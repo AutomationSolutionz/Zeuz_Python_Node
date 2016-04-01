@@ -13,8 +13,8 @@ else:
     from AutomationFW.MacDesktop import MacCommonFoldersPaths as WinCommonFoldersPaths
 
 ###########Production / Dev Config variables######################
-Environment = "Test"
-#Environment = "Production"
+#Environment = "Test"
+Environment = "Production"
 if Environment == "Test":
     ###########Dev Config Variables############################
     print "Running on Test Environment..."
@@ -33,6 +33,11 @@ if Environment == "Test":
     #Email List for Daily Build
     dl_list = "test@test.com"
     server_port= 8000
+
+    log_file_upload_server_ip='localhost'
+    log_file_upload_server_port=8000
+
+
     #Folder Paths
     if os.name == 'nt':
         NetworkFolder = WinCommonFoldersPaths.Get_My_Documents_Path()
@@ -57,6 +62,9 @@ elif Environment == "Production":
     
     adb_port=5037
     server_port= 90
+
+    log_file_upload_server_ip='assetscience.automationsolutionz.com'
+    log_file_upload_server_port=90
 
     #Folder Paths
     if os.name == 'nt':
@@ -107,5 +115,3 @@ BuildPath = "C:\\Test"
 
 RunIdTempPath=''
 test_log_base_path='TestExecutionLog'
-log_file_upload_server_ip='0.0.0.0'
-log_file_upload_server_port=8000
