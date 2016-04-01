@@ -2,9 +2,10 @@
 import os
 import time
 import sys
-sys.path.append("..")
+#sys.path.append("..")
 top_path=os.path.realpath(os.path.join(os.path.join(os.getcwd(),os.pardir),os.pardir))
-sys.path.append(top_path)
+if top_path not in sys.path:
+    sys.path.append(top_path)
 if os.name == 'nt':
     from AutomationFW.PCDesktop import WinCommonFoldersPaths
     #from AutomationFW import PCDesktop.WinCommonFoldersPaths as WinCommonFoldersPaths
@@ -12,8 +13,8 @@ else:
     from AutomationFW.MacDesktop import MacCommonFoldersPaths as WinCommonFoldersPaths
 
 ###########Production / Dev Config variables######################
-#Environment = "Test"
-Environment = "Production"
+Environment = "Test"
+#Environment = "Production"
 if Environment == "Test":
     ###########Dev Config Variables############################
     print "Running on Test Environment..."
@@ -106,5 +107,5 @@ BuildPath = "C:\\Test"
 
 RunIdTempPath=''
 test_log_base_path='TestExecutionLog'
-log_file_upload_server_ip='99.236.248.206'
-log_file_upload_server_port=90
+log_file_upload_server_ip='0.0.0.0'
+log_file_upload_server_port=8000

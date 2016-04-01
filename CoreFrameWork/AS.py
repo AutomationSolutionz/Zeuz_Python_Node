@@ -1,5 +1,5 @@
 import sys
-sys.path.append("..")
+#sys.path.append("..")
 print "Connecting to database and verifying user authentication"
 import traceback, os.path
 import DataBaseUtilities as DB

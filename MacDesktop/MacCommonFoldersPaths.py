@@ -9,7 +9,7 @@ System File Locations
 Retrieves common system path names on MAC
 """
 import sys
-sys.path.append("..")
+#sys.path.append("..")
 
 try:
     from Carbon import Folder, Folders

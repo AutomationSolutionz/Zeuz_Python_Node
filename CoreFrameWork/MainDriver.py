@@ -7,14 +7,16 @@ from poster.streaminghttp import register_openers
 import urllib2
 from poster.encode import multipart_encode
 import traceback, os.path
-sys.path.append("..")
+#sys.path.append("..")
 top_path=os.path.realpath(os.path.join(os.path.join(os.getcwd(),os.pardir),os.pardir))
-sys.path.append(top_path)
+if top_path not in sys.path:
+    sys.path.append(top_path)
 #adding driver folder to sys.path
-current_file_path=os.path.dirname(os.getcwd())#getting parent folder
-driver_folder=os.path.join(current_file_path,'Drivers')
-if driver_folder not in sys.path:
-    sys.path.append(driver_folder)
+all_sub_dir=os.listdir(os.path.dirname(os.path.dirname(os.getcwd())))
+for each in all_sub_dir:
+    if not each.startswith('.'):
+        if os.path.join(top_path,each) not in sys.path:
+            sys.path.append(os.path.join(top_path,each))
 import ConfigParser
 import time, datetime
 import threading, Queue
@@ -22,7 +24,7 @@ import inspect
 import DataBaseUtilities as DBUtil
 import FileUtilities as FL
 import CommonUtil
-import AutomationFW.Drivers
+import Drivers
 import importlib
 import Global,requests
 #import FSDriver

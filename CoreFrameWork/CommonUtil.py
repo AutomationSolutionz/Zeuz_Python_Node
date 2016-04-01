@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 import sys
 from ConfigParser import NoOptionError
-sys.path.append("..")
+#sys.path.append("..")
 
 import time, datetime, inspect
 from dateutil.relativedelta import relativedelta

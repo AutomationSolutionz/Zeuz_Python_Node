@@ -2,7 +2,7 @@
 
 '''
 import sys
-sys.path.append("..")
+#sys.path.append("..")
 import DataBaseUtilities as DBUtil
 import inspect
 
