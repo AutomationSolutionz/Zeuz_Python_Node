@@ -977,6 +977,14 @@ def TakeScreenShot(ImageName,local_run=False):
                     full_location=ImageFolder+os.sep+TimeStamp("utc")+"_"+ImageName+'.png'
                     os.system("import -window root %s"%full_location)
 
+                    #android working copy
+                    output = os.system("adb devices")
+                    if output is not None:
+                        full_location=ImageFolder+os.sep+TimeStamp("utc")+"_"+ImageName+'_android.png'
+                        #os.system("adb shell screencap -p | perl -pe 's/\x0D\x0A/\x0A/g' > %s"%full_location)
+                        os.system("adb shell screencap -p /sdcard/screen.png")
+                        os.system("adb pull /sdcard/screen.png %s"%full_location)
+
             elif os.name == 'nt':
                 path = ImageFolder + os.sep + TimeStamp("utc") + "_" + ImageName + ".jpg"
                 img = ImageGrab.grab()
