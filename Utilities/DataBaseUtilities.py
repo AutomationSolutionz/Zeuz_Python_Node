@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 import sys
 import psycopg2, inspect, time
-from AutomationFW.Utilities import ConfigModule
+from Utilities import ConfigModule
 """
 To Rename the Table name: Alter Table OldTableName
                           Rename To NewTableName

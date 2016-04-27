@@ -1,11 +1,11 @@
 import sys
 print "Connecting to database and verifying user authentication"
-import AutomationFW.Utilities.DataBaseUtilities as DB
-from AutomationFW.Utilities import ConfigModule
+import Utilities.DataBaseUtilities as DB
+from Utilities import ConfigModule
 import os
 import time
 import MainDriver
-from AutomationFW.Utilities import FileUtilities, CommonUtil
+from Utilities import FileUtilities, CommonUtil
 import base64
 def RunProcess(sTesterid):
     DATABASE_TAG='Database'

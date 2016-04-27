@@ -15,8 +15,8 @@ import ConfigParser
 import time
 import threading, Queue
 import inspect
-import AutomationFW.Utilities.DataBaseUtilities as DBUtil
-from AutomationFW.Utilities import FileUtilities as FL, CommonUtil,DataFetching,ConfigModule
+import Utilities.DataBaseUtilities as DBUtil
+from Utilities import FileUtilities as FL, CommonUtil,DataFetching,ConfigModule
 import importlib
 import requests
 ReRunTag="ReRun"

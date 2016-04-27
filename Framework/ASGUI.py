@@ -7,11 +7,10 @@ import base64
 
 import wx
 import wx.wizard
-import DataBaseUtilities as DB
-import CommonUtil
-import Global
-import MainDriver
-from AutomationFW.Utilities import FileUtilities
+from Utilities import DataBaseUtilities as DB
+from Utilities import CommonUtil
+from Framework import  MainDriver
+from Utilities import FileUtilities
 
 
 class RedirectText(object):

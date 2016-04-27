@@ -1,6 +1,6 @@
 __author__='main'
 import sys
-import DataBaseUtilities as DBUtil
+from Utilities import DataBaseUtilities as DBUtil
 import inspect
 
 unmask_characters={

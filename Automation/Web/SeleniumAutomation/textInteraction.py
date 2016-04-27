@@ -3,8 +3,8 @@ __author__ = 'shetu'
 import os
 import sys
 import time
-from AutomationFW.Helpers.Web.locateInteraction import Locate_Element_By_Class,Locate_Element_By_Name
-from AutomationFW.Helpers.Web.locateInteraction import Locate_Element_By_ID
+from Automation.Web.SeleniumAutomation.locateInteraction import Locate_Element_By_Class,Locate_Element_By_Name
+from Automation.Web.SeleniumAutomation.locateInteraction import Locate_Element_By_ID
 def Set_Text_By_ID(element_name,text_value,parent=False):
     try:
         time.sleep(4)

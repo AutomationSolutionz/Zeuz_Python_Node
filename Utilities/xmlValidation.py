@@ -1,6 +1,6 @@
 __author__='minar'
 import os, sys, subprocess, inspect
-from AutomationFW.Utilities import CommonUtil
+from Utilities import CommonUtil
 
 from lxml import etree
 from StringIO import StringIO

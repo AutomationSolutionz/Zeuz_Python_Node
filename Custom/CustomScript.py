@@ -2,9 +2,9 @@
 from lxml.html.diff import tag_token
 from appium import webdriver
 import os , sys, time, inspect
-from AutomationFW.Utilities import CommonUtil
-from AutomationFW.Helpers.Device import adbOptions
-from AutomationFW.Helpers.Web import clickInteraction,locateInteraction
+from Utilities import CommonUtil
+from Automation.Mobile.Android.adb_calls import adbOptions
+from Automation.Web.SeleniumAutomation import clickInteraction,locateInteraction
 from appium.webdriver.common.touch_action import TouchAction
 from django.test.html import Element
 

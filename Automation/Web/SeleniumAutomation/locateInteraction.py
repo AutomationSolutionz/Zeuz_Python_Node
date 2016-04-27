@@ -2,7 +2,7 @@ __author__ = 'shetu'
 from selenium.webdriver.support.ui import WebDriverWait
 from selenium.webdriver.common.by import By
 WebDriver_Wait=20
-from AutomationFW.Helpers import Base as config
+from Automation.Web.SeleniumAutomation import config as config
 from selenium.webdriver.support import expected_conditions as EC
 import os,sys
 def Locate_Element_By_ID(element_name,parent=False):

@@ -4,9 +4,9 @@ from ConfigParser import NoOptionError
 import os, psutil
 import DataBaseUtilities as DB
 import logging
-from AutomationFW.Utilities import ConfigModule
+from Utilities import ConfigModule
 import datetime
-from AutomationFW.Utilities import FileUtilities as FL
+from Utilities import FileUtilities as FL
 temp_config=os.path.join(os.path.join(FL.get_home_folder(),os.path.join('Desktop',os.path.join('AutomationLog',ConfigModule.get_config_value('Temp','_file')))))
 
 def to_unicode(obj, encoding='utf-8'):

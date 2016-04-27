@@ -1,11 +1,10 @@
 from appium import webdriver
 import os,sys,time
 import inspect
-from AutomationFW.Utilities import CommonUtil
-from AutomationFW.Helpers.Custom import CustomScript
-from AutomationFW.Helpers.Web import navigate as n
-from AutomationFW.Helpers.Web import locateInteraction
-from AutomationFW.Utilities import CompareModule as c
+from Utilities import CommonUtil
+from Custom import CustomScript
+from Automation.Web.SeleniumAutomation import navigate as n
+from Utilities import CompareModule as c
 #if local_run is True, no logging will be recorded to the web server.  Only local print will be displayed
 #local_run = True
 local_run = False
