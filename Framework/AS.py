@@ -1,6 +1,7 @@
-import sys
+import sys,os
+sys.path.append(os.path.dirname(os.getcwd()))
 print "Connecting to database and verifying user authentication"
-import Utilities.DataBaseUtilities as DB
+from Utilities import DataBaseUtilities as DB
 from Utilities import ConfigModule
 import os
 import time
@@ -275,4 +276,4 @@ def dependency_collection(project,team,server):
         print Error_Detail
 
 if __name__=='__main__':
-     Login()
+    Login()
