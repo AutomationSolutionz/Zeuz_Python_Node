@@ -2,7 +2,7 @@ from appium import webdriver
 import os,sys,time
 import inspect
 from Utilities import CommonUtil
-from AutoData import AndroidDemo_script
+from AutoDataHelper import AndroidDemo_script
 from Automation.Web.SeleniumAutomation import navigate as n
 #from Automation.Web.SeleniumAutomation import locateInteraction
 from Utilities import CompareModule
