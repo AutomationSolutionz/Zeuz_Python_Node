@@ -460,6 +460,8 @@ def main(server_id):
                     step_time=DBUtil.GetData(conn,step_time_query)
                     conn.close()
                     step_time=step_time[0]
+                    auto_generated_image_name=('_').join(TestStepsList[StepSeq-1][1].split(" "))+'_started.png'
+                    CommonUtil.TakeScreenShot(auto_generated_image_name)
                     try:
                         q = Queue.Queue()
                         if TestStepsList[StepSeq-1][3] in Driver_list:
@@ -560,6 +562,8 @@ def main(server_id):
                     #if DBUtil.IsDBConnectionGood(conn) == False:
                     #    print "DB connection is bad"
                     #    CommonUtil.ExecLog(sModuleInfo, "DB connection error", 3)
+                    auto_generated_image_name=('_').join(TestStepsList[StepSeq-1][1].split(" "))+'_'+sStepResult.lower()+'.png'
+                    CommonUtil.TakeScreenShot(auto_generated_image_name)
                     try:
                         conn.close()
                     except Exception, e:
