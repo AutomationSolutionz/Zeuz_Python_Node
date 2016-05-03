@@ -1,7 +1,7 @@
 #Android Debug Bridge (ADB) options to get the android devices info connected via usb/wi-fi
 __author__='minar'
 import subprocess, inspect, os
-from AutomationFW.Utilities import CommonUtil
+from Utilities import CommonUtil
 
 #if local_run is True, no logging will be recorded to the web server.  Only local print will be displayed
 local_run = True

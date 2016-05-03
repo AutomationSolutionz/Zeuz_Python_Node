@@ -249,44 +249,63 @@ def select_base_car(car_data):
 def select_car(car_data,index):
     sModuleInfo = inspect.stack()[0][3] + " : " + inspect.getmoduleinfo(__file__).name
     try:
-        div_name_config='competitorgridview-selection-changebtn'+str(index-1)
-        parent_element=locateInteraction.Locate_Element_By_ID(div_name_config)
-        change_button=locateInteraction.Locate_Element_By_Tag('button',parent_element)
+        div_name_config = 'competitorgridview-selection-changebtn' + str(index - 1)
+        _button_parent_element=locateInteraction.Locate_Element_By_ID(div_name_config)
+        change_button=locateInteraction.Locate_Element_By_Tag('button',_button_parent_element)
         change_button.click()
-        time.sleep(3)
-        #year field
-        year_field=locateInteraction.Locate_Element_By_ID('x-auto-125')
-        year_field.click()
-        year_field_input=locateInteraction.Locate_Element_By_ID('x-auto-126')
-        CommonUtil.ExecLog(sModuleInfo,"Selecting car %d year: %s"%(int(index),car_data['year']),1,local_run)
-        clickInteraction.Click_Element_By_Name(car_data['year'],year_field_input)
-        CommonUtil.ExecLog(sModuleInfo,"Selected car %d year: %s"%(int(index),car_data['year']),1,local_run)
-        time.sleep(3)
-        #make field
-        make_field=locateInteraction.Locate_Element_By_ID('x-auto-128')
-        make_field.click()
-        make_field_input=locateInteraction.Locate_Element_By_ID('x-auto-129')
-        CommonUtil.ExecLog(sModuleInfo,"Selecting car %d make: %s"%(int(index),car_data['make']),1,local_run)
-        clickInteraction.Click_Element_By_Name(car_data['make'],make_field_input)
-        CommonUtil.ExecLog(sModuleInfo,"Selected car %d make: %s"%(int(index),car_data['make']),1,local_run)
-        time.sleep(3)
-        #model_field
-        model_field=locateInteraction.Locate_Element_By_ID('x-auto-131')
-        model_field.click()
-        model_field_input=locateInteraction.Locate_Element_By_ID('x-auto-132')
-        CommonUtil.ExecLog(sModuleInfo,"Selecting car %d model: %s"%(int(index),car_data['model']),1,local_run)
-        clickInteraction.Click_Element_By_Name(car_data['model'],model_field_input)
-        CommonUtil.ExecLog(sModuleInfo,"Selected car %d model: %s"%(int(index),car_data['model']),1,local_run)
-        #trim field
-        time.sleep(3)
-        trim_field=locateInteraction.Locate_Element_By_ID('x-auto-134')
-        trim_field.click()
-        trim_field_input=locateInteraction.Locate_Element_By_ID('x-auto-135')
-        CommonUtil.ExecLog(sModuleInfo,"Selecting car %d trim: %s"%(int(index),car_data['trim']),1,local_run)
-        clickInteraction.Click_Element_By_Name(car_data['trim'],trim_field_input)
-        CommonUtil.ExecLog(sModuleInfo,"Selected car %d trim: %s"%(int(index),car_data['trim']),1,local_run)
-        time.sleep(5)
-        return True
+        parent_element=locateInteraction.Locate_Element_By_Class('vehicleSelectionPopup')
+        all_children=locateInteraction.Locate_All_Children(parent_element)
+
+        if all_children:
+            first_div=locateInteraction.Locate_All_Children(all_children[0])
+            popup_selection=locateInteraction.Locate_Element_By_Class('compare-ptip-selection',first_div[2])
+            t_body_tag=locateInteraction.Locate_Element_By_Tag('tbody',popup_selection)
+            all_rows=locateInteraction.Locate_All_Children(t_body_tag)
+            for _i,e in enumerate(all_rows):
+                desired_input=locateInteraction.Locate_Element_By_TAG_Under_Specific_Element('input',e)
+                desired_input.click()
+                all_tds=locateInteraction.Locate_All_Children(e)
+                if not all_tds:
+                    CommonUtil.ExecLog(sModuleInfo,"Found not child elements in row",3,local_run)
+                    return False
+                all_divs=locateInteraction.Locate_Element_By_TAG_Under_Specific_Element('div',all_tds[1],True)
+                if not all_divs:
+                    CommonUtil.ExecLog(sModuleInfo, "Found not child elements in columns", 3, local_run)
+                    return False
+                if _i==0:
+                    selected_data=car_data['year']
+                    CommonUtil.ExecLog(sModuleInfo,"Going to select the year of car %d"%index,1,local_run)
+                elif _i==1:
+                    selected_data=car_data['make']
+                    CommonUtil.ExecLog(sModuleInfo, "Going to select the make of car %d" % index, 1, local_run)
+                elif _i==2:
+                    selected_data=car_data['model']
+                    CommonUtil.ExecLog(sModuleInfo, "Going to select the model of car %d" % index, 1, local_run)
+                elif _i==3:
+                    selected_data=car_data['trim']
+                    CommonUtil.ExecLog(sModuleInfo, "Going to select the trim of car %d" % index, 1, local_run)
+                else:
+                    selected_data=''
+                    CommonUtil.ExecLog(sModuleInfo, "Nothing to select for car %d" % index, 1, local_run)
+
+                if _i in [0,1,2,3]:
+                    clickInteraction.Click_Element_By_Name(selected_data,all_divs[1])
+
+                if _i==0:
+                    CommonUtil.ExecLog(sModuleInfo, "Selected the year of car %d, %s" %(index,selected_data), 1, local_run)
+                elif _i==1:
+                    CommonUtil.ExecLog(sModuleInfo, "Selected the make of car %d, %s" % (index, selected_data), 1,local_run)
+                elif _i==2:
+                    CommonUtil.ExecLog(sModuleInfo, "Selected the model of car %d, %s" % (index, selected_data), 1,local_run)
+                elif _i==3:
+                    CommonUtil.ExecLog(sModuleInfo, "Selected the trim of car %d, %s" % (index, selected_data), 1,local_run)
+                else:
+                    CommonUtil.ExecLog(sModuleInfo, "Nothing was selected of car %d, %s" % (index, selected_data), 1,local_run)
+            return True
+        else:
+            CommonUtil.ExecLog(sModuleInfo, "Vehicle Selection Popup was not there", 1, local_run)
+            return False
+
     except Exception, e:
         exc_type, exc_obj, exc_tb = sys.exc_info()
         fname = os.path.split(exc_tb.tb_frame.f_code.co_filename)[1]

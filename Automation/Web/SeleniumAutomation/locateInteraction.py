@@ -5,6 +5,36 @@ WebDriver_Wait=20
 from Automation.Web.SeleniumAutomation import config as config
 from selenium.webdriver.support import expected_conditions as EC
 import os,sys
+
+def Locate_Element_By_TAG_Under_Specific_Element(tag_name,parent=False,multiple=False):
+    try:
+        if isinstance(parent, bool) == True:
+            e = WebDriverWait(config.sBrowser, WebDriver_Wait).until(EC.presence_of_all_elements_located((By.XPATH, './/%s'%(tag_name))))
+        else:
+            e = WebDriverWait(parent, WebDriver_Wait).until(EC.presence_of_all_elements_located((By.XPATH, './/%s'%(tag_name))))
+        if multiple:
+            return e
+        else:
+            return e[0]
+    except Exception, e:
+        exc_type, exc_obj, exc_tb = sys.exc_info()
+        fname = os.path.split(exc_tb.tb_frame.f_code.co_filename)[1]
+        Error_Detail = ((str(exc_type).replace("type ", "Error Type: ")) + ";" + "Error Message: " + str(
+            exc_obj) + ";" + "File Name: " + fname + ";" + "Line: " + str(exc_tb.tb_lineno))
+        print "%s" % Error_Detail
+def Locate_All_Children(parent=False):
+    try:
+        if isinstance(parent,bool)==True:
+            e = WebDriverWait(config.sBrowser, WebDriver_Wait).until(EC.presence_of_all_elements_located((By.XPATH,'*')))
+        else:
+            e = WebDriverWait(parent, WebDriver_Wait).until(EC.presence_of_all_elements_located((By.XPATH,'*')))
+        return e
+    except Exception,e:
+        exc_type, exc_obj, exc_tb = sys.exc_info()
+        fname = os.path.split(exc_tb.tb_frame.f_code.co_filename)[1]
+        Error_Detail = ((str(exc_type).replace("type ", "Error Type: ")) + ";" + "Error Message: " + str(exc_obj) + ";" + "File Name: " + fname + ";" + "Line: " + str(exc_tb.tb_lineno))
+        print "%s" % Error_Detail
+
 def Locate_Element_By_ID(element_name,parent=False):
     try:
 
