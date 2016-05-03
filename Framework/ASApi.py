@@ -1,5 +1,6 @@
-from Utilities import ConfigModule,RequestFormatter,CommonUtil
-import os,sys
+from Utilities import ConfigModule,RequestFormatter,CommonUtil,FileUtilities
+import MainDriver
+import os,sys,time
 
 '''Constants'''
 AUTHENTICATION_TAG='Authentication'
@@ -36,48 +37,41 @@ def Login():
         print "Authetication Failed"
         return False
 def RunProcess(sTesterid):
-    DATABASE_TAG='Database'
-    server=ConfigModule.get_config_value(DATABASE_TAG,'database_address')
     while (1):
         try:
-            conn = DB.ConnectToDataBase(sHost=server)
-            status = DB.GetData(conn, "Select status from test_run_env where tester_id = '%s' and status in ('Submitted','Unassigned') limit 1 " % (sTesterid))
-            conn.close()
-            if len(status) == 0:
-                continue
-            if status[0] != "Unassigned":
-                if status[0] == "Submitted":
-                    #creating this folder in the desktop
-
-                    current_path=os.path.join(FileUtilities.get_home_folder(),os.path.join('Desktop','AutomationLog'))
-                    retVal= FileUtilities.CreateFolder(current_path,forced=False)
-                    if retVal:
-                        #now save it in the global_config.ini
-                        TEMP_TAG='Temp'
-                        file_name=ConfigModule.get_config_value(TEMP_TAG,'_file')
-                        current_path_file= os.path.join(current_path,file_name)
-                        FileUtilities.CreateFile(current_path_file)
-                        ConfigModule.clean_config_file(current_path_file)
-                        ConfigModule.add_section('sectionOne',current_path_file)
-                        ConfigModule.add_config_value('sectionOne','temp_run_file_path',current_path,current_path_file)
-                    value=MainDriver.main(server)
-                    print "updating db with parameter"
-                    if value=="pass":
-                        break
-                    print "Successfully updated db with parameter"
-
-            elif status[0] == "Unassigned":
+            r=RequestFormatter.Get('is_run_submitted_api',{'machine_name':sTesterid})
+            r=r.json()
+            if r['run_submit']:
+                PreProcess()
+                server=ConfigModule.get_config_value('Server','server_address')
+                value = MainDriver.main(server)
+                print "updating db with parameter"
+                if value == "pass":
+                    break
+                print "Successfully updated db with parameter"
+            else:
                 time.sleep(3)
-                conn = DB.ConnectToDataBase(sHost=server)
-                last_updated_time= CommonUtil.TimeStamp("string")
-                DB.UpdateRecordInTable(conn, "test_run_env", "where tester_id = '%s' and status = 'Unassigned'" % sTesterid, last_updated_time=last_updated_time)
-                conn.close()
+                if r['update']:
+                    _r=RequestFormatter.Get('update_machine_with_time_api',{'machine_name':sTesterid})
         except Exception, e:
             exc_type, exc_obj, exc_tb = sys.exc_info()
             fname = os.path.split(exc_tb.tb_frame.f_code.co_filename)[1]
             Error_Detail = ((str(exc_type).replace("type ", "Error Type: ")) + ";" +  "Error Message: " + str(exc_obj) +";" + "File Name: " + fname + ";" + "Line: "+ str(exc_tb.tb_lineno))
             print Error_Detail
     return True
+def PreProcess():
+    current_path = os.path.join(FileUtilities.get_home_folder(), os.path.join('Desktop', 'AutomationLog'))
+    retVal = FileUtilities.CreateFolder(current_path, forced=False)
+    if retVal:
+        # now save it in the global_config.ini
+        TEMP_TAG = 'Temp'
+        file_name = ConfigModule.get_config_value(TEMP_TAG, '_file')
+        current_path_file = os.path.join(current_path, file_name)
+        FileUtilities.CreateFile(current_path_file)
+        ConfigModule.clean_config_file(current_path_file)
+        ConfigModule.add_section('sectionOne', current_path_file)
+        ConfigModule.add_config_value('sectionOne', 'temp_run_file_path', current_path, current_path_file)
+
 
 def update_machine(dependency):
     try:
