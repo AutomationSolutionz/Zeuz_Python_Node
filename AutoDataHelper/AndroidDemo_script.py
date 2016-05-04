@@ -274,15 +274,19 @@ def select_car(car_data,index):
                     return False
                 if _i==0:
                     selected_data=car_data['year']
+		    time.sleep(1)
                     CommonUtil.ExecLog(sModuleInfo,"Going to select the year of car %d"%index,1,local_run)
                 elif _i==1:
                     selected_data=car_data['make']
+		    time.sleep(1)
                     CommonUtil.ExecLog(sModuleInfo, "Going to select the make of car %d" % index, 1, local_run)
                 elif _i==2:
                     selected_data=car_data['model']
+		    time.sleep(1)
                     CommonUtil.ExecLog(sModuleInfo, "Going to select the model of car %d" % index, 1, local_run)
                 elif _i==3:
                     selected_data=car_data['trim']
+		    time.sleep(5)
                     CommonUtil.ExecLog(sModuleInfo, "Going to select the trim of car %d" % index, 1, local_run)
                 else:
                     selected_data=''
