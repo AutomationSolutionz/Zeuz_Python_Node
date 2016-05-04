@@ -7,7 +7,7 @@ from Utilities import CommonUtil
 local_run = False
 
 
-def lcoate_element_by_id(driver, _id, parent=False):
+def locate_element_by_id(driver, _id, parent=False):
     sModuleInfo = inspect.stack()[0][3] + " : " + inspect.getmoduleinfo(__file__).name
     try:
         CommonUtil.ExecLog(sModuleInfo,"Trying to locate element by id: %s"%_id,1,local_run)
@@ -21,6 +21,22 @@ def lcoate_element_by_id(driver, _id, parent=False):
         fname = os.path.split(exc_tb.tb_frame.f_code.co_filename)[1]
         Error_Detail = ((str(exc_type).replace("type ", "Error Type: ")) + ";" +  "Error Message: " + str(exc_obj) +";" + "File Name: " + fname + ";" + "Line: "+ str(exc_tb.tb_lineno))
         CommonUtil.ExecLog(sModuleInfo, "Unable to locate the element. %s"%Error_Detail, 3,local_run)
+
+def locate_elements_by_id(driver, _id, parent=False):
+    sModuleInfo = inspect.stack()[0][3] + " : " + inspect.getmoduleinfo(__file__).name
+    try:
+        CommonUtil.ExecLog(sModuleInfo,"Trying to locate elements by id: %s"%_id,1,local_run)
+        if isinstance(parent,bool) == True:
+            elems = driver.find_elements_by_id(_id)
+        else:
+            elems=parent.find_elements_by_id(_id)
+        return elems
+    except Exception, e:
+        exc_type, exc_obj, exc_tb = sys.exc_info()        
+        fname = os.path.split(exc_tb.tb_frame.f_code.co_filename)[1]
+        Error_Detail = ((str(exc_type).replace("type ", "Error Type: ")) + ";" +  "Error Message: " + str(exc_obj) +";" + "File Name: " + fname + ";" + "Line: "+ str(exc_tb.tb_lineno))
+        CommonUtil.ExecLog(sModuleInfo, "Unable to locate elements. %s"%Error_Detail, 3,local_run)
+
     
 def locate_element_by_name(driver, _name, parent=False):
     sModuleInfo = inspect.stack()[0][3] + " : " + inspect.getmoduleinfo(__file__).name

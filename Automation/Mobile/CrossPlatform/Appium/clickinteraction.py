@@ -12,7 +12,7 @@ def click_element_by_id(driver, _id, parent=False):
     sModuleInfo = inspect.stack()[0][3] + " : " + inspect.getmoduleinfo(__file__).name
     try:
         CommonUtil.ExecLog(sModuleInfo,"Trying to click on element by id: %s"%_id,1,local_run)
-        elem = li.lcoate_element_by_id(driver, _id, parent)
+        elem = li.locate_element_by_id(driver, _id, parent)
         elem.click()
         CommonUtil.ExecLog(sModuleInfo,"Clicked on element successfully",1,local_run)
         return "Passed"
