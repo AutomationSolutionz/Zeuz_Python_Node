@@ -11,4 +11,4 @@ def form_uri(resource_path):
     return base_server_address+resource_path+'/'
 
 def Get(resource_path,payload={}):
-    return requests.get(form_uri(resource_path),params=payload)
+    return requests.get(form_uri(resource_path),params=payload).json()

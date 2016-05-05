@@ -23,7 +23,7 @@ def Login():
     }
     r = RequestFormatter.Get('login_api',user_info_object)
     print "Authentication check for user='%s', project='%s', team='%s'"%(username,project,team)
-    if r.json():
+    if r:
         print "Authentication Successful"
         machine_object=update_machine(dependency_collection())
         if machine_object['registered']:
@@ -40,7 +40,6 @@ def RunProcess(sTesterid):
     while (1):
         try:
             r=RequestFormatter.Get('is_run_submitted_api',{'machine_name':sTesterid})
-            r=r.json()
             if r['run_submit']:
                 PreProcess()
                 server=ConfigModule.get_config_value('Server','server_address')
@@ -106,7 +105,6 @@ def update_machine(dependency):
             'team':team
         }
         r=RequestFormatter.Get('update_automation_machine_api',update_object)
-        r=r.json()
         if r['registered']:
             print "Machine is registerd as online with name: %s"%(r['name'])
         else:
@@ -125,7 +123,7 @@ def dependency_collection():
         project=ConfigModule.get_config_value(AUTHENTICATION_TAG,PROJECT_TAG)
         team=ConfigModule.get_config_value(AUTHENTICATION_TAG,TEAM_TAG)
         r=RequestFormatter.Get('get_all_dependency_name_api',{'project':project,'team':team})
-        obtained_list=[x.lower() for x in r.json()]
+        obtained_list=[x.lower() for x in r]
         #print "Dependency: ",dependency_list
         missing_list=list(set(obtained_list)-set(dependency_option))
         #print missing_list
@@ -135,7 +133,7 @@ def dependency_collection():
         else:
             print "All the dependency present in the configuration file - settings.conf"
             final_dependency=[]
-            for each in r.json():
+            for each in r:
                 temp=[]
                 each_dep_list=ConfigModule.get_config_value(dependency_tag,each).split(",")
                 #print each_dep_list
