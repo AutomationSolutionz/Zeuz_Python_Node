@@ -1,5 +1,5 @@
 from Utilities import ConfigModule,RequestFormatter,CommonUtil,FileUtilities
-import MainDriver
+import MainDriverApi
 import os,sys,time
 
 '''Constants'''
@@ -42,8 +42,7 @@ def RunProcess(sTesterid):
             r=RequestFormatter.Get('is_run_submitted_api',{'machine_name':sTesterid})
             if r['run_submit']:
                 PreProcess()
-                server=ConfigModule.get_config_value('Server','server_address')
-                value = MainDriver.main(server)
+                value = MainDriverApi.main()
                 print "updating db with parameter"
                 if value == "pass":
                     break
@@ -89,18 +88,23 @@ def update_machine(dependency):
         team=ConfigModule.get_config_value(AUTHENTICATION_TAG,TEAM_TAG)
         if not dependency:
             dependency=""
-        _d=[]
+        _d={}
         for x in dependency:
             t = []
             for i in x[1]:
-                t.append(('/#').join(i))
-            _d.append(x[0] + '//'+('/*').join(t))
+                _t=['name','bit','version']
+                __t={}
+                for index,_i in enumerate(i):
+                    __t.update({_t[index]:_i})
+                if __t:
+                    t.append(__t)
+            _d.update({x[0]:t})
         dependency=_d
         update_object={
             'machine_name':testerid,
             'local_ip':local_ip,
             'productVersion':productVersion,
-            'dependency':('##').join(dependency),
+            'dependency':dependency,
             'project':project,
             'team':team
         }
