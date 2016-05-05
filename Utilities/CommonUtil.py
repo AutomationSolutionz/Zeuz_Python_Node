@@ -110,12 +110,13 @@ def TakeScreenShot(ImageName,local_run=False):
                 os.system("sips -s format jpeg -s formatOptions 30 " + path + " -o " + newpath)
                 os.system("rm " + path)
                 """
-                if sys.platform == 'linux2':
-                    #linux working copy
-                    full_location=ImageFolder+os.sep+TimeStamp("utc")+"_"+ImageName+'.png'
-                    os.system("import -window root %s"%full_location)
+                #if sys.platform == 'linux2':
                 
-                    #android working copy
+                #linux working copy
+                full_location=ImageFolder+os.sep+TimeStamp("utc")+"_"+ImageName+'.png'
+                os.system("import -window root %s"%full_location)
+                
+                """    #android working copy
                     output = os.system("adb devices")
                     if output is not None:
                         full_location=ImageFolder+os.sep+TimeStamp("utc")+"_"+ImageName+'_android.png'
@@ -163,7 +164,7 @@ def TakeScreenShot(ImageName,local_run=False):
                         full_location=ImageFolder+os.sep+TimeStamp("utc")+"_"+ImageName+'_android.png'
                         #os.system("adb shell screencap -p | perl -pe 's/\x0D\x0A/\x0A/g' > %s"%full_location)
                         os.system("adb shell screencap -p /sdcard/screen.png")
-                        os.system("adb pull /sdcard/screen.png %s"%full_location)
+                        os.system("adb pull /sdcard/screen.png %s"%full_location)"""
 
             elif os.name == 'nt':
                 path = ImageFolder + os.sep + TimeStamp("utc") + "_" + ImageName + ".jpg"
