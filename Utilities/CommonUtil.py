@@ -1,13 +1,13 @@
 # -*- coding: utf-8 -*-
 import sys
-from ConfigParser import NoOptionError
-import ConfigParser
+from ConfigParser import NoOptionError,NoSectionError
 import os, psutil
 import DataBaseUtilities as DB
 import logging
 from Utilities import ConfigModule
 import datetime
 from Utilities import FileUtilities as FL
+import uuid
 temp_config=os.path.join(os.path.join(FL.get_home_folder(),os.path.join('Desktop',os.path.join('AutomationLog',ConfigModule.get_config_value('Temp','_file')))))
 
 def to_unicode(obj, encoding='utf-8'):
@@ -250,41 +250,34 @@ class MachineInfo():
         :return: returns the local pc name
         """
         try:
-            import time, math
-            import os.path
-            
-            #path to node_id file
-            node_id_path =  os.path.expanduser('~')+ os.sep + 'Desktop' + "Node_ID.txt"
-        
-            if os.path.isfile(node_id_path) == False:
-                #print "file doesnt exists.... will create a new one"
-                #get user name from settings.conf file
-                file_name1 = os.path.abspath(os.path.dirname(__file__))  + os.sep + 'settings.conf'
-                file_name = file_name1.replace('Utilities', 'FrameWork')
-                config = ConfigParser.SafeConfigParser()
-                config.read(file_name)
-                user_name= config.get('Authentication', "username")
-                #generate random a
-                m = time.time()
-                uniqid = '%8x%05x' %(math.floor(m),(m-math.floor(m))*1000000)            
-                machine_id = user_name+'_' + uniqid
-                #creating and writing to the Node_Id file
-                file = open(node_id_path,'w+')   
-                file.write(machine_id)
-                file.close()
-                return machine_id
+            node_id_file_path=os.path.join(FL.get_home_folder(),os.path.join('Desktop','node_id.conf'))
+            if os.path.isfile(node_id_file_path):
+                unique_id=ConfigModule.get_config_value('UniqueID','id',node_id_file_path)
+                if unique_id=='':
+                    ConfigModule.clean_config_file(node_id_file_path)
+                    ConfigModule.add_section('UniqueID', node_id_file_path)
+                    unique_id = uuid.uuid4()
+                    unique_id = str(unique_id)[:10]
+                    ConfigModule.add_config_value('UniqueID', 'id', unique_id,node_id_file_path)
+                    machine_name = ConfigModule.get_config_value('Authentication', 'username') +'_' +str(unique_id)
+                    return machine_name[:100]
+                machine_name = ConfigModule.get_config_value('Authentication', 'username') +'_' +str(unique_id)
             else:
-                #print "file exists.... returning the current value"
-                file = open(node_id_path,'r')
-                machine_id = file.read()
-                return machine_id
-       
+                #create the file name
+                f=open(node_id_file_path,'w')
+                f.close()
+                unique_id=uuid.uuid4()
+                unique_id=str(unique_id)[:10]
+                ConfigModule.add_section('UniqueID',node_id_file_path)
+                ConfigModule.add_config_value('UniqueID','id',unique_id,node_id_file_path)
+                machine_name = ConfigModule.get_config_value('Authentication', 'username') +'_' +str(unique_id)
+            return machine_name[:100]
+
         except Exception, e:
             #incase exception happens for whatever reason.. we will return the timestamp...
-            print "Exceptioin: ", e
+            print "Exception: ", e
             print "Unable to set create a Node key.  Please check class MachineInfo() in commonutil"
-            random_number = TimeStamp("utcstring")
-            return random_number
+            return False
         
 
 

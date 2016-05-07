@@ -18,10 +18,10 @@ def get_config_value(section,key,location=False):
         config.read(_file_name)
         return config.get(section,key)
     except ConfigParser.NoSectionError:
-        print "No section in that name: %s"%section
+        #print "No section in that name: %s"%section
         return ""
     except ConfigParser.NoOptionError:
-        print "No option in that name: %s"%key
+        #print "No option in that name: %s"%key
         return ""
 
 def remove_config_value(section,value,location=False):
@@ -34,6 +34,7 @@ def remove_config_value(section,value,location=False):
     config.remove_option(section,value)
     with(open(_file_name,'w')) as open_file:
         config.write(open_file)
+    open_file.close()
 
 
 def add_config_value(section,key,value,location=False):
@@ -47,12 +48,13 @@ def add_config_value(section,key,value,location=False):
         config.set(section,key,value)
         with(open(_file_name,'w')) as open_file:
             config.write(open_file)
+        open_file.close()
         return True
     except ConfigParser.NoSectionError:
-        print "No section in that name: %s"%section
+        #print "No section in that name: %s"%section
         return ""
     except ConfigParser.NoOptionError:
-        print "No option in that name: %s"%key
+        #print "No option in that name: %s"%key
         return ""
 
 
@@ -91,6 +93,7 @@ def add_section(section_name,location=False):
         config.add_section(section_name)
         with(open(_file_name,'w')) as open_file:
             config.write(open_file)
+        open_file.close()
         return True
     except ConfigParser.NoSectionError,e:
         print 'found no section with name %s'%section_name
@@ -111,6 +114,7 @@ def clean_config_file(location=False):
             config.remove_section(each)
         with(open(_file_name,'w')) as open_file:
             config.write(open_file)
+        open_file.close()
         return True
     except Exception, e:
         print e
