@@ -209,24 +209,24 @@ def main(server_id):
             else:
                 AutomationList.append((each[0],each[1]))
         print AutomationList
-        if len(filter(lambda x: x[1]=='Manual',AutomationList))>0:
-            if (len(filter(lambda x:x[1]=='Automated',AutomationList)))>0 or (len(filter(lambda x:x[1]=='Performance',AutomationList)))>0:
-                run_type='Hybrid'
-            else:
-                run_type='Manual'
-        else:
-            if (len(filter(lambda x:x[1]=='Performance',AutomationList)))== 0 and (len(filter(lambda x:x[1]=='Automated',AutomationList)))>0:
-                run_type='Automation'
-            elif (len(filter(lambda x:x[1]=='Performance',AutomationList)))>0 and (len(filter(lambda x:x[1]=='Automated',AutomationList)))==0:
-                run_type='Performance'
-            else:
-                run_type='Hybrid'
-        Dict={}
-        Dict.update({'run_type':run_type})
-        sWhereQuery="where run_id='%s'" %TestRunID[0]
-        conn=DBUtil.ConnectToDataBase(sHost=server_id)
-        print DBUtil.UpdateRecordInTable(conn,"test_run_env",sWhereQuery,**Dict)
-        conn.close()
+        # if len(filter(lambda x: x[1]=='Manual',AutomationList))>0:
+        #     if (len(filter(lambda x:x[1]=='Automated',AutomationList)))>0 or (len(filter(lambda x:x[1]=='Performance',AutomationList)))>0:
+        #         run_type='Hybrid'
+        #     else:
+        #         run_type='Manual'
+        # else:
+        #     if (len(filter(lambda x:x[1]=='Performance',AutomationList)))== 0 and (len(filter(lambda x:x[1]=='Automated',AutomationList)))>0:
+        #         run_type='Automation'
+        #     elif (len(filter(lambda x:x[1]=='Performance',AutomationList)))>0 and (len(filter(lambda x:x[1]=='Automated',AutomationList)))==0:
+        #         run_type='Performance'
+        #     else:
+        #         run_type='Hybrid'
+        # Dict={}
+        # Dict.update({'run_type':run_type})
+        # sWhereQuery="where run_id='%s'" %TestRunID[0]
+        # conn=DBUtil.ConnectToDataBase(sHost=server_id)
+        # print DBUtil.UpdateRecordInTable(conn,"test_run_env",sWhereQuery,**Dict)
+        # conn.close()
         TestCaseLists=[]
         automation_count=len(filter(lambda  x:x[1]=='Automated',AutomationList))
         performance_count=len(filter(lambda  x:x[1]=='Performance',AutomationList))
