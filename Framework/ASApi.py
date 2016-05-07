@@ -1,6 +1,8 @@
+import os,sys,time
+sys.path.append(os.path.dirname(os.getcwd()))
 from Utilities import ConfigModule,RequestFormatter,CommonUtil,FileUtilities
 import MainDriverApi
-import os,sys,time
+
 
 '''Constants'''
 AUTHENTICATION_TAG='Authentication'

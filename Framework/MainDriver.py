@@ -194,7 +194,7 @@ def main(server_id):
         query="select distinct tc.tc_id,test_case_type,test_order from result_test_cases tc, test_run tr where tr.run_id=tc.run_id and tr.tc_id=tc.tc_id and tc.run_id='%s' order by tr.test_order"%TestRunID[0].strip()
         TestCaseLists = DBUtil.GetData(conn, query,False) #"Select TC_ID From test_run Where run_id = '%s'" % TestRunID[0], False)
         conn.close()
-        #HYBRID RUN IMPLEMENTED HERE
+        # #HYBRID RUN IMPLEMENTED HERE
         AutomationList=[]
         run_type=""
         for each in TestCaseLists:
@@ -209,24 +209,24 @@ def main(server_id):
             else:
                 AutomationList.append((each[0],each[1]))
         print AutomationList
-        if len(filter(lambda x: x[1]=='Manual',AutomationList))>0:
-            if (len(filter(lambda x:x[1]=='Automated',AutomationList)))>0 or (len(filter(lambda x:x[1]=='Performance',AutomationList)))>0:
-                run_type='Hybrid'
-            else:
-                run_type='Manual'
-        else:
-            if (len(filter(lambda x:x[1]=='Performance',AutomationList)))== 0 and (len(filter(lambda x:x[1]=='Automated',AutomationList)))>0:
-                run_type='Automation'
-            elif (len(filter(lambda x:x[1]=='Performance',AutomationList)))>0 and (len(filter(lambda x:x[1]=='Automated',AutomationList)))==0:
-                run_type='Performance'
-            else:
-                run_type='Hybrid'
-        Dict={}
-        Dict.update({'run_type':run_type})
-        sWhereQuery="where run_id='%s'" %TestRunID[0]
-        conn=DBUtil.ConnectToDataBase(sHost=server_id)
-        print DBUtil.UpdateRecordInTable(conn,"test_run_env",sWhereQuery,**Dict)
-        conn.close()
+        # if len(filter(lambda x: x[1]=='Manual',AutomationList))>0:
+        #     if (len(filter(lambda x:x[1]=='Automated',AutomationList)))>0 or (len(filter(lambda x:x[1]=='Performance',AutomationList)))>0:
+        #         run_type='Hybrid'
+        #     else:
+        #         run_type='Manual'
+        # else:
+        #     if (len(filter(lambda x:x[1]=='Performance',AutomationList)))== 0 and (len(filter(lambda x:x[1]=='Automated',AutomationList)))>0:
+        #         run_type='Automation'
+        #     elif (len(filter(lambda x:x[1]=='Performance',AutomationList)))>0 and (len(filter(lambda x:x[1]=='Automated',AutomationList)))==0:
+        #         run_type='Performance'
+        #     else:
+        #         run_type='Hybrid'
+        # Dict={}
+        # Dict.update({'run_type':run_type})
+        # sWhereQuery="where run_id='%s'" %TestRunID[0]
+        # conn=DBUtil.ConnectToDataBase(sHost=server_id)
+        # print DBUtil.UpdateRecordInTable(conn,"test_run_env",sWhereQuery,**Dict)
+        # conn.close()
         TestCaseLists=[]
         automation_count=len(filter(lambda  x:x[1]=='Automated',AutomationList))
         performance_count=len(filter(lambda  x:x[1]=='Performance',AutomationList))
