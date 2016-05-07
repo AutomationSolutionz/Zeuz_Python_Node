@@ -1,6 +1,7 @@
 # -*- coding: utf-8 -*-
 import sys
 from ConfigParser import NoOptionError
+import ConfigParser
 import os, psutil
 import DataBaseUtilities as DB
 import logging
@@ -236,7 +237,11 @@ class MachineInfo():
         """
         try:
             import socket
-            return socket.gethostbyname_ex(socket.gethostname())[2][0]
+            s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+            s.connect(("gmail.com",80))
+            ip = (s.getsockname()[0])
+            s.close()
+            return ip
         except Exception, e:
             print "Exceptioin: ", e
             return False
@@ -244,10 +249,43 @@ class MachineInfo():
         """
         :return: returns the local pc name
         """
-        if os.name == 'nt':
-            return os.getenv("USERNAME")
-        elif os.name == 'posix':
-            import socket
-            return socket.gethostname()
+        try:
+            import time, math
+            import os.path
+            
+            #path to node_id file
+            node_id_path =  os.path.expanduser('~')+ os.sep + 'Desktop' + "Node_ID.txt"
+        
+            if os.path.isfile(node_id_path) == False:
+                #print "file doesnt exists.... will create a new one"
+                #get user name from settings.conf file
+                file_name1 = os.path.abspath(os.path.dirname(__file__))  + os.sep + 'settings.conf'
+                file_name = file_name1.replace('Utilities', 'FrameWork')
+                config = ConfigParser.SafeConfigParser()
+                config.read(file_name)
+                user_name= config.get('Authentication', "username")
+                #generate random a
+                m = time.time()
+                uniqid = '%8x%05x' %(math.floor(m),(m-math.floor(m))*1000000)            
+                machine_id = user_name+'_' + uniqid
+                #creating and writing to the Node_Id file
+                file = open(node_id_path,'w+')   
+                file.write(machine_id)
+                file.close()
+                return machine_id
+            else:
+                #print "file exists.... returning the current value"
+                file = open(node_id_path,'r')
+                machine_id = file.read()
+                return machine_id
+       
+        except Exception, e:
+            #incase exception happens for whatever reason.. we will return the timestamp...
+            print "Exceptioin: ", e
+            print "Unable to set create a Node key.  Please check class MachineInfo() in commonutil"
+            random_number = TimeStamp("utcstring")
+            return random_number
+        
+
 
 
