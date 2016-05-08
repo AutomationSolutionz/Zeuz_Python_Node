@@ -1,12 +1,13 @@
 # -*- coding: utf-8 -*-
 import sys
-from ConfigParser import NoOptionError
+from ConfigParser import NoOptionError,NoSectionError
 import os, psutil
 import DataBaseUtilities as DB
 import logging
 from Utilities import ConfigModule
 import datetime
 from Utilities import FileUtilities as FL
+import uuid
 temp_config=os.path.join(os.path.join(FL.get_home_folder(),os.path.join('Desktop',os.path.join('AutomationLog',ConfigModule.get_config_value('Temp','_file')))))
 
 def to_unicode(obj, encoding='utf-8'):
@@ -236,7 +237,11 @@ class MachineInfo():
         """
         try:
             import socket
-            return socket.gethostbyname_ex(socket.gethostname())[2][0]
+            s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+            s.connect(("gmail.com",80))
+            ip = (s.getsockname()[0])
+            s.close()
+            return ip
         except Exception, e:
             print "Exceptioin: ", e
             return False
@@ -244,10 +249,36 @@ class MachineInfo():
         """
         :return: returns the local pc name
         """
-        if os.name == 'nt':
-            return os.getenv("USERNAME")
-        elif os.name == 'posix':
-            import socket
-            return socket.gethostname()
+        try:
+            node_id_file_path=os.path.join(FL.get_home_folder(),os.path.join('Desktop','node_id.conf'))
+            if os.path.isfile(node_id_file_path):
+                unique_id=ConfigModule.get_config_value('UniqueID','id',node_id_file_path)
+                if unique_id=='':
+                    ConfigModule.clean_config_file(node_id_file_path)
+                    ConfigModule.add_section('UniqueID', node_id_file_path)
+                    unique_id = uuid.uuid4()
+                    unique_id = str(unique_id)[:10]
+                    ConfigModule.add_config_value('UniqueID', 'id', unique_id,node_id_file_path)
+                    machine_name = ConfigModule.get_config_value('Authentication', 'username') +'_' +str(unique_id)
+                    return machine_name[:100]
+                machine_name = ConfigModule.get_config_value('Authentication', 'username') +'_' +str(unique_id)
+            else:
+                #create the file name
+                f=open(node_id_file_path,'w')
+                f.close()
+                unique_id=uuid.uuid4()
+                unique_id=str(unique_id)[:10]
+                ConfigModule.add_section('UniqueID',node_id_file_path)
+                ConfigModule.add_config_value('UniqueID','id',unique_id,node_id_file_path)
+                machine_name = ConfigModule.get_config_value('Authentication', 'username') +'_' +str(unique_id)
+            return machine_name[:100]
+
+        except Exception, e:
+            #incase exception happens for whatever reason.. we will return the timestamp...
+            print "Exception: ", e
+            print "Unable to set create a Node key.  Please check class MachineInfo() in commonutil"
+            return False
+        
+
 
 
