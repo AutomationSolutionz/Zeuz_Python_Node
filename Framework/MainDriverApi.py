@@ -1,4 +1,5 @@
-import inspect,os
+import inspect,os,time,sys,urllib2
+from datetime import datetime
 from Utilities import ConfigModule,FileUtilities as FL,CommonUtil,RequestFormatter
 '''Constants'''
 PROGRESS_TAG = 'In-Progress'
@@ -60,6 +61,90 @@ def main():
         run_params_list = RequestFormatter.Get('get_all_run_parameters_based_on_project_and_team_api',{'run_id':run_id})
         final_run_params = get_run_params_list(run_params_list)
         update_run_time_status=RequestFormatter.Get('update_machine_info_based_on_run_id_api',{'run_id':run_id,'options':{'status':PROGRESS_TAG}})
-        sTestSetStartTime = CommonUtil.TimeStamp('string')
+        sTestSetStartTime = datetime.fromtimestamp(time.time()).strftime('%Y-%m-%d %H:%M:%S')
+        test_env_result_status_time_update=RequestFormatter.Get('update_test_env_results_based_on_run_id_api',{'options':{'status':PROGRESS_TAG,'teststarttime':str(sTestSetStartTime),'run_id':run_id}})
+        TestCaseLists=RequestFormatter.Get('get_all_automated_test_cases_based_on_run_id_api',{'run_id':run_id})
+        if len(TestCaseLists) > 0:
+            print "Running Test cases from list : ", TestCaseLists[0:len(TestCaseLists)]
+            CommonUtil.ExecLog(sModuleInfo, "Running Test cases from list : %s" % TestCaseLists[0:len(TestCaseLists)],1)
+            print "Total number of test cases ", len(TestCaseLists)
+        else:
+            print "No test cases found for the current user :", Userid
+            CommonUtil.ExecLog(sModuleInfo, "No test cases found for the current user : %s" % Userid, 2)
+            return False
+        for TestCaseID in TestCaseLists:
+            test_case=TestCaseID[0]
+            copy_status=False
+            while not copy_status:
+                copy_status=RequestFormatter.Get('is_test_case_copied_api',{'run_id':run_id,'test_case':test_case})
+                if copy_status:
+                    CommonUtil.ExecLog(sModuleInfo,"Gathering data for test case %s is completed" % (test_case),1)
+                else:
+                    print "Gathering data for test case %s"%(test_case)
+            ConfigModule.add_config_value('sectionOne', 'sTestStepExecLogId', "MainDriver", temp_ini_file)
+            StepSeq = 1
+            test_case_type = TestCaseID[1]
+            CommonUtil.ExecLog(sModuleInfo,"-------------*************--------------",1)
+            CommonUtil.ExecLog(sModuleInfo,"Creating Automation Log for test case: %s"%test_case,1)
+            try:
+                log_file_path = ConfigModule.get_config_value('sectionOne', 'temp_run_file_path', temp_ini_file)
+            except Exception, e:
+                exc_type, exc_obj, exc_tb = sys.exc_info()
+                fname = os.path.split(exc_tb.tb_frame.f_code.co_filename)[1]
+                Error_Detail = ((str(exc_type).replace("type ", "Error Type: ")) + ";" + "Error Message: " + str(exc_obj) + ";" + "File Name: " + fname + ";" + "Line: " + str(exc_tb.tb_lineno))
+                print Error_Detail
+            test_case_folder = log_file_path + os.sep + (run_id.replace(':', '-') + os.sep + test_case.replace(":", '-'))
+            ConfigModule.add_config_value('sectionOne', 'test_case', test_case, temp_ini_file)
+            ConfigModule.add_config_value('sectionOne', 'test_case_folder', test_case_folder, temp_ini_file)
+            log_folder = test_case_folder + os.sep + 'Log'
+            ConfigModule.add_config_value('sectionOne', 'log_folder', log_folder, temp_ini_file)
+            screenshot_folder = test_case_folder + os.sep + 'screenshots'
+            ConfigModule.add_config_value('sectionOne', 'screen_capture_folder', screenshot_folder, temp_ini_file)
+
+            home = os.path.join(FL.get_home_folder(), os.path.join('Desktop', 'Attachments'))
+            ConfigModule.add_config_value('sectionOne', 'download_folder', home, temp_ini_file)
+
+            # create_test_case_folder
+            test_case_folder = ConfigModule.get_config_value('sectionOne', 'test_case_folder', temp_ini_file)
+            FL.CreateFolder(test_case_folder)
+
+            # FL.CreateFolder(Global.TCLogFolder + os.sep + "ProductLog")
+            log_folder = ConfigModule.get_config_value('sectionOne', 'log_folder', temp_ini_file)
+            FL.CreateFolder(log_folder)
+
+            # FL.CreateFolder(Global.TCLogFolder + os.sep + "Screenshots")
+            # creating ScreenShot File
+            screen_capture_folder = ConfigModule.get_config_value('sectionOne', 'screen_capture_folder', temp_ini_file)
+            FL.CreateFolder(screen_capture_folder)
+
+            #creating the download folder
+            download_folder = ConfigModule.get_config_value('sectionOne', 'download_folder', temp_ini_file)
+
+            #test case attachements
+            test_case_attachments=RequestFormatter.Get('get_test_case_attachments_api',{'run_id':run_id,'test_case':test_case})
+            test_step_attachments=RequestFormatter.Get('get_test_step_attachments_for_test_case_api',{'run_id':run_id,'test_case':test_case})
+            FL.DeleteFolder(ConfigModule.get_config_value('sectionOne', 'download_folder', temp_ini_file))
+            FL.CreateFolder(download_folder)
+            file_specific_steps={}
+            for each in test_case_attachments:
+                CommonUtil.ExecLog(sModuleInfo,"Attachment download for test case %s started"%test_case,1)
+                m = each[1] + '.' + each[2]  # file name
+                f = open(download_folder + '/' + m, 'wb')
+                f.write(urllib2.urlopen('http://' + ConfigModule.get_config_value('Server', 'server_address') + ':' + str(ConfigModule.get_config_value('Server', 'server_port')) + '/static' + each[0]).read())
+                file_specific_steps.update({m: download_folder + '/' + m})
+                f.close()
+            if test_case_attachments:
+                CommonUtil.ExecLog(sModuleInfo, "Attachment download for test case %s finished" % test_case, 1)
+            for each in test_step_attachments:
+                CommonUtil.ExecLog(sModuleInfo, "Attachment download for steps in test case %s started" % test_case, 1)
+                m = each[1] + '.' + each[2]  # file name
+                if not os.path.exists(download_folder + '/' + str(each[3])):
+                    FL.CreateFolder(download_folder + '/' + str(each[3]))
+                f = open(download_folder + '/' + str(each[3]) + '/' + m, 'wb')
+                f.write(urllib2.urlopen('http://' + ConfigModule.get_config_value('Server', 'server_address') + ':' + str(ConfigModule.get_config_value('Server', 'server_port')) + '/static' + each[0]).read())
+                file_specific_steps.update({m: download_folder + '/' + str(each[3]) + '/' + m})
+                f.close()
+            if test_step_attachments:
+                CommonUtil.ExecLog(sModuleInfo, "Attachment download for steps in test case %s finished" % test_case, 1)
 if __name__=='__main__':
     main()
