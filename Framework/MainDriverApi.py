@@ -146,5 +146,35 @@ def main():
                 f.close()
             if test_step_attachments:
                 CommonUtil.ExecLog(sModuleInfo, "Attachment download for steps in test case %s finished" % test_case, 1)
+            test_case_detail=RequestFormatter.Get('get_test_case_detail_api',{'run_id':run_id,'test_case':test_case})
+            TestCaseName=test_case_detail[0][1]
+            CommonUtil.ExecLog(sModuleInfo, "-------------*************--------------", 1)
+            CommonUtil.ExecLog(sModuleInfo, "Running Test case id : %s :: %s" % (test_case, TestCaseName), 1)
+
+            sTestCaseStartTime = datetime.fromtimestamp(time.time()).strftime('%Y-%m-%d %H:%M:%S')
+            test_case_result_index=RequestFormatter.Get('test_case_results_update_returns_index_api',{'run_id':run_id,'test_case':test_case,'options':{'status':PROGRESS_TAG,'teststarttime':sTestCaseStartTime}})
+            TestStepsList=RequestFormatter.Get('test_step_fetch_for_test_case_run_id_api',{'run_id':run_id,'test_case':test_case})
+            Stepscount=len(TestStepsList)
+            while StepSeq <= Stepscount:
+                current_step_name=TestStepsList[StepSeq - 1][1]
+                current_step_id=TestStepsList[StepSeq-1][0]
+                CommonUtil.ExecLog(sModuleInfo, "Step : %s" % current_step_name, 1)
+                step_meta_data=RequestFormatter.Get('get_step_meta_data_api',{'run_id':run_id,'test_case':test_case,'step_seq':StepSeq})
+                continue_value=filter(lambda x: x[0]=='continue' and x[1]=='point',step_meta_data)
+                if continue_value:
+                    if continue_value[0][2]=='yes':
+                        test_case_continue=True
+                    else:
+                        test_case_continue = False
+                else:
+                    test_case_continue=False
+                ConfigModule.add_config_value('sectionOne', 'sTestStepExecLogId',run_id + "|" + test_case + "|" + str(current_step_id) + "|" + str(StepSeq), temp_ini_file)
+                sTestStepStartTime=datetime.fromtimestamp(time.time()).strftime('%Y-%m-%d %H:%M:%S')
+                TestStepStartTime = time.time()
+                WinMemBegin = CommonUtil.PhysicalAvailableMemory()  # MemoryManager.winmem()
+                test_step_status_index=RequestFormatter.Get('test_step_results_update_returns_index_api',{'run_id':run_id,'tc_id':test_case,'step_id':current_step_id})
+
+                StepSeq+=1
+
 if __name__=='__main__':
     main()
