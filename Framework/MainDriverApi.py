@@ -301,10 +301,14 @@ def main():
                     print current_step_name + ": Test Step Cancelled"
                     CommonUtil.ExecLog(sModuleInfo, "%s : Test Step Cancelled" % current_step_name, 3)
                     after_execution_dict.update({'status': CANCELLED_TAG})
+                    t=RequestFormatter.Get('clean_up_run_api',{'run_id':run_id})
+                    return "pass"
                 else:
                     print current_step_name + ": Test Step Cancelled"
                     CommonUtil.ExecLog(sModuleInfo, "%s : Test Step Cancelled" % current_step_name, 3)
                     after_execution_dict.update({'status': CANCELLED_TAG})
+                    t = RequestFormatter.Get('clean_up_run_api', {'run_id': run_id})
+                    return "pass"
                 test_step_status_index = RequestFormatter.Get('test_step_results_update_returns_index_api',{'run_id': run_id, 'tc_id': test_case,'step_id': current_step_id,'test_step_sequence': current_step_sequence,'options': after_execution_dict})
                 run_cancelled=RequestFormatter.Get('get_status_of_a_run_api',{'run_id':run_id})
                 if run_cancelled=='Cancelled':
