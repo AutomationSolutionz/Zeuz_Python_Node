@@ -13,6 +13,7 @@ FAILED_TAG='Failed'
 NOT_RUN_TAG='Not Run'
 BLOCKED_TAG='Blocked'
 CANCELLED_TAG='Cancelled'
+COMPLETE_TAG='Complete'
 passed_tag_list=['Pass','pass','PASS','PASSED','Passed','passed','true','TRUE','True',True,1,'1','Success','success','SUCCESS']
 failed_tag_list=['Fail','fail','FAIL','Failed','failed','FAILED','false','False','FALSE',False,0,'0']
 def upload_zip(server_id,port_id,temp_folder,run_id,file_name,base_path=False):
@@ -94,7 +95,8 @@ def main():
         final_run_params = get_run_params_list(run_params_list)
         update_run_time_status=RequestFormatter.Get('update_machine_info_based_on_run_id_api',{'run_id':run_id,'options':{'status':PROGRESS_TAG}})
         sTestSetStartTime = datetime.fromtimestamp(time.time()).strftime('%Y-%m-%d %H:%M:%S')
-        test_env_result_status_time_update=RequestFormatter.Get('update_test_env_results_based_on_run_id_api',{'options':{'status':PROGRESS_TAG,'teststarttime':str(sTestSetStartTime),'run_id':run_id}})
+        TestSetStartTime=time.time()
+        test_env_result_status_time_update=RequestFormatter.Get('update_test_env_results_based_on_run_id_api',{'options':{'status':PROGRESS_TAG,'teststarttime':str(sTestSetStartTime)},'run_id':run_id})
         TestCaseLists=RequestFormatter.Get('get_all_automated_test_cases_based_on_run_id_api',{'run_id':run_id})
         if len(TestCaseLists) > 0:
             print "Running Test cases from list : ", TestCaseLists[0:len(TestCaseLists)]
@@ -394,5 +396,26 @@ def main():
             }
             # Update test case result
             test_case_result_index = RequestFormatter.Get('test_case_results_update_returns_index_api',{'run_id': run_id, 'test_case': test_case,'options': test_case_after_dict})
+            run_cancelled = RequestFormatter.Get('get_status_of_a_run_api', {'run_id': run_id})
+            if run_cancelled == 'Cancelled':
+                print "Test Run status is Cancelled. Exiting the current Test Set... ", run_id
+                CommonUtil.ExecLog(sModuleInfo,"Test Run status is Cancelled. Exiting the current Test Set...%s" % run_id,2)
+                break
+        #starting the run closing
+        sTestSetEndTime = datetime.fromtimestamp(time.time()).strftime('%Y-%m-%d %H:%M:%S')
+        TestSetEndTime = time.time()
+        TimeDiff=TestSetEndTime-TestSetStartTime
+        TimeInSec=int(TimeDiff)
+        TestSetDuration = CommonUtil.FormatSeconds(TimeInSec)
+        run_cancelled = RequestFormatter.Get('get_status_of_a_run_api', {'run_id': run_id})
+        if run_cancelled == 'Cancelled':
+            print "Test Set Cancelled by the User"
+            CommonUtil.ExecLog(sModuleInfo, "Test Set Cancelled by the User", 1)
+        else:
+            test_env_result_status_time_update = RequestFormatter.Get('update_test_env_results_based_on_run_id_api', {'options': {'status':COMPLETE_TAG, 'testendtime':sTestSetEndTime, 'duration':TestSetDuration}, 'run_id': run_id})
+            update_run_time_status = RequestFormatter.Get('update_machine_info_based_on_run_id_api',{'run_id': run_id, 'options': {'status':COMPLETE_TAG,'email_flag':True}})
+        ConfigModule.add_config_value('sectionOne', 'sTestStepExecLogId', "MainDriver", temp_ini_file)
+        print "Test Set Completed"
+    return "pass"
 if __name__=='__main__':
     main()
