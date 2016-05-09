@@ -1,4 +1,4 @@
-import inspect,os,time,sys,urllib2,Queue,importlib
+import inspect,os,time,sys,urllib2,Queue,importlib,requests
 from datetime import datetime
 from Utilities import ConfigModule,FileUtilities as FL,CommonUtil,RequestFormatter
 top_path=os.path.dirname(os.getcwd())
@@ -7,8 +7,34 @@ sys.path.append(drivers_path)
 import Drivers
 '''Constants'''
 PROGRESS_TAG = 'In-Progress'
+PASSED_TAG='Passed'
+WARNING_TAG='Warning'
+FAILED_TAG='Failed'
+NOT_RUN_TAG='Not Run'
+BLOCKED_TAG='Blocked'
+CANCELLED_TAG='Cancelled'
 passed_tag_list=['Pass','pass','PASS','PASSED','Passed','passed','true','TRUE','True',True,1,'1','Success','success','SUCCESS']
 failed_tag_list=['Fail','fail','FAIL','Failed','failed','FAILED','false','False','FALSE',False,0,'0']
+def upload_zip(server_id,port_id,temp_folder,run_id,file_name,base_path=False):
+    """
+    :param server_id: the location of the server
+    :param port_id: the port it will listen on
+    :param temp_folder: the logfiles folder
+    :param run_id: respective run_id
+    :param file_name: zipfile name for the run
+    :param base_path: base_path for file save
+    :return:
+    """
+    url_link='http://'+server_id+':'+str(port_id)+"/Home/UploadZip/"
+    total_file_path=temp_folder+os.sep+run_id.replace(':','-')+os.sep+file_name
+    fileObj=open(total_file_path,'rb')
+    file_list={'docfile':fileObj}
+    data_list={'run_id':run_id,'file_name':file_name,'base_path':base_path}
+    r=requests.post(url_link,files=file_list,data=data_list)
+    if r.status_code==200:
+        print "Zip File is uploaded to production successfully"
+    else:
+        print "Zip File is not uploaded to production successfully"
 
 
 def get_final_dependency_list(dependency_list,run_description):
@@ -158,9 +184,11 @@ def main():
             CommonUtil.ExecLog(sModuleInfo, "Running Test case id : %s :: %s" % (test_case, TestCaseName), 1)
 
             sTestCaseStartTime = datetime.fromtimestamp(time.time()).strftime('%Y-%m-%d %H:%M:%S')
+            TestCaseStartTime=time.time()
             test_case_result_index=RequestFormatter.Get('test_case_results_update_returns_index_api',{'run_id':run_id,'test_case':test_case,'options':{'status':PROGRESS_TAG,'teststarttime':sTestCaseStartTime}})
             TestStepsList=RequestFormatter.Get('test_step_fetch_for_test_case_run_id_api',{'run_id':run_id,'test_case':test_case})
             Stepscount=len(TestStepsList)
+            sTestStepResultList = []
             while StepSeq <= Stepscount:
                 current_step_name=TestStepsList[StepSeq - 1][1]
                 current_step_id=TestStepsList[StepSeq-1][0]
@@ -221,7 +249,150 @@ def main():
                     Error_Detail = ((str(exc_type).replace("type ", "Error Type: ")) + ";" + "Error Message: " + str(exc_obj) + ";" + "File Name: " + fname + ";" + "Line: " + str(exc_tb.tb_lineno))
                     CommonUtil.ExecLog(sModuleInfo, "Exception occurred in test step : %s" % Error_Detail, 3)
                     sStepResult = "Failed"
+                sTestStepEndTime=datetime.fromtimestamp(time.time()).strftime('%Y-%m-%d %H:%M:%S')
+                TestStepEndTime = time.time()
+                WinMemEnd = CommonUtil.PhysicalAvailableMemory()
+                # Time it took to run the test step
+                TimeDiff = TestStepEndTime - TestStepStartTime
+                # TimeInSec = TimeDiff.seconds
+                TimeInSec = int(TimeDiff)
+                TestStepDuration = CommonUtil.FormatSeconds(TimeInSec)
+                TestStepMemConsumed = WinMemBegin - WinMemEnd
+                # add result of each step to a list; for a test case to pass all steps should be pass; atleast one Failed makes it 'Fail' else 'Warning' or 'Blocked'
+                if sStepResult:
+                    sTestStepResultList.append(sStepResult.upper())
+                else:
+                    sTestStepResultList.append("FAILED")
+                    print "sStepResult : ", sStepResult
+                    CommonUtil.ExecLog(sModuleInfo, "sStepResult : %s" % sStepResult, 1)
+                    sStepResult = "Failed"
+                after_execution_dict = {
+                    'stependtime':sTestStepEndTime,
+                    'end_memory':WinMemEnd,
+                    'duration':TestStepDuration,
+                    'memory_consumed':TestStepMemConsumed
+                }
+                if sStepResult.upper() == PASSED_TAG.upper():
+                    # Step Passed
+                    CommonUtil.ExecLog(sModuleInfo, "%s : Test Step Passed" % current_step_name, 1)
+                    after_execution_dict.update({'status':PASSED_TAG})
+                elif sStepResult.upper() == WARNING_TAG.upper():
+                    CommonUtil.ExecLog(sModuleInfo, "%s : Test Step Warning" % current_step_name, 2)
+                    after_execution_dict.update({'status': WARNING_TAG})
+                    if not test_case_continue:
+                        break
+                elif sStepResult.upper() == NOT_RUN_TAG.upper():
+                    # Step has Warning, but continue running next test step for this test case
+                    CommonUtil.ExecLog(sModuleInfo, "%s : Test Step Not Run" % current_step_name, 2)
+                    after_execution_dict.update({'status': NOT_RUN_TAG})
+                elif sStepResult.upper() == FAILED_TAG.upper():
+                    # Step has a Critial failure, fail the test step and test case. go to next test case
+                    CommonUtil.ExecLog(sModuleInfo, "%s : Test Step Failed Failure" % current_step_name, 3)
+                    after_execution_dict.update({'status':FAILED_TAG})
+                    if not test_case_continue:
+                        break
+                elif sStepResult.upper() == BLOCKED_TAG.upper():
+                    # Step is Blocked, Block the test step and test case. go to next test case
+                    CommonUtil.ExecLog(sModuleInfo, "%s : Test Step Blocked" % current_step_name, 3)
+                    after_execution_dict.update({'status': BLOCKED_TAG})
+                elif sStepResult.upper() == CANCELLED_TAG.upper():
+                    print current_step_name + ": Test Step Cancelled"
+                    CommonUtil.ExecLog(sModuleInfo, "%s : Test Step Cancelled" % current_step_name, 3)
+                    after_execution_dict.update({'status': CANCELLED_TAG})
+                else:
+                    print current_step_name + ": Test Step Cancelled"
+                    CommonUtil.ExecLog(sModuleInfo, "%s : Test Step Cancelled" % current_step_name, 3)
+                    after_execution_dict.update({'status': CANCELLED_TAG})
+                test_step_status_index = RequestFormatter.Get('test_step_results_update_returns_index_api',{'run_id': run_id, 'tc_id': test_case,'step_id': current_step_id,'test_step_sequence': current_step_sequence,'options': after_execution_dict})
+                run_cancelled=RequestFormatter.Get('get_status_of_a_run_api',{'run_id':run_id})
+                if run_cancelled=='Cancelled':
+                    CommonUtil.ExecLog(sModuleInfo,"Test Run status is Cancelled. Exiting the current Test Case...%s" % test_case, 2)
+                    break
                 StepSeq+=1
+            sTestCaseEndTime = datetime.fromtimestamp(time.time()).strftime('%Y-%m-%d %H:%M:%S')
+            TestCaseEndTime=time.time()
+            # Decide if Test Case Pass/Failed
+            if 'BLOCKED' in sTestStepResultList:
+                CommonUtil.ExecLog(sModuleInfo, "Test Case Blocked", 3)
+                sTestCaseStatus = "Blocked"
+            elif 'FAILED' in sTestStepResultList:
+                CommonUtil.ExecLog(sModuleInfo, "Test Case Failed", 3)
+                step_index = 1
+                for each in sTestStepResultList:
+                    if each == 'FAILED':
+                        break
+                    else:
+                        step_index += 1
+                datasetid = TestCaseID[0] + '_s' + str(step_index)
+                status=RequestFormatter.Get('if_failed_at_verification_point_api',{'run_id':run_id,'data_id':datasetid})
+                if status:
+                    sTestCaseStatus = 'Failed'
+                else:
+                    sTestCaseStatus = 'Blocked'
+                CommonUtil.ExecLog(sModuleInfo, "Test Case " + sTestCaseStatus, 3)
+            elif 'WARNING' in sTestStepResultList:
+                print "Test Case Contain Warning(s)"
+                CommonUtil.ExecLog(sModuleInfo, "Test Case Contain Warning(s)", 2)
+                sTestCaseStatus = "Failed"
+            elif 'NOT RUN' in sTestStepResultList:
+                print "Test Case Contain Not Run Steps"
+                CommonUtil.ExecLog(sModuleInfo, "Test Case Contain Warning(s)", 2)
+                sTestCaseStatus = "Failed"
+            elif 'PASSED' in sTestStepResultList:
+                print "Test Case Passed"
+                CommonUtil.ExecLog(sModuleInfo, "Test Case Passed", 1)
+                sTestCaseStatus = "Passed"
+            else:
+                print "Test Case Status Unknown"
+                CommonUtil.ExecLog(sModuleInfo, "Test Case Status Unknown", 2)
+                sTestCaseStatus = "Unknown"
 
+            # Time it took to run the test case
+            TimeDiff = TestCaseEndTime - TestCaseStartTime
+            TimeInSec = int(TimeDiff)
+            TestCaseDuration = CommonUtil.FormatSeconds(TimeInSec)
+
+            # Find Test case failed reason
+            try:
+                FailReason = RequestFormatter.Get('get_failed_reason_test_case_api',{'run_id':run_id,'test_case':test_case})
+            except Exception, e:
+                exc_type, exc_obj, exc_tb = sys.exc_info()
+                fname = os.path.split(exc_tb.tb_frame.f_code.co_filename)[1]
+                Error_Detail = ((str(exc_type).replace("type ", "Error Type: ")) + ";" + "Error Message: " + str(exc_obj) + ";" + "File Name: " + fname + ";" + "Line: " + str(exc_tb.tb_lineno))
+                print Error_Detail
+                print "Unable to find Fail Reason for Test case: ", test_case
+                FailReason = ""
+
+            # Zip the folder
+            # removing duplicates line from here.
+            current_log_file = os.path.join(ConfigModule.get_config_value('sectionOne', 'log_folder', temp_ini_file),'temp.log')
+            temp_log_file = os.path.join(ConfigModule.get_config_value('sectionOne', 'log_folder', temp_ini_file),test_case + '.log')
+            lines_seen = set()
+            outfile = open(temp_log_file, 'w')
+            for line in open(current_log_file, 'r'):
+                if line not in lines_seen:
+                    outfile.write(line)
+                    lines_seen.add(line)
+            outfile.close()
+            FL.DeleteFile(current_log_file)
+            # FL.RenameFile(ConfigModule.get_config_value('sectionOne','log_folder'), 'temp.log',TCID+'.log')
+            TCLogFile = FL.ZipFolder(ConfigModule.get_config_value('sectionOne', 'test_case_folder', temp_ini_file),ConfigModule.get_config_value('sectionOne', 'test_case_folder',temp_ini_file) + ".zip")
+            # Delete the folder
+            FL.DeleteFolder(ConfigModule.get_config_value('sectionOne', 'test_case_folder', temp_ini_file))
+
+            # upload will go here.
+            upload_zip(ConfigModule.get_config_value('Server', 'server_address'),ConfigModule.get_config_value('Server', 'server_port'),ConfigModule.get_config_value('sectionOne', 'temp_run_file_path', temp_ini_file), run_id,ConfigModule.get_config_value('sectionOne', 'test_case', temp_ini_file) + ".zip",ConfigModule.get_config_value('Temp', '_file_upload_path'))
+            TCLogFile = os.sep + ConfigModule.get_config_value('Temp', '_file_upload_path') + os.sep + run_id.replace(":", '-') + '/' + ConfigModule.get_config_value('sectionOne', 'test_case',temp_ini_file) + '.zip'
+            FL.DeleteFile(ConfigModule.get_config_value('sectionOne', 'test_case_folder', temp_ini_file) + '.zip')
+
+            test_case_after_dict = {
+                'status': sTestCaseStatus,
+                'testendtime': sTestCaseEndTime,
+                'duration': TestCaseDuration,
+                'failreason': FailReason,
+                'logid': TCLogFile
+            }
+            # Update test case result
+            test_case_result_index = RequestFormatter.Get('test_case_results_update_returns_index_api',{'run_id': run_id, 'test_case': test_case,'options': test_case_after_dict})
 if __name__=='__main__':
     main()
