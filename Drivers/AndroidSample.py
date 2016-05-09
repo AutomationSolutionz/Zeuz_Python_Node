@@ -13,7 +13,7 @@ from Utilities import CommonUtil
 local_run = False
 
 
-def unlock_phone(dependency,step_data,file_attachment,temp_q):
+def unlock_phone(dependency,run_time_params,step_data,file_attachment,temp_q):
     sModuleInfo = inspect.stack()[0][3] + " : " + inspect.getmoduleinfo(__file__).name
     try:
         devinfo = device.info
@@ -33,7 +33,7 @@ def unlock_phone(dependency,step_data,file_attachment,temp_q):
         temp_q.put("Failed")
         return "failed"
 
-def open_android_app(dependency,step_data,file_attachment,temp_q):
+def open_android_app(dependency,run_time_params,step_data,file_attachment,temp_q):
     sModuleInfo = inspect.stack()[0][3] + " : " + inspect.getmoduleinfo(__file__).name
     try:
         first_data_set=step_data[0]
@@ -51,7 +51,7 @@ def open_android_app(dependency,step_data,file_attachment,temp_q):
         temp_q.put("Failed")
         return "failed"
 
-def close_android_app(dependency,step_data,file_attachment,temp_q):
+def close_android_app(dependency,run_time_params,step_data,file_attachment,temp_q):
     sModuleInfo = inspect.stack()[0][3] + " : " + inspect.getmoduleinfo(__file__).name
     try:
         devinfo = device.info
@@ -72,7 +72,7 @@ def close_android_app(dependency,step_data,file_attachment,temp_q):
         temp_q.put("Failed")
         return "failed"
 
-def click_on_android_text(dependency,step_data,file_attachment,temp_q):
+def click_on_android_text(dependency,run_time_params,step_data,file_attachment,temp_q):
     sModuleInfo = inspect.stack()[0][3] + " : " + inspect.getmoduleinfo(__file__).name
     try:
         first_data_set=step_data[0]
@@ -88,7 +88,7 @@ def click_on_android_text(dependency,step_data,file_attachment,temp_q):
         temp_q.put("Failed")
         return "failed"
 				
-def verify_android_text(dependency,step_data,file_attachment,temp_q):
+def verify_android_text(dependency,run_time_params,step_data,file_attachment,temp_q):
     sModuleInfo = inspect.stack()[0][3] + " : " + inspect.getmoduleinfo(__file__).name
     try:
         first_data_set=step_data[0]

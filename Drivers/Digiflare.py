@@ -1,15 +1,15 @@
 from appium import webdriver
 import os,sys
 import inspect
-from AutomationFW.CoreFrameWork import CommonUtil
-from AutomationFW.Web import AndroidDemo_script
+from Utilities import CommonUtil
+from DigiFlareHelper import AndroidDemo_script
 
 #if local_run is True, no logging will be recorded to the web server.  Only local print will be displayed
 #local_run = True
 local_run = False
 
 
-def open_app(dependency,step_data,file_attachment,temp_q):
+def open_app(dependency,run_time_params,step_data,file_attachment,temp_q):
     sModuleInfo = inspect.stack()[0][3] + " : " + inspect.getmoduleinfo(__file__).name
     try:
         package_name=step_data[0][0][1]
@@ -26,7 +26,7 @@ def open_app(dependency,step_data,file_attachment,temp_q):
         temp_q.put("Failed")
         return "failed"
     
-def confirm_right_menu_items(dependency,step_data,file_attachment,temp_q):
+def confirm_right_menu_items(dependency,run_time_params,step_data,file_attachment,temp_q):
     sModuleInfo = inspect.stack()[0][3] + " : " + inspect.getmoduleinfo(__file__).name
     try:
         sTestStepReturnStatus = AndroidDemo_script.confirm_right()
@@ -42,7 +42,7 @@ def confirm_right_menu_items(dependency,step_data,file_attachment,temp_q):
         return "failed"
     
     
-def confirm_left_menu_items(dependency,step_data,file_attachment,temp_q):
+def confirm_left_menu_items(dependency,run_time_params,step_data,file_attachment,temp_q):
     sModuleInfo = inspect.stack()[0][3] + " : " + inspect.getmoduleinfo(__file__).name
     try:
         sTestStepReturnStatus = AndroidDemo_script.confirm_left()
@@ -58,7 +58,7 @@ def confirm_left_menu_items(dependency,step_data,file_attachment,temp_q):
         return "failed"
 
 
-def check_sub_menu_exixts(dependency,step_data,file_attachment,temp_q):
+def check_sub_menu_exixts(dependency,run_time_params,step_data,file_attachment,temp_q):
     sModuleInfo = inspect.stack()[0][3] + " : " + inspect.getmoduleinfo(__file__).name
     try:
         section_name = step_data[0][0][1]
@@ -76,7 +76,7 @@ def check_sub_menu_exixts(dependency,step_data,file_attachment,temp_q):
 
 
 
-def confirm_opened_section(dependency,step_data,file_attachment,temp_q):
+def confirm_opened_section(dependency,run_time_params,step_data,file_attachment,temp_q):
     sModuleInfo = inspect.stack()[0][3] + " : " + inspect.getmoduleinfo(__file__).name
     try:
         section_name = step_data[0][0][1]
@@ -94,7 +94,7 @@ def confirm_opened_section(dependency,step_data,file_attachment,temp_q):
 
 
 
-def confirm_sub_menu_items(dependency,step_data,file_attachment,temp_q):
+def confirm_sub_menu_items(dependency,run_time_params,step_data,file_attachment,temp_q):
     sModuleInfo = inspect.stack()[0][3] + " : " + inspect.getmoduleinfo(__file__).name
     try:
         submenus=step_data[0][0][1]
@@ -111,7 +111,7 @@ def confirm_sub_menu_items(dependency,step_data,file_attachment,temp_q):
         return "failed"
 
 
-def confirm_video_player(dependency,step_data,file_attachment,temp_q):
+def confirm_video_player(dependency,run_time_params,step_data,file_attachment,temp_q):
     sModuleInfo = inspect.stack()[0][3] + " : " + inspect.getmoduleinfo(__file__).name
     try:
         sTestStepReturnStatus = AndroidDemo_script.confirm_player()
@@ -127,7 +127,7 @@ def confirm_video_player(dependency,step_data,file_attachment,temp_q):
         return "failed"
     
 
-def go_to_a_left_menu_section(dependency,step_data,file_attachment,temp_q):
+def go_to_a_left_menu_section(dependency,run_time_params,step_data,file_attachment,temp_q):
     sModuleInfo = inspect.stack()[0][3] + " : " + inspect.getmoduleinfo(__file__).name
     try:
         section_name=step_data[0][0][1]
@@ -143,7 +143,7 @@ def go_to_a_left_menu_section(dependency,step_data,file_attachment,temp_q):
         temp_q.put("Failed")
         return "failed"
     
-def go_to_a_sub_menu_section(dependency,step_data,file_attachment,temp_q):
+def go_to_a_sub_menu_section(dependency,run_time_params,step_data,file_attachment,temp_q):
     sModuleInfo = inspect.stack()[0][3] + " : " + inspect.getmoduleinfo(__file__).name
     try:
         section_name=step_data[0][0][1]
@@ -159,7 +159,7 @@ def go_to_a_sub_menu_section(dependency,step_data,file_attachment,temp_q):
         temp_q.put("Failed")
         return "failed"
 
-def close_app(dependency,step_data,file_attachment,temp_q):
+def close_app(dependency,run_time_params,step_data,file_attachment,temp_q):
     sModuleInfo = inspect.stack()[0][3] + " : " + inspect.getmoduleinfo(__file__).name
     try:
         sTestStepReturnStatus = AndroidDemo_script.close()

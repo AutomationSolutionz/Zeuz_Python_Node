@@ -1,8 +1,14 @@
-import inspect,os,time,sys,urllib2
+import inspect,os,time,sys,urllib2,Queue,importlib
 from datetime import datetime
 from Utilities import ConfigModule,FileUtilities as FL,CommonUtil,RequestFormatter
+top_path=os.path.dirname(os.getcwd())
+drivers_path=os.path.join(top_path,'Drivers')
+sys.path.append(drivers_path)
+import Drivers
 '''Constants'''
 PROGRESS_TAG = 'In-Progress'
+passed_tag_list=['Pass','pass','PASS','PASSED','Passed','passed','true','TRUE','True',True,1,'1','Success','success','SUCCESS']
+failed_tag_list=['Fail','fail','FAIL','Failed','failed','FAILED','false','False','FALSE',False,0,'0']
 
 
 def get_final_dependency_list(dependency_list,run_description):
@@ -184,6 +190,37 @@ def main():
                 test_step_status_index=RequestFormatter.Get('test_step_results_update_returns_index_api',{'run_id':run_id,'tc_id':test_case,'step_id':current_step_id,'test_step_sequence':current_step_sequence,'options':Dict})
                 test_steps_data=RequestFormatter.Get('get_test_step_data_based_on_test_case_run_id_api',{'run_id':run_id,'test_case':test_case,'step_sequence':current_step_sequence,'step_iteration':StepSeq})
                 CommonUtil.ExecLog(sModuleInfo, "steps data for #%d: %s" % (StepSeq, str(test_steps_data)), 1)
+                step_time = filter(lambda x:x[0]=='estimated' and x[1]=='time',step_meta_data)
+                if step_time:
+                    step_time=int(step_time[0][2])
+                else:
+                    step_time=0
+                auto_generated_image_name = ('_').join(current_step_name.split(" ")) + '_started.png'
+                CommonUtil.TakeScreenShot(str(auto_generated_image_name))
+                try:
+                    q = Queue.Queue()
+                    current_driver=TestStepsList[StepSeq-1][3]
+                    if current_driver in driver_list:
+                        module_name = importlib.import_module(current_driver)
+                        step_name = current_step_name
+                        step_name = step_name.lower().replace(' ', '_')
+                        functionTocall = getattr(module_name, step_name)
+                        simple_queue=Queue.Queue()
+                        sStepResult = functionTocall(final_dependency,final_run_params,test_steps_data, file_specific_steps, simple_queue)
+                        if sStepResult in passed_tag_list:
+                            sStepResult = 'PASSED'
+                        if sStepResult in failed_tag_list:
+                            sStepResult = 'FAILED'
+                        q.put(sStepResult)
+                    else:
+                        CommonUtil.ExecLog(sModuleInfo, "Driver is not enlisted. Execution of test step failed", 3)
+                        sStepResult="Failed"
+                except Exception,e:
+                    exc_type, exc_obj, exc_tb = sys.exc_info()
+                    fname = os.path.split(exc_tb.tb_frame.f_code.co_filename)[1]
+                    Error_Detail = ((str(exc_type).replace("type ", "Error Type: ")) + ";" + "Error Message: " + str(exc_obj) + ";" + "File Name: " + fname + ";" + "Line: " + str(exc_tb.tb_lineno))
+                    CommonUtil.ExecLog(sModuleInfo, "Exception occurred in test step : %s" % Error_Detail, 3)
+                    sStepResult = "Failed"
                 StepSeq+=1
 
 if __name__=='__main__':

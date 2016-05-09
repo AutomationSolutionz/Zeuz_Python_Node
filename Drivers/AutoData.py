@@ -11,7 +11,7 @@ from Utilities import CompareModule
 local_run = False
 
 
-def open_app(dependency,step_data,file_attachment,temp_q):
+def open_app(dependency,run_time_params,step_data,file_attachment,temp_q):
     sModuleInfo = inspect.stack()[0][3] + " : " + inspect.getmoduleinfo(__file__).name
     try:
         package_name=step_data[0][0][1]
@@ -28,7 +28,7 @@ def open_app(dependency,step_data,file_attachment,temp_q):
         temp_q.put("Failed")
         return "failed"
 
-def confirm_right_menu_items(dependency,step_data,file_attachment,temp_q):
+def confirm_right_menu_items(dependency,run_time_params,step_data,file_attachment,temp_q):
     sModuleInfo = inspect.stack()[0][3] + " : " + inspect.getmoduleinfo(__file__).name
     try:
         sTestStepReturnStatus = AndroidDemo_script.confirm_right()
@@ -43,7 +43,7 @@ def confirm_right_menu_items(dependency,step_data,file_attachment,temp_q):
         temp_q.put("Failed")
         return "failed"
 
-def go_to_a_left_menu_section(dependency,step_data,file_attachment,temp_q):
+def go_to_a_left_menu_section(dependency,run_time_params,step_data,file_attachment,temp_q):
     sModuleInfo = inspect.stack()[0][3] + " : " + inspect.getmoduleinfo(__file__).name
     try:
         section_name=step_data[0][0][1]
@@ -59,7 +59,7 @@ def go_to_a_left_menu_section(dependency,step_data,file_attachment,temp_q):
         temp_q.put("Failed")
         return "failed"
 
-def close_app(dependency,step_data,file_attachment,temp_q):
+def close_app(dependency,run_time_params,step_data,file_attachment,temp_q):
     sModuleInfo = inspect.stack()[0][3] + " : " + inspect.getmoduleinfo(__file__).name
     try:
         sTestStepReturnStatus = AndroidDemo_script.close()
@@ -74,11 +74,11 @@ def close_app(dependency,step_data,file_attachment,temp_q):
         temp_q.put("Failed")
         return "failed"
 
-def open_browser(dependency,step_data,file_attachment,temp_q):
+def open_browser(dependency,run_time_params,step_data,file_attachment,temp_q):
     sModuleInfo = inspect.stack()[0][3] + " : " + inspect.getmoduleinfo(__file__).name
     try:
         #first_data_set=step_data[0]
-        browser_name=dependency['dependency']['Browser']
+        browser_name=dependency['Browser']
         stepReturn=n.selectBrowser(browser_name)
         CommonUtil.ExecLog(sModuleInfo,"started the browser",1,local_run)
         temp_q.put(stepReturn)
@@ -91,7 +91,7 @@ def open_browser(dependency,step_data,file_attachment,temp_q):
         temp_q.put("Failed")
         return "failed"
 
-def close_browser(dependency,step_data,file_attachment,temp_q):
+def close_browser(dependency,run_time_params,step_data,file_attachment,temp_q):
     sModuleInfo = inspect.stack()[0][3] + " : " + inspect.getmoduleinfo(__file__).name
     try:
         sTestStepReturnStatus=n.tearDown()
@@ -106,7 +106,7 @@ def close_browser(dependency,step_data,file_attachment,temp_q):
         temp_q.put("Failed")
         return "failed"
 
-def go_to_webpage(dependency,step_data,file_attachment,temp_q):
+def go_to_webpage(dependency,run_time_params,step_data,file_attachment,temp_q):
     sModuleInfo = inspect.stack()[0][3] + " : " + inspect.getmoduleinfo(__file__).name
     try:
         first_data_set=step_data[0]
@@ -124,7 +124,7 @@ def go_to_webpage(dependency,step_data,file_attachment,temp_q):
         temp_q.put("Failed")
         return "failed"
 
-def car_selection(dependency,step_data,file_attachment, temp_q):
+def car_selection(dependency,run_time_params,step_data,file_attachment, temp_q):
     sModuleInfo = inspect.stack()[0][3] + " : " + inspect.getmoduleinfo(__file__).name
     try:
         first_data_set=step_data[0]
@@ -155,7 +155,7 @@ def car_selection(dependency,step_data,file_attachment, temp_q):
         temp_q.put("Failed")
         return "failed"
 		
-def car_selection_base(dependency,step_data,file_attachment, temp_q):
+def car_selection_base(dependency,run_time_params,step_data,file_attachment, temp_q):
     sModuleInfo = inspect.stack()[0][3] + " : " + inspect.getmoduleinfo(__file__).name
     try:
         first_data_set=step_data[0]
@@ -179,7 +179,7 @@ def car_selection_base(dependency,step_data,file_attachment, temp_q):
         temp_q.put("Failed")
         return "failed"
 		
-def verify_data(dependency,step_data,file_attachment,temp_q):
+def verify_data(dependency,run_time_params,step_data,file_attachment,temp_q):
     sModuleInfo = inspect.stack()[0][3] + " : " + inspect.getmoduleinfo(__file__).name
     try:
         first_data_set=step_data[0]
@@ -200,7 +200,7 @@ def verify_data(dependency,step_data,file_attachment,temp_q):
         temp_q.put("Failed")
         return "failed"
     
-def lock_car(dependency,steps_data,file_attachment,temp_q):
+def lock_car(dependency,run_time_params,steps_data,file_attachment,temp_q):
     sModuleInfo = inspect.stack()[0][3] + " : " + inspect.getmoduleinfo(__file__).name
     try:
         first_data_set=steps_data[0]
@@ -216,7 +216,7 @@ def lock_car(dependency,steps_data,file_attachment,temp_q):
         temp_q.put("Failed")
         return "failed"
     
-def unlock_car(dependency,steps_data,file_attachment,temp_q):
+def unlock_car(dependency,run_time_params,steps_data,file_attachment,temp_q):
     sModuleInfo = inspect.stack()[0][3] + " : " + inspect.getmoduleinfo(__file__).name
     try:
         first_data_set=steps_data[0]
@@ -232,7 +232,7 @@ def unlock_car(dependency,steps_data,file_attachment,temp_q):
         temp_q.put("Failed")
         return "failed"
 
-def open_detail_pop_up(dependency,steps_data,file_attachment,temp_q):
+def open_detail_pop_up(dependency,run_time_params,steps_data,file_attachment,temp_q):
     sModuleInfo = inspect.stack()[0][3] + " : " + inspect.getmoduleinfo(__file__).name
     try:
         first_data_set=steps_data[0]
@@ -256,7 +256,7 @@ def open_detail_pop_up(dependency,steps_data,file_attachment,temp_q):
         temp_q.put("Failed")
         return "failed"
     
-def check_nissan_advantage_tag(dependency,steps_data,file_attachment,temp_q):
+def check_nissan_advantage_tag(dependency,run_time_params,steps_data,file_attachment,temp_q):
     sModuleInfo = inspect.stack()[0][3] + " : " + inspect.getmoduleinfo(__file__).name
     try:
         first_data_set=steps_data[0]
