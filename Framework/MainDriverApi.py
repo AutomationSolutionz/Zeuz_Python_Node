@@ -158,6 +158,7 @@ def main():
             while StepSeq <= Stepscount:
                 current_step_name=TestStepsList[StepSeq - 1][1]
                 current_step_id=TestStepsList[StepSeq-1][0]
+                current_step_sequence=TestStepsList[StepSeq-1][2]
                 CommonUtil.ExecLog(sModuleInfo, "Step : %s" % current_step_name, 1)
                 step_meta_data=RequestFormatter.Get('get_step_meta_data_api',{'run_id':run_id,'test_case':test_case,'step_seq':StepSeq})
                 continue_value=filter(lambda x: x[0]=='continue' and x[1]=='point',step_meta_data)
@@ -171,9 +172,18 @@ def main():
                 ConfigModule.add_config_value('sectionOne', 'sTestStepExecLogId',run_id + "|" + test_case + "|" + str(current_step_id) + "|" + str(StepSeq), temp_ini_file)
                 sTestStepStartTime=datetime.fromtimestamp(time.time()).strftime('%Y-%m-%d %H:%M:%S')
                 TestStepStartTime = time.time()
-                WinMemBegin = CommonUtil.PhysicalAvailableMemory()  # MemoryManager.winmem()
-                test_step_status_index=RequestFormatter.Get('test_step_results_update_returns_index_api',{'run_id':run_id,'tc_id':test_case,'step_id':current_step_id})
-
+                WinMemBegin = CommonUtil.PhysicalAvailableMemory()
+                Dict = {
+                    'teststepsequence': current_step_sequence,
+                    'status': PROGRESS_TAG,
+                    'stepstarttime': sTestStepStartTime,
+                    'logid': ConfigModule.get_config_value('sectionOne', 'sTestStepExecLogId', temp_ini_file),
+                    'start_memory': WinMemBegin,
+                    'testcaseresulttindex': test_case_result_index
+                }
+                test_step_status_index=RequestFormatter.Get('test_step_results_update_returns_index_api',{'run_id':run_id,'tc_id':test_case,'step_id':current_step_id,'test_step_sequence':current_step_sequence,'options':Dict})
+                test_steps_data=RequestFormatter.Get('get_test_step_data_based_on_test_case_run_id_api',{'run_id':run_id,'test_case':test_case,'step_sequence':current_step_sequence,'step_iteration':StepSeq})
+                CommonUtil.ExecLog(sModuleInfo, "steps data for #%d: %s" % (StepSeq, str(test_steps_data)), 1)
                 StepSeq+=1
 
 if __name__=='__main__':
