@@ -2,7 +2,7 @@
 '''
 Created on May 15, 2016
 
-@author: RizDesktop
+@author: Automation Solutionz Inc.
 '''
 
 import sys
@@ -186,7 +186,7 @@ def Click_Element_By_Name(_name,parent=False):
  
  
 
-def Click_Element_By_ID(_id):    
+def Click_Element_By_ID(_id,parent=False):    
     sModuleInfo = inspect.stack()[0][3] + " : " + inspect.getmoduleinfo(__file__).name
     try:
         CommonUtil.TakeScreenShot(sModuleInfo, local_run)
@@ -235,14 +235,4 @@ def Set_Text_Field_Value_By_ID(_id,value):
         CommonUtil.ExecLog(sModuleInfo, "Unable to set value for your ID: %s.  Error: %s"%(_id, Error_Detail), 3,local_run)
         return "failed"    
 
-
-def Sample_test_Case():
-    print BrowserSelection('firefox')
-    print OpenLink('https://engitsolutions.sharepoint.com/sites/Demo/')
-    print Login_To_Application("demo@itsolutionsinc.ca","test1234.",'cred_userid_inputtext',"cred_password_inputtext","cred_sign_in_button",logged_name=False)
-    print Click_By_Parameter_And_Value('title',"Open the Settings menu to access personal and app settings", parent=False)
-    print Click_By_Parameter_And_Value('aria-label',"Site contents", parent=False)
-    print Click_By_Parameter_And_Value('alt',"new subsite", parent=False) 
-    
-    
-Sample_test_Case()    
+ 

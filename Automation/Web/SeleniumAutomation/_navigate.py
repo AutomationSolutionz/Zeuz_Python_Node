@@ -4,9 +4,9 @@ import os
 import inspect
 from selenium import webdriver
 from Automation.Web.SeleniumAutomation import config as config
-from Automation.Web.SeleniumAutomation.locateInteraction import Locate_Element_By_Tag
-from Automation.Web.SeleniumAutomation import textInteraction as t
-from Automation.Web.SeleniumAutomation import clickInteraction as c
+from Automation.Web.SeleniumAutomation._locateInteraction import Locate_Element_By_Tag
+from Automation.Web.SeleniumAutomation import _textInteraction as t
+from Automation.Web.SeleniumAutomation import _clickInteraction as c
 def selectBrowser(browser):
     try:
         config.sBrowser.close()
