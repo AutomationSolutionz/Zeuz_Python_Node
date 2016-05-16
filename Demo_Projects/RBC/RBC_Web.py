@@ -96,23 +96,28 @@ def OpenLink(link, page_title=False):
         CommonUtil.TakeScreenShot(sModuleInfo, local_run)
         return "failed"
 
-def Login(user_name,password,logged_name):
+def Login_To_Application(user_name,password,user_element,password_element,button_to_click,logged_name=False):
     sModuleInfo = inspect.stack()[0][3] + " : " + inspect.getmoduleinfo(__file__).name
     try:
         CommonUtil.TakeScreenShot(sModuleInfo, local_run)
-        Click_Element_By_Name("Log in")
-        Set_Text_Field_Value_By_ID("username",user_name)
-        Set_Text_Field_Value_By_ID("password",password)
-        Click_Element_By_ID ("loginbtn")
+        #If you are not sure what the ID are for the field... then you need to customize this a little...
+        CommonUtil.ExecLog(sModuleInfo, "Entering logging credential by ID...", 1, local_run)
+        Set_Text_Field_Value_By_ID(user_element,user_name)
+        Set_Text_Field_Value_By_ID(password_element,password)
+        Click_Element_By_ID(button_to_click)
+        time.sleep(2)
         CommonUtil.TakeScreenShot(sModuleInfo, local_run)
-        CommonUtil.ExecLog(sModuleInfo, "Successfully logged in", 1, local_run)
-        element_login = WebDriverWait(sBrowser, WebDriver_Wait).until(EC.presence_of_element_located((By.XPATH, "//*[@title='View profile']")))
-        if (WebDriverWait(element_login, WebDriver_Wait).until(lambda driver : element_login.text)) == logged_name:
-            CommonUtil.ExecLog(sModuleInfo, "Verified that logged in as: %s"%logged_name, 1,local_run)
-            return "passed"
-        else:
-            CommonUtil.ExecLog(sModuleInfo, "Log in failed for user: %s"%logged_name, 3,local_run)
-            return "failed"
+        #if user selected to validate login name then we shall do that...  
+        if logged_name == True:
+            element_login = WebDriverWait(sBrowser, WebDriver_Wait).until(EC.presence_of_element_located((By.XPATH, "//*[@title='View profile']")))
+            if (WebDriverWait(element_login, WebDriver_Wait).until(lambda driver : element_login.text)) == logged_name:
+                CommonUtil.ExecLog(sModuleInfo, "Verified that logged in as: %s"%logged_name, 1,local_run)
+                return "passed"
+            else:
+                CommonUtil.ExecLog(sModuleInfo, "Log in failed for user: %s"%logged_name, 3,local_run)
+                return "failed"
+        #if user didn't want to validate login name, and we didn't run into any exception, then we return pass
+        return "passed"
     except Exception, e:
         exc_type, exc_obj, exc_tb = sys.exc_info()        
         fname = os.path.split(exc_tb.tb_frame.f_code.co_filename)[1]
@@ -203,24 +208,41 @@ def Click_Element_By_ID(_id):
         CommonUtil.ExecLog(sModuleInfo, "Unable to click element by ID: %s.  Error: %s"%(_id,Error_Detail), 3,local_run)
         return "failed"    
 
-def Click_Element_By_Custome_Field_Value(field,value):
+ 
+
+def Set_Text_Field_Value_By_ID(_id,value):
     sModuleInfo = inspect.stack()[0][3] + " : " + inspect.getmoduleinfo(__file__).name
     try:
         CommonUtil.TakeScreenShot(sModuleInfo, local_run)
-        CommonUtil.ExecLog(sModuleInfo, "Trying to find element by field: %s and value: %s"%(field,value), 1,local_run)
-        Element = WebDriverWait(sBrowser, WebDriver_Wait).until(EC.presence_of_element_located((By.XPATH, "//input[@%s='%s']"%(field,value))))
+        CommonUtil.ExecLog(sModuleInfo, "Trying to find element by id: %s"%_id, 1,local_run)
+        try:
+            Element = WebDriverWait(sBrowser, WebDriver_Wait).until(EC.presence_of_element_located((By.ID, _id)))
+        except:
+            CommonUtil.ExecLog(sModuleInfo, "Could not find your element by ID: %s"%_id, 3,local_run)
+            return "failed"  
         #Now we simply click it
         Element.click()
+        Element.clear()
+        Element.send_keys(value)
+        Element.click()
         CommonUtil.TakeScreenShot(sModuleInfo, local_run)
-        CommonUtil.ExecLog(sModuleInfo, "Successfully clicked your element by field: %s and value: %s"%(field,value), 1,local_run)
+        CommonUtil.ExecLog(sModuleInfo, "Successfully set the value of to text with ID: %s"%_id, 1,local_run)
         return "passed"
-
     except Exception, e:
         exc_type, exc_obj, exc_tb = sys.exc_info()        
         fname = os.path.split(exc_tb.tb_frame.f_code.co_filename)[1]
         Error_Detail = ((str(exc_type).replace("type ", "Error Type: ")) + ";" +  "Error Message: " + str(exc_obj) +";" + "File Name: " + fname + ";" + "Line: "+ str(exc_tb.tb_lineno))
-        CommonUtil.ExecLog(sModuleInfo, "Unable to click your element by field: %s and value: %s.  Error: %s"%(field,value, Error_Detail), 3,local_run)
+        CommonUtil.ExecLog(sModuleInfo, "Unable to set value for your ID: %s.  Error: %s"%(_id, Error_Detail), 3,local_run)
         return "failed"    
 
-CommonUtil.TakeScreenShot("ding", True)
+
+def Sample_test_Case():
+    print BrowserSelection('firefox')
+    print OpenLink('https://engitsolutions.sharepoint.com/sites/Demo/')
+    print Login_To_Application("demo@itsolutionsinc.ca","test1234.",'cred_userid_inputtext',"cred_password_inputtext","cred_sign_in_button",logged_name=False)
+    print Click_By_Parameter_And_Value('title',"Open the Settings menu to access personal and app settings", parent=False)
+    print Click_By_Parameter_And_Value('aria-label',"Site contents", parent=False)
+    print Click_By_Parameter_And_Value('alt',"new subsite", parent=False) 
     
+    
+Sample_test_Case()    
