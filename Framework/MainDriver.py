@@ -194,7 +194,7 @@ def main(server_id):
         query="select distinct tc.tc_id,test_case_type,test_order from result_test_cases tc, test_run tr where tr.run_id=tc.run_id and tr.tc_id=tc.tc_id and tc.run_id='%s' order by tr.test_order"%TestRunID[0].strip()
         TestCaseLists = DBUtil.GetData(conn, query,False) #"Select TC_ID From test_run Where run_id = '%s'" % TestRunID[0], False)
         conn.close()
-        #HYBRID RUN IMPLEMENTED HERE
+        # #HYBRID RUN IMPLEMENTED HERE
         AutomationList=[]
         run_type=""
         for each in TestCaseLists:

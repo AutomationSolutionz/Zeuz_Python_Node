@@ -2,7 +2,7 @@ __author__ = 'shetu'
 from selenium.webdriver.support.ui import WebDriverWait
 from selenium.webdriver.common.by import By
 WebDriver_Wait=20
-from Automation.Web.SeleniumAutomation import config as config
+
 from selenium.webdriver.support import expected_conditions as EC
 import os,sys
 
@@ -22,6 +22,7 @@ def Locate_Element_By_TAG_Under_Specific_Element(tag_name,parent=False,multiple=
         Error_Detail = ((str(exc_type).replace("type ", "Error Type: ")) + ";" + "Error Message: " + str(
             exc_obj) + ";" + "File Name: " + fname + ";" + "Line: " + str(exc_tb.tb_lineno))
         print "%s" % Error_Detail
+        
 def Locate_All_Children(parent=False):
     try:
         if isinstance(parent,bool)==True:

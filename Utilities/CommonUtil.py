@@ -6,7 +6,7 @@ import DataBaseUtilities as DB
 import logging
 from Utilities import ConfigModule
 import datetime
-from Utilities import FileUtilities as FL
+from Utilities import FileUtilities as FL,RequestFormatter
 import uuid
 from PIL import ImageGrab
 from PIL import Image
@@ -42,19 +42,18 @@ def ExecLog(sModuleInfo, sDetails, iLogLevel=1, local_run=False, sStatus=""):
             logger.addHandler(hdlr)
             logger.setLevel(logging.DEBUG)
             
-            conn = DB.ConnectToDataBase()
             sDetails = to_unicode(sDetails)
             if iLogLevel == 1:
                 logger.info(sModuleInfo + ' - ' + sDetails + '' + sStatus)
-                DB.InsertNewRecordInToTable(conn, 'execution_log', logid=log_id, modulename=sModuleInfo, details=sDetails, status="Passed", loglevel=iLogLevel)
+                status="Passed"
         
             elif iLogLevel == 2:
                 logger.warning(sModuleInfo + ' - ' + sDetails + '' + sStatus)
-                DB.InsertNewRecordInToTable(conn, 'execution_log', logid=log_id, modulename=sModuleInfo, details=sDetails, status="Warning", loglevel=iLogLevel)
+                status="Warning"
         
             elif iLogLevel == 3:
                 logger.error(sModuleInfo + ' - ' + sDetails + '' + sStatus)
-                DB.InsertNewRecordInToTable(conn, 'execution_log', logid=log_id, modulename=sModuleInfo, details=sDetails, status="Error", loglevel=iLogLevel)
+                status="Error"
         
             elif iLogLevel == 4:
                 logger.info(sModuleInfo + ' - ' + sDetails + '' + sStatus)
@@ -63,7 +62,7 @@ def ExecLog(sModuleInfo, sDetails, iLogLevel=1, local_run=False, sStatus=""):
                 print "unknown log level"
             
             logger.removeHandler(hdlr)
-            conn.close()
+            r=RequestFormatter.Get('log_execution', {'logid': log_id, 'modulename': sModuleInfo, 'details': sDetails, 'status': status, 'loglevel': iLogLevel})
         else:
             print sModuleInfo, ":", sDetails
     except Exception, e:
@@ -185,25 +184,7 @@ def TakeScreenShot(ImageName,local_run=False):
     except Exception, e:
         print "Exception : ", e
 
-def FindTestCaseFailedReason(conn, run_id, tc_id):
-    sqlQuery = ("select details from execution_log el, test_step_results tsr"
-                " where el.logid = tsr.logid"
-                " and tsr.run_id = '%s' and tsr.tc_id = '%s' and tsr.status = 'Failed' and el.loglevel = 3" % (run_id, tc_id))
-    DataQuery = DB.GetData(conn, sqlQuery, False)
-    IgnoreKeywordList = ['Test Case', 'Test Step', 'Test Set']
-    Reason = []
-    for eachData in DataQuery:
-        KWFound = False
-        for KW in IgnoreKeywordList:
-            if KW in str(eachData):
-                KWFound = True
-                break
-        if KWFound == False:
-            Reason.append(to_unicode(eachData[0]))
-    print "Failure Reason for Test case: %s - %s" % (tc_id, Reason)
-    ReasonStr = ','.join(Reason)
-    ReasonStr = (ReasonStr[:100] + '..') if len(ReasonStr) > 100 else ReasonStr
-    return ReasonStr
+
 def TimeStamp(format):
     """
     :param format: name of format ex: string , integer
