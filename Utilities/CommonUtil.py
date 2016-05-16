@@ -8,6 +8,8 @@ from Utilities import ConfigModule
 import datetime
 from Utilities import FileUtilities as FL
 import uuid
+from PIL import ImageGrab
+from PIL import Image
 temp_config=os.path.join(os.path.join(FL.get_home_folder(),os.path.join('Desktop',os.path.join('AutomationLog',ConfigModule.get_config_value('Temp','_file')))))
 
 def to_unicode(obj, encoding='utf-8'):
@@ -111,13 +113,16 @@ def TakeScreenShot(ImageName,local_run=False):
                 os.system("sips -s format jpeg -s formatOptions 30 " + path + " -o " + newpath)
                 os.system("rm " + path)
                 """
-                #if sys.platform == 'linux2':
                 
                 #linux working copy
                 full_location=ImageFolder+os.sep+TimeStamp("utc")+"_"+ImageName+'.png'
                 os.system("import -window root %s"%full_location)
                 
-                """    #android working copy
+                #mobile device working copy
+                if sys.platform == 'linux2':
+                    #mobile device connected to linux machine
+                    
+                    #android working copy
                     output = os.system("adb devices")
                     if output is not None:
                         full_location=ImageFolder+os.sep+TimeStamp("utc")+"_"+ImageName+'_android.png'
@@ -130,7 +135,9 @@ def TakeScreenShot(ImageName,local_run=False):
                     os.system("idevicescreenshot"%full_location)
                         
                 elif sys.platform == 'darwin':
-                    #mac working copy
+                    #mobile device connected to mac os x machine
+                    
+                    #ios device working copy
                     full_location=ImageFolder+os.sep+TimeStamp("utc")+"_"+ImageName+'.png'
                     os.system("screencapture ~%s"%full_location)
                 
@@ -165,7 +172,7 @@ def TakeScreenShot(ImageName,local_run=False):
                         full_location=ImageFolder+os.sep+TimeStamp("utc")+"_"+ImageName+'_android.png'
                         #os.system("adb shell screencap -p | perl -pe 's/\x0D\x0A/\x0A/g' > %s"%full_location)
                         os.system("adb shell screencap -p /sdcard/screen.png")
-                        os.system("adb pull /sdcard/screen.png %s"%full_location)"""
+                        os.system("adb pull /sdcard/screen.png %s"%full_location)
 
             elif os.name == 'nt':
                 path = ImageFolder + os.sep + TimeStamp("utc") + "_" + ImageName + ".jpg"
