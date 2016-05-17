@@ -109,12 +109,12 @@ def main():
         for TestCaseID in TestCaseLists:
             test_case=TestCaseID[0]
             copy_status=False
+            print "Gathering data for test case %s" % (test_case)
             while not copy_status:
                 copy_status=RequestFormatter.Get('is_test_case_copied_api',{'run_id':run_id,'test_case':test_case})
                 if copy_status:
                     CommonUtil.ExecLog(sModuleInfo,"Gathering data for test case %s is completed" % (test_case),1)
-                else:
-                    print "Gathering data for test case %s"%(test_case)
+
             ConfigModule.add_config_value('sectionOne', 'sTestStepExecLogId', "MainDriver", temp_ini_file)
             StepSeq = 1
             test_case_type = TestCaseID[1]
