@@ -236,3 +236,55 @@ def Set_Text_Field_Value_By_ID(_id,value):
         Error_Detail = ((str(exc_type).replace("type ", "Error Type: ")) + ";" +  "Error Message: " + str(exc_obj) +";" + "File Name: " + fname + ";" + "Line: "+ str(exc_tb.tb_lineno))
         CommonUtil.ExecLog(sModuleInfo, "Unable to set value for your ID: %s.  Error: %s"%(_id, Error_Detail), 3,local_run)
         return "failed"    
+
+def Get_Parent_Element(parameter,value):
+    sModuleInfo = inspect.stack()[0][3] + " : " + inspect.getmoduleinfo(__file__).name
+    try:
+        
+        CommonUtil.ExecLog(sModuleInfo, "Trying to find element that we are trying to find parents of", 1,local_run)
+        #first locate the element that we are dealing with...
+        try:
+            Element = WebDriverWait(sBrowser, WebDriver_Wait).until(EC.presence_of_element_located((By.XPATH, "//*[@%s='%s']"%(parameter,value))))
+        except:
+            CommonUtil.TakeScreenShot(sModuleInfo, local_run)
+            CommonUtil.ExecLog(sModuleInfo, "Could not locate the element to being with.. please check your element properties parameter:%s value:%s"%(parameter,value), 3,local_run)
+            return "failed"  
+        
+        #Now that we have located the element we simply find the parent and return the parent element
+        try:
+            parent = WebDriverWait(Element, WebDriver_Wait).until(EC.presence_of_element_located((By.XPATH, "..")))
+            CommonUtil.ExecLog(sModuleInfo, "We found the parent element of your given parameter and value", 3,local_run)
+            return parent
+        except:
+            CommonUtil.TakeScreenShot(sModuleInfo, local_run)
+            CommonUtil.ExecLog(sModuleInfo, "Could not locate the element to being with.. please check your element properties parameter:%s value:%s"%(parameter,value), 3,local_run)
+            return "failed"              
+
+    except Exception, e:
+        exc_type, exc_obj, exc_tb = sys.exc_info()        
+        fname = os.path.split(exc_tb.tb_frame.f_code.co_filename)[1]
+        Error_Detail = ((str(exc_type).replace("type ", "Error Type: ")) + ";" +  "Error Message: " + str(exc_obj) +";" + "File Name: " + fname + ";" + "Line: "+ str(exc_tb.tb_lineno))
+        CommonUtil.ExecLog(sModuleInfo, "Unable to get the parent element.  Error: %s"%(Error_Detail), 3,local_run)
+        return "failed"  
+
+def Get_Element(parameter,value):
+    sModuleInfo = inspect.stack()[0][3] + " : " + inspect.getmoduleinfo(__file__).name
+    try:
+        
+        CommonUtil.ExecLog(sModuleInfo, "Trying to find element by parameter:%s and value:%s"%(parameter,value), 1,local_run)
+        #first locate the element that we are dealing with...
+        try:
+            Element = WebDriverWait(sBrowser, WebDriver_Wait).until(EC.presence_of_element_located((By.XPATH, "//*[@%s='%s']"%(parameter,value))))
+            CommonUtil.ExecLog(sModuleInfo, "We found the element of your given parameter and value", 1,local_run)
+            return Element
+        except:
+            CommonUtil.TakeScreenShot(sModuleInfo, local_run)
+            CommonUtil.ExecLog(sModuleInfo, "Could not locate the element to being with.. please check your element properties parameter:%s value:%s"%(parameter,value), 3,local_run)
+            return "failed"  
+ 
+    except Exception, e:
+        exc_type, exc_obj, exc_tb = sys.exc_info()        
+        fname = os.path.split(exc_tb.tb_frame.f_code.co_filename)[1]
+        Error_Detail = ((str(exc_type).replace("type ", "Error Type: ")) + ";" +  "Error Message: " + str(exc_obj) +";" + "File Name: " + fname + ";" + "Line: "+ str(exc_tb.tb_lineno))
+        CommonUtil.ExecLog(sModuleInfo, "Unable to get the parent element.  Error: %s"%(Error_Detail), 3,local_run)
+        return "failed"  
