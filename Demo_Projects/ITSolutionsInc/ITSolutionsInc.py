@@ -22,7 +22,7 @@ from Utilities import CommonUtil
 from selenium.webdriver.support import expected_conditions as EC
 
 #Built in function import 
-from Automation.Web.SeleniumAutomation.BuiltInFunctions import *
+from Automation.Web.SeleniumAutomation import BuiltInFunctions
 
 
 global WebDriver_Wait 
@@ -41,7 +41,7 @@ def Select_Gear_Menu_Item(item_text):
     try:
         CommonUtil.ExecLog(sModuleInfo, "Trying to click on Settings Gear Icon", 1,local_run)
         try:
-            Click_By_Parameter_And_Value('title',"Open the Settings menu to access personal and app settings", parent=False)
+            BuiltInFunctions.Click_By_Parameter_And_Value('title',"Open the Settings menu to access personal and app settings", parent=False)
         except:
             CommonUtil.ExecLog(sModuleInfo, "Could not click on the Gear icon", 3,local_run)
             CommonUtil.TakeScreenShot(sModuleInfo, local_run)
@@ -49,7 +49,7 @@ def Select_Gear_Menu_Item(item_text):
         #We now look for the pop up menu 
         CommonUtil.ExecLog(sModuleInfo, "Trying locate the pop up window menu", 1,local_run)
         try:
-            pop_up_menu = Get_Element("ispopup","1")
+            pop_up_menu = BuiltInFunctions.Get_Element("ispopup","1")
         except:
             CommonUtil.ExecLog(sModuleInfo, "Could not locate pop up menu", 3,local_run)
             CommonUtil.TakeScreenShot(sModuleInfo, local_run)
@@ -59,7 +59,7 @@ def Select_Gear_Menu_Item(item_text):
             CommonUtil.TakeScreenShot(sModuleInfo, local_run)
             return "failed"  
         #Now that we have located the pop up menu, we can click on any item in that menu
-        result = Click_Element_By_Name(item_text,pop_up_menu) 
+        result = BuiltInFunctions.Click_Element_By_Name(item_text,pop_up_menu) 
         if result == "passed":   
             CommonUtil.ExecLog(sModuleInfo, "Successfully clicked your Gear menu item %s"%item_text, 1,local_run)        
             return "passed"
@@ -74,5 +74,3 @@ def Select_Gear_Menu_Item(item_text):
         CommonUtil.ExecLog(sModuleInfo, "Could not click on the Gear menu item: %s.  Error: %s"%(item_text, Error_Detail), 3,local_run)
         return "failed"       
     
-    
-     

@@ -1,7 +1,8 @@
+# -*- coding: cp1252 -*-
 '''
-Created on May 16, 2016
+Created on May 15, 2016
 
-@author: hossa
+@author: Automation Solutionz Inc.
 '''
 from Demo_Projects.ITSolutionsInc.ITSolutionsInc import *
 
@@ -14,10 +15,6 @@ def Sample_test_Case_1():
 
 def Sample_test_Case_2():
     print Browser_Selection('firefox')
-    print Open_Link('http://qa-factory.assetscience.com/totalanalysis/login/auth')
-    print Login_To_Application("rhossain","test1234.",'username',"password","submit",logged_name=False)
-    print Click_By_Parameter_And_Value('href',"/totalanalysis/devicesearch")   
-
-href="/totalanalysis/devicesearch"    
+  
 Sample_test_Case_1()    
 #Sample_test_Case_2()   
