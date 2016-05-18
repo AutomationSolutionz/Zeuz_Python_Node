@@ -53,6 +53,7 @@ def close_application(dependency,run_time_params,step_data,file_attachment,temp_
         temp_q.put("Failed")
         return "failed"
     
+    
 def install_application(dependency,run_time_params,step_data,file_attachment,temp_q):
     sModuleInfo = inspect.stack()[0][3] + " : " + inspect.getmoduleinfo(__file__).name
     try:
@@ -78,8 +79,8 @@ def remove_application(dependency,run_time_params,step_data,file_attachment,temp
     sModuleInfo = inspect.stack()[0][3] + " : " + inspect.getmoduleinfo(__file__).name
     try:
         CommonUtil.ExecLog(sModuleInfo,"Enter: Step - Launch application",1,local_run)
-        app_name=step_data[0][0][1]
-        sTestStepReturnStatus = bf.remove(app_name)
+        app_package=step_data[0][0][1]
+        sTestStepReturnStatus = bf.remove(app_package)
         print sTestStepReturnStatus
         temp_q.put(sTestStepReturnStatus)
         CommonUtil.ExecLog(sModuleInfo,"Exit: Step - Launch application",1,local_run)
@@ -91,3 +92,4 @@ def remove_application(dependency,run_time_params,step_data,file_attachment,temp
         CommonUtil.ExecLog(sModuleInfo, "Unable to launch app: Error:%s" %( Error_Detail), 3,local_run)
         temp_q.put("Failed")
         return "failed"
+

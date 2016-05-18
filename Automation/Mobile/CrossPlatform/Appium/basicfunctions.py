@@ -28,16 +28,21 @@ def launch(package_name,activity_name):
             outcome = launch_and_start_driver(package_name, activity_name)
             if outcome == "Passed":
                 CommonUtil.ExecLog(sModuleInfo,"App is launched",1,local_run)
+                return "Passed"
             elif outcome == "failed":
                 CommonUtil.ExecLog(sModuleInfo, "App is not launched", 3,local_run)
+                return "failed"
         else:
             #driver already initiated.
-            outcome = open()
-            outcome = launch_and_start_driver(package_name, activity_name)
+            CommonUtil.ExecLog(sModuleInfo,"App is launched already.",1,local_run)
+            return "Passed"
+            """outcome = open()
             if outcome == "Passed":
                 CommonUtil.ExecLog(sModuleInfo,"App is launched",1,local_run)
+                return outcome
             elif outcome == "failed":
                 CommonUtil.ExecLog(sModuleInfo, "App is not launched", 3,local_run)
+                return outcome"""
     
     except Exception, e:
         exc_type, exc_obj, exc_tb = sys.exc_info()        
@@ -102,14 +107,15 @@ def install(app_location, app_package, app_activity):
             #driver initiated
             if driver.is_app_installed(app_package):
                 CommonUtil.ExecLog(sModuleInfo,"App is already installed.",1,local_run)
+                return "Passed"
             else:
                 CommonUtil.ExecLog(sModuleInfo,"App is not installed. Now installing...",1,local_run)
-                try:
-                    driver.install_app(app_location)
-                    CommonUtil.ExecLog(sModuleInfo,"App is installed successfully.",1,local_run)
+                outcome = load(app_location)
+                if outcome == "Passed":
+                    CommonUtil.ExecLog(sModuleInfo,"App is installed.",1,local_run)
                     return "Passed"
-                except:
-                    CommonUtil.ExecLog(sModuleInfo, "Unable to install the app", 3,local_run)
+                elif outcome == "failed":
+                    CommonUtil.ExecLog(sModuleInfo, "Failed to install the app.", 3,local_run)
                     return "failed"
         
         else:
@@ -119,20 +125,25 @@ def install(app_location, app_package, app_activity):
                 outcome = launch_and_start_driver(app_package, app_activity)
                 if outcome == "Passed":
                     CommonUtil.ExecLog(sModuleInfo,"App is installed already.",1,local_run)
+                    return "Passed"
                 elif outcome == "failed":
                     CommonUtil.ExecLog(sModuleInfo, "App is not installed. Now trying to install and launch again...", 3,local_run)
                     answer = install_and_start_driver(app_location)
                     if answer == "Passed":
                         CommonUtil.ExecLog(sModuleInfo,"App is installed",1,local_run)
+                        return "Passed"
                     elif answer == "failed":
-                        CommonUtil.ExecLog(sModuleInfo, "App is not installed", 3,local_run)
+                        CommonUtil.ExecLog(sModuleInfo, "Failed to install the app.", 3,local_run)
+                        return "failed"
                     
             except:
                 answer = install_and_start_driver(app_location)
                 if answer == "Passed":
-                    CommonUtil.ExecLog(sModuleInfo,"App is installed",1,local_run)
+                    CommonUtil.ExecLog(sModuleInfo,"App is installed.",1,local_run)
+                    return "Passed"
                 elif answer == "failed":
-                    CommonUtil.ExecLog(sModuleInfo, "App is not installed", 3,local_run)
+                    CommonUtil.ExecLog(sModuleInfo, "Failed to install the app.", 3,local_run)
+                    return "failed"
                     
 
     except Exception, e:
@@ -184,6 +195,21 @@ def open():
         fname = os.path.split(exc_tb.tb_frame.f_code.co_filename)[1]
         Error_Detail = ((str(exc_type).replace("type ", "Error Type: ")) + ";" +  "Error Message: " + str(exc_obj) +";" + "File Name: " + fname + ";" + "Line: "+ str(exc_tb.tb_lineno))
         CommonUtil.ExecLog(sModuleInfo, "Unable to open the app. %s"%Error_Detail, 3,local_run)
+        return "failed"
+    
+    
+def load(app_location):
+    sModuleInfo = inspect.stack()[0][3] + " : " + inspect.getmoduleinfo(__file__).name
+    try:
+        CommonUtil.ExecLog(sModuleInfo,"Trying to load the app",1,local_run)
+        driver.install_app(app_location)
+        CommonUtil.ExecLog(sModuleInfo,"Loaded the app successfully",1,local_run)
+        return "Passed"
+    except Exception, e:
+        exc_type, exc_obj, exc_tb = sys.exc_info()        
+        fname = os.path.split(exc_tb.tb_frame.f_code.co_filename)[1]
+        Error_Detail = ((str(exc_type).replace("type ", "Error Type: ")) + ";" +  "Error Message: " + str(exc_obj) +";" + "File Name: " + fname + ";" + "Line: "+ str(exc_tb.tb_lineno))
+        CommonUtil.ExecLog(sModuleInfo, "Unable to load the app. %s"%Error_Detail, 3,local_run)
         return "failed"
     
 
