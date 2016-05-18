@@ -59,7 +59,8 @@ def install_application(dependency,run_time_params,step_data,file_attachment,tem
         CommonUtil.ExecLog(sModuleInfo,"Enter: Step - Install application",1,local_run)
         app_location=step_data[0][0][1]
         package_name=step_data[0][1][1]
-        sTestStepReturnStatus = bf.install(app_location, package_name)
+        activity_name=step_data[0][2][1]
+        sTestStepReturnStatus = bf.install(app_location, package_name, activity_name)
         print sTestStepReturnStatus
         temp_q.put(sTestStepReturnStatus)
         CommonUtil.ExecLog(sModuleInfo,"Exit: Step - Install application",1,local_run)
