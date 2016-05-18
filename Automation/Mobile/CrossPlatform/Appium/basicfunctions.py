@@ -15,7 +15,7 @@ def launch(package_name,activity_name):
     sModuleInfo = inspect.stack()[0][3] + " : " + inspect.getmoduleinfo(__file__).name
     try:
         sModuleInfo = inspect.stack()[0][3] + " : " + inspect.getmoduleinfo(__file__).name
-        CommonUtil.ExecLog(sModuleInfo,"Trying to open the app",1,local_run)
+        CommonUtil.ExecLog(sModuleInfo,"Trying to launch the app",1,local_run)
         desired_caps = {}
         desired_caps['platformName'] = 'Android'
         df = adbOptions.get_android_version()
@@ -32,7 +32,7 @@ def launch(package_name,activity_name):
         global driver
         CommonUtil.ExecLog(sModuleInfo,"Opened the app successfully",1,local_run)
         time.sleep(10)
-        driver.wait(10)
+        driver.implicitly_wait(5)
         return "Passed"
     except Exception, e:
         exc_type, exc_obj, exc_tb = sys.exc_info()        

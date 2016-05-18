@@ -15,14 +15,17 @@ from Automation.Mobile.CrossPlatform.Appium import basicfunctions as bf
 local_run = False
 
 
-def open_app(dependency,run_time_params,step_data,file_attachment,temp_q):
+def launch_application(dependency,run_time_params,step_data,file_attachment,temp_q):
     sModuleInfo = inspect.stack()[0][3] + " : " + inspect.getmoduleinfo(__file__).name
     try:
-        package_name=step_data[0][0][1]
-        activity_name=step_data[0][1][1]
+        CommonUtil.ExecLog(sModuleInfo,"Enter: Step - Launch application",1,local_run)
+        app_name=step_data[0][0][1]
+        package_name=step_data[0][1][1]
+        activity_name=step_data[0][2][1]
         sTestStepReturnStatus = bf.launch(package_name,activity_name)
         print sTestStepReturnStatus
         temp_q.put(sTestStepReturnStatus)
+        CommonUtil.ExecLog(sModuleInfo,"Exit: Step - Launch application",1,local_run)
         return sTestStepReturnStatus
     except Exception, e:
         exc_type, exc_obj, exc_tb = sys.exc_info()
@@ -33,12 +36,14 @@ def open_app(dependency,run_time_params,step_data,file_attachment,temp_q):
         return "failed"
 
 
-def close_app(dependency,run_time_params,step_data,file_attachment,temp_q):
+def close_application(dependency,run_time_params,step_data,file_attachment,temp_q):
     sModuleInfo = inspect.stack()[0][3] + " : " + inspect.getmoduleinfo(__file__).name
     try:
+        CommonUtil.ExecLog(sModuleInfo,"Enter: Step - Close Application",1,local_run)
         sTestStepReturnStatus = bf.close()
         print sTestStepReturnStatus
         temp_q.put(sTestStepReturnStatus)
+        CommonUtil.ExecLog(sModuleInfo,"Exit: Step - Close Application",1,local_run)
         return sTestStepReturnStatus
     except Exception, e:
         exc_type, exc_obj, exc_tb = sys.exc_info()
@@ -48,3 +53,39 @@ def close_app(dependency,run_time_params,step_data,file_attachment,temp_q):
         temp_q.put("Failed")
         return "failed"
     
+def install_application(dependency,run_time_params,step_data,file_attachment,temp_q):
+    sModuleInfo = inspect.stack()[0][3] + " : " + inspect.getmoduleinfo(__file__).name
+    try:
+        CommonUtil.ExecLog(sModuleInfo,"Enter: Step - Install application",1,local_run)
+        app_location=step_data[0][0][1]
+        sTestStepReturnStatus = bf.install(app_location)
+        print sTestStepReturnStatus
+        temp_q.put(sTestStepReturnStatus)
+        CommonUtil.ExecLog(sModuleInfo,"Exit: Step - Install application",1,local_run)
+        return sTestStepReturnStatus
+    except Exception, e:
+        exc_type, exc_obj, exc_tb = sys.exc_info()
+        fname = os.path.split(exc_tb.tb_frame.f_code.co_filename)[1]
+        Error_Detail = ((str(exc_type).replace("type ", "Error Type: ")) + ";" +  "Error Message: " + str(exc_obj) +";" + "File Name: " + fname + ";" + "Line: "+ str(exc_tb.tb_lineno))
+        CommonUtil.ExecLog(sModuleInfo, "Unable to launch app: Error:%s" %( Error_Detail), 3,local_run)
+        temp_q.put("Failed")
+        return "failed"
+    
+    
+def remove_application(dependency,run_time_params,step_data,file_attachment,temp_q):
+    sModuleInfo = inspect.stack()[0][3] + " : " + inspect.getmoduleinfo(__file__).name
+    try:
+        CommonUtil.ExecLog(sModuleInfo,"Enter: Step - Launch application",1,local_run)
+        app_name=step_data[0][0][1]
+        sTestStepReturnStatus = bf.remove(app_name)
+        print sTestStepReturnStatus
+        temp_q.put(sTestStepReturnStatus)
+        CommonUtil.ExecLog(sModuleInfo,"Exit: Step - Launch application",1,local_run)
+        return sTestStepReturnStatus
+    except Exception, e:
+        exc_type, exc_obj, exc_tb = sys.exc_info()
+        fname = os.path.split(exc_tb.tb_frame.f_code.co_filename)[1]
+        Error_Detail = ((str(exc_type).replace("type ", "Error Type: ")) + ";" +  "Error Message: " + str(exc_obj) +";" + "File Name: " + fname + ";" + "Line: "+ str(exc_tb.tb_lineno))
+        CommonUtil.ExecLog(sModuleInfo, "Unable to launch app: Error:%s" %( Error_Detail), 3,local_run)
+        temp_q.put("Failed")
+        return "failed"
