@@ -237,10 +237,48 @@ def Set_Text_Field_Value_By_ID(_id,value):
         CommonUtil.ExecLog(sModuleInfo, "Unable to set value for your ID: %s.  Error: %s"%(_id, Error_Detail), 3,local_run)
         return "failed"    
 
+def Set_Text_Field_By_Parameter_And_Value(parameter,value,text,parent=False):
+    sModuleInfo = inspect.stack()[0][3] + " : " + inspect.getmoduleinfo(__file__).name
+    try:
+        CommonUtil.TakeScreenShot(sModuleInfo, local_run)
+        CommonUtil.ExecLog(sModuleInfo, "Locating your element by parameter:%s and value:%s..."%(parameter,value), 1, local_run)
+        if isinstance(parent, (bool)) == True:
+            All_Elements = WebDriverWait(sBrowser, WebDriver_Wait).until(EC.presence_of_all_elements_located((By.XPATH, "//*[@%s='%s']"%(parameter,value))))
+        else:
+            All_Elements = WebDriverWait(parent, WebDriver_Wait).until(EC.presence_of_all_elements_located((By.XPATH, "//*[@%s='%s']"%(parameter,value))))
+        if All_Elements == []:        
+            CommonUtil.ExecLog(sModuleInfo, "Could not find your element by parameter:%s and value:%s..."%(parameter,value), 3,local_run)
+            return "failed"
+        else:
+            if len(All_Elements) > 1:
+                CommonUtil.ExecLog(sModuleInfo, "Found more than one element and will use the first one.  ** if fails, try providing parent element** ", 2, local_run)
+                CommonUtil.TakeScreenShot(sModuleInfo, local_run)
+                if (WebDriverWait(All_Elements[0], WebDriver_Wait).until(lambda driver : All_Elements[0].is_displayed())) == True:
+                    Element = All_Elements[0]
+                    CommonUtil.ExecLog(sModuleInfo, "Using the *first* element to set the text", 2,local_run)
+            else:
+                CommonUtil.ExecLog(sModuleInfo, "Found one element and will set the text on that", 1, local_run)
+                if (WebDriverWait(All_Elements[0], WebDriver_Wait).until(lambda driver : All_Elements[0].is_displayed())) == True:
+                    Element = All_Elements[0]
+        Element.click()
+        Element.clear()
+        Element.send_keys(text)
+        Element.click()
+        CommonUtil.TakeScreenShot(sModuleInfo, local_run)
+
+        CommonUtil.ExecLog(sModuleInfo, "Successfully clicked by %s and %s"%(parameter,value), 1,local_run)
+        return "passed" 
+    except Exception, e:
+        exc_type, exc_obj, exc_tb = sys.exc_info()        
+        fname = os.path.split(exc_tb.tb_frame.f_code.co_filename)[1]
+        Error_Detail = ((str(exc_type).replace("type ", "Error Type: ")) + ";" +  "Error Message: " + str(exc_obj) +";" + "File Name: " + fname + ";" + "Line: "+ str(exc_tb.tb_lineno))
+        CommonUtil.ExecLog(sModuleInfo, "Unable to locate element to click.  Parameter: %s & Value: %s  Error: %s"%(parameter,value,Error_Detail), 3,local_run)
+        CommonUtil.TakeScreenShot(sModuleInfo, local_run)
+        return "failed"
+
 def Get_Parent_Element(parameter,value):
     sModuleInfo = inspect.stack()[0][3] + " : " + inspect.getmoduleinfo(__file__).name
     try:
-        
         CommonUtil.ExecLog(sModuleInfo, "Trying to find element that we are trying to find parents of", 1,local_run)
         #first locate the element that we are dealing with...
         try:
@@ -249,7 +287,6 @@ def Get_Parent_Element(parameter,value):
             CommonUtil.TakeScreenShot(sModuleInfo, local_run)
             CommonUtil.ExecLog(sModuleInfo, "Could not locate the element to being with.. please check your element properties parameter:%s value:%s"%(parameter,value), 3,local_run)
             return "failed"  
-        
         #Now that we have located the element we simply find the parent and return the parent element
         try:
             parent = WebDriverWait(Element, WebDriver_Wait).until(EC.presence_of_element_located((By.XPATH, "..")))
