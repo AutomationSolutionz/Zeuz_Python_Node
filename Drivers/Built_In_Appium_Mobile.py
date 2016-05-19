@@ -8,7 +8,7 @@ Created on May 15, 2016
 import os,sys
 import inspect
 from Utilities import CommonUtil
-from Built_In_Automation.Mobile.CrossPlatform.Appium import basicfunctions as bf
+from Built_In_Automation.Mobile.CrossPlatform.Appium import BuiltInFunctions as bf
 
 #if local_run is True, no logging will be recorded to the web server.  Only local print will be displayed
 #local_run = True
