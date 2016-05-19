@@ -30,7 +30,7 @@ WebDriver_Wait_Short = 10
 local_run = True
 #local_run = False
 
-def Browser_Selection(browser):
+def Open_Browser(browser):
     sModuleInfo = inspect.stack()[0][3] + " : " + inspect.getmoduleinfo(__file__).name
     try:
         sBrowser.close()
@@ -77,7 +77,7 @@ def Browser_Selection(browser):
         CommonUtil.ExecLog(sModuleInfo, "Unable to start WebDriver. %s"%Error_Detail, 3,local_run)
         return "failed"
 
-def Open_Link(link, page_title=False):
+def Go_To_Link(link, page_title=False):
     #this function needs work with validating page title.  We need to check if user entered any title.
     #if not then we dont do the validation
     sModuleInfo = inspect.stack()[0][3] + " : " + inspect.getmoduleinfo(__file__).name
