@@ -105,18 +105,18 @@ def install(app_location, app_package, app_activity):
         
         if 'driver' in globals():
             #driver initiated
-            if driver.is_app_installed(app_package):
+            """if driver.is_app_installed(app_package):
                 CommonUtil.ExecLog(sModuleInfo,"App is already installed.",1,local_run)
                 return "Passed"
             else:
-                CommonUtil.ExecLog(sModuleInfo,"App is not installed. Now installing...",1,local_run)
-                outcome = load(app_location)
-                if outcome == "Passed":
-                    CommonUtil.ExecLog(sModuleInfo,"App is installed.",1,local_run)
-                    return "Passed"
-                elif outcome == "failed":
-                    CommonUtil.ExecLog(sModuleInfo, "Failed to install the app.", 3,local_run)
-                    return "failed"
+                CommonUtil.ExecLog(sModuleInfo,"App is not installed. Now installing...",1,local_run)"""
+            outcome = load(app_location)
+            if outcome == "Passed":
+                CommonUtil.ExecLog(sModuleInfo,"App is installed.",1,local_run)
+                return "Passed"
+            elif outcome == "failed":
+                CommonUtil.ExecLog(sModuleInfo, "Failed to install the app.", 3,local_run)
+                return "failed"
         
         else:
             #driver not initiated
@@ -201,8 +201,9 @@ def open():
 def load(app_location):
     sModuleInfo = inspect.stack()[0][3] + " : " + inspect.getmoduleinfo(__file__).name
     try:
-        CommonUtil.ExecLog(sModuleInfo,"Trying to load the app",1,local_run)
-        driver.install_app(app_location)
+        CommonUtil.ExecLog(sModuleInfo,"Trying to load the app..",1,local_run)
+        #driver.install_app(app_location)
+        adbOptions.install_app(app_location)
         CommonUtil.ExecLog(sModuleInfo,"Loaded the app successfully",1,local_run)
         return "Passed"
     except Exception, e:
@@ -264,18 +265,18 @@ def remove(app_package):
     sModuleInfo = inspect.stack()[0][3] + " : " + inspect.getmoduleinfo(__file__).name
     try:
         CommonUtil.ExecLog(sModuleInfo,"Trying to remove app with package name %s..."%app_package,1,local_run)
-        if driver.is_app_installed(app_package):
-            CommonUtil.ExecLog(sModuleInfo,"App is installed. Now removing...",1,local_run)
-            try:
-                driver.remove_app(app_package)
-                CommonUtil.ExecLog(sModuleInfo,"App is removed successfully.",1,local_run)
-                return "Passed"
-            except:
-                CommonUtil.ExecLog(sModuleInfo, "Unable to remove the app", 3,local_run)
-                return "failed"
-        else:   
-            CommonUtil.ExecLog(sModuleInfo,"App is not found.",3,local_run)
+        #if driver.is_app_installed(app_package):
+            #CommonUtil.ExecLog(sModuleInfo,"App is installed. Now removing...",1,local_run)
+        try:
+            driver.remove_app(app_package)
+            CommonUtil.ExecLog(sModuleInfo,"App is removed successfully.",1,local_run)
+            return "Passed"
+        except:
+            CommonUtil.ExecLog(sModuleInfo, "Unable to remove the app", 3,local_run)
             return "failed"
+        """else:   
+            CommonUtil.ExecLog(sModuleInfo,"App is not found.",3,local_run)
+            return "failed" """
         
     except Exception, e:
         exc_type, exc_obj, exc_tb = sys.exc_info()        
