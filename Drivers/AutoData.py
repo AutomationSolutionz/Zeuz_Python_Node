@@ -3,8 +3,8 @@ import os,sys,time
 import inspect
 from Utilities import CommonUtil
 from AutoDataHelper import AndroidDemo_script
-from Automation.Web.SeleniumAutomation import _navigate as n
-#from Automation.Web.SeleniumAutomation import locateInteraction
+from Built_In_Automation.Web.SeleniumAutomation import _navigate as n
+#from Built_In_Automation.Web.SeleniumAutomation import locateInteraction
 from Utilities import CompareModule
 #if local_run is True, no logging will be recorded to the web server.  Only local print will be displayed
 #local_run = True

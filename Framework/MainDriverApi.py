@@ -119,7 +119,7 @@ def main():
             StepSeq = 1
             test_case_type = TestCaseID[1]
             CommonUtil.ExecLog(sModuleInfo,"-------------*************--------------",1)
-            CommonUtil.ExecLog(sModuleInfo,"Creating Automation Log for test case: %s"%test_case,1)
+            CommonUtil.ExecLog(sModuleInfo,"Creating Built_In_Automation Log for test case: %s"%test_case,1)
             try:
                 log_file_path = ConfigModule.get_config_value('sectionOne', 'temp_run_file_path', temp_ini_file)
             except Exception, e:

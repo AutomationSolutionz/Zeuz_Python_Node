@@ -97,7 +97,7 @@ def update_machine(dependency):
         DATABASE_TAG='Database'
         server=ConfigModule.get_config_value(DATABASE_TAG,'database_address')
         UpdatedTime = CommonUtil.TimeStamp("string")
-        query="select count(*) from permitted_user_list where user_level='Automation' and user_names='%s'"%testerid
+        query="select count(*) from permitted_user_list where user_level='Built_In_Automation' and user_names='%s'"%testerid
         Conn=DB.ConnectToDataBase(sHost=server)
         count=DB.GetData(Conn,query)
         Conn.close()
@@ -105,7 +105,7 @@ def update_machine(dependency):
             #insert to the permitted_user_list
             temp_Dict={
                 'user_names':testerid,
-                'user_level':'Automation',
+                'user_level':'Built_In_Automation',
                 'email':testerid+"@machine.com"
             }
             Conn=DB.ConnectToDataBase(sHost=server)
@@ -209,7 +209,7 @@ def Check_Credentials(username,password,project,team,server,port):
         #user_list=user_list[0]
         message=",".join(user_list)
         #print message
-        query="select count(*) from user_info ui, permitted_user_list pul where ui.full_name=pul.user_names and username='%s' and password='%s' and user_level not in ('email','Automation', 'Manual') and user_id in (%s)"%(username,base64.b64encode(password),message)
+        query="select count(*) from user_info ui, permitted_user_list pul where ui.full_name=pul.user_names and username='%s' and password='%s' and user_level not in ('email','Built_In_Automation', 'Manual') and user_id in (%s)"%(username,base64.b64encode(password),message)
         Conn=DB.ConnectToDataBase(sHost=server)
         count=DB.GetData(Conn,query)
         Conn.close()

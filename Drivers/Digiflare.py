@@ -2,7 +2,7 @@
 import os, sys
 import inspect
 from Utilities import CommonUtil
-from Demo_Projects.DigiFlare import AndroidDemo_script
+from Projects.DigiFlare import AndroidDemo_script
 
 #if local_run is True, no logging will be recorded to the web server.  Only local print will be displayed
 #local_run = True

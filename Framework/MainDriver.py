@@ -216,7 +216,7 @@ def main(server_id):
         #         run_type='Manual'
         # else:
         #     if (len(filter(lambda x:x[1]=='Performance',AutomationList)))== 0 and (len(filter(lambda x:x[1]=='Automated',AutomationList)))>0:
-        #         run_type='Automation'
+        #         run_type='Built_In_Automation'
         #     elif (len(filter(lambda x:x[1]=='Performance',AutomationList)))>0 and (len(filter(lambda x:x[1]=='Automated',AutomationList)))==0:
         #         run_type='Performance'
         #     else:
