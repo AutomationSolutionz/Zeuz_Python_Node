@@ -12,12 +12,15 @@ from Built_In_Automation.Web.SeleniumAutomation import BuiltInFunctions
 #local_run = True
 local_run = False
 
-def open_browser(dependency,step_data,file_attachment,temp_q):
+#for api to work, driver needs run_params and dic is single 
+#def open_browser(dependency,step_data,file_attachment,temp_q):
+def open_browser(dependency,run_params,step_data,file_attachment,temp_q):
     #this function takes the dependency Browser and passes the browser type you selected during run time
     sModuleInfo = inspect.stack()[0][3] + " : " + inspect.getmoduleinfo(__file__).name
     try:
-
-        browser_name=dependency['dependency']['Browser']
+        
+        #browser_name=dependency['dependency']['Browser']
+        browser_name=dependency['Browser']
         stepReturn=BuiltInFunctions.Open_Browser(browser_name)
         CommonUtil.ExecLog(sModuleInfo,"started the browser",1,local_run)
         temp_q.put(stepReturn)
@@ -31,7 +34,7 @@ def open_browser(dependency,step_data,file_attachment,temp_q):
         return "failed"
 
 
-def go_to_webpage(dependency,step_data,file_attachment,temp_q):
+def go_to_webpage(dependency,run_params,step_data,file_attachment,temp_q):
     sModuleInfo = inspect.stack()[0][3] + " : " + inspect.getmoduleinfo(__file__).name
     try:
         first_data_set=step_data[0]
