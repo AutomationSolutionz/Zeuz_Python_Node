@@ -1,13 +1,8 @@
 #Browser environment
-from lxml.html.diff import tag_token
-from appium import webdriver
 import os , sys, time, inspect
 from Utilities import CommonUtil
-from Built_In_Automation.Mobile.Android.adb_calls import adbOptions
 from Built_In_Automation.Web.SeleniumAutomation import _locateInteraction
 from Built_In_Automation.Web.SeleniumAutomation import _clickInteraction
-from appium.webdriver.common.touch_action import TouchAction
-from django.test.html import Element
 
 #if local_run is True, no logging will be recorded to the web server.  Only local print will be displayed
 #local_run = True

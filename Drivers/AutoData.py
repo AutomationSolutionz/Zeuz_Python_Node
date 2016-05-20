@@ -4,69 +4,14 @@ import inspect
 from Utilities import CommonUtil
 from Projects.AutoData import Mobile_Functions as MF
 from Projects.AutoData import Browser_Functions as BF
-from Built_In_Automation.Web.SeleniumAutomation import _navigate as n
+from Built_In_Automation.Web.SeleniumAutomation import BuiltInFunctions as SBF
+#from Built_In_Automation.Web.SeleniumAutomation import _navigate as n
 #from Built_In_Automation.Web.SeleniumAutomation import locateInteraction
 from Utilities import CompareModule
 #if local_run is True, no logging will be recorded to the web server.  Only local print will be displayed
 #local_run = True
 local_run = False
 
-
-def open_browser(dependency,run_time_params,step_data,file_attachment,temp_q):
-    sModuleInfo = inspect.stack()[0][3] + " : " + inspect.getmoduleinfo(__file__).name
-    try:
-        CommonUtil.ExecLog(sModuleInfo,"Enter: Step - Open Browser",1,local_run)
-        #first_data_set=step_data[0]
-        browser_name=dependency['Browser']
-        stepReturn=n.selectBrowser(browser_name)
-        CommonUtil.ExecLog(sModuleInfo,"started the browser",1,local_run)
-        temp_q.put(stepReturn)
-        CommonUtil.ExecLog(sModuleInfo,"Exit: Step - Open Browser",1,local_run)
-        return stepReturn
-    except Exception, e:
-        exc_type, exc_obj, exc_tb = sys.exc_info()
-        fname = os.path.split(exc_tb.tb_frame.f_code.co_filename)[1]
-        Error_Detail = ((str(exc_type).replace("type ", "Error Type: ")) + ";" +  "Error Message: " + str(exc_obj) +";" + "File Name: " + fname + ";" + "Line: "+ str(exc_tb.tb_lineno))
-        CommonUtil.ExecLog(sModuleInfo, "Unable to start browser: Error:%s" %( Error_Detail), 3,local_run)
-        temp_q.put("Failed")
-        return "failed"
-
-def close_browser(dependency,run_time_params,step_data,file_attachment,temp_q):
-    sModuleInfo = inspect.stack()[0][3] + " : " + inspect.getmoduleinfo(__file__).name
-    try:
-        CommonUtil.ExecLog(sModuleInfo,"Enter: Step - Close Browser",1,local_run)
-        sTestStepReturnStatus=n.tearDown()
-        print sTestStepReturnStatus
-        temp_q.put(sTestStepReturnStatus)
-        CommonUtil.ExecLog(sModuleInfo,"Exit: Step - Close Browser",1,local_run)
-        return sTestStepReturnStatus
-    except Exception, e:
-        exc_type, exc_obj, exc_tb = sys.exc_info()
-        fname = os.path.split(exc_tb.tb_frame.f_code.co_filename)[1]
-        Error_Detail = ((str(exc_type).replace("type ", "Error Type: ")) + ";" +  "Error Message: " + str(exc_obj) +";" + "File Name: " + fname + ";" + "Line: "+ str(exc_tb.tb_lineno))
-        CommonUtil.ExecLog(sModuleInfo, "Unable to close browser: Error:%s" %( Error_Detail), 3,local_run)
-        temp_q.put("Failed")
-        return "failed"
-
-def go_to_webpage(dependency,run_time_params,step_data,file_attachment,temp_q):
-    sModuleInfo = inspect.stack()[0][3] + " : " + inspect.getmoduleinfo(__file__).name
-    try:
-        CommonUtil.ExecLog(sModuleInfo,"Enter: Step - Go To Webpage",1,local_run)
-        first_data_set=step_data[0]
-        web_link=first_data_set[0][1]
-        sTestStepReturnStatus=n.openLink(web_link)
-        time.sleep(10)
-        print sTestStepReturnStatus
-        temp_q.put(sTestStepReturnStatus)
-        CommonUtil.ExecLog(sModuleInfo,"Exit: Step - Go To Webpage",1,local_run)
-        return sTestStepReturnStatus
-    except Exception, e:
-        exc_type, exc_obj, exc_tb = sys.exc_info()
-        fname = os.path.split(exc_tb.tb_frame.f_code.co_filename)[1]
-        Error_Detail = ((str(exc_type).replace("type ", "Error Type: ")) + ";" +  "Error Message: " + str(exc_obj) +";" + "File Name: " + fname + ";" + "Line: "+ str(exc_tb.tb_lineno))
-        CommonUtil.ExecLog(sModuleInfo, "Unable to go to webpage: Error:%s" %( Error_Detail), 3,local_run)
-        temp_q.put("Failed")
-        return "failed"
 
 def car_selection(dependency,run_time_params,step_data,file_attachment, temp_q):
     sModuleInfo = inspect.stack()[0][3] + " : " + inspect.getmoduleinfo(__file__).name

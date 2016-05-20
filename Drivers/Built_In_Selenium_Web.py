@@ -4,7 +4,7 @@ Created on May 15, 2016
 @author: AutomationSolutionz Inc.
 '''
 
-import os,sys,time
+import os,sys
 import inspect
 from Utilities import CommonUtil
 from Built_In_Automation.Web.SeleniumAutomation import BuiltInFunctions
@@ -30,6 +30,24 @@ def open_browser(dependency,run_params,step_data,file_attachment,temp_q):
         fname = os.path.split(exc_tb.tb_frame.f_code.co_filename)[1]
         Error_Detail = ((str(exc_type).replace("type ", "Error Type: ")) + ";" +  "Error Message: " + str(exc_obj) +";" + "File Name: " + fname + ";" + "Line: "+ str(exc_tb.tb_lineno))
         CommonUtil.ExecLog(sModuleInfo, "Unable to start browser: Error:%s" %( Error_Detail), 3,local_run)
+        temp_q.put("Failed")
+        return "failed"
+
+
+def close_browser(dependency,run_time_params,step_data,file_attachment,temp_q):
+    sModuleInfo = inspect.stack()[0][3] + " : " + inspect.getmoduleinfo(__file__).name
+    try:
+        CommonUtil.ExecLog(sModuleInfo,"Enter: Step - Close Browser",1,local_run)
+        sTestStepReturnStatus=BuiltInFunctions.Tear_Down()
+        print sTestStepReturnStatus
+        temp_q.put(sTestStepReturnStatus)
+        CommonUtil.ExecLog(sModuleInfo,"Exit: Step - Close Browser",1,local_run)
+        return sTestStepReturnStatus
+    except Exception, e:
+        exc_type, exc_obj, exc_tb = sys.exc_info()
+        fname = os.path.split(exc_tb.tb_frame.f_code.co_filename)[1]
+        Error_Detail = ((str(exc_type).replace("type ", "Error Type: ")) + ";" +  "Error Message: " + str(exc_obj) +";" + "File Name: " + fname + ";" + "Line: "+ str(exc_tb.tb_lineno))
+        CommonUtil.ExecLog(sModuleInfo, "Unable to close browser: Error:%s" %( Error_Detail), 3,local_run)
         temp_q.put("Failed")
         return "failed"
 
@@ -67,3 +85,6 @@ def login_to_web_app(dependency,run_time_params,step_data,file_attachment,temp_q
         CommonUtil.ExecLog(sModuleInfo, "Unable to go to webpage: Error:%s" %( Error_Detail), 3,local_run)
         temp_q.put("Failed")
         return "failed"
+    
+    
+    
