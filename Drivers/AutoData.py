@@ -1,8 +1,9 @@
-from appium import webdriver
+
 import os,sys,time
 import inspect
 from Utilities import CommonUtil
-from AutoDataHelper import AndroidDemo_script
+from Projects.AutoData import Mobile_Functions as MF
+from Projects.AutoData import Browser_Functions as BF
 from Built_In_Automation.Web.SeleniumAutomation import _navigate as n
 #from Built_In_Automation.Web.SeleniumAutomation import locateInteraction
 from Utilities import CompareModule
@@ -16,7 +17,7 @@ def open_app(dependency,run_time_params,step_data,file_attachment,temp_q):
     try:
         package_name=step_data[0][0][1]
         activity_name=step_data[0][1][1]
-        sTestStepReturnStatus = AndroidDemo_script.launch(package_name,activity_name)
+        sTestStepReturnStatus = MF.launch(package_name,activity_name)
         print sTestStepReturnStatus
         temp_q.put(sTestStepReturnStatus)
         return sTestStepReturnStatus
@@ -31,7 +32,7 @@ def open_app(dependency,run_time_params,step_data,file_attachment,temp_q):
 def confirm_right_menu_items(dependency,run_time_params,step_data,file_attachment,temp_q):
     sModuleInfo = inspect.stack()[0][3] + " : " + inspect.getmoduleinfo(__file__).name
     try:
-        sTestStepReturnStatus = AndroidDemo_script.confirm_right()
+        sTestStepReturnStatus = MF.confirm_right()
         print sTestStepReturnStatus
         temp_q.put(sTestStepReturnStatus)
         return sTestStepReturnStatus
@@ -47,7 +48,7 @@ def go_to_a_left_menu_section(dependency,run_time_params,step_data,file_attachme
     sModuleInfo = inspect.stack()[0][3] + " : " + inspect.getmoduleinfo(__file__).name
     try:
         section_name=step_data[0][0][1]
-        sTestStepReturnStatus = AndroidDemo_script.go_left(section_name)
+        sTestStepReturnStatus = MF.go_left(section_name)
         print sTestStepReturnStatus
         temp_q.put(sTestStepReturnStatus)
         return sTestStepReturnStatus
@@ -62,7 +63,7 @@ def go_to_a_left_menu_section(dependency,run_time_params,step_data,file_attachme
 def close_app(dependency,run_time_params,step_data,file_attachment,temp_q):
     sModuleInfo = inspect.stack()[0][3] + " : " + inspect.getmoduleinfo(__file__).name
     try:
-        sTestStepReturnStatus = AndroidDemo_script.close()
+        sTestStepReturnStatus = MF.close()
         print sTestStepReturnStatus
         temp_q.put(sTestStepReturnStatus)
         return sTestStepReturnStatus
@@ -138,11 +139,11 @@ def car_selection(dependency,run_time_params,step_data,file_attachment, temp_q):
                 Dict.update({i[1]:i[2]})
             car_data.append(Dict)
         print car_data
-        if AndroidDemo_script.select_base_car(car_data[0]):
+        if BF.select_base_car(car_data[0]):
             CommonUtil.ExecLog(sModuleInfo,"Selected the first car successfully",1,local_run)
-            AndroidDemo_script.select_car(car_data[1],1)
-            AndroidDemo_script.select_car(car_data[2],2)
-            AndroidDemo_script.select_car(car_data[3],3)
+            BF.select_car(car_data[1],1)
+            BF.select_car(car_data[2],2)
+            BF.select_car(car_data[3],3)
             return "passed"
         else:
             CommonUtil.ExecLog(sModuleInfo,"Can't select the first car",1,local_run)
@@ -155,6 +156,7 @@ def car_selection(dependency,run_time_params,step_data,file_attachment, temp_q):
         temp_q.put("Failed")
         return "failed"
 		
+        
 def car_selection_base(dependency,run_time_params,step_data,file_attachment, temp_q):
     sModuleInfo = inspect.stack()[0][3] + " : " + inspect.getmoduleinfo(__file__).name
     try:
@@ -169,7 +171,7 @@ def car_selection_base(dependency,run_time_params,step_data,file_attachment, tem
                 Dict.update({i[1]:i[2]})
             car_data.append(Dict)
         print car_data
-        AndroidDemo_script.select_base_car(car_data[0])
+        BF.select_base_car(car_data[0])
         return "passed"
     except Exception, e:
         exc_type, exc_obj, exc_tb = sys.exc_info()
@@ -185,7 +187,7 @@ def verify_data(dependency,run_time_params,step_data,file_attachment,temp_q):
         first_data_set=step_data[0]
         tag_list=filter(lambda x:x[0]=='tag',first_data_set)
         rest_data=filter(lambda x:x[0]!='tag',first_data_set)
-        total_list=AndroidDemo_script.read_data_from_page(tag_list)
+        total_list=BF.read_data_from_page(tag_list)
         oCompare=CompareModule()
         expected_list=CompareModule.make_single_data_set_compatible(rest_data)
         actual_list=CompareModule.make_single_data_set_compatible(total_list)
@@ -205,7 +207,7 @@ def lock_car(dependency,run_time_params,steps_data,file_attachment,temp_q):
     try:
         first_data_set=steps_data[0]
         car_number=int(first_data_set[0][1])
-        stepReturnStatus=AndroidDemo_script.lock_unlock_car(car_number,True)
+        stepReturnStatus=BF.lock_unlock_car(car_number,True)
         temp_q.put(stepReturnStatus)
         return stepReturnStatus
     except Exception, e:
@@ -221,7 +223,7 @@ def unlock_car(dependency,run_time_params,steps_data,file_attachment,temp_q):
     try:
         first_data_set=steps_data[0]
         car_number=int(first_data_set[0][1])
-        stepReturnStatus=AndroidDemo_script.lock_unlock_car(car_number)
+        stepReturnStatus=BF.lock_unlock_car(car_number)
         temp_q.put(stepReturnStatus)
         return stepReturnStatus
     except Exception, e:
@@ -238,7 +240,7 @@ def open_detail_pop_up(dependency,run_time_params,steps_data,file_attachment,tem
         first_data_set=steps_data[0]
         tag_to_click=first_data_set[0][1]
         description_to_match=first_data_set[1][1]
-        actual_data=AndroidDemo_script.open_detail_pop_up(tag_to_click,description_to_match)
+        actual_data=BF.open_detail_pop_up(tag_to_click,description_to_match)
         if actual_data:
             oCompare=CompareModule()
             expected_list=CompareModule.make_single_data_set_compatible(first_data_set)
@@ -260,7 +262,7 @@ def check_nissan_advantage_tag(dependency,run_time_params,steps_data,file_attach
     sModuleInfo = inspect.stack()[0][3] + " : " + inspect.getmoduleinfo(__file__).name
     try:
         first_data_set=steps_data[0]
-        stepReturnStatus=AndroidDemo_script.check_nissan_adv_tag(first_data_set[0][1])
+        stepReturnStatus=BF.check_nissan_adv_tag(first_data_set[0][1])
         temp_q.put(stepReturnStatus)
         return stepReturnStatus
     except Exception, e:
