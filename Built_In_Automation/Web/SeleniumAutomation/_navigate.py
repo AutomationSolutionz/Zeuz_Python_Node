@@ -3,10 +3,13 @@ import sys
 import os
 import inspect
 from selenium import webdriver
-from Built_In_Automation.Web.SeleniumAutomation import config as config
+from Built_In_Automation.Web.SeleniumAutomation import BuiltInFunctions as config
 from Built_In_Automation.Web.SeleniumAutomation._locateInteraction import Locate_Element_By_Tag
 from Built_In_Automation.Web.SeleniumAutomation import _textInteraction as t
 from Built_In_Automation.Web.SeleniumAutomation import _clickInteraction as c
+from Utilities import CommonUtil
+
+
 def selectBrowser(browser):
     try:
         config.sBrowser.close()
