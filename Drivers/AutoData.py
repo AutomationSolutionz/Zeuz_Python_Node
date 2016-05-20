@@ -17,26 +17,9 @@ def car_selection(dependency,run_time_params,step_data,file_attachment, temp_q):
     try:
         CommonUtil.ExecLog(sModuleInfo,"Enter: Step - Car Selection",1,local_run)
         first_data_set=step_data[0]
-        print first_data_set
-        distinct =sorted(list(set([x[0] for x in first_data_set])),key=lambda x:x)
-        car_data=[]
-        for e in distinct:
-            l=filter(lambda x:x[0]==e,first_data_set)
-            Dict={}
-            for i in l:
-                Dict.update({i[1]:i[2]})
-            car_data.append(Dict)
-        print car_data
-        if BF.select_base_car(car_data[0]):
-            CommonUtil.ExecLog(sModuleInfo,"Selected the first car successfully",1,local_run)
-            BF.select_car(car_data[1],1)
-            BF.select_car(car_data[2],2)
-            BF.select_car(car_data[3],3)
-            return "passed"
-        else:
-            CommonUtil.ExecLog(sModuleInfo,"Can't select the first car",1,local_run)
-            return "failed"
+        stepResult=BF.selectCar(first_data_set)
         CommonUtil.ExecLog(sModuleInfo,"Exit: Step - Car Selection",1,local_run)
+        return stepResult
     except Exception, e:
         exc_type, exc_obj, exc_tb = sys.exc_info()
         fname = os.path.split(exc_tb.tb_frame.f_code.co_filename)[1]
@@ -51,19 +34,9 @@ def car_selection_base(dependency,run_time_params,step_data,file_attachment, tem
     try:
         CommonUtil.ExecLog(sModuleInfo,"Enter: Step - Car Selection Base",1,local_run)
         first_data_set=step_data[0]
-        print first_data_set
-        distinct =sorted(list(set([x[0] for x in first_data_set])),key=lambda x:x)
-        car_data=[]
-        for e in distinct:
-            l=filter(lambda x:x[0]==e,first_data_set)
-            Dict={}
-            for i in l:
-                Dict.update({i[1]:i[2]})
-            car_data.append(Dict)
-        print car_data
-        BF.select_base_car(car_data[0])
+        stepResult=BF.select_car_base(first_data_set)
         CommonUtil.ExecLog(sModuleInfo,"Exit: Step - Car Selection Base",1,local_run)
-        return "passed"
+        return stepResult
     except Exception, e:
         exc_type, exc_obj, exc_tb = sys.exc_info()
         fname = os.path.split(exc_tb.tb_frame.f_code.co_filename)[1]
@@ -78,13 +51,7 @@ def verify_data(dependency,run_time_params,step_data,file_attachment,temp_q):
     try:
         CommonUtil.ExecLog(sModuleInfo,"Enter: Step - Verify Data",1,local_run)
         first_data_set=step_data[0]
-        tag_list=filter(lambda x:x[0]=='tag',first_data_set)
-        rest_data=filter(lambda x:x[0]!='tag',first_data_set)
-        total_list=BF.read_data_from_page(tag_list)
-        oCompare=CompareModule()
-        expected_list=CompareModule.make_single_data_set_compatible(rest_data)
-        actual_list=CompareModule.make_single_data_set_compatible(total_list)
-        status=oCompare.compare([expected_list],[actual_list])
+        status = BF.data_verify(first_data_set)
         temp_q.put(status)
         CommonUtil.ExecLog(sModuleInfo,"Exit: Step - Verify Data",1,local_run)
         return status

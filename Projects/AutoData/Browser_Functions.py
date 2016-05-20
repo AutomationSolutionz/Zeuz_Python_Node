@@ -3,11 +3,88 @@ import os , sys, time, inspect
 from Utilities import CommonUtil
 from Built_In_Automation.Web.SeleniumAutomation import _locateInteraction
 from Built_In_Automation.Web.SeleniumAutomation import _clickInteraction
+from Utilities import CompareModule
 
 #if local_run is True, no logging will be recorded to the web server.  Only local print will be displayed
 #local_run = True
 local_run = False
 
+
+def selectCar(first_data_set):
+    sModuleInfo = inspect.stack()[0][3] + " : " + inspect.getmoduleinfo(__file__).name
+    try:
+        print first_data_set
+        distinct =sorted(list(set([x[0] for x in first_data_set])),key=lambda x:x)
+        car_data=[]
+        for e in distinct:
+            l=filter(lambda x:x[0]==e,first_data_set)
+            Dict={}
+            for i in l:
+                Dict.update({i[1]:i[2]})
+            car_data.append(Dict)
+        print car_data
+        if select_base_car(car_data[0]):
+            CommonUtil.ExecLog(sModuleInfo,"Selected the first car successfully",1,local_run)
+            select_car(car_data[1],1)
+            select_car(car_data[2],2)
+            select_car(car_data[3],3)
+            return "passed"
+        else:
+            CommonUtil.ExecLog(sModuleInfo,"Can't select the first car",1,local_run)
+            return "failed"
+        
+    except Exception, e:
+        exc_type, exc_obj, exc_tb = sys.exc_info()
+        fname = os.path.split(exc_tb.tb_frame.f_code.co_filename)[1]
+        Error_Detail = ((str(exc_type).replace("type ", "Error Type: ")) + ";" +  "Error Message: " + str(exc_obj) +";" + "File Name: " + fname + ";" + "Line: "+ str(exc_tb.tb_lineno))
+        CommonUtil.ExecLog(sModuleInfo, "Unable to select car. %s"%Error_Detail, 3,local_run)
+        return "failed"
+    
+    
+def select_car_base(first_data_set):
+    sModuleInfo = inspect.stack()[0][3] + " : " + inspect.getmoduleinfo(__file__).name
+    try:
+        print first_data_set
+        distinct =sorted(list(set([x[0] for x in first_data_set])),key=lambda x:x)
+        car_data=[]
+        for e in distinct:
+            l=filter(lambda x:x[0]==e,first_data_set)
+            Dict={}
+            for i in l:
+                Dict.update({i[1]:i[2]})
+            car_data.append(Dict)
+        print car_data
+        select_base_car(car_data[0])
+        return "passed"
+            
+    except Exception, e:
+        exc_type, exc_obj, exc_tb = sys.exc_info()
+        fname = os.path.split(exc_tb.tb_frame.f_code.co_filename)[1]
+        Error_Detail = ((str(exc_type).replace("type ", "Error Type: ")) + ";" +  "Error Message: " + str(exc_obj) +";" + "File Name: " + fname + ";" + "Line: "+ str(exc_tb.tb_lineno))
+        CommonUtil.ExecLog(sModuleInfo, "Unable to select car. %s"%Error_Detail, 3,local_run)
+        return "failed"
+    
+    
+def data_verify(first_data_set):
+    sModuleInfo = inspect.stack()[0][3] + " : " + inspect.getmoduleinfo(__file__).name
+    try:
+        tag_list=filter(lambda x:x[0]=='tag',first_data_set)
+        rest_data=filter(lambda x:x[0]!='tag',first_data_set)
+        total_list=read_data_from_page(tag_list)
+        oCompare=CompareModule()
+        expected_list=CompareModule.make_single_data_set_compatible(rest_data)
+        actual_list=CompareModule.make_single_data_set_compatible(total_list)
+        status=oCompare.compare([expected_list],[actual_list])
+        return status    
+    except Exception, e:
+        exc_type, exc_obj, exc_tb = sys.exc_info()
+        fname = os.path.split(exc_tb.tb_frame.f_code.co_filename)[1]
+        Error_Detail = ((str(exc_type).replace("type ", "Error Type: ")) + ";" +  "Error Message: " + str(exc_obj) +";" + "File Name: " + fname + ";" + "Line: "+ str(exc_tb.tb_lineno))
+        CommonUtil.ExecLog(sModuleInfo, "Unable to select car. %s"%Error_Detail, 3,local_run)
+        return "failed"
+    
+    
+    
 
 def select_base_car(car_data):
     sModuleInfo = inspect.stack()[0][3] + " : " + inspect.getmoduleinfo(__file__).name
