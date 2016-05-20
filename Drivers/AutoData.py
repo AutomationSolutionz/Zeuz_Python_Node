@@ -1,10 +1,9 @@
 
-import os,sys,time
+import os,sys
 import inspect
 from Utilities import CommonUtil
 from Projects.AutoData import Mobile_Functions as MF
 from Projects.AutoData import Browser_Functions as BF
-from Built_In_Automation.Web.SeleniumAutomation import BuiltInFunctions as SBF
 #from Built_In_Automation.Web.SeleniumAutomation import _navigate as n
 #from Built_In_Automation.Web.SeleniumAutomation import locateInteraction
 from Utilities import CompareModule
@@ -177,25 +176,6 @@ def check_nissan_advantage_tag(dependency,run_time_params,steps_data,file_attach
         return "failed"
 
 
-def open_app(dependency,run_time_params,step_data,file_attachment,temp_q):
-    sModuleInfo = inspect.stack()[0][3] + " : " + inspect.getmoduleinfo(__file__).name
-    try:
-        CommonUtil.ExecLog(sModuleInfo,"Enter: Step - Open App",1,local_run)
-        package_name=step_data[0][0][1]
-        activity_name=step_data[0][1][1]
-        sTestStepReturnStatus = MF.launch(package_name,activity_name)
-        print sTestStepReturnStatus
-        temp_q.put(sTestStepReturnStatus)
-        CommonUtil.ExecLog(sModuleInfo,"Exit: Step - Open App",1,local_run)
-        return sTestStepReturnStatus
-    except Exception, e:
-        exc_type, exc_obj, exc_tb = sys.exc_info()
-        fname = os.path.split(exc_tb.tb_frame.f_code.co_filename)[1]
-        Error_Detail = ((str(exc_type).replace("type ", "Error Type: ")) + ";" +  "Error Message: " + str(exc_obj) +";" + "File Name: " + fname + ";" + "Line: "+ str(exc_tb.tb_lineno))
-        CommonUtil.ExecLog(sModuleInfo, "Unable to launch app: Error:%s" %( Error_Detail), 3,local_run)
-        temp_q.put("Failed")
-        return "failed"
-
 def confirm_right_menu_items(dependency,run_time_params,step_data,file_attachment,temp_q):
     sModuleInfo = inspect.stack()[0][3] + " : " + inspect.getmoduleinfo(__file__).name
     try:
@@ -213,6 +193,7 @@ def confirm_right_menu_items(dependency,run_time_params,step_data,file_attachmen
         temp_q.put("Failed")
         return "failed"
 
+
 def go_to_a_left_menu_section(dependency,run_time_params,step_data,file_attachment,temp_q):
     sModuleInfo = inspect.stack()[0][3] + " : " + inspect.getmoduleinfo(__file__).name
     try:
@@ -228,23 +209,6 @@ def go_to_a_left_menu_section(dependency,run_time_params,step_data,file_attachme
         fname = os.path.split(exc_tb.tb_frame.f_code.co_filename)[1]
         Error_Detail = ((str(exc_type).replace("type ", "Error Type: ")) + ";" +  "Error Message: " + str(exc_obj) +";" + "File Name: " + fname + ";" + "Line: "+ str(exc_tb.tb_lineno))
         CommonUtil.ExecLog(sModuleInfo, "Unable to go to left menu section: %s: Error:%s" %(section_name, Error_Detail), 3,local_run)
-        temp_q.put("Failed")
-        return "failed"
-
-def close_app(dependency,run_time_params,step_data,file_attachment,temp_q):
-    sModuleInfo = inspect.stack()[0][3] + " : " + inspect.getmoduleinfo(__file__).name
-    try:
-        CommonUtil.ExecLog(sModuleInfo,"Enter: Step - Close app",1,local_run)
-        sTestStepReturnStatus = MF.close()
-        print sTestStepReturnStatus
-        temp_q.put(sTestStepReturnStatus)
-        CommonUtil.ExecLog(sModuleInfo,"Exit: Step - Close app",1,local_run)
-        return sTestStepReturnStatus
-    except Exception, e:
-        exc_type, exc_obj, exc_tb = sys.exc_info()
-        fname = os.path.split(exc_tb.tb_frame.f_code.co_filename)[1]
-        Error_Detail = ((str(exc_type).replace("type ", "Error Type: ")) + ";" +  "Error Message: " + str(exc_obj) +";" + "File Name: " + fname + ";" + "Line: "+ str(exc_tb.tb_lineno))
-        CommonUtil.ExecLog(sModuleInfo, "Unable to close app: Error:%s" %( Error_Detail), 3,local_run)
         temp_q.put("Failed")
         return "failed"
 

@@ -1,13 +1,19 @@
 
 import os , sys, inspect
 from Utilities import CommonUtil
+from appium import webdriver
+from Built_In_Automation.Mobile.CrossPlatform.Appium import BuiltInFunctions as bf
 
 #if local_run is True, no logging will be recorded to the web server.  Only local print will be displayed
 #local_run = True
 local_run = False
 
+#Get the initiated global driver
+driver = bf.get_driver()
+global driver
 
-def locate_element_by_id(driver, _id, parent=False):
+
+def locate_element_by_id(_id, parent=False):
     sModuleInfo = inspect.stack()[0][3] + " : " + inspect.getmoduleinfo(__file__).name
     try:
         CommonUtil.ExecLog(sModuleInfo,"Trying to locate element by id: %s"%_id,1,local_run)
@@ -22,7 +28,7 @@ def locate_element_by_id(driver, _id, parent=False):
         Error_Detail = ((str(exc_type).replace("type ", "Error Type: ")) + ";" +  "Error Message: " + str(exc_obj) +";" + "File Name: " + fname + ";" + "Line: "+ str(exc_tb.tb_lineno))
         CommonUtil.ExecLog(sModuleInfo, "Unable to locate the element. %s"%Error_Detail, 3,local_run)
 
-def locate_elements_by_id(driver, _id, parent=False):
+def locate_elements_by_id(_id, parent=False):
     sModuleInfo = inspect.stack()[0][3] + " : " + inspect.getmoduleinfo(__file__).name
     try:
         CommonUtil.ExecLog(sModuleInfo,"Trying to locate elements by id: %s"%_id,1,local_run)
@@ -38,7 +44,7 @@ def locate_elements_by_id(driver, _id, parent=False):
         CommonUtil.ExecLog(sModuleInfo, "Unable to locate elements. %s"%Error_Detail, 3,local_run)
 
     
-def locate_element_by_name(driver, _name, parent=False):
+def locate_element_by_name(_name, parent=False):
     sModuleInfo = inspect.stack()[0][3] + " : " + inspect.getmoduleinfo(__file__).name
     try:
         CommonUtil.ExecLog(sModuleInfo,"Trying to locate element by name: %s"%_name,1,local_run)
@@ -53,7 +59,8 @@ def locate_element_by_name(driver, _name, parent=False):
         Error_Detail = ((str(exc_type).replace("type ", "Error Type: ")) + ";" +  "Error Message: " + str(exc_obj) +";" + "File Name: " + fname + ";" + "Line: "+ str(exc_tb.tb_lineno))
         CommonUtil.ExecLog(sModuleInfo, "Unable to locate the element. %s"%Error_Detail, 3,local_run)
     
-def locate_element_by_class_name(driver, _class, parent=False):
+    
+def locate_element_by_class_name(_class, parent=False):
     sModuleInfo = inspect.stack()[0][3] + " : " + inspect.getmoduleinfo(__file__).name
     try:
         CommonUtil.ExecLog(sModuleInfo,"Trying to locate element by class: %s"%_class,1,local_run)
@@ -68,7 +75,8 @@ def locate_element_by_class_name(driver, _class, parent=False):
         Error_Detail = ((str(exc_type).replace("type ", "Error Type: ")) + ";" +  "Error Message: " + str(exc_obj) +";" + "File Name: " + fname + ";" + "Line: "+ str(exc_tb.tb_lineno))
         CommonUtil.ExecLog(sModuleInfo, "Unable to locate the element. %s"%Error_Detail, 3,local_run)
     
-def locate_element_by_xpath(driver, _classpath, parent=False):
+    
+def locate_element_by_xpath(_classpath, parent=False):
     sModuleInfo = inspect.stack()[0][3] + " : " + inspect.getmoduleinfo(__file__).name
     try:
         CommonUtil.ExecLog(sModuleInfo,"Trying to locate element by xpath: %s"%_classpath,1,local_run)
@@ -83,7 +91,7 @@ def locate_element_by_xpath(driver, _classpath, parent=False):
         Error_Detail = ((str(exc_type).replace("type ", "Error Type: ")) + ";" +  "Error Message: " + str(exc_obj) +";" + "File Name: " + fname + ";" + "Line: "+ str(exc_tb.tb_lineno))
         CommonUtil.ExecLog(sModuleInfo, "Unable to locate the element. %s"%Error_Detail, 3,local_run)
     
-def locate_element_by_accessibility_id(driver, _id, parent=False):
+def locate_element_by_accessibility_id(_id, parent=False):
     sModuleInfo = inspect.stack()[0][3] + " : " + inspect.getmoduleinfo(__file__).name
     try:
         CommonUtil.ExecLog(sModuleInfo,"Trying to locate element by accessibility id: %s"%_id,1,local_run)
@@ -99,7 +107,7 @@ def locate_element_by_accessibility_id(driver, _id, parent=False):
         CommonUtil.ExecLog(sModuleInfo, "Unable to locate the element. %s"%Error_Detail, 3,local_run)
 
 
-def locate_element_by_android_uiautomator_text(driver, _text, parent=False):
+def locate_element_by_android_uiautomator_text(_text, parent=False):
     sModuleInfo = inspect.stack()[0][3] + " : " + inspect.getmoduleinfo(__file__).name
     try:
         CommonUtil.ExecLog(sModuleInfo,"Trying to locate element by android uiautomator text: %s"%_text,1,local_run)
@@ -115,7 +123,7 @@ def locate_element_by_android_uiautomator_text(driver, _text, parent=False):
         CommonUtil.ExecLog(sModuleInfo, "Unable to locate the element. %s"%Error_Detail, 3,local_run)
 
 
-def locate_element_by_android_uiautomator_description(driver, _description, parent=False):
+def locate_element_by_android_uiautomator_description(_description, parent=False):
     sModuleInfo = inspect.stack()[0][3] + " : " + inspect.getmoduleinfo(__file__).name
     try:
         CommonUtil.ExecLog(sModuleInfo,"Trying to locate element by android uiautomator description: %s"%_description,1,local_run)
