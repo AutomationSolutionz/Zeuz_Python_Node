@@ -16,6 +16,8 @@ PATH = lambda p: os.path.abspath(
 #local_run = True
 local_run = False
 
+driver = None
+
 
 def launch(package_name,activity_name):
     sModuleInfo = inspect.stack()[0][3] + " : " + inspect.getmoduleinfo(__file__).name
