@@ -7,10 +7,8 @@ import base64
 
 import wx
 import wx.wizard
-from Utilities import DataBaseUtilities as DB
-from Utilities import CommonUtil
-from Framework import  MainDriver
-from Utilities import FileUtilities
+from Utilities import DataBaseUtilities as DB, CommonUtil, FileUtilities
+from FrameWork import MainDriver
 
 
 class RedirectText(object):
@@ -47,11 +45,9 @@ class WizardPage(wx.wizard.PyWizardPage):
     def GetNext(self):
         return self.next
 class MyWizard(wx.wizard.Wizard):
-    """"""
-    #----------------------------------------------------------------------
     def __init__(self):
         """Constructor"""
-        wx.wizard.Wizard.__init__(self, None, -1, "Built_In_Automation Solutionz")
+        wx.wizard.Wizard.__init__(self, None, -1, "Automation Solutionz")
         self.SetPageSize((500, 350))
         self.login_page=self.create_login_page()
         self.project_team_page=self.create_project_team_page()
@@ -360,7 +356,7 @@ class MyWizard(wx.wizard.Wizard):
             project = self.project_name_full
             team = self.team_name_full
             worker=AS(username,password,project,team,server,port,self.selected_dependency,self.product_version)
-            worker.setName("Built_In_Automation Solutionz is running")
+            worker.setName("Automation Solutionz is running")
             worker.start()
 class AS(threading.Thread):
     def __init__(self,username,password,project,team,server,port,dependency,product):
@@ -437,7 +433,7 @@ class AS(threading.Thread):
             #product_version = ' '
             productVersion=product_version
             UpdatedTime = CommonUtil.TimeStamp("string")
-            query="select count(*) from permitted_user_list where user_level='Built_In_Automation' and user_names='%s'"%testerid
+            query="select count(*) from permitted_user_list where user_level='Automation' and user_names='%s'"%testerid
             Conn=DB.ConnectToDataBase(sHost=self.server)
             count=DB.GetData(Conn,query)
             Conn.close()
@@ -445,7 +441,7 @@ class AS(threading.Thread):
                 #insert to the permitted_user_list
                 temp_Dict={
                     'user_names':testerid,
-                    'user_level':'Built_In_Automation',
+                    'user_level':'Automation',
                     'email':testerid+"@machine.com"
                 }
                 Conn=DB.ConnectToDataBase(sHost=self.server)
@@ -552,7 +548,7 @@ class AS(threading.Thread):
             Conn.close()
             #user_list=user_list[0]
             message=",".join(user_list)
-            query="select count(*) from user_info ui, permitted_user_list pul where ui.full_name=pul.user_names and username='%s' and password='%s' and user_level not in ('email','Built_In_Automation', 'Manual') and user_id in (%s)"%(self.username,base64.b64encode(self.password),message)
+            query="select count(*) from user_info ui, permitted_user_list pul where ui.full_name=pul.user_names and username='%s' and password='%s' and user_level not in ('email','Automation', 'Manual') and user_id in (%s)"%(self.username,base64.b64encode(self.password),message)
             Conn=DB.ConnectToDataBase(sHost=self.server)
             count=DB.GetData(Conn,query)
             Conn.close()
