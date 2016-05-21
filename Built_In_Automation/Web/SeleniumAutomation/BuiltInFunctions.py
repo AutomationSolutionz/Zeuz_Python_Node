@@ -341,3 +341,7 @@ def Tear_Down():
         print "%s"%Error_Detail
         return "failed"
 
+
+def get_driver():
+    return sBrowser
+

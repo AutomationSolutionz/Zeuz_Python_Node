@@ -6,6 +6,14 @@ WebDriver_Wait=20
 from selenium.webdriver.support import expected_conditions as EC
 import os,sys
 
+from Built_In_Automation.Web.SeleniumAutomation import BuiltInFunctions as BF
+#Get the initiated global driver
+sBrowser = BF.get_driver()
+global sBrowser
+
+
+
+
 def Click_Element_By_ID(element_name,parent=False):
     try:
         e=Locate_Element_By_ID(element_name,parent)
@@ -50,7 +58,7 @@ def Click_By_Parameter_And_Value(parameter,value, parent=False):
 def Click_Element_By_Name(_name,parent=False):
     try:
         if isinstance(parent, (bool)) == True:
-            allElements = WebDriverWait(config.sBrowser, WebDriver_Wait).until(EC.presence_of_all_elements_located((By.XPATH, "//*[text()='%s']"%_name)))
+            allElements = WebDriverWait(sBrowser, WebDriver_Wait).until(EC.presence_of_all_elements_located((By.XPATH, "//*[text()='%s']"%_name)))
         else:
             allElements = WebDriverWait(parent, WebDriver_Wait).until(EC.presence_of_all_elements_located((By.XPATH, "//*[text()='%s']"%_name)))
         if allElements == []:

@@ -5,6 +5,14 @@ import sys
 import time
 from Built_In_Automation.Web.SeleniumAutomation._locateInteraction import Locate_Element_By_Class,Locate_Element_By_Name
 from Built_In_Automation.Web.SeleniumAutomation._locateInteraction import Locate_Element_By_ID
+
+from Built_In_Automation.Web.SeleniumAutomation import BuiltInFunctions as BF
+#Get the initiated global driver
+sBrowser = BF.get_driver()
+global sBrowser
+
+
+
 def Set_Text_By_ID(element_name,text_value,parent=False):
     try:
         time.sleep(4)

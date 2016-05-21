@@ -9,6 +9,9 @@ from Built_In_Automation.Web.SeleniumAutomation import _textInteraction as t
 from Built_In_Automation.Web.SeleniumAutomation import _clickInteraction as c
 from Utilities import CommonUtil
 
+#Get the initiated global driver
+sBrowser = config.get_driver()
+global sBrowser
 
 
 def dataRetrieval(tag_name,index_list,parent=False):
