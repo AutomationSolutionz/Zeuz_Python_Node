@@ -29,14 +29,14 @@ WebDriver_Wait_Short = 10
 #if local_run is True, no logging will be recorded to the web server.  Only local print will be displayed
 #local_run = True
 local_run = False
-
+global sBrowser
+sBrowser = None
 def Open_Browser(browser):
     sModuleInfo = inspect.stack()[0][3] + " : " + inspect.getmoduleinfo(__file__).name
     try:
         sBrowser.close()
     except:
         True
-    global sBrowser
     try:
         browser = browser.lower()
         if "chrome" in browser:

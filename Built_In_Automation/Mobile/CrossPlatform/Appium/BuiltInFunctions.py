@@ -70,8 +70,8 @@ def launch_and_start_driver(package_name, activity_name):
         desired_caps['deviceName'] = df
         desired_caps['appPackage'] = package_name
         desired_caps['appActivity'] = activity_name
-        driver = webdriver.Remote('http://localhost:4723/wd/hub', desired_caps)
         global driver
+        driver = webdriver.Remote('http://localhost:4723/wd/hub', desired_caps)
         CommonUtil.ExecLog(sModuleInfo,"Launched the app successfully.",1,local_run)
         wait(10)
         return "Passed"
@@ -171,8 +171,8 @@ def install_and_start_driver(app_location):
         #adbOptions.kill_adb_server()
         desired_caps['deviceName'] = df
         desired_caps['app'] = PATH(app_location)
-        driver = webdriver.Remote('http://localhost:4723/wd/hub', desired_caps)
         global driver
+        driver = webdriver.Remote('http://localhost:4723/wd/hub', desired_caps)
         CommonUtil.ExecLog(sModuleInfo,"Installed and launched the app successfully.",1,local_run)
         time.sleep(10)
         driver.implicitly_wait(5)

@@ -10,8 +10,9 @@ from Built_In_Automation.Mobile.CrossPlatform.Appium import BuiltInFunctions as 
 local_run = False
 
 #Get the initiated global driver
-driver = bf.get_driver()
 global driver
+driver = bf.get_driver()
+
 
 def click_element_by_id(_id, parent=False):
     sModuleInfo = inspect.stack()[0][3] + " : " + inspect.getmoduleinfo(__file__).name

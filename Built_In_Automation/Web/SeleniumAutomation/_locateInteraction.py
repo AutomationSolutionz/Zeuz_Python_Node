@@ -8,8 +8,9 @@ import os,sys
 
 from Built_In_Automation.Web.SeleniumAutomation import BuiltInFunctions as BF
 #Get the initiated global driver
-sBrowser = BF.get_driver()
 global sBrowser
+sBrowser = BF.get_driver()
+
 
 
 def Locate_Element_By_TAG_Under_Specific_Element(tag_name,parent=False,multiple=False):

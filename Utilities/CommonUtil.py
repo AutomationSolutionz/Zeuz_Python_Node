@@ -8,6 +8,7 @@ from Utilities import ConfigModule
 import datetime
 from Utilities import FileUtilities as FL
 import uuid
+from Utilities import RequestFormatter
 temp_config=os.path.join(os.path.join(FL.get_home_folder(),os.path.join('Desktop',os.path.join('AutomationLog',ConfigModule.get_config_value('Temp','_file')))))
 
 def to_unicode(obj, encoding='utf-8'):
@@ -40,28 +41,31 @@ def ExecLog(sModuleInfo, sDetails, iLogLevel=1, local_run=False, sStatus=""):
             logger.addHandler(hdlr)
             logger.setLevel(logging.DEBUG)
             
-            conn = DB.ConnectToDataBase()
+            #conn = DB.ConnectToDataBase()
             sDetails = to_unicode(sDetails)
             if iLogLevel == 1:
                 logger.info(sModuleInfo + ' - ' + sDetails + '' + sStatus)
-                DB.InsertNewRecordInToTable(conn, 'execution_log', logid=log_id, modulename=sModuleInfo, details=sDetails, status="Passed", loglevel=iLogLevel)
-        
+                #DB.InsertNewRecordInToTable(conn, 'execution_log', logid=log_id, modulename=sModuleInfo, details=sDetails, status="Passed", loglevel=iLogLevel)
+                status = 'Passed'
             elif iLogLevel == 2:
                 logger.warning(sModuleInfo + ' - ' + sDetails + '' + sStatus)
-                DB.InsertNewRecordInToTable(conn, 'execution_log', logid=log_id, modulename=sModuleInfo, details=sDetails, status="Warning", loglevel=iLogLevel)
+                #DB.InsertNewRecordInToTable(conn, 'execution_log', logid=log_id, modulename=sModuleInfo, details=sDetails, status="Warning", loglevel=iLogLevel)
+                status = 'Warning'
         
             elif iLogLevel == 3:
                 logger.error(sModuleInfo + ' - ' + sDetails + '' + sStatus)
-                DB.InsertNewRecordInToTable(conn, 'execution_log', logid=log_id, modulename=sModuleInfo, details=sDetails, status="Error", loglevel=iLogLevel)
+                #DB.InsertNewRecordInToTable(conn, 'execution_log', logid=log_id, modulename=sModuleInfo, details=sDetails, status="Error", loglevel=iLogLevel)
+                status = 'Error'
         
             elif iLogLevel == 4:
                 logger.info(sModuleInfo + ' - ' + sDetails + '' + sStatus)
-        
+                status = 'Error'
             else:
                 print "unknown log level"
-            
+                status = ''
             logger.removeHandler(hdlr)
-            conn.close()
+            #conn.close()
+            r = RequestFormatter.Get('log_execution',{'logid': log_id, 'modulename': sModuleInfo, 'details': sDetails, 'status': status,'loglevel': iLogLevel})
         else:
             print sModuleInfo, ":", sDetails
     except Exception, e:
