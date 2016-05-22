@@ -30,6 +30,8 @@ WebDriver_Wait_Short = 10
 #local_run = True
 local_run = False
 
+sBrowser = None
+
 def Open_Browser(browser):
     sModuleInfo = inspect.stack()[0][3] + " : " + inspect.getmoduleinfo(__file__).name
     try:
