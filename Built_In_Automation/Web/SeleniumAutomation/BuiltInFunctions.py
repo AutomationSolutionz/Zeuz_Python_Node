@@ -30,6 +30,7 @@ WebDriver_Wait_Short = 10
 local_run = True
 #local_run = False
 
+global sBrowser
 sBrowser = None
 
 def Open_Browser(browser):

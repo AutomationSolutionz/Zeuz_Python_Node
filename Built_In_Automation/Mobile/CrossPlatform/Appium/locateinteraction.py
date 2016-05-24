@@ -9,8 +9,8 @@ from Built_In_Automation.Mobile.CrossPlatform.Appium import BuiltInFunctions as 
 local_run = False
 
 #Get the initiated global driver
-driver = bf.get_driver()
 global driver
+driver = bf.get_driver()
 
 
 def locate_element_by_id(_id, parent=False):

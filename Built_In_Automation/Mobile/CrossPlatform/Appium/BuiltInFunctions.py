@@ -16,6 +16,7 @@ PATH = lambda p: os.path.abspath(
 #local_run = True
 local_run = False
 
+global driver
 driver = None
 
 

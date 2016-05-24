@@ -11,8 +11,8 @@ local_run = False
 
 
 #Get the initiated global driver
-driver = bf.get_driver()
 global driver
+driver = bf.get_driver()
 
 
 
