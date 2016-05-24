@@ -4,10 +4,10 @@ from Utilities import CommonUtil
 from Built_In_Automation.Web.SeleniumAutomation import _locateInteraction
 from Built_In_Automation.Web.SeleniumAutomation import _clickInteraction
 from Utilities import CompareModule
-
+from Built_In_Automation.Web.SeleniumAutomation import BuiltInFunctions as bf
 #if local_run is True, no logging will be recorded to the web server.  Only local print will be displayed
-#local_run = True
-local_run = False
+local_run = True
+#local_run = False
 
 
 def selectCar(first_data_set):
@@ -40,7 +40,6 @@ def selectCar(first_data_set):
         CommonUtil.ExecLog(sModuleInfo, "Unable to select car. %s"%Error_Detail, 3,local_run)
         return "failed"
     
-    
 def select_car_base(first_data_set):
     sModuleInfo = inspect.stack()[0][3] + " : " + inspect.getmoduleinfo(__file__).name
     try:
@@ -64,7 +63,6 @@ def select_car_base(first_data_set):
         CommonUtil.ExecLog(sModuleInfo, "Unable to select car. %s"%Error_Detail, 3,local_run)
         return "failed"
     
-    
 def data_verify(first_data_set):
     sModuleInfo = inspect.stack()[0][3] + " : " + inspect.getmoduleinfo(__file__).name
     try:
@@ -83,9 +81,6 @@ def data_verify(first_data_set):
         CommonUtil.ExecLog(sModuleInfo, "Unable to select car. %s"%Error_Detail, 3,local_run)
         return "failed"
     
-    
-    
-
 def select_base_car(car_data):
     sModuleInfo = inspect.stack()[0][3] + " : " + inspect.getmoduleinfo(__file__).name
     try:
@@ -235,7 +230,7 @@ def lock_unlock_car(car_num,mode=False):
     sModuleInfo = inspect.stack()[0][3] + " : " + inspect.getmoduleinfo(__file__).name
     try:
         car_lock_button='lock-button-'+str(car_num-1)
-        lockButton=_locateInteraction.Locate_Element_By_ID(car_lock_button)
+        lockButton= bf.Get_Element('id', car_lock_button)
         CommonUtil.ExecLog(sModuleInfo,"Lock button located",1,local_run)
         if mode:
             #will be locked.so check for that locked is not present in there.
