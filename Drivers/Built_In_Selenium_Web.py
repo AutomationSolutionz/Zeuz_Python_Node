@@ -9,7 +9,7 @@ import inspect
 from Utilities import CommonUtil
 from Built_In_Automation.Web.SeleniumAutomation import BuiltInFunctions
 #if local_run is True, no logging will be recorded to the web server.  Only local print will be displayed
-local_run = True
+local_run = False
 #local_run = False
 
 #for api to work, driver needs run_params and dic is single 
