@@ -70,7 +70,7 @@ def install_application(dependency,run_time_params,step_data,file_attachment,tem
         exc_type, exc_obj, exc_tb = sys.exc_info()
         fname = os.path.split(exc_tb.tb_frame.f_code.co_filename)[1]
         Error_Detail = ((str(exc_type).replace("type ", "Error Type: ")) + ";" +  "Error Message: " + str(exc_obj) +";" + "File Name: " + fname + ";" + "Line: "+ str(exc_tb.tb_lineno))
-        CommonUtil.ExecLog(sModuleInfo, "Unable to launch app: Error:%s" %( Error_Detail), 3,local_run)
+        CommonUtil.ExecLog(sModuleInfo, "Unable to install app: Error:%s" %( Error_Detail), 3,local_run)
         temp_q.put("Failed")
         return "failed"
     
@@ -89,7 +89,7 @@ def remove_application(dependency,run_time_params,step_data,file_attachment,temp
         exc_type, exc_obj, exc_tb = sys.exc_info()
         fname = os.path.split(exc_tb.tb_frame.f_code.co_filename)[1]
         Error_Detail = ((str(exc_type).replace("type ", "Error Type: ")) + ";" +  "Error Message: " + str(exc_obj) +";" + "File Name: " + fname + ";" + "Line: "+ str(exc_tb.tb_lineno))
-        CommonUtil.ExecLog(sModuleInfo, "Unable to launch app: Error:%s" %( Error_Detail), 3,local_run)
+        CommonUtil.ExecLog(sModuleInfo, "Unable to remove app: Error:%s" %( Error_Detail), 3,local_run)
         temp_q.put("Failed")
         return "failed"
 
