@@ -27,16 +27,18 @@ global WebDriver_Wait_Short
 WebDriver_Wait_Short = 10
 
 #if local_run is True, no logging will be recorded to the web server.  Only local print will be displayed
-#local_run = True
-local_run = False
-global sBrowser
+local_run = True
+#local_run = False
+
 sBrowser = None
+
 def Open_Browser(browser):
     sModuleInfo = inspect.stack()[0][3] + " : " + inspect.getmoduleinfo(__file__).name
     try:
         sBrowser.close()
     except:
         True
+    global sBrowser
     try:
         browser = browser.lower()
         if "chrome" in browser:
@@ -304,21 +306,29 @@ def Get_Parent_Element(parameter,value):
         CommonUtil.ExecLog(sModuleInfo, "Unable to get the parent element.  Error: %s"%(Error_Detail), 3,local_run)
         return "failed"  
 
-def Get_Element(parameter,value):
+def Get_Element(parameter,value,parent=False):
     sModuleInfo = inspect.stack()[0][3] + " : " + inspect.getmoduleinfo(__file__).name
     try:
-        
-        CommonUtil.ExecLog(sModuleInfo, "Trying to find element by parameter:%s and value:%s"%(parameter,value), 1,local_run)
-        #first locate the element that we are dealing with...
-        try:
-            Element = WebDriverWait(sBrowser, WebDriver_Wait).until(EC.presence_of_element_located((By.XPATH, "//*[@%s='%s']"%(parameter,value))))
-            CommonUtil.ExecLog(sModuleInfo, "We found the element of your given parameter and value", 1,local_run)
-            return Element
-        except:
-            CommonUtil.TakeScreenShot(sModuleInfo, local_run)
-            CommonUtil.ExecLog(sModuleInfo, "Could not locate the element to being with.. please check your element properties parameter:%s value:%s"%(parameter,value), 3,local_run)
-            return "failed"  
- 
+        if isinstance(parent, (bool)) == True:
+            All_Elements = WebDriverWait(sBrowser, WebDriver_Wait).until(EC.presence_of_all_elements_located((By.XPATH, "//*[@%s='%s']"%(parameter,value))))
+        else:
+            All_Elements = WebDriverWait(parent, WebDriver_Wait).until(EC.presence_of_all_elements_located((By.XPATH, "//*[@%s='%s']"%(parameter,value))))
+        if All_Elements == []:        
+            CommonUtil.ExecLog(sModuleInfo, "Could not find your element by parameter:%s and value:%s..."%(parameter,value), 3,local_run)
+            return "failed"
+        else:
+            if len(All_Elements) > 1:
+                CommonUtil.ExecLog(sModuleInfo, "Found more than one element and will use the first one.  ** if fails, try providing parent element** ", 2, local_run)
+                CommonUtil.TakeScreenShot(sModuleInfo, local_run)
+                if (WebDriverWait(All_Elements[0], WebDriver_Wait).until(lambda driver : All_Elements[0].is_displayed())) == True:
+                    Element = All_Elements[0]
+                    CommonUtil.ExecLog(sModuleInfo, "Using the *first* element to set the text", 2,local_run)
+            else:
+                CommonUtil.ExecLog(sModuleInfo, "Found one element and will set the text on that", 1, local_run)
+                if (WebDriverWait(All_Elements[0], WebDriver_Wait).until(lambda driver : All_Elements[0].is_displayed())) == True:
+                    Element = All_Elements[0]
+        CommonUtil.ExecLog(sModuleInfo, "We found the element of your given parameter and value", 1,local_run)
+        return Element
     except Exception, e:
         exc_type, exc_obj, exc_tb = sys.exc_info()        
         fname = os.path.split(exc_tb.tb_frame.f_code.co_filename)[1]
