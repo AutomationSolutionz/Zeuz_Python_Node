@@ -32,8 +32,8 @@ local_run = True
 
 global sBrowser
 sBrowser = None
-
 def Open_Browser(browser):
+    global sBrowser
     sModuleInfo = inspect.stack()[0][3] + " : " + inspect.getmoduleinfo(__file__).name
     try:
         sBrowser.close()
