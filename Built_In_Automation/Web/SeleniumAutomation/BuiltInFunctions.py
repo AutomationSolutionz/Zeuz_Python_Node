@@ -1,3 +1,4 @@
+
 # -*- coding: cp1252 -*-
 '''
 Created on May 15, 2016
@@ -27,8 +28,8 @@ global WebDriver_Wait_Short
 WebDriver_Wait_Short = 10
 
 #if local_run is True, no logging will be recorded to the web server.  Only local print will be displayed
-local_run = True
-#local_run = False
+#local_run = True
+local_run = False
 
 global sBrowser
 sBrowser = None
@@ -102,6 +103,8 @@ def Go_To_Link(link, page_title=False):
         return "failed"
 
 def Login_To_Application(user_name,password,user_element,password_element,button_to_click,logged_name=False):
+    #logged name needs update
+    
     sModuleInfo = inspect.stack()[0][3] + " : " + inspect.getmoduleinfo(__file__).name
     try:
         CommonUtil.TakeScreenShot(sModuleInfo, local_run)
@@ -216,6 +219,11 @@ def Click_Element_By_ID(_id,parent=False):
  
 
 def Set_Text_Field_Value_By_ID(_id,value):
+    
+    '''
+    
+    should be deleted
+    '''
     sModuleInfo = inspect.stack()[0][3] + " : " + inspect.getmoduleinfo(__file__).name
     try:
         CommonUtil.TakeScreenShot(sModuleInfo, local_run)
@@ -279,7 +287,42 @@ def Set_Text_Field_By_Parameter_And_Value(parameter,value,text,parent=False):
         CommonUtil.TakeScreenShot(sModuleInfo, local_run)
         return "failed"
 
-def Get_Parent_Element(parameter,value):
+def Get_Parent_Element(parameter,value,index=0):
+    '''
+    need improvmenets.. we need to do this by using all elements concept 
+    '''
+    sModuleInfo = inspect.stack()[0][3] + " : " + inspect.getmoduleinfo(__file__).name
+    try:
+        CommonUtil.ExecLog(sModuleInfo, "Trying to find element that we are trying to find parents of", 1,local_run)
+        #first locate the element that we are dealing with...
+        try:
+            Element = WebDriverWait(sBrowser, WebDriver_Wait).until(EC.presence_of_element_located((By.XPATH, "//*[@%s='%s']"%(parameter,value))))
+        except:
+            CommonUtil.TakeScreenShot(sModuleInfo, local_run)
+            CommonUtil.ExecLog(sModuleInfo, "Could not locate the element to being with.. please check your element properties parameter:%s value:%s"%(parameter,value), 3,local_run)
+            return "failed"  
+        #Now that we have located the element we simply find the parent and return the parent element
+        try:
+            parent = WebDriverWait(Element, WebDriver_Wait).until(EC.presence_of_element_located((By.XPATH, "..")))
+            CommonUtil.ExecLog(sModuleInfo, "We found the parent element of your given parameter and value", 3,local_run)
+            return parent
+        except:
+            CommonUtil.TakeScreenShot(sModuleInfo, local_run)
+            CommonUtil.ExecLog(sModuleInfo, "Could not locate the element to being with.. please check your element properties parameter:%s value:%s"%(parameter,value), 3,local_run)
+            return "failed"              
+
+    except Exception, e:
+        exc_type, exc_obj, exc_tb = sys.exc_info()        
+        fname = os.path.split(exc_tb.tb_frame.f_code.co_filename)[1]
+        Error_Detail = ((str(exc_type).replace("type ", "Error Type: ")) + ";" +  "Error Message: " + str(exc_obj) +";" + "File Name: " + fname + ";" + "Line: "+ str(exc_tb.tb_lineno))
+        CommonUtil.ExecLog(sModuleInfo, "Unable to get the parent element.  Error: %s"%(Error_Detail), 3,local_run)
+        return "failed"  
+
+def Get_Child_Elements(parameter,value,parent=False):
+    
+    '''
+    Need to write code.  Should return a list of child elements.  
+    '''
     sModuleInfo = inspect.stack()[0][3] + " : " + inspect.getmoduleinfo(__file__).name
     try:
         CommonUtil.ExecLog(sModuleInfo, "Trying to find element that we are trying to find parents of", 1,local_run)
@@ -337,6 +380,41 @@ def Get_Element(parameter,value,parent=False):
         CommonUtil.ExecLog(sModuleInfo, "Unable to get the parent element.  Error: %s"%(Error_Detail), 3,local_run)
         return "failed"  
     
+
+
+
+def Get_Element_With_Reference(element_parameter,element_value,reference_parameter,reference_value,child_parent):
+    '''
+    need coding...
+    
+    The purpose of this function is to minimize finding duplicate element in the easiest way.. 
+    a lot of time we get duplicate elements with matching condition.
+    If we can actually provide some child/parent information, then the permutation becomes a lot more harder to duplicate.
+    
+    
+    
+    '''
+    
+    sModuleInfo = inspect.stack()[0][3] + " : " + inspect.getmoduleinfo(__file__).name
+    try:
+        
+        CommonUtil.ExecLog(sModuleInfo, "Trying to find element by parameter:%s and value:%s"%(element_parameter,element_value), 1,local_run)
+        #first locate the element that we are dealing with...
+        try:
+            Element = WebDriverWait(sBrowser, WebDriver_Wait).until(EC.presence_of_element_located((By.XPATH, "//*[@%s='%s']"%(element_parameter,element_value))))
+            CommonUtil.ExecLog(sModuleInfo, "We found the element of your given parameter and value", 1,local_run)
+            return Element
+        except:
+            CommonUtil.TakeScreenShot(sModuleInfo, local_run)
+            CommonUtil.ExecLog(sModuleInfo, "Could not locate the element to being with.. please check your element properties parameter:%s value:%s"%(element_parameter,element_value), 3,local_run)
+            return "failed"  
+ 
+    except Exception, e:
+        exc_type, exc_obj, exc_tb = sys.exc_info()        
+        fname = os.path.split(exc_tb.tb_frame.f_code.co_filename)[1]
+        Error_Detail = ((str(exc_type).replace("type ", "Error Type: ")) + ";" +  "Error Message: " + str(exc_obj) +";" + "File Name: " + fname + ";" + "Line: "+ str(exc_tb.tb_lineno))
+        CommonUtil.ExecLog(sModuleInfo, "Unable to get the parent element.  Error: %s"%(Error_Detail), 3,local_run)
+        return "failed"      
     
 def Tear_Down():
     sModuleInfo = inspect.stack()[0][3] + " : " + inspect.getmoduleinfo(__file__).name
@@ -351,7 +429,6 @@ def Tear_Down():
         Error_Detail = ((str(exc_type).replace("type ", "Error Type: ")) + ";" +  "Error Message: " + str(exc_obj) +";" + "File Name: " + fname + ";" + "Line: "+ str(exc_tb.tb_lineno))
         print "%s"%Error_Detail
         return "failed"
-
 
 def get_driver():
     return sBrowser
