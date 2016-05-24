@@ -292,6 +292,10 @@ def main():
                     CommonUtil.ExecLog(sModuleInfo, "%s : Test Step Failed Failure" % current_step_name, 3)
                     after_execution_dict.update({'status':FAILED_TAG})
                     if not test_case_continue:
+                        test_step_status_index = RequestFormatter.Get('test_step_results_update_returns_index_api',{'run_id': run_id, 'tc_id': test_case,'step_id': current_step_id,'test_step_sequence': current_step_sequence,'options': after_execution_dict})
+                        run_cancelled = RequestFormatter.Get('get_status_of_a_run_api', {'run_id': run_id})
+                        if run_cancelled == 'Cancelled':
+                            CommonUtil.ExecLog(sModuleInfo,"Test Run status is Cancelled. Exiting the current Test Case...%s" % test_case,2)
                         break
                 elif sStepResult.upper() == BLOCKED_TAG.upper():
                     # Step is Blocked, Block the test step and test case. go to next test case
