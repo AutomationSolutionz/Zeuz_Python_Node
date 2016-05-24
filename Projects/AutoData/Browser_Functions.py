@@ -165,7 +165,7 @@ def select_car(car_data,index):
 
                 if _i in [0,1,2,3]:
                     _clickInteraction.Click_Element_By_Name(selected_data,all_divs[1])
-
+                    time.sleep(3)
                 if _i==0:
                     CommonUtil.ExecLog(sModuleInfo, "Selected the year of car %d, %s" %(index,selected_data), 1, local_run)
                 elif _i==1:

@@ -8,8 +8,8 @@ from Projects.AutoData import Browser_Functions as BF
 #from Built_In_Automation.Web.SeleniumAutomation import locateInteraction
 from Utilities import CompareModule
 #if local_run is True, no logging will be recorded to the web server.  Only local print will be displayed
-#local_run = True
-local_run = False
+local_run = True
+# local_run = False
 
 
 def car_selection(dependency,run_time_params,step_data,file_attachment, temp_q):

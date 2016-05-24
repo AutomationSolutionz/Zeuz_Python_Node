@@ -8,9 +8,9 @@ import os,sys
 
 from Built_In_Automation.Web.SeleniumAutomation import BuiltInFunctions as BF
 #Get the initiated global driver
-global sBrowser
-sBrowser = BF.get_driver()
 
+sBrowser = BF.get_driver()
+global sBrowser
 
 
 
