@@ -249,10 +249,7 @@ def single_dataset_compare(expected_copy,actual_copy):
     missing_group_data=list(set(expected_group_data) - set(actual_group_data))
     extra_group_data=list(set(actual_group_data) - set(expected_group_data))
     
-    matching_group_record_label=[]
-    for each in matching_group_data:
-        if each[0] not in matching_group_record_label:
-            matching_group_record_label.append(each[0])
+    matching_group_record_label=list(set([x[0] for x in matching_group_data]))
     final=[]
     for each in matching_group_record_label:
         temp_label=each
@@ -263,11 +260,8 @@ def single_dataset_compare(expected_copy,actual_copy):
         final.append((temp_label,temp))
     matching_group_data=final
     
-    missing_group_data_label=[]
-    for each in missing_group_data:
-        if each[0] not in missing_group_data_label:
-            missing_group_data_label.append(each[0])
-    
+    missing_group_data_label=list(set([x[0] for x in missing_group_data]))
+
     final_missing_group_data=[]
     for each in missing_group_data_label:
         temp_label=each
@@ -277,10 +271,8 @@ def single_dataset_compare(expected_copy,actual_copy):
                 temp.append((eachitem[1],eachitem[2]))
         final_missing_group_data.append((temp_label,temp))
     
-    extra_group_data_label=[]
-    for each in extra_group_data:
-        if each[0] not in extra_group_data_label:
-            extra_group_data_label.append(each[0])
+    extra_group_data_label=list(set([x[0] for x in extra_group_data]))
+
     final_extra_group_data=[]        
     for each in extra_group_data_label:
         temp_label=each
@@ -300,17 +292,52 @@ def single_dataset_compare(expected_copy,actual_copy):
                 label=element[0]
                 temp_expected=[]
                 temp_actual=[]
-                for i in range(len(element[1])-1,-1,-1):
-                    for j in range(len(data_to_compare[1])-1,-1,-1):
-                        if element[1][i][0]==data_to_compare[1][j][0]:
-                            temp_expected.append(element[1][i])
-                            temp_actual.append(data_to_compare[1][j])
-                            element[1].pop(i)
-                            data_to_compare[1].pop(j)
-                expected_tuple=[label,temp_expected]
-                actual_tuple=[label,temp_actual]
-                group_data_not_matching.append((tuple(expected_tuple),tuple(actual_tuple)))
-    
+
+                _key_list = [x[0] for x in element[1]]
+
+                for e in _key_list:
+                    _e = filter(lambda x:x[0]==e,element[1])
+                    _a = filter(lambda x:x[0]==e,data_to_compare[1])
+                    if _e and _a:
+                        temp_expected.append(_e[0])
+                        temp_actual.append(_a[0])
+
+                expected_tuple = [label, temp_expected]
+                actual_tuple = [label, temp_actual]
+                group_data_not_matching.append((tuple(expected_tuple), tuple(actual_tuple)))
+
+                # for i in range(len(element[1])-1,-1,-1):
+                #     for j in range(len(data_to_compare[1])-1,-1,-1):
+                #         if element[1][i][0]==data_to_compare[1][j][0]:
+                #             temp_expected.append(element[1][i])
+                #             temp_actual.append(data_to_compare[1][j])
+                #             element[1].pop(i)
+                #             data_to_compare[1].pop(j)
+                # expected_tuple=[label,temp_expected]
+                # actual_tuple=[label,temp_actual]
+                # group_data_not_matching.append((tuple(expected_tuple),tuple(actual_tuple)))
+    _final_missing=[]
+    _final_extra = []
+    for e in group_data_not_matching:
+        #missing data remove
+        _e = filter(lambda x:x[0]==e[0][0],final_missing_group_data)
+        _a = filter(lambda x:x[0]==e[0][0],final_extra_group_data)
+
+        if _e:
+            for i in e[0][1]:
+                for each in final_missing_group_data:
+                    f= filter(lambda x:x[0]==i[0], each[1])
+                    if f:
+                        each[1].remove(f[0])
+        if _a:
+            for i in e[1][1]:
+                for each in final_extra_group_data:
+                    f = filter(lambda x: x[0] == i[0], each[1])
+                    if f:
+                        each[1].remove(f[0])
+
+    final_missing_group_data = filter(lambda x:len(x[1])>0,final_missing_group_data)
+    final_extra_group_data = filter(lambda x:len(x[1])>0,final_extra_group_data)
     if len(missing_tuple_data)>0 or len(extra_tuple_data)>0 or len(final_missing_group_data)>0 or len(final_extra_group_data) or len(group_data_not_matching)>0:
         status=3
     else:
@@ -389,74 +416,90 @@ def find_keylist(list_element):
 def main():
     oCompare=CompareModule()
     
-    expected_list=[
-                   [
-                    ('Address', 'hall', 'titumir', False, False),
-                    ('Address', 'district', 'cox\'s bazar', False, False),
-                    ('name', '', 'shetu', True, False), 
-                    ('roll', '', '0905011', True, False),
-                    ('Academic', 'dept', 'cse', False, False),
-                    ('Academic', 'cg', '3.25', False, False)
-                    ],
-                   [
-                    ('name', '', 'shetu', True, False), 
-                    ('roll', '', '0905011', True, False),
-                    ('Academic', 'dept', 'mme', False, False),
-                    ],
-                   [
-                    ('Address', 'hall', 'titumir', False, False),
-                    ('Address', 'district', 'cox\'s bazar', False, False),
-                    ('name', '', 'minar', True, False), 
-                    ('roll', '', '09050105', True, False),
-                    ('Academic', 'dept', 'cse', False, False),
-                    ('Academic', 'cg', '3.25', False, False)
-                    ],
-                   [
-                    ('name', '', 'shetu', True, False), 
-                    ('roll', '', '0905011', True, False),
-                    ('Academic', 'dept', 'eee', False, False),
-                    ],
-                   [
-                    ('Address', 'hall', 'titumir', False, False),
-                    ('Address', 'district', 'cox\'s bazar', False, False),
-                    ('name', '', 'Saad', True, False), 
-                    ('roll', '', '09050105', False, False),
-                    ('Academic', 'dept', 'cse', False, False),
-                    ('Academic', 'cg', '3.25', False, False)
-                    ]
-                   ]
-    actual_list=[
-                 [
-                    ('Address', 'hall', 'titumir', False, False),
-                    ('Address', 'district', 'cox\'s bazar', False, False),
-                    ('name', '', 'shetu', True, False), 
-                    ('roll', '', '0905011', True, False),
-                    ('Academic', 'dept', 'cse', False, False),
-                    ('Academic', 'cg', '3.25', False, False)
-                    ],
-                 [
-                    ('Address', 'hall', 'titumir', False, False),
-                    ('Address', 'district', 'cox\'s bazar', False, False),
-                    ('name', '', 'hamid', False, False), 
-                    ('roll', '', '09050105', True, False),
-                    ('Academic', 'dept', 'cse', False, False),
-                    ('Academic', 'cg', '3.25', False, False)
-                    ],
-                 [
-                    ('Address', 'hall', 'titumir', False, False),
-                    ('Address', 'district', 'cox\'s bazar', False, False),
-                    ('name', '', 'Sajjad', True, False), 
-                    ('roll', '', '09050105', True, False),
-                    ('Academic', 'dept', 'cse', False, False),
-                    ('Academic', 'cg', '3.25', False, False)
-                    ],
-                 [
-                    ('name', '', 'Sajjad', True, False), 
-                    ('roll', '', '09050105', True, False),
-                ]
-                ]
-    keyword_list=['name','roll']
-    status=oCompare.compare(expected_list,actual_list,keyword_list)
+    # expected_list=[
+    #                [
+    #                 ('Address', 'hall', 'titumir', False, False),
+    #                 ('Address', 'district', 'cox\'s bazar', False, False),
+    #                 ('name', '', 'shetu', True, False),
+    #                 ('roll', '', '0905011', True, False),
+    #                 ('Academic', 'dept', 'me', False, False),
+    #                 ('Academic', 'cg', '3.25', False, False)
+    #                 ],
+    #                [
+    #                 ('name', '', 'shetu', True, False),
+    #                 ('roll', '', '0905011', True, False),
+    #                 ('Academic', 'dept', 'mme', False, False),
+    #                 ],
+    #                [
+    #                 ('Address', 'hall', 'titumir', False, False),
+    #                 ('Address', 'district', 'cox\'s bazar', False, False),
+    #                 ('name', '', 'minar', True, False),
+    #                 ('roll', '', '09050105', True, False),
+    #                 ('Academic', 'dept', 'cse', False, False),
+    #                 ('Academic', 'cg', '3.25', False, False)
+    #                 ],
+    #                [
+    #                 ('name', '', 'shetu', True, False),
+    #                 ('roll', '', '0905011', True, False),
+    #                 ('Academic', 'dept', 'eee', False, False),
+    #                 ],
+    #                [
+    #                 ('Address', 'hall', 'titumir', False, False),
+    #                 ('Address', 'district', 'cox\'s bazar', False, False),
+    #                 ('name', '', 'Saad', True, False),
+    #                 ('roll', '', '09050105', False, False),
+    #                 ('Academic', 'dept', 'cse', False, False),
+    #                 ('Academic', 'cg', '3.25', False, False)
+    #                 ]
+    #                ]
+    # actual_list=[
+    #              [
+    #                 ('Address', 'hall', 'titumir', False, False),
+    #                 ('Address', 'district', 'cox\'s bazar', False, False),
+    #                 ('name', '', 'shetu', True, False),
+    #                 ('roll', '', '0905011', True, False),
+    #                 ('Academic', 'dept', 'cse', False, False),
+    #                 ('Academic', 'cg', '3.25', False, False)
+    #                 ],
+    #              [
+    #                 ('Address', 'hall', 'titumir', False, False),
+    #                 ('Address', 'district', 'cox\'s bazar', False, False),
+    #                 ('name', '', 'hamid', False, False),
+    #                 ('roll', '', '09050105', True, False),
+    #                 ('Academic', 'dept', 'cse', False, False),
+    #                 ('Academic', 'cg', '3.25', False, False)
+    #                 ],
+    #              [
+    #                 ('Address', 'hall', 'titumir', False, False),
+    #                 ('Address', 'district', 'cox\'s bazar', False, False),
+    #                 ('name', '', 'Sajjad', True, False),
+    #                 ('roll', '', '09050105', True, False),
+    #                 ('Academic', 'dept', 'cse', False, False),
+    #                 ('Academic', 'cg', '3.25', False, False)
+    #                 ],
+    #              [
+    #                 ('name', '', 'Sajjad', True, False),
+    #                 ('roll', '', '09050105', True, False),
+    #             ]
+    #             ]
+    # keyword_list=['name','roll']
+    expected_list=[[('Starting from*', 'car1', '101,770', False, False),
+ ('Starting from*', 'car2', '151,100', False, False),
+ ('Starting from*', 'car3', '118,900', False, False),
+ ('Starting from*', 'car4', '60,000', False, False),
+ ('Destination Charge', 'car1', '1,595', False, False),
+ ('Destination Charge', 'car2', '995', False, False),
+ ('Destination Charge', 'car3', '1,250', False, False),
+ ('Destination Charge', 'car4', '995', False, False)]]
+    actual_list = [[(u'Starting from*', 'car1', u'$101,770', False, False),
+ (u'Starting from*', 'car2', u'$20,995', False, False),
+ (u'Starting from*', 'car3', u'$20,995', False, False),
+ (u'Starting from*', 'car4', u'$20,995', False, False),
+ (u'Destination Charge', 'car1', u'$1,595', False, False),
+ (u'Destination Charge', 'car2', u'$810', False, False),
+ (u'Destination Charge', 'car3', u'$810', False, False),
+ (u'Destination Charge', 'car4', u'$810', False, False)]]
+    status=oCompare.compare(expected_list,actual_list)
     print status
 if __name__=='__main__':
     main()

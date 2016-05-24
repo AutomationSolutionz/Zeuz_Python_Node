@@ -69,7 +69,7 @@ def data_verify(first_data_set):
         tag_list=filter(lambda x:x[0]=='tag',first_data_set)
         rest_data=filter(lambda x:x[0]!='tag',first_data_set)
         total_list=read_data_from_page(tag_list)
-        oCompare=CompareModule()
+        oCompare=CompareModule.CompareModule()
         expected_list=CompareModule.make_single_data_set_compatible(rest_data)
         actual_list=CompareModule.make_single_data_set_compatible(total_list)
         status=oCompare.compare([expected_list],[actual_list])
