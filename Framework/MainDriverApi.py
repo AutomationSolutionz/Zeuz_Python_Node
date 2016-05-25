@@ -219,7 +219,7 @@ def main():
                 }
                 test_step_status_index=RequestFormatter.Get('test_step_results_update_returns_index_api',{'run_id':run_id,'tc_id':test_case,'step_id':current_step_id,'test_step_sequence':current_step_sequence,'options':Dict})
                 test_steps_data=RequestFormatter.Get('get_test_step_data_based_on_test_case_run_id_api',{'run_id':run_id,'test_case':test_case,'step_sequence':current_step_sequence,'step_iteration':StepSeq})
-                CommonUtil.ExecLog(sModuleInfo, "steps data for #%d: %s" % (StepSeq, str(test_steps_data)), 1)
+                CommonUtil.ExecLog(sModuleInfo, "steps data for Step(%d): %s" % (StepSeq, str(test_steps_data)), 1)
                 step_time = filter(lambda x:x[0]=='estimated' and x[1]=='time',step_meta_data)
                 if step_time:
                     step_time=int(step_time[0][2])
