@@ -13,7 +13,6 @@ global driver
 driver = bf.get_driver()
 
 
-
 def locate_element_by_id(_id, parent=False):
     sModuleInfo = inspect.stack()[0][3] + " : " + inspect.getmoduleinfo(__file__).name
     try:
