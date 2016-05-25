@@ -17,6 +17,9 @@ def to_unicode(obj, encoding='utf-8'):
             obj = unicode(obj, encoding)
         return obj
 
+def encode_to_exclude_hash_symbol(sDetails):
+    return sDetails.replace('#', '{{|1|}}')
+
 def ExecLog(sModuleInfo, sDetails, iLogLevel=1, local_run=False, sStatus=""):
     try:
         if local_run == False:
@@ -42,7 +45,7 @@ def ExecLog(sModuleInfo, sDetails, iLogLevel=1, local_run=False, sStatus=""):
             logger.setLevel(logging.DEBUG)
             
             #conn = DB.ConnectToDataBase()
-            sDetails = to_unicode(sDetails)
+            sDetails = encode_to_exclude_hash_symbol(to_unicode(sDetails))
             if iLogLevel == 1:
                 logger.info(sModuleInfo + ' - ' + sDetails + '' + sStatus)
                 #DB.InsertNewRecordInToTable(conn, 'execution_log', logid=log_id, modulename=sModuleInfo, details=sDetails, status="Passed", loglevel=iLogLevel)
