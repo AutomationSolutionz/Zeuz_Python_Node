@@ -16,9 +16,6 @@ PATH = lambda p: os.path.abspath(
 #local_run = True
 local_run = False
 
-global driver
-driver = None
-
 
 def launch(package_name,activity_name):
     sModuleInfo = inspect.stack()[0][3] + " : " + inspect.getmoduleinfo(__file__).name
@@ -71,8 +68,8 @@ def launch_and_start_driver(package_name, activity_name):
         desired_caps['deviceName'] = df
         desired_caps['appPackage'] = package_name
         desired_caps['appActivity'] = activity_name
-        global driver
         driver = webdriver.Remote('http://localhost:4723/wd/hub', desired_caps)
+        global driver
         CommonUtil.ExecLog(sModuleInfo,"Launched the app successfully.",1,local_run)
         wait(10)
         return "Passed"
@@ -172,8 +169,8 @@ def install_and_start_driver(app_location):
         #adbOptions.kill_adb_server()
         desired_caps['deviceName'] = df
         desired_caps['app'] = PATH(app_location)
-        global driver
         driver = webdriver.Remote('http://localhost:4723/wd/hub', desired_caps)
+        global driver
         CommonUtil.ExecLog(sModuleInfo,"Installed and launched the app successfully.",1,local_run)
         time.sleep(10)
         driver.implicitly_wait(5)
@@ -289,7 +286,3 @@ def remove(app_package):
         return "failed"
 
 
-def get_driver():
-    return driver
-
-    
