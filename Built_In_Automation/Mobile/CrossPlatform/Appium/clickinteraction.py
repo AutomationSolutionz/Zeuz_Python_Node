@@ -1,24 +1,18 @@
 
-from appium import webdriver
 import os , sys, inspect
 from Utilities import CommonUtil
 from Built_In_Automation.Mobile.CrossPlatform.Appium import locateinteraction as li
-from Built_In_Automation.Mobile.CrossPlatform.Appium import BuiltInFunctions as bf
 
 #if local_run is True, no logging will be recorded to the web server.  Only local print will be displayed
 #local_run = True
 local_run = False
 
-#Get the initiated global driver
-global driver
-driver = bf.get_driver()
 
-
-def click_element_by_id(_id, parent=False):
+def click_element_by_id(driver, _id):
     sModuleInfo = inspect.stack()[0][3] + " : " + inspect.getmoduleinfo(__file__).name
     try:
         CommonUtil.ExecLog(sModuleInfo,"Trying to click on element by id: %s"%_id,1,local_run)
-        elem = li.locate_element_by_id(_id, parent)
+        elem = li.locate_element_by_id(driver, _id)
         elem.click()
         CommonUtil.ExecLog(sModuleInfo,"Clicked on element successfully",1,local_run)
         return "Passed"
@@ -29,11 +23,11 @@ def click_element_by_id(_id, parent=False):
         CommonUtil.ExecLog(sModuleInfo, "Unable to click on the element. %s"%Error_Detail, 3,local_run)
         return "failed"
     
-def click_element_by_name(_name, parent=False):
+def click_element_by_name(driver, _name):
     sModuleInfo = inspect.stack()[0][3] + " : " + inspect.getmoduleinfo(__file__).name
     try:
-        CommonUtil.ExecLog(sModuleInfo,"Trying to click on element by name: %s"%_name,1,local_run)
-        elem = li.locate_element_by_name(_name, parent)
+        CommonUtil.ExecLog(sModuleInfo,"Trying to click on element by class name: %s"%_name,1,local_run)
+        elem = li.locate_element_by_name(driver, _name)
         elem.click()
         CommonUtil.ExecLog(sModuleInfo,"Clicked on element successfully",1,local_run)
         return "Passed"
@@ -44,11 +38,11 @@ def click_element_by_name(_name, parent=False):
         CommonUtil.ExecLog(sModuleInfo, "Unable to click on the element. %s"%Error_Detail, 3,local_run)
         return "failed"
     
-def click_element_by_class_name(_class, parent=False):
+def click_element_by_class_name(driver, _class):
     sModuleInfo = inspect.stack()[0][3] + " : " + inspect.getmoduleinfo(__file__).name
     try:
         CommonUtil.ExecLog(sModuleInfo,"Trying to click on element by class: %s"%_class,1,local_run)
-        elem = li.locate_element_by_class_name(_class, parent)
+        elem = li.locate_element_by_class_name(driver, _class)
         elem.click()
         CommonUtil.ExecLog(sModuleInfo,"Clicked on element successfully",1,local_run)
         return "Passed"
@@ -59,11 +53,11 @@ def click_element_by_class_name(_class, parent=False):
         CommonUtil.ExecLog(sModuleInfo, "Unable to click on the element. %s"%Error_Detail, 3,local_run)
         return "failed"
     
-def click_element_by_xpath(_classpath, parent=False):
+def click_element_by_xpath(driver, _classpath):
     sModuleInfo = inspect.stack()[0][3] + " : " + inspect.getmoduleinfo(__file__).name
     try:
         CommonUtil.ExecLog(sModuleInfo,"Trying to click on element by xpath: %s"%_classpath,1,local_run)
-        elem = li.locate_element_by_xpath(_classpath, parent)
+        elem = li.locate_element_by_xpath(driver, _classpath)
         elem.click()
         CommonUtil.ExecLog(sModuleInfo,"Clicked on element successfully",1,local_run)
         return "Passed"
@@ -74,11 +68,11 @@ def click_element_by_xpath(_classpath, parent=False):
         CommonUtil.ExecLog(sModuleInfo, "Unable to click on the element. %s"%Error_Detail, 3,local_run)
         return "failed"
     
-def click_element_by_accessibility_id(_id, parent=False):
+def click_element_by_accessibility_id(driver, _id):
     sModuleInfo = inspect.stack()[0][3] + " : " + inspect.getmoduleinfo(__file__).name
     try:
         CommonUtil.ExecLog(sModuleInfo,"Trying to click on element by accessibility id: %s"%_id,1,local_run)
-        elem = li.locate_element_by_accessibility_id(_id, parent)
+        elem = li.locate_element_by_accessibility_id(driver, _id)
         elem.click()
         CommonUtil.ExecLog(sModuleInfo,"Clicked on element successfully",1,local_run)
         return "Passed"
@@ -89,11 +83,11 @@ def click_element_by_accessibility_id(_id, parent=False):
         CommonUtil.ExecLog(sModuleInfo, "Unable to click on the element. %s"%Error_Detail, 3,local_run)
         return "failed"
     
-def click_element_by_android_uiautomator_text(_text, parent=False):
+def click_element_by_android_uiautomator_text(driver, _text):
     sModuleInfo = inspect.stack()[0][3] + " : " + inspect.getmoduleinfo(__file__).name
     try:
         CommonUtil.ExecLog(sModuleInfo,"Trying to click on element by android uiautomator text: %s"%_text,1,local_run)
-        elem = li.locate_element_by_android_uiautomator_text(_text, parent)
+        elem = li.locate_element_by_android_uiautomator_text(driver, _text)
         elem.click()
         CommonUtil.ExecLog(sModuleInfo,"Clicked on element successfully",1,local_run)
         return "Passed"
@@ -104,11 +98,11 @@ def click_element_by_android_uiautomator_text(_text, parent=False):
         CommonUtil.ExecLog(sModuleInfo, "Unable to click on the element. %s"%Error_Detail, 3,local_run)
         return "failed"
     
-def click_element_by_android_uiautomator_description(_description, parent=False):
+def click_element_by_android_uiautomator_description(driver, _description):
     sModuleInfo = inspect.stack()[0][3] + " : " + inspect.getmoduleinfo(__file__).name
     try:
         CommonUtil.ExecLog(sModuleInfo,"Trying to click on element by android uiautomator description: %s"%_description,1,local_run)
-        elem = li.locate_element_by_android_uiautomator_description(_description, parent)
+        elem = li.locate_element_by_android_uiautomator_description(driver, _description)
         elem.click()
         CommonUtil.ExecLog(sModuleInfo,"Clicked on element successfully",1,local_run)
         return "Passed"
