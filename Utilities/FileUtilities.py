@@ -1,10 +1,14 @@
 import os,subprocess,shutil
+
+
 def get_home_folder():
     """
 
     :return: give the location of home folder
     """
     return os.path.expanduser("~")
+
+
 def CreateFolder(folderPath, forced=True):
     """
 
@@ -22,6 +26,7 @@ def CreateFolder(folderPath, forced=True):
         return True
     except Exception, e:
         return "Error: %s" % e
+
 
 def DeleteFolder(sFolderPath):
     """
@@ -44,6 +49,7 @@ def DeleteFolder(sFolderPath):
     except Exception, e:
         return "Error: %s" % e
 
+
 def CreateFile(sFilePath):
     try:
         if os.path.isfile(sFilePath):
@@ -56,6 +62,7 @@ def CreateFile(sFilePath):
             return True
     except Exception, e:
         return "Error: %s" % e
+
 
 def ZipFolder(dir, zip_file):
     """
@@ -82,6 +89,7 @@ def ZipFolder(dir, zip_file):
         print "Exception :", e
         return False
 
+
 def DeleteFile(sFilePath):
     try:
         if os.path.isfile(sFilePath):
@@ -89,3 +97,33 @@ def DeleteFile(sFilePath):
             return True
     except Exception, e:
         return "Error: %s" % e
+
+
+def copy_folder(src, dest):
+    """
+
+    :param src: source of the folder
+    :param dest: destination to be copied.
+    :return: True if passed or False if failed
+    """
+    try:
+        shutil.copytree(src, dest)
+        return True
+    except Exception, e:
+        print "Error: %s" % e
+        return False
+
+
+def copy_file(src, dest):
+    """
+
+    :param src: full location of source file
+    :param dest: full location of destination file
+    :return: True if passed or False if failed
+    """
+    try:
+        shutil.copyfile(src, dest)
+        return True
+    except Exception, e:
+        print "Error: %s" % e
+        return False
