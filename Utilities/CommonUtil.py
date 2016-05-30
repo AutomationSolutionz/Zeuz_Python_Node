@@ -26,6 +26,47 @@ def encode_to_exclude_symbol(sDetails):
         sDetails = sDetails.replace(e, replace_dict[e])
     return sDetails
 
+def Add_Folder_To_Current_Test_Case_Log(src):
+    try:
+        #get the current test case locations
+        dest_folder = ConfigModule.get_config_value('sectionOne', 'test_case_folder')
+        folder_name = filter(lambda x:x!='', src.split('/'))[-1]
+        if folder_name:
+            des_path = os.path.join(dest_folder, folder_name)
+            FL.copy_folder(src, des_path)
+            return True
+        else:
+            return False
+    except Exception, e:
+        exc_type, exc_obj, exc_tb = sys.exc_info()
+        fname = os.path.split(exc_tb.tb_frame.f_code.co_filename)[1]
+        Error_Detail = ((str(exc_type).replace("type ", "Error Type: ")) + ";" + "Error Message: " + str(
+            exc_obj) + ";" + "File Name: " + fname + ";" + "Line: " + str(exc_tb.tb_lineno))
+        print Error_Detail
+        return False
+
+
+def Add_File_To_Current_Test_Case_Log(src):
+    try:
+        #get the current test case locations
+        dest_folder = ConfigModule.get_config_value('sectionOne', 'test_case_folder')
+        file_name = filter(lambda x:x!='', src.split('/'))[-1]
+        if file_name:
+            des_path = os.path.join(dest_folder, file_name)
+            FL.copy_file(src, des_path)
+            return True
+        else:
+            return False
+    except Exception, e:
+        exc_type, exc_obj, exc_tb = sys.exc_info()
+        fname = os.path.split(exc_tb.tb_frame.f_code.co_filename)[1]
+        Error_Detail = ((str(exc_type).replace("type ", "Error Type: ")) + ";" + "Error Message: " + str(
+            exc_obj) + ";" + "File Name: " + fname + ";" + "Line: " + str(exc_tb.tb_lineno))
+        print Error_Detail
+        return False
+
+
+
 def ExecLog(sModuleInfo, sDetails, iLogLevel=1, local_run=False, sStatus=""):
     try:
         if local_run == False:
