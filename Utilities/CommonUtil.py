@@ -29,7 +29,7 @@ def encode_to_exclude_symbol(sDetails):
 def Add_Folder_To_Current_Test_Case_Log(src):
     try:
         #get the current test case locations
-        dest_folder = ConfigModule.get_config_value('sectionOne', 'test_case_folder')
+        dest_folder = ConfigModule.get_config_value('sectionOne', 'test_case_folder',temp_config)
         folder_name = filter(lambda x:x!='', src.split('/'))[-1]
         if folder_name:
             des_path = os.path.join(dest_folder, folder_name)
@@ -49,7 +49,7 @@ def Add_Folder_To_Current_Test_Case_Log(src):
 def Add_File_To_Current_Test_Case_Log(src):
     try:
         #get the current test case locations
-        dest_folder = ConfigModule.get_config_value('sectionOne', 'test_case_folder')
+        dest_folder = ConfigModule.get_config_value('sectionOne', 'test_case_folder',temp_config)
         file_name = filter(lambda x:x!='', src.split('/'))[-1]
         if file_name:
             des_path = os.path.join(dest_folder, file_name)
