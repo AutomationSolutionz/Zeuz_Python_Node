@@ -50,7 +50,7 @@ def Select_Gear_Menu_Item(item_text):
         #We now try to find the right element and click it
         CommonUtil.ExecLog(sModuleInfo, "Trying locate Site contents menu", 1,local_run)
 
-        #Site_Content = BuiltInFunctions.Get_Element_With_Reference('aria-label',"Site contents","class","_fce_w ms-font-s ms-fwt-sl","child")
+        #Site_Content = BuiltInFunctions.Get_Element_With_Reference('aria-label',"Site contents","class","_fce_w ms-font-s ms-fwt-sl","parent")
         All_Elements = BuiltInFunctions.Get_All_Elements('aria-label',"Site contents")
         All_Parents =[]
         if len(All_Elements) > 1:
