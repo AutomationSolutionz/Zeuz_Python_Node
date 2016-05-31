@@ -50,7 +50,7 @@ def Select_Gear_Menu_Item(item_text):
         #We now look for the pop up menu 
         CommonUtil.ExecLog(sModuleInfo, "Trying locate the pop up window menu", 1,local_run)
         try:
-            pop_up_menu = BuiltInFunctions.Get_Element_With_Reference("ispopup","1",'aria-label',"Site contents","children")
+            pop_up_menu = BuiltInFunctions.Get_Element_With_Reference("ispopup","1",'aria-label',"Site contents","child")
             
             
             #BuiltInFunctions.Get_Element("ispopup","1")
