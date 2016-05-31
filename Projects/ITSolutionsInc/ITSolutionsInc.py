@@ -47,30 +47,41 @@ def Select_Gear_Menu_Item(item_text):
             CommonUtil.ExecLog(sModuleInfo, "Could not click on the Gear icon", 3,local_run)
             CommonUtil.TakeScreenShot(sModuleInfo, local_run)
             return "failed"  
-        #We now look for the pop up menu 
-        CommonUtil.ExecLog(sModuleInfo, "Trying locate the pop up window menu", 1,local_run)
-        try:
-            pop_up_menu = BuiltInFunctions.Get_Element_With_Reference("ispopup","1",'aria-label',"Site contents","child")
-            
-            
-            #BuiltInFunctions.Get_Element("ispopup","1")
-        except:
-            CommonUtil.ExecLog(sModuleInfo, "Could not locate pop up menu", 3,local_run)
-            CommonUtil.TakeScreenShot(sModuleInfo, local_run)
-            return "failed"  
-        if pop_up_menu == "failed":
-            CommonUtil.ExecLog(sModuleInfo, "Could not locate pop up menu", 3,local_run)
-            CommonUtil.TakeScreenShot(sModuleInfo, local_run)
-            return "failed"  
-        #Now that we have located the pop up menu, we can click on any item in that menu
-        result = BuiltInFunctions.Click_Element_By_Name(item_text,pop_up_menu) 
-        if result == "passed":   
-            CommonUtil.ExecLog(sModuleInfo, "Successfully clicked your Gear menu item %s"%item_text, 1,local_run)        
+        #We now try to find the right element and click it
+        CommonUtil.ExecLog(sModuleInfo, "Trying locate Site contents menu", 1,local_run)
+
+        #Site_Content = BuiltInFunctions.Get_Element_With_Reference('aria-label',"Site contents","class","_fce_w ms-font-s ms-fwt-sl","child")
+        All_Elements = BuiltInFunctions.Get_All_Elements('aria-label',"Site contents")
+        All_Parents =[]
+        if len(All_Elements) > 1:
+            #find all parents element for the matching interested element
+            for each in All_Elements:
+                All_Parents.append(each.find_element_by_xpath('..'))
+            #get all matching attributes elements.  We use this as a reference point 
+            #to find out which of the All_Elements is our correct one  
+            Final_Parent_Element = []
+            for each_parent in All_Parents:
+                if each_parent.get_attribute("class") == "_fce_w ms-font-s ms-fwt-sl":
+                    Final_Parent_Element.append(each_parent)
+            if len(Final_Parent_Element)>1:
+                CommonUtil.ExecLog(sModuleInfo, "Found too many matching elements", 3,local_run)
+                return "failed"
+            elif len(Final_Parent_Element)== 0:
+                CommonUtil.ExecLog(sModuleInfo, "Didn't find any matching elements", 3,local_run)
+                return "failed"    
+            else:
+                CommonUtil.ExecLog(sModuleInfo, "Successfully located your unique element", 1,local_run)
+                parent_of_main_element =   All_Parents[0]
+        
+        result=BuiltInFunctions.Click_By_Parameter_And_Value('aria-label',"Site contents", parent_of_main_element)                  
+        if result == "passed":
+            CommonUtil.ExecLog(sModuleInfo, "Clicked your element", 1,local_run)            
             return "passed"
         else:
-            CommonUtil.ExecLog(sModuleInfo, "Could not click on the Gear menu item: %s"%item_text, 3,local_run)
-            CommonUtil.TakeScreenShot(sModuleInfo, local_run)
-            return "failed"                
+            CommonUtil.ExecLog(sModuleInfo, "Failed to clicked your element", 3,local_run)            
+            return "failed"
+                           
+              
     except Exception, e:
         exc_type, exc_obj, exc_tb = sys.exc_info()        
         fname = os.path.split(exc_tb.tb_frame.f_code.co_filename)[1]
