@@ -72,8 +72,12 @@ def Select_Gear_Menu_Item(item_text):
             else:
                 CommonUtil.ExecLog(sModuleInfo, "Successfully located your unique element", 1,local_run)
                 parent_of_main_element =   All_Parents[0]
-        
-        result=BuiltInFunctions.Click_By_Parameter_And_Value('aria-label',"Site contents", parent_of_main_element)                  
+
+        #parent_of_main_element = BuiltInFunctions.Get_Element_With_Reference('ispopup','1','aria-label','Site contents','child')
+        #parent_of_main_element = BuiltInFunctions.Get_Element_With_Reference('ispopup', '1', 'text','Site contents', 'child')
+        result=BuiltInFunctions.Click_By_Parameter_And_Value('aria-label','Site contents', parent_of_main_element)
+
+
         if result == "passed":
             CommonUtil.ExecLog(sModuleInfo, "Clicked your element", 1,local_run)            
             return "passed"
