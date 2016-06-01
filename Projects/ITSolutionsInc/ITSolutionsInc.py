@@ -47,11 +47,13 @@ def Select_Gear_Menu_Item(item_text):
             CommonUtil.ExecLog(sModuleInfo, "Could not click on the Gear icon", 3,local_run)
             CommonUtil.TakeScreenShot(sModuleInfo, local_run)
             return "failed"  
+        
+        time.sleep(3)
         #We now try to find the right element and click it
-        CommonUtil.ExecLog(sModuleInfo, "Trying locate Site contents menu", 1,local_run)
+        CommonUtil.ExecLog(sModuleInfo, "Trying locate %s menu"%item_text, 1,local_run)
 
         #Site_Content = BuiltInFunctions.Get_Element_With_Reference('aria-label',"Site contents","class","_fce_w ms-font-s ms-fwt-sl","parent")
-        All_Elements = BuiltInFunctions.Get_All_Elements('aria-label',"Site contents")
+        All_Elements = BuiltInFunctions.Get_All_Elements('aria-label',item_text)
         All_Parents =[]
         if len(All_Elements) > 1:
             #find all parents element for the matching interested element
@@ -75,7 +77,7 @@ def Select_Gear_Menu_Item(item_text):
 
         #parent_of_main_element = BuiltInFunctions.Get_Element_With_Reference('ispopup','1','aria-label','Site contents','child')
         #parent_of_main_element = BuiltInFunctions.Get_Element_With_Reference('ispopup', '1', 'text','Site contents', 'child')
-        result=BuiltInFunctions.Click_By_Parameter_And_Value('aria-label','Site contents', parent_of_main_element)
+        result=BuiltInFunctions.Click_By_Parameter_And_Value('aria-label',item_text, parent_of_main_element)
 
 
         if result == "passed":
@@ -84,8 +86,7 @@ def Select_Gear_Menu_Item(item_text):
         else:
             CommonUtil.ExecLog(sModuleInfo, "Failed to clicked your element", 3,local_run)            
             return "failed"
-                           
-              
+
     except Exception, e:
         exc_type, exc_obj, exc_tb = sys.exc_info()        
         fname = os.path.split(exc_tb.tb_frame.f_code.co_filename)[1]
