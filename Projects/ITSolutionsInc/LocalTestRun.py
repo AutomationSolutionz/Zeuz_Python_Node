@@ -10,17 +10,16 @@ sys.path.append(os.path.dirname(os.getcwd()))
 from Projects.ITSolutionsInc.ITSolutionsInc import *
 
 
-def Delete_Site_Content():
+def Delete_Sub_Site():
     result = BuiltInFunctions.Open_Browser('firefox')
     if result == "failed": return False
     result = BuiltInFunctions.Go_To_Link('https://engitsolutions.sharepoint.com/sites/Demo/')
     if result == "failed": return False
     result = BuiltInFunctions.Login_To_Application("demo@itsolutionsinc.ca","test1234.",'cred_userid_inputtext',"cred_password_inputtext","cred_sign_in_button",logged_name=False)
     if result == "failed": return False
-    result = Select_Gear_Menu_Item("Site contents")
-    if result == "failed": return False
-    result = Create_New_Subsite("Automated Sub Site","This description was filled out by automation","Automated_Sub_Site")
-    if result == "failed": return False    
+
+    result = Delete_Site()
+  
 
 def Create_Site_Content():
     result = BuiltInFunctions.Open_Browser('firefox')
@@ -35,8 +34,10 @@ def Create_Site_Content():
     if result == "failed": return False
 def Sample_test_Case_2():
     print BuiltInFunctions.Browser_Selection('firefox')
-  
-Create_Site_Content()    
+
+
+Delete_Sub_Site() 
+#Create_Site_Content()    
 #Sample_test_Case_2()  
 
 

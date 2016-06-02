@@ -417,11 +417,16 @@ def Get_All_Elements(parameter,value,parent=False):
     sModuleInfo = inspect.stack()[0][3] + " : " + inspect.getmoduleinfo(__file__).name
     try:
         if isinstance(parent, (bool)) == True:
-            All_Elements = WebDriverWait(sBrowser, WebDriver_Wait).until(EC.presence_of_all_elements_located((By.XPATH, "//*[@%s='%s']"%(parameter,value))))
+            if parameter == "text()":
+                All_Elements = WebDriverWait(sBrowser, WebDriver_Wait).until(EC.presence_of_all_elements_located((By.XPATH, "//*[%s='%s']"%(parameter,value))))
+            else:
+                All_Elements = WebDriverWait(sBrowser, WebDriver_Wait).until(EC.presence_of_all_elements_located((By.XPATH, "//*[@%s='%s']"%(parameter,value))))
         else:
-            All_Elements = WebDriverWait(parent, WebDriver_Wait).until(EC.presence_of_all_elements_located((By.XPATH, "//*[@%s='%s']"%(parameter,value))))
+            if parameter == "text()":
+                All_Elements = WebDriverWait(parent, WebDriver_Wait).until(EC.presence_of_all_elements_located((By.XPATH, "//*[%s='%s']"%(parameter,value))))
+            else:
+                All_Elements = WebDriverWait(parent, WebDriver_Wait).until(EC.presence_of_all_elements_located((By.XPATH, "//*[@%s='%s']"%(parameter,value))))
         all_visible_elements = []
-
         if All_Elements == []:        
             CommonUtil.ExecLog(sModuleInfo, "Could not find your element by parameter:%s and value:%s..."%(parameter,value), 3,local_run)
             return "failed"
@@ -429,7 +434,6 @@ def Get_All_Elements(parameter,value,parent=False):
             for each_elem in All_Elements:        
                 if each_elem.is_displayed() == True:
                     all_visible_elements.append(each_elem)
-        
         if all_visible_elements == []:
             CommonUtil.ExecLog(sModuleInfo, "Could not find your element by parameter:%s and value:%s..."%(parameter,value), 3,local_run)
             return "failed"

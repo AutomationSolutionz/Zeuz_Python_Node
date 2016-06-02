@@ -47,13 +47,10 @@ def Select_Gear_Menu_Item(item_text):
             CommonUtil.ExecLog(sModuleInfo, "Could not click on the Gear icon", 3,local_run)
             CommonUtil.TakeScreenShot(sModuleInfo, local_run)
             return "failed"  
-        
         time.sleep(3)
         #We now try to find the right element and click it
         CommonUtil.ExecLog(sModuleInfo, "Trying locate %s menu"%item_text, 1,local_run)
-
-        result= BuiltInFunctions.Get_Element_With_Reference('aria-label','Site contents','ispopup', '1',"parent")
-        
+        result= BuiltInFunctions.Get_Element_With_Reference('aria-label',item_text,'ispopup', '1',"parent")
         if result != "failed":
             result.click()
             CommonUtil.ExecLog(sModuleInfo, "Clicked your element", 1,local_run)            
@@ -61,7 +58,6 @@ def Select_Gear_Menu_Item(item_text):
         else:
             CommonUtil.ExecLog(sModuleInfo, "Failed to clicked your element", 3,local_run)            
             return "failed"
-
     except Exception, e:
         exc_type, exc_obj, exc_tb = sys.exc_info()        
         fname = os.path.split(exc_tb.tb_frame.f_code.co_filename)[1]
@@ -154,4 +150,25 @@ def Create_New_Subsite(title="Automated Sub Site",description="This description 
         Error_Detail = ((str(exc_type).replace("type ", "Error Type: ")) + ";" +  "Error Message: " + str(exc_obj) +";" + "File Name: " + fname + ";" + "Line: "+ str(exc_tb.tb_lineno))
         CommonUtil.ExecLog(sModuleInfo, "Unable to create the form  Error: %s"%(Error_Detail), 3,local_run)
         return "failed"          
-   
+    
+def Delete_Site(root_site='https://engitsolutions.sharepoint.com/sites/Demo/', sub_site_name='Automated Sub Site'):
+    #this function assumes you are in Site Content page
+    sModuleInfo = inspect.stack()[0][3] + " : " + inspect.getmoduleinfo(__file__).name
+    try:
+        CommonUtil.ExecLog(sModuleInfo, "Checking to see if any sub site exists", 1,local_run)
+        #first go to root site 
+        BuiltInFunctions.Go_To_Link(root_site)
+        #go to site contents
+        Select_Gear_Menu_Item("Site contents")
+        
+        result = BuiltInFunctions.Get_All_Elements('text()','This site does not have any subsites.') 
+        print result
+    
+    
+    except Exception, e:
+        exc_type, exc_obj, exc_tb = sys.exc_info()        
+        fname = os.path.split(exc_tb.tb_frame.f_code.co_filename)[1]
+        Error_Detail = ((str(exc_type).replace("type ", "Error Type: ")) + ";" +  "Error Message: " + str(exc_obj) +";" + "File Name: " + fname + ";" + "Line: "+ str(exc_tb.tb_lineno))
+        CommonUtil.ExecLog(sModuleInfo, "Unable to create the form  Error: %s"%(Error_Detail), 3,local_run)
+        return "failed"          
+ 
