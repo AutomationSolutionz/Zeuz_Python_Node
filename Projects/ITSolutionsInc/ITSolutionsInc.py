@@ -52,35 +52,10 @@ def Select_Gear_Menu_Item(item_text):
         #We now try to find the right element and click it
         CommonUtil.ExecLog(sModuleInfo, "Trying locate %s menu"%item_text, 1,local_run)
 
-        #Site_Content = BuiltInFunctions.Get_Element_With_Reference('aria-label',"Site contents","class","_fce_w ms-font-s ms-fwt-sl","parent")
-        All_Elements = BuiltInFunctions.Get_All_Elements('aria-label',item_text)
-        All_Parents =[]
-        if len(All_Elements) > 1:
-            #find all parents element for the matching interested element
-            for each in All_Elements:
-                All_Parents.append(each.find_element_by_xpath('..'))
-            #get all matching attributes elements.  We use this as a reference point 
-            #to find out which of the All_Elements is our correct one  
-            Final_Parent_Element = []
-            for each_parent in All_Parents:
-                if each_parent.get_attribute("class") == "_fce_w ms-font-s ms-fwt-sl":
-                    Final_Parent_Element.append(each_parent)
-            if len(Final_Parent_Element)>1:
-                CommonUtil.ExecLog(sModuleInfo, "Found too many matching elements", 3,local_run)
-                return "failed"
-            elif len(Final_Parent_Element)== 0:
-                CommonUtil.ExecLog(sModuleInfo, "Didn't find any matching elements", 3,local_run)
-                return "failed"    
-            else:
-                CommonUtil.ExecLog(sModuleInfo, "Successfully located your unique element", 1,local_run)
-                parent_of_main_element =   All_Parents[0]
-
-        #parent_of_main_element = BuiltInFunctions.Get_Element_With_Reference('ispopup','1','aria-label','Site contents','child')
-        #parent_of_main_element = BuiltInFunctions.Get_Element_With_Reference('ispopup', '1', 'text','Site contents', 'child')
-        result=BuiltInFunctions.Click_By_Parameter_And_Value('aria-label',item_text, parent_of_main_element)
-
-
-        if result == "passed":
+        result= BuiltInFunctions.Get_Element_With_Reference('aria-label','Site contents','ispopup', '1',"parent")
+        
+        if result != "failed":
+            result.click()
             CommonUtil.ExecLog(sModuleInfo, "Clicked your element", 1,local_run)            
             return "passed"
         else:
@@ -93,6 +68,11 @@ def Select_Gear_Menu_Item(item_text):
         Error_Detail = ((str(exc_type).replace("type ", "Error Type: ")) + ";" +  "Error Message: " + str(exc_obj) +";" + "File Name: " + fname + ";" + "Line: "+ str(exc_tb.tb_lineno))
         CommonUtil.ExecLog(sModuleInfo, "Could not click on the Gear menu item: %s.  Error: %s"%(item_text, Error_Detail), 3,local_run)
         return "failed"       
+
+
+
+        
+
     
 def Create_New_Subsite(title="Automated Sub Site",description="This description was filled out by automation",url_name="Automated_Sub_Site"):
     #this function assumes you are in Site Content page
