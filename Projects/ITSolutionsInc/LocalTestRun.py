@@ -36,8 +36,20 @@ def Sample_test_Case_2():
     print BuiltInFunctions.Browser_Selection('firefox')
 
 
-Delete_Sub_Site() 
+def Create_Site_Content1():
+    result = BuiltInFunctions.Open_Browser('firefox')
+    if result == "failed": return False
+    result = BuiltInFunctions.Go_To_Link('https://engitsolutions.sharepoint.com/sites/Demo/')
+    if result == "failed": return False
+    result = BuiltInFunctions.Login_To_Application("demo@itsolutionsinc.ca","test1234.",'cred_userid_inputtext',"cred_password_inputtext","cred_sign_in_button",logged_name=False)
+    if result == "failed": return False
+    result = Select_Gear_Menu_Item("Edit page")
+    if result == "failed": return False
+
+
+
+#Delete_Sub_Site() 
 #Create_Site_Content()    
 #Sample_test_Case_2()  
 
-
+Create_Site_Content1()

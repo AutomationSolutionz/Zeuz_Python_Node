@@ -163,6 +163,9 @@ def Delete_Site(root_site='https://engitsolutions.sharepoint.com/sites/Demo/', s
         
         result = BuiltInFunctions.Get_All_Elements('text()','This site does not have any subsites.') 
         print result
+        
+        if result != "failed":
+            CommonUtil.ExecLog(sModuleInfo, "There are no sub site created", 1,local_run)
     
     
     except Exception, e:
