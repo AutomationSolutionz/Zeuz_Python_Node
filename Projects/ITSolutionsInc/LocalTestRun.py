@@ -7,49 +7,46 @@ Created on May 15, 2016
 import sys
 import os
 sys.path.append(os.path.dirname(os.getcwd()))
-from Projects.ITSolutionsInc.ITSolutionsInc import *
+from Projects.ITSolutionsInc import ITSolutionsInc as ITS
 
 
 def Delete_Sub_Site():
-    result = BuiltInFunctions.Open_Browser('firefox')
+    result = ITS.BuiltInFunctions.Open_Browser('firefox')
     if result == "failed": return False
-    result = BuiltInFunctions.Go_To_Link('https://engitsolutions.sharepoint.com/sites/Demo/')
+    result = ITS.BuiltInFunctions.Go_To_Link('https://engitsolutions.sharepoint.com/sites/Demo/')
     if result == "failed": return False
-    result = BuiltInFunctions.Login_To_Application("demo@itsolutionsinc.ca","test1234.",'cred_userid_inputtext',"cred_password_inputtext","cred_sign_in_button",logged_name=False)
+    result = ITS.BuiltInFunctions.Login_To_Application("demo@itsolutionsinc.ca","test1234.",'cred_userid_inputtext',"cred_password_inputtext","cred_sign_in_button",logged_name=False)
     if result == "failed": return False
 
-    result = Delete_Site()
+
   
 
 def Create_Site_Content():
-    result = BuiltInFunctions.Open_Browser('firefox')
-    if result == "failed": return False
-    result = BuiltInFunctions.Go_To_Link('https://engitsolutions.sharepoint.com/sites/Demo/')
-    if result == "failed": return False
-    result = BuiltInFunctions.Login_To_Application("demo@itsolutionsinc.ca","test1234.",'cred_userid_inputtext',"cred_password_inputtext","cred_sign_in_button",logged_name=False)
-    if result == "failed": return False
-    result = Select_Gear_Menu_Item("Site contents")
-    if result == "failed": return False
-    result = Create_New_Subsite("Automated Sub Site","This description was filled out by automation","Automated_Sub_Site")
-    if result == "failed": return False
-def Sample_test_Case_2():
-    print BuiltInFunctions.Browser_Selection('firefox')
+    ITS.BuiltInFunctions.Open_Browser('firefox')
+    ITS.BuiltInFunctions.Go_To_Link('https://engitsolutions.sharepoint.com/sites/Demo/')
+    ITS.BuiltInFunctions.Login_To_Application("demo@itsolutionsinc.ca","test1234.",'cred_userid_inputtext',"cred_password_inputtext","cred_sign_in_button",logged_name=False)
+    ITS.Select_Gear_Menu_Item("Site contents")
+    ITS.Delete_Sub_Site('Automated Sub Site')
+    ITS.Select_Gear_Menu_Item("Site contents")
+    ITS.Create_New_Subsite("Automated Sub Site","This description was filled out by automation","Automated_Sub_Site")
+
+    
 
 
-def Create_Site_Content1():
-    result = BuiltInFunctions.Open_Browser('firefox')
+def Create_Site_Edit_Page():
+    result = ITS.BuiltInFunctions.Open_Browser('firefox')
     if result == "failed": return False
-    result = BuiltInFunctions.Go_To_Link('https://engitsolutions.sharepoint.com/sites/Demo/')
+    result = ITS.BuiltInFunctions.Go_To_Link('https://engitsolutions.sharepoint.com/sites/Demo/')
     if result == "failed": return False
-    result = BuiltInFunctions.Login_To_Application("demo@itsolutionsinc.ca","test1234.",'cred_userid_inputtext',"cred_password_inputtext","cred_sign_in_button",logged_name=False)
+    result = ITS.BuiltInFunctions.Login_To_Application("demo@itsolutionsinc.ca","test1234.",'cred_userid_inputtext',"cred_password_inputtext","cred_sign_in_button",logged_name=False)
     if result == "failed": return False
-    result = Select_Gear_Menu_Item("Edit page")
+    result = ITS.Select_Gear_Menu_Item("Edit page")
     if result == "failed": return False
 
 
 
 #Delete_Sub_Site() 
-#Create_Site_Content()    
+Create_Site_Content()    
 #Sample_test_Case_2()  
 
-Create_Site_Content1()
+

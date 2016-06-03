@@ -65,16 +65,15 @@ def Select_Gear_Menu_Item(item_text):
         CommonUtil.ExecLog(sModuleInfo, "Could not click on the Gear menu item: %s.  Error: %s"%(item_text, Error_Detail), 3,local_run)
         return "failed"       
 
-
-
-        
-
-    
+ 
 def Create_New_Subsite(title="Automated Sub Site",description="This description was filled out by automation",url_name="Automated_Sub_Site"):
     #this function assumes you are in Site Content page
     sModuleInfo = inspect.stack()[0][3] + " : " + inspect.getmoduleinfo(__file__).name
     try:
+        
+        
         CommonUtil.ExecLog(sModuleInfo, "Trying to click on Create new site", 1,local_run)
+        
         try:
             BuiltInFunctions.Click_By_Parameter_And_Value("id","createnewsite", parent=False)
         except:
@@ -151,23 +150,43 @@ def Create_New_Subsite(title="Automated Sub Site",description="This description 
         CommonUtil.ExecLog(sModuleInfo, "Unable to create the form  Error: %s"%(Error_Detail), 3,local_run)
         return "failed"          
     
-def Delete_Site(root_site='https://engitsolutions.sharepoint.com/sites/Demo/', sub_site_name='Automated Sub Site'):
+def Delete_Sub_Site( sub_site_name='Automated Sub Site'):
     #this function assumes you are in Site Content page
     sModuleInfo = inspect.stack()[0][3] + " : " + inspect.getmoduleinfo(__file__).name
     try:
         CommonUtil.ExecLog(sModuleInfo, "Checking to see if any sub site exists", 1,local_run)
-        #first go to root site 
-        BuiltInFunctions.Go_To_Link(root_site)
-        #go to site contents
-        Select_Gear_Menu_Item("Site contents")
-        
         result = BuiltInFunctions.Get_All_Elements('text()','This site does not have any subsites.') 
-        print result
-        
         if result != "failed":
             CommonUtil.ExecLog(sModuleInfo, "There are no sub site created", 1,local_run)
-    
-    
+            return "passed"
+        else:
+            sub_site = BuiltInFunctions.Get_All_Elements('text()','sub_site_name')
+            #BuiltInFunctions.Go_To_Link ('https://engitsolutions.sharepoint.com/sites/Demo/Automated_Sub_Site/')
+            if sub_site != "failed":
+                sub_site[0].click()
+            else:
+                print "no subsite with your condition was found"
+                return "failed"
+            
+            Select_Gear_Menu_Item("Site settings")
+            delete_link = BuiltInFunctions.Get_All_Elements("text()", "Delete this site")
+            if delete_link == "failed":
+                return "failed"
+            else:
+                delete_link[0].click()
+            
+            confirm_page = BuiltInFunctions.Get_All_Elements("text()", "https://engitsolutions.sharepoint.com/sites/Demo/Automated_Sub_Site")
+            if  confirm_page != "failed":
+                BuiltInFunctions.Click_By_Parameter_And_Value ('value',"Delete")
+                browser_ = BuiltInFunctions.get_driver()
+                alert = browser_.switch_to_alert()
+                alert.accept()
+                print "successfully deleted"
+                return "passed"
+            else:
+                print "couldn't confirm the right page to delete "
+                return "failed"
+
     except Exception, e:
         exc_type, exc_obj, exc_tb = sys.exc_info()        
         fname = os.path.split(exc_tb.tb_frame.f_code.co_filename)[1]
