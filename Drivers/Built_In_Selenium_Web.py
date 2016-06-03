@@ -76,9 +76,12 @@ def login_to_web_app(dependency,run_time_params,step_data,file_attachment,temp_q
     sModuleInfo = inspect.stack()[0][3] + " : " + inspect.getmoduleinfo(__file__).name
     try:
         CommonUtil.ExecLog(sModuleInfo,"Enter: Step - Login To Web App",1,local_run)
-        first_data_set=step_data[0]
-        web_link=first_data_set[0][1]
-        web_title = first_data_set[0][2]
+        user_name=step_data[0][0][1]
+        password = step_data[0][1][1]
+        user_element = step_data[0][2][1]
+        password_element = step_data[0][3][1]
+        button_to_click =step_data[0][4][1]
+        
         sTestStepReturnStatus=BuiltInFunctions.Login_To_Application(user_name, password, user_element, password_element, button_to_click)
         temp_q.put(sTestStepReturnStatus)
         CommonUtil.ExecLog(sModuleInfo,"Exit: Step - Login To Web App",1,local_run)

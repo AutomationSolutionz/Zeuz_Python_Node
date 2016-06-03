@@ -14,10 +14,10 @@ from Projects.ITSolutionsInc import ITSolutionsInc as ITS
 local_run = False
 
 
-def Select_Gear_Menu(dependency,run_params,step_data,file_attachment,temp_q):
+def select_gear_menu(dependency,run_params,step_data,file_attachment,temp_q):
     sModuleInfo = inspect.stack()[0][3] + " : " + inspect.getmoduleinfo(__file__).name
     try:
-        item_text = step_data[0][0][2]
+        item_text = step_data[0][0][1]
         sTestStepReturnStatus=ITS.Select_Gear_Menu_Item(item_text)
         
         temp_q.put(sTestStepReturnStatus)
@@ -30,10 +30,10 @@ def Select_Gear_Menu(dependency,run_params,step_data,file_attachment,temp_q):
         temp_q.put("Failed")
         return "failed"
 
-def Delete_Sub_Site(dependency,run_params,step_data,file_attachment,temp_q):
+def delete_sub_site(dependency,run_params,step_data,file_attachment,temp_q):
     sModuleInfo = inspect.stack()[0][3] + " : " + inspect.getmoduleinfo(__file__).name
     try:
-        sub_site_name = step_data[0][0][2]
+        sub_site_name = step_data[0][0][1]
         sTestStepReturnStatus=ITS.Delete_Sub_Site(sub_site_name)
         
         temp_q.put(sTestStepReturnStatus)
@@ -46,12 +46,12 @@ def Delete_Sub_Site(dependency,run_params,step_data,file_attachment,temp_q):
         temp_q.put("Failed")
         return "failed"
 
-def Create_New_Subsite(dependency,run_params,step_data,file_attachment,temp_q):
+def create_new_subsite(dependency,run_params,step_data,file_attachment,temp_q):
     sModuleInfo = inspect.stack()[0][3] + " : " + inspect.getmoduleinfo(__file__).name
     try:
-        title = step_data[0][0][2]
-        description = step_data[0][1][2]
-        url_name = step_data[0][2][2]
+        title = step_data[0][0][1]
+        description = step_data[0][1][1]
+        url_name = step_data[0][2][1]
         
         sTestStepReturnStatus=ITS.Create_New_Subsite(title, description, url_name)
         

@@ -91,57 +91,28 @@ def Create_New_Subsite(title="Automated Sub Site",description="This description 
         else:
             CommonUtil.ExecLog(sModuleInfo, "Unable to create the form", 3,local_run)
             CommonUtil.TakeScreenShot(sModuleInfo, local_run)
+            return "failed"
         
         
         #Wait until the creating page appears
         #This should probably go in BuiltINfunction
         CommonUtil.ExecLog(sModuleInfo, "Waiting for working on creating page appears", 1,local_run)
         max_wait = 5
-        i=0
+        time.sleep(5)
+        return "passed"
+        '''        i=0
         t1 = datetime.now()
         found_the_window = False
         t2=False
         while max_wait !=i: 
-            result = BuiltInFunctions.Get_Element('id',"ms-loading-box")
+            value = "This shouldn't take long."
+            result = BuiltInFunctions.Get_All_Elements("text()", value)
             time.sleep(1)
             i = i+1
             if result != "failed":
                 t2 = datetime.now()
                 found_the_window = True
-                break
-        if t2==False:
-            t2 = datetime.now()
-        delta = t2 - t1
-        if found_the_window == True:
-            CommonUtil.ExecLog(sModuleInfo, "Found the waiting for creating window in: %s seconds"%delta, 1,local_run)
-        else:
-            CommonUtil.ExecLog(sModuleInfo, "Unable to find the creating window in: %s seconds"%delta, 3,local_run)
-            return "failed"
-        #Now that we have found the waiting for creating window... we need to wait until its gone....
-        CommonUtil.ExecLog(sModuleInfo, "Waiting for working on creating page appears", 1,local_run)
-        max_wait = 10
-        i=0
-        t1 = datetime.now()
-        found_the_window = True
-        t2=False
-        while max_wait !=i: 
-            result = BuiltInFunctions.Get_Element('id',"ms-loading-box")
-            time.sleep(1)
-            i = i+1
-            if result == "failed":
-                t2 = datetime.now()
-                found_the_window = False
-                break
-        if t2==False:
-            t2 = datetime.now()
-        delta = t2 - t1
-        if found_the_window == False:
-            CommonUtil.ExecLog(sModuleInfo, "Creating window is gone in: %s seconds"%delta, 1,local_run)
-        else:
-            CommonUtil.ExecLog(sModuleInfo, "Creating window was never gone in: %s seconds"%delta, 3,local_run)
-            return "failed"    
-        # Need to click by text Publish it 
-               
+                break'''
 
     except Exception, e:
         exc_type, exc_obj, exc_tb = sys.exc_info()        
@@ -183,7 +154,13 @@ def Delete_Sub_Site( sub_site_name='Automated Sub Site'):
                 alert = browser_.switch_to_alert()
                 alert.accept()
                 print "successfully deleted"
-                return "passed"
+                back_to_web = BuiltInFunctions.Get_All_Elements("text()", "Go back to site")
+                if back_to_web == "failed":
+                    return "failed"
+                else:
+                    back_to_web[0].click()
+                    time.sleep(2)
+                    return "passed"
             else:
                 print "couldn't confirm the right page to delete "
                 return "failed"
