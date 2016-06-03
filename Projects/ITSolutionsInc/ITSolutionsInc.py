@@ -32,8 +32,8 @@ global WebDriver_Wait_Short
 WebDriver_Wait_Short = 10
 
 #if local_run is True, no logging will be recorded to the web server.  Only local print will be displayed
-local_run = True
-#local_run = False
+#local_run = True
+local_run = False
 
   
 
@@ -160,10 +160,11 @@ def Delete_Sub_Site( sub_site_name='Automated Sub Site'):
             CommonUtil.ExecLog(sModuleInfo, "There are no sub site created", 1,local_run)
             return "passed"
         else:
-            sub_site = BuiltInFunctions.Get_All_Elements('text()','sub_site_name')
+            sub_site = BuiltInFunctions.Get_All_Elements('text()',sub_site_name)
             #BuiltInFunctions.Go_To_Link ('https://engitsolutions.sharepoint.com/sites/Demo/Automated_Sub_Site/')
             if sub_site != "failed":
                 sub_site[0].click()
+                time.sleep(5)
             else:
                 print "no subsite with your condition was found"
                 return "failed"

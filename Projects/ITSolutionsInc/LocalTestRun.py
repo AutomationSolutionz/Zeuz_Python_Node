@@ -30,7 +30,7 @@ def Create_Site_Content():
     ITS.Select_Gear_Menu_Item("Site contents")
     ITS.Create_New_Subsite("Automated Sub Site","This description was filled out by automation","Automated_Sub_Site")
 
-    
+
 
 
 def Create_Site_Edit_Page():

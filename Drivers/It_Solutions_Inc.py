@@ -17,7 +17,7 @@ local_run = False
 def Select_Gear_Menu(dependency,run_params,step_data,file_attachment,temp_q):
     sModuleInfo = inspect.stack()[0][3] + " : " + inspect.getmoduleinfo(__file__).name
     try:
-        item_text = step_data[0][1]
+        item_text = step_data[0][0][2]
         sTestStepReturnStatus=ITS.Select_Gear_Menu_Item(item_text)
         
         temp_q.put(sTestStepReturnStatus)
@@ -30,3 +30,37 @@ def Select_Gear_Menu(dependency,run_params,step_data,file_attachment,temp_q):
         temp_q.put("Failed")
         return "failed"
 
+def Delete_Sub_Site(dependency,run_params,step_data,file_attachment,temp_q):
+    sModuleInfo = inspect.stack()[0][3] + " : " + inspect.getmoduleinfo(__file__).name
+    try:
+        sub_site_name = step_data[0][0][2]
+        sTestStepReturnStatus=ITS.Delete_Sub_Site(sub_site_name)
+        
+        temp_q.put(sTestStepReturnStatus)
+        return sTestStepReturnStatus
+    except Exception, e:
+        exc_type, exc_obj, exc_tb = sys.exc_info()
+        fname = os.path.split(exc_tb.tb_frame.f_code.co_filename)[1]
+        Error_Detail = ((str(exc_type).replace("type ", "Error Type: ")) + ";" +  "Error Message: " + str(exc_obj) +";" + "File Name: " + fname + ";" + "Line: "+ str(exc_tb.tb_lineno))
+        CommonUtil.ExecLog(sModuleInfo, "Unable to go to webpage: Error:%s" %( Error_Detail), 3,local_run)
+        temp_q.put("Failed")
+        return "failed"
+
+def Create_New_Subsite(dependency,run_params,step_data,file_attachment,temp_q):
+    sModuleInfo = inspect.stack()[0][3] + " : " + inspect.getmoduleinfo(__file__).name
+    try:
+        title = step_data[0][0][2]
+        description = step_data[0][1][2]
+        url_name = step_data[0][2][2]
+        
+        sTestStepReturnStatus=ITS.Create_New_Subsite(title, description, url_name)
+        
+        temp_q.put(sTestStepReturnStatus)
+        return sTestStepReturnStatus
+    except Exception, e:
+        exc_type, exc_obj, exc_tb = sys.exc_info()
+        fname = os.path.split(exc_tb.tb_frame.f_code.co_filename)[1]
+        Error_Detail = ((str(exc_type).replace("type ", "Error Type: ")) + ";" +  "Error Message: " + str(exc_obj) +";" + "File Name: " + fname + ";" + "Line: "+ str(exc_tb.tb_lineno))
+        CommonUtil.ExecLog(sModuleInfo, "Unable to go to webpage: Error:%s" %( Error_Detail), 3,local_run)
+        temp_q.put("Failed")
+        return "failed"

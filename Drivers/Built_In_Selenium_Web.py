@@ -79,7 +79,7 @@ def login_to_web_app(dependency,run_time_params,step_data,file_attachment,temp_q
         first_data_set=step_data[0]
         web_link=first_data_set[0][1]
         web_title = first_data_set[0][2]
-        sTestStepReturnStatus=BuiltInFunctions.Go_To_Link(web_link, web_title)
+        sTestStepReturnStatus=BuiltInFunctions.Login_To_Application(user_name, password, user_element, password_element, button_to_click)
         temp_q.put(sTestStepReturnStatus)
         CommonUtil.ExecLog(sModuleInfo,"Exit: Step - Login To Web App",1,local_run)
         return sTestStepReturnStatus
