@@ -3,6 +3,11 @@ from appium import webdriver
 import os , sys, time, inspect
 from Utilities import CommonUtil
 from Built_In_Automation.Mobile.Android.adb_calls import adbOptions
+from Built_In_Automation.Mobile.CrossPlatform.Appium import commonOptions as co
+from Built_In_Automation.Mobile.CrossPlatform.Appium import clickinteraction as ci
+from Built_In_Automation.Mobile.CrossPlatform.Appium import locateinteraction as li
+from Built_In_Automation.Mobile.CrossPlatform.Appium import checkelement as ce
+from Built_In_Automation.Mobile.CrossPlatform.Appium import textinteraction as ti
 from appium.webdriver.common.touch_action import TouchAction
 
 
@@ -31,8 +36,8 @@ def launch(package_name,activity_name):
         driver = webdriver.Remote('http://localhost:4723/wd/hub', desired_caps)
         global driver
         CommonUtil.ExecLog(sModuleInfo,"Opened the app successfully",1,local_run)
-        time.sleep(10)
-        wait(10)
+        co.wait(driver, 10)
+        co.swipe(driver)
         return "Passed"
     except Exception, e:
         exc_type, exc_obj, exc_tb = sys.exc_info()        
@@ -40,6 +45,7 @@ def launch(package_name,activity_name):
         Error_Detail = ((str(exc_type).replace("type ", "Error Type: ")) + ";" +  "Error Message: " + str(exc_obj) +";" + "File Name: " + fname + ";" + "Line: "+ str(exc_tb.tb_lineno))
         CommonUtil.ExecLog(sModuleInfo, "Unable to start WebDriver. %s"%Error_Detail, 3,local_run)
         return "failed"
+
 
 def close():
     sModuleInfo = inspect.stack()[0][3] + " : " + inspect.getmoduleinfo(__file__).name
@@ -56,128 +62,20 @@ def close():
         CommonUtil.ExecLog(sModuleInfo, "Unable to close the driver. %s"%Error_Detail, 3,local_run)
         return "failed"
     
-def go_back():
-    sModuleInfo = inspect.stack()[0][3] + " : " + inspect.getmoduleinfo(__file__).name
-    try:
-        CommonUtil.ExecLog(sModuleInfo,"Trying to go back",1,local_run)
-        driver.back()
-        CommonUtil.ExecLog(sModuleInfo,"Went back successfully",1,local_run)
-        return "Passed"
-    except Exception, e:
-        exc_type, exc_obj, exc_tb = sys.exc_info()        
-        fname = os.path.split(exc_tb.tb_frame.f_code.co_filename)[1]
-        Error_Detail = ((str(exc_type).replace("type ", "Error Type: ")) + ";" +  "Error Message: " + str(exc_obj) +";" + "File Name: " + fname + ";" + "Line: "+ str(exc_tb.tb_lineno))
-        CommonUtil.ExecLog(sModuleInfo, "Unable to go back. %s"%Error_Detail, 3,local_run)
-        return "failed"
-    
-def wait(_time):
-    sModuleInfo = inspect.stack()[0][3] + " : " + inspect.getmoduleinfo(__file__).name
-    try:
-        CommonUtil.ExecLog(sModuleInfo,"Starting waiting for %s seconds.."%_time,1,local_run)
-        driver.implicitly_wait(_time)
-        time.sleep(_time)
-        CommonUtil.ExecLog(sModuleInfo,"Waited successfully",1,local_run)
-        return "Passed"
-    except Exception, e:
-        exc_type, exc_obj, exc_tb = sys.exc_info()        
-        fname = os.path.split(exc_tb.tb_frame.f_code.co_filename)[1]
-        Error_Detail = ((str(exc_type).replace("type ", "Error Type: ")) + ";" +  "Error Message: " + str(exc_obj) +";" + "File Name: " + fname + ";" + "Line: "+ str(exc_tb.tb_lineno))
-        CommonUtil.ExecLog(sModuleInfo, "Unable to wait. %s"%Error_Detail, 3,local_run)
-        return "failed"
-
-def click_element_by_id(_id):
-    sModuleInfo = inspect.stack()[0][3] + " : " + inspect.getmoduleinfo(__file__).name
-    try:
-        CommonUtil.ExecLog(sModuleInfo,"Trying to find element by id: %s"%_id,1,local_run)
-        elem = driver.find_element_by_id(_id)
-        CommonUtil.ExecLog(sModuleInfo,"Trying to click on element by id: %s"%_id,1,local_run)
-        elem.click()
-        CommonUtil.ExecLog(sModuleInfo,"Clicked on element successfully",1,local_run)
-        return "Passed"
-    except Exception, e:
-        exc_type, exc_obj, exc_tb = sys.exc_info()        
-        fname = os.path.split(exc_tb.tb_frame.f_code.co_filename)[1]
-        Error_Detail = ((str(exc_type).replace("type ", "Error Type: ")) + ";" +  "Error Message: " + str(exc_obj) +";" + "File Name: " + fname + ";" + "Line: "+ str(exc_tb.tb_lineno))
-        CommonUtil.ExecLog(sModuleInfo, "Unable to click on the element. %s"%Error_Detail, 3,local_run)
-        return "failed"
-    
-def click_element_by_name(_name):
-    sModuleInfo = inspect.stack()[0][3] + " : " + inspect.getmoduleinfo(__file__).name
-    try:
-        CommonUtil.ExecLog(sModuleInfo,"Trying to find element by name: %s"%_name,1,local_run)
-        elem = driver.find_element_by_name(_name)
-        CommonUtil.ExecLog(sModuleInfo,"Trying to click on element by name: %s"%_name,1,local_run)
-        elem.click()
-        CommonUtil.ExecLog(sModuleInfo,"Clicked on element successfully",1,local_run)
-        return "Passed"
-    except Exception, e:
-        exc_type, exc_obj, exc_tb = sys.exc_info()        
-        fname = os.path.split(exc_tb.tb_frame.f_code.co_filename)[1]
-        Error_Detail = ((str(exc_type).replace("type ", "Error Type: ")) + ";" +  "Error Message: " + str(exc_obj) +";" + "File Name: " + fname + ";" + "Line: "+ str(exc_tb.tb_lineno))
-        CommonUtil.ExecLog(sModuleInfo, "Unable to click on the element. %s"%Error_Detail, 3,local_run)
-        return "failed"
-    
-def click_element_by_class_name(_class):
-    sModuleInfo = inspect.stack()[0][3] + " : " + inspect.getmoduleinfo(__file__).name
-    try:
-        CommonUtil.ExecLog(sModuleInfo,"Trying to find element by class: %s"%_class,1,local_run)
-        elem = driver.find_element_by_class_name(_class)
-        CommonUtil.ExecLog(sModuleInfo,"Trying to click on element by class: %s"%_class,1,local_run)
-        elem.click()
-        CommonUtil.ExecLog(sModuleInfo,"Clicked on element successfully",1,local_run)
-        return "Passed"
-    except Exception, e:
-        exc_type, exc_obj, exc_tb = sys.exc_info()        
-        fname = os.path.split(exc_tb.tb_frame.f_code.co_filename)[1]
-        Error_Detail = ((str(exc_type).replace("type ", "Error Type: ")) + ";" +  "Error Message: " + str(exc_obj) +";" + "File Name: " + fname + ";" + "Line: "+ str(exc_tb.tb_lineno))
-        CommonUtil.ExecLog(sModuleInfo, "Unable to click on the element. %s"%Error_Detail, 3,local_run)
-        return "failed"
-    
-def click_element_by_xpath(_classpath):
-    sModuleInfo = inspect.stack()[0][3] + " : " + inspect.getmoduleinfo(__file__).name
-    try:
-        CommonUtil.ExecLog(sModuleInfo,"Trying to find element by xpath: %s"%_classpath,1,local_run)
-        elem = driver.find_element_by_xpath(_classpath)
-        CommonUtil.ExecLog(sModuleInfo,"Trying to click on element by class: %s"%_classpath,1,local_run)
-        elem.click()
-        CommonUtil.ExecLog(sModuleInfo,"Clicked on element successfully",1,local_run)
-        return "Passed"
-    except Exception, e:
-        exc_type, exc_obj, exc_tb = sys.exc_info()        
-        fname = os.path.split(exc_tb.tb_frame.f_code.co_filename)[1]
-        Error_Detail = ((str(exc_type).replace("type ", "Error Type: ")) + ";" +  "Error Message: " + str(exc_obj) +";" + "File Name: " + fname + ";" + "Line: "+ str(exc_tb.tb_lineno))
-        CommonUtil.ExecLog(sModuleInfo, "Unable to click on the element. %s"%Error_Detail, 3,local_run)
-        return "failed"
-    
-def click_element_by_accessibility_id(_id):
-    sModuleInfo = inspect.stack()[0][3] + " : " + inspect.getmoduleinfo(__file__).name
-    try:
-        CommonUtil.ExecLog(sModuleInfo,"Trying to find element by accessibility id: %s"%_id,1,local_run)
-        elem = driver.find_element_by_accessibility_id(_id)
-        CommonUtil.ExecLog(sModuleInfo,"Trying to click on element by accessibility id: %s"%_id,1,local_run)
-        elem.click()
-        CommonUtil.ExecLog(sModuleInfo,"Clicked on element successfully",1,local_run)
-        return "Passed"
-    except Exception, e:
-        exc_type, exc_obj, exc_tb = sys.exc_info()        
-        fname = os.path.split(exc_tb.tb_frame.f_code.co_filename)[1]
-        Error_Detail = ((str(exc_type).replace("type ", "Error Type: ")) + ";" +  "Error Message: " + str(exc_obj) +";" + "File Name: " + fname + ";" + "Line: "+ str(exc_tb.tb_lineno))
-        CommonUtil.ExecLog(sModuleInfo, "Unable to click on the element. %s"%Error_Detail, 3,local_run)
-        return "failed"
     
 def confirm_right():
     sModuleInfo = inspect.stack()[0][3] + " : " + inspect.getmoduleinfo(__file__).name
     try:
         CommonUtil.ExecLog(sModuleInfo,"Trying to confirm the right menu options",1,local_run)
-        click_element_by_id("ca.bellmedia.bnngo:id/action_right_toggle")
-        check_element_by_id("ca.bellmedia.bnngo:id/rdo_stock")
-        click_element_by_id("ca.bellmedia.bnngo:id/rdo_stock")
+        ci.click_element_by_id(driver, "ca.bellmedia.bnngo:id/action_right_toggle")
+        ce.check_element_by_id(driver, "ca.bellmedia.bnngo:id/rdo_stock")
+        ci.click_element_by_id(driver, "ca.bellmedia.bnngo:id/rdo_stock")
         CommonUtil.ExecLog(sModuleInfo,"The right menu has 'Stock Lookup'",1,local_run)
-        check_element_by_id("ca.bellmedia.bnngo:id/rdo_twitter")
-        click_element_by_id("ca.bellmedia.bnngo:id/rdo_twitter")
+        ce.check_element_by_id(driver, "ca.bellmedia.bnngo:id/rdo_twitter")
+        ci.click_element_by_id(driver, "ca.bellmedia.bnngo:id/rdo_twitter")
         CommonUtil.ExecLog(sModuleInfo,"The right menu has 'Twitter'",1,local_run)
-        check_element_by_id("ca.bellmedia.bnngo:id/rdo_tv")
-        click_element_by_id("ca.bellmedia.bnngo:id/rdo_tv")
+        ce.check_element_by_id(driver,"ca.bellmedia.bnngo:id/rdo_tv")
+        ci.click_element_by_id(driver, "ca.bellmedia.bnngo:id/rdo_tv")
         CommonUtil.ExecLog(sModuleInfo,"The right menu has 'Live'",1,local_run)
         CommonUtil.ExecLog(sModuleInfo,"Confirmed the right menu items successfully",1,local_run)
         return "Passed"
@@ -192,32 +90,31 @@ def confirm_right():
 def confirm_left():
     sModuleInfo = inspect.stack()[0][3] + " : " + inspect.getmoduleinfo(__file__).name
     try:
-        time.sleep(5)
         results = "failed"
         CommonUtil.ExecLog(sModuleInfo,"Trying to confirm the left menu options",1,local_run)
-        wait(10)
+        co.wait(driver, 10)
         CommonUtil.ExecLog(sModuleInfo,"Trying to click on left menu",1,local_run)
-        click_element_by_id("android:id/home")
+        ci.click_element_by_id(driver, "android:id/home")
         CommonUtil.ExecLog(sModuleInfo,"Trying to match the option - 'Home'...",1,local_run)
-        results = check_element_by_name('Home')
+        results = ce.check_element_by_name(driver, 'Home')
         #go_back()
         CommonUtil.ExecLog(sModuleInfo,"Trying to match the option - 'News'...",1,local_run)
-        results = check_element_by_name('News')
+        results = ce.check_element_by_name(driver, 'News')
         #go_back()
         CommonUtil.ExecLog(sModuleInfo,"Trying to match the option - 'Markets'...",1,local_run)
-        results = check_element_by_name('Markets')
+        results = ce.check_element_by_name(driver, 'Markets')
         #go_back()
         CommonUtil.ExecLog(sModuleInfo,"Trying to match the option - 'Videos'...",1,local_run)
-        results = check_element_by_name('Videos')
+        results = ce.check_element_by_name(driver, 'Videos')
         #go_back()
         CommonUtil.ExecLog(sModuleInfo,"Trying to match the option - 'Shows'...",1,local_run)
-        results = check_element_by_name('Shows')
+        results = ce.check_element_by_name(driver, 'Shows')
         #go_back()
         CommonUtil.ExecLog(sModuleInfo,"Trying to match the option - 'Blogs'...",1,local_run)
-        results = check_element_by_name('Blogs')
+        results = ce.check_element_by_name(driver, 'Blogs')
         #go_back()
         CommonUtil.ExecLog(sModuleInfo,"Trying to match the option - 'Top Picks'...",1,local_run)
-        results = check_element_by_name('Top Picks')
+        results = ce.check_element_by_name(driver, 'Top Picks')
         #go_back()
         if results=="Passed":
             CommonUtil.ExecLog(sModuleInfo,"Confirmed the left menu items successfully",1,local_run)
@@ -238,9 +135,9 @@ def go_left(section_name):
     try:
         CommonUtil.ExecLog(sModuleInfo,"Trying to go to the left menu section: %s"%section_name,1,local_run)
         CommonUtil.ExecLog(sModuleInfo,"Trying to click on left menu",1,local_run)
-        click_element_by_id("android:id/home")
+        ci.click_element_by_id(driver, "android:id/home")
         CommonUtil.ExecLog(sModuleInfo,"Trying to click on the section: %s"%section_name,1,local_run)
-        results = click_element_by_name(section_name)
+        results = ci.click_element_by_name(driver, section_name)
         if results=="Passed":
             CommonUtil.ExecLog(sModuleInfo,"Clicked on the left menu section %s"%section_name,1,local_run)
             return "Passed"
@@ -259,7 +156,7 @@ def go_sub(section_name):
     try:
         CommonUtil.ExecLog(sModuleInfo,"Trying to go to the left sub-menu section: %s"%section_name,1,local_run)
         CommonUtil.ExecLog(sModuleInfo,"Trying to click on the sub section: %s"%section_name,1,local_run)
-        results = click_element_by_name(section_name)
+        results = ci.click_element_by_name(driver, section_name)
         if results=="Passed":
             CommonUtil.ExecLog(sModuleInfo,"Clicked on the left menu section %s"%section_name,1,local_run)
             return "Passed"
@@ -277,8 +174,10 @@ def check_section(section_name):
     sModuleInfo = inspect.stack()[0][3] + " : " + inspect.getmoduleinfo(__file__).name
     try:
         CommonUtil.ExecLog(sModuleInfo,"Trying to match the section: %s"%section_name,1,local_run)
-        elem = driver.find_element_by_id("android:id/action_bar_title")
-        if elem.text == section_name:
+        elem = li.locate_element_by_id(driver, "android:id/action_bar_title")
+        found = ce.check_element_by_name(driver, section_name)
+        if found == "Passed" and elem.text == section_name:
+            co.swipe(driver)
             CommonUtil.ExecLog(sModuleInfo,"Opened the section - %s successfully"%section_name,1,local_run)
             return "Passed"
         else:
@@ -298,9 +197,9 @@ def confirm_submenu(section_name):
     try:
         CommonUtil.ExecLog(sModuleInfo,"Trying to check sub menu for the section: %s"%section_name,1,local_run)
         CommonUtil.ExecLog(sModuleInfo,"Trying to check section - %s on left sub menu"%section_name,1,local_run)
-        res = check_element_by_id("ca.bellmedia.bnngo:id/txt_title")
+        res = ce.check_element_by_id(driver, "ca.bellmedia.bnngo:id/txt_title")
         #check_element_by_id("ca.bellmedia.bnngo:id/list")
-        res2 = check_element_by_id("ca.bellmedia.bnngo:id/btn_back")
+        res2 = ce.check_element_by_id(driver, "ca.bellmedia.bnngo:id/btn_back")
         if res=="Passed" and res2=="Passed":
             CommonUtil.ExecLog(sModuleInfo,"Sub-menu for the section - %s confirmed successfully"%section_name,1,local_run)
             return "Passed"
@@ -323,7 +222,7 @@ def confirm_submenu_items(submenus):
         items = submenus.split(",")
         for each in items:
             CommonUtil.ExecLog(sModuleInfo,"Trying to check sub menu - %s ..."%each.strip(),1,local_run)
-            result = check_element_by_name(each)
+            result = ce.check_element_by_name(driver, each)
             if result == "Passed":
                 CommonUtil.ExecLog(sModuleInfo,"Sub-menu item %s confirmed successfully"%each.strip(),1,local_run)
             else:
@@ -342,10 +241,10 @@ def confirm_player():
     sModuleInfo = inspect.stack()[0][3] + " : " + inspect.getmoduleinfo(__file__).name
     try:
         CommonUtil.ExecLog(sModuleInfo,"Trying to confirm the video playing...",1,local_run)
-        wait(5)
-        click_element_by_id("ca.bellmedia.bnngo:id/img_picture")
-        wait(2)
-        res = check_element_by_id("ca.bellmedia.bnngo:id/pbBufferingSpinner")
+        co.wait(driver, 5)
+        ci.click_element_by_id(driver, "ca.bellmedia.bnngo:id/img_picture")
+        co.wait(driver, 2)
+        res = ce.check_element_by_id(driver, "ca.bellmedia.bnngo:id/pbBufferingSpinner")
         if res=="Passed":
             CommonUtil.ExecLog(sModuleInfo,"Confirmed the video player opening successfully",1,local_run)
             return "Passed"
@@ -359,43 +258,5 @@ def confirm_player():
         CommonUtil.ExecLog(sModuleInfo, "Unable to confirm the right menu options. %s"%Error_Detail, 3,local_run)
         return "failed"
     
-def check_element_by_id(_id):
-    sModuleInfo = inspect.stack()[0][3] + " : " + inspect.getmoduleinfo(__file__).name
-    try:
-        CommonUtil.ExecLog(sModuleInfo,"Trying to find element by id: %s"%_id,1,local_run)
-        elem = driver.find_elements_by_id(_id)
-        if not elem:
-            CommonUtil.ExecLog(sModuleInfo,"Element by id : %s not found"%_id,3,local_run)
-            return "failed"
-        elif elem[0].is_displayed():
-            #click_element_by_id(_id)
-            CommonUtil.ExecLog(sModuleInfo,"Element by id : %s found"%_id,1,local_run)
-            return "Passed"
-        
-    except Exception, e:
-        exc_type, exc_obj, exc_tb = sys.exc_info()        
-        fname = os.path.split(exc_tb.tb_frame.f_code.co_filename)[1]
-        Error_Detail = ((str(exc_type).replace("type ", "Error Type: ")) + ";" +  "Error Message: " + str(exc_obj) +";" + "File Name: " + fname + ";" + "Line: "+ str(exc_tb.tb_lineno))
-        CommonUtil.ExecLog(sModuleInfo, "Unable to check the element. %s"%Error_Detail, 3,local_run)
-        return "failed"
-    
-def check_element_by_name(_name):
-    sModuleInfo = inspect.stack()[0][3] + " : " + inspect.getmoduleinfo(__file__).name
-    try:
-        CommonUtil.ExecLog(sModuleInfo,"Trying to find element by name: %s"%_name,1,local_run)
-        elem = driver.find_element_by_name(_name)
-        if not elem:
-            CommonUtil.ExecLog(sModuleInfo,"Element by name : %s not found"%_name,3,local_run)
-            return "failed"
-        elif elem.is_displayed():
-            #click_element_by_name(_name)
-            CommonUtil.ExecLog(sModuleInfo,"Element by name : %s found"%_name,1,local_run)
-            return "Passed"
-    except Exception, e:
-        exc_type, exc_obj, exc_tb = sys.exc_info()        
-        fname = os.path.split(exc_tb.tb_frame.f_code.co_filename)[1]
-        Error_Detail = ((str(exc_type).replace("type ", "Error Type: ")) + ";" +  "Error Message: " + str(exc_obj) +";" + "File Name: " + fname + ";" + "Line: "+ str(exc_tb.tb_lineno))
-        CommonUtil.ExecLog(sModuleInfo, "Unable to check the element. %s"%Error_Detail, 3,local_run)
-        return "failed"
     
     
