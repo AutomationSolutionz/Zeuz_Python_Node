@@ -168,7 +168,29 @@ def TakeScreenShot(ImageName,local_run=False):
                 
                 #linux working copy
                 full_location=ImageFolder+os.sep+TimeStamp("utc")+"_"+ImageName+'.png'
-                os.system("import -window root %s"%full_location)
+                #os.system("import -window root %s"%full_location)
+                
+                try:
+                    from gi.repository import Gdk
+
+                except ImportError:
+                    print 'could not import python package needed for screenshot...installing package "gi"'
+                    os.system('pip install gi')
+
+                # set the root window as the window we want for screenshot
+                window = Gdk.get_default_root_window()
+                # get dimensions of the window
+                x, y, width, height = window.get_geometry()
+
+                print 'taking screenshot...'
+                # take screenshot
+                img = Gdk.pixbuf_get_from_window(window, x, y, width, height)
+
+                if img:
+                    img.savev(full_location, "png", (), ())
+                    print 'screenshot saved as: "%s"' % full_location
+                else:
+                    print "unable to take screenshot..."
                 
                 #mobile device working copy
                 if sys.platform == 'linux2':

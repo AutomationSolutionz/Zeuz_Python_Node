@@ -9,11 +9,11 @@ from Built_In_Automation.Mobile.CrossPlatform.Appium import BuiltInFunctions as 
 local_run = False
 
 
-def check_element_by_id(_id, parent=False):
+def check_element_by_id(driver, _id):
     sModuleInfo = inspect.stack()[0][3] + " : " + inspect.getmoduleinfo(__file__).name
     try:
-        CommonUtil.ExecLog(sModuleInfo,"Trying to find element by id: %s"%_id,1,local_run)
-        elems = li.locate_elements_by_id(_id, parent)
+        CommonUtil.ExecLog(sModuleInfo,"Trying to check element by id: %s"%_id,1,local_run)
+        elems = li.locate_elements_by_id(driver, _id)
         if not elems:
             CommonUtil.ExecLog(sModuleInfo,"Element by id : %s not found"%_id,3,local_run)
             return "failed"
@@ -29,11 +29,11 @@ def check_element_by_id(_id, parent=False):
         CommonUtil.ExecLog(sModuleInfo, "Unable to check the element. %s"%Error_Detail, 3,local_run)
         return "failed"
     
-def check_element_by_name(_name, parent=False):
+def check_element_by_name(driver, _name):
     sModuleInfo = inspect.stack()[0][3] + " : " + inspect.getmoduleinfo(__file__).name
     try:
-        CommonUtil.ExecLog(sModuleInfo,"Trying to find element by name: %s"%_name,1,local_run)
-        elem = li.locate_element_by_name(_name, parent)
+        CommonUtil.ExecLog(sModuleInfo,"Trying to check element by name: %s"%_name,1,local_run)
+        elem = li.locate_element_by_name(driver, _name)
         if not elem:
             CommonUtil.ExecLog(sModuleInfo,"Element by name : %s not found"%_name,3,local_run)
             return "failed"

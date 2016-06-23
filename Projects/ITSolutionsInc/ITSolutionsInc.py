@@ -32,8 +32,8 @@ global WebDriver_Wait_Short
 WebDriver_Wait_Short = 10
 
 #if local_run is True, no logging will be recorded to the web server.  Only local print will be displayed
-local_run = True
-#local_run = False
+#local_run = True
+local_run = False
 
   
 
@@ -47,42 +47,33 @@ def Select_Gear_Menu_Item(item_text):
             CommonUtil.ExecLog(sModuleInfo, "Could not click on the Gear icon", 3,local_run)
             CommonUtil.TakeScreenShot(sModuleInfo, local_run)
             return "failed"  
-        #We now look for the pop up menu 
-        CommonUtil.ExecLog(sModuleInfo, "Trying locate the pop up window menu", 1,local_run)
-        try:
-            pop_up_menu = BuiltInFunctions.Get_Element_With_Reference("ispopup","1",'aria-label',"Site contents","child")
-            
-            
-            #BuiltInFunctions.Get_Element("ispopup","1")
-        except:
-            CommonUtil.ExecLog(sModuleInfo, "Could not locate pop up menu", 3,local_run)
-            CommonUtil.TakeScreenShot(sModuleInfo, local_run)
-            return "failed"  
-        if pop_up_menu == "failed":
-            CommonUtil.ExecLog(sModuleInfo, "Could not locate pop up menu", 3,local_run)
-            CommonUtil.TakeScreenShot(sModuleInfo, local_run)
-            return "failed"  
-        #Now that we have located the pop up menu, we can click on any item in that menu
-        result = BuiltInFunctions.Click_Element_By_Name(item_text,pop_up_menu) 
-        if result == "passed":   
-            CommonUtil.ExecLog(sModuleInfo, "Successfully clicked your Gear menu item %s"%item_text, 1,local_run)        
+        time.sleep(3)
+        #We now try to find the right element and click it
+        CommonUtil.ExecLog(sModuleInfo, "Trying locate %s menu"%item_text, 1,local_run)
+        result= BuiltInFunctions.Get_Element_With_Reference('aria-label',item_text,'ispopup', '1',"parent")
+        if result != "failed":
+            result.click()
+            CommonUtil.ExecLog(sModuleInfo, "Clicked your element", 1,local_run)            
             return "passed"
         else:
-            CommonUtil.ExecLog(sModuleInfo, "Could not click on the Gear menu item: %s"%item_text, 3,local_run)
-            CommonUtil.TakeScreenShot(sModuleInfo, local_run)
-            return "failed"                
+            CommonUtil.ExecLog(sModuleInfo, "Failed to clicked your element", 3,local_run)            
+            return "failed"
     except Exception, e:
         exc_type, exc_obj, exc_tb = sys.exc_info()        
         fname = os.path.split(exc_tb.tb_frame.f_code.co_filename)[1]
         Error_Detail = ((str(exc_type).replace("type ", "Error Type: ")) + ";" +  "Error Message: " + str(exc_obj) +";" + "File Name: " + fname + ";" + "Line: "+ str(exc_tb.tb_lineno))
         CommonUtil.ExecLog(sModuleInfo, "Could not click on the Gear menu item: %s.  Error: %s"%(item_text, Error_Detail), 3,local_run)
         return "failed"       
-    
+
+ 
 def Create_New_Subsite(title="Automated Sub Site",description="This description was filled out by automation",url_name="Automated_Sub_Site"):
     #this function assumes you are in Site Content page
     sModuleInfo = inspect.stack()[0][3] + " : " + inspect.getmoduleinfo(__file__).name
     try:
+        
+        
         CommonUtil.ExecLog(sModuleInfo, "Trying to click on Create new site", 1,local_run)
+        
         try:
             BuiltInFunctions.Click_By_Parameter_And_Value("id","createnewsite", parent=False)
         except:
@@ -100,57 +91,28 @@ def Create_New_Subsite(title="Automated Sub Site",description="This description 
         else:
             CommonUtil.ExecLog(sModuleInfo, "Unable to create the form", 3,local_run)
             CommonUtil.TakeScreenShot(sModuleInfo, local_run)
+            return "failed"
         
         
         #Wait until the creating page appears
         #This should probably go in BuiltINfunction
         CommonUtil.ExecLog(sModuleInfo, "Waiting for working on creating page appears", 1,local_run)
         max_wait = 5
-        i=0
+        time.sleep(5)
+        return "passed"
+        '''        i=0
         t1 = datetime.now()
         found_the_window = False
         t2=False
         while max_wait !=i: 
-            result = BuiltInFunctions.Get_Element('id',"ms-loading-box")
+            value = "This shouldn't take long."
+            result = BuiltInFunctions.Get_All_Elements("text()", value)
             time.sleep(1)
             i = i+1
             if result != "failed":
                 t2 = datetime.now()
                 found_the_window = True
-                break
-        if t2==False:
-            t2 = datetime.now()
-        delta = t2 - t1
-        if found_the_window == True:
-            CommonUtil.ExecLog(sModuleInfo, "Found the waiting for creating window in: %s seconds"%delta, 1,local_run)
-        else:
-            CommonUtil.ExecLog(sModuleInfo, "Unable to find the creating window in: %s seconds"%delta, 3,local_run)
-            return "failed"
-        #Now that we have found the waiting for creating window... we need to wait until its gone....
-        CommonUtil.ExecLog(sModuleInfo, "Waiting for working on creating page appears", 1,local_run)
-        max_wait = 10
-        i=0
-        t1 = datetime.now()
-        found_the_window = True
-        t2=False
-        while max_wait !=i: 
-            result = BuiltInFunctions.Get_Element('id',"ms-loading-box")
-            time.sleep(1)
-            i = i+1
-            if result == "failed":
-                t2 = datetime.now()
-                found_the_window = False
-                break
-        if t2==False:
-            t2 = datetime.now()
-        delta = t2 - t1
-        if found_the_window == False:
-            CommonUtil.ExecLog(sModuleInfo, "Creating window is gone in: %s seconds"%delta, 1,local_run)
-        else:
-            CommonUtil.ExecLog(sModuleInfo, "Creating window was never gone in: %s seconds"%delta, 3,local_run)
-            return "failed"    
-        # Need to click by text Publish it 
-               
+                break'''
 
     except Exception, e:
         exc_type, exc_obj, exc_tb = sys.exc_info()        
@@ -158,4 +120,55 @@ def Create_New_Subsite(title="Automated Sub Site",description="This description 
         Error_Detail = ((str(exc_type).replace("type ", "Error Type: ")) + ";" +  "Error Message: " + str(exc_obj) +";" + "File Name: " + fname + ";" + "Line: "+ str(exc_tb.tb_lineno))
         CommonUtil.ExecLog(sModuleInfo, "Unable to create the form  Error: %s"%(Error_Detail), 3,local_run)
         return "failed"          
-   
+    
+def Delete_Sub_Site( sub_site_name='Automated Sub Site'):
+    #this function assumes you are in Site Content page
+    sModuleInfo = inspect.stack()[0][3] + " : " + inspect.getmoduleinfo(__file__).name
+    try:
+        CommonUtil.ExecLog(sModuleInfo, "Checking to see if any sub site exists", 1,local_run)
+        result = BuiltInFunctions.Get_All_Elements('text()','This site does not have any subsites.') 
+        if result != "failed":
+            CommonUtil.ExecLog(sModuleInfo, "There are no sub site created", 1,local_run)
+            return "passed"
+        else:
+            sub_site = BuiltInFunctions.Get_All_Elements('text()',sub_site_name)
+            #BuiltInFunctions.Go_To_Link ('https://engitsolutions.sharepoint.com/sites/Demo/Automated_Sub_Site/')
+            if sub_site != "failed":
+                sub_site[0].click()
+                time.sleep(5)
+            else:
+                print "no subsite with your condition was found"
+                return "failed"
+            
+            Select_Gear_Menu_Item("Site settings")
+            delete_link = BuiltInFunctions.Get_All_Elements("text()", "Delete this site")
+            if delete_link == "failed":
+                return "failed"
+            else:
+                delete_link[0].click()
+            
+            confirm_page = BuiltInFunctions.Get_All_Elements("text()", "https://engitsolutions.sharepoint.com/sites/Demo/Automated_Sub_Site")
+            if  confirm_page != "failed":
+                BuiltInFunctions.Click_By_Parameter_And_Value ('value',"Delete")
+                browser_ = BuiltInFunctions.get_driver()
+                alert = browser_.switch_to_alert()
+                alert.accept()
+                print "successfully deleted"
+                back_to_web = BuiltInFunctions.Get_All_Elements("text()", "Go back to site")
+                if back_to_web == "failed":
+                    return "failed"
+                else:
+                    back_to_web[0].click()
+                    time.sleep(2)
+                    return "passed"
+            else:
+                print "couldn't confirm the right page to delete "
+                return "failed"
+
+    except Exception, e:
+        exc_type, exc_obj, exc_tb = sys.exc_info()        
+        fname = os.path.split(exc_tb.tb_frame.f_code.co_filename)[1]
+        Error_Detail = ((str(exc_type).replace("type ", "Error Type: ")) + ";" +  "Error Message: " + str(exc_obj) +";" + "File Name: " + fname + ";" + "Line: "+ str(exc_tb.tb_lineno))
+        CommonUtil.ExecLog(sModuleInfo, "Unable to create the form  Error: %s"%(Error_Detail), 3,local_run)
+        return "failed"          
+ 

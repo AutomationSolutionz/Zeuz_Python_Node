@@ -113,8 +113,9 @@ def Login_To_Application(user_name,password,user_element,password_element,button
         CommonUtil.ExecLog(sModuleInfo, "Entering logging credential by ID...", 1, local_run)
         Set_Text_Field_Value_By_ID(user_element,user_name)
         Set_Text_Field_Value_By_ID(password_element,password)
+        time.sleep(5)
         Click_Element_By_ID(button_to_click)
-        time.sleep(2)
+        #time.sleep(2)
         CommonUtil.TakeScreenShot(sModuleInfo, local_run)
         #if user selected to validate login name then we shall do that...  
         if logged_name == True:
@@ -284,12 +285,6 @@ def Set_Text_Field_By_Parameter_And_Value(parameter,value,text,parent=False):
         return "failed"
 
 
-'''
-need improvmenets.. we need to do this by using all elements concept
-
-'''
-
-
 def Get_Parent_Element(parameter,value,parent = False):
     sModuleInfo = inspect.stack()[0][3] + " : " + inspect.getmoduleinfo(__file__).name
     try:
@@ -336,11 +331,6 @@ def Get_Parent_Element(parameter,value,parent = False):
         parameter, value, Error_Detail), 3, local_run)
         CommonUtil.TakeScreenShot(sModuleInfo, local_run)
         return "failed"
-
-
-'''
-    Need to write code.  Should return a list of child elements.
-'''
 
 
 def Get_Child_Elements(parameter,value,parent=False):
@@ -391,9 +381,8 @@ def Get_Child_Elements(parameter,value,parent=False):
         CommonUtil.TakeScreenShot(sModuleInfo, local_run)
         return "failed"
 
-  
 
-def Get_Element(parameter,value,parent=False):
+def Get_Element(parameter,value,index_number=0,parent=False):
     sModuleInfo = inspect.stack()[0][3] + " : " + inspect.getmoduleinfo(__file__).name
     try:
         if isinstance(parent, (bool)) == True:
@@ -407,43 +396,102 @@ def Get_Element(parameter,value,parent=False):
             if len(All_Elements) > 1:
                 CommonUtil.ExecLog(sModuleInfo, "Found more than one element and will use the first one.  ** if fails, try providing parent element** ", 2, local_run)
                 CommonUtil.TakeScreenShot(sModuleInfo, local_run)
-                if (WebDriverWait(All_Elements[0], WebDriver_Wait).until(lambda driver : All_Elements[0].is_displayed())) == True:
-                    Element = All_Elements[0]
+                if (WebDriverWait(All_Elements[index_number], WebDriver_Wait).until(lambda driver : All_Elements[index_number].is_displayed())) == True:
+                    Element = All_Elements[index_number]
                     CommonUtil.ExecLog(sModuleInfo, "Using the *first* element to set the text", 2,local_run)
             else:
                 CommonUtil.ExecLog(sModuleInfo, "Found one element and will set the text on that", 1, local_run)
-                if (WebDriverWait(All_Elements[0], WebDriver_Wait).until(lambda driver : All_Elements[0].is_displayed())) == True:
-                    Element = All_Elements[0]
+                if (WebDriverWait(All_Elements[index_number], WebDriver_Wait).until(lambda driver : All_Elements[index_number].is_displayed())) == True:
+                    Element = All_Elements[index_number]
         CommonUtil.ExecLog(sModuleInfo, "We found the element of your given parameter and value", 1,local_run)
         return Element
     except Exception, e:
         exc_type, exc_obj, exc_tb = sys.exc_info()        
         fname = os.path.split(exc_tb.tb_frame.f_code.co_filename)[1]
         Error_Detail = ((str(exc_type).replace("type ", "Error Type: ")) + ";" +  "Error Message: " + str(exc_obj) +";" + "File Name: " + fname + ";" + "Line: "+ str(exc_tb.tb_lineno))
-        CommonUtil.ExecLog(sModuleInfo, "Unable to get the parent element.  Error: %s"%(Error_Detail), 3,local_run)
+        CommonUtil.ExecLog(sModuleInfo, "Unable to get the element.  Error: %s"%(Error_Detail), 3,local_run)
         return "failed"
 
 
+def Get_All_Elements(parameter,value,parent=False):
+    sModuleInfo = inspect.stack()[0][3] + " : " + inspect.getmoduleinfo(__file__).name
+    try:
+        if isinstance(parent, (bool)) == True:
+            if parameter == "text()":
+                All_Elements = WebDriverWait(sBrowser, WebDriver_Wait).until(EC.presence_of_all_elements_located((By.XPATH, "//*[%s='%s']"%(parameter,value))))
+            else:
+                All_Elements = WebDriverWait(sBrowser, WebDriver_Wait).until(EC.presence_of_all_elements_located((By.XPATH, "//*[@%s='%s']"%(parameter,value))))
+        else:
+            if parameter == "text()":
+                All_Elements = WebDriverWait(parent, WebDriver_Wait).until(EC.presence_of_all_elements_located((By.XPATH, "//*[%s='%s']"%(parameter,value))))
+            else:
+                All_Elements = WebDriverWait(parent, WebDriver_Wait).until(EC.presence_of_all_elements_located((By.XPATH, "//*[@%s='%s']"%(parameter,value))))
+        all_visible_elements = []
+        if All_Elements == []:        
+            CommonUtil.ExecLog(sModuleInfo, "Could not find your element by parameter:%s and value:%s..."%(parameter,value), 3,local_run)
+            return "failed"
+        else:
+            for each_elem in All_Elements:        
+                if each_elem.is_displayed() == True:
+                    all_visible_elements.append(each_elem)
+        if all_visible_elements == []:
+            CommonUtil.ExecLog(sModuleInfo, "Could not find your element by parameter:%s and value:%s..."%(parameter,value), 3,local_run)
+            return "failed"
+        else:            
+            CommonUtil.ExecLog(sModuleInfo, "We found element(s) of your given parameter and value", 1,local_run)
+            return all_visible_elements
+    except Exception, e:
+        exc_type, exc_obj, exc_tb = sys.exc_info()        
+        fname = os.path.split(exc_tb.tb_frame.f_code.co_filename)[1]
+        Error_Detail = ((str(exc_type).replace("type ", "Error Type: ")) + ";" +  "Error Message: " + str(exc_obj) +";" + "File Name: " + fname + ";" + "Line: "+ str(exc_tb.tb_lineno))
+        CommonUtil.ExecLog(sModuleInfo, "Unable to get the element.  Error: %s"%(Error_Detail), 3,local_run)
+        return "failed"
+
+def Get_Element_With_Reference(element_parameter,element_value,reference_parameter,reference_value,reference_is_parent_or_child):
+    sModuleInfo = inspect.stack()[0][3] + " : " + inspect.getmoduleinfo(__file__).name
+    try:
+        if reference_is_parent_or_child == "parent":     
+            CommonUtil.ExecLog(sModuleInfo, "Locating all parents elements", 1,local_run)   
+            all_parent_elements = Get_All_Elements(reference_parameter,reference_value)
+            all_matching_elements = []
+            for each_parent in all_parent_elements:
+                interested_elem = Get_All_Elements(element_parameter,element_value,each_parent)
+                if interested_elem != "failed":
+                    for each_matching in interested_elem:
+                        all_matching_elements.append(each_matching)
+            if len(all_matching_elements) >1:
+                CommonUtil.ExecLog(sModuleInfo, "Found more than one elements.  Will send the first element.  If it doesn't work, try to give different reference element", 2,local_run)  
+                return all_matching_elements[0]  
+            elif len(all_matching_elements) == 0:
+                CommonUtil.ExecLog(sModuleInfo, "No elements were found", 3,local_run)  
+                return "failed"
+            else:
+                CommonUtil.ExecLog(sModuleInfo, "Found the single element!", 1,local_run)  
+                return all_matching_elements[0]  
+        
+        elif reference_is_parent_or_child == "child":        
+            all_parent_elements = Get_All_Elements(element_parameter,element_value)
+            all_matching_elements = []
+            for each_parent in all_parent_elements:
+                interested_elem = Get_All_Elements(reference_parameter,reference_value,each_parent)
+                if interested_elem != "failed":
+                    all_matching_elements.append(each_parent)
+            if len(all_matching_elements) >1:
+                CommonUtil.ExecLog(sModuleInfo, "Found more than one elements.  Will send the first element.  If it doesn't work, try to give different reference element", 2,local_run)  
+                return all_matching_elements[0]      
+            elif len(all_matching_elements) == 0:
+                CommonUtil.ExecLog(sModuleInfo, "No elements were found", 3,local_run)  
+                return "failed"
+            else:
+                CommonUtil.ExecLog(sModuleInfo, "Found the single element!", 1,local_run)  
+                return all_matching_elements[0]  
+    except Exception, e:
+        exc_type, exc_obj, exc_tb = sys.exc_info()        
+        fname = os.path.split(exc_tb.tb_frame.f_code.co_filename)[1]
+        Error_Detail = ((str(exc_type).replace("type ", "Error Type: ")) + ";" +  "Error Message: " + str(exc_obj) +";" + "File Name: " + fname + ";" + "Line: "+ str(exc_tb.tb_lineno))
+        CommonUtil.ExecLog(sModuleInfo, "Could not find your element.  Error: %s"%(Error_Detail), 3,local_run)
+        return "failed"       
 '''
-need coding...
-
-The purpose of this function is to minimize finding duplicate element in the easiest way..
-a lot of time we get duplicate elements with matching condition.
-If we can actually provide some child/parent information, then the permutation becomes a
-lot more harder to duplicate.
-
-user will provide the element's parameter and value and then provide either the child or parent
-and then function will return an element.
-
-make sure you use Get_Element(parameter,value,parent=False) as reference ..
-we always want to make sure that we are looking for all elements.....
-
-if a user gives a child as reference .. then you need to find all the children of the given parent
-and look for the interested item...
-
-
-'''
-
 
 def Get_Element_With_Reference(element_parameter,element_value,reference_parameter,reference_value,child_parent):
     sModuleInfo = inspect.stack()[0][3] + " : " + inspect.getmoduleinfo(__file__).name
@@ -462,26 +510,44 @@ def Get_Element_With_Reference(element_parameter,element_value,reference_paramet
             return "failed"
         else:
             if len(All_Elements) > 1:
-                CommonUtil.ExecLog(sModuleInfo,
-                                   "Found more than one element and will use the first one.  ** if fails, try providing parent element** ",
-                                   2, local_run)
+                #CommonUtil.ExecLog(sModuleInfo,
+                #                  "Found more than one element and will use the first one.  ** if fails, try providing parent element** ",
+                #                   2, local_run)
                 CommonUtil.TakeScreenShot(sModuleInfo, local_run)
 
                 child_parent=child_parent.lower()
 
                 if child_parent == 'child':
                     valid_parent_element = []
-                    child_element = Get_Element(reference_parameter, reference_value)
-                    for possible_parent_element in All_Elements:
-                        parent = Get_Parent_Element(reference_parameter,reference_value)
-                        if possible_parent_element == parent:
-                            valid_parent_element.append(possible_parent_element)
+                    child_element_list = WebDriverWait(sBrowser, WebDriver_Wait).until(EC.presence_of_all_elements_located((By.XPATH, "//*[@%s='%s']" % (reference_parameter, reference_value))))
+                    print All_Elements
+                    print child_element_list
+
+                    for child in child_element_list:
+                        for possible_parent_element in All_Elements:
+
+                            children_of_possible_refernece = Get_All_Elements(reference_parameter,reference_value,possible_parent_element)
+                            print children_of_possible_refernece
+                            if len(children_of_possible_refernece) > 1:
+                                CommonUtil.ExecLog(sModuleInfo,
+                                                      "Found more than one element by parameter:%s and value:%s with referenece child parameter:%s and reference child value:%s..." % (
+                                                       element_parameter, element_value, reference_parameter,
+                                                       reference_value), 3,
+                                                   local_run)
+                                return "failed"
+
+
+                            if child in children_of_possible_refernece:
+                                if possible_parent_element not in valid_parent_element:
+                                    valid_parent_element.append(possible_parent_element)
+
 
                     if valid_parent_element == []:
                         CommonUtil.ExecLog(sModuleInfo,
                                    "Could not find your element by parameter:%s and value:%s with referenece child parameter:%s and reference child value:%s..." % (
                                    element_parameter, element_value,reference_parameter,reference_value), 3,
                                    local_run)
+                        return "failed"
                     else:
                         if len(valid_parent_element) > 1:
                             CommonUtil.ExecLog(sModuleInfo,
@@ -498,20 +564,33 @@ def Get_Element_With_Reference(element_parameter,element_value,reference_paramet
                                 Element = valid_parent_element[0]
                                 return Element
 
-
                 elif child_parent == 'parent':
                     valid_child_element = []
-                    parent_element = Get_Element(reference_parameter, reference_value)
-                    for possible_child_element in All_Elements:
-                        all_child = Get_Child_Elements(reference_parameter, reference_value)
-                        if possible_child_element in all_child:
-                            valid_child_element.append(possible_child_element)
+                    possible_parent_element_list = WebDriverWait(sBrowser, WebDriver_Wait).until(
+                        EC.presence_of_all_elements_located(
+                            (By.XPATH, "//*[@%s='%s']" % (reference_parameter, reference_value))))
+
+                    for possible_parent_element in possible_parent_element_list:
+                        for possible_child in All_Elements:
+                            child_list_of_reference_parent = Get_All_Elements(element_parameter,element_value,possible_parent_element)
+                            if len(child_list_of_reference_parent) > 1:
+                                CommonUtil.ExecLog(sModuleInfo,                                                       "Found more than one element by parameter:%s and value:%s with referenece child parameter:%s and reference child value:%s..." % (
+                                                           element_parameter, element_value, reference_parameter,
+                                                           reference_value), 3,
+                                                       local_run)
+                                return "failed"
+
+
+                            if possible_child in child_list_of_reference_parent:
+                                if possible_child not in valid_child_element:
+                                    valid_child_element.append(possible_child)
 
                     if valid_child_element == []:
                         CommonUtil.ExecLog(sModuleInfo,
                                            "Could not find your element by parameter:%s and value:%s with referenece parent parameter:%s and reference parent value:%s..." % (
                                                element_parameter, element_value, reference_parameter, reference_value), 3,
                                            local_run)
+                        return "failed"
                     else:
                         if len(valid_child_element) > 1:
                             CommonUtil.ExecLog(sModuleInfo,
@@ -530,6 +609,7 @@ def Get_Element_With_Reference(element_parameter,element_value,reference_paramet
 
             else:
                 CommonUtil.ExecLog(sModuleInfo, "Found one element and will return that", 1, local_run)
+                time.sleep(5)
                 if (WebDriverWait(All_Elements[0], WebDriver_Wait).until(
                         lambda driver: All_Elements[0].is_displayed())) == True:
                     Element = All_Elements[0]
@@ -545,7 +625,7 @@ def Get_Element_With_Reference(element_parameter,element_value,reference_paramet
         CommonUtil.TakeScreenShot(sModuleInfo, local_run)
         return "failed"
     
- 
+''' 
     
 def Tear_Down():
     sModuleInfo = inspect.stack()[0][3] + " : " + inspect.getmoduleinfo(__file__).name

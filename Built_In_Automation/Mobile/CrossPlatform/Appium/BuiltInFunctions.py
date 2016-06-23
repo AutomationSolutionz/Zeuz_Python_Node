@@ -427,3 +427,28 @@ def remove(app_package):
         return "failed"
 
 
+def launch_ios_app():
+    sModuleInfo = inspect.stack()[0][3] + " : " + inspect.getmoduleinfo(__file__).name
+    try:
+        CommonUtil.ExecLog(sModuleInfo,"Trying to launch the app...",1,local_run)
+        PATH = lambda p: os.path.abspath(
+            os.path.join(os.path.dirname(__file__), p)
+        )
+        desired_caps = {}
+        desired_caps['platformName'] = 'iOS'
+        desired_caps['platformVersion'] = '7.1.2'
+        desired_caps['deviceName'] = 'iPhone 4s'
+        desired_caps['app'] = PATH('/Users/user/Documents/workspace/asut/pro-diagnostics-1.28.2.ipa')
+        desired_caps['udid'] = '848b6a392f627ff995862ed57ec1f03530deb2b8'
+        desired_caps['bundleId'] = 'com.assetscience.canada.prodiagnostics'
+        driver = webdriver.Remote('http://localhost:4723/wd/hub', desired_caps)
+        global driver
+        CommonUtil.ExecLog(sModuleInfo,"Launched the app successfully.",1,local_run)
+        wait(10)
+        return "Passed"
+    except Exception, e:
+        exc_type, exc_obj, exc_tb = sys.exc_info()        
+        fname = os.path.split(exc_tb.tb_frame.f_code.co_filename)[1]
+        Error_Detail = ((str(exc_type).replace("type ", "Error Type: ")) + ";" +  "Error Message: " + str(exc_obj) +";" + "File Name: " + fname + ";" + "Line: "+ str(exc_tb.tb_lineno))
+        CommonUtil.ExecLog(sModuleInfo, "Unable to start WebDriver. %s"%Error_Detail, 3,local_run)
+        return "failed"
