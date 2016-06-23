@@ -1,8 +1,8 @@
 
 # Android environment
 from appium import webdriver
-import os , sys, time, inspect
-from Utilities import CommonUtil
+import os , sys, time, inspect, json
+from Utilities import CommonUtil, FileUtilities
 from Built_In_Automation.Mobile.Android.adb_calls import adbOptions
 from appium.webdriver.common.touch_action import TouchAction
 
@@ -15,6 +15,147 @@ PATH = lambda p: os.path.abspath(
 #if local_run is True, no logging will be recorded to the web server.  Only local print will be displayed
 #local_run = True
 local_run = False
+
+global APPIUM_DRIVER_LIST
+APPIUM_DRIVER_LIST = {}
+
+
+def getDriversList():
+    return APPIUM_DRIVER_LIST
+
+
+def getDriver(index):
+    try:
+        return APPIUM_DRIVER_LIST[index]
+    except Exception, e:
+        return False
+
+
+def addDriver(position, driver, port):
+    try:
+        APPIUM_DRIVER_LIST.update({position: {'driver':driver, 'port': port}})
+        return True
+    except Exception, e:
+        return False
+
+
+def start_selenium_hub(file_location = os.path.join(FileUtilities.get_home_folder(), os.path.join('Desktop', 'selenium-server-standalone-2.43.1.jar'))):
+    sModuleInfo = inspect.stack()[0][3] + " : " + inspect.getmoduleinfo(__file__).name
+    try:
+        CommonUtil.ExecLog(sModuleInfo, "Starting Selenium Hub", 1, local_run)
+        console_run("java -jar %s -role hub" % file_location)
+        CommonUtil.ExecLog(sModuleInfo, "Selenium Hub Command given", 1, local_run)
+        return True
+    except Exception, e:
+        exc_type, exc_obj, exc_tb = sys.exc_info()
+        fname = os.path.split(exc_tb.tb_frame.f_code.co_filename)[1]
+        Error_Detail = ((str(exc_type).replace("type ", "Error Type: ")) + ";" + "Error Message: " + str(
+            exc_obj) + ";" + "File Name: " + fname + ";" + "Line: " + str(exc_tb.tb_lineno))
+        CommonUtil.ExecLog(sModuleInfo, "Unable to Start Selenium Hub: Error:%s" % (Error_Detail), 3, local_run)
+        return False
+
+def console_run(run_command):
+    sModuleInfo = inspect.stack()[0][3] + " : " + inspect.getmoduleinfo(__file__).name
+    try:
+        os.system("gnome-terminal --working-directory %s -e 'bash -c \"%s ;exec bash\"'" % (FileUtilities.get_home_folder(),run_command))
+    except Exception, e:
+        exc_type, exc_obj, exc_tb = sys.exc_info()
+        fname = os.path.split(exc_tb.tb_frame.f_code.co_filename)[1]
+        Error_Detail = ((str(exc_type).replace("type ", "Error Type: ")) + ";" + "Error Message: " + str(
+            exc_obj) + ";" + "File Name: " + fname + ";" + "Line: " + str(exc_tb.tb_lineno))
+        CommonUtil.ExecLog(sModuleInfo, "Unable to run command", 3, local_run)
+        return False
+
+
+def init_config_for_device(port_to_connect, device_index, hub_address='127.0.0.1', hub_port=4444, base_location = os.path.join(FileUtilities.get_home_folder(), os.path.join('Desktop', 'appiumConfig')), **kwargs):
+    sModuleInfo = inspect.stack()[0][3] + " : " + inspect.getmoduleinfo(__file__).name
+    try:
+        dictJson={
+            "configuration":
+                {
+                    "nodeTimeout": 120,
+                    "port": port_to_connect,
+                    "hubPort": hub_port,
+                    "proxy": "org.openqa.grid.selenium.proxy.DefaultRemoteProxy",
+                    "url": "http://%s:%d/wd/hub"%(hub_address,port_to_connect),
+                    "hub": "%s:%d/grid/register"%(hub_address, hub_port),
+                    "hubHost": "%s"%(hub_address),
+                    "nodePolling": 2000,
+                    "registerCycle": 10000,
+                    "register": True,
+                    "cleanUpCycle": 2000,
+                    "timeout": 30000,
+                    "maxSession": 1
+                }
+        }
+        dictJson.update({'capabilities':[kwargs]})
+        if not os.path.exists(base_location):
+            FileUtilities.CreateFolder(base_location)
+        file_location = os.path.join(base_location, 'nodeConfig%d.json'%device_index)
+        with open(file_location, 'w') as txtfile:
+            json.dump(dictJson, txtfile)
+        #start appium instance
+        set_appium_specific_variable()
+        start_appium_instances(port_to_connect, file_location)
+        return True
+    except Exception, e:
+        exc_type, exc_obj, exc_tb = sys.exc_info()
+        fname = os.path.split(exc_tb.tb_frame.f_code.co_filename)[1]
+        Error_Detail = ((str(exc_type).replace("type ", "Error Type: ")) + ";" + "Error Message: " + str(
+            exc_obj) + ";" + "File Name: " + fname + ";" + "Line: " + str(exc_tb.tb_lineno))
+        CommonUtil.ExecLog(sModuleInfo, "Unable to initiate appium instance for device:%d"%device_index, 3, local_run)
+        return False
+
+
+def set_appium_specific_variable():
+    sModuleInfo = inspect.stack()[0][3] + " : " + inspect.getmoduleinfo(__file__).name
+    try:
+        env_vars = {'PATH': '', 'LD_LIBRARY_PATH': '', 'ANDROID_HOME': '', 'HOME': ''}
+        not_set = False
+
+        for var in env_vars.keys():
+            env_value = os.getenv(var)
+
+            if env_value:
+                env_vars[var] = env_value
+
+            elif not env_value:
+                not_set = True
+
+        if not_set:
+            os.environ['PATH'] = env_vars['HOME'] + "/.linuxbrew/bin:" + env_vars['PATH']
+            env_vars['PATH'] = env_vars['HOME'] + "/.linuxbrew/bin:" + env_vars['PATH']
+
+            os.environ['LD_LIBRARY_PATH'] = env_vars['HOME'] + "/.linuxbrew/lib:" + env_vars['LD_LIBRARY_PATH']
+            env_vars['LD_LIBRARY_PATH'] = env_vars['HOME'] + "/.linuxbrew/lib:" + env_vars['LD_LIBRARY_PATH']
+
+            os.environ['ANDROID_HOME'] = os.path.join(FileUtilities.get_home_folder(), "android-sdk-linux")
+            env_vars['ANDROID_HOME'] = os.path.join(FileUtilities.get_home_folder(), "android-sdk-linux")
+
+            os.environ['PATH'] = env_vars['PATH'] + ":" + env_vars['ANDROID_HOME'] + "/tools:" + \
+                                 env_vars['ANDROID_HOME'] + "/platform-tools"
+            env_vars['PATH'] = env_vars['PATH'] + ":" + env_vars['ANDROID_HOME'] + "/tools:" + \
+                               env_vars['ANDROID_HOME'] + "/platform-tools"
+    except Exception, e:
+        exc_type, exc_obj, exc_tb = sys.exc_info()
+        fname = os.path.split(exc_tb.tb_frame.f_code.co_filename)[1]
+        Error_Detail = ((str(exc_type).replace("type ", "Error Type: ")) + ";" + "Error Message: " + str(
+            exc_obj) + ";" + "File Name: " + fname + ";" + "Line: " + str(exc_tb.tb_lineno))
+        CommonUtil.ExecLog(sModuleInfo, "Unable to set appium variable", 3, local_run)
+        return False
+
+def start_appium_instances(port_to_connect, file_location, hub_address = '127.0.0.1' ):
+    sModuleInfo = inspect.stack()[0][3] + " : " + inspect.getmoduleinfo(__file__).name
+    try:
+        run_command = "appium -a %s -p %d --nodeconfig %s" % (hub_address, port_to_connect, file_location)
+        console_run(run_command)
+    except Exception, e:
+        exc_type, exc_obj, exc_tb = sys.exc_info()
+        fname = os.path.split(exc_tb.tb_frame.f_code.co_filename)[1]
+        Error_Detail = ((str(exc_type).replace("type ", "Error Type: ")) + ";" + "Error Message: " + str(
+            exc_obj) + ";" + "File Name: " + fname + ";" + "Line: " + str(exc_tb.tb_lineno))
+        CommonUtil.ExecLog(sModuleInfo, "Unable to start appium instance at port :%d"%port_to_connect, 3, local_run)
+        return False
 
 
 def launch(package_name,activity_name):
