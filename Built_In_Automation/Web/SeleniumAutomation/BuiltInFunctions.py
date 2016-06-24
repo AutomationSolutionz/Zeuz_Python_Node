@@ -382,7 +382,7 @@ def Get_Child_Elements(parameter,value,parent=False):
         return "failed"
 
 
-def Get_Element(parameter,value,index_number=0,parent=False):
+def Get_Element_OLD(parameter,value,index_number=0,parent=False):
     sModuleInfo = inspect.stack()[0][3] + " : " + inspect.getmoduleinfo(__file__).name
     try:
         if isinstance(parent, (bool)) == True:
@@ -413,12 +413,51 @@ def Get_Element(parameter,value,index_number=0,parent=False):
         return "failed"
 
 
+
+def Locate_Element_By_Tag(tag_text,parent=False,multiple=False):
+
+    try:
+        if isinstance(parent,bool) == True:
+            if not multiple:
+                e=sBrowser.find_element_by_tag_name(tag_text)
+            else:
+                e=sBrowser.find_elements_by_tag_name(tag_text)
+        else:
+            if not multiple:
+                e=parent.find_element_by_tag_name(tag_text)
+            else:
+                e=parent.find_elements_by_tag_name(tag_text)
+        return e
+    except Exception, e:
+        exc_type, exc_obj, exc_tb = sys.exc_info()
+        fname = os.path.split(exc_tb.tb_frame.f_code.co_filename)[1]
+        Error_Detail = ((str(exc_type).replace("type ", "Error Type: ")) + ";" +  "Error Message: " + str(exc_obj) +";" + "File Name: " + fname + ";" + "Line: "+ str(exc_tb.tb_lineno))
+
+
 '============================================'
 
-def Get_Element_With_Reference(element_parameter,element_value,reference_parameter,reference_value,reference_is_parent_or_child):
+def Get_Element(element_parameter,element_value,reference_parameter=False,reference_value=False,reference_is_parent_or_child=False):
     sModuleInfo = inspect.stack()[0][3] + " : " + inspect.getmoduleinfo(__file__).name
     try:
-        if reference_is_parent_or_child == "parent":     
+        if reference_is_parent_or_child == False:
+            All_Elements = Get_All_Elements(element_parameter,element_value)     
+            if All_Elements == []:        
+                CommonUtil.ExecLog(sModuleInfo, "Could not find your element by parameter:%s and value:%s..."%(element_parameter,element_value), 3,local_run)
+                return "failed"
+            else:
+                if len(All_Elements) > 1:
+                    #Setting index to 0 to pick up the first element.. in future we may add index in the mix as well.. so that we can pin point which element in the case of multiple
+                    index_number=0
+                    CommonUtil.ExecLog(sModuleInfo, "Found more than one element and will use the first one.  ** if fails, try providing reference element** ", 2, local_run)
+                    CommonUtil.TakeScreenShot(sModuleInfo, local_run)
+                    Element = All_Elements[index_number]
+                    CommonUtil.ExecLog(sModuleInfo, "Using the *first* element to set the text", 2,local_run)
+                else:
+                    CommonUtil.ExecLog(sModuleInfo, "Found one element", 1, local_run)
+                    Element = All_Elements[index_number]
+            return Element
+
+        elif reference_is_parent_or_child == "parent":     
             CommonUtil.ExecLog(sModuleInfo, "Locating all parents elements", 1,local_run)   
             all_parent_elements = Get_All_Elements(reference_parameter,reference_value)
             all_matching_elements = []
@@ -465,18 +504,26 @@ def Get_Element_With_Reference(element_parameter,element_value,reference_paramet
 
 
 def Get_All_Elements(parameter,value,parent=False):
+    #http://selenium-python.readthedocs.io/locating-elements.html
     sModuleInfo = inspect.stack()[0][3] + " : " + inspect.getmoduleinfo(__file__).name
     try:
         if isinstance(parent, (bool)) == True:
             if parameter == "text()":
                 All_Elements = WebDriverWait(sBrowser, WebDriver_Wait).until(EC.presence_of_all_elements_located((By.XPATH, "//*[%s='%s']"%(parameter,value))))
+            elif parameter == "tag_name":
+                All_Elements = WebDriverWait(sBrowser, WebDriver_Wait).until(EC.presence_of_all_elements_located((By.TAG_NAME, "//*[%s='%s']"%(parameter,value))))
             else:
                 All_Elements = WebDriverWait(sBrowser, WebDriver_Wait).until(EC.presence_of_all_elements_located((By.XPATH, "//*[@%s='%s']"%(parameter,value))))
         else:
             if parameter == "text()":
                 All_Elements = WebDriverWait(parent, WebDriver_Wait).until(EC.presence_of_all_elements_located((By.XPATH, "//*[%s='%s']"%(parameter,value))))
+            elif parameter == "tag_name":
+                All_Elements = WebDriverWait(parent, WebDriver_Wait).until(EC.presence_of_all_elements_located((By.TAG_NAME, "//*[%s='%s']"%(parameter,value))))
+                
             else:
                 All_Elements = WebDriverWait(parent, WebDriver_Wait).until(EC.presence_of_all_elements_located((By.XPATH, "//*[@%s='%s']"%(parameter,value))))
+        
+        
         all_visible_elements = []
         if All_Elements == []:        
             CommonUtil.ExecLog(sModuleInfo, "Could not find your element by parameter:%s and value:%s..."%(parameter,value), 3,local_run)
@@ -498,25 +545,6 @@ def Get_All_Elements(parameter,value,parent=False):
         CommonUtil.ExecLog(sModuleInfo, "Unable to get the element.  Error: %s"%(Error_Detail), 3,local_run)
         return "failed"
 
-
-def Locate_Element_By_Tag(tag_text,parent=False,multiple=False):
-
-    try:
-        if isinstance(parent,bool) == True:
-            if not multiple:
-                e=sBrowser.find_element_by_tag_name(tag_text)
-            else:
-                e=sBrowser.find_elements_by_tag_name(tag_text)
-        else:
-            if not multiple:
-                e=parent.find_element_by_tag_name(tag_text)
-            else:
-                e=parent.find_elements_by_tag_name(tag_text)
-        return e
-    except Exception, e:
-        exc_type, exc_obj, exc_tb = sys.exc_info()
-        fname = os.path.split(exc_tb.tb_frame.f_code.co_filename)[1]
-        Error_Detail = ((str(exc_type).replace("type ", "Error Type: ")) + ";" +  "Error Message: " + str(exc_obj) +";" + "File Name: " + fname + ";" + "Line: "+ str(exc_tb.tb_lineno))
 
     
 def Tear_Down():
