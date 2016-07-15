@@ -450,11 +450,12 @@ def Enter_Text_In_Text_Box(step_data):
             CommonUtil.ExecLog(sModuleInfo, "The information in the data-set(s) are incorrect. Please provide accurate data set(s) information.", 3,local_run)
             return "failed"
         else:
-            Element = Validate_Step_Data(step_data) 
-            if ((Element == []) or (Element == "failed")):
+            returned_step_data_list = Validate_Step_Data(step_data[0]) 
+            if ((returned_step_data_list == []) or (returned_step_data_list == "failed")):
                 return "failed"
             else:
                 try:
+                    Element = Get_Element(returned_step_data_list[0], returned_step_data_list[1], returned_step_data_list[2], returned_step_data_list[3], returned_step_data_list[4])
                     text_value=step_data[1][0][1]
                     Element.click()
                     Element.clear()
@@ -464,6 +465,8 @@ def Enter_Text_In_Text_Box(step_data):
                     CommonUtil.ExecLog(sModuleInfo, "Successfully set the value of to text to: %s"%text_value, 1,local_run)
                     return "passed"
                 except Exception, e:
+                    element_attributes = Element.get_attribute('outerHTML')
+                    CommonUtil.ExecLog(sModuleInfo, "Element Attributes: %s"%(element_attributes),3,local_run)
                     exc_type, exc_obj, exc_tb = sys.exc_info()        
                     fname = os.path.split(exc_tb.tb_frame.f_code.co_filename)[1]
                     Error_Detail = ((str(exc_type).replace("type ", "Error Type: ")) + ";" +  "Error Message: " + str(exc_obj) +";" + "File Name: " + fname + ";" + "Line: "+ str(exc_tb.tb_lineno))
@@ -487,16 +490,19 @@ def Click_Element(step_data):
             CommonUtil.ExecLog(sModuleInfo, "The information in the data-set(s) are incorrect. Please provide accurate data set(s) information.", 3,local_run)
             return "failed"
         else:
-            Element = Validate_Step_Data(step_data) 
-            if ((Element == []) or (Element == "failed")):
+            returned_step_data_list = Validate_Step_Data(step_data[0]) 
+            if ((returned_step_data_list == []) or (returned_step_data_list == "failed")):
                 return "failed"
             else:
                 try:
+                    Element = Get_Element(returned_step_data_list[0], returned_step_data_list[1], returned_step_data_list[2], returned_step_data_list[3], returned_step_data_list[4])
                     Element.click()
                     CommonUtil.TakeScreenShot(sModuleInfo, local_run)
                     CommonUtil.ExecLog(sModuleInfo, "Successfully clicked the element with given parameters and values", 1,local_run)
                     return "passed"
                 except Exception, e:
+                    element_attributes = Element.get_attribute('outerHTML')
+                    CommonUtil.ExecLog(sModuleInfo, "Element Attributes: %s"%(element_attributes),3,local_run)
                     exc_type, exc_obj, exc_tb = sys.exc_info()        
                     fname = os.path.split(exc_tb.tb_frame.f_code.co_filename)[1]
                     Error_Detail = ((str(exc_type).replace("type ", "Error Type: ")) + ";" +  "Error Message: " + str(exc_obj) +";" + "File Name: " + fname + ";" + "Line: "+ str(exc_tb.tb_lineno))
@@ -540,34 +546,67 @@ def Wait_For_New_Element(step_data):
             return "failed"
 
 
+# def Navigate_Menu_Items(step_data_1, step_data_2, step_data_3=False, step_data_4=False):
+#     sModuleInfo = inspect.stack()[0][3] + " : " + inspect.getmoduleinfo(__file__).name
+#     try:
+#         if (len(step_data_1)==0) or (len(step_data_2)==0):
+#             CommonUtil.ExecLog(sModuleInfo, "The information in the data-set(s) are incorrect. Please provide accurate data set(s) information.", 3,local_run)
+#             return "failed"
+#         else:
+#             try:
+#                 if(1 < len(step_data_1[0]) >= 4):
+#                     CommonUtil.ExecLog(sModuleInfo, "The information in the data-set(s) are incorrect. Please provide accurate data set(s) information.", 3,local_run)
+#                     return "failed"
+#                 else:
+#                     menu_level_1_element = Click_Element(step_data)
+#                     if ((menu_level_1_element == []) or (menu_level_1_element == "failed")):
+#                         return "failed"
+#                     else:
+#                         try:
+#                             ##need to implement HOVER!!
+#                             menu_level_1_element.click()
+#                             CommonUtil.TakeScreenShot(sModuleInfo, local_run)
+#                             CommonUtil.ExecLog(sModuleInfo, "Successfully clicked the first menu level element with given parameters and values", 1,local_run)
+#                         except Exception, e:
+#                             CommonUtil.ExecLog(sModuleInfo, "Failed to clicked the first menu level element with given parameters and values", 3,local_run)
+# 
+#     except Exception, e:
+#         exc_type, exc_obj, exc_tb = sys.exc_info()
+#         fname = os.path.split(exc_tb.tb_frame.f_code.co_filename)[1]
+#         Error_Detail = ((str(exc_type).replace("type ", "Error Type: ")) + ";" +  "Error Message: " + str(exc_obj) +";" + "File Name: " + fname + ";" + "Line: "+ str(exc_tb.tb_lineno))
+#         print "%s"%Error_Detail
+#         return "failed"
+
 #Validation of step data passed on by the user
 def Validate_Step_Data(step_data):
     sModuleInfo = inspect.stack()[0][3] + " : " + inspect.getmoduleinfo(__file__).name
     CommonUtil.ExecLog(sModuleInfo, "Function: Validate_Step_Data", 1,local_run)
     try:    
-        if (len(step_data[0])==1):
-            element_parameter = step_data[0][0][0]
-            element_value = step_data[0][0][1]
+        if (len(step_data)==1):
+            element_parameter = step_data[0][0]
+            element_value = step_data[0][1]
             reference_parameter = False
             reference_value = False    
             reference_is_parent_or_child = False
-        elif (len(step_data[0])==2):
-            element_parameter = step_data[0][0][0]
-            element_value = step_data[0][0][1]
-            reference_parameter = step_data[0][1][0]
-            reference_value = step_data[0][1][1]
+        elif (len(step_data)==2):
+            element_parameter = step_data[0][0]
+            element_value = step_data[0][1]
+            reference_parameter = step_data[1][0]
+            reference_value = step_data[1][1]
             reference_is_parent_or_child = False
-        elif (len(step_data[0])==2):
-            element_parameter = step_data[0][0][0]
-            element_value = step_data[0][0][1]
-            reference_parameter = step_data[0][1][0]
-            reference_value = step_data[0][1][1]    
-            reference_is_parent_or_child = step_data[0][2][1]
+        elif (len(step_data)==2):
+            element_parameter = step_data[0][0]
+            element_value = step_data[0][1]
+            reference_parameter = step_data[1][0]
+            reference_value = step_data[1][1]    
+            reference_is_parent_or_child = step_data[2][1]
         else:
             CommonUtil.ExecLog(sModuleInfo, "Data set incorrect. Please provide accurate data set(s) information.", 3,local_run)
             return "failed"
-        Element = Get_Element(element_parameter, element_value, reference_parameter, reference_value, reference_is_parent_or_child)
-        return Element
+        validated_data = (element_parameter, element_value, reference_parameter, reference_value, reference_is_parent_or_child)
+        return validated_data
+        #Element = Get_Element(element_parameter, element_value, reference_parameter, reference_value, reference_is_parent_or_child)
+        #return Element
     except Exception, e:
             exc_type, exc_obj, exc_tb = sys.exc_info()        
             fname = os.path.split(exc_tb.tb_frame.f_code.co_filename)[1]
