@@ -8,6 +8,8 @@ Created on May 15, 2016
 
 import sys
 import os
+from operator import or_
+from selenium.webdriver.support.expected_conditions import staleness_of
 
 
 sys.path.append("..")
@@ -22,7 +24,9 @@ from selenium.webdriver.common.keys import Keys
 from selenium.webdriver.common.by import By
 from selenium.common.exceptions import NoSuchElementException
 from Utilities import CommonUtil
+from Utilities import CompareModule
 from selenium.webdriver.support import expected_conditions as EC
+
 
 global WebDriver_Wait 
 WebDriver_Wait = 20
@@ -30,8 +34,8 @@ global WebDriver_Wait_Short
 WebDriver_Wait_Short = 10
 
 #if local_run is True, no logging will be recorded to the web server.  Only local print will be displayed
-#local_run = True
-local_run = False
+local_run = True
+#local_run = False
 
 global sBrowser
 sBrowser = None
@@ -436,46 +440,178 @@ def Locate_Element_By_Tag(tag_text,parent=False,multiple=False):
 
 '============================================'
 
-def Get_Element(element_parameter,element_value,reference_parameter=False,reference_value=False,reference_is_parent_or_child=False):
+#Method to enter texts in a text box; step data passed on by the user
+def Enter_Text_In_Text_Box(step_data):
     sModuleInfo = inspect.stack()[0][3] + " : " + inspect.getmoduleinfo(__file__).name
+    CommonUtil.ExecLog(sModuleInfo, "Inside Enter Text In Text Box function", 1,local_run)
     try:
-        if reference_is_parent_or_child == False:
-            All_Elements = Get_All_Elements(element_parameter,element_value)     
-            if All_Elements == []:        
-                CommonUtil.ExecLog(sModuleInfo, "Could not find your element by parameter:%s and value:%s..."%(element_parameter,element_value), 3,local_run)
+        #If there are no two separate data-sets, or if the first data-set is not between 1 to 3 items, or if the second data-set doesn't have only 1 item                   
+        if ((len(step_data) != 2) or (1 < len(step_data[0]) >= 4) or (len(step_data[1]) != 1)):
+            CommonUtil.ExecLog(sModuleInfo, "The information in the data-set(s) are incorrect. Please provide accurate data set(s) information.", 3,local_run)
+            return "failed"
+        else:
+            Element = Validate_Step_Data(step_data) 
+            if ((Element == []) or (Element == "failed")):
                 return "failed"
             else:
-                if len(All_Elements) > 1:
-                    #Setting index to 0 to pick up the first element.. in future we may add index in the mix as well.. so that we can pin point which element in the case of multiple
-                    index_number=0
-                    CommonUtil.ExecLog(sModuleInfo, "Found more than one element and will use the first one.  ** if fails, try providing reference element** ", 2, local_run)
+                try:
+                    text_value=step_data[1][0][1]
+                    Element.click()
+                    Element.clear()
+                    Element.send_keys(text_value)
+                    Element.click()
                     CommonUtil.TakeScreenShot(sModuleInfo, local_run)
-                    Element = All_Elements[index_number]
-                    CommonUtil.ExecLog(sModuleInfo, "Using the *first* element to set the text", 2,local_run)
-                else:
-                    CommonUtil.ExecLog(sModuleInfo, "Found one element", 1, local_run)
-                    Element = All_Elements[index_number]
-            return Element
+                    CommonUtil.ExecLog(sModuleInfo, "Successfully set the value of to text to: %s"%text_value, 1,local_run)
+                    return "passed"
+                except Exception, e:
+                    exc_type, exc_obj, exc_tb = sys.exc_info()        
+                    fname = os.path.split(exc_tb.tb_frame.f_code.co_filename)[1]
+                    Error_Detail = ((str(exc_type).replace("type ", "Error Type: ")) + ";" +  "Error Message: " + str(exc_obj) +";" + "File Name: " + fname + ";" + "Line: "+ str(exc_tb.tb_lineno))
+                    CommonUtil.ExecLog(sModuleInfo, "Could not select/click your element.  Error: %s"%(Error_Detail), 3,local_run)
+                    return "failed"
 
+    except Exception, e:
+        exc_type, exc_obj, exc_tb = sys.exc_info()        
+        fname = os.path.split(exc_tb.tb_frame.f_code.co_filename)[1]
+        Error_Detail = ((str(exc_type).replace("type ", "Error Type: ")) + ";" +  "Error Message: " + str(exc_obj) +";" + "File Name: " + fname + ";" + "Line: "+ str(exc_tb.tb_lineno))
+        CommonUtil.ExecLog(sModuleInfo, "Could not find your element.  Error: %s"%(Error_Detail), 3,local_run)
+        return "failed"
+
+
+#Method to click on element; step data passed on by the user
+def Click_Element(step_data):
+    sModuleInfo = inspect.stack()[0][3] + " : " + inspect.getmoduleinfo(__file__).name
+    CommonUtil.ExecLog(sModuleInfo, "Inside Click Element function", 1,local_run)
+    try:
+        if ((len(step_data) != 1) or (1 < len(step_data[0]) >= 4)):
+            CommonUtil.ExecLog(sModuleInfo, "The information in the data-set(s) are incorrect. Please provide accurate data set(s) information.", 3,local_run)
+            return "failed"
+        else:
+            Element = Validate_Step_Data(step_data) 
+            if ((Element == []) or (Element == "failed")):
+                return "failed"
+            else:
+                try:
+                    Element.click()
+                    CommonUtil.TakeScreenShot(sModuleInfo, local_run)
+                    CommonUtil.ExecLog(sModuleInfo, "Successfully clicked the element with given parameters and values", 1,local_run)
+                    return "passed"
+                except Exception, e:
+                    exc_type, exc_obj, exc_tb = sys.exc_info()        
+                    fname = os.path.split(exc_tb.tb_frame.f_code.co_filename)[1]
+                    Error_Detail = ((str(exc_type).replace("type ", "Error Type: ")) + ";" +  "Error Message: " + str(exc_obj) +";" + "File Name: " + fname + ";" + "Line: "+ str(exc_tb.tb_lineno))
+                    CommonUtil.ExecLog(sModuleInfo, "Could not select/click your element.  Error: %s"%(Error_Detail), 3,local_run)
+                    return "failed"
+
+    except Exception, e:
+        exc_type, exc_obj, exc_tb = sys.exc_info()        
+        fname = os.path.split(exc_tb.tb_frame.f_code.co_filename)[1]
+        Error_Detail = ((str(exc_type).replace("type ", "Error Type: ")) + ";" +  "Error Message: " + str(exc_obj) +";" + "File Name: " + fname + ";" + "Line: "+ str(exc_tb.tb_lineno))
+        CommonUtil.ExecLog(sModuleInfo, "Could not find/click your element.  Error: %s"%(Error_Detail), 3,local_run)
+        return "failed"
+    
+
+#Search for element on new page after a particular time-out duration entered by the user through step-data
+def Wait_For_New_Element(step_data):
+    sModuleInfo = inspect.stack()[0][3] + " : " + inspect.getmoduleinfo(__file__).name
+    CommonUtil.ExecLog(sModuleInfo, "Function: Wait_For_New_Page_Element", 1,local_run)
+    try:                  
+        if ((len(step_data) != 2) or (1 < len(step_data[0]) >= 4) or (len(step_data[1]) != 1)):
+            CommonUtil.ExecLog(sModuleInfo, "The information in the data-set(s) are incorrect. Please provide accurate data set(s) information.", 3,local_run)
+            return "failed"
+        else:
+            timeout_duration = int(step_data[1][0][1])
+            start_time = time.time()
+            interval = 1
+            for i in range(timeout_duration):
+                time.sleep(start_time + i*interval - time.time())
+                Element=Validate_Step_Data(step_data)
+                 
+                if ((Element == []) or (Element == "failed")):
+                    return "failed"
+                else:
+                    return Element   
+
+    except Exception, e:
+            exc_type, exc_obj, exc_tb = sys.exc_info()        
+            fname = os.path.split(exc_tb.tb_frame.f_code.co_filename)[1]
+            Error_Detail = ((str(exc_type).replace("type ", "Error Type: ")) + ";" +  "Error Message: " + str(exc_obj) +";" + "File Name: " + fname + ";" + "Line: "+ str(exc_tb.tb_lineno))
+            CommonUtil.ExecLog(sModuleInfo, "Could not find the new page element requested.  Error: %s"%(Error_Detail), 3,local_run)
+            return "failed"
+
+
+#Validation of step data passed on by the user
+def Validate_Step_Data(step_data):
+    sModuleInfo = inspect.stack()[0][3] + " : " + inspect.getmoduleinfo(__file__).name
+    CommonUtil.ExecLog(sModuleInfo, "Function: Validate_Step_Data", 1,local_run)
+    try:    
+        if (len(step_data[0])==1):
+            element_parameter = step_data[0][0][0]
+            element_value = step_data[0][0][1]
+            reference_parameter = False
+            reference_value = False    
+            reference_is_parent_or_child = False
+        elif (len(step_data[0])==2):
+            element_parameter = step_data[0][0][0]
+            element_value = step_data[0][0][1]
+            reference_parameter = step_data[0][1][0]
+            reference_value = step_data[0][1][1]
+            reference_is_parent_or_child = False
+        elif (len(step_data[0])==2):
+            element_parameter = step_data[0][0][0]
+            element_value = step_data[0][0][1]
+            reference_parameter = step_data[0][1][0]
+            reference_value = step_data[0][1][1]    
+            reference_is_parent_or_child = step_data[0][2][1]
+        else:
+            CommonUtil.ExecLog(sModuleInfo, "Data set incorrect. Please provide accurate data set(s) information.", 3,local_run)
+            return "failed"
+        Element = Get_Element(element_parameter, element_value, reference_parameter, reference_value, reference_is_parent_or_child)
+        return Element
+    except Exception, e:
+            exc_type, exc_obj, exc_tb = sys.exc_info()        
+            fname = os.path.split(exc_tb.tb_frame.f_code.co_filename)[1]
+            Error_Detail = ((str(exc_type).replace("type ", "Error Type: ")) + ";" +  "Error Message: " + str(exc_obj) +";" + "File Name: " + fname + ";" + "Line: "+ str(exc_tb.tb_lineno))
+            CommonUtil.ExecLog(sModuleInfo, "Could not find the new page element requested.  Error: %s"%(Error_Detail), 3,local_run)
+            return "failed"
+
+
+
+def Get_Element(element_parameter,element_value,reference_parameter=False,reference_value=False,reference_is_parent_or_child=False,get_all_unvalidated_elements=False):
+    sModuleInfo = inspect.stack()[0][3] + " : " + inspect.getmoduleinfo(__file__).name
+    try:
+        All_Elements_Found = []
+        if reference_is_parent_or_child == False:
+            if ((reference_parameter == False) and (reference_value == False)):
+                All_Elements = Get_All_Elements(element_parameter,element_value)     
+                if ((All_Elements == []) or (All_Elements == 'failed')):        
+                    CommonUtil.ExecLog(sModuleInfo, "Could not find your element by parameter:%s and value:%s..."%(element_parameter,element_value), 3,local_run)
+                    return "failed"
+                else:
+                    All_Elements_Found = All_Elements
+            elif (reference_parameter != False and reference_value!= False):
+                CommonUtil.ExecLog(sModuleInfo, "Locating element using double matching", 1,local_run)
+                All_Elements = Get_Double_Matching_Elements(element_parameter, element_value, reference_parameter, reference_value)
+                if ((All_Elements == []) or (All_Elements == "failed")):
+                    CommonUtil.ExecLog(sModuleInfo, "Could not find your element by parameter1:%s , value1:%s and parameter2:%s , value2:%s..."%(element_parameter,element_value,reference_parameter,reference_value), 3,local_run)
+                    return "failed"
+                else:
+                    All_Elements_Found = All_Elements
+            else:
+                CommonUtil.ExecLog(sModuleInfo, "Could not find your element because you are missing at least one parameter", 3,local_run)
+                return "failed"
+            
         elif reference_is_parent_or_child == "parent":     
             CommonUtil.ExecLog(sModuleInfo, "Locating all parents elements", 1,local_run)   
-            all_parent_elements = Get_All_Elements(reference_parameter,reference_value)
+            all_parent_elements = Get_All_Elements(reference_parameter,reference_value)#,"parent")
             all_matching_elements = []
             for each_parent in all_parent_elements:
-                interested_elem = Get_All_Elements(element_parameter,element_value,each_parent)
+                interested_elem = Get_All_Elements(element_parameter,element_value,each_parent) #can there be a problem when we send in each parent, or does this contain both param and value?
                 if interested_elem != "failed":
                     for each_matching in interested_elem:
                         all_matching_elements.append(each_matching)
-            if len(all_matching_elements) >1:
-                CommonUtil.ExecLog(sModuleInfo, "Found more than one elements.  Will send the first element.  If it doesn't work, try to give different reference element", 2,local_run)  
-                return all_matching_elements[0]  
-            elif len(all_matching_elements) == 0:
-                CommonUtil.ExecLog(sModuleInfo, "No elements were found", 3,local_run)  
-                return "failed"
-            else:
-                CommonUtil.ExecLog(sModuleInfo, "Found the single element!", 1,local_run)  
-                return all_matching_elements[0]  
-        
+            All_Elements_Found = all_matching_elements
+
         elif reference_is_parent_or_child == "child":        
             all_parent_elements = Get_All_Elements(element_parameter,element_value)
             all_matching_elements = []
@@ -483,15 +619,24 @@ def Get_Element(element_parameter,element_value,reference_parameter=False,refere
                 interested_elem = Get_All_Elements(reference_parameter,reference_value,each_parent)
                 if interested_elem != "failed":
                     all_matching_elements.append(each_parent)
-            if len(all_matching_elements) >1:
-                CommonUtil.ExecLog(sModuleInfo, "Found more than one elements.  Will send the first element.  If it doesn't work, try to give different reference element", 2,local_run)  
-                return all_matching_elements[0]      
-            elif len(all_matching_elements) == 0:
-                CommonUtil.ExecLog(sModuleInfo, "No elements were found", 3,local_run)  
-                return "failed"
-            else:
-                CommonUtil.ExecLog(sModuleInfo, "Found the single element!", 1,local_run)  
-                return all_matching_elements[0]  
+            All_Elements_Found=all_matching_elements
+            
+        elif ((reference_is_parent_or_child!="parent") or (reference_is_parent_or_child!="child") or (reference_is_parent_or_child!=False)):
+            CommonUtil.ExecLog(sModuleInfo, "Unspecified reference type; please indicate whether parent, child or leave blank", 3,local_run)
+            return "failed"
+        
+        else:
+            CommonUtil.ExecLog(sModuleInfo, "Unable to run based on the current inputs, please check the inputs and re-enter values", 3,local_run)
+            return "failed"
+        
+        #this method returns all the elements found without validation
+        if(get_all_unvalidated_elements!=False):
+            return All_Elements_Found
+        else:
+            #can later also pass on the index of the element we want
+            result = Element_Validation(All_Elements_Found)#, index)
+            return result
+    
     except Exception, e:
         exc_type, exc_obj, exc_tb = sys.exc_info()        
         fname = os.path.split(exc_tb.tb_frame.f_code.co_filename)[1]
@@ -500,44 +645,62 @@ def Get_Element(element_parameter,element_value,reference_parameter=False,refere
         return "failed"       
 
 
-
-
-
+#Method to get the elements based on type - more methods may be added in the future
+#Called by: Get_Elements
 def Get_All_Elements(parameter,value,parent=False):
     #http://selenium-python.readthedocs.io/locating-elements.html
     sModuleInfo = inspect.stack()[0][3] + " : " + inspect.getmoduleinfo(__file__).name
     try:
-        if isinstance(parent, (bool)) == True:
-            if parameter == "text()":
-                All_Elements = WebDriverWait(sBrowser, WebDriver_Wait).until(EC.presence_of_all_elements_located((By.XPATH, "//*[%s='%s']"%(parameter,value))))
+        #if parent == False:
+        if isinstance(parent, (bool)) == False:
+            if parameter == "text":
+                All_Elements = WebDriverWait(sBrowser, WebDriver_Wait).until(EC.presence_of_all_elements_located((By.XPATH, "//*[text()='%s']"%value)))
             elif parameter == "tag_name":
-                All_Elements = WebDriverWait(sBrowser, WebDriver_Wait).until(EC.presence_of_all_elements_located((By.TAG_NAME, "//*[%s='%s']"%(parameter,value))))
+                All_Elements = WebDriverWait(sBrowser, WebDriver_Wait).until(EC.presence_of_all_elements_located((By.TAG_NAME, '%s'%(value))))
+            elif ((parameter == "link_text") or (parameter == "href")):
+                All_Elements = WebDriverWait(sBrowser, WebDriver_Wait).until(EC.presence_of_all_elements_located((By.LINK_TEXT, '%s'%(value))))
+            elif parameter == "css_selector":
+                All_Elements = WebDriverWait(sBrowser, WebDriver_Wait).until(EC.presence_of_all_elements_located((By.CSS_SELECTOR, '%s'%(value))))    
             else:
                 All_Elements = WebDriverWait(sBrowser, WebDriver_Wait).until(EC.presence_of_all_elements_located((By.XPATH, "//*[@%s='%s']"%(parameter,value))))
         else:
-            if parameter == "text()":
-                All_Elements = WebDriverWait(parent, WebDriver_Wait).until(EC.presence_of_all_elements_located((By.XPATH, "//*[%s='%s']"%(parameter,value))))
+            if parameter == "text":
+                All_Elements = WebDriverWait(parent, WebDriver_Wait).until(EC.presence_of_all_elements_located((By.XPATH, "//*[text()='%s']" %value)))
             elif parameter == "tag_name":
-                All_Elements = WebDriverWait(parent, WebDriver_Wait).until(EC.presence_of_all_elements_located((By.TAG_NAME, "//*[%s='%s']"%(parameter,value))))
-                
+                All_Elements = WebDriverWait(parent, WebDriver_Wait).until(EC.presence_of_all_elements_located((By.TAG_NAME, '%s'%(value))))
+            elif ((parameter == "link_text") or (parameter == "href")):
+                All_Elements = WebDriverWait(parent, WebDriver_Wait).until(EC.presence_of_all_elements_located((By.LINK_TEXT, '%s'%(value))))
+            elif parameter == "css_selector":
+                All_Elements = WebDriverWait(parent, WebDriver_Wait).until(EC.presence_of_all_elements_located((By.CSS_SELECTOR, '%s'%(value))))
             else:
                 All_Elements = WebDriverWait(parent, WebDriver_Wait).until(EC.presence_of_all_elements_located((By.XPATH, "//*[@%s='%s']"%(parameter,value))))
-        
-        
-        all_visible_elements = []
-        if All_Elements == []:        
-            CommonUtil.ExecLog(sModuleInfo, "Could not find your element by parameter:%s and value:%s..."%(parameter,value), 3,local_run)
-            return "failed"
+                
+        return All_Elements
+    except Exception, e:
+        exc_type, exc_obj, exc_tb = sys.exc_info()        
+        fname = os.path.split(exc_tb.tb_frame.f_code.co_filename)[1]
+        Error_Detail = ((str(exc_type).replace("type ", "Error Type: ")) + ";" +  "Error Message: " + str(exc_obj) +";" + "File Name: " + fname + ";" + "Line: "+ str(exc_tb.tb_lineno))
+        CommonUtil.ExecLog(sModuleInfo, "Unable to get the element.  Error: %s"%(Error_Detail), 3,local_run)
+        return "failed"
+ 
+    
+#Use two parameters on the same level to get a specific element
+#Called by: Get_Elements
+def Get_Double_Matching_Elements(param_1, value_1, param_2, value_2):
+    sModuleInfo = inspect.stack()[0][3] + " : " + inspect.getmoduleinfo(__file__).name
+    try:
+        if (param_1 == "text" and param_2 == "text"):
+            CommonUtil.ExecLog(sModuleInfo, "Locating element using double matching where both parameters are of type text", 1,local_run)
+            All_Elements = WebDriverWait(sBrowser, WebDriver_Wait).until(EC.presence_of_all_elements_located((By.XPATH, "//*[text()='%s' and text()='%s']"%(value_1,value_2))))
+        elif (param_2 == "tag_name" and param_2 == "tag_name"):
+            CommonUtil.ExecLog(sModuleInfo, "Locating element using double matching where both parameters are of type tag", 1,local_run)
+            All_Elements = WebDriverWait(sBrowser, WebDriver_Wait).until(EC.presence_of_all_elements_located((By.TAG_NAME, "//*[@%s='%s' and @%s='%s']"%(param_1,value_1,param_2,value_2))))
         else:
-            for each_elem in All_Elements:        
-                if each_elem.is_displayed() == True:
-                    all_visible_elements.append(each_elem)
-        if all_visible_elements == []:
-            CommonUtil.ExecLog(sModuleInfo, "Could not find your element by parameter:%s and value:%s..."%(parameter,value), 3,local_run)
-            return "failed"
-        else:            
-            CommonUtil.ExecLog(sModuleInfo, "We found element(s) of your given parameter and value", 1,local_run)
-            return all_visible_elements
+            CommonUtil.ExecLog(sModuleInfo, "Locating element using double matching, type unspecific", 1,local_run)
+            All_Elements = WebDriverWait(sBrowser, WebDriver_Wait).until(EC.presence_of_all_elements_located((By.XPATH, "//*[@%s='%s' and @%s='%s']"%(param_1,value_1,param_2,value_2))))
+        
+        return All_Elements
+     
     except Exception, e:
         exc_type, exc_obj, exc_tb = sys.exc_info()        
         fname = os.path.split(exc_tb.tb_frame.f_code.co_filename)[1]
@@ -546,7 +709,86 @@ def Get_All_Elements(parameter,value,parent=False):
         return "failed"
 
 
+def Get_Table_Elements(table_parameter,table_value, reference_parameter=False,reference_value=False,reference_is_parent_or_child=False,get_all_unvalidated_elements=False):
+    sModuleInfo = inspect.stack()[0][3] + " : " + inspect.getmoduleinfo(__file__).name
+    try:
+        table = Get_Element(table_parameter, table_value,reference_parameter,reference_value,reference_is_parent_or_child)
+        all_rows = WebDriverWait(table, WebDriver_Wait).until(EC.presence_of_all_elements_located((By.XPATH, "*")))
+        master_text_table = []
+        for each_row_obj in all_rows:
+            if (each_row_obj.is_displayed()!=False):
+                try:
+                    row_element = WebDriverWait(each_row_obj, WebDriver_Wait).until(EC.presence_of_all_elements_located((By.XPATH, "*")))
+                    temp_row_holder = []
+                    for each_column_obj in row_element:
+                        temp_row_holder.append(each_column_obj.text)
+                except Exception, e:
+                    print e
+                    
+                master_text_table.append(temp_row_holder)
+        print master_text_table
+            
+    except Exception, e:
+        exc_type, exc_obj, exc_tb = sys.exc_info()        
+        fname = os.path.split(exc_tb.tb_frame.f_code.co_filename)[1]
+        Error_Detail = ((str(exc_type).replace("type ", "Error Type: ")) + ";" +  "Error Message: " + str(exc_obj) +";" + "File Name: " + fname + ";" + "Line: "+ str(exc_tb.tb_lineno))
+        CommonUtil.ExecLog(sModuleInfo, "Unable to get the element.  Error: %s"%(Error_Detail), 3,local_run)
+        return "failed"
+
+
+def Element_Validation(All_Elements_Found):#, index):
+    sModuleInfo = inspect.stack()[0][3] + " : " + inspect.getmoduleinfo(__file__).name
+    try:
+        #index = int(index)
+        return_element = []
+        all_visible_elements = []
+        all_invisible_elements = []
+        if All_Elements_Found == []:        
+            CommonUtil.ExecLog(sModuleInfo, "Could not find your element by given parameters and values", 3,local_run)
+            return "failed"
+        elif len(All_Elements_Found) == 1:
+            for each_elem in All_Elements_Found:
+                #Case 1: Found only one invisible element - pass with warning 
+                if each_elem.is_displayed() == False:
+                    return_element.append(each_elem)
+                    CommonUtil.ExecLog(sModuleInfo, "Found one invisible element by given parameters and values", 2,local_run)
+                #Case 2: Found only one visible element - pass
+                elif each_elem.is_displayed() == True:
+                    return_element.append(each_elem)
+                    CommonUtil.ExecLog(sModuleInfo, "Found one visible element by given parameters and values", 1,local_run)
+                else:
+                    CommonUtil.ExecLog(sModuleInfo, "Could not find element by given parameters and values", 3,local_run)
+                    return "failed"
+            return return_element[0]
+
+        elif len(All_Elements_Found) > 1:
+            CommonUtil.ExecLog(sModuleInfo, "Found more than one element by given parameters and values, validating visible and invisible elements. Total number of elements found: %s"%(len(All_Elements_Found)), 2,local_run)
+            for each_elem in All_Elements_Found:
+                if each_elem.is_displayed() == True:
+                    all_visible_elements.append(each_elem)
+                else:
+                    all_invisible_elements.append(each_elem)
+            #sequential logic - if at least one is_displayed() elements, show that, else allow invisible elements
+            if len(all_visible_elements) > 0:
+                CommonUtil.ExecLog(sModuleInfo, "Found at least one visible element for given parameters and values, returning the first one or by the index specified", 2,local_run)
+                return_element = all_visible_elements
+            else:
+                CommonUtil.ExecLog(sModuleInfo, "Did not find a visible element, however, invisible elements present", 2,local_run)    
+                return_element = all_invisible_elements
+            return return_element[0]#[index]
+
+        else:
+            CommonUtil.ExecLog(sModuleInfo, "Could not find element by given parameters and values", 3,local_run)
+            return "failed" 
+
+    except Exception, e:
+        exc_type, exc_obj, exc_tb = sys.exc_info()        
+        fname = os.path.split(exc_tb.tb_frame.f_code.co_filename)[1]
+        Error_Detail = ((str(exc_type).replace("type ", "Error Type: ")) + ";" +  "Error Message: " + str(exc_obj) +";" + "File Name: " + fname + ";" + "Line: "+ str(exc_tb.tb_lineno))
+        CommonUtil.ExecLog(sModuleInfo, "Unable to get the element.  Error: %s"%(Error_Detail), 3,local_run)
+        return "failed"
     
+
 def Tear_Down():
     sModuleInfo = inspect.stack()[0][3] + " : " + inspect.getmoduleinfo(__file__).name
     try:

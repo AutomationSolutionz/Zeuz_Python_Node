@@ -159,7 +159,7 @@ def confirm_right_menu_items(dependency,run_time_params,step_data,file_attachmen
         CommonUtil.ExecLog(sModuleInfo, "Unable to confirm right menu options: Error:%s" %( Error_Detail), 3,local_run)
         temp_q.put("Failed")
         return "failed"
-import Built_In_Selenium_Web as Web
+from Drivers import Built_In_Selenium_Driver as Web
 def open_browser(dependency,run_time_params,step_data,file_attachment,temp_q):
     sModuleInfo = inspect.stack()[0][3] + " : " + inspect.getmoduleinfo(__file__).name
     try:
