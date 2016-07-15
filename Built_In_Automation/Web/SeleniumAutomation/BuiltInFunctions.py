@@ -34,8 +34,8 @@ global WebDriver_Wait_Short
 WebDriver_Wait_Short = 10
 
 #if local_run is True, no logging will be recorded to the web server.  Only local print will be displayed
-local_run = True
-#local_run = False
+#local_run = True
+local_run = False
 
 global sBrowser
 sBrowser = None
@@ -690,8 +690,7 @@ def Get_All_Elements(parameter,value,parent=False):
     #http://selenium-python.readthedocs.io/locating-elements.html
     sModuleInfo = inspect.stack()[0][3] + " : " + inspect.getmoduleinfo(__file__).name
     try:
-        #if parent == False:
-        if isinstance(parent, (bool)) == False:
+        if parent == False:
             if parameter == "text":
                 All_Elements = WebDriverWait(sBrowser, WebDriver_Wait).until(EC.presence_of_all_elements_located((By.XPATH, "//*[text()='%s']"%value)))
             elif parameter == "tag_name":
