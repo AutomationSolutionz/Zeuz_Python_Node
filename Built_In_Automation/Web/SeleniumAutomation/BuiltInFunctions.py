@@ -594,7 +594,7 @@ def Validate_Step_Data(step_data):
             reference_parameter = step_data[1][0]
             reference_value = step_data[1][1]
             reference_is_parent_or_child = False
-        elif (len(step_data)==2):
+        elif (len(step_data)==3):
             element_parameter = step_data[0][0]
             element_value = step_data[0][1]
             reference_parameter = step_data[1][0]
