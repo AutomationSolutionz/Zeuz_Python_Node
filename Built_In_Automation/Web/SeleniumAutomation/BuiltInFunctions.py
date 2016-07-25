@@ -26,7 +26,7 @@ from selenium.webdriver.common.keys import Keys
 from selenium.webdriver.common.by import By
 from selenium.common.exceptions import NoSuchElementException
 from Utilities import CommonUtil
-from Utilities import CompareModule
+#from Utilities import CompareModule
 from selenium.webdriver.support import expected_conditions as EC
 
 
@@ -603,7 +603,36 @@ def Wait_For_New_Element(step_data):
             return "failed"
 
 
-#def Action_Handler():
+def Action_Handler(action_step_data, action_name):
+    sModuleInfo = inspect.stack()[0][3] + " : " + inspect.getmoduleinfo(__file__).name
+    try:
+        if action_name =="click":
+            result = Click_Element(action_step_data)
+            if result == "failed":
+                return "failed"
+        elif action_name == "hover":
+            result = Hover_Over_Element(action_step_data)
+            if result == "failed":
+                return "failed"
+        elif action_name=="text":
+            result = Enter_Text_In_Text_Box(action_step_data)
+            if result == "failed":
+                return "failed"
+        elif action_name =="wait":
+            result = Wait_For_New_Element(action_step_data)
+            if result == "failed":
+                return "failed"
+        else:
+            CommonUtil.ExecLog(sModuleInfo, "The action you entered is incorrect. Please provide accurate information on the data set(s).", 3,local_run)
+            return "failed" 
+        
+    except Exception, e:
+        exc_type, exc_obj, exc_tb = sys.exc_info()
+        fname = os.path.split(exc_tb.tb_frame.f_code.co_filename)[1]
+        Error_Detail = ((str(exc_type).replace("type ", "Error Type: ")) + ";" +  "Error Message: " + str(exc_obj) +";" + "File Name: " + fname + ";" + "Line: "+ str(exc_tb.tb_lineno))
+        print "%s"%Error_Detail
+        return "failed"  
+    
 
 
 def Sequential_Actions(step_data):
@@ -617,25 +646,10 @@ def Sequential_Actions(step_data):
                 #finding what to do for each dataset  
                 if len(row)==5:                    
                     if row[1]=="action":
-                        if row[0]=="click_hover":
-                            if row[2] == "click":
-                                result = Click_Element([each])
-                                if result == "failed":
-                                    return "failed"
-                            elif row[2] == "hover":
-                                result = Hover_Over_Element([each])
-                                if result == "failed":
-                                    return "failed"
-                        elif row[0]=="enter_text":
-                            result = Enter_Text_In_Text_Box([each])
-                            if result == "failed":
-                                    return "failed"
-                        elif row[0]=="wait_for_element":
-                            result = Wait_For_New_Element([each])
-                            if result == "failed":
-                                    return "failed"
-                            
-                    
+                        result = Action_Handler([each],row[0])
+                        if result == [] or result == "failed":
+                            return "failed"
+                        
                     elif row[1]=="logic":
                         logic_decision=""
                         logic_row.append(row)
@@ -664,7 +678,11 @@ def Sequential_Actions(step_data):
                                 for each_item in list_of_steps:
                                     each_item = int(each_item)
                                     Sequential_Actions([step_data[each_item]])
-                                return "passed"            
+                                return "passed"
+                    
+                    else:
+                        CommonUtil.ExecLog(sModuleInfo, "The sub-field information is incorrect. Please provide accurate information on the data set(s).", 3,local_run)
+                        return "failed"             
 #                         if logic_decision=="false":
                         #now get the element result so that we can decide which logic to execute 
 
@@ -779,7 +797,7 @@ def Compare_Text_Data(step_data):
         else:
             oCompare = CompareModule()
             #need to verify
-            expected_text_dataset = step_data[0]#[0][1]
+            expected_text_dataset = [[('Starting from*', 'car1', '101,770', False, False)]]#[step_data[0]]#[0][1]
             returned_expected_step_data = Validate_Step_Data(step_data[1])
             if ((returned_expected_step_data == []) or (returned_expected_step_data == "failed")):
                 return "failed"
@@ -787,7 +805,8 @@ def Compare_Text_Data(step_data):
                 try:
                     Element = Get_Element(returned_expected_step_data[0], returned_expected_step_data[1], returned_expected_step_data[2], returned_expected_step_data[3], returned_expected_step_data[4])
                     #need to verify
-                    actual_text_dataset = Element.text
+                    actual_text_dataset = [[(u'Starting from*', 'car1', u'$101,770', False, False)]]##[[('text', Element.text, False, False)]]
+                    
                 except Exception, e:
                     exc_type, exc_obj, exc_tb = sys.exc_info()        
                     fname = os.path.split(exc_tb.tb_frame.f_code.co_filename)[1]
