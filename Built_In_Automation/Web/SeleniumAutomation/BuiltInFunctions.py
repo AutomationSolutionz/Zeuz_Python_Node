@@ -603,6 +603,7 @@ def Wait_For_New_Element(step_data):
             return "failed"
 
 
+#Handles actions for the sequential logic, based on the input from the mentioned function
 def Action_Handler(action_step_data, action_name):
     sModuleInfo = inspect.stack()[0][3] + " : " + inspect.getmoduleinfo(__file__).name
     try:
@@ -634,7 +635,7 @@ def Action_Handler(action_step_data, action_name):
         return "failed"  
     
 
-
+#Performs a series of action or logical decisions based on user input
 def Sequential_Actions(step_data):
     sModuleInfo = inspect.stack()[0][3] + " : " + inspect.getmoduleinfo(__file__).name
     try:            
@@ -676,8 +677,8 @@ def Sequential_Actions(step_data):
                                 print conditional_steps[2]
                                 list_of_steps = conditional_steps[2].split(",")
                                 for each_item in list_of_steps:
-                                    each_item = int(each_item)
-                                    Sequential_Actions([step_data[each_item]])
+                                    data_set_number = int(each_item) - 1
+                                    Sequential_Actions([step_data[data_set_number]])
                                 return "passed"
                     
                     else:
@@ -902,22 +903,26 @@ def Get_All_Elements(parameter,value,parent=False):
         if parent == False:
             if parameter == "text":
                 All_Elements = WebDriverWait(sBrowser, WebDriver_Wait).until(EC.presence_of_all_elements_located((By.XPATH, "//*[text()='%s']"%value)))
-            elif parameter == "tag_name":
+            elif parameter == "tag":
                 All_Elements = WebDriverWait(sBrowser, WebDriver_Wait).until(EC.presence_of_all_elements_located((By.TAG_NAME, '%s'%(value))))
             elif ((parameter == "link_text") or (parameter == "href")):
                 All_Elements = WebDriverWait(sBrowser, WebDriver_Wait).until(EC.presence_of_all_elements_located((By.LINK_TEXT, '%s'%(value))))
-            elif parameter == "css_selector":
+            elif (parameter == "partial_link_text"):
+                All_Elements = WebDriverWait(sBrowser, WebDriver_Wait).until(EC.presence_of_all_elements_located((By.PARTIAL_LINK_TEXT, '%s'%(value))))
+            elif parameter == "css":
                 All_Elements = WebDriverWait(sBrowser, WebDriver_Wait).until(EC.presence_of_all_elements_located((By.CSS_SELECTOR, '%s'%(value))))    
             else:
                 All_Elements = WebDriverWait(sBrowser, WebDriver_Wait).until(EC.presence_of_all_elements_located((By.XPATH, "//*[@%s='%s']"%(parameter,value))))
         else:
             if parameter == "text":
                 All_Elements = WebDriverWait(parent, WebDriver_Wait).until(EC.presence_of_all_elements_located((By.XPATH, "//*[text()='%s']" %value)))
-            elif parameter == "tag_name":
+            elif parameter == "tag":
                 All_Elements = WebDriverWait(parent, WebDriver_Wait).until(EC.presence_of_all_elements_located((By.TAG_NAME, '%s'%(value))))
             elif ((parameter == "link_text") or (parameter == "href")):
                 All_Elements = WebDriverWait(parent, WebDriver_Wait).until(EC.presence_of_all_elements_located((By.LINK_TEXT, '%s'%(value))))
-            elif parameter == "css_selector":
+            elif (parameter == "partial_link_text"):
+                All_Elements = WebDriverWait(parent, WebDriver_Wait).until(EC.presence_of_all_elements_located((By.PARTIAL_LINK_TEXT, '%s'%(value))))
+            elif parameter == "css":
                 All_Elements = WebDriverWait(parent, WebDriver_Wait).until(EC.presence_of_all_elements_located((By.CSS_SELECTOR, '%s'%(value))))
             else:
                 All_Elements = WebDriverWait(parent, WebDriver_Wait).until(EC.presence_of_all_elements_located((By.XPATH, "//*[@%s='%s']"%(parameter,value))))
@@ -936,74 +941,186 @@ def Get_All_Elements(parameter,value,parent=False):
 def Get_Double_Matching_Elements(param_1, value_1, param_2, value_2):
     sModuleInfo = inspect.stack()[0][3] + " : " + inspect.getmoduleinfo(__file__).name
     try:
-        #text, tagname,linktext/href,css
-        All_Elements = []
-        if (param_1 == "text" and param_2 == "tag_name"):
+        #text, tagname,linktext/href,css,partiallinktext
+        #All_Elements = []
+        ##Text and Tag double matching
+        if ((param_1 == "text" and param_2 == "tag") or (param_1 == "tag" and param_2 == "text")):
             CommonUtil.ExecLog(sModuleInfo, "Locating element using double matching, types: text and tag name", 1,local_run)
             try:
-                Parameter_1_Element = WebDriverWait(sBrowser, WebDriver_Wait).until(EC.presence_of_all_elements_located((By.XPATH, "//*[text()='%s']"%value_1)))
-                Parameter_2_Element = WebDriverWait(sBrowser, WebDriver_Wait).until(EC.presence_of_all_elements_located((By.TAG_NAME, '%s'%(value_2))))
-                for item in Parameter_1_Element:
-                    if item in Parameter_2_Element:
-                        All_Elements = item
+                if (param_1 == "text" and param_2 == "tag"):
+                    text_value = value_1
+                    tag_value = value_2
+                elif(param_1 == "tag" and param_2 == "text"): 
+                    text_value = value_2
+                    tag_value = value_1  
+                Text_Element = WebDriverWait(sBrowser, WebDriver_Wait).until(EC.presence_of_all_elements_located((By.XPATH, "//*[text()='%s']"%text_value)))
+                Tag_Element = WebDriverWait(sBrowser, WebDriver_Wait).until(EC.presence_of_all_elements_located((By.TAG_NAME, '%s'%(tag_value))))
+                matched_element = []
+                for item in Text_Element:
+                    if item in Tag_Element:
+                        matched_element.append(item)
+                if matched_element != []:
+                    return matched_element
+                else:
+                    return "failed"
             except Exception, e:
                 errMsg = "Could not find elements by double matching with types text and tag name"
                 Exception_Info(sModuleInfo, errMsg)
         
-        elif (param_1 == "text" and param_2 == "css_selector"):
+        ##Text and CSS double matching        
+        elif ((param_1 == "text" and param_2 == "css") or (param_1 == "css" and param_2 == "text")):
             CommonUtil.ExecLog(sModuleInfo, "Locating element using double matching, types: text and css selector", 1,local_run)
             try:
-                Parameter_1_Element = WebDriverWait(sBrowser, WebDriver_Wait).until(EC.presence_of_all_elements_located((By.XPATH, "//*[text()='%s']"%value_1)))
-                Parameter_2_Element = WebDriverWait(sBrowser, WebDriver_Wait).until(EC.presence_of_all_elements_located((By.TAG_NAME, '%s'%(value_2))))
-                for item in Parameter_1_Element:
-                    if item in Parameter_2_Element:
-                        All_Elements = item
+                if (param_1 == "text" and param_2 == "css"):
+                    text_value = value_1
+                    css_value = value_2
+                elif(param_1 == "css" and param_2 == "text"): 
+                    text_value = value_2
+                    css_value = value_1
+                Text_Element = WebDriverWait(sBrowser, WebDriver_Wait).until(EC.presence_of_all_elements_located((By.XPATH, "//*[text()='%s']"%text_value)))
+                CSS_Element = WebDriverWait(sBrowser, WebDriver_Wait).until(EC.presence_of_all_elements_located((By.CSS_SELECTOR, '%s'%(css_value))))
+                matched_element=[]
+                for item in Text_Element:
+                    if item in CSS_Element:
+                        matched_element.append(item)
+                if matched_element != []:
+                    return matched_element
+                else:
+                    return "failed"
             except Exception, e:
                 errMsg = "Could not find elements by double matching with types text and css selector"
                 Exception_Info(sModuleInfo, errMsg)
         
-        elif ((param_1 == "link_text" or param_1 == "href") and param_2 == "css_selector"):
-            CommonUtil.ExecLog(sModuleInfo, "Locating element using double matching, types: text and css selector", 1,local_run)
+        ##Link_Text and CSS double matching                
+        elif (((param_1 == "link_text" or param_1 == "href") and param_2 == "css") or (param_1 == "css" and (param_2 == "link_text" or param_2 == "href"))):
+            CommonUtil.ExecLog(sModuleInfo, "Locating element using double matching, types: link text and css selector", 1,local_run)
             try:
-                Parameter_1_Element = WebDriverWait(sBrowser, WebDriver_Wait).until(EC.presence_of_all_elements_located((By.LINK_TEXT, '%s'%value_1)))
-                Parameter_2_Element = WebDriverWait(sBrowser, WebDriver_Wait).until(EC.presence_of_all_elements_located((By.CSS_SELECTOR, '%s'%(value_2))))
-                for item in Parameter_1_Element:
-                    if item in Parameter_2_Element:
-                        All_Elements = item
+                if ((param_1 == "link_text" or param_1 == "href") and param_2 == "css"):
+                    link_text_value = value_1
+                    css_value = value_2
+                elif(param_1 == "css" and (param_2 == "link_text" or param_2 == "href")): 
+                    link_text_value = value_2
+                    css_value = value_1
+                Link_Text_Element = WebDriverWait(sBrowser, WebDriver_Wait).until(EC.presence_of_all_elements_located((By.LINK_TEXT, '%s'%link_text_value)))
+                CSS_Element = WebDriverWait(sBrowser, WebDriver_Wait).until(EC.presence_of_all_elements_located((By.CSS_SELECTOR, '%s'%(css_value))))
+                matched_element=[]
+                for item in Link_Text_Element:
+                    if item in CSS_Element:
+                        matched_element.append(item)
+                if matched_element != []:
+                    return matched_element
+                else:
+                    return "failed"
             except Exception, e:
                 errMsg = "Could not find elements by double matching with types link text and css selector"
                 Exception_Info(sModuleInfo, errMsg)
-        
-        elif (param_1 == "tag_name" and param_2 == "css_selector"):
-            CommonUtil.ExecLog(sModuleInfo, "Locating element using double matching, types: text and css selector", 1,local_run)
+
+        ##Tag and CSS double matching                
+        elif ((param_1 == "tag" and param_2 == "css") or (param_1 == "css" and param_2 == "tag")):
+            CommonUtil.ExecLog(sModuleInfo, "Locating element using double matching, types: tag and css selector", 1,local_run)
             try:
-                Parameter_1_Element = WebDriverWait(sBrowser, WebDriver_Wait).until(EC.presence_of_all_elements_located((By.TAG_NAME, '%s'%value_1)))
-                Parameter_2_Element = WebDriverWait(sBrowser, WebDriver_Wait).until(EC.presence_of_all_elements_located((By.CSS_SELECTOR, '%s'%(value_2))))
-                for item in Parameter_1_Element:
-                    if item in Parameter_2_Element:
-                        All_Elements = item
+                if (param_1 == "tag" and param_2 == "css"):
+                    tag_value = value_1
+                    css_value = value_2
+                elif(param_1 == "css" and param_2 == "tag"): 
+                    tag_value = value_2
+                    css_value = value_1
+                Tag_Element = WebDriverWait(sBrowser, WebDriver_Wait).until(EC.presence_of_all_elements_located((By.TAG_NAME, '%s'%tag_value)))
+                CSS_Element = WebDriverWait(sBrowser, WebDriver_Wait).until(EC.presence_of_all_elements_located((By.CSS_SELECTOR, '%s'%(css_value))))
+                matched_element=[]
+                for item in Tag_Element:
+                    if item in CSS_Element:
+                        matched_element.append(item)
+                if matched_element != []:
+                    return matched_element
+                else:
+                    return "failed"
             except Exception, e:
-                errMsg = "Could not find elements by double matching with types link text and css selector"
+                errMsg = "Could not find elements by double matching with types tag and css selector"
+                Exception_Info(sModuleInfo, errMsg)
+
+        ##Link Text and Tag double matching               
+        elif (((param_1 == "link_text" or param_1 == "href") and param_2 == "tag") or (param_1 == "tag" and (param_2 == "link_text" or param_2 == "href"))):
+            CommonUtil.ExecLog(sModuleInfo, "Locating element using double matching, types: link text and tag", 1,local_run)
+            try:
+                if ((param_1 == "link_text" or param_1 == "href") and param_2 == "tag"):
+                    link_text_value = value_1
+                    tag_value = value_2
+                elif(param_1 == "tag" and (param_2 == "link_text" or param_2 == "href")): 
+                    link_text_value = value_2
+                    tag_value = value_1
+                Link_Text_Element = WebDriverWait(sBrowser, WebDriver_Wait).until(EC.presence_of_all_elements_located((By.LINK_TEXT, '%s'%link_text_value)))
+                Tag_Element = WebDriverWait(sBrowser, WebDriver_Wait).until(EC.presence_of_all_elements_located((By.TAG_NAME, '%s'%(tag_value))))
+                matched_element=[]
+                for item in Link_Text_Element:
+                    if item in Tag_Element:
+                        matched_element.append(item)
+                if matched_element != []:
+                    return matched_element
+                else:
+                    return "failed"
+            except Exception, e:
+                errMsg = "Could not find elements by double matching with types link text and tag"
+                Exception_Info(sModuleInfo, errMsg)
+
+        ##Tag and Partial Link Text double matching                
+        elif ((param_1 == "tag" and param_2 == "partial_link_text") or (param_1 == "partial_link_text" and param_2 == "tag")):
+            CommonUtil.ExecLog(sModuleInfo, "Locating element using double matching, types: tag and partial link text", 1,local_run)
+            try:
+                if (param_1 == "tag" and param_2 == "partial_link_text"):
+                    tag_value = value_1
+                    partial_link_text_value = value_2
+                elif(param_1 == "partial_link_text" and param_2 == "tag"): 
+                    tag_value = value_2
+                    partial_link_text_value = value_1
+                Tag_Element = WebDriverWait(sBrowser, WebDriver_Wait).until(EC.presence_of_all_elements_located((By.TAG_NAME, '%s'%tag_value)))
+                Partial_Link_Text_Element = WebDriverWait(sBrowser, WebDriver_Wait).until(EC.presence_of_all_elements_located((By.PARTIAL_LINK_TEXT, '%s'%(partial_link_text_value))))
+                matched_element=[]
+                for item in Tag_Element:
+                    if item in Partial_Link_Text_Element:
+                        matched_element.append(item)
+                if matched_element != []:
+                    return matched_element
+                else:
+                    return "failed"
+            except Exception, e:
+                errMsg = "Could not find elements by double matching with types tag and partial link text"
                 Exception_Info(sModuleInfo, errMsg)
         
-        elif ((param_1 == "link_text" or param_1 == "href") and param_2 == "tag_name"):
-            CommonUtil.ExecLog(sModuleInfo, "Locating element using double matching, types: text and css selector", 1,local_run)
+        ##CSS and Partial Link Text double matching                
+        elif ((param_1 == "css" and param_2 == "partial_link_text") or (param_1 == "partial_link_text" and param_2 == "css")):
+            CommonUtil.ExecLog(sModuleInfo, "Locating element using double matching, types: partial link text and css selector", 1,local_run)
             try:
-                Parameter_1_Element = WebDriverWait(sBrowser, WebDriver_Wait).until(EC.presence_of_all_elements_located((By.LINK_TEXT, '%s'%value_1)))
-                Parameter_2_Element = WebDriverWait(sBrowser, WebDriver_Wait).until(EC.presence_of_all_elements_located((By.TAG_NAME, '%s'%(value_2))))
-                for item in Parameter_1_Element:
-                    if item in Parameter_2_Element:
-                        All_Elements = item
+                if (param_1 == "css" and param_2 == "partial_link_text"):
+                    css_value = value_1
+                    partial_link_text_value = value_2
+                elif(param_1 == "partial_link_text" and param_2 == "css"): 
+                    css_value = value_2
+                    partial_link_text_value = value_1
+                CSS_Element = WebDriverWait(sBrowser, WebDriver_Wait).until(EC.presence_of_all_elements_located((By.CSS_SELECTOR, '%s'%css_value)))
+                Partial_Link_Text_Element = WebDriverWait(sBrowser, WebDriver_Wait).until(EC.presence_of_all_elements_located((By.PARTIAL_LINK_TEXT, '%s'%(partial_link_text_value))))
+                matched_element=[]
+                for item in CSS_Element:
+                    if item in Partial_Link_Text_Element:
+                        matched_element.append(item)
+                if matched_element != []:
+                    return matched_element
+                else:
+                    return "failed"
             except Exception, e:
-                errMsg = "Could not find elements by double matching with types link text and css selector"
+                errMsg = "Could not find elements by double matching with types partial link text and css selector"
                 Exception_Info(sModuleInfo, errMsg)
                 
+        ##Other criteria double matching                        
         else:
             CommonUtil.ExecLog(sModuleInfo, "Locating element using double matching, type unspecific", 1,local_run)
+            All_Elements=[]
             All_Elements = WebDriverWait(sBrowser, WebDriver_Wait).until(EC.presence_of_all_elements_located((By.XPATH, "//*[@%s='%s' and @%s='%s']"%(param_1,value_1,param_2,value_2))))
-        
-        return All_Elements
-     
+            if All_Elements != []:
+                return All_Elements
+            else:
+                return failed
+            
     except Exception, e:
         exc_type, exc_obj, exc_tb = sys.exc_info()        
         fname = os.path.split(exc_tb.tb_frame.f_code.co_filename)[1]

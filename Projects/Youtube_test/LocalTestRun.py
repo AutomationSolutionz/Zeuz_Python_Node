@@ -13,19 +13,16 @@ from Projects.Youtube_test import Youtube_Search as YTS
 def Create_Site_Content():
     YTS.BuiltInFunctions.Open_Browser('firefox')
 #    Test_For_Compare_Text()
-#     Test_For_Double_Matching()
+#    Test_For_Double_Matching()
 #     Test_For_Get_All_Elements()
 #     Test_For_Get_Elements()
 #     Test_For_Individual_Actions()
-    Test_For_Sequential_Actions()
+#    Test_For_Sequential_Actions()
 #    Nissan_Test_Page()
 #   Test_For_Get_Elements()
 #   Test_For_Double_Matching()
 #   Test_For_Get_All_Elements()
 ##    Henry's Test Page:
-#    YTS.BuiltInFunctions.Go_To_Link('http://www.henrys.com/Categories/67-Digital-Cameras-Compare-and-Buy.aspx?source=Cornerstone_Henry%27s+Canada&bypassredirect=true&gclid=CKLv3b3F380CFZY1aQod4jMI2w')
-#    YTS.BuiltInFunctions.Get_Element('link_text','Lighting & Studio','id','header_lstCategories_category_4','parent')    
-
     print "test complete"
 #    YTS.Item_Search('webdriver')
 
@@ -53,30 +50,49 @@ def Test_For_Get_Elements():
 def Test_For_Get_All_Elements():
     #Case 1: Parent = False
     #Case 1.A: Param type = text
-#     YTS.BuiltInFunctions.Get_All_Elements('text', 'Search')
-#     print "end of text test case"
-#     #Case 1.B: Param type = tag name
-#     YTS.BuiltInFunctions.Get_All_Elements('tag_name', 'div')
-#     print "end of tag test case"
-#     #Case 1.C: Param type = link text
-#     YTS.BuiltInFunctions.Get_All_Elements('link_text', 'Lighting & Studio')
-#     print "end of link test case"
-#     #Case 1.D: Param type = css
-#     YTS.BuiltInFunctions.Get_All_Elements('css_selector', 'li.A')
-#     print "end of css case"
-#     #Case 1.E: Param type = others /by xpath
-#     YTS.BuiltInFunctions.Get_All_Elements('id', 'header_lstCategories_dropNav_4')
-#     print "end of xpath case"
+    YTS.BuiltInFunctions.Get_All_Elements('text', 'Search')
+    print "end of text test case"
+    #Case 1.B: Param type = tag name
+    YTS.BuiltInFunctions.Get_All_Elements('tag_name', 'div')
+    print "end of tag test case"
+    #Case 1.C: Param type = link text
+    YTS.BuiltInFunctions.Get_All_Elements('link_text', 'Lighting & Studio')
+    print "end of link test case"
+    #Case 1.D: Param type = css
+    YTS.BuiltInFunctions.Get_All_Elements('css_selector', 'li.A')
+    print "end of css case"
+    #Case 1.E: Param type = others /by xpath
+    YTS.BuiltInFunctions.Get_All_Elements('id', 'header_lstCategories_dropNav_4')
+    print "end of xpath case"
     
-    ##Testing YouTube Stuff:
-    YTS.BuiltInFunctions.Go_To_Link('https://www.youtube.com/?hl=en&gl=CA')
-    YTS.BuiltInFunctions.Get_All_Elements('link_text', 'Best of Youtube')
-
+    
 def Test_For_Double_Matching():
-    #Text and tag
+    #text, tagname,linktext/href,css,partiallinktext
     YTS.BuiltInFunctions.Go_To_Link('https://www.henrys.com/SignIn.aspx')
-    YTS.BuiltInFunctions.Get_Double_Matching_Elements('text', 'Email', 'tag_name', 'd')
-
+    #Text and tag
+    YTS.BuiltInFunctions.Get_Double_Matching_Elements('text', 'Email', 'tag', 'td')
+    print "end text tag"
+    #Text and partial link text
+    #Text and link text
+    #Text and CSS
+    YTS.BuiltInFunctions.Get_Double_Matching_Elements('css', 'td.field', 'text', 'Email')
+    print "end text css"
+    #Tag and CSS
+    YTS.BuiltInFunctions.Get_Double_Matching_Elements('tag', 'td', 'css', 'td.field')
+    print "end css tag"
+    #Tag and partial link text
+    YTS.BuiltInFunctions.Get_Double_Matching_Elements('tag', 'a', 'partial_link_text', 'Print')
+    print "end partiallinktext tag"
+    #Tag and link text
+    YTS.BuiltInFunctions.Get_Double_Matching_Elements('tag', 'a', 'link_text', 'Printers')
+    print "end linktext tag"    
+    #CSS and link text
+    YTS.BuiltInFunctions.Get_Double_Matching_Elements('css', 'td.field', 'link_text', 'Password')
+    print "end linktext css"
+    #CSS and partial link text
+    YTS.BuiltInFunctions.Get_Double_Matching_Elements('css', 'td.field', 'partial_link_text', 'word')
+    print "end partiallinktext css"
+      
 def Nissan_Test_Page():
     YTS.BuiltInFunctions.Go_To_Link('http://compare.nissanusa.com/nissan_compare/NNAComparator/Compare.jsp?clientID=273266&modelName=z&#params:main=competitorselect~acode=XGC60NIC041A0')
     step_data_nissan = [ [ ( 'class' , 'btnCenter-blue' , False , False ) , ( 'class' , 'basevehicle' , False , False ) , ( 'relation' , 'parent' , False , False ) ] , [ ( 'action_click_hover' , 'click' , False , False ) ] , [ ( 'class' , 'x-form-trigger x-form-trigger-arrow ' , False , False ) , ( 'class' , 'gwt-PopupPanel' , False , False ) , ( 'relation' , 'parent' , False , False ) ] , [ ( 'action' , 'click' , False , False ) ] ]    
@@ -94,7 +110,8 @@ def Test_For_Individual_Actions():
   
 def Test_For_Sequential_Actions():
     YTS.BuiltInFunctions.Go_To_Link('http://www.henrys.com/')
-    step_data_mod = [ [ ( 'id' , 'header_lstCategories_category_4' , False , False ) , ( 'class' , 'A' , False , False ) , ( 'hover' , 'action' , 'hover' , False , False ) ] , [ ( 'text' , 'Studio Strobes' , False , False ) , ( 'id' , 'header_lstCategories_category_4' , False , False ) , ( 'relation' , 'parent' , False , False ) , ( 'click' , 'action' , 'click' , False , False ) ] , [ ( 'id' , 'txtSearch' , False , False ) , ( 'text' , 'action' , 'camera' , False , False ) ] , [ ( 'id' , 'middle-storelocation' , False , False ) , ( 'true' , 'logic' , '4,6' , False , False ) , ( 'false' , 'logic' , '5' , False , False ) ] , [ ( 'id' , 'header_lstCategories_category_4' , False , False ) , ( 'class' , 'A' , False , False ) , ( 'hover' , 'action' , 'hover' , False , False ) ] , [ ( 'id' , 'header_lstCategories_category_1' , False , False ) , ( 'class' , 'B' , False , False ) , ( 'hover' , 'action' , 'hover' , False , False )] , [  ( 'text' , 'Studio Strobes' , False , False ) , ( 'id' , 'header_lstCategories_category_4' , False , False ) , ( 'relation' , 'parent' , False , False ) , ( 'click' , 'action' , 'click' , False , False )  ] ]
+    #YTS.BuiltInFunctions.Go_To_Link('http://qa-factory.assetscience.com/totalanalysis/login/auth')
+    step_data_mod = [ [ ( 'id' , 'header_lstCategories_category_4' , False , False ) , ( 'class' , 'A' , False , False ) , ( 'hover' , 'action' , 'hover' , False , False ) ] , [ ( 'text' , 'Studio Strobes' , False , False ) , ( 'id' , 'header_lstCategories_category_4' , False , False ) , ( 'relation' , 'parent' , False , False ) , ( 'click' , 'action' , 'click' , False , False ) ] , [ ( 'id' , 'txtSearch' , False , False ) , ( 'text' , 'action' , 'camera' , False , False ) ] , [ ( 'id' , 'middle-storelocation' , False , False ) , ( 'true' , 'logic' , '5,7' , False , False ) , ( 'false' , 'logic' , '6' , False , False ) ] , [ ( 'id' , 'header_lstCategories_category_4' , False , False ) , ( 'class' , 'A' , False , False ) , ( 'hover' , 'action' , 'hover' , False , False ) ] , [ ( 'id' , 'header_lstCategories_category_1' , False , False ) , ( 'class' , 'B' , False , False ) , ( 'hover' , 'action' , 'hover' , False , False )] , [  ( 'text' , 'Studio Strobes' , False , False ) , ( 'id' , 'header_lstCategories_category_4' , False , False ) , ( 'relation' , 'parent' , False , False ) , ( 'click' , 'action' , 'click' , False , False )  ] ]##[ [ ( 'id' , 'username' , False , False ) , ( 'text' , 'action' , 'rrakin' , False , False ) ] , [ ( 'id' , 'password' , False , False ) , ( 'text' , 'action' , 'password' , False , False ) ] , [ ( 'id' , 'submit' , False , False ) , ( 'click' , 'action' , 'click' , False , False ) ] ]#[ [ ( 'id' , 'header_lstCategories_category_4' , False , False ) , ( 'class' , 'A' , False , False ) , ( 'hover' , 'action' , 'hover' , False , False ) ] , [ ( 'text' , 'Studio Strobes' , False , False ) , ( 'id' , 'header_lstCategories_category_4' , False , False ) , ( 'relation' , 'parent' , False , False ) , ( 'click' , 'action' , 'click' , False , False ) ] , [ ( 'id' , 'txtSearch' , False , False ) , ( 'text' , 'action' , 'camera' , False , False ) ] , [ ( 'id' , 'middle-storelocation' , False , False ) , ( 'true' , 'logic' , '4,6' , False , False ) , ( 'false' , 'logic' , '5' , False , False ) ] , [ ( 'id' , 'header_lstCategories_category_4' , False , False ) , ( 'class' , 'A' , False , False ) , ( 'hover' , 'action' , 'hover' , False , False ) ] , [ ( 'id' , 'header_lstCategories_category_1' , False , False ) , ( 'class' , 'B' , False , False ) , ( 'hover' , 'action' , 'hover' , False , False )] , [  ( 'text' , 'Studio Strobes' , False , False ) , ( 'id' , 'header_lstCategories_category_4' , False , False ) , ( 'relation' , 'parent' , False , False ) , ( 'click' , 'action' , 'click' , False , False )  ] ]
     YTS.BuiltInFunctions.Sequential_Actions(step_data_mod)
 
 
