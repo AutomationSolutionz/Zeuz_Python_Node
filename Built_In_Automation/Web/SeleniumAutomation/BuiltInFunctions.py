@@ -1119,7 +1119,7 @@ def Get_Double_Matching_Elements(param_1, value_1, param_2, value_2):
             if All_Elements != []:
                 return All_Elements
             else:
-                return failed
+                return "failed"
             
     except Exception, e:
         exc_type, exc_obj, exc_tb = sys.exc_info()        
