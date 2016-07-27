@@ -677,8 +677,8 @@ def Sequential_Actions(step_data):
                                 print conditional_steps[2]
                                 list_of_steps = conditional_steps[2].split(",")
                                 for each_item in list_of_steps:
-                                    data_set_number = int(each_item) - 1
-                                    Sequential_Actions([step_data[data_set_number]])
+                                    data_set_index = int(each_item) - 1
+                                    Sequential_Actions([step_data[data_set_index]])
                                 return "passed"
                     
                     else:
