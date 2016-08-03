@@ -213,6 +213,8 @@ def eliminate_duplicate(datasets,keywordlist):
     result={'valid': data_to_consider,'duplicate':data_to_eliminate}
     return result
 def single_dataset_compare(expected_copy,actual_copy):
+    expected_copy = make_single_data_set_compatible(expected_copy)
+    actual_copy = make_single_data_set_compatible(actual_copy)
     sModuleInfo = inspect.stack()[0][3] + " : " + inspect.getmoduleinfo(__file__).name
     expected_list=copy.deepcopy(expected_copy)
     actual_list=copy.deepcopy(actual_copy)
