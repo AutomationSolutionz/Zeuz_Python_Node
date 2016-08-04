@@ -549,6 +549,8 @@ def Get_All_Elements(parameter, value, parent=False):
         if parent == False:
             if parameter == "name":
                 All_Elements = driver.find_elements_by_name(value)
+            elif parameter == "id":
+                All_Elements = driver.find_elements_by_id(value)
         """else:
             if parameter == "text":
                 All_Elements = WebDriverWait(parent, WebDriver_Wait).until(
