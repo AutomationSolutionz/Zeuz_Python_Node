@@ -487,6 +487,77 @@ def Enter_Text_In_Text_Box(step_data):
         return "failed"
 
 
+
+def Keystroke_Key_Mapping(Element,keystroke):
+    sModuleInfo = inspect.stack()[0][3] + " : " + inspect.getmoduleinfo(__file__).name
+    CommonUtil.ExecLog(sModuleInfo, "Inside Keystroke For Element function", 1,local_run)
+    try:
+        if keystroke == "ENTER":
+            Element.send_keys(Keys.ENTER)
+        elif keystroke == "ADD":
+            Element.send_keys(Keys.ADD)
+        elif keystroke == "BACKSPACE":
+            Element.send_keys(Keys.BACKSPACE)
+        elif keystroke == "CANCEL":
+            Element.send_keys(Keys.CANCEL)
+        elif keystroke == "CLEAR":
+            Element.send_keys(Keys.CLEAR)
+        elif keystroke == "DELETE":
+            Element.send_keys(Keys.DELETE)
+        elif keystroke == "SPACE":
+            Element.send_keys(Keys.SPACE)
+            
+    except Exception, e:
+        exc_type, exc_obj, exc_tb = sys.exc_info()        
+        fname = os.path.split(exc_tb.tb_frame.f_code.co_filename)[1]
+        Error_Detail = ((str(exc_type).replace("type ", "Error Type: ")) + ";" +  "Error Message: " + str(exc_obj) +";" + "File Name: " + fname + ";" + "Line: "+ str(exc_tb.tb_lineno))
+        CommonUtil.ExecLog(sModuleInfo, "Could not press enter for your element.  Error: %s"%(Error_Detail), 3,local_run)
+        return "failed"    
+
+#Method to click on element; step data passed on by the user
+def Keystroke_For_Element(step_data):
+    sModuleInfo = inspect.stack()[0][3] + " : " + inspect.getmoduleinfo(__file__).name
+    CommonUtil.ExecLog(sModuleInfo, "Inside Keystroke For Element function", 1,local_run)
+    try:
+        if ((len(step_data) != 1) or (1 < len(step_data[0]) >= 5)):
+            CommonUtil.ExecLog(sModuleInfo, "The information in the data-set(s) are incorrect. Please provide accurate data set(s) information.", 3,local_run)
+            return "failed"
+        else:
+            element_step_data = step_data[0][0:len(step_data[0])-1:1]
+            returned_step_data_list = Validate_Step_Data(element_step_data) 
+            if ((returned_step_data_list == []) or (returned_step_data_list == "failed")):
+                return "failed"
+            else:
+                try:
+                    Element = Get_Element(returned_step_data_list[0], returned_step_data_list[1], returned_step_data_list[2], returned_step_data_list[3], returned_step_data_list[4])
+                    if step_data[0][len(step_data[0])-1][0] == "keystroke_keys":
+                        keystroke_value=(step_data[0][len(step_data[0])-1][2]).upper()
+#                        print keystroke_value
+                        Keystroke_Key_Mapping(Element, keystroke_value)
+#                        Element.send_keys(Keys.ENTER)
+                    elif step_data[0][len(step_data[0])-1][0] == "keystroke_chars":
+                        keystroke_value=(step_data[0][len(step_data[0])-1][2])
+                        Element.send_keys(keystroke_value)
+                    CommonUtil.TakeScreenShot(sModuleInfo, local_run)
+                    CommonUtil.ExecLog(sModuleInfo, "Successfully entered keystroke for the element with given parameters and values", 1,local_run)
+                    return "passed"
+                except Exception, e:
+                    element_attributes = Element.get_attribute('outerHTML')
+                    CommonUtil.ExecLog(sModuleInfo, "Element Attributes: %s"%(element_attributes),3,local_run)
+                    exc_type, exc_obj, exc_tb = sys.exc_info()        
+                    fname = os.path.split(exc_tb.tb_frame.f_code.co_filename)[1]
+                    Error_Detail = ((str(exc_type).replace("type ", "Error Type: ")) + ";" +  "Error Message: " + str(exc_obj) +";" + "File Name: " + fname + ";" + "Line: "+ str(exc_tb.tb_lineno))
+                    CommonUtil.ExecLog(sModuleInfo, "Could not enter keystroke for your element.  Error: %s"%(Error_Detail), 3,local_run)
+                    return "failed"
+
+    except Exception, e:
+        exc_type, exc_obj, exc_tb = sys.exc_info()        
+        fname = os.path.split(exc_tb.tb_frame.f_code.co_filename)[1]
+        Error_Detail = ((str(exc_type).replace("type ", "Error Type: ")) + ";" +  "Error Message: " + str(exc_obj) +";" + "File Name: " + fname + ";" + "Line: "+ str(exc_tb.tb_lineno))
+        CommonUtil.ExecLog(sModuleInfo, "Could not press enter for your element.  Error: %s"%(Error_Detail), 3,local_run)
+        return "failed"
+
+
 #Method to click on element; step data passed on by the user
 def Click_Element(step_data):
     sModuleInfo = inspect.stack()[0][3] + " : " + inspect.getmoduleinfo(__file__).name
@@ -615,12 +686,20 @@ def Action_Handler(action_step_data, action_name):
             result = Hover_Over_Element(action_step_data)
             if result == "failed":
                 return "failed"
+        elif (action_name == "keystroke_keys" or action_name == "keystroke_chars"):
+            result = Keystroke_For_Element(action_step_data)
+            if result == "failed":
+                return "failed"
         elif action_name=="text":
             result = Enter_Text_In_Text_Box(action_step_data)
             if result == "failed":
                 return "failed"
         elif action_name =="wait":
             result = Wait_For_New_Element(action_step_data)
+            if result == "failed":
+                return "failed"
+        elif (action_name == "validate full text" or action_name == "validate partial text"):
+            result = Validate_Text(action_step_data)
             if result == "failed":
                 return "failed"
         else:
@@ -736,7 +815,6 @@ def Validate_Text(step_data):
             CommonUtil.ExecLog(sModuleInfo, "The information in the data-set(s) are incorrect. Please provide accurate data set(s) information.", 3,local_run)
             return "failed"
         else:
-#             oCompare = CompareModule()
             expected_text_data = step_data[0][1][2]
             if step_data[0][0][0] == "current_page":
                 try:
@@ -761,7 +839,7 @@ def Validate_Text(step_data):
             for each_text_item in list_of_element_text:
                 if each_text_item != "":
                     visible_list_of_element_text.append(each_text_item)                
-            if step_data[0][1][1] == "partial match":
+            if step_data[0][1][0] == "validate partial text":
                 actual_text_data = visible_list_of_element_text
                 CommonUtil.ExecLog(sModuleInfo, "Expected Text: " + expected_text_data, 1,local_run)
                 CommonUtil.ExecLog(sModuleInfo, "Actual Text: " + str(actual_text_data), 1,local_run)
@@ -771,7 +849,7 @@ def Validate_Text(step_data):
                 else: 
                     CommonUtil.ExecLog(sModuleInfo, "Unable to validate using partial match.", 3,local_run)
                     return "failed"
-            if step_data[0][1][1] == "full match":
+            if step_data[0][1][0] == "validate full text":
                 actual_text_data = visible_list_of_element_text
                 CommonUtil.ExecLog(sModuleInfo, "Expected Text: " + expected_text_data, 1,local_run)
                 CommonUtil.ExecLog(sModuleInfo, "Actual Text: " + str(actual_text_data), 1,local_run)
@@ -835,8 +913,15 @@ def Validate_Table(step_data):
             return "failed"
         else:
             try:
-                actual_table_data = Get_Table_Elements('tag', 'tbody')
                 #actual_table_dataset = Get_Table_Elements(returned_step_data_list[0], returned_step_data_list[1], returned_step_data_list[2], returned_step_data_list[3], returned_step_data_list[4])
+                actual_table_data = Get_Table_Elements('tag', 'tbody')
+                row_number = 1
+                formatted_actual_table_data = []
+                for every_row in actual_table_data:
+                    for every_column in every_row:
+                        formatted_actual_table_data.append(every_column)
+                    row_number = row_number+1
+                
             except Exception, e:
                 errMsg = "Unable to get table element. Please check if the correct information has been provided."
                 Exception_Info(sModuleInfo, errMsg)
@@ -854,17 +939,17 @@ def Validate_Table(step_data):
 #                     errMsg = "Could not find table row elements"
 #                     Exception_Info(sModuleInfo, errMsg)                
 #                 master_text_table.append(temp_row_holder)
-        expected_table_step_data = step_data[0][new_data_group_index:len(step_data[0])-1:1]
+        expected_table_step_data = step_data[0][new_data_group_index+1:len(step_data[0])-1:1]
         print expected_table_step_data
         
         expected_table_data_set = []
         row_index = 1
         for each_row in expected_table_step_data:
-            if each[1] == row_index:
+            if each_row[1] == str(row_index):
                 temp_row_holder = []
                 for each_item_in_row in each_row:
                     temp_row_holder.append(step_data[0][row_index][2])
-            row_index= row_index + 1  
+            row_index= int(row_index) + 1  
         
         print "a"
     except Exception, e:
