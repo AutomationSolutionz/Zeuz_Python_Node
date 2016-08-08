@@ -12,16 +12,18 @@ from Projects.Youtube_test import Youtube_Search as YTS
 
 def Create_Site_Content():
     YTS.BuiltInFunctions.Open_Browser('firefox')
-#    Test_For_Compare_Text()
-#    Test_For_Double_Matching()
+    Test_For_Validate_Table()
+#     Test_For_Get_Table_Elements()
+#     Test_For_Compare_Text()
+#     Test_For_Double_Matching()
 #     Test_For_Get_All_Elements()
 #     Test_For_Get_Elements()
 #     Test_For_Individual_Actions()
-#    Test_For_Sequential_Actions()
-#    Nissan_Test_Page()
-#   Test_For_Get_Elements()
-#   Test_For_Double_Matching()
-#   Test_For_Get_All_Elements()
+#     Test_For_Sequential_Actions()
+# #    Nissan_Test_Page()
+#     Test_For_Get_Elements()
+#     Test_For_Double_Matching()
+#     Test_For_Get_All_Elements()
 ##    Henry's Test Page:
     print "test complete"
 #    YTS.Item_Search('webdriver')
@@ -114,10 +116,25 @@ def Test_For_Sequential_Actions():
     step_data_mod = [ [ ( 'id' , 'header_lstCategories_category_4' , False , False ) , ( 'class' , 'A' , False , False ) , ( 'hover' , 'action' , 'hover' , False , False ) ] , [ ( 'text' , 'Studio Strobes' , False , False ) , ( 'id' , 'header_lstCategories_category_4' , False , False ) , ( 'relation' , 'parent' , False , False ) , ( 'click' , 'action' , 'click' , False , False ) ] , [ ( 'id' , 'txtSearch' , False , False ) , ( 'text' , 'action' , 'camera' , False , False ) ] , [ ( 'id' , 'middle-storelocation' , False , False ) , ( 'true' , 'logic' , '5,7' , False , False ) , ( 'false' , 'logic' , '6' , False , False ) ] , [ ( 'id' , 'header_lstCategories_category_4' , False , False ) , ( 'class' , 'A' , False , False ) , ( 'hover' , 'action' , 'hover' , False , False ) ] , [ ( 'id' , 'header_lstCategories_category_1' , False , False ) , ( 'class' , 'B' , False , False ) , ( 'hover' , 'action' , 'hover' , False , False )] , [  ( 'text' , 'Studio Strobes' , False , False ) , ( 'id' , 'header_lstCategories_category_4' , False , False ) , ( 'relation' , 'parent' , False , False ) , ( 'click' , 'action' , 'click' , False , False )  ] ]##[ [ ( 'id' , 'username' , False , False ) , ( 'text' , 'action' , 'rrakin' , False , False ) ] , [ ( 'id' , 'password' , False , False ) , ( 'text' , 'action' , 'password' , False , False ) ] , [ ( 'id' , 'submit' , False , False ) , ( 'click' , 'action' , 'click' , False , False ) ] ]#[ [ ( 'id' , 'header_lstCategories_category_4' , False , False ) , ( 'class' , 'A' , False , False ) , ( 'hover' , 'action' , 'hover' , False , False ) ] , [ ( 'text' , 'Studio Strobes' , False , False ) , ( 'id' , 'header_lstCategories_category_4' , False , False ) , ( 'relation' , 'parent' , False , False ) , ( 'click' , 'action' , 'click' , False , False ) ] , [ ( 'id' , 'txtSearch' , False , False ) , ( 'text' , 'action' , 'camera' , False , False ) ] , [ ( 'id' , 'middle-storelocation' , False , False ) , ( 'true' , 'logic' , '4,6' , False , False ) , ( 'false' , 'logic' , '5' , False , False ) ] , [ ( 'id' , 'header_lstCategories_category_4' , False , False ) , ( 'class' , 'A' , False , False ) , ( 'hover' , 'action' , 'hover' , False , False ) ] , [ ( 'id' , 'header_lstCategories_category_1' , False , False ) , ( 'class' , 'B' , False , False ) , ( 'hover' , 'action' , 'hover' , False , False )] , [  ( 'text' , 'Studio Strobes' , False , False ) , ( 'id' , 'header_lstCategories_category_4' , False , False ) , ( 'relation' , 'parent' , False , False ) , ( 'click' , 'action' , 'click' , False , False )  ] ]
     YTS.BuiltInFunctions.Sequential_Actions(step_data_mod)
 
+def Test_For_Get_Table_Elements():
+    #YTS.BuiltInFunctions.Go_To_Link('http://www.bestbuy.ca/en-CA/product/lg-electronics-lg-24-fhd-60hz-5ms-gtg-tn-led-monitor-24m38d-b-aus-black-24m38d-b-aus/10440826.aspx?icmp=Homepage_BTS_SectionF_weeklydeals_1Big_computing_monitors_QL_Lgmonitoroffer')
+    #YTS.BuiltInFunctions.Get_Table_Elements('class', 'std-tablist')
+    YTS.BuiltInFunctions.Go_To_Link('http://qa-factory.assetscience.com/totalanalysis/devicesearch/list')
+    YTS.BuiltInFunctions.Login_To_Application('rrakin', 'password', 'username', 'password', 'submit')
+    YTS.BuiltInFunctions.Get_Table_Elements('tag', 'tbody')
+    
+
+def Test_For_Validate_Table():
+    step_data = [ [ ( 'id' , 'table' , False , False ) , ( 'ref' , 'top-table' , False , False ) , ( 'relation' , 'parent' , False , False ) , ( 'table' , 'table_validate' , 'table' , False , False ) , ( 'MEID' , '1' , '234567812478' , False , False ) , ( 'MEID' , '1' , 'zxcvbnm' , False , False ) , ( 'ZZZZZ' , '2' , 'asdasd' , False , False ) , ( 'ZZZZZ' , '2' , '12312378' , False , False ) ] ]        
+    YTS.BuiltInFunctions.Go_To_Link('http://qa-factory.assetscience.com/totalanalysis/devicesearch/list')
+    YTS.BuiltInFunctions.Login_To_Application('rrakin', 'password', 'username', 'password', 'submit')
+    YTS.BuiltInFunctions.Validate_Table(step_data)
 
 def Test_For_Compare_Text():
-    step_data_text = [ [ ( 'text' , 'Drones' , False , False ) ] , [ ( 'id' , 'header_lstCategories_category_1' , False , False ) , ( 'class' , 'B' , False , False ) ] ]
+    #step_data_text = [ [ ( 'text','Drones' , False , False ) ] , [ ( 'id' , 'header_lstCategories_category_1' , False , False ) , ( 'class' , 'B' , False , False ) ] ]
+    #step_data_new = [ [ ( 'current_page' , 'current_page' , False , False ) , ( 'expected text' , 'full match' , 'Henrys - Photo - Video - Digital' , False , False ) ] ]
+    step_data_element = [ [ ( 'id' , 'header-nav-custcare' , False , False ) , ( 'expected text' , 'full match' , 'Customer Care' , False , False ) ] ]
     YTS.BuiltInFunctions.Go_To_Link('https://www.henrys.com')
-    YTS.BuiltInFunctions.Compare_Text_Data(step_data_text)
+    YTS.BuiltInFunctions.Validate_Text(step_data_element)
 
 Create_Site_Content()

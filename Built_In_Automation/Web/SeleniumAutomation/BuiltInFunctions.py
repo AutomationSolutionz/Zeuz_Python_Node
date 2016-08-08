@@ -639,8 +639,6 @@ def Action_Handler(action_step_data, action_name):
 def Sequential_Actions(step_data):
     sModuleInfo = inspect.stack()[0][3] + " : " + inspect.getmoduleinfo(__file__).name
     try:            
-#         group_of_data_set = []
-#         temp_data_set = []
         for each in step_data:
             logic_row=[]
             for row in each:
@@ -683,67 +681,8 @@ def Sequential_Actions(step_data):
                     
                     else:
                         CommonUtil.ExecLog(sModuleInfo, "The sub-field information is incorrect. Please provide accurate information on the data set(s).", 3,local_run)
-                        return "failed"             
-#                         if logic_decision=="false":
-                        #now get the element result so that we can decide which logic to execute 
-
-#                         element_step_data = each[0:len(step_data[0])-2:1]
-#                         returned_step_data_list = Validate_Step_Data(element_step_data) 
-#                         if ((returned_step_data_list == []) or (returned_step_data_list == "failed")):
-#                             return "failed"
-#                         else:
-#                             try:
-#                                 Element = Get_Element(returned_step_data_list[0], returned_step_data_list[1], returned_step_data_list[2], returned_step_data_list[3], returned_step_data_list[4])
-#                                 if Element == 'failed':
-#                                     logic_decision = "false"
-#                                 else:
-#                                     logic_decision = "true"
-#                                 
-#                             except:
-#                                 print 'a'
-#                         if logic_decision=="false":
-                            
-                            #list_of_steps = row[2].split(",")
-        
+                        return "failed"                 
         return "passed"
-                        
-###Things to do:
-#1. Get the step data
-#2. Get each_dataset in step_data 
-#3. For each_dataset find the row which has 3 filled columns
-#4. For the row with 3 filled columns, get the middle row and see if there is action or logic
-#5. If there is action: read the type of action for that dataset and perform action
-#6. Else: if it is logic: read strings regarding the which steps to execute
-#7. Within else: split the strings by ',' and put the items in a list
-#8. Execute which step we want to do 
-
-#                 temp_data_set.append(each)
-#                 i = i + 1
-#                 if i == 2:
-#                     i = 0
-#                     group_of_data_set.append(temp_data_set)
-#                     temp_data_set = []
-                     
-#             count = len(group_of_data_set)    
-#            for each_group in group_of_data_set:
-#                 if each_group[1][0][0] == "logic_true":
-#                     if each_group [1][0][1] != []:
-#                         each_item = each_group[1][0][1].split(",").trim()
-#                         for each_step_number in each_item:
-#                                  
-#                             #go to that particular step number
-#                     else:
-#                         CommonUtil.ExecLog(sModuleInfo, "The information in the data-set(s) are incorrect. Please provide accurate data set(s) information.", 3,local_run)
-#                         return "failed"        
-#                if each_group[1][0][0] == "action_click_hover":
-#                    if each_group[1][0][1] == "click":
-#                        Click_Element([each_group[0]])
-#                    elif each_group[1][0][1] == "hover":
-#                        Hover_Over_Element([each_group[0]])
-#                elif each_group[1][0][0] == "action_enter_text":
-#                    Enter_Text_In_Text_Box(each_group)
-#                elif each_group[1][0][0] == "action_wait":
-#                    Wait_For_New_Element(each_group)
 
     except Exception, e:
         exc_type, exc_obj, exc_tb = sys.exc_info()
@@ -788,34 +727,79 @@ def Validate_Step_Data(step_data):
             return "failed"
 
 
-def Compare_Text_Data(step_data):
+#Validating text from an element given information regarding the expected text
+def Validate_Text(step_data):
     sModuleInfo = inspect.stack()[0][3] + " : " + inspect.getmoduleinfo(__file__).name
     CommonUtil.ExecLog(sModuleInfo, "Function: Compare_Text_Data", 1,local_run)
     try:
-        if (len(step_data) != 2):
+        if ((len(step_data) != 1) or (1 < len(step_data[0]) >= 5)):
             CommonUtil.ExecLog(sModuleInfo, "The information in the data-set(s) are incorrect. Please provide accurate data set(s) information.", 3,local_run)
             return "failed"
         else:
-            oCompare = CompareModule()
-            #need to verify
-            expected_text_dataset = [[('Starting from*', 'car1', '101,770', False, False)]]#[step_data[0]]#[0][1]
-            returned_expected_step_data = Validate_Step_Data(step_data[1])
-            if ((returned_expected_step_data == []) or (returned_expected_step_data == "failed")):
-                return "failed"
-            else:
+#             oCompare = CompareModule()
+            expected_text_data = step_data[0][1][2]
+            if step_data[0][0][0] == "current_page":
                 try:
-                    Element = Get_Element(returned_expected_step_data[0], returned_expected_step_data[1], returned_expected_step_data[2], returned_expected_step_data[3], returned_expected_step_data[4])
-                    #need to verify
-                    actual_text_dataset = [[(u'Starting from*', 'car1', u'$101,770', False, False)]]##[[('text', Element.text, False, False)]]
-                    
+                    Element = Get_Element('tag', 'html')
                 except Exception, e:
-                    exc_type, exc_obj, exc_tb = sys.exc_info()        
-                    fname = os.path.split(exc_tb.tb_frame.f_code.co_filename)[1]
-                    Error_Detail = ((str(exc_type).replace("type ", "Error Type: ")) + ";" +  "Error Message: " + str(exc_obj) +";" + "File Name: " + fname + ";" + "Line: "+ str(exc_tb.tb_lineno))
-                    CommonUtil.ExecLog(sModuleInfo, "Could not compare text as requested.  Error: %s"%(Error_Detail), 3,local_run)
-                    return "failed"    
-            status=oCompare.compare(expected_text_dataset,actual_text_dataset)
-            print status
+                    errMsg = "Could not get element from the current page."
+                    Exception_Info(sModuleInfo, errMsg)
+            else:
+                element_step_data = step_data[0][0:len(step_data[0])-1:1]
+                returned_step_data_list = Validate_Step_Data(element_step_data) 
+                if ((returned_step_data_list == []) or (returned_step_data_list == "failed")):
+                    return "failed"
+                else:
+                    try:
+                        Element = Get_Element(returned_step_data_list[0], returned_step_data_list[1], returned_step_data_list[2], returned_step_data_list[3], returned_step_data_list[4])    
+                    except Exception, e:
+                        errMsg = "Could not get element based on the information provided."
+                        Exception_Info(sModuleInfo, errMsg)
+                
+            list_of_element_text = Element.text.split('\n')
+            visible_list_of_element_text = []
+            for each_text_item in list_of_element_text:
+                if each_text_item != "":
+                    visible_list_of_element_text.append(each_text_item)                
+            if step_data[0][1][1] == "partial match":
+                actual_text_data = visible_list_of_element_text
+                CommonUtil.ExecLog(sModuleInfo, "Expected Text: " + expected_text_data, 1,local_run)
+                CommonUtil.ExecLog(sModuleInfo, "Actual Text: " + str(actual_text_data), 1,local_run)
+                if (expected_text_data in each_item for each_item in actual_text_data):
+                    CommonUtil.ExecLog(sModuleInfo, "The text has been validated by a partial match.", 1,local_run)
+                    return "passed"
+                else: 
+                    CommonUtil.ExecLog(sModuleInfo, "Unable to validate using partial match.", 3,local_run)
+                    return "failed"
+            if step_data[0][1][1] == "full match":
+                actual_text_data = visible_list_of_element_text
+                CommonUtil.ExecLog(sModuleInfo, "Expected Text: " + expected_text_data, 1,local_run)
+                CommonUtil.ExecLog(sModuleInfo, "Actual Text: " + str(actual_text_data), 1,local_run)
+                if (expected_text_data in actual_text_data):
+                    CommonUtil.ExecLog(sModuleInfo, "The text has been validated by using complete match.", 1,local_run)
+                    return "passed"
+                else:
+                    CommonUtil.ExecLog(sModuleInfo, "Unable to validate using complete match.", 3,local_run) 
+                    return "failed" 
+                                        
+#             expected_text_dataset = [step_data[0]]#[0][1]##[[('Starting from*', 'car1', '$101,770', False, False)]]#[step_data[0]]#[0][1]
+#             returned_expected_step_data = Validate_Step_Data(step_data[1])
+#             if ((returned_expected_step_data == []) or (returned_expected_step_data == "failed")):
+#                 return "failed"
+#             else:
+#                 try:
+#                     Element = Get_Element(returned_expected_step_data[0], returned_expected_step_data[1], returned_expected_step_data[2], returned_expected_step_data[3], returned_expected_step_data[4])
+#                     #need to verify
+#                     actual_text_dataset = [[('text', Element.text, False, False)]]#[[(u'Starting from*', 'car1', u'$101,770', False, False)]]
+#                     
+#                 except Exception, e:
+#                     exc_type, exc_obj, exc_tb = sys.exc_info()        
+#                     fname = os.path.split(exc_tb.tb_frame.f_code.co_filename)[1]
+#                     Error_Detail = ((str(exc_type).replace("type ", "Error Type: ")) + ";" +  "Error Message: " + str(exc_obj) +";" + "File Name: " + fname + ";" + "Line: "+ str(exc_tb.tb_lineno))
+#                     CommonUtil.ExecLog(sModuleInfo, "Could not compare text as requested.  Error: %s"%(Error_Detail), 3,local_run)
+#                     return "failed"    
+#             status=oCompare.compare(expected_text_dataset,actual_text_dataset)
+#             print status
             
     except Exception, e:
         exc_type, exc_obj, exc_tb = sys.exc_info()        
@@ -823,6 +807,72 @@ def Compare_Text_Data(step_data):
         Error_Detail = ((str(exc_type).replace("type ", "Error Type: ")) + ";" +  "Error Message: " + str(exc_obj) +";" + "File Name: " + fname + ";" + "Line: "+ str(exc_tb.tb_lineno))
         CommonUtil.ExecLog(sModuleInfo, "Could not compare text as requested.  Error: %s"%(Error_Detail), 3,local_run)
         return "failed"
+    
+
+##Things to do:
+#1) get the table data from the element step data
+#2) for expected data, for each row in the step_data: 
+#   if subfield row is not empty and length of step-data = 5:
+#   for each_row in the step_data, append item in a list for a particular row 
+#[[u'1486543', u'353513070625277', u'N/A', u'SAMSUNG-SM-G928A', u'MCHOWDHURY', u'2016-08-04 08:55:56 EDT', u'2016-08-04 09:09:18 EDT', u'Diagnostics - Quick', u'FAIL', u'DEFAULT', u'N/A'], [u'1486542', u'353513070625277', u'N/A', u'SAMSUNG-SM-G928A', u'MCHOWDHURY', u'2016-08-04 08:44:02 EDT', u'2016-08-04 08:55:47 EDT', u'Diagnostics - Quick', u'FAIL', u'DEFAULT', u'N/A'], [u'1486538', u'353926064400988', u'N/A', u'PRIMO_RX2', u'FD363A605A2B11E', u'2016-08-04 06:14:36 EDT', u'2016-08-04 06:16:48 EDT', u'Diagnostics - Appium', u'INCOMPLETE', u'N/A', u'N/A'], [u'1486533', u'353926064400988', u'N/A', u'PRIMO_RX2', u'E2B1EC4E5A2A11E', u'2016-08-04 06:06:31 EDT', u'2016-08-04 06:09:29 EDT', u'Diagnostics - Appium', u'INCOMPLETE', u'N/A', u'N/A'], [u'1486528', u'353926064400988', u'N/A', u'PRIMO_RX2', u'46EB791E5A2611E', u'2016-08-04 05:33:29 EDT', u'2016-08-04 05:52:23 EDT', u'Diagnostics - Appium', u'INCOMPLETE', u'N/A', u'N/A'], [u'1486518', u'353926064400988', u'N/A', u'PRIMO_RX2', u'SREEJOY', u'2016-08-04 02:20:49 EDT', u'2016-08-04 02:22:05 EDT', u'Diagnostics - Appium', u'PASS', u'PASS', u'N/A'], [u'1486517', u'353926064400988', u'N/A', u'PRIMO_RX2', u'SREEJOY', u'2016-08-04 02:19:08 EDT', u'2016-08-04 02:20:38 EDT', u'Diagnostics - Appium', u'FAIL', u'GENERAL TEST FAILURE', u'N/A'], [u'1486510', u'911338900054604', u'N/A', u'GENERIC', u'TEST', u'2016-08-04 02:11:25 EDT', u'2016-08-04 02:12:08 EDT', u'Diagnostics - Unsupported Device', u'CRASH', u'N/A', u'N/A'], [u'1486509', u'911338900054604', u'N/A', u'GENERIC', u'TEST', u'2016-08-04 02:10:25 EDT', u'2016-08-04 02:11:00 EDT', u'Diagnostics - Appium', u'CRASH', u'N/A', u'N/A'], [u'1486505', u'911338900054604', u'N/A', u'GENERIC', u'TEST', u'2016-08-04 02:04:14 EDT', u'2016-08-04 02:04:53 EDT', u'Diagnostics - Appium', u'CRASH', u'N/A', u'N/A'], [u'1486496', u'911338900054604', u'N/A', u'GENERIC', u'SREEJOY', u'2016-08-04 01:58:20 EDT', u'2016-08-04 01:58:26 EDT', u'Diagnostics - Appium', u'INCOMPLETE', u'N/A', u'N/A'], [u'1486492', u'911338900054604', u'N/A', u'GENERIC', u'SREEJOY', u'2016-08-04 01:55:53 EDT', u'2016-08-04 01:56:24 EDT', u'Diagnostics - Appium', u'CRASH', u'N/A', u'N/A'], [u'1486488', u'911338900054604', u'N/A', u'GENERIC', u'SREEJOY', u'2016-08-04 01:45:27 EDT', u'2016-08-04 01:46:14 EDT', u'Diagnostics - Appium', u'CRASH', u'N/A', u'N/A'], [u'1486486', u'357185067524411', u'N/A', u'XPLORER ZV', u'SREEJOY', u'2016-08-04 01:44:31 EDT', u'2016-08-04 01:45:16 EDT', u'Diagnostics - Appium', u'CRASH', u'N/A', u'N/A'], [u'1486477', u'N/A', u'N/A', u'UNDEFINED', u'NIKOLAS', u'2016-08-03 18:44:41 EDT', u'2016-08-03 18:44:41 EDT', u'N/A', u'CRASH', u'N/A', u'N/A'], [u'1486474', u'N/A', u'N/A', u'UNDEFINED', u'ASCI', u'2014-06-19 15:29:57 EDT', u'2014-06-19 15:29:57 EDT', u'Quick Suite - Android 1.20.1 - iOS 1.10.7', u'FAIL', u'FAIL', u'N/A'], [u'1486472', u'355451060315922', u'N/A', u'GENERIC', u'JAVIER', u'2016-08-03 18:17:10 EDT', u'2016-08-03 18:18:07 EDT', u'Diagnostics - Generic Device', u'CRASH', u'N/A', u'N/A'], [u'1486470', u'355451060315922', u'N/A', u'GENERIC', u'JAVIER', u'2016-08-03 18:12:18 EDT', u'2016-08-03 18:12:59 EDT', u'Diagnostics - Generic Device', u'CRASH', u'N/A', u'N/A'], [u'1486468', u'N/A', u'N/A', u'UNDEFINED', u'SANDEEP', u'2014-08-08 06:13:38 EDT', u'2014-08-08 06:13:38 EDT', u'All Tests - Android 1.21.4 + iOS 1.11.2', u'FAIL', u'FAIL', u'N/A'], [u'1486466', u'N/A', u'N/A', u'UNDEFINED', u'DSE22', u'2016-08-03 17:59:13 EDT', u'2016-08-03 18:05:37 EDT', u'Software Flash', u'RETRY', u'N/A', u'N/A']]        row_number = 1
+def Validate_Table(step_data):    
+    sModuleInfo = inspect.stack()[0][3] + " : " + inspect.getmoduleinfo(__file__).name
+    try:
+        new_data_group_index = 0
+        for each in step_data[0]:
+            if len(each) != 5:
+                new_data_group_index = new_data_group_index + 1
+            else:
+                get_element_last_item = new_data_group_index - 1
+                print get_element_last_item
+                break
+                
+        element_step_data = step_data[0][0:get_element_last_item:1]
+        ##print statement to be removed
+        print element_step_data
+        returned_step_data_list = Validate_Step_Data(element_step_data) 
+        if ((returned_step_data_list == []) or (returned_step_data_list == "failed")):
+            return "failed"
+        else:
+            try:
+                actual_table_data = Get_Table_Elements('tag', 'tbody')
+                #actual_table_dataset = Get_Table_Elements(returned_step_data_list[0], returned_step_data_list[1], returned_step_data_list[2], returned_step_data_list[3], returned_step_data_list[4])
+            except Exception, e:
+                errMsg = "Unable to get table element. Please check if the correct information has been provided."
+                Exception_Info(sModuleInfo, errMsg)
+        
+#         all_rows = WebDriverWait(table, WebDriver_Wait).until(EC.presence_of_all_elements_located((By.XPATH, "*")))
+#         master_text_table = []
+#         for each_row_obj in all_rows:
+#             if (each_row_obj.is_displayed()!=False):
+#                 try:
+#                     row_element = WebDriverWait(each_row_obj, WebDriver_Wait).until(EC.presence_of_all_elements_located((By.XPATH, "*")))
+#                     temp_row_holder = []
+#                     for each_column_obj in row_element:
+#                         temp_row_holder.append(each_column_obj.text)
+#                 except Exception, e:
+#                     errMsg = "Could not find table row elements"
+#                     Exception_Info(sModuleInfo, errMsg)                
+#                 master_text_table.append(temp_row_holder)
+        expected_table_step_data = step_data[0][new_data_group_index:len(step_data[0])-1:1]
+        print expected_table_step_data
+        
+        expected_table_data_set = []
+        row_index = 1
+        for each_row in expected_table_step_data:
+            if each[1] == row_index:
+                temp_row_holder = []
+                for each_item_in_row in each_row:
+                    temp_row_holder.append(step_data[0][row_index][2])
+            row_index= row_index + 1  
+        
+        print "a"
+    except Exception, e:
+        exc_type, exc_obj, exc_tb = sys.exc_info()        
+        fname = os.path.split(exc_tb.tb_frame.f_code.co_filename)[1]
+        Error_Detail = ((str(exc_type).replace("type ", "Error Type: ")) + ";" +  "Error Message: " + str(exc_obj) +";" + "File Name: " + fname + ";" + "Line: "+ str(exc_tb.tb_lineno))
+        CommonUtil.ExecLog(sModuleInfo, "Could not find your element.  Error: %s"%(Error_Detail), 3,local_run)
+        return "failed" 
     
     
     
@@ -895,7 +945,7 @@ def Get_Element(element_parameter,element_value,reference_parameter=False,refere
 
 
 #Method to get the elements based on type - more methods may be added in the future
-#Called by: Get_Elements
+#Called by: Get_Element
 def Get_All_Elements(parameter,value,parent=False):
     #http://selenium-python.readthedocs.io/locating-elements.html
     sModuleInfo = inspect.stack()[0][3] + " : " + inspect.getmoduleinfo(__file__).name
@@ -937,7 +987,7 @@ def Get_All_Elements(parameter,value,parent=False):
  
     
 #Use two parameters on the same level to get a specific element
-#Called by: Get_Elements
+#Called by: Get_Element
 def Get_Double_Matching_Elements(param_1, value_1, param_2, value_2):
     sModuleInfo = inspect.stack()[0][3] + " : " + inspect.getmoduleinfo(__file__).name
     try:
@@ -1143,11 +1193,12 @@ def Get_Table_Elements(table_parameter,table_value, reference_parameter=False,re
                     for each_column_obj in row_element:
                         temp_row_holder.append(each_column_obj.text)
                 except Exception, e:
-                    print e
-                    
+                    errMsg = "Could not find table row elements"
+                    Exception_Info(sModuleInfo, errMsg)                
                 master_text_table.append(temp_row_holder)
         print master_text_table
-            
+        return master_text_table    
+
     except Exception, e:
         exc_type, exc_obj, exc_tb = sys.exc_info()        
         fname = os.path.split(exc_tb.tb_frame.f_code.co_filename)[1]
