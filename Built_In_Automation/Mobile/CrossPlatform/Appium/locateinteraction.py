@@ -109,3 +109,14 @@ def locate_element_by_android_uiautomator_description(driver, _description):
         CommonUtil.ExecLog(sModuleInfo, "Unable to locate the element. %s"%Error_Detail, 3,local_run)
 
 
+def locate_element_by_ios_uiautomation(driver, _description):
+    sModuleInfo = inspect.stack()[0][3] + " : " + inspect.getmoduleinfo(__file__).name
+    try:
+        CommonUtil.ExecLog(sModuleInfo,"Trying to locate element by ios uiautomatoion: %s"%_description,1,local_run)
+        elem = driver.driver.find_element_by_ios_uiautomation('.elements()[0]')
+        return elem
+    except Exception, e:
+        exc_type, exc_obj, exc_tb = sys.exc_info()
+        fname = os.path.split(exc_tb.tb_frame.f_code.co_filename)[1]
+        Error_Detail = ((str(exc_type).replace("type ", "Error Type: ")) + ";" +  "Error Message: " + str(exc_obj) +";" + "File Name: " + fname + ";" + "Line: "+ str(exc_tb.tb_lineno))
+        CommonUtil.ExecLog(sModuleInfo, "Unable to locate the element. %s"%Error_Detail, 3,local_run)
