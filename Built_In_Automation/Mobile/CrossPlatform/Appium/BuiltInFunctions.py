@@ -518,6 +518,8 @@ def Get_Single_Element(parameter, value, parent=False):
             elif parameter == "android_uiautomator_description":
                 All_Elements == driver.find_element_by_android_uiautomator(
                     'new UiSelector().description(' + value + ')')
+            elif parameter == "ios_uiautomation":
+                All_Elements == driver.find_element_by_ios_uiautomation('.elements()[0]')
         elif parent == True:
             if parameter == "name":
                 All_Elements = driver.find_element_by_name(value)
@@ -534,6 +536,8 @@ def Get_Single_Element(parameter, value, parent=False):
             elif parameter == "android_uiautomator_description":
                 All_Elements == driver.find_element_by_android_uiautomator(
                     'new UiSelector().description(' + value + ')')
+            elif parameter == "ios_uiautomation":
+                All_Elements == driver.find_element_by_ios_uiautomation('.elements()[0]')
 
         return All_Elements
     except Exception, e:

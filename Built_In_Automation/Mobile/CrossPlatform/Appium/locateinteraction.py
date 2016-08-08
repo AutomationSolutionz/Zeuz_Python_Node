@@ -113,7 +113,7 @@ def locate_element_by_ios_uiautomation(driver, _description):
     sModuleInfo = inspect.stack()[0][3] + " : " + inspect.getmoduleinfo(__file__).name
     try:
         CommonUtil.ExecLog(sModuleInfo,"Trying to locate element by ios uiautomatoion: %s"%_description,1,local_run)
-        elem = driver.driver.find_element_by_ios_uiautomation('.elements()[0]')
+        elem = driver.find_element_by_ios_uiautomation('.elements()[0]')
         return elem
     except Exception, e:
         exc_type, exc_obj, exc_tb = sys.exc_info()
