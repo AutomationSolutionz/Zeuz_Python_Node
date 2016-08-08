@@ -452,3 +452,272 @@ def launch_ios_app():
         Error_Detail = ((str(exc_type).replace("type ", "Error Type: ")) + ";" +  "Error Message: " + str(exc_obj) +";" + "File Name: " + fname + ";" + "Line: "+ str(exc_tb.tb_lineno))
         CommonUtil.ExecLog(sModuleInfo, "Unable to start WebDriver. %s"%Error_Detail, 3,local_run)
         return "failed"
+
+
+
+#################################Generic functions###################################
+
+def Get_Element(element_parameter, element_value, reference_parameter=False, reference_value=False,
+                reference_is_parent_or_child=False, get_all_unvalidated_elements=False):
+    sModuleInfo = inspect.stack()[0][3] + " : " + inspect.getmoduleinfo(__file__).name
+    try:
+        CommonUtil.ExecLog(sModuleInfo, "Starting locating element...", 1, local_run)
+        #all_elements = Get_All_Elements(element_parameter,element_value)
+        element = Get_Single_Element(element_parameter, element_value)
+        #element = Element_Validation(element)
+        return element
+    except Exception, e:
+        exc_type, exc_obj, exc_tb = sys.exc_info()
+        fname = os.path.split(exc_tb.tb_frame.f_code.co_filename)[1]
+        Error_Detail = ((str(exc_type).replace("type ", "Error Type: ")) + ";" + "Error Message: " + str(
+            exc_obj) + ";" + "File Name: " + fname + ";" + "Line: " + str(exc_tb.tb_lineno))
+        CommonUtil.ExecLog(sModuleInfo, "Could not find your element.  Error: %s" % (Error_Detail), 3, local_run)
+        return "failed"
+
+def Click_Element(step_data):
+    sModuleInfo = inspect.stack()[0][3] + " : " + inspect.getmoduleinfo(__file__).name
+    try:
+        CommonUtil.ExecLog(sModuleInfo, "Trying to click on element...", 1, local_run)
+        element_data = Validate_Step_Data(step_data)
+        elem = Get_Element(element_data[0],element_data[1])
+        if elem.is_enabled():
+            elem.click()
+            CommonUtil.ExecLog(sModuleInfo, "Clicked on element successfully", 1, local_run)
+            return "Passed"
+        else:
+            CommonUtil.ExecLog(sModuleInfo, "Unable to click. The element is disabled.", 3, local_run)
+            return "failed"
+    except Exception, e:
+        exc_type, exc_obj, exc_tb = sys.exc_info()
+        fname = os.path.split(exc_tb.tb_frame.f_code.co_filename)[1]
+        Error_Detail = ((str(exc_type).replace("type ", "Error Type: ")) + ";" + "Error Message: " + str(
+            exc_obj) + ";" + "File Name: " + fname + ";" + "Line: " + str(exc_tb.tb_lineno))
+        CommonUtil.ExecLog(sModuleInfo, "Unable to click on the element. %s" % Error_Detail, 3, local_run)
+        return "failed"
+
+    # Method to get the elements based on type - more methods may be added in the future
+    # Called by: Get_Elements
+def Get_Single_Element(parameter, value, parent=False):
+    # http://selenium-python.readthedocs.io/locating-elements.html
+    sModuleInfo = inspect.stack()[0][3] + " : " + inspect.getmoduleinfo(__file__).name
+    try:
+        All_Elements = []
+        if parent == False:
+            if parameter == "name":
+                All_Elements = driver.find_element_by_name(value)
+            elif parameter == "id":
+                All_Elements = driver.find_element_by_id(value)
+            elif parameter == "accessibility_id":
+                All_Elements = driver.find_element_by_accessibility_id(value)
+            elif parameter == "class_name":
+                All_Elements = driver.find_element_by_class_name(value)
+            elif parameter == "xpath":
+                All_Elements = driver.find_element_by_xpath(value)
+            elif parameter == "android_uiautomator_text":
+                All_Elements == driver.find_element_by_android_uiautomator('new UiSelector().text(' + value + ')')
+            elif parameter == "android_uiautomator_description":
+                All_Elements == driver.find_element_by_android_uiautomator(
+                    'new UiSelector().description(' + value + ')')
+            elif parameter == "ios_uiautomation":
+                All_Elements == driver.find_element_by_ios_uiautomation('.elements()[0]')
+        elif parent == True:
+            if parameter == "name":
+                All_Elements = driver.find_element_by_name(value)
+            elif parameter == "id":
+                All_Elements = driver.find_element_by_id(value)
+            elif parameter == "accessibility_id":
+                All_Elements = driver.find_element_by_accessibility_id(value)
+            elif parameter == "class_name":
+                All_Elements = driver.find_element_by_class_name(value)
+            elif parameter == "xpath":
+                All_Elements = driver.find_element_by_xpath(value)
+            elif parameter == "android_uiautomator_text":
+                All_Elements == driver.find_element_by_android_uiautomator('new UiSelector().text(' + value + ')')
+            elif parameter == "android_uiautomator_description":
+                All_Elements == driver.find_element_by_android_uiautomator(
+                    'new UiSelector().description(' + value + ')')
+            elif parameter == "ios_uiautomation":
+                All_Elements == driver.find_element_by_ios_uiautomation('.elements()[0]')
+
+        return All_Elements
+    except Exception, e:
+        exc_type, exc_obj, exc_tb = sys.exc_info()
+        fname = os.path.split(exc_tb.tb_frame.f_code.co_filename)[1]
+        Error_Detail = ((str(exc_type).replace("type ", "Error Type: ")) + ";" + "Error Message: " + str(
+            exc_obj) + ";" + "File Name: " + fname + ";" + "Line: " + str(exc_tb.tb_lineno))
+        CommonUtil.ExecLog(sModuleInfo, "Unable to get the element.  Error: %s" % (Error_Detail), 3, local_run)
+        return "failed"
+
+
+# Method to get the elements based on type - more methods may be added in the future
+# Called by: Get_Elements
+def Get_All_Elements(parameter, value, parent=False):
+    # http://selenium-python.readthedocs.io/locating-elements.html
+    sModuleInfo = inspect.stack()[0][3] + " : " + inspect.getmoduleinfo(__file__).name
+    try:
+        All_Elements = []
+        if parent == False:
+            if parameter == "name":
+                All_Elements = driver.find_elements_by_name(value)
+            elif parameter == "id":
+                All_Elements = driver.find_elements_by_id(value)
+            elif parameter == "accessibility_id":
+                All_Elements = driver.find_elements_by_accessibility_id(value)
+            elif parameter == "class_name":
+                All_Elements = driver.find_elements_by_class_name(value)
+            elif parameter == "xpath":
+                All_Elements = driver.find_elements_by_xpath(value)
+            elif parameter == "android_uiautomator_text":
+                All_Elements == driver.find_elements_by_android_uiautomator('new UiSelector().text('+value+')')
+            elif parameter == "android_uiautomator_description":
+                All_Elements == driver.find_elements_by_android_uiautomator('new UiSelector().description('+value+')')
+        elif parent == True:
+            if parameter == "name":
+                All_Elements = driver.find_elements_by_name(value)
+            elif parameter == "id":
+                All_Elements = driver.find_elements_by_id(value)
+            elif parameter == "accessibility_id":
+                All_Elements = driver.find_elements_by_accessibility_id(value)
+            elif parameter == "class_name":
+                All_Elements = driver.find_elements_by_class_name(value)
+            elif parameter == "xpath":
+                All_Elements = driver.find_elements_by_xpath(value)
+            elif parameter == "android_uiautomator_text":
+                All_Elements == driver.find_elements_by_android_uiautomator('new UiSelector().text('+value+')')
+            elif parameter == "android_uiautomator_description":
+                All_Elements == driver.find_elements_by_android_uiautomator('new UiSelector().description('+value+')')
+
+        return All_Elements
+    except Exception, e:
+        exc_type, exc_obj, exc_tb = sys.exc_info()
+        fname = os.path.split(exc_tb.tb_frame.f_code.co_filename)[1]
+        Error_Detail = ((str(exc_type).replace("type ", "Error Type: ")) + ";" + "Error Message: " + str(
+            exc_obj) + ";" + "File Name: " + fname + ";" + "Line: " + str(exc_tb.tb_lineno))
+        CommonUtil.ExecLog(sModuleInfo, "Unable to get the element.  Error: %s" % (Error_Detail), 3, local_run)
+        return "failed"
+
+
+#Method to click on element; step data passed on by the user
+"""def Click_Element(step_data):
+    sModuleInfo = inspect.stack()[0][3] + " : " + inspect.getmoduleinfo(__file__).name
+    CommonUtil.ExecLog(sModuleInfo, "Inside Click Element function", 1,local_run)
+    try:
+        if ((len(step_data) != 1) or (1 < len(step_data[0]) >= 5)):
+            CommonUtil.ExecLog(sModuleInfo, "The information in the data-set(s) are incorrect. Please provide accurate data set(s) information.", 3,local_run)
+            return "failed"
+        else:
+            element_step_data = step_data[0][0:len(step_data[0])-1:1]
+            returned_step_data_list = Validate_Step_Data(element_step_data)
+            if ((returned_step_data_list == []) or (returned_step_data_list == "failed")):
+                return "failed"
+            else:
+                try:
+                    Element = Get_Element(returned_step_data_list[0], returned_step_data_list[1], returned_step_data_list[2], returned_step_data_list[3], returned_step_data_list[4])
+                    Element.click()
+                    CommonUtil.TakeScreenShot(sModuleInfo, local_run)
+                    CommonUtil.ExecLog(sModuleInfo, "Successfully clicked the element with given parameters and values", 1,local_run)
+                    return "passed"
+                except Exception, e:
+                    element_attributes = Element.get_attribute('name')
+                    CommonUtil.ExecLog(sModuleInfo, "Element Attributes: %s"%(element_attributes),3,local_run)
+                    exc_type, exc_obj, exc_tb = sys.exc_info()
+                    fname = os.path.split(exc_tb.tb_frame.f_code.co_filename)[1]
+                    Error_Detail = ((str(exc_type).replace("type ", "Error Type: ")) + ";" +  "Error Message: " + str(exc_obj) +";" + "File Name: " + fname + ";" + "Line: "+ str(exc_tb.tb_lineno))
+                    CommonUtil.ExecLog(sModuleInfo, "Could not select/click your element.  Error: %s"%(Error_Detail), 3,local_run)
+                    return "failed"
+
+    except Exception, e:
+        exc_type, exc_obj, exc_tb = sys.exc_info()
+        fname = os.path.split(exc_tb.tb_frame.f_code.co_filename)[1]
+        Error_Detail = ((str(exc_type).replace("type ", "Error Type: ")) + ";" +  "Error Message: " + str(exc_obj) +";" + "File Name: " + fname + ";" + "Line: "+ str(exc_tb.tb_lineno))
+        CommonUtil.ExecLog(sModuleInfo, "Could not find/click your element.  Error: %s"%(Error_Detail), 3,local_run)
+        return "failed" """
+
+
+#Validation of step data passed on by the user
+def Validate_Step_Data(step_data):
+    sModuleInfo = inspect.stack()[0][3] + " : " + inspect.getmoduleinfo(__file__).name
+    CommonUtil.ExecLog(sModuleInfo, "Function: Validate_Step_Data", 1,local_run)
+    try:
+        if (len(step_data)==1):
+            element_parameter = step_data[0][0]
+            element_value = step_data[0][1]
+            reference_parameter = False
+            reference_value = False
+            reference_is_parent_or_child = False
+        elif (len(step_data)==2):
+            element_parameter = step_data[0][0]
+            element_value = step_data[0][1]
+            reference_parameter = step_data[1][0]
+            reference_value = step_data[1][1]
+            reference_is_parent_or_child = False
+        elif (len(step_data)==3):
+            element_parameter = step_data[0][0]
+            element_value = step_data[0][1]
+            reference_parameter = step_data[1][0]
+            reference_value = step_data[1][1]
+            reference_is_parent_or_child = step_data[2][1]
+        else:
+            CommonUtil.ExecLog(sModuleInfo, "Data set incorrect. Please provide accurate data set(s) information.", 3,local_run)
+            return "failed"
+        validated_data = (element_parameter, element_value, reference_parameter, reference_value, reference_is_parent_or_child)
+        return validated_data
+    except Exception, e:
+            exc_type, exc_obj, exc_tb = sys.exc_info()
+            fname = os.path.split(exc_tb.tb_frame.f_code.co_filename)[1]
+            Error_Detail = ((str(exc_type).replace("type ", "Error Type: ")) + ";" +  "Error Message: " + str(exc_obj) +";" + "File Name: " + fname + ";" + "Line: "+ str(exc_tb.tb_lineno))
+            CommonUtil.ExecLog(sModuleInfo, "Could not find the new page element requested.  Error: %s"%(Error_Detail), 3,local_run)
+            return "failed"
+
+
+def Element_Validation(All_Elements_Found):#, index):
+    sModuleInfo = inspect.stack()[0][3] + " : " + inspect.getmoduleinfo(__file__).name
+    try:
+        #index = int(index)
+        return_element = []
+        all_visible_elements = []
+        all_invisible_elements = []
+        if All_Elements_Found == []:
+            CommonUtil.ExecLog(sModuleInfo, "Could not find your element by given parameters and values", 3,local_run)
+            return "failed"
+        elif len(All_Elements_Found) == 1:
+            for each_elem in All_Elements_Found:
+                #Case 1: Found only one invisible element - pass with warning
+                if each_elem.is_displayed() == False:
+                    return_element.append(each_elem)
+                    CommonUtil.ExecLog(sModuleInfo, "Found one invisible element by given parameters and values", 2,local_run)
+                #Case 2: Found only one visible element - pass
+                elif each_elem.is_displayed() == True:
+                    return_element.append(each_elem)
+                    CommonUtil.ExecLog(sModuleInfo, "Found one visible element by given parameters and values", 1,local_run)
+                else:
+                    CommonUtil.ExecLog(sModuleInfo, "Could not find element by given parameters and values", 3,local_run)
+                    return "failed"
+            return return_element[0]
+
+        elif len(All_Elements_Found) > 1:
+            CommonUtil.ExecLog(sModuleInfo, "Found more than one element by given parameters and values, validating visible and invisible elements. Total number of elements found: %s"%(len(All_Elements_Found)), 2,local_run)
+            for each_elem in All_Elements_Found:
+                if each_elem.is_displayed() == True:
+                    all_visible_elements.append(each_elem)
+                else:
+                    all_invisible_elements.append(each_elem)
+            #sequential logic - if at least one is_displayed() elements, show that, else allow invisible elements
+            if len(all_visible_elements) > 0:
+                CommonUtil.ExecLog(sModuleInfo, "Found at least one visible element for given parameters and values, returning the first one or by the index specified", 2,local_run)
+                return_element = all_visible_elements
+            else:
+                CommonUtil.ExecLog(sModuleInfo, "Did not find a visible element, however, invisible elements present", 2,local_run)
+                return_element = all_invisible_elements
+            return return_element[0]#[index]
+
+        else:
+            CommonUtil.ExecLog(sModuleInfo, "Could not find element by given parameters and values", 3,local_run)
+            return "failed"
+
+    except Exception, e:
+        exc_type, exc_obj, exc_tb = sys.exc_info()
+        fname = os.path.split(exc_tb.tb_frame.f_code.co_filename)[1]
+        Error_Detail = ((str(exc_type).replace("type ", "Error Type: ")) + ";" +  "Error Message: " + str(exc_obj) +";" + "File Name: " + fname + ";" + "Line: "+ str(exc_tb.tb_lineno))
+        CommonUtil.ExecLog(sModuleInfo, "Unable to get the element.  Error: %s"%(Error_Detail), 3,local_run)
+        return "failed"
