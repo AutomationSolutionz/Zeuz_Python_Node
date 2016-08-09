@@ -568,7 +568,7 @@ def Get_Single_Element(parameter, value, parent=False):
                 All_Elements = driver.find_element_by_class_name(value)
             elif parameter == "xpath":
                 #All_Elements = driver.find_element_by_xpath(value)
-                All_Elements == driver.find_elements_by_xpath("//*[@%s='%s']" % (parameter, value))
+                All_Elements == driver.find_element_by_xpath("//*[@%s='%s']" % (parameter, value))
             elif parameter == "android_uiautomator_text":
                 All_Elements == driver.find_element_by_android_uiautomator('new UiSelector().text(' + value + ')')
             elif parameter == "android_uiautomator_description":
@@ -577,7 +577,7 @@ def Get_Single_Element(parameter, value, parent=False):
             elif parameter == "ios_uiautomation":
                 All_Elements == driver.find_element_by_ios_uiautomation('.elements()[0]')
             else:
-                All_Elements == driver.find_elements_by_xpath("//*[@%s='%s']"%(parameter,value))
+                All_Elements == driver.find_element_by_xpath("//*[@%s='%s']"%(parameter,value))
 
         elif parent == True:
             if parameter == "name":
@@ -590,7 +590,7 @@ def Get_Single_Element(parameter, value, parent=False):
                 All_Elements = driver.find_element_by_class_name(value)
             elif parameter == "xpath":
                 #All_Elements = driver.find_element_by_xpath(value)
-                All_Elements == driver.find_elements_by_xpath("//*[@%s='%s']" % (parameter, value))
+                All_Elements == driver.find_element_by_xpath("//*[@%s='%s']" % (parameter, value))
             elif parameter == "android_uiautomator_text":
                 All_Elements == driver.find_element_by_android_uiautomator('new UiSelector().text(' + value + ')')
             elif parameter == "android_uiautomator_description":
@@ -599,7 +599,7 @@ def Get_Single_Element(parameter, value, parent=False):
             elif parameter == "ios_uiautomation":
                 All_Elements == driver.find_element_by_ios_uiautomation('.elements()[0]')
             else:
-                All_Elements == driver.find_elements_by_xpath("//*[@%s='%s']"%(parameter,value))
+                All_Elements == driver.find_element_by_xpath("//*[@%s='%s']"%(parameter,value))
 
         return All_Elements
     except Exception, e:
@@ -859,7 +859,7 @@ def Action_Handler(action_step_data, action_name):
             result = Wait(action_step_data)
             if result == "failed":
                 return "failed"
-        elif (action_name == "swipe" or action_name == "keystroke_chars"):
+        elif action_name == "swipe":
             result = Swipe(action_step_data)
             if result == "failed":
                 return "failed"
