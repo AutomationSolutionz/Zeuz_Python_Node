@@ -488,31 +488,31 @@ def Enter_Text_In_Text_Box(step_data):
 
 
 
-def Keystroke_Key_Mapping(Element,keystroke):
-    sModuleInfo = inspect.stack()[0][3] + " : " + inspect.getmoduleinfo(__file__).name
-    CommonUtil.ExecLog(sModuleInfo, "Inside Keystroke For Element function", 1,local_run)
-    try:
-        if keystroke == "ENTER":
-            Element.send_keys(Keys.ENTER)
-        elif keystroke == "ADD":
-            Element.send_keys(Keys.ADD)
-        elif keystroke == "BACKSPACE":
-            Element.send_keys(Keys.BACKSPACE)
-        elif keystroke == "CANCEL":
-            Element.send_keys(Keys.CANCEL)
-        elif keystroke == "CLEAR":
-            Element.send_keys(Keys.CLEAR)
-        elif keystroke == "DELETE":
-            Element.send_keys(Keys.DELETE)
-        elif keystroke == "SPACE":
-            Element.send_keys(Keys.SPACE)
-            
-    except Exception, e:
-        exc_type, exc_obj, exc_tb = sys.exc_info()        
-        fname = os.path.split(exc_tb.tb_frame.f_code.co_filename)[1]
-        Error_Detail = ((str(exc_type).replace("type ", "Error Type: ")) + ";" +  "Error Message: " + str(exc_obj) +";" + "File Name: " + fname + ";" + "Line: "+ str(exc_tb.tb_lineno))
-        CommonUtil.ExecLog(sModuleInfo, "Could not press enter for your element.  Error: %s"%(Error_Detail), 3,local_run)
-        return "failed"    
+# def Keystroke_Key_Mapping(Element,keystroke):
+#     sModuleInfo = inspect.stack()[0][3] + " : " + inspect.getmoduleinfo(__file__).name
+#     CommonUtil.ExecLog(sModuleInfo, "Inside Keystroke For Element function", 1,local_run)
+#     try:
+#         if keystroke == "ENTER":
+#             Element.send_keys(Keys.ENTER)
+#         elif keystroke == "ADD":
+#             Element.send_keys(Keys.ADD)
+#         elif keystroke == "BACKSPACE":
+#             Element.send_keys(Keys.BACKSPACE)
+#         elif keystroke == "CANCEL":
+#             Element.send_keys(Keys.CANCEL)
+#         elif keystroke == "CLEAR":
+#             Element.send_keys(Keys.CLEAR)
+#         elif keystroke == "DELETE":
+#             Element.send_keys(Keys.DELETE)
+#         elif keystroke == "SPACE":
+#             Element.send_keys(Keys.SPACE)
+#             
+#     except Exception, e:
+#         exc_type, exc_obj, exc_tb = sys.exc_info()        
+#         fname = os.path.split(exc_tb.tb_frame.f_code.co_filename)[1]
+#         Error_Detail = ((str(exc_type).replace("type ", "Error Type: ")) + ";" +  "Error Message: " + str(exc_obj) +";" + "File Name: " + fname + ";" + "Line: "+ str(exc_tb.tb_lineno))
+#         CommonUtil.ExecLog(sModuleInfo, "Could not press enter for your element.  Error: %s"%(Error_Detail), 3,local_run)
+#         return "failed"    
 
 #Method to click on element; step data passed on by the user
 def Keystroke_For_Element(step_data):
@@ -532,15 +532,25 @@ def Keystroke_For_Element(step_data):
                     Element = Get_Element(returned_step_data_list[0], returned_step_data_list[1], returned_step_data_list[2], returned_step_data_list[3], returned_step_data_list[4])
                     if step_data[0][len(step_data[0])-1][0] == "keystroke_keys":
                         keystroke_value=(step_data[0][len(step_data[0])-1][2]).upper()
-#                        print keystroke_value
-                        Keystroke_Key_Mapping(Element, keystroke_value)
-#                        Element.send_keys(Keys.ENTER)
+                        get_keystroke_value = getattr(Keys, keystroke_value)
+                        result = Element.send_keys(get_keystroke_value)
+#                        Keystroke_Key_Mapping(Element, keystroke_value)
                     elif step_data[0][len(step_data[0])-1][0] == "keystroke_chars":
                         keystroke_value=(step_data[0][len(step_data[0])-1][2])
-                        Element.send_keys(keystroke_value)
-                    CommonUtil.TakeScreenShot(sModuleInfo, local_run)
-                    CommonUtil.ExecLog(sModuleInfo, "Successfully entered keystroke for the element with given parameters and values", 1,local_run)
-                    return "passed"
+                        result = Element.send_keys(keystroke_value)
+                    else:
+                        CommonUtil.ExecLog(sModuleInfo, "The correct parameter for the action has not been entered. Please check for errors.", 2,local_run)
+                        result = "failed"
+                        
+                    if (result != "failed"):
+                        CommonUtil.TakeScreenShot(sModuleInfo, local_run)
+                        CommonUtil.ExecLog(sModuleInfo, "Successfully entered keystroke for the element with given parameters and values", 1,local_run)
+                        return "passed"
+                    else:
+                        CommonUtil.TakeScreenShot(sModuleInfo, local_run)
+                        CommonUtil.ExecLog(sModuleInfo, "Could not enter keystroke for the element with given parameters and values", 3,local_run)
+                        return "failed"
+              
                 except Exception, e:
                     element_attributes = Element.get_attribute('outerHTML')
                     CommonUtil.ExecLog(sModuleInfo, "Element Attributes: %s"%(element_attributes),3,local_run)
@@ -554,7 +564,7 @@ def Keystroke_For_Element(step_data):
         exc_type, exc_obj, exc_tb = sys.exc_info()        
         fname = os.path.split(exc_tb.tb_frame.f_code.co_filename)[1]
         Error_Detail = ((str(exc_type).replace("type ", "Error Type: ")) + ";" +  "Error Message: " + str(exc_obj) +";" + "File Name: " + fname + ";" + "Line: "+ str(exc_tb.tb_lineno))
-        CommonUtil.ExecLog(sModuleInfo, "Could not press enter for your element.  Error: %s"%(Error_Detail), 3,local_run)
+        CommonUtil.ExecLog(sModuleInfo, "Could not enter keystroke for your element.  Error: %s"%(Error_Detail), 3,local_run)
         return "failed"
 
 

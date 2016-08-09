@@ -12,13 +12,13 @@ from Projects.Youtube_test import Youtube_Search as YTS
 
 def Create_Site_Content():
     YTS.BuiltInFunctions.Open_Browser('firefox')
-    Test_For_Validate_Table()
+#     Test_For_Validate_Table()
 #     Test_For_Get_Table_Elements()
 #     Test_For_Compare_Text()
 #     Test_For_Double_Matching()
 #     Test_For_Get_All_Elements()
 #     Test_For_Get_Elements()
-#     Test_For_Individual_Actions()
+    Test_For_Individual_Actions()
 #     Test_For_Sequential_Actions()
 # #    Nissan_Test_Page()
 #     Test_For_Get_Elements()
@@ -101,14 +101,17 @@ def Nissan_Test_Page():
     YTS.BuiltInFunctions.Sequential_Actions(step_data_nissan)
 
 def Test_For_Individual_Actions():
+    YTS.BuiltInFunctions.Go_To_Link('http://www.henrys.com/')
     step_data_text_new = [ [ ( 'id' , 'txtSearch' , False , False ) , ( 'enter_text' , 'action' , 'camera' , False , False ) ] ]
     step_data_wait_new = [ [ ( 'id' , 'header_lstCategories_category_4' , False , False ) , ( 'wait_for_element' , 'action' , '10' , False , False ) ] ]
     step_data_click_new = [ [ ( 'id' , 'btnSearch' , False , False ) , ( 'click_hover' , 'action' , 'click' , False , False ) ] ]
     step_data_hover_new = [ [ ( 'id' , 'header_lstCategories_category_4' , False , False ) , ( 'click_hover' , 'action' , 'hover' , False , False ) ] ]
-    YTS.BuiltInFunctions.Enter_Text_In_Text_Box(step_data_text_new)
-    YTS.BuiltInFunctions.Click_Element(step_data_click_new)
-    YTS.BuiltInFunctions.Wait_For_New_Element(step_data_wait_new)
-    YTS.BuiltInFunctions.Hover_Over_Element(step_data_hover_new)
+    step_data_keystroke = [ [ ( 'id' , 'txtSearch' , False , False ) , ( 'keystroke_chars' , 'action' , 'AbCd' , False , False ) ] ]
+    #YTS.BuiltInFunctions.Enter_Text_In_Text_Box(step_data_text_new)
+    #YTS.BuiltInFunctions.Click_Element(step_data_click_new)
+    #YTS.BuiltInFunctions.Wait_For_New_Element(step_data_wait_new)
+    #YTS.BuiltInFunctions.Hover_Over_Element(step_data_hover_new)
+    YTS.BuiltInFunctions.Keystroke_For_Element(step_data_keystroke)
   
 def Test_For_Sequential_Actions():
     YTS.BuiltInFunctions.Go_To_Link('http://www.henrys.com/')
@@ -117,7 +120,7 @@ def Test_For_Sequential_Actions():
     #step_data = [ [ ( 'id' , 'txtSearch' , False , False ) , ( 'text' , 'action' , 'camera' , False , False ) ] , [ ( 'id' , 'btnSearch' , False , False ) , ( 'keystroke_keys' , 'action' , 'Enter' , False , False ) ] ]
     #YTS.BuiltInFunctions.Go_To_Link('http://www.inflightintegration.com/')
     #step_data = [ [ ( 'href' , 'Schedule a Demo' , False , False ) , ( 'click' , 'action' , 'click' , False , False ) ]  , [ ( 'name' , 'element_1_1' , False , False ) , ( 'text' , 'action' , 'Zeuz' , False , False ) ]  , [ ( 'id' , 'saveForm' , False , False ) , ( 'click' , 'action' , 'click' , False , False ) ] ]
-    step_data = [ [ ( 'current_page' , 'current_page' , False , False ) , ( 'validate full text' , 'action' , 'Henrys - Photo - Video - Digital' , False , False ) ] ]#[ [ ( 'id' , 'header-nav-custcare' , False , False ) , ( 'validate partial text' , 'action' , 'Customer Care' , False , False ) ] ]
+    #step_data = [ [ ( 'current_page' , 'current_page' , False , False ) , ( 'validate full text' , 'action' , 'Henrys - Photo - Video - Digital' , False , False ) ] ]#[ [ ( 'id' , 'header-nav-custcare' , False , False ) , ( 'validate partial text' , 'action' , 'Customer Care' , False , False ) ] ]
     YTS.BuiltInFunctions.Sequential_Actions(step_data)#_mod)
 
 def Test_For_Get_Table_Elements():
