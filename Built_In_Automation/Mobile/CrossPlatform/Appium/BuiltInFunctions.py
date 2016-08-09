@@ -784,3 +784,258 @@ def Element_Validation(All_Elements_Found):#, index):
         CommonUtil.ExecLog(sModuleInfo, "Unable to get the element.  Error: %s"%(Error_Detail), 3,local_run)
         return "failed"
 
+
+# Performs a series of action or logical decisions based on user input
+def Sequential_Actions(step_data):
+    sModuleInfo = inspect.stack()[0][3] + " : " + inspect.getmoduleinfo(__file__).name
+    try:
+        for each in step_data:
+            logic_row = []
+            for row in each:
+                # finding what to do for each dataset
+                if len(row) == 5:
+                    if row[1] == "action":
+                        result = Action_Handler([each], row[0])
+                        if result == [] or result == "failed":
+                            return "failed"
+
+                    elif row[1] == "logic":
+                        logic_decision = ""
+                        logic_row.append(row)
+                        if len(logic_row) == 2:
+                            element_step_data = each[0:len(step_data[0]) - 2:1]
+                            returned_step_data_list = Validate_Step_Data(element_step_data)
+                            if ((returned_step_data_list == []) or (returned_step_data_list == "failed")):
+                                return "failed"
+                            else:
+                                try:
+                                    Element = Get_Element(returned_step_data_list[0], returned_step_data_list[1],
+                                                          returned_step_data_list[2], returned_step_data_list[3],
+                                                          returned_step_data_list[4])
+                                    if Element == 'failed':
+                                        logic_decision = "false"
+                                    else:
+                                        logic_decision = "true"
+                                except Exception, errMsg:
+                                    errMsg = "Could not find element in the by the criteria..."
+                                    Exception_Info(sModuleInfo, errMsg)
+                        else:
+                            continue
+
+                        for conditional_steps in logic_row:
+                            if logic_decision in conditional_steps:
+                                print conditional_steps[2]
+                                list_of_steps = conditional_steps[2].split(",")
+                                for each_item in list_of_steps:
+                                    data_set_index = int(each_item) - 1
+                                    Sequential_Actions([step_data[data_set_index]])
+                                return "passed"
+
+                    else:
+                        CommonUtil.ExecLog(sModuleInfo,
+                                           "The sub-field information is incorrect. Please provide accurate information on the data set(s).",
+                                           3, local_run)
+                        return "failed"
+        return "passed"
+
+    except Exception, e:
+        exc_type, exc_obj, exc_tb = sys.exc_info()
+        fname = os.path.split(exc_tb.tb_frame.f_code.co_filename)[1]
+        Error_Detail = ((str(exc_type).replace("type ", "Error Type: ")) + ";" + "Error Message: " + str(
+            exc_obj) + ";" + "File Name: " + fname + ";" + "Line: " + str(exc_tb.tb_lineno))
+        print "%s" % Error_Detail
+        return "failed"
+
+
+# Handles actions for the sequential logic, based on the input from the mentioned function
+def Action_Handler(action_step_data, action_name):
+    sModuleInfo = inspect.stack()[0][3] + " : " + inspect.getmoduleinfo(__file__).name
+    try:
+        if action_name == "click":
+            result = Click_Element(action_step_data)
+            if result == "failed":
+                return "failed"
+        elif action_name == "wait":
+            result = Wait(action_step_data)
+            if result == "failed":
+                return "failed"
+        elif (action_name == "swipe" or action_name == "keystroke_chars"):
+            result = Swipe(action_step_data)
+            if result == "failed":
+                return "failed"
+        elif action_name == "tap":
+            result = Enter_Text_In_Text_Box(action_step_data)
+            if result == "failed":
+                return "failed"
+        elif action_name == "go_back":
+            result = Go_Back(action_step_data)
+            if result == "failed":
+                return "failed"
+        elif (action_name == "validate full text" or action_name == "validate partial text"):
+            result = Validate_Text(action_step_data)
+            if result == "failed":
+                return "failed"
+        else:
+            CommonUtil.ExecLog(sModuleInfo,
+                               "The action you entered is incorrect. Please provide accurate information on the data set(s).",
+                               3, local_run)
+            return "failed"
+
+    except Exception, e:
+        exc_type, exc_obj, exc_tb = sys.exc_info()
+        fname = os.path.split(exc_tb.tb_frame.f_code.co_filename)[1]
+        Error_Detail = ((str(exc_type).replace("type ", "Error Type: ")) + ";" + "Error Message: " + str(
+            exc_obj) + ";" + "File Name: " + fname + ";" + "Line: " + str(exc_tb.tb_lineno))
+        print "%s" % Error_Detail
+        return "failed"
+
+
+def Exception_Info(sModuleInfo, errMsg):
+    exc_type, exc_obj, exc_tb = sys.exc_info()
+    fname = os.path.split(exc_tb.tb_frame.f_code.co_filename)[1]
+    Error_Detail = ((str(exc_type).replace("type ", "Error Type: ")) + ";" +  "Error Message: " + str(exc_obj) +";" + "File Name: " + fname + ";" + "Line: "+ str(exc_tb.tb_lineno))
+    CommonUtil.ExecLog(sModuleInfo, errMsg + ".  Error: %s"%(Error_Detail), 3,local_run)
+    return "failed"
+
+
+def Go_Back(step_data):
+    sModuleInfo = inspect.stack()[0][3] + " : " + inspect.getmoduleinfo(__file__).name
+    try:
+        CommonUtil.ExecLog(sModuleInfo, "Trying to go back...", 1, local_run)
+        driver.back()
+        CommonUtil.ExecLog(sModuleInfo, "Went back successfully", 1, local_run)
+        return "Passed"
+    except Exception, e:
+        exc_type, exc_obj, exc_tb = sys.exc_info()
+        fname = os.path.split(exc_tb.tb_frame.f_code.co_filename)[1]
+        Error_Detail = ((str(exc_type).replace("type ", "Error Type: ")) + ";" + "Error Message: " + str(
+            exc_obj) + ";" + "File Name: " + fname + ";" + "Line: " + str(exc_tb.tb_lineno))
+        CommonUtil.ExecLog(sModuleInfo, "Unable to go back. %s" % Error_Detail, 3, local_run)
+        return "failed"
+
+
+def Wait(step_data):
+    sModuleInfo = inspect.stack()[0][3] + " : " + inspect.getmoduleinfo(__file__).name
+    try:
+        CommonUtil.ExecLog(sModuleInfo, "Starting waiting for %s seconds.." % step_data[2], 1, local_run)
+        #function_data = Validate_Step_Data(step_data)
+        driver.implicitly_wait(step_data[2])
+        time.sleep(step_data[2])
+        CommonUtil.ExecLog(sModuleInfo, "Waited successfully", 1, local_run)
+        return "Passed"
+    except Exception, e:
+        exc_type, exc_obj, exc_tb = sys.exc_info()
+        fname = os.path.split(exc_tb.tb_frame.f_code.co_filename)[1]
+        Error_Detail = ((str(exc_type).replace("type ", "Error Type: ")) + ";" + "Error Message: " + str(
+            exc_obj) + ";" + "File Name: " + fname + ";" + "Line: " + str(exc_tb.tb_lineno))
+        CommonUtil.ExecLog(sModuleInfo, "Unable to wait. %s" % Error_Detail, 3, local_run)
+        return "failed"
+
+
+def Swipe(step_data):
+    sModuleInfo = inspect.stack()[0][3] + " : " + inspect.getmoduleinfo(__file__).name
+    try:
+        CommonUtil.ExecLog(sModuleInfo, "Starting to swipe the screen...", 1, local_run)
+        driver.swipe(100, 500, 100, 100, 800)
+        CommonUtil.ExecLog(sModuleInfo, "Swiped the screen successfully", 1, local_run)
+        return "Passed"
+    except Exception, e:
+        exc_type, exc_obj, exc_tb = sys.exc_info()
+        fname = os.path.split(exc_tb.tb_frame.f_code.co_filename)[1]
+        Error_Detail = ((str(exc_type).replace("type ", "Error Type: ")) + ";" + "Error Message: " + str(
+            exc_obj) + ";" + "File Name: " + fname + ";" + "Line: " + str(exc_tb.tb_lineno))
+        CommonUtil.ExecLog(sModuleInfo, "Unable to swipe. %s" % Error_Detail, 3, local_run)
+        return "failed"
+
+def Tap(step_data):
+    sModuleInfo = inspect.stack()[0][3] + " : " + inspect.getmoduleinfo(__file__).name
+    try:
+        CommonUtil.ExecLog(sModuleInfo, "Starting to tap the...", 1, local_run)
+        element_data = Validate_Step_Data(step_data)
+        elem = Get_Element(element_data[0], element_data[1])
+        if elem.is_enabled():
+            action = TouchAction(driver)
+            action.tap(elem).perform()
+            CommonUtil.ExecLog(sModuleInfo, "Tapped on element successfully", 1, local_run)
+            return "Passed"
+        else:
+            CommonUtil.ExecLog(sModuleInfo, "Unable to tap. The element is disabled.", 3, local_run)
+            return "failed"
+    except Exception, e:
+        exc_type, exc_obj, exc_tb = sys.exc_info()
+        fname = os.path.split(exc_tb.tb_frame.f_code.co_filename)[1]
+        Error_Detail = ((str(exc_type).replace("type ", "Error Type: ")) + ";" + "Error Message: " + str(
+            exc_obj) + ";" + "File Name: " + fname + ";" + "Line: " + str(exc_tb.tb_lineno))
+        CommonUtil.ExecLog(sModuleInfo, "Unable to tap. %s" % Error_Detail, 3, local_run)
+        return "failed"
+
+
+# Validating text from an element given information regarding the expected text
+def Validate_Text(step_data):
+    sModuleInfo = inspect.stack()[0][3] + " : " + inspect.getmoduleinfo(__file__).name
+    CommonUtil.ExecLog(sModuleInfo, "Function: Compare_Text_Data", 1, local_run)
+    try:
+        if ((len(step_data) != 1) or (1 < len(step_data[0]) >= 5)):
+            CommonUtil.ExecLog(sModuleInfo,
+                               "The information in the data-set(s) are incorrect. Please provide accurate data set(s) information.",
+                               3, local_run)
+            return "failed"
+        else:
+            expected_text_data = step_data[0][1][2]
+            if step_data[0][0][0] == "current_page":
+                try:
+                    Element = Get_Element('tag', 'html')
+                except Exception, e:
+                    errMsg = "Could not get element from the current page."
+                    Exception_Info(sModuleInfo, errMsg)
+            else:
+                element_step_data = step_data[0][0:len(step_data[0]) - 1:1]
+                returned_step_data_list = Validate_Step_Data(element_step_data)
+                if ((returned_step_data_list == []) or (returned_step_data_list == "failed")):
+                    return "failed"
+                else:
+                    try:
+                        Element = Get_Element(returned_step_data_list[0], returned_step_data_list[1],
+                                              returned_step_data_list[2], returned_step_data_list[3],
+                                              returned_step_data_list[4])
+                    except Exception, e:
+                        errMsg = "Could not get element based on the information provided."
+                        Exception_Info(sModuleInfo, errMsg)
+
+            list_of_element_text = Element.text.split('\n')
+            visible_list_of_element_text = []
+            for each_text_item in list_of_element_text:
+                if each_text_item != "":
+                    visible_list_of_element_text.append(each_text_item)
+            if step_data[0][1][0] == "validate partial text":
+                actual_text_data = visible_list_of_element_text
+                CommonUtil.ExecLog(sModuleInfo, "Expected Text: " + expected_text_data, 1, local_run)
+                CommonUtil.ExecLog(sModuleInfo, "Actual Text: " + str(actual_text_data), 1, local_run)
+                if (expected_text_data in each_item for each_item in actual_text_data):
+                    CommonUtil.ExecLog(sModuleInfo, "The text has been validated by a partial match.", 1, local_run)
+                    return "passed"
+                else:
+                    CommonUtil.ExecLog(sModuleInfo, "Unable to validate using partial match.", 3, local_run)
+                    return "failed"
+            if step_data[0][1][0] == "validate full text":
+                actual_text_data = visible_list_of_element_text
+                CommonUtil.ExecLog(sModuleInfo, "Expected Text: " + expected_text_data, 1, local_run)
+                CommonUtil.ExecLog(sModuleInfo, "Actual Text: " + str(actual_text_data), 1, local_run)
+                if (expected_text_data in actual_text_data):
+                    CommonUtil.ExecLog(sModuleInfo, "The text has been validated by using complete match.", 1,
+                                       local_run)
+                    return "passed"
+                else:
+                    CommonUtil.ExecLog(sModuleInfo, "Unable to validate using complete match.", 3, local_run)
+                    return "failed"
+
+    except Exception, e:
+        exc_type, exc_obj, exc_tb = sys.exc_info()
+        fname = os.path.split(exc_tb.tb_frame.f_code.co_filename)[1]
+        Error_Detail = ((str(exc_type).replace("type ", "Error Type: ")) + ";" + "Error Message: " + str(
+            exc_obj) + ";" + "File Name: " + fname + ";" + "Line: " + str(exc_tb.tb_lineno))
+        CommonUtil.ExecLog(sModuleInfo, "Could not compare text as requested.  Error: %s" % (Error_Detail), 3,
+                           local_run)
+        return "failed"
+
+
