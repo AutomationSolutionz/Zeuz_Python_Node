@@ -110,3 +110,20 @@ def click_element(dependency, run_time_params, step_data, file_attachment, temp_
         CommonUtil.ExecLog(sModuleInfo, "Unable to click element: Error:%s" % (Error_Detail), 3, local_run)
         temp_q.put("Failed")
         return "failed"
+
+
+def enter_text(dependency,run_time_params,step_data,file_attachment,temp_q):
+    sModuleInfo = inspect.stack()[0][3] + " : " + inspect.getmoduleinfo(__file__).name
+    try:
+        CommonUtil.ExecLog(sModuleInfo,"Enter: Step - Enter Text",1,local_run)
+        sTestStepReturnStatus=bf.Enter_Text_In_Text_Box(step_data)
+        temp_q.put(sTestStepReturnStatus)
+        CommonUtil.ExecLog(sModuleInfo,"Exit: Step - Enter Text",1,local_run)
+        return sTestStepReturnStatus
+    except Exception, e:
+        exc_type, exc_obj, exc_tb = sys.exc_info()
+        fname = os.path.split(exc_tb.tb_frame.f_code.co_filename)[1]
+        Error_Detail = ((str(exc_type).replace("type ", "Error Type: ")) + ";" +  "Error Message: " + str(exc_obj) +";" + "File Name: " + fname + ";" + "Line: "+ str(exc_tb.tb_lineno))
+        CommonUtil.ExecLog(sModuleInfo, "Unable to enter text: Error:%s" %( Error_Detail), 3,local_run)
+        temp_q.put("Failed")
+        return "failed"

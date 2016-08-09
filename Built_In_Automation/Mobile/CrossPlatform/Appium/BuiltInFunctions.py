@@ -495,6 +495,61 @@ def Click_Element(step_data):
         CommonUtil.ExecLog(sModuleInfo, "Unable to click on the element. %s" % Error_Detail, 3, local_run)
         return "failed"
 
+# Method to enter texts in a text box; step data passed on by the user
+def Enter_Text_In_Text_Box(step_data):
+    sModuleInfo = inspect.stack()[0][3] + " : " + inspect.getmoduleinfo(__file__).name
+    CommonUtil.ExecLog(sModuleInfo, "Inside Enter Text In Text Box function", 1, local_run)
+    try:
+        # If there are no two separate data-sets, or if the first data-set is not between 1 to 3 items, or if the second data-set doesn't have only 1 item
+        if ((len(step_data) != 1) or (1 < len(step_data[0]) >= 5)):  # or (len(step_data[1]) != 1)):
+            CommonUtil.ExecLog(sModuleInfo,
+                               "The information in the data-set(s) are incorrect. Please provide accurate data set(s) information.",
+                               3, local_run)
+            return "failed"
+        else:
+            element_step_data = step_data[0][0:len(step_data[0]) - 1:1]
+            returned_step_data_list = Validate_Step_Data(element_step_data)
+            # returned_step_data_list = Validate_Step_Data(step_data[0])
+            if ((returned_step_data_list == []) or (returned_step_data_list == "failed")):
+                return "failed"
+            else:
+                try:
+                    Element = Get_Element(returned_step_data_list[0], returned_step_data_list[1],
+                                          returned_step_data_list[2], returned_step_data_list[3],
+                                          returned_step_data_list[4])
+                    text_value = step_data[0][len(step_data[0]) - 1][2]
+                    # text_value = step[1][0][2]
+                    # text_value=step_data[1][0][1]
+                    Element.click()
+                    Element.clear()
+                    Element.set_value(text_value)
+                    Element.click()
+                    CommonUtil.TakeScreenShot(sModuleInfo, local_run)
+                    CommonUtil.ExecLog(sModuleInfo, "Successfully set the value of to text to: %s" % text_value,
+                                       1, local_run)
+                    return "passed"
+                except Exception, e:
+                    exc_type, exc_obj, exc_tb = sys.exc_info()
+                    fname = os.path.split(exc_tb.tb_frame.f_code.co_filename)[1]
+                    Error_Detail = (
+                    (str(exc_type).replace("type ", "Error Type: ")) + ";" + "Error Message: " + str(
+                        exc_obj) + ";" + "File Name: " + fname + ";" + "Line: " + str(exc_tb.tb_lineno))
+                    CommonUtil.ExecLog(sModuleInfo,
+                                       "Could not select/click your element.  Error: %s" % (Error_Detail), 3,
+                                       local_run)
+                    return "failed"
+
+    except Exception, e:
+        exc_type, exc_obj, exc_tb = sys.exc_info()
+        fname = os.path.split(exc_tb.tb_frame.f_code.co_filename)[1]
+        Error_Detail = ((str(exc_type).replace("type ", "Error Type: ")) + ";" + "Error Message: " + str(
+            exc_obj) + ";" + "File Name: " + fname + ";" + "Line: " + str(exc_tb.tb_lineno))
+        CommonUtil.ExecLog(sModuleInfo, "Could not find your element.  Error: %s" % (Error_Detail), 3,
+                           local_run)
+        return "failed"
+
+
+
     # Method to get the elements based on type - more methods may be added in the future
     # Called by: Get_Elements
 def Get_Single_Element(parameter, value, parent=False):
@@ -512,7 +567,8 @@ def Get_Single_Element(parameter, value, parent=False):
             elif parameter == "class_name":
                 All_Elements = driver.find_element_by_class_name(value)
             elif parameter == "xpath":
-                All_Elements = driver.find_element_by_xpath(value)
+                #All_Elements = driver.find_element_by_xpath(value)
+                All_Elements == driver.find_elements_by_xpath("//*[@%s='%s']" % (parameter, value))
             elif parameter == "android_uiautomator_text":
                 All_Elements == driver.find_element_by_android_uiautomator('new UiSelector().text(' + value + ')')
             elif parameter == "android_uiautomator_description":
@@ -520,6 +576,9 @@ def Get_Single_Element(parameter, value, parent=False):
                     'new UiSelector().description(' + value + ')')
             elif parameter == "ios_uiautomation":
                 All_Elements == driver.find_element_by_ios_uiautomation('.elements()[0]')
+            else:
+                All_Elements == driver.find_elements_by_xpath("//*[@%s='%s']"%(parameter,value))
+
         elif parent == True:
             if parameter == "name":
                 All_Elements = driver.find_element_by_name(value)
@@ -530,7 +589,8 @@ def Get_Single_Element(parameter, value, parent=False):
             elif parameter == "class_name":
                 All_Elements = driver.find_element_by_class_name(value)
             elif parameter == "xpath":
-                All_Elements = driver.find_element_by_xpath(value)
+                #All_Elements = driver.find_element_by_xpath(value)
+                All_Elements == driver.find_elements_by_xpath("//*[@%s='%s']" % (parameter, value))
             elif parameter == "android_uiautomator_text":
                 All_Elements == driver.find_element_by_android_uiautomator('new UiSelector().text(' + value + ')')
             elif parameter == "android_uiautomator_description":
@@ -538,6 +598,8 @@ def Get_Single_Element(parameter, value, parent=False):
                     'new UiSelector().description(' + value + ')')
             elif parameter == "ios_uiautomation":
                 All_Elements == driver.find_element_by_ios_uiautomation('.elements()[0]')
+            else:
+                All_Elements == driver.find_elements_by_xpath("//*[@%s='%s']"%(parameter,value))
 
         return All_Elements
     except Exception, e:
@@ -721,3 +783,4 @@ def Element_Validation(All_Elements_Found):#, index):
         Error_Detail = ((str(exc_type).replace("type ", "Error Type: ")) + ";" +  "Error Message: " + str(exc_obj) +";" + "File Name: " + fname + ";" + "Line: "+ str(exc_tb.tb_lineno))
         CommonUtil.ExecLog(sModuleInfo, "Unable to get the element.  Error: %s"%(Error_Detail), 3,local_run)
         return "failed"
+
