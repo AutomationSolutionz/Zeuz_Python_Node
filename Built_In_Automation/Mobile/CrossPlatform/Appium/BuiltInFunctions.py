@@ -212,7 +212,7 @@ def launch_and_start_driver(package_name, activity_name):
         driver = webdriver.Remote('http://localhost:4723/wd/hub', desired_caps)
         global driver
         CommonUtil.ExecLog(sModuleInfo,"Launched the app successfully.",1,local_run)
-        wait(10)
+        wait(3)
         return "Passed"
     except Exception, e:
         exc_type, exc_obj, exc_tb = sys.exc_info()        
