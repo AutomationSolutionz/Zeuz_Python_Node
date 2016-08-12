@@ -12,6 +12,7 @@ from operator import or_
 from selenium.webdriver.support.expected_conditions import staleness_of
 from Utilities.CompareModule import CompareModule
 from json.decoder import errmsg
+from docutils.nodes import status
 
 
 sys.path.append("..")
@@ -902,7 +903,6 @@ def Validate_Text(step_data):
 #2) for expected data, for each row in the step_data: 
 #   if subfield row is not empty and length of step-data = 5:
 #   for each_row in the step_data, append item in a list for a particular row 
-#[[u'1486543', u'353513070625277', u'N/A', u'SAMSUNG-SM-G928A', u'MCHOWDHURY', u'2016-08-04 08:55:56 EDT', u'2016-08-04 09:09:18 EDT', u'Diagnostics - Quick', u'FAIL', u'DEFAULT', u'N/A'], [u'1486542', u'353513070625277', u'N/A', u'SAMSUNG-SM-G928A', u'MCHOWDHURY', u'2016-08-04 08:44:02 EDT', u'2016-08-04 08:55:47 EDT', u'Diagnostics - Quick', u'FAIL', u'DEFAULT', u'N/A'], [u'1486538', u'353926064400988', u'N/A', u'PRIMO_RX2', u'FD363A605A2B11E', u'2016-08-04 06:14:36 EDT', u'2016-08-04 06:16:48 EDT', u'Diagnostics - Appium', u'INCOMPLETE', u'N/A', u'N/A'], [u'1486533', u'353926064400988', u'N/A', u'PRIMO_RX2', u'E2B1EC4E5A2A11E', u'2016-08-04 06:06:31 EDT', u'2016-08-04 06:09:29 EDT', u'Diagnostics - Appium', u'INCOMPLETE', u'N/A', u'N/A'], [u'1486528', u'353926064400988', u'N/A', u'PRIMO_RX2', u'46EB791E5A2611E', u'2016-08-04 05:33:29 EDT', u'2016-08-04 05:52:23 EDT', u'Diagnostics - Appium', u'INCOMPLETE', u'N/A', u'N/A'], [u'1486518', u'353926064400988', u'N/A', u'PRIMO_RX2', u'SREEJOY', u'2016-08-04 02:20:49 EDT', u'2016-08-04 02:22:05 EDT', u'Diagnostics - Appium', u'PASS', u'PASS', u'N/A'], [u'1486517', u'353926064400988', u'N/A', u'PRIMO_RX2', u'SREEJOY', u'2016-08-04 02:19:08 EDT', u'2016-08-04 02:20:38 EDT', u'Diagnostics - Appium', u'FAIL', u'GENERAL TEST FAILURE', u'N/A'], [u'1486510', u'911338900054604', u'N/A', u'GENERIC', u'TEST', u'2016-08-04 02:11:25 EDT', u'2016-08-04 02:12:08 EDT', u'Diagnostics - Unsupported Device', u'CRASH', u'N/A', u'N/A'], [u'1486509', u'911338900054604', u'N/A', u'GENERIC', u'TEST', u'2016-08-04 02:10:25 EDT', u'2016-08-04 02:11:00 EDT', u'Diagnostics - Appium', u'CRASH', u'N/A', u'N/A'], [u'1486505', u'911338900054604', u'N/A', u'GENERIC', u'TEST', u'2016-08-04 02:04:14 EDT', u'2016-08-04 02:04:53 EDT', u'Diagnostics - Appium', u'CRASH', u'N/A', u'N/A'], [u'1486496', u'911338900054604', u'N/A', u'GENERIC', u'SREEJOY', u'2016-08-04 01:58:20 EDT', u'2016-08-04 01:58:26 EDT', u'Diagnostics - Appium', u'INCOMPLETE', u'N/A', u'N/A'], [u'1486492', u'911338900054604', u'N/A', u'GENERIC', u'SREEJOY', u'2016-08-04 01:55:53 EDT', u'2016-08-04 01:56:24 EDT', u'Diagnostics - Appium', u'CRASH', u'N/A', u'N/A'], [u'1486488', u'911338900054604', u'N/A', u'GENERIC', u'SREEJOY', u'2016-08-04 01:45:27 EDT', u'2016-08-04 01:46:14 EDT', u'Diagnostics - Appium', u'CRASH', u'N/A', u'N/A'], [u'1486486', u'357185067524411', u'N/A', u'XPLORER ZV', u'SREEJOY', u'2016-08-04 01:44:31 EDT', u'2016-08-04 01:45:16 EDT', u'Diagnostics - Appium', u'CRASH', u'N/A', u'N/A'], [u'1486477', u'N/A', u'N/A', u'UNDEFINED', u'NIKOLAS', u'2016-08-03 18:44:41 EDT', u'2016-08-03 18:44:41 EDT', u'N/A', u'CRASH', u'N/A', u'N/A'], [u'1486474', u'N/A', u'N/A', u'UNDEFINED', u'ASCI', u'2014-06-19 15:29:57 EDT', u'2014-06-19 15:29:57 EDT', u'Quick Suite - Android 1.20.1 - iOS 1.10.7', u'FAIL', u'FAIL', u'N/A'], [u'1486472', u'355451060315922', u'N/A', u'GENERIC', u'JAVIER', u'2016-08-03 18:17:10 EDT', u'2016-08-03 18:18:07 EDT', u'Diagnostics - Generic Device', u'CRASH', u'N/A', u'N/A'], [u'1486470', u'355451060315922', u'N/A', u'GENERIC', u'JAVIER', u'2016-08-03 18:12:18 EDT', u'2016-08-03 18:12:59 EDT', u'Diagnostics - Generic Device', u'CRASH', u'N/A', u'N/A'], [u'1486468', u'N/A', u'N/A', u'UNDEFINED', u'SANDEEP', u'2014-08-08 06:13:38 EDT', u'2014-08-08 06:13:38 EDT', u'All Tests - Android 1.21.4 + iOS 1.11.2', u'FAIL', u'FAIL', u'N/A'], [u'1486466', u'N/A', u'N/A', u'UNDEFINED', u'DSE22', u'2016-08-03 17:59:13 EDT', u'2016-08-03 18:05:37 EDT', u'Software Flash', u'RETRY', u'N/A', u'N/A']]        row_number = 1
 def Validate_Table(step_data):    
     sModuleInfo = inspect.stack()[0][3] + " : " + inspect.getmoduleinfo(__file__).name
     try:
@@ -914,54 +914,83 @@ def Validate_Table(step_data):
                 get_element_last_item = new_data_group_index - 1
                 print get_element_last_item
                 break
-                
-        element_step_data = step_data[0][0:get_element_last_item:1]
+        
+        if get_element_last_item == 0:
+            element_step_data = step_data[0][0]
+        else:        
+            element_step_data = step_data[0][0:get_element_last_item:1]
         ##print statement to be removed
         print element_step_data
-        returned_step_data_list = Validate_Step_Data(element_step_data) 
+        returned_step_data_list = Validate_Step_Data([element_step_data]) 
         if ((returned_step_data_list == []) or (returned_step_data_list == "failed")):
             return "failed"
         else:
             try:
-                #actual_table_dataset = Get_Table_Elements(returned_step_data_list[0], returned_step_data_list[1], returned_step_data_list[2], returned_step_data_list[3], returned_step_data_list[4])
-                actual_table_data = Get_Table_Elements('tag', 'tbody')
-                row_number = 1
-                formatted_actual_table_data = []
-                for every_row in actual_table_data:
-                    for every_column in every_row:
-                        formatted_actual_table_data.append(every_column)
-                    row_number = row_number+1
+                oCompare = CompareModule()
+                expected_table_step_data = step_data[0][new_data_group_index+1:len(step_data[0])-1:1]             
+                print expected_table_step_data
+                actual_table_dataset = Get_Table_Elements(returned_step_data_list[0], returned_step_data_list[1], returned_step_data_list[2], returned_step_data_list[3], returned_step_data_list[4])
+                print actual_table_dataset
+                master_actual = []
+                row_num = 1
+                for each_row in actual_table_dataset:
+                    temp_row_holder = []
+                    col_num = 1
+                    for each_col in each_row:
+                        temp_row_holder.append(col_num)
+                        temp_row_holder.append(row_num)
+                        temp_row_holder.append(each_col)
+                        col_num = col_num + 1
+                    master_actual.append(temp_row_holder)
+                    row_num = row_num + 1
                 
+                for every_expected_table_row in expected_table_step_data:
+                    for every_master_row in master_actual:
+                        if every_master_row[1] == every_expected_table_row[1]:
+                            every_master_row.insert(0,every_expected_table_row[0])
+                        
+                    
+                
+                try:
+                    status = oCompare.compare(expected_table_step_data, master_actual)
+                    print status
+                except Exception, e:
+                    errMsg = "Error when comparing the expected and actual data."
+                    Exception_Info(sModuleInfo, errMsg)
+
+
+                #actual_table_dataset = Get_Table_Elements('tag', 'tbody')
+#                 row_number = 0
+#                 formatted_actual_table_data= []
+#                 temp_actual_table_data = []
+#                 for every_row in actual_table_dataset:
+#                     #for every_expected_data_row in expected_table_step_data:
+#                     expected_table_data_row_number = 0
+#                     for expected_table_data_row_number in range(0,len(expected_table_step_data)-1,1):
+#                         for every_column in every_row:
+#                             temp_actual_table_data.append(expected_table_step_data[expected_table_data_row_number][0])
+#                             temp_actual_table_data.append(row_number)
+#                             temp_actual_table_data.append(every_column)
+#                             temp_actual_table_data.append(expected_table_step_data[expected_table_data_row_number][3])
+#                             temp_actual_table_data.append(expected_table_step_data[expected_table_data_row_number][4])
+#                             expected_table_data_row_number = expected_table_data_row_number + 1
+#                         formatted_actual_table_data.append(temp_actual_table_data)
+#                         row_number = row_number+1
+#                 
             except Exception, e:
                 errMsg = "Unable to get table element. Please check if the correct information has been provided."
                 Exception_Info(sModuleInfo, errMsg)
         
-#         all_rows = WebDriverWait(table, WebDriver_Wait).until(EC.presence_of_all_elements_located((By.XPATH, "*")))
-#         master_text_table = []
-#         for each_row_obj in all_rows:
-#             if (each_row_obj.is_displayed()!=False):
-#                 try:
-#                     row_element = WebDriverWait(each_row_obj, WebDriver_Wait).until(EC.presence_of_all_elements_located((By.XPATH, "*")))
-#                     temp_row_holder = []
-#                     for each_column_obj in row_element:
-#                         temp_row_holder.append(each_column_obj.text)
-#                 except Exception, e:
-#                     errMsg = "Could not find table row elements"
-#                     Exception_Info(sModuleInfo, errMsg)                
-#                 master_text_table.append(temp_row_holder)
-        expected_table_step_data = step_data[0][new_data_group_index+1:len(step_data[0])-1:1]
-        print expected_table_step_data
-        
-        expected_table_data_set = []
-        row_index = 1
-        for each_row in expected_table_step_data:
-            if each_row[1] == str(row_index):
-                temp_row_holder = []
-                for each_item_in_row in each_row:
-                    temp_row_holder.append(step_data[0][row_index][2])
-            row_index= int(row_index) + 1  
-        
-        print "a"
+#         expected_table_data_set = []
+#         row_index = 1
+#         for each_row in expected_table_step_data:
+#             if each_row[1] == str(row_index):
+#                 temp_row_holder = []
+#                 for each_item_in_row in each_row:
+#                     temp_row_holder.append(step_data[0][row_index][2])
+#             row_index= int(row_index) + 1  
+#         
+#         print "a"
     except Exception, e:
         exc_type, exc_obj, exc_tb = sys.exc_info()        
         fname = os.path.split(exc_tb.tb_frame.f_code.co_filename)[1]
@@ -1380,16 +1409,3 @@ def Exception_Info(sModuleInfo, errMsg):
     CommonUtil.ExecLog(sModuleInfo, errMsg + ".  Error: %s"%(Error_Detail), 3,local_run)
     return "failed"
 
-# b = Get_Element(element_parameter, element_value, reference_parameter, reference_value, reference_is_parent_or_child, get_all_unvalidated_elements)
-# if b == "failed":
-#     b = 'false'
-# else:
-#     b = 'true'
-#     
-#     
-# a = [('true','logic',"34,3,3"),('false','logic',"5,2,5")]
-# b = 'true'
-# #b = 'false'
-# for each_row in a:
-#     if b in each_row:
-#         print each_row[2]
