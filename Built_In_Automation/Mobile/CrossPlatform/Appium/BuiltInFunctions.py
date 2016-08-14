@@ -577,11 +577,11 @@ def Get_Single_Element(parameter, value, parent=False):
             elif parameter == "ios_uiautomation":
                 All_Elements == driver.find_element_by_ios_uiautomation('.elements()[0]')
             else:
-                All_Elements == driver.find_element_by_xpath("//*[@%s='%s']"%(parameter,value))
+                All_Elements == driver.find_element_by_xpath("//*[@%s='%s']"%(parameter, value))
 
         elif parent == True:
             if parameter == "name":
-                All_Elements = driver.find_element_by_name(value)
+                All_Elements = driver.find_element_by_xpath("//*[@text='%s']" % value)
             elif parameter == "id":
                 All_Elements = driver.find_element_by_id(value)
             elif parameter == "accessibility_id":
