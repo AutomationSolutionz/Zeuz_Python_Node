@@ -113,8 +113,6 @@ def Go_To_Link(link, page_title=False):
 
 
 
-'============================================'
-
 #Method to enter texts in a text box; step data passed on by the user
 def Enter_Text_In_Text_Box(step_data):
     sModuleInfo = inspect.stack()[0][3] + " : " + inspect.getmoduleinfo(__file__).name
