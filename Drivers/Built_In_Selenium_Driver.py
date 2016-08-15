@@ -7,7 +7,7 @@ Created on May 15, 2016
 import os,sys
 import inspect
 from Utilities import CommonUtil
-from Built_In_Automation.Web.SeleniumAutomation import BuiltInFunctions
+from Built_In_Automation.Web.SeleniumAutomation import BuiltInFunctions as Selenium_Built_In
 #if local_run is True, no logging will be recorded to the web server.  Only local print will be displayed
 local_run = False
 #local_run = False
@@ -21,7 +21,7 @@ def open_browser(dependency,run_params,step_data,file_attachment,temp_q):
         CommonUtil.ExecLog(sModuleInfo,"Enter: Step - Open Browser",1,local_run)
         #browser_name=dependency['dependency']['Browser']
         browser_name=dependency['Browser']
-        stepReturn=BuiltInFunctions.Open_Browser(browser_name)
+        stepReturn=Selenium_Built_In.Open_Browser(browser_name)
         CommonUtil.ExecLog(sModuleInfo,"started the browser",1,local_run)
         temp_q.put(stepReturn)
         CommonUtil.ExecLog(sModuleInfo,"Exit: Step - Open Browser",1,local_run)
@@ -39,7 +39,7 @@ def close_browser(dependency,run_time_params,step_data,file_attachment,temp_q):
     sModuleInfo = inspect.stack()[0][3] + " : " + inspect.getmoduleinfo(__file__).name
     try:
         CommonUtil.ExecLog(sModuleInfo,"Enter: Step - Close Browser",1,local_run)
-        sTestStepReturnStatus=BuiltInFunctions.Tear_Down()
+        sTestStepReturnStatus=Selenium_Built_In.Tear_Down()
         print sTestStepReturnStatus
         temp_q.put(sTestStepReturnStatus)
         CommonUtil.ExecLog(sModuleInfo,"Exit: Step - Close Browser",1,local_run)
@@ -60,7 +60,7 @@ def go_to_webpage(dependency,run_params,step_data,file_attachment,temp_q):
         first_data_set=step_data[0]
         web_link=first_data_set[0][1]
         web_title = first_data_set[0][2]
-        sTestStepReturnStatus=BuiltInFunctions.Go_To_Link(web_link, web_title)
+        sTestStepReturnStatus=Selenium_Built_In.Go_To_Link(web_link, web_title)
         temp_q.put(sTestStepReturnStatus)
         CommonUtil.ExecLog(sModuleInfo,"Exit: Step - Go To Webpage",1,local_run)
         return sTestStepReturnStatus
@@ -73,11 +73,11 @@ def go_to_webpage(dependency,run_params,step_data,file_attachment,temp_q):
         return "failed"
 
 
-def enter_text(dependency,run_time_params,step_data,file_attachment,temp_q):
+def enter_text_selenium(dependency,run_time_params,step_data,file_attachment,temp_q):
     sModuleInfo = inspect.stack()[0][3] + " : " + inspect.getmoduleinfo(__file__).name
     try:
         CommonUtil.ExecLog(sModuleInfo,"Enter: Step - Enter Text",1,local_run)
-        sTestStepReturnStatus=BuiltInFunctions.Enter_Text_In_Text_Box(step_data)
+        sTestStepReturnStatus=Selenium_Built_In.Enter_Text_In_Text_Box(step_data)
         temp_q.put(sTestStepReturnStatus)
         CommonUtil.ExecLog(sModuleInfo,"Exit: Step - Enter Text",1,local_run)
         return sTestStepReturnStatus
@@ -89,11 +89,11 @@ def enter_text(dependency,run_time_params,step_data,file_attachment,temp_q):
         temp_q.put("Failed")
         return "failed"
     
-def click_element(dependency,run_time_params,step_data,file_attachment,temp_q):
+def click_element_selenium(dependency,run_time_params,step_data,file_attachment,temp_q):
     sModuleInfo = inspect.stack()[0][3] + " : " + inspect.getmoduleinfo(__file__).name
     try:
         CommonUtil.ExecLog(sModuleInfo,"Enter: Step - Click Element",1,local_run)
-        sTestStepReturnStatus=BuiltInFunctions.Click_Element(step_data)
+        sTestStepReturnStatus=Selenium_Built_In.Click_Element(step_data)
         temp_q.put(sTestStepReturnStatus)
         CommonUtil.ExecLog(sModuleInfo,"Exit: Step - Click Element",1,local_run)
         return sTestStepReturnStatus
@@ -105,11 +105,11 @@ def click_element(dependency,run_time_params,step_data,file_attachment,temp_q):
         temp_q.put("Failed")
         return "failed"
     
-def sequential_actions(dependency,run_time_params,step_data,file_attachment,temp_q):
+def sequential_actions_selenium(dependency,run_time_params,step_data,file_attachment,temp_q):
     sModuleInfo = inspect.stack()[0][3] + " : " + inspect.getmoduleinfo(__file__).name
     try:
         CommonUtil.ExecLog(sModuleInfo,"Enter: Step - Sequential Actions",1,local_run)
-        sTestStepReturnStatus=BuiltInFunctions.Sequential_Actions(step_data)
+        sTestStepReturnStatus=Selenium_Built_In.Sequential_Actions(step_data)
         temp_q.put(sTestStepReturnStatus)
         CommonUtil.ExecLog(sModuleInfo,"Exit: Step - Sequential Actions",1,local_run)
         return sTestStepReturnStatus
