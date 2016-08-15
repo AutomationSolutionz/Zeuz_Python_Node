@@ -72,29 +72,7 @@ def go_to_webpage(dependency,run_params,step_data,file_attachment,temp_q):
         temp_q.put("Failed")
         return "failed"
 
-def login_to_web_app(dependency,run_time_params,step_data,file_attachment,temp_q):
-    sModuleInfo = inspect.stack()[0][3] + " : " + inspect.getmoduleinfo(__file__).name
-    try:
-        CommonUtil.ExecLog(sModuleInfo,"Enter: Step - Login To Web App",1,local_run)
-        user_name=step_data[0][0][1]
-        password = step_data[0][1][1]
-        user_element = step_data[0][2][1]
-        password_element = step_data[0][3][1]
-        button_to_click =step_data[0][4][1]
-        
-        sTestStepReturnStatus=BuiltInFunctions.Login_To_Application(user_name, password, user_element, password_element, button_to_click)
-        temp_q.put(sTestStepReturnStatus)
-        CommonUtil.ExecLog(sModuleInfo,"Exit: Step - Login To Web App",1,local_run)
-        return sTestStepReturnStatus
-    except Exception, e:
-        exc_type, exc_obj, exc_tb = sys.exc_info()
-        fname = os.path.split(exc_tb.tb_frame.f_code.co_filename)[1]
-        Error_Detail = ((str(exc_type).replace("type ", "Error Type: ")) + ";" +  "Error Message: " + str(exc_obj) +";" + "File Name: " + fname + ";" + "Line: "+ str(exc_tb.tb_lineno))
-        CommonUtil.ExecLog(sModuleInfo, "Unable to login to web app: Error:%s" %( Error_Detail), 3,local_run)
-        temp_q.put("Failed")
-        return "failed"
-    
-    
+
 def enter_text(dependency,run_time_params,step_data,file_attachment,temp_q):
     sModuleInfo = inspect.stack()[0][3] + " : " + inspect.getmoduleinfo(__file__).name
     try:
@@ -118,6 +96,22 @@ def click_element(dependency,run_time_params,step_data,file_attachment,temp_q):
         sTestStepReturnStatus=BuiltInFunctions.Click_Element(step_data)
         temp_q.put(sTestStepReturnStatus)
         CommonUtil.ExecLog(sModuleInfo,"Exit: Step - Click Element",1,local_run)
+        return sTestStepReturnStatus
+    except Exception, e:
+        exc_type, exc_obj, exc_tb = sys.exc_info()
+        fname = os.path.split(exc_tb.tb_frame.f_code.co_filename)[1]
+        Error_Detail = ((str(exc_type).replace("type ", "Error Type: ")) + ";" +  "Error Message: " + str(exc_obj) +";" + "File Name: " + fname + ";" + "Line: "+ str(exc_tb.tb_lineno))
+        CommonUtil.ExecLog(sModuleInfo, "Unable to click element: Error:%s" %( Error_Detail), 3,local_run)
+        temp_q.put("Failed")
+        return "failed"
+    
+def sequential_actions(dependency,run_time_params,step_data,file_attachment,temp_q):
+    sModuleInfo = inspect.stack()[0][3] + " : " + inspect.getmoduleinfo(__file__).name
+    try:
+        CommonUtil.ExecLog(sModuleInfo,"Enter: Step - Sequential Actions",1,local_run)
+        sTestStepReturnStatus=BuiltInFunctions.Sequential_Actions(step_data)
+        temp_q.put(sTestStepReturnStatus)
+        CommonUtil.ExecLog(sModuleInfo,"Exit: Step - Sequential Actions",1,local_run)
         return sTestStepReturnStatus
     except Exception, e:
         exc_type, exc_obj, exc_tb = sys.exc_info()
