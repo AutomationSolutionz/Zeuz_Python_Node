@@ -206,9 +206,12 @@ def launch_and_start_driver(package_name, activity_name):
         df = adbOptions.get_device_model()
         CommonUtil.ExecLog(sModuleInfo,df,1,local_run)
         #adbOptions.kill_adb_server()
+
         desired_caps['deviceName'] = df
         desired_caps['appPackage'] = package_name
         desired_caps['appActivity'] = activity_name
+        #desired_caps['appPackage'] = 'com.assetscience.androidprodiagnostics'
+        #desired_caps['appActivity'] = 'com.assetscience.recell.device.android.prodiagnostics.MainActivity'
         driver = webdriver.Remote('http://localhost:4723/wd/hub', desired_caps)
         global driver
         CommonUtil.ExecLog(sModuleInfo,"Launched the app successfully.",1,local_run)
@@ -702,23 +705,23 @@ def Validate_Step_Data(step_data):
     CommonUtil.ExecLog(sModuleInfo, "Function: Validate_Step_Data", 1,local_run)
     try:
         if (len(step_data)==1):
-            element_parameter = step_data[0][0]
-            element_value = step_data[0][1]
+            element_parameter = step_data[0][0][0]
+            element_value = step_data[0][0][2]
             reference_parameter = False
             reference_value = False
             reference_is_parent_or_child = False
         elif (len(step_data)==2):
-            element_parameter = step_data[0][0]
-            element_value = step_data[0][1]
-            reference_parameter = step_data[1][0]
-            reference_value = step_data[1][1]
+            element_parameter = step_data[0][0][0]
+            element_value = step_data[0][0][2]
+            reference_parameter = step_data[0][1][0]
+            reference_value = step_data[0][1][2]
             reference_is_parent_or_child = False
         elif (len(step_data)==3):
-            element_parameter = step_data[0][0]
-            element_value = step_data[0][1]
-            reference_parameter = step_data[1][0]
-            reference_value = step_data[1][1]
-            reference_is_parent_or_child = step_data[2][1]
+            element_parameter = step_data[0][0][0]
+            element_value = step_data[0][0][2]
+            reference_parameter = step_data[0][1][0]
+            reference_value = step_data[0][1][2]
+            reference_is_parent_or_child = step_data[0][2][2]
         else:
             CommonUtil.ExecLog(sModuleInfo, "Data set incorrect. Please provide accurate data set(s) information.", 3,local_run)
             return "failed"
