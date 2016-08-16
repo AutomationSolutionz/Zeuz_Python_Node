@@ -482,7 +482,7 @@ def Click_Element(step_data):
     try:
         CommonUtil.ExecLog(sModuleInfo, "Trying to click on element...", 1, local_run)
         element_data = Validate_Step_Data(step_data)
-        elem = Get_Element(element_data[0],element_data[1])
+        elem = Get_Element(element_data[0], element_data[1])
         if elem.is_enabled():
             elem.click()
             CommonUtil.ExecLog(sModuleInfo, "Clicked on element successfully", 1, local_run)
