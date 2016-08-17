@@ -13,17 +13,8 @@ import time
 import requests
 import json
 import MainDriverApi
-from Utilities import ConfigModule, RequestFormatter, CommonUtil, FileUtilities
+from Utilities import ConfigModule, CommonUtil, FileUtilities
 sys.path.append(os.path.dirname(os.getcwd()))
-
-
-
-'''Constants'''
-AUTHENTICATION_TAG='Authentication'
-USERNAME_TAG='username'
-PASSWORD_TAG='password'
-PROJECT_TAG='project'
-TEAM_TAG='team'
 
 
 class GUIApp(QtGui.QMainWindow, ASApiGUIdesign.Ui_mainWindow):
@@ -45,7 +36,7 @@ class GUIApp(QtGui.QMainWindow, ASApiGUIdesign.Ui_mainWindow):
             'project': project,
             'team': team
         }
-        r = RequestFormatter.Get('login_api', user_info_object)
+        r = self.Get('login_api', user_info_object)
         print "Authentication check for user='%s', project='%s', team='%s'" % (username, project, team)
         if r:
             print "Authentication Successful"
@@ -63,7 +54,7 @@ class GUIApp(QtGui.QMainWindow, ASApiGUIdesign.Ui_mainWindow):
 
     def form_uri(self, resource_path):
         server = unicode(self.server.toPlainText()).strip()
-        port = int(unicode(self.port.toPlainText())).strip()
+        port = int(unicode(self.port.toPlainText()).strip())
         base_server_address = 'http://%s:%s/' % (str(server), str(port))
         return base_server_address + resource_path + '/'
 
@@ -73,7 +64,7 @@ class GUIApp(QtGui.QMainWindow, ASApiGUIdesign.Ui_mainWindow):
     def RunProcess(self, sTesterid):
         while 1:
             try:
-                r = RequestFormatter.Get('is_run_submitted_api', {'machine_name': sTesterid})
+                r = self.Get('is_run_submitted_api', {'machine_name': sTesterid})
                 if r['run_submit']:
                     self.PreProcess()
                     value = MainDriverApi.main()
@@ -84,7 +75,7 @@ class GUIApp(QtGui.QMainWindow, ASApiGUIdesign.Ui_mainWindow):
                 else:
                     time.sleep(3)
                     if r['update']:
-                        _r = RequestFormatter.Get('update_machine_with_time_api', {'machine_name': sTesterid})
+                        _r = self.Get('update_machine_with_time_api', {'machine_name': sTesterid})
             except Exception, e:
                 exc_type, exc_obj, exc_tb = sys.exc_info()
                 fname = os.path.split(exc_tb.tb_frame.f_code.co_filename)[1]
@@ -144,7 +135,7 @@ class GUIApp(QtGui.QMainWindow, ASApiGUIdesign.Ui_mainWindow):
                 'project': project,
                 'team': team
             }
-            r = RequestFormatter.Get('update_automation_machine_api', update_object)
+            r = self.Get('update_automation_machine_api', update_object)
             if r['registered']:
                 print "Machine is registered as online with name: %s" % (r['name'])
             else:
@@ -163,7 +154,7 @@ class GUIApp(QtGui.QMainWindow, ASApiGUIdesign.Ui_mainWindow):
             dependency_option = ConfigModule.get_all_option(dependency_tag)
             project = unicode(self.project.toPlainText())
             team = unicode(self.team.toPlainText())
-            r = RequestFormatter.Get('get_all_dependency_name_api', {'project': project, 'team': team})
+            r = self.Get('get_all_dependency_name_api', {'project': project, 'team': team})
             obtained_list = [x.lower() for x in r]
             # print "Dependency: ",dependency_list
             missing_list = list(set(obtained_list) - set(dependency_option))
