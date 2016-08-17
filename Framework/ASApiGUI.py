@@ -36,6 +36,13 @@ class GUIApp(QtGui.QMainWindow, ASApiGUIdesign.Ui_mainWindow):
             'project': project,
             'team': team
         }
+
+        """self.central_widget = QtGui.QStackedWidget()
+        self.setCentralWidget(self.central_widget)
+        logged_in_widget = LoggedWidget(self)
+        self.central_widget.addWidget(logged_in_widget)
+        self.central_widget.setCurrentWidget(logged_in_widget)"""
+
         r = self.Get('login_api', user_info_object)
         print "Authentication check for user='%s', project='%s', team='%s'" % (username, project, team)
         if r:
@@ -188,13 +195,32 @@ class GUIApp(QtGui.QMainWindow, ASApiGUIdesign.Ui_mainWindow):
                 exc_obj) + ";" + "File Name: " + fname + ";" + "Line: " + str(exc_tb.tb_lineno))
             print Error_Detail
 
+        """def new_window(self):
+        app = QtGui.QApplication(sys.argv)
+        w = QtGui.QWidget()
+        b = QtGui.QLabel(w)
+        b.setText("Welcome to ZeuZ Framework!")
+        w.setGeometry(300, 300, 600, 150)
+        b.move(50, 20)
+        w.setWindowTitle("PyQT")
+        w.show()
+        sys.exit(app.exec_())"""
+
     def close_gui(self):
         print "Closed"
         self.close()
 
 
+"""class LoggedWidget(QtGui.QWidget):
+    def __init__(self, parent=None):
+        super(LoggedWidget, self).__init__(parent)
+        layout = QtGui.QHBoxLayout()
+        self.label = QtGui.QLabel('Logging in...')
+        layout.addWidget(self.label)
+        self.setLayout(layout)"""
+
+
 def main():
-    # window()
     app = QtGui.QApplication(sys.argv)
     form = GUIApp()
     form.show()
@@ -205,14 +231,3 @@ if __name__ == '__main__':
 
 
 
-
-"""def window():
-    app = QtGui.QApplication(sys.argv)
-    w = QtGui.QWidget()
-    b = QtGui.QLabel(w)
-    b.setText("Welcome to ZeuZ Framework!")
-    w.setGeometry(300, 300, 600, 150)
-    b.move(50, 20)
-    w.setWindowTitle("PyQT")
-    w.show()
-    sys.exit(app.exec_())"""
