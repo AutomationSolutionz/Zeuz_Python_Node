@@ -36,7 +36,7 @@ def Login():
         else:
             return False
     else:
-        print "Authetication Failed"
+        print "Authentication Failed"
         return False
 def RunProcess(sTesterid):
     while (1):
@@ -112,7 +112,7 @@ def update_machine(dependency):
         }
         r=RequestFormatter.Get('update_automation_machine_api',update_object)
         if r['registered']:
-            print "Machine is registerd as online with name: %s"%(r['name'])
+            print "Machine is registered as online with name: %s"%(r['name'])
         else:
             print "Machine is not registered as online"
         return r
