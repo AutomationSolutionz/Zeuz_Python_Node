@@ -10,6 +10,8 @@ from Utilities import ASApiGUIdesign
 
 import os
 import time
+import requests
+import json
 import MainDriverApi
 from Utilities import ConfigModule, RequestFormatter, CommonUtil, FileUtilities
 sys.path.append(os.path.dirname(os.getcwd()))
@@ -32,12 +34,10 @@ class GUIApp(QtGui.QMainWindow, ASApiGUIdesign.Ui_mainWindow):
         self.cancelBtn.clicked.connect(self.close_gui)
 
     def connect_server(self):
-        username = unicode(self.username.toPlainText())
-        password = unicode(self.password.text())
-        project = unicode(self.project.toPlainText())
-        team = unicode(self.team.toPlainText())
-        server = self.server.toPlainText()
-        port = int(self.port.toPlainText())
+        username = unicode(self.username.toPlainText()).strip()
+        password = unicode(self.password.text()).strip()
+        project = unicode(self.project.toPlainText()).strip()
+        team = unicode(self.team.toPlainText()).strip()
 
         user_info_object = {
             'username': username,
@@ -60,6 +60,15 @@ class GUIApp(QtGui.QMainWindow, ASApiGUIdesign.Ui_mainWindow):
         else:
             print "Authentication Failed"
             return False
+
+    def form_uri(self, resource_path):
+        server = unicode(self.server.toPlainText()).strip()
+        port = int(unicode(self.port.toPlainText())).strip()
+        base_server_address = 'http://%s:%s/' % (str(server), str(port))
+        return base_server_address + resource_path + '/'
+
+    def Get(self, resource_path, payload={}):
+        return requests.get(self.form_uri(resource_path), params=json.dumps(payload)).json()
 
     def RunProcess(self, sTesterid):
         while 1:
