@@ -6,15 +6,17 @@ Created on August 17, 2016
 
 import sys
 from PyQt4 import QtGui
+import os
+sys.path.append(os.path.dirname(os.getcwd()))
 from Utilities import ASApiGUIdesign
 
-import os
+
 import time
 import requests
 import json
 import MainDriverApi
 from Utilities import ConfigModule, CommonUtil, FileUtilities
-sys.path.append(os.path.dirname(os.getcwd()))
+
 
 
 class GUIApp(QtGui.QMainWindow, ASApiGUIdesign.Ui_mainWindow):
