@@ -112,6 +112,26 @@ def Go_To_Link(link, page_title=False):
         return "failed"
 
 
+#Method to get the element step data from the original step_data
+def Get_Element_Step_Data(step_data):
+    sModuleInfo = inspect.stack()[0][3] + " : " + inspect.getmoduleinfo(__file__).name
+    CommonUtil.ExecLog(sModuleInfo, "Function - Get Element Step Data", 1,local_run)
+    try:
+        element_step_data=[]
+        for each in step_data[0]:
+            if each[1]=="":
+                element_step_data.append(each)
+            else:
+                break
+            
+        return element_step_data
+    
+    except Exception, e:
+        exc_type, exc_obj, exc_tb = sys.exc_info()        
+        fname = os.path.split(exc_tb.tb_frame.f_code.co_filename)[1]
+        Error_Detail = ((str(exc_type).replace("type ", "Error Type: ")) + ";" +  "Error Message: " + str(exc_obj) +";" + "File Name: " + fname + ";" + "Line: "+ str(exc_tb.tb_lineno))
+        CommonUtil.ExecLog(sModuleInfo, "Could not get element step data.  Error: %s"%(Error_Detail), 3,local_run)
+        return "failed"
 
 #Method to enter texts in a text box; step data passed on by the user
 def Enter_Text_In_Text_Box(step_data):
@@ -123,7 +143,8 @@ def Enter_Text_In_Text_Box(step_data):
             CommonUtil.ExecLog(sModuleInfo, "The information in the data-set(s) are incorrect. Please provide accurate data set(s) information.", 3,local_run)
             return "failed"
         else:
-            element_step_data = step_data[0][0:len(step_data[0])-1:1]
+            element_step_data=Get_Element_Step_Data(step_data)
+            #element_step_data = step_data[0][0:len(step_data[0])-1:1]
             returned_step_data_list = Validate_Step_Data(element_step_data) 
             #returned_step_data_list = Validate_Step_Data(step_data[0])
             if ((returned_step_data_list == []) or (returned_step_data_list == "failed")):
@@ -194,7 +215,8 @@ def Keystroke_For_Element(step_data):
             CommonUtil.ExecLog(sModuleInfo, "The information in the data-set(s) are incorrect. Please provide accurate data set(s) information.", 3,local_run)
             return "failed"
         else:
-            element_step_data = step_data[0][0:len(step_data[0])-1:1]
+            #element_step_data = step_data[0][0:len(step_data[0])-1:1]
+            element_step_data = Get_Element_Step_Data(step_data)
             returned_step_data_list = Validate_Step_Data(element_step_data) 
             if ((returned_step_data_list == []) or (returned_step_data_list == "failed")):
                 return "failed"
@@ -248,7 +270,8 @@ def Click_Element(step_data):
             CommonUtil.ExecLog(sModuleInfo, "The information in the data-set(s) are incorrect. Please provide accurate data set(s) information.", 3,local_run)
             return "failed"
         else:
-            element_step_data = step_data[0][0:len(step_data[0])-1:1]
+            #element_step_data = step_data[0][0:len(step_data[0])-1:1]
+            element_step_data = Get_Element_Step_Data(step_data)            
             returned_step_data_list = Validate_Step_Data(element_step_data) 
             if ((returned_step_data_list == []) or (returned_step_data_list == "failed")):
                 return "failed"
@@ -285,7 +308,8 @@ def Hover_Over_Element(step_data):
             CommonUtil.ExecLog(sModuleInfo, "The information in the data-set(s) are incorrect. Please provide accurate data set(s) information.", 3,local_run)
             return "failed"
         else:
-            element_step_data = step_data[0][0:len(step_data[0])-1:1]
+            #element_step_data = step_data[0][0:len(step_data[0])-1:1]
+            element_step_data = Get_Element_Step_Data(step_data)
             returned_step_data_list = Validate_Step_Data(element_step_data) 
             if ((returned_step_data_list == []) or (returned_step_data_list == "failed")):
                 return "failed"
@@ -323,7 +347,8 @@ def Wait_For_New_Element(step_data):
             CommonUtil.ExecLog(sModuleInfo, "The information in the data-set(s) are incorrect. Please provide accurate data set(s) information.", 3,local_run)
             return "failed"
         else:
-            element_step_data = step_data[0][0:len(step_data[0])-1:1]            
+            #element_step_data = step_data[0][0:len(step_data[0])-1:1]            
+            element_step_data = Get_Element_Step_Data(step_data)
             returned_step_data_list = Validate_Step_Data(element_step_data)
             if ((returned_step_data_list == []) or (returned_step_data_list == "failed")):
                 return "failed"
@@ -403,7 +428,7 @@ def Sequential_Actions(step_data):
             logic_row=[]
             for row in each:
                 #finding what to do for each dataset  
-                if len(row)==5:                    
+                if len(row)==5 and row[1] != "":                    
                     if row[1]=="action":
                         result = Action_Handler([each],row[0])
                         if result == [] or result == "failed":
@@ -458,22 +483,22 @@ def Validate_Step_Data(step_data):
     try:    
         if (len(step_data)==1):
             element_parameter = step_data[0][0]
-            element_value = step_data[0][1]
+            element_value = step_data[0][2]
             reference_parameter = False
             reference_value = False    
             reference_is_parent_or_child = False
         elif (len(step_data)==2):
             element_parameter = step_data[0][0]
-            element_value = step_data[0][1]
+            element_value = step_data[0][2]
             reference_parameter = step_data[1][0]
-            reference_value = step_data[1][1]
+            reference_value = step_data[1][2]
             reference_is_parent_or_child = False
         elif (len(step_data)==3):
             element_parameter = step_data[0][0]
-            element_value = step_data[0][1]
+            element_value = step_data[0][2]
             reference_parameter = step_data[1][0]
-            reference_value = step_data[1][1]    
-            reference_is_parent_or_child = step_data[2][1]
+            reference_value = step_data[1][2]    
+            reference_is_parent_or_child = step_data[2][2]
         else:
             CommonUtil.ExecLog(sModuleInfo, "Data set incorrect. Please provide accurate data set(s) information.", 3,local_run)
             return "failed"
@@ -568,106 +593,107 @@ def Validate_Text(step_data):
         return "failed"
     
 
-##Things to do:
-#1) get the table data from the element step data
-#2) for expected data, for each row in the step_data: 
-#   if subfield row is not empty and length of step-data = 5:
-#   for each_row in the step_data, append item in a list for a particular row 
-def Validate_Table(step_data):    
-    sModuleInfo = inspect.stack()[0][3] + " : " + inspect.getmoduleinfo(__file__).name
-    try:
-        new_data_group_index = 0
-        for each in step_data[0]:
-            if len(each) != 5:
-                new_data_group_index = new_data_group_index + 1
-            else:
-                get_element_last_item = new_data_group_index - 1
-                print get_element_last_item
-                break
-        
-        if get_element_last_item == 0:
-            element_step_data = step_data[0][0]
-        else:        
-            element_step_data = step_data[0][0:get_element_last_item:1]
-        ##print statement to be removed
-        print element_step_data
-        returned_step_data_list = Validate_Step_Data([element_step_data]) 
-        if ((returned_step_data_list == []) or (returned_step_data_list == "failed")):
-            return "failed"
-        else:
-            try:
-                oCompare = CompareModule()
-                expected_table_step_data = step_data[0][new_data_group_index+1:len(step_data[0])-1:1]             
-                print expected_table_step_data
-                actual_table_dataset = Get_Table_Elements(returned_step_data_list[0], returned_step_data_list[1], returned_step_data_list[2], returned_step_data_list[3], returned_step_data_list[4])
-                print actual_table_dataset
-                master_actual = []
-                row_num = 1
-                for each_row in actual_table_dataset:
-                    temp_row_holder = []
-                    col_num = 1
-                    for each_col in each_row:
-                        temp_row_holder.append(col_num)
-                        temp_row_holder.append(row_num)
-                        temp_row_holder.append(each_col)
-                        col_num = col_num + 1
-                    master_actual.append(temp_row_holder)
-                    row_num = row_num + 1
-                
-                for every_expected_table_row in expected_table_step_data:
-                    for every_master_row in master_actual:
-                        if every_master_row[1] == every_expected_table_row[1]:
-                            every_master_row.insert(0,every_expected_table_row[0])
-                        
-                    
-                
-                try:
-                    status = oCompare.compare(expected_table_step_data, master_actual)
-                    print status
-                except Exception, e:
-                    errMsg = "Error when comparing the expected and actual data."
-                    Exception_Info(sModuleInfo, errMsg)
-
-
-                #actual_table_dataset = Get_Table_Elements('tag', 'tbody')
-#                 row_number = 0
-#                 formatted_actual_table_data= []
-#                 temp_actual_table_data = []
-#                 for every_row in actual_table_dataset:
-#                     #for every_expected_data_row in expected_table_step_data:
-#                     expected_table_data_row_number = 0
-#                     for expected_table_data_row_number in range(0,len(expected_table_step_data)-1,1):
-#                         for every_column in every_row:
-#                             temp_actual_table_data.append(expected_table_step_data[expected_table_data_row_number][0])
-#                             temp_actual_table_data.append(row_number)
-#                             temp_actual_table_data.append(every_column)
-#                             temp_actual_table_data.append(expected_table_step_data[expected_table_data_row_number][3])
-#                             temp_actual_table_data.append(expected_table_step_data[expected_table_data_row_number][4])
-#                             expected_table_data_row_number = expected_table_data_row_number + 1
-#                         formatted_actual_table_data.append(temp_actual_table_data)
-#                         row_number = row_number+1
-#                 
-            except Exception, e:
-                errMsg = "Unable to get table element. Please check if the correct information has been provided."
-                Exception_Info(sModuleInfo, errMsg)
-        
-#         expected_table_data_set = []
-#         row_index = 1
-#         for each_row in expected_table_step_data:
-#             if each_row[1] == str(row_index):
-#                 temp_row_holder = []
-#                 for each_item_in_row in each_row:
-#                     temp_row_holder.append(step_data[0][row_index][2])
-#             row_index= int(row_index) + 1  
+# ##Things to do:
+# #1) get the table data from the element step data
+# #2) for expected data, for each row in the step_data: 
+# #   if subfield row is not empty and length of step-data = 5:
+# #   for each_row in the step_data, append item in a list for a particular row 
+# def Validate_Table(step_data):    
+#     sModuleInfo = inspect.stack()[0][3] + " : " + inspect.getmoduleinfo(__file__).name
+#     try:
+#         new_data_group_index = 0
+#         for each in step_data[0]:
+#             if len(each) != 5:
+#                 new_data_group_index = new_data_group_index + 1
+#             else:
+#                 get_element_last_item = new_data_group_index - 1
+#                 print get_element_last_item
+#                 break
 #         
-#         print "a"
-    except Exception, e:
-        exc_type, exc_obj, exc_tb = sys.exc_info()        
-        fname = os.path.split(exc_tb.tb_frame.f_code.co_filename)[1]
-        Error_Detail = ((str(exc_type).replace("type ", "Error Type: ")) + ";" +  "Error Message: " + str(exc_obj) +";" + "File Name: " + fname + ";" + "Line: "+ str(exc_tb.tb_lineno))
-        CommonUtil.ExecLog(sModuleInfo, "Could not find your element.  Error: %s"%(Error_Detail), 3,local_run)
-        return "failed" 
-    
+#         if get_element_last_item == 0:
+#             element_step_data = step_data[0][0]
+#         else:        
+#             element_step_data = step_data[0][0:get_element_last_item:1]
+#         ##print statement to be removed
+#         print element_step_data
+#         returned_step_data_list = Validate_Step_Data([element_step_data]) 
+#         if ((returned_step_data_list == []) or (returned_step_data_list == "failed")):
+#             return "failed"
+#         else:
+#             try:
+#                 oCompare = CompareModule()
+#                 expected_table_step_data = step_data[0][new_data_group_index+1:len(step_data[0])-1:1]             
+#                 print expected_table_step_data
+#                 actual_table_dataset = Get_Table_Elements(returned_step_data_list[0], returned_step_data_list[1], returned_step_data_list[2], returned_step_data_list[3], returned_step_data_list[4])
+#                 master_actual = []
+#                 row_num = 1
+#                 for each_row in actual_table_dataset:
+#                     temp_row_holder = []
+#                     col_num = 1
+#                     for each_col in each_row:
+#                         temp_column_holder = []
+#                         temp_column_holder.append(col_num)
+#                         temp_column_holder.append(row_num)
+#                         temp_column_holder.append(each_col)
+#                         temp_row_holder.append(temp_column_holder)
+#                         col_num = col_num + 1
+#                     master_actual.append(temp_row_holder)
+#                     row_num = row_num + 1
+#                 
+#                 for every_expected_table_row in expected_table_step_data:
+#                     for every_master_row in master_actual:
+#                         if every_master_row[1] == every_expected_table_row[1]:
+#                             every_master_row.insert(0,every_expected_table_row[0])
+#                         
+#                     
+#                 
+#                 try:
+#                     status = oCompare.compare(expected_table_step_data, master_actual)
+#                     print status
+#                 except Exception, e:
+#                     errMsg = "Error when comparing the expected and actual data."
+#                     Exception_Info(sModuleInfo, errMsg)
+# 
+# 
+#                 #actual_table_dataset = Get_Table_Elements('tag', 'tbody')
+# #                 row_number = 0
+# #                 formatted_actual_table_data= []
+# #                 temp_actual_table_data = []
+# #                 for every_row in actual_table_dataset:
+# #                     #for every_expected_data_row in expected_table_step_data:
+# #                     expected_table_data_row_number = 0
+# #                     for expected_table_data_row_number in range(0,len(expected_table_step_data)-1,1):
+# #                         for every_column in every_row:
+# #                             temp_actual_table_data.append(expected_table_step_data[expected_table_data_row_number][0])
+# #                             temp_actual_table_data.append(row_number)
+# #                             temp_actual_table_data.append(every_column)
+# #                             temp_actual_table_data.append(expected_table_step_data[expected_table_data_row_number][3])
+# #                             temp_actual_table_data.append(expected_table_step_data[expected_table_data_row_number][4])
+# #                             expected_table_data_row_number = expected_table_data_row_number + 1
+# #                         formatted_actual_table_data.append(temp_actual_table_data)
+# #                         row_number = row_number+1
+# #                 
+#             except Exception, e:
+#                 errMsg = "Unable to get table element. Please check if the correct information has been provided."
+#                 Exception_Info(sModuleInfo, errMsg)
+#         
+# #         expected_table_data_set = []
+# #         row_index = 1
+# #         for each_row in expected_table_step_data:
+# #             if each_row[1] == str(row_index):
+# #                 temp_row_holder = []
+# #                 for each_item_in_row in each_row:
+# #                     temp_row_holder.append(step_data[0][row_index][2])
+# #             row_index= int(row_index) + 1  
+# #         
+# #         print "a"
+#     except Exception, e:
+#         exc_type, exc_obj, exc_tb = sys.exc_info()        
+#         fname = os.path.split(exc_tb.tb_frame.f_code.co_filename)[1]
+#         Error_Detail = ((str(exc_type).replace("type ", "Error Type: ")) + ";" +  "Error Message: " + str(exc_obj) +";" + "File Name: " + fname + ";" + "Line: "+ str(exc_tb.tb_lineno))
+#         CommonUtil.ExecLog(sModuleInfo, "Could not find your element.  Error: %s"%(Error_Detail), 3,local_run)
+#         return "failed" 
+#     
     
     
 def Get_Element(element_parameter,element_value,reference_parameter=False,reference_value=False,reference_is_parent_or_child=False,get_all_unvalidated_elements=False):
