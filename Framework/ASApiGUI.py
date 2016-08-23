@@ -5,65 +5,29 @@ Created on August 17, 2016
 '''
 
 import sys
-from PyQt4 import QtGui
+from PyQt4 import QtGui, QtCore
 import os
-sys.path.append(os.path.dirname(os.getcwd()))
-from Utilities import ASApiGUIdesign
-
-
 import time
 import requests
 import json
 import MainDriverApi
+from Utilities import ASApiGUIdesign
 from Utilities import ConfigModule, CommonUtil, FileUtilities
+sys.path.append(os.path.dirname(os.getcwd()))
 
 
-class GUIApp(QtGui.QMainWindow, ASApiGUIdesign.Ui_mainWindow):
-    def __init__(self, parent=None):
-        super(GUIApp, self).__init__(parent)
-        self.setupUi(self)
-        self.connectBtn.clicked.connect(self.connect_server)
-        self.cancelBtn.clicked.connect(self.close_gui)
-
-    def connect_server(self):
-        username = unicode(self.username.toPlainText()).strip()
-        password = unicode(self.password.text()).strip()
-        project = unicode(self.project.toPlainText()).strip()
-        team = unicode(self.team.toPlainText()).strip()
-
-        user_info_object = {
-            'username': username,
-            'password': password,
-            'project': project,
-            'team': team
-        }
-
-        """self.central_widget = QtGui.QStackedWidget()
-        self.setCentralWidget(self.central_widget)
-        logged_in_widget = LoggedWidget(self)
-        self.central_widget.addWidget(logged_in_widget)
-        self.central_widget.setCurrentWidget(logged_in_widget)"""
-
-        r = self.Get('login_api', user_info_object)
-        print "Authentication check for user='%s', project='%s', team='%s'" % (username, project, team)
-        if r:
-            print "Authentication Successful"
-            machine_object = self.update_machine(self.dependency_collection())
-            if machine_object['registered']:
-                tester_id = machine_object['name']
-                run_again = self.RunProcess(tester_id)
-                if run_again:
-                    self.connect_server()
-            else:
-                return False
-        else:
-            print "Authentication Failed"
-            return False
+class ApiThread(QtCore.QThread):
+    def __init__(self, user_info):
+        QtCore.QThread.__init__(self)
+        self.username = user_info['username']
+        self.password = user_info['password']
+        self.project = user_info['project']
+        self.team = user_info['team']
+        self.server = user_info['server']
+        self.port = user_info['port']
 
     def form_uri(self, resource_path):
-        server = unicode(self.server.toPlainText()).strip()
-        port = int(unicode(self.port.toPlainText()).strip())
-        base_server_address = 'http://%s:%s/' % (str(server), str(port))
+        base_server_address = 'http://%s:%s/' % (str(self.server), str(self.port))
         return base_server_address + resource_path + '/'
 
     def Get(self, resource_path, payload={}):
@@ -118,9 +82,6 @@ class GUIApp(QtGui.QMainWindow, ASApiGUIdesign.Ui_mainWindow):
             version = ConfigModule.get_config_value(product_, 'version')
             productVersion = branch + ":" + version
 
-            project = unicode(self.project.toPlainText())
-            team = unicode(self.team.toPlainText())
-
             if not dependency:
                 dependency = ""
             _d = {}
@@ -140,8 +101,8 @@ class GUIApp(QtGui.QMainWindow, ASApiGUIdesign.Ui_mainWindow):
                 'local_ip': local_ip,
                 'productVersion': productVersion,
                 'dependency': dependency,
-                'project': project,
-                'team': team
+                'project': self.project,
+                'team': self.team
             }
             r = self.Get('update_automation_machine_api', update_object)
             if r['registered']:
@@ -160,9 +121,7 @@ class GUIApp(QtGui.QMainWindow, ASApiGUIdesign.Ui_mainWindow):
         try:
             dependency_tag = 'Dependency'
             dependency_option = ConfigModule.get_all_option(dependency_tag)
-            project = unicode(self.project.toPlainText())
-            team = unicode(self.team.toPlainText())
-            r = self.Get('get_all_dependency_name_api', {'project': project, 'team': team})
+            r = self.Get('get_all_dependency_name_api', {'project': self.project, 'team': self.team})
             obtained_list = [x.lower() for x in r]
             # print "Dependency: ",dependency_list
             missing_list = list(set(obtained_list) - set(dependency_option))
@@ -195,6 +154,67 @@ class GUIApp(QtGui.QMainWindow, ASApiGUIdesign.Ui_mainWindow):
             Error_Detail = ((str(exc_type).replace("type ", "Error Type: ")) + ";" + "Error Message: " + str(
                 exc_obj) + ";" + "File Name: " + fname + ";" + "Line: " + str(exc_tb.tb_lineno))
             print Error_Detail
+
+
+class GUIApp(QtGui.QMainWindow, ASApiGUIdesign.Ui_mainWindow):
+    def __init__(self, parent=None):
+        super(GUIApp, self).__init__(parent)
+        self.setupUi(self)
+        self.connectBtn.clicked.connect(self.connect_server)
+        self.cancelBtn.clicked.connect(self.close_gui)
+
+    def connect_server(self):
+        username = unicode(self.username.toPlainText()).strip()
+        password = unicode(self.password.text()).strip()
+        project = unicode(self.project.toPlainText()).strip()
+        team = unicode(self.team.toPlainText()).strip()
+        server = unicode(self.server.toPlainText()).strip()
+        port = int(unicode(self.port.toPlainText()).strip())
+
+        user_info_object = {
+            'username': username,
+            'password': password,
+            'project': project,
+            'team': team,
+            'server': server,
+            'port': port
+        }
+
+        """self.central_widget = QtGui.QStackedWidget()
+        self.setCentralWidget(self.central_widget)
+        logged_in_widget = LoggedWidget(self)
+        self.central_widget.addWidget(logged_in_widget)
+        self.central_widget.setCurrentWidget(logged_in_widget)"""
+
+        self.threads = []
+
+        r = self.Get('login_api', user_info_object)
+        print "Authentication check for user='%s', project='%s', team='%s'" % (username, project, team)
+        if r:
+            print "Authentication Successful"
+            api = ApiThread(user_info_object)
+            self.threads.append(api)
+            api.start()
+            machine_object = api.update_machine(api.dependency_collection())
+            if machine_object['registered']:
+                tester_id = machine_object['name']
+                run_again = api.RunProcess(tester_id)
+                if run_again:
+                    api.connect_server()
+            else:
+                return False
+        else:
+            print "Authentication Failed"
+            return False
+
+    def form_uri(self, resource_path):
+        server = unicode(self.server.toPlainText()).strip()
+        port = int(unicode(self.port.toPlainText()).strip())
+        base_server_address = 'http://%s:%s/' % (str(server), str(port))
+        return base_server_address + resource_path + '/'
+
+    def Get(self, resource_path, payload={}):
+        return requests.get(self.form_uri(resource_path), params=json.dumps(payload)).json()
 
         """def new_window(self):
         app = QtGui.QApplication(sys.argv)
