@@ -18,7 +18,6 @@ import MainDriverApi
 from Utilities import ConfigModule, CommonUtil, FileUtilities
 
 
-
 class GUIApp(QtGui.QMainWindow, ASApiGUIdesign.Ui_mainWindow):
     def __init__(self, parent=None):
         super(GUIApp, self).__init__(parent)
