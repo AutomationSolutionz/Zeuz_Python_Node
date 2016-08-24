@@ -380,6 +380,69 @@ def Wait_For_New_Element(step_data):
             return "failed"
 
 
+#Validating text from an element given information regarding the expected text
+def Validate_Text(step_data):
+    sModuleInfo = inspect.stack()[0][3] + " : " + inspect.getmoduleinfo(__file__).name
+    CommonUtil.ExecLog(sModuleInfo, "Function: Compare_Text_Data", 1,local_run)
+    try:
+        if ((len(step_data) != 1) or (1 < len(step_data[0]) >= 5)):
+            CommonUtil.ExecLog(sModuleInfo, "The information in the data-set(s) are incorrect. Please provide accurate data set(s) information.", 3,local_run)
+            return "failed"
+        else:
+            expected_text_data = step_data[0][1][2]
+            if step_data[0][0][0] == "current_page":
+                try:
+                    Element = Get_Element('tag', 'html')
+                except Exception, e:
+                    errMsg = "Could not get element from the current page."
+                    Exception_Info(sModuleInfo, errMsg)
+            else:
+                element_step_data = Get_Element_Step_Data(step_data)
+                #element_step_data = step_data[0][0:len(step_data[0])-1:1]
+                returned_step_data_list = Validate_Step_Data(element_step_data) 
+                if ((returned_step_data_list == []) or (returned_step_data_list == "failed")):
+                    return "failed"
+                else:
+                    try:
+                        Element = Get_Element(returned_step_data_list[0], returned_step_data_list[1], returned_step_data_list[2], returned_step_data_list[3], returned_step_data_list[4])    
+                    except Exception, e:
+                        errMsg = "Could not get element based on the information provided."
+                        Exception_Info(sModuleInfo, errMsg)
+                
+            list_of_element_text = Element.text.split('\n')
+            visible_list_of_element_text = []
+            for each_text_item in list_of_element_text:
+                if each_text_item != "":
+                    visible_list_of_element_text.append(each_text_item)                
+            if step_data[0][1][0] == "validate partial text":
+                actual_text_data = visible_list_of_element_text
+                CommonUtil.ExecLog(sModuleInfo, "Expected Text: " + expected_text_data, 1,local_run)
+                CommonUtil.ExecLog(sModuleInfo, "Actual Text: " + str(actual_text_data), 1,local_run)
+                if (expected_text_data in each_item for each_item in actual_text_data):
+                    CommonUtil.ExecLog(sModuleInfo, "The text has been validated by a partial match.", 1,local_run)
+                    return "passed"
+                else: 
+                    CommonUtil.ExecLog(sModuleInfo, "Unable to validate using partial match.", 3,local_run)
+                    return "failed"
+            if step_data[0][1][0] == "validate full text":
+                actual_text_data = visible_list_of_element_text
+                CommonUtil.ExecLog(sModuleInfo, "Expected Text: " + expected_text_data, 1,local_run)
+                CommonUtil.ExecLog(sModuleInfo, "Actual Text: " + str(actual_text_data), 1,local_run)
+                if (expected_text_data in actual_text_data):
+                    CommonUtil.ExecLog(sModuleInfo, "The text has been validated by using complete match.", 1,local_run)
+                    return "passed"
+                else:
+                    CommonUtil.ExecLog(sModuleInfo, "Unable to validate using complete match.", 3,local_run) 
+                    return "failed" 
+            
+    except Exception, e:
+        exc_type, exc_obj, exc_tb = sys.exc_info()        
+        fname = os.path.split(exc_tb.tb_frame.f_code.co_filename)[1]
+        Error_Detail = ((str(exc_type).replace("type ", "Error Type: ")) + ";" +  "Error Message: " + str(exc_obj) +";" + "File Name: " + fname + ";" + "Line: "+ str(exc_tb.tb_lineno))
+        CommonUtil.ExecLog(sModuleInfo, "Could not compare text as requested.  Error: %s"%(Error_Detail), 3,local_run)
+        return "failed"
+    
+
 #Handles actions for the sequential logic, based on the input from the mentioned function
 def Action_Handler(action_step_data, action_name):
     sModuleInfo = inspect.stack()[0][3] + " : " + inspect.getmoduleinfo(__file__).name
@@ -476,6 +539,7 @@ def Sequential_Actions(step_data):
         print "%s"%Error_Detail
         return "failed"
 
+
 #Validation of step data passed on by the user
 def Validate_Step_Data(step_data):
     sModuleInfo = inspect.stack()[0][3] + " : " + inspect.getmoduleinfo(__file__).name
@@ -511,189 +575,196 @@ def Validate_Step_Data(step_data):
             CommonUtil.ExecLog(sModuleInfo, "Could not find the new page element requested.  Error: %s"%(Error_Detail), 3,local_run)
             return "failed"
 
+    
 
-#Validating text from an element given information regarding the expected text
-def Validate_Text(step_data):
+def Model_Actual_Data(actual_data):
     sModuleInfo = inspect.stack()[0][3] + " : " + inspect.getmoduleinfo(__file__).name
-    CommonUtil.ExecLog(sModuleInfo, "Function: Compare_Text_Data", 1,local_run)
+    CommonUtil.ExecLog(sModuleInfo, "Function: Model_Actual_Data", 1,local_run)
     try:
-        if ((len(step_data) != 1) or (1 < len(step_data[0]) >= 5)):
-            CommonUtil.ExecLog(sModuleInfo, "The information in the data-set(s) are incorrect. Please provide accurate data set(s) information.", 3,local_run)
-            return "failed"
-        else:
-            expected_text_data = step_data[0][1][2]
-            if step_data[0][0][0] == "current_page":
-                try:
-                    Element = Get_Element('tag', 'html')
-                except Exception, e:
-                    errMsg = "Could not get element from the current page."
-                    Exception_Info(sModuleInfo, errMsg)
-            else:
-                element_step_data = step_data[0][0:len(step_data[0])-1:1]
-                returned_step_data_list = Validate_Step_Data(element_step_data) 
-                if ((returned_step_data_list == []) or (returned_step_data_list == "failed")):
-                    return "failed"
-                else:
-                    try:
-                        Element = Get_Element(returned_step_data_list[0], returned_step_data_list[1], returned_step_data_list[2], returned_step_data_list[3], returned_step_data_list[4])    
-                    except Exception, e:
-                        errMsg = "Could not get element based on the information provided."
-                        Exception_Info(sModuleInfo, errMsg)
-                
-            list_of_element_text = Element.text.split('\n')
-            visible_list_of_element_text = []
-            for each_text_item in list_of_element_text:
-                if each_text_item != "":
-                    visible_list_of_element_text.append(each_text_item)                
-            if step_data[0][1][0] == "validate partial text":
-                actual_text_data = visible_list_of_element_text
-                CommonUtil.ExecLog(sModuleInfo, "Expected Text: " + expected_text_data, 1,local_run)
-                CommonUtil.ExecLog(sModuleInfo, "Actual Text: " + str(actual_text_data), 1,local_run)
-                if (expected_text_data in each_item for each_item in actual_text_data):
-                    CommonUtil.ExecLog(sModuleInfo, "The text has been validated by a partial match.", 1,local_run)
-                    return "passed"
-                else: 
-                    CommonUtil.ExecLog(sModuleInfo, "Unable to validate using partial match.", 3,local_run)
-                    return "failed"
-            if step_data[0][1][0] == "validate full text":
-                actual_text_data = visible_list_of_element_text
-                CommonUtil.ExecLog(sModuleInfo, "Expected Text: " + expected_text_data, 1,local_run)
-                CommonUtil.ExecLog(sModuleInfo, "Actual Text: " + str(actual_text_data), 1,local_run)
-                if (expected_text_data in actual_text_data):
-                    CommonUtil.ExecLog(sModuleInfo, "The text has been validated by using complete match.", 1,local_run)
-                    return "passed"
-                else:
-                    CommonUtil.ExecLog(sModuleInfo, "Unable to validate using complete match.", 3,local_run) 
-                    return "failed" 
-                                        
-#             expected_text_dataset = [step_data[0]]#[0][1]##[[('Starting from*', 'car1', '$101,770', False, False)]]#[step_data[0]]#[0][1]
-#             returned_expected_step_data = Validate_Step_Data(step_data[1])
-#             if ((returned_expected_step_data == []) or (returned_expected_step_data == "failed")):
-#                 return "failed"
-#             else:
-#                 try:
-#                     Element = Get_Element(returned_expected_step_data[0], returned_expected_step_data[1], returned_expected_step_data[2], returned_expected_step_data[3], returned_expected_step_data[4])
-#                     #need to verify
-#                     actual_text_dataset = [[('text', Element.text, False, False)]]#[[(u'Starting from*', 'car1', u'$101,770', False, False)]]
-#                     
-#                 except Exception, e:
-#                     exc_type, exc_obj, exc_tb = sys.exc_info()        
-#                     fname = os.path.split(exc_tb.tb_frame.f_code.co_filename)[1]
-#                     Error_Detail = ((str(exc_type).replace("type ", "Error Type: ")) + ";" +  "Error Message: " + str(exc_obj) +";" + "File Name: " + fname + ";" + "Line: "+ str(exc_tb.tb_lineno))
-#                     CommonUtil.ExecLog(sModuleInfo, "Could not compare text as requested.  Error: %s"%(Error_Detail), 3,local_run)
-#                     return "failed"    
-#             status=oCompare.compare(expected_text_dataset,actual_text_dataset)
-#             print status
-            
+        Modeled_Data_Set = []
+        row_count = 1
+        for each_row in actual_data:
+            column_count = 1
+            for each_column in each_row:            
+                temp_data_model = ["column "+ str(column_count), "row "+str(row_count)]
+                temp_data_model.append(each_column.strip())
+                #temp_data_model.append("False")
+                #temp_data_model.append("False")
+                Modeled_Data_Set.append(temp_data_model)
+                column_count = column_count +1
+            row_count = row_count+1
+        return Modeled_Data_Set  
     except Exception, e:
         exc_type, exc_obj, exc_tb = sys.exc_info()        
         fname = os.path.split(exc_tb.tb_frame.f_code.co_filename)[1]
         Error_Detail = ((str(exc_type).replace("type ", "Error Type: ")) + ";" +  "Error Message: " + str(exc_obj) +";" + "File Name: " + fname + ";" + "Line: "+ str(exc_tb.tb_lineno))
-        CommonUtil.ExecLog(sModuleInfo, "Could not compare text as requested.  Error: %s"%(Error_Detail), 3,local_run)
+        CommonUtil.ExecLog(sModuleInfo, "Could not model actual model data.  Error: %s"%(Error_Detail), 3,local_run)
+        return "failed"
+
+
+def Model_Expected_Data(expected_data):
+    sModuleInfo = inspect.stack()[0][3] + " : " + inspect.getmoduleinfo(__file__).name
+    CommonUtil.ExecLog(sModuleInfo, "Function: Model_Actual_Data", 1,local_run)
+    try:
+        Modeled_Data_Set = []
+        row_count = 1
+        for each_row in expected_data:
+            column_count = 1
+            temp_data_model = []
+            for each_column in each_row:
+                if column_count <= 3:            
+                    temp_data_model.append(each_column.strip())
+                    column_count = column_count +1
+                else:
+                    break
+            Modeled_Data_Set.append(temp_data_model)
+            row_count = row_count+1
+        return Modeled_Data_Set  
+    except Exception, e:
+        exc_type, exc_obj, exc_tb = sys.exc_info()        
+        fname = os.path.split(exc_tb.tb_frame.f_code.co_filename)[1]
+        Error_Detail = ((str(exc_type).replace("type ", "Error Type: ")) + ";" +  "Error Message: " + str(exc_obj) +";" + "File Name: " + fname + ";" + "Line: "+ str(exc_tb.tb_lineno))
+        CommonUtil.ExecLog(sModuleInfo, "Could not model actual model data.  Error: %s"%(Error_Detail), 3,local_run)
+        return "failed"
+
+    
+def Model_Expected_Column_Row(expect_data):
+    #collect all column name
+    sModuleInfo = inspect.stack()[0][3] + " : " + inspect.getmoduleinfo(__file__).name
+    CommonUtil.ExecLog(sModuleInfo, "Function: Model_Actual_Data", 1,local_run)
+    try:
+        column_names = []
+        row_names = []
+        for each in expect_data:
+            
+            if each[0] not in column_names:
+                column_names.append(each[0])
+            
+            if each[1] not in row_names:
+                row_names.append(each[1])
+        return  column_names, row_names
+    except Exception, e:
+        exc_type, exc_obj, exc_tb = sys.exc_info()        
+        fname = os.path.split(exc_tb.tb_frame.f_code.co_filename)[1]
+        Error_Detail = ((str(exc_type).replace("type ", "Error Type: ")) + ";" +  "Error Message: " + str(exc_obj) +";" + "File Name: " + fname + ";" + "Line: "+ str(exc_tb.tb_lineno))
+        CommonUtil.ExecLog(sModuleInfo, "Could not model expected column row.  Error: %s"%(Error_Detail), 3,local_run)
         return "failed"
     
 
-# ##Things to do:
-# #1) get the table data from the element step data
-# #2) for expected data, for each row in the step_data: 
-# #   if subfield row is not empty and length of step-data = 5:
-# #   for each_row in the step_data, append item in a list for a particular row 
-# def Validate_Table(step_data):    
-#     sModuleInfo = inspect.stack()[0][3] + " : " + inspect.getmoduleinfo(__file__).name
-#     try:
-#         new_data_group_index = 0
-#         for each in step_data[0]:
-#             if len(each) != 5:
-#                 new_data_group_index = new_data_group_index + 1
-#             else:
-#                 get_element_last_item = new_data_group_index - 1
-#                 print get_element_last_item
-#                 break
-#         
-#         if get_element_last_item == 0:
-#             element_step_data = step_data[0][0]
-#         else:        
-#             element_step_data = step_data[0][0:get_element_last_item:1]
-#         ##print statement to be removed
-#         print element_step_data
-#         returned_step_data_list = Validate_Step_Data([element_step_data]) 
-#         if ((returned_step_data_list == []) or (returned_step_data_list == "failed")):
-#             return "failed"
-#         else:
-#             try:
-#                 oCompare = CompareModule()
-#                 expected_table_step_data = step_data[0][new_data_group_index+1:len(step_data[0])-1:1]             
-#                 print expected_table_step_data
-#                 actual_table_dataset = Get_Table_Elements(returned_step_data_list[0], returned_step_data_list[1], returned_step_data_list[2], returned_step_data_list[3], returned_step_data_list[4])
-#                 master_actual = []
-#                 row_num = 1
-#                 for each_row in actual_table_dataset:
-#                     temp_row_holder = []
-#                     col_num = 1
-#                     for each_col in each_row:
-#                         temp_column_holder = []
-#                         temp_column_holder.append(col_num)
-#                         temp_column_holder.append(row_num)
-#                         temp_column_holder.append(each_col)
-#                         temp_row_holder.append(temp_column_holder)
-#                         col_num = col_num + 1
-#                     master_actual.append(temp_row_holder)
-#                     row_num = row_num + 1
-#                 
-#                 for every_expected_table_row in expected_table_step_data:
-#                     for every_master_row in master_actual:
-#                         if every_master_row[1] == every_expected_table_row[1]:
-#                             every_master_row.insert(0,every_expected_table_row[0])
-#                         
-#                     
-#                 
-#                 try:
-#                     status = oCompare.compare(expected_table_step_data, master_actual)
-#                     print status
-#                 except Exception, e:
-#                     errMsg = "Error when comparing the expected and actual data."
-#                     Exception_Info(sModuleInfo, errMsg)
-# 
-# 
-#                 #actual_table_dataset = Get_Table_Elements('tag', 'tbody')
-# #                 row_number = 0
-# #                 formatted_actual_table_data= []
-# #                 temp_actual_table_data = []
-# #                 for every_row in actual_table_dataset:
-# #                     #for every_expected_data_row in expected_table_step_data:
-# #                     expected_table_data_row_number = 0
-# #                     for expected_table_data_row_number in range(0,len(expected_table_step_data)-1,1):
-# #                         for every_column in every_row:
-# #                             temp_actual_table_data.append(expected_table_step_data[expected_table_data_row_number][0])
-# #                             temp_actual_table_data.append(row_number)
-# #                             temp_actual_table_data.append(every_column)
-# #                             temp_actual_table_data.append(expected_table_step_data[expected_table_data_row_number][3])
-# #                             temp_actual_table_data.append(expected_table_step_data[expected_table_data_row_number][4])
-# #                             expected_table_data_row_number = expected_table_data_row_number + 1
-# #                         formatted_actual_table_data.append(temp_actual_table_data)
-# #                         row_number = row_number+1
-# #                 
-#             except Exception, e:
-#                 errMsg = "Unable to get table element. Please check if the correct information has been provided."
-#                 Exception_Info(sModuleInfo, errMsg)
-#         
-# #         expected_table_data_set = []
-# #         row_index = 1
-# #         for each_row in expected_table_step_data:
-# #             if each_row[1] == str(row_index):
-# #                 temp_row_holder = []
-# #                 for each_item_in_row in each_row:
-# #                     temp_row_holder.append(step_data[0][row_index][2])
-# #             row_index= int(row_index) + 1  
-# #         
-# #         print "a"
-#     except Exception, e:
-#         exc_type, exc_obj, exc_tb = sys.exc_info()        
-#         fname = os.path.split(exc_tb.tb_frame.f_code.co_filename)[1]
-#         Error_Detail = ((str(exc_type).replace("type ", "Error Type: ")) + ";" +  "Error Message: " + str(exc_obj) +";" + "File Name: " + fname + ";" + "Line: "+ str(exc_tb.tb_lineno))
-#         CommonUtil.ExecLog(sModuleInfo, "Could not find your element.  Error: %s"%(Error_Detail), 3,local_run)
-#         return "failed" 
-#     
+
+##Helper function for validate table - Exact Matching
+def Exact_Validate_Table_Helper(expected_table_data, actual_table_data, validation_option):
+    sModuleInfo = inspect.stack()[0][3] + " : " + inspect.getmoduleinfo(__file__).name
+    try:
+        match_count = 0
+        mismatch_count = 0
+        matched_list = []
+        mismatch_list = []
+        
+        actual_table_length = len(actual_table_data)
+        expected_table_length = len(expected_table_data)
+        if (actual_table_length != expected_table_length):
+            CommonUtil.ExecLog(sModuleInfo, "Size of the tables do not match!", 2,local_run)  
+            
+        for each_item in expected_table_data:
+            if validation_option == "default":
+                ##Do default action
+                if each_item in actual_table_data:
+                    matched_list.append(each_item)
+                    match_count = match_count + 1
+                else:
+                    mismatch_list.append(each_item)
+                    mismatch_count = mismatch_count + 1
+                    
+            elif validation_option == "case_insensitive":
+                ##Do case upper
+                print "b"
+            
+        #sequential logical flow
+        if mismatch_count == 0:
+            CommonUtil.ExecLog(sModuleInfo, "There were 0 mismatches! Table has been validated.", 1,local_run)
+            CommonUtil.ExecLog(sModuleInfo, "List of matched items: %s"%(matched_list), 1, local_run)
+            CommonUtil.ExecLog(sModuleInfo, "List of mismatched items: %s"%(mismatch_list), 1, local_run)
+            return "passed"
+        else:
+            CommonUtil.ExecLog(sModuleInfo, "There were mismatches! Table has invalid data.", 3,local_run)
+            CommonUtil.ExecLog(sModuleInfo, "List of matched items: %s"%(matched_list), 3, local_run)
+            CommonUtil.ExecLog(sModuleInfo, "List of mismatched items: %s"%(mismatch_list), 3, local_run)
+            return "failed"
+            
+        #print mismatch_count, match_count, mismatch_list, matched_list 
+                       
+    except Exception, e:
+        errMsg = "Error when comparing the exact expected and actual data."
+        Exception_Info(sModuleInfo, errMsg)  
+                    
+                      
+#Validate table
+def Validate_Table(step_data):    
+    sModuleInfo = inspect.stack()[0][3] + " : " + inspect.getmoduleinfo(__file__).name
+    try:
+        #element_step_data = Get_Element_Step_Data(step_data)
+        table_validate_index = 0
+        for each in step_data[0]:
+            if each[1]=="":
+                table_validate_index = table_validate_index + 1
+            else:
+                get_element_last_item = table_validate_index - 1
+                print get_element_last_item
+                break
+          
+        if get_element_last_item == 0:
+            element_step_data = step_data[0][0]
+        else:        
+            element_step_data = step_data[0][0:get_element_last_item:1]
+        ##print statement to be removed
+        print element_step_data
+        returned_step_data_list = Validate_Step_Data([element_step_data]) 
+        if ((returned_step_data_list == []) or (returned_step_data_list == "failed")):
+            return "failed"
+        else:
+            try:
+                #oCompare = CompareModule()
+                expected_table_step_data = (step_data[0][table_validate_index+1:len(step_data[0])-1:1])
+                actual_table_dataset = Get_Table_Elements(returned_step_data_list[0], returned_step_data_list[1], returned_step_data_list[2], returned_step_data_list[3], returned_step_data_list[4])
+                modelled_actual_table_step_data = Model_Actual_Data(actual_table_dataset)
+                #expected_table_step_data = [[u'Camera Model', u'Nikon D5200 Kit'], [u'Lens Mount', u'Nikon F Bayonet Mount'], [u'Image Sensor', u''], [u'NFC Enabled', u'No'], [u'Sensor Type', u'CMOS'], [u'Sensor Size Format', u'DX'], [u'Effective Pixels', u'24.1 MP'], [u'Total Pixels', u'24.71 MP'], [u'Colour Filter System', u'Yes'], [u'Colour Space', u'Yes'], [u'Dust Reduction', u'Yes'], [u'Processor', u'EXPEED'], [u'Viewfinder', u''], [u'Viewfinder Type', u'Eye-Level Pentamirror Single-Lens Reflex Viewfinder'], [u'Effective Magnification', u'0.78x (Approx.)'], [u'Diopter Adjustment', u''], [u'LCD Features', u''], [u'LCD Size', u'3 in'], [u'LCD Resolution', u'921,000 Dots'], [u'Swivel LCD', u'Yes'], [u'Live Preview', u'Yes'], [u'Auto Focus', u''], [u'AF Type', u'9, 21 or 39 point Dynamic-area AF; Auto-area AF; Single-point AF; 3D-tracking (39 points)'], [u'Focusing Modes 1', u'Auto AF-S/AF-C selection (AF-A); Continuous-servo (AF-C); Face-Priority AF available in Live View only and D-Movie only; Full-time Servo (AF-A) available in Live View only and D-Movie'], [u'Focusing Modes 2', u'Manual (M) with electronic rangefinder; Normal area; Single-servo AF (AF-S); Wide Area'], [u'AF Points', u'39'], [u'Exposure', u''], [u'ISO', u'100 - 6400'], [u'White Balance Settings 1', u'Auto; Cloudy; Direct Sunlight; Flash; Fluorescent (7 Types); Incandescent; Preset Manual; Shade'], [u'Auto White Balance', u'Yes'], [u'White Balance Bracketing', u'Yes'], [u'Exposure Compensation', u'\xb15 EV in Increments of 1/3 or 1/2 EV'], [u'Shutter', u''], [u'Shutter Type', u'Electronically Controlled Vertical-Travel Focal-Plane'], [u'Shutter Speeds', u'1/4000 to 30 sec. in steps of 1/3 or 1/2 EV'], [u'Self-Timer', u'Yes'], [u'Drive', u''], [u'Flash', u''], [u'Built-in Flash Type', u'TTL: i-TTL Flash'], [u'Flash Sync', u'Yes'], [u'Video', u''], [u'Video Output Format', u'NTSC'], [u'Movie File Formats', u'MOV'], [u'Max Video Resolution-24 fps Minimum', u'1920 x 1080'], [u'Playback', u''], [u'Image Playback Modes 1', u'Auto Image Rotation; Full-Frame and Thumbnail (4, 9, or 72 images or calendar); Highlights; Histogram Display; Image Comment; Movie Playback; Movie Slideshow; Playback with Zoom; Slideshow'], [u'Storage & Interface', u''], [u'Storage Media', u'SD; SDHC; SDXC'], [u'Data Interface', u'HDMI Output: Type C Mini-Pin HDMI Connector; Hi-Speed USB; Stereo Microphone Input'], [u'Wi-Fi', u'Yes'], [u'NFC', u'No'], [u'Bluetooth', u'Yes'], [u'Jpeg', u'Yes'], [u'Raw', u'Yes'], [u'Raw+Jpeg', u'Yes'], [u'Guided Shooting Mode', u'Yes'], [u'Languages Supported', u'Arabic; Brazilian Portuguese; Chinese (Simplified and Traditional); Czech; Danish; Dutch; English; Finnish; French; German; Greek; Hindi; Hungarian; Indonesian; Italian; Japanese; Korean; Norwegian; Polish; Portuguese; Romanian; Russian; Spanish; Swedish; Thai; Turkish; Ukrainian'], [u'Included Lens', u''], [u'Lens Frame Colour', u'Black'], [u'Lens Range', u'18-55mm'], [u'Stabilized', u'Yes'], [u'Model Number', u'18-55MM'], [u'Lens Weight', u'0.35G'], [u'Body Features', u''], [u'Stabilized Body', u'Yes'], [u'Body Colour', u'Black'], [u'Intelligent Shoe', u'Yes'], [u'Cable Release', u'Yes'], [u'Weather Sealed', u'No'], [u'Power', u''], [u'Battery Type', u'1 x EN-EL14a Rechargeable Li-ion Battery; EN-EL14 Rechargeable Li-ion Battery'], [u'Power Saving Modes', u'EN-EL14'], [u'Physical Features', u''], [u'Width', u'12.9 cm'], [u'Height', u'3.9 cm'], [u'Depth', u'7.8 cm'], [u'Weight', u'505 g'], [u"What's in the Box", u''], [u'Warranty Labour', u'180 Day(s)'], [u'Warranty Parts', u'180 Day(s)']]
+                modelled_expected_table_step_data = Model_Expected_Data(expected_table_step_data)
+                
+                try:
+                    validation_option=step_data[0][table_validate_index][2]
+                    if step_data[0][table_validate_index][0] == "exact":
+                        Exact_Validate_Table_Helper(modelled_expected_table_step_data, modelled_actual_table_step_data, validation_option)
+                    
+                    ##Will be added as an additional feature
+                    elif step_data[0][table_validate_index][0]!= "ignore_row":
+                        CommonUtil.ExecLog(sModuleInfo, "Function yet to be provided. Please wait for the update.", 2,local_run)
+                        return "failed"
+                    ##Will be added as an additional feature        
+                    elif step_data[0][table_validate_index][0]!= "ignore_column":
+                        CommonUtil.ExecLog(sModuleInfo, "Function yet to be provided. Please wait for the update.", 2,local_run)
+                        return "failed"
+                    else:
+                        CommonUtil.ExecLog(sModuleInfo, "The information in the table validation index is incorrect. Please provide the appropriate information", 3,local_run)
+                        return "failed"                        
+                                                        
+                    #status = oCompare.compare([expected_table_step_data], [modelled_actual_table_step_data])
+                    #print status
+                except Exception, e:
+                    errMsg = "Error when comparing the expected and actual data."
+                    Exception_Info(sModuleInfo, errMsg)
+           
+            except Exception, e:
+                errMsg = "Unable to get table element. Please check if the correct information has been provided."
+                Exception_Info(sModuleInfo, errMsg)
+         
+    except Exception, e:
+        exc_type, exc_obj, exc_tb = sys.exc_info()        
+        fname = os.path.split(exc_tb.tb_frame.f_code.co_filename)[1]
+        Error_Detail = ((str(exc_type).replace("type ", "Error Type: ")) + ";" +  "Error Message: " + str(exc_obj) +";" + "File Name: " + fname + ";" + "Line: "+ str(exc_tb.tb_lineno))
+        CommonUtil.ExecLog(sModuleInfo, "Could not find your element.  Error: %s"%(Error_Detail), 3,local_run)
+        return "failed" 
+     
     
     
 def Get_Element(element_parameter,element_value,reference_parameter=False,reference_value=False,reference_is_parent_or_child=False,get_all_unvalidated_elements=False):
@@ -1105,3 +1176,14 @@ def Exception_Info(sModuleInfo, errMsg):
     CommonUtil.ExecLog(sModuleInfo, errMsg + ".  Error: %s"%(Error_Detail), 3,local_run)
     return "failed"
 
+
+
+
+a = [1,2,3]
+
+b = 1
+
+if b in a:
+    print "found"
+else:
+    print "not found"    
