@@ -598,13 +598,62 @@ def Model_Actual_Data(actual_data):
         exc_type, exc_obj, exc_tb = sys.exc_info()        
         fname = os.path.split(exc_tb.tb_frame.f_code.co_filename)[1]
         Error_Detail = ((str(exc_type).replace("type ", "Error Type: ")) + ";" +  "Error Message: " + str(exc_obj) +";" + "File Name: " + fname + ";" + "Line: "+ str(exc_tb.tb_lineno))
-        CommonUtil.ExecLog(sModuleInfo, "Could not model actual model data.  Error: %s"%(Error_Detail), 3,local_run)
+        CommonUtil.ExecLog(sModuleInfo, "Could not model actual data.  Error: %s"%(Error_Detail), 3,local_run)
+        return "failed"
+
+
+def Model_Actual_Data_Ignoring_Column(actual_data):
+    sModuleInfo = inspect.stack()[0][3] + " : " + inspect.getmoduleinfo(__file__).name
+    CommonUtil.ExecLog(sModuleInfo, "Function: Model_Actual_Data_Ignoring_Column", 1,local_run)
+    try:
+        Modeled_Data_Set = []
+        row_count = 1
+        for each_row in actual_data:
+            column_count = 1
+            for each_column in each_row:            
+                temp_data_model = ["row "+str(row_count)]
+                temp_data_model.append(each_column.strip())
+                #temp_data_model.append("False")
+                #temp_data_model.append("False")
+                Modeled_Data_Set.append(temp_data_model)
+                column_count = column_count +1
+            row_count = row_count+1
+        return Modeled_Data_Set  
+    except Exception, e:
+        exc_type, exc_obj, exc_tb = sys.exc_info()        
+        fname = os.path.split(exc_tb.tb_frame.f_code.co_filename)[1]
+        Error_Detail = ((str(exc_type).replace("type ", "Error Type: ")) + ";" +  "Error Message: " + str(exc_obj) +";" + "File Name: " + fname + ";" + "Line: "+ str(exc_tb.tb_lineno))
+        CommonUtil.ExecLog(sModuleInfo, "Could not model actual data ignoring column.  Error: %s"%(Error_Detail), 3,local_run)
+        return "failed"
+    
+def Model_Actual_Data_Ignoring_Row(actual_data):
+    sModuleInfo = inspect.stack()[0][3] + " : " + inspect.getmoduleinfo(__file__).name
+    CommonUtil.ExecLog(sModuleInfo, "Function: Model_Actual_Data_Ignoring_Row", 1,local_run)
+    try:
+        Modeled_Data_Set = []
+        row_count = 1
+        for each_row in actual_data:
+            column_count = 1
+            for each_column in each_row:            
+                temp_data_model = ["column "+str(column_count)]
+                temp_data_model.append(each_column.strip())
+                #temp_data_model.append("False")
+                #temp_data_model.append("False")
+                Modeled_Data_Set.append(temp_data_model)
+                column_count = column_count +1
+            row_count = row_count+1
+        return Modeled_Data_Set  
+    except Exception, e:
+        exc_type, exc_obj, exc_tb = sys.exc_info()        
+        fname = os.path.split(exc_tb.tb_frame.f_code.co_filename)[1]
+        Error_Detail = ((str(exc_type).replace("type ", "Error Type: ")) + ";" +  "Error Message: " + str(exc_obj) +";" + "File Name: " + fname + ";" + "Line: "+ str(exc_tb.tb_lineno))
+        CommonUtil.ExecLog(sModuleInfo, "Could not model actual data ignoring row.  Error: %s"%(Error_Detail), 3,local_run)
         return "failed"
 
 
 def Model_Expected_Data(expected_data):
     sModuleInfo = inspect.stack()[0][3] + " : " + inspect.getmoduleinfo(__file__).name
-    CommonUtil.ExecLog(sModuleInfo, "Function: Model_Actual_Data", 1,local_run)
+    CommonUtil.ExecLog(sModuleInfo, "Function: Model_Expected_Data", 1,local_run)
     try:
         Modeled_Data_Set = []
         row_count = 1
@@ -624,22 +673,79 @@ def Model_Expected_Data(expected_data):
         exc_type, exc_obj, exc_tb = sys.exc_info()        
         fname = os.path.split(exc_tb.tb_frame.f_code.co_filename)[1]
         Error_Detail = ((str(exc_type).replace("type ", "Error Type: ")) + ";" +  "Error Message: " + str(exc_obj) +";" + "File Name: " + fname + ";" + "Line: "+ str(exc_tb.tb_lineno))
-        CommonUtil.ExecLog(sModuleInfo, "Could not model actual model data.  Error: %s"%(Error_Detail), 3,local_run)
+        CommonUtil.ExecLog(sModuleInfo, "Could not model expected data.  Error: %s"%(Error_Detail), 3,local_run)
         return "failed"
 
+
+def Model_Expected_Data_Ignoring_Column(expected_data):
+    sModuleInfo = inspect.stack()[0][3] + " : " + inspect.getmoduleinfo(__file__).name
+    CommonUtil.ExecLog(sModuleInfo, "Function: Model_Expected_Data_Ignoring_Column", 1,local_run)
+    try:
+        Modeled_Data_Set = []
+        row_count = 1
+        for each_row in expected_data:
+            column_count = 1
+            temp_data_model = []
+            for each_column in each_row:
+                if column_count <= 3:            
+                    if column_count == 1:
+                        column_count = column_count + 1
+                    else:
+                        temp_data_model.append(each_column.strip())
+                        column_count = column_count +1
+                else:
+                    break
+            Modeled_Data_Set.append(temp_data_model)
+            row_count = row_count+1
+        return Modeled_Data_Set  
+    except Exception, e:
+        exc_type, exc_obj, exc_tb = sys.exc_info()        
+        fname = os.path.split(exc_tb.tb_frame.f_code.co_filename)[1]
+        Error_Detail = ((str(exc_type).replace("type ", "Error Type: ")) + ";" +  "Error Message: " + str(exc_obj) +";" + "File Name: " + fname + ";" + "Line: "+ str(exc_tb.tb_lineno))
+        CommonUtil.ExecLog(sModuleInfo, "Could not model expected data ignoring column.  Error: %s"%(Error_Detail), 3,local_run)
+        return "failed"
+
+
+def Model_Expected_Data_Ignoring_Row(expected_data):
+    sModuleInfo = inspect.stack()[0][3] + " : " + inspect.getmoduleinfo(__file__).name
+    CommonUtil.ExecLog(sModuleInfo, "Function: Model_Expected_Data_Ignoring_Row", 1,local_run)
+    try:
+        Modeled_Data_Set = []
+        row_count = 1
+        for each_row in expected_data:
+            column_count = 1
+            temp_data_model = []
+            for each_column in each_row:
+                if column_count <= 3:            
+                    if column_count == 2:
+                        column_count = column_count + 1
+                    else:
+                        temp_data_model.append(each_column.strip())
+                        column_count = column_count +1
+                else:
+                    break
+            Modeled_Data_Set.append(temp_data_model)
+            row_count = row_count+1
+        return Modeled_Data_Set  
+    except Exception, e:
+        exc_type, exc_obj, exc_tb = sys.exc_info()        
+        fname = os.path.split(exc_tb.tb_frame.f_code.co_filename)[1]
+        Error_Detail = ((str(exc_type).replace("type ", "Error Type: ")) + ";" +  "Error Message: " + str(exc_obj) +";" + "File Name: " + fname + ";" + "Line: "+ str(exc_tb.tb_lineno))
+        CommonUtil.ExecLog(sModuleInfo, "Could not model expected data ignoring row.  Error: %s"%(Error_Detail), 3,local_run)
+        return "failed"
+    
+    
     
 def Model_Expected_Column_Row(expect_data):
     #collect all column name
     sModuleInfo = inspect.stack()[0][3] + " : " + inspect.getmoduleinfo(__file__).name
-    CommonUtil.ExecLog(sModuleInfo, "Function: Model_Actual_Data", 1,local_run)
+    CommonUtil.ExecLog(sModuleInfo, "Function: Model_Expected_Column_Row", 1,local_run)
     try:
         column_names = []
         row_names = []
         for each in expect_data:
-            
             if each[0] not in column_names:
                 column_names.append(each[0])
-            
             if each[1] not in row_names:
                 row_names.append(each[1])
         return  column_names, row_names
@@ -653,7 +759,7 @@ def Model_Expected_Column_Row(expect_data):
 
 
 ##Helper function for validate table - Exact Matching
-def Exact_Validate_Table_Helper(expected_table_data, actual_table_data, validation_option):
+def Validate_Table_Helper(expected_table_data, actual_table_data, validation_option):
     sModuleInfo = inspect.stack()[0][3] + " : " + inspect.getmoduleinfo(__file__).name
     try:
         match_count = 0
@@ -675,10 +781,10 @@ def Exact_Validate_Table_Helper(expected_table_data, actual_table_data, validati
                 else:
                     mismatch_list.append(each_item)
                     mismatch_count = mismatch_count + 1
-                    
+            
+            ##Need to be implemented!        
             elif validation_option == "case_insensitive":
-                ##Do case upper
-                print "b"
+                CommonUtil.ExecLog(sModuleInfo, "Function yet to be provided. Please wait for the update.", 2,local_run)
             
         #sequential logical flow
         if mismatch_count == 0:
@@ -727,23 +833,24 @@ def Validate_Table(step_data):
                 #oCompare = CompareModule()
                 expected_table_step_data = (step_data[0][table_validate_index+1:len(step_data[0])-1:1])
                 actual_table_dataset = Get_Table_Elements(returned_step_data_list[0], returned_step_data_list[1], returned_step_data_list[2], returned_step_data_list[3], returned_step_data_list[4])
-                modelled_actual_table_step_data = Model_Actual_Data(actual_table_dataset)
-                #expected_table_step_data = [[u'Camera Model', u'Nikon D5200 Kit'], [u'Lens Mount', u'Nikon F Bayonet Mount'], [u'Image Sensor', u''], [u'NFC Enabled', u'No'], [u'Sensor Type', u'CMOS'], [u'Sensor Size Format', u'DX'], [u'Effective Pixels', u'24.1 MP'], [u'Total Pixels', u'24.71 MP'], [u'Colour Filter System', u'Yes'], [u'Colour Space', u'Yes'], [u'Dust Reduction', u'Yes'], [u'Processor', u'EXPEED'], [u'Viewfinder', u''], [u'Viewfinder Type', u'Eye-Level Pentamirror Single-Lens Reflex Viewfinder'], [u'Effective Magnification', u'0.78x (Approx.)'], [u'Diopter Adjustment', u''], [u'LCD Features', u''], [u'LCD Size', u'3 in'], [u'LCD Resolution', u'921,000 Dots'], [u'Swivel LCD', u'Yes'], [u'Live Preview', u'Yes'], [u'Auto Focus', u''], [u'AF Type', u'9, 21 or 39 point Dynamic-area AF; Auto-area AF; Single-point AF; 3D-tracking (39 points)'], [u'Focusing Modes 1', u'Auto AF-S/AF-C selection (AF-A); Continuous-servo (AF-C); Face-Priority AF available in Live View only and D-Movie only; Full-time Servo (AF-A) available in Live View only and D-Movie'], [u'Focusing Modes 2', u'Manual (M) with electronic rangefinder; Normal area; Single-servo AF (AF-S); Wide Area'], [u'AF Points', u'39'], [u'Exposure', u''], [u'ISO', u'100 - 6400'], [u'White Balance Settings 1', u'Auto; Cloudy; Direct Sunlight; Flash; Fluorescent (7 Types); Incandescent; Preset Manual; Shade'], [u'Auto White Balance', u'Yes'], [u'White Balance Bracketing', u'Yes'], [u'Exposure Compensation', u'\xb15 EV in Increments of 1/3 or 1/2 EV'], [u'Shutter', u''], [u'Shutter Type', u'Electronically Controlled Vertical-Travel Focal-Plane'], [u'Shutter Speeds', u'1/4000 to 30 sec. in steps of 1/3 or 1/2 EV'], [u'Self-Timer', u'Yes'], [u'Drive', u''], [u'Flash', u''], [u'Built-in Flash Type', u'TTL: i-TTL Flash'], [u'Flash Sync', u'Yes'], [u'Video', u''], [u'Video Output Format', u'NTSC'], [u'Movie File Formats', u'MOV'], [u'Max Video Resolution-24 fps Minimum', u'1920 x 1080'], [u'Playback', u''], [u'Image Playback Modes 1', u'Auto Image Rotation; Full-Frame and Thumbnail (4, 9, or 72 images or calendar); Highlights; Histogram Display; Image Comment; Movie Playback; Movie Slideshow; Playback with Zoom; Slideshow'], [u'Storage & Interface', u''], [u'Storage Media', u'SD; SDHC; SDXC'], [u'Data Interface', u'HDMI Output: Type C Mini-Pin HDMI Connector; Hi-Speed USB; Stereo Microphone Input'], [u'Wi-Fi', u'Yes'], [u'NFC', u'No'], [u'Bluetooth', u'Yes'], [u'Jpeg', u'Yes'], [u'Raw', u'Yes'], [u'Raw+Jpeg', u'Yes'], [u'Guided Shooting Mode', u'Yes'], [u'Languages Supported', u'Arabic; Brazilian Portuguese; Chinese (Simplified and Traditional); Czech; Danish; Dutch; English; Finnish; French; German; Greek; Hindi; Hungarian; Indonesian; Italian; Japanese; Korean; Norwegian; Polish; Portuguese; Romanian; Russian; Spanish; Swedish; Thai; Turkish; Ukrainian'], [u'Included Lens', u''], [u'Lens Frame Colour', u'Black'], [u'Lens Range', u'18-55mm'], [u'Stabilized', u'Yes'], [u'Model Number', u'18-55MM'], [u'Lens Weight', u'0.35G'], [u'Body Features', u''], [u'Stabilized Body', u'Yes'], [u'Body Colour', u'Black'], [u'Intelligent Shoe', u'Yes'], [u'Cable Release', u'Yes'], [u'Weather Sealed', u'No'], [u'Power', u''], [u'Battery Type', u'1 x EN-EL14a Rechargeable Li-ion Battery; EN-EL14 Rechargeable Li-ion Battery'], [u'Power Saving Modes', u'EN-EL14'], [u'Physical Features', u''], [u'Width', u'12.9 cm'], [u'Height', u'3.9 cm'], [u'Depth', u'7.8 cm'], [u'Weight', u'505 g'], [u"What's in the Box", u''], [u'Warranty Labour', u'180 Day(s)'], [u'Warranty Parts', u'180 Day(s)']]
-                modelled_expected_table_step_data = Model_Expected_Data(expected_table_step_data)
                 
                 try:
                     validation_option=step_data[0][table_validate_index][2]
-                    if step_data[0][table_validate_index][0] == "exact":
-                        Exact_Validate_Table_Helper(modelled_expected_table_step_data, modelled_actual_table_step_data, validation_option)
+                    if (step_data[0][table_validate_index][0] == "exact"):
+                        modelled_actual_table_step_data = Model_Actual_Data(actual_table_dataset)
+                        modelled_expected_table_step_data = Model_Expected_Data(expected_table_step_data)
+                        Validate_Table_Helper(modelled_expected_table_step_data, modelled_actual_table_step_data, validation_option)
                     
-                    ##Will be added as an additional feature
-                    elif step_data[0][table_validate_index][0]!= "ignore_row":
-                        CommonUtil.ExecLog(sModuleInfo, "Function yet to be provided. Please wait for the update.", 2,local_run)
-                        return "failed"
-                    ##Will be added as an additional feature        
-                    elif step_data[0][table_validate_index][0]!= "ignore_column":
-                        CommonUtil.ExecLog(sModuleInfo, "Function yet to be provided. Please wait for the update.", 2,local_run)
-                        return "failed"
+                    elif step_data[0][table_validate_index][0]== "ignore_row":
+                        modelled_actual_table_step_data = Model_Actual_Data_Ignoring_Row(actual_table_dataset)
+                        modelled_expected_table_step_data = Model_Expected_Data_Ignoring_Row(expected_table_step_data)
+                        Validate_Table_Helper(modelled_expected_table_step_data, modelled_actual_table_step_data, validation_option)
+                        
+                    elif step_data[0][table_validate_index][0]== "ignore_column":
+                        modelled_actual_table_step_data = Model_Actual_Data_Ignoring_Column(actual_table_dataset)
+                        modelled_expected_table_step_data = Model_Expected_Data_Ignoring_Column(expected_table_step_data)
+                        Validate_Table_Helper(modelled_expected_table_step_data, modelled_actual_table_step_data, validation_option)
+
                     else:
                         CommonUtil.ExecLog(sModuleInfo, "The information in the table validation index is incorrect. Please provide the appropriate information", 3,local_run)
                         return "failed"                        
@@ -1175,15 +1282,3 @@ def Exception_Info(sModuleInfo, errMsg):
     Error_Detail = ((str(exc_type).replace("type ", "Error Type: ")) + ";" +  "Error Message: " + str(exc_obj) +";" + "File Name: " + fname + ";" + "Line: "+ str(exc_tb.tb_lineno))
     CommonUtil.ExecLog(sModuleInfo, errMsg + ".  Error: %s"%(Error_Detail), 3,local_run)
     return "failed"
-
-
-
-
-a = [1,2,3]
-
-b = 1
-
-if b in a:
-    print "found"
-else:
-    print "not found"    
