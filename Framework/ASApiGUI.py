@@ -19,12 +19,39 @@ sys.path.append(os.path.dirname(os.getcwd()))
 class ApiThread(QtCore.QThread):
     def __init__(self, user_info):
         QtCore.QThread.__init__(self)
+        self.user_info = user_info
         self.username = user_info['username']
         self.password = user_info['password']
         self.project = user_info['project']
         self.team = user_info['team']
         self.server = user_info['server']
         self.port = user_info['port']
+
+    def run(self):
+        r = self.Get('login_api', self.user_info)
+        print "Authentication check for user='%s', project='%s', team='%s'" % (self.username, self.project, self.team)
+        if r:
+            print "Authentication Successful"
+            machine_object = self.update_machine(self.dependency_collection())
+            if machine_object['registered']:
+                tester_id = machine_object['name']
+                run_again = self.RunProcess(tester_id)
+                if run_again:
+                    ApiThread(self.user_info)
+            else:
+                return False
+        else:
+            print "Authentication Failed"
+            return False
+
+    def begin(self):
+        self.start()
+
+    def __del__(self):
+        self.wait()
+
+    def end(self):
+        self.terminate()
 
     def form_uri(self, resource_path):
         base_server_address = 'http://%s:%s/' % (str(self.server), str(self.port))
@@ -160,6 +187,7 @@ class GUIApp(QtGui.QMainWindow, ASApiGUIdesign.Ui_mainWindow):
     def __init__(self, parent=None):
         super(GUIApp, self).__init__(parent)
         self.setupUi(self)
+        self.threads = []
         self.connectBtn.clicked.connect(self.connect_server)
         self.cancelBtn.clicked.connect(self.close_gui)
 
@@ -180,65 +208,16 @@ class GUIApp(QtGui.QMainWindow, ASApiGUIdesign.Ui_mainWindow):
             'port': port
         }
 
-        """self.central_widget = QtGui.QStackedWidget()
-        self.setCentralWidget(self.central_widget)
-        logged_in_widget = LoggedWidget(self)
-        self.central_widget.addWidget(logged_in_widget)
-        self.central_widget.setCurrentWidget(logged_in_widget)"""
-
-        self.threads = []
-
-        r = self.Get('login_api', user_info_object)
-        print "Authentication check for user='%s', project='%s', team='%s'" % (username, project, team)
-        if r:
-            print "Authentication Successful"
-            api = ApiThread(user_info_object)
-            self.threads.append(api)
-            api.start()
-            machine_object = api.update_machine(api.dependency_collection())
-            if machine_object['registered']:
-                tester_id = machine_object['name']
-                run_again = api.RunProcess(tester_id)
-                if run_again:
-                    api.connect_server()
-            else:
-                return False
-        else:
-            print "Authentication Failed"
-            return False
-
-    def form_uri(self, resource_path):
-        server = unicode(self.server.toPlainText()).strip()
-        port = int(unicode(self.port.toPlainText()).strip())
-        base_server_address = 'http://%s:%s/' % (str(server), str(port))
-        return base_server_address + resource_path + '/'
-
-    def Get(self, resource_path, payload={}):
-        return requests.get(self.form_uri(resource_path), params=json.dumps(payload)).json()
-
-        """def new_window(self):
-        app = QtGui.QApplication(sys.argv)
-        w = QtGui.QWidget()
-        b = QtGui.QLabel(w)
-        b.setText("Welcome to ZeuZ Framework!")
-        w.setGeometry(300, 300, 600, 150)
-        b.move(50, 20)
-        w.setWindowTitle("PyQT")
-        w.show()
-        sys.exit(app.exec_())"""
+        api = ApiThread(user_info_object)
+        self.threads.append(api)
+        api.begin()
 
     def close_gui(self):
         print "Closed"
         self.close()
 
 
-"""class LoggedWidget(QtGui.QWidget):
-    def __init__(self, parent=None):
-        super(LoggedWidget, self).__init__(parent)
-        layout = QtGui.QHBoxLayout()
-        self.label = QtGui.QLabel('Logging in...')
-        layout.addWidget(self.label)
-        self.setLayout(layout)"""
+
 
 
 def main():
@@ -252,3 +231,29 @@ if __name__ == '__main__':
 
 
 
+
+
+"""class LoggedWidget(QtGui.QWidget):
+    def __init__(self, parent=None):
+        super(LoggedWidget, self).__init__(parent)
+        layout = QtGui.QHBoxLayout()
+        self.label = QtGui.QLabel('Logging in...')
+        layout.addWidget(self.label)
+        self.setLayout(layout)
+
+        def new_window(self):
+        app = QtGui.QApplication(sys.argv)
+        w = QtGui.QWidget()
+        b = QtGui.QLabel(w)
+        b.setText("Welcome to ZeuZ Framework!")
+        w.setGeometry(300, 300, 600, 150)
+        b.move(50, 20)
+        w.setWindowTitle("PyQT")
+        w.show()
+        sys.exit(app.exec_())"""
+
+"""self.central_widget = QtGui.QStackedWidget()
+        self.setCentralWidget(self.central_widget)
+        logged_in_widget = LoggedWidget(self)
+        self.central_widget.addWidget(logged_in_widget)
+        self.central_widget.setCurrentWidget(logged_in_widget)"""
