@@ -183,11 +183,21 @@ class ApiThread(QtCore.QThread):
             print Error_Detail
 
 
+class LoggedWidget(QtGui.QWidget):
+    def __init__(self, parent=None):
+        super(LoggedWidget, self).__init__(parent)
+        layout = QtGui.QHBoxLayout()
+        self.label = QtGui.QLabel('Logging in...')
+        layout.addWidget(self.label)
+        self.setLayout(layout)
+
+
 class GUIApp(QtGui.QMainWindow, ASApiGUIdesign.Ui_mainWindow):
     def __init__(self, parent=None):
         super(GUIApp, self).__init__(parent)
         self.setupUi(self)
         self.threads = []
+        self.central_widget = None
         self.connectBtn.clicked.connect(self.connect_server)
         self.cancelBtn.clicked.connect(self.close_gui)
 
@@ -217,9 +227,6 @@ class GUIApp(QtGui.QMainWindow, ASApiGUIdesign.Ui_mainWindow):
         self.close()
 
 
-
-
-
 def main():
     app = QtGui.QApplication(sys.argv)
     form = GUIApp()
@@ -230,16 +237,12 @@ if __name__ == '__main__':
     main()
 
 
-
-
-
-"""class LoggedWidget(QtGui.QWidget):
-    def __init__(self, parent=None):
-        super(LoggedWidget, self).__init__(parent)
-        layout = QtGui.QHBoxLayout()
-        self.label = QtGui.QLabel('Logging in...')
-        layout.addWidget(self.label)
-        self.setLayout(layout)
+"""
+        self.central_widget = QtGui.QStackedWidget()
+        self.setCentralWidget(self.central_widget)
+        logged_in_widget = LoggedWidget(self)
+        self.central_widget.addWidget(logged_in_widget)
+        self.central_widget.setCurrentWidget(logged_in_widget)
 
         def new_window(self):
         app = QtGui.QApplication(sys.argv)
@@ -250,10 +253,6 @@ if __name__ == '__main__':
         b.move(50, 20)
         w.setWindowTitle("PyQT")
         w.show()
-        sys.exit(app.exec_())"""
+        sys.exit(app.exec_())
 
-"""self.central_widget = QtGui.QStackedWidget()
-        self.setCentralWidget(self.central_widget)
-        logged_in_widget = LoggedWidget(self)
-        self.central_widget.addWidget(logged_in_widget)
-        self.central_widget.setCurrentWidget(logged_in_widget)"""
+        """
