@@ -198,22 +198,22 @@ class GUIApp(QtGui.QMainWindow, ASApiGUIdesign.Ui_mainWindow):
         self.setupUi(self)
         self.threads = []
         self.central_widget = None
-        self.connectBtn.clicked.connect(self.connect_server)
+        self.firstNextBtn.clicked.connect(self.connect_server)
         self.cancelBtn.clicked.connect(self.close_gui)
 
     def connect_server(self):
-        username = unicode(self.username.toPlainText()).strip()
+        username = unicode(self.username.text()).strip()
         password = unicode(self.password.text()).strip()
-        project = unicode(self.project.toPlainText()).strip()
-        team = unicode(self.team.toPlainText()).strip()
-        server = unicode(self.server.toPlainText()).strip()
-        port = int(unicode(self.port.toPlainText()).strip())
+        #project = unicode(self.project.toPlainText()).strip()
+        #team = unicode(self.team.toPlainText()).strip()
+        server = unicode(self.server.text()).strip()
+        port = int(unicode(self.port.text()).strip())
 
         user_info_object = {
             'username': username,
             'password': password,
-            'project': project,
-            'team': team,
+            #'project': project,
+            #'team': team,
             'server': server,
             'port': port
         }
