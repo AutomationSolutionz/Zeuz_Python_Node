@@ -191,8 +191,8 @@ class TeamWidget(QtGui.QWidget, ASApiGUITeam.Ui_teamForm):
         self.firstBackBtn.clicked.connect(self.close_gui)
 
     def connect_server(self):
-        #team = unicode(self.listView.toPlainText()).strip()
-        #user_info_object.update({'team': team})
+        team = unicode(self.listView.Rad).strip()
+        user_info_object.update({'team': team})
 
         projects = self.Get('get_user_projects_api', user_info_object)
 
@@ -269,15 +269,15 @@ class GUIApp(QtGui.QMainWindow, ASApiGUIdesign.Ui_mainWindow):
         global user_info_object
 
         teams = self.Get('get_user_teams_api', user_info_object)
-
+        print teams
         self.central_widget = QtGui.QStackedWidget()
         self.setCentralWidget(self.central_widget)
         team_widget = TeamWidget(self)
+        layout = QtGui.QHBoxLayout()
         for each in teams:
-            layout = QtGui.QHBoxLayout()
-            team_widget.listView.rb = QtGui.QRadioButton("%s"%each[1])
+            team_widget.listView.rb = QtGui.QRadioButton("%s" % each[0])
             layout.addWidget(team_widget.listView.rb)
-            team_widget.listView.setLayout(layout)
+        team_widget.listView.setLayout(layout)
         self.central_widget.addWidget(team_widget)
         self.central_widget.setCurrentWidget(team_widget)
 
