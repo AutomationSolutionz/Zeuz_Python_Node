@@ -25,7 +25,7 @@ except AttributeError:
 
 class Ui_mainWindow(object):
     def setupUi(self, mainWindow):
-        mainWindow.setObjectName(_fromUtf8("mainWindow"))
+        mainWindow.setObjectName(_fromUtf8("ZeuZ Framework - ASAPI GUI"))
         mainWindow.resize(738, 484)
         self.centralwidget = QtGui.QWidget(mainWindow)
         self.centralwidget.setObjectName(_fromUtf8("centralwidget"))

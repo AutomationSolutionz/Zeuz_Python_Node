@@ -11,7 +11,7 @@ import time
 import requests
 import json
 import MainDriverApi
-from Utilities import ASApiGUIdesign
+from Utilities import ASApiGUIdesign, ASApiGUITeam, ASApiGUIProject
 from Utilities import ConfigModule, CommonUtil, FileUtilities
 sys.path.append(os.path.dirname(os.getcwd()))
 
@@ -183,13 +183,66 @@ class ApiThread(QtCore.QThread):
             print Error_Detail
 
 
-class LoggedWidget(QtGui.QWidget):
+class TeamWidget(QtGui.QWidget, ASApiGUITeam.Ui_teamForm):
     def __init__(self, parent=None):
-        super(LoggedWidget, self).__init__(parent)
-        layout = QtGui.QHBoxLayout()
-        self.label = QtGui.QLabel('Logging in...')
-        layout.addWidget(self.label)
-        self.setLayout(layout)
+        super(TeamWidget, self).__init__(parent)
+        self.setupUi(self)
+        self.SecondNextBtn.clicked.connect(self.connect_server)
+        self.firstBackBtn.clicked.connect(self.close_gui)
+
+    def connect_server(self):
+        #team = unicode(self.listView.toPlainText()).strip()
+        #user_info_object.update({'team': team})
+
+        projects = self.Get('get_user_projects_api', user_info_object)
+
+        self.central_widget = QtGui.QStackedWidget()
+        self.setCentralWidget(self.central_widget)
+        project_widget = ProjectWidget(self)
+        self.central_widget.addWidget(project_widget)
+        self.central_widget.setCurrentWidget(project_widget)
+
+    def close_gui(self):
+        print "Closed"
+        self.close()
+
+    def form_uri(self, resource_path):
+        base_server_address = 'http://%s:%s/' % (
+        str(user_info_object['server']), str(user_info_object['port']))
+        return base_server_address + resource_path + '/'
+
+    def Get(self, resource_path, payload={}):
+        return requests.get(self.form_uri(resource_path), params=json.dumps(payload)).json()
+
+
+class ProjectWidget(QtGui.QWidget, ASApiGUIProject.Ui_projectForm):
+    def __init__(self, parent=None):
+        super(ProjectWidget, self).__init__(parent)
+        self.setupUi(self)
+        self.ThirdNextBtn.clicked.connect(self.connect_server)
+        self.secondBackBtn.clicked.connect(self.close_gui)
+
+    def connect_server(self):
+        project = unicode(self.listView.text()).strip()
+        user_info_object.update({'project': project})
+
+        self.central_widget = QtGui.QStackedWidget()
+        self.setCentralWidget(self.central_widget)
+        project_widget = ProjectWidget(self)
+        self.central_widget.addWidget(project_widget)
+        self.central_widget.setCurrentWidget(project_widget)
+
+    def close_gui(self):
+        print "Closed"
+        self.close()
+
+    def form_uri(self, resource_path):
+        base_server_address = 'http://%s:%s/' % (
+        str(unicode(self.server.text()).strip()), str(unicode(self.port.text()).strip()))
+        return base_server_address + resource_path + '/'
+
+    def Get(self, resource_path, payload={}):
+        return requests.get(self.form_uri(resource_path), params=json.dumps(payload)).json()
 
 
 class GUIApp(QtGui.QMainWindow, ASApiGUIdesign.Ui_mainWindow):
@@ -204,27 +257,44 @@ class GUIApp(QtGui.QMainWindow, ASApiGUIdesign.Ui_mainWindow):
     def connect_server(self):
         username = unicode(self.username.text()).strip()
         password = unicode(self.password.text()).strip()
-        #project = unicode(self.project.toPlainText()).strip()
-        #team = unicode(self.team.toPlainText()).strip()
         server = unicode(self.server.text()).strip()
         port = int(unicode(self.port.text()).strip())
 
         user_info_object = {
             'username': username,
             'password': password,
-            #'project': project,
-            #'team': team,
             'server': server,
             'port': port
         }
+        global user_info_object
 
-        api = ApiThread(user_info_object)
+        teams = self.Get('get_user_teams_api', user_info_object)
+
+        self.central_widget = QtGui.QStackedWidget()
+        self.setCentralWidget(self.central_widget)
+        team_widget = TeamWidget(self)
+        for each in teams:
+            layout = QtGui.QHBoxLayout()
+            team_widget.listView.rb = QtGui.QRadioButton("%s"%each[1])
+            layout.addWidget(team_widget.listView.rb)
+            team_widget.listView.setLayout(layout)
+        self.central_widget.addWidget(team_widget)
+        self.central_widget.setCurrentWidget(team_widget)
+
+        """api = ApiThread(user_info_object)
         self.threads.append(api)
-        api.begin()
+        api.begin()"""
 
     def close_gui(self):
         print "Closed"
         self.close()
+
+    def form_uri(self, resource_path):
+        base_server_address = 'http://%s:%s/' % (str(unicode(self.server.text()).strip()), str(unicode(self.port.text()).strip()))
+        return base_server_address + resource_path + '/'
+
+    def Get(self, resource_path, payload={}):
+        return requests.get(self.form_uri(resource_path), params=json.dumps(payload)).json()
 
 
 def main():
@@ -235,24 +305,3 @@ def main():
 
 if __name__ == '__main__':
     main()
-
-
-"""
-        self.central_widget = QtGui.QStackedWidget()
-        self.setCentralWidget(self.central_widget)
-        logged_in_widget = LoggedWidget(self)
-        self.central_widget.addWidget(logged_in_widget)
-        self.central_widget.setCurrentWidget(logged_in_widget)
-
-        def new_window(self):
-        app = QtGui.QApplication(sys.argv)
-        w = QtGui.QWidget()
-        b = QtGui.QLabel(w)
-        b.setText("Welcome to ZeuZ Framework!")
-        w.setGeometry(300, 300, 600, 150)
-        b.move(50, 20)
-        w.setWindowTitle("PyQT")
-        w.show()
-        sys.exit(app.exec_())
-
-        """
