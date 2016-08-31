@@ -11,7 +11,7 @@ import time
 import requests
 import json
 import MainDriverApi
-from Utilities import ASApiGUIdesign, ASApiGUITeam, ASApiGUIProject, ASApiGUIuser
+from Utilities import ASApiGUIdesign, ASApiGUITeam, ASApiGUIProject, ASApiGUIuser, ASApiGUIdependency
 from Utilities import ConfigModule, CommonUtil, FileUtilities
 sys.path.append(os.path.dirname(os.getcwd()))
 
