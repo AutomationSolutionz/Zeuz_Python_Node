@@ -76,7 +76,7 @@ class Ui_mainWindow(object):
         QtCore.QMetaObject.connectSlotsByName(mainWindow)
 
     def retranslateUi(self, mainWindow):
-        mainWindow.setWindowTitle(_translate("mainWindow", "MainWindow", None))
+        mainWindow.setWindowTitle(_translate("mainWindow", "ZeuZ Framework - ASAPI GUI", None))
         self.label.setText(_translate("mainWindow", "Username", None))
         self.label_2.setText(_translate("mainWindow", "Password", None))
         self.label_6.setText(_translate("mainWindow", "Server port", None))

@@ -200,21 +200,28 @@ class TeamWidget(QtGui.QWidget, ASApiGUITeam.Ui_teamForm):
         print user_info_object
         projects = self.Get('get_user_projects_api', user_info_object)
 
-        #self.close_gui()
+        self.label.hide()
         self.central_widget = QtGui.QStackedWidget()
-        self.setCentralWidget(self.central_widget)
-        project_widget = ProjectWidget(self)
+        self.parent().setCentralWidget(self.parent().central_widget)
+        self.project_widget = ProjectWidget(self)
         layout = QtGui.QFormLayout()
         for each in projects:
-            project_widget.listView.rb = QtGui.QRadioButton("%s" % each[0])
-            layout.addWidget(project_widget.listView.rb)
-        project_widget.listView.setLayout(layout)
-        self.central_widget.addWidget(project_widget)
-        self.central_widget.setCurrentWidget(project_widget)
+            self.project_widget.listView.rb = QtGui.QRadioButton("%s" % each[0])
+            layout.addWidget(self.project_widget.listView.rb)
+        self.project_widget.listView.setLayout(layout)
+        #self.parent().central_widget.hide()
+        self.project_widget.show()
+        #self.central_widget.addWidget(project_widget)
+        #self.central_widget.setCurrentWidget(project_widget)
 
     def close_gui(self):
         print "Closed"
         self.close()
+        #self.parent().cancelBtn.show()
+        """self.parent().central_widget.show()
+        self.central_widget = QtGui.QStackedWidget()
+        self.parent().setCentralWidget(self.parent().central_widget)
+        self.parent().central_widget.show()"""
 
     def form_uri(self, resource_path):
         base_server_address = 'http://%s:%s/' % (
@@ -233,18 +240,27 @@ class ProjectWidget(QtGui.QWidget, ASApiGUIProject.Ui_projectForm):
         self.secondBackBtn.clicked.connect(self.close_gui)
 
     def connect_server(self):
-        project = unicode(self.listView.text()).strip()
-        user_info_object.update({'project': project})
+        for radioButton in self.findChildren(QtGui.QRadioButton):
+            if radioButton.isChecked():
+                project = unicode(radioButton.text())
+                print "Radio Button Selected: ", project
+                user_info_object.update({'project': project})
 
-        self.central_widget = QtGui.QStackedWidget()
+        print user_info_object
+
+        api = ApiThread(user_info_object)
+        api.begin()
+
+        """self.central_widget = QtGui.QStackedWidget()
         self.setCentralWidget(self.central_widget)
         project_widget = ProjectWidget(self)
         self.central_widget.addWidget(project_widget)
-        self.central_widget.setCurrentWidget(project_widget)
+        self.central_widget.setCurrentWidget(project_widget)"""
 
     def close_gui(self):
         print "Closed"
         self.close()
+        self.parent().label.show()
 
     def form_uri(self, resource_path):
         base_server_address = 'http://%s:%s/' % (
@@ -282,15 +298,24 @@ class GUIApp(QtGui.QMainWindow, ASApiGUIdesign.Ui_mainWindow):
         print teams
         self.central_widget = QtGui.QStackedWidget()
         self.setCentralWidget(self.central_widget)
-        team_widget = TeamWidget(self)
+        self.team_widget = TeamWidget(self)
+        layout = QtGui.QFormLayout()
+        for each in teams:
+            self.team_widget.listView.rb = QtGui.QRadioButton("%s" % each[0])
+            layout.addWidget(self.team_widget.listView.rb)
+        self.team_widget.listView.setLayout(layout)
+        self.central_widget.hide()
+        self.team_widget.show()
+        #self.central_widget.addWidget(team_widget)
+        #self.central_widget.setCurrentWidget(team_widget)
+
+        """team_widget = TeamWidget(self)
         layout = QtGui.QFormLayout()
         for each in teams:
             team_widget.listView.rb = QtGui.QRadioButton("%s" % each[0])
             layout.addWidget(team_widget.listView.rb)
         team_widget.listView.setLayout(layout)
-        self.central_widget.addWidget(team_widget)
-        self.central_widget.setCurrentWidget(team_widget)
-
+        team_widget.show()"""
         """api = ApiThread(user_info_object)
         self.threads.append(api)
         api.begin()"""
