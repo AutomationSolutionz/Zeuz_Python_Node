@@ -187,18 +187,28 @@ class TeamWidget(QtGui.QWidget, ASApiGUITeam.Ui_teamForm):
     def __init__(self, parent=None):
         super(TeamWidget, self).__init__(parent)
         self.setupUi(self)
+        self.central_widget = None
         self.SecondNextBtn.clicked.connect(self.connect_server)
         self.firstBackBtn.clicked.connect(self.close_gui)
 
     def connect_server(self):
-        team = unicode(self.listView.Rad).strip()
-        user_info_object.update({'team': team})
-
+        for radioButton in self.findChildren(QtGui.QRadioButton):
+            if radioButton.isChecked():
+                team = unicode(radioButton.text())
+                print "Radio Button Selected: ", team
+                user_info_object.update({'team': team})
+        print user_info_object
         projects = self.Get('get_user_projects_api', user_info_object)
 
+        #self.close_gui()
         self.central_widget = QtGui.QStackedWidget()
         self.setCentralWidget(self.central_widget)
         project_widget = ProjectWidget(self)
+        layout = QtGui.QFormLayout()
+        for each in projects:
+            project_widget.listView.rb = QtGui.QRadioButton("%s" % each[0])
+            layout.addWidget(project_widget.listView.rb)
+        project_widget.listView.setLayout(layout)
         self.central_widget.addWidget(project_widget)
         self.central_widget.setCurrentWidget(project_widget)
 
@@ -238,7 +248,7 @@ class ProjectWidget(QtGui.QWidget, ASApiGUIProject.Ui_projectForm):
 
     def form_uri(self, resource_path):
         base_server_address = 'http://%s:%s/' % (
-        str(unicode(self.server.text()).strip()), str(unicode(self.port.text()).strip()))
+            str(user_info_object['server']), str(user_info_object['port']))
         return base_server_address + resource_path + '/'
 
     def Get(self, resource_path, payload={}):
@@ -277,9 +287,6 @@ class GUIApp(QtGui.QMainWindow, ASApiGUIdesign.Ui_mainWindow):
         for each in teams:
             team_widget.listView.rb = QtGui.QRadioButton("%s" % each[0])
             layout.addWidget(team_widget.listView.rb)
-            #team_widget.listView.hl = QtGui.QFrame()
-            #team_widget.listView.hl.setFrameShape(QtGui.QFrame.HLine)
-            #layout.addWidget(team_widget.listView.hl)
         team_widget.listView.setLayout(layout)
         self.central_widget.addWidget(team_widget)
         self.central_widget.setCurrentWidget(team_widget)
@@ -293,7 +300,8 @@ class GUIApp(QtGui.QMainWindow, ASApiGUIdesign.Ui_mainWindow):
         self.close()
 
     def form_uri(self, resource_path):
-        base_server_address = 'http://%s:%s/' % (str(unicode(self.server.text()).strip()), str(unicode(self.port.text()).strip()))
+        base_server_address = 'http://%s:%s/' % (
+            str(unicode(self.server.text()).strip()), str(unicode(self.port.text()).strip()))
         return base_server_address + resource_path + '/'
 
     def Get(self, resource_path, payload={}):
