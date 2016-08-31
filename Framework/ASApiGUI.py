@@ -319,10 +319,12 @@ class GUIApp(QtGui.QMainWindow, ASApiGUIdesign.Ui_mainWindow):
         #self.start_screen.firstNextBtn.clicked.connect(lambda: self.central_widget.setCurrentWidget(self.second_screen))
         self.start_screen.firstNextBtn.clicked.connect(self.user_action)
         self.start_screen.cancelBtn.clicked.connect(lambda: self.close())
-        self.second_screen.firstBackBtn.clicked.connect(lambda: self.central_widget.setCurrentWidget(self.start_screen))
+        #self.second_screen.firstBackBtn.clicked.connect(lambda: self.central_widget.setCurrentWidget(self.start_screen))
+        self.second_screen.firstBackBtn.clicked.connect(self.back_to_user)
         #self.second_screen.SecondNextBtn.clicked.connect(lambda: self.central_widget.setCurrentWidget(self.third_screen))
         self.second_screen.SecondNextBtn.clicked.connect(self.team_action)
-        self.third_screen.secondBackBtn.clicked.connect(lambda: self.central_widget.setCurrentWidget(self.second_screen))
+        #self.third_screen.secondBackBtn.clicked.connect(lambda: self.central_widget.setCurrentWidget(self.second_screen))
+        self.third_screen.secondBackBtn.clicked.connect(self.back_to_team)
         self.third_screen.ThirdNextBtn.clicked.connect(self.project_action)
 
     def connect_server(self):
@@ -385,6 +387,30 @@ class GUIApp(QtGui.QMainWindow, ASApiGUIdesign.Ui_mainWindow):
         api = ApiThread(self.user_info_object)
         self.threads.append(api)
         api.begin()
+
+    def back_to_user(self):
+        self.second_screen.close()
+        self.clear_layout(self.second_screen.listView.layout())
+        QtCore.QObjectCleanupHandler().add(self.second_screen.listView.layout())
+        self.start_screen.show()
+        self.central_widget.setCurrentWidget(self.start_screen)
+
+    def back_to_team(self):
+        self.third_screen.close()
+        self.clear_layout(self.third_screen.listView.layout())
+        QtCore.QObjectCleanupHandler().add(self.third_screen.listView.layout())
+        self.second_screen.show()
+        self.central_widget.setCurrentWidget(self.second_screen)
+
+    def clear_layout(self, layout):
+        if layout is not None:
+            while layout.count():
+                item = layout.takeAt(0)
+                widget = item.widget()
+                if widget is not None:
+                    widget.deleteLater()
+                else:
+                    self.clearLayout(item.layout())
 
     def form_uri(self, resource_path):
         base_server_address = 'http://%s:%s/' % (
