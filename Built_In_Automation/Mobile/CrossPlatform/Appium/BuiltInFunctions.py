@@ -1,10 +1,11 @@
 
 # Android environment
 from appium import webdriver
-import os , sys, time, inspect, json
+import os, sys, time, inspect, json
 from Utilities import CommonUtil, FileUtilities
 from Built_In_Automation.Mobile.Android.adb_calls import adbOptions
 from appium.webdriver.common.touch_action import TouchAction
+from Built_In_Automation.Mobile.CrossPlatform.Appium import clickinteraction as ci
 
 
 PATH = lambda p: os.path.abspath(
@@ -457,7 +458,6 @@ def launch_ios_app():
         return "failed"
 
 
-
 #################################Generic functions###################################
 
 def Get_Element(element_parameter, element_value, reference_parameter=False, reference_value=False,
@@ -477,11 +477,47 @@ def Get_Element(element_parameter, element_value, reference_parameter=False, ref
         CommonUtil.ExecLog(sModuleInfo, "Could not find your element.  Error: %s" % (Error_Detail), 3, local_run)
         return "failed"
 
+
 def Click_Element(step_data):
     sModuleInfo = inspect.stack()[0][3] + " : " + inspect.getmoduleinfo(__file__).name
     try:
         CommonUtil.ExecLog(sModuleInfo, "Trying to click on element...", 1, local_run)
-        element_data = Validate_Step_Data(step_data)
+        element_parameter = step_data[0][0][0]
+        element_value = step_data[0][0][2]
+        if element_parameter == "name":
+            result = ci.click_element_by_name(driver, element_value)
+        elif element_parameter == "id":
+            result = ci.click_element_by_id(driver, element_value)
+        elif element_parameter == "accessibility_id":
+            result = ci.click_element_by_accessibility_id(driver, element_value)
+        elif element_parameter == "class_name":
+            result = ci.click_element_by_class_name(driver, element_value)
+        elif element_parameter == "xpath":
+            result = ci.click_element_by_xpath(driver, element_value)
+        elif element_parameter == "android_uiautomator_text":
+            result = ci.click_element_by_android_uiautomator_text(driver, element_value)
+        elif element_parameter == "android_uiautomator_description":
+            result = ci.click_element_by_android_uiautomator_description(driver, element_value)
+        elif element_parameter == "ios_uiautomation":
+            result = ci.click_element_by_ios_uiautomation(driver, element_value)
+        else:
+            elem = driver.find_element_by_xpath("//*[@%s='%s']" % (element_parameter, element_value))
+            if elem.is_enabled():
+                elem.click()
+                CommonUtil.ExecLog(sModuleInfo, "Clicked on element successfully", 1, local_run)
+                return "Passed"
+            else:
+                CommonUtil.ExecLog(sModuleInfo, "Unable to click. The element is disabled.", 3, local_run)
+                return "failed"
+
+        if result == "Passed":
+            CommonUtil.ExecLog(sModuleInfo, "Clicked on element successfully", 1, local_run)
+            return "Passed"
+        else:
+            CommonUtil.ExecLog(sModuleInfo, "Unable to click. The element is disabled.", 3, local_run)
+            return "failed"
+
+        """element_data = Validate_Step_Data(step_data)
         elem = Get_Element(element_data[0], element_data[1])
         if elem.is_enabled():
             elem.click()
@@ -489,7 +525,7 @@ def Click_Element(step_data):
             return "Passed"
         else:
             CommonUtil.ExecLog(sModuleInfo, "Unable to click. The element is disabled.", 3, local_run)
-            return "failed"
+            return "failed" """
     except Exception, e:
         exc_type, exc_obj, exc_tb = sys.exc_info()
         fname = os.path.split(exc_tb.tb_frame.f_code.co_filename)[1]

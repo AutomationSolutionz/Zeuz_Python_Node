@@ -196,7 +196,7 @@ class TeamWidget(QtGui.QWidget, ASApiGUITeam.Ui_teamForm):
                 team = unicode(radioButton.text())
                 print "Radio Button Selected: ", team
                 user_info_object.update({'team': team})
-        print user_info_object
+
         projects = self.Get('get_user_projects_api', user_info_object)
 
         self.label.hide()
@@ -240,7 +240,6 @@ class ProjectWidget(QtGui.QWidget, ASApiGUIProject.Ui_projectForm):
                 print "Radio Button Selected: ", project
                 user_info_object.update({'project': project})
 
-        print user_info_object
 
         api = ApiThread(user_info_object)
         api.begin()
