@@ -116,7 +116,7 @@ def enter_text_appium(dependency,run_time_params,step_data,file_attachment,temp_
     sModuleInfo = inspect.stack()[0][3] + " : " + inspect.getmoduleinfo(__file__).name
     try:
         CommonUtil.ExecLog(sModuleInfo,"Enter: Step - Enter Text",1,local_run)
-        sTestStepReturnStatus=bf.Enter_Text_In_Text_Box(step_data)
+        sTestStepReturnStatus=bf.Set_Text(step_data)
         temp_q.put(sTestStepReturnStatus)
         CommonUtil.ExecLog(sModuleInfo,"Exit: Step - Enter Text",1,local_run)
         return sTestStepReturnStatus

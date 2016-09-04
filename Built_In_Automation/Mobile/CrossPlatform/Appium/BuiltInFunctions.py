@@ -6,6 +6,7 @@ from Utilities import CommonUtil, FileUtilities
 from Built_In_Automation.Mobile.Android.adb_calls import adbOptions
 from appium.webdriver.common.touch_action import TouchAction
 from Built_In_Automation.Mobile.CrossPlatform.Appium import clickinteraction as ci
+from Built_In_Automation.Mobile.CrossPlatform.Appium import textinteraction as ti
 
 
 PATH = lambda p: os.path.abspath(
@@ -513,7 +514,7 @@ def Click_Element(step_data):
         if result == "Passed":
             CommonUtil.ExecLog(sModuleInfo, "Clicked on element successfully", 1, local_run)
             return "Passed"
-        else:
+        elif result == "failed":
             CommonUtil.ExecLog(sModuleInfo, "Unable to click. The element is disabled.", 3, local_run)
             return "failed"
 
@@ -533,6 +534,55 @@ def Click_Element(step_data):
             exc_obj) + ";" + "File Name: " + fname + ";" + "Line: " + str(exc_tb.tb_lineno))
         CommonUtil.ExecLog(sModuleInfo, "Unable to click on the element. %s" % Error_Detail, 3, local_run)
         return "failed"
+
+
+# Method to enter texts in a text box; step data passed on by the user
+def Set_Text(step_data):
+    sModuleInfo = inspect.stack()[0][3] + " : " + inspect.getmoduleinfo(__file__).name
+    CommonUtil.ExecLog(sModuleInfo, "Inside Enter Text In Text Box function", 1, local_run)
+    try:
+        CommonUtil.ExecLog(sModuleInfo, "Trying to set text in the textbox...", 1, local_run)
+        element_parameter = step_data[0][0][0]
+        element_value = step_data[0][0][2]
+        text_value = step_data[0][1][2]
+        if element_parameter == "name":
+            result = ti.set_text_by_name(driver, element_value, text_value)
+        elif element_parameter == "id":
+            result = ti.set_text_by_id(driver, element_value, text_value)
+        elif element_parameter == "accessibility_id":
+            result = ti.set_text_by_accessibility_id(driver, element_value, text_value)
+        elif element_parameter == "class_name":
+            result = ti.set_text_by_class_name(driver, element_value, text_value)
+        elif element_parameter == "xpath":
+            result = ti.set_text_by_xpath(driver, element_value, text_value)
+        elif element_parameter == "android_uiautomator_text":
+            result = ti.set_text_by_android_uiautomator_text(driver, element_value, text_value)
+        elif element_parameter == "android_uiautomator_description":
+            result = ti.set_text_by_android_uiautomator_description(driver, element_value, text_value)
+        elif element_parameter == "ios_uiautomation":
+            result = ti.set_text_by_ios_uiautomation(driver, element_value, text_value)
+        else:
+            elem = driver.find_element_by_xpath("//*[@%s='%s']" % (element_parameter, element_value))
+            driver.set_value(elem, text_value)
+            CommonUtil.ExecLog(sModuleInfo, "Entered text on element successfully", 1, local_run)
+            return "Passed"
+
+        if result == "Passed":
+            CommonUtil.ExecLog(sModuleInfo, "Clicked on element successfully", 1, local_run)
+            return "Passed"
+        elif result == "failed":
+            CommonUtil.ExecLog(sModuleInfo, "Unable to click. The element is disabled.", 3, local_run)
+            return "failed"
+
+    except Exception, e:
+        exc_type, exc_obj, exc_tb = sys.exc_info()
+        fname = os.path.split(exc_tb.tb_frame.f_code.co_filename)[1]
+        Error_Detail = ((str(exc_type).replace("type ", "Error Type: ")) + ";" + "Error Message: " + str(
+            exc_obj) + ";" + "File Name: " + fname + ";" + "Line: " + str(exc_tb.tb_lineno))
+        CommonUtil.ExecLog(sModuleInfo, "Could not set text.  Error: %s" % (Error_Detail), 3,
+                           local_run)
+        return "failed"
+
 
 # Method to enter texts in a text box; step data passed on by the user
 def Enter_Text_In_Text_Box(step_data):
