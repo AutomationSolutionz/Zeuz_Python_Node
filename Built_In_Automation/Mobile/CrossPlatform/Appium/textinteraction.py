@@ -19,7 +19,8 @@ def set_text_by_id(driver, _id, text):
             elem.click()
             driver.hide_keyboard()
             #elem.set_value(text)
-            driver.set_value(elem, text)
+            #driver.set_value(elem, text)
+            elem.send_keys(text)
             CommonUtil.ExecLog(sModuleInfo, "Text set on element successfully", 1, local_run)
             return "Passed"
         else:
@@ -43,8 +44,7 @@ def set_text_by_name(driver, _name, text):
         if elem.is_displayed():
             elem.click()
             driver.hide_keyboard()
-            # elem.set_value(text)
-            driver.set_value(elem, text)
+            elem.send_keys(text)
             CommonUtil.ExecLog(sModuleInfo, "Text set on element successfully", 1, local_run)
             return "Passed"
         else:
@@ -67,8 +67,7 @@ def set_text_by_class_name(driver, _class, text):
         if elem.is_displayed():
             elem.click()
             driver.hide_keyboard()
-            # elem.set_value(text)
-            driver.set_value(elem, text)
+            elem.send_keys(text)
             CommonUtil.ExecLog(sModuleInfo, "Text set on element successfully", 1, local_run)
             return "Passed"
         else:
@@ -91,8 +90,7 @@ def set_text_by_xpath(driver, _classpath, text):
         if elem.is_displayed():
             elem.click()
             driver.hide_keyboard()
-            # elem.set_value(text)
-            driver.set_value(elem, text)
+            elem.send_keys(text)
             CommonUtil.ExecLog(sModuleInfo, "Text set on element successfully", 1, local_run)
             return "Passed"
         else:
@@ -114,8 +112,7 @@ def set_text_by_accessibility_id(driver, _id, text):
         if elem.is_displayed():
             elem.click()
             driver.hide_keyboard()
-            # elem.set_value(text)
-            driver.set_value(elem, text)
+            elem.send_keys(text)
             CommonUtil.ExecLog(sModuleInfo, "Text set on element successfully", 1, local_run)
             return "Passed"
         else:
@@ -138,8 +135,7 @@ def set_text_by_android_uiautomator_text(driver, _text, text_value):
         if elem.is_displayed():
             elem.click()
             driver.hide_keyboard()
-            # elem.set_value(text)
-            driver.set_value(elem, text_value)
+            elem.send_keys(text_value)
             CommonUtil.ExecLog(sModuleInfo, "Text set on element successfully", 1, local_run)
             return "Passed"
         else:
@@ -164,8 +160,7 @@ def set_text_by_android_uiautomator_description(driver, _description, text):
         if elem.is_displayed():
             elem.click()
             driver.hide_keyboard()
-            # elem.set_value(text)
-            driver.set_value(elem, text)
+            elem.send_keys(text)
             CommonUtil.ExecLog(sModuleInfo, "Text set on element successfully", 1, local_run)
             return "Passed"
         else:
@@ -190,8 +185,7 @@ def set_text_by_ios_uiautomation(driver, _description, text):
         if elem.is_displayed():
             elem.click()
             driver.hide_keyboard()
-            # elem.set_value(text)
-            driver.set_value(elem, text)
+            elem.send_keys(text)
             CommonUtil.ExecLog(sModuleInfo, "Text set on element successfully", 1, local_run)
             return "Passed"
         else:
