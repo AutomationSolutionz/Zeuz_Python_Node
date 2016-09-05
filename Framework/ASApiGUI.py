@@ -187,75 +187,12 @@ class TeamWidget(QtGui.QWidget, ASApiGUITeam.Ui_teamForm):
     def __init__(self, parent=None):
         super(TeamWidget, self).__init__(parent)
         self.setupUi(self)
-        #self.SecondNextBtn.clicked.connect(self.connect_server)
-        #self.firstBackBtn.clicked.connect(self.close_gui)
-
-    def connect_server(self):
-        for radioButton in self.findChildren(QtGui.QRadioButton):
-            if radioButton.isChecked():
-                team = unicode(radioButton.text())
-                print "Radio Button Selected: ", team
-                user_info_object.update({'team': team})
-
-        projects = self.Get('get_user_projects_api', user_info_object)
-
-        self.label.hide()
-        self.central_widget = QtGui.QStackedWidget()
-        self.parent().setCentralWidget(self.parent().central_widget)
-        self.project_widget = ProjectWidget(self)
-        layout = QtGui.QFormLayout()
-        for each in projects:
-            self.project_widget.listView.rb = QtGui.QRadioButton("%s" % each[0])
-            layout.addWidget(self.project_widget.listView.rb)
-        self.project_widget.listView.setLayout(layout)
-        #self.parent().central_widget.hide()
-        self.project_widget.show()
-        #self.central_widget.addWidget(project_widget)
-        #self.central_widget.setCurrentWidget(project_widget)
-
-    def close_gui(self):
-        print "Closed"
-        self.close()
-
-    def form_uri(self, resource_path):
-        base_server_address = 'http://%s:%s/' % (
-        str(user_info_object['server']), str(user_info_object['port']))
-        return base_server_address + resource_path + '/'
-
-    def Get(self, resource_path, payload={}):
-        return requests.get(self.form_uri(resource_path), params=json.dumps(payload)).json()
 
 
 class ProjectWidget(QtGui.QWidget, ASApiGUIProject.Ui_projectForm):
     def __init__(self, parent=None):
         super(ProjectWidget, self).__init__(parent)
         self.setupUi(self)
-        #self.ThirdNextBtn.clicked.connect(self.connect_server)
-        #self.secondBackBtn.clicked.connect(self.close_gui)
-
-    def connect_server(self):
-        for radioButton in self.findChildren(QtGui.QRadioButton):
-            if radioButton.isChecked():
-                project = unicode(radioButton.text())
-                print "Radio Button Selected: ", project
-                user_info_object.update({'project': project})
-
-
-        api = ApiThread(user_info_object)
-        api.begin()
-
-    def close_gui(self):
-        print "Closed"
-        self.close()
-        self.parent().label.show()
-
-    def form_uri(self, resource_path):
-        base_server_address = 'http://%s:%s/' % (
-            str(user_info_object['server']), str(user_info_object['port']))
-        return base_server_address + resource_path + '/'
-
-    def Get(self, resource_path, payload={}):
-        return requests.get(self.form_uri(resource_path), params=json.dumps(payload)).json()
 
 
 class UserWidget(QtGui.QWidget, ASApiGUIuser.Ui_userForm):
@@ -263,40 +200,6 @@ class UserWidget(QtGui.QWidget, ASApiGUIuser.Ui_userForm):
         super(UserWidget, self).__init__(parent)
         self.setupUi(self)
         self.central_widget = None
-        #self.firstNextBtn.clicked.connect(self.connect_server)
-        #self.cancelBtn.clicked.connect(self.close_gui)
-
-    def connect_server(self):
-        username = unicode(self.username.text()).strip()
-        password = unicode(self.password.text()).strip()
-        server = unicode(self.server.text()).strip()
-        port = int(unicode(self.port.text()).strip())
-
-        user_info_object = {
-            'username': username,
-            'password': password,
-            'server': server,
-            'port': port
-        }
-        global user_info_object
-
-        teams = self.Get('get_user_teams_api', user_info_object)
-        print teams
-        team_widget = TeamWidget(self)
-        layout = QtGui.QFormLayout()
-        for each in teams:
-            team_widget.listView.rb = QtGui.QRadioButton("%s" % each[0])
-            layout.addWidget(team_widget.listView.rb)
-        team_widget.listView.setLayout(layout)
-        team_widget.show()
-
-    def form_uri(self, resource_path):
-        base_server_address = 'http://%s:%s/' % (
-            str(unicode(self.server.text()).strip()), str(unicode(self.port.text()).strip()))
-        return base_server_address + resource_path + '/'
-
-    def Get(self, resource_path, payload={}):
-        return requests.get(self.form_uri(resource_path), params=json.dumps(payload)).json()
 
 
 class GUIApp(QtGui.QMainWindow, ASApiGUIdesign.Ui_mainWindow):
@@ -315,14 +218,10 @@ class GUIApp(QtGui.QMainWindow, ASApiGUIdesign.Ui_mainWindow):
         self.central_widget.addWidget(self.third_screen)
         self.central_widget.setCurrentWidget(self.start_screen)
 
-        #self.start_screen.firstNextBtn.clicked.connect(lambda: self.central_widget.setCurrentWidget(self.second_screen))
         self.start_screen.firstNextBtn.clicked.connect(self.user_action)
         self.start_screen.cancelBtn.clicked.connect(lambda: self.close())
-        #self.second_screen.firstBackBtn.clicked.connect(lambda: self.central_widget.setCurrentWidget(self.start_screen))
         self.second_screen.firstBackBtn.clicked.connect(self.back_to_user)
-        #self.second_screen.SecondNextBtn.clicked.connect(lambda: self.central_widget.setCurrentWidget(self.third_screen))
         self.second_screen.SecondNextBtn.clicked.connect(self.team_action)
-        #self.third_screen.secondBackBtn.clicked.connect(lambda: self.central_widget.setCurrentWidget(self.second_screen))
         self.third_screen.secondBackBtn.clicked.connect(self.back_to_team)
         self.third_screen.ThirdNextBtn.clicked.connect(self.project_action)
 
@@ -343,7 +242,6 @@ class GUIApp(QtGui.QMainWindow, ASApiGUIdesign.Ui_mainWindow):
             'server': server,
             'port': port
         }
-        #global user_info_object
 
         teams = self.Get('get_user_teams_api', self.user_info_object)
         print teams
@@ -362,7 +260,7 @@ class GUIApp(QtGui.QMainWindow, ASApiGUIdesign.Ui_mainWindow):
                 team = unicode(radioButton.text())
                 print "Radio Button Selected: ", team
                 self.user_info_object.update({'team': team})
-        print self.user_info_object
+
         projects = self.Get('get_user_projects_api', self.user_info_object)
         print projects
 
@@ -380,8 +278,6 @@ class GUIApp(QtGui.QMainWindow, ASApiGUIdesign.Ui_mainWindow):
                 project = unicode(radioButton.text())
                 print "Radio Button Selected: ", project
                 self.user_info_object.update({'project': project})
-
-        print self.user_info_object
 
         api = ApiThread(self.user_info_object)
         self.threads.append(api)
