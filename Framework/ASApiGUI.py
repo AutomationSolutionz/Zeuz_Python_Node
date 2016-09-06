@@ -11,7 +11,7 @@ import time
 import requests
 import json
 import MainDriverApi
-from Utilities import ASApiGUIdesign, ASApiGUITeam, ASApiGUIProject, ASApiGUIuser, ASApiGUIdependency
+from Utilities import ASApiGUIdesign, ASApiGUITeam, ASApiGUIProject, ASApiGUIuser, ASApiGUIdependency, ASApiGUIbranch, ASApiGUIconnect
 from Utilities import ConfigModule, CommonUtil, FileUtilities
 sys.path.append(os.path.dirname(os.getcwd()))
 
@@ -205,6 +205,18 @@ class DependencyWidget(QtGui.QWidget, ASApiGUIdependency.Ui_dependencyForm):
         self.setupUi(self)
 
 
+class BranchWidget(QtGui.QWidget, ASApiGUIbranch.Ui_branchForm):
+    def __init__(self, parent=None):
+        super(BranchWidget, self).__init__(parent)
+        self.setupUi(self)
+
+
+class ConnectWidget(QtGui.QWidget, ASApiGUIconnect.Ui_connectForm):
+    def __init__(self, parent=None):
+        super(ConnectWidget, self).__init__(parent)
+        self.setupUi(self)
+
+
 class UserWidget(QtGui.QWidget, ASApiGUIuser.Ui_userForm):
     def __init__(self, parent=None):
         super(UserWidget, self).__init__(parent)
@@ -224,10 +236,14 @@ class GUIApp(QtGui.QMainWindow, ASApiGUIdesign.Ui_mainWindow):
         self.second_screen = TeamWidget(self)
         self.third_screen = ProjectWidget(self)
         self.fourth_screen = DependencyWidget(self)
+        self.fifth_screen = BranchWidget(self)
+        self.final_screen = ConnectWidget(self)
         self.central_widget.addWidget(self.start_screen)
         self.central_widget.addWidget(self.second_screen)
         self.central_widget.addWidget(self.third_screen)
         self.central_widget.addWidget(self.fourth_screen)
+        self.central_widget.addWidget(self.fifth_screen)
+        self.central_widget.addWidget(self.final_screen)
         self.central_widget.setCurrentWidget(self.start_screen)
 
         self.start_screen.firstNextBtn.clicked.connect(self.user_action)
@@ -237,12 +253,11 @@ class GUIApp(QtGui.QMainWindow, ASApiGUIdesign.Ui_mainWindow):
         self.third_screen.secondBackBtn.clicked.connect(self.back_to_team)
         self.third_screen.ThirdNextBtn.clicked.connect(self.project_action)
         self.fourth_screen.thirdBackBtn.clicked.connect(self.back_to_project)
-        self.fourth_screen.FourthNextBtn.clicked.connect(self.connect_server)
-
-    def connect_server(self):
-        api = ApiThread(self.user_info_object)
-        self.threads.append(api)
-        api.begin()
+        self.fourth_screen.FourthNextBtn.clicked.connect(self.dependency_action)
+        self.fifth_screen.fourthBackBtn.clicked.connect(self.back_to_dependency)
+        self.fifth_screen.FifthNextBtn.clicked.connect(self.connect_server)
+        self.final_screen.fifthBackBtn.clicked.connect(self.back_to_branch)
+        self.final_screen.closeBtn.clicked.connect(lambda: self.close())
 
     def user_action(self):
         username = unicode(self.start_screen.username.text()).strip()
@@ -301,11 +316,47 @@ class GUIApp(QtGui.QMainWindow, ASApiGUIdesign.Ui_mainWindow):
             self.fourth_screen.label = QtGui.QLabel("%s" % each[0])
             layout.addWidget(self.fourth_screen.label)
             for element in each[1]:
-                self.fourth_screen.rb = QtGui.QRadioButton("%s" % element)
-                layout.addWidget(self.fourth_screen.rb)
+                self.fourth_screen.cb = QtGui.QCheckBox("%s" % element)
+                layout.addWidget(self.fourth_screen.cb)
         self.fourth_screen.setLayout(layout)
         self.third_screen.hide()
         self.fourth_screen.show()
+
+    def dependency_action(self):
+        dependencies = []
+        for dep in self.fourth_screen.findChildren(QtGui.QLabel):
+            dependencies.append(unicode(dep.text()))
+        print dependencies
+
+        dep_options = []
+        for checkBox in self.fourth_screen.findChildren(QtGui.QCheckBox):
+            if checkBox.isChecked():
+                dep = unicode(checkBox.text())
+                print "Dependency selected: ", dep
+                dep_options.append(dep)
+        print dep_options
+
+        branches = self.Get('get_branch_version_list_api', self.user_info_object)
+        print branches
+
+        layout = QtGui.QFormLayout()
+        for each in branches:
+            self.fifth_screen.label = QtGui.QLabel("%s" % each[0])
+            layout.addWidget(self.fifth_screen.label)
+            for element in each[1]:
+                self.fifth_screen.cb = QtGui.QCheckBox("%s" % element)
+                layout.addWidget(self.fifth_screen.cb)
+        self.fifth_screen.setLayout(layout)
+        self.fourth_screen.hide()
+        self.fifth_screen.show()
+
+    def connect_server(self):
+        api = ApiThread(self.user_info_object)
+        self.threads.append(api)
+        api.begin()
+
+        self.fifth_screen.hide()
+        self.final_screen.show()
 
     def back_to_user(self):
         self.second_screen.close()
@@ -327,6 +378,20 @@ class GUIApp(QtGui.QMainWindow, ASApiGUIdesign.Ui_mainWindow):
         QtCore.QObjectCleanupHandler().add(self.fourth_screen.layout())
         self.third_screen.show()
         self.central_widget.setCurrentWidget(self.third_screen)
+
+    def back_to_dependency(self):
+        self.fifth_screen.close()
+        self.clear_layout(self.fifth_screen.layout())
+        QtCore.QObjectCleanupHandler().add(self.fifth_screen.layout())
+        self.fourth_screen.show()
+        self.central_widget.setCurrentWidget(self.fourth_screen)
+
+    def back_to_branch(self):
+        self.final_screen.close()
+        self.clear_layout(self.final_screen.layout())
+        QtCore.QObjectCleanupHandler().add(self.final_screen.layout())
+        self.fifth_screen.show()
+        self.central_widget.setCurrentWidget(self.fifth_screen)
 
     def clear_layout(self, layout):
         if layout is not None:
