@@ -391,7 +391,6 @@ def Validate_Text(step_data):
                                3, local_run)
             return "failed"
         else:
-            expected_text_data = step_data[0][1][2]
             if step_data[0][0][0] == "current_page":
                 try:
                     Element = Get_Element('tag', 'html')
@@ -418,7 +417,12 @@ def Validate_Text(step_data):
             for each_text_item in list_of_element_text:
                 if each_text_item != "":
                     visible_list_of_element_text.append(each_text_item)
-            if step_data[0][1][0] == "validate partial text":
+            if step_data[0][1][0] == "validate partial text" or step_data[0][3][0] == "validate partial text":
+                if step_data[0][1][0] == "validate partial text":
+                    expected_text_data = step_data[0][1][2]
+                else:
+                    expected_text_data = step_data[0][3][2]
+
                 actual_text_data = visible_list_of_element_text
                 CommonUtil.ExecLog(sModuleInfo, "Expected Text: " + expected_text_data, 1, local_run)
                 CommonUtil.ExecLog(sModuleInfo, "Actual Text: " + str(actual_text_data), 1, local_run)
@@ -428,7 +432,11 @@ def Validate_Text(step_data):
                 else:
                     CommonUtil.ExecLog(sModuleInfo, "Unable to validate using partial match.", 3, local_run)
                     return "failed"
-            if step_data[0][1][0] == "validate full text":
+            if step_data[0][1][0] == "validate full text" or step_data[0][3][0] == "validate full text":
+                if step_data[0][1][0] == "validate full text":
+                    expected_text_data = step_data[0][1][2]
+                else:
+                    expected_text_data = step_data[0][3][2]
                 actual_text_data = visible_list_of_element_text
                 CommonUtil.ExecLog(sModuleInfo, "Expected Text: " + expected_text_data, 1, local_run)
                 CommonUtil.ExecLog(sModuleInfo, "Actual Text: " + str(actual_text_data), 1, local_run)
