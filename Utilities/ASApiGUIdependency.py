@@ -2,7 +2,7 @@
 
 # Form implementation generated from reading ui file 'dependencyGUI.ui'
 #
-# Created: Wed Aug 31 16:57:28 2016
+# Created: Tue Sep  6 11:44:18 2016
 #      by: PyQt4 UI code generator 4.10.4
 #
 # WARNING! All changes made in this file will be lost!
@@ -23,16 +23,17 @@ except AttributeError:
     def _translate(context, text, disambig):
         return QtGui.QApplication.translate(context, text, disambig)
 
+
 class Ui_dependencyForm(object):
     def setupUi(self, dependencyForm):
         dependencyForm.setObjectName(_fromUtf8("dependencyForm"))
-        dependencyForm.resize(749, 503)
+        dependencyForm.resize(702, 471)
         self.FourthNextBtn = QtGui.QPushButton(dependencyForm)
-        self.FourthNextBtn.setGeometry(QtCore.QRect(590, 440, 98, 27))
+        self.FourthNextBtn.setGeometry(QtCore.QRect(560, 410, 98, 27))
         self.FourthNextBtn.setStyleSheet(_fromUtf8("background: #4499aa; color: white"))
         self.FourthNextBtn.setObjectName(_fromUtf8("FourthNextBtn"))
         self.thirdBackBtn = QtGui.QPushButton(dependencyForm)
-        self.thirdBackBtn.setGeometry(QtCore.QRect(470, 440, 98, 27))
+        self.thirdBackBtn.setGeometry(QtCore.QRect(440, 410, 98, 27))
         self.thirdBackBtn.setObjectName(_fromUtf8("thirdBackBtn"))
 
         self.retranslateUi(dependencyForm)

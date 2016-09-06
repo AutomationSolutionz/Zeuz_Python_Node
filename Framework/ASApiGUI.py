@@ -131,12 +131,16 @@ class ApiThread(QtCore.QThread):
                 'project': self.project,
                 'team': self.team
             }
-            r = self.Get('update_automation_machine_api', update_object)
-            if r['registered']:
-                print "Machine is registered as online with name: %s" % (r['name'])
-            else:
-                print "Machine is not registered as online"
-            return r
+            try:
+                r = self.Get('update_automation_machine_api', update_object)
+                if r['registered']:
+                    print "Machine is registered as online with name: %s" % (r['name'])
+                else:
+                    print "Machine is not registered as online"
+                return r
+            except:
+                r = self.Get('update_automation_machine_api', update_object)
+                return r
         except Exception, e:
             exc_type, exc_obj, exc_tb = sys.exc_info()
             fname = os.path.split(exc_tb.tb_frame.f_code.co_filename)[1]
@@ -195,6 +199,12 @@ class ProjectWidget(QtGui.QWidget, ASApiGUIProject.Ui_projectForm):
         self.setupUi(self)
 
 
+class DependencyWidget(QtGui.QWidget, ASApiGUIdependency.Ui_dependencyForm):
+    def __init__(self, parent=None):
+        super(DependencyWidget, self).__init__(parent)
+        self.setupUi(self)
+
+
 class UserWidget(QtGui.QWidget, ASApiGUIuser.Ui_userForm):
     def __init__(self, parent=None):
         super(UserWidget, self).__init__(parent)
@@ -212,10 +222,12 @@ class GUIApp(QtGui.QMainWindow, ASApiGUIdesign.Ui_mainWindow):
         self.setCentralWidget(self.central_widget)
         self.start_screen = UserWidget(self)
         self.second_screen = TeamWidget(self)
-        self.third_screen = ProjectWidget()
+        self.third_screen = ProjectWidget(self)
+        self.fourth_screen = DependencyWidget(self)
         self.central_widget.addWidget(self.start_screen)
         self.central_widget.addWidget(self.second_screen)
         self.central_widget.addWidget(self.third_screen)
+        self.central_widget.addWidget(self.fourth_screen)
         self.central_widget.setCurrentWidget(self.start_screen)
 
         self.start_screen.firstNextBtn.clicked.connect(self.user_action)
@@ -224,9 +236,11 @@ class GUIApp(QtGui.QMainWindow, ASApiGUIdesign.Ui_mainWindow):
         self.second_screen.SecondNextBtn.clicked.connect(self.team_action)
         self.third_screen.secondBackBtn.clicked.connect(self.back_to_team)
         self.third_screen.ThirdNextBtn.clicked.connect(self.project_action)
+        self.fourth_screen.thirdBackBtn.clicked.connect(self.back_to_project)
+        self.fourth_screen.FourthNextBtn.clicked.connect(self.connect_server)
 
     def connect_server(self):
-        api = ApiThread(user_info_object)
+        api = ApiThread(self.user_info_object)
         self.threads.append(api)
         api.begin()
 
@@ -279,9 +293,19 @@ class GUIApp(QtGui.QMainWindow, ASApiGUIdesign.Ui_mainWindow):
                 print "Radio Button Selected: ", project
                 self.user_info_object.update({'project': project})
 
-        api = ApiThread(self.user_info_object)
-        self.threads.append(api)
-        api.begin()
+        dependencies = self.Get('get_dependency_lists_api', self.user_info_object)
+        print dependencies
+
+        layout = QtGui.QFormLayout()
+        for each in dependencies:
+            self.fourth_screen.label = QtGui.QLabel("%s" % each[0])
+            layout.addWidget(self.fourth_screen.label)
+            for element in each[1]:
+                self.fourth_screen.rb = QtGui.QRadioButton("%s" % element)
+                layout.addWidget(self.fourth_screen.rb)
+        self.fourth_screen.setLayout(layout)
+        self.third_screen.hide()
+        self.fourth_screen.show()
 
     def back_to_user(self):
         self.second_screen.close()
@@ -296,6 +320,13 @@ class GUIApp(QtGui.QMainWindow, ASApiGUIdesign.Ui_mainWindow):
         QtCore.QObjectCleanupHandler().add(self.third_screen.listView.layout())
         self.second_screen.show()
         self.central_widget.setCurrentWidget(self.second_screen)
+
+    def back_to_project(self):
+        self.fourth_screen.close()
+        self.clear_layout(self.fourth_screen.layout())
+        QtCore.QObjectCleanupHandler().add(self.fourth_screen.layout())
+        self.third_screen.show()
+        self.central_widget.setCurrentWidget(self.third_screen)
 
     def clear_layout(self, layout):
         if layout is not None:
