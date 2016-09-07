@@ -878,53 +878,54 @@ def Element_Validation(All_Elements_Found):#, index):
 def Sequential_Actions(step_data):
     sModuleInfo = inspect.stack()[0][3] + " : " + inspect.getmoduleinfo(__file__).name
     try:
+        logic_row = []
         for each in step_data:
-            logic_row = []
-            for row in each:
-                # finding what to do for each dataset
-                if len(row) == 5:
-                    if row[1] == "action":
-                        result = Action_Handler([each], row[0])
-                        if result == [] or result == "failed":
-                            return "failed"
-
-                    elif row[1] == "logic":
-                        logic_decision = ""
-                        logic_row.append(row)
-                        if len(logic_row) == 2:
-                            element_step_data = each[0:len(step_data[0]) - 2:1]
-                            returned_step_data_list = Validate_Step_Data(element_step_data)
-                            if ((returned_step_data_list == []) or (returned_step_data_list == "failed")):
-                                return "failed"
-                            else:
-                                try:
-                                    Element = Get_Element(returned_step_data_list[0], returned_step_data_list[1],
-                                                          returned_step_data_list[2], returned_step_data_list[3],
-                                                          returned_step_data_list[4])
-                                    if Element == 'failed':
-                                        logic_decision = "false"
-                                    else:
-                                        logic_decision = "true"
-                                except Exception, errMsg:
-                                    errMsg = "Could not find element in the by the criteria..."
-                                    Exception_Info(sModuleInfo, errMsg)
-                        else:
-                            continue
-
-                        for conditional_steps in logic_row:
-                            if logic_decision in conditional_steps:
-                                print conditional_steps[2]
-                                list_of_steps = conditional_steps[2].split(",")
-                                for each_item in list_of_steps:
-                                    data_set_index = int(each_item) - 1
-                                    Sequential_Actions([step_data[data_set_index]])
-                                return "passed"
-
-                    else:
-                        CommonUtil.ExecLog(sModuleInfo,
-                                           "The sub-field information is incorrect. Please provide accurate information on the data set(s).",
-                                           3, local_run)
+            # finding what to do for each dataset
+            if each[0][1] == "action":
+                result = Action_Handler(each[1], each[0][0])
+                if result == [] or result == "failed":
+                    return "failed"
+            elif each[1][1] == "action":
+                result = Action_Handler(each[0], each[1][0])
+                if result == [] or result == "failed":
+                    return "failed"
+            elif each[0][1] == "logic":
+                logic_decision = ""
+                logic_row.append(each[1])
+                if len(logic_row) == 2:
+                    element_step_data = each[0:len(step_data[0]) - 2:1]
+                    returned_step_data_list = Validate_Step_Data(element_step_data)
+                    if(returned_step_data_list == []) or (returned_step_data_list == "failed"):
                         return "failed"
+                    else:
+                        try:
+                            Element = Get_Element(returned_step_data_list[0], returned_step_data_list[1],
+                                                  returned_step_data_list[2], returned_step_data_list[3],
+                                                  returned_step_data_list[4])
+                            if Element == 'failed':
+                                logic_decision = "false"
+                            else:
+                                logic_decision = "true"
+                        except Exception, errMsg:
+                            errMsg = "Could not find element in the by the criteria..."
+                            Exception_Info(sModuleInfo, errMsg)
+                else:
+                    continue
+
+                for conditional_steps in logic_row:
+                    if logic_decision in conditional_steps:
+                        print conditional_steps[2]
+                        list_of_steps = conditional_steps[2].split(",")
+                        for each_item in list_of_steps:
+                            data_set_index = int(each_item) - 1
+                            Sequential_Actions([step_data[data_set_index]])
+                        return "passed"
+
+            else:
+                CommonUtil.ExecLog(sModuleInfo,
+                                   "The sub-field information is incorrect. Please provide accurate information on the data set(s).",
+                                   3, local_run)
+                return "failed"
         return "passed"
 
     except Exception, e:
