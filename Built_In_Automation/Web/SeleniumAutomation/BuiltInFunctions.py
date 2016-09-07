@@ -411,18 +411,13 @@ def Validate_Text(step_data):
                     except Exception, e:
                         errMsg = "Could not get element based on the information provided."
                         Exception_Info(sModuleInfo, errMsg)
-
+            expected_text_data = step_data[0][len(step_data[0]) - 1][2]
             list_of_element_text = Element.text.split('\n')
             visible_list_of_element_text = []
             for each_text_item in list_of_element_text:
                 if each_text_item != "":
                     visible_list_of_element_text.append(each_text_item)
-            if step_data[0][1][0] == "validate partial text" or step_data[0][3][0] == "validate partial text":
-                if step_data[0][1][0] == "validate partial text":
-                    expected_text_data = step_data[0][1][2]
-                else:
-                    expected_text_data = step_data[0][3][2]
-
+            if step_data[0][len(step_data[0])-1][0] == "validate partial text":
                 actual_text_data = visible_list_of_element_text
                 CommonUtil.ExecLog(sModuleInfo, "Expected Text: " + expected_text_data, 1, local_run)
                 CommonUtil.ExecLog(sModuleInfo, "Actual Text: " + str(actual_text_data), 1, local_run)
@@ -432,11 +427,7 @@ def Validate_Text(step_data):
                 else:
                     CommonUtil.ExecLog(sModuleInfo, "Unable to validate using partial match.", 3, local_run)
                     return "failed"
-            if step_data[0][1][0] == "validate full text" or step_data[0][3][0] == "validate full text":
-                if step_data[0][1][0] == "validate full text":
-                    expected_text_data = step_data[0][1][2]
-                else:
-                    expected_text_data = step_data[0][3][2]
+            if step_data[0][len(step_data[0])-1][0] == "validate full text":
                 actual_text_data = visible_list_of_element_text
                 CommonUtil.ExecLog(sModuleInfo, "Expected Text: " + expected_text_data, 1, local_run)
                 CommonUtil.ExecLog(sModuleInfo, "Actual Text: " + str(actual_text_data), 1, local_run)
@@ -483,7 +474,7 @@ def Action_Handler(action_step_data, action_name):
             if result == "failed":
                 return "failed"
         elif action_name == "sleep":
-            result = Wait(action_step_data)
+            result = Sleep(action_step_data)
             if result == "failed":
                 return "failed"
         elif (action_name == "validate full text" or action_name == "validate partial text"):
@@ -506,12 +497,20 @@ def Action_Handler(action_step_data, action_name):
         return "failed"
 
 
-def Wait(step_row):
+def Sleep(step_data):
     sModuleInfo = inspect.stack()[0][3] + " : " + inspect.getmoduleinfo(__file__).name
+    CommonUtil.ExecLog(sModuleInfo, "Function: Sleep", 1, local_run)
     try:
-        tuple = step_row[0][0]
-        seconds = int(tuple[2])
-        result = time.sleep(seconds)
+        if ((len(step_data) != 1) or (1 < len(step_data[0]) >= 5)):
+            CommonUtil.ExecLog(sModuleInfo,
+                               "The information in the data-set(s) are incorrect. Please provide accurate data set(s) information.",
+                               3, local_run)
+            return "failed"
+        else:
+            tuple = step_data[0][0]
+            seconds = int(tuple[2])
+            CommonUtil.ExecLog(sModuleInfo,"Sleeping for %s seconds"%seconds,1,local_run)
+            result = time.sleep(seconds)
 
         return result
     except Exception, e:
@@ -522,19 +521,29 @@ def Wait(step_row):
         print "%s" % Error_Detail
         return "failed"
 
-def Scroll(step_row):
+def Scroll(step_data):
     sModuleInfo = inspect.stack()[0][3] + " : " + inspect.getmoduleinfo(__file__).name
+    CommonUtil.ExecLog(sModuleInfo, "Function: Scroll", 1, local_run)
     try:
-        tuple = step_row[0][0]
-        up_or_down = tuple[2]
-        if up_or_down == 'down':
-            result = sBrowser.execute_script("window.scrollBy(0,750)", "")
-            time.sleep(5)
-        elif up_or_down == 'up':
-            result = sBrowser.execute_script("window.scrollBy(0,-750)", "")
-            time.sleep(5)
+        if ((len(step_data) != 1) or (1 < len(step_data[0]) >= 5)):
+            CommonUtil.ExecLog(sModuleInfo,
+                               "The information in the data-set(s) are incorrect. Please provide accurate data set(s) information.",
+                               3, local_run)
+            return "failed"
         else:
-            result = "failed"
+            tuple = step_data[0][0]
+            scroll_direction = tuple[2]
+            if scroll_direction == 'down':
+                CommonUtil.ExecLog(sModuleInfo,"Scrolling down",1,local_run)
+                result = sBrowser.execute_script("window.scrollBy(0,750)", "")
+                time.sleep(5)
+            elif scroll_direction == 'up':
+                CommonUtil.ExecLog(sModuleInfo, "Scrolling up", 1, local_run)
+                result = sBrowser.execute_script("window.scrollBy(0,-750)", "")
+                time.sleep(5)
+            else:
+                CommonUtil.ExecLog(sModuleInfo, "Scrolling was not successful", 3, local_run)
+                result = "failed"
 
         return result
     except Exception, e:
