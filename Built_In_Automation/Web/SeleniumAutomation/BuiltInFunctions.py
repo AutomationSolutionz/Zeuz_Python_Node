@@ -92,7 +92,7 @@ def Open_Browser(browser):
 
 def Go_To_Link(link, page_title=False):
     #this function needs work with validating page title.  We need to check if user entered any title.
-    #if not then we dont do the validation
+    #if not then we don't do the validation
     sModuleInfo = inspect.stack()[0][3] + " : " + inspect.getmoduleinfo(__file__).name
     try:
         sBrowser.get(link)
@@ -111,6 +111,8 @@ def Go_To_Link(link, page_title=False):
         CommonUtil.TakeScreenShot(sModuleInfo, local_run)
         return "failed"
 
+
+'============================= Sequential Action Section Begins=============================='
 
 #Method to get the element step data from the original step_data
 def Get_Element_Step_Data(step_data):
@@ -131,6 +133,54 @@ def Get_Element_Step_Data(step_data):
         fname = os.path.split(exc_tb.tb_frame.f_code.co_filename)[1]
         Error_Detail = ((str(exc_type).replace("type ", "Error Type: ")) + ";" +  "Error Message: " + str(exc_obj) +";" + "File Name: " + fname + ";" + "Line: "+ str(exc_tb.tb_lineno))
         CommonUtil.ExecLog(sModuleInfo, "Could not get element step data.  Error: %s"%(Error_Detail), 3,local_run)
+        return "failed"
+
+
+#Handles actions for the sequential logic, based on the input from the mentioned function
+def Action_Handler(action_step_data, action_name):
+    sModuleInfo = inspect.stack()[0][3] + " : " + inspect.getmoduleinfo(__file__).name
+    try:
+        if action_name =="click":
+            result = Click_Element(action_step_data)
+            if result == "failed":
+                return "failed"
+        elif action_name == "hover":
+            result = Hover_Over_Element(action_step_data)
+            if result == "failed":
+                return "failed"
+        elif (action_name == "keystroke_keys" or action_name == "keystroke_chars"):
+            result = Keystroke_For_Element(action_step_data)
+            if result == "failed":
+                return "failed"
+        elif action_name=="text":
+            result = Enter_Text_In_Text_Box(action_step_data)
+            if result == "failed":
+                return "failed"
+        elif action_name =="wait":
+            result = Wait_For_New_Element(action_step_data)
+            if result == "failed":
+                return "failed"
+        elif action_name == "sleep":
+            result = Sleep(action_step_data)
+            if result == "failed":
+                return "failed"
+        elif (action_name == "validate full text" or action_name == "validate partial text"):
+            result = Validate_Text(action_step_data)
+            if result == "failed":
+                return "failed"
+        elif (action_name == "scroll"):
+            result = Scroll(action_step_data)
+            if result == "failed":
+                return "failed"
+        else:
+            CommonUtil.ExecLog(sModuleInfo, "The action you entered is incorrect. Please provide accurate information on the data set(s).", 3,local_run)
+            return "failed" 
+        
+    except Exception, e:
+        exc_type, exc_obj, exc_tb = sys.exc_info()
+        fname = os.path.split(exc_tb.tb_frame.f_code.co_filename)[1]
+        Error_Detail = ((str(exc_type).replace("type ", "Error Type: ")) + ";" +  "Error Message: " + str(exc_obj) +";" + "File Name: " + fname + ";" + "Line: "+ str(exc_tb.tb_lineno))
+        print "%s"%Error_Detail
         return "failed"
 
 #Method to enter texts in a text box; step data passed on by the user
@@ -179,7 +229,6 @@ def Enter_Text_In_Text_Box(step_data):
         return "failed"
 
 
-
 # def Keystroke_Key_Mapping(Element,keystroke):
 #     sModuleInfo = inspect.stack()[0][3] + " : " + inspect.getmoduleinfo(__file__).name
 #     CommonUtil.ExecLog(sModuleInfo, "Inside Keystroke For Element function", 1,local_run)
@@ -205,6 +254,7 @@ def Enter_Text_In_Text_Box(step_data):
 #         Error_Detail = ((str(exc_type).replace("type ", "Error Type: ")) + ";" +  "Error Message: " + str(exc_obj) +";" + "File Name: " + fname + ";" + "Line: "+ str(exc_tb.tb_lineno))
 #         CommonUtil.ExecLog(sModuleInfo, "Could not press enter for your element.  Error: %s"%(Error_Detail), 3,local_run)
 #         return "failed"    
+
 
 #Method to click on element; step data passed on by the user
 def Keystroke_For_Element(step_data):
@@ -386,9 +436,7 @@ def Validate_Text(step_data):
     CommonUtil.ExecLog(sModuleInfo, "Function: Compare_Text_Data", 1, local_run)
     try:
         if ((len(step_data) != 1) or (1 < len(step_data[0]) >= 5)):
-            CommonUtil.ExecLog(sModuleInfo,
-                               "The information in the data-set(s) are incorrect. Please provide accurate data set(s) information.",
-                               3, local_run)
+            CommonUtil.ExecLog(sModuleInfo, "The information in the data-set(s) are incorrect. Please provide accurate data set(s) information.",3, local_run)
             return "failed"
         else:
             if step_data[0][0][0] == "current_page":
@@ -405,9 +453,7 @@ def Validate_Text(step_data):
                     return "failed"
                 else:
                     try:
-                        Element = Get_Element(returned_step_data_list[0], returned_step_data_list[1],
-                                              returned_step_data_list[2], returned_step_data_list[3],
-                                              returned_step_data_list[4])
+                        Element = Get_Element(returned_step_data_list[0], returned_step_data_list[1], returned_step_data_list[2], returned_step_data_list[3], returned_step_data_list[4])
                     except Exception, e:
                         errMsg = "Could not get element based on the information provided."
                         Exception_Info(sModuleInfo, errMsg)
@@ -432,8 +478,7 @@ def Validate_Text(step_data):
                 CommonUtil.ExecLog(sModuleInfo, "Expected Text: " + expected_text_data, 1, local_run)
                 CommonUtil.ExecLog(sModuleInfo, "Actual Text: " + str(actual_text_data), 1, local_run)
                 if (expected_text_data in actual_text_data):
-                    CommonUtil.ExecLog(sModuleInfo, "The text has been validated by using complete match.", 1,
-                                       local_run)
+                    CommonUtil.ExecLog(sModuleInfo, "The text has been validated by using complete match.", 1, local_run)
                     return "passed"
                 else:
                     CommonUtil.ExecLog(sModuleInfo, "Unable to validate using complete match.", 3, local_run)
@@ -449,54 +494,7 @@ def Validate_Text(step_data):
         return "failed"
     
 
-#Handles actions for the sequential logic, based on the input from the mentioned function
-def Action_Handler(action_step_data, action_name):
-    sModuleInfo = inspect.stack()[0][3] + " : " + inspect.getmoduleinfo(__file__).name
-    try:
-        if action_name =="click":
-            result = Click_Element(action_step_data)
-            if result == "failed":
-                return "failed"
-        elif action_name == "hover":
-            result = Hover_Over_Element(action_step_data)
-            if result == "failed":
-                return "failed"
-        elif (action_name == "keystroke_keys" or action_name == "keystroke_chars"):
-            result = Keystroke_For_Element(action_step_data)
-            if result == "failed":
-                return "failed"
-        elif action_name=="text":
-            result = Enter_Text_In_Text_Box(action_step_data)
-            if result == "failed":
-                return "failed"
-        elif action_name =="wait":
-            result = Wait_For_New_Element(action_step_data)
-            if result == "failed":
-                return "failed"
-        elif action_name == "sleep":
-            result = Sleep(action_step_data)
-            if result == "failed":
-                return "failed"
-        elif (action_name == "validate full text" or action_name == "validate partial text"):
-            result = Validate_Text(action_step_data)
-            if result == "failed":
-                return "failed"
-        elif (action_name == "scroll"):
-            result = Scroll(action_step_data)
-            if result == "failed":
-                return "failed"
-        else:
-            CommonUtil.ExecLog(sModuleInfo, "The action you entered is incorrect. Please provide accurate information on the data set(s).", 3,local_run)
-            return "failed" 
-        
-    except Exception, e:
-        exc_type, exc_obj, exc_tb = sys.exc_info()
-        fname = os.path.split(exc_tb.tb_frame.f_code.co_filename)[1]
-        Error_Detail = ((str(exc_type).replace("type ", "Error Type: ")) + ";" +  "Error Message: " + str(exc_obj) +";" + "File Name: " + fname + ";" + "Line: "+ str(exc_tb.tb_lineno))
-        print "%s"%Error_Detail
-        return "failed"
-
-
+#Method to sleep for a particular duration
 def Sleep(step_data):
     sModuleInfo = inspect.stack()[0][3] + " : " + inspect.getmoduleinfo(__file__).name
     CommonUtil.ExecLog(sModuleInfo, "Function: Sleep", 1, local_run)
@@ -521,6 +519,8 @@ def Sleep(step_data):
         print "%s" % Error_Detail
         return "failed"
 
+
+#Method to scroll down a page
 def Scroll(step_data):
     sModuleInfo = inspect.stack()[0][3] + " : " + inspect.getmoduleinfo(__file__).name
     CommonUtil.ExecLog(sModuleInfo, "Function: Scroll", 1, local_run)
@@ -554,7 +554,7 @@ def Scroll(step_data):
         print "%s" % Error_Detail
         return "failed"
     
-
+    
 #Performs a series of action or logical decisions based on user input
 def Sequential_Actions(step_data):
     sModuleInfo = inspect.stack()[0][3] + " : " + inspect.getmoduleinfo(__file__).name
@@ -611,43 +611,10 @@ def Sequential_Actions(step_data):
         print "%s"%Error_Detail
         return "failed"
 
-
-#Validation of step data passed on by the user
-def Validate_Step_Data(step_data):
-    sModuleInfo = inspect.stack()[0][3] + " : " + inspect.getmoduleinfo(__file__).name
-    CommonUtil.ExecLog(sModuleInfo, "Function: Validate_Step_Data", 1,local_run)
-    try:    
-        if (len(step_data)==1):
-            element_parameter = step_data[0][0]
-            element_value = step_data[0][2]
-            reference_parameter = False
-            reference_value = False    
-            reference_is_parent_or_child = False
-        elif (len(step_data)==2):
-            element_parameter = step_data[0][0]
-            element_value = step_data[0][2]
-            reference_parameter = step_data[1][0]
-            reference_value = step_data[1][2]
-            reference_is_parent_or_child = False
-        elif (len(step_data)==3):
-            element_parameter = step_data[0][0]
-            element_value = step_data[0][2]
-            reference_parameter = step_data[1][0]
-            reference_value = step_data[1][2]    
-            reference_is_parent_or_child = step_data[2][2]
-        else:
-            CommonUtil.ExecLog(sModuleInfo, "Data set incorrect. Please provide accurate data set(s) information.", 3,local_run)
-            return "failed"
-        validated_data = (element_parameter, element_value, reference_parameter, reference_value, reference_is_parent_or_child)
-        return validated_data
-    except Exception, e:
-            exc_type, exc_obj, exc_tb = sys.exc_info()        
-            fname = os.path.split(exc_tb.tb_frame.f_code.co_filename)[1]
-            Error_Detail = ((str(exc_type).replace("type ", "Error Type: ")) + ";" +  "Error Message: " + str(exc_obj) +";" + "File Name: " + fname + ";" + "Line: "+ str(exc_tb.tb_lineno))
-            CommonUtil.ExecLog(sModuleInfo, "Could not find the new page element requested.  Error: %s"%(Error_Detail), 3,local_run)
-            return "failed"
-
+'===================== ===x=== Sequential Action Section Ends ===x=== ======================'
     
+
+'============================= Validate Table Section Begins =============================='
 
 def Model_Actual_Data(actual_data):
     sModuleInfo = inspect.stack()[0][3] + " : " + inspect.getmoduleinfo(__file__).name
@@ -697,6 +664,7 @@ def Model_Actual_Data_Ignoring_Column(actual_data):
         Error_Detail = ((str(exc_type).replace("type ", "Error Type: ")) + ";" +  "Error Message: " + str(exc_obj) +";" + "File Name: " + fname + ";" + "Line: "+ str(exc_tb.tb_lineno))
         CommonUtil.ExecLog(sModuleInfo, "Could not model actual data ignoring column.  Error: %s"%(Error_Detail), 3,local_run)
         return "failed"
+
     
 def Model_Actual_Data_Ignoring_Row(actual_data):
     sModuleInfo = inspect.stack()[0][3] + " : " + inspect.getmoduleinfo(__file__).name
@@ -807,7 +775,6 @@ def Model_Expected_Data_Ignoring_Row(expected_data):
         return "failed"
     
     
-    
 def Model_Expected_Column_Row(expect_data):
     #collect all column name
     sModuleInfo = inspect.stack()[0][3] + " : " + inspect.getmoduleinfo(__file__).name
@@ -828,7 +795,6 @@ def Model_Expected_Column_Row(expect_data):
         CommonUtil.ExecLog(sModuleInfo, "Could not model expected column row.  Error: %s"%(Error_Detail), 3,local_run)
         return "failed"
     
-
 
 ##Helper function for validate table - Exact Matching
 def Validate_Table_Helper(expected_table_data, actual_table_data, validation_option):
@@ -944,8 +910,13 @@ def Validate_Table(step_data):
         CommonUtil.ExecLog(sModuleInfo, "Could not find your element.  Error: %s"%(Error_Detail), 3,local_run)
         return "failed" 
      
-    
-    
+
+'===================== ===x=== Validate Table Section Ends ===x=== ======================'    
+
+
+
+'============================= Get Elements Section Begins =============================='    
+
 def Get_Element(element_parameter,element_value,reference_parameter=False,reference_value=False,reference_is_parent_or_child=False,get_all_unvalidated_elements=False):
     sModuleInfo = inspect.stack()[0][3] + " : " + inspect.getmoduleinfo(__file__).name
     try:
@@ -1277,6 +1248,11 @@ def Get_Table_Elements(table_parameter,table_value, reference_parameter=False,re
         return "failed"
 
 
+'===================== ===x=== Get Element Section Ends ===x=== ======================'
+
+
+'============================= Validation Section Begins =============================='
+
 def Element_Validation(All_Elements_Found):#, index):
     sModuleInfo = inspect.stack()[0][3] + " : " + inspect.getmoduleinfo(__file__).name
     try:
@@ -1328,6 +1304,44 @@ def Element_Validation(All_Elements_Found):#, index):
         Error_Detail = ((str(exc_type).replace("type ", "Error Type: ")) + ";" +  "Error Message: " + str(exc_obj) +";" + "File Name: " + fname + ";" + "Line: "+ str(exc_tb.tb_lineno))
         CommonUtil.ExecLog(sModuleInfo, "Unable to get the element.  Error: %s"%(Error_Detail), 3,local_run)
         return "failed"
+
+
+#Validation of step data passed on by the user
+def Validate_Step_Data(step_data):
+    sModuleInfo = inspect.stack()[0][3] + " : " + inspect.getmoduleinfo(__file__).name
+    CommonUtil.ExecLog(sModuleInfo, "Function: Validate_Step_Data", 1,local_run)
+    try:    
+        if (len(step_data)==1):
+            element_parameter = step_data[0][0]
+            element_value = step_data[0][2]
+            reference_parameter = False
+            reference_value = False    
+            reference_is_parent_or_child = False
+        elif (len(step_data)==2):
+            element_parameter = step_data[0][0]
+            element_value = step_data[0][2]
+            reference_parameter = step_data[1][0]
+            reference_value = step_data[1][2]
+            reference_is_parent_or_child = False
+        elif (len(step_data)==3):
+            element_parameter = step_data[0][0]
+            element_value = step_data[0][2]
+            reference_parameter = step_data[1][0]
+            reference_value = step_data[1][2]    
+            reference_is_parent_or_child = step_data[2][2]
+        else:
+            CommonUtil.ExecLog(sModuleInfo, "Data set incorrect. Please provide accurate data set(s) information.", 3,local_run)
+            return "failed"
+        validated_data = (element_parameter, element_value, reference_parameter, reference_value, reference_is_parent_or_child)
+        return validated_data
+    except Exception, e:
+            exc_type, exc_obj, exc_tb = sys.exc_info()        
+            fname = os.path.split(exc_tb.tb_frame.f_code.co_filename)[1]
+            Error_Detail = ((str(exc_type).replace("type ", "Error Type: ")) + ";" +  "Error Message: " + str(exc_obj) +";" + "File Name: " + fname + ";" + "Line: "+ str(exc_tb.tb_lineno))
+            CommonUtil.ExecLog(sModuleInfo, "Could not find the new page element requested.  Error: %s"%(Error_Detail), 3,local_run)
+            return "failed"
+
+'===================== ===x=== Validation Section Ends ===x=== ======================'
     
 
 def Tear_Down():
