@@ -98,7 +98,9 @@ def click_element_appium(dependency, run_time_params, step_data, file_attachment
     sModuleInfo = inspect.stack()[0][3] + " : " + inspect.getmoduleinfo(__file__).name
     try:
         CommonUtil.ExecLog(sModuleInfo, "Enter: Step - Click Element", 1, local_run)
-        sTestStepReturnStatus = bf.Click_Element(step_data)
+        element_parameter = step_data[0][0][0]
+        element_value = step_data[0][0][2]
+        sTestStepReturnStatus = bf.Click_Element(element_parameter, element_value)
         temp_q.put(sTestStepReturnStatus)
         CommonUtil.ExecLog(sModuleInfo, "Exit: Step - Click Element", 1, local_run)
         return sTestStepReturnStatus
@@ -116,7 +118,10 @@ def enter_text_appium(dependency,run_time_params,step_data,file_attachment,temp_
     sModuleInfo = inspect.stack()[0][3] + " : " + inspect.getmoduleinfo(__file__).name
     try:
         CommonUtil.ExecLog(sModuleInfo,"Enter: Step - Enter Text",1,local_run)
-        sTestStepReturnStatus=bf.Set_Text(step_data)
+        element_parameter = step_data[0][0][0]
+        element_value = step_data[0][0][2]
+        text_value = step_data[0][1][2]
+        sTestStepReturnStatus=bf.Set_Text(element_parameter, element_value, text_value)
         temp_q.put(sTestStepReturnStatus)
         CommonUtil.ExecLog(sModuleInfo,"Exit: Step - Enter Text",1,local_run)
         return sTestStepReturnStatus

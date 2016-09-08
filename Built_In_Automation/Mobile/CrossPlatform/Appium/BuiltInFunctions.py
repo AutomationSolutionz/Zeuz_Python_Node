@@ -479,12 +479,10 @@ def Get_Element(element_parameter, element_value, reference_parameter=False, ref
         return "failed"
 
 
-def Click_Element(step_data):
+def Click_Element(element_parameter, element_value):
     sModuleInfo = inspect.stack()[0][3] + " : " + inspect.getmoduleinfo(__file__).name
     try:
         CommonUtil.ExecLog(sModuleInfo, "Trying to click on element...", 1, local_run)
-        element_parameter = step_data[0][0][0]
-        element_value = step_data[0][0][2]
         if element_parameter == "name":
             result = ci.click_element_by_name(driver, element_value)
         elif element_parameter == "id":
@@ -537,14 +535,11 @@ def Click_Element(step_data):
 
 
 # Method to enter texts in a text box; step data passed on by the user
-def Set_Text(step_data):
+def Set_Text(element_parameter, element_value, text_value):
     sModuleInfo = inspect.stack()[0][3] + " : " + inspect.getmoduleinfo(__file__).name
     CommonUtil.ExecLog(sModuleInfo, "Inside Enter Text In Text Box function", 1, local_run)
     try:
         CommonUtil.ExecLog(sModuleInfo, "Trying to set text in the textbox...", 1, local_run)
-        element_parameter = step_data[0][0][0]
-        element_value = step_data[0][0][2]
-        text_value = step_data[0][1][2]
         if element_parameter == "name":
             result = ti.set_text_by_name(driver, element_value, text_value)
         elif element_parameter == "id":
@@ -942,7 +937,7 @@ def Action_Handler(action_step_data, action_name):
     sModuleInfo = inspect.stack()[0][3] + " : " + inspect.getmoduleinfo(__file__).name
     try:
         if action_name == "click":
-            result = Click_Element(action_step_data)
+            result = Click_Element(action_step_data[0], action_step_data[2])
             if result == "failed":
                 return "failed"
         elif action_name == "wait":

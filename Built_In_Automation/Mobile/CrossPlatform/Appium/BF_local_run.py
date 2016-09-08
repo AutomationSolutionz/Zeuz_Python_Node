@@ -16,7 +16,7 @@ from appium import webdriver
 #bf.Just_Click('name','SEND RESULTS')
 #bf.Sequential_Actions([[[['name','SEND RESULTS']],['click','action','click',False,False]]])
 bf.launch_and_start_driver('com.bunz', 'com.bunz.activity.LaunchActivity')
-bf.Sequential_Actions([[('click','action','click'),('accessibility_id','','Navigate up')]])
+bf.Sequential_Actions([[['click','action','click'],['accessibility_id','','Navigate up']]])
 """bf.Click_Element([[['id', '', 'com.bunz:id/txt_next']]])
 bf.Click_Element([[['id', '', 'com.bunz:id/txt_next']]])
 bf.Click_Element([[['id', '', 'com.bunz:id/txt_next']]])
