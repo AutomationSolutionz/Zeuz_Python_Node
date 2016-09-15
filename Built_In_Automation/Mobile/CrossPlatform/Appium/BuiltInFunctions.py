@@ -468,6 +468,9 @@ def Get_Element(element_parameter, element_value, reference_parameter=False, ref
         CommonUtil.ExecLog(sModuleInfo, "Starting locating element...", 1, local_run)
         #all_elements = Get_All_Elements(element_parameter,element_value)
         element = Get_Single_Element(element_parameter, element_value)
+        if ((element == []) or (element == "failed")):
+            CommonUtil.ExecLog(sModuleInfo, "Could not get the element with the given parameters and values. Please provide accurate data set(s) information.", 3,local_run)
+            return "failed"
         #element = Element_Validation(element)
         return element
     except Exception, e:
@@ -936,6 +939,8 @@ def Sequential_Actions(step_data):
 def Action_Handler(action_step_data, action_name):
     sModuleInfo = inspect.stack()[0][3] + " : " + inspect.getmoduleinfo(__file__).name
     try:
+        """ Need to add: long hold, pinch to zoom, """
+        
         if action_name == "click":
             result = Click_Element(action_step_data[0], action_step_data[2])
             if result == "failed":
