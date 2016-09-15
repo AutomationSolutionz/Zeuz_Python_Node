@@ -229,10 +229,16 @@ def main():
                 CommonUtil.TakeScreenShot(str(auto_generated_image_name))
                 try:
                     q = Queue.Queue()
-                    current_driver=TestStepsList[StepSeq-1][3]
+                    if TestStepsList[StepSeq-1][8]!=None:
+                        current_driver = TestStepsList[StepSeq - 1][8]
+                    else:
+                        current_driver=TestStepsList[StepSeq-1][3]
                     if current_driver in driver_list:
                         module_name = importlib.import_module(current_driver)
-                        step_name = current_step_name
+                        if TestStepsList[StepSeq - 1][8] != None:
+                            step_name = (TestStepsList[StepSeq - 1][7]).strip()
+                        else:
+                            step_name = current_step_name
                         step_name = step_name.lower().replace(' ', '_')
                         functionTocall = getattr(module_name, step_name)
                         simple_queue=Queue.Queue()
