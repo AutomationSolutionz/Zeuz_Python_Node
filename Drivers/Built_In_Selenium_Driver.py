@@ -57,10 +57,14 @@ def go_to_webpage(dependency,run_params,step_data,file_attachment,temp_q):
     sModuleInfo = inspect.stack()[0][3] + " : " + inspect.getmoduleinfo(__file__).name
     try:
         CommonUtil.ExecLog(sModuleInfo,"Enter: Step - Go To Webpage Selenium",1,local_run)
+#         first_data_set=step_data[0]
+#         web_link=first_data_set[0][1]
+#         web_title = first_data_set[0][2]
+#         sTestStepReturnStatus=Selenium_Built_In.Go_To_Link(web_link, web_title)
         first_data_set=step_data[0]
-        web_link=first_data_set[0][1]
-        web_title = first_data_set[0][2]
-        sTestStepReturnStatus=Selenium_Built_In.Go_To_Link(web_link, web_title)
+        web_link=first_data_set[0][2]
+        #web_title = first_data_set[0][2]
+        sTestStepReturnStatus=Selenium_Built_In.Go_To_Link(web_link)
         temp_q.put(sTestStepReturnStatus)
         CommonUtil.ExecLog(sModuleInfo,"Exit: Step - Go To Webpage Selenium",1,local_run)
         return sTestStepReturnStatus
