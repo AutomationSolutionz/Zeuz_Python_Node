@@ -201,11 +201,13 @@ def launch_and_start_driver(package_name, activity_name):
         CommonUtil.ExecLog(sModuleInfo,"Trying to launch the app...",1,local_run)
         desired_caps = {}
         desired_caps['platformName'] = 'Android'
-        df = adbOptions.get_android_version()
+        #df = adbOptions.get_android_version()
+        df = "4.4.2"
         CommonUtil.ExecLog(sModuleInfo,df,1,local_run)
         #adbOptions.kill_adb_server()
         desired_caps['platformVersion'] = df
-        df = adbOptions.get_device_model()
+        #df = adbOptions.get_device_model()
+        df = "Android"
         CommonUtil.ExecLog(sModuleInfo,df,1,local_run)
         #adbOptions.kill_adb_server()
 
@@ -566,10 +568,10 @@ def Set_Text(element_parameter, element_value, text_value):
             return "Passed"
 
         if result == "Passed":
-            CommonUtil.ExecLog(sModuleInfo, "Clicked on element successfully", 1, local_run)
+            CommonUtil.ExecLog(sModuleInfo, "Entered text successfully", 1, local_run)
             return "Passed"
         elif result == "failed":
-            CommonUtil.ExecLog(sModuleInfo, "Unable to click. The element is disabled.", 3, local_run)
+            CommonUtil.ExecLog(sModuleInfo, "Unable to enter text.", 3, local_run)
             return "failed"
 
     except Exception, e:
@@ -880,11 +882,11 @@ def Sequential_Actions(step_data):
         for each in step_data:
             # finding what to do for each dataset
             if each[0][1] == "action":
-                result = Action_Handler(each[1], each[0][0])
+                result = Action_Handler(each[1], each[0][0], each[0][2])
                 if result == [] or result == "failed":
                     return "failed"
             elif each[1][1] == "action":
-                result = Action_Handler(each[0], each[1][0])
+                result = Action_Handler(each[0], each[1][0], each[1][2])
                 if result == [] or result == "failed":
                     return "failed"
             elif each[0][1] == "logic":
@@ -936,13 +938,17 @@ def Sequential_Actions(step_data):
 
 
 # Handles actions for the sequential logic, based on the input from the mentioned function
-def Action_Handler(action_step_data, action_name):
+def Action_Handler(action_step_data, action_name, action_value):
     sModuleInfo = inspect.stack()[0][3] + " : " + inspect.getmoduleinfo(__file__).name
     try:
         """ Need to add: long hold, pinch to zoom, """
         
         if action_name == "click":
             result = Click_Element(action_step_data[0], action_step_data[2])
+            if result == "failed":
+                return "failed"
+        elif action_name == "text":
+            result = Set_Text(action_step_data[0], action_step_data[2], action_value)
             if result == "failed":
                 return "failed"
         elif action_name == "wait":
@@ -1295,3 +1301,4 @@ def Click_Element_Appium(step_data):
             exc_obj) + ";" + "File Name: " + fname + ";" + "Line: " + str(exc_tb.tb_lineno))
         CommonUtil.ExecLog(sModuleInfo, "Unable to click on the element. %s" % Error_Detail, 3, local_run)
         return "failed"
+
