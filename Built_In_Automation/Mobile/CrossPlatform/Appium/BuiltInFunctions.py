@@ -201,13 +201,13 @@ def launch_and_start_driver(package_name, activity_name):
         CommonUtil.ExecLog(sModuleInfo,"Trying to launch the app...",1,local_run)
         desired_caps = {}
         desired_caps['platformName'] = 'Android'
-        #df = adbOptions.get_android_version()
-        df = "4.4.2"
+        df = adbOptions.get_android_version()
+        #df = "4.4.2"
         CommonUtil.ExecLog(sModuleInfo,df,1,local_run)
         #adbOptions.kill_adb_server()
         desired_caps['platformVersion'] = df
-        #df = adbOptions.get_device_model()
-        df = "Android"
+        df = adbOptions.get_device_model()
+        #df = "Android"
         CommonUtil.ExecLog(sModuleInfo,df,1,local_run)
         #adbOptions.kill_adb_server()
 
@@ -882,11 +882,11 @@ def Sequential_Actions(step_data):
         for each in step_data:
             # finding what to do for each dataset
             if each[0][1] == "action":
-                result = Action_Handler(each[1], each[0][0], each[0][2])
+                result = Action_Handler(each[0][0], each[1], each[0][2])
                 if result == [] or result == "failed":
                     return "failed"
             elif each[1][1] == "action":
-                result = Action_Handler(each[0], each[1][0], each[1][2])
+                result = Action_Handler(each[1][0], each[0], each[1][2])
                 if result == [] or result == "failed":
                     return "failed"
             elif each[0][1] == "logic":
@@ -938,7 +938,7 @@ def Sequential_Actions(step_data):
 
 
 # Handles actions for the sequential logic, based on the input from the mentioned function
-def Action_Handler(action_step_data, action_name, action_value):
+def Action_Handler(action_name, action_step_data=False, action_value=False):
     sModuleInfo = inspect.stack()[0][3] + " : " + inspect.getmoduleinfo(__file__).name
     try:
         """ Need to add: long hold, pinch to zoom, """
@@ -952,22 +952,22 @@ def Action_Handler(action_step_data, action_name, action_value):
             if result == "failed":
                 return "failed"
         elif action_name == "wait":
-            result = Wait(action_step_data)
+            result = Wait(action_value)
             if result == "failed":
                 return "failed"
         elif action_name == "swipe":
-            result = Swipe(action_step_data)
+            result = Swipe()
             if result == "failed":
                 return "failed"
         elif action_name == "tap":
-            result = Enter_Text_In_Text_Box(action_step_data)
+            result = Tap(action_step_data)
             if result == "failed":
                 return "failed"
         elif action_name == "go_back":
-            result = Go_Back(action_step_data)
+            result = Go_Back()
             if result == "failed":
                 return "failed"
-        elif (action_name == "validate full text" or action_name == "validate partial text"):
+        elif action_name == "validate full text" or action_name == "validate partial text":
             result = Validate_Text(action_step_data)
             if result == "failed":
                 return "failed"
@@ -994,7 +994,7 @@ def Exception_Info(sModuleInfo, errMsg):
     return "failed"
 
 
-def Go_Back(step_data):
+def Go_Back():
     sModuleInfo = inspect.stack()[0][3] + " : " + inspect.getmoduleinfo(__file__).name
     try:
         CommonUtil.ExecLog(sModuleInfo, "Trying to go back...", 1, local_run)
@@ -1010,13 +1010,13 @@ def Go_Back(step_data):
         return "failed"
 
 
-def Wait(step_data):
+def Wait(time_to_wait):
     sModuleInfo = inspect.stack()[0][3] + " : " + inspect.getmoduleinfo(__file__).name
     try:
-        CommonUtil.ExecLog(sModuleInfo, "Starting waiting for %s seconds.." % step_data[2], 1, local_run)
+        CommonUtil.ExecLog(sModuleInfo, "Starting waiting for %s seconds.." % time_to_wait, 1, local_run)
         #function_data = Validate_Step_Data(step_data)
-        driver.implicitly_wait(step_data[2])
-        time.sleep(step_data[2])
+        driver.implicitly_wait(float(time_to_wait))
+        time.sleep(float(time_to_wait))
         CommonUtil.ExecLog(sModuleInfo, "Waited successfully", 1, local_run)
         return "Passed"
     except Exception, e:
@@ -1028,7 +1028,7 @@ def Wait(step_data):
         return "failed"
 
 
-def Swipe(step_data):
+def Swipe():
     sModuleInfo = inspect.stack()[0][3] + " : " + inspect.getmoduleinfo(__file__).name
     try:
         CommonUtil.ExecLog(sModuleInfo, "Starting to swipe the screen...", 1, local_run)
@@ -1048,7 +1048,7 @@ def Tap(step_data):
     try:
         CommonUtil.ExecLog(sModuleInfo, "Starting to tap the...", 1, local_run)
         element_data = Validate_Step_Data(step_data)
-        elem = Get_Element(element_data[0], element_data[1])
+        elem = Get_Element(element_data[0], element_data[2])
         if elem.is_enabled():
             action = TouchAction(driver)
             action.tap(elem).perform()
@@ -1228,7 +1228,7 @@ def Action_Handler_Appium(action_step_data, action_name):
             if result == "failed":
                 return "failed"
         elif action_name == "swipe":
-            result = Swipe(action_step_data)
+            result = Swipe()
             if result == "failed":
                 return "failed"
         elif action_name == "tap":
