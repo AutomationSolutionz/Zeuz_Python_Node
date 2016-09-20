@@ -37,8 +37,8 @@ global WebDriver_Wait_Short
 WebDriver_Wait_Short = 10
 
 #if local_run is True, no logging will be recorded to the web server.  Only local print will be displayed
-local_run = True
-#local_run = False
+#local_run = True
+local_run = False
 
 global sBrowser
 sBrowser = None
