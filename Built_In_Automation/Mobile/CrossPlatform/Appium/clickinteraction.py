@@ -31,7 +31,7 @@ def click_element_by_id(driver, _id):
 def click_element_by_name(driver, _name):
     sModuleInfo = inspect.stack()[0][3] + " : " + inspect.getmoduleinfo(__file__).name
     try:
-        CommonUtil.ExecLog(sModuleInfo,"Trying to click on element by class name: %s"%_name,1,local_run)
+        CommonUtil.ExecLog(sModuleInfo,"Trying to click on element by name: %s"%_name,1,local_run)
         elem = li.locate_element_by_name(driver, _name)
         if elem.is_enabled():
             elem.click()

@@ -37,7 +37,7 @@ bf.Click_Element([[['name', '', 'Settings']]])
 bf.Click_Element([[['name', '', 'City']]])"""
 #bf.Wait(5)
 #bf.Swipe()
-bf.Sequential_Actions([[['wait','action',float('5')],[]], [['swipe','action','swipe'],[]], [['click','action','click'], ['id','','com.bunz:id/fab_create_post']]])
+bf.Sequential_Actions([[['wait','action',float('5')],[]], [['swipe','action','swipe'],[]], [['tap','action','tap'], ['id','','com.bunz:id/fab_create_post']]])
 bf.close()
 
 """bf.launch_and_start_driver('com.android.settings', 'com.android.settings.Settings')

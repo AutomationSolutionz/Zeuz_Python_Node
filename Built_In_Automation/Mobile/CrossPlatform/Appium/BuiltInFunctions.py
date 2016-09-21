@@ -960,7 +960,7 @@ def Action_Handler(action_name, action_step_data=False, action_value=False):
             if result == "failed":
                 return "failed"
         elif action_name == "tap":
-            result = Tap(action_step_data)
+            result = Tap(action_step_data[0], action_step_data[2])
             if result == "failed":
                 return "failed"
         elif action_name == "go_back":
@@ -1043,12 +1043,13 @@ def Swipe():
         CommonUtil.ExecLog(sModuleInfo, "Unable to swipe. %s" % Error_Detail, 3, local_run)
         return "failed"
 
-def Tap(step_data):
+
+def Tap(element_parameter, element_value):
     sModuleInfo = inspect.stack()[0][3] + " : " + inspect.getmoduleinfo(__file__).name
     try:
-        CommonUtil.ExecLog(sModuleInfo, "Starting to tap the...", 1, local_run)
-        element_data = Validate_Step_Data(step_data)
-        elem = Get_Element(element_data[0], element_data[2])
+        CommonUtil.ExecLog(sModuleInfo, "Starting to tap the element...", 1, local_run)
+        #element_data = Validate_Step_Data(step_data)
+        elem = Get_Element(element_parameter, element_value)
         if elem.is_enabled():
             action = TouchAction(driver)
             action.tap(elem).perform()
