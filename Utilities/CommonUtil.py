@@ -191,19 +191,22 @@ def TakeScreenShot(ImageName,local_run=False):
                     print 'screenshot saved as: "%s"' % full_location
                 else:
                     print "unable to take screenshot..."
-                
+
                 #mobile device working copy
                 if sys.platform == 'linux2':
                     #mobile device connected to linux machine
                     
                     #android working copy
-                    output = os.system("adb devices")
-                    if output is not None:
-                        full_location=ImageFolder+os.sep+TimeStamp("utc")+"_"+ImageName+'_android.png'
-                        #os.system("adb shell screencap -p | perl -pe 's/\x0D\x0A/\x0A/g' > %s"%full_location)
-                        os.system("adb shell screencap -p /sdcard/screen.png")
-                        os.system("adb pull /sdcard/screen.png %s"%full_location)
-                        
+                    try:
+                        output = os.system("adb devices")
+                        if output is not None:
+                            full_location=ImageFolder+os.sep+TimeStamp("utc")+"_"+ImageName+'_android.png'
+                            #os.system("adb shell screencap -p | perl -pe 's/\x0D\x0A/\x0A/g' > %s"%full_location)
+                            os.system("adb shell screencap -p /sdcard/screen.png")
+                            os.system("adb pull /sdcard/screen.png %s"%full_location)
+                    except Exception, e:
+                        print e
+
                     #ios device working copy
                     full_location=ImageFolder+os.sep+TimeStamp("utc")+"_"+ImageName+'_ios.tiff'
                     os.system("idevicescreenshot"%full_location)
