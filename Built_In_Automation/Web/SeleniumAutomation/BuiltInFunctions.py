@@ -117,13 +117,14 @@ def Go_To_Link(link, page_title=False):
 #Method to get the element step data from the original step_data
 def Get_Element_Step_Data(step_data):
     sModuleInfo = inspect.stack()[0][3] + " : " + inspect.getmoduleinfo(__file__).name
-    CommonUtil.ExecLog(sModuleInfo, "Function - Get Element Step Data", 1,local_run)
+    CommonUtil.ExecLog(sModuleInfo, "Function: Get_Element_Step_Data", 1,local_run)
     try:
         element_step_data=[]
         for each in step_data[0]:
             if each[1]=="":
                 element_step_data.append(each)
             else:
+                CommonUtil.ExecLog(sModuleInfo, "End of element step data", 2,local_run)
                 break
             
         return element_step_data
@@ -139,6 +140,7 @@ def Get_Element_Step_Data(step_data):
 #Handles actions for the sequential logic, based on the input from the mentioned function
 def Action_Handler(action_step_data, action_name):
     sModuleInfo = inspect.stack()[0][3] + " : " + inspect.getmoduleinfo(__file__).name
+    CommonUtil.ExecLog(sModuleInfo, "Function: Action_Handler", 1,local_run)
     try:
         if action_name =="click":
             result = Click_Element(action_step_data)
@@ -186,7 +188,7 @@ def Action_Handler(action_step_data, action_name):
 #Method to enter texts in a text box; step data passed on by the user
 def Enter_Text_In_Text_Box(step_data):
     sModuleInfo = inspect.stack()[0][3] + " : " + inspect.getmoduleinfo(__file__).name
-    CommonUtil.ExecLog(sModuleInfo, "Inside Enter Text In Text Box function", 1,local_run)
+    CommonUtil.ExecLog(sModuleInfo, "Function: Enter_Text_In_Text_Box", 1,local_run)
     try:
         #If there are no two separate data-sets, or if the first data-set is not between 1 to 3 items, or if the second data-set doesn't have only 1 item                   
         if ((len(step_data) != 1) or (1 < len(step_data[0]) >= 5)):# or (len(step_data[1]) != 1)):
@@ -203,8 +205,6 @@ def Enter_Text_In_Text_Box(step_data):
                 try:
                     Element = Get_Element(returned_step_data_list[0], returned_step_data_list[1], returned_step_data_list[2], returned_step_data_list[3], returned_step_data_list[4])
                     text_value=step_data[0][len(step_data[0])-1][2]
-                    #text_value = step[1][0][2]
-                    #text_value=step_data[1][0][1]
                     Element.click()
                     Element.clear()
                     Element.send_keys(text_value)
@@ -229,37 +229,10 @@ def Enter_Text_In_Text_Box(step_data):
         return "failed"
 
 
-# def Keystroke_Key_Mapping(Element,keystroke):
-#     sModuleInfo = inspect.stack()[0][3] + " : " + inspect.getmoduleinfo(__file__).name
-#     CommonUtil.ExecLog(sModuleInfo, "Inside Keystroke For Element function", 1,local_run)
-#     try:
-#         if keystroke == "ENTER":
-#             Element.send_keys(Keys.ENTER)
-#         elif keystroke == "ADD":
-#             Element.send_keys(Keys.ADD)
-#         elif keystroke == "BACKSPACE":
-#             Element.send_keys(Keys.BACKSPACE)
-#         elif keystroke == "CANCEL":
-#             Element.send_keys(Keys.CANCEL)
-#         elif keystroke == "CLEAR":
-#             Element.send_keys(Keys.CLEAR)
-#         elif keystroke == "DELETE":
-#             Element.send_keys(Keys.DELETE)
-#         elif keystroke == "SPACE":
-#             Element.send_keys(Keys.SPACE)
-#             
-#     except Exception, e:
-#         exc_type, exc_obj, exc_tb = sys.exc_info()        
-#         fname = os.path.split(exc_tb.tb_frame.f_code.co_filename)[1]
-#         Error_Detail = ((str(exc_type).replace("type ", "Error Type: ")) + ";" +  "Error Message: " + str(exc_obj) +";" + "File Name: " + fname + ";" + "Line: "+ str(exc_tb.tb_lineno))
-#         CommonUtil.ExecLog(sModuleInfo, "Could not press enter for your element.  Error: %s"%(Error_Detail), 3,local_run)
-#         return "failed"    
-
-
 #Method to click on element; step data passed on by the user
 def Keystroke_For_Element(step_data):
     sModuleInfo = inspect.stack()[0][3] + " : " + inspect.getmoduleinfo(__file__).name
-    CommonUtil.ExecLog(sModuleInfo, "Inside Keystroke For Element function", 1,local_run)
+    CommonUtil.ExecLog(sModuleInfo, "Function: Keystroke_For_Element", 1,local_run)
     try:
         if ((len(step_data) != 1) or (1 < len(step_data[0]) >= 5)):
             CommonUtil.ExecLog(sModuleInfo, "The information in the data-set(s) are incorrect. Please provide accurate data set(s) information.", 3,local_run)
@@ -314,7 +287,7 @@ def Keystroke_For_Element(step_data):
 #Method to click on element; step data passed on by the user
 def Click_Element(step_data):
     sModuleInfo = inspect.stack()[0][3] + " : " + inspect.getmoduleinfo(__file__).name
-    CommonUtil.ExecLog(sModuleInfo, "Inside Click Element function", 1,local_run)
+    CommonUtil.ExecLog(sModuleInfo, "Function: Click_Element", 1,local_run)
     try:
         if ((len(step_data) != 1) or (1 < len(step_data[0]) >= 5)):
             CommonUtil.ExecLog(sModuleInfo, "The information in the data-set(s) are incorrect. Please provide accurate data set(s) information.", 3,local_run)
@@ -352,7 +325,7 @@ def Click_Element(step_data):
 #Method to hover over element; step data passed on by the user
 def Hover_Over_Element(step_data):
     sModuleInfo = inspect.stack()[0][3] + " : " + inspect.getmoduleinfo(__file__).name
-    CommonUtil.ExecLog(sModuleInfo, "Inside Hover Over Element function", 1,local_run)
+    CommonUtil.ExecLog(sModuleInfo, "Function: Hover_Over_Element", 1,local_run)
     try:
         if ((len(step_data) != 1) or (1 < len(step_data[0]) >= 5)):
             CommonUtil.ExecLog(sModuleInfo, "The information in the data-set(s) are incorrect. Please provide accurate data set(s) information.", 3,local_run)
@@ -433,7 +406,7 @@ def Wait_For_New_Element(step_data):
 #Validating text from an element given information regarding the expected text
 def Validate_Text(step_data):
     sModuleInfo = inspect.stack()[0][3] + " : " + inspect.getmoduleinfo(__file__).name
-    CommonUtil.ExecLog(sModuleInfo, "Function: Compare_Text_Data", 1, local_run)
+    CommonUtil.ExecLog(sModuleInfo, "Function: Validate_Text", 1, local_run)
     try:
         if ((len(step_data) != 1) or (1 < len(step_data[0]) >= 5)):
             CommonUtil.ExecLog(sModuleInfo, "The information in the data-set(s) are incorrect. Please provide accurate data set(s) information.",3, local_run)
@@ -558,6 +531,7 @@ def Scroll(step_data):
 #Performs a series of action or logical decisions based on user input
 def Sequential_Actions(step_data):
     sModuleInfo = inspect.stack()[0][3] + " : " + inspect.getmoduleinfo(__file__).name
+    CommonUtil.ExecLog(sModuleInfo, "Function: Sequential_Actions", 1,local_run)
     try:            
         for each in step_data:
             logic_row=[]
@@ -565,11 +539,13 @@ def Sequential_Actions(step_data):
                 #finding what to do for each dataset  
                 if len(row)==5 and row[1] != "":                    
                     if row[1]=="action":
+                        CommonUtil.ExecLog(sModuleInfo, "Checking the action to be performed in the action row", 1,local_run)
                         result = Action_Handler([each],row[0])
                         if result == [] or result == "failed":
                             return "failed"
                         
                     elif row[1]=="logic":
+                        CommonUtil.ExecLog(sModuleInfo, "Checking the logic conditional to be performed in the logic row", 1,local_run)
                         logic_decision=""
                         logic_row.append(row)
                         if len(logic_row)==2:
