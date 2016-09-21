@@ -249,6 +249,7 @@ def TakeScreenShot(ImageName,local_run=False):
                         os.system("adb pull /sdcard/screen.png %s"%full_location)
 
             elif os.name == 'nt':
+                # windows working copy
                 from PIL import ImageGrab
                 from PIL import Image
                 path = ImageFolder + os.sep + TimeStamp("utc") + "_" + ImageName + ".jpg"
@@ -258,6 +259,18 @@ def TakeScreenShot(ImageName,local_run=False):
                 hsize = int((float(img.size[1])*float(wpercent)))
                 img = img.resize((basewidth,hsize), Image.ANTIALIAS)
                 img.save(path, 'JPEG')
+
+                # android working copy
+                try:
+                    output = os.system("adb devices")
+                    if output is not None:
+                        full_location = ImageFolder + os.sep + TimeStamp("utc") + "_" + ImageName + '_android.png'
+                        # os.system("adb shell screencap -p | perl -pe 's/\x0D\x0A/\x0A/g' > %s"%full_location)
+                        os.system("adb shell screencap -p /sdcard/screen.png")
+                        os.system("adb pull /sdcard/screen.png %s" % full_location)
+                except Exception, e:
+                    print e
+
     except Exception, e:
         print "Exception : ", e
 
