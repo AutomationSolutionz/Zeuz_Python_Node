@@ -563,7 +563,7 @@ def Set_Text(element_parameter, element_value, text_value):
             result = ti.set_text_by_ios_uiautomation(driver, element_value, text_value)
         else:
             elem = driver.find_element_by_xpath("//*[@%s='%s']" % (element_parameter, element_value))
-            driver.set_value(elem, text_value)
+            elem.send_keys(text_value)
             CommonUtil.ExecLog(sModuleInfo, "Entered text on element successfully", 1, local_run)
             return "Passed"
 
