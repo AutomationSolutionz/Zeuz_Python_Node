@@ -563,11 +563,21 @@ def Set_Text(element_parameter, element_value, text_value):
             result = set_text_by_ios_uiautomation(driver, element_value, text_value)
         else:
             elem = driver.find_element_by_xpath("//*[@%s='%s']" % (element_parameter, element_value))
+            elem.click()
+            driver.hide_keyboard()
             elem.send_keys(text_value)
+            try:
+                driver.hide_keyboard()
+            except Exception, e:
+                print e
             CommonUtil.ExecLog(sModuleInfo, "Entered text on element successfully", 1, local_run)
             return "passed"
 
         if result == "passed":
+            try:
+                driver.hide_keyboard()
+            except Exception, e:
+                print e
             CommonUtil.ExecLog(sModuleInfo, "Entered text successfully", 1, local_run)
             return "passed"
         elif result == "failed":
@@ -1622,10 +1632,11 @@ def set_text_by_id(driver, _id, text):
         elem = locate_element_by_id(driver, _id)
         if elem.is_displayed():
             elem.click()
-            driver.hide_keyboard()
+            #driver.hide_keyboard()
             #elem.set_value(text)
             #driver.set_value(elem, text)
             elem.send_keys(text)
+            driver.hide_keyboard()
             CommonUtil.ExecLog(sModuleInfo, "Text set on element successfully", 1, local_run)
             return "Passed"
         else:
@@ -1648,8 +1659,8 @@ def set_text_by_name(driver, _name, text):
         elem = locate_element_by_name(driver, _name)
         if elem.is_displayed():
             elem.click()
-            driver.hide_keyboard()
             elem.send_keys(text)
+            driver.hide_keyboard()
             CommonUtil.ExecLog(sModuleInfo, "Text set on element successfully", 1, local_run)
             return "Passed"
         else:
@@ -1671,8 +1682,8 @@ def set_text_by_class_name(driver, _class, text):
         elem = locate_element_by_class_name(driver, _class)
         if elem.is_displayed():
             elem.click()
-            driver.hide_keyboard()
             elem.send_keys(text)
+            driver.hide_keyboard()
             CommonUtil.ExecLog(sModuleInfo, "Text set on element successfully", 1, local_run)
             return "Passed"
         else:
@@ -1694,8 +1705,8 @@ def set_text_by_xpath(driver, _classpath, text):
         elem = locate_element_by_xpath(driver, _classpath)
         if elem.is_displayed():
             elem.click()
-            driver.hide_keyboard()
             elem.send_keys(text)
+            driver.hide_keyboard()
             CommonUtil.ExecLog(sModuleInfo, "Text set on element successfully", 1, local_run)
             return "Passed"
         else:
@@ -1716,8 +1727,8 @@ def set_text_by_accessibility_id(driver, _id, text):
         elem = locate_element_by_accessibility_id(driver, _id)
         if elem.is_displayed():
             elem.click()
-            driver.hide_keyboard()
             elem.send_keys(text)
+            driver.hide_keyboard()
             CommonUtil.ExecLog(sModuleInfo, "Text set on element successfully", 1, local_run)
             return "Passed"
         else:
@@ -1739,8 +1750,8 @@ def set_text_by_android_uiautomator_text(driver, _text, text_value):
         elem = locate_element_by_android_uiautomator_text(driver, _text)
         if elem.is_displayed():
             elem.click()
-            driver.hide_keyboard()
             elem.send_keys(text_value)
+            driver.hide_keyboard()
             CommonUtil.ExecLog(sModuleInfo, "Text set on element successfully", 1, local_run)
             return "Passed"
         else:
@@ -1764,8 +1775,8 @@ def set_text_by_android_uiautomator_description(driver, _description, text):
         elem = locate_element_by_android_uiautomator_description(driver, _description)
         if elem.is_displayed():
             elem.click()
-            driver.hide_keyboard()
             elem.send_keys(text)
+            driver.hide_keyboard()
             CommonUtil.ExecLog(sModuleInfo, "Text set on element successfully", 1, local_run)
             return "Passed"
         else:
@@ -1789,8 +1800,8 @@ def set_text_by_ios_uiautomation(driver, _description, text):
         elem = locate_element_by_ios_uiautomation(driver, _description)
         if elem.is_displayed():
             elem.click()
-            driver.hide_keyboard()
             elem.send_keys(text)
+            driver.hide_keyboard()
             CommonUtil.ExecLog(sModuleInfo, "Text set on element successfully", 1, local_run)
             return "Passed"
         else:
