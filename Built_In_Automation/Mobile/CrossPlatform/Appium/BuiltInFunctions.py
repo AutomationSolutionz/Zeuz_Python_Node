@@ -882,11 +882,15 @@ def Sequential_Actions(step_data):
         for each in step_data:
             # finding what to do for each dataset
             if each[0][1] == "action":
+                CommonUtil.TakeScreenShot(sModuleInfo, local_run)
                 result = Action_Handler(each[0][0], each[1], each[0][2])
+                CommonUtil.TakeScreenShot(sModuleInfo, local_run)
                 if result == [] or result == "failed":
                     return "failed"
             elif each[1][1] == "action":
+                CommonUtil.TakeScreenShot(sModuleInfo, local_run)
                 result = Action_Handler(each[1][0], each[0], each[1][2])
+                CommonUtil.TakeScreenShot(sModuleInfo, local_run)
                 if result == [] or result == "failed":
                     return "failed"
             elif each[0][1] == "logic":
@@ -967,6 +971,10 @@ def Action_Handler(action_name, action_step_data=False, action_value=False):
             result = Go_Back()
             if result == "failed":
                 return "failed"
+        elif action_name == "enter":
+            result = SendKey_Enter()
+            if result == "failed":
+                return "failed"
         elif action_name == "validate full text" or action_name == "validate partial text":
             result = Validate_Text(action_step_data)
             if result == "failed":
@@ -992,6 +1000,22 @@ def Exception_Info(sModuleInfo, errMsg):
     Error_Detail = ((str(exc_type).replace("type ", "Error Type: ")) + ";" +  "Error Message: " + str(exc_obj) +";" + "File Name: " + fname + ";" + "Line: "+ str(exc_tb.tb_lineno))
     CommonUtil.ExecLog(sModuleInfo, errMsg + ".  Error: %s"%(Error_Detail), 3,local_run)
     return "failed"
+
+
+def SendKey_Enter():
+    sModuleInfo = inspect.stack()[0][3] + " : " + inspect.getmoduleinfo(__file__).name
+    try:
+        CommonUtil.ExecLog(sModuleInfo, "Trying to send enter key...", 1, local_run)
+        driver.keyevent(66)
+        CommonUtil.ExecLog(sModuleInfo, "Sent enter key successfully", 1, local_run)
+        return "Passed"
+    except Exception, e:
+        exc_type, exc_obj, exc_tb = sys.exc_info()
+        fname = os.path.split(exc_tb.tb_frame.f_code.co_filename)[1]
+        Error_Detail = ((str(exc_type).replace("type ", "Error Type: ")) + ";" + "Error Message: " + str(
+            exc_obj) + ";" + "File Name: " + fname + ";" + "Line: " + str(exc_tb.tb_lineno))
+        CommonUtil.ExecLog(sModuleInfo, "Unable to send enter key. %s" % Error_Detail, 3, local_run)
+        return "failed"
 
 
 def Go_Back():
