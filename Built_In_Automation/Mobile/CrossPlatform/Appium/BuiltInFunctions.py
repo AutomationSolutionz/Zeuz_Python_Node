@@ -5,8 +5,8 @@ import os, sys, time, inspect, json
 from Utilities import CommonUtil, FileUtilities
 from Built_In_Automation.Mobile.Android.adb_calls import adbOptions
 from appium.webdriver.common.touch_action import TouchAction
-from Built_In_Automation.Mobile.CrossPlatform.Appium import clickinteraction as ci
-from Built_In_Automation.Mobile.CrossPlatform.Appium import textinteraction as ti
+#from Built_In_Automation.Mobile.CrossPlatform.Appium import clickinteraction as ci
+#from Built_In_Automation.Mobile.CrossPlatform.Appium import textinteraction as ti
 
 
 PATH = lambda p: os.path.abspath(
@@ -169,18 +169,18 @@ def launch(package_name,activity_name):
         if 'driver' not in globals():
             # appium driver not initiated.
             outcome = launch_and_start_driver(package_name, activity_name)
-            if outcome == "Passed":
+            if outcome == "passed":
                 CommonUtil.ExecLog(sModuleInfo,"App is launched",1,local_run)
-                return "Passed"
+                return "passed"
             elif outcome == "failed":
                 CommonUtil.ExecLog(sModuleInfo, "App is not launched", 3,local_run)
                 return "failed"
         else:
             #driver already initiated.
             CommonUtil.ExecLog(sModuleInfo,"App is launched already.",1,local_run)
-            return "Passed"
+            return "passed"
             """outcome = open()
-            if outcome == "Passed":
+            if outcome == "passed":
                 CommonUtil.ExecLog(sModuleInfo,"App is launched",1,local_run)
                 return outcome
             elif outcome == "failed":
@@ -220,7 +220,7 @@ def launch_and_start_driver(package_name, activity_name):
         global driver
         CommonUtil.ExecLog(sModuleInfo,"Launched the app successfully.",1,local_run)
         wait(3)
-        return "Passed"
+        return "passed"
     except Exception, e:
         exc_type, exc_obj, exc_tb = sys.exc_info()        
         fname = os.path.split(exc_tb.tb_frame.f_code.co_filename)[1]
@@ -236,7 +236,7 @@ def close():
         driver.close_app()
         CommonUtil.ExecLog(sModuleInfo,"Closed the app successfully",1,local_run)
         driver.quit()
-        return "Passed"
+        return "passed"
     except Exception, e:
         exc_type, exc_obj, exc_tb = sys.exc_info()        
         fname = os.path.split(exc_tb.tb_frame.f_code.co_filename)[1]
@@ -255,13 +255,13 @@ def install(app_location, app_package, app_activity):
             #driver initiated
             """if driver.is_app_installed(app_package):
                 CommonUtil.ExecLog(sModuleInfo,"App is already installed.",1,local_run)
-                return "Passed"
+                return "passed"
             else:
                 CommonUtil.ExecLog(sModuleInfo,"App is not installed. Now installing...",1,local_run)"""
             outcome = load(app_location)
-            if outcome == "Passed":
+            if outcome == "passed":
                 CommonUtil.ExecLog(sModuleInfo,"App is installed.",1,local_run)
-                return "Passed"
+                return "passed"
             elif outcome == "failed":
                 CommonUtil.ExecLog(sModuleInfo, "Failed to install the app.", 3,local_run)
                 return "failed"
@@ -271,24 +271,24 @@ def install(app_location, app_package, app_activity):
             try:
                 #It will try to launch the app as if its already installed
                 outcome = launch_and_start_driver(app_package, app_activity)
-                if outcome == "Passed":
+                if outcome == "passed":
                     CommonUtil.ExecLog(sModuleInfo,"App is installed already.",1,local_run)
-                    return "Passed"
+                    return "passed"
                 elif outcome == "failed":
                     CommonUtil.ExecLog(sModuleInfo, "App is not installed. Now trying to install and launch again...", 3,local_run)
                     answer = install_and_start_driver(app_location)
-                    if answer == "Passed":
+                    if answer == "passed":
                         CommonUtil.ExecLog(sModuleInfo,"App is installed",1,local_run)
-                        return "Passed"
+                        return "passed"
                     elif answer == "failed":
                         CommonUtil.ExecLog(sModuleInfo, "Failed to install the app.", 3,local_run)
                         return "failed"
                     
             except:
                 answer = install_and_start_driver(app_location)
-                if answer == "Passed":
+                if answer == "passed":
                     CommonUtil.ExecLog(sModuleInfo,"App is installed.",1,local_run)
-                    return "Passed"
+                    return "passed"
                 elif answer == "failed":
                     CommonUtil.ExecLog(sModuleInfo, "Failed to install the app.", 3,local_run)
                     return "failed"
@@ -322,7 +322,7 @@ def install_and_start_driver(app_location):
         CommonUtil.ExecLog(sModuleInfo,"Installed and launched the app successfully.",1,local_run)
         time.sleep(10)
         driver.implicitly_wait(5)
-        return "Passed"
+        return "passed"
     except Exception, e:
         exc_type, exc_obj, exc_tb = sys.exc_info()        
         fname = os.path.split(exc_tb.tb_frame.f_code.co_filename)[1]
@@ -337,7 +337,7 @@ def open():
         CommonUtil.ExecLog(sModuleInfo,"Trying to open the app",1,local_run)
         driver.launch_app()
         CommonUtil.ExecLog(sModuleInfo,"Opened the app successfully",1,local_run)
-        return "Passed"
+        return "passed"
     except Exception, e:
         exc_type, exc_obj, exc_tb = sys.exc_info()        
         fname = os.path.split(exc_tb.tb_frame.f_code.co_filename)[1]
@@ -353,7 +353,7 @@ def load(app_location):
         #driver.install_app(app_location)
         adbOptions.install_app(app_location)
         CommonUtil.ExecLog(sModuleInfo,"Loaded the app successfully",1,local_run)
-        return "Passed"
+        return "passed"
     except Exception, e:
         exc_type, exc_obj, exc_tb = sys.exc_info()        
         fname = os.path.split(exc_tb.tb_frame.f_code.co_filename)[1]
@@ -369,7 +369,7 @@ def reset():
         driver.reset()
         wait(5)
         CommonUtil.ExecLog(sModuleInfo,"App is reset successfully",1,local_run)
-        return "Passed"
+        return "passed"
     except Exception, e:
         exc_type, exc_obj, exc_tb = sys.exc_info()        
         fname = os.path.split(exc_tb.tb_frame.f_code.co_filename)[1]
@@ -384,7 +384,7 @@ def go_back():
         CommonUtil.ExecLog(sModuleInfo,"Trying to go back...",1,local_run)
         driver.back()
         CommonUtil.ExecLog(sModuleInfo,"Went back successfully",1,local_run)
-        return "Passed"
+        return "passed"
     except Exception, e:
         exc_type, exc_obj, exc_tb = sys.exc_info()        
         fname = os.path.split(exc_tb.tb_frame.f_code.co_filename)[1]
@@ -400,7 +400,7 @@ def wait(_time):
         driver.implicitly_wait(_time)
         time.sleep(_time)
         CommonUtil.ExecLog(sModuleInfo,"Waited successfully",1,local_run)
-        return "Passed"
+        return "passed"
     except Exception, e:
         exc_type, exc_obj, exc_tb = sys.exc_info()        
         fname = os.path.split(exc_tb.tb_frame.f_code.co_filename)[1]
@@ -418,7 +418,7 @@ def remove(app_package):
         try:
             driver.remove_app(app_package)
             CommonUtil.ExecLog(sModuleInfo,"App is removed successfully.",1,local_run)
-            return "Passed"
+            return "passed"
         except:
             CommonUtil.ExecLog(sModuleInfo, "Unable to remove the app", 3,local_run)
             return "failed"
@@ -452,7 +452,7 @@ def launch_ios_app():
         global driver
         CommonUtil.ExecLog(sModuleInfo,"Launched the app successfully.",1,local_run)
         wait(10)
-        return "Passed"
+        return "passed"
     except Exception, e:
         exc_type, exc_obj, exc_tb = sys.exc_info()        
         fname = os.path.split(exc_tb.tb_frame.f_code.co_filename)[1]
@@ -489,34 +489,34 @@ def Click_Element(element_parameter, element_value):
     try:
         CommonUtil.ExecLog(sModuleInfo, "Trying to click on element...", 1, local_run)
         if element_parameter == "name":
-            result = ci.click_element_by_name(driver, element_value)
+            result = click_element_by_name(driver, element_value)
         elif element_parameter == "id":
-            result = ci.click_element_by_id(driver, element_value)
+            result = click_element_by_id(driver, element_value)
         elif element_parameter == "accessibility_id":
-            result = ci.click_element_by_accessibility_id(driver, element_value)
+            result = click_element_by_accessibility_id(driver, element_value)
         elif element_parameter == "class_name":
-            result = ci.click_element_by_class_name(driver, element_value)
+            result = click_element_by_class_name(driver, element_value)
         elif element_parameter == "xpath":
-            result = ci.click_element_by_xpath(driver, element_value)
+            result = click_element_by_xpath(driver, element_value)
         elif element_parameter == "android_uiautomator_text":
-            result = ci.click_element_by_android_uiautomator_text(driver, element_value)
+            result = click_element_by_android_uiautomator_text(driver, element_value)
         elif element_parameter == "android_uiautomator_description":
-            result = ci.click_element_by_android_uiautomator_description(driver, element_value)
+            result = click_element_by_android_uiautomator_description(driver, element_value)
         elif element_parameter == "ios_uiautomation":
-            result = ci.click_element_by_ios_uiautomation(driver, element_value)
+            result = click_element_by_ios_uiautomation(driver, element_value)
         else:
             elem = driver.find_element_by_xpath("//*[@%s='%s']" % (element_parameter, element_value))
             if elem.is_enabled():
                 elem.click()
                 CommonUtil.ExecLog(sModuleInfo, "Clicked on element successfully", 1, local_run)
-                return "Passed"
+                return "passed"
             else:
                 CommonUtil.ExecLog(sModuleInfo, "Unable to click. The element is disabled.", 3, local_run)
                 return "failed"
 
-        if result == "Passed":
+        if result == "passed":
             CommonUtil.ExecLog(sModuleInfo, "Clicked on element successfully", 1, local_run)
-            return "Passed"
+            return "passed"
         elif result == "failed":
             CommonUtil.ExecLog(sModuleInfo, "Unable to click. The element is disabled.", 3, local_run)
             return "failed"
@@ -526,7 +526,7 @@ def Click_Element(element_parameter, element_value):
         if elem.is_enabled():
             elem.click()
             CommonUtil.ExecLog(sModuleInfo, "Clicked on element successfully", 1, local_run)
-            return "Passed"
+            return "passed"
         else:
             CommonUtil.ExecLog(sModuleInfo, "Unable to click. The element is disabled.", 3, local_run)
             return "failed" """
@@ -546,30 +546,30 @@ def Set_Text(element_parameter, element_value, text_value):
     try:
         CommonUtil.ExecLog(sModuleInfo, "Trying to set text in the textbox...", 1, local_run)
         if element_parameter == "name":
-            result = ti.set_text_by_name(driver, element_value, text_value)
+            result = set_text_by_name(driver, element_value, text_value)
         elif element_parameter == "id":
-            result = ti.set_text_by_id(driver, element_value, text_value)
+            result = set_text_by_id(driver, element_value, text_value)
         elif element_parameter == "accessibility_id":
-            result = ti.set_text_by_accessibility_id(driver, element_value, text_value)
+            result = set_text_by_accessibility_id(driver, element_value, text_value)
         elif element_parameter == "class_name":
-            result = ti.set_text_by_class_name(driver, element_value, text_value)
+            result = set_text_by_class_name(driver, element_value, text_value)
         elif element_parameter == "xpath":
-            result = ti.set_text_by_xpath(driver, element_value, text_value)
+            result = set_text_by_xpath(driver, element_value, text_value)
         elif element_parameter == "android_uiautomator_text":
-            result = ti.set_text_by_android_uiautomator_text(driver, element_value, text_value)
+            result = set_text_by_android_uiautomator_text(driver, element_value, text_value)
         elif element_parameter == "android_uiautomator_description":
-            result = ti.set_text_by_android_uiautomator_description(driver, element_value, text_value)
+            result = set_text_by_android_uiautomator_description(driver, element_value, text_value)
         elif element_parameter == "ios_uiautomation":
-            result = ti.set_text_by_ios_uiautomation(driver, element_value, text_value)
+            result = set_text_by_ios_uiautomation(driver, element_value, text_value)
         else:
             elem = driver.find_element_by_xpath("//*[@%s='%s']" % (element_parameter, element_value))
             elem.send_keys(text_value)
             CommonUtil.ExecLog(sModuleInfo, "Entered text on element successfully", 1, local_run)
-            return "Passed"
+            return "passed"
 
-        if result == "Passed":
+        if result == "passed":
             CommonUtil.ExecLog(sModuleInfo, "Entered text successfully", 1, local_run)
-            return "Passed"
+            return "passed"
         elif result == "failed":
             CommonUtil.ExecLog(sModuleInfo, "Unable to enter text.", 3, local_run)
             return "failed"
@@ -1008,7 +1008,7 @@ def SendKey_Enter():
         CommonUtil.ExecLog(sModuleInfo, "Trying to send enter key...", 1, local_run)
         driver.keyevent(66)
         CommonUtil.ExecLog(sModuleInfo, "Sent enter key successfully", 1, local_run)
-        return "Passed"
+        return "passed"
     except Exception, e:
         exc_type, exc_obj, exc_tb = sys.exc_info()
         fname = os.path.split(exc_tb.tb_frame.f_code.co_filename)[1]
@@ -1024,7 +1024,7 @@ def Go_Back():
         CommonUtil.ExecLog(sModuleInfo, "Trying to go back...", 1, local_run)
         driver.back()
         CommonUtil.ExecLog(sModuleInfo, "Went back successfully", 1, local_run)
-        return "Passed"
+        return "passed"
     except Exception, e:
         exc_type, exc_obj, exc_tb = sys.exc_info()
         fname = os.path.split(exc_tb.tb_frame.f_code.co_filename)[1]
@@ -1042,7 +1042,7 @@ def Wait(time_to_wait):
         driver.implicitly_wait(float(time_to_wait))
         time.sleep(float(time_to_wait))
         CommonUtil.ExecLog(sModuleInfo, "Waited successfully", 1, local_run)
-        return "Passed"
+        return "passed"
     except Exception, e:
         exc_type, exc_obj, exc_tb = sys.exc_info()
         fname = os.path.split(exc_tb.tb_frame.f_code.co_filename)[1]
@@ -1058,7 +1058,7 @@ def Swipe():
         CommonUtil.ExecLog(sModuleInfo, "Starting to swipe the screen...", 1, local_run)
         driver.swipe(100, 500, 100, 100, 800)
         CommonUtil.ExecLog(sModuleInfo, "Swiped the screen successfully", 1, local_run)
-        return "Passed"
+        return "passed"
     except Exception, e:
         exc_type, exc_obj, exc_tb = sys.exc_info()
         fname = os.path.split(exc_tb.tb_frame.f_code.co_filename)[1]
@@ -1078,7 +1078,7 @@ def Tap(element_parameter, element_value):
             action = TouchAction(driver)
             action.tap(elem).perform()
             CommonUtil.ExecLog(sModuleInfo, "Tapped on element successfully", 1, local_run)
-            return "Passed"
+            return "passed"
         else:
             CommonUtil.ExecLog(sModuleInfo, "Unable to tap. The element is disabled.", 3, local_run)
             return "failed"
@@ -1327,3 +1327,483 @@ def Click_Element_Appium(step_data):
         CommonUtil.ExecLog(sModuleInfo, "Unable to click on the element. %s" % Error_Detail, 3, local_run)
         return "failed"
 
+
+
+'''
+   Moving all locate, Click and text interaction function under one 
+'''
+#location
+
+
+
+
+def locate_element_by_id(driver, _id):
+    sModuleInfo = inspect.stack()[0][3] + " : " + inspect.getmoduleinfo(__file__).name
+    try:
+        CommonUtil.ExecLog(sModuleInfo,"Trying to locate element by id: %s"%_id,1,local_run)
+        elem = driver.find_element_by_id(_id)
+        return elem
+    except Exception, e:
+        exc_type, exc_obj, exc_tb = sys.exc_info()        
+        fname = os.path.split(exc_tb.tb_frame.f_code.co_filename)[1]
+        Error_Detail = ((str(exc_type).replace("type ", "Error Type: ")) + ";" +  "Error Message: " + str(exc_obj) +";" + "File Name: " + fname + ";" + "Line: "+ str(exc_tb.tb_lineno))
+        CommonUtil.ExecLog(sModuleInfo, "Unable to locate the element. %s"%Error_Detail, 3,local_run)
+
+def locate_elements_by_id(driver, _id):
+    sModuleInfo = inspect.stack()[0][3] + " : " + inspect.getmoduleinfo(__file__).name
+    try:
+        CommonUtil.ExecLog(sModuleInfo,"Trying to locate elements by id: %s"%_id,1,local_run)
+        elems = driver.find_elements_by_id(_id)
+        return elems
+    except Exception, e:
+        exc_type, exc_obj, exc_tb = sys.exc_info()        
+        fname = os.path.split(exc_tb.tb_frame.f_code.co_filename)[1]
+        Error_Detail = ((str(exc_type).replace("type ", "Error Type: ")) + ";" +  "Error Message: " + str(exc_obj) +";" + "File Name: " + fname + ";" + "Line: "+ str(exc_tb.tb_lineno))
+        CommonUtil.ExecLog(sModuleInfo, "Unable to locate elements. %s"%Error_Detail, 3,local_run)
+
+    
+def locate_element_by_name(driver, _name):
+    sModuleInfo = inspect.stack()[0][3] + " : " + inspect.getmoduleinfo(__file__).name
+    try:
+        CommonUtil.ExecLog(sModuleInfo,"Trying to locate element by name: %s"%_name,1,local_run)
+        elem = driver.find_element_by_name(_name)
+        return elem
+    except Exception, e:
+        exc_type, exc_obj, exc_tb = sys.exc_info()        
+        fname = os.path.split(exc_tb.tb_frame.f_code.co_filename)[1]
+        Error_Detail = ((str(exc_type).replace("type ", "Error Type: ")) + ";" +  "Error Message: " + str(exc_obj) +";" + "File Name: " + fname + ";" + "Line: "+ str(exc_tb.tb_lineno))
+        CommonUtil.ExecLog(sModuleInfo, "Unable to locate the element. %s"%Error_Detail, 3,local_run)
+    
+    
+def locate_element_by_class_name(driver, _class):
+    sModuleInfo = inspect.stack()[0][3] + " : " + inspect.getmoduleinfo(__file__).name
+    try:
+        CommonUtil.ExecLog(sModuleInfo,"Trying to locate element by class: %s"%_class,1,local_run)
+        elem = driver.find_element_by_class_name(_class)
+        return elem
+    except Exception, e:
+        exc_type, exc_obj, exc_tb = sys.exc_info()        
+        fname = os.path.split(exc_tb.tb_frame.f_code.co_filename)[1]
+        Error_Detail = ((str(exc_type).replace("type ", "Error Type: ")) + ";" +  "Error Message: " + str(exc_obj) +";" + "File Name: " + fname + ";" + "Line: "+ str(exc_tb.tb_lineno))
+        CommonUtil.ExecLog(sModuleInfo, "Unable to locate the element. %s"%Error_Detail, 3,local_run)
+    
+    
+def locate_element_by_xpath(driver, _classpath):
+    sModuleInfo = inspect.stack()[0][3] + " : " + inspect.getmoduleinfo(__file__).name
+    try:
+        CommonUtil.ExecLog(sModuleInfo,"Trying to locate element by xpath: %s"%_classpath,1,local_run)
+        elem = driver.find_element_by_xpath(_classpath)
+        return elem
+    except Exception, e:
+        exc_type, exc_obj, exc_tb = sys.exc_info()        
+        fname = os.path.split(exc_tb.tb_frame.f_code.co_filename)[1]
+        Error_Detail = ((str(exc_type).replace("type ", "Error Type: ")) + ";" +  "Error Message: " + str(exc_obj) +";" + "File Name: " + fname + ";" + "Line: "+ str(exc_tb.tb_lineno))
+        CommonUtil.ExecLog(sModuleInfo, "Unable to locate the element. %s"%Error_Detail, 3,local_run)
+    
+def locate_element_by_accessibility_id(driver, _id):
+    sModuleInfo = inspect.stack()[0][3] + " : " + inspect.getmoduleinfo(__file__).name
+    try:
+        CommonUtil.ExecLog(sModuleInfo,"Trying to locate element by accessibility id: %s"%_id,1,local_run)
+        elem = driver.find_element_by_accessibility_id(_id)
+        return elem
+    except Exception, e:
+        exc_type, exc_obj, exc_tb = sys.exc_info()        
+        fname = os.path.split(exc_tb.tb_frame.f_code.co_filename)[1]
+        Error_Detail = ((str(exc_type).replace("type ", "Error Type: ")) + ";" +  "Error Message: " + str(exc_obj) +";" + "File Name: " + fname + ";" + "Line: "+ str(exc_tb.tb_lineno))
+        CommonUtil.ExecLog(sModuleInfo, "Unable to locate the element. %s"%Error_Detail, 3,local_run)
+
+
+def locate_element_by_android_uiautomator_text(driver, _text):
+    sModuleInfo = inspect.stack()[0][3] + " : " + inspect.getmoduleinfo(__file__).name
+    try:
+        CommonUtil.ExecLog(sModuleInfo,"Trying to locate element by android uiautomator text: %s"%_text,1,local_run)
+        elem = driver.find_element_by_android_uiautomator('new UiSelector().text('+_text+')')
+        return elem
+    except Exception, e:
+        exc_type, exc_obj, exc_tb = sys.exc_info()        
+        fname = os.path.split(exc_tb.tb_frame.f_code.co_filename)[1]
+        Error_Detail = ((str(exc_type).replace("type ", "Error Type: ")) + ";" +  "Error Message: " + str(exc_obj) +";" + "File Name: " + fname + ";" + "Line: "+ str(exc_tb.tb_lineno))
+        CommonUtil.ExecLog(sModuleInfo, "Unable to locate the element. %s"%Error_Detail, 3,local_run)
+
+
+def locate_element_by_android_uiautomator_description(driver, _description):
+    sModuleInfo = inspect.stack()[0][3] + " : " + inspect.getmoduleinfo(__file__).name
+    try:
+        CommonUtil.ExecLog(sModuleInfo,"Trying to locate element by android uiautomator description: %s"%_description,1,local_run)
+        elem = driver.find_element_by_android_uiautomator('new UiSelector().description('+_description+')')
+        return elem
+    except Exception, e:
+        exc_type, exc_obj, exc_tb = sys.exc_info()        
+        fname = os.path.split(exc_tb.tb_frame.f_code.co_filename)[1]
+        Error_Detail = ((str(exc_type).replace("type ", "Error Type: ")) + ";" +  "Error Message: " + str(exc_obj) +";" + "File Name: " + fname + ";" + "Line: "+ str(exc_tb.tb_lineno))
+        CommonUtil.ExecLog(sModuleInfo, "Unable to locate the element. %s"%Error_Detail, 3,local_run)
+
+
+def locate_element_by_ios_uiautomation(driver, _description):
+    sModuleInfo = inspect.stack()[0][3] + " : " + inspect.getmoduleinfo(__file__).name
+    try:
+        CommonUtil.ExecLog(sModuleInfo,"Trying to locate element by ios uiautomatoion: %s"%_description,1,local_run)
+        elem = driver.find_element_by_ios_uiautomation('.elements()[0]')
+        return elem
+    except Exception, e:
+        exc_type, exc_obj, exc_tb = sys.exc_info()
+        fname = os.path.split(exc_tb.tb_frame.f_code.co_filename)[1]
+        Error_Detail = ((str(exc_type).replace("type ", "Error Type: ")) + ";" +  "Error Message: " + str(exc_obj) +";" + "File Name: " + fname + ";" + "Line: "+ str(exc_tb.tb_lineno))
+        CommonUtil.ExecLog(sModuleInfo, "Unable to locate the element. %s"%Error_Detail, 3,local_run)
+
+
+
+
+    
+#Click
+
+    
+def click_element_by_id(driver, _id):
+    sModuleInfo = inspect.stack()[0][3] + " : " + inspect.getmoduleinfo(__file__).name
+    try:
+        CommonUtil.ExecLog(sModuleInfo,"Trying to click on element by id: %s"%_id,1,local_run)
+        elem = locate_element_by_id(driver, _id)
+        if elem.is_enabled():
+            elem.click()
+            CommonUtil.ExecLog(sModuleInfo,"Clicked on element successfully",1,local_run)
+            return "Passed"
+        else:
+            CommonUtil.ExecLog(sModuleInfo,"Unable to click. The element is disabled.",3,local_run)
+            return "failed"
+    except Exception, e:
+        exc_type, exc_obj, exc_tb = sys.exc_info()        
+        fname = os.path.split(exc_tb.tb_frame.f_code.co_filename)[1]
+        Error_Detail = ((str(exc_type).replace("type ", "Error Type: ")) + ";" +  "Error Message: " + str(exc_obj) +";" + "File Name: " + fname + ";" + "Line: "+ str(exc_tb.tb_lineno))
+        CommonUtil.ExecLog(sModuleInfo, "Unable to click on the element. %s"%Error_Detail, 3,local_run)
+        return "failed"
+    
+def click_element_by_name(driver, _name):
+    sModuleInfo = inspect.stack()[0][3] + " : " + inspect.getmoduleinfo(__file__).name
+    try:
+        CommonUtil.ExecLog(sModuleInfo,"Trying to click on element by name: %s"%_name,1,local_run)
+        elem = locate_element_by_name(driver, _name)
+        if elem.is_enabled():
+            elem.click()
+            CommonUtil.ExecLog(sModuleInfo,"Clicked on element successfully",1,local_run)
+            return "Passed"
+        else:
+            CommonUtil.ExecLog(sModuleInfo,"Unable to click. The element is disabled.",3,local_run)
+            return "failed"
+    except Exception, e:
+        exc_type, exc_obj, exc_tb = sys.exc_info()        
+        fname = os.path.split(exc_tb.tb_frame.f_code.co_filename)[1]
+        Error_Detail = ((str(exc_type).replace("type ", "Error Type: ")) + ";" +  "Error Message: " + str(exc_obj) +";" + "File Name: " + fname + ";" + "Line: "+ str(exc_tb.tb_lineno))
+        CommonUtil.ExecLog(sModuleInfo, "Unable to click on the element. %s"%Error_Detail, 3,local_run)
+        return "failed"
+    
+def click_element_by_class_name(driver, _class):
+    sModuleInfo = inspect.stack()[0][3] + " : " + inspect.getmoduleinfo(__file__).name
+    try:
+        CommonUtil.ExecLog(sModuleInfo,"Trying to click on element by class: %s"%_class,1,local_run)
+        elem = locate_element_by_class_name(driver, _class)
+        if elem.is_enabled():
+            elem.click()
+            CommonUtil.ExecLog(sModuleInfo,"Clicked on element successfully",1,local_run)
+            return "Passed"
+        else:
+            CommonUtil.ExecLog(sModuleInfo,"Unable to click. The element is disabled.",3,local_run)
+            return "failed"
+    except Exception, e:
+        exc_type, exc_obj, exc_tb = sys.exc_info()        
+        fname = os.path.split(exc_tb.tb_frame.f_code.co_filename)[1]
+        Error_Detail = ((str(exc_type).replace("type ", "Error Type: ")) + ";" +  "Error Message: " + str(exc_obj) +";" + "File Name: " + fname + ";" + "Line: "+ str(exc_tb.tb_lineno))
+        CommonUtil.ExecLog(sModuleInfo, "Unable to click on the element. %s"%Error_Detail, 3,local_run)
+        return "failed"
+    
+def click_element_by_xpath(driver, _classpath):
+    sModuleInfo = inspect.stack()[0][3] + " : " + inspect.getmoduleinfo(__file__).name
+    try:
+        CommonUtil.ExecLog(sModuleInfo,"Trying to click on element by xpath: %s"%_classpath,1,local_run)
+        elem = locate_element_by_xpath(driver, _classpath)
+        if elem.is_enabled():
+            elem.click()
+            CommonUtil.ExecLog(sModuleInfo,"Clicked on element successfully",1,local_run)
+            return "Passed"
+        else:
+            CommonUtil.ExecLog(sModuleInfo,"Unable to click. The element is disabled.",3,local_run)
+            return "failed"
+    except Exception, e:
+        exc_type, exc_obj, exc_tb = sys.exc_info()        
+        fname = os.path.split(exc_tb.tb_frame.f_code.co_filename)[1]
+        Error_Detail = ((str(exc_type).replace("type ", "Error Type: ")) + ";" +  "Error Message: " + str(exc_obj) +";" + "File Name: " + fname + ";" + "Line: "+ str(exc_tb.tb_lineno))
+        CommonUtil.ExecLog(sModuleInfo, "Unable to click on the element. %s"%Error_Detail, 3,local_run)
+        return "failed"
+    
+def click_element_by_accessibility_id(driver, _id):
+    sModuleInfo = inspect.stack()[0][3] + " : " + inspect.getmoduleinfo(__file__).name
+    try:
+        CommonUtil.ExecLog(sModuleInfo,"Trying to click on element by accessibility id: %s"%_id,1,local_run)
+        elem = locate_element_by_accessibility_id(driver, _id)
+        if elem.is_enabled():
+            elem.click()
+            CommonUtil.ExecLog(sModuleInfo,"Clicked on element successfully",1,local_run)
+            return "Passed"
+        else:
+            CommonUtil.ExecLog(sModuleInfo,"Unable to click. The element is disabled.",3,local_run)
+            return "failed"
+    except Exception, e:
+        exc_type, exc_obj, exc_tb = sys.exc_info()        
+        fname = os.path.split(exc_tb.tb_frame.f_code.co_filename)[1]
+        Error_Detail = ((str(exc_type).replace("type ", "Error Type: ")) + ";" +  "Error Message: " + str(exc_obj) +";" + "File Name: " + fname + ";" + "Line: "+ str(exc_tb.tb_lineno))
+        CommonUtil.ExecLog(sModuleInfo, "Unable to click on the element. %s"%Error_Detail, 3,local_run)
+        return "failed"
+    
+def click_element_by_android_uiautomator_text(driver, _text):
+    sModuleInfo = inspect.stack()[0][3] + " : " + inspect.getmoduleinfo(__file__).name
+    try:
+        CommonUtil.ExecLog(sModuleInfo,"Trying to click on element by android uiautomator text: %s"%_text,1,local_run)
+        elem = locate_element_by_android_uiautomator_text(driver, _text)
+        if elem.is_enabled():
+            elem.click()
+            CommonUtil.ExecLog(sModuleInfo,"Clicked on element successfully",1,local_run)
+            return "Passed"
+        else:
+            CommonUtil.ExecLog(sModuleInfo,"Unable to click. The element is disabled.",3,local_run)
+            return "failed"
+    except Exception, e:
+        exc_type, exc_obj, exc_tb = sys.exc_info()        
+        fname = os.path.split(exc_tb.tb_frame.f_code.co_filename)[1]
+        Error_Detail = ((str(exc_type).replace("type ", "Error Type: ")) + ";" +  "Error Message: " + str(exc_obj) +";" + "File Name: " + fname + ";" + "Line: "+ str(exc_tb.tb_lineno))
+        CommonUtil.ExecLog(sModuleInfo, "Unable to click on the element. %s"%Error_Detail, 3,local_run)
+        return "failed"
+    
+def click_element_by_android_uiautomator_description(driver, _description):
+    sModuleInfo = inspect.stack()[0][3] + " : " + inspect.getmoduleinfo(__file__).name
+    try:
+        CommonUtil.ExecLog(sModuleInfo,"Trying to click on element by android uiautomator description: %s"%_description,1,local_run)
+        elem = locate_element_by_android_uiautomator_description(driver, _description)
+        if elem.is_enabled():
+            elem.click()
+            CommonUtil.ExecLog(sModuleInfo,"Clicked on element successfully",1,local_run)
+            return "Passed"
+        else:
+            CommonUtil.ExecLog(sModuleInfo,"Unable to click. The element is disabled.",3,local_run)
+            return "failed"
+    except Exception, e:
+        exc_type, exc_obj, exc_tb = sys.exc_info()        
+        fname = os.path.split(exc_tb.tb_frame.f_code.co_filename)[1]
+        Error_Detail = ((str(exc_type).replace("type ", "Error Type: ")) + ";" +  "Error Message: " + str(exc_obj) +";" + "File Name: " + fname + ";" + "Line: "+ str(exc_tb.tb_lineno))
+        CommonUtil.ExecLog(sModuleInfo, "Unable to click on the element. %s"%Error_Detail, 3,local_run)
+        return "failed"
+
+
+def click_element_by_ios_uiautomation(driver, _description):
+    sModuleInfo = inspect.stack()[0][3] + " : " + inspect.getmoduleinfo(__file__).name
+    try:
+        CommonUtil.ExecLog(sModuleInfo,"Trying to click on element by android uiautomator description: %s"%_description,1,local_run)
+        elem = locate_element_by_ios_uiautomation(driver, _description)
+        if elem.is_enabled():
+            elem.click()
+            CommonUtil.ExecLog(sModuleInfo,"Clicked on element successfully",1,local_run)
+            return "Passed"
+        else:
+            CommonUtil.ExecLog(sModuleInfo,"Unable to click. The element is disabled.",3,local_run)
+            return "failed"
+    except Exception, e:
+        exc_type, exc_obj, exc_tb = sys.exc_info()
+        fname = os.path.split(exc_tb.tb_frame.f_code.co_filename)[1]
+        Error_Detail = ((str(exc_type).replace("type ", "Error Type: ")) + ";" +  "Error Message: " + str(exc_obj) +";" + "File Name: " + fname + ";" + "Line: "+ str(exc_tb.tb_lineno))
+        CommonUtil.ExecLog(sModuleInfo, "Unable to click on the element. %s"%Error_Detail, 3,local_run)
+        return "failed"
+
+#text
+
+
+
+def set_text_by_id(driver, _id, text):
+    sModuleInfo = inspect.stack()[0][3] + " : " + inspect.getmoduleinfo(__file__).name
+    try:
+        CommonUtil.ExecLog(sModuleInfo,"Trying to set text on element by id: %s"%_id,1,local_run)
+        elem = locate_element_by_id(driver, _id)
+        if elem.is_displayed():
+            elem.click()
+            driver.hide_keyboard()
+            #elem.set_value(text)
+            #driver.set_value(elem, text)
+            elem.send_keys(text)
+            CommonUtil.ExecLog(sModuleInfo, "Text set on element successfully", 1, local_run)
+            return "Passed"
+        else:
+            CommonUtil.ExecLog(sModuleInfo, "Unable to set text. The element is hidden.", 3, local_run)
+            return "failed"
+        #driver.set_value(elem, text)
+
+    except Exception, e:
+        exc_type, exc_obj, exc_tb = sys.exc_info()        
+        fname = os.path.split(exc_tb.tb_frame.f_code.co_filename)[1]
+        Error_Detail = ((str(exc_type).replace("type ", "Error Type: ")) + ";" +  "Error Message: " + str(exc_obj) +";" + "File Name: " + fname + ";" + "Line: "+ str(exc_tb.tb_lineno))
+        CommonUtil.ExecLog(sModuleInfo, "Unable to set text on the element. %s"%Error_Detail, 3,local_run)
+        return "failed"
+
+
+def set_text_by_name(driver, _name, text):
+    sModuleInfo = inspect.stack()[0][3] + " : " + inspect.getmoduleinfo(__file__).name
+    try:
+        CommonUtil.ExecLog(sModuleInfo,"Trying to set text on element by name: %s"%_name,1,local_run)
+        elem = locate_element_by_name(driver, _name)
+        if elem.is_displayed():
+            elem.click()
+            driver.hide_keyboard()
+            elem.send_keys(text)
+            CommonUtil.ExecLog(sModuleInfo, "Text set on element successfully", 1, local_run)
+            return "Passed"
+        else:
+            CommonUtil.ExecLog(sModuleInfo, "Unable to set text. The element is hidden.", 3, local_run)
+            return "failed"
+
+    except Exception, e:
+        exc_type, exc_obj, exc_tb = sys.exc_info()        
+        fname = os.path.split(exc_tb.tb_frame.f_code.co_filename)[1]
+        Error_Detail = ((str(exc_type).replace("type ", "Error Type: ")) + ";" +  "Error Message: " + str(exc_obj) +";" + "File Name: " + fname + ";" + "Line: "+ str(exc_tb.tb_lineno))
+        CommonUtil.ExecLog(sModuleInfo, "Unable to set text on the element. %s"%Error_Detail, 3,local_run)
+        return "failed"
+
+
+def set_text_by_class_name(driver, _class, text):
+    sModuleInfo = inspect.stack()[0][3] + " : " + inspect.getmoduleinfo(__file__).name
+    try:
+        CommonUtil.ExecLog(sModuleInfo,"Trying to set text on element by class: %s"%_class,1,local_run)
+        elem = locate_element_by_class_name(driver, _class)
+        if elem.is_displayed():
+            elem.click()
+            driver.hide_keyboard()
+            elem.send_keys(text)
+            CommonUtil.ExecLog(sModuleInfo, "Text set on element successfully", 1, local_run)
+            return "Passed"
+        else:
+            CommonUtil.ExecLog(sModuleInfo, "Unable to set text. The element is hidden.", 3, local_run)
+            return "failed"
+
+    except Exception, e:
+        exc_type, exc_obj, exc_tb = sys.exc_info()        
+        fname = os.path.split(exc_tb.tb_frame.f_code.co_filename)[1]
+        Error_Detail = ((str(exc_type).replace("type ", "Error Type: ")) + ";" +  "Error Message: " + str(exc_obj) +";" + "File Name: " + fname + ";" + "Line: "+ str(exc_tb.tb_lineno))
+        CommonUtil.ExecLog(sModuleInfo, "Unable to set text on the element. %s"%Error_Detail, 3,local_run)
+        return "failed"
+
+
+def set_text_by_xpath(driver, _classpath, text):
+    sModuleInfo = inspect.stack()[0][3] + " : " + inspect.getmoduleinfo(__file__).name
+    try:
+        CommonUtil.ExecLog(sModuleInfo,"Trying to set text on element by xpath: %s"%_classpath,1,local_run)
+        elem = locate_element_by_xpath(driver, _classpath)
+        if elem.is_displayed():
+            elem.click()
+            driver.hide_keyboard()
+            elem.send_keys(text)
+            CommonUtil.ExecLog(sModuleInfo, "Text set on element successfully", 1, local_run)
+            return "Passed"
+        else:
+            CommonUtil.ExecLog(sModuleInfo, "Unable to set text. The element is hidden.", 3, local_run)
+            return "failed"
+    except Exception, e:
+        exc_type, exc_obj, exc_tb = sys.exc_info()        
+        fname = os.path.split(exc_tb.tb_frame.f_code.co_filename)[1]
+        Error_Detail = ((str(exc_type).replace("type ", "Error Type: ")) + ";" +  "Error Message: " + str(exc_obj) +";" + "File Name: " + fname + ";" + "Line: "+ str(exc_tb.tb_lineno))
+        CommonUtil.ExecLog(sModuleInfo, "Unable to set text on the element. %s"%Error_Detail, 3,local_run)
+        return "failed"
+
+
+def set_text_by_accessibility_id(driver, _id, text):
+    sModuleInfo = inspect.stack()[0][3] + " : " + inspect.getmoduleinfo(__file__).name
+    try:
+        CommonUtil.ExecLog(sModuleInfo,"Trying to set text on element by accessibility id: %s"%_id,1,local_run)
+        elem = locate_element_by_accessibility_id(driver, _id)
+        if elem.is_displayed():
+            elem.click()
+            driver.hide_keyboard()
+            elem.send_keys(text)
+            CommonUtil.ExecLog(sModuleInfo, "Text set on element successfully", 1, local_run)
+            return "Passed"
+        else:
+            CommonUtil.ExecLog(sModuleInfo, "Unable to set text. The element is hidden.", 3, local_run)
+            return "failed"
+    except Exception, e:
+        exc_type, exc_obj, exc_tb = sys.exc_info()
+        fname = os.path.split(exc_tb.tb_frame.f_code.co_filename)[1]
+        Error_Detail = ((str(exc_type).replace("type ", "Error Type: ")) + ";" + "Error Message: " + str(
+            exc_obj) + ";" + "File Name: " + fname + ";" + "Line: " + str(exc_tb.tb_lineno))
+        CommonUtil.ExecLog(sModuleInfo, "Unable to set text on the element. %s" % Error_Detail, 3, local_run)
+        return "failed"
+
+
+def set_text_by_android_uiautomator_text(driver, _text, text_value):
+    sModuleInfo = inspect.stack()[0][3] + " : " + inspect.getmoduleinfo(__file__).name
+    try:
+        CommonUtil.ExecLog(sModuleInfo, "Trying to click on element by android uiautomator text: %s" % _text, 1, local_run)
+        elem = locate_element_by_android_uiautomator_text(driver, _text)
+        if elem.is_displayed():
+            elem.click()
+            driver.hide_keyboard()
+            elem.send_keys(text_value)
+            CommonUtil.ExecLog(sModuleInfo, "Text set on element successfully", 1, local_run)
+            return "Passed"
+        else:
+            CommonUtil.ExecLog(sModuleInfo, "Unable to set text. The element is hidden.", 3, local_run)
+            return "failed"
+    except Exception, e:
+        exc_type, exc_obj, exc_tb = sys.exc_info()
+        fname = os.path.split(exc_tb.tb_frame.f_code.co_filename)[1]
+        Error_Detail = ((str(exc_type).replace("type ", "Error Type: ")) + ";" + "Error Message: " + str(
+            exc_obj) + ";" + "File Name: " + fname + ";" + "Line: " + str(exc_tb.tb_lineno))
+        CommonUtil.ExecLog(sModuleInfo, "Unable to click on the element. %s" % Error_Detail, 3, local_run)
+        return "failed"
+
+
+def set_text_by_android_uiautomator_description(driver, _description, text):
+    sModuleInfo = inspect.stack()[0][3] + " : " + inspect.getmoduleinfo(__file__).name
+    try:
+        CommonUtil.ExecLog(sModuleInfo,
+                           "Trying to click on element by android uiautomator description: %s" % _description, 1,
+                           local_run)
+        elem = locate_element_by_android_uiautomator_description(driver, _description)
+        if elem.is_displayed():
+            elem.click()
+            driver.hide_keyboard()
+            elem.send_keys(text)
+            CommonUtil.ExecLog(sModuleInfo, "Text set on element successfully", 1, local_run)
+            return "Passed"
+        else:
+            CommonUtil.ExecLog(sModuleInfo, "Unable to set text. The element is hidden.", 3, local_run)
+            return "failed"
+    except Exception, e:
+        exc_type, exc_obj, exc_tb = sys.exc_info()
+        fname = os.path.split(exc_tb.tb_frame.f_code.co_filename)[1]
+        Error_Detail = ((str(exc_type).replace("type ", "Error Type: ")) + ";" + "Error Message: " + str(
+            exc_obj) + ";" + "File Name: " + fname + ";" + "Line: " + str(exc_tb.tb_lineno))
+        CommonUtil.ExecLog(sModuleInfo, "Unable to click on the element. %s" % Error_Detail, 3, local_run)
+        return "failed"
+
+
+def set_text_by_ios_uiautomation(driver, _description, text):
+    sModuleInfo = inspect.stack()[0][3] + " : " + inspect.getmoduleinfo(__file__).name
+    try:
+        CommonUtil.ExecLog(sModuleInfo,
+                           "Trying to click on element by android uiautomator description: %s" % _description, 1,
+                           local_run)
+        elem = locate_element_by_ios_uiautomation(driver, _description)
+        if elem.is_displayed():
+            elem.click()
+            driver.hide_keyboard()
+            elem.send_keys(text)
+            CommonUtil.ExecLog(sModuleInfo, "Text set on element successfully", 1, local_run)
+            return "Passed"
+        else:
+            CommonUtil.ExecLog(sModuleInfo, "Unable to set text. The element is hidden.", 3, local_run)
+            return "failed"
+    except Exception, e:
+        exc_type, exc_obj, exc_tb = sys.exc_info()
+        fname = os.path.split(exc_tb.tb_frame.f_code.co_filename)[1]
+        Error_Detail = ((str(exc_type).replace("type ", "Error Type: ")) + ";" + "Error Message: " + str(
+            exc_obj) + ";" + "File Name: " + fname + ";" + "Line: " + str(exc_tb.tb_lineno))
+        CommonUtil.ExecLog(sModuleInfo, "Unable to click on the element. %s" % Error_Detail, 3, local_run)
+        return "failed"
+
+
+    
+    
