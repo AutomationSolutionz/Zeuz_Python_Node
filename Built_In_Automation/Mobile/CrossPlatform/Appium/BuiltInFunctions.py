@@ -222,6 +222,7 @@ def launch_and_start_driver(package_name, activity_name):
         wait(3)
         return "passed"
     except Exception, e:
+        CommonUtil.ExecLog(sModuleInfo, "Exception: %s" % e, 3, local_run)
         exc_type, exc_obj, exc_tb = sys.exc_info()        
         fname = os.path.split(exc_tb.tb_frame.f_code.co_filename)[1]
         Error_Detail = ((str(exc_type).replace("type ", "Error Type: ")) + ";" +  "Error Message: " + str(exc_obj) +";" + "File Name: " + fname + ";" + "Line: "+ str(exc_tb.tb_lineno))
@@ -505,13 +506,25 @@ def Click_Element(element_parameter, element_value):
         elif element_parameter == "ios_uiautomation":
             result = click_element_by_ios_uiautomation(driver, element_value)
         else:
-            elem = driver.find_element_by_xpath("//*[@%s='%s']" % (element_parameter, element_value))
-            if elem.is_enabled():
-                elem.click()
-                CommonUtil.ExecLog(sModuleInfo, "Clicked on element successfully", 1, local_run)
-                return "passed"
-            else:
-                CommonUtil.ExecLog(sModuleInfo, "Unable to click. The element is disabled.", 3, local_run)
+            try:
+                CommonUtil.ExecLog(sModuleInfo,
+                                   "Trying to click on element with parameter - %s and value - %s ..." % (element_parameter, element_value),
+                                   1, local_run)
+                elem = driver.find_element_by_xpath("//*[@%s='%s']" % (element_parameter, element_value))
+                if elem.is_enabled():
+                    elem.click()
+                    CommonUtil.ExecLog(sModuleInfo, "Clicked on element successfully", 1, local_run)
+                    return "passed"
+                else:
+                    CommonUtil.ExecLog(sModuleInfo, "Unable to click. The element is disabled.", 3, local_run)
+                    return "failed"
+            except Exception, e:
+                CommonUtil.ExecLog(sModuleInfo, "Exception: %s" % e, 3, local_run)
+                exc_type, exc_obj, exc_tb = sys.exc_info()
+                fname = os.path.split(exc_tb.tb_frame.f_code.co_filename)[1]
+                Error_Detail = ((str(exc_type).replace("type ", "Error Type: ")) + ";" + "Error Message: " + str(
+                    exc_obj) + ";" + "File Name: " + fname + ";" + "Line: " + str(exc_tb.tb_lineno))
+                CommonUtil.ExecLog(sModuleInfo, "Unable to click on the element. %s" % Error_Detail, 3, local_run)
                 return "failed"
 
         if result == "passed":
@@ -564,20 +577,12 @@ def Set_Text(element_parameter, element_value, text_value):
         else:
             elem = driver.find_element_by_xpath("//*[@%s='%s']" % (element_parameter, element_value))
             elem.click()
-            driver.hide_keyboard()
             elem.send_keys(text_value)
-            try:
-                driver.hide_keyboard()
-            except Exception, e:
-                print e
+            driver.hide_keyboard()
             CommonUtil.ExecLog(sModuleInfo, "Entered text on element successfully", 1, local_run)
             return "passed"
 
         if result == "passed":
-            try:
-                driver.hide_keyboard()
-            except Exception, e:
-                print e
             CommonUtil.ExecLog(sModuleInfo, "Entered text successfully", 1, local_run)
             return "passed"
         elif result == "failed":
@@ -1481,6 +1486,7 @@ def click_element_by_id(driver, _id):
             CommonUtil.ExecLog(sModuleInfo,"Unable to click. The element is disabled.",3,local_run)
             return "failed"
     except Exception, e:
+        CommonUtil.ExecLog(sModuleInfo, "Exception: %s" % e, 3, local_run)
         exc_type, exc_obj, exc_tb = sys.exc_info()        
         fname = os.path.split(exc_tb.tb_frame.f_code.co_filename)[1]
         Error_Detail = ((str(exc_type).replace("type ", "Error Type: ")) + ";" +  "Error Message: " + str(exc_obj) +";" + "File Name: " + fname + ";" + "Line: "+ str(exc_tb.tb_lineno))
@@ -1500,6 +1506,7 @@ def click_element_by_name(driver, _name):
             CommonUtil.ExecLog(sModuleInfo,"Unable to click. The element is disabled.",3,local_run)
             return "failed"
     except Exception, e:
+        CommonUtil.ExecLog(sModuleInfo, "Exception: %s" % e, 3, local_run)
         exc_type, exc_obj, exc_tb = sys.exc_info()        
         fname = os.path.split(exc_tb.tb_frame.f_code.co_filename)[1]
         Error_Detail = ((str(exc_type).replace("type ", "Error Type: ")) + ";" +  "Error Message: " + str(exc_obj) +";" + "File Name: " + fname + ";" + "Line: "+ str(exc_tb.tb_lineno))
@@ -1519,6 +1526,7 @@ def click_element_by_class_name(driver, _class):
             CommonUtil.ExecLog(sModuleInfo,"Unable to click. The element is disabled.",3,local_run)
             return "failed"
     except Exception, e:
+        CommonUtil.ExecLog(sModuleInfo, "Exception: %s" % e, 3, local_run)
         exc_type, exc_obj, exc_tb = sys.exc_info()        
         fname = os.path.split(exc_tb.tb_frame.f_code.co_filename)[1]
         Error_Detail = ((str(exc_type).replace("type ", "Error Type: ")) + ";" +  "Error Message: " + str(exc_obj) +";" + "File Name: " + fname + ";" + "Line: "+ str(exc_tb.tb_lineno))
@@ -1538,6 +1546,7 @@ def click_element_by_xpath(driver, _classpath):
             CommonUtil.ExecLog(sModuleInfo,"Unable to click. The element is disabled.",3,local_run)
             return "failed"
     except Exception, e:
+        CommonUtil.ExecLog(sModuleInfo, "Exception: %s" % e, 3, local_run)
         exc_type, exc_obj, exc_tb = sys.exc_info()        
         fname = os.path.split(exc_tb.tb_frame.f_code.co_filename)[1]
         Error_Detail = ((str(exc_type).replace("type ", "Error Type: ")) + ";" +  "Error Message: " + str(exc_obj) +";" + "File Name: " + fname + ";" + "Line: "+ str(exc_tb.tb_lineno))
@@ -1645,6 +1654,7 @@ def set_text_by_id(driver, _id, text):
         #driver.set_value(elem, text)
 
     except Exception, e:
+        CommonUtil.ExecLog(sModuleInfo, "Exception: %s" % e, 3, local_run)
         exc_type, exc_obj, exc_tb = sys.exc_info()        
         fname = os.path.split(exc_tb.tb_frame.f_code.co_filename)[1]
         Error_Detail = ((str(exc_type).replace("type ", "Error Type: ")) + ";" +  "Error Message: " + str(exc_obj) +";" + "File Name: " + fname + ";" + "Line: "+ str(exc_tb.tb_lineno))
@@ -1668,6 +1678,7 @@ def set_text_by_name(driver, _name, text):
             return "failed"
 
     except Exception, e:
+        CommonUtil.ExecLog(sModuleInfo, "Exception: %s" % e, 3, local_run)
         exc_type, exc_obj, exc_tb = sys.exc_info()        
         fname = os.path.split(exc_tb.tb_frame.f_code.co_filename)[1]
         Error_Detail = ((str(exc_type).replace("type ", "Error Type: ")) + ";" +  "Error Message: " + str(exc_obj) +";" + "File Name: " + fname + ";" + "Line: "+ str(exc_tb.tb_lineno))
@@ -1691,6 +1702,7 @@ def set_text_by_class_name(driver, _class, text):
             return "failed"
 
     except Exception, e:
+        CommonUtil.ExecLog(sModuleInfo, "Exception: %s" % e, 3, local_run)
         exc_type, exc_obj, exc_tb = sys.exc_info()        
         fname = os.path.split(exc_tb.tb_frame.f_code.co_filename)[1]
         Error_Detail = ((str(exc_type).replace("type ", "Error Type: ")) + ";" +  "Error Message: " + str(exc_obj) +";" + "File Name: " + fname + ";" + "Line: "+ str(exc_tb.tb_lineno))
@@ -1713,6 +1725,7 @@ def set_text_by_xpath(driver, _classpath, text):
             CommonUtil.ExecLog(sModuleInfo, "Unable to set text. The element is hidden.", 3, local_run)
             return "failed"
     except Exception, e:
+        CommonUtil.ExecLog(sModuleInfo, "Exception: %s" % e, 3, local_run)
         exc_type, exc_obj, exc_tb = sys.exc_info()        
         fname = os.path.split(exc_tb.tb_frame.f_code.co_filename)[1]
         Error_Detail = ((str(exc_type).replace("type ", "Error Type: ")) + ";" +  "Error Message: " + str(exc_obj) +";" + "File Name: " + fname + ";" + "Line: "+ str(exc_tb.tb_lineno))
