@@ -209,7 +209,7 @@ def tear_down_selenium(dependency,run_time_params,step_data,file_attachment,temp
     sModuleInfo = inspect.stack()[0][3] + " : " + inspect.getmoduleinfo(__file__).name
     try:
         CommonUtil.ExecLog(sModuleInfo,"Enter: Step - Tear Down Selenium",1,local_run)
-        sTestStepReturnStatus=Selenium_Built_In.Tear_Down(step_data)
+        sTestStepReturnStatus=Selenium_Built_In.Tear_Down()
         temp_q.put(sTestStepReturnStatus)
         CommonUtil.ExecLog(sModuleInfo,"Exit: Step - Tear Down Selenium",1,local_run)
         return sTestStepReturnStatus
