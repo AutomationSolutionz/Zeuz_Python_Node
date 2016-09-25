@@ -601,6 +601,31 @@ def Set_Text(element_parameter, element_value, text_value):
         return "failed"
 
 
+# Method to enter text in a text box and press enter to search of something
+def Set_Text_Enter(element_parameter, element_value, text_value):
+    sModuleInfo = inspect.stack()[0][3] + " : " + inspect.getmoduleinfo(__file__).name
+    CommonUtil.ExecLog(sModuleInfo, "Inside Enter Text In Text Box function", 1, local_run)
+    try:
+        CommonUtil.ExecLog(sModuleInfo, "Trying to set text in the textbox...", 1, local_run)
+
+        #elem = driver.find_element_by_xpath("//*[@%s='%s']" % (element_parameter, element_value))
+        elem = Get_Single_Element(element_parameter, element_value)
+        elem.click()
+        elem.send_keys(text_value + "\n")
+        CommonUtil.ExecLog(sModuleInfo, "Entered text on element successfully", 1, local_run)
+        return "passed"
+        CommonUtil.ExecLog(sModuleInfo, "Entered and searched text successfully", 1, local_run)
+
+    except Exception, e:
+        CommonUtil.ExecLog(sModuleInfo, "Exception: %s" % e, 3, local_run)
+        exc_type, exc_obj, exc_tb = sys.exc_info()
+        fname = os.path.split(exc_tb.tb_frame.f_code.co_filename)[1]
+        Error_Detail = ((str(exc_type).replace("type ", "Error Type: ")) + ";" + "Error Message: " + str(
+            exc_obj) + ";" + "File Name: " + fname + ";" + "Line: " + str(exc_tb.tb_lineno))
+        CommonUtil.ExecLog(sModuleInfo, "Could not set text and search.  Error: %s" % (Error_Detail), 3,
+                           local_run)
+        return "failed"
+
 # Method to enter texts in a text box; step data passed on by the user
 def Enter_Text_In_Text_Box(step_data):
     sModuleInfo = inspect.stack()[0][3] + " : " + inspect.getmoduleinfo(__file__).name
@@ -973,6 +998,10 @@ def Action_Handler(action_name, action_step_data=False, action_value=False):
                 return "failed"
         elif action_name == "text":
             result = Set_Text(action_step_data[0], action_step_data[2], action_value)
+            if result == "failed":
+                return "failed"
+        elif action_name == "text_search":
+            result = Set_Text_Enter(action_step_data[0], action_step_data[2], action_value)
             if result == "failed":
                 return "failed"
         elif action_name == "wait":
