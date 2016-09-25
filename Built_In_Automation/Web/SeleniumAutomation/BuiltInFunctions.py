@@ -104,6 +104,7 @@ def Go_To_Link(link, page_title=False):
         #time.sleep(3)
         return "passed"
     except Exception, e:
+        CommonUtil.ExecLog(sModuleInfo, "Exception :%s" % e, 3, local_run)
         exc_type, exc_obj, exc_tb = sys.exc_info()        
         fname = os.path.split(exc_tb.tb_frame.f_code.co_filename)[1]
         Error_Detail = ((str(exc_type).replace("type ", "Error Type: ")) + ";" +  "Error Message: " + str(exc_obj) +";" + "File Name: " + fname + ";" + "Line: "+ str(exc_tb.tb_lineno))
@@ -581,10 +582,12 @@ def Sequential_Actions(step_data):
         return "passed"
 
     except Exception, e:
+        CommonUtil.ExecLog(sModuleInfo, "Exception: %s" % e, 3, local_run)
         exc_type, exc_obj, exc_tb = sys.exc_info()
         fname = os.path.split(exc_tb.tb_frame.f_code.co_filename)[1]
         Error_Detail = ((str(exc_type).replace("type ", "Error Type: ")) + ";" +  "Error Message: " + str(exc_obj) +";" + "File Name: " + fname + ";" + "Line: "+ str(exc_tb.tb_lineno))
         print "%s"%Error_Detail
+        CommonUtil.ExecLog(sModuleInfo, "Error: %s" % Error_Detail, 3, local_run)
         return "failed"
 
 '===================== ===x=== Sequential Action Section Ends ===x=== ======================'
