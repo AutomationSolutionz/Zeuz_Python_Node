@@ -805,73 +805,36 @@ def Get_All_Elements(parameter, value, parent=False):
         return "failed"
 
 
-#Method to click on element; step data passed on by the user
-"""def Click_Element(step_data):
-    sModuleInfo = inspect.stack()[0][3] + " : " + inspect.getmoduleinfo(__file__).name
-    CommonUtil.ExecLog(sModuleInfo, "Inside Click Element function", 1,local_run)
-    try:
-        if ((len(step_data) != 1) or (1 < len(step_data[0]) >= 5)):
-            CommonUtil.ExecLog(sModuleInfo, "The information in the data-set(s) are incorrect. Please provide accurate data set(s) information.", 3,local_run)
-            return "failed"
-        else:
-            element_step_data = step_data[0][0:len(step_data[0])-1:1]
-            returned_step_data_list = Validate_Step_Data(element_step_data)
-            if ((returned_step_data_list == []) or (returned_step_data_list == "failed")):
-                return "failed"
-            else:
-                try:
-                    Element = Get_Element(returned_step_data_list[0], returned_step_data_list[1], returned_step_data_list[2], returned_step_data_list[3], returned_step_data_list[4])
-                    Element.click()
-                    CommonUtil.TakeScreenShot(sModuleInfo, local_run)
-                    CommonUtil.ExecLog(sModuleInfo, "Successfully clicked the element with given parameters and values", 1,local_run)
-                    return "passed"
-                except Exception, e:
-                    element_attributes = Element.get_attribute('name')
-                    CommonUtil.ExecLog(sModuleInfo, "Element Attributes: %s"%(element_attributes),3,local_run)
-                    exc_type, exc_obj, exc_tb = sys.exc_info()
-                    fname = os.path.split(exc_tb.tb_frame.f_code.co_filename)[1]
-                    Error_Detail = ((str(exc_type).replace("type ", "Error Type: ")) + ";" +  "Error Message: " + str(exc_obj) +";" + "File Name: " + fname + ";" + "Line: "+ str(exc_tb.tb_lineno))
-                    CommonUtil.ExecLog(sModuleInfo, "Could not select/click your element.  Error: %s"%(Error_Detail), 3,local_run)
-                    return "failed"
-
-    except Exception, e:
-        exc_type, exc_obj, exc_tb = sys.exc_info()
-        fname = os.path.split(exc_tb.tb_frame.f_code.co_filename)[1]
-        Error_Detail = ((str(exc_type).replace("type ", "Error Type: ")) + ";" +  "Error Message: " + str(exc_obj) +";" + "File Name: " + fname + ";" + "Line: "+ str(exc_tb.tb_lineno))
-        CommonUtil.ExecLog(sModuleInfo, "Could not find/click your element.  Error: %s"%(Error_Detail), 3,local_run)
-        return "failed" """
-
-
 #Validation of step data passed on by the user
 def Validate_Step_Data(step_data):
     sModuleInfo = inspect.stack()[0][3] + " : " + inspect.getmoduleinfo(__file__).name
     CommonUtil.ExecLog(sModuleInfo, "Function: Validate_Step_Data", 1,local_run)
-    try:
+    try:    
         if (len(step_data)==1):
-            element_parameter = step_data[0][0][0]
-            element_value = step_data[0][0][2]
+            element_parameter = step_data[0][0]
+            element_value = step_data[0][2]
             reference_parameter = False
-            reference_value = False
+            reference_value = False    
             reference_is_parent_or_child = False
         elif (len(step_data)==2):
-            element_parameter = step_data[0][0][0]
-            element_value = step_data[0][0][2]
-            reference_parameter = step_data[0][1][0]
-            reference_value = step_data[0][1][2]
+            element_parameter = step_data[0][0]
+            element_value = step_data[0][2]
+            reference_parameter = step_data[1][0]
+            reference_value = step_data[1][2]
             reference_is_parent_or_child = False
         elif (len(step_data)==3):
-            element_parameter = step_data[0][0][0]
-            element_value = step_data[0][0][2]
-            reference_parameter = step_data[0][1][0]
-            reference_value = step_data[0][1][2]
-            reference_is_parent_or_child = step_data[0][2][2]
+            element_parameter = step_data[0][0]
+            element_value = step_data[0][2]
+            reference_parameter = step_data[1][0]
+            reference_value = step_data[1][2]    
+            reference_is_parent_or_child = step_data[2][2]
         else:
             CommonUtil.ExecLog(sModuleInfo, "Data set incorrect. Please provide accurate data set(s) information.", 3,local_run)
             return "failed"
         validated_data = (element_parameter, element_value, reference_parameter, reference_value, reference_is_parent_or_child)
         return validated_data
     except Exception, e:
-            exc_type, exc_obj, exc_tb = sys.exc_info()
+            exc_type, exc_obj, exc_tb = sys.exc_info()        
             fname = os.path.split(exc_tb.tb_frame.f_code.co_filename)[1]
             Error_Detail = ((str(exc_type).replace("type ", "Error Type: ")) + ";" +  "Error Message: " + str(exc_obj) +";" + "File Name: " + fname + ";" + "Line: "+ str(exc_tb.tb_lineno))
             CommonUtil.ExecLog(sModuleInfo, "Could not find the new page element requested.  Error: %s"%(Error_Detail), 3,local_run)
@@ -1223,176 +1186,6 @@ def Validate_Text(step_data):
         CommonUtil.ExecLog(sModuleInfo, "Could not compare text as requested.  Error: %s" % (Error_Detail), 3,
                            local_run)
         return "failed"
-
-
-'=================== Riasat ======================'
-#Method to get the element step data from the original step_data
-def Get_Element_Step_Data_Appium(step_data):
-    sModuleInfo = inspect.stack()[0][3] + " : " + inspect.getmoduleinfo(__file__).name
-    CommonUtil.ExecLog(sModuleInfo, "Function - Get Element Step Data", 1,local_run)
-    try:
-        element_step_data=[]
-        for each in step_data[0]:
-            if each[1]=="":
-                element_step_data.append(each)
-            else:
-                break
-            
-        return element_step_data
-    
-    except Exception, e:
-        exc_type, exc_obj, exc_tb = sys.exc_info()        
-        fname = os.path.split(exc_tb.tb_frame.f_code.co_filename)[1]
-        Error_Detail = ((str(exc_type).replace("type ", "Error Type: ")) + ";" +  "Error Message: " + str(exc_obj) +";" + "File Name: " + fname + ";" + "Line: "+ str(exc_tb.tb_lineno))
-        CommonUtil.ExecLog(sModuleInfo, "Could not get element step data.  Error: %s"%(Error_Detail), 3,local_run)
-        return "failed"
-
-
-#Performs a series of action or logical decisions based on user input
-def Sequential_Actions_Appium(step_data):
-    sModuleInfo = inspect.stack()[0][3] + " : " + inspect.getmoduleinfo(__file__).name
-    try:            
-        for each in step_data:
-            logic_row=[]
-            for row in each:
-                #finding what to do for each dataset  
-                if len(row)==5 and row[1] != "":                    
-                    if row[1]=="action":
-                        result = Action_Handler([each],row[0])
-                        if result == [] or result == "failed":
-                            return "failed"
-                        
-                    elif row[1]=="logic":
-                        logic_decision=""
-                        logic_row.append(row)
-                        if len(logic_row)==2:
-                            element_step_data = each[0:len(step_data[0])-2:1]
-                            returned_step_data_list = Validate_Step_Data(element_step_data) 
-                            if ((returned_step_data_list == []) or (returned_step_data_list == "failed")):
-                                return "failed"
-                            else:
-                                try:
-                                    Element = Get_Element(returned_step_data_list[0], returned_step_data_list[1], returned_step_data_list[2], returned_step_data_list[3], returned_step_data_list[4])
-                                    if Element == 'failed':
-                                        logic_decision = "false"
-                                    else:
-                                        logic_decision = "true"                                        
-                                except Exception, errMsg:
-                                    errMsg = "Could not find element in the by the criteria..."
-                                    Exception_Info(sModuleInfo, errMsg)            
-                        else:
-                            continue
-
-                        for conditional_steps in logic_row:
-                            if logic_decision in conditional_steps:
-                                print conditional_steps[2]
-                                list_of_steps = conditional_steps[2].split(",")
-                                for each_item in list_of_steps:
-                                    data_set_index = int(each_item) - 1
-                                    Sequential_Actions([step_data[data_set_index]])
-                                return "passed"
-                    
-                    else:
-                        CommonUtil.ExecLog(sModuleInfo, "The sub-field information is incorrect. Please provide accurate information on the data set(s).", 3,local_run)
-                        return "failed"                 
-        return "passed"
-
-    except Exception, e:
-        exc_type, exc_obj, exc_tb = sys.exc_info()
-        fname = os.path.split(exc_tb.tb_frame.f_code.co_filename)[1]
-        Error_Detail = ((str(exc_type).replace("type ", "Error Type: ")) + ";" +  "Error Message: " + str(exc_obj) +";" + "File Name: " + fname + ";" + "Line: "+ str(exc_tb.tb_lineno))
-        print "%s"%Error_Detail
-        return "failed"
-    
-
-#Handles actions for the sequential logic, based on the input from the mentioned function
-def Action_Handler_Appium(action_step_data, action_name):
-    sModuleInfo = inspect.stack()[0][3] + " : " + inspect.getmoduleinfo(__file__).name
-    try:
-        if action_name =="click":
-            result = Click_Element(action_step_data)
-            if result == "failed":
-                return "failed"
-        elif action_name == "wait":
-            result = Wait(action_step_data)
-            if result == "failed":
-                return "failed"
-        elif action_name == "swipe":
-            result = Swipe()
-            if result == "failed":
-                return "failed"
-        elif action_name == "tap":
-            result = Enter_Text_In_Text_Box(action_step_data)
-            if result == "failed":
-                return "failed"
-        elif action_name == "go_back":
-            result = Go_Back(action_step_data)
-            if result == "failed":
-                return "failed"
-        elif (action_name == "validate full text" or action_name == "validate partial text"):
-            result = Validate_Text(action_step_data)
-            if result == "failed":
-                return "failed"
-        else:
-            CommonUtil.ExecLog(sModuleInfo, "The action you entered is incorrect. Please provide accurate information on the data set(s).", 3,local_run)
-            return "failed" 
-        
-    except Exception, e:
-        exc_type, exc_obj, exc_tb = sys.exc_info()
-        fname = os.path.split(exc_tb.tb_frame.f_code.co_filename)[1]
-        Error_Detail = ((str(exc_type).replace("type ", "Error Type: ")) + ";" +  "Error Message: " + str(exc_obj) +";" + "File Name: " + fname + ";" + "Line: "+ str(exc_tb.tb_lineno))
-        print "%s"%Error_Detail
-        return "failed"
-
-'-----------------------------------------------------------------'
-'                             For Minar                           '
-'Why cannot click work like tap? What is the issue that you faced '
-'-----------------------------------------------------------------'
-def Click_Element_Appium(step_data):
-    sModuleInfo = inspect.stack()[0][3] + " : " + inspect.getmoduleinfo(__file__).name
-    CommonUtil.ExecLog(sModuleInfo, "Inside Click_Element_Appium function", 1,local_run)
-    try:
-        if (len(step_data) != 1) or (1 < len(step_data[0]) >= 5):
-            CommonUtil.ExecLog(sModuleInfo, "The information in the data-set(s) are incorrect. Please provide accurate data set(s) information.", 3, local_run)
-            return "failed"
-        else:
-            element_step_data = Get_Element_Step_Data_Appium(step_data)            
-            returned_step_data_list = Validate_Step_Data(element_step_data) 
-            if (returned_step_data_list == []) or (returned_step_data_list == "failed"):
-                return "failed"
-            else:
-                try:
-                    Element = Get_Element(returned_step_data_list[0], returned_step_data_list[1], returned_step_data_list[2], returned_step_data_list[3], returned_step_data_list[4])
-                    if (Element == []) or (Element == "failed"):
-                        CommonUtil.ExecLog(sModuleInfo, "Could not get the element with the given parameters and values. Please provide accurate data set(s) information.", 3, local_run)
-                        return "failed"
-                    else:
-                        if Element.is_enabled():
-                            Element.click()
-                            CommonUtil.ExecLog(sModuleInfo, "Clicked on element successfully", 1, local_run)
-                            return "passed"
-                        else:
-                            CommonUtil.ExecLog(sModuleInfo, "Unable to click. The element is disabled.", 3, local_run)
-                            return "failed"
-                    
-                except Exception, e:
-                    CommonUtil.ExecLog(sModuleInfo, "Exception: %s" % e, 3, local_run)
-                    #element_attributes = Element.get_attribute('outerHTML')
-                    #CommonUtil.ExecLog(sModuleInfo, "Element Attributes: %s"%(element_attributes),3,local_run)
-                    exc_type, exc_obj, exc_tb = sys.exc_info()        
-                    fname = os.path.split(exc_tb.tb_frame.f_code.co_filename)[1]
-                    Error_Detail = ((str(exc_type).replace("type ", "Error Type: ")) + ";" +  "Error Message: " + str(exc_obj) +";" + "File Name: " + fname + ";" + "Line: "+ str(exc_tb.tb_lineno))
-                    CommonUtil.ExecLog(sModuleInfo, "Could not select/click your element.  Error: %s" % Error_Detail, 3, local_run)
-                    return "failed"
-       
-    except Exception, e:
-        exc_type, exc_obj, exc_tb = sys.exc_info()
-        fname = os.path.split(exc_tb.tb_frame.f_code.co_filename)[1]
-        Error_Detail = ((str(exc_type).replace("type ", "Error Type: ")) + ";" + "Error Message: " + str(
-            exc_obj) + ";" + "File Name: " + fname + ";" + "Line: " + str(exc_tb.tb_lineno))
-        CommonUtil.ExecLog(sModuleInfo, "Unable to click on the element. %s" % Error_Detail, 3, local_run)
-        return "failed"
-
 
 
 '''
@@ -2002,4 +1795,162 @@ def Get_All_Elements_Appium(parameter,value,parent=False):
 
 '===================== ===x=== Get Element Section Ends ===x=== ======================'    
     
+'============================= Sequential Actions Section Begins =============================='
+'=================== Riasat ======================'
+#Method to get the element step data from the original step_data
+def Get_Element_Step_Data_Appium(step_data):
+    sModuleInfo = inspect.stack()[0][3] + " : " + inspect.getmoduleinfo(__file__).name
+    CommonUtil.ExecLog(sModuleInfo, "Function - Get Element Step Data", 1,local_run)
+    try:
+        element_step_data=[]
+        for each in step_data[0]:
+            if each[1]=="":
+                element_step_data.append(each)
+            else:
+                break
+            
+        return element_step_data
+    
+    except Exception, e:
+        exc_type, exc_obj, exc_tb = sys.exc_info()        
+        fname = os.path.split(exc_tb.tb_frame.f_code.co_filename)[1]
+        Error_Detail = ((str(exc_type).replace("type ", "Error Type: ")) + ";" +  "Error Message: " + str(exc_obj) +";" + "File Name: " + fname + ";" + "Line: "+ str(exc_tb.tb_lineno))
+        CommonUtil.ExecLog(sModuleInfo, "Could not get element step data.  Error: %s"%(Error_Detail), 3,local_run)
+        return "failed"
+
+
+#Performs a series of action or logical decisions based on user input
+def Sequential_Actions_Appium(step_data):
+    sModuleInfo = inspect.stack()[0][3] + " : " + inspect.getmoduleinfo(__file__).name
+    try:            
+        for each in step_data:
+            logic_row=[]
+            for row in each:
+                #finding what to do for each dataset  
+                if len(row)==5 and row[1] != "":                    
+                    if row[1]=="action":
+                        result = Action_Handler([each],row[0])
+                        if result == [] or result == "failed":
+                            return "failed"
+                        
+                    elif row[1]=="logic":
+                        logic_decision=""
+                        logic_row.append(row)
+                        if len(logic_row)==2:
+                            element_step_data = each[0:len(step_data[0])-2:1]
+                            returned_step_data_list = Validate_Step_Data(element_step_data) 
+                            if ((returned_step_data_list == []) or (returned_step_data_list == "failed")):
+                                return "failed"
+                            else:
+                                try:
+                                    Element = Get_Element(returned_step_data_list[0], returned_step_data_list[1], returned_step_data_list[2], returned_step_data_list[3], returned_step_data_list[4])
+                                    if Element == 'failed':
+                                        logic_decision = "false"
+                                    else:
+                                        logic_decision = "true"                                        
+                                except Exception, errMsg:
+                                    errMsg = "Could not find element in the by the criteria..."
+                                    Exception_Info(sModuleInfo, errMsg)            
+                        else:
+                            continue
+
+                        for conditional_steps in logic_row:
+                            if logic_decision in conditional_steps:
+                                print conditional_steps[2]
+                                list_of_steps = conditional_steps[2].split(",")
+                                for each_item in list_of_steps:
+                                    data_set_index = int(each_item) - 1
+                                    Sequential_Actions([step_data[data_set_index]])
+                                return "passed"
+                    
+                    else:
+                        CommonUtil.ExecLog(sModuleInfo, "The sub-field information is incorrect. Please provide accurate information on the data set(s).", 3,local_run)
+                        return "failed"                 
+        return "passed"
+
+    except Exception, e:
+        exc_type, exc_obj, exc_tb = sys.exc_info()
+        fname = os.path.split(exc_tb.tb_frame.f_code.co_filename)[1]
+        Error_Detail = ((str(exc_type).replace("type ", "Error Type: ")) + ";" +  "Error Message: " + str(exc_obj) +";" + "File Name: " + fname + ";" + "Line: "+ str(exc_tb.tb_lineno))
+        print "%s"%Error_Detail
+        return "failed"
+    
+
+#Handles actions for the sequential logic, based on the input from the mentioned function
+def Action_Handler_Appium(action_step_data, action_name):
+    sModuleInfo = inspect.stack()[0][3] + " : " + inspect.getmoduleinfo(__file__).name
+    try:
+        if action_name =="click":
+            result = Click_Element(action_step_data)
+            if result == "failed":
+                return "failed"
+        elif action_name == "wait":
+            result = Wait(action_step_data)
+            if result == "failed":
+                return "failed"
+        elif action_name == "swipe":
+            result = Swipe()
+            if result == "failed":
+                return "failed"
+        elif action_name == "tap":
+            result = Enter_Text_In_Text_Box(action_step_data)
+            if result == "failed":
+                return "failed"
+        elif action_name == "go_back":
+            result = Go_Back(action_step_data)
+            if result == "failed":
+                return "failed"
+        elif (action_name == "validate full text" or action_name == "validate partial text"):
+            result = Validate_Text(action_step_data)
+            if result == "failed":
+                return "failed"
+        else:
+            CommonUtil.ExecLog(sModuleInfo, "The action you entered is incorrect. Please provide accurate information on the data set(s).", 3,local_run)
+            return "failed" 
+        
+    except Exception, e:
+        exc_type, exc_obj, exc_tb = sys.exc_info()
+        fname = os.path.split(exc_tb.tb_frame.f_code.co_filename)[1]
+        Error_Detail = ((str(exc_type).replace("type ", "Error Type: ")) + ";" +  "Error Message: " + str(exc_obj) +";" + "File Name: " + fname + ";" + "Line: "+ str(exc_tb.tb_lineno))
+        print "%s"%Error_Detail
+        return "failed"
+
+
+#Method to click on element; step data passed on by the user
+def Click_Element_Appium(step_data):
+    sModuleInfo = inspect.stack()[0][3] + " : " + inspect.getmoduleinfo(__file__).name
+    CommonUtil.ExecLog(sModuleInfo, "Function: Click_Element", 1,local_run)
+    try:
+        if ((len(step_data) != 1) or (1 < len(step_data[0]) >= 5)):
+            CommonUtil.ExecLog(sModuleInfo, "The information in the data-set(s) are incorrect. Please provide accurate data set(s) information.", 3,local_run)
+            return "failed"
+        else:
+            #element_step_data = step_data[0][0:len(step_data[0])-1:1]
+            element_step_data = Get_Element_Step_Data_Appium(step_data)            
+            returned_step_data_list = Validate_Step_Data(element_step_data) 
+            if ((returned_step_data_list == []) or (returned_step_data_list == "failed")):
+                return "failed"
+            else:
+                try:
+                    Element = Get_Element_Appium(returned_step_data_list[0], returned_step_data_list[1], returned_step_data_list[2], returned_step_data_list[3], returned_step_data_list[4])
+                    Element.click()
+                    CommonUtil.TakeScreenShot(sModuleInfo, local_run)
+                    CommonUtil.ExecLog(sModuleInfo, "Successfully clicked the element with given parameters and values", 1,local_run)
+                    return "passed"
+                except Exception, e:
+                    element_attributes = Element.get_attribute('outerHTML')
+                    CommonUtil.ExecLog(sModuleInfo, "Element Attributes: %s"%(element_attributes),3,local_run)
+                    exc_type, exc_obj, exc_tb = sys.exc_info()        
+                    fname = os.path.split(exc_tb.tb_frame.f_code.co_filename)[1]
+                    Error_Detail = ((str(exc_type).replace("type ", "Error Type: ")) + ";" +  "Error Message: " + str(exc_obj) +";" + "File Name: " + fname + ";" + "Line: "+ str(exc_tb.tb_lineno))
+                    CommonUtil.ExecLog(sModuleInfo, "Could not select/click your element.  Error: %s"%(Error_Detail), 3,local_run)
+                    return "failed"
+
+    except Exception, e:
+        exc_type, exc_obj, exc_tb = sys.exc_info()        
+        fname = os.path.split(exc_tb.tb_frame.f_code.co_filename)[1]
+        Error_Detail = ((str(exc_type).replace("type ", "Error Type: ")) + ";" +  "Error Message: " + str(exc_obj) +";" + "File Name: " + fname + ";" + "Line: "+ str(exc_tb.tb_lineno))
+        CommonUtil.ExecLog(sModuleInfo, "Could not find/click your element.  Error: %s"%(Error_Detail), 3,local_run)
+        return "failed"
+'===================== ===x=== Sequential Actions Section Ends ===x=== ======================'    
     
