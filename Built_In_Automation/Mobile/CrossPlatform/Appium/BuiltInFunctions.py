@@ -2002,15 +2002,12 @@ def Enter_Text_Appium(step_data):
     sModuleInfo = inspect.stack()[0][3] + " : " + inspect.getmoduleinfo(__file__).name
     CommonUtil.ExecLog(sModuleInfo, "Function: Enter_Text_Appium", 1,local_run)
     try:
-        #If there are no two separate data-sets, or if the first data-set is not between 1 to 3 items, or if the second data-set doesn't have only 1 item                   
-        if ((len(step_data) != 1) or (1 < len(step_data[0]) >= 5)):# or (len(step_data[1]) != 1)):
+        if ((len(step_data) != 1) or (1 < len(step_data[0]) >= 5)):
             CommonUtil.ExecLog(sModuleInfo, "The information in the data-set(s) are incorrect. Please provide accurate data set(s) information.", 3,local_run)
             return "failed"
         else:
             element_step_data=Get_Element_Step_Data_Appium(step_data)
-            #element_step_data = step_data[0][0:len(step_data[0])-1:1]
             returned_step_data_list = Validate_Step_Data(element_step_data) 
-            #returned_step_data_list = Validate_Step_Data(step_data[0])
             if ((returned_step_data_list == []) or (returned_step_data_list == "failed")):
                 return "failed"
             else:
@@ -2036,6 +2033,48 @@ def Enter_Text_Appium(step_data):
         fname = os.path.split(exc_tb.tb_frame.f_code.co_filename)[1]
         Error_Detail = ((str(exc_type).replace("type ", "Error Type: ")) + ";" +  "Error Message: " + str(exc_obj) +";" + "File Name: " + fname + ";" + "Line: "+ str(exc_tb.tb_lineno))
         CommonUtil.ExecLog(sModuleInfo, "Could not find your element.  Error: %s"%(Error_Detail), 3,local_run)
+        return "failed"
+
+
+def Swipe_Appium(step_data):
+    sModuleInfo = inspect.stack()[0][3] + " : " + inspect.getmoduleinfo(__file__).name
+    CommonUtil.ExecLog(sModuleInfo, "Function: Swipe_Appium", 1, local_run)
+    try:
+        if ((len(step_data) != 1) or (1 < len(step_data[0]) >= 5)):
+            CommonUtil.ExecLog(sModuleInfo, "The information in the data-set(s) are incorrect. Please provide accurate data set(s) information.", 3,local_run)
+            return "failed"
+        else:
+            swipe_direction = step_data[0][0][2]
+            if swipe_direction == 'down':
+                CommonUtil.ExecLog(sModuleInfo,"Swiping down!",1,local_run)
+                driver.swipe(100, 500, 100, 100, 800)
+                CommonUtil.ExecLog(sModuleInfo, "Swiped the screen down successfully", 1, local_run)
+                time.sleep(3)
+            elif swipe_direction == 'up':
+                CommonUtil.ExecLog(sModuleInfo,"Swiping up!",1,local_run)
+                driver.swipe(100, 100, 100, 500, 800)
+                CommonUtil.ExecLog(sModuleInfo, "Swiped the screen up successfully", 1, local_run)
+                time.sleep(3)
+            elif swipe_direction == 'left':
+                CommonUtil.ExecLog(sModuleInfo,"Swiping left!",1,local_run)
+                driver.swipe(100, 300, 500, 300, 800)
+                CommonUtil.ExecLog(sModuleInfo, "Swiped the screen left successfully", 1, local_run)
+                time.sleep(3)
+            elif swipe_direction == 'right':
+                CommonUtil.ExecLog(sModuleInfo,"Swiping right!",1,local_run)
+                driver.swipe(500, 300, 100, 300, 800)
+                CommonUtil.ExecLog(sModuleInfo, "Swiped the screen right successfully", 1, local_run)
+                time.sleep(3)    
+            else:
+                CommonUtil.ExecLog(sModuleInfo, "Swiping was not successful", 3, local_run)
+                result = "failed"
+
+        return result
+    except Exception, e:
+        exc_type, exc_obj, exc_tb = sys.exc_info()        
+        fname = os.path.split(exc_tb.tb_frame.f_code.co_filename)[1]
+        Error_Detail = ((str(exc_type).replace("type ", "Error Type: ")) + ";" +  "Error Message: " + str(exc_obj) +";" + "File Name: " + fname + ";" + "Line: "+ str(exc_tb.tb_lineno))
+        CommonUtil.ExecLog(sModuleInfo, "Failed to swipe.  Error: %s"%(Error_Detail), 3,local_run)
         return "failed"
 
 '===================== ===x=== Sequential Actions Section Ends ===x=== ======================'    
