@@ -2047,22 +2047,22 @@ def Swipe_Appium(step_data):
             swipe_direction = step_data[0][0][2]
             if swipe_direction == 'down':
                 CommonUtil.ExecLog(sModuleInfo,"Swiping down!",1,local_run)
-                driver.swipe(100, 500, 100, 100, 800)
+                result = driver.swipe(100, 500, 100, 100, 800)
                 CommonUtil.ExecLog(sModuleInfo, "Swiped the screen down successfully", 1, local_run)
                 time.sleep(3)
             elif swipe_direction == 'up':
                 CommonUtil.ExecLog(sModuleInfo,"Swiping up!",1,local_run)
-                driver.swipe(100, 100, 100, 500, 800)
+                result = driver.swipe(100, 100, 100, 500, 800)
                 CommonUtil.ExecLog(sModuleInfo, "Swiped the screen up successfully", 1, local_run)
                 time.sleep(3)
             elif swipe_direction == 'left':
                 CommonUtil.ExecLog(sModuleInfo,"Swiping left!",1,local_run)
-                driver.swipe(100, 300, 500, 300, 800)
+                result = driver.swipe(100, 300, 500, 300, 800)
                 CommonUtil.ExecLog(sModuleInfo, "Swiped the screen left successfully", 1, local_run)
                 time.sleep(3)
             elif swipe_direction == 'right':
                 CommonUtil.ExecLog(sModuleInfo,"Swiping right!",1,local_run)
-                driver.swipe(500, 300, 100, 300, 800)
+                result = driver.swipe(500, 300, 100, 300, 800)
                 CommonUtil.ExecLog(sModuleInfo, "Swiped the screen right successfully", 1, local_run)
                 time.sleep(3)    
             else:
@@ -2076,6 +2076,28 @@ def Swipe_Appium(step_data):
         Error_Detail = ((str(exc_type).replace("type ", "Error Type: ")) + ";" +  "Error Message: " + str(exc_obj) +";" + "File Name: " + fname + ";" + "Line: "+ str(exc_tb.tb_lineno))
         CommonUtil.ExecLog(sModuleInfo, "Failed to swipe.  Error: %s"%(Error_Detail), 3,local_run)
         return "failed"
+    
+    
+# def Go_Back_Appium(step_data):
+#     sModuleInfo = inspect.stack()[0][3] + " : " + inspect.getmoduleinfo(__file__).name
+#     CommonUtil.ExecLog(sModuleInfo, "Function: Go_Back_Appium", 1, local_run)
+#     try:
+#         if ((len(step_data) != 1) or (1 < len(step_data[0]) >= 5)):
+#             CommonUtil.ExecLog(sModuleInfo, "The information in the data-set(s) are incorrect. Please provide accurate data set(s) information.", 3,local_run)
+#             return "failed"
+#         else:
+#             CommonUtil.ExecLog(sModuleInfo, "Trying to go back...", 1, local_run)
+#             result = driver.back()
+#             CommonUtil.ExecLog(sModuleInfo, "Went back successfully", 1, local_run)
+#         
+#         return result
+#     
+#     except Exception, e:
+#         exc_type, exc_obj, exc_tb = sys.exc_info()        
+#         fname = os.path.split(exc_tb.tb_frame.f_code.co_filename)[1]
+#         Error_Detail = ((str(exc_type).replace("type ", "Error Type: ")) + ";" +  "Error Message: " + str(exc_obj) +";" + "File Name: " + fname + ";" + "Line: "+ str(exc_tb.tb_lineno))
+#         CommonUtil.ExecLog(sModuleInfo, "Failed to go back.  Error: %s"%(Error_Detail), 3,local_run)
+#         return "failed"
 
 '===================== ===x=== Sequential Actions Section Ends ===x=== ======================'    
     
