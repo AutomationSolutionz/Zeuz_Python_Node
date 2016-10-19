@@ -13,14 +13,14 @@ from Projects.Youtube_test import Youtube_Search as YTS
 
 def Create_Site_Content():
     YTS.BuiltInFunctions.Open_Browser('chrome')
-    Test_For_Validate_Table()
+#     Test_For_Validate_Table()
 #     Test_For_Get_Table_Elements()
 #     Test_For_Compare_Text()
 #     Test_For_Double_Matching()
 #     Test_For_Get_All_Elements()
 #     Test_For_Get_Elements()
 #     Test_For_Individual_Actions()
-#     Test_For_Sequential_Actions()
+    Test_For_Sequential_Actions()
 # #    Nissan_Test_Page()
 #     Test_For_Get_Elements()
 #     Test_For_Double_Matching()
@@ -103,21 +103,21 @@ def Nissan_Test_Page():
 
 def Test_For_Individual_Actions():
     YTS.BuiltInFunctions.Go_To_Link('http://www.henrys.com/')
-    step_data_text_new = [ [ ( 'id' , '', 'txtSearch' , False , False ), ( 'text' , 'action' , 'camera' , False , False ) ] ]
-    step_data_wait_new = [ [ ( 'id' , '', 'header_lstCategories_category_4' , False , False ) , ( 'wait' , 'action' , '10' , False , False ) ] ]
-    step_data_click_new = [ [ ( 'id' , '', 'btnSearch' , False , False ) , ( 'click' , 'action' , 'click' , False , False ) ] ]
-    step_data_hover_new = [ [ ( 'id' , '', 'header_lstCategories_category_4' , False , False ) , ( 'hover' , 'action' , 'hover' , False , False ) ] ]
-    step_data_keystroke = [ [ ( 'id' , '', 'txtSearch' , False , False ) , ( 'keystroke_chars' , 'action' , 'AbCd' , False , False ) ] ]
-    YTS.BuiltInFunctions.Enter_Text_In_Text_Box(step_data_text_new)
-    YTS.BuiltInFunctions.Click_Element(step_data_click_new)
+    step_data_text_new = [ [ ( 'id' , 'element parameter', 'txtSearch' , False , False ), ( 'text' , 'action' , 'camera' , False , False ) ] ]
+    step_data_wait_new = [ [ ( 'id' , 'element parameter', 'header_lstCategories_category_4' , False , False ) , ( 'wait' , 'action' , '10' , False , False ) ] ]
+    step_data_click_new = [ [ ( 'id' , 'element parameter', 'btnSearch' , False , False ) , ( 'click' , 'action' , 'click' , False , False ) ] ]
+    step_data_hover_new = [ [ ( 'id' , 'element parameter', 'header_lstCategories_category_4' , False , False ) , ( 'hover' , 'action' , 'hover' , False , False ) ] ]
+    step_data_keystroke = [ [ ( 'keystroke_chars' , 'action' , 'AbCd' , False , False ) , ( 'id' , 'element parameter', 'txtSearch' , False , False ) ] ]
+#    YTS.BuiltInFunctions.Enter_Text_In_Text_Box(step_data_text_new)
+#    YTS.BuiltInFunctions.Click_Element(step_data_click_new)
     YTS.BuiltInFunctions.Wait_For_New_Element(step_data_wait_new)
-    YTS.BuiltInFunctions.Hover_Over_Element(step_data_hover_new)
-    YTS.BuiltInFunctions.Keystroke_For_Element(step_data_keystroke)
+#    YTS.BuiltInFunctions.Hover_Over_Element(step_data_hover_new)
+#    YTS.BuiltInFunctions.Keystroke_For_Element(step_data_keystroke)
   
 def Test_For_Sequential_Actions():
     YTS.BuiltInFunctions.Go_To_Link('http://www.henrys.com/')
     #YTS.BuiltInFunctions.Go_To_Link('http://qa-factory.assetscience.com/totalanalysis/login/auth')
-    step_data_mod = [ [ ( 'id' , '','header_lstCategories_category_4' , False , False ) , ( 'class' , '', 'A' , False , False ) , ( 'hover' , 'action' , 'hover' , False , False ) ] , [ ( 'text' , '','Studio Strobes' , False , False ) , ( 'id' , '', 'header_lstCategories_category_4' , False , False ) , ( 'relation' , '','parent' , False , False ) , ( 'click' , 'action' , 'click' , False , False ) ] , [ ( 'id' , '', 'txtSearch' , False , False ) , ( 'text' , 'action' , 'camera' , False , False ) ] , [ ( 'id' , '', 'middle-storelocation' , False , False ) , ( 'true' , 'logic' , '5,7' , False , False ) , ( 'false' , 'logic' , '6' , False , False ) ] , [ ( 'id' , '','header_lstCategories_category_4' , False , False ) , ( 'class' , '', 'A' , False , False ) , ( 'hover' , 'action' , 'hover' , False , False ) ] , [ ( 'id' , '','header_lstCategories_category_1' , False , False ) , ( 'class' , '','B' , False , False ) , ( 'hover' , 'action' , 'hover' , False , False )] , [  ( 'text' , '', 'Studio Strobes' , False , False ) , ( 'id' , '', 'header_lstCategories_category_4' , False , False ) , ( 'relation' , '', 'parent' , False , False ) , ( 'click' , 'action' , 'click' , False , False )  ] ]##[ [ ( 'id' , 'username' , False , False ) , ( 'text' , 'action' , 'rrakin' , False , False ) ] , [ ( 'id' , 'password' , False , False ) , ( 'text' , 'action' , 'password' , False , False ) ] , [ ( 'id' , 'submit' , False , False ) , ( 'click' , 'action' , 'click' , False , False ) ] ]#[ [ ( 'id' , 'header_lstCategories_category_4' , False , False ) , ( 'class' , 'A' , False , False ) , ( 'hover' , 'action' , 'hover' , False , False ) ] , [ ( 'text' , 'Studio Strobes' , False , False ) , ( 'id' , 'header_lstCategories_category_4' , False , False ) , ( 'relation' , 'parent' , False , False ) , ( 'click' , 'action' , 'click' , False , False ) ] , [ ( 'id' , 'txtSearch' , False , False ) , ( 'text' , 'action' , 'camera' , False , False ) ] , [ ( 'id' , 'middle-storelocation' , False , False ) , ( 'true' , 'logic' , '4,6' , False , False ) , ( 'false' , 'logic' , '5' , False , False ) ] , [ ( 'id' , 'header_lstCategories_category_4' , False , False ) , ( 'class' , 'A' , False , False ) , ( 'hover' , 'action' , 'hover' , False , False ) ] , [ ( 'id' , 'header_lstCategories_category_1' , False , False ) , ( 'class' , 'B' , False , False ) , ( 'hover' , 'action' , 'hover' , False , False )] , [  ( 'text' , 'Studio Strobes' , False , False ) , ( 'id' , 'header_lstCategories_category_4' , False , False ) , ( 'relation' , 'parent' , False , False ) , ( 'click' , 'action' , 'click' , False , False )  ] ]
+    step_data_mod = [ [ ( 'id' , 'element parameter 1 of 2','header_lstCategories_category_4' , False , False ) , ( 'class' , 'element parameter 2 of 2', 'A' , False , False ) , ( 'hover' , 'action' , 'hover' , False , False ) ] , [ ( 'text' , 'element parameter','Studio Strobes' , False , False ) , ( 'id' , 'reference parameter', 'header_lstCategories_category_4' , False , False ) , ( 'relation' , 'relation type','parent' , False , False ) , ( 'wait' , 'action' , '10' , False , False ) ] ,[ ( 'text' , 'element parameter','Studio Strobes' , False , False ) , ( 'id' , 'reference parameter', 'header_lstCategories_category_4' , False , False ) , ( 'relation' , 'relation type','parent' , False , False ) , ( 'click' , 'action' , 'click' , False , False ) ] , [ ( 'id' , 'element parameter', 'txtSearch' , False , False ) , ( 'text' , 'action' , 'camera' , False , False ) ] , [ ( 'id' , 'element parameter', 'middle-storelocation' , False , False ) , ( 'true' , 'conditional action' , '5,7' , False , False ) , ( 'false' , 'conditional action' , '6' , False , False ) ] , [ ( 'id' , 'element parameter 1 of 2','header_lstCategories_category_4' , False , False ) , ( 'class' , 'element parameter 2 of 2', 'A' , False , False ) , ( 'hover' , 'action' , 'hover' , False , False ) ] , [ ( 'id' , 'element parameter 1 of 2','header_lstCategories_category_1' , False , False ) , ( 'class' , 'element parameter 2 of 2','B' , False , False ) , ( 'hover' , 'action' , 'hover' , False , False )] , [  ( 'text' , 'element parameter', 'Studio Strobes' , False , False ) , ( 'id' , 'reference parameter', 'header_lstCategories_category_4' , False , False ) , ( 'relation' , 'relation type', 'parent' , False , False ) , ( 'click' , 'action' , 'click' , False , False )  ] ]##[ [ ( 'id' , 'username' , False , False ) , ( 'text' , 'action' , 'rrakin' , False , False ) ] , [ ( 'id' , 'password' , False , False ) , ( 'text' , 'action' , 'password' , False , False ) ] , [ ( 'id' , 'submit' , False , False ) , ( 'click' , 'action' , 'click' , False , False ) ] ]#[ [ ( 'id' , 'header_lstCategories_category_4' , False , False ) , ( 'class' , 'A' , False , False ) , ( 'hover' , 'action' , 'hover' , False , False ) ] , [ ( 'text' , 'Studio Strobes' , False , False ) , ( 'id' , 'header_lstCategories_category_4' , False , False ) , ( 'relation' , 'parent' , False , False ) , ( 'click' , 'action' , 'click' , False , False ) ] , [ ( 'id' , 'txtSearch' , False , False ) , ( 'text' , 'action' , 'camera' , False , False ) ] , [ ( 'id' , 'middle-storelocation' , False , False ) , ( 'true' , 'logic' , '4,6' , False , False ) , ( 'false' , 'logic' , '5' , False , False ) ] , [ ( 'id' , 'header_lstCategories_category_4' , False , False ) , ( 'class' , 'A' , False , False ) , ( 'hover' , 'action' , 'hover' , False , False ) ] , [ ( 'id' , 'header_lstCategories_category_1' , False , False ) , ( 'class' , 'B' , False , False ) , ( 'hover' , 'action' , 'hover' , False , False )] , [  ( 'text' , 'Studio Strobes' , False , False ) , ( 'id' , 'header_lstCategories_category_4' , False , False ) , ( 'relation' , 'parent' , False , False ) , ( 'click' , 'action' , 'click' , False , False )  ] ]
     #step_data = [ [ ( 'id' , 'txtSearch' , False , False ) , ( 'text' , 'action' , 'camera' , False , False ) ] , [ ( 'id' , 'btnSearch' , False , False ) , ( 'keystroke_keys' , 'action' , 'Enter' , False , False ) ] ]
     #YTS.BuiltInFunctions.Go_To_Link('http://www.inflightintegration.com/')
     #step_data = [ [ ( 'href' , 'Schedule a Demo' , False , False ) , ( 'click' , 'action' , 'click' , False , False ) ]  , [ ( 'name' , 'element_1_1' , False , False ) , ( 'text' , 'action' , 'Zeuz' , False , False ) ]  , [ ( 'id' , 'saveForm' , False , False ) , ( 'click' , 'action' , 'click' , False , False ) ] ]
@@ -141,8 +141,8 @@ def Test_For_Validate_Table():
 
 def Test_For_Compare_Text():
     #step_data_text = [ [ ( 'text','Drones' , False , False ) ] , [ ( 'id' , 'header_lstCategories_category_1' , False , False ) , ( 'class' , 'B' , False , False ) ] ]
-    #step_data_new = [ [ ( 'current_page' , 'current_page' , False , False ) , ( 'expected text' , 'full match' , 'Henrys - Photo - Video - Digital' , False , False ) ] ]
-    step_data_element = [ [ ( 'id' , 'header-nav-custcare' , False , False ) , ( 'validate partial text' , 'action' , 'Customer Care' , False , False ) ] ]
+    step_data_element = [ [ ( 'current_page' , 'element properties', 'current_page' , False , False ) , ( 'validate partial text' , 'action' , 'Henry - Photo - Video - Digital' , False , False ) ] ]
+    #step_data_element = [ [ ( 'id' , 'element parameter','header-nav-custcare' , False , False ) , ( 'validate partial text' , 'action' , 'Customer Care' , False , False ) ] ]
     YTS.BuiltInFunctions.Go_To_Link('https://www.henrys.com')
     YTS.BuiltInFunctions.Validate_Text(step_data_element)
 
