@@ -816,18 +816,25 @@ def Validate_Step_Data(step_data):
             reference_parameter = False
             reference_value = False    
             reference_is_parent_or_child = False
-        elif (len(step_data)==2):
-            element_parameter = step_data[0][0]
-            element_value = step_data[0][2]
-            reference_parameter = step_data[1][0]
-            reference_value = step_data[1][2]
-            reference_is_parent_or_child = False
+#         elif (len(step_data)==2):
+#             for each in step_data:
+#                 if each[1]=="element parameter 1 of 2":
+#                     element_parameter = each[0]
+#                     element_value = each[2]
+#                 elif each[1]=="element parameter 2 of 2":
+#                     reference_parameter = each[0]
+#                     reference_value = each[2]
+#             reference_is_parent_or_child = False
         elif (len(step_data)==3):
-            element_parameter = step_data[0][0]
-            element_value = step_data[0][2]
-            reference_parameter = step_data[1][0]
-            reference_value = step_data[1][2]    
-            reference_is_parent_or_child = step_data[2][2]
+            for each in step_data:
+                if each[1]=="element parameter":
+                    element_parameter = each[0]
+                    element_value = each[2]
+                elif each[1]=="reference parameter":
+                    reference_parameter = each[0]
+                    reference_value = each[2]
+                elif each[1]=="relation type":
+                    reference_is_parent_or_child = each[2]
         else:
             CommonUtil.ExecLog(sModuleInfo, "Data set incorrect. Please provide accurate data set(s) information.", 3,local_run)
             return "failed"
@@ -1804,11 +1811,12 @@ def Get_Element_Step_Data_Appium(step_data):
     try:
         element_step_data=[]
         for each in step_data[0]:
-            if each[1]=="":
-                element_step_data.append(each)
+            if (each[1]=="action" or each[1]=="conditional action"):
+                CommonUtil.ExecLog(sModuleInfo, "Not a part of element step data", 2,local_run)
+                continue
             else:
-                break
-            
+                element_step_data.append(each)
+                 
         return element_step_data
     
     except Exception, e:
@@ -1826,46 +1834,50 @@ def Sequential_Actions_Appium(step_data):
         for each in step_data:
             logic_row=[]
             for row in each:
-                #finding what to do for each dataset  
-                if len(row)==5 and row[1] != "":                    
-                    if row[1]=="action":
-                        result = Action_Handler([each],row[0])
-                        if result == [] or result == "failed":
-                            return "failed"
-                        
-                    elif row[1]=="logic":
-                        logic_decision=""
-                        logic_row.append(row)
-                        if len(logic_row)==2:
-                            element_step_data = each[0:len(step_data[0])-2:1]
-                            returned_step_data_list = Validate_Step_Data(element_step_data) 
-                            if ((returned_step_data_list == []) or (returned_step_data_list == "failed")):
-                                return "failed"
-                            else:
-                                try:
-                                    Element = Get_Element(returned_step_data_list[0], returned_step_data_list[1], returned_step_data_list[2], returned_step_data_list[3], returned_step_data_list[4])
-                                    if Element == 'failed':
-                                        logic_decision = "false"
-                                    else:
-                                        logic_decision = "true"                                        
-                                except Exception, errMsg:
-                                    errMsg = "Could not find element in the by the criteria..."
-                                    Exception_Info(sModuleInfo, errMsg)            
-                        else:
-                            continue
-
-                        for conditional_steps in logic_row:
-                            if logic_decision in conditional_steps:
-                                print conditional_steps[2]
-                                list_of_steps = conditional_steps[2].split(",")
-                                for each_item in list_of_steps:
-                                    data_set_index = int(each_item) - 1
-                                    Sequential_Actions([step_data[data_set_index]])
-                                return "passed"
+                if ((row[1] == "element parameter") or (row[1] == "reference parameter") or (row[1] == "relation type") or (row[1] == "element parameter 1 of 2") or (row[1] == "element parameter 2 of 2")):     ##modifying the filter for changes to be made in the sub-field of the step data. May remove this part of the if statement                
+                    continue
+                
+                elif row[1]=="action":
+                    CommonUtil.ExecLog(sModuleInfo, "Checking the action to be performed in the action row", 1,local_run)
+                    result = Action_Handler_Appium([each],row[0])
+                    if result == [] or result == "failed":
+                        return "failed"
                     
+                elif row[1]=="conditional action":
+                    CommonUtil.ExecLog(sModuleInfo, "Checking the logical conditional action to be performed in the conditional action row", 1,local_run)
+                    logic_decision=""
+                    logic_row.append(row)
+                    if len(logic_row)==2:
+                        #element_step_data = each[0:len(step_data[0])-2:1]
+                        element_step_data = Get_Element_Step_Data_Appium([each])
+                        returned_step_data_list = Validate_Step_Data(element_step_data) 
+                        if ((returned_step_data_list == []) or (returned_step_data_list == "failed")):
+                            return "failed"
+                        else:
+                            try:
+                                Element = Get_Element_Appium(returned_step_data_list[0], returned_step_data_list[1], returned_step_data_list[2], returned_step_data_list[3], returned_step_data_list[4])
+                                if Element == 'failed':
+                                    logic_decision = "false"
+                                else:
+                                    logic_decision = "true"                                        
+                            except Exception, errMsg:
+                                errMsg = "Could not find element in the by the criteria..."
+                                Exception_Info(sModuleInfo, errMsg)            
                     else:
-                        CommonUtil.ExecLog(sModuleInfo, "The sub-field information is incorrect. Please provide accurate information on the data set(s).", 3,local_run)
-                        return "failed"                 
+                        continue
+
+                    for conditional_steps in logic_row:
+                        if logic_decision in conditional_steps:
+                            print conditional_steps[2]
+                            list_of_steps = conditional_steps[2].split(",")
+                            for each_item in list_of_steps:
+                                data_set_index = int(each_item) - 1
+                                Sequential_Actions_Appium([step_data[data_set_index]])
+                            return "passed"
+                
+                else:
+                    CommonUtil.ExecLog(sModuleInfo, "The sub-field information is incorrect. Please provide accurate information on the data set(s).", 3,local_run)
+                    return "failed"                 
         return "passed"
 
     except Exception, e:
@@ -1881,7 +1893,7 @@ def Action_Handler_Appium(action_step_data, action_name):
     sModuleInfo = inspect.stack()[0][3] + " : " + inspect.getmoduleinfo(__file__).name
     try:
         if action_name =="click":
-            result = Click_Element(action_step_data)
+            result = Click_Element_Appium(action_step_data)
             if result == "failed":
                 return "failed"
         elif action_name == "wait":
@@ -1889,11 +1901,11 @@ def Action_Handler_Appium(action_step_data, action_name):
             if result == "failed":
                 return "failed"
         elif action_name == "swipe":
-            result = Swipe()
+            result = Swipe_Appium(action_step_data)
             if result == "failed":
                 return "failed"
         elif action_name == "tap":
-            result = Enter_Text_In_Text_Box(action_step_data)
+            result = Tap_Appium(action_step_data)
             if result == "failed":
                 return "failed"
         elif action_name == "go_back":
@@ -2013,7 +2025,12 @@ def Enter_Text_Appium(step_data):
             else:
                 try:
                     Element = Get_Element_Appium(returned_step_data_list[0], returned_step_data_list[1], returned_step_data_list[2], returned_step_data_list[3], returned_step_data_list[4])
-                    text_value=step_data[0][len(step_data[0])-1][2]
+                    for each in step_data[0]:
+                        if each[1]=="action":
+                            text_value=each[2]
+                        else:
+                            continue
+                    #text_value=step_data[0][len(step_data[0])-1][2]
                     Element.click()
                     Element.clear()
                     Element.send_keys(text_value)
