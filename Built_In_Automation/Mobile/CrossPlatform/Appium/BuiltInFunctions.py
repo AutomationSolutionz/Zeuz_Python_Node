@@ -1908,12 +1908,12 @@ def Action_Handler_Appium(action_step_data, action_name):
             result = Tap_Appium(action_step_data)
             if result == "failed":
                 return "failed"
-        elif action_name == "go_back":
-            result = Go_Back(action_step_data)
+        elif (action_name == "Android keystroke" or action_name == "iOS keystroke"):
+            result = Keystroke_Appium(action_step_data)
             if result == "failed":
                 return "failed"
         elif (action_name == "validate full text" or action_name == "validate partial text"):
-            result = Validate_Text(action_step_data)
+            result = Validate_Text_Appium(action_step_data)
             if result == "failed":
                 return "failed"
         else:
@@ -2093,28 +2093,175 @@ def Swipe_Appium(step_data):
         Error_Detail = ((str(exc_type).replace("type ", "Error Type: ")) + ";" +  "Error Message: " + str(exc_obj) +";" + "File Name: " + fname + ";" + "Line: "+ str(exc_tb.tb_lineno))
         CommonUtil.ExecLog(sModuleInfo, "Failed to swipe.  Error: %s"%(Error_Detail), 3,local_run)
         return "failed"
-    
-    
-# def Go_Back_Appium(step_data):
-#     sModuleInfo = inspect.stack()[0][3] + " : " + inspect.getmoduleinfo(__file__).name
-#     CommonUtil.ExecLog(sModuleInfo, "Function: Go_Back_Appium", 1, local_run)
-#     try:
-#         if ((len(step_data) != 1) or (1 < len(step_data[0]) >= 5)):
-#             CommonUtil.ExecLog(sModuleInfo, "The information in the data-set(s) are incorrect. Please provide accurate data set(s) information.", 3,local_run)
-#             return "failed"
-#         else:
-#             CommonUtil.ExecLog(sModuleInfo, "Trying to go back...", 1, local_run)
-#             result = driver.back()
-#             CommonUtil.ExecLog(sModuleInfo, "Went back successfully", 1, local_run)
-#         
-#         return result
-#     
-#     except Exception, e:
-#         exc_type, exc_obj, exc_tb = sys.exc_info()        
-#         fname = os.path.split(exc_tb.tb_frame.f_code.co_filename)[1]
-#         Error_Detail = ((str(exc_type).replace("type ", "Error Type: ")) + ";" +  "Error Message: " + str(exc_obj) +";" + "File Name: " + fname + ";" + "Line: "+ str(exc_tb.tb_lineno))
-#         CommonUtil.ExecLog(sModuleInfo, "Failed to go back.  Error: %s"%(Error_Detail), 3,local_run)
-#         return "failed"
 
+
+def Android_Keystroke_Key_Mapping(keystroke):
+    sModuleInfo = inspect.stack()[0][3] + " : " + inspect.getmoduleinfo(__file__).name
+    CommonUtil.ExecLog(sModuleInfo, "Function: Android_Keystroke_Key_Mapping", 1,local_run)
+    try:
+        if keystroke == "RETURN":
+            driver.keyevent(66)
+        elif keystroke == "GO BACK":
+            driver.back()
+        elif keystroke == "SPACE":
+            driver.keyevent(62)
+        elif keystroke == "BACKSPACE":
+            driver.keyevent(67)
+        elif keystroke == "CALL":
+            driver.keyevent(5)            
+        elif keystroke == "END CALL":
+            driver.keyevent(6)
+                                     
+    except Exception, e:
+        exc_type, exc_obj, exc_tb = sys.exc_info()        
+        fname = os.path.split(exc_tb.tb_frame.f_code.co_filename)[1]
+        Error_Detail = ((str(exc_type).replace("type ", "Error Type: ")) + ";" +  "Error Message: " + str(exc_obj) +";" + "File Name: " + fname + ";" + "Line: "+ str(exc_tb.tb_lineno))
+        CommonUtil.ExecLog(sModuleInfo, "Could not press enter for your element.  Error: %s"%(Error_Detail), 3,local_run)
+        return "failed"    
+    
+
+"""MINAR: PLEASE CHECK IF THIS IS POSSIBLE FOR AN iOS"""
+def iOS_Keystroke_Key_Mapping(keystroke):
+    sModuleInfo = inspect.stack()[0][3] + " : " + inspect.getmoduleinfo(__file__).name
+    CommonUtil.ExecLog(sModuleInfo, "Function: iOS_Keystroke_Key_Mapping", 1,local_run)
+    try:
+        if keystroke == "RETURN":
+            driver.keyevent(13)
+        #elif keystroke == "GO BACK":
+        #    driver.back()
+        elif keystroke == "SPACE":
+            driver.keyevent(32)
+        elif keystroke == "BACKSPACE":
+            driver.keyevent(8)
+        elif keystroke == "CALL":
+            driver.keyevent(5)            
+        elif keystroke == "END CALL":
+            driver.keyevent(6)
+                                     
+    except Exception, e:
+        exc_type, exc_obj, exc_tb = sys.exc_info()        
+        fname = os.path.split(exc_tb.tb_frame.f_code.co_filename)[1]
+        Error_Detail = ((str(exc_type).replace("type ", "Error Type: ")) + ";" +  "Error Message: " + str(exc_obj) +";" + "File Name: " + fname + ";" + "Line: "+ str(exc_tb.tb_lineno))
+        CommonUtil.ExecLog(sModuleInfo, "Could not press enter for your element.  Error: %s"%(Error_Detail), 3,local_run)
+        return "failed"   
+
+
+#Method to click on element; step data passed on by the user
+def Keystroke_Appium(step_data):
+    sModuleInfo = inspect.stack()[0][3] + " : " + inspect.getmoduleinfo(__file__).name
+    CommonUtil.ExecLog(sModuleInfo, "Function: Keystroke_Appium", 1,local_run)
+    try:
+        if ((len(step_data) != 1) or (1 < len(step_data[0]) >= 5)):
+            CommonUtil.ExecLog(sModuleInfo, "The information in the data-set(s) are incorrect. Please provide accurate data set(s) information.", 3,local_run)
+            return "failed"
+        else:
+            for each in step_data[0]:
+                if each[1]=="action":
+                    if each[0]=="iOS keystroke":
+                        keystroke_value=(each[2]).upper()
+                        result = iOS_Keystroke_Key_Mapping(keystroke_value)
+                    elif each[0] == "Android keystroke":
+                        keystroke_value=(each[2]).upper()
+                        result = Android_Keystroke_Key_Mapping(keystroke_value)
+                    else:
+                        CommonUtil.ExecLog(sModuleInfo, "The correct parameter for the action has not been entered. Please check for errors.", 2,local_run)
+                        result = "failed"
+                else:
+                    continue
+                
+            if (result != "failed"):
+                CommonUtil.TakeScreenShot(sModuleInfo, local_run)
+                CommonUtil.ExecLog(sModuleInfo, "Successfully entered keystroke for the element with given parameters and values", 1,local_run)
+                return "passed"
+            else:
+                CommonUtil.TakeScreenShot(sModuleInfo, local_run)
+                CommonUtil.ExecLog(sModuleInfo, "Could not enter keystroke for the element with given parameters and values", 3,local_run)
+                return "failed"
+              
+    except Exception, e:
+        exc_type, exc_obj, exc_tb = sys.exc_info()        
+        fname = os.path.split(exc_tb.tb_frame.f_code.co_filename)[1]
+        Error_Detail = ((str(exc_type).replace("type ", "Error Type: ")) + ";" +  "Error Message: " + str(exc_obj) +";" + "File Name: " + fname + ";" + "Line: "+ str(exc_tb.tb_lineno))
+        CommonUtil.ExecLog(sModuleInfo, "Could not enter keystroke.  Error: %s"%(Error_Detail), 3,local_run)
+        return "failed"
+
+
+"""NEED TO BE CHANGED QUITE A BIT. CURRENT_PAGE WILL BE MODIFIED TO HAVE SOMETHING ELSE"""
+#Validating text from an element given information regarding the expected text
+def Validate_Text_Appium(step_data):
+    sModuleInfo = inspect.stack()[0][3] + " : " + inspect.getmoduleinfo(__file__).name
+    CommonUtil.ExecLog(sModuleInfo, "Function: Validate_Text", 1, local_run)
+    try:
+        if ((len(step_data) != 1) or (1 < len(step_data[0]) >= 5)):
+            CommonUtil.ExecLog(sModuleInfo, "The information in the data-set(s) are incorrect. Please provide accurate data set(s) information.",3, local_run)
+            return "failed"
+        else:
+            for each in step_data[0]:
+                if each[0] == "current_page":
+                    try:
+                        Element = Get_Element_Appium('tag', 'html')
+                        break
+                    except Exception, e:
+                        errMsg = "Could not get element from the current page."
+                        Exception_Info(sModuleInfo, errMsg)
+                else:
+                    element_step_data = Get_Element_Step_Data_Appium(step_data)
+                    returned_step_data_list = Validate_Step_Data(element_step_data)
+                    if ((returned_step_data_list == []) or (returned_step_data_list == "failed")):
+                        return "failed"
+                    else:
+                        try:
+                            Element = Get_Element_Appium(returned_step_data_list[0], returned_step_data_list[1], returned_step_data_list[2], returned_step_data_list[3], returned_step_data_list[4])
+                            break
+                        except Exception, e:
+                            errMsg = "Could not get element based on the information provided."
+                            Exception_Info(sModuleInfo, errMsg)            
+ 
+            for each_step_data_item in step_data[0]:
+                if each_step_data_item[1]=="action":
+                    expected_text_data = each_step_data_item[2]
+                    validation_type = each_step_data_item[0]
+            #expected_text_data = step_data[0][len(step_data[0]) - 1][2]
+            list_of_element_text = Element.text.split('\n')
+            visible_list_of_element_text = []
+            for each_text_item in list_of_element_text:
+                if each_text_item != "":
+                    visible_list_of_element_text.append(each_text_item)
+             
+            #if step_data[0][len(step_data[0])-1][0] == "validate partial text":
+            if validation_type == "validate partial text":
+                actual_text_data = visible_list_of_element_text
+                CommonUtil.ExecLog(sModuleInfo, "Expected Text: " + expected_text_data, 1, local_run)
+                CommonUtil.ExecLog(sModuleInfo, "Actual Text: " + str(actual_text_data), 1, local_run)
+                for each_actual_text_data_item in actual_text_data:
+                    if expected_text_data in each_actual_text_data_item:
+                        CommonUtil.ExecLog(sModuleInfo, "The text has been validated by a partial match.", 1, local_run)
+                        return "passed"
+                CommonUtil.ExecLog(sModuleInfo, "Unable to validate using partial match.", 3, local_run)
+                return "failed"
+            #if step_data[0][len(step_data[0])-1][0] == "validate full text":
+            if validation_type == "validate full text":
+                actual_text_data = visible_list_of_element_text
+                CommonUtil.ExecLog(sModuleInfo, "Expected Text: " + expected_text_data, 1, local_run)
+                CommonUtil.ExecLog(sModuleInfo, "Actual Text: " + str(actual_text_data), 1, local_run)
+                if (expected_text_data in actual_text_data):
+                    CommonUtil.ExecLog(sModuleInfo, "The text has been validated by using complete match.", 1, local_run)
+                    return "passed"
+                else:
+                    CommonUtil.ExecLog(sModuleInfo, "Unable to validate using complete match.", 3, local_run)
+                    return "failed"
+             
+            else:
+                CommonUtil.ExecLog(sModuleInfo, "Incorrect validation type. Please check step data", 3, local_run)
+                return "failed"
+ 
+    except Exception, e:
+        exc_type, exc_obj, exc_tb = sys.exc_info()
+        fname = os.path.split(exc_tb.tb_frame.f_code.co_filename)[1]
+        Error_Detail = ((str(exc_type).replace("type ", "Error Type: ")) + ";" + "Error Message: " + str(
+            exc_obj) + ";" + "File Name: " + fname + ";" + "Line: " + str(exc_tb.tb_lineno))
+        CommonUtil.ExecLog(sModuleInfo, "Could not compare text as requested.  Error: %s" % (Error_Detail), 3,
+                           local_run)
+        return "failed"
 '===================== ===x=== Sequential Actions Section Ends ===x=== ======================'    
     
