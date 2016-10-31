@@ -9,11 +9,30 @@ Created on Apr 25, 2016
 # pip install pyserial
 #
 
-import time, serial, os, sys, subprocess
-import serial.tools.list_ports
-import socket
-import inspect
+#!/usr/bin/env python
 
+# Depends on pyserial module availability
+# pip install pyserial
+# check which usb port on NUC is connected to mux serial port 
+# run the following command for that port to allow read/write permissions:
+# sudo chmod 666 /dev/tty<USB port>
+# in most cases the USB port will be USB0
+
+##Error Message:
+#Exception AttributeError: "'muxboard' object has no attribute '_fd'" in  ignored
+
+import time, os, sys, subprocess
+import pip
+try:
+    import serial
+except:
+    pip.main(['install', 'pyserial'])
+
+import serial.tools.list_ports
+# import logging
+import inspect, socket
+
+# logger = logging.get# logger(__name__)
 
 class muxboard(object):
     def __init__(self, path):
@@ -250,4 +269,5 @@ def ConnectDisconnectDevice(connection_status, port_index=1, port='s'):
 #print ConnectionControl(1)
 #print ConnectDisconnectDevice(0)
 
-
+# if __name__ == '__main__':
+#     ConnectDisconnectDevice(1,2,'m')
