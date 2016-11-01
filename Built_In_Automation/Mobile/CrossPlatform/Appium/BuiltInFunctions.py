@@ -12,6 +12,9 @@ from appium.webdriver.common.touch_action import TouchAction
 from selenium.webdriver.support.ui import WebDriverWait
 from selenium.webdriver.support import expected_conditions as EC
 from selenium.webdriver.common.by import By
+from dropbox.files import Dimensions
+
+
 
 PATH = lambda p: os.path.abspath(
     os.path.join(os.path.dirname(__file__), p)
@@ -1132,58 +1135,70 @@ def Validate_Text(step_data):
     CommonUtil.ExecLog(sModuleInfo, "Function: Compare_Text_Data", 1, local_run)
     try:
         if ((len(step_data) != 1) or (1 < len(step_data[0]) >= 5)):
-            CommonUtil.ExecLog(sModuleInfo,
-                               "The information in the data-set(s) are incorrect. Please provide accurate data set(s) information.",
-                               3, local_run)
+            CommonUtil.ExecLog(sModuleInfo, "The information in the data-set(s) are incorrect. Please provide accurate data set(s) information.", 3, local_run)
             return "failed"
         else:
-            expected_text_data = step_data[0][1][2]
-            if step_data[0][0][0] == "current_page":
-                try:
-                    Element = Get_Element('tag', 'html')
-                except Exception, e:
-                    errMsg = "Could not get element from the current page."
-                    Exception_Info(sModuleInfo, errMsg)
-            else:
-                element_step_data = step_data[0][0:len(step_data[0]) - 1:1]
-                returned_step_data_list = Validate_Step_Data(element_step_data)
-                if ((returned_step_data_list == []) or (returned_step_data_list == "failed")):
-                    return "failed"
-                else:
+            dimension = driver.get_window_size('current')
+            print dimension
+            
+            for each in step_data[0]:
+                if each[0] == "current_page":
                     try:
-                        Element = Get_Element(returned_step_data_list[0], returned_step_data_list[1],
-                                              returned_step_data_list[2], returned_step_data_list[3],
-                                              returned_step_data_list[4])
+                        Element = Get_Element_Appium('tag', 'html')
+                        break
                     except Exception, e:
-                        errMsg = "Could not get element based on the information provided."
+                        errMsg = "Could not get element from the current page."
                         Exception_Info(sModuleInfo, errMsg)
-
+                else:
+                    element_step_data = Get_Element_Step_Data_Appium(step_data)
+                    returned_step_data_list = Validate_Step_Data(element_step_data)
+                    if ((returned_step_data_list == []) or (returned_step_data_list == "failed")):
+                        return "failed"
+                    else:
+                        try:
+                            Element = Get_Element_Appium(returned_step_data_list[0], returned_step_data_list[1], returned_step_data_list[2], returned_step_data_list[3], returned_step_data_list[4])
+                            break
+                        except Exception, e:
+                            errMsg = "Could not get element based on the information provided."
+                            Exception_Info(sModuleInfo, errMsg)            
+ 
+            for each_step_data_item in step_data[0]:
+                if each_step_data_item[1]=="action":
+                    expected_text_data = each_step_data_item[2]
+                    validation_type = each_step_data_item[0]
+            #expected_text_data = step_data[0][len(step_data[0]) - 1][2]
             list_of_element_text = Element.text.split('\n')
             visible_list_of_element_text = []
             for each_text_item in list_of_element_text:
                 if each_text_item != "":
                     visible_list_of_element_text.append(each_text_item)
-            if step_data[0][1][0] == "validate partial text":
+            
+            #if step_data[0][len(step_data[0])-1][0] == "validate partial text":
+            if validation_type == "validate partial text":
                 actual_text_data = visible_list_of_element_text
                 CommonUtil.ExecLog(sModuleInfo, "Expected Text: " + expected_text_data, 1, local_run)
                 CommonUtil.ExecLog(sModuleInfo, "Actual Text: " + str(actual_text_data), 1, local_run)
-                if (expected_text_data in each_item for each_item in actual_text_data):
-                    CommonUtil.ExecLog(sModuleInfo, "The text has been validated by a partial match.", 1, local_run)
-                    return "passed"
-                else:
-                    CommonUtil.ExecLog(sModuleInfo, "Unable to validate using partial match.", 3, local_run)
-                    return "failed"
-            if step_data[0][1][0] == "validate full text":
+                for each_actual_text_data_item in actual_text_data:
+                    if expected_text_data in each_actual_text_data_item:
+                        CommonUtil.ExecLog(sModuleInfo, "The text has been validated by a partial match.", 1, local_run)
+                        return "passed"
+                CommonUtil.ExecLog(sModuleInfo, "Unable to validate using partial match.", 3, local_run)
+                return "failed"
+            #if step_data[0][len(step_data[0])-1][0] == "validate full text":
+            if validation_type == "validate full text":
                 actual_text_data = visible_list_of_element_text
                 CommonUtil.ExecLog(sModuleInfo, "Expected Text: " + expected_text_data, 1, local_run)
                 CommonUtil.ExecLog(sModuleInfo, "Actual Text: " + str(actual_text_data), 1, local_run)
                 if (expected_text_data in actual_text_data):
-                    CommonUtil.ExecLog(sModuleInfo, "The text has been validated by using complete match.", 1,
-                                       local_run)
+                    CommonUtil.ExecLog(sModuleInfo, "The text has been validated by using complete match.", 1, local_run)
                     return "passed"
                 else:
                     CommonUtil.ExecLog(sModuleInfo, "Unable to validate using complete match.", 3, local_run)
                     return "failed"
+            
+            else:
+                CommonUtil.ExecLog(sModuleInfo, "Incorrect validation type. Please check step data", 3, local_run)
+                return "failed"
 
     except Exception, e:
         exc_type, exc_obj, exc_tb = sys.exc_info()
