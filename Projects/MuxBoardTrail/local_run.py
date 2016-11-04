@@ -8,19 +8,44 @@ import os
 import time
 
 
-from Built_In_Automation.Mobile.CrossPlatform.Appium import BuiltInFunctions
+from Built_In_Automation.Mobile.CrossPlatform.Appium import BuiltInFunctions as bf
 from Utilities import muxboard
 from Utilities.muxboard import ConnectDisconnectDevice
 from appium import webdriver
+from time import sleep
+
+
+def Get_Port_To_Connect(port_number):
+    number = port_number.split(',')
+    return number
+
+def ConnectedDeviceAction():
+    bf.launch('com.google.android.youtube', 'com.google.android.youtube.HomeActivity')
+    #sleep(3)
+    bf.Keystroke_Appium([ [ ( 'Android keystroke' , 'action' , 'go back' , False , False ) ] ] )
+    #sleep(3)
+    bf.Keystroke_Appium([ [ ( 'Android keystroke' , 'action' , 'gO Back' , False , False ) ] ] )
+    #sleep(3)
+    bf.Keystroke_Appium([ [ ( 'Android keystroke' , 'action' , 'go back' , False , False ) ] ] )
+    #sleep(3)
+    bf.Click_Element_Appium([ [ ( 'id' , 'element parameter' , 'com.google.android.googlequicksearchbox:id/search_widget_hotword_prompt' , False , False ) ] ] )
+    #sleep(3)
+    bf.Enter_Text_Appium([ [ ( 'id' , 'element parameter' , 'com.google.android.googlequicksearchbox:id/search_box' , False , False ), ( 'text' , 'action' , 'camera' , False , False )  ] ] )
+    #sleep(3)
+    bf.Keystroke_Appium([ [ ( 'Android keystroke' , 'action' , 'reTurN' , False , False ) ] ] )
+    #sleep(3)
+    bf.close()
 
 def Connect_To_MuxBoard():
-    ConnectDisconnectDevice(0,2,'m')
+    port_number = "2"
+    ConnectDisconnectDevice('reset')
+    result = Get_Port_To_Connect(port_number)
+    
+    for each_item in result:
+        print each_item
+        ConnectDisconnectDevice(1,int(each_item),'m')
+        sleep(10)
+        ConnectedDeviceAction()
+       # ConnectDisconnectDevice(0,int(each_item),'m')
     
 Connect_To_MuxBoard()
-
-
-#bf.launch_and_start_driver('com.bunz', 'com.bunz.activity.LaunchActivity')
-#bf.Sequential_Actions([[[u'resource-id', u'', u'com.bunz:id/btn_login', False, False], [u'click', u'action', u'click', False, False]], [[u'resource-id', u'', u'com.bunz:id/btn_login_email', False, False], [u'click', u'action', u'click', False, False]], [[u'wait', u'action', u'5', False, False], [u'wait', u'and', u'see', False, False]], [[u'resource-id', u'', u'com.bunz:id/edt_email', False, False], [u'click', u'action', u'click', False, False]], [[u'wait', u'action', u'5', False, False], [u'wait', u'and', u'see', False, False]], [[u'resource-id', u'', u'com.bunz:id/edt_email', False, False], [u'text', u'action', u'test@bunz.com', False, False]], [[u'resource-id', u'', u'com.bunz:id/edt_password', False, False], [u'click', u'action', u'click', False, False]], [[u'wait', u'action', u'5', False, False], [u'wait', u'and', u'see', False, False]], [[u'resource-id', u'', u'com.bunz:id/edt_password', False, False], [u'text', u'action', u'password', False, False]], [[u'resource-id', u'', u'com.bunz:id/btn_login_email', False, False], [u'click', u'action', u'click', False, False]]])
-
-#bf.Sequential_Actions([[['wait','action',float('5')],[]], [['swipe','action','swipe'],[]], [['tap','action','tap'], ['id','','com.bunz:id/fab_create_post']]])
-#bf.close()
