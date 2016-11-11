@@ -13,6 +13,7 @@ from selenium.webdriver.support.expected_conditions import staleness_of
 from Utilities.CompareModule import CompareModule
 from json.decoder import errmsg
 from docutils.nodes import status
+from argparse import Action
 
 
 sys.path.append("..")
@@ -179,6 +180,10 @@ def Action_Handler(action_step_data, action_name):
                 return "failed"
         elif (action_name == "scroll"):
             result = Scroll(action_step_data)
+            if result == "failed":
+                return "failed"
+        elif (action_name == "step result"):
+            result = Step_Result(action_step_data)
             if result == "failed":
                 return "failed"
         else:
@@ -577,6 +582,31 @@ def Scroll(step_data):
                 time.sleep(5)
             else:
                 CommonUtil.ExecLog(sModuleInfo, "Scrolling was not successful", 3, local_run)
+                result = "failed"
+
+        return result
+    except Exception, e:
+        exc_type, exc_obj, exc_tb = sys.exc_info()
+        fname = os.path.split(exc_tb.tb_frame.f_code.co_filename)[1]
+        Error_Detail = ((str(exc_type).replace("type ", "Error Type: ")) + ";" + "Error Message: " + str(
+            exc_obj) + ";" + "File Name: " + fname + ";" + "Line: " + str(exc_tb.tb_lineno))
+        print "%s" % Error_Detail
+        return "failed"
+    
+
+#Method to return pass or fail for the step outcome
+def Step_Result(step_data):
+    sModuleInfo = inspect.stack()[0][3] + " : " + inspect.getmoduleinfo(__file__).name
+    CommonUtil.ExecLog(sModuleInfo, "Function: Step_Result", 1, local_run)
+    try:
+        if ((len(step_data) != 1) or (1 < len(step_data[0]) >= 5)):
+            CommonUtil.ExecLog(sModuleInfo,"The information in the data-set(s) are incorrect. Please provide accurate data set(s) information.",3, local_run)
+            return "failed"
+        else:
+            step_result = step_data[0][0][2]
+            if step_result == 'pass':
+                result = "passed"
+            elif step_result == 'fail':
                 result = "failed"
 
         return result
