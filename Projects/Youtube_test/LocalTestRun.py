@@ -13,6 +13,7 @@ from Projects.Youtube_test import Youtube_Search as YTS
 
 def Create_Site_Content():
     YTS.BuiltInFunctions.Open_Browser('chrome')
+    Test_For_Dashboard()
 #     Test_For_Validate_Table()
 #     Test_For_Get_Table_Elements()
 #     Test_For_Compare_Text()
@@ -20,7 +21,7 @@ def Create_Site_Content():
 #     Test_For_Get_All_Elements()
 #     Test_For_Get_Elements()
 #     Test_For_Individual_Actions()
-    Test_For_Sequential_Actions()
+#     Test_For_Sequential_Actions()
 # #    Nissan_Test_Page()
 #     Test_For_Get_Elements()
 #     Test_For_Double_Matching()
@@ -108,9 +109,11 @@ def Test_For_Individual_Actions():
     step_data_click_new = [ [ ( 'id' , 'element parameter', 'btnSearch' , False , False ) , ( 'click' , 'action' , 'click' , False , False ) ] ]
     step_data_hover_new = [ [ ( 'id' , 'element parameter', 'header_lstCategories_category_4' , False , False ) , ( 'hover' , 'action' , 'hover' , False , False ) ] ]
     step_data_keystroke = [ [ ( 'keystroke_chars' , 'action' , 'AbCd' , False , False ) , ( 'id' , 'element parameter', 'txtSearch' , False , False ) ] ]
+    step_data_result_outcome = [ [ ( 'step result' , 'action' , 'pass' , False , False ) ] ]
+    YTS.BuiltInFunctions.Step_Result(step_data_result_outcome)
 #    YTS.BuiltInFunctions.Enter_Text_In_Text_Box(step_data_text_new)
 #    YTS.BuiltInFunctions.Click_Element(step_data_click_new)
-    YTS.BuiltInFunctions.Wait_For_New_Element(step_data_wait_new)
+#    YTS.BuiltInFunctions.Wait_For_New_Element(step_data_wait_new)
 #    YTS.BuiltInFunctions.Hover_Over_Element(step_data_hover_new)
 #    YTS.BuiltInFunctions.Keystroke_For_Element(step_data_keystroke)
   
@@ -145,5 +148,14 @@ def Test_For_Compare_Text():
     #step_data_element = [ [ ( 'id' , 'element parameter','header-nav-custcare' , False , False ) , ( 'validate partial text' , 'action' , 'Customer Care' , False , False ) ] ]
     YTS.BuiltInFunctions.Go_To_Link('https://www.henrys.com')
     YTS.BuiltInFunctions.Validate_Text(step_data_element)
+
+def Test_For_Dashboard():
+    YTS.BuiltInFunctions.Go_To_Link('http://qa-factory.assetscience.com/client/#/login')
+    #step_data = [ [ ( 'ng-model' , 'element parameter' , 'username' , False , False ) , ( 'text' , 'action' , 'automationadmin' , False , False ) ]  , [ ( 'ng-model' , 'element parameter' , 'password' , False , False ) , ( 'text' , 'action' , 'password' , False , False ) ]  , [ ( 'class' , 'element parameter' , 'log_login_button ng-binding' , False , False ) , ( 'click' , 'action' , 'click' , False , False ) ] ]
+    #YTS.BuiltInFunctions.Sequential_Actions(step_data)
+#    YTS.BuiltInFunctions.Get_Element('aria-hidden', 'true', 'partial_link_text', 'Floor Dashboard', 'child')
+#    YTS.BuiltInFunctions.Get_Element('partial_link_text', 'Floor Dashboard')
+    step_data_conditional = [[[u'partial_link_text', u'element parameter', u'Floor Dashboard', False, False], [u'true', u'conditional action', u'2', False, False], [u'false', u'conditional action', u'3', False, False]], [[u'step result', u'action', u'pass', False, False]], [[u'step result', u'action', u'fail', False, False]]]
+    YTS.BuiltInFunctions.Sequential_Actions(step_data_conditional)
 
 Create_Site_Content()
