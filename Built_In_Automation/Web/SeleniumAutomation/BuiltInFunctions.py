@@ -417,7 +417,11 @@ def Wait_For_New_Element(step_data):
                     for i in range(timeout_duration):
                         time.sleep(start_time + i*interval - time.time())
                         Element = Get_Element(returned_step_data_list[0], returned_step_data_list[1], returned_step_data_list[2], returned_step_data_list[3], returned_step_data_list[4])
-                 
+                        if (Element == []):
+                            continue
+                        else:
+                            break
+                        
                     if ((Element == []) or (Element == "failed")):
                         return "failed"
                     else:
