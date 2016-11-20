@@ -2022,7 +2022,9 @@ def Tap_Appium(step_data):
             exc_obj) + ";" + "File Name: " + fname + ";" + "Line: " + str(exc_tb.tb_lineno))
         CommonUtil.ExecLog(sModuleInfo, "Unable to tap. %s" % Error_Detail, 3, local_run)
         return "failed"
-    
+
+# def Double_Tap_Appium(step_data): //asifurrouf
+
 
 #Method to enter texts in a text box; step data passed on by the user
 def Enter_Text_Appium(step_data):
