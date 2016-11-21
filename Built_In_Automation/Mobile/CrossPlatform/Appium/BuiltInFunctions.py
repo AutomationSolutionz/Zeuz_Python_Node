@@ -2023,7 +2023,56 @@ def Tap_Appium(step_data):
         CommonUtil.ExecLog(sModuleInfo, "Unable to tap. %s" % Error_Detail, 3, local_run)
         return "failed"
 
-# def Double_Tap_Appium(step_data): //asifurrouf
+# def Double_Tap_Appium_asifurrouf
+
+def Double_Tap_Appium(step_data):
+    sModuleInfo = inspect.stack()[0][3] + " : " + inspect.getmoduleinfo(__file__).name
+    CommonUtil.ExecLog(sModuleInfo, "Function: Tap_Appium", 1, local_run)
+    try:
+        if ((len(step_data) != 1) or (1 < len(step_data[0]) >= 5)):
+            CommonUtil.ExecLog(sModuleInfo,
+                               "The information in the data-set(s) are incorrect. Please provide accurate data set(s) information.",
+                               3, local_run)
+            return "failed"
+        else:
+            element_step_data = Get_Element_Step_Data_Appium(step_data)
+            returned_step_data_list = Validate_Step_Data(element_step_data)
+            if ((returned_step_data_list == []) or (returned_step_data_list == "failed")):
+                return "failed"
+            else:
+                try:
+                    Element = Get_Element_Appium(returned_step_data_list[0], returned_step_data_list[1],
+                                                 returned_step_data_list[2], returned_step_data_list[3],
+                                                 returned_step_data_list[4])
+                    if Element.is_enabled():
+                        action = TouchAction(driver)
+
+                        action.press(Element).wait(100).release().press(Element).wait(100).release().perform()
+
+                        CommonUtil.ExecLog(sModuleInfo, "Double Tapped on element successfully", 1, local_run)
+                        return "passed"
+                    else:
+                        CommonUtil.TakeScreenShot(sModuleInfo, local_run)
+                        CommonUtil.ExecLog(sModuleInfo, "Element not enabled. Unable to click.", 3, local_run)
+                        return "failed"
+                except Exception, e:
+                    exc_type, exc_obj, exc_tb = sys.exc_info()
+                    fname = os.path.split(exc_tb.tb_frame.f_code.co_filename)[1]
+                    Error_Detail = ((str(exc_type).replace("type ", "Error Type: ")) + ";" + "Error Message: " + str(
+                        exc_obj) + ";" + "File Name: " + fname + ";" + "Line: " + str(exc_tb.tb_lineno))
+                    CommonUtil.ExecLog(sModuleInfo, "Could not select/click your element.  Error: %s" % (Error_Detail),
+                                       3, local_run)
+                    return "failed"
+
+    except Exception, e:
+        exc_type, exc_obj, exc_tb = sys.exc_info()
+        fname = os.path.split(exc_tb.tb_frame.f_code.co_filename)[1]
+        Error_Detail = ((str(exc_type).replace("type ", "Error Type: ")) + ";" + "Error Message: " + str(
+            exc_obj) + ";" + "File Name: " + fname + ";" + "Line: " + str(exc_tb.tb_lineno))
+        CommonUtil.ExecLog(sModuleInfo, "Unable to tap. %s" % Error_Detail, 3, local_run)
+        return "failed"
+
+# Double_Tap_Appium_asifurrouf
 
 
 #Method to enter texts in a text box; step data passed on by the user
