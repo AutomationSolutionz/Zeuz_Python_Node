@@ -11,7 +11,8 @@ unmask_characters={
     '{{5}}':',',
     '{{6}}':'#',
     '{{7}}':"'",
-    '{{8}}':'%'
+    '{{8}}':'%',
+    '{{9}}':'|'
 }
 def unmask_string(givenText):
     for e in unmask_characters.keys():
