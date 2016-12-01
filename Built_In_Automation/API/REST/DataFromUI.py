@@ -3,7 +3,7 @@
 
 
 url_ip = 'https://httpbin.org/ip'
-url_ip_status=200
+Status_OK=200
 url_GET = 'https://httpbin.org/get'
 url_GET_status=200
 
@@ -13,8 +13,8 @@ url_GET_2_status=405
 url_Post = 'https://httpbin.org/post'
 url_Post_status = 200
 
-
 url_Patch = 'https://httpbin.org/patch'
+
 url_Put = 'https://httpbin.org/put'
 url_Delete = 'https://httpbin.org/delete'
 

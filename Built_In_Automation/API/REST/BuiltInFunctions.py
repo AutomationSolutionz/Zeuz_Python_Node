@@ -85,6 +85,33 @@ class HttpMethods():
             else:
                 print "Status Code Not Matched"
 
+    @staticmethod
+    def PATCH(url, data, statuscode):
+        if (url == " "):
+            print "Empty String"
+        else:
+            Data = requests.post(url, data)
+            print "Status Code:", statuscode
+
+            if (statuscode == Data.status_code):
+                print "Status Code Matched", Data.status_code
+            else:
+                print "Status Code Not Matched"
+
+    @staticmethod
+    def PUT(url, data, statuscode):
+        if (url == " "):
+            print "Empty String"
+        else:
+            Data = requests.post(url, data)
+            print "Status Code:", statuscode
+
+            if (statuscode == Data.status_code):
+                print "Status Code Matched", Data.status_code
+            else:
+                print "Status Code Not Matched"
+
+
 
 def Exception_Info(sModuleInfo, errMsg):
     exc_type, exc_obj, exc_tb = sys.exc_info()
