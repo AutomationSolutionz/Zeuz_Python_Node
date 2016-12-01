@@ -1,5 +1,6 @@
 import sys
 import os
+import requests
 sys.path.append("..")
 
 from Utilities import CommonUtil
@@ -52,6 +53,38 @@ class AuthorizationData:
     @authentication.setter
     def authentication(self, authentication):
         self._authentication = authentication
+
+
+class HttpMethods():
+
+    @staticmethod
+    def GET(url,statuscode):
+        if(url==" "):
+         print "Empty String"
+        else:
+           Data=requests.get(url)
+           print "Status Code:", statuscode
+
+           if(statuscode==Data.status_code):
+               print "Status Code Matched",Data.status_code
+           else:
+               print "Status Code Not Matched"
+
+
+
+    @staticmethod
+    def POST(url,data,statuscode):
+        if (url == " "):
+            print "Empty String"
+        else:
+            Data=requests.post(url,data)
+            print "Status Code:",statuscode
+
+            if (statuscode == Data.status_code):
+                print "Status Code Matched", Data.status_code
+            else:
+                print "Status Code Not Matched"
+
 
 def Exception_Info(sModuleInfo, errMsg):
     exc_type, exc_obj, exc_tb = sys.exc_info()
