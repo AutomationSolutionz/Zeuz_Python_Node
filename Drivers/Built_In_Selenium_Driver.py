@@ -34,24 +34,22 @@ def open_browser(dependency,run_params,step_data,file_attachment,temp_q):
         temp_q.put("Failed")
         return "failed"
 
-
-def tear_down_close_browser(dependency,run_time_params,step_data,file_attachment,temp_q):
-    sModuleInfo = inspect.stack()[0][3] + " : " + inspect.getmoduleinfo(__file__).name
-    try:
-        CommonUtil.ExecLog(sModuleInfo,"Enter: Step - Close Browser Selenium",1,local_run)
-        sTestStepReturnStatus=Selenium_Built_In.Tear_Down()
-        print sTestStepReturnStatus
-        temp_q.put(sTestStepReturnStatus)
-        CommonUtil.ExecLog(sModuleInfo,"Exit: Step - Close Browser Selenium",1,local_run)
-        return sTestStepReturnStatus
-    except Exception, e:
-        exc_type, exc_obj, exc_tb = sys.exc_info()
-        fname = os.path.split(exc_tb.tb_frame.f_code.co_filename)[1]
-        Error_Detail = ((str(exc_type).replace("type ", "Error Type: ")) + ";" +  "Error Message: " + str(exc_obj) +";" + "File Name: " + fname + ";" + "Line: "+ str(exc_tb.tb_lineno))
-        CommonUtil.ExecLog(sModuleInfo, "Unable to close browser Selenium:%s" %( Error_Detail), 3,local_run)
-        temp_q.put("Failed")
-        return "failed"
-
+# def tear_down_close_browser(dependency,run_time_params,step_data,file_attachment,temp_q):
+#     sModuleInfo = inspect.stack()[0][3] + " : " + inspect.getmoduleinfo(__file__).name
+#     try:
+#         CommonUtil.ExecLog(sModuleInfo,"Enter: Step - Close Browser Selenium",1,local_run)
+#         sTestStepReturnStatus=Selenium_Built_In.Tear_Down()
+#         print sTestStepReturnStatus
+#         temp_q.put(sTestStepReturnStatus)
+#         CommonUtil.ExecLog(sModuleInfo,"Exit: Step - Close Browser Selenium",1,local_run)
+#         return sTestStepReturnStatus
+#     except Exception, e:
+#         exc_type, exc_obj, exc_tb = sys.exc_info()
+#         fname = os.path.split(exc_tb.tb_frame.f_code.co_filename)[1]
+#         Error_Detail = ((str(exc_type).replace("type ", "Error Type: ")) + ";" +  "Error Message: " + str(exc_obj) +";" + "File Name: " + fname + ";" + "Line: "+ str(exc_tb.tb_lineno))
+#         CommonUtil.ExecLog(sModuleInfo, "Unable to close browser Selenium:%s" %( Error_Detail), 3,local_run)
+#         temp_q.put("Failed")
+#         return "failed"
 
 def go_to_webpage(dependency,run_params,step_data,file_attachment,temp_q):
     sModuleInfo = inspect.stack()[0][3] + " : " + inspect.getmoduleinfo(__file__).name
@@ -76,7 +74,6 @@ def go_to_webpage(dependency,run_params,step_data,file_attachment,temp_q):
         temp_q.put("Failed")
         return "failed"
 
-
 def enter_text_selenium(dependency,run_time_params,step_data,file_attachment,temp_q):
     sModuleInfo = inspect.stack()[0][3] + " : " + inspect.getmoduleinfo(__file__).name
     try:
@@ -90,38 +87,6 @@ def enter_text_selenium(dependency,run_time_params,step_data,file_attachment,tem
         fname = os.path.split(exc_tb.tb_frame.f_code.co_filename)[1]
         Error_Detail = ((str(exc_type).replace("type ", "Error Type: ")) + ";" +  "Error Message: " + str(exc_obj) +";" + "File Name: " + fname + ";" + "Line: "+ str(exc_tb.tb_lineno))
         CommonUtil.ExecLog(sModuleInfo, "Unable to enter text Selenium:%s" %( Error_Detail), 3,local_run)
-        temp_q.put("Failed")
-        return "failed"
-    
-def click_element_selenium(dependency,run_time_params,step_data,file_attachment,temp_q):
-    sModuleInfo = inspect.stack()[0][3] + " : " + inspect.getmoduleinfo(__file__).name
-    try:
-        CommonUtil.ExecLog(sModuleInfo,"Enter: Step - Click Element Selenium",1,local_run)
-        sTestStepReturnStatus=Selenium_Built_In.Click_Element(step_data)
-        temp_q.put(sTestStepReturnStatus)
-        CommonUtil.ExecLog(sModuleInfo,"Exit: Step - Click Element Selenium",1,local_run)
-        return sTestStepReturnStatus
-    except Exception, e:
-        exc_type, exc_obj, exc_tb = sys.exc_info()
-        fname = os.path.split(exc_tb.tb_frame.f_code.co_filename)[1]
-        Error_Detail = ((str(exc_type).replace("type ", "Error Type: ")) + ";" +  "Error Message: " + str(exc_obj) +";" + "File Name: " + fname + ";" + "Line: "+ str(exc_tb.tb_lineno))
-        CommonUtil.ExecLog(sModuleInfo, "Unable to click element Selenium:%s" %( Error_Detail), 3,local_run)
-        temp_q.put("Failed")
-        return "failed"
-    
-def sequential_actions_selenium(dependency,run_time_params,step_data,file_attachment,temp_q):
-    sModuleInfo = inspect.stack()[0][3] + " : " + inspect.getmoduleinfo(__file__).name
-    try:
-        CommonUtil.ExecLog(sModuleInfo,"Enter: Step - Sequential Actions Selenium",1,local_run)
-        sTestStepReturnStatus=Selenium_Built_In.Sequential_Actions(step_data)
-        temp_q.put(sTestStepReturnStatus)
-        CommonUtil.ExecLog(sModuleInfo,"Exit: Step - Sequential Actions Selenium",1,local_run)
-        return sTestStepReturnStatus
-    except Exception, e:
-        exc_type, exc_obj, exc_tb = sys.exc_info()
-        fname = os.path.split(exc_tb.tb_frame.f_code.co_filename)[1]
-        Error_Detail = ((str(exc_type).replace("type ", "Error Type: ")) + ";" +  "Error Message: " + str(exc_obj) +";" + "File Name: " + fname + ";" + "Line: "+ str(exc_tb.tb_lineno))
-        CommonUtil.ExecLog(sModuleInfo, "Unable to click element Selenium: %s" %( Error_Detail), 3,local_run)
         temp_q.put("Failed")
         return "failed"
 
@@ -140,7 +105,23 @@ def keystroke_selenium(dependency,run_time_params,step_data,file_attachment,temp
         CommonUtil.ExecLog(sModuleInfo, "Unable to send keystroke:%s" %( Error_Detail), 3,local_run)
         temp_q.put("Failed")
         return "failed"  
-'======'
+    
+def click_element_selenium(dependency,run_time_params,step_data,file_attachment,temp_q):
+    sModuleInfo = inspect.stack()[0][3] + " : " + inspect.getmoduleinfo(__file__).name
+    try:
+        CommonUtil.ExecLog(sModuleInfo,"Enter: Step - Click Element Selenium",1,local_run)
+        sTestStepReturnStatus=Selenium_Built_In.Click_Element(step_data)
+        temp_q.put(sTestStepReturnStatus)
+        CommonUtil.ExecLog(sModuleInfo,"Exit: Step - Click Element Selenium",1,local_run)
+        return sTestStepReturnStatus
+    except Exception, e:
+        exc_type, exc_obj, exc_tb = sys.exc_info()
+        fname = os.path.split(exc_tb.tb_frame.f_code.co_filename)[1]
+        Error_Detail = ((str(exc_type).replace("type ", "Error Type: ")) + ";" +  "Error Message: " + str(exc_obj) +";" + "File Name: " + fname + ";" + "Line: "+ str(exc_tb.tb_lineno))
+        CommonUtil.ExecLog(sModuleInfo, "Unable to click element Selenium:%s" %( Error_Detail), 3,local_run)
+        temp_q.put("Failed")
+        return "failed"
+
 def hover_over_selenium(dependency,run_time_params,step_data,file_attachment,temp_q):
     sModuleInfo = inspect.stack()[0][3] + " : " + inspect.getmoduleinfo(__file__).name
     try:
@@ -189,6 +170,70 @@ def validate_text_selenium(dependency,run_time_params,step_data,file_attachment,
         temp_q.put("Failed")
         return "failed"  
 
+def sleep_selenium(dependency,run_time_params,step_data,file_attachment,temp_q):
+    sModuleInfo = inspect.stack()[0][3] + " : " + inspect.getmoduleinfo(__file__).name
+    try:
+        CommonUtil.ExecLog(sModuleInfo,"Enter: Step - Validate Text Selenium",1,local_run)
+        sTestStepReturnStatus=Selenium_Built_In.Sleep(step_data)
+        temp_q.put(sTestStepReturnStatus)
+        CommonUtil.ExecLog(sModuleInfo,"Exit: Step - Validate Text Selenium",1,local_run)
+        return sTestStepReturnStatus
+    except Exception, e:
+        exc_type, exc_obj, exc_tb = sys.exc_info()
+        fname = os.path.split(exc_tb.tb_frame.f_code.co_filename)[1]
+        Error_Detail = ((str(exc_type).replace("type ", "Error Type: ")) + ";" +  "Error Message: " + str(exc_obj) +";" + "File Name: " + fname + ";" + "Line: "+ str(exc_tb.tb_lineno))
+        CommonUtil.ExecLog(sModuleInfo, "Unable to validate text Selenium:%s" %( Error_Detail), 3,local_run)
+        temp_q.put("Failed")
+        return "failed"  
+
+def scroll_selenium(dependency,run_time_params,step_data,file_attachment,temp_q):
+    sModuleInfo = inspect.stack()[0][3] + " : " + inspect.getmoduleinfo(__file__).name
+    try:
+        CommonUtil.ExecLog(sModuleInfo,"Enter: Step - Validate Text Selenium",1,local_run)
+        sTestStepReturnStatus=Selenium_Built_In.Scroll(step_data)
+        temp_q.put(sTestStepReturnStatus)
+        CommonUtil.ExecLog(sModuleInfo,"Exit: Step - Validate Text Selenium",1,local_run)
+        return sTestStepReturnStatus
+    except Exception, e:
+        exc_type, exc_obj, exc_tb = sys.exc_info()
+        fname = os.path.split(exc_tb.tb_frame.f_code.co_filename)[1]
+        Error_Detail = ((str(exc_type).replace("type ", "Error Type: ")) + ";" +  "Error Message: " + str(exc_obj) +";" + "File Name: " + fname + ";" + "Line: "+ str(exc_tb.tb_lineno))
+        CommonUtil.ExecLog(sModuleInfo, "Unable to validate text Selenium:%s" %( Error_Detail), 3,local_run)
+        temp_q.put("Failed")
+        return "failed"  
+
+def step_result_selenium(dependency,run_time_params,step_data,file_attachment,temp_q):
+    sModuleInfo = inspect.stack()[0][3] + " : " + inspect.getmoduleinfo(__file__).name
+    try:
+        CommonUtil.ExecLog(sModuleInfo,"Enter: Step - Validate Text Selenium",1,local_run)
+        sTestStepReturnStatus=Selenium_Built_In.Step_Result(step_data)
+        temp_q.put(sTestStepReturnStatus)
+        CommonUtil.ExecLog(sModuleInfo,"Exit: Step - Validate Text Selenium",1,local_run)
+        return sTestStepReturnStatus
+    except Exception, e:
+        exc_type, exc_obj, exc_tb = sys.exc_info()
+        fname = os.path.split(exc_tb.tb_frame.f_code.co_filename)[1]
+        Error_Detail = ((str(exc_type).replace("type ", "Error Type: ")) + ";" +  "Error Message: " + str(exc_obj) +";" + "File Name: " + fname + ";" + "Line: "+ str(exc_tb.tb_lineno))
+        CommonUtil.ExecLog(sModuleInfo, "Unable to validate text Selenium:%s" %( Error_Detail), 3,local_run)
+        temp_q.put("Failed")
+        return "failed"  
+
+def sequential_actions_selenium(dependency,run_time_params,step_data,file_attachment,temp_q):
+    sModuleInfo = inspect.stack()[0][3] + " : " + inspect.getmoduleinfo(__file__).name
+    try:
+        CommonUtil.ExecLog(sModuleInfo,"Enter: Step - Sequential Actions Selenium",1,local_run)
+        sTestStepReturnStatus=Selenium_Built_In.Sequential_Actions(step_data)
+        temp_q.put(sTestStepReturnStatus)
+        CommonUtil.ExecLog(sModuleInfo,"Exit: Step - Sequential Actions Selenium",1,local_run)
+        return sTestStepReturnStatus
+    except Exception, e:
+        exc_type, exc_obj, exc_tb = sys.exc_info()
+        fname = os.path.split(exc_tb.tb_frame.f_code.co_filename)[1]
+        Error_Detail = ((str(exc_type).replace("type ", "Error Type: ")) + ";" +  "Error Message: " + str(exc_obj) +";" + "File Name: " + fname + ";" + "Line: "+ str(exc_tb.tb_lineno))
+        CommonUtil.ExecLog(sModuleInfo, "Unable to click element Selenium: %s" %( Error_Detail), 3,local_run)
+        temp_q.put("Failed")
+        return "failed"
+
 def validate_table_selenium(dependency,run_time_params,step_data,file_attachment,temp_q):
     sModuleInfo = inspect.stack()[0][3] + " : " + inspect.getmoduleinfo(__file__).name
     try:
@@ -204,6 +249,8 @@ def validate_table_selenium(dependency,run_time_params,step_data,file_attachment
         CommonUtil.ExecLog(sModuleInfo, "Unable to Validate Table:%s" %( Error_Detail), 3,local_run)
         temp_q.put("Failed")
         return "failed"  
+
+'======'
 
 def tear_down_selenium(dependency,run_time_params,step_data,file_attachment,temp_q):
     sModuleInfo = inspect.stack()[0][3] + " : " + inspect.getmoduleinfo(__file__).name

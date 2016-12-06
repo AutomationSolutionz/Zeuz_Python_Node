@@ -14,6 +14,8 @@ from Utilities.CompareModule import CompareModule
 from json.decoder import errmsg
 from docutils.nodes import status
 from argparse import Action
+from selenium.webdriver.remote.webdriver import WebDriver
+from selenium.webdriver.remote.webelement import WebElement
 
 
 sys.path.append("..")
@@ -30,7 +32,7 @@ from selenium.common.exceptions import NoSuchElementException
 from Utilities import CommonUtil
 #from Utilities import CompareModule
 from selenium.webdriver.support import expected_conditions as EC
-
+import types
 
 global WebDriver_Wait 
 WebDriver_Wait = 20
@@ -196,6 +198,7 @@ def Action_Handler(action_step_data, action_name):
         Error_Detail = ((str(exc_type).replace("type ", "Error Type: ")) + ";" +  "Error Message: " + str(exc_obj) +";" + "File Name: " + fname + ";" + "Line: "+ str(exc_tb.tb_lineno))
         print "%s"%Error_Detail
         return "failed"
+
 
 #Method to enter texts in a text box; step data passed on by the user
 def Enter_Text_In_Text_Box(step_data):
@@ -1429,6 +1432,34 @@ def Validate_Step_Data(step_data):
 
 '===================== ===x=== Validation Section Ends ===x=== ======================'
     
+    
+'''
+    This section below contains methods similar to Sequential Actions, however
+    different parameters are passed on as per user requests.
+'''
+'============================ Stand-alone Action Section Begins ============================='
+
+def Hover_Over_Element_StandAlone(Element):
+    sModuleInfo = inspect.stack()[0][3] + " : " + inspect.getmoduleinfo(__file__).name
+    CommonUtil.ExecLog(sModuleInfo, "Function: Hover_Over_Element_StandAlone", 1,local_run)
+    try:
+        # If user passes on element rather than step_data:
+        ## step_data = ELEMENT!!!
+        if isinstance(Element, (WebElement)) == True:
+            try:
+                hov = ActionChains(sBrowser).move_to_element(Element)
+                hov.perform()
+                CommonUtil.TakeScreenShot(sModuleInfo, local_run)
+                CommonUtil.ExecLog(sModuleInfo, "Successfully clicked the element with given parameters and values", 1,local_run)
+                return "passed"
+            except Exception, e:
+                element_attributes = Element.get_attribute('outerHTML')
+                CommonUtil.ExecLog(sModuleInfo, "Element Attributes: %s"%(element_attributes),3,local_run)
+                errMsg = "Could not select/click your element"
+                Exception_Info(sModuleInfo, errMsg)
+
+'===================== ===x=== Stand-alone Action Section Ends ===x=== ======================'
+
 
 def Tear_Down():
     sModuleInfo = inspect.stack()[0][3] + " : " + inspect.getmoduleinfo(__file__).name
