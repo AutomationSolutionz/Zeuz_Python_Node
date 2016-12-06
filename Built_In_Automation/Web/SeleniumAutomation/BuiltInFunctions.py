@@ -1439,25 +1439,98 @@ def Validate_Step_Data(step_data):
 '''
 '============================ Stand-alone Action Section Begins ============================='
 
+def Click_Element_StandAlone(Element):
+    sModuleInfo = inspect.stack()[0][3] + " : " + inspect.getmoduleinfo(__file__).name
+    CommonUtil.ExecLog(sModuleInfo, "Function: Click_Element_StandAlone", 1,local_run)
+    try:
+        if isinstance(Element, (WebElement)) == True:
+            try:
+                Element.click()
+                CommonUtil.TakeScreenShot(sModuleInfo, local_run)
+                CommonUtil.ExecLog(sModuleInfo, "Successfully clicked the element", 1,local_run)
+                return "passed"
+            except Exception, e:
+                element_attributes = Element.get_attribute('outerHTML')
+                CommonUtil.ExecLog(sModuleInfo, "Element Attributes: %s"%(element_attributes),3,local_run)
+                errMsg = "Could not find/click your element"
+                Exception_Info(sModuleInfo, errMsg)
+    except Exception, e:
+        errMsg = "Could not find/click your element"
+        Exception_Info(sModuleInfo, errMsg)
+
+
 def Hover_Over_Element_StandAlone(Element):
     sModuleInfo = inspect.stack()[0][3] + " : " + inspect.getmoduleinfo(__file__).name
     CommonUtil.ExecLog(sModuleInfo, "Function: Hover_Over_Element_StandAlone", 1,local_run)
     try:
-        # If user passes on element rather than step_data:
-        ## step_data = ELEMENT!!!
         if isinstance(Element, (WebElement)) == True:
             try:
                 hov = ActionChains(sBrowser).move_to_element(Element)
                 hov.perform()
                 CommonUtil.TakeScreenShot(sModuleInfo, local_run)
-                CommonUtil.ExecLog(sModuleInfo, "Successfully clicked the element with given parameters and values", 1,local_run)
+                CommonUtil.ExecLog(sModuleInfo, "Successfully hovered over the element", 1,local_run)
                 return "passed"
             except Exception, e:
                 element_attributes = Element.get_attribute('outerHTML')
                 CommonUtil.ExecLog(sModuleInfo, "Element Attributes: %s"%(element_attributes),3,local_run)
-                errMsg = "Could not select/click your element"
+                errMsg = "Could not find/hover over your element"
                 Exception_Info(sModuleInfo, errMsg)
+    except Exception, e:
+        errMsg = "Could not find/hover over your element"
+        Exception_Info(sModuleInfo, errMsg)
 
+
+def Keystroke_Key_StandAlone(KeyToBePressed):
+    sModuleInfo = inspect.stack()[0][3] + " : " + inspect.getmoduleinfo(__file__).name
+    CommonUtil.ExecLog(sModuleInfo, "Function: Keystroke_Key_StandAlone", 1,local_run)
+    try:
+        keystroke_value=KeyToBePressed.upper()
+        get_keystroke_value = getattr(Keys, keystroke_value)
+        result = ActionChains(sBrowser).send_keys(get_keystroke_value)
+        #result.perform()
+        CommonUtil.TakeScreenShot(sModuleInfo, local_run)
+        CommonUtil.ExecLog(sModuleInfo, "Successfully pressed key", 1,local_run)
+        return "passed"
+    except Exception, e:
+        errMsg = "Could not press the desired key"
+        Exception_Info(sModuleInfo, errMsg)
+        
+        
+def Keystroke_Characters_StandAlone(KeysToBePressed):
+    sModuleInfo = inspect.stack()[0][3] + " : " + inspect.getmoduleinfo(__file__).name
+    CommonUtil.ExecLog(sModuleInfo, "Function: Keystroke_Characters_StandAlone", 1,local_run)
+    try:
+        result = ActionChains(sBrowser).send_keys(KeysToBePressed)
+        #result.perform()
+        CommonUtil.TakeScreenShot(sModuleInfo, local_run)
+        CommonUtil.ExecLog(sModuleInfo, "Successfully pressed characters", 1,local_run)
+        return "passed"
+    except Exception, e:
+        errMsg = "Could not press the desired characters"
+        Exception_Info(sModuleInfo, errMsg)
+
+
+def Scroll_StandAlone(scroll_direction):
+    sModuleInfo = inspect.stack()[0][3] + " : " + inspect.getmoduleinfo(__file__).name
+    CommonUtil.ExecLog(sModuleInfo, "Function: Scroll_StandAlone", 1, local_run)
+    try:
+        if scroll_direction == 'down':
+            CommonUtil.ExecLog(sModuleInfo,"Scrolling down",1,local_run)
+            result = sBrowser.execute_script("window.scrollBy(0,750)", "")
+            time.sleep(5)
+        elif scroll_direction == 'up':
+            CommonUtil.ExecLog(sModuleInfo, "Scrolling up", 1, local_run)
+            result = sBrowser.execute_script("window.scrollBy(0,-750)", "")
+            time.sleep(5)
+        else:
+            CommonUtil.ExecLog(sModuleInfo, "Scrolling was not successful", 3, local_run)
+            result = "failed"
+        return result
+    
+    except Exception, e:
+        errMsg = "Could not scroll in the desired direction"
+        Exception_Info(sModuleInfo, errMsg)
+    
 '===================== ===x=== Stand-alone Action Section Ends ===x=== ======================'
 
 
