@@ -126,7 +126,7 @@ class HttpMethods():
                 print "Status Code Not Matched"
 
 
-def Data_By_GET_Method(url,param,statuscode):
+def Data_By_POST_Method(url,param,statuscode):
     # this function needs work with validating page title.  We need to check if user entered any title.
     # if not then we don't do the validation
     sModuleInfo = inspect.stack()[0][3] + " : " + inspect.getmoduleinfo(__file__).name
