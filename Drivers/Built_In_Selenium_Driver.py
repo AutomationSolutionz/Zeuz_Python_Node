@@ -14,6 +14,7 @@ local_run = False
 
 #for api to work, driver needs run_params and dic is single 
 #def open_browser(dependency,step_data,file_attachment,temp_q):
+
 def open_browser(dependency,run_params,step_data,file_attachment,temp_q):
     #this function takes the dependency Browser and passes the browser type you selected during run time
     sModuleInfo = inspect.stack()[0][3] + " : " + inspect.getmoduleinfo(__file__).name
