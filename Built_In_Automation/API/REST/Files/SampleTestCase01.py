@@ -1,7 +1,7 @@
 #Sample Test Case
 
-from DataFromUI import *
-from BuiltInFunctions import HttpMethods
+from Built_In_Automation.API.REST.DataFromUI import *
+from Built_In_Automation.API.REST.BuiltInFunctions import HttpMethods
 
 Method=HttpMethods
 
