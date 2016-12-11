@@ -16,6 +16,7 @@ from docutils.nodes import status
 from argparse import Action
 from selenium.webdriver.remote.webdriver import WebDriver
 from selenium.webdriver.remote.webelement import WebElement
+from selenium.webdriver.firefox.firefox_binary import FirefoxBinary
 
 
 sys.path.append("..")
@@ -62,7 +63,29 @@ def Open_Browser(browser):
             CommonUtil.ExecLog(sModuleInfo, "Started Chrome Browser", 1, local_run)
             return "passed"
         elif browser == 'firefox':
-            sBrowser = webdriver.Firefox()
+            from sys import platform as _platform
+            if _platform == "linux" or _platform == "linux2":
+                # linux
+                print "linux"
+            elif _platform == "darwin":
+                # MAC OS X
+                print "mac"
+            elif _platform == "win32":
+                try:
+                    import winreg
+                except ImportError:
+                    import _winreg as winreg
+                handle = winreg.OpenKey(winreg.HKEY_LOCAL_MACHINE,
+                    r"SOFTWARE\Microsoft\Windows\CurrentVersion\App Paths\firefox.exe")
+                num_values = winreg.QueryInfoKey(handle)[1]
+                path = False
+                for i in range(num_values):
+                    path = (winreg.EnumValue(handle, i))
+                    if path != False:
+                        firefox_path =  path[1]
+                        binary = FirefoxBinary(firefox_path)
+                        break
+            sBrowser = webdriver.Firefox(firefox_binary=binary)
             sBrowser.implicitly_wait(WebDriver_Wait)
             sBrowser.maximize_window()
             CommonUtil.ExecLog(sModuleInfo, "Started Firefox Browser", 1, local_run)
