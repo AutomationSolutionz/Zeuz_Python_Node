@@ -5,7 +5,7 @@ Created on May 16, 2016
 '''
 from Drivers import AutoData
 from Drivers import Built_In_Selenium_Driver as s
-from Built_In_Automation.Web.SeleniumAutomation import BuiltInFunctions as bf
+from Built_In_Automation.Web.Selenium import BuiltInFunctions as bf
 from Projects.AutoData import Browser_Functions as ad
 
 

@@ -4,8 +4,8 @@ import inspect
 from Utilities import CommonUtil
 from Projects.AutoData import Mobile_Functions as MF
 from Projects.AutoData import Browser_Functions as BF
-#from Built_In_Automation.Web.SeleniumAutomation import _navigate as n
-#from Built_In_Automation.Web.SeleniumAutomation import locateInteraction
+#from Built_In_Automation.Web.Selenium import _navigate as n
+#from Built_In_Automation.Web.Selenium import locateInteraction
 from Utilities import CompareModule
 #if local_run is True, no logging will be recorded to the web server.  Only local print will be displayed
 local_run = False

@@ -7,7 +7,7 @@ Created on May 15, 2016
 import os,sys
 import inspect
 from Utilities import CommonUtil
-from Built_In_Automation.Web.SeleniumAutomation import BuiltInFunctions as Selenium_Built_In
+from Built_In_Automation.Web.Selenium import BuiltInFunctions as Selenium_Built_In
 #if local_run is True, no logging will be recorded to the web server.  Only local print will be displayed
 local_run = False
 #local_run = False

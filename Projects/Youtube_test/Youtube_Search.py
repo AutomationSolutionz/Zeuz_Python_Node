@@ -21,7 +21,7 @@ from Utilities import CommonUtil
 from selenium.webdriver.support import expected_conditions as EC
 
 #Built in function import 
-from Built_In_Automation.Web.SeleniumAutomation import BuiltInFunctions
+from Built_In_Automation.Web.Selenium import BuiltInFunctions
 from datetime import datetime
 
 
