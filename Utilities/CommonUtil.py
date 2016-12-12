@@ -342,8 +342,9 @@ class MachineInfo():
             s.close()
             return ip
         except Exception, e:
-            print "Exceptioin: ", e
+            print "Exception: ", e
             return False
+
     def getLocalUser(self):
         """
         :return: returns the local pc name
@@ -377,7 +378,37 @@ class MachineInfo():
             print "Exception: ", e
             print "Unable to set create a Node key.  Please check class MachineInfo() in commonutil"
             return False
-        
 
+    def getUniqueId(self):
+        """
+        :return: returns the local pc unique ID
+        """
+        try:
+            node_id_file_path=os.path.join(FL.get_home_folder(),os.path.join('Desktop','node_id.conf'))
+            if os.path.isfile(node_id_file_path):
+                unique_id=ConfigModule.get_config_value('UniqueID','id',node_id_file_path)
+                if unique_id=='':
+                    ConfigModule.clean_config_file(node_id_file_path)
+                    ConfigModule.add_section('UniqueID', node_id_file_path)
+                    unique_id = uuid.uuid4()
+                    unique_id = str(unique_id)[:10]
+                    ConfigModule.add_config_value('UniqueID', 'id', unique_id,node_id_file_path)
+                    machine_name = str(unique_id)
+                    return machine_name[:100]
+                machine_name = str(unique_id)
+            else:
+                #create the file name
+                f=open(node_id_file_path,'w')
+                f.close()
+                unique_id=uuid.uuid4()
+                unique_id=str(unique_id)[:10]
+                ConfigModule.add_section('UniqueID',node_id_file_path)
+                ConfigModule.add_config_value('UniqueID','id',unique_id,node_id_file_path)
+                machine_name = str(unique_id)
+            return machine_name[:100]
 
-
+        except Exception, e:
+            #incase exception happens for whatever reason.. we will return the timestamp...
+            print "Exception: ", e
+            print "Unable to set create a Node key.  Please check class MachineInfo() in commonutil"
+            return False

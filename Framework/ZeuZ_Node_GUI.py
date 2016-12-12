@@ -107,6 +107,7 @@ class ApiThread(QtCore.QThread):
 
             local_ip = oLocalInfo.getLocalIP()
             testerid = (oLocalInfo.getLocalUser()).lower()
+            uniqueid = (oLocalInfo.getUniqueId()).lower()
 
             product_ = 'ProductVersion'
             branch = ConfigModule.get_config_value(product_, 'branch')
@@ -128,7 +129,7 @@ class ApiThread(QtCore.QThread):
                 _d.update({x[0]: t})
             dependency = _d
             update_object = {
-                'machine_name': testerid,
+                'machine_name': self.username+"_"+uniqueid,
                 'local_ip': local_ip,
                 'productVersion': productVersion,
                 'dependency': dependency,
@@ -162,7 +163,7 @@ class ApiThread(QtCore.QThread):
             missing_list = list(set(obtained_list) - set(dependency_option))
             # print missing_list
             if missing_list:
-                print ",".join(missing_list) + " missing from the configuration file - settings.conf"
+                print ",".join(missing_list) + " missing from selected dependencies - ZeuZ_Node"
                 return False
             else:
                 print "All the dependency present in the configuration file - settings.conf"
