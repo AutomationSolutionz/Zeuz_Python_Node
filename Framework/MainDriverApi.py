@@ -14,8 +14,8 @@ NOT_RUN_TAG='Not Run'
 BLOCKED_TAG='Blocked'
 CANCELLED_TAG='Cancelled'
 COMPLETE_TAG='Complete'
-passed_tag_list=['Pass','pass','PASS','PASSED','Passed','passed','true','TRUE','True',True,1,'1','Success','success','SUCCESS']
-failed_tag_list=['Fail','fail','FAIL','Failed','failed','FAILED','false','False','FALSE',False,0,'0']
+passed_tag_list=['Pass','pass','PASS','PASSED','Passed','passed','true','TRUE','True','1','Success','success','SUCCESS']
+failed_tag_list=['Fail','fail','FAIL','Failed','failed','FAILED','false','False','FALSE','0']
 def upload_zip(server_id,port_id,temp_folder,run_id,file_name,base_path=False):
     """
     :param server_id: the location of the server
@@ -245,12 +245,17 @@ def main():
                         sStepResult = functionTocall(final_dependency,final_run_params,test_steps_data, file_specific_steps, simple_queue)
                         if sStepResult in passed_tag_list:
                             sStepResult = 'PASSED'
-                        if sStepResult in failed_tag_list:
-                            sStepResult = 'FAILED'
+                        elif sStepResult in failed_tag_list:
+                            sStepResult = 'FAILED'    
+                        else:
+                            CommonUtil.ExecLog(sModuleInfo, "sStepResult not an acceptable type", 3)
+                            CommonUtil.ExecLog(sModuleInfo, "Acceptable pass string(s): %s" %(passed_tag_list), 3)
+                            CommonUtil.ExecLog(sModuleInfo, "Acceptable fail string(s): %s" %(failed_tag_list), 3)                                                        
+                            sStepResult="FAILED"
                         q.put(sStepResult)
                     else:
                         CommonUtil.ExecLog(sModuleInfo, "Driver is not enlisted. Execution of test step failed", 3)
-                        sStepResult="Failed"
+                        sStepResult="FAILED"
                 except Exception,e:
                     exc_type, exc_obj, exc_tb = sys.exc_info()
                     fname = os.path.split(exc_tb.tb_frame.f_code.co_filename)[1]
