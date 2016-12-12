@@ -4,15 +4,19 @@ Created on August 17, 2016
 @author: minar
 '''
 
-import sys
-from PyQt4 import QtGui, QtCore
-import os
-import time
-import requests
 import json
+import os
+import sys
+import time
+from PyQt4 import QtGui, QtCore
+
+import requests
+
 import MainDriverApi
-from Utilities import ASApiGUIdesign, ASApiGUITeam, ASApiGUIProject, ASApiGUIuser, ASApiGUIdependency, ASApiGUIbranch, ASApiGUIconnect
+from Utilities.Zeuz_Node import ASApiGUITeam, ASApiGUIProject, ASApiGUIuser, ASApiGUIdependency, ASApiGUIbranch, ASApiGUIconnect
 from Utilities import ConfigModule, CommonUtil, FileUtilities
+from Utilities.Zeuz_Node import ASApiGUIdesign
+
 sys.path.append(os.path.dirname(os.getcwd()))
 
 
