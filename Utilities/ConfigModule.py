@@ -3,6 +3,7 @@ import ConfigParser,os
 '''constants'''
 file_name='settings.conf'
 
+
 def get_config_value(section,key,location=False):
     """
     :param section: name of section
@@ -23,6 +24,7 @@ def get_config_value(section,key,location=False):
     except ConfigParser.NoOptionError:
         #print "No option in that name: %s"%key
         return ""
+
 
 def remove_config_value(section,value,location=False):
     config=ConfigParser.SafeConfigParser()
@@ -78,6 +80,7 @@ def get_all_option(section_name,location=False):
         print 'found no options on the section %s'%section_name
         return []
 
+
 def add_section(section_name,location=False):
     """
     :param section_name: name of the section to add
@@ -101,6 +104,7 @@ def add_section(section_name,location=False):
     except ConfigParser.NoOptionError,e:
         print 'found no options on the section %s'%section_name
         return []
+
 
 def clean_config_file(location=False):
     try:

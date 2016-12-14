@@ -16,6 +16,7 @@ import MainDriverApi
 from Utilities.Zeuz_Node import ASApiGUITeam, ASApiGUIProject, ASApiGUIuser, ASApiGUIdependency, ASApiGUIbranch, ASApiGUIconnect
 from Utilities import ConfigModule, CommonUtil, FileUtilities
 from Utilities.Zeuz_Node import ASApiGUIdesign
+from Utilities import ConfigModule
 
 sys.path.append(os.path.dirname(os.getcwd()))
 
@@ -166,7 +167,7 @@ class ApiThread(QtCore.QThread):
                 print ",".join(missing_list) + " missing from selected dependencies - ZeuZ_Node"
                 return False
             else:
-                print "All the dependency present in the configuration file - settings.conf"
+                print "All the dependencies present - ZeuZ_Node"
                 final_dependency = []
                 for each in r:
                     temp = []
@@ -277,6 +278,11 @@ class GUIApp(QtGui.QMainWindow, ASApiGUIdesign.Ui_mainWindow):
             'port': port
         }
 
+        ConfigModule.add_config_value('Authentication', 'username', username)
+        ConfigModule.add_config_value('Authentication', 'password', password)
+        ConfigModule.add_config_value('Server', 'server_address', server)
+        ConfigModule.add_config_value('Server', 'server_port', str(port))
+
         teams = self.Get('get_user_teams_api', self.user_info_object)
         print teams
 
@@ -294,6 +300,7 @@ class GUIApp(QtGui.QMainWindow, ASApiGUIdesign.Ui_mainWindow):
                 team = unicode(radioButton.text())
                 print "Radio Button Selected: ", team
                 self.user_info_object.update({'team': team})
+                ConfigModule.add_config_value('Authentication', 'team', team)
 
         projects = self.Get('get_user_projects_api', self.user_info_object)
         print projects
@@ -312,6 +319,7 @@ class GUIApp(QtGui.QMainWindow, ASApiGUIdesign.Ui_mainWindow):
                 project = unicode(radioButton.text())
                 print "Radio Button Selected: ", project
                 self.user_info_object.update({'project': project})
+                ConfigModule.add_config_value('Authentication', 'project', project)
 
         dependencies = self.Get('get_dependency_lists_api', self.user_info_object)
         print dependencies

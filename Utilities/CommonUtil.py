@@ -329,6 +329,7 @@ def TimeStamp(format):
 
     return TimeStamp
 
+
 class MachineInfo():
     def getLocalIP(self):
         """
