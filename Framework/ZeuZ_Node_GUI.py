@@ -279,7 +279,7 @@ class GUIApp(QtGui.QMainWindow, ASApiGUIdesign.Ui_mainWindow):
         }
 
         ConfigModule.add_config_value('Authentication', 'username', username)
-        ConfigModule.add_config_value('Authentication', 'password', password)
+        #ConfigModule.add_config_value('Authentication', 'password', password)
         ConfigModule.add_config_value('Server', 'server_address', server)
         ConfigModule.add_config_value('Server', 'server_port', str(port))
 
@@ -298,7 +298,7 @@ class GUIApp(QtGui.QMainWindow, ASApiGUIdesign.Ui_mainWindow):
         for radioButton in self.second_screen.findChildren(QtGui.QRadioButton):
             if radioButton.isChecked():
                 team = unicode(radioButton.text())
-                print "Radio Button Selected: ", team
+                print "Team Selected: ", team
                 self.user_info_object.update({'team': team})
                 ConfigModule.add_config_value('Authentication', 'team', team)
 
@@ -317,7 +317,7 @@ class GUIApp(QtGui.QMainWindow, ASApiGUIdesign.Ui_mainWindow):
         for radioButton in self.third_screen.findChildren(QtGui.QRadioButton):
             if radioButton.isChecked():
                 project = unicode(radioButton.text())
-                print "Radio Button Selected: ", project
+                print "Project Selected: ", project
                 self.user_info_object.update({'project': project})
                 ConfigModule.add_config_value('Authentication', 'project', project)
 
@@ -367,6 +367,14 @@ class GUIApp(QtGui.QMainWindow, ASApiGUIdesign.Ui_mainWindow):
         api = ApiThread(self.user_info_object)
         self.threads.append(api)
         api.begin()
+
+        branch_options = []
+        for checkBox in self.fifth_screen.findChildren(QtGui.QCheckBox):
+            if checkBox.isChecked():
+                dep = unicode(checkBox.text())
+                print "Branch version selected: ", dep
+                branch_options.append(dep)
+        print branch_options
 
         self.fifth_screen.hide()
         self.final_screen.show()

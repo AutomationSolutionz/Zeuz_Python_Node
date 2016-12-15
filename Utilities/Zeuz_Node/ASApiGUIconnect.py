@@ -44,5 +44,5 @@ class Ui_connectForm(object):
         connectForm.setWindowTitle(_translate("connectForm", "Form", None))
         self.fifthBackBtn.setText(_translate("connectForm", "Back", None))
         self.closeBtn.setText(_translate("connectForm", "Close", None))
-        self.label.setText(_translate("connectForm", "Connecting...", None))
+        self.label.setText(_translate("connectForm", "Running...", None))
 
