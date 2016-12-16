@@ -606,10 +606,12 @@ def Scroll(step_data):
                 CommonUtil.ExecLog(sModuleInfo,"Scrolling down",1,local_run)
                 result = sBrowser.execute_script("window.scrollBy(0,750)", "")
                 time.sleep(5)
+                return "passed"
             elif scroll_direction == 'up':
                 CommonUtil.ExecLog(sModuleInfo, "Scrolling up", 1, local_run)
                 result = sBrowser.execute_script("window.scrollBy(0,-750)", "")
                 time.sleep(5)
+                return "passed"
             else:
                 CommonUtil.ExecLog(sModuleInfo, "Scrolling was not successful", 3, local_run)
                 result = "failed"
