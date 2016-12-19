@@ -1068,6 +1068,19 @@ def Get_Element(element_parameter,element_value,reference_parameter=False,refere
                     all_matching_elements.append(each_parent)
             All_Elements_Found=all_matching_elements
             
+        elif reference_is_parent_or_child == "sibling":     
+            CommonUtil.ExecLog(sModuleInfo, "Locating the sibling element", 1,local_run)   
+            all_sibling_elements = Get_All_Elements(reference_parameter,reference_value)
+            for each_sibling in all_sibling_elements:
+                all_parent_elements = WebDriverWait(each_sibling, WebDriver_Wait).until(EC.presence_of_all_elements_located((By.XPATH, "..")))
+                all_matching_elements = []
+                for each_parent in all_parent_elements:
+                    interested_elem = Get_All_Elements(element_parameter,element_value,each_parent) #can there be a problem when we send in each parent, or does this contain both param and value?
+                    if interested_elem != "failed":
+                        for each_matching in interested_elem:
+                            all_matching_elements.append(each_matching)
+                All_Elements_Found = all_matching_elements
+                        
         elif ((reference_is_parent_or_child!="parent") or (reference_is_parent_or_child!="child") or (reference_is_parent_or_child!=False)):
             CommonUtil.ExecLog(sModuleInfo, "Unspecified reference type; please indicate whether parent, child or leave blank", 3,local_run)
             return "failed"
