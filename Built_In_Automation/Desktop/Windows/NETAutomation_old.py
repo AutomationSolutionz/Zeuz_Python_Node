@@ -376,48 +376,15 @@ def Drag_Object(Element1_source, Element2_destination):
         fname = os.path.split(exc_tb.tb_frame.f_code.co_filename)[1]
         print ((str(exc_type).replace("type ", "Error Type: ")) + ";" +  "Error Message: " + str(exc_obj) +";" + "File Name: " + fname + ";" + "Line: "+ str(exc_tb.tb_lineno))
 
-
-def get_element(window_name, element_name=None, element_class=None, automation_id=None, control_type=None):
-    root = _get_main_window(window_name)
-    if root is None:
-        print "No window found with the name: " + window_name
-        return None
-
-    return find_element(root, element_name, element_class, automation_id, control_type)
-
-
-def find_element(root, element_name, element_class, automation_id, control_type):
-    found = element_name is None or element_name == root.Current.Name
-    found &= element_class is None or element_class == root.Current.ClassName
-    found &= automation_id is None or automation_id == root.Current.AutomationId
-    found &= control_type is None or control_type == root.Current.LocalizedControlType
-
-    if found:
-        print "Element found: '%s' (%s)" % (root.Current.Name, root.Current.LocalizedControlType)
-        return root
-
-    children = root.FindAll(TreeScope.Children, Condition.TrueCondition)
-
-    for child in children:
-        element = find_element(child, element_name, element_class, automation_id, control_type)
-        if element:
-            return element
-
-    return None
-
-# menu_bar = get_element("Skype", "RECENT", None, None, "tab item")
-menu_bar = get_element("Skype", "RECENT")
-
 #Element_Class = None
 #menu_bar = Get_Element("Skype", "Call mobiles and landlines from the dial pad.",None,None,None)
-#menu_bar = Get_Element("Skype", "See updates from your contacts in Skype Home.", None, None, "button")
+menu_bar = Get_Element("Skype", "Today", None, None, "button")
 #menu_bar = Get_Element("Pictures", "UIRibbonDockTop", None)
 #menu_bar1 = Get_Element(menu_bar, "Ribbon", None)
 #menu_bar2 = Get_Element("Pictures", "Ribbon", None)
 
 print menu_bar
-if menu_bar:
-    Click_Element_None_Mouse(menu_bar, Expand=None, Invoke=True, Select=None, Toggle=None)
+Click_Element_None_Mouse(menu_bar,Expand=None,Invoke=True,Select=None,Toggle=None)
 #Click_Element_By_Mouse(menu_bar)
 
 #print menu_bar1 
