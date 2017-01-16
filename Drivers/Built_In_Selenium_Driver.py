@@ -21,7 +21,16 @@ def open_browser(dependency,run_params,step_data,file_attachment,temp_q):
     try:
         CommonUtil.ExecLog(sModuleInfo,"Enter: Step - Open Browser Selenium",1,local_run)
         #browser_name=dependency['dependency']['Browser']
-        browser_name=dependency['Browser']
+        try:
+            browser_name=dependency['Browser']
+        except Exception, e:
+            exc_type, exc_obj, exc_tb = sys.exc_info()
+            fname = os.path.split(exc_tb.tb_frame.f_code.co_filename)[1]
+            Error_Detail = ((str(exc_type).replace("type ", "Error Type: ")) + ";" +  "Error Message: " + str(exc_obj) +";" + "File Name: " + fname + ";" + "Line: "+ str(exc_tb.tb_lineno))
+            CommonUtil.ExecLog(sModuleInfo, "Dependency not set for browser. Please set the Apply Filter value to YES. Error: %s" %( Error_Detail), 3,local_run)
+            temp_q.put("failed")
+            return "failed"
+        
         stepReturn=Selenium_Built_In.Open_Browser(browser_name)
         CommonUtil.ExecLog(sModuleInfo,"started the browser",1,local_run)
         temp_q.put(stepReturn)
