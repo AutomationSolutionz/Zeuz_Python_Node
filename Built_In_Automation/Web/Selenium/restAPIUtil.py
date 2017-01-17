@@ -62,8 +62,11 @@ def rest_API_Helper(rest_call_type,url,headers=False,payload_type=False,body=Fal
             #If response is successful (i.e. code 200)
             if response.status_code == 200:
                 CommonUtil.ExecLog(sModuleInfo, "Successful REST request. Status Code: %s"%response.status_code, 1,local_run)
-                validation_result = _response_Validation(payload_type, response, extraction_fields) 
-                return validation_result
+                if payload_type == "json":
+                    return response.json()
+                else:
+                    validation_result = _response_Validation(payload_type, response, extraction_fields) 
+                    return validation_result
             else:
                 CommonUtil.ExecLog(sModuleInfo, "Error in REST request. Status Code: %s"%response.status_code, 3,local_run)
                 
@@ -74,15 +77,16 @@ def rest_API_Helper(rest_call_type,url,headers=False,payload_type=False,body=Fal
 
 # Internal method
 ## Will be improved upon in the future 
-def _response_Validation(payload_type, response, extraction_data):
+def _response_Validation(payload_type, response, extraction_data=False):
     sModuleInfo = inspect.stack()[0][3] + " : " + inspect.getmoduleinfo(__file__).name
     CommonUtil.ExecLog(sModuleInfo, "Function: _response_Validation", 1,local_run)
     try:
-        extraction_fields = extraction_data.split(',')
+#         extraction_fields = extraction_data.split(',')
         
         master_container = []
         #For payload body type: data
         if payload_type == "data":
+            extraction_fields = extraction_data.split(',')
             for each in response.json():
                 ##Will need to send required_data through step data
                 container = []
@@ -97,8 +101,11 @@ def _response_Validation(payload_type, response, extraction_data):
         
         #For payload body type: json
         elif payload_type == "json":
-            CommonUtil.ExecLog(sModuleInfo, "Validation not yet implemented. Failing validation step.", 2,local_run)  
-            return "failed"
+            CommonUtil.ExecLog(sModuleInfo, "Specific validation not provided. Will need to be implemented in the future.", 2,local_run)
+            results=response.json()
+            return results            
+            #CommonUtil.ExecLog(sModuleInfo, "Validation not yet implemented. Failing validation step.", 2,local_run)  
+            #return "failed"
             
     except Exception, e:
         errMsg = "Unable to validate response."
