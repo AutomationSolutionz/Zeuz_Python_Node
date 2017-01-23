@@ -1070,17 +1070,19 @@ def Get_Element(element_parameter,element_value,reference_parameter=False,refere
             
         elif reference_is_parent_or_child == "sibling":     
             CommonUtil.ExecLog(sModuleInfo, "Locating the sibling element", 1,local_run)   
-            all_sibling_elements = Get_All_Elements(reference_parameter,reference_value)
-            for each_sibling in all_sibling_elements:
-                all_parent_elements = WebDriverWait(each_sibling, WebDriver_Wait).until(EC.presence_of_all_elements_located((By.XPATH, "..")))
-                all_matching_elements = []
-                for each_parent in all_parent_elements:
-                    interested_elem = Get_All_Elements(element_parameter,element_value,each_parent) #can there be a problem when we send in each parent, or does this contain both param and value?
-                    if interested_elem != "failed":
-                        for each_matching in interested_elem:
-                            all_matching_elements.append(each_matching)
-                All_Elements_Found = all_matching_elements
-                        
+#             all_sibling_elements = Get_All_Elements(reference_parameter,reference_value)
+#             for each_sibling in all_sibling_elements:
+#                 all_parent_elements = WebDriverWait(each_sibling, WebDriver_Wait).until(EC.presence_of_all_elements_located((By.XPATH, "..")))
+#                 all_matching_elements = []
+#                 for each_parent in all_parent_elements:
+#                     interested_elem = Get_All_Elements(element_parameter,element_value,each_parent) #can there be a problem when we send in each parent, or does this contain both param and value?
+#                     if interested_elem != "failed":
+#                         for each_matching in interested_elem:
+#                             all_matching_elements.append(each_matching)
+#                 All_Elements_Found = all_matching_elements
+###trying out list comprehension
+            All_Elements_Found=[each_matching for each_sibling in Get_All_Elements(reference_parameter,reference_value) for each_parent in WebDriverWait(each_sibling, WebDriver_Wait).until(EC.presence_of_all_elements_located((By.XPATH, ".."))) for each_matching in Get_All_Elements(element_parameter,element_value,each_parent)]
+            
         elif ((reference_is_parent_or_child!="parent") or (reference_is_parent_or_child!="child") or (reference_is_parent_or_child!=False)):
             CommonUtil.ExecLog(sModuleInfo, "Unspecified reference type; please indicate whether parent, child or leave blank", 3,local_run)
             return "failed"
@@ -1126,17 +1128,24 @@ def Get_All_Elements(parameter,value,parent=False):
                 All_Elements = WebDriverWait(sBrowser, WebDriver_Wait).until(EC.presence_of_all_elements_located((By.XPATH, "//*[@%s='%s']"%(parameter,value))))
         else:
             if parameter == "text":
-                All_Elements = WebDriverWait(parent, WebDriver_Wait).until(EC.presence_of_all_elements_located((By.XPATH, "//*[text()='%s']" %value)))
+                All_Elements = parent.find_elements(By.XPATH, "//*[text()='%s']" %value)
+#                 All_Elements = WebDriverWait(parent, WebDriver_Wait).until(EC.presence_of_all_elements_located((By.XPATH, "//*[text()='%s']" %value)))
             elif parameter == "tag":
-                All_Elements = WebDriverWait(parent, WebDriver_Wait).until(EC.presence_of_all_elements_located((By.TAG_NAME, '%s'%(value))))
+                All_Elements = parent.find_elements(By.TAG_NAME, '%s'%(value))
+#                 All_Elements = parent.find_element_by_tag_name(value)
+#                 All_Elements = WebDriverWait(parent, WebDriver_Wait).until(EC.presence_of_all_elements_located((By.TAG_NAME, '%s'%(value))))
             elif ((parameter == "link_text") or (parameter == "href")):
-                All_Elements = WebDriverWait(parent, WebDriver_Wait).until(EC.presence_of_all_elements_located((By.LINK_TEXT, '%s'%(value))))
+                All_Elements = parent.find_elements(By.LINK_TEXT, '%s'%(value))
+#                 All_Elements = WebDriverWait(parent, WebDriver_Wait).until(EC.presence_of_all_elements_located((By.LINK_TEXT, '%s'%(value))))
             elif (parameter == "partial_link_text"):
-                All_Elements = WebDriverWait(parent, WebDriver_Wait).until(EC.presence_of_all_elements_located((By.PARTIAL_LINK_TEXT, '%s'%(value))))
+                All_Elements = parent.find_elements(By.PARTIAL_LINK_TEXT, '%s'%(value))
+#                 All_Elements = WebDriverWait(parent, WebDriver_Wait).until(EC.presence_of_all_elements_located((By.PARTIAL_LINK_TEXT, '%s'%(value))))
             elif parameter == "css":
-                All_Elements = WebDriverWait(parent, WebDriver_Wait).until(EC.presence_of_all_elements_located((By.CSS_SELECTOR, '%s'%(value))))
+                All_Elements = parent.find_elements(By.CSS_SELECTOR, '%s'%(value))
+#                 All_Elements = WebDriverWait(parent, WebDriver_Wait).until(EC.presence_of_all_elements_located((By.CSS_SELECTOR, '%s'%(value))))
             else:
-                All_Elements = WebDriverWait(parent, WebDriver_Wait).until(EC.presence_of_all_elements_located((By.XPATH, "//*[@%s='%s']"%(parameter,value))))
+                All_Elements = parent.find_elements(By.XPATH, "//*[@%s='%s']"%(parameter,value))
+#                 All_Elements = WebDriverWait(parent, WebDriver_Wait).until(EC.presence_of_all_elements_located((By.XPATH, "//*[@%s='%s']"%(parameter,value))))
                 
         return All_Elements
     except Exception, e:
