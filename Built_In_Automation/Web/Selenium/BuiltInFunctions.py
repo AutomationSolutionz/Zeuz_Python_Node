@@ -22,6 +22,7 @@ from selenium.webdriver.firefox.firefox_binary import FirefoxBinary
 sys.path.append("..")
 from selenium import webdriver
 from selenium.webdriver.support.ui import Select
+# from selenium.webdriver.support.select import Select
 import time
 import inspect
 from selenium.webdriver.support.ui import WebDriverWait
@@ -209,6 +210,10 @@ def Action_Handler(action_step_data, action_name):
                 return "failed"
         elif (action_name == "step result"):
             result = Step_Result(action_step_data)
+            if result == "failed":
+                return "failed"
+        elif (action_name == "deselect all" or action_name == "select by visible text" or action_name == "deselect by visible text" or action_name == "select by value" or action_name == "deselect by value" or action_name =="select by index" or action_name == "deselect by index"):
+            result = Select_Deselect(action_step_data)
             if result == "failed":
                 return "failed"
         else:
@@ -649,7 +654,87 @@ def Step_Result(step_data):
             exc_obj) + ";" + "File Name: " + fname + ";" + "Line: " + str(exc_tb.tb_lineno))
         print "%s" % Error_Detail
         return "failed"
-    
+
+
+def Select_Deselect(step_data):    
+    sModuleInfo = inspect.stack()[0][3] + " : " + inspect.getmoduleinfo(__file__).name
+    CommonUtil.ExecLog(sModuleInfo, "Function: Step_Result", 1, local_run)
+    try:
+        if ((len(step_data) != 1) or (1 < len(step_data[0]) >= 5)):
+            CommonUtil.ExecLog(sModuleInfo, "The information in the data-set(s) are incorrect. Please provide accurate data set(s) information.", 3,local_run)
+            return "failed"
+        else:
+            #element_step_data = step_data[0][0:len(step_data[0])-1:1]
+            element_step_data = Get_Element_Step_Data(step_data)
+            returned_step_data_list = Validate_Step_Data(element_step_data) 
+            if ((returned_step_data_list == []) or (returned_step_data_list == "failed")):
+                return "failed"
+            else:
+                try:
+                    Element = Get_Element(returned_step_data_list[0], returned_step_data_list[1], returned_step_data_list[2], returned_step_data_list[3], returned_step_data_list[4])
+                    for each in step_data[0]:
+                        if each[1]=="action":
+                            if each[0]=="deselect all":
+                                CommonUtil.ExecLog(sModuleInfo, "Deselect all elements", 1, local_run)
+                                result = Select(Element).deselect_all()
+                                #result = selected_Element.deselect_all()
+                                return "passed"
+                            elif each[0] == "deselect by visible text":
+                                CommonUtil.ExecLog(sModuleInfo, "Deselect by visible text", 1, local_run)
+                                visible_text=each[2]
+                                selected_Element = Select(Element)
+                                result = selected_Element.deselect_by_visible_text(visible_text)
+                                return "passed"
+                            elif each[0] == "deselect by value":
+                                CommonUtil.ExecLog(sModuleInfo, "Deselect by value", 1, local_run)
+                                value=each[2]
+                                selected_Element = Select(Element)
+                                result = selected_Element.deselect_by_value(value)
+                                return "passed"
+                            elif each[0] == "deselect by index":
+                                CommonUtil.ExecLog(sModuleInfo, "Deselect by index", 1, local_run)
+                                index=int(each[2])
+                                selected_Element = Select(Element)
+                                result = selected_Element.deselect_by_index(index)
+                                return "passed"
+                            elif each[0] == "select by index":
+                                CommonUtil.ExecLog(sModuleInfo, "Select by index", 1, local_run)
+                                index=each[2]
+                                selected_Element = Select(Element)
+                                result = selected_Element.select_by_index(index)
+                                return "passed"
+                            elif each[0] == "select by value":
+                                CommonUtil.ExecLog(sModuleInfo, "Select by value", 1, local_run)
+                                value=each[2]
+                                selected_Element = Select(Element)
+                                result = selected_Element.select_by_value(value)
+                                return "passed"
+                            elif each[0] == "select by visible text":
+                                CommonUtil.ExecLog(sModuleInfo, "Select by visible text", 1, local_run)
+                                visible_text=each[2]
+                                selected_Element = Select(Element)
+                                result = selected_Element.select_by_visible_text(visible_text)
+                                return "passed"
+                            else:
+                                CommonUtil.ExecLog(sModuleInfo, "The correct parameter for the action has not been entered. Please check for errors.", 2,local_run)
+                                result = "failed"
+                        else:
+                            continue
+                except Exception, e:
+                    element_attributes = Element.get_attribute('outerHTML')
+                    CommonUtil.ExecLog(sModuleInfo, "Element Attributes: %s"%(element_attributes),3,local_run)
+                    exc_type, exc_obj, exc_tb = sys.exc_info()        
+                    fname = os.path.split(exc_tb.tb_frame.f_code.co_filename)[1]
+                    Error_Detail = ((str(exc_type).replace("type ", "Error Type: ")) + ";" +  "Error Message: " + str(exc_obj) +";" + "File Name: " + fname + ";" + "Line: "+ str(exc_tb.tb_lineno))
+                    CommonUtil.ExecLog(sModuleInfo, "Could not select/hover over your element.  Error: %s"%(Error_Detail), 3,local_run)
+                    return "failed"
+    except Exception, e:
+        exc_type, exc_obj, exc_tb = sys.exc_info()
+        fname = os.path.split(exc_tb.tb_frame.f_code.co_filename)[1]
+        Error_Detail = ((str(exc_type).replace("type ", "Error Type: ")) + ";" + "Error Message: " + str(
+            exc_obj) + ";" + "File Name: " + fname + ";" + "Line: " + str(exc_tb.tb_lineno))
+        print "%s" % Error_Detail
+        return "failed"
     
 #Performs a series of action or conditional logical action decisions based on user input
 def Sequential_Actions(step_data):
