@@ -456,7 +456,8 @@ def Wait_For_New_Element(step_data):
                     if ((Element == []) or (Element == "failed")):
                         return "failed"
                     else:
-                        return Element
+                        #return Element
+                        return "passed"
                 except Exception, e:
                     exc_type, exc_obj, exc_tb = sys.exc_info()        
                     fname = os.path.split(exc_tb.tb_frame.f_code.co_filename)[1]
@@ -582,9 +583,9 @@ def Sleep(step_data):
             tuple = step_data[0][0]
             seconds = int(tuple[2])
             CommonUtil.ExecLog(sModuleInfo,"Sleeping for %s seconds"%seconds,1,local_run)
-            result = time.sleep(seconds)
-
-        return result
+            time.sleep(seconds)
+            return "passed"
+        #return result
     except Exception, e:
         exc_type, exc_obj, exc_tb = sys.exc_info()
         fname = os.path.split(exc_tb.tb_frame.f_code.co_filename)[1]
@@ -621,7 +622,7 @@ def Scroll(step_data):
                 CommonUtil.ExecLog(sModuleInfo, "Scrolling was not successful", 3, local_run)
                 result = "failed"
 
-        return result
+        #return result
     except Exception, e:
         exc_type, exc_obj, exc_tb = sys.exc_info()
         fname = os.path.split(exc_tb.tb_frame.f_code.co_filename)[1]
@@ -735,6 +736,7 @@ def Select_Deselect(step_data):
             exc_obj) + ";" + "File Name: " + fname + ";" + "Line: " + str(exc_tb.tb_lineno))
         print "%s" % Error_Detail
         return "failed"
+    
     
 #Performs a series of action or conditional logical action decisions based on user input
 def Sequential_Actions(step_data):
@@ -1209,6 +1211,8 @@ def Get_All_Elements(parameter,value,parent=False):
                 All_Elements = WebDriverWait(sBrowser, WebDriver_Wait).until(EC.presence_of_all_elements_located((By.PARTIAL_LINK_TEXT, '%s'%(value))))
             elif parameter == "css":
                 All_Elements = WebDriverWait(sBrowser, WebDriver_Wait).until(EC.presence_of_all_elements_located((By.CSS_SELECTOR, '%s'%(value))))    
+            elif parameter == "xpath":
+                All_Elements = WebDriverWait(sBrowser, WebDriver_Wait).until(EC.presence_of_all_elements_located((By.XPATH, '%s'%(value))))
             else:
                 All_Elements = WebDriverWait(sBrowser, WebDriver_Wait).until(EC.presence_of_all_elements_located((By.XPATH, "//*[@%s='%s']"%(parameter,value))))
         else:
@@ -1228,6 +1232,8 @@ def Get_All_Elements(parameter,value,parent=False):
             elif parameter == "css":
                 All_Elements = parent.find_elements(By.CSS_SELECTOR, '%s'%(value))
 #                 All_Elements = WebDriverWait(parent, WebDriver_Wait).until(EC.presence_of_all_elements_located((By.CSS_SELECTOR, '%s'%(value))))
+            elif parameter == "xpath":
+                All_Elements = parent.find_elements(By.XPATH, '%s'%(value))
             else:
                 All_Elements = parent.find_elements(By.XPATH, "//*[@%s='%s']"%(parameter,value))
 #                 All_Elements = WebDriverWait(parent, WebDriver_Wait).until(EC.presence_of_all_elements_located((By.XPATH, "//*[@%s='%s']"%(parameter,value))))
@@ -1451,7 +1457,7 @@ def Get_Table_Elements(table_parameter,table_value, reference_parameter=False,re
                     errMsg = "Could not find table row elements"
                     Exception_Info(sModuleInfo, errMsg)                
                 master_text_table.append(temp_row_holder)
-        print master_text_table
+#         print master_text_table
         return master_text_table    
 
     except Exception, e:
