@@ -32,10 +32,21 @@ def open_browser(dependency,run_params,step_data,file_attachment,temp_q):
             return "failed"
         
         stepReturn=Selenium_Built_In.Open_Browser(browser_name)
-        CommonUtil.ExecLog(sModuleInfo,"started the browser",1,local_run)
-        temp_q.put(stepReturn)
-        CommonUtil.ExecLog(sModuleInfo,"Exit: Step - Open Browser",1,local_run)
-        return stepReturn
+        if stepReturn == "passed":
+            CommonUtil.ExecLog(sModuleInfo,"Successfully started the browser",1,local_run)
+            temp_q.put(stepReturn)
+            CommonUtil.ExecLog(sModuleInfo,"Exit: Step - Open Browser",1,local_run)
+            return stepReturn
+        elif stepReturn == "failed":
+            CommonUtil.ExecLog(sModuleInfo,"Failed to start the browser",1,local_run)
+            temp_q.put(stepReturn)
+            CommonUtil.ExecLog(sModuleInfo,"Exit: Step - Open Browser",1,local_run)
+            return stepReturn
+        else:
+            CommonUtil.ExecLog(sModuleInfo,"Step return type unknown: %s" %(stepReturn),1,local_run)
+            temp_q.put("failed")
+            CommonUtil.ExecLog(sModuleInfo,"Exit: Step - Open Browser",1,local_run)
+            return "failed"
     except Exception, e:
         exc_type, exc_obj, exc_tb = sys.exc_info()
         fname = os.path.split(exc_tb.tb_frame.f_code.co_filename)[1]
@@ -73,9 +84,19 @@ def go_to_webpage(dependency,run_params,step_data,file_attachment,temp_q):
         web_link=first_data_set[0][2]
         #web_title = first_data_set[0][2]
         sTestStepReturnStatus=Selenium_Built_In.Go_To_Link(web_link)
-        temp_q.put(sTestStepReturnStatus)
-        CommonUtil.ExecLog(sModuleInfo,"Exit: Step - Go To Webpage Selenium",1,local_run)
-        return sTestStepReturnStatus
+        if sTestStepReturnStatus == "passed":
+            temp_q.put(sTestStepReturnStatus)
+            CommonUtil.ExecLog(sModuleInfo,"Exit: Step - Go To Webpage Selenium",1,local_run)
+            return sTestStepReturnStatus
+        elif sTestStepReturnStatus == "failed":
+            temp_q.put(sTestStepReturnStatus)
+            CommonUtil.ExecLog(sModuleInfo,"Exit: Step - Go To Webpage Selenium",1,local_run)
+            return sTestStepReturnStatus
+        else:
+            CommonUtil.ExecLog(sModuleInfo,"Step return type unknown: %s" %(sTestStepReturnStatus),1,local_run)
+            temp_q.put("failed")
+            CommonUtil.ExecLog(sModuleInfo,"Exit: Step - Go To Webpage Selenium",1,local_run)
+            return "failed"
     except Exception, e:
         exc_type, exc_obj, exc_tb = sys.exc_info()
         fname = os.path.split(exc_tb.tb_frame.f_code.co_filename)[1]
