@@ -180,6 +180,22 @@ def Action_Handler(action_step_data, action_name):
             result = Click_Element(action_step_data)
             if result == "failed":
                 return "failed"
+        elif action_name =="click and hold":
+            result = Click_and_Hold_Element(action_step_data)
+            if result == "failed":
+                return "failed"
+        elif action_name =="context click":
+            result = Context_Click_Element(action_step_data)
+            if result == "failed":
+                return "failed"
+        elif action_name =="double click":
+            result = Double_Click_Element(action_step_data)
+            if result == "failed":
+                return "failed"
+        elif action_name =="move to element":
+            result = Move_To_Element(action_step_data)
+            if result == "failed":
+                return "failed"
         elif action_name == "hover":
             result = Hover_Over_Element(action_step_data)
             if result == "failed":
@@ -382,7 +398,162 @@ def Click_Element(step_data):
         Error_Detail = ((str(exc_type).replace("type ", "Error Type: ")) + ";" +  "Error Message: " + str(exc_obj) +";" + "File Name: " + fname + ";" + "Line: "+ str(exc_tb.tb_lineno))
         CommonUtil.ExecLog(sModuleInfo, "Could not find/click your element.  Error: %s"%(Error_Detail), 3,local_run)
         return "failed"
+    
 
+#Method to click and hold on element; step data passed on by the user
+def Click_and_Hold_Element(step_data):
+    sModuleInfo = inspect.stack()[0][3] + " : " + inspect.getmoduleinfo(__file__).name
+    CommonUtil.ExecLog(sModuleInfo, "Function: Click_and_Hold_Element", 1,local_run)
+    try:
+        if ((len(step_data) != 1) or (1 < len(step_data[0]) >= 5)):
+            CommonUtil.ExecLog(sModuleInfo, "The information in the data-set(s) are incorrect. Please provide accurate data set(s) information.", 3,local_run)
+            return "failed"
+        else:
+            #element_step_data = step_data[0][0:len(step_data[0])-1:1]
+            element_step_data = Get_Element_Step_Data(step_data)            
+            returned_step_data_list = Validate_Step_Data(element_step_data) 
+            if ((returned_step_data_list == []) or (returned_step_data_list == "failed")):
+                return "failed"
+            else:
+                try:
+                    Element = Get_Element(returned_step_data_list[0], returned_step_data_list[1], returned_step_data_list[2], returned_step_data_list[3], returned_step_data_list[4])
+                    click_and_hold = ActionChains(sBrowser).click_and_hold(Element)
+                    click_and_hold.perform()
+                    CommonUtil.TakeScreenShot(sModuleInfo, local_run)
+                    CommonUtil.ExecLog(sModuleInfo, "Successfully clicked and held the element with given parameters and values", 1,local_run)
+                    return "passed"
+                except Exception, e:
+                    element_attributes = Element.get_attribute('outerHTML')
+                    CommonUtil.ExecLog(sModuleInfo, "Element Attributes: %s"%(element_attributes),3,local_run)
+                    exc_type, exc_obj, exc_tb = sys.exc_info()        
+                    fname = os.path.split(exc_tb.tb_frame.f_code.co_filename)[1]
+                    Error_Detail = ((str(exc_type).replace("type ", "Error Type: ")) + ";" +  "Error Message: " + str(exc_obj) +";" + "File Name: " + fname + ";" + "Line: "+ str(exc_tb.tb_lineno))
+                    CommonUtil.ExecLog(sModuleInfo, "Could not click and hold your element.  Error: %s"%(Error_Detail), 3,local_run)
+                    return "failed"
+
+    except Exception, e:
+        exc_type, exc_obj, exc_tb = sys.exc_info()        
+        fname = os.path.split(exc_tb.tb_frame.f_code.co_filename)[1]
+        Error_Detail = ((str(exc_type).replace("type ", "Error Type: ")) + ";" +  "Error Message: " + str(exc_obj) +";" + "File Name: " + fname + ";" + "Line: "+ str(exc_tb.tb_lineno))
+        CommonUtil.ExecLog(sModuleInfo, "Could not find/click your element.  Error: %s"%(Error_Detail), 3,local_run)
+        return "failed"
+
+
+#Method to right click on element; step data passed on by the user
+def Context_Click_Element(step_data):
+    sModuleInfo = inspect.stack()[0][3] + " : " + inspect.getmoduleinfo(__file__).name
+    CommonUtil.ExecLog(sModuleInfo, "Function: Context_Click_Element", 1,local_run)
+    try:
+        if ((len(step_data) != 1) or (1 < len(step_data[0]) >= 5)):
+            CommonUtil.ExecLog(sModuleInfo, "The information in the data-set(s) are incorrect. Please provide accurate data set(s) information.", 3,local_run)
+            return "failed"
+        else:
+            #element_step_data = step_data[0][0:len(step_data[0])-1:1]
+            element_step_data = Get_Element_Step_Data(step_data)            
+            returned_step_data_list = Validate_Step_Data(element_step_data) 
+            if ((returned_step_data_list == []) or (returned_step_data_list == "failed")):
+                return "failed"
+            else:
+                try:
+                    Element = Get_Element(returned_step_data_list[0], returned_step_data_list[1], returned_step_data_list[2], returned_step_data_list[3], returned_step_data_list[4])
+                    context_click = ActionChains(sBrowser).context_click(Element)
+                    context_click.perform()
+                    CommonUtil.TakeScreenShot(sModuleInfo, local_run)
+                    CommonUtil.ExecLog(sModuleInfo, "Successfully right clicked the element with given parameters and values", 1,local_run)
+                    return "passed"
+                except Exception, e:
+                    element_attributes = Element.get_attribute('outerHTML')
+                    CommonUtil.ExecLog(sModuleInfo, "Element Attributes: %s"%(element_attributes),3,local_run)
+                    exc_type, exc_obj, exc_tb = sys.exc_info()        
+                    fname = os.path.split(exc_tb.tb_frame.f_code.co_filename)[1]
+                    Error_Detail = ((str(exc_type).replace("type ", "Error Type: ")) + ";" +  "Error Message: " + str(exc_obj) +";" + "File Name: " + fname + ";" + "Line: "+ str(exc_tb.tb_lineno))
+                    CommonUtil.ExecLog(sModuleInfo, "Could not right click your element.  Error: %s"%(Error_Detail), 3,local_run)
+                    return "failed"
+
+    except Exception, e:
+        exc_type, exc_obj, exc_tb = sys.exc_info()        
+        fname = os.path.split(exc_tb.tb_frame.f_code.co_filename)[1]
+        Error_Detail = ((str(exc_type).replace("type ", "Error Type: ")) + ";" +  "Error Message: " + str(exc_obj) +";" + "File Name: " + fname + ";" + "Line: "+ str(exc_tb.tb_lineno))
+        CommonUtil.ExecLog(sModuleInfo, "Could not find/click your element.  Error: %s"%(Error_Detail), 3,local_run)
+        return "failed"
+
+
+#Method to double click on element; step data passed on by the user
+def Double_Click_Element(step_data):
+    sModuleInfo = inspect.stack()[0][3] + " : " + inspect.getmoduleinfo(__file__).name
+    CommonUtil.ExecLog(sModuleInfo, "Function: Double_Click_Element", 1,local_run)
+    try:
+        if ((len(step_data) != 1) or (1 < len(step_data[0]) >= 5)):
+            CommonUtil.ExecLog(sModuleInfo, "The information in the data-set(s) are incorrect. Please provide accurate data set(s) information.", 3,local_run)
+            return "failed"
+        else:
+            #element_step_data = step_data[0][0:len(step_data[0])-1:1]
+            element_step_data = Get_Element_Step_Data(step_data)            
+            returned_step_data_list = Validate_Step_Data(element_step_data) 
+            if ((returned_step_data_list == []) or (returned_step_data_list == "failed")):
+                return "failed"
+            else:
+                try:
+                    Element = Get_Element(returned_step_data_list[0], returned_step_data_list[1], returned_step_data_list[2], returned_step_data_list[3], returned_step_data_list[4])
+                    double_click = ActionChains(sBrowser).double_click(Element)
+                    double_click.perform()
+                    CommonUtil.TakeScreenShot(sModuleInfo, local_run)
+                    CommonUtil.ExecLog(sModuleInfo, "Successfully double clicked the element with given parameters and values", 1,local_run)
+                    return "passed"
+                except Exception, e:
+                    element_attributes = Element.get_attribute('outerHTML')
+                    CommonUtil.ExecLog(sModuleInfo, "Element Attributes: %s"%(element_attributes),3,local_run)
+                    exc_type, exc_obj, exc_tb = sys.exc_info()        
+                    fname = os.path.split(exc_tb.tb_frame.f_code.co_filename)[1]
+                    Error_Detail = ((str(exc_type).replace("type ", "Error Type: ")) + ";" +  "Error Message: " + str(exc_obj) +";" + "File Name: " + fname + ";" + "Line: "+ str(exc_tb.tb_lineno))
+                    CommonUtil.ExecLog(sModuleInfo, "Could not double click your element.  Error: %s"%(Error_Detail), 3,local_run)
+                    return "failed"
+
+    except Exception, e:
+        exc_type, exc_obj, exc_tb = sys.exc_info()        
+        fname = os.path.split(exc_tb.tb_frame.f_code.co_filename)[1]
+        Error_Detail = ((str(exc_type).replace("type ", "Error Type: ")) + ";" +  "Error Message: " + str(exc_obj) +";" + "File Name: " + fname + ";" + "Line: "+ str(exc_tb.tb_lineno))
+        CommonUtil.ExecLog(sModuleInfo, "Could not find/click your element.  Error: %s"%(Error_Detail), 3,local_run)
+        return "failed"
+    
+
+#Method to move to middle of the element; step data passed on by the user
+def Move_To_Element(step_data):
+    sModuleInfo = inspect.stack()[0][3] + " : " + inspect.getmoduleinfo(__file__).name
+    CommonUtil.ExecLog(sModuleInfo, "Function: Move_To_Element", 1,local_run)
+    try:
+        if ((len(step_data) != 1) or (1 < len(step_data[0]) >= 5)):
+            CommonUtil.ExecLog(sModuleInfo, "The information in the data-set(s) are incorrect. Please provide accurate data set(s) information.", 3,local_run)
+            return "failed"
+        else:
+            #element_step_data = step_data[0][0:len(step_data[0])-1:1]
+            element_step_data = Get_Element_Step_Data(step_data)
+            returned_step_data_list = Validate_Step_Data(element_step_data) 
+            if ((returned_step_data_list == []) or (returned_step_data_list == "failed")):
+                return "failed"
+            else:
+                try:
+                    Element = Get_Element(returned_step_data_list[0], returned_step_data_list[1], returned_step_data_list[2], returned_step_data_list[3], returned_step_data_list[4])
+                    move = ActionChains(sBrowser).move_to_element(Element).perform()
+                    CommonUtil.TakeScreenShot(sModuleInfo, local_run)
+                    CommonUtil.ExecLog(sModuleInfo, "Successfully moved to the middle of the element with given parameters and values", 1,local_run)
+                    return "passed"
+                except Exception, e:
+                    element_attributes = Element.get_attribute('outerHTML')
+                    CommonUtil.ExecLog(sModuleInfo, "Element Attributes: %s"%(element_attributes),3,local_run)
+                    exc_type, exc_obj, exc_tb = sys.exc_info()        
+                    fname = os.path.split(exc_tb.tb_frame.f_code.co_filename)[1]
+                    Error_Detail = ((str(exc_type).replace("type ", "Error Type: ")) + ";" +  "Error Message: " + str(exc_obj) +";" + "File Name: " + fname + ";" + "Line: "+ str(exc_tb.tb_lineno))
+                    CommonUtil.ExecLog(sModuleInfo, "Could not move to your element your element.  Error: %s"%(Error_Detail), 3,local_run)
+                    return "failed"
+
+    except Exception, e:
+        exc_type, exc_obj, exc_tb = sys.exc_info()        
+        fname = os.path.split(exc_tb.tb_frame.f_code.co_filename)[1]
+        Error_Detail = ((str(exc_type).replace("type ", "Error Type: ")) + ";" +  "Error Message: " + str(exc_obj) +";" + "File Name: " + fname + ";" + "Line: "+ str(exc_tb.tb_lineno))
+        CommonUtil.ExecLog(sModuleInfo, "Could not find/hover over your element.  Error: %s"%(Error_Detail), 3,local_run)
+        return "failed"
+    
 
 #Method to hover over element; step data passed on by the user
 def Hover_Over_Element(step_data):
