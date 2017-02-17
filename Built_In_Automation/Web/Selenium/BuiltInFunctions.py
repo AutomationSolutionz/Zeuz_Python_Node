@@ -1384,6 +1384,8 @@ def Get_All_Elements(parameter,value,parent=False):
                 All_Elements = WebDriverWait(sBrowser, WebDriver_Wait).until(EC.presence_of_all_elements_located((By.CSS_SELECTOR, '%s'%(value))))    
             elif parameter == "xpath":
                 All_Elements = WebDriverWait(sBrowser, WebDriver_Wait).until(EC.presence_of_all_elements_located((By.XPATH, '%s'%(value))))
+            elif (parameter == "partial_plain_text" or parameter == "plain_text"):
+                All_Elements = Get_Plain_Text_Element(parameter, value)
             else:
                 All_Elements = WebDriverWait(sBrowser, WebDriver_Wait).until(EC.presence_of_all_elements_located((By.XPATH, "//*[@%s='%s']"%(parameter,value))))
         else:
@@ -1858,6 +1860,59 @@ def Tear_Down():
         print "%s"%Error_Detail
         CommonUtil.ExecLog(sModuleInfo, "Error: %s" % Error_Detail, 3, local_run)
         return "failed"
+
+
+##@Riz and @Sreejoy: More work is needed here. Please investigate further.
+def Get_Plain_Text_Element(element_parameter, element_value, parent=False):
+    sModuleInfo = inspect.stack()[0][3] + " : " + inspect.getmoduleinfo(__file__).name
+    CommonUtil.ExecLog(sModuleInfo, "Function: Get_Plain_Text_Element", 1, local_run)
+    try:
+        if parent==False:
+            all_elements_with_text = sBrowser.find_elements_by_xpath(".//*")
+        else:
+            all_elements_with_text = parent.find_elements_by_xpath(".//*")
+        
+        #Sequential logical flow    
+        if element_parameter == "plain_text":
+            index = 0 
+            full_list = []
+            for each in all_elements_with_text:
+                text_to_print = None
+                try:
+                    text_to_print = each.text
+                except:
+                    False
+                if text_to_print == element_value:
+                    full_list.append(each)
+                    break     
+                index = index +1 
+            return_element = full_list[len(full_list) - 1]
+        
+        elif element_parameter == "partial_plain_text":
+            index = 0 
+            full_list = []
+            for each in all_elements_with_text:
+                text_to_print = None
+                try:
+                    text_to_print = each.text
+                except:
+                    False
+                if element_value in text_to_print:
+                    full_list.append(each)
+                    break     
+                index = index +1 
+            return_element = full_list[len(full_list) - 1]
+            
+        else:
+            CommonUtil.ExecLog(sModuleInfo, "Incorrect element parameter entered, please check the value.", 3, local_run)
+            return "failed"
+        
+        return return_element
+            
+    except Exception, e:
+        errMsg = "Could not get the element by plain text search"
+        Exception_Info(sModuleInfo, errMsg)
+
 
 
 def get_driver():
