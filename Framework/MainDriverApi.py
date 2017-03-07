@@ -1,4 +1,4 @@
-import inspect,os,time,sys,urllib2,Queue,importlib,requests
+import inspect,os,time,sys,urllib2,Queue,importlib,requests, threading
 from datetime import datetime
 from Utilities import ConfigModule,FileUtilities as FL,CommonUtil,RequestFormatter
 top_path=os.path.dirname(os.getcwd())
@@ -242,7 +242,41 @@ def main():
                         step_name = step_name.lower().replace(' ', '_')
                         functionTocall = getattr(module_name, step_name)
                         simple_queue=Queue.Queue()
-                        sStepResult = functionTocall(final_dependency,final_run_params,test_steps_data, file_specific_steps, simple_queue)
+
+                        if ConfigModule.get_config_value('RunDefinition', 'Threading') in passed_tag_list:
+                            stepThread = threading.Thread(target=functionTocall, args=(final_dependency,final_run_params,test_steps_data, file_specific_steps, simple_queue))
+                            CommonUtil.ExecLog(sModuleInfo, "Starting Test Step Thread..",1)
+                            stepThread.start()
+                            # Wait for the Thread to finish or until timeout
+                            CommonUtil.ExecLog(sModuleInfo, "Waiting for Test Step Thread to finish..for (seconds) :%d"%step_time, 1)
+                            stepThread.join(float(step_time))
+                            try:
+                                sStepResult = simple_queue.get_nowait()
+                                # Get the return value from the ExecuteTestStep
+                                # fn via Queue
+                                q.put(sStepResult)
+                                CommonUtil.ExecLog(sModuleInfo, "Test Step Thread Ended..", 1)
+                            except Queue.Empty:
+                                # Global.DefaultTestStepTimeout
+                                CommonUtil.ExecLog(sModuleInfo, "Test Step didn't return after %d seconds"%step_time, 3)
+                                sStepResult = "Failed"
+                                q.put(sStepResult)
+                                # Clean up
+                                if stepThread.isAlive():
+                                    CommonUtil.ExecLog(sModuleInfo, "Timeout Error", 3)
+                                    # stepThread.__stop()
+                                    try:
+                                        stepThread._Thread__stop()
+                                        while stepThread.isAlive():
+                                            time.sleep(1)
+                                            CommonUtil.ExecLog(sModuleInfo, "Thread is still alive", 3)
+                                            print
+                                    except:
+                                        CommonUtil.ExecLog(sModuleInfo, "Thread could not be terminated", 3)
+
+                        else:
+                            sStepResult = functionTocall(final_dependency,final_run_params,test_steps_data, file_specific_steps, simple_queue)
+
                         if sStepResult in passed_tag_list:
                             sStepResult = 'PASSED'
                         elif sStepResult in failed_tag_list:
