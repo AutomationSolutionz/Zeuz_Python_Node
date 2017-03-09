@@ -9,9 +9,6 @@ import inspect
 from Utilities import CommonUtil
 from Projects.ITSolutionsInc import ITSolutionsInc as ITS
 
-#if local_run is True, no logging will be recorded to the web server.  Only local print will be displayed
-#local_run = True
-local_run = False
 
 
 def select_gear_menu(dependency,run_params,step_data,file_attachment,temp_q):
@@ -26,7 +23,7 @@ def select_gear_menu(dependency,run_params,step_data,file_attachment,temp_q):
         exc_type, exc_obj, exc_tb = sys.exc_info()
         fname = os.path.split(exc_tb.tb_frame.f_code.co_filename)[1]
         Error_Detail = ((str(exc_type).replace("type ", "Error Type: ")) + ";" +  "Error Message: " + str(exc_obj) +";" + "File Name: " + fname + ";" + "Line: "+ str(exc_tb.tb_lineno))
-        CommonUtil.ExecLog(sModuleInfo, "Unable to go to webpage: Error:%s" %( Error_Detail), 3,local_run)
+        CommonUtil.ExecLog(sModuleInfo, "Unable to go to webpage: Error:%s" %( Error_Detail), 3)
         temp_q.put("Failed")
         return "failed"
 
@@ -42,7 +39,7 @@ def delete_sub_site(dependency,run_params,step_data,file_attachment,temp_q):
         exc_type, exc_obj, exc_tb = sys.exc_info()
         fname = os.path.split(exc_tb.tb_frame.f_code.co_filename)[1]
         Error_Detail = ((str(exc_type).replace("type ", "Error Type: ")) + ";" +  "Error Message: " + str(exc_obj) +";" + "File Name: " + fname + ";" + "Line: "+ str(exc_tb.tb_lineno))
-        CommonUtil.ExecLog(sModuleInfo, "Unable to go to webpage: Error:%s" %( Error_Detail), 3,local_run)
+        CommonUtil.ExecLog(sModuleInfo, "Unable to go to webpage: Error:%s" %( Error_Detail), 3)
         temp_q.put("Failed")
         return "failed"
 
@@ -61,6 +58,6 @@ def create_new_subsite(dependency,run_params,step_data,file_attachment,temp_q):
         exc_type, exc_obj, exc_tb = sys.exc_info()
         fname = os.path.split(exc_tb.tb_frame.f_code.co_filename)[1]
         Error_Detail = ((str(exc_type).replace("type ", "Error Type: ")) + ";" +  "Error Message: " + str(exc_obj) +";" + "File Name: " + fname + ";" + "Line: "+ str(exc_tb.tb_lineno))
-        CommonUtil.ExecLog(sModuleInfo, "Unable to go to webpage: Error:%s" %( Error_Detail), 3,local_run)
+        CommonUtil.ExecLog(sModuleInfo, "Unable to go to webpage: Error:%s" %( Error_Detail), 3)
         temp_q.put("Failed")
         return "failed"

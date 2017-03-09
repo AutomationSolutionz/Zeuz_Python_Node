@@ -7,19 +7,16 @@ from Built_In_Automation.Web.Selenium import BuiltInFunctions
 
 sys.path.append("..")
 
-#if local_run is True, no logging will be recorded to the web server.  Only local print will be displayed
-#local_run = True
-local_run = False
 
 
 # Basic API Helper methods. Currently supporting GET and POST calls
 ## Need to add more functionality later
 def rest_API_Helper(rest_call_type,url,headers=False,payload_type=False,body=False, extraction_fields=False):
     sModuleInfo = inspect.stack()[0][3] + " : " + inspect.getmoduleinfo(__file__).name
-    CommonUtil.ExecLog(sModuleInfo, "Function: rest_API_Helper", 1,local_run)
+    CommonUtil.ExecLog(sModuleInfo, "Function: rest_API_Helper", 1)
     try:
         if ((rest_call_type == "") or (url == "")):
-                CommonUtil.ExecLog(sModuleInfo, "Please enter a valid REST call type and a valid URL!", 3,local_run)
+                CommonUtil.ExecLog(sModuleInfo, "Please enter a valid REST call type and a valid URL!", 3)
                 return "failed"
         else:                     
             #For GET calls
@@ -61,14 +58,14 @@ def rest_API_Helper(rest_call_type,url,headers=False,payload_type=False,body=Fal
             
             #If response is successful (i.e. code 200)
             if response.status_code == 200:
-                CommonUtil.ExecLog(sModuleInfo, "Successful REST request. Status Code: %s"%response.status_code, 1,local_run)
+                CommonUtil.ExecLog(sModuleInfo, "Successful REST request. Status Code: %s"%response.status_code, 1)
                 if payload_type == "json":
                     return response.json()
                 else:
                     validation_result = _response_Validation(payload_type, response, extraction_fields) 
                     return validation_result
             else:
-                CommonUtil.ExecLog(sModuleInfo, "Error in REST request. Status Code: %s"%response.status_code, 3,local_run)
+                CommonUtil.ExecLog(sModuleInfo, "Error in REST request. Status Code: %s"%response.status_code, 3)
                 
     except Exception, e:
         errMsg = "rest_API_Helper not successful in returning data. Please check the data entered."
@@ -79,7 +76,7 @@ def rest_API_Helper(rest_call_type,url,headers=False,payload_type=False,body=Fal
 ## Will be improved upon in the future 
 def _response_Validation(payload_type, response, extraction_data=False):
     sModuleInfo = inspect.stack()[0][3] + " : " + inspect.getmoduleinfo(__file__).name
-    CommonUtil.ExecLog(sModuleInfo, "Function: _response_Validation", 1,local_run)
+    CommonUtil.ExecLog(sModuleInfo, "Function: _response_Validation", 1)
     try:
 #         extraction_fields = extraction_data.split(',')
         
@@ -101,10 +98,10 @@ def _response_Validation(payload_type, response, extraction_data=False):
         
         #For payload body type: json
         elif payload_type == "json":
-            CommonUtil.ExecLog(sModuleInfo, "Specific validation not provided. Will need to be implemented in the future.", 2,local_run)
+            CommonUtil.ExecLog(sModuleInfo, "Specific validation not provided. Will need to be implemented in the future.", 2)
             results=response.json()
             return results            
-            #CommonUtil.ExecLog(sModuleInfo, "Validation not yet implemented. Failing validation step.", 2,local_run)  
+            #CommonUtil.ExecLog(sModuleInfo, "Validation not yet implemented. Failing validation step.", 2)  
             #return "failed"
             
     except Exception, e:
@@ -116,5 +113,5 @@ def Exception_Info(sModuleInfo, errMsg):
     exc_type, exc_obj, exc_tb = sys.exc_info()
     fname = os.path.split(exc_tb.tb_frame.f_code.co_filename)[1]
     Error_Detail = ((str(exc_type).replace("type ", "Error Type: ")) + ";" +  "Error Message: " + str(exc_obj) +";" + "File Name: " + fname + ";" + "Line: "+ str(exc_tb.tb_lineno))
-    CommonUtil.ExecLog(sModuleInfo, errMsg + ".  Error: %s"%(Error_Detail), 3,local_run)
+    CommonUtil.ExecLog(sModuleInfo, errMsg + ".  Error: %s"%(Error_Detail), 3)
     return "failed"    

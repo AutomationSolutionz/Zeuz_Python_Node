@@ -420,25 +420,29 @@ def main():
 
             # Zip the folder
             # removing duplicates line from here.
-            current_log_file = os.path.join(ConfigModule.get_config_value('sectionOne', 'log_folder', temp_ini_file),'temp.log')
-            temp_log_file = os.path.join(ConfigModule.get_config_value('sectionOne', 'log_folder', temp_ini_file),test_case + '.log')
-            lines_seen = set()
-            outfile = open(temp_log_file, 'w')
-            for line in open(current_log_file, 'r'):
-                if line not in lines_seen:
-                    outfile.write(line)
-                    lines_seen.add(line)
-            outfile.close()
-            FL.DeleteFile(current_log_file)
-            # FL.RenameFile(ConfigModule.get_config_value('sectionOne','log_folder'), 'temp.log',TCID+'.log')
-            TCLogFile = FL.ZipFolder(ConfigModule.get_config_value('sectionOne', 'test_case_folder', temp_ini_file),ConfigModule.get_config_value('sectionOne', 'test_case_folder',temp_ini_file) + ".zip")
-            # Delete the folder
-            FL.DeleteFolder(ConfigModule.get_config_value('sectionOne', 'test_case_folder', temp_ini_file))
+            local_run_settings = ConfigModule.get_config_value('RunDefinition', 'local_run')
+            if local_run_settings == False or local_run_settings=='False':
+                current_log_file = os.path.join(ConfigModule.get_config_value('sectionOne', 'log_folder', temp_ini_file),'temp.log')
+                temp_log_file = os.path.join(ConfigModule.get_config_value('sectionOne', 'log_folder', temp_ini_file),test_case + '.log')
+                lines_seen = set()
+                outfile = open(temp_log_file, 'w')
+                for line in open(current_log_file, 'r'):
+                    if line not in lines_seen:
+                        outfile.write(line)
+                        lines_seen.add(line)
+                outfile.close()
+                FL.DeleteFile(current_log_file)
+                # FL.RenameFile(ConfigModule.get_config_value('sectionOne','log_folder'), 'temp.log',TCID+'.log')
+                TCLogFile = FL.ZipFolder(ConfigModule.get_config_value('sectionOne', 'test_case_folder', temp_ini_file),ConfigModule.get_config_value('sectionOne', 'test_case_folder',temp_ini_file) + ".zip")
+                # Delete the folder
+                FL.DeleteFolder(ConfigModule.get_config_value('sectionOne', 'test_case_folder', temp_ini_file))
 
-            # upload will go here.
-            upload_zip(ConfigModule.get_config_value('Server', 'server_address'),ConfigModule.get_config_value('Server', 'server_port'),ConfigModule.get_config_value('sectionOne', 'temp_run_file_path', temp_ini_file), run_id,ConfigModule.get_config_value('sectionOne', 'test_case', temp_ini_file) + ".zip",ConfigModule.get_config_value('Temp', '_file_upload_path'))
-            TCLogFile = os.sep + ConfigModule.get_config_value('Temp', '_file_upload_path') + os.sep + run_id.replace(":", '-') + '/' + ConfigModule.get_config_value('sectionOne', 'test_case',temp_ini_file) + '.zip'
-            FL.DeleteFile(ConfigModule.get_config_value('sectionOne', 'test_case_folder', temp_ini_file) + '.zip')
+                # upload will go here.
+                upload_zip(ConfigModule.get_config_value('Server', 'server_address'),ConfigModule.get_config_value('Server', 'server_port'),ConfigModule.get_config_value('sectionOne', 'temp_run_file_path', temp_ini_file), run_id,ConfigModule.get_config_value('sectionOne', 'test_case', temp_ini_file) + ".zip",ConfigModule.get_config_value('Temp', '_file_upload_path'))
+                TCLogFile = os.sep + ConfigModule.get_config_value('Temp', '_file_upload_path') + os.sep + run_id.replace(":", '-') + '/' + ConfigModule.get_config_value('sectionOne', 'test_case',temp_ini_file) + '.zip'
+                FL.DeleteFile(ConfigModule.get_config_value('sectionOne', 'test_case_folder', temp_ini_file) + '.zip')
+            else:
+                TCLogFile = ''
 
             test_case_after_dict = {
                 'status': sTestCaseStatus,

@@ -30,30 +30,26 @@ WebDriver_Wait = 20
 global WebDriver_Wait_Short
 WebDriver_Wait_Short = 10
 
-#if local_run is True, no logging will be recorded to the web server.  Only local print will be displayed
-local_run = True
-#local_run = False
-
 
 
 def Item_Search(search_text):
     sModuleInfo = inspect.stack()[0][3] + " : " + inspect.getmoduleinfo(__file__).name
     try:
-        CommonUtil.ExecLog(sModuleInfo, "Trying locate search menu", 1,local_run)
+        CommonUtil.ExecLog(sModuleInfo, "Trying locate search menu", 1)
         result= BuiltInFunctions.Get_Double_Matching_Elements('aria-label', 'Search', 'placeholder', 'Search')
 #        Get_Element_With_Reference('aria-label',item_text,'ispopup', '1',"parent")
         if result != "failed":
             result.click()
-            CommonUtil.ExecLog(sModuleInfo, "Clicked your element", 1,local_run)            
+            CommonUtil.ExecLog(sModuleInfo, "Clicked your element", 1)            
             return "passed"
         else:
-            CommonUtil.ExecLog(sModuleInfo, "Failed to clicked your element", 3,local_run)            
+            CommonUtil.ExecLog(sModuleInfo, "Failed to clicked your element", 3)            
             return "failed"
         
     except Exception, e:
         exc_type, exc_obj, exc_tb = sys.exc_info()        
         fname = os.path.split(exc_tb.tb_frame.f_code.co_filename)[1]
         Error_Detail = ((str(exc_type).replace("type ", "Error Type: ")) + ";" +  "Error Message: " + str(exc_obj) +";" + "File Name: " + fname + ";" + "Line: "+ str(exc_tb.tb_lineno))
-        CommonUtil.ExecLog(sModuleInfo, "Could not locate search bar menu item: %s.  Error: %s"%(search_text, Error_Detail), 3,local_run)
+        CommonUtil.ExecLog(sModuleInfo, "Could not locate search bar menu item: %s.  Error: %s"%(search_text, Error_Detail), 3)
         return "failed"
 

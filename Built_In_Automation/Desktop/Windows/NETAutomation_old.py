@@ -24,9 +24,7 @@ import autoit
 
 global recur_count
 recur_count = 0 
-#if local_run is True, no logging will be recorded to the web server.  Only local print will be displayed
-#local_run = True
-local_run = False
+
 
 
 

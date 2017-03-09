@@ -8,9 +8,6 @@ import os,sys
 import inspect
 from Utilities import CommonUtil
 from Built_In_Automation.Web.Selenium import BuiltInFunctions as Selenium_Built_In
-#if local_run is True, no logging will be recorded to the web server.  Only local print will be displayed
-local_run = False
-#local_run = False
 
 import sys
 import os
@@ -18,10 +15,6 @@ import requests
 sys.path.append("..")
 
 from Utilities import CommonUtil
-
-
-#local_run = True
-local_run = False
 
 class AuthorizationData:
 
@@ -133,20 +126,20 @@ def Data_By_GET_Method(url):
 
         Data = requests.get(url)
         if(Data.status_code == 200):
-            CommonUtil.ExecLog(sModuleInfo, "Received Proper Data your link: %s" % url, 1, local_run)
+            CommonUtil.ExecLog(sModuleInfo, "Received Proper Data your link: %s" % url, 1)
             return "passed"
         else:
-            CommonUtil.ExecLog(sModuleInfo, "Received Wrong Data your link: %s" % url, 1, local_run)
+            CommonUtil.ExecLog(sModuleInfo, "Received Wrong Data your link: %s" % url, 1)
             return "failed"
 
     except Exception, e:
-        CommonUtil.ExecLog(sModuleInfo, "Exception :%s" % e, 3, local_run)
+        CommonUtil.ExecLog(sModuleInfo, "Exception :%s" % e, 3)
         exc_type, exc_obj, exc_tb = sys.exc_info()
         fname = os.path.split(exc_tb.tb_frame.f_code.co_filename)[1]
         Error_Detail = ((str(exc_type).replace("type ", "Error Type: ")) + ";" + "Error Message: " + str(
             exc_obj) + ";" + "File Name: " + fname + ";" + "Line: " + str(exc_tb.tb_lineno))
-        CommonUtil.ExecLog(sModuleInfo, "Received Wrong Data your link: %s. Error:%s" % (url, Error_Detail), 3, local_run)
-        CommonUtil.TakeScreenShot(sModuleInfo, local_run)
+        CommonUtil.ExecLog(sModuleInfo, "Received Wrong Data your link: %s. Error:%s" % (url, Error_Detail), 3)
+        CommonUtil.TakeScreenShot(sModuleInfo)
         return "failed"
 
 def Data_By_POST_Method(url,param,statuscode):
@@ -157,18 +150,18 @@ def Data_By_POST_Method(url,param,statuscode):
 
         Data = requests.post(url, param)
         if(statuscode == Data.status_code):
-            CommonUtil.ExecLog(sModuleInfo, "Received Proper Data your link: %s" % url, 1, local_run)
+            CommonUtil.ExecLog(sModuleInfo, "Received Proper Data your link: %s" % url, 1)
             return "passed"
         else:
-            CommonUtil.ExecLog(sModuleInfo, "Received Wrong Data your link: %s" % url, 1, local_run)
+            CommonUtil.ExecLog(sModuleInfo, "Received Wrong Data your link: %s" % url, 1)
             return "failed"
 
     except Exception, e:
-        CommonUtil.ExecLog(sModuleInfo, "Exception :%s" % e, 3, local_run)
+        CommonUtil.ExecLog(sModuleInfo, "Exception :%s" % e, 3)
         exc_type, exc_obj, exc_tb = sys.exc_info()
         fname = os.path.split(exc_tb.tb_frame.f_code.co_filename)[1]
         Error_Detail = ((str(exc_type).replace("type ", "Error Type: ")) + ";" + "Error Message: " + str(
             exc_obj) + ";" + "File Name: " + fname + ";" + "Line: " + str(exc_tb.tb_lineno))
-        CommonUtil.ExecLog(sModuleInfo, "Received Wrong Data your link: %s. Error:%s" % (url, Error_Detail), 3, local_run)
-        CommonUtil.TakeScreenShot(sModuleInfo, local_run)
+        CommonUtil.ExecLog(sModuleInfo, "Received Wrong Data your link: %s. Error:%s" % (url, Error_Detail), 3)
+        CommonUtil.TakeScreenShot(sModuleInfo)
         return "failed"

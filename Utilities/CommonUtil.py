@@ -69,7 +69,8 @@ def Add_File_To_Current_Test_Case_Log(src):
 
 def ExecLog(sModuleInfo, sDetails, iLogLevel=1, local_run=False, sStatus=""):
     try:
-        if local_run == False:
+        local_run = ConfigModule.get_config_value('RunDefinition','local_run')
+        if local_run == False or local_run == 'False':
             print sModuleInfo, ":", sDetails
             log_id=ConfigModule.get_config_value('sectionOne','sTestStepExecLogId',temp_config)
             FWLogFile = ConfigModule.get_config_value('sectionOne','log_folder',temp_config)
@@ -144,11 +145,12 @@ def TakeScreenShot(ImageName,local_run=False):
     #TakeScreenShot("TestStepName")
     """
     #file Name don't contain \/?*"<>|
+    local_run = ConfigModule.get_config_value('RunDefinition', 'local_run')
     chars_to_remove=["?","*","\"","<",">","|","\\","\/",":"]
     ImageName=(ImageName.translate(None,''.join(chars_to_remove))).replace(" ","_").strip()
     print ImageName
     try:
-        if local_run == False:
+        if local_run == False or local_run == 'False':
             image_folder=ConfigModule.get_config_value('sectionOne','screen_capture_folder',temp_config)
             #ImageFolder = Global.TCLogFolder + os.sep + "Screenshots"
             ImageFolder=image_folder

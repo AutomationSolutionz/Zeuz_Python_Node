@@ -4,9 +4,7 @@ import inspect
 from Utilities import CommonUtil
 from Projects.DigiFlare import AndroidDemo_script
 
-#if local_run is True, no logging will be recorded to the web server.  Only local print will be displayed
-#local_run = True
-local_run = False
+
 
 
 def open_app(dependency,run_time_params,step_data,file_attachment,temp_q):
@@ -22,7 +20,7 @@ def open_app(dependency,run_time_params,step_data,file_attachment,temp_q):
         exc_type, exc_obj, exc_tb = sys.exc_info()
         fname = os.path.split(exc_tb.tb_frame.f_code.co_filename)[1]
         Error_Detail = ((str(exc_type).replace("type ", "Error Type: ")) + ";" +  "Error Message: " + str(exc_obj) +";" + "File Name: " + fname + ";" + "Line: "+ str(exc_tb.tb_lineno))
-        CommonUtil.ExecLog(sModuleInfo, "Unable to launch app: Error:%s" %( Error_Detail), 3,local_run)
+        CommonUtil.ExecLog(sModuleInfo, "Unable to launch app: Error:%s" %( Error_Detail), 3)
         temp_q.put("Failed")
         return "failed"
     
@@ -37,7 +35,7 @@ def confirm_right_menu_items(dependency,run_time_params,step_data,file_attachmen
         exc_type, exc_obj, exc_tb = sys.exc_info()
         fname = os.path.split(exc_tb.tb_frame.f_code.co_filename)[1]
         Error_Detail = ((str(exc_type).replace("type ", "Error Type: ")) + ";" +  "Error Message: " + str(exc_obj) +";" + "File Name: " + fname + ";" + "Line: "+ str(exc_tb.tb_lineno))
-        CommonUtil.ExecLog(sModuleInfo, "Unable to confirm right menu options: Error:%s" %( Error_Detail), 3,local_run)
+        CommonUtil.ExecLog(sModuleInfo, "Unable to confirm right menu options: Error:%s" %( Error_Detail), 3)
         temp_q.put("Failed")
         return "failed"
     
@@ -53,7 +51,7 @@ def confirm_left_menu_items(dependency,run_time_params,step_data,file_attachment
         exc_type, exc_obj, exc_tb = sys.exc_info()
         fname = os.path.split(exc_tb.tb_frame.f_code.co_filename)[1]
         Error_Detail = ((str(exc_type).replace("type ", "Error Type: ")) + ";" +  "Error Message: " + str(exc_obj) +";" + "File Name: " + fname + ";" + "Line: "+ str(exc_tb.tb_lineno))
-        CommonUtil.ExecLog(sModuleInfo, "Unable to confirm left menu options: Error:%s" %( Error_Detail), 3,local_run)
+        CommonUtil.ExecLog(sModuleInfo, "Unable to confirm left menu options: Error:%s" %( Error_Detail), 3)
         temp_q.put("Failed")
         return "failed"
 
@@ -70,7 +68,7 @@ def check_sub_menu_exixts(dependency,run_time_params,step_data,file_attachment,t
         exc_type, exc_obj, exc_tb = sys.exc_info()
         fname = os.path.split(exc_tb.tb_frame.f_code.co_filename)[1]
         Error_Detail = ((str(exc_type).replace("type ", "Error Type: ")) + ";" +  "Error Message: " + str(exc_obj) +";" + "File Name: " + fname + ";" + "Line: "+ str(exc_tb.tb_lineno))
-        CommonUtil.ExecLog(sModuleInfo, "Unable to confirm sub menu: Error:%s" %( Error_Detail), 3,local_run)
+        CommonUtil.ExecLog(sModuleInfo, "Unable to confirm sub menu: Error:%s" %( Error_Detail), 3)
         temp_q.put("Failed")
         return "failed"
 
@@ -88,7 +86,7 @@ def confirm_opened_section(dependency,run_time_params,step_data,file_attachment,
         exc_type, exc_obj, exc_tb = sys.exc_info()
         fname = os.path.split(exc_tb.tb_frame.f_code.co_filename)[1]
         Error_Detail = ((str(exc_type).replace("type ", "Error Type: ")) + ";" +  "Error Message: " + str(exc_obj) +";" + "File Name: " + fname + ";" + "Line: "+ str(exc_tb.tb_lineno))
-        CommonUtil.ExecLog(sModuleInfo, "Unable to confirm the section: Error:%s" %( Error_Detail), 3,local_run)
+        CommonUtil.ExecLog(sModuleInfo, "Unable to confirm the section: Error:%s" %( Error_Detail), 3)
         temp_q.put("Failed")
         return "failed"
 
@@ -106,7 +104,7 @@ def confirm_sub_menu_items(dependency,run_time_params,step_data,file_attachment,
         exc_type, exc_obj, exc_tb = sys.exc_info()
         fname = os.path.split(exc_tb.tb_frame.f_code.co_filename)[1]
         Error_Detail = ((str(exc_type).replace("type ", "Error Type: ")) + ";" +  "Error Message: " + str(exc_obj) +";" + "File Name: " + fname + ";" + "Line: "+ str(exc_tb.tb_lineno))
-        CommonUtil.ExecLog(sModuleInfo, "Unable to confirm sub menu options: Error:%s" %( Error_Detail), 3,local_run)
+        CommonUtil.ExecLog(sModuleInfo, "Unable to confirm sub menu options: Error:%s" %( Error_Detail), 3)
         temp_q.put("Failed")
         return "failed"
 
@@ -122,7 +120,7 @@ def confirm_video_player(dependency,run_time_params,step_data,file_attachment,te
         exc_type, exc_obj, exc_tb = sys.exc_info()
         fname = os.path.split(exc_tb.tb_frame.f_code.co_filename)[1]
         Error_Detail = ((str(exc_type).replace("type ", "Error Type: ")) + ";" +  "Error Message: " + str(exc_obj) +";" + "File Name: " + fname + ";" + "Line: "+ str(exc_tb.tb_lineno))
-        CommonUtil.ExecLog(sModuleInfo, "Unable to confirm video player: Error:%s" %( Error_Detail), 3,local_run)
+        CommonUtil.ExecLog(sModuleInfo, "Unable to confirm video player: Error:%s" %( Error_Detail), 3)
         temp_q.put("Failed")
         return "failed"
     
@@ -139,7 +137,7 @@ def go_to_a_left_menu_section(dependency,run_time_params,step_data,file_attachme
         exc_type, exc_obj, exc_tb = sys.exc_info()
         fname = os.path.split(exc_tb.tb_frame.f_code.co_filename)[1]
         Error_Detail = ((str(exc_type).replace("type ", "Error Type: ")) + ";" +  "Error Message: " + str(exc_obj) +";" + "File Name: " + fname + ";" + "Line: "+ str(exc_tb.tb_lineno))
-        CommonUtil.ExecLog(sModuleInfo, "Unable to go to left menu section: %s: Error:%s" %(section_name, Error_Detail), 3,local_run)
+        CommonUtil.ExecLog(sModuleInfo, "Unable to go to left menu section: %s: Error:%s" %(section_name, Error_Detail), 3)
         temp_q.put("Failed")
         return "failed"
     
@@ -155,7 +153,7 @@ def go_to_a_sub_menu_section(dependency,run_time_params,step_data,file_attachmen
         exc_type, exc_obj, exc_tb = sys.exc_info()
         fname = os.path.split(exc_tb.tb_frame.f_code.co_filename)[1]
         Error_Detail = ((str(exc_type).replace("type ", "Error Type: ")) + ";" +  "Error Message: " + str(exc_obj) +";" + "File Name: " + fname + ";" + "Line: "+ str(exc_tb.tb_lineno))
-        CommonUtil.ExecLog(sModuleInfo, "Unable to go to left sub-menu section: %s: Error:%s" %(section_name, Error_Detail), 3,local_run)
+        CommonUtil.ExecLog(sModuleInfo, "Unable to go to left sub-menu section: %s: Error:%s" %(section_name, Error_Detail), 3)
         temp_q.put("Failed")
         return "failed"
 
@@ -170,7 +168,7 @@ def close_app(dependency,run_time_params,step_data,file_attachment,temp_q):
         exc_type, exc_obj, exc_tb = sys.exc_info()
         fname = os.path.split(exc_tb.tb_frame.f_code.co_filename)[1]
         Error_Detail = ((str(exc_type).replace("type ", "Error Type: ")) + ";" +  "Error Message: " + str(exc_obj) +";" + "File Name: " + fname + ";" + "Line: "+ str(exc_tb.tb_lineno))
-        CommonUtil.ExecLog(sModuleInfo, "Unable to close app: Error:%s" %( Error_Detail), 3,local_run)
+        CommonUtil.ExecLog(sModuleInfo, "Unable to close app: Error:%s" %( Error_Detail), 3)
         temp_q.put("Failed")
         return "failed"
     

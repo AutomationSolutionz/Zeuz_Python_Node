@@ -5,9 +5,7 @@ from Built_In_Automation.Web.Selenium import _locateInteraction
 from Built_In_Automation.Web.Selenium import _clickInteraction
 from Utilities import CompareModule
 from Built_In_Automation.Web.Selenium import BuiltInFunctions as bf
-#if local_run is True, no logging will be recorded to the web server.  Only local print will be displayed
-local_run = False
-#local_run = False
+
 
 
 def selectCar(first_data_set):
@@ -24,20 +22,20 @@ def selectCar(first_data_set):
             car_data.append(Dict)
         print car_data
         if select_base_car(car_data[0]):
-            CommonUtil.ExecLog(sModuleInfo,"Selected the first car successfully",1,local_run)
+            CommonUtil.ExecLog(sModuleInfo,"Selected the first car successfully",1)
             select_car(car_data[1],1)
             select_car(car_data[2],2)
             select_car(car_data[3],3)
             return "passed"
         else:
-            CommonUtil.ExecLog(sModuleInfo,"Can't select the first car",1,local_run)
+            CommonUtil.ExecLog(sModuleInfo,"Can't select the first car",1)
             return "failed"
         
     except Exception, e:
         exc_type, exc_obj, exc_tb = sys.exc_info()
         fname = os.path.split(exc_tb.tb_frame.f_code.co_filename)[1]
         Error_Detail = ((str(exc_type).replace("type ", "Error Type: ")) + ";" +  "Error Message: " + str(exc_obj) +";" + "File Name: " + fname + ";" + "Line: "+ str(exc_tb.tb_lineno))
-        CommonUtil.ExecLog(sModuleInfo, "Unable to select car. %s"%Error_Detail, 3,local_run)
+        CommonUtil.ExecLog(sModuleInfo, "Unable to select car. %s"%Error_Detail, 3)
         return "failed"
     
 def select_car_base(first_data_set):
@@ -60,7 +58,7 @@ def select_car_base(first_data_set):
         exc_type, exc_obj, exc_tb = sys.exc_info()
         fname = os.path.split(exc_tb.tb_frame.f_code.co_filename)[1]
         Error_Detail = ((str(exc_type).replace("type ", "Error Type: ")) + ";" +  "Error Message: " + str(exc_obj) +";" + "File Name: " + fname + ";" + "Line: "+ str(exc_tb.tb_lineno))
-        CommonUtil.ExecLog(sModuleInfo, "Unable to select car. %s"%Error_Detail, 3,local_run)
+        CommonUtil.ExecLog(sModuleInfo, "Unable to select car. %s"%Error_Detail, 3)
         return "failed"
     
 def data_verify(first_data_set):
@@ -78,7 +76,7 @@ def data_verify(first_data_set):
         exc_type, exc_obj, exc_tb = sys.exc_info()
         fname = os.path.split(exc_tb.tb_frame.f_code.co_filename)[1]
         Error_Detail = ((str(exc_type).replace("type ", "Error Type: ")) + ";" +  "Error Message: " + str(exc_obj) +";" + "File Name: " + fname + ";" + "Line: "+ str(exc_tb.tb_lineno))
-        CommonUtil.ExecLog(sModuleInfo, "Unable to select car. %s"%Error_Detail, 3,local_run)
+        CommonUtil.ExecLog(sModuleInfo, "Unable to select car. %s"%Error_Detail, 3)
         return "failed"
     
 def select_base_car(car_data):
@@ -90,19 +88,19 @@ def select_base_car(car_data):
         Model_drop_down =_locateInteraction.Locate_Element_By_Parameter_Value('role','combobox',parent_element)
         Model_drop_down.click()
         #selecting the model
-        CommonUtil.ExecLog(sModuleInfo,"Selecting car model: %s"%car_data['model'],1,local_run)
+        CommonUtil.ExecLog(sModuleInfo,"Selecting car model: %s"%car_data['model'],1)
         parent_element=_locateInteraction.Locate_Element_By_ID('x-auto-1')
         _clickInteraction.Click_Element_By_Name(car_data['model'],parent_element)
-        CommonUtil.ExecLog(sModuleInfo,"Selected car model: %s"%car_data['model'],1,local_run)
+        CommonUtil.ExecLog(sModuleInfo,"Selected car model: %s"%car_data['model'],1)
         #selecting the year
         parent_element =_locateInteraction.Locate_Element_By_ID('comp-popup-title')
         Model_drop_down =_locateInteraction.Locate_Element_By_Parameter_Value('role','combobox',parent_element,True)
         Model_drop_down[1].click()
-        CommonUtil.ExecLog(sModuleInfo,"Selecting car year: %s"%car_data['year'],1,local_run)
+        CommonUtil.ExecLog(sModuleInfo,"Selecting car year: %s"%car_data['year'],1)
         # parent_element=_locateInteraction.Locate_Element_By_ID('x-auto-4')
         # parent_element.click()
         _clickInteraction.Click_Element_By_Name(car_data['year'],parent_element)
-        CommonUtil.ExecLog(sModuleInfo,"Selected car year: %s"%car_data['year'],1,local_run)
+        CommonUtil.ExecLog(sModuleInfo,"Selected car year: %s"%car_data['year'],1)
         #selecting the version
         panel_drop_down =_locateInteraction.Locate_Element_By_Parameter_Value('class','pnl-trim')
         table_object=_locateInteraction.Locate_Element_By_Tag('table',panel_drop_down,)
@@ -114,7 +112,7 @@ def select_base_car(car_data):
         exc_type, exc_obj, exc_tb = sys.exc_info()
         fname = os.path.split(exc_tb.tb_frame.f_code.co_filename)[1]
         Error_Detail = ((str(exc_type).replace("type ", "Error Type: ")) + ";" +  "Error Message: " + str(exc_obj) +";" + "File Name: " + fname + ";" + "Line: "+ str(exc_tb.tb_lineno))
-        CommonUtil.ExecLog(sModuleInfo, "Unable to click on the element. %s"%Error_Detail, 3,local_run)
+        CommonUtil.ExecLog(sModuleInfo, "Unable to click on the element. %s"%Error_Detail, 3)
         return False
 
 def select_car(car_data,index):
@@ -137,55 +135,55 @@ def select_car(car_data,index):
                 desired_input.click()
                 all_tds=_locateInteraction.Locate_All_Children(e)
                 if not all_tds:
-                    CommonUtil.ExecLog(sModuleInfo,"Found not child elements in row",3,local_run)
+                    CommonUtil.ExecLog(sModuleInfo,"Found not child elements in row",3)
                     return False
                 all_divs=_locateInteraction.Locate_Element_By_TAG_Under_Specific_Element('div',all_tds[1],True)
                 if not all_divs:
-                    CommonUtil.ExecLog(sModuleInfo, "Found not child elements in columns", 3, local_run)
+                    CommonUtil.ExecLog(sModuleInfo, "Found not child elements in columns", 3)
                     return False
                 if _i==0:
                     selected_data=car_data['year']
                     time.sleep(1)
-                    CommonUtil.ExecLog(sModuleInfo,"Going to select the year of car %d"%index,1,local_run)
+                    CommonUtil.ExecLog(sModuleInfo,"Going to select the year of car %d"%index,1)
                 elif _i==1:
                     selected_data=car_data['make']
                     time.sleep(1)
-                    CommonUtil.ExecLog(sModuleInfo, "Going to select the make of car %d" % index, 1, local_run)
+                    CommonUtil.ExecLog(sModuleInfo, "Going to select the make of car %d" % index, 1)
                 elif _i==2:
                     selected_data=car_data['model']
                     time.sleep(1)
-                    CommonUtil.ExecLog(sModuleInfo, "Going to select the model of car %d" % index, 1, local_run)
+                    CommonUtil.ExecLog(sModuleInfo, "Going to select the model of car %d" % index, 1)
                 elif _i==3:
                     selected_data=car_data['trim']
                     time.sleep(5)
-                    CommonUtil.ExecLog(sModuleInfo, "Going to select the trim of car %d" % index, 1, local_run)
+                    CommonUtil.ExecLog(sModuleInfo, "Going to select the trim of car %d" % index, 1)
                 else:
                     selected_data=''
-                    CommonUtil.ExecLog(sModuleInfo, "Nothing to select for car %d" % index, 1, local_run)
+                    CommonUtil.ExecLog(sModuleInfo, "Nothing to select for car %d" % index, 1)
 
                 if _i in [0,1,2,3]:
                     _clickInteraction.Click_Element_By_Name(selected_data,all_divs[1])
                     time.sleep(3)
                 if _i==0:
-                    CommonUtil.ExecLog(sModuleInfo, "Selected the year of car %d, %s" %(index,selected_data), 1, local_run)
+                    CommonUtil.ExecLog(sModuleInfo, "Selected the year of car %d, %s" %(index,selected_data), 1)
                 elif _i==1:
-                    CommonUtil.ExecLog(sModuleInfo, "Selected the make of car %d, %s" % (index, selected_data), 1,local_run)
+                    CommonUtil.ExecLog(sModuleInfo, "Selected the make of car %d, %s" % (index, selected_data), 1)
                 elif _i==2:
-                    CommonUtil.ExecLog(sModuleInfo, "Selected the model of car %d, %s" % (index, selected_data), 1,local_run)
+                    CommonUtil.ExecLog(sModuleInfo, "Selected the model of car %d, %s" % (index, selected_data), 1)
                 elif _i==3:
-                    CommonUtil.ExecLog(sModuleInfo, "Selected the trim of car %d, %s" % (index, selected_data), 1,local_run)
+                    CommonUtil.ExecLog(sModuleInfo, "Selected the trim of car %d, %s" % (index, selected_data), 1)
                 else:
-                    CommonUtil.ExecLog(sModuleInfo, "Nothing was selected of car %d, %s" % (index, selected_data), 1,local_run)
+                    CommonUtil.ExecLog(sModuleInfo, "Nothing was selected of car %d, %s" % (index, selected_data), 1)
             return True
         else:
-            CommonUtil.ExecLog(sModuleInfo, "Vehicle Selection Popup was not there", 1, local_run)
+            CommonUtil.ExecLog(sModuleInfo, "Vehicle Selection Popup was not there", 1)
             return False
 
     except Exception, e:
         exc_type, exc_obj, exc_tb = sys.exc_info()
         fname = os.path.split(exc_tb.tb_frame.f_code.co_filename)[1]
         Error_Detail = ((str(exc_type).replace("type ", "Error Type: ")) + ";" +  "Error Message: " + str(exc_obj) +";" + "File Name: " + fname + ";" + "Line: "+ str(exc_tb.tb_lineno))
-        CommonUtil.ExecLog(sModuleInfo, "Unable to click on the element. %s"%Error_Detail, 3,local_run)
+        CommonUtil.ExecLog(sModuleInfo, "Unable to click on the element. %s"%Error_Detail, 3)
         return False
 
 def read_data_from_page(tag_list):
@@ -223,7 +221,7 @@ def read_data_from_page(tag_list):
         exc_type, exc_obj, exc_tb = sys.exc_info()
         fname = os.path.split(exc_tb.tb_frame.f_code.co_filename)[1]
         Error_Detail = ((str(exc_type).replace("type ", "Error Type: ")) + ";" +  "Error Message: " + str(exc_obj) +";" + "File Name: " + fname + ";" + "Line: "+ str(exc_tb.tb_lineno))
-        CommonUtil.ExecLog(sModuleInfo, "Unable to read the data. %s"%Error_Detail, 3,local_run)
+        CommonUtil.ExecLog(sModuleInfo, "Unable to read the data. %s"%Error_Detail, 3)
         return False
 
 def lock_unlock_car(car_num,mode=False):
@@ -231,43 +229,43 @@ def lock_unlock_car(car_num,mode=False):
     try:
         car_lock_button='lock-button-'+str(car_num-1)
         lockButton= bf.Get_Element('id', car_lock_button)
-        CommonUtil.ExecLog(sModuleInfo,"Lock button located",1,local_run)
+        CommonUtil.ExecLog(sModuleInfo,"Lock button located",1)
         if mode:
             #will be locked.so check for that locked is not present in there.
             if 'locked' not in lockButton.get_attribute('class'):
-                CommonUtil.ExecLog(sModuleInfo,"Lock Button unlocked",1,local_run)
+                CommonUtil.ExecLog(sModuleInfo,"Lock Button unlocked",1)
                 lockButton.click()
-                CommonUtil.ExecLog(sModuleInfo,"Lock Button clicked",1,local_run)
+                CommonUtil.ExecLog(sModuleInfo,"Lock Button clicked",1)
                 lockButton=_locateInteraction.Locate_Element_By_ID(car_lock_button)
                 if 'locked' in lockButton.get_attribute('class'):
-                    CommonUtil.ExecLog(sModuleInfo,'Lock Button locked successfully',1,local_run)
+                    CommonUtil.ExecLog(sModuleInfo,'Lock Button locked successfully',1)
                     return True
                 else:
-                    CommonUtil.ExecLog(sModuleInfo,'Lock Button is not locked',3,local_run)
+                    CommonUtil.ExecLog(sModuleInfo,'Lock Button is not locked',3)
                     return False
             else:
-                CommonUtil.ExecLog(sModuleInfo,"Lock Button locked already",1,local_run)
+                CommonUtil.ExecLog(sModuleInfo,"Lock Button locked already",1)
                 return True
         else:
             if 'locked' not in lockButton.get_attribute('class'):
-                CommonUtil.ExecLog(sModuleInfo,"Lock Button unlocked already",1,local_run)
+                CommonUtil.ExecLog(sModuleInfo,"Lock Button unlocked already",1)
                 return True
             else:
-                CommonUtil.ExecLog(sModuleInfo,"Lock Button locked",1,local_run)
+                CommonUtil.ExecLog(sModuleInfo,"Lock Button locked",1)
                 lockButton.click()
-                CommonUtil.ExecLog(sModuleInfo,"Lock Button clicked",1,local_run)
+                CommonUtil.ExecLog(sModuleInfo,"Lock Button clicked",1)
                 lockButton=_locateInteraction.Locate_Element_By_ID(car_lock_button)
                 if 'locked' not  in lockButton.get_attribute('class'):
-                    CommonUtil.ExecLog(sModuleInfo,'Lock Button unlocked successfully',1,local_run)
+                    CommonUtil.ExecLog(sModuleInfo,'Lock Button unlocked successfully',1)
                     return True
                 else:
-                    CommonUtil.ExecLog(sModuleInfo,'Lock Button is still locked',3,local_run)
+                    CommonUtil.ExecLog(sModuleInfo,'Lock Button is still locked',3)
                     return False
     except Exception, e:
         exc_type, exc_obj, exc_tb = sys.exc_info()
         fname = os.path.split(exc_tb.tb_frame.f_code.co_filename)[1]
         Error_Detail = ((str(exc_type).replace("type ", "Error Type: ")) + ";" +  "Error Message: " + str(exc_obj) +";" + "File Name: " + fname + ";" + "Line: "+ str(exc_tb.tb_lineno))
-        CommonUtil.ExecLog(sModuleInfo, "Unable to unlock. %s"%Error_Detail, 3,local_run)
+        CommonUtil.ExecLog(sModuleInfo, "Unable to unlock. %s"%Error_Detail, 3)
         return False
 
 def open_detail_pop_up(tag_to_click,description_to_match):
@@ -278,22 +276,22 @@ def open_detail_pop_up(tag_to_click,description_to_match):
         all_tds=_locateInteraction.Locate_Element_By_Tag('td',table_ref,multiple=True)
         desired_td=filter(lambda x:'hasFeature' in x.get_attribute('class') and x.text==tag_to_click,all_tds)
         if desired_td:
-            CommonUtil.ExecLog(sModuleInfo,"Clickable feature found with text: %s"%(tag_to_click),1,local_run)
+            CommonUtil.ExecLog(sModuleInfo,"Clickable feature found with text: %s"%(tag_to_click),1)
             #_clickInteraction.scrollTo(0,desired_td[0].location['y'])
             desired_td[0].click()
-            CommonUtil.ExecLog(sModuleInfo,"Clicked feature found with text: %s"%(tag_to_click),1,local_run)
+            CommonUtil.ExecLog(sModuleInfo,"Clicked feature found with text: %s"%(tag_to_click),1)
             #get the desired data
             description_tab=_locateInteraction.Locate_Element_By_ID('compare-ptip-features-description')
             data_set=[('tag',tag_to_click,False,False),('description',description_tab.text,False,False)]
             return data_set
         else:
-            CommonUtil.ExecLog(sModuleInfo,"No column is found with this criteria",3,local_run)
+            CommonUtil.ExecLog(sModuleInfo,"No column is found with this criteria",3)
             return False
     except Exception, e:
         exc_type, exc_obj, exc_tb = sys.exc_info()
         fname = os.path.split(exc_tb.tb_frame.f_code.co_filename)[1]
         Error_Detail = ((str(exc_type).replace("type ", "Error Type: ")) + ";" +  "Error Message: " + str(exc_obj) +";" + "File Name: " + fname + ";" + "Line: "+ str(exc_tb.tb_lineno))
-        CommonUtil.ExecLog(sModuleInfo, "Unable to open detail popup. %s"%Error_Detail, 3,local_run)
+        CommonUtil.ExecLog(sModuleInfo, "Unable to open detail popup. %s"%Error_Detail, 3)
         return False
 
 def check_nissan_adv_tag(tag_given):
@@ -308,20 +306,20 @@ def check_nissan_adv_tag(tag_given):
             if all_trs:
                 nissan_tag=filter(lambda x: 'col2aAdv' in x.get_attribute('class'),all_trs)
                 if nissan_tag:
-                    CommonUtil.ExecLog(sModuleInfo,"Nissan advantage tag is found for: %s"%tag_given,1,local_run)
+                    CommonUtil.ExecLog(sModuleInfo,"Nissan advantage tag is found for: %s"%tag_given,1)
                     return True
                 else:
-                    CommonUtil.ExecLog(sModuleInfo,"Nissan advantage tag is not found for: %s"%tag_given,1,local_run)
+                    CommonUtil.ExecLog(sModuleInfo,"Nissan advantage tag is not found for: %s"%tag_given,1)
                     return False
             else:
-                CommonUtil.ExecLog(sModuleInfo,"No column is found under the given tag: %s"%tag_given,3,local_run)
+                CommonUtil.ExecLog(sModuleInfo,"No column is found under the given tag: %s"%tag_given,3)
                 return False
         else:
-            CommonUtil.ExecLog(sModuleInfo,"No row is found with the given tag: %s"%tag_given,3,local_run)
+            CommonUtil.ExecLog(sModuleInfo,"No row is found with the given tag: %s"%tag_given,3)
             return False
     except Exception, e:
         exc_type, exc_obj, exc_tb = sys.exc_info()
         fname = os.path.split(exc_tb.tb_frame.f_code.co_filename)[1]
         Error_Detail = ((str(exc_type).replace("type ", "Error Type: ")) + ";" +  "Error Message: " + str(exc_obj) +";" + "File Name: " + fname + ";" + "Line: "+ str(exc_tb.tb_lineno))
-        CommonUtil.ExecLog(sModuleInfo, "Unable to locate nissan tag on the element. %s"%Error_Detail, 3,local_run)
+        CommonUtil.ExecLog(sModuleInfo, "Unable to locate nissan tag on the element. %s"%Error_Detail, 3)
         return False
