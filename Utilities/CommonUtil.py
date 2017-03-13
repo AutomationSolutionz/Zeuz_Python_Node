@@ -1,5 +1,6 @@
 # -*- coding: utf-8 -*-
 import sys
+import inspect
 from ConfigParser import NoOptionError,NoSectionError
 import os, psutil
 import DataBaseUtilities as DB
@@ -65,7 +66,29 @@ def Add_File_To_Current_Test_Case_Log(src):
         print Error_Detail
         return False
 
-
+def Result_Analyzer(sTestStepReturnStatus,temp_q):
+    sModuleInfo = inspect.stack()[0][3] + " : " + inspect.getmoduleinfo(__file__).name
+    passed_tag_list=['Pass','pass','PASS','PASSED','Passed','passed','true','TRUE','True',True,1,'1','Success','success','SUCCESS']
+    failed_tag_list=['Fail','fail','FAIL','Failed','failed','FAILED','false','False','FALSE',False,0,'0']
+    try:
+        if sTestStepReturnStatus in passed_tag_list:
+            temp_q.put("passed")
+            return "passed"
+        elif sTestStepReturnStatus in failed_tag_list:
+            temp_q.put("failed")
+            return "failed"
+        else:
+            ExecLog(sModuleInfo,"Step return type unknown: %s" %(sTestStepReturnStatus),3)
+            temp_q.put("failed")
+            return "failed"
+    
+    except Exception, e:
+        exc_type, exc_obj, exc_tb = sys.exc_info()
+        fname = os.path.split(exc_tb.tb_frame.f_code.co_filename)[1]
+        Error_Detail = ((str(exc_type).replace("type ", "Error Type: ")) + ";" +  "Error Message: " + str(exc_obj) +";" + "File Name: " + fname + ";" + "Line: "+ str(exc_tb.tb_lineno))
+        ExecLog(sModuleInfo, "Step results was not recognized:%s" %( Error_Detail), 3)
+        temp_q.put("failed")
+        return "failed"
 
 def ExecLog(sModuleInfo, sDetails, iLogLevel=1, local_run=False, sStatus=""):
     try:

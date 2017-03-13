@@ -44,9 +44,20 @@ WebDriver_Wait_Short = 10
 global sBrowser
 sBrowser = None
 
-def Open_Browser(browser):
+def Open_Browser(dependency):
     global sBrowser
     sModuleInfo = inspect.stack()[0][3] + " : " + inspect.getmoduleinfo(__file__).name
+    
+    try:
+        browser=dependency['Browser']
+    except Exception, e:
+        exc_type, exc_obj, exc_tb = sys.exc_info()
+        fname = os.path.split(exc_tb.tb_frame.f_code.co_filename)[1]
+        Error_Detail = ((str(exc_type).replace("type ", "Error Type: ")) + ";" +  "Error Message: " + str(exc_obj) +";" + "File Name: " + fname + ";" + "Line: "+ str(exc_tb.tb_lineno))
+        CommonUtil.ExecLog(sModuleInfo, "Dependency not set for browser. Please set the Apply Filter value to YES. Error: %s" %( Error_Detail), 3)
+        return "failed"
+
+    
     try:
         sBrowser.close()
     except:
@@ -113,14 +124,16 @@ def Open_Browser(browser):
         CommonUtil.ExecLog(sModuleInfo, "Unable to start WebDriver. %s"%Error_Detail, 3)
         return "failed"
 
-def Go_To_Link(link, page_title=False):
+def Go_To_Link(step_data, page_title=False):
     #this function needs work with validating page title.  We need to check if user entered any title.
     #if not then we don't do the validation
     sModuleInfo = inspect.stack()[0][3] + " : " + inspect.getmoduleinfo(__file__).name
     try:
-        sBrowser.get(link)
+        first_data_set=step_data[0]
+        web_link=first_data_set[0][2]
+        sBrowser.get(web_link)
         sBrowser.implicitly_wait(WebDriver_Wait)
-        CommonUtil.ExecLog(sModuleInfo, "Successfully opened your link: %s" % link, 1)
+        CommonUtil.ExecLog(sModuleInfo, "Successfully opened your link: %s" % web_link, 1)
         CommonUtil.TakeScreenShot(sModuleInfo)
 #         if page_title != False:
 #             assert page_title in sBrowser.title
@@ -131,7 +144,7 @@ def Go_To_Link(link, page_title=False):
         exc_type, exc_obj, exc_tb = sys.exc_info()        
         fname = os.path.split(exc_tb.tb_frame.f_code.co_filename)[1]
         Error_Detail = ((str(exc_type).replace("type ", "Error Type: ")) + ";" +  "Error Message: " + str(exc_obj) +";" + "File Name: " + fname + ";" + "Line: "+ str(exc_tb.tb_lineno))
-        CommonUtil.ExecLog(sModuleInfo, "failed to open your link: %s. Error:%s" %(link, Error_Detail), 3)
+        CommonUtil.ExecLog(sModuleInfo, "failed to open your link: %s. Error:%s" %(web_link, Error_Detail), 3)
         CommonUtil.TakeScreenShot(sModuleInfo)
         return "failed"
 
