@@ -129,8 +129,8 @@ def Go_To_Link(step_data, page_title=False):
     #if not then we don't do the validation
     sModuleInfo = inspect.stack()[0][3] + " : " + inspect.getmoduleinfo(__file__).name
     try:
-        first_data_set=step_data[0]
-        web_link=first_data_set[0][2]
+ 
+        web_link=step_data[0][0][2]
         sBrowser.get(web_link)
         sBrowser.implicitly_wait(WebDriver_Wait)
         CommonUtil.ExecLog(sModuleInfo, "Successfully opened your link: %s" % web_link, 1)
