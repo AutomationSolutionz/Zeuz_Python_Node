@@ -93,7 +93,7 @@ def Open_Browser(dependency):
                         firefox_path =  path[1]
                         binary = FirefoxBinary(firefox_path)
                         break
-            sBrowser = webdriver.Firefox(firefox_binary=binary)
+            sBrowser = webdriver.Firefox()
             sBrowser.implicitly_wait(WebDriver_Wait)
             sBrowser.maximize_window()
             CommonUtil.ExecLog(sModuleInfo, "Started Firefox Browser", 1)
