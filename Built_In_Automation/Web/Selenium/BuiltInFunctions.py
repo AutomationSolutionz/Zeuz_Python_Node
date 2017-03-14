@@ -69,6 +69,7 @@ def Open_Browser(dependency):
             from selenium.webdriver.chrome.options import Options
             options = Options()
             options.add_argument("--no-sandbox")
+            options.add_argument("--disable-extensions")
             sBrowser = webdriver.Chrome(chrome_options = options)
             sBrowser.implicitly_wait(WebDriver_Wait)
             sBrowser.maximize_window()
