@@ -65,11 +65,17 @@ def Open_Browser(dependency):
     try:
         browser = browser.lower()
         if "chrome" in browser:
-            sBrowser = webdriver.Chrome()
+
+            from selenium.webdriver.chrome.options import Options
+            options = Options()
+            options.add_argument("--no-sandbox")
+            sBrowser = webdriver.Chrome(chrome_options = options)
             sBrowser.implicitly_wait(WebDriver_Wait)
             sBrowser.maximize_window()
             CommonUtil.ExecLog(sModuleInfo, "Started Chrome Browser", 1)
             return "passed"
+        
+        
         elif browser == 'firefox':
             from sys import platform as _platform
             if _platform == "linux" or _platform == "linux2":
