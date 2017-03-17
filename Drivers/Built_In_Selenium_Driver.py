@@ -484,7 +484,7 @@ def tear_down_selenium(dependency,run_time_params,step_data,file_attachment,temp
     sModuleInfo = inspect.stack()[0][3] + " : " + inspect.getmoduleinfo(__file__).name
     try:
         CommonUtil.ExecLog(sModuleInfo,"Enter: Step - Tear Down Selenium",1)
-        sTestStepReturnStatus=Selenium_Built_In.Tear_Down()
+        sTestStepReturnStatus=Selenium_Built_In.Tear_Down_Selenium()
         return CommonUtil.Result_Analyzer(sTestStepReturnStatus,temp_q)
 
 #         if sTestStepReturnStatus in passed_tag_list:
