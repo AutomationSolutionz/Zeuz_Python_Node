@@ -66,6 +66,31 @@ def Add_File_To_Current_Test_Case_Log(src):
         print Error_Detail
         return False
 
+def Exception_Handler(exec_info, temp_q=None):
+
+    try:
+        sModuleInfo_Local = inspect.stack()[0][3] + " : " + inspect.getmoduleinfo(__file__).name
+        exc_type, exc_obj, exc_tb = exec_info
+        Error_Type = (str(exc_type).replace("type ", "")).replace("<", "").replace(">", "").replace(";", ":")
+        Error_Message = str(exc_obj)
+        File_Name = os.path.split(exc_tb.tb_frame.f_code.co_filename)[1]
+        Function_Name = os.path.split(exc_tb.tb_frame.f_code.co_name)[1]
+        Line_Number = str(exc_tb.tb_lineno)
+        Error_Detail = "Error Type ~ %s: Error Message ~ %s: File Name ~ %s: Function Name ~ %s: Line ~ %s"%(Error_Type, Error_Message, File_Name, Function_Name,Line_Number)
+        sModuleInfo = Function_Name + ":" +File_Name
+        ExecLog(sModuleInfo, "Following exception occurred: %s" %( Error_Detail), 3)
+        if temp_q != None:
+            temp_q.put("failed")
+        return "failed"
+
+    except Exception:
+        exc_type_local, exc_obj_local, exc_tb_local = sys.exc_info()
+        fname_local = os.path.split(exc_tb.tb_frame.f_code.co_filename)[1]
+        Error_Detail_Local = ((str(exc_type_local).replace("type ", "Error Type: ")) + ";" +  "Error Message: " + str(exc_obj_local) +";" + "File Name: " + fname_local + ";" + "Line: "+ str(exc_tb_local.tb_lineno))
+        ExecLog(sModuleInfo_Local, "Following exception occurred: %s" %( Error_Detail_Local), 3)
+        return "failed"  
+
+
 def Result_Analyzer(sTestStepReturnStatus,temp_q):
     sModuleInfo = inspect.stack()[0][3] + " : " + inspect.getmoduleinfo(__file__).name
     passed_tag_list=['Pass','pass','PASS','PASSED','Passed','passed','true','TRUE','True',True,1,'1','Success','success','SUCCESS']
@@ -93,6 +118,11 @@ def Result_Analyzer(sTestStepReturnStatus,temp_q):
 def ExecLog(sModuleInfo, sDetails, iLogLevel=1, local_run=False, sStatus=""):
     try:
         local_run = ConfigModule.get_config_value('RunDefinition','local_run')
+        # ";" is not supported for logging.  So replacing them
+        sDetails = sDetails.replace(";", ":")
+        sDetails = sDetails.replace("=", "~")
+        
+        
         if local_run == False or local_run == 'False':
             print sModuleInfo, ":", sDetails
             log_id=ConfigModule.get_config_value('sectionOne','sTestStepExecLogId',temp_config)
@@ -438,3 +468,5 @@ class MachineInfo():
             print "Exception: ", e
             print "Unable to set create a Node key.  Please check class MachineInfo() in commonutil"
             return False
+
+
