@@ -1860,7 +1860,7 @@ def Scroll_StandAlone(scroll_direction):
 '===================== ===x=== Stand-alone Action Section Ends ===x=== ======================'
 
 
-def Tear_Down():
+def Tear_Down_Selenium():
     sModuleInfo = inspect.stack()[0][3] + " : " + inspect.getmoduleinfo(__file__).name
     try:
         CommonUtil.ExecLog(sModuleInfo, "Trying to tear down the page and close the browser...", 1)
