@@ -191,7 +191,13 @@ def main():
             TestStepsList=RequestFormatter.Get('test_step_fetch_for_test_case_run_id_api',{'run_id':run_id,'test_case':test_case})
             Stepscount=len(TestStepsList)
             sTestStepResultList = []
+            already_failed = False
             while StepSeq <= Stepscount:
+                if already_failed == True:
+                    always_run = TestStepsList[StepSeq - 1][9]
+                    if always_run != True:
+                        StepSeq += 1
+                        continue
                 current_step_name=TestStepsList[StepSeq - 1][1]
                 current_step_id=TestStepsList[StepSeq-1][0]
                 current_step_sequence=TestStepsList[StepSeq-1][2]
@@ -280,11 +286,11 @@ def main():
                         if sStepResult in passed_tag_list:
                             sStepResult = 'PASSED'
                         elif sStepResult in failed_tag_list:
-                            sStepResult = 'FAILED'    
+                            sStepResult = 'FAILED'
                         else:
                             CommonUtil.ExecLog(sModuleInfo, "sStepResult not an acceptable type", 3)
                             CommonUtil.ExecLog(sModuleInfo, "Acceptable pass string(s): %s" %(passed_tag_list), 3)
-                            CommonUtil.ExecLog(sModuleInfo, "Acceptable fail string(s): %s" %(failed_tag_list), 3)                                                        
+                            CommonUtil.ExecLog(sModuleInfo, "Acceptable fail string(s): %s" %(failed_tag_list), 3)
                             sStepResult="FAILED"
                         q.put(sStepResult)
                     else:
@@ -327,7 +333,10 @@ def main():
                     CommonUtil.ExecLog(sModuleInfo, "%s : Test Step Warning" % current_step_name, 2)
                     after_execution_dict.update({'status': WARNING_TAG})
                     if not test_case_continue:
-                        break
+                        already_failed = True
+                        StepSeq += 1
+                        continue
+                        #break
                 elif sStepResult.upper() == NOT_RUN_TAG.upper():
                     # Step has Warning, but continue running next test step for this test case
                     CommonUtil.ExecLog(sModuleInfo, "%s : Test Step Not Run" % current_step_name, 2)
@@ -341,7 +350,10 @@ def main():
                         run_cancelled = RequestFormatter.Get('get_status_of_a_run_api', {'run_id': run_id})
                         if run_cancelled == 'Cancelled':
                             CommonUtil.ExecLog(sModuleInfo,"Test Run status is Cancelled. Exiting the current Test Case...%s" % test_case,2)
-                        break
+                        already_failed = True
+                        StepSeq += 1
+                        continue
+                        #break
                 elif sStepResult.upper() == BLOCKED_TAG.upper():
                     # Step is Blocked, Block the test step and test case. go to next test case
                     CommonUtil.ExecLog(sModuleInfo, "%s : Test Step Blocked" % current_step_name, 3)
