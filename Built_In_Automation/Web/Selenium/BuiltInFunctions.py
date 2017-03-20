@@ -50,13 +50,8 @@ def Open_Browser(dependency):
     try:
         browser=dependency['Browser']
     except Exception:
-        exc_type, exc_obj, exc_tb = sys.exc_info()
-        fname = os.path.split(exc_tb.tb_frame.f_code.co_filename)[1]
-        Error_Detail = ((str(exc_type).replace("type ", "Error Type: ")) + ";" +  "Error Message: " + str(exc_obj) +";" + "File Name: " + fname + ";" + "Line: "+ str(exc_tb.tb_lineno))
-        CommonUtil.ExecLog(sModuleInfo, "Dependency not set for browser. Please set the Apply Filter value to YES. Error: %s" %( Error_Detail), 3)
-        return "failed"
-
-    
+        ErrorMessage =  "Dependency not set for browser. Please set the Apply Filter value to YES."
+        return CommonUtil.Exception_Handler(sys.exc_info(), None, ErrorMessage)    
     try:
         sBrowser.close()
     except:
@@ -142,8 +137,8 @@ def Go_To_Link(step_data, page_title=False):
         #time.sleep(3)
         return "passed"
     except Exception:
-        CommonUtil.ExecLog(sModuleInfo, "failed to open your link: %s" %(web_link), 3)
-        return CommonUtil.Exception_Handler(sys.exc_info())
+        ErrorMessage =  "failed to open your link: %s" %(web_link)
+        return CommonUtil.Exception_Handler(sys.exc_info(), None, ErrorMessage)
 
 
 
