@@ -66,7 +66,7 @@ def Add_File_To_Current_Test_Case_Log(src):
         print Error_Detail
         return False
 
-def Exception_Handler(exec_info, temp_q=None):
+def Exception_Handler(exec_info, temp_q=None,UserMessage=None):
 
     try:
         sModuleInfo_Local = inspect.stack()[0][3] + " : " + inspect.getmoduleinfo(__file__).name
@@ -79,8 +79,12 @@ def Exception_Handler(exec_info, temp_q=None):
         Error_Detail = "Error Type ~ %s: Error Message ~ %s: File Name ~ %s: Function Name ~ %s: Line ~ %s"%(Error_Type, Error_Message, File_Name, Function_Name,Line_Number)
         sModuleInfo = Function_Name + ":" +File_Name
         ExecLog(sModuleInfo, "Following exception occurred: %s" %( Error_Detail), 3)
+        TakeScreenShot(Function_Name+"~"+File_Name)
+        if UserMessage != None:
+                ExecLog(sModuleInfo, "Following error message is custom: %s" %(UserMessage), 3)
         if temp_q != None:
             temp_q.put("failed")
+        
         return "failed"
 
     except Exception:
