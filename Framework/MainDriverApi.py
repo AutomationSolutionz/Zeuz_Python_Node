@@ -246,6 +246,7 @@ def main():
                                 step_name = current_step_name
                             step_name = step_name.lower().replace(' ', '_')
                             try:
+                                #importing functions from driver
                                 functionTocall = getattr(module_name, step_name)
                                 simple_queue = Queue.Queue()
 

@@ -1,0 +1,8 @@
+[ZeuZ Python Version]
+version = 1.3
+
+[Zeuz Server Version]
+version= 2.4
+
+[Release Date]
+date= 2017-03-01
