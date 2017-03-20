@@ -3,7 +3,6 @@ import sys
 import inspect
 from ConfigParser import NoOptionError,NoSectionError
 import os, psutil
-import DataBaseUtilities as DB
 import logging
 from Utilities import ConfigModule
 import datetime
@@ -336,25 +335,6 @@ def TakeScreenShot(ImageName,local_run=False):
     except Exception, e:
         print "Exception : ", e
 
-def FindTestCaseFailedReason(conn, run_id, tc_id):
-    sqlQuery = ("select details from execution_log el, test_step_results tsr"
-                " where el.logid = tsr.logid"
-                " and tsr.run_id = '%s' and tsr.tc_id = '%s' and tsr.status = 'Failed' and el.loglevel = 3" % (run_id, tc_id))
-    DataQuery = DB.GetData(conn, sqlQuery, False)
-    IgnoreKeywordList = ['Test Case', 'Test Step', 'Test Set']
-    Reason = []
-    for eachData in DataQuery:
-        KWFound = False
-        for KW in IgnoreKeywordList:
-            if KW in str(eachData):
-                KWFound = True
-                break
-        if KWFound == False:
-            Reason.append(to_unicode(eachData[0]))
-    print "Failure Reason for Test case: %s - %s" % (tc_id, Reason)
-    ReasonStr = ','.join(Reason)
-    ReasonStr = (ReasonStr[:100] + '..') if len(ReasonStr) > 100 else ReasonStr
-    return ReasonStr
 def TimeStamp(format):
     """
     :param format: name of format ex: string , integer
