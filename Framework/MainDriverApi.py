@@ -122,11 +122,9 @@ def main():
             CommonUtil.ExecLog(sModuleInfo,"Creating Built_In_Automation Log for test case: %s"%test_case,1)
             try:
                 log_file_path = ConfigModule.get_config_value('sectionOne', 'temp_run_file_path', temp_ini_file)
-            except Exception, e:
-                exc_type, exc_obj, exc_tb = sys.exc_info()
-                fname = os.path.split(exc_tb.tb_frame.f_code.co_filename)[1]
-                Error_Detail = ((str(exc_type).replace("type ", "Error Type: ")) + ";" + "Error Message: " + str(exc_obj) + ";" + "File Name: " + fname + ";" + "Line: " + str(exc_tb.tb_lineno))
-                print Error_Detail
+            except Exception:
+                CommonUtil.Exception_Handler(sys.exc_info(),None, "Unable to set Log file path")
+                
             test_case_folder = log_file_path + os.sep + (run_id.replace(':', '-') + os.sep + test_case.replace(":", '-'))
             ConfigModule.add_config_value('sectionOne', 'test_case', test_case, temp_ini_file)
             ConfigModule.add_config_value('sectionOne', 'test_case_folder', test_case_folder, temp_ini_file)
@@ -269,8 +267,8 @@ def main():
                                         CommonUtil.ExecLog(sModuleInfo, "Test Step Thread Ended..", 1)
                                     except Queue.Empty:
                                         # Global.DefaultTestStepTimeout
-                                        CommonUtil.ExecLog(sModuleInfo,
-                                                           "Test Step didn't return after %d seconds" % step_time, 3)
+                                        ErrorMessage ="Test Step didn't return after %d seconds" % step_time
+                                        CommonUtil.Exception_Handler(sys.exc_info(),None, ErrorMessage)
                                         sStepResult = "Failed"
                                         q.put(sStepResult)
                                         # Clean up
@@ -284,16 +282,13 @@ def main():
                                                     CommonUtil.ExecLog(sModuleInfo, "Thread is still alive", 3)
                                                     print
                                             except:
-                                                CommonUtil.ExecLog(sModuleInfo, "Thread could not be terminated", 3)
-
+                                                CommonUtil.Exception_Handler(sys.exc_info(),None,"Thread could not be terminated")
                                 else:
                                     sStepResult = functionTocall(final_dependency, final_run_params, test_steps_data,
                                                                  file_specific_steps, simple_queue)
                             except:
-                                CommonUtil.ExecLog(sModuleInfo, "No Function named '%s' found in Driver '%s' " %(step_name,current_driver), 3)
+                                CommonUtil.Exception_Handler(sys.exc_info(),None, "No Function named '%s' found in Driver '%s' " %(step_name,current_driver))
                                 sStepResult = "Failed"
-
-
 
                             if sStepResult in passed_tag_list:
                                 sStepResult = 'PASSED'
@@ -305,17 +300,14 @@ def main():
                                 CommonUtil.ExecLog(sModuleInfo, "Acceptable fail string(s): %s" %(failed_tag_list), 3)
                                 sStepResult="FAILED"
                             q.put(sStepResult)
-                        except:
-                            CommonUtil.ExecLog(sModuleInfo, "No Driver named '%s' found" %current_driver, 3)
+                        except Exception:
+                            CommonUtil.Exception_Handler(sys.exc_info(),None, "No Driver named '%s' found" %current_driver)
                             sStepResult = "Failed"
                     else:
                         CommonUtil.ExecLog(sModuleInfo, "Driver %s is not found. Execution of test step failed"%current_driver, 3)
                         sStepResult="FAILED"
-                except Exception,e:
-                    exc_type, exc_obj, exc_tb = sys.exc_info()
-                    fname = os.path.split(exc_tb.tb_frame.f_code.co_filename)[1]
-                    Error_Detail = ((str(exc_type).replace("type ", "Error Type: ")) + ";" + "Error Message: " + str(exc_obj) + ";" + "File Name: " + fname + ";" + "Line: " + str(exc_tb.tb_lineno))
-                    CommonUtil.ExecLog(sModuleInfo, "Exception occurred in test step : %s" % Error_Detail, 3)
+                except Exception:
+                    CommonUtil.Exception_Handler(sys.exc_info(),None, "Exception occurred in test step")
                     sStepResult = "Failed"
                 sTestStepEndTime=datetime.fromtimestamp(time.time()).strftime('%Y-%m-%d %H:%M:%S')
                 TestStepEndTime = time.time()
@@ -437,12 +429,9 @@ def main():
             # Find Test case failed reason
             try:
                 FailReason = RequestFormatter.Get('get_failed_reason_test_case_api',{'run_id':run_id,'test_case':test_case})
-            except Exception, e:
-                exc_type, exc_obj, exc_tb = sys.exc_info()
-                fname = os.path.split(exc_tb.tb_frame.f_code.co_filename)[1]
-                Error_Detail = ((str(exc_type).replace("type ", "Error Type: ")) + ";" + "Error Message: " + str(exc_obj) + ";" + "File Name: " + fname + ";" + "Line: " + str(exc_tb.tb_lineno))
-                print Error_Detail
-                print "Unable to find Fail Reason for Test case: ", test_case
+            except Exception:
+                errMessage =  "Unable to find Fail Reason for Test case: %s" %test_case
+                CommonUtil.Exception_Handler(sys.exc_info(),None, errMessage)
                 FailReason = ""
 
             # Zip the folder
