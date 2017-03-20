@@ -191,7 +191,13 @@ def main():
             TestStepsList=RequestFormatter.Get('test_step_fetch_for_test_case_run_id_api',{'run_id':run_id,'test_case':test_case})
             Stepscount=len(TestStepsList)
             sTestStepResultList = []
+            already_failed = False
             while StepSeq <= Stepscount:
+                if already_failed == True:
+                    always_run = TestStepsList[StepSeq - 1][9]
+                    if always_run != True:
+                        StepSeq += 1
+                        continue
                 current_step_name=TestStepsList[StepSeq - 1][1]
                 current_step_id=TestStepsList[StepSeq-1][0]
                 current_step_sequence=TestStepsList[StepSeq-1][2]
@@ -234,61 +240,76 @@ def main():
                     else:
                         current_driver=TestStepsList[StepSeq-1][3]
                     if current_driver in driver_list:
-                        module_name = importlib.import_module(current_driver)
-                        if TestStepsList[StepSeq - 1][8] != None:
-                            step_name = (TestStepsList[StepSeq - 1][7]).strip()
-                        else:
-                            step_name = current_step_name
-                        step_name = step_name.lower().replace(' ', '_')
-                        functionTocall = getattr(module_name, step_name)
-                        simple_queue=Queue.Queue()
-
-                        if ConfigModule.get_config_value('RunDefinition', 'Threading') in passed_tag_list:
-                            stepThread = threading.Thread(target=functionTocall, args=(final_dependency,final_run_params,test_steps_data, file_specific_steps, simple_queue))
-                            CommonUtil.ExecLog(sModuleInfo, "Starting Test Step Thread..",1)
-                            stepThread.start()
-                            # Wait for the Thread to finish or until timeout
-                            CommonUtil.ExecLog(sModuleInfo, "Waiting for Test Step Thread to finish..for (seconds) :%d"%step_time, 1)
-                            stepThread.join(float(step_time))
+                        try:
+                            module_name = importlib.import_module(current_driver)
+                            if TestStepsList[StepSeq - 1][8] != None:
+                                step_name = (TestStepsList[StepSeq - 1][7]).strip()
+                            else:
+                                step_name = current_step_name
+                            step_name = step_name.lower().replace(' ', '_')
                             try:
-                                sStepResult = simple_queue.get_nowait()
-                                # Get the return value from the ExecuteTestStep
-                                # fn via Queue
-                                q.put(sStepResult)
-                                CommonUtil.ExecLog(sModuleInfo, "Test Step Thread Ended..", 1)
-                            except Queue.Empty:
-                                # Global.DefaultTestStepTimeout
-                                CommonUtil.ExecLog(sModuleInfo, "Test Step didn't return after %d seconds"%step_time, 3)
-                                sStepResult = "Failed"
-                                q.put(sStepResult)
-                                # Clean up
-                                if stepThread.isAlive():
-                                    CommonUtil.ExecLog(sModuleInfo, "Timeout Error", 3)
-                                    # stepThread.__stop()
+                                functionTocall = getattr(module_name, step_name)
+                                simple_queue = Queue.Queue()
+
+                                if ConfigModule.get_config_value('RunDefinition', 'Threading') in passed_tag_list:
+                                    stepThread = threading.Thread(target=functionTocall, args=(
+                                    final_dependency, final_run_params, test_steps_data, file_specific_steps, simple_queue))
+                                    CommonUtil.ExecLog(sModuleInfo, "Starting Test Step Thread..", 1)
+                                    stepThread.start()
+                                    # Wait for the Thread to finish or until timeout
+                                    CommonUtil.ExecLog(sModuleInfo,
+                                                       "Waiting for Test Step Thread to finish..for (seconds) :%d" % step_time,
+                                                       1)
+                                    stepThread.join(float(step_time))
                                     try:
-                                        stepThread._Thread__stop()
-                                        while stepThread.isAlive():
-                                            time.sleep(1)
-                                            CommonUtil.ExecLog(sModuleInfo, "Thread is still alive", 3)
-                                            print
-                                    except:
-                                        CommonUtil.ExecLog(sModuleInfo, "Thread could not be terminated", 3)
+                                        sStepResult = simple_queue.get_nowait()
+                                        # Get the return value from the ExecuteTestStep
+                                        # fn via Queue
+                                        q.put(sStepResult)
+                                        CommonUtil.ExecLog(sModuleInfo, "Test Step Thread Ended..", 1)
+                                    except Queue.Empty:
+                                        # Global.DefaultTestStepTimeout
+                                        CommonUtil.ExecLog(sModuleInfo,
+                                                           "Test Step didn't return after %d seconds" % step_time, 3)
+                                        sStepResult = "Failed"
+                                        q.put(sStepResult)
+                                        # Clean up
+                                        if stepThread.isAlive():
+                                            CommonUtil.ExecLog(sModuleInfo, "Timeout Error", 3)
+                                            # stepThread.__stop()
+                                            try:
+                                                stepThread._Thread__stop()
+                                                while stepThread.isAlive():
+                                                    time.sleep(1)
+                                                    CommonUtil.ExecLog(sModuleInfo, "Thread is still alive", 3)
+                                                    print
+                                            except:
+                                                CommonUtil.ExecLog(sModuleInfo, "Thread could not be terminated", 3)
 
-                        else:
-                            sStepResult = functionTocall(final_dependency,final_run_params,test_steps_data, file_specific_steps, simple_queue)
+                                else:
+                                    sStepResult = functionTocall(final_dependency, final_run_params, test_steps_data,
+                                                                 file_specific_steps, simple_queue)
+                            except:
+                                CommonUtil.ExecLog(sModuleInfo, "No Function named '%s' found in Driver '%s' " %(step_name,current_driver), 3)
+                                sStepResult = "Failed"
 
-                        if sStepResult in passed_tag_list:
-                            sStepResult = 'PASSED'
-                        elif sStepResult in failed_tag_list:
-                            sStepResult = 'FAILED'    
-                        else:
-                            CommonUtil.ExecLog(sModuleInfo, "sStepResult not an acceptable type", 3)
-                            CommonUtil.ExecLog(sModuleInfo, "Acceptable pass string(s): %s" %(passed_tag_list), 3)
-                            CommonUtil.ExecLog(sModuleInfo, "Acceptable fail string(s): %s" %(failed_tag_list), 3)                                                        
-                            sStepResult="FAILED"
-                        q.put(sStepResult)
+
+
+                            if sStepResult in passed_tag_list:
+                                sStepResult = 'PASSED'
+                            elif sStepResult in failed_tag_list:
+                                sStepResult = 'FAILED'
+                            else:
+                                CommonUtil.ExecLog(sModuleInfo, "sStepResult not an acceptable type", 3)
+                                CommonUtil.ExecLog(sModuleInfo, "Acceptable pass string(s): %s" %(passed_tag_list), 3)
+                                CommonUtil.ExecLog(sModuleInfo, "Acceptable fail string(s): %s" %(failed_tag_list), 3)
+                                sStepResult="FAILED"
+                            q.put(sStepResult)
+                        except:
+                            CommonUtil.ExecLog(sModuleInfo, "No Driver named '%s' found" %current_driver, 3)
+                            sStepResult = "Failed"
                     else:
-                        CommonUtil.ExecLog(sModuleInfo, "Driver is not enlisted. Execution of test step failed", 3)
+                        CommonUtil.ExecLog(sModuleInfo, "Driver %s is not found. Execution of test step failed"%current_driver, 3)
                         sStepResult="FAILED"
                 except Exception,e:
                     exc_type, exc_obj, exc_tb = sys.exc_info()
@@ -327,7 +348,10 @@ def main():
                     CommonUtil.ExecLog(sModuleInfo, "%s : Test Step Warning" % current_step_name, 2)
                     after_execution_dict.update({'status': WARNING_TAG})
                     if not test_case_continue:
-                        break
+                        already_failed = True
+                        StepSeq += 1
+                        continue
+                        #break
                 elif sStepResult.upper() == NOT_RUN_TAG.upper():
                     # Step has Warning, but continue running next test step for this test case
                     CommonUtil.ExecLog(sModuleInfo, "%s : Test Step Not Run" % current_step_name, 2)
@@ -341,7 +365,10 @@ def main():
                         run_cancelled = RequestFormatter.Get('get_status_of_a_run_api', {'run_id': run_id})
                         if run_cancelled == 'Cancelled':
                             CommonUtil.ExecLog(sModuleInfo,"Test Run status is Cancelled. Exiting the current Test Case...%s" % test_case,2)
-                        break
+                        already_failed = True
+                        StepSeq += 1
+                        continue
+                        #break
                 elif sStepResult.upper() == BLOCKED_TAG.upper():
                     # Step is Blocked, Block the test step and test case. go to next test case
                     CommonUtil.ExecLog(sModuleInfo, "%s : Test Step Blocked" % current_step_name, 3)
