@@ -6,7 +6,7 @@ import os
 import time
 
 sys.path.append(os.path.dirname(os.getcwd()))
-from Projects.Amazon_test import Amazon as amazon
+from Projects.Sample_Amazon_Testing import Amazon as amazon
 
 
 web_link_step = [ [ ( 'web_page' , '' , 'http://amazon.ca' , False , False , '' ) ] ]
