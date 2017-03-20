@@ -1,4 +1,3 @@
-
 # -*- coding: cp1252 -*-
 '''
 Created on May 15, 2016
@@ -50,7 +49,7 @@ def Open_Browser(dependency):
     
     try:
         browser=dependency['Browser']
-    except Exception, e:
+    except Exception:
         exc_type, exc_obj, exc_tb = sys.exc_info()
         fname = os.path.split(exc_tb.tb_frame.f_code.co_filename)[1]
         Error_Detail = ((str(exc_type).replace("type ", "Error Type: ")) + ";" +  "Error Message: " + str(exc_obj) +";" + "File Name: " + fname + ";" + "Line: "+ str(exc_tb.tb_lineno))
@@ -124,12 +123,8 @@ def Open_Browser(dependency):
             CommonUtil.ExecLog(sModuleInfo, "You did not select a valid browser: %s" % browser, 3)
             return "failed"
         #time.sleep(3)
-    except Exception, e:
-        exc_type, exc_obj, exc_tb = sys.exc_info()        
-        fname = os.path.split(exc_tb.tb_frame.f_code.co_filename)[1]
-        Error_Detail = ((str(exc_type).replace("type ", "Error Type: ")) + ";" +  "Error Message: " + str(exc_obj) +";" + "File Name: " + fname + ";" + "Line: "+ str(exc_tb.tb_lineno))
-        CommonUtil.ExecLog(sModuleInfo, "Unable to start WebDriver. %s"%Error_Detail, 3)
-        return "failed"
+    except Exception:
+        return CommonUtil.Exception_Handler(sys.exc_info())
 
 def Go_To_Link(step_data, page_title=False):
     #this function needs work with validating page title.  We need to check if user entered any title.
@@ -146,14 +141,10 @@ def Go_To_Link(step_data, page_title=False):
 #             assert page_title in sBrowser.title
         #time.sleep(3)
         return "passed"
-    except Exception, e:
-        CommonUtil.ExecLog(sModuleInfo, "Exception :%s" % e, 3)
-        exc_type, exc_obj, exc_tb = sys.exc_info()        
-        fname = os.path.split(exc_tb.tb_frame.f_code.co_filename)[1]
-        Error_Detail = ((str(exc_type).replace("type ", "Error Type: ")) + ";" +  "Error Message: " + str(exc_obj) +";" + "File Name: " + fname + ";" + "Line: "+ str(exc_tb.tb_lineno))
-        CommonUtil.ExecLog(sModuleInfo, "failed to open your link: %s. Error:%s" %(web_link, Error_Detail), 3)
-        CommonUtil.TakeScreenShot(sModuleInfo)
-        return "failed"
+    except Exception:
+        CommonUtil.ExecLog(sModuleInfo, "failed to open your link: %s" %(web_link), 3)
+        return CommonUtil.Exception_Handler(sys.exc_info())
+
 
 
 '============================= Sequential Action Section Begins=============================='
@@ -179,12 +170,8 @@ def Get_Element_Step_Data(step_data):
                  
         return element_step_data
     
-    except Exception, e:
-        exc_type, exc_obj, exc_tb = sys.exc_info()        
-        fname = os.path.split(exc_tb.tb_frame.f_code.co_filename)[1]
-        Error_Detail = ((str(exc_type).replace("type ", "Error Type: ")) + ";" +  "Error Message: " + str(exc_obj) +";" + "File Name: " + fname + ";" + "Line: "+ str(exc_tb.tb_lineno))
-        CommonUtil.ExecLog(sModuleInfo, "Could not get element step data.  Error: %s"%(Error_Detail), 3)
-        return "failed"
+    except Exception:
+        return CommonUtil.Exception_Handler(sys.exc_info())
 
 
 #Handles actions for the sequential logic, based on the input from the mentioned function
@@ -252,13 +239,8 @@ def Action_Handler(action_step_data, action_name):
             CommonUtil.ExecLog(sModuleInfo, "The action you entered is incorrect. Please provide accurate information on the data set(s).", 3)
             return "failed" 
         
-    except Exception, e:
-        exc_type, exc_obj, exc_tb = sys.exc_info()
-        fname = os.path.split(exc_tb.tb_frame.f_code.co_filename)[1]
-        Error_Detail = ((str(exc_type).replace("type ", "Error Type: ")) + ";" +  "Error Message: " + str(exc_obj) +";" + "File Name: " + fname + ";" + "Line: "+ str(exc_tb.tb_lineno))
-        print "%s"%Error_Detail
-        return "failed"
-
+    except Exception:
+        return CommonUtil.Exception_Handler(sys.exc_info())
 
 #Method to enter texts in a text box; step data passed on by the user
 def Enter_Text_In_Text_Box(step_data):
@@ -292,21 +274,13 @@ def Enter_Text_In_Text_Box(step_data):
                     CommonUtil.TakeScreenShot(sModuleInfo)
                     CommonUtil.ExecLog(sModuleInfo, "Successfully set the value of to text to: %s"%text_value, 1)
                     return "passed"
-                except Exception, e:
+                except Exception:           
                     element_attributes = Element.get_attribute('outerHTML')
                     CommonUtil.ExecLog(sModuleInfo, "Element Attributes: %s"%(element_attributes),3)
-                    exc_type, exc_obj, exc_tb = sys.exc_info()        
-                    fname = os.path.split(exc_tb.tb_frame.f_code.co_filename)[1]
-                    Error_Detail = ((str(exc_type).replace("type ", "Error Type: ")) + ";" +  "Error Message: " + str(exc_obj) +";" + "File Name: " + fname + ";" + "Line: "+ str(exc_tb.tb_lineno))
-                    CommonUtil.ExecLog(sModuleInfo, "Could not select/click your element.  Error: %s"%(Error_Detail), 3)
-                    return "failed"
-
-    except Exception, e:
-        exc_type, exc_obj, exc_tb = sys.exc_info()        
-        fname = os.path.split(exc_tb.tb_frame.f_code.co_filename)[1]
-        Error_Detail = ((str(exc_type).replace("type ", "Error Type: ")) + ";" +  "Error Message: " + str(exc_obj) +";" + "File Name: " + fname + ";" + "Line: "+ str(exc_tb.tb_lineno))
-        CommonUtil.ExecLog(sModuleInfo, "Could not find your element.  Error: %s"%(Error_Detail), 3)
-        return "failed"
+                    errMsg = "Could not select/click your element."
+                    return CommonUtil.Exception_Handler(sys.exc_info(),None,errMsg)
+    except Exception:
+        return CommonUtil.Exception_Handler(sys.exc_info())
 
 
 #Method to click on element; step data passed on by the user
@@ -360,22 +334,14 @@ def Keystroke_For_Element(step_data):
                         CommonUtil.TakeScreenShot(sModuleInfo)
                         CommonUtil.ExecLog(sModuleInfo, "Could not enter keystroke for the element with given parameters and values", 3)
                         return "failed"
-              
-                except Exception, e:
+                except Exception:
                     element_attributes = Element.get_attribute('outerHTML')
                     CommonUtil.ExecLog(sModuleInfo, "Element Attributes: %s"%(element_attributes),3)
-                    exc_type, exc_obj, exc_tb = sys.exc_info()        
-                    fname = os.path.split(exc_tb.tb_frame.f_code.co_filename)[1]
-                    Error_Detail = ((str(exc_type).replace("type ", "Error Type: ")) + ";" +  "Error Message: " + str(exc_obj) +";" + "File Name: " + fname + ";" + "Line: "+ str(exc_tb.tb_lineno))
-                    CommonUtil.ExecLog(sModuleInfo, "Could not enter keystroke for your element.  Error: %s"%(Error_Detail), 3)
-                    return "failed"
+                    errMsg = "Could not enter keystroke for your element."
+                    return CommonUtil.Exception_Handler(sys.exc_info(),None,errMsg)
 
-    except Exception, e:
-        exc_type, exc_obj, exc_tb = sys.exc_info()        
-        fname = os.path.split(exc_tb.tb_frame.f_code.co_filename)[1]
-        Error_Detail = ((str(exc_type).replace("type ", "Error Type: ")) + ";" +  "Error Message: " + str(exc_obj) +";" + "File Name: " + fname + ";" + "Line: "+ str(exc_tb.tb_lineno))
-        CommonUtil.ExecLog(sModuleInfo, "Could not enter keystroke for your element.  Error: %s"%(Error_Detail), 3)
-        return "failed"
+    except Exception:
+        return CommonUtil.Exception_Handler(sys.exc_info())
 
 
 #Method to click on element; step data passed on by the user
@@ -399,21 +365,13 @@ def Click_Element(step_data):
                     CommonUtil.TakeScreenShot(sModuleInfo)
                     CommonUtil.ExecLog(sModuleInfo, "Successfully clicked the element with given parameters and values", 1)
                     return "passed"
-                except Exception, e:
+                except Exception:
                     element_attributes = Element.get_attribute('outerHTML')
                     CommonUtil.ExecLog(sModuleInfo, "Element Attributes: %s"%(element_attributes),3)
-                    exc_type, exc_obj, exc_tb = sys.exc_info()        
-                    fname = os.path.split(exc_tb.tb_frame.f_code.co_filename)[1]
-                    Error_Detail = ((str(exc_type).replace("type ", "Error Type: ")) + ";" +  "Error Message: " + str(exc_obj) +";" + "File Name: " + fname + ";" + "Line: "+ str(exc_tb.tb_lineno))
-                    CommonUtil.ExecLog(sModuleInfo, "Could not select/click your element.  Error: %s"%(Error_Detail), 3)
-                    return "failed"
-
-    except Exception, e:
-        exc_type, exc_obj, exc_tb = sys.exc_info()        
-        fname = os.path.split(exc_tb.tb_frame.f_code.co_filename)[1]
-        Error_Detail = ((str(exc_type).replace("type ", "Error Type: ")) + ";" +  "Error Message: " + str(exc_obj) +";" + "File Name: " + fname + ";" + "Line: "+ str(exc_tb.tb_lineno))
-        CommonUtil.ExecLog(sModuleInfo, "Could not find/click your element.  Error: %s"%(Error_Detail), 3)
-        return "failed"
+                    errMsg = "Could not select/click your element."
+                    return CommonUtil.Exception_Handler(sys.exc_info(),None,errMsg)
+    except Exception:
+        return CommonUtil.Exception_Handler(sys.exc_info())
     
 
 #Method to click and hold on element; step data passed on by the user
@@ -438,21 +396,13 @@ def Click_and_Hold_Element(step_data):
                     CommonUtil.TakeScreenShot(sModuleInfo)
                     CommonUtil.ExecLog(sModuleInfo, "Successfully clicked and held the element with given parameters and values", 1)
                     return "passed"
-                except Exception, e:
+                except Exception:
                     element_attributes = Element.get_attribute('outerHTML')
                     CommonUtil.ExecLog(sModuleInfo, "Element Attributes: %s"%(element_attributes),3)
-                    exc_type, exc_obj, exc_tb = sys.exc_info()        
-                    fname = os.path.split(exc_tb.tb_frame.f_code.co_filename)[1]
-                    Error_Detail = ((str(exc_type).replace("type ", "Error Type: ")) + ";" +  "Error Message: " + str(exc_obj) +";" + "File Name: " + fname + ";" + "Line: "+ str(exc_tb.tb_lineno))
-                    CommonUtil.ExecLog(sModuleInfo, "Could not click and hold your element.  Error: %s"%(Error_Detail), 3)
-                    return "failed"
-
-    except Exception, e:
-        exc_type, exc_obj, exc_tb = sys.exc_info()        
-        fname = os.path.split(exc_tb.tb_frame.f_code.co_filename)[1]
-        Error_Detail = ((str(exc_type).replace("type ", "Error Type: ")) + ";" +  "Error Message: " + str(exc_obj) +";" + "File Name: " + fname + ";" + "Line: "+ str(exc_tb.tb_lineno))
-        CommonUtil.ExecLog(sModuleInfo, "Could not find/click your element.  Error: %s"%(Error_Detail), 3)
-        return "failed"
+                    errMsg = "Could not click and hold your element."
+                    return CommonUtil.Exception_Handler(sys.exc_info(),None,errMsg)
+    except Exception:
+        return CommonUtil.Exception_Handler(sys.exc_info())
 
 
 #Method to right click on element; step data passed on by the user
@@ -477,22 +427,13 @@ def Context_Click_Element(step_data):
                     CommonUtil.TakeScreenShot(sModuleInfo)
                     CommonUtil.ExecLog(sModuleInfo, "Successfully right clicked the element with given parameters and values", 1)
                     return "passed"
-                except Exception, e:
+                except Exception:
                     element_attributes = Element.get_attribute('outerHTML')
                     CommonUtil.ExecLog(sModuleInfo, "Element Attributes: %s"%(element_attributes),3)
-                    exc_type, exc_obj, exc_tb = sys.exc_info()        
-                    fname = os.path.split(exc_tb.tb_frame.f_code.co_filename)[1]
-                    Error_Detail = ((str(exc_type).replace("type ", "Error Type: ")) + ";" +  "Error Message: " + str(exc_obj) +";" + "File Name: " + fname + ";" + "Line: "+ str(exc_tb.tb_lineno))
-                    CommonUtil.ExecLog(sModuleInfo, "Could not right click your element.  Error: %s"%(Error_Detail), 3)
-                    return "failed"
-
-    except Exception, e:
-        exc_type, exc_obj, exc_tb = sys.exc_info()        
-        fname = os.path.split(exc_tb.tb_frame.f_code.co_filename)[1]
-        Error_Detail = ((str(exc_type).replace("type ", "Error Type: ")) + ";" +  "Error Message: " + str(exc_obj) +";" + "File Name: " + fname + ";" + "Line: "+ str(exc_tb.tb_lineno))
-        CommonUtil.ExecLog(sModuleInfo, "Could not find/click your element.  Error: %s"%(Error_Detail), 3)
-        return "failed"
-
+                    errMsg = "Could not right click your element."
+                    return CommonUtil.Exception_Handler(sys.exc_info(),None,errMsg)
+    except Exception:
+        return CommonUtil.Exception_Handler(sys.exc_info())
 
 #Method to double click on element; step data passed on by the user
 def Double_Click_Element(step_data):
@@ -516,21 +457,13 @@ def Double_Click_Element(step_data):
                     CommonUtil.TakeScreenShot(sModuleInfo)
                     CommonUtil.ExecLog(sModuleInfo, "Successfully double clicked the element with given parameters and values", 1)
                     return "passed"
-                except Exception, e:
+                except Exception:
                     element_attributes = Element.get_attribute('outerHTML')
                     CommonUtil.ExecLog(sModuleInfo, "Element Attributes: %s"%(element_attributes),3)
-                    exc_type, exc_obj, exc_tb = sys.exc_info()        
-                    fname = os.path.split(exc_tb.tb_frame.f_code.co_filename)[1]
-                    Error_Detail = ((str(exc_type).replace("type ", "Error Type: ")) + ";" +  "Error Message: " + str(exc_obj) +";" + "File Name: " + fname + ";" + "Line: "+ str(exc_tb.tb_lineno))
-                    CommonUtil.ExecLog(sModuleInfo, "Could not double click your element.  Error: %s"%(Error_Detail), 3)
-                    return "failed"
-
-    except Exception, e:
-        exc_type, exc_obj, exc_tb = sys.exc_info()        
-        fname = os.path.split(exc_tb.tb_frame.f_code.co_filename)[1]
-        Error_Detail = ((str(exc_type).replace("type ", "Error Type: ")) + ";" +  "Error Message: " + str(exc_obj) +";" + "File Name: " + fname + ";" + "Line: "+ str(exc_tb.tb_lineno))
-        CommonUtil.ExecLog(sModuleInfo, "Could not find/click your element.  Error: %s"%(Error_Detail), 3)
-        return "failed"
+                    errMsg = "Could not double click your element."
+                    return CommonUtil.Exception_Handler(sys.exc_info(),None,errMsg)
+    except Exception:
+        return CommonUtil.Exception_Handler(sys.exc_info())
     
 
 #Method to move to middle of the element; step data passed on by the user
@@ -554,21 +487,13 @@ def Move_To_Element(step_data):
                     CommonUtil.TakeScreenShot(sModuleInfo)
                     CommonUtil.ExecLog(sModuleInfo, "Successfully moved to the middle of the element with given parameters and values", 1)
                     return "passed"
-                except Exception, e:
+                except Exception:
                     element_attributes = Element.get_attribute('outerHTML')
                     CommonUtil.ExecLog(sModuleInfo, "Element Attributes: %s"%(element_attributes),3)
-                    exc_type, exc_obj, exc_tb = sys.exc_info()        
-                    fname = os.path.split(exc_tb.tb_frame.f_code.co_filename)[1]
-                    Error_Detail = ((str(exc_type).replace("type ", "Error Type: ")) + ";" +  "Error Message: " + str(exc_obj) +";" + "File Name: " + fname + ";" + "Line: "+ str(exc_tb.tb_lineno))
-                    CommonUtil.ExecLog(sModuleInfo, "Could not move to your element your element.  Error: %s"%(Error_Detail), 3)
-                    return "failed"
-
-    except Exception, e:
-        exc_type, exc_obj, exc_tb = sys.exc_info()        
-        fname = os.path.split(exc_tb.tb_frame.f_code.co_filename)[1]
-        Error_Detail = ((str(exc_type).replace("type ", "Error Type: ")) + ";" +  "Error Message: " + str(exc_obj) +";" + "File Name: " + fname + ";" + "Line: "+ str(exc_tb.tb_lineno))
-        CommonUtil.ExecLog(sModuleInfo, "Could not find/hover over your element.  Error: %s"%(Error_Detail), 3)
-        return "failed"
+                    errMsg = "Could not move to your element your element."
+                    return CommonUtil.Exception_Handler(sys.exc_info(),None,errMsg)
+    except Exception:
+        return CommonUtil.Exception_Handler(sys.exc_info())
     
 
 #Method to hover over element; step data passed on by the user
@@ -593,21 +518,13 @@ def Hover_Over_Element(step_data):
                     CommonUtil.TakeScreenShot(sModuleInfo)
                     CommonUtil.ExecLog(sModuleInfo, "Successfully hovered over the element with given parameters and values", 1)
                     return "passed"
-                except Exception, e:
+                except Exception:
                     element_attributes = Element.get_attribute('outerHTML')
                     CommonUtil.ExecLog(sModuleInfo, "Element Attributes: %s"%(element_attributes),3)
-                    exc_type, exc_obj, exc_tb = sys.exc_info()        
-                    fname = os.path.split(exc_tb.tb_frame.f_code.co_filename)[1]
-                    Error_Detail = ((str(exc_type).replace("type ", "Error Type: ")) + ";" +  "Error Message: " + str(exc_obj) +";" + "File Name: " + fname + ";" + "Line: "+ str(exc_tb.tb_lineno))
-                    CommonUtil.ExecLog(sModuleInfo, "Could not select/hover over your element.  Error: %s"%(Error_Detail), 3)
-                    return "failed"
-
-    except Exception, e:
-        exc_type, exc_obj, exc_tb = sys.exc_info()        
-        fname = os.path.split(exc_tb.tb_frame.f_code.co_filename)[1]
-        Error_Detail = ((str(exc_type).replace("type ", "Error Type: ")) + ";" +  "Error Message: " + str(exc_obj) +";" + "File Name: " + fname + ";" + "Line: "+ str(exc_tb.tb_lineno))
-        CommonUtil.ExecLog(sModuleInfo, "Could not find/hover over your element.  Error: %s"%(Error_Detail), 3)
-        return "failed"
+                    errMsg = "Could not select/hover over your element."
+                    return CommonUtil.Exception_Handler(sys.exc_info(),None,errMsg)
+    except Exception:
+        return CommonUtil.Exception_Handler(sys.exc_info())
 
 
 #Search for element on new page after a particular time-out duration entered by the user through step-data
@@ -645,19 +562,13 @@ def Wait_For_New_Element(step_data):
                     else:
                         #return Element
                         return "passed"
-                except Exception, e:
-                    exc_type, exc_obj, exc_tb = sys.exc_info()        
-                    fname = os.path.split(exc_tb.tb_frame.f_code.co_filename)[1]
-                    Error_Detail = ((str(exc_type).replace("type ", "Error Type: ")) + ";" +  "Error Message: " + str(exc_obj) +";" + "File Name: " + fname + ";" + "Line: "+ str(exc_tb.tb_lineno))
-                    CommonUtil.ExecLog(sModuleInfo, "Could not find the new page element requested.  Error: %s"%(Error_Detail), 3)
-                    return "failed"   
-        
-    except Exception, e:
-            exc_type, exc_obj, exc_tb = sys.exc_info()        
-            fname = os.path.split(exc_tb.tb_frame.f_code.co_filename)[1]
-            Error_Detail = ((str(exc_type).replace("type ", "Error Type: ")) + ";" +  "Error Message: " + str(exc_obj) +";" + "File Name: " + fname + ";" + "Line: "+ str(exc_tb.tb_lineno))
-            CommonUtil.ExecLog(sModuleInfo, "Could not find the new page element requested.  Error: %s"%(Error_Detail), 3)
-            return "failed"
+                except Exception:
+                    element_attributes = Element.get_attribute('outerHTML')
+                    CommonUtil.ExecLog(sModuleInfo, "Element Attributes: %s"%(element_attributes),3)
+                    errMsg = "Could not find the new page element requested."
+                    return CommonUtil.Exception_Handler(sys.exc_info(),None,errMsg)    
+    except Exception:
+        return CommonUtil.Exception_Handler(sys.exc_info())
 
 
 #Validating text from an element given information regarding the expected text
@@ -674,9 +585,8 @@ def Validate_Text(step_data):
                     try:
                         Element = Get_Element('tag', 'html')
                         break
-                    except Exception, e:
-                        errMsg = "Could not get element from the current page."
-                        Exception_Info(sModuleInfo, errMsg)
+                    except Exception:
+                        return CommonUtil.Exception_Handler(sys.exc_info(),None,"Could not get element from the current page.")  
                 else:
                     element_step_data = Get_Element_Step_Data(step_data)
                     returned_step_data_list = Validate_Step_Data(element_step_data)
@@ -686,16 +596,17 @@ def Validate_Text(step_data):
                         try:
                             Element = Get_Element(returned_step_data_list[0], returned_step_data_list[1], returned_step_data_list[2], returned_step_data_list[3], returned_step_data_list[4])
                             break
-                        except Exception, e:
+                            
+                        except Exception:
                             errMsg = "Could not get element based on the information provided."
-                            Exception_Info(sModuleInfo, errMsg)            
+                            return CommonUtil.Exception_Handler(sys.exc_info(),None,errMsg)           
             
 #             if step_data[0][0][0] == "current_page":
 #                 try:
 #                     Element = Get_Element('tag', 'html')
-#                 except Exception, e:
+#                 except Exception:
 #                     errMsg = "Could not get element from the current page."
-#                     Exception_Info(sModuleInfo, errMsg)
+#                     return CommonUtil.Exception_Handler(sys.exc_info(),None,errMsg) 
 #             else:
 #                 element_step_data = Get_Element_Step_Data(step_data)
 #                 # element_step_data = step_data[0][0:len(step_data[0])-1:1]
@@ -705,9 +616,9 @@ def Validate_Text(step_data):
 #                 else:
 #                     try:
 #                         Element = Get_Element(returned_step_data_list[0], returned_step_data_list[1], returned_step_data_list[2], returned_step_data_list[3], returned_step_data_list[4])
-#                     except Exception, e:
+#                     except Exception:
 #                         errMsg = "Could not get element based on the information provided."
-#                         Exception_Info(sModuleInfo, errMsg)
+#                         return CommonUtil.Exception_Handler(sys.exc_info(),None,errMsg) 
             for each_step_data_item in step_data[0]:
                 if each_step_data_item[1]=="action":
                     expected_text_data = each_step_data_item[2]
@@ -746,13 +657,8 @@ def Validate_Text(step_data):
                 CommonUtil.ExecLog(sModuleInfo, "Incorrect validation type. Please check step data", 3)
                 return "failed"
 
-    except Exception, e:
-        exc_type, exc_obj, exc_tb = sys.exc_info()
-        fname = os.path.split(exc_tb.tb_frame.f_code.co_filename)[1]
-        Error_Detail = ((str(exc_type).replace("type ", "Error Type: ")) + ";" + "Error Message: " + str(
-            exc_obj) + ";" + "File Name: " + fname + ";" + "Line: " + str(exc_tb.tb_lineno))
-        CommonUtil.ExecLog(sModuleInfo, "Could not compare text as requested.  Error: %s" % (Error_Detail), 3)
-        return "failed"
+    except Exception:
+        return CommonUtil.Exception_Handler(sys.exc_info())
     
 
 #Method to sleep for a particular duration
@@ -772,13 +678,8 @@ def Sleep(step_data):
             time.sleep(seconds)
             return "passed"
         #return result
-    except Exception, e:
-        exc_type, exc_obj, exc_tb = sys.exc_info()
-        fname = os.path.split(exc_tb.tb_frame.f_code.co_filename)[1]
-        Error_Detail = ((str(exc_type).replace("type ", "Error Type: ")) + ";" + "Error Message: " + str(
-            exc_obj) + ";" + "File Name: " + fname + ";" + "Line: " + str(exc_tb.tb_lineno))
-        print "%s" % Error_Detail
-        return "failed"
+    except Exception:
+        return CommonUtil.Exception_Handler(sys.exc_info())
 
 
 #Method to scroll down a page
@@ -807,15 +708,11 @@ def Scroll(step_data):
             else:
                 CommonUtil.ExecLog(sModuleInfo, "Scrolling was not successful", 3)
                 result = "failed"
+                return result
 
         #return result
-    except Exception, e:
-        exc_type, exc_obj, exc_tb = sys.exc_info()
-        fname = os.path.split(exc_tb.tb_frame.f_code.co_filename)[1]
-        Error_Detail = ((str(exc_type).replace("type ", "Error Type: ")) + ";" + "Error Message: " + str(
-            exc_obj) + ";" + "File Name: " + fname + ";" + "Line: " + str(exc_tb.tb_lineno))
-        print "%s" % Error_Detail
-        return "failed"
+    except Exception:
+        return CommonUtil.Exception_Handler(sys.exc_info())
     
 
 #Method to return pass or fail for the step outcome
@@ -825,7 +722,7 @@ def Step_Result(step_data):
     try:
         if ((len(step_data) != 1) or (1 < len(step_data[0]) >= 5)):
             CommonUtil.ExecLog(sModuleInfo,"The information in the data-set(s) are incorrect. Please provide accurate data set(s) information.",3)
-            return "failed"
+            result = "failed"
         else:
             step_result = step_data[0][0][2]
             if step_result == 'pass':
@@ -834,13 +731,8 @@ def Step_Result(step_data):
                 result = "failed"
 
         return result
-    except Exception, e:
-        exc_type, exc_obj, exc_tb = sys.exc_info()
-        fname = os.path.split(exc_tb.tb_frame.f_code.co_filename)[1]
-        Error_Detail = ((str(exc_type).replace("type ", "Error Type: ")) + ";" + "Error Message: " + str(
-            exc_obj) + ";" + "File Name: " + fname + ";" + "Line: " + str(exc_tb.tb_lineno))
-        print "%s" % Error_Detail
-        return "failed"
+    except Exception:
+        return CommonUtil.Exception_Handler(sys.exc_info())
 
 
 def Select_Deselect(step_data):    
@@ -905,23 +797,17 @@ def Select_Deselect(step_data):
                             else:
                                 CommonUtil.ExecLog(sModuleInfo, "The correct parameter for the action has not been entered. Please check for errors.", 2)
                                 result = "failed"
+   
                         else:
                             continue
-                except Exception, e:
+                    
+                except Exception:
                     element_attributes = Element.get_attribute('outerHTML')
                     CommonUtil.ExecLog(sModuleInfo, "Element Attributes: %s"%(element_attributes),3)
-                    exc_type, exc_obj, exc_tb = sys.exc_info()        
-                    fname = os.path.split(exc_tb.tb_frame.f_code.co_filename)[1]
-                    Error_Detail = ((str(exc_type).replace("type ", "Error Type: ")) + ";" +  "Error Message: " + str(exc_obj) +";" + "File Name: " + fname + ";" + "Line: "+ str(exc_tb.tb_lineno))
-                    CommonUtil.ExecLog(sModuleInfo, "Could not select/hover over your element.  Error: %s"%(Error_Detail), 3)
-                    return "failed"
-    except Exception, e:
-        exc_type, exc_obj, exc_tb = sys.exc_info()
-        fname = os.path.split(exc_tb.tb_frame.f_code.co_filename)[1]
-        Error_Detail = ((str(exc_type).replace("type ", "Error Type: ")) + ";" + "Error Message: " + str(
-            exc_obj) + ";" + "File Name: " + fname + ";" + "Line: " + str(exc_tb.tb_lineno))
-        print "%s" % Error_Detail
-        return "failed"
+                    errMsg = "Could not select/hover over your element."
+                    return CommonUtil.Exception_Handler(sys.exc_info(),None,errMsg)
+    except Exception:
+        return CommonUtil.Exception_Handler(sys.exc_info())
     
     
 #Performs a series of action or conditional logical action decisions based on user input
@@ -962,7 +848,7 @@ def Sequential_Actions(step_data):
                                     logic_decision = "true"                                        
                             except Exception, errMsg:
                                 errMsg = "Could not find element in the by the criteria..."
-                                Exception_Info(sModuleInfo, errMsg)            
+                                return CommonUtil.Exception_Handler(sys.exc_info(),None,errMsg)             
                     else:
                         continue
 
@@ -982,14 +868,8 @@ def Sequential_Actions(step_data):
                     return "failed"                 
         return "passed"
 
-    except Exception, e:
-        CommonUtil.ExecLog(sModuleInfo, "Exception: %s" % e, 3)
-        exc_type, exc_obj, exc_tb = sys.exc_info()
-        fname = os.path.split(exc_tb.tb_frame.f_code.co_filename)[1]
-        Error_Detail = ((str(exc_type).replace("type ", "Error Type: ")) + ";" +  "Error Message: " + str(exc_obj) +";" + "File Name: " + fname + ";" + "Line: "+ str(exc_tb.tb_lineno))
-        print "%s"%Error_Detail
-        CommonUtil.ExecLog(sModuleInfo, "Error: %s" % Error_Detail, 3)
-        return "failed"
+    except Exception:
+        return CommonUtil.Exception_Handler(sys.exc_info())
 
 '===================== ===x=== Sequential Action Section Ends ===x=== ======================'
     
@@ -1013,12 +893,10 @@ def Model_Actual_Data(actual_data):
                 column_count = column_count +1
             row_count = row_count+1
         return Modeled_Data_Set  
-    except Exception, e:
-        exc_type, exc_obj, exc_tb = sys.exc_info()        
-        fname = os.path.split(exc_tb.tb_frame.f_code.co_filename)[1]
-        Error_Detail = ((str(exc_type).replace("type ", "Error Type: ")) + ";" +  "Error Message: " + str(exc_obj) +";" + "File Name: " + fname + ";" + "Line: "+ str(exc_tb.tb_lineno))
-        CommonUtil.ExecLog(sModuleInfo, "Could not model actual data.  Error: %s"%(Error_Detail), 3)
-        return "failed"
+
+    except Exception:
+        return CommonUtil.Exception_Handler(sys.exc_info(),None,"Could not model actual data")        
+
 
 
 def Model_Actual_Data_Ignoring_Column(actual_data):
@@ -1038,12 +916,9 @@ def Model_Actual_Data_Ignoring_Column(actual_data):
                 column_count = column_count +1
             row_count = row_count+1
         return Modeled_Data_Set  
-    except Exception, e:
-        exc_type, exc_obj, exc_tb = sys.exc_info()        
-        fname = os.path.split(exc_tb.tb_frame.f_code.co_filename)[1]
-        Error_Detail = ((str(exc_type).replace("type ", "Error Type: ")) + ";" +  "Error Message: " + str(exc_obj) +";" + "File Name: " + fname + ";" + "Line: "+ str(exc_tb.tb_lineno))
-        CommonUtil.ExecLog(sModuleInfo, "Could not model actual data ignoring column.  Error: %s"%(Error_Detail), 3)
-        return "failed"
+    except Exception:
+        return CommonUtil.Exception_Handler(sys.exc_info(),None,"Could not model actual data ignoring column")        
+
 
     
 def Model_Actual_Data_Ignoring_Row(actual_data):
@@ -1063,12 +938,9 @@ def Model_Actual_Data_Ignoring_Row(actual_data):
                 column_count = column_count +1
             row_count = row_count+1
         return Modeled_Data_Set  
-    except Exception, e:
-        exc_type, exc_obj, exc_tb = sys.exc_info()        
-        fname = os.path.split(exc_tb.tb_frame.f_code.co_filename)[1]
-        Error_Detail = ((str(exc_type).replace("type ", "Error Type: ")) + ";" +  "Error Message: " + str(exc_obj) +";" + "File Name: " + fname + ";" + "Line: "+ str(exc_tb.tb_lineno))
-        CommonUtil.ExecLog(sModuleInfo, "Could not model actual data ignoring row.  Error: %s"%(Error_Detail), 3)
-        return "failed"
+    except Exception:
+        return CommonUtil.Exception_Handler(sys.exc_info(),None,"Could not model actual data ignoring column")        
+
 
 
 def Model_Expected_Data(expected_data):
@@ -1089,12 +961,9 @@ def Model_Expected_Data(expected_data):
             Modeled_Data_Set.append(temp_data_model)
             row_count = row_count+1
         return Modeled_Data_Set  
-    except Exception, e:
-        exc_type, exc_obj, exc_tb = sys.exc_info()        
-        fname = os.path.split(exc_tb.tb_frame.f_code.co_filename)[1]
-        Error_Detail = ((str(exc_type).replace("type ", "Error Type: ")) + ";" +  "Error Message: " + str(exc_obj) +";" + "File Name: " + fname + ";" + "Line: "+ str(exc_tb.tb_lineno))
-        CommonUtil.ExecLog(sModuleInfo, "Could not model expected data.  Error: %s"%(Error_Detail), 3)
-        return "failed"
+    except Exception:
+        return CommonUtil.Exception_Handler(sys.exc_info(),None,"Could not model expected data")        
+
 
 
 def Model_Expected_Data_Ignoring_Column(expected_data):
@@ -1118,12 +987,9 @@ def Model_Expected_Data_Ignoring_Column(expected_data):
             Modeled_Data_Set.append(temp_data_model)
             row_count = row_count+1
         return Modeled_Data_Set  
-    except Exception, e:
-        exc_type, exc_obj, exc_tb = sys.exc_info()        
-        fname = os.path.split(exc_tb.tb_frame.f_code.co_filename)[1]
-        Error_Detail = ((str(exc_type).replace("type ", "Error Type: ")) + ";" +  "Error Message: " + str(exc_obj) +";" + "File Name: " + fname + ";" + "Line: "+ str(exc_tb.tb_lineno))
-        CommonUtil.ExecLog(sModuleInfo, "Could not model expected data ignoring column.  Error: %s"%(Error_Detail), 3)
-        return "failed"
+    except Exception:
+        return CommonUtil.Exception_Handler(sys.exc_info(),None,"Could not model expected data ignoring column.")        
+
 
 
 def Model_Expected_Data_Ignoring_Row(expected_data):
@@ -1147,12 +1013,9 @@ def Model_Expected_Data_Ignoring_Row(expected_data):
             Modeled_Data_Set.append(temp_data_model)
             row_count = row_count+1
         return Modeled_Data_Set  
-    except Exception, e:
-        exc_type, exc_obj, exc_tb = sys.exc_info()        
-        fname = os.path.split(exc_tb.tb_frame.f_code.co_filename)[1]
-        Error_Detail = ((str(exc_type).replace("type ", "Error Type: ")) + ";" +  "Error Message: " + str(exc_obj) +";" + "File Name: " + fname + ";" + "Line: "+ str(exc_tb.tb_lineno))
-        CommonUtil.ExecLog(sModuleInfo, "Could not model expected data ignoring row.  Error: %s"%(Error_Detail), 3)
-        return "failed"
+    except Exception:
+        return CommonUtil.Exception_Handler(sys.exc_info(),None,"Could not model expected data ignoring row.")        
+
     
     
 def Model_Expected_Column_Row(expect_data):
@@ -1168,12 +1031,9 @@ def Model_Expected_Column_Row(expect_data):
             if each[1] not in row_names:
                 row_names.append(each[1])
         return  column_names, row_names
-    except Exception, e:
-        exc_type, exc_obj, exc_tb = sys.exc_info()        
-        fname = os.path.split(exc_tb.tb_frame.f_code.co_filename)[1]
-        Error_Detail = ((str(exc_type).replace("type ", "Error Type: ")) + ";" +  "Error Message: " + str(exc_obj) +";" + "File Name: " + fname + ";" + "Line: "+ str(exc_tb.tb_lineno))
-        CommonUtil.ExecLog(sModuleInfo, "Could not model expected column row.  Error: %s"%(Error_Detail), 3)
-        return "failed"
+    except Exception:
+        return CommonUtil.Exception_Handler(sys.exc_info(),None,"Could not model expected column row. ")        
+
     
 
 ##Helper function for validate table - Exact Matching
@@ -1218,9 +1078,11 @@ def Validate_Table_Helper(expected_table_data, actual_table_data, validation_opt
             
         #print mismatch_count, match_count, mismatch_list, matched_list 
                        
-    except Exception, e:
+    except Exception:
+        return CommonUtil.Exception_Handler(sys.exc_info(),None,"Could not model expected data")        
+
         errMsg = "Error when comparing the exact expected and actual data."
-        Exception_Info(sModuleInfo, errMsg)  
+        return CommonUtil.Exception_Handler(sys.exc_info(),None,errMsg)   
                     
                       
 #Validate table
@@ -1275,20 +1137,17 @@ def Validate_Table(step_data):
                                                         
                     #status = oCompare.compare([expected_table_step_data], [modelled_actual_table_step_data])
                     #print status
-                except Exception, e:
+                except Exception:
                     errMsg = "Error when comparing the expected and actual data."
-                    Exception_Info(sModuleInfo, errMsg)
+                    return CommonUtil.Exception_Handler(sys.exc_info(),None,errMsg) 
            
-            except Exception, e:
+            except Exception:
                 errMsg = "Unable to get table element. Please check if the correct information has been provided."
-                Exception_Info(sModuleInfo, errMsg)
+                return CommonUtil.Exception_Handler(sys.exc_info(),None,errMsg) 
          
-    except Exception, e:
-        exc_type, exc_obj, exc_tb = sys.exc_info()        
-        fname = os.path.split(exc_tb.tb_frame.f_code.co_filename)[1]
-        Error_Detail = ((str(exc_type).replace("type ", "Error Type: ")) + ";" +  "Error Message: " + str(exc_obj) +";" + "File Name: " + fname + ";" + "Line: "+ str(exc_tb.tb_lineno))
-        CommonUtil.ExecLog(sModuleInfo, "Could not find your element.  Error: %s"%(Error_Detail), 3)
-        return "failed" 
+    except Exception:
+        return CommonUtil.Exception_Handler(sys.exc_info(),None,"Could not find your element.")        
+
      
 
 '===================== ===x=== Validate Table Section Ends ===x=== ======================'    
@@ -1372,19 +1231,14 @@ def Get_Element(element_parameter,element_value,reference_parameter=False,refere
             result = Element_Validation(All_Elements_Found)#, index)
             return result
     
-    except Exception, e:
-        exc_type, exc_obj, exc_tb = sys.exc_info()        
-        fname = os.path.split(exc_tb.tb_frame.f_code.co_filename)[1]
-        Error_Detail = ((str(exc_type).replace("type ", "Error Type: ")) + ";" +  "Error Message: " + str(exc_obj) +";" + "File Name: " + fname + ";" + "Line: "+ str(exc_tb.tb_lineno))
-        CommonUtil.ExecLog(sModuleInfo, "Could not find your element.  Error: %s"%(Error_Detail), 3)
-        return "failed"       
+    except Exception:
+        return CommonUtil.Exception_Handler(sys.exc_info(),None,"Could not find your element.")        
 
 
 #Method to get the elements based on type - more methods may be added in the future
 #Called by: Get_Element
 def Get_All_Elements(parameter,value,parent=False):
     #http://selenium-python.readthedocs.io/locating-elements.html
-    sModuleInfo = inspect.stack()[0][3] + " : " + inspect.getmoduleinfo(__file__).name
     try:
         if parent == False:
             if parameter == "text":
@@ -1427,13 +1281,9 @@ def Get_All_Elements(parameter,value,parent=False):
 #                 All_Elements = WebDriverWait(parent, WebDriver_Wait).until(EC.presence_of_all_elements_located((By.XPATH, "//*[@%s='%s']"%(parameter,value))))
                 
         return All_Elements
-    except Exception, e:
-        exc_type, exc_obj, exc_tb = sys.exc_info()        
-        fname = os.path.split(exc_tb.tb_frame.f_code.co_filename)[1]
-        Error_Detail = ((str(exc_type).replace("type ", "Error Type: ")) + ";" +  "Error Message: " + str(exc_obj) +";" + "File Name: " + fname + ";" + "Line: "+ str(exc_tb.tb_lineno))
-        CommonUtil.ExecLog(sModuleInfo, "Unable to get the element.  Error: %s"%(Error_Detail), 3)
-        return "failed"
- 
+    except Exception:
+        return CommonUtil.Exception_Handler(sys.exc_info(),None,"Unable to get the element.")        
+
     
 #Use two parameters on the same level to get a specific element
 #Called by: Get_Element
@@ -1462,9 +1312,11 @@ def Get_Double_Matching_Elements(param_1, value_1, param_2, value_2):
                     return matched_element
                 else:
                     return "failed"
-            except Exception, e:
+            except Exception:
                 errMsg = "Could not find elements by double matching with types text and tag name"
-                Exception_Info(sModuleInfo, errMsg)
+                return CommonUtil.Exception_Handler(sys.exc_info(),None,errMsg)        
+
+
         
         ##Text and CSS double matching        
         elif ((param_1 == "text" and param_2 == "css") or (param_1 == "css" and param_2 == "text")):
@@ -1486,9 +1338,9 @@ def Get_Double_Matching_Elements(param_1, value_1, param_2, value_2):
                     return matched_element
                 else:
                     return "failed"
-            except Exception, e:
+            except Exception:
                 errMsg = "Could not find elements by double matching with types text and css selector"
-                Exception_Info(sModuleInfo, errMsg)
+                return CommonUtil.Exception_Handler(sys.exc_info(),None,errMsg) 
         
         ##Link_Text and CSS double matching                
         elif (((param_1 == "link_text" or param_1 == "href") and param_2 == "css") or (param_1 == "css" and (param_2 == "link_text" or param_2 == "href"))):
@@ -1510,9 +1362,9 @@ def Get_Double_Matching_Elements(param_1, value_1, param_2, value_2):
                     return matched_element
                 else:
                     return "failed"
-            except Exception, e:
+            except Exception:
                 errMsg = "Could not find elements by double matching with types link text and css selector"
-                Exception_Info(sModuleInfo, errMsg)
+                return CommonUtil.Exception_Handler(sys.exc_info(),None,errMsg) 
 
         ##Tag and CSS double matching                
         elif ((param_1 == "tag" and param_2 == "css") or (param_1 == "css" and param_2 == "tag")):
@@ -1534,9 +1386,9 @@ def Get_Double_Matching_Elements(param_1, value_1, param_2, value_2):
                     return matched_element
                 else:
                     return "failed"
-            except Exception, e:
+            except Exception:
                 errMsg = "Could not find elements by double matching with types tag and css selector"
-                Exception_Info(sModuleInfo, errMsg)
+                return CommonUtil.Exception_Handler(sys.exc_info(),None,errMsg) 
 
         ##Link Text and Tag double matching               
         elif (((param_1 == "link_text" or param_1 == "href") and param_2 == "tag") or (param_1 == "tag" and (param_2 == "link_text" or param_2 == "href"))):
@@ -1558,9 +1410,9 @@ def Get_Double_Matching_Elements(param_1, value_1, param_2, value_2):
                     return matched_element
                 else:
                     return "failed"
-            except Exception, e:
+            except Exception:
                 errMsg = "Could not find elements by double matching with types link text and tag"
-                Exception_Info(sModuleInfo, errMsg)
+                return CommonUtil.Exception_Handler(sys.exc_info(),None,errMsg) 
 
         ##Tag and Partial Link Text double matching                
         elif ((param_1 == "tag" and param_2 == "partial_link_text") or (param_1 == "partial_link_text" and param_2 == "tag")):
@@ -1582,9 +1434,9 @@ def Get_Double_Matching_Elements(param_1, value_1, param_2, value_2):
                     return matched_element
                 else:
                     return "failed"
-            except Exception, e:
+            except Exception:
                 errMsg = "Could not find elements by double matching with types tag and partial link text"
-                Exception_Info(sModuleInfo, errMsg)
+                return CommonUtil.Exception_Handler(sys.exc_info(),None,errMsg) 
         
         ##CSS and Partial Link Text double matching                
         elif ((param_1 == "css" and param_2 == "partial_link_text") or (param_1 == "partial_link_text" and param_2 == "css")):
@@ -1606,9 +1458,9 @@ def Get_Double_Matching_Elements(param_1, value_1, param_2, value_2):
                     return matched_element
                 else:
                     return "failed"
-            except Exception, e:
+            except Exception:
                 errMsg = "Could not find elements by double matching with types partial link text and css selector"
-                Exception_Info(sModuleInfo, errMsg)
+                return CommonUtil.Exception_Handler(sys.exc_info(),None,errMsg) 
                 
         ##Other criteria double matching                        
         else:
@@ -1620,7 +1472,7 @@ def Get_Double_Matching_Elements(param_1, value_1, param_2, value_2):
             else:
                 return "failed"
             
-    except Exception, e:
+    except Exception:
         exc_type, exc_obj, exc_tb = sys.exc_info()        
         fname = os.path.split(exc_tb.tb_frame.f_code.co_filename)[1]
         Error_Detail = ((str(exc_type).replace("type ", "Error Type: ")) + ";" +  "Error Message: " + str(exc_obj) +";" + "File Name: " + fname + ";" + "Line: "+ str(exc_tb.tb_lineno))
@@ -1641,14 +1493,14 @@ def Get_Table_Elements(table_parameter,table_value, reference_parameter=False,re
                     temp_row_holder = []
                     for each_column_obj in row_element:
                         temp_row_holder.append(each_column_obj.text)
-                except Exception, e:
+                except Exception:
                     errMsg = "Could not find table row elements"
-                    Exception_Info(sModuleInfo, errMsg)                
+                    return CommonUtil.Exception_Handler(sys.exc_info(),None,errMsg)               
                 master_text_table.append(temp_row_holder)
 #         print master_text_table
         return master_text_table    
 
-    except Exception, e:
+    except Exception:
         exc_type, exc_obj, exc_tb = sys.exc_info()        
         fname = os.path.split(exc_tb.tb_frame.f_code.co_filename)[1]
         Error_Detail = ((str(exc_type).replace("type ", "Error Type: ")) + ";" +  "Error Message: " + str(exc_obj) +";" + "File Name: " + fname + ";" + "Line: "+ str(exc_tb.tb_lineno))
@@ -1706,7 +1558,7 @@ def Element_Validation(All_Elements_Found):#, index):
             CommonUtil.ExecLog(sModuleInfo, "Could not find element by given parameters and values", 3)
             return "failed" 
 
-    except Exception, e:
+    except Exception:
         exc_type, exc_obj, exc_tb = sys.exc_info()        
         fname = os.path.split(exc_tb.tb_frame.f_code.co_filename)[1]
         Error_Detail = ((str(exc_type).replace("type ", "Error Type: ")) + ";" +  "Error Message: " + str(exc_obj) +";" + "File Name: " + fname + ";" + "Line: "+ str(exc_tb.tb_lineno))
@@ -1749,7 +1601,7 @@ def Validate_Step_Data(step_data):
             return "failed"
         validated_data = (element_parameter, element_value, reference_parameter, reference_value, reference_is_parent_or_child)
         return validated_data
-    except Exception, e:
+    except Exception:
             exc_type, exc_obj, exc_tb = sys.exc_info()        
             fname = os.path.split(exc_tb.tb_frame.f_code.co_filename)[1]
             Error_Detail = ((str(exc_type).replace("type ", "Error Type: ")) + ";" +  "Error Message: " + str(exc_obj) +";" + "File Name: " + fname + ";" + "Line: "+ str(exc_tb.tb_lineno))
@@ -1775,14 +1627,14 @@ def Click_Element_StandAlone(Element):
                 CommonUtil.TakeScreenShot(sModuleInfo)
                 CommonUtil.ExecLog(sModuleInfo, "Successfully clicked the element", 1)
                 return "passed"
-            except Exception, e:
+            except Exception:
                 element_attributes = Element.get_attribute('outerHTML')
                 CommonUtil.ExecLog(sModuleInfo, "Element Attributes: %s"%(element_attributes),3)
                 errMsg = "Could not find/click your element"
-                Exception_Info(sModuleInfo, errMsg)
-    except Exception, e:
+                return CommonUtil.Exception_Handler(sys.exc_info(),None,errMsg) 
+    except Exception:
         errMsg = "Could not find/click your element"
-        Exception_Info(sModuleInfo, errMsg)
+        return CommonUtil.Exception_Handler(sys.exc_info(),None,errMsg) 
 
 
 def Hover_Over_Element_StandAlone(Element):
@@ -1796,14 +1648,14 @@ def Hover_Over_Element_StandAlone(Element):
                 CommonUtil.TakeScreenShot(sModuleInfo)
                 CommonUtil.ExecLog(sModuleInfo, "Successfully hovered over the element", 1)
                 return "passed"
-            except Exception, e:
+            except Exception:
                 element_attributes = Element.get_attribute('outerHTML')
                 CommonUtil.ExecLog(sModuleInfo, "Element Attributes: %s"%(element_attributes),3)
                 errMsg = "Could not find/hover over your element"
-                Exception_Info(sModuleInfo, errMsg)
-    except Exception, e:
+                return CommonUtil.Exception_Handler(sys.exc_info(),None,errMsg) 
+    except Exception:
         errMsg = "Could not find/hover over your element"
-        Exception_Info(sModuleInfo, errMsg)
+        return CommonUtil.Exception_Handler(sys.exc_info(),None,errMsg) 
 
 
 def Keystroke_Key_StandAlone(KeyToBePressed):
@@ -1817,9 +1669,9 @@ def Keystroke_Key_StandAlone(KeyToBePressed):
         CommonUtil.TakeScreenShot(sModuleInfo)
         CommonUtil.ExecLog(sModuleInfo, "Successfully pressed key", 1)
         return "passed"
-    except Exception, e:
+    except Exception:
         errMsg = "Could not press the desired key"
-        Exception_Info(sModuleInfo, errMsg)
+        return CommonUtil.Exception_Handler(sys.exc_info(),None,errMsg) 
         
         
 def Keystroke_Characters_StandAlone(KeysToBePressed):
@@ -1831,9 +1683,9 @@ def Keystroke_Characters_StandAlone(KeysToBePressed):
         CommonUtil.TakeScreenShot(sModuleInfo)
         CommonUtil.ExecLog(sModuleInfo, "Successfully pressed characters", 1)
         return "passed"
-    except Exception, e:
+    except Exception:
         errMsg = "Could not press the desired characters"
-        Exception_Info(sModuleInfo, errMsg)
+        return CommonUtil.Exception_Handler(sys.exc_info(),None,errMsg) 
 
 
 def Scroll_StandAlone(scroll_direction):
@@ -1853,9 +1705,9 @@ def Scroll_StandAlone(scroll_direction):
             result = "failed"
         return result
     
-    except Exception, e:
+    except Exception:
         errMsg = "Could not scroll in the desired direction"
-        Exception_Info(sModuleInfo, errMsg)
+        return CommonUtil.Exception_Handler(sys.exc_info(),None,errMsg) 
     
 '===================== ===x=== Stand-alone Action Section Ends ===x=== ======================'
 
@@ -1867,14 +1719,9 @@ def Tear_Down_Selenium():
         sBrowser.quit()
         CommonUtil.ExecLog(sModuleInfo, "Closed the browser successfully.", 1)
         return "passed"
-    except Exception, e:
-        CommonUtil.ExecLog(sModuleInfo, "Exception: %s" % e, 3)
-        exc_type, exc_obj, exc_tb = sys.exc_info()
-        fname = os.path.split(exc_tb.tb_frame.f_code.co_filename)[1]
-        Error_Detail = ((str(exc_type).replace("type ", "Error Type: ")) + ";" +  "Error Message: " + str(exc_obj) +";" + "File Name: " + fname + ";" + "Line: "+ str(exc_tb.tb_lineno))
-        print "%s"%Error_Detail
-        CommonUtil.ExecLog(sModuleInfo, "Error: %s" % Error_Detail, 3)
-        return "failed"
+    except Exception:
+        errMsg = "Unable to tear down selenium browsers"
+        return CommonUtil.Exception_Handler(sys.exc_info(),None,errMsg) 
 
 
 ##@Riz and @Sreejoy: More work is needed here. Please investigate further.
@@ -1924,18 +1771,10 @@ def Get_Plain_Text_Element(element_parameter, element_value, parent=False):
         
         return return_element
             
-    except Exception, e:
+    except Exception:
         errMsg = "Could not get the element by plain text search"
-        Exception_Info(sModuleInfo, errMsg)
-
-
+        return CommonUtil.Exception_Handler(sys.exc_info(),None,errMsg)   
 
 def get_driver():
     return sBrowser
 
-def Exception_Info(sModuleInfo, errMsg):
-    exc_type, exc_obj, exc_tb = sys.exc_info()        
-    fname = os.path.split(exc_tb.tb_frame.f_code.co_filename)[1]
-    Error_Detail = ((str(exc_type).replace("type ", "Error Type: ")) + ";" +  "Error Message: " + str(exc_obj) +";" + "File Name: " + fname + ";" + "Line: "+ str(exc_tb.tb_lineno))
-    CommonUtil.ExecLog(sModuleInfo, errMsg + ".  Error: %s"%(Error_Detail), 3)
-    return "failed"
