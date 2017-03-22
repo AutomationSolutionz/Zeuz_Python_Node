@@ -9,7 +9,7 @@ import sys
 import os
 from operator import or_
 from selenium.webdriver.support.expected_conditions import staleness_of
-from Utilities.CompareModule import CompareModule
+from Framework.Utilities.CompareModule import CompareModule
 from json.decoder import errmsg
 from docutils.nodes import status
 from argparse import Action
@@ -30,7 +30,7 @@ from selenium.webdriver.common.keys import Keys
 #Ver1.0
 from selenium.webdriver.common.by import By
 from selenium.common.exceptions import NoSuchElementException
-from Utilities import CommonUtil
+from Framework.Utilities import CommonUtil
 #from Utilities import CompareModule
 from selenium.webdriver.support import expected_conditions as EC
 import types

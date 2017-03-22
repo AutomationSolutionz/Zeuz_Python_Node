@@ -2,8 +2,8 @@
 # Android environment
 from appium import webdriver
 import os, sys, time, inspect, json
-from Utilities import CommonUtil, FileUtilities
-from Built_In_Automation.Mobile.Android.adb_calls import adbOptions
+from Framework.Utilities import CommonUtil, FileUtilities
+from Framework.Built_In_Automation.Mobile.Android.adb_calls import adbOptions
 from appium.webdriver.common.touch_action import TouchAction
 #from Built_In_Automation.Mobile.CrossPlatform.Appium import clickinteraction as ci
 #from Built_In_Automation.Mobile.CrossPlatform.Appium import textinteraction as ti
