@@ -1,6 +1,6 @@
 import os, sys
 import inspect
-from Utilities import CommonUtil
+from Framework.Utilities import CommonUtil
 from Projects.Sample_Amazon_Testing import Amazon
 
 passed_tag_list=['Pass','pass','PASS','PASSED','Passed','passed','true','TRUE','True',True,1,'1','Success','success','SUCCESS']

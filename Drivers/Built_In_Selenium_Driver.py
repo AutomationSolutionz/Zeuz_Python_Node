@@ -5,10 +5,8 @@ Created on May 15, 2016
 '''
 
 import sys
-from Utilities import CommonUtil
+from Framework.Utilities import CommonUtil
 from Framework.Built_In_Automation.Web.Selenium import BuiltInFunctions as Selenium_Built_In
-
-
 
 def open_browser(dependency,run_params,step_data,file_attachment,temp_q):
     try:

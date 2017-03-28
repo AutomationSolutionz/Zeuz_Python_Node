@@ -4,11 +4,11 @@ import inspect
 from ConfigParser import NoOptionError,NoSectionError
 import os, psutil
 import logging
-from Utilities import ConfigModule
+from Framework.Utilities import ConfigModule
 import datetime
-from Utilities import FileUtilities as FL
+from Framework.Utilities import FileUtilities as FL
 import uuid
-from Utilities import RequestFormatter
+from Framework.Utilities import RequestFormatter
 temp_config=os.path.join(os.path.join(FL.get_home_folder(),os.path.join('Desktop',os.path.join('AutomationLog',ConfigModule.get_config_value('Temp','_file')))))
 
 def to_unicode(obj, encoding='utf-8'):
