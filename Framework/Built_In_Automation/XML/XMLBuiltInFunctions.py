@@ -4,7 +4,7 @@ Created on Mar 30, 2017
 @author: mchowdhury
 '''
 import os, sys, inspect
-from Utilities import CommonUtil
+from Framework.Utilities import CommonUtil
 from xml.etree import ElementTree as ET
 
 local_run = True
