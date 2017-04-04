@@ -58,16 +58,16 @@ def launch_and_start_driver(package_name, activity_name):
         CommonUtil.ExecLog(sModuleInfo,"Trying to launch the app...",1,local_run)
         desired_caps = {}
         desired_caps['platformName'] = 'Android'
-        df = adbOptions.get_android_version()
+        df = adbOptions.get_android_version().strip()
         CommonUtil.ExecLog(sModuleInfo,df,1,local_run)
         #adbOptions.kill_adb_server()
         desired_caps['platformVersion'] = df
-        df = adbOptions.get_device_model()
+        df = adbOptions.get_device_model().strip()
         CommonUtil.ExecLog(sModuleInfo,df,1,local_run)
         #adbOptions.kill_adb_server()
         desired_caps['deviceName'] = df
-        desired_caps['appPackage'] = package_name
-        desired_caps['appActivity'] = activity_name
+        desired_caps['appPackage'] = package_name.strip()
+        desired_caps['appActivity'] = activity_name.strip()
         driver = webdriver.Remote('http://localhost:4723/wd/hub', desired_caps)
         global driver
         CommonUtil.ExecLog(sModuleInfo,"Launched the app successfully.",1,local_run)
@@ -160,11 +160,11 @@ def install_and_start_driver(app_location):
         CommonUtil.ExecLog(sModuleInfo,"Trying to install and then launch the app...",1,local_run)
         desired_caps = {}
         desired_caps['platformName'] = 'Android'
-        df = adbOptions.get_android_version()
+        df = adbOptions.get_android_version().strip()
         CommonUtil.ExecLog(sModuleInfo,df,1,local_run)
         #adbOptions.kill_adb_server()
         desired_caps['platformVersion'] = df
-        df = adbOptions.get_device_model()
+        df = adbOptions.get_device_model().strip()
         CommonUtil.ExecLog(sModuleInfo,df,1,local_run)
         #adbOptions.kill_adb_server()
         desired_caps['deviceName'] = df
