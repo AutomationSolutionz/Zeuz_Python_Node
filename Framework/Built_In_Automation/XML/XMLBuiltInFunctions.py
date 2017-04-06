@@ -19,9 +19,16 @@ delete_tag_list = ['Delete', 'delete', 'DELETE', 'Remove', 'remove', 'REMOVE' ] 
 read_tag_list = ['Read', 'read', 'READ'] #Read existing element(S)
 add_tag_list = ['Add', 'add', 'ADD'] #Add additional line or element(s)
 
+
+##
+# This function perform the sequential actions on step-data(s) of XML file
+# Called by: xml_sequential_actions drivedr function
+#
+# @param step_data is a set of data extract from the Automation Framework 
+# and performs the actions process it XML file
+#
+# @return the process result 'pass' or 'fail'
 def sequential_actions_xml(step_data):
-    ''' This section perform the sequential actions on step-data(s) of XML file
-        Called by: xml_sequential_actions '''
     sModuleInfo = inspect.stack()[0][3] + " : " + inspect.getmoduleinfo(__file__).name
     CommonUtil.ExecLog(sModuleInfo, "Function: sequential_actions_xml", 1,local_run)
     try:          
@@ -50,10 +57,17 @@ def sequential_actions_xml(step_data):
 
     except Exception:
         return CommonUtil.Exception_Handler(sys.exc_info())
-    
+
+##
+# Function to perform actions for the sequential logic based on the input in the data_set
+# Called by: <action_result> in sequential_actions_xml function
+#
+# @param action_step_data is a set of data provided by the user 
+# @param action_name provide the respective action perform on the target element
+# @param action_value is the expected result of respective target element
+#
+# @return the process result 'pass' or 'fail'
 def action_handler(action_step_data, action_name, action_value):
-    ''' Handles actions for the sequential logic, based on the input in the data_set
-    Called by: <action_result> in sequential_actions_xml function '''
     sModuleInfo = inspect.stack()[0][3] + " : " + inspect.getmoduleinfo(__file__).name
     CommonUtil.ExecLog(sModuleInfo, "Function: action_handler", 1,local_run)
     try:
@@ -92,10 +106,17 @@ def action_handler(action_step_data, action_name, action_value):
     except Exception:
         errMsg = "Unable to process the action(s)."
         return CommonUtil.Exception_Handler(sys.exc_info(),None,errMsg)
-    
+
+##
+# Update the target element(s) of XML tree
+# Called by: <result> in action_handler function
+#
+# @param step_data is a set of data provided by the user 
+# @param action_name provide the respective action perform on the target element
+# @param action_value is the expected result of respective target element
+#
+# @return the process result 'pass' or 'fail'
 def update_element(step_data, action_name, action_value):
-    ''' Function to update the step data element from the original step_data
-    Called by: <result> in action_handler function '''
     sModuleInfo = inspect.stack()[0][3] + " : " + inspect.getmoduleinfo(__file__).name
     CommonUtil.ExecLog(sModuleInfo, "Function: update_element", 1,local_run)
     try:
@@ -137,10 +158,17 @@ def update_element(step_data, action_name, action_value):
  
         errMsg = "Could not update the element(s)."
         return CommonUtil.Exception_Handler(sys.exc_info(),None,errMsg)
-    
+
+##
+# Delete the existing target element from the XML tree
+# Called by: <result> in action_handler function
+#
+# @param step_data is a set of data provided by the user 
+# @param action_name provide the respective action perform on the target element
+# @param action_value is the expected result of respective target element
+#
+# @return the process result 'pass' or 'fail'
 def delete_element(step_data, action_name, action_value):
-    ''' Function to delete the existing step data
-    Called by: <result> in action_handler function '''
     sModuleInfo = inspect.stack()[0][3] + " : " + inspect.getmoduleinfo(__file__).name
     CommonUtil.ExecLog(sModuleInfo, "Function: delete_element", 1,local_run)
     try:
@@ -179,9 +207,14 @@ def delete_element(step_data, action_name, action_value):
         errMsg = "Unable to delete the element(s)."
         return CommonUtil.Exception_Handler(sys.exc_info(),None,errMsg)
 
+##
+# Read the elements of XML tree
+# Called by: <result> in action_handler function
+#
+# @param step_data is a set of data provided by the user 
+#
+# @return the process result 'pass' or 'fail'
 def read_element(step_data):
-    ''' Function to read the elements from the XML file
-    Called by: <result> in action_handler function '''
     sModuleInfo = inspect.stack()[0][3] + " : " + inspect.getmoduleinfo(__file__).name
     CommonUtil.ExecLog(sModuleInfo, "Function: read_element", 1,local_run)
     try:
@@ -204,10 +237,15 @@ def read_element(step_data):
     except Exception:
         errMsg = "Unable to read the element(s)."
         return CommonUtil.Exception_Handler(sys.exc_info(),None,errMsg)
-    
+
+##
+# Get all element step data(s) provided in the original step_data, except 'action(s)'
+# Called by: <element_step_data> in update_element, read_element functions
+#
+# @param step_data is a set of data provided by the user 
+#
+# @return the added step data elements
 def get_element_step_data(step_data):
-    ''' Function to get all element step data(s) provided in the original step_data, except 'action(s)'
-    Called by: <element_step_data> in update_element, read_element functions '''
     sModuleInfo = inspect.stack()[0][3] + " : " + inspect.getmoduleinfo(__file__).name
     CommonUtil.ExecLog(sModuleInfo, "Function: get_element_step_data", 1,local_run)
     try:
@@ -225,9 +263,15 @@ def get_element_step_data(step_data):
         errMsg = "Could not get element step data."
         return CommonUtil.Exception_Handler(sys.exc_info(),None,errMsg)
 
+##
+# Validate the step data passed on by the user in the original step_data
+# Called by: <returned_step_data> in update_element, delete_element, read_element functions
+#
+# @param step_data is a set of data provided by the user 
+#
+# @return data contains: file_path, tree_level, target_element, target_value, reference_element, 
+# reference_value, element_element, element_valuethe added step data elements
 def validate_step_data(step_data):
-    ''' Function to validate the step data passed on by the user
-    Called by: <returned_step_data> in update_element, delete_element, read_element functions '''
     sModuleInfo = inspect.stack()[0][3] + " : " + inspect.getmoduleinfo(__file__).name
     CommonUtil.ExecLog(sModuleInfo, "Function: validate_step_data", 1,local_run)
     try:
@@ -268,10 +312,18 @@ def validate_step_data(step_data):
     except Exception:
         errMsg = "Could not find elements requested."
         return CommonUtil.Exception_Handler(sys.exc_info(),None,errMsg)
-                
+
+##
+# Get updated element(s) based on action value in the original step_data
+# Called by: <returned_element> in update_element and delete_element functions
+#
+# @param action_name provide the respective action perform on the target element
+# @param action_value is the expected result of respective target element
+# @param returned_step_data is a set of step data(s) after validation 
+#
+# @return data contains the process result after action(s), which contains 'default' or 'pass' or 'fail'
+# 'default' means nothing to change, 'pass' means action success, 'fail' means action failed               
 def get_updated_element(action_name, action_value, returned_step_data):
-    ''' Function to get updated element(s) based on action value in the original step_data
-    Called by: <returned_element> in update_element and delete_element functions '''
     sModuleInfo = inspect.stack()[0][3] + " : " + inspect.getmoduleinfo(__file__).name
     CommonUtil.ExecLog(sModuleInfo, "Function: get_updated_element", 1,local_run)
     try:
@@ -295,9 +347,23 @@ def get_updated_element(action_name, action_value, returned_step_data):
     except Exception:
         return CommonUtil.Exception_Handler(sys.exc_info())
 
+##
+# Updated the target element(s) which is in level one
+# Called by: <returned_target_element> in get_updated_element function
+#
+# @param file_path provide the target location of the XML file 
+# @param target_element is the target tag or attribute
+# @param target_value contains target attribute or value
+# @param reference_element is the parent  tag or attribute
+# @param reference_value contains parent tag or attribute or value
+# @param element_element is the child attribute
+# @param reference_value contains child value
+# @param action_name provide the respective action perform on the target element
+# @param action_value is the expected result of respective target element
+#
+# @return data contains the process result after action(s), which contains 'default' or 'pass' or 'fail'
+# 'default' means nothing to change, 'pass' means action success, 'fail' means action failed  
 def update_l1_target_element(file_path, target_element, target_value, reference_element, reference_value, element_element, element_value, action_name, action_value):
-    ''' Function to update the L1 target element(s) based on action elements
-    Called by: <returned_target_element> in get_updated_element function '''
     sModuleInfo = inspect.stack()[0][3] + " : " + inspect.getmoduleinfo(__file__).name
     CommonUtil.ExecLog(sModuleInfo, "Function: update_l1_target_element", 1,local_run)
     try:
@@ -316,6 +382,22 @@ def update_l1_target_element(file_path, target_element, target_value, reference_
         errMsg = "Unable to update the level 1 element(s)."
         return CommonUtil.Exception_Handler(sys.exc_info(),None,errMsg)
 
+##
+# Updated the target element(s) which is in level two
+# Called by: <returned_target_element> in get_updated_element function
+#
+# @param file_path provide the target location of the XML file 
+# @param target_element is the target tag or attribute
+# @param target_value contains target attribute or value
+# @param reference_element is the parent  tag or attribute
+# @param reference_value contains parent tag or attribute or value
+# @param element_element is the child attribute
+# @param reference_value contains child value
+# @param action_name provide the respective action perform on the target element
+# @param action_value is the expected result of respective target element
+#
+# @return data contains the process result after action(s), which contains 'default' or 'pass' or 'fail'
+# 'default' means nothing to change, 'pass' means action success, 'fail' means action failed  
 def update_l2_target_element(file_path, target_element, target_value, reference_element, reference_value, element_element, element_value, action_name, action_value):
     ''' Function to update the L2 target element(s) based on action elements
     Called by: <returned_target_element> in get_updated_element function '''
@@ -344,7 +426,23 @@ def update_l2_target_element(file_path, target_element, target_value, reference_
     except Exception:
         errMsg = "Unable to update the level 2 element(s)."
         return CommonUtil.Exception_Handler(sys.exc_info(),None,errMsg)
-    
+
+##
+# Updated the target element(s) which is in level three
+# Called by: <returned_target_element> in get_updated_element function
+#
+# @param file_path provide the target location of the XML file 
+# @param target_element is the target tag or attribute
+# @param target_value contains target attribute or value
+# @param reference_element is the parent  tag or attribute
+# @param reference_value contains parent tag or attribute or value
+# @param element_element is the child attribute
+# @param reference_value contains child value
+# @param action_name provide the respective action perform on the target element
+# @param action_value is the expected result of respective target element
+#
+# @return data contains the process result after action(s), which contains 'default' or 'pass' or 'fail'
+# 'default' means nothing to change, 'pass' means action success, 'fail' means action failed  
 def update_l3_target_element(file_path, target_element, target_value, reference_element, reference_value, element_element, element_value, action_name, action_value):
     ''' Function to update the L3 target element(s) based on action elements
     Called by: <returned_target_element> in get_updated_element function '''
@@ -373,9 +471,14 @@ def update_l3_target_element(file_path, target_element, target_value, reference_
         errMsg = "Unable to update the level 3 element(s)."
         return CommonUtil.Exception_Handler(sys.exc_info(),None,errMsg)
 
+##
+# Get the tree of XML tree without deleting any user comment(s)
+# Called by: <file_tree> in update_lx_target_element and validated_lx_target_element functions
+#
+# @param file_path provide the target location of the XML file 
+#
+# @return data contains file parse and XML tree 
 def get_file_tree(file_path):
-    ''' Function to get the XML file tree without deleting any user comment(s)
-    Called by: <file_tree> in update_l1_target_element, update_l2_target_element and update_l3_target_element functions '''
     sModuleInfo = inspect.stack()[0][3] + " : " + inspect.getmoduleinfo(__file__).name
     CommonUtil.ExecLog(sModuleInfo, "Function: get_file_tree", 1,local_run)
     try:
@@ -389,9 +492,14 @@ def get_file_tree(file_path):
         errMsg = "Unable to get the file tree."
         return CommonUtil.Exception_Handler(sys.exc_info(),None,errMsg)
 
+##
+# Handle the user comments in the parse XML tree
+# Called by: <doc> in get_file_tree function
+#
+# @param XMLTreeBuilder, built in Python function
+#
+# @return user comments in the XML tree
 class XMLParser(ET.XMLTreeBuilder):
-    ''' Customize Class function to keep user comment(s) in the XML file
-        Ref: http://effbot.org/zone/element-pi.htm '''
      
     def __init__(self):
         ET.XMLTreeBuilder.__init__(self)
@@ -402,9 +510,21 @@ class XMLParser(ET.XMLTreeBuilder):
         self._target.data(data)
         self._target.end(ET.Comment)
 
+##
+# Updated the target attribute
+# Called by: <returned_target_attribute> in update_lx_target_element functions
+#
+# @param file_path provide the target location of the XML file
+# @param doc contains tree parse
+# @param desired contains target element(s)
+# @param target_attributr is the target element or value
+# @param target_value contains target attribute or value
+# @param action_name provide the respective action perform on the target element
+# @param action_value is the expected result of respective target element
+#
+# @return data contains 'default' or 'pass' or 'fail'
+# 'default' means nothing to change, 'pass' means action success, 'fail' means action failed 
 def update_target_attribute(file_path, doc, desired, target_attrib, target_value, action_name, action_value):
-    ''' Function to update the target element(s)
-    Called by: <returned_validated_attribute> in update_l1_target_element, update_l2_target_element and update_l3_target_element functions '''
     sModuleInfo = inspect.stack()[0][3] + " : " + inspect.getmoduleinfo(__file__).name
     CommonUtil.ExecLog(sModuleInfo, "Function: update_target_attribute", 1,local_run)
     try:
@@ -413,7 +533,7 @@ def update_target_attribute(file_path, doc, desired, target_attrib, target_value
             
             if current_value == action_value:
                 CommonUtil.ExecLog(sModuleInfo, "The current attribute value '%s' is already set to the target value." %current_value, 1, local_run)
-                return "default"
+                return "Default"
             
             elif len(desired) > 1:
                 if current_value == target_value:
@@ -446,9 +566,14 @@ def update_target_attribute(file_path, doc, desired, target_attrib, target_value
         errMsg = "Unable to update the target element(s)."
         return CommonUtil.Exception_Handler(sys.exc_info(),None,errMsg)
 
+# Updated the target action value
+# Called by: <returned_action_value> in update_target_attribute function
+#
+# @param file_path provide the target location of the XML file
+# @param doc contains tree parse
+#
+# @return contains 'pass' result
 def update_action_value(file_path, doc):
-    ''' Function to write the action value in the XML file 
-    Called by: <returned_action_value> in update_target_attribute function '''
     sModuleInfo = inspect.stack()[0][3] + " : " + inspect.getmoduleinfo(__file__).name
     CommonUtil.ExecLog(sModuleInfo, "Function: update_action_value", 1,local_run)
     try:
@@ -461,9 +586,16 @@ def update_action_value(file_path, doc):
         errMsg = "Unable to update the action element(s)."
         return CommonUtil.Exception_Handler(sys.exc_info(),None,errMsg)
 
+##
+# Validate updated element(s) based on action value in the original step_data
+# Called by: <element_validated> in update_element and delete_element functions
+#
+# @param action_name provide the respective action perform on the target element
+# @param action_value is the expected result of respective target element
+# @param returned_step_data is a set of step data(s) after validation 
+#
+# @return contains 'pass' or 'fail' result 
 def validate_updated_element(action_name, action_value, returned_step_data):
-    ''' Function to validate all element(s) updated in the XML file
-    Called by: <element_validated> in update_element and delete_element functions '''
     sModuleInfo = inspect.stack()[0][3] + " : " + inspect.getmoduleinfo(__file__).name
     CommonUtil.ExecLog(sModuleInfo, "Function: validate_updated_element", 1,local_run)
     try:
@@ -487,9 +619,22 @@ def validate_updated_element(action_name, action_value, returned_step_data):
         errMsg = "Could not validate the updated element(s)."
         return CommonUtil.Exception_Handler(sys.exc_info(),None,errMsg) 
 
+##
+# Validate the target element(s) which is in level one
+# Called by: <validated_element> in validate_updated_element function
+#
+# @param file_path provide the target location of the XML file 
+# @param target_element is the target tag or attribute
+# @param target_value contains target attribute or value
+# @param reference_element is the parent  tag or attribute
+# @param reference_value contains parent tag or attribute or value
+# @param element_element is the child attribute
+# @param reference_value contains child value
+# @param action_name provide the respective action perform on the target element
+# @param action_value is the expected result of respective target element
+#
+# @return contains 'pass' or 'fail' result 
 def validate_l1_target_element(file_path, target_element, target_value, reference_element, reference_value, element_element, element_value, action_name, action_value):
-    ''' Function to validate the updated L1 target element(s) in the XML file
-    Called by: <validated_element> in validate_updated_element function '''
     sModuleInfo = inspect.stack()[0][3] + " : " + inspect.getmoduleinfo(__file__).name
     CommonUtil.ExecLog(sModuleInfo, "Function: validate_l1_target_element", 1,local_run)
     try:
@@ -506,9 +651,22 @@ def validate_l1_target_element(file_path, target_element, target_value, referenc
         errMsg = "Unable to validate updated the level 1 element(s)."
         return CommonUtil.Exception_Handler(sys.exc_info(),None,errMsg)
 
+##
+# Validate the target element(s) which is in level two
+# Called by: <validated_element> in validate_updated_element function
+#
+# @param file_path provide the target location of the XML file 
+# @param target_element is the target tag or attribute
+# @param target_value contains target attribute or value
+# @param reference_element is the parent  tag or attribute
+# @param reference_value contains parent tag or attribute or value
+# @param element_element is the child attribute
+# @param reference_value contains child value
+# @param action_name provide the respective action perform on the target element
+# @param action_value is the expected result of respective target element
+#
+# @return contains 'pass' or 'fail' result 
 def validate_l2_target_element(file_path, target_element, target_value, reference_element, reference_value, element_element, element_value, action_name, action_value):
-    ''' Function to validate the updated L2 target element(s) in the XML file
-    Called by: <validated_element> in validate_updated_element function '''
     sModuleInfo = inspect.stack()[0][3] + " : " + inspect.getmoduleinfo(__file__).name
     CommonUtil.ExecLog(sModuleInfo, "Function: validate_l2_target_element", 1,local_run)
     try:
@@ -530,9 +688,22 @@ def validate_l2_target_element(file_path, target_element, target_value, referenc
         errMsg = "Unable to validate updated the level 2 element(s)."
         return CommonUtil.Exception_Handler(sys.exc_info(),None,errMsg)
 
+##
+# Validate the target element(s) which is in level three
+# Called by: <validated_element> in validate_updated_element function
+#
+# @param file_path provide the target location of the XML file 
+# @param target_element is the target tag or attribute
+# @param target_value contains target attribute or value
+# @param reference_element is the parent  tag or attribute
+# @param reference_value contains parent tag or attribute or value
+# @param element_element is the child attribute
+# @param reference_value contains child value
+# @param action_name provide the respective action perform on the target element
+# @param action_value is the expected result of respective target element
+#
+# @return contains 'pass' or 'fail' result 
 def validate_l3_target_element(file_path, target_element, target_value, reference_element, reference_value, element_element, element_value, action_name, action_value):
-    ''' Function to validate the updated L3 target element(s) in the XML file
-    Called by: <validated_element> in validate_updated_element function '''
     sModuleInfo = inspect.stack()[0][3] + " : " + inspect.getmoduleinfo(__file__).name
     CommonUtil.ExecLog(sModuleInfo, "Function: validate_l3_target_element", 1,local_run)
     try:
@@ -554,6 +725,16 @@ def validate_l3_target_element(file_path, target_element, target_value, referenc
         errMsg = "Unable to validate updated the level 3 element(s)."
         return CommonUtil.Exception_Handler(sys.exc_info(),None,errMsg)
 
+##
+# Validate the target attribute
+# Called by: <returned_validated_attribute> in validate_lx_target_element functions
+#
+# @param desired contains target element(s)
+# @param target_attributr is the target element or value
+# @param action_name provide the respective action perform on the target element
+# @param action_value is the expected result of respective target element
+#
+# @return 'pass' or 'fail'
 def validate_target_attribute(desired, target_attrib, action_name, action_value):
     ''' Function to validate the target value
     Called by: <returned_validated_attribute> in validae_l1_target_element validate_l2_target_element and validate_l3_target_element functions '''
@@ -579,6 +760,12 @@ def validate_target_attribute(desired, target_attrib, action_name, action_value)
         errMsg = "Unable to validate updated target element(s)."
         return CommonUtil.Exception_Handler(sys.exc_info(),None,errMsg)
 
+##
+# This driver function perform the sequential actions on step-data(s) of XML file
+#
+# @param step_data is a set of data extract from the Automation Framework 
+#
+# @return the function result pass or fail
 def xml_sequential_actions(step_data):
     ''' This is the main function of XML file, which provide 
     the step_data(s) to it's child function and get the result(s) '''
@@ -607,7 +794,7 @@ def xml_sequential_actions(step_data):
 
 ''' Local run '''
 # android_suite-qc.xml -> target + action: Test-1712
-step_data = [ [ ( 'level 1' , 'filepath' , '/home/asci/AssetScience/recell_dse-candidate/Launcher/resource/configurations/qa_latest/android_suite-qc.xml' , False , False , '' ) , ( 'TestSuite' , 'target parameter' , 'operatorAuditThreshold' , False , False , '' ) , ( 'update' , 'action' , '1' , False , False , '' ) ] ]
+# step_data = [ [ ( 'level 1' , 'filepath' , '/home/asci/AssetScience/recell_dse-candidate/Launcher/resource/configurations/qa_latest/android_suite-qc.xml' , False , False , '' ) , ( 'TestSuite' , 'target parameter' , 'operatorAuditThreshold' , False , False , '' ) , ( 'update' , 'action' , '1' , False , False , '' ) ] ]
 
 #assetscience-refurb.ini'
 # step_data = [ [ ( 'level 1' , 'filepath' , '/home/asci/AssetScience/recell_dse-candidate/assetscience-refurb.ini' , False , False , '' ) , ( 'ServerSync' , 'target parameter' , False , False , False , '' ) , ( 'update' , 'action' , 'True' , False , False , '' ) ] ]
@@ -622,7 +809,7 @@ step_data = [ [ ( 'level 1' , 'filepath' , '/home/asci/AssetScience/recell_dse-c
 # step_data = [ [ ( 'level 3' , 'filepath' , '/home/asci/AssetScience/Generic/Teleplan_21212121212122_20170228083953.xml' , False , False , '' ) , ( 'read' , 'action' , False , False , False , '' ) ] ]
 
 # failcodes.xml -> reference + target + action
-# step_data = [ [ ( 'level 3' , 'filepath' , '/home/asci/AssetScience/recell_dse-candidate/Launcher/resource/configurations/qa_latest/failcodes.xml' , False , False , '' ) , ( 'name' , 'reference parameter' , 'General Test Failure' , False , False , '' ) , ( 'name' , 'target parameter' , 'ICloudTest' , False , False , '' ) , ( 'update' , 'action' , 'ICloudTest-update' , False , False , '' ) ] ]
+step_data = [ [ ( 'level 3' , 'filepath' , '/home/asci/AssetScience/recell_dse-candidate/Launcher/resource/configurations/qa_latest/failcodes.xml' , False , False , '' ) , ( 'name' , 'reference parameter' , 'General Test Failure' , False , False , '' ) , ( 'name' , 'target parameter' , 'ICloudTest' , False , False , '' ) , ( 'update' , 'action' , 'ICloudTest-update' , False , False , '' ) ] ]
 # android_testdefinitions.xml -> reference + element + target + action:Test-2336
 # step_data = [ [ ( 'level 3' , 'filepath' , '/home/asci/AssetScience/recell_dse-candidate/Launcher/resource/configurations/qa_latest/android_testdefinitions.xml' , False , False , '' ) , ( 'customerIdentifier' , 'reference parameter' , 'HeadsetStereoTest' , False , False , '' ) , ( 'mode' , 'element parameter' , 'MuteBothChannel' , False , False , '' ) , ( 'AuditMode' , 'target parameter' , 'enabled' , False , False , '' ) , ( 'update' , 'action' , 'false' , False , False , '' ) ] ]
 
