@@ -134,7 +134,7 @@ def save_fields_from_rest_call(result_dict, fields_to_be_saved):
 
 
         if len(saved_response) > 0:
-            CommonUtil.ExecLog(sModuleInfo, "SavedResponse Saved Fields with Value##", 1)
+            CommonUtil.ExecLog(sModuleInfo, "#Saved Response Fields with Value##", 1)
             for each in saved_response:
                 CommonUtil.ExecLog(sModuleInfo,"%s : %s"%(each,saved_response[each]),1)
     except Exception:
