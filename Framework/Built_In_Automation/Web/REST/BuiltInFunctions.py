@@ -1,7 +1,7 @@
 
 # -*- coding: cp1252 -*-
 '''
-Created on April 11, 2017
+Created on April 10, 2017
 
 @author: Built_In_Automation Solutionz Inc.
 '''
@@ -73,21 +73,25 @@ def get_previous_response_variables_in_strings(step_data_string_input):
     sModuleInfo = inspect.stack()[0][3] + " : " + inspect.getmoduleinfo(__file__).name
     CommonUtil.ExecLog(sModuleInfo, "Function: get previous response variables in strings", 1)
     try:
+        changed = False
         input = step_data_string_input
-        all_parse = input.split('%')
-        print all_parse
-
+        all_parse = input.split('%|')
         output = ''
+        for each in all_parse:
+            if '|%' in each:
+                changed = True
+                parts = each.split('|%')
+                output += saved_response[parts[0]]
+                CommonUtil.ExecLog(sModuleInfo,'Replacing variable "%s" with its value "%s"'%(parts[0],saved_response[parts[0]]),1)
+                output += parts[1]
+            else:
+                output += each
+        if changed == True:
+            CommonUtil.ExecLog(sModuleInfo,"Input string is changed by variable substitution",1)
+            CommonUtil.ExecLog(sModuleInfo, "Input string before change: %s"%input, 1)
+            CommonUtil.ExecLog(sModuleInfo, "Input string after change: %s"%output, 1)
 
-        if len(all_parse) == 1 or len(all_parse) == 2:
-            return input
-        else:
-            for i in range(0, len(all_parse)):
-                if i % 2 == 1:
-                    output += saved_response[all_parse[i]]
-                else:
-                    output += all_parse[i]
-            return output
+        return output
 
     except Exception:
         return CommonUtil.Exception_Handler(sys.exc_info())
@@ -153,7 +157,7 @@ def handle_rest_call(data, fields_to_be_saved):
         elif method.lower().strip() == 'put':
             result = requests.put(url, json=body, headers=headers, verify=False)
         elif method.lower().strip() == 'get':
-            result = requests.put(url, json=body, headers=headers, verify=False)
+            result = requests.get(url, json=body, headers=headers, verify=False)
         else:
             return "failed"
         status_code = int(result.status_code)
@@ -162,7 +166,7 @@ def handle_rest_call(data, fields_to_be_saved):
             CommonUtil.ExecLog(sModuleInfo,'Post Call Returned Bad Response',3)
             return "failed"
         else:
-            CommonUtil.ExecLog(sModuleInfo, 'Post Call Returned Response Successfully', 3)
+            CommonUtil.ExecLog(sModuleInfo, 'Post Call Returned Response Successfully', 1)
             CommonUtil.ExecLog(sModuleInfo,"Received Response: %s"%result.json(),1)
             save_fields_from_rest_call(result.json(), fields_to_be_saved)
             return "passed"
@@ -315,3 +319,6 @@ def Validate_Step_Data(step_data):
 
 
 '===================== ===x=== Validation Section Ends ===x=== ======================'
+
+def get_saved_response():
+    return saved_response
