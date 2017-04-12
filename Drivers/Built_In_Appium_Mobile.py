@@ -7,8 +7,8 @@ Created on May 15, 2016
 
 import os,sys
 import inspect
-from Utilities import CommonUtil
-from Built_In_Automation.Mobile.CrossPlatform.Appium import BuiltInFunctions as bf
+from Framework.Utilities import CommonUtil
+from Framework.Built_In_Automation.Mobile.CrossPlatform.Appium import BuiltInFunctions as bf
 
 passed_tag_list=['Pass','pass','PASS','PASSED','Passed','passed','true','TRUE','True',True,1,'1','Success','success','SUCCESS']
 failed_tag_list=['Fail','fail','FAIL','Failed','failed','FAILED','false','False','FALSE',False,0,'0']

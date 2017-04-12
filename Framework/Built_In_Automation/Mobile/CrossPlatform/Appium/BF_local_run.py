@@ -1,6 +1,6 @@
 
 
-from Built_In_Automation.Mobile.CrossPlatform.Appium import BuiltInFunctions as bf
+from Framework.Built_In_Automation.Mobile.CrossPlatform.Appium import BuiltInFunctions as bf
 #from Built_In_Automation.Mobile.CrossPlatform.Appium import clickinteraction as ci
 from appium import webdriver
 

@@ -6,15 +6,15 @@ Created on December 7, 2016
 
 import os,sys
 import inspect
-from Utilities import CommonUtil
-from Built_In_Automation.Web.Selenium import BuiltInFunctions as Selenium_Built_In
+from Framework.Utilities import CommonUtil
+from Framework.Built_In_Automation.Web.Selenium import BuiltInFunctions as Selenium_Built_In
 
 import sys
 import os
 import requests
 sys.path.append("..")
 
-from Utilities import CommonUtil
+from Framework.Utilities import CommonUtil
 
 class AuthorizationData:
 

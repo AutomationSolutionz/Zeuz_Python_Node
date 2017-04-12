@@ -5,8 +5,8 @@ import imutils
 import glob
 import cv2
 import os
-from Utilities import CommonUtil
-from Utilities import FileUtilities as FL
+from Framework.Utilities import CommonUtil
+from Framework.Utilities import FileUtilities as FL
 
 def locateCenter(file_name):
     try:

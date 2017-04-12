@@ -1,7 +1,7 @@
 __author__='shetu'
 import inspect
 import copy
-from Utilities import CommonUtil
+from Framework.Utilities import CommonUtil
 
 
 def make_single_data_set_compatible(expected_list):

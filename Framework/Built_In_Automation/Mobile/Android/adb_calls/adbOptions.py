@@ -1,7 +1,7 @@
 #Android Debug Bridge (ADB) options to get the android devices info connected via usb/wi-fi
 __author__='minar'
 import subprocess, inspect, os
-from Utilities import CommonUtil
+from Framework.Utilities import CommonUtil
 
 def start_adb_server():
     sModuleInfo = inspect.stack()[0][3] + " : " + inspect.getmoduleinfo(__file__).name

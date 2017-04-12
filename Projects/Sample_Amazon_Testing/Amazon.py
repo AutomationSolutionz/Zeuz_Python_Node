@@ -10,8 +10,8 @@ import xlrd
 sys.path.append("..")
 import inspect
 import time
-from Utilities import CommonUtil
-from Built_In_Automation.Web.Selenium import BuiltInFunctions
+from Framework.Utilities import CommonUtil
+from Framework.Built_In_Automation.Web.Selenium import BuiltInFunctions
 
 
 

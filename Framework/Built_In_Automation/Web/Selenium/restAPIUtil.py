@@ -2,8 +2,8 @@ import sys, os, re, inspect
 import json
 import requests
 from datetime import datetime
-from Utilities import CommonUtil
-from Built_In_Automation.Web.Selenium import BuiltInFunctions
+from Framework.Utilities import CommonUtil
+from Framework.Built_In_Automation.Web.Selenium import BuiltInFunctions
 
 sys.path.append("..")
 
