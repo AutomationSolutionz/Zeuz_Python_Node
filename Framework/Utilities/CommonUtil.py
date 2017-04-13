@@ -249,7 +249,15 @@ def TakeScreenShot(ImageName,local_run=False):
                  img = Gdk.pixbuf_get_from_window(window, x, y, width, height)
 
                  if img:
+                     from PIL import Image
                      img.savev(full_location, "png", (), ())
+                     file1 = full_location
+                     file2 = full_location
+                     size = 800, 450
+
+                     im = Image.open(file1)
+                     im.thumbnail(size, Image.ANTIALIAS)
+                     im.save(file2, "JPEG")
                      print 'screenshot saved as: "%s"' % full_location
                  else:
                      print "unable to take screenshot..."
