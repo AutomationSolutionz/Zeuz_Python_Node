@@ -22,7 +22,7 @@ PATH = lambda p: os.path.abspath(
 
 
 global driver
-#driver = None
+driver = None
 
 global WebDriver_Wait 
 WebDriver_Wait = 20
@@ -211,28 +211,28 @@ def launch_and_start_driver(package_name, activity_name):
         CommonUtil.ExecLog(sModuleInfo,"Trying to launch the app...",1)
         desired_caps = {}
         desired_caps['platformName'] = 'Android'
-        df = adbOptions.get_android_version()
+        df = adbOptions.get_android_version().stip()
         #df = "4.4.2"
         CommonUtil.ExecLog(sModuleInfo,df,1)
         #adbOptions.kill_adb_server()
         desired_caps['platformVersion'] = df
-        df = adbOptions.get_device_model()
+        df = adbOptions.get_device_model().stip()
         #df = "Android"
         CommonUtil.ExecLog(sModuleInfo,df,1)
         #adbOptions.kill_adb_server()
 
         desired_caps['deviceName'] = df
-        desired_caps['appPackage'] = package_name
-        desired_caps['appActivity'] = activity_name
+        desired_caps['appPackage'] = package_name.stip()
+        desired_caps['appActivity'] = activity_name.stip()
         #desired_caps['appPackage'] = 'com.assetscience.androidprodiagnostics'
         #desired_caps['appActivity'] = 'com.assetscience.recell.device.android.prodiagnostics.MainActivity'
         driver = webdriver.Remote('http://localhost:4723/wd/hub', desired_caps)
-        wait(10)
+        #wait(10)
         global driver
         #deletelater = WebDriverWait(driver, WebDriver_Wait)
         #print deletelater
         CommonUtil.ExecLog(sModuleInfo,"Launched the app successfully.",1)
-        wait(3)
+        #wait(3)
         return "passed"
     except Exception, e:
         CommonUtil.ExecLog(sModuleInfo, "Exception: %s" % e, 3)
@@ -1070,7 +1070,7 @@ def Wait(time_to_wait):
         CommonUtil.ExecLog(sModuleInfo, "Starting waiting for %s seconds.." % time_to_wait, 1)
         #function_data = Validate_Step_Data(step_data)
         driver.implicitly_wait(float(time_to_wait))
-        time.sleep(float(time_to_wait))
+        #time.sleep(float(time_to_wait))
         CommonUtil.ExecLog(sModuleInfo, "Waited successfully", 1)
         return "passed"
     except Exception, e:
@@ -1082,11 +1082,11 @@ def Wait(time_to_wait):
         return "failed"
 
 
-def Swipe():
+def Swipe(x, y, w, h):
     sModuleInfo = inspect.stack()[0][3] + " : " + inspect.getmoduleinfo(__file__).name
     try:
         CommonUtil.ExecLog(sModuleInfo, "Starting to swipe the screen...", 1)
-        driver.swipe(100, 500, 100, 100, 800)
+        driver.swipe(x, y, w, h)
         CommonUtil.ExecLog(sModuleInfo, "Swiped the screen successfully", 1)
         return "passed"
     except Exception, e:
@@ -1204,6 +1204,67 @@ def Validate_Text(step_data):
 '''
    Moving all locate, Click and text interaction function under one 
 '''
+    
+def read_screen_heirarchy():
+    ''' Read the XML string of the device's GUI and return it '''
+    
+    sModuleInfo = inspect.stack()[0][3] + " : " + inspect.getmoduleinfo(__file__).name
+    
+    try:
+        data = driver.page_source # Read screen and get xml formatted text
+        CommonUtil.ExecLog(sModuleInfo,"Read screen heirarchy successfully",1)
+        if data:
+            return data
+        else:
+            return False
+    except:
+        CommonUtil.ExecLog(sModuleInfo,"Read screen heirarchy unsuccessfully",3)
+        return False
+
+def tap_location(positions):
+    ''' Tap the provided position using x,y cooridnates '''
+    # positions: list containing x,y coordinates
+    
+    sModuleInfo = inspect.stack()[0][3] + " : " + inspect.getmoduleinfo(__file__).name
+    try:
+        driver.tap(positions) # Tap the location (must be in list format)
+        CommonUtil.ExecLog(sModuleInfo,"Tapped on location successfully",1)
+        return 'passed'
+    except:
+        CommonUtil.ExecLog(sModuleInfo,"Tapped on location unsuccessfully",3)
+        return 'failed'
+    
+def get_element_location_by_id(_id):
+    ''' Find and return an element's x,y coordinates '''
+    
+    sModuleInfo = inspect.stack()[0][3] + " : " + inspect.getmoduleinfo(__file__).name
+    
+    try:
+        positions = []
+        elem = locate_element_by_id(driver, _id) # Get element object for given id
+        location = elem.location # Get element x,y coordinates
+        positions.append((location['x'], location['y'])) # Put them on an array - Needs to be in this format for dirver.tap()
+        CommonUtil.ExecLog(sModuleInfo,"Retreived location successfully",1)
+        return positions # Return array
+    except:
+        CommonUtil.ExecLog(sModuleInfo,"Retreived location unsuccessfully",3)
+        return 'failed'
+        
+
+def get_window_size():
+    ''' Read the device's LCD resolution / screen size '''
+    # Returns a dictionary of width and height
+    
+    sModuleInfo = inspect.stack()[0][3] + " : " + inspect.getmoduleinfo(__file__).name
+    
+    try:
+        return driver.get_window_size() # Get window resolution in dictionary
+        CommonUtil.ExecLog(sModuleInfo,"Read window size successfully",1)
+    except:
+        CommonUtil.ExecLog(sModuleInfo,"Read window size unsuccessfully",1)
+        return 'failed'
+    
+    
 #location
 
 
