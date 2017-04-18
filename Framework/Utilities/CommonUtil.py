@@ -1,7 +1,6 @@
 # -*- coding: utf-8 -*-
 import sys
 import inspect
-from ConfigParser import NoOptionError,NoSectionError
 import os, psutil
 import logging
 from Framework.Utilities import ConfigModule
@@ -10,6 +9,9 @@ from Framework.Utilities import FileUtilities as FL
 import uuid
 from Framework.Utilities import RequestFormatter
 temp_config=os.path.join(os.path.join(FL.get_home_folder(),os.path.join('Desktop',os.path.join('AutomationLog',ConfigModule.get_config_value('Temp','_file')))))
+
+global shared_variables
+shared_variables = {}
 
 def to_unicode(obj, encoding='utf-8'):
     if isinstance(obj, basestring):
@@ -466,3 +468,94 @@ class MachineInfo():
             return False
 
 
+#shared_variables
+
+def Set_Shared_Variables(key, value):
+    try:
+        sModuleInfo = inspect.stack()[0][3] + " : " + inspect.getmoduleinfo(__file__).name
+        global shared_variables
+        if key == '' or key == None or value == '' or value == None: #if input is invalid
+            return "failed"
+        else:
+            shared_variables[key] = value
+            ExecLog(sModuleInfo, "Variable value of '%s' is set as: %s" % (key, value), 1)
+            return "passed"
+    except:
+        Exception_Handler(sys.exc_info())
+
+def Get_Shared_Variables(key):
+    try:
+        sModuleInfo = inspect.stack()[0][3] + " : " + inspect.getmoduleinfo(__file__).name
+        global shared_variables
+        if key == '' or key == None: #if input is invalid
+            return "failed"
+        else:
+            if key in shared_variables:
+                value = shared_variables[key]
+                ExecLog(sModuleInfo,"Variable value of '%s' is: %s"%(key,value),1)
+                return value
+            else:
+                ExecLog(sModuleInfo,"No Such variable named '%s' found in shared variables"%key,3)
+                return "failed"
+    except:
+        Exception_Handler(sys.exc_info())
+
+def Show_All_Shared_Variables():
+    try:
+        sModuleInfo = inspect.stack()[0][3] + " : " + inspect.getmoduleinfo(__file__).name
+        global shared_variables
+        if len(shared_variables) > 0:
+            ExecLog(sModuleInfo, "##Shared Variable Fields with Value##", 1)
+            for each in shared_variables:
+                ExecLog(sModuleInfo, "%s : %s" % (each, shared_variables[each]), 1)
+    except:
+        Exception_Handler(sys.exc_info())
+
+def Handle_Step_Data_Variables(step_data):
+    sModuleInfo = inspect.stack()[0][3] + " : " + inspect.getmoduleinfo(__file__).name
+    try:
+        changed_step_data = []
+        for dataset in step_data:
+            changed_dataset = []
+            for row in dataset:
+                changed_row = []
+                for each in row:
+                    if each == True or each == False or each == '':
+                        changed_row.append(each)
+                    else:
+                        if '|%' in each:
+                            changed_row.append(get_previous_response_variables_in_strings(each))
+                        else:
+                            changed_row.append(each)
+                changed_dataset.append(changed_row)
+            changed_step_data.append(changed_dataset)
+        return changed_step_data
+    except:
+        Exception_Handler(sys.exc_info())
+
+def get_previous_response_variables_in_strings(step_data_string_input):
+    sModuleInfo = inspect.stack()[0][3] + " : " + inspect.getmoduleinfo(__file__).name
+    ExecLog(sModuleInfo, "Function: get previous response variables in strings", 1)
+    try:
+        changed = False
+        input = step_data_string_input
+        all_parse = input.split('%|')
+        output = ''
+        for each in all_parse:
+            if '|%' in each:
+                changed = True
+                parts = each.split('|%')
+                output += Get_Shared_Variables(parts[0])
+                ExecLog(sModuleInfo,'Replacing variable "%s" with its value "%s"'%(parts[0],Get_Shared_Variables(parts[0])),1)
+                output += parts[1]
+            else:
+                output += each
+        if changed == True:
+            ExecLog(sModuleInfo,"Input string is changed by variable substitution",1)
+            ExecLog(sModuleInfo, "Input string before change: %s"%input, 1)
+            ExecLog(sModuleInfo, "Input string after change: %s"%output, 1)
+
+        return output
+
+    except Exception:
+        return Exception_Handler(sys.exc_info())

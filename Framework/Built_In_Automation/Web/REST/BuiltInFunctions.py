@@ -16,11 +16,10 @@ sys.path.append("..")
 import ast
 import time
 import inspect
-from Framework.Utilities import CommonUtil
 
 requests.packages.urllib3.disable_warnings()
-global saved_response
-saved_response = {}
+
+from Framework.Utilities import CommonUtil
 
 '============================= Sequential Action Section Begins=============================='
 
@@ -68,33 +67,6 @@ def Action_Handler(action_step_data, action_row):
 
 
 # Method to get previous response variables
-#if we want the variable 'access_token', then we will have to use %access_token% in step data
-def get_previous_response_variables_in_strings(step_data_string_input):
-    sModuleInfo = inspect.stack()[0][3] + " : " + inspect.getmoduleinfo(__file__).name
-    CommonUtil.ExecLog(sModuleInfo, "Function: get previous response variables in strings", 1)
-    try:
-        changed = False
-        input = step_data_string_input
-        all_parse = input.split('%|')
-        output = ''
-        for each in all_parse:
-            if '|%' in each:
-                changed = True
-                parts = each.split('|%')
-                output += saved_response[parts[0]]
-                CommonUtil.ExecLog(sModuleInfo,'Replacing variable "%s" with its value "%s"'%(parts[0],saved_response[parts[0]]),1)
-                output += parts[1]
-            else:
-                output += each
-        if changed == True:
-            CommonUtil.ExecLog(sModuleInfo,"Input string is changed by variable substitution",1)
-            CommonUtil.ExecLog(sModuleInfo, "Input string before change: %s"%input, 1)
-            CommonUtil.ExecLog(sModuleInfo, "Input string after change: %s"%output, 1)
-
-        return output
-
-    except Exception:
-        return CommonUtil.Exception_Handler(sys.exc_info())
 
 
 # Method to return dictonaries from string
@@ -113,11 +85,10 @@ def save_fields_from_rest_call(result_dict, fields_to_be_saved):
     CommonUtil.ExecLog(sModuleInfo, "Function: save fields from rest call", 1)
     try:
         fields_to_be_saved = fields_to_be_saved.split(",")
-        global saved_response
         if fields_to_be_saved[0].lower().strip() == 'all':
             for each in result_dict:
                 field = each.strip()
-                saved_response[field] = result_dict[field]
+                CommonUtil.Set_Shared_Variables(field,result_dict[field])
             CommonUtil.ExecLog(sModuleInfo, "All response fields are saved", 1)
         elif fields_to_be_saved[0].lower().strip() == 'none':
             CommonUtil.ExecLog(sModuleInfo, "No response fields are saved", 1)
@@ -128,15 +99,11 @@ def save_fields_from_rest_call(result_dict, fields_to_be_saved):
                 field = each.strip()
                 if field in result_dict:
                     which_are_saved.append(field)
-                    saved_response[field] = result_dict[field]
+                    CommonUtil.Set_Shared_Variables(field, result_dict[field])
 
             CommonUtil.ExecLog(sModuleInfo, "%s response fields are saved"%(", ".join(str(x) for x in which_are_saved)),1)
 
-
-        if len(saved_response) > 0:
-            CommonUtil.ExecLog(sModuleInfo, "#Saved Response Fields with Value##", 1)
-            for each in saved_response:
-                CommonUtil.ExecLog(sModuleInfo,"%s : %s"%(each,saved_response[each]),1)
+        CommonUtil.Show_All_Shared_Variables()
     except Exception:
         return CommonUtil.Exception_Handler(sys.exc_info())
 
@@ -146,10 +113,10 @@ def handle_rest_call(data, fields_to_be_saved):
     sModuleInfo = inspect.stack()[0][3] + " : " + inspect.getmoduleinfo(__file__).name
     CommonUtil.ExecLog(sModuleInfo, "Function: handle rest call", 1)
     try:
-        url = get_previous_response_variables_in_strings(data[0])
-        method = get_previous_response_variables_in_strings(data[1])
-        body = get_previous_response_variables_in_strings(data[2])
-        headers = get_previous_response_variables_in_strings(data[3])
+        url = data[0]
+        method = data[1]
+        body = data[2]
+        headers = data[3]
         body = get_value_as_list(body)
         headers = get_value_as_list(headers)
 
@@ -254,7 +221,7 @@ def Sequential_Actions(step_data):
 
                 elif row[1] == "action":
                     CommonUtil.ExecLog(sModuleInfo, "Checking the action to be performed in the action row", 1)
-                    result = Action_Handler([each], row)
+                    result = Action_Handler(CommonUtil.Handle_Step_Data_Variables([each]), row)
                     if result == [] or result == "failed":
                         return "failed"
 
@@ -326,5 +293,3 @@ def Validate_Step_Data(step_data):
 
 '===================== ===x=== Validation Section Ends ===x=== ======================'
 
-def get_saved_response():
-    return saved_response

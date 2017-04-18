@@ -7,13 +7,7 @@ Created on May 15, 2016
 
 import sys
 import os
-from operator import or_
-from selenium.webdriver.support.expected_conditions import staleness_of
-from Framework.Utilities.CompareModule import CompareModule
-from json.decoder import errmsg
-from docutils.nodes import status
-from argparse import Action
-from selenium.webdriver.remote.webdriver import WebDriver
+
 from selenium.webdriver.remote.webelement import WebElement
 from selenium.webdriver.firefox.firefox_binary import FirefoxBinary
 
@@ -21,7 +15,7 @@ from selenium.webdriver.firefox.firefox_binary import FirefoxBinary
 sys.path.append("..")
 from selenium import webdriver
 from selenium.webdriver.support.ui import Select
-# from selenium.webdriver.support.select import Select
+
 import time
 import inspect
 from selenium.webdriver.support.ui import WebDriverWait
@@ -29,13 +23,13 @@ from selenium.webdriver.common.action_chains import ActionChains
 from selenium.webdriver.common.keys import Keys
 #Ver1.0
 from selenium.webdriver.common.by import By
-from selenium.common.exceptions import NoSuchElementException
-from Framework.Utilities import CommonUtil
-#from Utilities import CompareModule
-from selenium.webdriver.support import expected_conditions as EC
-import types
 
-global WebDriver_Wait 
+from Framework.Utilities import CommonUtil
+
+from selenium.webdriver.support import expected_conditions as EC
+
+
+global WebDriver_Wait
 WebDriver_Wait = 20
 global WebDriver_Wait_Short
 WebDriver_Wait_Short = 10
@@ -46,12 +40,12 @@ sBrowser = None
 def Open_Browser(dependency):
     global sBrowser
     sModuleInfo = inspect.stack()[0][3] + " : " + inspect.getmoduleinfo(__file__).name
-    
+
     try:
         browser=dependency['Browser']
     except Exception:
         ErrorMessage =  "Dependency not set for browser. Please set the Apply Filter value to YES."
-        return CommonUtil.Exception_Handler(sys.exc_info(), None, ErrorMessage)    
+        return CommonUtil.Exception_Handler(sys.exc_info(), None, ErrorMessage)
     try:
         sBrowser.close()
     except:
@@ -68,9 +62,10 @@ def Open_Browser(dependency):
             sBrowser.implicitly_wait(WebDriver_Wait)
             sBrowser.maximize_window()
             CommonUtil.ExecLog(sModuleInfo, "Started Chrome Browser", 1)
+            CommonUtil.Set_Shared_Variables('sBrowser',sBrowser)
             return "passed"
-        
-        
+
+
         elif browser == 'firefox':
             from sys import platform as _platform
             if _platform == "linux" or _platform == "linux2":
@@ -98,22 +93,25 @@ def Open_Browser(dependency):
             sBrowser.implicitly_wait(WebDriver_Wait)
             sBrowser.maximize_window()
             CommonUtil.ExecLog(sModuleInfo, "Started Firefox Browser", 1)
+            CommonUtil.Set_Shared_Variables('sBrowser', sBrowser)
             return "passed"
         elif "ie" in browser:
             sBrowser = webdriver.Ie()
             sBrowser.implicitly_wait(WebDriver_Wait)
             sBrowser.maximize_window()
             CommonUtil.ExecLog(sModuleInfo, "Started Internet Explorer Browser", 1)
+            CommonUtil.Set_Shared_Variables('sBrowser', sBrowser)
             return "passed"
-        
+
         elif "safari" in browser:
             os.environ["SELENIUM_SERVER_JAR"] = os.sys.prefix + os.sep + "Scripts" + os.sep + "selenium-server-standalone-2.45.0.jar"
             sBrowser = webdriver.Safari()
             sBrowser.implicitly_wait(WebDriver_Wait)
             sBrowser.maximize_window()
             CommonUtil.ExecLog(sModuleInfo, "Started Safari Browser", 1)
+            CommonUtil.Set_Shared_Variables('sBrowser', sBrowser)
             return "passed"
-    
+
         else:
             CommonUtil.ExecLog(sModuleInfo, "You did not select a valid browser: %s" % browser, 3)
             return "failed"
@@ -126,7 +124,7 @@ def Go_To_Link(step_data, page_title=False):
     #if not then we don't do the validation
     sModuleInfo = inspect.stack()[0][3] + " : " + inspect.getmoduleinfo(__file__).name
     try:
- 
+
         web_link=step_data[0][0][2]
         sBrowser.get(web_link)
         sBrowser.implicitly_wait(WebDriver_Wait)
@@ -162,9 +160,9 @@ def Get_Element_Step_Data(step_data):
                 continue
             else:
                 element_step_data.append(each)
-                 
+
         return element_step_data
-    
+
     except Exception:
         return CommonUtil.Exception_Handler(sys.exc_info())
 
@@ -232,8 +230,8 @@ def Action_Handler(action_step_data, action_name):
                 return "failed"
         else:
             CommonUtil.ExecLog(sModuleInfo, "The action you entered is incorrect. Please provide accurate information on the data set(s).", 3)
-            return "failed" 
-        
+            return "failed"
+
     except Exception:
         return CommonUtil.Exception_Handler(sys.exc_info())
 
@@ -242,14 +240,14 @@ def Enter_Text_In_Text_Box(step_data):
     sModuleInfo = inspect.stack()[0][3] + " : " + inspect.getmoduleinfo(__file__).name
     CommonUtil.ExecLog(sModuleInfo, "Function: Enter_Text_In_Text_Box", 1)
     try:
-        #If there are no two separate data-sets, or if the first data-set is not between 1 to 3 items, or if the second data-set doesn't have only 1 item                   
+        #If there are no two separate data-sets, or if the first data-set is not between 1 to 3 items, or if the second data-set doesn't have only 1 item
         if ((len(step_data) != 1) or (1 < len(step_data[0]) >= 5)):# or (len(step_data[1]) != 1)):
             CommonUtil.ExecLog(sModuleInfo, "The information in the data-set(s) are incorrect. Please provide accurate data set(s) information.", 3)
             return "failed"
         else:
             element_step_data=Get_Element_Step_Data(step_data)
             #element_step_data = step_data[0][0:len(step_data[0])-1:1]
-            returned_step_data_list = Validate_Step_Data(element_step_data) 
+            returned_step_data_list = Validate_Step_Data(element_step_data)
             #returned_step_data_list = Validate_Step_Data(step_data[0])
             if ((returned_step_data_list == []) or (returned_step_data_list == "failed")):
                 return "failed"
@@ -269,7 +267,7 @@ def Enter_Text_In_Text_Box(step_data):
                     CommonUtil.TakeScreenShot(sModuleInfo)
                     CommonUtil.ExecLog(sModuleInfo, "Successfully set the value of to text to: %s"%text_value, 1)
                     return "passed"
-                except Exception:           
+                except Exception:
                     element_attributes = Element.get_attribute('outerHTML')
                     CommonUtil.ExecLog(sModuleInfo, "Element Attributes: %s"%(element_attributes),3)
                     errMsg = "Could not select/click your element."
@@ -289,7 +287,7 @@ def Keystroke_For_Element(step_data):
         else:
             #element_step_data = step_data[0][0:len(step_data[0])-1:1]
             element_step_data = Get_Element_Step_Data(step_data)
-            returned_step_data_list = Validate_Step_Data(element_step_data) 
+            returned_step_data_list = Validate_Step_Data(element_step_data)
             if ((returned_step_data_list == []) or (returned_step_data_list == "failed")):
                 return "failed"
             else:
@@ -320,7 +318,7 @@ def Keystroke_For_Element(step_data):
 #                     else:
 #                         CommonUtil.ExecLog(sModuleInfo, "The correct parameter for the action has not been entered. Please check for errors.", 2)
 #                         result = "failed"
-                        
+
                     if (result != "failed"):
                         CommonUtil.TakeScreenShot(sModuleInfo)
                         CommonUtil.ExecLog(sModuleInfo, "Successfully entered keystroke for the element with given parameters and values", 1)
@@ -349,8 +347,8 @@ def Click_Element(step_data):
             return "failed"
         else:
             #element_step_data = step_data[0][0:len(step_data[0])-1:1]
-            element_step_data = Get_Element_Step_Data(step_data)            
-            returned_step_data_list = Validate_Step_Data(element_step_data) 
+            element_step_data = Get_Element_Step_Data(step_data)
+            returned_step_data_list = Validate_Step_Data(element_step_data)
             if ((returned_step_data_list == []) or (returned_step_data_list == "failed")):
                 return "failed"
             else:
@@ -367,7 +365,7 @@ def Click_Element(step_data):
                     return CommonUtil.Exception_Handler(sys.exc_info(),None,errMsg)
     except Exception:
         return CommonUtil.Exception_Handler(sys.exc_info())
-    
+
 
 #Method to click and hold on element; step data passed on by the user
 def Click_and_Hold_Element(step_data):
@@ -379,8 +377,8 @@ def Click_and_Hold_Element(step_data):
             return "failed"
         else:
             #element_step_data = step_data[0][0:len(step_data[0])-1:1]
-            element_step_data = Get_Element_Step_Data(step_data)            
-            returned_step_data_list = Validate_Step_Data(element_step_data) 
+            element_step_data = Get_Element_Step_Data(step_data)
+            returned_step_data_list = Validate_Step_Data(element_step_data)
             if ((returned_step_data_list == []) or (returned_step_data_list == "failed")):
                 return "failed"
             else:
@@ -410,8 +408,8 @@ def Context_Click_Element(step_data):
             return "failed"
         else:
             #element_step_data = step_data[0][0:len(step_data[0])-1:1]
-            element_step_data = Get_Element_Step_Data(step_data)            
-            returned_step_data_list = Validate_Step_Data(element_step_data) 
+            element_step_data = Get_Element_Step_Data(step_data)
+            returned_step_data_list = Validate_Step_Data(element_step_data)
             if ((returned_step_data_list == []) or (returned_step_data_list == "failed")):
                 return "failed"
             else:
@@ -440,8 +438,8 @@ def Double_Click_Element(step_data):
             return "failed"
         else:
             #element_step_data = step_data[0][0:len(step_data[0])-1:1]
-            element_step_data = Get_Element_Step_Data(step_data)            
-            returned_step_data_list = Validate_Step_Data(element_step_data) 
+            element_step_data = Get_Element_Step_Data(step_data)
+            returned_step_data_list = Validate_Step_Data(element_step_data)
             if ((returned_step_data_list == []) or (returned_step_data_list == "failed")):
                 return "failed"
             else:
@@ -459,7 +457,7 @@ def Double_Click_Element(step_data):
                     return CommonUtil.Exception_Handler(sys.exc_info(),None,errMsg)
     except Exception:
         return CommonUtil.Exception_Handler(sys.exc_info())
-    
+
 
 #Method to move to middle of the element; step data passed on by the user
 def Move_To_Element(step_data):
@@ -472,7 +470,7 @@ def Move_To_Element(step_data):
         else:
             #element_step_data = step_data[0][0:len(step_data[0])-1:1]
             element_step_data = Get_Element_Step_Data(step_data)
-            returned_step_data_list = Validate_Step_Data(element_step_data) 
+            returned_step_data_list = Validate_Step_Data(element_step_data)
             if ((returned_step_data_list == []) or (returned_step_data_list == "failed")):
                 return "failed"
             else:
@@ -489,7 +487,7 @@ def Move_To_Element(step_data):
                     return CommonUtil.Exception_Handler(sys.exc_info(),None,errMsg)
     except Exception:
         return CommonUtil.Exception_Handler(sys.exc_info())
-    
+
 
 #Method to hover over element; step data passed on by the user
 def Hover_Over_Element(step_data):
@@ -502,7 +500,7 @@ def Hover_Over_Element(step_data):
         else:
             #element_step_data = step_data[0][0:len(step_data[0])-1:1]
             element_step_data = Get_Element_Step_Data(step_data)
-            returned_step_data_list = Validate_Step_Data(element_step_data) 
+            returned_step_data_list = Validate_Step_Data(element_step_data)
             if ((returned_step_data_list == []) or (returned_step_data_list == "failed")):
                 return "failed"
             else:
@@ -526,12 +524,12 @@ def Hover_Over_Element(step_data):
 def Wait_For_New_Element(step_data):
     sModuleInfo = inspect.stack()[0][3] + " : " + inspect.getmoduleinfo(__file__).name
     CommonUtil.ExecLog(sModuleInfo, "Function: Wait_For_New_Page_Element", 1)
-    try:                  
+    try:
         if ((len(step_data) != 1) or (1 < len(step_data[0]) >= 5)):# or (len(step_data[1]) != 1)):
             CommonUtil.ExecLog(sModuleInfo, "The information in the data-set(s) are incorrect. Please provide accurate data set(s) information.", 3)
             return "failed"
         else:
-            #element_step_data = step_data[0][0:len(step_data[0])-1:1]            
+            #element_step_data = step_data[0][0:len(step_data[0])-1:1]
             element_step_data = Get_Element_Step_Data(step_data)
             returned_step_data_list = Validate_Step_Data(element_step_data)
             if ((returned_step_data_list == []) or (returned_step_data_list == "failed")):
@@ -540,8 +538,8 @@ def Wait_For_New_Element(step_data):
                 try:
                     for each in step_data[0]:
                         if each[1]=="action":
-                            timeout_duration = int(each[2])                            
-                    
+                            timeout_duration = int(each[2])
+
                     start_time = time.time()
                     interval = 1
                     for i in range(timeout_duration):
@@ -551,7 +549,7 @@ def Wait_For_New_Element(step_data):
                             continue
                         else:
                             break
-                        
+
                     if ((Element == []) or (Element == "failed")):
                         return "failed"
                     else:
@@ -561,7 +559,7 @@ def Wait_For_New_Element(step_data):
                     element_attributes = Element.get_attribute('outerHTML')
                     CommonUtil.ExecLog(sModuleInfo, "Element Attributes: %s"%(element_attributes),3)
                     errMsg = "Could not find the new page element requested."
-                    return CommonUtil.Exception_Handler(sys.exc_info(),None,errMsg)    
+                    return CommonUtil.Exception_Handler(sys.exc_info(),None,errMsg)
     except Exception:
         return CommonUtil.Exception_Handler(sys.exc_info())
 
@@ -581,7 +579,7 @@ def Validate_Text(step_data):
                         Element = Get_Element('tag', 'html')
                         break
                     except Exception:
-                        return CommonUtil.Exception_Handler(sys.exc_info(),None,"Could not get element from the current page.")  
+                        return CommonUtil.Exception_Handler(sys.exc_info(),None,"Could not get element from the current page.")
                 else:
                     element_step_data = Get_Element_Step_Data(step_data)
                     returned_step_data_list = Validate_Step_Data(element_step_data)
@@ -591,17 +589,17 @@ def Validate_Text(step_data):
                         try:
                             Element = Get_Element(returned_step_data_list[0], returned_step_data_list[1], returned_step_data_list[2], returned_step_data_list[3], returned_step_data_list[4])
                             break
-                            
+
                         except Exception:
                             errMsg = "Could not get element based on the information provided."
-                            return CommonUtil.Exception_Handler(sys.exc_info(),None,errMsg)           
-            
+                            return CommonUtil.Exception_Handler(sys.exc_info(),None,errMsg)
+
 #             if step_data[0][0][0] == "current_page":
 #                 try:
 #                     Element = Get_Element('tag', 'html')
 #                 except Exception:
 #                     errMsg = "Could not get element from the current page."
-#                     return CommonUtil.Exception_Handler(sys.exc_info(),None,errMsg) 
+#                     return CommonUtil.Exception_Handler(sys.exc_info(),None,errMsg)
 #             else:
 #                 element_step_data = Get_Element_Step_Data(step_data)
 #                 # element_step_data = step_data[0][0:len(step_data[0])-1:1]
@@ -613,7 +611,7 @@ def Validate_Text(step_data):
 #                         Element = Get_Element(returned_step_data_list[0], returned_step_data_list[1], returned_step_data_list[2], returned_step_data_list[3], returned_step_data_list[4])
 #                     except Exception:
 #                         errMsg = "Could not get element based on the information provided."
-#                         return CommonUtil.Exception_Handler(sys.exc_info(),None,errMsg) 
+#                         return CommonUtil.Exception_Handler(sys.exc_info(),None,errMsg)
             for each_step_data_item in step_data[0]:
                 if each_step_data_item[1]=="action":
                     expected_text_data = each_step_data_item[2]
@@ -624,7 +622,7 @@ def Validate_Text(step_data):
             for each_text_item in list_of_element_text:
                 if each_text_item != "":
                     visible_list_of_element_text.append(each_text_item)
-            
+
             #if step_data[0][len(step_data[0])-1][0] == "validate partial text":
             if validation_type == "validate partial text":
                 actual_text_data = visible_list_of_element_text
@@ -647,14 +645,14 @@ def Validate_Text(step_data):
                 else:
                     CommonUtil.ExecLog(sModuleInfo, "Unable to validate using complete match.", 3)
                     return "failed"
-            
+
             else:
                 CommonUtil.ExecLog(sModuleInfo, "Incorrect validation type. Please check step data", 3)
                 return "failed"
 
     except Exception:
         return CommonUtil.Exception_Handler(sys.exc_info())
-    
+
 
 #Method to sleep for a particular duration
 def Sleep(step_data):
@@ -708,7 +706,7 @@ def Scroll(step_data):
         #return result
     except Exception:
         return CommonUtil.Exception_Handler(sys.exc_info())
-    
+
 
 #Method to return pass or fail for the step outcome
 def Step_Result(step_data):
@@ -730,7 +728,7 @@ def Step_Result(step_data):
         return CommonUtil.Exception_Handler(sys.exc_info())
 
 
-def Select_Deselect(step_data):    
+def Select_Deselect(step_data):
     sModuleInfo = inspect.stack()[0][3] + " : " + inspect.getmoduleinfo(__file__).name
     CommonUtil.ExecLog(sModuleInfo, "Function: Step_Result", 1)
     try:
@@ -740,7 +738,7 @@ def Select_Deselect(step_data):
         else:
             #element_step_data = step_data[0][0:len(step_data[0])-1:1]
             element_step_data = Get_Element_Step_Data(step_data)
-            returned_step_data_list = Validate_Step_Data(element_step_data) 
+            returned_step_data_list = Validate_Step_Data(element_step_data)
             if ((returned_step_data_list == []) or (returned_step_data_list == "failed")):
                 return "failed"
             else:
@@ -792,10 +790,10 @@ def Select_Deselect(step_data):
                             else:
                                 CommonUtil.ExecLog(sModuleInfo, "The correct parameter for the action has not been entered. Please check for errors.", 2)
                                 result = "failed"
-   
+
                         else:
                             continue
-                    
+
                 except Exception:
                     element_attributes = Element.get_attribute('outerHTML')
                     CommonUtil.ExecLog(sModuleInfo, "Element Attributes: %s"%(element_attributes),3)
@@ -803,27 +801,27 @@ def Select_Deselect(step_data):
                     return CommonUtil.Exception_Handler(sys.exc_info(),None,errMsg)
     except Exception:
         return CommonUtil.Exception_Handler(sys.exc_info())
-    
-    
+
+
 #Performs a series of action or conditional logical action decisions based on user input
 def Sequential_Actions(step_data):
     sModuleInfo = inspect.stack()[0][3] + " : " + inspect.getmoduleinfo(__file__).name
     CommonUtil.ExecLog(sModuleInfo, "Function: Sequential_Actions", 1)
-    try:            
+    try:
         for each in step_data:
             logic_row=[]
             for row in each:
-                #finding what to do for each dataset  
-                #if len(row)==5 and row[1] != "":     ##modifying the filter for changes to be made in the sub-field of the step data. May remove this part of the if statement                
-                if ((row[1] == "element parameter") or (row[1] == "reference parameter") or (row[1] == "relation type") or (row[1] == "element parameter 1 of 2") or (row[1] == "element parameter 2 of 2")):     ##modifying the filter for changes to be made in the sub-field of the step data. May remove this part of the if statement                
+                #finding what to do for each dataset
+                #if len(row)==5 and row[1] != "":     ##modifying the filter for changes to be made in the sub-field of the step data. May remove this part of the if statement
+                if ((row[1] == "element parameter") or (row[1] == "reference parameter") or (row[1] == "relation type") or (row[1] == "element parameter 1 of 2") or (row[1] == "element parameter 2 of 2")):     ##modifying the filter for changes to be made in the sub-field of the step data. May remove this part of the if statement
                     continue
-                
+
                 elif row[1]=="action":
                     CommonUtil.ExecLog(sModuleInfo, "Checking the action to be performed in the action row", 1)
                     result = Action_Handler([each],row[0])
                     if result == [] or result == "failed":
                         return "failed"
-                    
+
                 elif row[1]=="conditional action":
                     CommonUtil.ExecLog(sModuleInfo, "Checking the logical conditional action to be performed in the conditional action row", 1)
                     logic_decision=""
@@ -831,7 +829,7 @@ def Sequential_Actions(step_data):
                     if len(logic_row)==2:
                         #element_step_data = each[0:len(step_data[0])-2:1]
                         element_step_data = Get_Element_Step_Data([each])
-                        returned_step_data_list = Validate_Step_Data(element_step_data) 
+                        returned_step_data_list = Validate_Step_Data(element_step_data)
                         if ((returned_step_data_list == []) or (returned_step_data_list == "failed")):
                             return "failed"
                         else:
@@ -840,10 +838,10 @@ def Sequential_Actions(step_data):
                                 if Element == 'failed':
                                     logic_decision = "false"
                                 else:
-                                    logic_decision = "true"                                        
+                                    logic_decision = "true"
                             except Exception, errMsg:
                                 errMsg = "Could not find element in the by the criteria..."
-                                return CommonUtil.Exception_Handler(sys.exc_info(),None,errMsg)             
+                                return CommonUtil.Exception_Handler(sys.exc_info(),None,errMsg)
                     else:
                         continue
 
@@ -857,17 +855,17 @@ def Sequential_Actions(step_data):
                                 if cond_result == "failed":
                                     return "failed"
                             return "passed"
-                
+
                 else:
                     CommonUtil.ExecLog(sModuleInfo, "The sub-field information is incorrect. Please provide accurate information on the data set(s).", 3)
-                    return "failed"                 
+                    return "failed"
         return "passed"
 
     except Exception:
         return CommonUtil.Exception_Handler(sys.exc_info())
 
 '===================== ===x=== Sequential Action Section Ends ===x=== ======================'
-    
+
 
 '============================= Validate Table Section Begins =============================='
 
@@ -879,7 +877,7 @@ def Model_Actual_Data(actual_data):
         row_count = 1
         for each_row in actual_data:
             column_count = 1
-            for each_column in each_row:            
+            for each_column in each_row:
                 temp_data_model = ["column "+ str(column_count), "row "+str(row_count)]
                 temp_data_model.append(each_column.strip())
                 #temp_data_model.append("False")
@@ -887,10 +885,10 @@ def Model_Actual_Data(actual_data):
                 Modeled_Data_Set.append(temp_data_model)
                 column_count = column_count +1
             row_count = row_count+1
-        return Modeled_Data_Set  
+        return Modeled_Data_Set
 
     except Exception:
-        return CommonUtil.Exception_Handler(sys.exc_info(),None,"Could not model actual data")        
+        return CommonUtil.Exception_Handler(sys.exc_info(),None,"Could not model actual data")
 
 
 
@@ -902,7 +900,7 @@ def Model_Actual_Data_Ignoring_Column(actual_data):
         row_count = 1
         for each_row in actual_data:
             column_count = 1
-            for each_column in each_row:            
+            for each_column in each_row:
                 temp_data_model = ["row "+str(row_count)]
                 temp_data_model.append(each_column.strip())
                 #temp_data_model.append("False")
@@ -910,12 +908,12 @@ def Model_Actual_Data_Ignoring_Column(actual_data):
                 Modeled_Data_Set.append(temp_data_model)
                 column_count = column_count +1
             row_count = row_count+1
-        return Modeled_Data_Set  
+        return Modeled_Data_Set
     except Exception:
-        return CommonUtil.Exception_Handler(sys.exc_info(),None,"Could not model actual data ignoring column")        
+        return CommonUtil.Exception_Handler(sys.exc_info(),None,"Could not model actual data ignoring column")
 
 
-    
+
 def Model_Actual_Data_Ignoring_Row(actual_data):
     sModuleInfo = inspect.stack()[0][3] + " : " + inspect.getmoduleinfo(__file__).name
     CommonUtil.ExecLog(sModuleInfo, "Function: Model_Actual_Data_Ignoring_Row", 1)
@@ -924,7 +922,7 @@ def Model_Actual_Data_Ignoring_Row(actual_data):
         row_count = 1
         for each_row in actual_data:
             column_count = 1
-            for each_column in each_row:            
+            for each_column in each_row:
                 temp_data_model = ["column "+str(column_count)]
                 temp_data_model.append(each_column.strip())
                 #temp_data_model.append("False")
@@ -932,9 +930,9 @@ def Model_Actual_Data_Ignoring_Row(actual_data):
                 Modeled_Data_Set.append(temp_data_model)
                 column_count = column_count +1
             row_count = row_count+1
-        return Modeled_Data_Set  
+        return Modeled_Data_Set
     except Exception:
-        return CommonUtil.Exception_Handler(sys.exc_info(),None,"Could not model actual data ignoring column")        
+        return CommonUtil.Exception_Handler(sys.exc_info(),None,"Could not model actual data ignoring column")
 
 
 
@@ -948,16 +946,16 @@ def Model_Expected_Data(expected_data):
             column_count = 1
             temp_data_model = []
             for each_column in each_row:
-                if column_count <= 3:            
+                if column_count <= 3:
                     temp_data_model.append(each_column.strip())
                     column_count = column_count +1
                 else:
                     break
             Modeled_Data_Set.append(temp_data_model)
             row_count = row_count+1
-        return Modeled_Data_Set  
+        return Modeled_Data_Set
     except Exception:
-        return CommonUtil.Exception_Handler(sys.exc_info(),None,"Could not model expected data")        
+        return CommonUtil.Exception_Handler(sys.exc_info(),None,"Could not model expected data")
 
 
 
@@ -971,7 +969,7 @@ def Model_Expected_Data_Ignoring_Column(expected_data):
             column_count = 1
             temp_data_model = []
             for each_column in each_row:
-                if column_count <= 3:            
+                if column_count <= 3:
                     if column_count == 1:
                         column_count = column_count + 1
                     else:
@@ -981,9 +979,9 @@ def Model_Expected_Data_Ignoring_Column(expected_data):
                     break
             Modeled_Data_Set.append(temp_data_model)
             row_count = row_count+1
-        return Modeled_Data_Set  
+        return Modeled_Data_Set
     except Exception:
-        return CommonUtil.Exception_Handler(sys.exc_info(),None,"Could not model expected data ignoring column.")        
+        return CommonUtil.Exception_Handler(sys.exc_info(),None,"Could not model expected data ignoring column.")
 
 
 
@@ -997,7 +995,7 @@ def Model_Expected_Data_Ignoring_Row(expected_data):
             column_count = 1
             temp_data_model = []
             for each_column in each_row:
-                if column_count <= 3:            
+                if column_count <= 3:
                     if column_count == 2:
                         column_count = column_count + 1
                     else:
@@ -1007,12 +1005,12 @@ def Model_Expected_Data_Ignoring_Row(expected_data):
                     break
             Modeled_Data_Set.append(temp_data_model)
             row_count = row_count+1
-        return Modeled_Data_Set  
+        return Modeled_Data_Set
     except Exception:
-        return CommonUtil.Exception_Handler(sys.exc_info(),None,"Could not model expected data ignoring row.")        
+        return CommonUtil.Exception_Handler(sys.exc_info(),None,"Could not model expected data ignoring row.")
 
-    
-    
+
+
 def Model_Expected_Column_Row(expect_data):
     #collect all column name
     sModuleInfo = inspect.stack()[0][3] + " : " + inspect.getmoduleinfo(__file__).name
@@ -1027,9 +1025,9 @@ def Model_Expected_Column_Row(expect_data):
                 row_names.append(each[1])
         return  column_names, row_names
     except Exception:
-        return CommonUtil.Exception_Handler(sys.exc_info(),None,"Could not model expected column row. ")        
+        return CommonUtil.Exception_Handler(sys.exc_info(),None,"Could not model expected column row. ")
 
-    
+
 
 ##Helper function for validate table - Exact Matching
 def Validate_Table_Helper(expected_table_data, actual_table_data, validation_option):
@@ -1039,12 +1037,12 @@ def Validate_Table_Helper(expected_table_data, actual_table_data, validation_opt
         mismatch_count = 0
         matched_list = []
         mismatch_list = []
-        
+
         actual_table_length = len(actual_table_data)
         expected_table_length = len(expected_table_data)
         if (actual_table_length != expected_table_length):
-            CommonUtil.ExecLog(sModuleInfo, "Size of the tables do not match!", 2)  
-            
+            CommonUtil.ExecLog(sModuleInfo, "Size of the tables do not match!", 2)
+
         for each_item in expected_table_data:
             if validation_option == "default":
                 ##Do default action
@@ -1054,11 +1052,11 @@ def Validate_Table_Helper(expected_table_data, actual_table_data, validation_opt
                 else:
                     mismatch_list.append(each_item)
                     mismatch_count = mismatch_count + 1
-            
-            ##Need to be implemented!        
+
+            ##Need to be implemented!
             elif validation_option == "case_insensitive":
                 CommonUtil.ExecLog(sModuleInfo, "Function yet to be provided. Please wait for the update.", 2)
-            
+
         #sequential logical flow
         if mismatch_count == 0:
             CommonUtil.ExecLog(sModuleInfo, "There were 0 mismatches! Table has been validated.", 1)
@@ -1070,18 +1068,18 @@ def Validate_Table_Helper(expected_table_data, actual_table_data, validation_opt
             CommonUtil.ExecLog(sModuleInfo, "List of matched items: %s"%(matched_list), 3)
             CommonUtil.ExecLog(sModuleInfo, "List of mismatched items: %s"%(mismatch_list), 3)
             return "failed"
-            
-        #print mismatch_count, match_count, mismatch_list, matched_list 
-                       
+
+        #print mismatch_count, match_count, mismatch_list, matched_list
+
     except Exception:
-        return CommonUtil.Exception_Handler(sys.exc_info(),None,"Could not model expected data")        
+        return CommonUtil.Exception_Handler(sys.exc_info(),None,"Could not model expected data")
 
         errMsg = "Error when comparing the exact expected and actual data."
-        return CommonUtil.Exception_Handler(sys.exc_info(),None,errMsg)   
-                    
-                      
+        return CommonUtil.Exception_Handler(sys.exc_info(),None,errMsg)
+
+
 #Validate table
-def Validate_Table(step_data):    
+def Validate_Table(step_data):
     sModuleInfo = inspect.stack()[0][3] + " : " + inspect.getmoduleinfo(__file__).name
     try:
         #element_step_data = Get_Element_Step_Data(step_data)
@@ -1093,14 +1091,14 @@ def Validate_Table(step_data):
                 get_element_last_item = table_validate_index - 1
                 print get_element_last_item
                 break
-          
+
         if get_element_last_item == 0:
             element_step_data = step_data[0][0]
-        else:        
+        else:
             element_step_data = step_data[0][0:get_element_last_item:1]
         ##print statement to be removed
         print element_step_data
-        returned_step_data_list = Validate_Step_Data([element_step_data]) 
+        returned_step_data_list = Validate_Step_Data([element_step_data])
         if ((returned_step_data_list == []) or (returned_step_data_list == "failed")):
             return "failed"
         else:
@@ -1108,19 +1106,19 @@ def Validate_Table(step_data):
                 #oCompare = CompareModule()
                 expected_table_step_data = (step_data[0][table_validate_index+1:len(step_data[0])-1:1])
                 actual_table_dataset = Get_Table_Elements(returned_step_data_list[0], returned_step_data_list[1], returned_step_data_list[2], returned_step_data_list[3], returned_step_data_list[4])
-                
+
                 try:
                     validation_option=step_data[0][table_validate_index][2]
                     if (step_data[0][table_validate_index][0] == "exact"):
                         modelled_actual_table_step_data = Model_Actual_Data(actual_table_dataset)
                         modelled_expected_table_step_data = Model_Expected_Data(expected_table_step_data)
                         Validate_Table_Helper(modelled_expected_table_step_data, modelled_actual_table_step_data, validation_option)
-                    
+
                     elif step_data[0][table_validate_index][0]== "ignore_row":
                         modelled_actual_table_step_data = Model_Actual_Data_Ignoring_Row(actual_table_dataset)
                         modelled_expected_table_step_data = Model_Expected_Data_Ignoring_Row(expected_table_step_data)
                         Validate_Table_Helper(modelled_expected_table_step_data, modelled_actual_table_step_data, validation_option)
-                        
+
                     elif step_data[0][table_validate_index][0]== "ignore_column":
                         modelled_actual_table_step_data = Model_Actual_Data_Ignoring_Column(actual_table_dataset)
                         modelled_expected_table_step_data = Model_Expected_Data_Ignoring_Column(expected_table_step_data)
@@ -1128,28 +1126,28 @@ def Validate_Table(step_data):
 
                     else:
                         CommonUtil.ExecLog(sModuleInfo, "The information in the table validation index is incorrect. Please provide the appropriate information", 3)
-                        return "failed"                        
-                                                        
+                        return "failed"
+
                     #status = oCompare.compare([expected_table_step_data], [modelled_actual_table_step_data])
                     #print status
                 except Exception:
                     errMsg = "Error when comparing the expected and actual data."
-                    return CommonUtil.Exception_Handler(sys.exc_info(),None,errMsg) 
-           
+                    return CommonUtil.Exception_Handler(sys.exc_info(),None,errMsg)
+
             except Exception:
                 errMsg = "Unable to get table element. Please check if the correct information has been provided."
-                return CommonUtil.Exception_Handler(sys.exc_info(),None,errMsg) 
-         
+                return CommonUtil.Exception_Handler(sys.exc_info(),None,errMsg)
+
     except Exception:
-        return CommonUtil.Exception_Handler(sys.exc_info(),None,"Could not find your element.")        
-
-     
-
-'===================== ===x=== Validate Table Section Ends ===x=== ======================'    
+        return CommonUtil.Exception_Handler(sys.exc_info(),None,"Could not find your element.")
 
 
 
-'============================= Get Elements Section Begins =============================='    
+'===================== ===x=== Validate Table Section Ends ===x=== ======================'
+
+
+
+'============================= Get Elements Section Begins =============================='
 
 def Get_Element(element_parameter,element_value,reference_parameter=False,reference_value=False,reference_is_parent_or_child=False,get_all_unvalidated_elements=False):
     sModuleInfo = inspect.stack()[0][3] + " : " + inspect.getmoduleinfo(__file__).name
@@ -1157,8 +1155,8 @@ def Get_Element(element_parameter,element_value,reference_parameter=False,refere
         All_Elements_Found = []
         if reference_is_parent_or_child == False:
             if ((reference_parameter == False) and (reference_value == False)):
-                All_Elements = Get_All_Elements(element_parameter,element_value)     
-                if ((All_Elements == []) or (All_Elements == 'failed')):        
+                All_Elements = Get_All_Elements(element_parameter,element_value)
+                if ((All_Elements == []) or (All_Elements == 'failed')):
                     CommonUtil.ExecLog(sModuleInfo, "Could not find your element by parameter:%s and value:%s..."%(element_parameter,element_value), 3)
                     return "failed"
                 else:
@@ -1174,9 +1172,9 @@ def Get_Element(element_parameter,element_value,reference_parameter=False,refere
             else:
                 CommonUtil.ExecLog(sModuleInfo, "Could not find your element because you are missing at least one parameter", 3)
                 return "failed"
-            
-        elif reference_is_parent_or_child == "parent":     
-            CommonUtil.ExecLog(sModuleInfo, "Locating all parents elements", 1)   
+
+        elif reference_is_parent_or_child == "parent":
+            CommonUtil.ExecLog(sModuleInfo, "Locating all parents elements", 1)
             all_parent_elements = Get_All_Elements(reference_parameter,reference_value)#,"parent")
             all_matching_elements = []
             for each_parent in all_parent_elements:
@@ -1186,7 +1184,7 @@ def Get_Element(element_parameter,element_value,reference_parameter=False,refere
                         all_matching_elements.append(each_matching)
             All_Elements_Found = all_matching_elements
 
-        elif reference_is_parent_or_child == "child":        
+        elif reference_is_parent_or_child == "child":
             all_parent_elements = Get_All_Elements(element_parameter,element_value)
             all_matching_elements = []
             for each_parent in all_parent_elements:
@@ -1194,9 +1192,9 @@ def Get_Element(element_parameter,element_value,reference_parameter=False,refere
                 if interested_elem != "failed":
                     all_matching_elements.append(each_parent)
             All_Elements_Found=all_matching_elements
-            
-        elif reference_is_parent_or_child == "sibling":     
-            CommonUtil.ExecLog(sModuleInfo, "Locating the sibling element", 1)   
+
+        elif reference_is_parent_or_child == "sibling":
+            CommonUtil.ExecLog(sModuleInfo, "Locating the sibling element", 1)
 #             all_sibling_elements = Get_All_Elements(reference_parameter,reference_value)
 #             for each_sibling in all_sibling_elements:
 #                 all_parent_elements = WebDriverWait(each_sibling, WebDriver_Wait).until(EC.presence_of_all_elements_located((By.XPATH, "..")))
@@ -1209,15 +1207,15 @@ def Get_Element(element_parameter,element_value,reference_parameter=False,refere
 #                 All_Elements_Found = all_matching_elements
 ###trying out list comprehension
             All_Elements_Found=[each_matching for each_sibling in Get_All_Elements(reference_parameter,reference_value) for each_parent in WebDriverWait(each_sibling, WebDriver_Wait).until(EC.presence_of_all_elements_located((By.XPATH, ".."))) for each_matching in Get_All_Elements(element_parameter,element_value,each_parent)]
-            
+
         elif ((reference_is_parent_or_child!="parent") or (reference_is_parent_or_child!="child") or (reference_is_parent_or_child!=False)):
             CommonUtil.ExecLog(sModuleInfo, "Unspecified reference type; please indicate whether parent, child or leave blank", 3)
             return "failed"
-        
+
         else:
             CommonUtil.ExecLog(sModuleInfo, "Unable to run based on the current inputs, please check the inputs and re-enter values", 3)
             return "failed"
-        
+
         #this method returns all the elements found without validation
         if(get_all_unvalidated_elements!=False):
             return All_Elements_Found
@@ -1225,9 +1223,9 @@ def Get_Element(element_parameter,element_value,reference_parameter=False,refere
             #can later also pass on the index of the element we want
             result = Element_Validation(All_Elements_Found)#, index)
             return result
-    
+
     except Exception:
-        return CommonUtil.Exception_Handler(sys.exc_info(),None,"Could not find your element.")        
+        return CommonUtil.Exception_Handler(sys.exc_info(),None,"Could not find your element.")
 
 
 #Method to get the elements based on type - more methods may be added in the future
@@ -1245,7 +1243,7 @@ def Get_All_Elements(parameter,value,parent=False):
             elif (parameter == "partial_link_text"):
                 All_Elements = WebDriverWait(sBrowser, WebDriver_Wait).until(EC.presence_of_all_elements_located((By.PARTIAL_LINK_TEXT, '%s'%(value))))
             elif parameter == "css":
-                All_Elements = WebDriverWait(sBrowser, WebDriver_Wait).until(EC.presence_of_all_elements_located((By.CSS_SELECTOR, '%s'%(value))))    
+                All_Elements = WebDriverWait(sBrowser, WebDriver_Wait).until(EC.presence_of_all_elements_located((By.CSS_SELECTOR, '%s'%(value))))
             elif parameter == "xpath":
                 All_Elements = WebDriverWait(sBrowser, WebDriver_Wait).until(EC.presence_of_all_elements_located((By.XPATH, '%s'%(value))))
             elif (parameter == "partial_plain_text" or parameter == "plain_text"):
@@ -1274,12 +1272,12 @@ def Get_All_Elements(parameter,value,parent=False):
             else:
                 All_Elements = parent.find_elements(By.XPATH, "//*[@%s='%s']"%(parameter,value))
 #                 All_Elements = WebDriverWait(parent, WebDriver_Wait).until(EC.presence_of_all_elements_located((By.XPATH, "//*[@%s='%s']"%(parameter,value))))
-                
+
         return All_Elements
     except Exception:
-        return CommonUtil.Exception_Handler(sys.exc_info(),None,"Unable to get the element.")        
+        return CommonUtil.Exception_Handler(sys.exc_info(),None,"Unable to get the element.")
 
-    
+
 #Use two parameters on the same level to get a specific element
 #Called by: Get_Element
 def Get_Double_Matching_Elements(param_1, value_1, param_2, value_2):
@@ -1294,9 +1292,9 @@ def Get_Double_Matching_Elements(param_1, value_1, param_2, value_2):
                 if (param_1 == "text" and param_2 == "tag"):
                     text_value = value_1
                     tag_value = value_2
-                elif(param_1 == "tag" and param_2 == "text"): 
+                elif(param_1 == "tag" and param_2 == "text"):
                     text_value = value_2
-                    tag_value = value_1  
+                    tag_value = value_1
                 Text_Element = WebDriverWait(sBrowser, WebDriver_Wait).until(EC.presence_of_all_elements_located((By.XPATH, "//*[text()='%s']"%text_value)))
                 Tag_Element = WebDriverWait(sBrowser, WebDriver_Wait).until(EC.presence_of_all_elements_located((By.TAG_NAME, '%s'%(tag_value))))
                 matched_element = []
@@ -1309,18 +1307,18 @@ def Get_Double_Matching_Elements(param_1, value_1, param_2, value_2):
                     return "failed"
             except Exception:
                 errMsg = "Could not find elements by double matching with types text and tag name"
-                return CommonUtil.Exception_Handler(sys.exc_info(),None,errMsg)        
+                return CommonUtil.Exception_Handler(sys.exc_info(),None,errMsg)
 
 
-        
-        ##Text and CSS double matching        
+
+        ##Text and CSS double matching
         elif ((param_1 == "text" and param_2 == "css") or (param_1 == "css" and param_2 == "text")):
             CommonUtil.ExecLog(sModuleInfo, "Locating element using double matching, types: text and css selector", 1)
             try:
                 if (param_1 == "text" and param_2 == "css"):
                     text_value = value_1
                     css_value = value_2
-                elif(param_1 == "css" and param_2 == "text"): 
+                elif(param_1 == "css" and param_2 == "text"):
                     text_value = value_2
                     css_value = value_1
                 Text_Element = WebDriverWait(sBrowser, WebDriver_Wait).until(EC.presence_of_all_elements_located((By.XPATH, "//*[text()='%s']"%text_value)))
@@ -1335,16 +1333,16 @@ def Get_Double_Matching_Elements(param_1, value_1, param_2, value_2):
                     return "failed"
             except Exception:
                 errMsg = "Could not find elements by double matching with types text and css selector"
-                return CommonUtil.Exception_Handler(sys.exc_info(),None,errMsg) 
-        
-        ##Link_Text and CSS double matching                
+                return CommonUtil.Exception_Handler(sys.exc_info(),None,errMsg)
+
+        ##Link_Text and CSS double matching
         elif (((param_1 == "link_text" or param_1 == "href") and param_2 == "css") or (param_1 == "css" and (param_2 == "link_text" or param_2 == "href"))):
             CommonUtil.ExecLog(sModuleInfo, "Locating element using double matching, types: link text and css selector", 1)
             try:
                 if ((param_1 == "link_text" or param_1 == "href") and param_2 == "css"):
                     link_text_value = value_1
                     css_value = value_2
-                elif(param_1 == "css" and (param_2 == "link_text" or param_2 == "href")): 
+                elif(param_1 == "css" and (param_2 == "link_text" or param_2 == "href")):
                     link_text_value = value_2
                     css_value = value_1
                 Link_Text_Element = WebDriverWait(sBrowser, WebDriver_Wait).until(EC.presence_of_all_elements_located((By.LINK_TEXT, '%s'%link_text_value)))
@@ -1359,16 +1357,16 @@ def Get_Double_Matching_Elements(param_1, value_1, param_2, value_2):
                     return "failed"
             except Exception:
                 errMsg = "Could not find elements by double matching with types link text and css selector"
-                return CommonUtil.Exception_Handler(sys.exc_info(),None,errMsg) 
+                return CommonUtil.Exception_Handler(sys.exc_info(),None,errMsg)
 
-        ##Tag and CSS double matching                
+        ##Tag and CSS double matching
         elif ((param_1 == "tag" and param_2 == "css") or (param_1 == "css" and param_2 == "tag")):
             CommonUtil.ExecLog(sModuleInfo, "Locating element using double matching, types: tag and css selector", 1)
             try:
                 if (param_1 == "tag" and param_2 == "css"):
                     tag_value = value_1
                     css_value = value_2
-                elif(param_1 == "css" and param_2 == "tag"): 
+                elif(param_1 == "css" and param_2 == "tag"):
                     tag_value = value_2
                     css_value = value_1
                 Tag_Element = WebDriverWait(sBrowser, WebDriver_Wait).until(EC.presence_of_all_elements_located((By.TAG_NAME, '%s'%tag_value)))
@@ -1383,16 +1381,16 @@ def Get_Double_Matching_Elements(param_1, value_1, param_2, value_2):
                     return "failed"
             except Exception:
                 errMsg = "Could not find elements by double matching with types tag and css selector"
-                return CommonUtil.Exception_Handler(sys.exc_info(),None,errMsg) 
+                return CommonUtil.Exception_Handler(sys.exc_info(),None,errMsg)
 
-        ##Link Text and Tag double matching               
+        ##Link Text and Tag double matching
         elif (((param_1 == "link_text" or param_1 == "href") and param_2 == "tag") or (param_1 == "tag" and (param_2 == "link_text" or param_2 == "href"))):
             CommonUtil.ExecLog(sModuleInfo, "Locating element using double matching, types: link text and tag", 1)
             try:
                 if ((param_1 == "link_text" or param_1 == "href") and param_2 == "tag"):
                     link_text_value = value_1
                     tag_value = value_2
-                elif(param_1 == "tag" and (param_2 == "link_text" or param_2 == "href")): 
+                elif(param_1 == "tag" and (param_2 == "link_text" or param_2 == "href")):
                     link_text_value = value_2
                     tag_value = value_1
                 Link_Text_Element = WebDriverWait(sBrowser, WebDriver_Wait).until(EC.presence_of_all_elements_located((By.LINK_TEXT, '%s'%link_text_value)))
@@ -1407,16 +1405,16 @@ def Get_Double_Matching_Elements(param_1, value_1, param_2, value_2):
                     return "failed"
             except Exception:
                 errMsg = "Could not find elements by double matching with types link text and tag"
-                return CommonUtil.Exception_Handler(sys.exc_info(),None,errMsg) 
+                return CommonUtil.Exception_Handler(sys.exc_info(),None,errMsg)
 
-        ##Tag and Partial Link Text double matching                
+        ##Tag and Partial Link Text double matching
         elif ((param_1 == "tag" and param_2 == "partial_link_text") or (param_1 == "partial_link_text" and param_2 == "tag")):
             CommonUtil.ExecLog(sModuleInfo, "Locating element using double matching, types: tag and partial link text", 1)
             try:
                 if (param_1 == "tag" and param_2 == "partial_link_text"):
                     tag_value = value_1
                     partial_link_text_value = value_2
-                elif(param_1 == "partial_link_text" and param_2 == "tag"): 
+                elif(param_1 == "partial_link_text" and param_2 == "tag"):
                     tag_value = value_2
                     partial_link_text_value = value_1
                 Tag_Element = WebDriverWait(sBrowser, WebDriver_Wait).until(EC.presence_of_all_elements_located((By.TAG_NAME, '%s'%tag_value)))
@@ -1431,16 +1429,16 @@ def Get_Double_Matching_Elements(param_1, value_1, param_2, value_2):
                     return "failed"
             except Exception:
                 errMsg = "Could not find elements by double matching with types tag and partial link text"
-                return CommonUtil.Exception_Handler(sys.exc_info(),None,errMsg) 
-        
-        ##CSS and Partial Link Text double matching                
+                return CommonUtil.Exception_Handler(sys.exc_info(),None,errMsg)
+
+        ##CSS and Partial Link Text double matching
         elif ((param_1 == "css" and param_2 == "partial_link_text") or (param_1 == "partial_link_text" and param_2 == "css")):
             CommonUtil.ExecLog(sModuleInfo, "Locating element using double matching, types: partial link text and css selector", 1)
             try:
                 if (param_1 == "css" and param_2 == "partial_link_text"):
                     css_value = value_1
                     partial_link_text_value = value_2
-                elif(param_1 == "partial_link_text" and param_2 == "css"): 
+                elif(param_1 == "partial_link_text" and param_2 == "css"):
                     css_value = value_2
                     partial_link_text_value = value_1
                 CSS_Element = WebDriverWait(sBrowser, WebDriver_Wait).until(EC.presence_of_all_elements_located((By.CSS_SELECTOR, '%s'%css_value)))
@@ -1455,9 +1453,9 @@ def Get_Double_Matching_Elements(param_1, value_1, param_2, value_2):
                     return "failed"
             except Exception:
                 errMsg = "Could not find elements by double matching with types partial link text and css selector"
-                return CommonUtil.Exception_Handler(sys.exc_info(),None,errMsg) 
-                
-        ##Other criteria double matching                        
+                return CommonUtil.Exception_Handler(sys.exc_info(),None,errMsg)
+
+        ##Other criteria double matching
         else:
             CommonUtil.ExecLog(sModuleInfo, "Locating element using double matching, type unspecific", 1)
             All_Elements=[]
@@ -1466,9 +1464,9 @@ def Get_Double_Matching_Elements(param_1, value_1, param_2, value_2):
                 return All_Elements
             else:
                 return "failed"
-            
+
     except Exception:
-        exc_type, exc_obj, exc_tb = sys.exc_info()        
+        exc_type, exc_obj, exc_tb = sys.exc_info()
         fname = os.path.split(exc_tb.tb_frame.f_code.co_filename)[1]
         Error_Detail = ((str(exc_type).replace("type ", "Error Type: ")) + ";" +  "Error Message: " + str(exc_obj) +";" + "File Name: " + fname + ";" + "Line: "+ str(exc_tb.tb_lineno))
         CommonUtil.ExecLog(sModuleInfo, "Unable to get the element.  Error: %s"%(Error_Detail), 3)
@@ -1490,13 +1488,13 @@ def Get_Table_Elements(table_parameter,table_value, reference_parameter=False,re
                         temp_row_holder.append(each_column_obj.text)
                 except Exception:
                     errMsg = "Could not find table row elements"
-                    return CommonUtil.Exception_Handler(sys.exc_info(),None,errMsg)               
+                    return CommonUtil.Exception_Handler(sys.exc_info(),None,errMsg)
                 master_text_table.append(temp_row_holder)
 #         print master_text_table
-        return master_text_table    
+        return master_text_table
 
     except Exception:
-        exc_type, exc_obj, exc_tb = sys.exc_info()        
+        exc_type, exc_obj, exc_tb = sys.exc_info()
         fname = os.path.split(exc_tb.tb_frame.f_code.co_filename)[1]
         Error_Detail = ((str(exc_type).replace("type ", "Error Type: ")) + ";" +  "Error Message: " + str(exc_obj) +";" + "File Name: " + fname + ";" + "Line: "+ str(exc_tb.tb_lineno))
         CommonUtil.ExecLog(sModuleInfo, "Unable to get the element.  Error: %s"%(Error_Detail), 3)
@@ -1515,12 +1513,12 @@ def Element_Validation(All_Elements_Found):#, index):
         return_element = []
         all_visible_elements = []
         all_invisible_elements = []
-        if All_Elements_Found == []:        
+        if All_Elements_Found == []:
             CommonUtil.ExecLog(sModuleInfo, "Could not find your element by given parameters and values", 3)
             return "failed"
         elif len(All_Elements_Found) == 1:
             for each_elem in All_Elements_Found:
-                #Case 1: Found only one invisible element - pass with warning 
+                #Case 1: Found only one invisible element - pass with warning
                 if each_elem.is_displayed() == False:
                     return_element.append(each_elem)
                     CommonUtil.ExecLog(sModuleInfo, "Found one invisible element by given parameters and values", 2)
@@ -1545,16 +1543,16 @@ def Element_Validation(All_Elements_Found):#, index):
                 CommonUtil.ExecLog(sModuleInfo, "Found at least one visible element for given parameters and values, returning the first one or by the index specified", 2)
                 return_element = all_visible_elements
             else:
-                CommonUtil.ExecLog(sModuleInfo, "Did not find a visible element, however, invisible elements present", 2)    
+                CommonUtil.ExecLog(sModuleInfo, "Did not find a visible element, however, invisible elements present", 2)
                 return_element = all_invisible_elements
             return return_element[0]#[index]
 
         else:
             CommonUtil.ExecLog(sModuleInfo, "Could not find element by given parameters and values", 3)
-            return "failed" 
+            return "failed"
 
     except Exception:
-        exc_type, exc_obj, exc_tb = sys.exc_info()        
+        exc_type, exc_obj, exc_tb = sys.exc_info()
         fname = os.path.split(exc_tb.tb_frame.f_code.co_filename)[1]
         Error_Detail = ((str(exc_type).replace("type ", "Error Type: ")) + ";" +  "Error Message: " + str(exc_obj) +";" + "File Name: " + fname + ";" + "Line: "+ str(exc_tb.tb_lineno))
         CommonUtil.ExecLog(sModuleInfo, "Unable to get the element.  Error: %s"%(Error_Detail), 3)
@@ -1565,12 +1563,12 @@ def Element_Validation(All_Elements_Found):#, index):
 def Validate_Step_Data(step_data):
     sModuleInfo = inspect.stack()[0][3] + " : " + inspect.getmoduleinfo(__file__).name
     CommonUtil.ExecLog(sModuleInfo, "Function: Validate_Step_Data", 1)
-    try:    
+    try:
         if (len(step_data)==1):
             element_parameter = step_data[0][0]
             element_value = step_data[0][2]
             reference_parameter = False
-            reference_value = False    
+            reference_value = False
             reference_is_parent_or_child = False
         elif (len(step_data)==2):
             for each in step_data:
@@ -1597,15 +1595,15 @@ def Validate_Step_Data(step_data):
         validated_data = (element_parameter, element_value, reference_parameter, reference_value, reference_is_parent_or_child)
         return validated_data
     except Exception:
-            exc_type, exc_obj, exc_tb = sys.exc_info()        
+            exc_type, exc_obj, exc_tb = sys.exc_info()
             fname = os.path.split(exc_tb.tb_frame.f_code.co_filename)[1]
             Error_Detail = ((str(exc_type).replace("type ", "Error Type: ")) + ";" +  "Error Message: " + str(exc_obj) +";" + "File Name: " + fname + ";" + "Line: "+ str(exc_tb.tb_lineno))
             CommonUtil.ExecLog(sModuleInfo, "Could not find the new page element requested.  Error: %s"%(Error_Detail), 3)
             return "failed"
 
 '===================== ===x=== Validation Section Ends ===x=== ======================'
-    
-    
+
+
 '''
     This section below contains methods similar to Sequential Actions, however
     different parameters are passed on as per user requests.
@@ -1626,10 +1624,10 @@ def Click_Element_StandAlone(Element):
                 element_attributes = Element.get_attribute('outerHTML')
                 CommonUtil.ExecLog(sModuleInfo, "Element Attributes: %s"%(element_attributes),3)
                 errMsg = "Could not find/click your element"
-                return CommonUtil.Exception_Handler(sys.exc_info(),None,errMsg) 
+                return CommonUtil.Exception_Handler(sys.exc_info(),None,errMsg)
     except Exception:
         errMsg = "Could not find/click your element"
-        return CommonUtil.Exception_Handler(sys.exc_info(),None,errMsg) 
+        return CommonUtil.Exception_Handler(sys.exc_info(),None,errMsg)
 
 
 def Hover_Over_Element_StandAlone(Element):
@@ -1647,10 +1645,10 @@ def Hover_Over_Element_StandAlone(Element):
                 element_attributes = Element.get_attribute('outerHTML')
                 CommonUtil.ExecLog(sModuleInfo, "Element Attributes: %s"%(element_attributes),3)
                 errMsg = "Could not find/hover over your element"
-                return CommonUtil.Exception_Handler(sys.exc_info(),None,errMsg) 
+                return CommonUtil.Exception_Handler(sys.exc_info(),None,errMsg)
     except Exception:
         errMsg = "Could not find/hover over your element"
-        return CommonUtil.Exception_Handler(sys.exc_info(),None,errMsg) 
+        return CommonUtil.Exception_Handler(sys.exc_info(),None,errMsg)
 
 
 def Keystroke_Key_StandAlone(KeyToBePressed):
@@ -1666,9 +1664,9 @@ def Keystroke_Key_StandAlone(KeyToBePressed):
         return "passed"
     except Exception:
         errMsg = "Could not press the desired key"
-        return CommonUtil.Exception_Handler(sys.exc_info(),None,errMsg) 
-        
-        
+        return CommonUtil.Exception_Handler(sys.exc_info(),None,errMsg)
+
+
 def Keystroke_Characters_StandAlone(KeysToBePressed):
     sModuleInfo = inspect.stack()[0][3] + " : " + inspect.getmoduleinfo(__file__).name
     CommonUtil.ExecLog(sModuleInfo, "Function: Keystroke_Characters_StandAlone", 1)
@@ -1680,7 +1678,7 @@ def Keystroke_Characters_StandAlone(KeysToBePressed):
         return "passed"
     except Exception:
         errMsg = "Could not press the desired characters"
-        return CommonUtil.Exception_Handler(sys.exc_info(),None,errMsg) 
+        return CommonUtil.Exception_Handler(sys.exc_info(),None,errMsg)
 
 
 def Scroll_StandAlone(scroll_direction):
@@ -1699,11 +1697,11 @@ def Scroll_StandAlone(scroll_direction):
             CommonUtil.ExecLog(sModuleInfo, "Scrolling was not successful", 3)
             result = "failed"
         return result
-    
+
     except Exception:
         errMsg = "Could not scroll in the desired direction"
-        return CommonUtil.Exception_Handler(sys.exc_info(),None,errMsg) 
-    
+        return CommonUtil.Exception_Handler(sys.exc_info(),None,errMsg)
+
 '===================== ===x=== Stand-alone Action Section Ends ===x=== ======================'
 
 
@@ -1716,7 +1714,7 @@ def Tear_Down_Selenium():
         return "passed"
     except Exception:
         errMsg = "Unable to tear down selenium browsers"
-        return CommonUtil.Exception_Handler(sys.exc_info(),None,errMsg) 
+        return CommonUtil.Exception_Handler(sys.exc_info(),None,errMsg)
 
 
 ##@Riz and @Sreejoy: More work is needed here. Please investigate further.
@@ -1728,10 +1726,10 @@ def Get_Plain_Text_Element(element_parameter, element_value, parent=False):
             all_elements_with_text = sBrowser.find_elements_by_xpath(".//*")
         else:
             all_elements_with_text = parent.find_elements_by_xpath(".//*")
-        
-        #Sequential logical flow    
+
+        #Sequential logical flow
         if element_parameter == "plain_text":
-            index = 0 
+            index = 0
             full_list = []
             for each in all_elements_with_text:
                 text_to_print = None
@@ -1741,12 +1739,12 @@ def Get_Plain_Text_Element(element_parameter, element_value, parent=False):
                     False
                 if text_to_print == element_value:
                     full_list.append(each)
-                    break     
-                index = index +1 
+                    break
+                index = index +1
             return_element = full_list[len(full_list) - 1]
-        
+
         elif element_parameter == "partial_plain_text":
-            index = 0 
+            index = 0
             full_list = []
             for each in all_elements_with_text:
                 text_to_print = None
@@ -1756,19 +1754,19 @@ def Get_Plain_Text_Element(element_parameter, element_value, parent=False):
                     False
                 if element_value in text_to_print:
                     full_list.append(each)
-                    break     
-                index = index +1 
+                    break
+                index = index +1
             return_element = full_list[len(full_list) - 1]
-            
+
         else:
             CommonUtil.ExecLog(sModuleInfo, "Incorrect element parameter entered, please check the value.", 3)
             return "failed"
-        
+
         return return_element
-            
+
     except Exception:
         errMsg = "Could not get the element by plain text search"
-        return CommonUtil.Exception_Handler(sys.exc_info(),None,errMsg)   
+        return CommonUtil.Exception_Handler(sys.exc_info(),None,errMsg)
 
 def get_driver():
     return sBrowser
