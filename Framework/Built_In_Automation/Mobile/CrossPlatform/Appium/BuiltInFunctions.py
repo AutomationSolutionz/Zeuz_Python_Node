@@ -325,17 +325,18 @@ def install_and_start_driver(app_location):
         CommonUtil.ExecLog(sModuleInfo,"Trying to install and then launch the app...",1)
         desired_caps = {}
         desired_caps['platformName'] = 'Android'
-        df = adbOptions.get_android_version()
+        df = adbOptions.get_android_version().strip()
         CommonUtil.ExecLog(sModuleInfo,df,1)
         #adbOptions.kill_adb_server()
         desired_caps['platformVersion'] = df
-        df = adbOptions.get_device_model()
+        df = adbOptions.get_device_model().strip()
         CommonUtil.ExecLog(sModuleInfo,df,1)
         #adbOptions.kill_adb_server()
         desired_caps['deviceName'] = df
-        desired_caps['app'] = PATH(app_location)
-        driver = webdriver.Remote('http://localhost:4723/wd/hub', desired_caps)
+        desired_caps['app'] = PATH(app_location).strip()
         global driver
+        driver = webdriver.Remote('http://localhost:4723/wd/hub', desired_caps)
+        CommonUtil.Set_Shared_Variables('appium_driver', driver) # Save driver instance to make available to other modules
         CommonUtil.ExecLog(sModuleInfo,"Installed and launched the app successfully.",1)
         time.sleep(10)
         driver.implicitly_wait(5)
