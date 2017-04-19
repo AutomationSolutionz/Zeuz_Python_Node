@@ -22,7 +22,9 @@ PATH = lambda p: os.path.abspath(
 
 
 global driver
-driver = None
+driver = CommonUtil.Get_Shared_Variables('appium_driver') # Retreive appium driver
+if driver == 'failed': # If variable not previously set, set to none
+    driver = None
 
 global WebDriver_Wait 
 WebDriver_Wait = 20
@@ -211,24 +213,25 @@ def launch_and_start_driver(package_name, activity_name):
         CommonUtil.ExecLog(sModuleInfo,"Trying to launch the app...",1)
         desired_caps = {}
         desired_caps['platformName'] = 'Android'
-        df = adbOptions.get_android_version().stip()
+        df = adbOptions.get_android_version().strip()
         #df = "4.4.2"
         CommonUtil.ExecLog(sModuleInfo,df,1)
         #adbOptions.kill_adb_server()
         desired_caps['platformVersion'] = df
-        df = adbOptions.get_device_model().stip()
+        df = adbOptions.get_device_model().strip()
         #df = "Android"
         CommonUtil.ExecLog(sModuleInfo,df,1)
         #adbOptions.kill_adb_server()
 
         desired_caps['deviceName'] = df
-        desired_caps['appPackage'] = package_name.stip()
-        desired_caps['appActivity'] = activity_name.stip()
+        desired_caps['appPackage'] = package_name.strip()
+        desired_caps['appActivity'] = activity_name.strip()
         #desired_caps['appPackage'] = 'com.assetscience.androidprodiagnostics'
         #desired_caps['appActivity'] = 'com.assetscience.recell.device.android.prodiagnostics.MainActivity'
-        driver = webdriver.Remote('http://localhost:4723/wd/hub', desired_caps)
-        #wait(10)
         global driver
+        driver = webdriver.Remote('http://localhost:4723/wd/hub', desired_caps)
+        CommonUtil.Set_Shared_Variables('appium_driver', driver) # Save driver instance to make available to other modules
+        #wait(10)
         #deletelater = WebDriverWait(driver, WebDriver_Wait)
         #print deletelater
         CommonUtil.ExecLog(sModuleInfo,"Launched the app successfully.",1)
