@@ -34,11 +34,11 @@ WebDriver_Wait = 20
 global WebDriver_Wait_Short
 WebDriver_Wait_Short = 10
 
-global sBrowser
-sBrowser = None
+global selenium_driver
+selenium_driver = None
 
 def Open_Browser(dependency):
-    global sBrowser
+    global selenium_driver
     sModuleInfo = inspect.stack()[0][3] + " : " + inspect.getmoduleinfo(__file__).name
 
     try:
@@ -47,7 +47,7 @@ def Open_Browser(dependency):
         ErrorMessage =  "Dependency not set for browser. Please set the Apply Filter value to YES."
         return CommonUtil.Exception_Handler(sys.exc_info(), None, ErrorMessage)
     try:
-        sBrowser.close()
+        selenium_driver.close()
     except:
         True
     try:
@@ -58,11 +58,11 @@ def Open_Browser(dependency):
             options = Options()
             options.add_argument("--no-sandbox")
             options.add_argument("--disable-extensions")
-            sBrowser = webdriver.Chrome(chrome_options = options)
-            sBrowser.implicitly_wait(WebDriver_Wait)
-            sBrowser.maximize_window()
+            selenium_driver = webdriver.Chrome(chrome_options = options)
+            selenium_driver.implicitly_wait(WebDriver_Wait)
+            selenium_driver.maximize_window()
             CommonUtil.ExecLog(sModuleInfo, "Started Chrome Browser", 1)
-            CommonUtil.Set_Shared_Variables('sBrowser',sBrowser)
+            CommonUtil.Set_Shared_Variables('selenium_driver',selenium_driver)
             return "passed"
 
 
@@ -89,27 +89,27 @@ def Open_Browser(dependency):
                         firefox_path =  path[1]
                         binary = FirefoxBinary(firefox_path)
                         break
-            sBrowser = webdriver.Firefox()
-            sBrowser.implicitly_wait(WebDriver_Wait)
-            sBrowser.maximize_window()
+            selenium_driver = webdriver.Firefox()
+            selenium_driver.implicitly_wait(WebDriver_Wait)
+            selenium_driver.maximize_window()
             CommonUtil.ExecLog(sModuleInfo, "Started Firefox Browser", 1)
-            CommonUtil.Set_Shared_Variables('sBrowser', sBrowser)
+            CommonUtil.Set_Shared_Variables('selenium_driver', selenium_driver)
             return "passed"
         elif "ie" in browser:
-            sBrowser = webdriver.Ie()
-            sBrowser.implicitly_wait(WebDriver_Wait)
-            sBrowser.maximize_window()
+            selenium_driver = webdriver.Ie()
+            selenium_driver.implicitly_wait(WebDriver_Wait)
+            selenium_driver.maximize_window()
             CommonUtil.ExecLog(sModuleInfo, "Started Internet Explorer Browser", 1)
-            CommonUtil.Set_Shared_Variables('sBrowser', sBrowser)
+            CommonUtil.Set_Shared_Variables('selenium_driver', selenium_driver)
             return "passed"
 
         elif "safari" in browser:
             os.environ["SELENIUM_SERVER_JAR"] = os.sys.prefix + os.sep + "Scripts" + os.sep + "selenium-server-standalone-2.45.0.jar"
-            sBrowser = webdriver.Safari()
-            sBrowser.implicitly_wait(WebDriver_Wait)
-            sBrowser.maximize_window()
+            selenium_driver = webdriver.Safari()
+            selenium_driver.implicitly_wait(WebDriver_Wait)
+            selenium_driver.maximize_window()
             CommonUtil.ExecLog(sModuleInfo, "Started Safari Browser", 1)
-            CommonUtil.Set_Shared_Variables('sBrowser', sBrowser)
+            CommonUtil.Set_Shared_Variables('selenium_driver', selenium_driver)
             return "passed"
 
         else:
@@ -126,12 +126,12 @@ def Go_To_Link(step_data, page_title=False):
     try:
 
         web_link=step_data[0][0][2]
-        sBrowser.get(web_link)
-        sBrowser.implicitly_wait(WebDriver_Wait)
+        selenium_driver.get(web_link)
+        selenium_driver.implicitly_wait(WebDriver_Wait)
         CommonUtil.ExecLog(sModuleInfo, "Successfully opened your link: %s" % web_link, 1)
         CommonUtil.TakeScreenShot(sModuleInfo)
 #         if page_title != False:
-#             assert page_title in sBrowser.title
+#             assert page_title in selenium_driver.title
         #time.sleep(3)
         return "passed"
     except Exception:
@@ -384,7 +384,7 @@ def Click_and_Hold_Element(step_data):
             else:
                 try:
                     Element = Get_Element(returned_step_data_list[0], returned_step_data_list[1], returned_step_data_list[2], returned_step_data_list[3], returned_step_data_list[4])
-                    click_and_hold = ActionChains(sBrowser).click_and_hold(Element)
+                    click_and_hold = ActionChains(selenium_driver).click_and_hold(Element)
                     click_and_hold.perform()
                     CommonUtil.TakeScreenShot(sModuleInfo)
                     CommonUtil.ExecLog(sModuleInfo, "Successfully clicked and held the element with given parameters and values", 1)
@@ -415,7 +415,7 @@ def Context_Click_Element(step_data):
             else:
                 try:
                     Element = Get_Element(returned_step_data_list[0], returned_step_data_list[1], returned_step_data_list[2], returned_step_data_list[3], returned_step_data_list[4])
-                    context_click = ActionChains(sBrowser).context_click(Element)
+                    context_click = ActionChains(selenium_driver).context_click(Element)
                     context_click.perform()
                     CommonUtil.TakeScreenShot(sModuleInfo)
                     CommonUtil.ExecLog(sModuleInfo, "Successfully right clicked the element with given parameters and values", 1)
@@ -445,7 +445,7 @@ def Double_Click_Element(step_data):
             else:
                 try:
                     Element = Get_Element(returned_step_data_list[0], returned_step_data_list[1], returned_step_data_list[2], returned_step_data_list[3], returned_step_data_list[4])
-                    double_click = ActionChains(sBrowser).double_click(Element)
+                    double_click = ActionChains(selenium_driver).double_click(Element)
                     double_click.perform()
                     CommonUtil.TakeScreenShot(sModuleInfo)
                     CommonUtil.ExecLog(sModuleInfo, "Successfully double clicked the element with given parameters and values", 1)
@@ -476,7 +476,7 @@ def Move_To_Element(step_data):
             else:
                 try:
                     Element = Get_Element(returned_step_data_list[0], returned_step_data_list[1], returned_step_data_list[2], returned_step_data_list[3], returned_step_data_list[4])
-                    move = ActionChains(sBrowser).move_to_element(Element).perform()
+                    move = ActionChains(selenium_driver).move_to_element(Element).perform()
                     CommonUtil.TakeScreenShot(sModuleInfo)
                     CommonUtil.ExecLog(sModuleInfo, "Successfully moved to the middle of the element with given parameters and values", 1)
                     return "passed"
@@ -506,7 +506,7 @@ def Hover_Over_Element(step_data):
             else:
                 try:
                     Element = Get_Element(returned_step_data_list[0], returned_step_data_list[1], returned_step_data_list[2], returned_step_data_list[3], returned_step_data_list[4])
-                    hov = ActionChains(sBrowser).move_to_element(Element)
+                    hov = ActionChains(selenium_driver).move_to_element(Element)
                     hov.perform()
                     CommonUtil.TakeScreenShot(sModuleInfo)
                     CommonUtil.ExecLog(sModuleInfo, "Successfully hovered over the element with given parameters and values", 1)
@@ -690,12 +690,12 @@ def Scroll(step_data):
             scroll_direction = tuple[2]
             if scroll_direction == 'down':
                 CommonUtil.ExecLog(sModuleInfo,"Scrolling down",1)
-                result = sBrowser.execute_script("window.scrollBy(0,750)", "")
+                result = selenium_driver.execute_script("window.scrollBy(0,750)", "")
                 time.sleep(5)
                 return "passed"
             elif scroll_direction == 'up':
                 CommonUtil.ExecLog(sModuleInfo, "Scrolling up", 1)
-                result = sBrowser.execute_script("window.scrollBy(0,-750)", "")
+                result = selenium_driver.execute_script("window.scrollBy(0,-750)", "")
                 time.sleep(5)
                 return "passed"
             else:
@@ -1235,21 +1235,21 @@ def Get_All_Elements(parameter,value,parent=False):
     try:
         if parent == False:
             if parameter == "text":
-                All_Elements = WebDriverWait(sBrowser, WebDriver_Wait).until(EC.presence_of_all_elements_located((By.XPATH, "//*[text()='%s']"%value)))
+                All_Elements = WebDriverWait(selenium_driver, WebDriver_Wait).until(EC.presence_of_all_elements_located((By.XPATH, "//*[text()='%s']"%value)))
             elif parameter == "tag":
-                All_Elements = WebDriverWait(sBrowser, WebDriver_Wait).until(EC.presence_of_all_elements_located((By.TAG_NAME, '%s'%(value))))
+                All_Elements = WebDriverWait(selenium_driver, WebDriver_Wait).until(EC.presence_of_all_elements_located((By.TAG_NAME, '%s'%(value))))
             elif ((parameter == "link_text") or (parameter == "href")):
-                All_Elements = WebDriverWait(sBrowser, WebDriver_Wait).until(EC.presence_of_all_elements_located((By.LINK_TEXT, '%s'%(value))))
+                All_Elements = WebDriverWait(selenium_driver, WebDriver_Wait).until(EC.presence_of_all_elements_located((By.LINK_TEXT, '%s'%(value))))
             elif (parameter == "partial_link_text"):
-                All_Elements = WebDriverWait(sBrowser, WebDriver_Wait).until(EC.presence_of_all_elements_located((By.PARTIAL_LINK_TEXT, '%s'%(value))))
+                All_Elements = WebDriverWait(selenium_driver, WebDriver_Wait).until(EC.presence_of_all_elements_located((By.PARTIAL_LINK_TEXT, '%s'%(value))))
             elif parameter == "css":
-                All_Elements = WebDriverWait(sBrowser, WebDriver_Wait).until(EC.presence_of_all_elements_located((By.CSS_SELECTOR, '%s'%(value))))
+                All_Elements = WebDriverWait(selenium_driver, WebDriver_Wait).until(EC.presence_of_all_elements_located((By.CSS_SELECTOR, '%s'%(value))))
             elif parameter == "xpath":
-                All_Elements = WebDriverWait(sBrowser, WebDriver_Wait).until(EC.presence_of_all_elements_located((By.XPATH, '%s'%(value))))
+                All_Elements = WebDriverWait(selenium_driver, WebDriver_Wait).until(EC.presence_of_all_elements_located((By.XPATH, '%s'%(value))))
             elif (parameter == "partial_plain_text" or parameter == "plain_text"):
                 All_Elements = Get_Plain_Text_Element(parameter, value)
             else:
-                All_Elements = WebDriverWait(sBrowser, WebDriver_Wait).until(EC.presence_of_all_elements_located((By.XPATH, "//*[@%s='%s']"%(parameter,value))))
+                All_Elements = WebDriverWait(selenium_driver, WebDriver_Wait).until(EC.presence_of_all_elements_located((By.XPATH, "//*[@%s='%s']"%(parameter,value))))
         else:
             if parameter == "text":
                 All_Elements = parent.find_elements(By.XPATH, "//*[text()='%s']" %value)
@@ -1295,8 +1295,8 @@ def Get_Double_Matching_Elements(param_1, value_1, param_2, value_2):
                 elif(param_1 == "tag" and param_2 == "text"):
                     text_value = value_2
                     tag_value = value_1
-                Text_Element = WebDriverWait(sBrowser, WebDriver_Wait).until(EC.presence_of_all_elements_located((By.XPATH, "//*[text()='%s']"%text_value)))
-                Tag_Element = WebDriverWait(sBrowser, WebDriver_Wait).until(EC.presence_of_all_elements_located((By.TAG_NAME, '%s'%(tag_value))))
+                Text_Element = WebDriverWait(selenium_driver, WebDriver_Wait).until(EC.presence_of_all_elements_located((By.XPATH, "//*[text()='%s']"%text_value)))
+                Tag_Element = WebDriverWait(selenium_driver, WebDriver_Wait).until(EC.presence_of_all_elements_located((By.TAG_NAME, '%s'%(tag_value))))
                 matched_element = []
                 for item in Text_Element:
                     if item in Tag_Element:
@@ -1321,8 +1321,8 @@ def Get_Double_Matching_Elements(param_1, value_1, param_2, value_2):
                 elif(param_1 == "css" and param_2 == "text"):
                     text_value = value_2
                     css_value = value_1
-                Text_Element = WebDriverWait(sBrowser, WebDriver_Wait).until(EC.presence_of_all_elements_located((By.XPATH, "//*[text()='%s']"%text_value)))
-                CSS_Element = WebDriverWait(sBrowser, WebDriver_Wait).until(EC.presence_of_all_elements_located((By.CSS_SELECTOR, '%s'%(css_value))))
+                Text_Element = WebDriverWait(selenium_driver, WebDriver_Wait).until(EC.presence_of_all_elements_located((By.XPATH, "//*[text()='%s']"%text_value)))
+                CSS_Element = WebDriverWait(selenium_driver, WebDriver_Wait).until(EC.presence_of_all_elements_located((By.CSS_SELECTOR, '%s'%(css_value))))
                 matched_element=[]
                 for item in Text_Element:
                     if item in CSS_Element:
@@ -1345,8 +1345,8 @@ def Get_Double_Matching_Elements(param_1, value_1, param_2, value_2):
                 elif(param_1 == "css" and (param_2 == "link_text" or param_2 == "href")):
                     link_text_value = value_2
                     css_value = value_1
-                Link_Text_Element = WebDriverWait(sBrowser, WebDriver_Wait).until(EC.presence_of_all_elements_located((By.LINK_TEXT, '%s'%link_text_value)))
-                CSS_Element = WebDriverWait(sBrowser, WebDriver_Wait).until(EC.presence_of_all_elements_located((By.CSS_SELECTOR, '%s'%(css_value))))
+                Link_Text_Element = WebDriverWait(selenium_driver, WebDriver_Wait).until(EC.presence_of_all_elements_located((By.LINK_TEXT, '%s'%link_text_value)))
+                CSS_Element = WebDriverWait(selenium_driver, WebDriver_Wait).until(EC.presence_of_all_elements_located((By.CSS_SELECTOR, '%s'%(css_value))))
                 matched_element=[]
                 for item in Link_Text_Element:
                     if item in CSS_Element:
@@ -1369,8 +1369,8 @@ def Get_Double_Matching_Elements(param_1, value_1, param_2, value_2):
                 elif(param_1 == "css" and param_2 == "tag"):
                     tag_value = value_2
                     css_value = value_1
-                Tag_Element = WebDriverWait(sBrowser, WebDriver_Wait).until(EC.presence_of_all_elements_located((By.TAG_NAME, '%s'%tag_value)))
-                CSS_Element = WebDriverWait(sBrowser, WebDriver_Wait).until(EC.presence_of_all_elements_located((By.CSS_SELECTOR, '%s'%(css_value))))
+                Tag_Element = WebDriverWait(selenium_driver, WebDriver_Wait).until(EC.presence_of_all_elements_located((By.TAG_NAME, '%s'%tag_value)))
+                CSS_Element = WebDriverWait(selenium_driver, WebDriver_Wait).until(EC.presence_of_all_elements_located((By.CSS_SELECTOR, '%s'%(css_value))))
                 matched_element=[]
                 for item in Tag_Element:
                     if item in CSS_Element:
@@ -1393,8 +1393,8 @@ def Get_Double_Matching_Elements(param_1, value_1, param_2, value_2):
                 elif(param_1 == "tag" and (param_2 == "link_text" or param_2 == "href")):
                     link_text_value = value_2
                     tag_value = value_1
-                Link_Text_Element = WebDriverWait(sBrowser, WebDriver_Wait).until(EC.presence_of_all_elements_located((By.LINK_TEXT, '%s'%link_text_value)))
-                Tag_Element = WebDriverWait(sBrowser, WebDriver_Wait).until(EC.presence_of_all_elements_located((By.TAG_NAME, '%s'%(tag_value))))
+                Link_Text_Element = WebDriverWait(selenium_driver, WebDriver_Wait).until(EC.presence_of_all_elements_located((By.LINK_TEXT, '%s'%link_text_value)))
+                Tag_Element = WebDriverWait(selenium_driver, WebDriver_Wait).until(EC.presence_of_all_elements_located((By.TAG_NAME, '%s'%(tag_value))))
                 matched_element=[]
                 for item in Link_Text_Element:
                     if item in Tag_Element:
@@ -1417,8 +1417,8 @@ def Get_Double_Matching_Elements(param_1, value_1, param_2, value_2):
                 elif(param_1 == "partial_link_text" and param_2 == "tag"):
                     tag_value = value_2
                     partial_link_text_value = value_1
-                Tag_Element = WebDriverWait(sBrowser, WebDriver_Wait).until(EC.presence_of_all_elements_located((By.TAG_NAME, '%s'%tag_value)))
-                Partial_Link_Text_Element = WebDriverWait(sBrowser, WebDriver_Wait).until(EC.presence_of_all_elements_located((By.PARTIAL_LINK_TEXT, '%s'%(partial_link_text_value))))
+                Tag_Element = WebDriverWait(selenium_driver, WebDriver_Wait).until(EC.presence_of_all_elements_located((By.TAG_NAME, '%s'%tag_value)))
+                Partial_Link_Text_Element = WebDriverWait(selenium_driver, WebDriver_Wait).until(EC.presence_of_all_elements_located((By.PARTIAL_LINK_TEXT, '%s'%(partial_link_text_value))))
                 matched_element=[]
                 for item in Tag_Element:
                     if item in Partial_Link_Text_Element:
@@ -1441,8 +1441,8 @@ def Get_Double_Matching_Elements(param_1, value_1, param_2, value_2):
                 elif(param_1 == "partial_link_text" and param_2 == "css"):
                     css_value = value_2
                     partial_link_text_value = value_1
-                CSS_Element = WebDriverWait(sBrowser, WebDriver_Wait).until(EC.presence_of_all_elements_located((By.CSS_SELECTOR, '%s'%css_value)))
-                Partial_Link_Text_Element = WebDriverWait(sBrowser, WebDriver_Wait).until(EC.presence_of_all_elements_located((By.PARTIAL_LINK_TEXT, '%s'%(partial_link_text_value))))
+                CSS_Element = WebDriverWait(selenium_driver, WebDriver_Wait).until(EC.presence_of_all_elements_located((By.CSS_SELECTOR, '%s'%css_value)))
+                Partial_Link_Text_Element = WebDriverWait(selenium_driver, WebDriver_Wait).until(EC.presence_of_all_elements_located((By.PARTIAL_LINK_TEXT, '%s'%(partial_link_text_value))))
                 matched_element=[]
                 for item in CSS_Element:
                     if item in Partial_Link_Text_Element:
@@ -1459,7 +1459,7 @@ def Get_Double_Matching_Elements(param_1, value_1, param_2, value_2):
         else:
             CommonUtil.ExecLog(sModuleInfo, "Locating element using double matching, type unspecific", 1)
             All_Elements=[]
-            All_Elements = WebDriverWait(sBrowser, WebDriver_Wait).until(EC.presence_of_all_elements_located((By.XPATH, "//*[@%s='%s' and @%s='%s']"%(param_1,value_1,param_2,value_2))))
+            All_Elements = WebDriverWait(selenium_driver, WebDriver_Wait).until(EC.presence_of_all_elements_located((By.XPATH, "//*[@%s='%s' and @%s='%s']"%(param_1,value_1,param_2,value_2))))
             if All_Elements != []:
                 return All_Elements
             else:
@@ -1636,7 +1636,7 @@ def Hover_Over_Element_StandAlone(Element):
     try:
         if isinstance(Element, (WebElement)) == True:
             try:
-                hov = ActionChains(sBrowser).move_to_element(Element)
+                hov = ActionChains(selenium_driver).move_to_element(Element)
                 hov.perform()
                 CommonUtil.TakeScreenShot(sModuleInfo)
                 CommonUtil.ExecLog(sModuleInfo, "Successfully hovered over the element", 1)
@@ -1657,7 +1657,7 @@ def Keystroke_Key_StandAlone(KeyToBePressed):
     try:
         keystroke_value=KeyToBePressed.upper()
         get_keystroke_value = getattr(Keys, keystroke_value)
-        result = ActionChains(sBrowser).send_keys(get_keystroke_value)
+        result = ActionChains(selenium_driver).send_keys(get_keystroke_value)
         #result.perform()
         CommonUtil.TakeScreenShot(sModuleInfo)
         CommonUtil.ExecLog(sModuleInfo, "Successfully pressed key", 1)
@@ -1671,7 +1671,7 @@ def Keystroke_Characters_StandAlone(KeysToBePressed):
     sModuleInfo = inspect.stack()[0][3] + " : " + inspect.getmoduleinfo(__file__).name
     CommonUtil.ExecLog(sModuleInfo, "Function: Keystroke_Characters_StandAlone", 1)
     try:
-        result = ActionChains(sBrowser).send_keys(KeysToBePressed)
+        result = ActionChains(selenium_driver).send_keys(KeysToBePressed)
         #result.perform()
         CommonUtil.TakeScreenShot(sModuleInfo)
         CommonUtil.ExecLog(sModuleInfo, "Successfully pressed characters", 1)
@@ -1687,11 +1687,11 @@ def Scroll_StandAlone(scroll_direction):
     try:
         if scroll_direction == 'down':
             CommonUtil.ExecLog(sModuleInfo,"Scrolling down",1)
-            result = sBrowser.execute_script("window.scrollBy(0,750)", "")
+            result = selenium_driver.execute_script("window.scrollBy(0,750)", "")
             time.sleep(5)
         elif scroll_direction == 'up':
             CommonUtil.ExecLog(sModuleInfo, "Scrolling up", 1)
-            result = sBrowser.execute_script("window.scrollBy(0,-750)", "")
+            result = selenium_driver.execute_script("window.scrollBy(0,-750)", "")
             time.sleep(5)
         else:
             CommonUtil.ExecLog(sModuleInfo, "Scrolling was not successful", 3)
@@ -1709,7 +1709,7 @@ def Tear_Down_Selenium():
     sModuleInfo = inspect.stack()[0][3] + " : " + inspect.getmoduleinfo(__file__).name
     try:
         CommonUtil.ExecLog(sModuleInfo, "Trying to tear down the page and close the browser...", 1)
-        sBrowser.quit()
+        selenium_driver.quit()
         CommonUtil.ExecLog(sModuleInfo, "Closed the browser successfully.", 1)
         return "passed"
     except Exception:
@@ -1723,7 +1723,7 @@ def Get_Plain_Text_Element(element_parameter, element_value, parent=False):
     CommonUtil.ExecLog(sModuleInfo, "Function: Get_Plain_Text_Element", 1)
     try:
         if parent==False:
-            all_elements_with_text = sBrowser.find_elements_by_xpath(".//*")
+            all_elements_with_text = selenium_driver.find_elements_by_xpath(".//*")
         else:
             all_elements_with_text = parent.find_elements_by_xpath(".//*")
 
@@ -1769,5 +1769,5 @@ def Get_Plain_Text_Element(element_parameter, element_value, parent=False):
         return CommonUtil.Exception_Handler(sys.exc_info(),None,errMsg)
 
 def get_driver():
-    return sBrowser
+    return selenium_driver
 

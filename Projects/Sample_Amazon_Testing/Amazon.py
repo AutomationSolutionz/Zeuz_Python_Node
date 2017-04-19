@@ -153,10 +153,10 @@ def Add_to_Cart_Using_Selenium(step_data,file_attachment):
 
         #Finding the Search Box
 
-        #global sBrowser
-        from Built_In_Automation.Web.Selenium.BuiltInFunctions import sBrowser
+        #global selenium_driver
+        from Built_In_Automation.Web.Selenium.BuiltInFunctions import selenium_driver
         #search_box = BuiltInFunctions.Get_Element('id','twotabsearchtextbox')
-        search_box = sBrowser.find_element_by_id("twotabsearchtextbox")
+        search_box = selenium_driver.find_element_by_id("twotabsearchtextbox")
 
         #Entering provided text in Search Box
         search_box.send_keys(search_text)
@@ -166,7 +166,7 @@ def Add_to_Cart_Using_Selenium(step_data,file_attachment):
 
         #Finding the search button
         #search_button = BuiltInFunctions.Get_Element('value','Go')
-        search_button = sBrowser.find_element_by_xpath('//*[@id="nav-search"]/form/div[2]/div/input')
+        search_button = selenium_driver.find_element_by_xpath('//*[@id="nav-search"]/form/div[2]/div/input')
 
         if search_button != "failed": #if search button found
             #Clicking on the search button
@@ -187,7 +187,7 @@ def Add_to_Cart_Using_Selenium(step_data,file_attachment):
         #clicking the first search result
         CommonUtil.ExecLog(sModuleInfo,"Trying to click on the first search result",1)
         #first_element = BuiltInFunctions.Get_Element('tag','a','class','s-item-container','parent')
-        first_element = sBrowser.find_element_by_xpath('//*[@id="result_0"]/div/div[3]/div[1]/a/h2')
+        first_element = selenium_driver.find_element_by_xpath('//*[@id="result_0"]/div/div[3]/div[1]/a/h2')
         if first_element!='failed':
             CommonUtil.ExecLog(sModuleInfo, "Found first search result element", 1)
             CommonUtil.ExecLog(sModuleInfo, "Clicking on the first search result element", 1)
@@ -205,7 +205,7 @@ def Add_to_Cart_Using_Selenium(step_data,file_attachment):
         CommonUtil.ExecLog(sModuleInfo, "Trying to add this item to cart", 1)
         CommonUtil.ExecLog(sModuleInfo, "Trying to click on Add to Cart button", 1)
         #add_to_cart_button = BuiltInFunctions.Get_Element('id','add-to-cart-button')
-        add_to_cart_button = sBrowser.find_element_by_id("add-to-cart-button")
+        add_to_cart_button = selenium_driver.find_element_by_id("add-to-cart-button")
         if add_to_cart_button != 'failed':
             CommonUtil.ExecLog(sModuleInfo, "Found Add to Cart button", 1)
             CommonUtil.TakeScreenShot(sModuleInfo)
