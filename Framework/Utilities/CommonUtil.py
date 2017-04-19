@@ -8,6 +8,7 @@ import datetime
 from Framework.Utilities import FileUtilities as FL
 import uuid
 from Framework.Utilities import RequestFormatter
+import subprocess
 temp_config=os.path.join(os.path.join(FL.get_home_folder(),os.path.join('Desktop',os.path.join('AutomationLog',ConfigModule.get_config_value('Temp','_file')))))
 
 global shared_variables
@@ -559,3 +560,38 @@ def get_previous_response_variables_in_strings(step_data_string_input):
 
     except Exception:
         return Exception_Handler(sys.exc_info())
+
+def run_cmd(command, return_status=False, is_shell=True, stdout_val=subprocess.PIPE, local_run=False):
+
+    '''Begin Constants'''
+    Passed = "Passed"
+    Failed = "Failed"
+    Running = 'running'
+    '''End Constants'''
+
+    # Run 'command' via command line in a bash shell, and store outputs to stdout_val
+    sModuleInfo = inspect.stack()[0][3] + " : " + inspect.getmoduleinfo(__file__).name
+    subprocess_dict = {}
+    try:
+        global subprocess_dict
+        ExecLog(sModuleInfo, "Trying to run command: %s" % command, 1, local_run)
+
+        # open a subprocess with command, and assign a session id to the shell process
+        # this is will make the shell process the group leader for all the child processes spawning from it
+        status = subprocess.Popen(command, shell=is_shell, stdout=stdout_val, preexec_fn=os.setsid)
+        subprocess_dict[status] = Running
+
+        if return_status:
+            return status
+        else:
+            return Passed
+
+    except Exception, e:
+
+        exc_type, exc_obj, exc_tb = sys.exc_info()
+        fname = os.path.split(exc_tb.tb_frame.f_code.co_filename)[1]
+        Error_Detail = ((str(exc_type).replace("type ", "Error Type: ")) + ";" + "Error Message: " + str(exc_obj) +
+                        ";" + "File Name: " + fname + ";" + "Line: " + str(exc_tb.tb_lineno))
+        ExecLog(sModuleInfo, "Unable to run command: %s. %s" % (command, Error_Detail), 3, local_run)
+
+        return Failed
