@@ -24,6 +24,7 @@ PATH = lambda p: os.path.abspath(
 global driver
 driver = CommonUtil.Get_Shared_Variables('appium_driver') # Retreive appium driver
 if driver == 'failed': # If variable not previously set, set to none
+    CommonUtil.ExecLog("%s : %s" % (__name__, inspect.getmoduleinfo(__file__).name), "Normal failure - Setting appium_driver to None", 1)
     driver = None
 
 global WebDriver_Wait 
@@ -974,6 +975,15 @@ def Action_Handler(action_name, action_step_data=False, action_value=False):
     sModuleInfo = inspect.stack()[0][3] + " : " + inspect.getmoduleinfo(__file__).name
     try:
         """ Need to add: long hold, pinch to zoom, """
+        
+        if "%|" in action_value and "|%" in action_value:
+            CommonUtil.ExecLog(sModuleInfo, "Shared Variable: %s" % action_value, 1)
+            action_value = action_value.replace("%|", "")
+            action_value = action_value.replace("|%", "")
+            action_value = CommonUtil.Get_Shared_Variables(action_value)
+            if action_value == 'failed':
+                CommonUtil.ExecLog(sModuleInfo, "Invalid shared variable", 3)
+                return "failed"
         
         if action_name == "click":
             result = Click_Element(action_step_data[0], action_step_data[2])
