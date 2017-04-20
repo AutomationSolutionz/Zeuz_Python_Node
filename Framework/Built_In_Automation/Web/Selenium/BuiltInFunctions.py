@@ -37,6 +37,9 @@ WebDriver_Wait_Short = 10
 global selenium_driver
 selenium_driver = None
 
+passed_tag_list=['Pass','pass','PASS','PASSED','Passed','passed','true','TRUE','True','1','Success','success','SUCCESS']
+failed_tag_list=['Fail','fail','FAIL','Failed','failed','FAILED','false','False','FALSE','0']
+
 def Open_Browser(dependency):
     global selenium_driver
     sModuleInfo = inspect.stack()[0][3] + " : " + inspect.getmoduleinfo(__file__).name
@@ -818,7 +821,10 @@ def Sequential_Actions(step_data):
 
                 elif row[1]=="action":
                     CommonUtil.ExecLog(sModuleInfo, "Checking the action to be performed in the action row", 1)
-                    result = Action_Handler([each],row[0])
+                    new_data_set = CommonUtil.Handle_Step_Data_Variables([each])
+                    if new_data_set in failed_tag_list:
+                        return 'failed'
+                    result = Action_Handler(new_data_set,row[0])
                     if result == [] or result == "failed":
                         return "failed"
 

@@ -9,7 +9,12 @@ from Framework.Utilities import FileUtilities as FL
 import uuid
 from Framework.Utilities import RequestFormatter
 import subprocess
+import string
+import random
 temp_config=os.path.join(os.path.join(FL.get_home_folder(),os.path.join('Desktop',os.path.join('AutomationLog',ConfigModule.get_config_value('Temp','_file')))))
+
+passed_tag_list=['Pass','pass','PASS','PASSED','Passed','passed','true','TRUE','True','1','Success','success','SUCCESS']
+failed_tag_list=['Fail','fail','FAIL','Failed','failed','FAILED','false','False','FALSE','0']
 
 global shared_variables
 shared_variables = {}
@@ -525,7 +530,12 @@ def Handle_Step_Data_Variables(step_data):
                         changed_row.append(each)
                     else:
                         if '|%' in each:
-                            changed_row.append(get_previous_response_variables_in_strings(each))
+                            replaced_value = get_previous_response_variables_in_strings(each)
+                            if replaced_value in failed_tag_list:
+                                ExecLog(sModuleInfo,"Step Data Format Not Appropriate",3)
+                                return 'failed'
+                            else:
+                                changed_row.append(replaced_value)
                         else:
                             changed_row.append(each)
                 changed_dataset.append(changed_row)
@@ -546,8 +556,36 @@ def get_previous_response_variables_in_strings(step_data_string_input):
             if '|%' in each:
                 changed = True
                 parts = each.split('|%')
-                output += Get_Shared_Variables(parts[0])
-                ExecLog(sModuleInfo,'Replacing variable "%s" with its value "%s"'%(parts[0],Get_Shared_Variables(parts[0])),1)
+                if str(parts[0]).startswith('random_string'):
+                    full_string = str(parts[0])
+                    random_string = ''
+                    if '(' in full_string:
+                        temp = full_string.split('(')
+                        params = temp[1].split(')')[0]
+                        if ',' in params:
+                            list_of_params = params.split(',')
+                            random_string = random_string_generator(list_of_params[0].strip(),int(list_of_params[1].strip()))
+                        else:
+                            if params.strip() == '':
+                                random_string = random_string_generator()
+                            else:
+                                random_string = random_string_generator(params.strip())
+                    else:
+                        return "failed"
+
+                    if random_string in failed_tag_list:
+                        return "failed"
+
+                    output+=random_string
+                    ExecLog(sModuleInfo, 'Replacing variable "%s" with its value "%s"' % (parts[0], random_string), 1)
+                else:
+                    var_value = Get_Shared_Variables(parts[0])
+                    if var_value == 'failed':
+                        ExecLog(sModuleInfo,"No such variable named '%s' in shared variables list"%parts[0],3)
+                        return "failed"
+                    else:
+                        output += var_value
+                        ExecLog(sModuleInfo,'Replacing variable "%s" with its value "%s"'%(parts[0],var_value),1)
                 output += parts[1]
             else:
                 output += each
@@ -558,6 +596,42 @@ def get_previous_response_variables_in_strings(step_data_string_input):
 
         return output
 
+    except Exception:
+        return Exception_Handler(sys.exc_info())
+
+
+def random_string_generator(pattern='nluc', size=10):
+    sModuleInfo = inspect.stack()[0][3] + " : " + inspect.getmoduleinfo(__file__).name
+    ExecLog(sModuleInfo, "Function: random string generator", 1)
+    try:
+        pattern = pattern.lower().strip()
+        punctuation = '`~!@#$%^&.'
+        chars = ''
+        for index in range(0,len(pattern)):
+            if pattern[index] == 'n':
+                chars += string.digits
+            if pattern[index] == 'l':
+                chars += string.ascii_lowercase
+            if pattern[index] == 'u':
+                chars += string.uppercase
+            if pattern[index] == 'c':
+                chars += punctuation
+
+        if chars == '':
+            return 'failed'
+        else:
+            return ''.join(random.choice(chars) for _ in range(size))
+    except Exception:
+        return Exception_Handler(sys.exc_info())
+
+
+def Clean_Up_Shared_Variables():
+    sModuleInfo = inspect.stack()[0][3] + " : " + inspect.getmoduleinfo(__file__).name
+    ExecLog(sModuleInfo, "Function: clean up shared variables", 1)
+    try:
+        global shared_variables
+        shared_variables = {}
+        return "passed"
     except Exception:
         return Exception_Handler(sys.exc_info())
 
@@ -595,3 +669,5 @@ def run_cmd(command, return_status=False, is_shell=True, stdout_val=subprocess.P
         ExecLog(sModuleInfo, "Unable to run command: %s. %s" % (command, Error_Detail), 3, local_run)
 
         return Failed
+
+

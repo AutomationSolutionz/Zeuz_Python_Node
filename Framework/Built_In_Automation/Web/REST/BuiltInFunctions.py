@@ -21,6 +21,9 @@ requests.packages.urllib3.disable_warnings()
 
 from Framework.Utilities import CommonUtil
 
+passed_tag_list=['Pass','pass','PASS','PASSED','Passed','passed','true','TRUE','True','1','Success','success','SUCCESS']
+failed_tag_list=['Fail','fail','FAIL','Failed','failed','FAILED','false','False','FALSE','0']
+
 '============================= Sequential Action Section Begins=============================='
 
 
@@ -221,8 +224,11 @@ def Sequential_Actions(step_data):
 
                 elif row[1] == "action":
                     CommonUtil.ExecLog(sModuleInfo, "Checking the action to be performed in the action row", 1)
-                    result = Action_Handler(CommonUtil.Handle_Step_Data_Variables([each]), row)
-                    if result == [] or result == "failed":
+                    new_data_set = CommonUtil.Handle_Step_Data_Variables([each])
+                    if new_data_set in failed_tag_list:
+                        return 'failed'
+                    result = Action_Handler(new_data_set, row)
+                    if result in failed_tag_list:
                         return "failed"
 
                 elif row[1] == "body" or row[1] == "header" or row[1] == "headers":
