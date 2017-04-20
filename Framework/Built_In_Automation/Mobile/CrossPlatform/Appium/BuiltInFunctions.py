@@ -22,10 +22,9 @@ PATH = lambda p: os.path.abspath(
 
 
 global driver
-driver = CommonUtil.Get_Shared_Variables('appium_driver') # Retreive appium driver
-if driver == 'failed': # If variable not previously set, set to none
-    CommonUtil.ExecLog("%s : %s" % (__name__, inspect.getmoduleinfo(__file__).name), "Normal failure - Setting appium_driver to None", 1)
-    driver = None
+driver = None
+if CommonUtil.Test_Shared_Variables('appium_driver'): # Check if driver is already set in shared variables
+    driver = CommonUtil.Get_Shared_Variables('appium_driver') # Retreive appium driver
 
 global WebDriver_Wait 
 WebDriver_Wait = 20

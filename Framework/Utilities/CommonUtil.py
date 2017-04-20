@@ -506,6 +506,24 @@ def Get_Shared_Variables(key):
     except:
         Exception_Handler(sys.exc_info())
 
+def Test_Shared_Variables(key):
+    ''' Test if a variable already exists and return true or false '''
+    
+    try:
+        sModuleInfo = inspect.stack()[0][3] + " : " + inspect.getmoduleinfo(__file__).name
+        global shared_variables
+        if key == '' or key == None: #if input is invalid
+            return "failed"
+        else: # Valid input
+            if key in shared_variables: # Test if key/variable exists
+                ExecLog(sModuleInfo,"Variable %s exists" % key,1)
+                return True
+            else:
+                ExecLog(sModuleInfo,"No Such variable named '%s' found in shared variables"%key,1)
+                return False
+    except:
+        Exception_Handler(sys.exc_info())
+
 def Show_All_Shared_Variables():
     try:
         sModuleInfo = inspect.stack()[0][3] + " : " + inspect.getmoduleinfo(__file__).name
