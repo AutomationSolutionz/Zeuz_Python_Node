@@ -12,6 +12,7 @@ import inspect
 from Framework.Utilities import CommonUtil, FileUtilities  as FL
 from Framework.Built_In_Automation.Desktop.CrossPlatform import DesktopAutomation as da
 '''from Framework.Built_In_Automation.Desktop.CrossPlatform import VideoAndImageMatching as vim'''
+from Framework.Built_In_Automation.Built_In_Utility.CrossPlatform import BuiltInUtilityFunction
 local_run = False
 
 Passed = "Passed"
@@ -78,7 +79,7 @@ def Action_Handler(action_step_data, action_name,file_attachment):
             if result == "failed":
                 return "failed"
         elif action_name == "remove_file" or "remove_folder":
-            result = remove_a_desktop_folder(action_step_data)
+            result = BuiltInUtilityFunction.remove_a_desktop_folder(action_step_data)
             if result == "failed":
                 return "failed"
         else:
