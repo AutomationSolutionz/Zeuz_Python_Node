@@ -498,7 +498,7 @@ def Get_Shared_Variables(key):
         else:
             if key in shared_variables:
                 value = shared_variables[key]
-                ExecLog(sModuleInfo,"Variable value of '%s' is: %s"%(key,value),1)
+                ExecLog(sModuleInfo,"Variable value of '%s' is: %s"%(str(key),value),1)
                 return value
             else:
                 ExecLog(sModuleInfo,"No Such variable named '%s' found in shared variables"%key,3)
@@ -602,7 +602,7 @@ def get_previous_response_variables_in_strings(step_data_string_input):
                         ExecLog(sModuleInfo,"No such variable named '%s' in shared variables list"%parts[0],3)
                         return "failed"
                     else:
-                        output += var_value
+                        output += str(var_value)
                         ExecLog(sModuleInfo,'Replacing variable "%s" with its value "%s"'%(parts[0],var_value),1)
                 output += parts[1]
             else:
@@ -665,7 +665,7 @@ def run_cmd(command, return_status=False, is_shell=True, stdout_val=subprocess.P
     sModuleInfo = inspect.stack()[0][3] + " : " + inspect.getmoduleinfo(__file__).name
     subprocess_dict = {}
     try:
-        global subprocess_dict
+        #global subprocess_dict
         ExecLog(sModuleInfo, "Trying to run command: %s" % command, 1, local_run)
 
         # open a subprocess with command, and assign a session id to the shell process
@@ -679,13 +679,6 @@ def run_cmd(command, return_status=False, is_shell=True, stdout_val=subprocess.P
             return Passed
 
     except Exception, e:
-
-        exc_type, exc_obj, exc_tb = sys.exc_info()
-        fname = os.path.split(exc_tb.tb_frame.f_code.co_filename)[1]
-        Error_Detail = ((str(exc_type).replace("type ", "Error Type: ")) + ";" + "Error Message: " + str(exc_obj) +
-                        ";" + "File Name: " + fname + ";" + "Line: " + str(exc_tb.tb_lineno))
-        ExecLog(sModuleInfo, "Unable to run command: %s. %s" % (command, Error_Detail), 3, local_run)
-
-        return Failed
+        return Exception_Handler(sys.exc_info())
 
 

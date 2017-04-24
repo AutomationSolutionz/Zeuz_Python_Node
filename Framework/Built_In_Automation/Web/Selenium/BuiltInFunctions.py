@@ -219,6 +219,14 @@ def Action_Handler(action_step_data, action_name):
             result = Validate_Text(action_step_data)
             if result == "failed":
                 return "failed"
+        elif (action_name == "save text"):
+            result = Save_Text(action_step_data)
+            if result == "failed":
+                return "failed"
+        elif (action_name == "compare variable"):
+            result = Compare_Variables(action_step_data)
+            if result == "failed":
+                return "failed"
         elif (action_name == "scroll"):
             result = Scroll(action_step_data)
             if result == "failed":
@@ -568,6 +576,110 @@ def Wait_For_New_Element(step_data):
 
 
 #Validating text from an element given information regarding the expected text
+def Compare_Variables(step_data):
+    sModuleInfo = inspect.stack()[0][3] + " : " + inspect.getmoduleinfo(__file__).name
+    CommonUtil.ExecLog(sModuleInfo, "Function: Save_Text", 1)
+    try:
+        element_step_data = Get_Element_Step_Data(step_data)
+        if ((element_step_data == []) or (element_step_data == "failed")):
+            return "failed"
+        else:
+            pass_count = 0
+            fail_count = 0
+            variable_list1 = []
+            variable_list2 = []
+            result = []
+            for each_step_data_item in step_data[0]:
+                if each_step_data_item[1]!="action":
+                    if '%|' in each_step_data_item[0].strip():
+                        previous_name = each_step_data_item[0].strip()
+                        new_name = CommonUtil.get_previous_response_variables_in_strings(each_step_data_item[0].strip())
+                        tuple1 = ('Variable',"'%s'"%previous_name,new_name)
+                    else:
+                        tuple1 = ('Text','',each_step_data_item[0].strip())
+                    variable_list1.append(tuple1)
+
+                    if '%|' in each_step_data_item[2].strip():
+                        previous_name = each_step_data_item[2].strip()
+                        new_name = CommonUtil.get_previous_response_variables_in_strings(each_step_data_item[2].strip())
+                        tuple2 = ('Variable',"'%s'"%previous_name,new_name)
+                    else:
+                        tuple2 = ('Text','',each_step_data_item[2].strip())
+                    variable_list2.append(tuple2)
+
+
+            for i in range(0,len(variable_list1)):
+                if variable_list1[i][2] == variable_list2[i][2]:
+                    result.append(True)
+                    pass_count+=1
+                else:
+                    result.append(False)
+                    fail_count+=1
+
+            CommonUtil.ExecLog(sModuleInfo,"###Variable Comaparison Results###",1)
+            CommonUtil.ExecLog(sModuleInfo,"Matched Variables: %d"%pass_count,1)
+            CommonUtil.ExecLog(sModuleInfo, "Not Matched Variables: %d" % fail_count, 1)
+
+            for i in range(0, len(variable_list1)):
+                if result[i] == True:
+                    CommonUtil.ExecLog(sModuleInfo,"Item %d. %s %s - %s :: %s %s - %s : Matched"%(i+1,variable_list1[i][0],variable_list1[i][1],variable_list1[i][2],variable_list2[i][0],variable_list2[i][1],variable_list2[i][2]),1)
+                else:
+                    CommonUtil.ExecLog(sModuleInfo, "Item %d. %s %s - %s :: %s %s - %s : Not Matched" % (i + 1, variable_list1[i][0], variable_list1[i][1], variable_list1[i][2], variable_list2[i][0],variable_list2[i][1], variable_list2[i][2]),3)
+
+            if fail_count > 0:
+                CommonUtil.ExecLog(sModuleInfo,"Error: %d item(s) did not match"%fail_count,3)
+                return "failed"
+            else:
+                return "passed"
+    except Exception:
+        return CommonUtil.Exception_Handler(sys.exc_info())
+
+
+#Validating text from an element given information regarding the expected text
+def Save_Text(step_data):
+    sModuleInfo = inspect.stack()[0][3] + " : " + inspect.getmoduleinfo(__file__).name
+    CommonUtil.ExecLog(sModuleInfo, "Function: Save_Text", 1)
+    try:
+        if ((len(step_data) != 1) or (1 < len(step_data[0]) >= 5)):
+            CommonUtil.ExecLog(sModuleInfo, "The information in the data-set(s) are incorrect. Please provide accurate data set(s) information.",3)
+            return "failed"
+        else:
+            for each in step_data[0]:
+                element_step_data = Get_Element_Step_Data(step_data)
+                returned_step_data_list = Validate_Step_Data(element_step_data)
+                if ((returned_step_data_list == []) or (returned_step_data_list == "failed")):
+                    return "failed"
+                else:
+                    try:
+                        Element = Get_Element(returned_step_data_list[0], returned_step_data_list[1], returned_step_data_list[2], returned_step_data_list[3], returned_step_data_list[4])
+                        break
+
+                    except Exception:
+                        errMsg = "Could not get element based on the information provided."
+                        return CommonUtil.Exception_Handler(sys.exc_info(),None,errMsg)
+
+            for each_step_data_item in step_data[0]:
+                if each_step_data_item[1]=="action":
+                    variable_name = each_step_data_item[2]
+
+            list_of_element_text = Element.text.split('\n')
+            visible_list_of_element_text = ""
+            for each_text_item in list_of_element_text:
+                if each_text_item != "":
+                    visible_list_of_element_text+=each_text_item
+
+            result = CommonUtil.Set_Shared_Variables(variable_name, visible_list_of_element_text)
+            if result in failed_tag_list:
+                CommonUtil.ExecLog(sModuleInfo, "Value of Variable '%s' could not be saved!!!", 3)
+                return "failed"
+            else:
+                CommonUtil.Show_All_Shared_Variables()
+                return "passed"
+    except Exception:
+        return CommonUtil.Exception_Handler(sys.exc_info())
+
+
+#Validating text from an element given information regarding the expected text
 def Validate_Text(step_data):
     sModuleInfo = inspect.stack()[0][3] + " : " + inspect.getmoduleinfo(__file__).name
     CommonUtil.ExecLog(sModuleInfo, "Function: Validate_Text", 1)
@@ -816,15 +928,19 @@ def Sequential_Actions(step_data):
             for row in each:
                 #finding what to do for each dataset
                 #if len(row)==5 and row[1] != "":     ##modifying the filter for changes to be made in the sub-field of the step data. May remove this part of the if statement
-                if ((row[1] == "element parameter") or (row[1] == "reference parameter") or (row[1] == "relation type") or (row[1] == "element parameter 1 of 2") or (row[1] == "element parameter 2 of 2")):     ##modifying the filter for changes to be made in the sub-field of the step data. May remove this part of the if statement
+                if ((row[1] == "element parameter") or (row[1] == "reference parameter") or (row[1] == "relation type") or (row[1] == "element parameter 1 of 2") or (row[1] == "element parameter 2 of 2") or (row[1] == "compare")):     ##modifying the filter for changes to be made in the sub-field of the step data. May remove this part of the if statement
                     continue
 
                 elif row[1]=="action":
                     CommonUtil.ExecLog(sModuleInfo, "Checking the action to be performed in the action row", 1)
-                    new_data_set = CommonUtil.Handle_Step_Data_Variables([each])
-                    if new_data_set in failed_tag_list:
-                        return 'failed'
-                    result = Action_Handler(new_data_set,row[0])
+                    if row[0] == 'compare variable':
+                        result = Action_Handler([each],row[0])
+                    else:
+                        new_data_set = CommonUtil.Handle_Step_Data_Variables([each])
+                        if new_data_set in failed_tag_list:
+                            return 'failed'
+                        result = Action_Handler(new_data_set,row[0])
+
                     if result == [] or result == "failed":
                         return "failed"
 
@@ -1776,4 +1892,3 @@ def Get_Plain_Text_Element(element_parameter, element_value, parent=False):
 
 def get_driver():
     return selenium_driver
-

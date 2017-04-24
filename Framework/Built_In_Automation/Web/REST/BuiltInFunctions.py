@@ -57,6 +57,10 @@ def Action_Handler(action_step_data, action_row):
             result = Get_Response(action_step_data, fields_to_be_saved)
             if result == "failed":
                 return "failed"
+        elif action_name == "compare variable":
+            result = Compare_Variables(action_step_data)
+            if result == "failed":
+                return "failed"
         elif action_name == "sleep":
             result = Sleep(action_step_data)
             if result == "failed":
@@ -219,15 +223,18 @@ def Sequential_Actions(step_data):
             for row in each:
                 # finding what to do for each dataset
                 # if len(row)==5 and row[1] != "":     ##modifying the filter for changes to be made in the sub-field of the step data. May remove this part of the if statement
-                if row[1] == "element parameter":  ##modifying the filter for changes to be made in the sub-field of the step data. May remove this part of the if statement
+                if row[1] == "element parameter" or row[1] == 'compare':  ##modifying the filter for changes to be made in the sub-field of the step data. May remove this part of the if statement
                     continue
 
                 elif row[1] == "action":
                     CommonUtil.ExecLog(sModuleInfo, "Checking the action to be performed in the action row", 1)
-                    new_data_set = CommonUtil.Handle_Step_Data_Variables([each])
-                    if new_data_set in failed_tag_list:
-                        return 'failed'
-                    result = Action_Handler(new_data_set, row)
+                    if row[0] == 'compare variable':
+                        result = Action_Handler([each], row)
+                    else:
+                        new_data_set = CommonUtil.Handle_Step_Data_Variables([each])
+                        if new_data_set in failed_tag_list:
+                            return 'failed'
+                        result = Action_Handler(new_data_set, row)
                     if result in failed_tag_list:
                         return "failed"
 
@@ -297,5 +304,64 @@ def Validate_Step_Data(step_data):
         return "failed"
 
 
-'===================== ===x=== Validation Section Ends ===x=== ======================'
+#Validating text from an element given information regarding the expected text
+def Compare_Variables(step_data):
+    sModuleInfo = inspect.stack()[0][3] + " : " + inspect.getmoduleinfo(__file__).name
+    CommonUtil.ExecLog(sModuleInfo, "Function: Save_Text", 1)
+    try:
+        element_step_data = Get_Element_Step_Data(step_data)
+        if ((element_step_data == []) or (element_step_data == "failed")):
+            return "failed"
+        else:
+            pass_count = 0
+            fail_count = 0
+            variable_list1 = []
+            variable_list2 = []
+            result = []
+            for each_step_data_item in step_data[0]:
+                if each_step_data_item[1]!="action":
+                    if '%|' in each_step_data_item[0].strip():
+                        previous_name = each_step_data_item[0].strip()
+                        new_name = CommonUtil.get_previous_response_variables_in_strings(each_step_data_item[0].strip())
+                        tuple1 = ('Variable',"'%s'"%previous_name,new_name)
+                    else:
+                        tuple1 = ('Text','',each_step_data_item[0].strip())
+                    variable_list1.append(tuple1)
 
+                    if '%|' in each_step_data_item[2].strip():
+                        previous_name = each_step_data_item[2].strip()
+                        new_name = CommonUtil.get_previous_response_variables_in_strings(each_step_data_item[2].strip())
+                        tuple2 = ('Variable',"'%s'"%previous_name,new_name)
+                    else:
+                        tuple2 = ('Text','',each_step_data_item[2].strip())
+                    variable_list2.append(tuple2)
+
+
+            for i in range(0,len(variable_list1)):
+                if variable_list1[i][2] == variable_list2[i][2]:
+                    result.append(True)
+                    pass_count+=1
+                else:
+                    result.append(False)
+                    fail_count+=1
+
+            CommonUtil.ExecLog(sModuleInfo,"###Variable Comaparison Results###",1)
+            CommonUtil.ExecLog(sModuleInfo,"Matched Variables: %d"%pass_count,1)
+            CommonUtil.ExecLog(sModuleInfo, "Not Matched Variables: %d" % fail_count, 1)
+
+            for i in range(0, len(variable_list1)):
+                if result[i] == True:
+                    CommonUtil.ExecLog(sModuleInfo,"Item %d. %s %s - %s :: %s %s - %s : Matched"%(i+1,variable_list1[i][0],variable_list1[i][1],variable_list1[i][2],variable_list2[i][0],variable_list2[i][1],variable_list2[i][2]),1)
+                else:
+                    CommonUtil.ExecLog(sModuleInfo, "Item %d. %s %s - %s :: %s %s - %s : Not Matched" % (i + 1, variable_list1[i][0], variable_list1[i][1], variable_list1[i][2], variable_list2[i][0],variable_list2[i][1], variable_list2[i][2]),3)
+
+            if fail_count > 0:
+                CommonUtil.ExecLog(sModuleInfo,"Error: %d item(s) did not match"%fail_count,3)
+                return "failed"
+            else:
+                return "passed"
+    except Exception:
+        return CommonUtil.Exception_Handler(sys.exc_info())
+
+
+'===================== ===x=== Validation Section Ends ===x=== ======================'
