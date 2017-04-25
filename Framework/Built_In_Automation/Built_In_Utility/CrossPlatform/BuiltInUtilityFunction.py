@@ -42,6 +42,7 @@ def Action_Handler(action_step_data, action_name):
             result = Sleep(action_step_data)
             if result == "failed":
                 return "failed"
+
         else:
             CommonUtil.ExecLog(sModuleInfo, "The action you entered is incorrect. Please provide accurate information on the data set(s).", 3)
             return "failed"
@@ -113,6 +114,82 @@ def Delete_File_or_Folder(step_data):
     except Exception:
         return CommonUtil.Exception_Handler(sys.exc_info())
 
+def Rename_File_or_Folder(step_data):
+        sModuleInfo = inspect.stack()[0][3] + " : " + inspect.getmoduleinfo(__file__).name
+        CommonUtil.ExecLog(sModuleInfo, "Function: Rename File or Folder", 1)
+        try:
+            from_path = FileUtilities.get_home_folder() + str(step_data[0][0][0]).strip()
+            to_path = FileUtilities.get_home_folder() + str(step_data[0][0][2]).strip()
+            file_or_folder = str(step_data[0][1][2]).strip()
+            if file_or_folder.lower() == 'file':
+                result = FileUtilities.RenameFile(from_path, to_path)
+                if result in failed_tag_list:
+                    CommonUtil.ExecLog(sModuleInfo,
+                                       "Could not rename file '%s' to '%s'" % (from_path, to_path), 3)
+                    return "failed"
+                else:
+                    CommonUtil.ExecLog(sModuleInfo,
+                                       "File '%s' renamed to '%s' successfully" % (from_path, to_path),
+                                       1)
+                    return "passed"
+            elif file_or_folder.lower() == 'folder':
+                result = FileUtilities.RenameFolder(from_path, to_path)
+                if result in failed_tag_list:
+                    CommonUtil.ExecLog(sModuleInfo,
+                                       "Could not rename folder '%s' to '%s'" % (from_path, to_path), 3)
+                    return "failed"
+                else:
+                    CommonUtil.ExecLog(sModuleInfo,
+                                       "Folder '%s' renamed to '%s' successfully" % (from_path, to_path),
+                                       1)
+                    return "passed"
+            else:
+                CommonUtil.ExecLog(sModuleInfo,
+                                   "The information in the data-set(s) are incorrect. Please provide accurate data set(s) information.",
+                                   3)
+                return 'failed'
+
+        except Exception:
+            return CommonUtil.Exception_Handler(sys.exc_info())
+
+def Move_File_or_Folder(step_data):
+    sModuleInfo = inspect.stack()[0][3] + " : " + inspect.getmoduleinfo(__file__).name
+    CommonUtil.ExecLog(sModuleInfo, "Function: Rename File or Folder", 1)
+    try:
+        from_path = FileUtilities.get_home_folder() + str(step_data[0][0][0]).strip()
+        to_path = FileUtilities.get_home_folder() + str(step_data[0][0][2]).strip()
+        file_or_folder = str(step_data[0][1][2]).strip()
+        if file_or_folder.lower() == 'file':
+            result = FileUtilities.RenameFile(from_path, to_path)
+            if result in failed_tag_list:
+                CommonUtil.ExecLog(sModuleInfo,
+                                           "Could not move file '%s' to '%s'" % (from_path, to_path), 3)
+                return "failed"
+            else:
+                CommonUtil.ExecLog(sModuleInfo,
+                                           "File '%s' moved to '%s' successfully" % (from_path, to_path),
+                                           1)
+                return "passed"
+        elif file_or_folder.lower() == 'folder':
+            result = FileUtilities.RenameFolder(from_path, to_path)
+            if result in failed_tag_list:
+                CommonUtil.ExecLog(sModuleInfo,
+                                           "Could not move folder '%s' to '%s'" % (from_path, to_path), 3)
+                return "failed"
+            else:
+                CommonUtil.ExecLog(sModuleInfo,
+                                           "Folder '%s' moved to '%s' successfully" % (from_path, to_path),
+                                           1)
+                return "passed"
+        else:
+            CommonUtil.ExecLog(sModuleInfo,
+                                       "The information in the data-set(s) are incorrect. Please provide accurate data set(s) information.",
+                                       3)
+            return 'failed'
+
+    except Exception:
+        return CommonUtil.Exception_Handler(sys.exc_info())
+
 #Method to sleep for a particular duration
 def Sleep(step_data):
     sModuleInfo = inspect.stack()[0][3] + " : " + inspect.getmoduleinfo(__file__).name
@@ -167,11 +244,3 @@ def Sequential_Actions(step_data):
 
 
 
-if __name__ == '__main__':
-    dataset = [
-        [
-            ['/folder2/another/hello.txt','path','',False,False],
-            ['delete','action','file',False,False]
-        ]
-    ]
-    Sequential_Actions(dataset)
