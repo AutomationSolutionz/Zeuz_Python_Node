@@ -246,18 +246,14 @@ def launch_and_start_driver(package_name, activity_name):
         return "failed"
         
         
-def close(step_data):
+def close():
     sModuleInfo = inspect.stack()[0][3] + " : " + inspect.getmoduleinfo(__file__).name
     try:
-        if ((len(step_data) != 1) or (1 < len(step_data[0]) >= 5)):
-            CommonUtil.ExecLog(sModuleInfo,"The information in the data-set(s) are incorrect. Please provide accurate data set(s) information.",3)
-            return "failed"
-        else:
-            CommonUtil.ExecLog(sModuleInfo,"Trying to close the app",1)
-            driver.close_app()
-            CommonUtil.ExecLog(sModuleInfo,"Closed the app successfully",1)
-            driver.quit()
-            return "passed"
+        CommonUtil.ExecLog(sModuleInfo,"Trying to close the app",1)
+        driver.close_app()
+        CommonUtil.ExecLog(sModuleInfo,"Closed the app successfully",1)
+        driver.quit()
+        return "passed"
     except Exception, e:
         exc_type, exc_obj, exc_tb = sys.exc_info()        
         fname = os.path.split(exc_tb.tb_frame.f_code.co_filename)[1]
@@ -323,32 +319,28 @@ def install(app_location, app_package, app_activity):
         return "failed"
 
 
-def install_and_start_driver(app_location,step_data):
+def install_and_start_driver(app_location):
     sModuleInfo = inspect.stack()[0][3] + " : " + inspect.getmoduleinfo(__file__).name
     try:
-        if ((len(step_data) != 1) or (1 < len(step_data[0]) >= 5)):
-            CommonUtil.ExecLog(sModuleInfo,"The information in the data-set(s) are incorrect. Please provide accurate data set(s) information.",3)
-            return "failed"
-        else:
-            CommonUtil.ExecLog(sModuleInfo,"Trying to install and then launch the app...",1)
-            desired_caps = {}
-            desired_caps['platformName'] = 'Android'
-            df = adbOptions.get_android_version().strip()
-            CommonUtil.ExecLog(sModuleInfo,df,1)
-            #adbOptions.kill_adb_server()
-            desired_caps['platformVersion'] = df
-            df = adbOptions.get_device_model().strip()
-            CommonUtil.ExecLog(sModuleInfo,df,1)
-            #adbOptions.kill_adb_server()
-            desired_caps['deviceName'] = df
-            desired_caps['app'] = PATH(app_location).strip()
-            global driver
-            driver = webdriver.Remote('http://localhost:4723/wd/hub', desired_caps)
-            CommonUtil.Set_Shared_Variables('appium_driver', driver) # Save driver instance to make available to other modules
-            CommonUtil.ExecLog(sModuleInfo,"Installed and launched the app successfully.",1)
-            time.sleep(10)
-            driver.implicitly_wait(5)
-            return "passed"
+        CommonUtil.ExecLog(sModuleInfo,"Trying to install and then launch the app...",1)
+        desired_caps = {}
+        desired_caps['platformName'] = 'Android'
+        df = adbOptions.get_android_version().strip()
+        CommonUtil.ExecLog(sModuleInfo,df,1)
+        #adbOptions.kill_adb_server()
+        desired_caps['platformVersion'] = df
+        df = adbOptions.get_device_model().strip()
+        CommonUtil.ExecLog(sModuleInfo,df,1)
+        #adbOptions.kill_adb_server()
+        desired_caps['deviceName'] = df
+        desired_caps['app'] = PATH(app_location).strip()
+        global driver
+        driver = webdriver.Remote('http://localhost:4723/wd/hub', desired_caps)
+        CommonUtil.Set_Shared_Variables('appium_driver', driver) # Save driver instance to make available to other modules
+        CommonUtil.ExecLog(sModuleInfo,"Installed and launched the app successfully.",1)
+        time.sleep(10)
+        driver.implicitly_wait(5)
+        return "passed"
     except Exception, e:
         exc_type, exc_obj, exc_tb = sys.exc_info()        
         fname = os.path.split(exc_tb.tb_frame.f_code.co_filename)[1]
@@ -1029,11 +1021,11 @@ def Action_Handler(action_name, action_step_data=False, action_value=False):
             if result == "failed":
                 return "failed"
         elif action_name == "close":
-            result = close(action_step_data)
+            result = close()
             if result == "failed":
                 return "failed"
-        elif action_name == "close":
-            result = install_and_start_driver(action_step_data)
+        elif action_name == "install":
+            result = install_and_start_driver()
             if result == "failed":
                 return "failed"
         else:
