@@ -12,10 +12,152 @@ import time
 import inspect
 
 from Framework.Utilities import CommonUtil
-from Framework.Utilities import FileUtilities
 
 passed_tag_list=['Pass','pass','PASS','PASSED','Passed','passed','true','TRUE','True','1','Success','success','SUCCESS',True]
 failed_tag_list=['Fail','fail','FAIL','Failed','failed','FAILED','false','False','FALSE','0',False]
+
+
+import os,subprocess,shutil
+
+
+
+import zipfile
+
+def get_home_folder():
+    """
+
+    :return: give the location of home folder
+    """
+    return os.path.expanduser("~")
+
+
+def CreateFolder(folderPath, forced=True):
+    """
+
+    :param folderPath: folderpath to create
+    :param forced: if true remove the folder first, if false won't remove the folder if there exists one with same name
+    :return: False if failed and exception or True if successful
+    """
+    try:
+        if os.path.isdir(folderPath):
+            if forced == False:
+                print "folder already exists"
+                return True
+            DeleteFolder(folderPath)
+        os.makedirs(folderPath)
+        return True
+    except Exception, e:
+        return "Error: %s" % e
+
+
+
+
+
+def CreateFile(sFilePath):
+    try:
+        if os.path.isfile(sFilePath):
+            print "File already exists"
+            return False
+        else:
+            print "Creating new file"
+            newfile = open(sFilePath, 'w')
+            newfile.close()
+            return True
+    except Exception, e:
+        return "Error: %s" % e
+
+def RenameFile(a,b):
+    try:
+        result = shutil.move(a, b)
+        return result
+    except Exception, e:
+        print "Error: %s" % e
+        return False
+
+def RenameFolder(a,b):
+    try:
+        result = shutil.move(a, b)
+        return result
+    except Exception, e:
+        print "Error: %s" % e
+        return False
+
+def ZipFolder(dir, zip_file):
+    """
+    Zips a given folder, its sub folders and files. Ignores any empty folders
+    dir is the path of the folder to be zipped
+    zip_file is the path of the zip file to be created
+    """
+    try:
+        import zipfile
+        zip = zipfile.ZipFile(zip_file, 'w', compression=zipfile.ZIP_DEFLATED)
+        root_len = len(os.path.abspath(dir))
+        for root, dirs, files in os.walk(dir):
+            archive_root = os.path.abspath(root)[root_len:]
+            for f in files:
+                fullpath = os.path.join(root, f)
+                archive_name = os.path.join(archive_root, f)
+                #print f
+                if f not in zip_file:
+                    zip.write(fullpath, archive_name, zipfile.ZIP_DEFLATED)
+
+        zip.close()
+        return zip_file
+    except Exception, e:
+        print "Exception :", e
+        return False
+
+def DeleteFile(sFilePath):
+    try:
+        if os.path.isfile(sFilePath):
+            result=os.remove(sFilePath)
+            return result
+        else:
+            return False
+    except Exception, e:
+        print "Error: %s" % e
+        return False
+
+
+def DeleteFolder(sFilePath):
+    try:
+        result = shutil.rmtree(sFilePath)
+        return result
+    except Exception, e:
+        print "Error: %s" % e
+        return False
+
+
+def copy_folder(src, dest):
+    """
+
+    :param src: source of the folder
+    :param dest: destination to be copied.
+    :return: True if passed or False if failed
+    """
+    try:
+        result = shutil.copytree(src, dest)
+        return result
+    except Exception, e:
+        print "Error: %s" % e
+        return False
+
+
+def copy_file(src, dest):
+    """
+
+    :param src: full location of source file
+    :param dest: full location of destination file
+    :return: True if passed or False if failed
+    """
+    try:
+        result = shutil.copyfile(src, dest)
+        return result
+    except Exception, e:
+        print "Error: %s" % e
+        return False
+
+
 
 #Handles actions for the sequential logic, based on the input from the mentioned function
 def Action_Handler(action_step_data, action_name):
@@ -56,11 +198,11 @@ def Copy_File_or_Folder(step_data):
     sModuleInfo = inspect.stack()[0][3] + " : " + inspect.getmoduleinfo(__file__).name
     CommonUtil.ExecLog(sModuleInfo, "Function: Copy File or Folder", 1)
     try:
-        from_path = FileUtilities.get_home_folder() + str(step_data[0][0][0]).strip()
-        to_path = FileUtilities.get_home_folder() + str(step_data[0][0][2]).strip()
+        from_path = get_home_folder() + str(step_data[0][0][0]).strip()
+        to_path = get_home_folder() + str(step_data[0][0][2]).strip()
         file_or_folder = str(step_data[0][1][2]).strip()
         if file_or_folder.lower() == 'file':
-            result = FileUtilities.copy_file(from_path,to_path)
+            result = copy_file(from_path,to_path)
             if result in failed_tag_list:
                 CommonUtil.ExecLog(sModuleInfo,"Could not copy file '%s' to the destination '%s'"%(from_path,to_path),3)
                 return "failed"
@@ -68,7 +210,7 @@ def Copy_File_or_Folder(step_data):
                 CommonUtil.ExecLog(sModuleInfo,"File '%s' copied to the destination '%s' successfully" % (from_path, to_path), 1)
                 return "passed"
         elif file_or_folder.lower() == 'folder':
-            result = FileUtilities.copy_folder(from_path,to_path)
+            result = copy_folder(from_path,to_path)
             if result in failed_tag_list:
                 CommonUtil.ExecLog(sModuleInfo,"Could not copy folder '%s' to the destination '%s'"%(from_path,to_path),3)
                 return "failed"
@@ -89,10 +231,10 @@ def Delete_File_or_Folder(step_data):
     sModuleInfo = inspect.stack()[0][3] + " : " + inspect.getmoduleinfo(__file__).name
     CommonUtil.ExecLog(sModuleInfo, "Function: Copy File or Folder", 1)
     try:
-        path = FileUtilities.get_home_folder() + str(step_data[0][0][0]).strip()
+        path = get_home_folder() + str(step_data[0][0][0]).strip()
         file_or_folder = str(step_data[0][1][2]).strip()
         if file_or_folder.lower() == 'file':
-            result = FileUtilities.DeleteFile(path)
+            result = DeleteFile(path)
             if result in failed_tag_list:
                 CommonUtil.ExecLog(sModuleInfo,"Could not delete file '%s'"%(path),3)
                 return "failed"
@@ -100,7 +242,7 @@ def Delete_File_or_Folder(step_data):
                 CommonUtil.ExecLog(sModuleInfo,"File '%s' deleted successfully" % (path), 1)
                 return "passed"
         elif file_or_folder.lower() == 'folder':
-            result = FileUtilities.DeleteFolder(path)
+            result = DeleteFolder(path)
             if result in failed_tag_list:
                 CommonUtil.ExecLog(sModuleInfo, "Could not delete folder '%s'" % (path), 3)
                 return "failed"
@@ -118,11 +260,11 @@ def Rename_File_or_Folder(step_data):
         sModuleInfo = inspect.stack()[0][3] + " : " + inspect.getmoduleinfo(__file__).name
         CommonUtil.ExecLog(sModuleInfo, "Function: Rename File or Folder", 1)
         try:
-            from_path = FileUtilities.get_home_folder() + str(step_data[0][0][0]).strip()
-            to_path = FileUtilities.get_home_folder() + str(step_data[0][0][2]).strip()
+            from_path = get_home_folder() + str(step_data[0][0][0]).strip()
+            to_path = get_home_folder() + str(step_data[0][0][2]).strip()
             file_or_folder = str(step_data[0][1][2]).strip()
             if file_or_folder.lower() == 'file':
-                result = FileUtilities.RenameFile(from_path, to_path)
+                result = RenameFile(from_path, to_path)
                 if result in failed_tag_list:
                     CommonUtil.ExecLog(sModuleInfo,
                                        "Could not rename file '%s' to '%s'" % (from_path, to_path), 3)
@@ -133,7 +275,7 @@ def Rename_File_or_Folder(step_data):
                                        1)
                     return "passed"
             elif file_or_folder.lower() == 'folder':
-                result = FileUtilities.RenameFolder(from_path, to_path)
+                result = RenameFolder(from_path, to_path)
                 if result in failed_tag_list:
                     CommonUtil.ExecLog(sModuleInfo,
                                        "Could not rename folder '%s' to '%s'" % (from_path, to_path), 3)
@@ -156,11 +298,11 @@ def Move_File_or_Folder(step_data):
     sModuleInfo = inspect.stack()[0][3] + " : " + inspect.getmoduleinfo(__file__).name
     CommonUtil.ExecLog(sModuleInfo, "Function: Rename File or Folder", 1)
     try:
-        from_path = FileUtilities.get_home_folder() + str(step_data[0][0][0]).strip()
-        to_path = FileUtilities.get_home_folder() + str(step_data[0][0][2]).strip()
+        from_path = get_home_folder() + str(step_data[0][0][0]).strip()
+        to_path = get_home_folder() + str(step_data[0][0][2]).strip()
         file_or_folder = str(step_data[0][1][2]).strip()
         if file_or_folder.lower() == 'file':
-            result = FileUtilities.RenameFile(from_path, to_path)
+            result = RenameFile(from_path, to_path)
             if result in failed_tag_list:
                 CommonUtil.ExecLog(sModuleInfo,
                                            "Could not move file '%s' to '%s'" % (from_path, to_path), 3)
@@ -171,7 +313,7 @@ def Move_File_or_Folder(step_data):
                                            1)
                 return "passed"
         elif file_or_folder.lower() == 'folder':
-            result = FileUtilities.RenameFolder(from_path, to_path)
+            result = RenameFolder(from_path, to_path)
             if result in failed_tag_list:
                 CommonUtil.ExecLog(sModuleInfo,
                                            "Could not move folder '%s' to '%s'" % (from_path, to_path), 3)

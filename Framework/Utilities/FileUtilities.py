@@ -1,9 +1,6 @@
 import os,subprocess,shutil
 
 
-
-import zipfile
-
 def get_home_folder():
     """
 
@@ -31,7 +28,26 @@ def CreateFolder(folderPath, forced=True):
         return "Error: %s" % e
 
 
+def DeleteFolder(sFolderPath):
+    """
 
+    :param sFolderPath: name of the path to delete
+    :return: True if success,False if failed
+    """
+    try:
+        target = sFolderPath
+        if os.path.exists(target) :
+            if os.name == 'nt':
+                shutil.rmtree(target)
+            elif os.name == 'posix':
+                cmd = "rm -rf %s/" % target
+                p = subprocess.Popen(cmd, stdout=subprocess.PIPE, shell=True)
+                cmdValue = p.communicate()
+            return True
+        else:
+            return False
+    except Exception, e:
+        return "Error: %s" % e
 
 
 def CreateFile(sFilePath):
@@ -47,21 +63,6 @@ def CreateFile(sFilePath):
     except Exception, e:
         return "Error: %s" % e
 
-def RenameFile(a,b):
-    try:
-        result = shutil.move(a, b)
-        return result
-    except Exception, e:
-        print "Error: %s" % e
-        return False
-
-def RenameFolder(a,b):
-    try:
-        result = shutil.move(a, b)
-        return result
-    except Exception, e:
-        print "Error: %s" % e
-        return False
 
 def ZipFolder(dir, zip_file):
     """
@@ -88,25 +89,14 @@ def ZipFolder(dir, zip_file):
         print "Exception :", e
         return False
 
+
 def DeleteFile(sFilePath):
     try:
         if os.path.isfile(sFilePath):
-            result=os.remove(sFilePath)
-            return result
-        else:
-            return False
+            os.remove(sFilePath)
+            return True
     except Exception, e:
-        print "Error: %s" % e
-        return False
-
-
-def DeleteFolder(sFilePath):
-    try:
-        result = shutil.rmtree(sFilePath)
-        return result
-    except Exception, e:
-        print "Error: %s" % e
-        return False
+        return "Error: %s" % e
 
 
 def copy_folder(src, dest):
@@ -117,8 +107,8 @@ def copy_folder(src, dest):
     :return: True if passed or False if failed
     """
     try:
-        result = shutil.copytree(src, dest)
-        return result
+        shutil.copytree(src, dest)
+        return True
     except Exception, e:
         print "Error: %s" % e
         return False
@@ -132,8 +122,8 @@ def copy_file(src, dest):
     :return: True if passed or False if failed
     """
     try:
-        result = shutil.copyfile(src, dest)
-        return result
+        shutil.copyfile(src, dest)
+        return True
     except Exception, e:
         print "Error: %s" % e
         return False
