@@ -248,13 +248,12 @@ def launch_and_start_driver(package_name, activity_name):
         return "failed"
         
         
-def close():
+def close_application():
     sModuleInfo = inspect.stack()[0][3] + " : " + inspect.getmoduleinfo(__file__).name
     try:
         CommonUtil.ExecLog(sModuleInfo,"Trying to close the app",1)
         driver.close_app()
         CommonUtil.ExecLog(sModuleInfo,"Closed the app successfully",1)
-        driver.quit()
         return "passed"
     except Exception, e:
         exc_type, exc_obj, exc_tb = sys.exc_info()        
@@ -1030,7 +1029,7 @@ def Action_Handler(action_name, action_step_data=False, action_value=False):
             if result == "failed":
                 return "failed"
         elif action_name == "close":
-            result = close()
+            result = close_application()
             if result == "failed":
                 return "failed"
         elif action_name == "save text":
@@ -1042,7 +1041,7 @@ def Action_Handler(action_name, action_step_data=False, action_value=False):
             if result == "failed":
                 return "failed"
         elif action_name == "install":
-            result = install_and_start_driver()
+            result = install_and_start_driver(action_value)
             if result == "failed":
                 return "failed"
         else:
@@ -2116,6 +2115,10 @@ def Action_Handler_Appium(action_step_data, action_name):
                 return "failed"
         elif (action_name == "validate full text" or action_name == "validate partial text"):
             result = Validate_Text_Appium(action_step_data)
+            if result == "failed":
+                return "failed"
+        elif action_name == "close":
+            result = close_application()
             if result == "failed":
                 return "failed"
         else:
