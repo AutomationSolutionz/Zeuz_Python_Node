@@ -307,7 +307,7 @@ def Validate_Step_Data(step_data):
 #Validating text from an element given information regarding the expected text
 def Compare_Variables(step_data):
     sModuleInfo = inspect.stack()[0][3] + " : " + inspect.getmoduleinfo(__file__).name
-    CommonUtil.ExecLog(sModuleInfo, "Function: Save_Text", 1)
+    CommonUtil.ExecLog(sModuleInfo, "Function: Compare Variables", 1)
     try:
         element_step_data = Get_Element_Step_Data(step_data)
         if ((element_step_data == []) or (element_step_data == "failed")):
