@@ -320,7 +320,7 @@ def install(app_location, app_package, app_activity):
         return "failed"
 
 
-def install_and_start_driver(app_location):
+def install_and_start_driver(app_location, app_activity=''):
     sModuleInfo = inspect.stack()[0][3] + " : " + inspect.getmoduleinfo(__file__).name
     try:
         CommonUtil.ExecLog(sModuleInfo,"Trying to install and then launch the app...",1)
@@ -335,6 +335,8 @@ def install_and_start_driver(app_location):
         #adbOptions.kill_adb_server()
         desired_caps['deviceName'] = df
         desired_caps['app'] = PATH(app_location).strip()
+        if app_activity: # If user passed an Activity name, add it to the capabilities to override the default
+            desired_caps['appActivity'] = app_activity 
         global driver
         driver = webdriver.Remote('http://localhost:4723/wd/hub', desired_caps)
         CommonUtil.Set_Shared_Variables('appium_driver', driver) # Save driver instance to make available to other modules
@@ -1041,7 +1043,7 @@ def Action_Handler(action_name, action_step_data=False, action_value=False):
             if result == "failed":
                 return "failed"
         elif action_name == "install":
-            result = install_and_start_driver(action_value)
+            result = install_and_start_driver(action_value, action_step_data[2])
             if result == "failed":
                 return "failed"
         else:
