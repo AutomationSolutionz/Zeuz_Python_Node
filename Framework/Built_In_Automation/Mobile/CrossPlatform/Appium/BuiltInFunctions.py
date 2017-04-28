@@ -1046,6 +1046,10 @@ def Action_Handler(action_name, action_step_data=False, action_value=False):
             result = install_and_start_driver(action_value, action_step_data[2])
             if result == "failed":
                 return "failed"
+        elif action_name == "uninstall":
+            result = remove(action_value)
+            if result == "failed":
+                return "failed"
         else:
             CommonUtil.ExecLog(sModuleInfo,
                                "The action you entered is incorrect. Please provide accurate information on the data set(s).",
