@@ -922,37 +922,38 @@ def Sequential_Actions(step_data):
                 CommonUtil.TakeScreenShot(sModuleInfo)
                 if result == [] or result == "failed":
                     return "failed"
-            elif each[0][1] == "logic":
+            elif each[0][1] == "logic": #first row, second column = logic
                 logic_decision = ""
-                logic_row.append(each[1])
-                if len(logic_row) == 2:
-                    element_step_data = each[0:len(step_data[0]) - 2:1]
-                    returned_step_data_list = Validate_Step_Data(element_step_data)
+                logic_row.append(each[1]) #save second row data
+                if len(logic_row) == 2: # if second row as two columns
+                    element_step_data = each[0:len(step_data[0]) - 2:1]#???
+                    returned_step_data_list = Validate_Step_Data(element_step_data)#validate is correct
                     if(returned_step_data_list == []) or (returned_step_data_list == "failed"):
                         return "failed"
                     else:
                         try:
                             Element = Get_Element(returned_step_data_list[0], returned_step_data_list[1],
                                                   returned_step_data_list[2], returned_step_data_list[3],
-                                                  returned_step_data_list[4])
+                                                  returned_step_data_list[4])#is element available
                             if Element == 'failed':
                                 logic_decision = "false"
                             else:
-                                logic_decision = "true"
+                                logic_decision = "true"#assume logic is true
                         except Exception, errMsg:
                             errMsg = "Could not find element in the by the criteria..."
                             Exception_Info(sModuleInfo, errMsg)
                 else:
                     continue
 
+                #figure out where to go
                 for conditional_steps in logic_row:
                     if logic_decision in conditional_steps:
                         print conditional_steps[2]
-                        list_of_steps = conditional_steps[2].split(",")
-                        for each_item in list_of_steps:
+                        list_of_steps = conditional_steps[2].split(",") # Get list of steps to go to
+                        for each_item in list_of_steps:#for each step
                             data_set_index = int(each_item) - 1
-                            Sequential_Actions([step_data[data_set_index]])
-                        return "passed"
+                            Sequential_Actions([step_data[data_set_index]])#call this function on it
+                        return "passed" # After processing the called steps, stop here
             elif each[len(each) - 1][1] == "action" and each[len(each) - 1][0] == 'compare variable':
                 CommonUtil.TakeScreenShot(sModuleInfo)
                 result = Action_Handler(each[len(each) - 1][0], each,'')
@@ -2036,55 +2037,62 @@ def Get_Element_Step_Data_Appium(step_data):
 
 #Performs a series of action or logical decisions based on user input
 def Sequential_Actions_Appium(step_data):
+    print step_data
     sModuleInfo = inspect.stack()[0][3] + " : " + inspect.getmoduleinfo(__file__).name
     try:            
-        for each in step_data:
+        for each in step_data: # For each data set within step data
             logic_row=[]
-            for row in each:
-                if ((row[1] == "element parameter") or (row[1] == "reference parameter") or (row[1] == "relation type") or (row[1] == "element parameter 1 of 2") or (row[1] == "element parameter 2 of 2")):     ##modifying the filter for changes to be made in the sub-field of the step data. May remove this part of the if statement                
+            for row in each: # For each row of the data set
+                # Don't process these items right now, but also dont' fail
+                if ((row[1] == "element parameter") or (row[1] == "reference parameter") or (row[1] == "relation type") or (row[1] == "element parameter 1 of 2") or (row[1] == "element parameter 2 of 2")):
                     continue
-                
+                # If middle column = action, call action handler
                 elif row[1]=="action":
                     CommonUtil.ExecLog(sModuleInfo, "Checking the action to be performed in the action row", 1)
-                    result = Action_Handler_Appium([each],row[0])
-                    if result == [] or result == "failed":
+                    result = Action_Handler_Appium(each,row[0]) # Pass data set, and action_name to action handler
+                    if result == [] or result == "failed": # Check result of action handler
                         return "failed"
                     
+                # If middle column = conditional action, evaluate data set
                 elif row[1]=="conditional action":
                     CommonUtil.ExecLog(sModuleInfo, "Checking the logical conditional action to be performed in the conditional action row", 1)
                     logic_decision=""
                     logic_row.append(row)
-                    if len(logic_row)==2:
-                        #element_step_data = each[0:len(step_data[0])-2:1]
-                        element_step_data = Get_Element_Step_Data_Appium([each])
-                        returned_step_data_list = Validate_Step_Data(element_step_data) 
-                        if ((returned_step_data_list == []) or (returned_step_data_list == "failed")):
+                    
+                    # Only run this when we have two conditional actions for this data set (a true and a false preferably)
+                    if len(logic_row) == 2:
+                        element_step_data = Get_Element_Step_Data_Appium([each]) # Pass data set as a list, and get back anything that's not an "action" or "conditional action"
+                        returned_step_data_list = Validate_Step_Data(element_step_data) # Make sure the element step data we got back from above is good
+                        if ((returned_step_data_list == []) or (returned_step_data_list == "failed")): # Element step data is bad, so fail
                             return "failed"
-                        else:
+                        else: # Element step data is good, so continue
+                            # Check if element from data set exists on device
                             try:
                                 Element = Get_Element_Appium(returned_step_data_list[0], returned_step_data_list[1], returned_step_data_list[2], returned_step_data_list[3], returned_step_data_list[4])
-                                if Element == 'failed':
+                                if Element == 'failed': # Element doesn't exist, proceed with the step data following the fail/false path
                                     logic_decision = "false"
-                                else:
+                                else: # Any other return means we found the element, proceed with the step data following the pass/true pass
                                     logic_decision = "true"                                        
-                            except Exception, errMsg:
+                            except Exception, errMsg: # Element doesn't exist, proceed with the step data following the fail/false path
                                 errMsg = "Could not find element in the by the criteria..."
-                                Exception_Info(sModuleInfo, errMsg)            
-                    else:
-                        continue
-
-                    for conditional_steps in logic_row:
-                        if logic_decision in conditional_steps:
-                            print conditional_steps[2]
-                            list_of_steps = conditional_steps[2].split(",")
-                            for each_item in list_of_steps:
-                                data_set_index = int(each_item) - 1
-                                Sequential_Actions_Appium([step_data[data_set_index]])
-                            return "passed"
+                                Exception_Info(sModuleInfo, errMsg)
+                                logic_decision = "false"
+                                        
+                            # Process the path as defined above (pass/fail)
+                            for conditional_steps in logic_row: # For each conditional action from the data set
+                                if logic_decision in conditional_steps: # If we have a result from the element check above (true/false)
+                                    list_of_steps = conditional_steps[2].split(",") # Get the data set numbers for this conditional action and put them in a list
+                                    for each_item in list_of_steps: # For each data set number we need to process before finishing
+                                        data_set_index = int(each_item) - 1 # data set number, -1 to offset for data set numbering system
+                                        Sequential_Actions_Appium([step_data[data_set_index]]) # Recursively call this function until all called data sets are complete
+                                    return "passed"
                 
+                # Middle column not listed above, so data set is wrong
                 else:
                     CommonUtil.ExecLog(sModuleInfo, "The sub-field information is incorrect. Please provide accurate information on the data set(s).", 3)
                     return "failed"                 
+        
+        # No failures, return pass
         return "passed"
 
     except Exception, e:
@@ -2097,39 +2105,84 @@ def Sequential_Actions_Appium(step_data):
 
 #Handles actions for the sequential logic, based on the input from the mentioned function
 def Action_Handler_Appium(action_step_data, action_name):
+    ''' Handle Sub-Field=Action from step data, called only by Sequential_Actions() '''
+    
     sModuleInfo = inspect.stack()[0][3] + " : " + inspect.getmoduleinfo(__file__).name
+    
+    # Put data set values in friendly variables
+    action_field, action_subfield, action_value = ('','','')
+    related_field, related_subfield, related_value = ('','','')
+    for row in action_step_data:
+        if row[0] == action_name: # Action line
+            action_field = row[0]
+            action_subfield = row[1]
+            action_value = row[2]
+        else: # Related information line
+            related_field = row[0]
+            related_subfield = row[1]
+            related_value = row[2]
+            
+    # Perform an action based on Field from step data
     try:
-        if action_name =="click":
-            result = Click_Element_Appium(action_step_data)
-            if result == "failed":
-                return "failed"
-        elif action_name == "wait":
-            result = Wait(action_step_data)
-            if result == "failed":
-                return "failed"
-        elif action_name == "swipe":
-            result = Swipe_Appium(action_step_data)
-            if result == "failed":
-                return "failed"
-        elif action_name == "tap":
-            result = Tap_Appium(action_step_data)
-            if result == "failed":
-                return "failed"
-        elif (action_name == "Android keystroke" or action_name == "iOS keystroke"):
-            result = Keystroke_Appium(action_step_data)
-            if result == "failed":
-                return "failed"
-        elif (action_name == "validate full text" or action_name == "validate partial text"):
-            result = Validate_Text_Appium(action_step_data)
-            if result == "failed":
-                return "failed"
-        elif action_name == "close":
+        # Handle shared variable string
+        if action_value != False:
+            if "%|" in action_value and "|%" in action_value: # If string contains these characters, it's a shared variable
+                CommonUtil.ExecLog(sModuleInfo, "Shared Variable: %s" % action_value, 1)
+                action_value = action_value.replace("%|", "") # Strip special variable characters
+                action_value = action_value.replace("|%", "")
+                action_value = CommonUtil.Get_Shared_Variables(action_value) # Get the string for this shared variable
+                if action_value == 'failed':
+                    CommonUtil.ExecLog(sModuleInfo, "Invalid shared variable", 3)
+                    return "failed"
+
+        # Multiple row actions
+        if action_name == "click": # Click an element
+            result = Click_Element(related_field, action_value)
+        elif action_name == "text": # Enter text string into element
+            result = Set_Text(related_field, related_value, action_value)
+        elif action_name == "text_search": # Enter text string and enter key (for fields that don't have a button)
+            result = Set_Text_Enter(related_field, related_value, action_value)
+        elif action_name == "wait": # Wait until element is available/enabled
+            result = Wait(action_value) # !!! Lucas: I think this needs the element, and WAit() has the line needed to wait on an element commented out
+        elif action_name == "tap": # Tap an element
+            result = Tap(related_field, related_value)
+        elif action_name == "enter": # Press enter key #!!!To be replaced with Keystroke_Appium()
+            result = SendKey_Enter()
+        elif action_name == "validate full text" or action_name == "validate partial text": # Test if text string exists
+            result = Validate_Text(action_step_data)
+        elif action_name == "save text": # Save text string
+            result = Save_Text([action_step_data],action_value)
+        elif action_name == "compare variable": # Compare two "shared" variables
+            result = Compare_Variables(action_step_data)
+        elif action_name == "action result": # Result from step data the user wants to specify (passed/failed)
+            if action_value in failed_tag_list: # Convert user specified pass/fail into standard result
+                result = 'failed'
+            else:
+                result = 'passed'
+        elif action_name == "install": # Install and execute application
+            result = install_and_start_driver(action_value, related_value) # file location, activity_name(optional)
+
+        # Single row actions
+        elif action_name == "sleep": # Sleep a specific amount of time
+            result = wait(action_value)
+        elif action_name == "swipe": # Swipe screen
+            result = Swipe(action_value) # Must be in x,y,w,h format
+        elif action_name == "go_back": # Press back button #!!!To be replaced with Keystroke_Appium()
+            result = Go_Back()
+        elif action_name == "close": # Close foreground application
             result = close_application()
-            if result == "failed":
-                return "failed"
+        elif action_name == "uninstall": # Uninstall application
+            result = remove(action_value)
+
+        # Anything else is an invalid action
         else:
             CommonUtil.ExecLog(sModuleInfo, "The action you entered is incorrect. Please provide accurate information on the data set(s).", 3)
             return "failed" 
+        
+        # Check result of the above if() statement
+        if result == "failed":
+            return "failed"
+
         
     except Exception, e:
         exc_type, exc_obj, exc_tb = sys.exc_info()
