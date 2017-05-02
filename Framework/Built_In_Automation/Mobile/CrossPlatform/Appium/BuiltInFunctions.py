@@ -216,28 +216,20 @@ def launch_and_start_driver(package_name, activity_name):
         desired_caps = {}
         desired_caps['platformName'] = 'Android'
         df = adbOptions.get_android_version().strip()
-        #df = "4.4.2"
         CommonUtil.ExecLog(sModuleInfo,df,1)
-        #adbOptions.kill_adb_server()
         desired_caps['platformVersion'] = df
         df = adbOptions.get_device_model().strip()
-        #df = "Android"
         CommonUtil.ExecLog(sModuleInfo,df,1)
-        #adbOptions.kill_adb_server()
 
         desired_caps['deviceName'] = df
         desired_caps['appPackage'] = package_name.strip()
         desired_caps['appActivity'] = activity_name.strip()
-        #desired_caps['appPackage'] = 'com.assetscience.androidprodiagnostics'
-        #desired_caps['appActivity'] = 'com.assetscience.recell.device.android.prodiagnostics.MainActivity'
         global driver
-        driver = webdriver.Remote('http://localhost:4723/wd/hub', desired_caps)
-        CommonUtil.Set_Shared_Variables('appium_driver', driver) # Save driver instance to make available to other modules
-        #wait(10)
-        #deletelater = WebDriverWait(driver, WebDriver_Wait)
-        #print deletelater
+        if driver == None: # Only create a new appium instance if we haven't already (may be done by install_and_start_driver())
+            driver = webdriver.Remote('http://localhost:4723/wd/hub', desired_caps)
+            CommonUtil.Set_Shared_Variables('appium_driver', driver) # Save driver instance to make available to other modules
         CommonUtil.ExecLog(sModuleInfo,"Launched the app successfully.",1)
-        #wait(3)
+
         return "passed"
     except Exception, e:
         CommonUtil.ExecLog(sModuleInfo, "Exception: %s" % e, 3)
@@ -418,7 +410,7 @@ def wait(_time):
     sModuleInfo = inspect.stack()[0][3] + " : " + inspect.getmoduleinfo(__file__).name
     try:
         CommonUtil.ExecLog(sModuleInfo,"Starting waiting for %s seconds.."%_time,1)
-        driver.implicitly_wait(_time)
+        driver.implicitly_wait(float(_time))
         time.sleep(_time)
         CommonUtil.ExecLog(sModuleInfo,"Waited successfully",1)
         return "passed"
@@ -2039,9 +2031,9 @@ def Get_Element_Step_Data_Appium(step_data):
         return "failed"
 
 
-#Performs a series of action or logical decisions based on user input
 def Sequential_Actions_Appium(step_data):
-    print step_data
+    ''' Main Sequential Actions functino - Performs logical decisions based on user input '''
+    
     sModuleInfo = inspect.stack()[0][3] + " : " + inspect.getmoduleinfo(__file__).name
     try:            
         for each in step_data: # For each data set within step data
@@ -2052,44 +2044,21 @@ def Sequential_Actions_Appium(step_data):
                     continue
                 # If middle column = action, call action handler
                 elif row[1]=="action":
-                    CommonUtil.ExecLog(sModuleInfo, "Checking the action to be performed in the action row", 1)
+                    CommonUtil.ExecLog(sModuleInfo, "Checking the action to be performed in the action row: %s" % str(row), 1)
                     result = Action_Handler_Appium(each,row[0]) # Pass data set, and action_name to action handler
                     if result == [] or result == "failed": # Check result of action handler
                         return "failed"
                     
                 # If middle column = conditional action, evaluate data set
                 elif row[1]=="conditional action":
-                    CommonUtil.ExecLog(sModuleInfo, "Checking the logical conditional action to be performed in the conditional action row", 1)
+                    CommonUtil.ExecLog(sModuleInfo, "Checking the logical conditional action to be performed in the conditional action row: %s" % str(row), 1)
                     logic_decision=""
                     logic_row.append(row)
                     
                     # Only run this when we have two conditional actions for this data set (a true and a false preferably)
                     if len(logic_row) == 2:
-                        element_step_data = Get_Element_Step_Data_Appium([each]) # Pass data set as a list, and get back anything that's not an "action" or "conditional action"
-                        returned_step_data_list = Validate_Step_Data(element_step_data) # Make sure the element step data we got back from above is good
-                        if ((returned_step_data_list == []) or (returned_step_data_list == "failed")): # Element step data is bad, so fail
-                            return "failed"
-                        else: # Element step data is good, so continue
-                            # Check if element from data set exists on device
-                            try:
-                                Element = Get_Element_Appium(returned_step_data_list[0], returned_step_data_list[1], returned_step_data_list[2], returned_step_data_list[3], returned_step_data_list[4])
-                                if Element == 'failed': # Element doesn't exist, proceed with the step data following the fail/false path
-                                    logic_decision = "false"
-                                else: # Any other return means we found the element, proceed with the step data following the pass/true pass
-                                    logic_decision = "true"                                        
-                            except Exception, errMsg: # Element doesn't exist, proceed with the step data following the fail/false path
-                                errMsg = "Could not find element in the by the criteria..."
-                                Exception_Info(sModuleInfo, errMsg)
-                                logic_decision = "false"
-                                        
-                            # Process the path as defined above (pass/fail)
-                            for conditional_steps in logic_row: # For each conditional action from the data set
-                                if logic_decision in conditional_steps: # If we have a result from the element check above (true/false)
-                                    list_of_steps = conditional_steps[2].split(",") # Get the data set numbers for this conditional action and put them in a list
-                                    for each_item in list_of_steps: # For each data set number we need to process before finishing
-                                        data_set_index = int(each_item) - 1 # data set number, -1 to offset for data set numbering system
-                                        Sequential_Actions_Appium([step_data[data_set_index]]) # Recursively call this function until all called data sets are complete
-                                    return "passed"
+                        CommonUtil.ExecLog(sModuleInfo, "Found 2 conditional actions - moving ahead with them", 1)
+                        return Conditional_Action_Handler(step_data, each, row, logic_row) # Pass step_data, and current iteration of data set to decide which data sets will be processed next
                 
                 # Middle column not listed above, so data set is wrong
                 else:
@@ -2106,6 +2075,42 @@ def Sequential_Actions_Appium(step_data):
         print "%s"%Error_Detail
         return "failed"
     
+def Conditional_Action_Handler(step_data, each, row, logic_row):
+    ''' Process conditional actions, called only by Sequential_Actions() '''
+    
+    sModuleInfo = inspect.stack()[0][3] + " : " + inspect.getmoduleinfo(__file__).name
+    
+    element_step_data = Get_Element_Step_Data_Appium([each]) # Pass data set as a list, and get back anything that's not an "action" or "conditional action"
+    returned_step_data_list = Validate_Step_Data(element_step_data) # Make sure the element step data we got back from above is good
+    if ((returned_step_data_list == []) or (returned_step_data_list == "failed")): # Element step data is bad, so fail
+        CommonUtil.ExecLog(sModuleInfo, "Element data is bad: %s" % str(element_step_data), 3)
+        return "failed"
+    else: # Element step data is good, so continue
+        # Check if element from data set exists on device
+        try:
+            Element = Get_Element_Appium(returned_step_data_list[0], returned_step_data_list[1], returned_step_data_list[2], returned_step_data_list[3], returned_step_data_list[4])
+            if Element == 'failed': # Element doesn't exist, proceed with the step data following the fail/false path
+                logic_decision = "false"
+            else: # Any other return means we found the element, proceed with the step data following the pass/true pass
+                logic_decision = "true"
+        except Exception, errMsg: # Element doesn't exist, proceed with the step data following the fail/false path
+            errMsg = "Could not find element in the by the criteria..."
+            Exception_Info(sModuleInfo, errMsg)
+            logic_decision = "false"
+                    
+        # Process the path as defined above (pass/fail)
+        for conditional_steps in logic_row: # For each conditional action from the data set
+            CommonUtil.ExecLog(sModuleInfo, "Processing conditional action: %s" % str(conditional_steps), 1)
+            if logic_decision in conditional_steps: # If we have a result from the element check above (true/false)
+                list_of_steps = conditional_steps[2].split(",") # Get the data set numbers for this conditional action and put them in a list
+                for each_item in list_of_steps: # For each data set number we need to process before finishing
+                    CommonUtil.ExecLog(sModuleInfo, "Processing conditional step %s" % str(each_item), 1)
+                    data_set_index = int(each_item) - 1 # data set number, -1 to offset for data set numbering system
+                    Sequential_Actions_Appium([step_data[data_set_index]]) # Recursively call this function until all called data sets are complete
+                return "passed"
+
+    # Shouldn't get here, but just in case
+    return 'passed'
 
 #Handles actions for the sequential logic, based on the input from the mentioned function
 def Action_Handler_Appium(action_step_data, action_name):
@@ -2121,7 +2126,7 @@ def Action_Handler_Appium(action_step_data, action_name):
             action_field = row[0]
             action_subfield = row[1]
             action_value = row[2]
-        else: # Related information line
+        elif ((row[1] == "element parameter") or (row[1] == "reference parameter") or (row[1] == "relation type") or (row[1] == "element parameter 1 of 2") or (row[1] == "element parameter 2 of 2")): # Related information line
             related_field = row[0]
             related_subfield = row[1]
             related_value = row[2]
@@ -2141,10 +2146,10 @@ def Action_Handler_Appium(action_step_data, action_name):
 
         # Multiple row actions
         if action_name == "click": # Click an element
-            result = Click_Element(related_field, action_value)
+            result = Click_Element(related_field, related_value)
         elif action_name == "text": # Enter text string into element
             result = Set_Text(related_field, related_value, action_value)
-        elif action_name == "text_search": # Enter text string and enter key (for fields that don't have a button)
+        elif action_name == "text search": # Enter text string and enter key (for fields that don't have a button)
             result = Set_Text_Enter(related_field, related_value, action_value)
         elif action_name == "wait": # Wait until element is available/enabled
             result = Wait(action_value) # !!! Lucas: I think this needs the element, and WAit() has the line needed to wait on an element commented out
@@ -2158,20 +2163,22 @@ def Action_Handler_Appium(action_step_data, action_name):
             result = Save_Text([action_step_data],action_value)
         elif action_name == "compare variable": # Compare two "shared" variables
             result = Compare_Variables(action_step_data)
-        elif action_name == "action result": # Result from step data the user wants to specify (passed/failed)
+        elif action_name == "step result": # Result from step data the user wants to specify (passed/failed)
             if action_value in failed_tag_list: # Convert user specified pass/fail into standard result
                 result = 'failed'
             else:
                 result = 'passed'
         elif action_name == "install": # Install and execute application
             result = install_and_start_driver(action_value, related_value) # file location, activity_name(optional)
+        elif action_name == "launch": # Launch program and get appium driver instance
+            result = launch_and_start_driver(action_value, related_value) # Package name, Activity name
 
         # Single row actions
         elif action_name == "sleep": # Sleep a specific amount of time
-            result = wait(action_value)
+            result = wait(int(action_value))
         elif action_name == "swipe": # Swipe screen
             result = Swipe(action_value) # Must be in x,y,w,h format
-        elif action_name == "go_back": # Press back button #!!!To be replaced with Keystroke_Appium()
+        elif action_name == "go back": # Press back button #!!!To be replaced with Keystroke_Appium()
             result = Go_Back()
         elif action_name == "close": # Close foreground application
             result = close_application()
