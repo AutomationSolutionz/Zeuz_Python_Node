@@ -1051,6 +1051,10 @@ def Action_Handler(action_name, action_step_data=False, action_value=False):
             result = remove(action_value)
             if result == "failed":
                 return "failed"
+        elif action_name == "sleep":
+            result = time.sleep(action_value)
+            if result == "failed":
+                return "failed"
         else:
             CommonUtil.ExecLog(sModuleInfo,
                                "The action you entered is incorrect. Please provide accurate information on the data set(s).",
