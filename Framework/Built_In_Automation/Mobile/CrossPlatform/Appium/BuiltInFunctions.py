@@ -894,6 +894,26 @@ def Element_Validation(All_Elements_Found):#, index):
         CommonUtil.ExecLog(sModuleInfo, "Unable to get the element.  Error: %s"%(Error_Detail), 3)
         return "failed"
 
+def Sleep(step_data):
+    sModuleInfo = inspect.stack()[0][3] + " : " + inspect.getmoduleinfo(__file__).name
+    CommonUtil.ExecLog(sModuleInfo, "Function: Sleep", 1)
+    try:
+        if ((len(step_data) != 1) or (1 < len(step_data[0]) >= 5)):
+            CommonUtil.ExecLog(sModuleInfo,
+                                   "The information in the data-set(s) are incorrect. Please provide accurate data set(s) information.",
+                                   3)
+            return "failed"
+        else:
+            tuple = step_data[0][0]
+            seconds = int(tuple[2])
+            CommonUtil.ExecLog(sModuleInfo, "Sleeping for %s seconds" % seconds, 1)
+            result = time.sleep(seconds)
+
+        return result
+
+    except Exception:
+        return CommonUtil.Exception_Handler(sys.exc_info())
+
 
 # Performs a series of action or logical decisions based on user input
 def Sequential_Actions(step_data):
@@ -1044,7 +1064,7 @@ def Action_Handler(action_name, action_step_data=False, action_value=False):
             if result == "failed":
                 return "failed"
         elif action_name == "sleep":
-            result = time.sleep(action_value)
+            result = Sleep(action_value)
             if result == "failed":
                 return "failed"
         else:
