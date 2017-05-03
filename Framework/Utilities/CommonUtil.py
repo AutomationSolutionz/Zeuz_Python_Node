@@ -489,6 +489,25 @@ def Set_Shared_Variables(key, value):
     except:
         Exception_Handler(sys.exc_info())
 
+
+def Set_List_Shared_Variables(list_name, key, value):
+    try:
+        sModuleInfo = inspect.stack()[0][3] + " : " + inspect.getmoduleinfo(__file__).name
+        global shared_variables
+        if key == '' or key == None or value == '' or value == None or list_name == '' or list_name == None: #if input is invalid
+            return "failed"
+        else:
+            if list_name in shared_variables:
+                shared_variables[list_name][key] = value
+                ExecLog(sModuleInfo, "In List '%s' Variable value of '%s' is set as: %s" % (list_name,key, value), 1)
+                return "passed"
+            else:
+                ExecLog(sModuleInfo,"List named %s does not exist on shared variables, so cant insert new field to list"%list_name,3)
+                return "failed"
+    except:
+        Exception_Handler(sys.exc_info())
+
+
 def Get_Shared_Variables(key):
     try:
         sModuleInfo = inspect.stack()[0][3] + " : " + inspect.getmoduleinfo(__file__).name
@@ -505,6 +524,25 @@ def Get_Shared_Variables(key):
                 return "failed"
     except:
         Exception_Handler(sys.exc_info())
+
+
+def Get_List_from_Shared_Variables(list_name):
+    try:
+        sModuleInfo = inspect.stack()[0][3] + " : " + inspect.getmoduleinfo(__file__).name
+        global shared_variables
+        if list_name == '' or list_name == None: #if input is invalid
+            return "failed"
+        else:
+            if list_name in shared_variables:
+                list = shared_variables[list_name]
+                ExecLog(sModuleInfo,"List: "+list_name+" is: "+str(list),1)
+                return list
+            else:
+                ExecLog(sModuleInfo,"List named %s does not exist on shared variables"%list_name,3)
+                return "failed"
+    except:
+        Exception_Handler(sys.exc_info())
+
 
 def Test_Shared_Variables(key):
     ''' Test if a variable already exists and return true or false '''
