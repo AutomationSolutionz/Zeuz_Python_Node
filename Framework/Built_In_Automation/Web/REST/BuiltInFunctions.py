@@ -240,6 +240,38 @@ def Sequential_Actions(step_data):
 
                 elif row[1] == "body" or row[1] == "header" or row[1] == "headers":
                     continue
+                elif row[1] == "conditional action":
+                    CommonUtil.ExecLog(sModuleInfo,
+                                       "Checking the logical conditional action to be performed in the conditional action row",
+                                       1)
+                    logic_decision = ""
+                    logic_row.append(row)
+                    if len(logic_row) == 2:
+                        # element_step_data = each[0:len(step_data[0])-2:1]
+                        new_data_set = CommonUtil.Handle_Step_Data_Variables([each])
+                        if new_data_set in failed_tag_list:
+                            return_result = 'failed'
+
+                        return_result = Get_Response(new_data_set, 'all')
+                        if return_result == 'failed':
+                            logic_decision = "false"
+                        else:
+                            logic_decision = "true"
+
+                    else:
+                        continue
+
+                    for conditional_steps in logic_row:
+                        if logic_decision in conditional_steps:
+                            print conditional_steps[2]
+                            print logic_decision
+                            list_of_steps = conditional_steps[2].split(",")
+                            for each_item in list_of_steps:
+                                data_set_index = int(each_item) - 1
+                                cond_result = Sequential_Actions([step_data[data_set_index]])
+                                if cond_result == "failed":
+                                    return "failed"
+                            return "passed"
 
                 else:
                     CommonUtil.ExecLog(sModuleInfo,
@@ -364,4 +396,3 @@ def Compare_Variables(step_data):
         return CommonUtil.Exception_Handler(sys.exc_info())
 
 
-'===================== ===x=== Validation Section Ends ===x=== ======================'
