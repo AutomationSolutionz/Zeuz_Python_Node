@@ -239,7 +239,21 @@ def launch_and_start_driver(package_name, activity_name):
         CommonUtil.ExecLog(sModuleInfo, "Unable to start WebDriver. %s"%Error_Detail, 3)
         return "failed"
         
-        
+def teardown_appium():
+    ''' Teardown of appium instance '''
+    
+    sModuleInfo = inspect.stack()[0][3] + " : " + inspect.getmoduleinfo(__file__).name
+    CommonUtil.ExecLog(sModuleInfo,"Starting Appium cleanup.",1)
+    try:
+        global driver
+        driver.quit() # Tell appium to shutdown instance
+        driver = None # Clear driver variable, so next run will be fresh
+        CommonUtil.Set_Shared_Variables('appium_driver', '') # Clear the driver from shared variables
+        CommonUtil.ExecLog(sModuleInfo,"Appium cleaned up successfully.",1)
+        return 'passed'
+    except Exception:
+        return CommonUtil.Exception_Handler(sys.exc_info())
+
 def close_application():
     sModuleInfo = inspect.stack()[0][3] + " : " + inspect.getmoduleinfo(__file__).name
     try:
@@ -986,6 +1000,133 @@ def Swipe(x, y, w, h):
         CommonUtil.ExecLog(sModuleInfo, "Unable to swipe. %s" % Error_Detail, 3)
         return "failed"
 
+def swipe_handler(action_value):
+    ''' Swipe screen based on user input '''
+    # Functions: General swipe (up/down/left/right), multiple swipes (X coordinate (from-to), Y coordinate (from-to), stepsize)
+    # action_value: comma delimited string containing swipe details
+
+    # Get screen size for calculations
+    window_size = get_window_size()
+    w = int(window_size['width'])
+    h = int(window_size['height'])
+
+    # Sanitize input
+    action_value = str(action_value) # Convert to string
+    action_value = action_value.replace(' ','') # Remove spaces
+    action_value = action_value.lower() # Convert to lowercase
+    
+    # Specific swipe dimensions given - just pass to swipe()
+    if action_value.count(',') == 3:
+        x, y, w, h = action_value.split(',')
+        Swipe(int(x), int(y), int(w), int(h))
+    
+    # Check for and handle simple gestures (swipe up/down/left/right), and may have a set number of swipes to exceute
+    elif action_value.count(',') == 0 or action_value.count(',') == 1:
+        # Process number of swipes as well
+        if action_value.count(',') == 1:
+            action_value, count = action_value.split(',')
+            count = int(count)
+        else:
+            count = 1
+            
+        # Check for direction and calculate accordingly
+        if action_value == 'up':
+            x1 = 50 * w / 100 # Middle horizontal
+            x2 = x1 # Midle horizontal
+            y1 = 75 * h / 100 # 75% down 
+            y2 = 1 # To top
+        elif action_value == 'down':
+            x1 = 50 * w / 100 # Middle horizontal
+            x2 = x1 # Midle horizontal
+            y1 = 25 * h / 100 # 25% down 
+            y2 = h - 1 # To bottom
+        elif action_value == 'left':
+            x1 = 90 * w / 100 # Start 90% on right
+            x2 = 10 * w / 100 # End 10% on left
+            y1 = 50 * h / 100 # Middle vertical 
+            y2 = y1 # Middle vertical
+        elif action_value == 'right':
+            x1 = 10 * w / 100 # Start 10% on left
+            x2 = 90 * w / 100 # End 90% on right
+            y1 = 50 * h / 100 # Middle vertical
+            y2 = y1 # Middle vertical
+
+        # Perform swipe as many times as specified, or once if not specified 
+        for i in range(0, count):
+            driver.swipe(x1, y1, x2, y2)
+            wait(1) # Small sleep, so action animation (if any) can complete
+        
+    # Handle a series of almost identical gestures (swipe horizontally at different locations for example)
+    elif action_value.count(',') == 2:
+        # Split input into separate parameters
+        horizontal, vertical, stepsize = action_value.split(',')
+        
+        # Stepsize - How far to skip
+        if stepsize.isdigit(): # Stepsize given in pixels
+            stepsize = int(stepsize)
+        elif '%' in stepsize: # Stepsize given as a percentage
+            stepsize = int(stepsize.replace('%', '')) # Convert to integer
+            stepsize = stepsize * h / 100 # Convert from percentage to pixels
+        elif stepsize == 'none':
+            stepsize = 1
+        elif stepsize == 'small':
+            stepsize = 50
+        elif stepsize == 'medium':
+            stepsize = 100
+        elif stepsize == 'large' or stepsize == 'big':
+            stepsize = 250
+        
+        # Horizontal - Start and end
+        xstart, xstop = horizontal.split('-')
+        if xstart.isdigit(): # X given in pixels
+            xstart = int(xstart)
+            xstop = int(xstop)
+        elif '%' in horizontal: # X given in percentage
+            xstart = int(xstart.replace('%', '')) # Convert to integer
+            xstart = xstart * w / 100 # Convert from percentage to pixels
+            xstop = int(xstop.replace('%', '')) # Convert to integer
+            xstop = xstop * w / 100 # Convert from percentage to pixels
+            if xstart <= 0: # driver.swipe fails if we are outside the boundary, so correct any values necessary
+                xstart = 1
+            if xstop >= w:
+                xstop = w - 1
+        elif horizontal == 'left-right': # Replace descriptive words with default values for them (FROM-TO)
+            xstart = 1
+            xstop = w - 1
+        elif horizontal == 'right-left': # Replace descriptive words with default values for them (FROM-TO)
+            xstart = w - 1
+            xstop = 1
+        
+        # Vertical - Start and end
+        ystart, ystop = vertical.split('-')
+        if ystart.isdigit(): # X given in pixels
+            ystart = int(ystart)
+            ystop = int(ystop)
+        elif '%' in vertical: # X given in percentage
+            ystart = int(ystart.replace('%', '')) # Convert to integer
+            ystart = ystart * h / 100 # Convert from percentage to pixels
+            ystop = int(ystop.replace('%', '')) # Convert to integer
+            ystop = ystop * h / 100 # Convert from percentage to pixels
+            if ystart <= 0: # driver.swipe fails if we are outside the boundary, so correct any values necessary
+                ystart = 1
+            if ystop >= h:
+                ystop = h - 1
+        elif vertical == 'top-bottom': # Replace descriptive words with default values for them (FROM-TO)
+            ystart = 1
+            ystop = h - 1
+        elif vertical == 'bottom-top': # Replace descriptive words with default values for them (FROM-TO)
+            ystart = h - 1
+            ystop = 1
+            stepsize *= -1 # Convert stepsize to negative, so range() works as expected
+    
+        # Perform swipe given computed dimensions above
+        for y in range(ystart, ystop, stepsize): # For each row, assuming stepsize, swipe and move to next row
+            print "SWIPE:",xstart, y, xstop, ystop
+            Swipe(xstart, y, xstop, y) # Swipe screen - y must be the same for horizontal swipes
+
+    # Invalid value
+    else:
+        return 'failed'
 
 def Tap(element_parameter, element_value):
     sModuleInfo = inspect.stack()[0][3] + " : " + inspect.getmoduleinfo(__file__).name
@@ -2021,18 +2162,28 @@ def Action_Handler_Appium(action_step_data, action_name):
             result = install_and_start_driver(action_value, related_value) # file location, activity_name(optional)
         elif action_name == "launch": # Launch program and get appium driver instance
             result = launch_and_start_driver(action_value, related_value) # Package name, Activity name
+        elif action_name == "get location":
+            position = get_element_location_by_id(related_value) # Get x,y coordinates of the pass button
+            if position != 'failed':
+                result = CommonUtil.Set_Shared_Variables(action_value, position)
+            else:
+                result = 'passed'
+        elif action_name == "tap location":
+            result = tap_location(action_value)
 
         # Single row actions
         elif action_name == "sleep": # Sleep a specific amount of time
             result = wait(int(action_value))
         elif action_name == "swipe": # Swipe screen
-            result = Swipe(action_value) # Must be in x,y,w,h format
+            result = swipe_handler(action_value)
         elif action_name == "go back": # Press back button #!!!To be replaced with Keystroke_Appium()
             result = Go_Back()
         elif action_name == "close": # Close foreground application
             result = close_application()
         elif action_name == "uninstall": # Uninstall application
             result = remove(action_value)
+        elif action_name == 'teardown': # Cleanup Appium instance
+            teardown_appium()
 
         # Anything else is an invalid action
         else:
