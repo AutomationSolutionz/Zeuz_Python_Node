@@ -907,9 +907,8 @@ def Sleep(step_data):
             tuple = step_data[0][0]
             seconds = int(tuple[2])
             CommonUtil.ExecLog(sModuleInfo, "Sleeping for %s seconds" % seconds, 1)
-            result = time.sleep(seconds)
-
-        return result
+            time.sleep(seconds)
+            return "passed"
 
     except Exception:
         return CommonUtil.Exception_Handler(sys.exc_info())
