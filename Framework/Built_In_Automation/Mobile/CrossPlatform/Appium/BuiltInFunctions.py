@@ -405,27 +405,12 @@ def reset():
         return "failed"
     
     
-def go_back():
-    sModuleInfo = inspect.stack()[0][3] + " : " + inspect.getmoduleinfo(__file__).name
-    try:
-        CommonUtil.ExecLog(sModuleInfo,"Trying to go back...",1)
-        driver.back()
-        CommonUtil.ExecLog(sModuleInfo,"Went back successfully",1)
-        return "passed"
-    except Exception, e:
-        exc_type, exc_obj, exc_tb = sys.exc_info()        
-        fname = os.path.split(exc_tb.tb_frame.f_code.co_filename)[1]
-        Error_Detail = ((str(exc_type).replace("type ", "Error Type: ")) + ";" +  "Error Message: " + str(exc_obj) +";" + "File Name: " + fname + ";" + "Line: "+ str(exc_tb.tb_lineno))
-        CommonUtil.ExecLog(sModuleInfo, "Unable to go back. %s"%Error_Detail, 3)
-        return "failed"
-
-    
 def wait(_time):
     sModuleInfo = inspect.stack()[0][3] + " : " + inspect.getmoduleinfo(__file__).name
     try:
         CommonUtil.ExecLog(sModuleInfo,"Starting waiting for %s seconds.."%_time,1)
-        driver.implicitly_wait(float(_time))
-        time.sleep(_time)
+        driver.implicitly_wait(float(_time)) # Instructs appium not to timeout while we wait (it has a 60 second timeout by default)
+        time.sleep(_time) # Stop here the specified amount of time
         CommonUtil.ExecLog(sModuleInfo,"Waited successfully",1)
         return "passed"
     except Exception, e:
@@ -2183,7 +2168,7 @@ def Action_Handler_Appium(action_step_data, action_name):
         elif action_name == "uninstall": # Uninstall application
             result = remove(action_value)
         elif action_name == 'teardown': # Cleanup Appium instance
-            teardown_appium()
+            result = teardown_appium()
 
         # Anything else is an invalid action
         else:
