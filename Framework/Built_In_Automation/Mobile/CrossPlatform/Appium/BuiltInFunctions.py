@@ -970,11 +970,15 @@ def Wait(time_to_wait):
         return "failed"
 
 
-def Swipe(x, y, w, h):
+def Swipe(x_start, y_start, x_end, y_end, duration = 1000):
+    ''' Perform single swipe gesture with provided start and end positions '''
+    # duration in mS - how long the gesture should take
+    
     sModuleInfo = inspect.stack()[0][3] + " : " + inspect.getmoduleinfo(__file__).name
+    
     try:
         CommonUtil.ExecLog(sModuleInfo, "Starting to swipe the screen...", 1)
-        driver.swipe(x, y, w, h)
+        driver.swipe(x_start, y_start, x_end, y_end, duration)
         CommonUtil.ExecLog(sModuleInfo, "Swiped the screen successfully", 1)
         return "passed"
     except Exception, e:
@@ -989,9 +993,14 @@ def swipe_handler(action_value):
     ''' Swipe screen based on user input '''
     # Functions: General swipe (up/down/left/right), multiple swipes (X coordinate (from-to), Y coordinate (from-to), stepsize)
     # action_value: comma delimited string containing swipe details
+    
+    sModuleInfo = inspect.stack()[0][3] + " : " + inspect.getmoduleinfo(__file__).name
+    CommonUtil.ExecLog(sModuleInfo, "Starting swipe handler", 1)
 
     # Get screen size for calculations
     window_size = get_window_size()
+    if window_size == 'failed':
+        return 'failed'
     w = int(window_size['width'])
     h = int(window_size['height'])
 
@@ -1002,8 +1011,9 @@ def swipe_handler(action_value):
     
     # Specific swipe dimensions given - just pass to swipe()
     if action_value.count(',') == 3:
-        x, y, w, h = action_value.split(',')
-        Swipe(int(x), int(y), int(w), int(h))
+        CommonUtil.ExecLog(sModuleInfo, "Swipe type: Single", 1)
+        x1, y1, x2, y2 = action_value.split(',')
+        Swipe(int(x1), int(y1), int(x2), int(y2))
     
     # Check for and handle simple gestures (swipe up/down/left/right), and may have a set number of swipes to exceute
     elif action_value.count(',') == 0 or action_value.count(',') == 1:
@@ -1013,6 +1023,7 @@ def swipe_handler(action_value):
             count = int(count)
         else:
             count = 1
+        CommonUtil.ExecLog(sModuleInfo, "Swipe type: Basic %s with a count of %d" % (action_value, count), 1)
             
         # Check for direction and calculate accordingly
         if action_value == 'up':
@@ -1045,6 +1056,7 @@ def swipe_handler(action_value):
     elif action_value.count(',') == 2:
         # Split input into separate parameters
         horizontal, vertical, stepsize = action_value.split(',')
+        CommonUtil.ExecLog(sModuleInfo, "Swipe type: Multiple", 1)
         
         # Stepsize - How far to skip
         if stepsize.isdigit(): # Stepsize given in pixels
@@ -1106,12 +1118,18 @@ def swipe_handler(action_value):
     
         # Perform swipe given computed dimensions above
         for y in range(ystart, ystop, stepsize): # For each row, assuming stepsize, swipe and move to next row
-            print "SWIPE:",xstart, y, xstop, ystop
-            Swipe(xstart, y, xstop, y) # Swipe screen - y must be the same for horizontal swipes
+            result = Swipe(xstart, y, xstop, y) # Swipe screen - y must be the same for horizontal swipes
+            if result == 'failed':
+                return 'failed'
 
     # Invalid value
     else:
+        CommonUtil.ExecLog(sModuleInfo, "The swipe data you entered is incorrect. Please provide accurate information on the data set(s).", 3) 
         return 'failed'
+
+    # Swipe complete
+    CommonUtil.ExecLog(sModuleInfo, "Swipe completed successfully", 1)    
+    return 'passed'
 
 def Tap(element_parameter, element_value):
     sModuleInfo = inspect.stack()[0][3] + " : " + inspect.getmoduleinfo(__file__).name
@@ -2153,8 +2171,6 @@ def Action_Handler_Appium(action_step_data, action_name):
                 result = CommonUtil.Set_Shared_Variables(action_value, position)
             else:
                 result = 'passed'
-        elif action_name == "tap location":
-            result = tap_location(action_value)
 
         # Single row actions
         elif action_name == "sleep": # Sleep a specific amount of time
@@ -2169,6 +2185,10 @@ def Action_Handler_Appium(action_step_data, action_name):
             result = remove(action_value)
         elif action_name == 'teardown': # Cleanup Appium instance
             result = teardown_appium()
+        elif action_name == 'keypress': # Press hardware, software or virtual key
+            result = Android_Keystroke_Key_Mapping(action_value) # To be replaced with handler dependent on android/ios
+        elif action_name == "tap location":
+            result = tap_location(action_value)
 
         # Anything else is an invalid action
         else:
@@ -2412,72 +2432,55 @@ def Enter_Text_Appium(step_data):
         return "failed"
 
 
-def Swipe_Appium(step_data):
-    sModuleInfo = inspect.stack()[0][3] + " : " + inspect.getmoduleinfo(__file__).name
-    CommonUtil.ExecLog(sModuleInfo, "Function: Swipe_Appium", 1)
-    try:
-        if ((len(step_data) != 1) or (1 < len(step_data[0]) >= 5)):
-            CommonUtil.ExecLog(sModuleInfo, "The information in the data-set(s) are incorrect. Please provide accurate data set(s) information.", 3)
-            return "failed"
-        else:
-            swipe_direction = step_data[0][0][2]
-            if swipe_direction == 'down':
-                CommonUtil.ExecLog(sModuleInfo,"Swiping down!",1)
-                result = driver.swipe(100, 500, 100, 100, 800)
-                CommonUtil.ExecLog(sModuleInfo, "Swiped the screen down successfully", 1)
-                time.sleep(3)
-            elif swipe_direction == 'up':
-                CommonUtil.ExecLog(sModuleInfo,"Swiping up!",1)
-                result = driver.swipe(100, 100, 100, 500, 800)
-                CommonUtil.ExecLog(sModuleInfo, "Swiped the screen up successfully", 1)
-                time.sleep(3)
-            elif swipe_direction == 'left':
-                CommonUtil.ExecLog(sModuleInfo,"Swiping left!",1)
-                result = driver.swipe(100, 300, 500, 300, 800)
-                CommonUtil.ExecLog(sModuleInfo, "Swiped the screen left successfully", 1)
-                time.sleep(3)
-            elif swipe_direction == 'right':
-                CommonUtil.ExecLog(sModuleInfo,"Swiping right!",1)
-                result = driver.swipe(500, 300, 100, 300, 800)
-                CommonUtil.ExecLog(sModuleInfo, "Swiped the screen right successfully", 1)
-                time.sleep(3)    
-            else:
-                CommonUtil.ExecLog(sModuleInfo, "Swiping was not successful", 3)
-                result = "failed"
-
-        return result
-    except Exception, e:
-        exc_type, exc_obj, exc_tb = sys.exc_info()        
-        fname = os.path.split(exc_tb.tb_frame.f_code.co_filename)[1]
-        Error_Detail = ((str(exc_type).replace("type ", "Error Type: ")) + ";" +  "Error Message: " + str(exc_obj) +";" + "File Name: " + fname + ";" + "Line: "+ str(exc_tb.tb_lineno))
-        CommonUtil.ExecLog(sModuleInfo, "Failed to swipe.  Error: %s"%(Error_Detail), 3)
-        return "failed"
-
-
 def Android_Keystroke_Key_Mapping(keystroke):
+    ''' Provides a friendly interface to invoke key events '''
+    # Keycodes: https://developer.android.com/reference/android/view/KeyEvent.html
+
     sModuleInfo = inspect.stack()[0][3] + " : " + inspect.getmoduleinfo(__file__).name
-    CommonUtil.ExecLog(sModuleInfo, "Function: Android_Keystroke_Key_Mapping", 1)
-    try:
-        if keystroke == "RETURN":
-            driver.keyevent(66)
-        elif keystroke == "GO BACK":
-            driver.back()
-        elif keystroke == "SPACE":
-            driver.keyevent(62)
-        elif keystroke == "BACKSPACE":
-            driver.keyevent(67)
-        elif keystroke == "CALL":
-            driver.keyevent(5)            
-        elif keystroke == "END CALL":
-            driver.keyevent(6)
-                                     
-    except Exception, e:
-        exc_type, exc_obj, exc_tb = sys.exc_info()        
-        fname = os.path.split(exc_tb.tb_frame.f_code.co_filename)[1]
-        Error_Detail = ((str(exc_type).replace("type ", "Error Type: ")) + ";" +  "Error Message: " + str(exc_obj) +";" + "File Name: " + fname + ";" + "Line: "+ str(exc_tb.tb_lineno))
-        CommonUtil.ExecLog(sModuleInfo, "Could not press enter for your element.  Error: %s"%(Error_Detail), 3)
-        return "failed"    
+    CommonUtil.ExecLog(sModuleInfo, "Starting Android key event handling for %s" % keystroke, 1)
     
+    # Sanitize input
+    keystroke = keystroke.strip()
+    keystroke = keystroke.lower()
+    keystroke = keystroke.replace('_', ' ')
+    
+    try:
+        if keystroke == "return":
+            driver.keyevent(66)
+        elif keystroke == "go back":
+            driver.back()
+        elif keystroke == "spacebar":
+            driver.keyevent(62)
+        elif keystroke == "backspace":
+            driver.keyevent(67)
+        elif keystroke == "call": # Press call connect, or starts phone program if not already started
+            driver.keyevent(5)
+        elif keystroke == "end call":
+            driver.keyevent(6)
+        elif keystroke == "home":
+            driver.keyevent(3)
+        elif keystroke == "mute":
+            driver.keyevent(164)
+        elif keystroke == "volume down":
+            driver.keyevent(25)
+        elif keystroke == "volume up":
+            driver.keyevent(24)
+        elif keystroke == "wake":
+            driver.keyevent(224)
+        elif keystroke == "power":
+            driver.keyevent(26)
+        elif keystroke == "app switch": # Task switcher / overview screen
+            driver.keyevent(187)
+        elif keystroke == "page down":
+            driver.keyevent(93)
+        elif keystroke == "page up":
+            driver.keyevent(92)
+        else:
+            CommonUtil.ExecLog(sModuleInfo, "Unsupported key event: %s" % keystroke, 3)
+
+        return 'passed'
+    except Exception, e:
+        return CommonUtil.Exception_Handler(sys.exc_info())
 
 """MINAR: PLEASE CHECK IF THIS IS POSSIBLE FOR AN iOS"""
 def iOS_Keystroke_Key_Mapping(keystroke):
