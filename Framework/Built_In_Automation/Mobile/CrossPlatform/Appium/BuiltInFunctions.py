@@ -220,6 +220,7 @@ def launch_and_start_driver(package_name, activity_name):
         desired_caps['platformVersion'] = df
         df = adbOptions.get_device_model().strip()
         CommonUtil.ExecLog(sModuleInfo,df,1)
+        desired_caps['newCommandTimeout'] = 300 # Set command timeout in seconds (defualt is 60 seconds)
 
         desired_caps['deviceName'] = df
         desired_caps['appPackage'] = package_name.strip()
