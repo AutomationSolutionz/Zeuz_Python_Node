@@ -141,6 +141,7 @@ def handle_rest_call(data, fields_to_be_saved):
         else:
             return "failed"
         status_code = int(result.status_code)
+        CommonUtil.Set_Shared_Variables('status_code',result.status_code)
         CommonUtil.ExecLog(sModuleInfo,'Post Call returned status code: %d'%status_code,1)
         if status_code >=400:
             CommonUtil.ExecLog(sModuleInfo,'Post Call Returned Bad Response',3)
@@ -394,5 +395,3 @@ def Compare_Variables(step_data):
                 return "passed"
     except Exception:
         return CommonUtil.Exception_Handler(sys.exc_info())
-
-
