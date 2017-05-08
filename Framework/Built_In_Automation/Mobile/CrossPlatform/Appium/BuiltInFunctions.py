@@ -22,15 +22,17 @@ PATH = lambda p: os.path.abspath(
     os.path.join(os.path.dirname(__file__), p)
 )
 
-
+# Recall appium driver, if not already set - needed between calls in a Zeuz test case
 global driver
 driver = None
 if CommonUtil.Test_Shared_Variables('appium_driver'): # Check if driver is already set in shared variables
     driver = CommonUtil.Get_Shared_Variables('appium_driver') # Retreive appium driver
 
+
 global WebDriver_Wait 
 WebDriver_Wait = 20
 
+################################### UNUSED - SEEMS TO INVOLVE SETTING UP APPIUM #########################################
 global APPIUM_DRIVER_LIST
 APPIUM_DRIVER_LIST = {}
 
@@ -171,43 +173,7 @@ def start_appium_instances(port_to_connect, file_location, hub_address = '127.0.
             exc_obj) + ";" + "File Name: " + fname + ";" + "Line: " + str(exc_tb.tb_lineno))
         CommonUtil.ExecLog(sModuleInfo, "Unable to start appium instance at port :%d"%port_to_connect, 3)
         return False
-
-
-def launch(package_name,activity_name):
-    sModuleInfo = inspect.stack()[0][3] + " : " + inspect.getmoduleinfo(__file__).name
-    try:
-        global driver
-        sModuleInfo = inspect.stack()[0][3] + " : " + inspect.getmoduleinfo(__file__).name
-        CommonUtil.ExecLog(sModuleInfo,"Trying to launch the app...",1)
-        
-        if 'driver' not in globals():
-            # appium driver not initiated.
-            outcome = launch_and_start_driver(package_name, activity_name)
-            if outcome == "passed":
-                CommonUtil.ExecLog(sModuleInfo,"App is launched",1)
-                return "passed"
-            elif outcome == "failed":
-                CommonUtil.ExecLog(sModuleInfo, "App is not launched", 3)
-                return "failed"
-        else:
-            #driver already initiated.
-            CommonUtil.ExecLog(sModuleInfo,"App is launched already.",1)
-            return "passed"
-            """outcome = open()
-            if outcome == "passed":
-                CommonUtil.ExecLog(sModuleInfo,"App is launched",1)
-                return outcome
-            elif outcome == "failed":
-                CommonUtil.ExecLog(sModuleInfo, "App is not launched", 3)
-                return outcome"""
-    
-    except Exception, e:
-        exc_type, exc_obj, exc_tb = sys.exc_info()        
-        fname = os.path.split(exc_tb.tb_frame.f_code.co_filename)[1]
-        Error_Detail = ((str(exc_type).replace("type ", "Error Type: ")) + ";" +  "Error Message: " + str(exc_obj) +";" + "File Name: " + fname + ";" + "Line: "+ str(exc_tb.tb_lineno))
-        CommonUtil.ExecLog(sModuleInfo, "Unable to start WebDriver. %s"%Error_Detail, 3)
-        return "failed"
-
+################################### UNUSED - SEEMS TO INVOLVE SETTING UP APPIUM #########################################
 
 def launch_and_start_driver(package_name, activity_name):
     sModuleInfo = inspect.stack()[0][3] + " : " + inspect.getmoduleinfo(__file__).name
@@ -270,63 +236,6 @@ def close_application():
         return "failed"
     
     
-def install(app_location, app_package, app_activity):
-    sModuleInfo = inspect.stack()[0][3] + " : " + inspect.getmoduleinfo(__file__).name
-    try:
-        sModuleInfo = inspect.stack()[0][3] + " : " + inspect.getmoduleinfo(__file__).name
-        CommonUtil.ExecLog(sModuleInfo,"Trying to install the app...",1)
-        
-        if 'driver' in globals():
-            #driver initiated
-            """if driver.is_app_installed(app_package):
-                CommonUtil.ExecLog(sModuleInfo,"App is already installed.",1)
-                return "passed"
-            else:
-                CommonUtil.ExecLog(sModuleInfo,"App is not installed. Now installing...",1)"""
-            outcome = load(app_location)
-            if outcome == "passed":
-                CommonUtil.ExecLog(sModuleInfo,"App is installed.",1)
-                return "passed"
-            elif outcome == "failed":
-                CommonUtil.ExecLog(sModuleInfo, "Failed to install the app.", 3)
-                return "failed"
-        
-        else:
-            #driver not initiated
-            try:
-                #It will try to launch the app as if its already installed
-                outcome = launch_and_start_driver(app_package, app_activity)
-                if outcome == "passed":
-                    CommonUtil.ExecLog(sModuleInfo,"App is installed already.",1)
-                    return "passed"
-                elif outcome == "failed":
-                    CommonUtil.ExecLog(sModuleInfo, "App is not installed. Now trying to install and launch again...", 3)
-                    answer = install_and_start_driver(app_location)
-                    if answer == "passed":
-                        CommonUtil.ExecLog(sModuleInfo,"App is installed",1)
-                        return "passed"
-                    elif answer == "failed":
-                        CommonUtil.ExecLog(sModuleInfo, "Failed to install the app.", 3)
-                        return "failed"
-                    
-            except:
-                answer = install_and_start_driver(app_location)
-                if answer == "passed":
-                    CommonUtil.ExecLog(sModuleInfo,"App is installed.",1)
-                    return "passed"
-                elif answer == "failed":
-                    CommonUtil.ExecLog(sModuleInfo, "Failed to install the app.", 3)
-                    return "failed"
-                    
-
-    except Exception, e:
-        exc_type, exc_obj, exc_tb = sys.exc_info()        
-        fname = os.path.split(exc_tb.tb_frame.f_code.co_filename)[1]
-        Error_Detail = ((str(exc_type).replace("type ", "Error Type: ")) + ";" +  "Error Message: " + str(exc_obj) +";" + "File Name: " + fname + ";" + "Line: "+ str(exc_tb.tb_lineno))
-        CommonUtil.ExecLog(sModuleInfo, "Unable to start WebDriver. %s"%Error_Detail, 3)
-        return "failed"
-
-
 def install_and_start_driver(app_location, app_activity=''):
     sModuleInfo = inspect.stack()[0][3] + " : " + inspect.getmoduleinfo(__file__).name
     try:
@@ -360,6 +269,8 @@ def install_and_start_driver(app_location, app_activity=''):
 
 
 def open():
+    ''' Launch the program specified in the launch_and_start_driver() capabilities '''
+    
     sModuleInfo = inspect.stack()[0][3] + " : " + inspect.getmoduleinfo(__file__).name
     try:
         CommonUtil.ExecLog(sModuleInfo,"Trying to open the app",1)
@@ -371,38 +282,6 @@ def open():
         fname = os.path.split(exc_tb.tb_frame.f_code.co_filename)[1]
         Error_Detail = ((str(exc_type).replace("type ", "Error Type: ")) + ";" +  "Error Message: " + str(exc_obj) +";" + "File Name: " + fname + ";" + "Line: "+ str(exc_tb.tb_lineno))
         CommonUtil.ExecLog(sModuleInfo, "Unable to open the app. %s"%Error_Detail, 3)
-        return "failed"
-    
-    
-def load(app_location):
-    sModuleInfo = inspect.stack()[0][3] + " : " + inspect.getmoduleinfo(__file__).name
-    try:
-        CommonUtil.ExecLog(sModuleInfo,"Trying to load the app..",1)
-        #driver.install_app(app_location)
-        adbOptions.install_app(app_location)
-        CommonUtil.ExecLog(sModuleInfo,"Loaded the app successfully",1)
-        return "passed"
-    except Exception, e:
-        exc_type, exc_obj, exc_tb = sys.exc_info()        
-        fname = os.path.split(exc_tb.tb_frame.f_code.co_filename)[1]
-        Error_Detail = ((str(exc_type).replace("type ", "Error Type: ")) + ";" +  "Error Message: " + str(exc_obj) +";" + "File Name: " + fname + ";" + "Line: "+ str(exc_tb.tb_lineno))
-        CommonUtil.ExecLog(sModuleInfo, "Unable to load the app. %s"%Error_Detail, 3)
-        return "failed"
-    
-
-def reset():
-    sModuleInfo = inspect.stack()[0][3] + " : " + inspect.getmoduleinfo(__file__).name
-    try:
-        CommonUtil.ExecLog(sModuleInfo,"Trying to reset the app...",1)
-        driver.reset()
-        wait(5)
-        CommonUtil.ExecLog(sModuleInfo,"App is reset successfully",1)
-        return "passed"
-    except Exception, e:
-        exc_type, exc_obj, exc_tb = sys.exc_info()        
-        fname = os.path.split(exc_tb.tb_frame.f_code.co_filename)[1]
-        Error_Detail = ((str(exc_type).replace("type ", "Error Type: ")) + ";" +  "Error Message: " + str(exc_obj) +";" + "File Name: " + fname + ";" + "Line: "+ str(exc_tb.tb_lineno))
-        CommonUtil.ExecLog(sModuleInfo, "Unable to reset the app. %s"%Error_Detail, 3)
         return "failed"
     
     
@@ -422,7 +301,9 @@ def wait(_time):
         return "failed"
 
     
-def remove(app_package):
+def uninstall_app(app_package):
+    ''' Uninstalls/removes application from device '''
+    
     sModuleInfo = inspect.stack()[0][3] + " : " + inspect.getmoduleinfo(__file__).name
     try:
         CommonUtil.ExecLog(sModuleInfo,"Trying to remove app with package name %s..."%app_package,1)
@@ -444,33 +325,6 @@ def remove(app_package):
         fname = os.path.split(exc_tb.tb_frame.f_code.co_filename)[1]
         Error_Detail = ((str(exc_type).replace("type ", "Error Type: ")) + ";" +  "Error Message: " + str(exc_obj) +";" + "File Name: " + fname + ";" + "Line: "+ str(exc_tb.tb_lineno))
         CommonUtil.ExecLog(sModuleInfo, "Unable to wait. %s"%Error_Detail, 3)
-        return "failed"
-
-
-def launch_ios_app():
-    sModuleInfo = inspect.stack()[0][3] + " : " + inspect.getmoduleinfo(__file__).name
-    try:
-        CommonUtil.ExecLog(sModuleInfo,"Trying to launch the app...",1)
-        PATH = lambda p: os.path.abspath(
-            os.path.join(os.path.dirname(__file__), p)
-        )
-        desired_caps = {}
-        desired_caps['platformName'] = 'iOS'
-        desired_caps['platformVersion'] = '7.1.2'
-        desired_caps['deviceName'] = 'iPhone 4s'
-        desired_caps['app'] = PATH('/Users/user/Documents/workspace/asut/pro-diagnostics-1.28.2.ipa')
-        desired_caps['udid'] = '848b6a392f627ff995862ed57ec1f03530deb2b8'
-        desired_caps['bundleId'] = 'com.assetscience.canada.prodiagnostics'
-        driver = webdriver.Remote('http://localhost:4723/wd/hub', desired_caps)
-        global driver
-        CommonUtil.ExecLog(sModuleInfo,"Launched the app successfully.",1)
-        wait(10)
-        return "passed"
-    except Exception, e:
-        exc_type, exc_obj, exc_tb = sys.exc_info()        
-        fname = os.path.split(exc_tb.tb_frame.f_code.co_filename)[1]
-        Error_Detail = ((str(exc_type).replace("type ", "Error Type: ")) + ";" +  "Error Message: " + str(exc_obj) +";" + "File Name: " + fname + ";" + "Line: "+ str(exc_tb.tb_lineno))
-        CommonUtil.ExecLog(sModuleInfo, "Unable to start WebDriver. %s"%Error_Detail, 3)
         return "failed"
 
 
@@ -614,6 +468,7 @@ def Set_Text(element_parameter, element_value, text_value):
 
 # Method to enter text in a text box and press enter to search of something
 def Set_Text_Enter(element_parameter, element_value, text_value):
+    # !!! Should be removed - can be performed with two sequential actions (text & click, element & ENTER key)
     sModuleInfo = inspect.stack()[0][3] + " : " + inspect.getmoduleinfo(__file__).name
     CommonUtil.ExecLog(sModuleInfo, "Inside Enter Text In Text Box function", 1)
     try:
@@ -638,6 +493,7 @@ def Set_Text_Enter(element_parameter, element_value, text_value):
 
 # Method to enter texts in a text box; step data passed on by the user
 def Enter_Text_In_Text_Box(step_data):
+    # !!! Should be removed - can be performed with two sequential actions (text & click, element & ENTER key)
     sModuleInfo = inspect.stack()[0][3] + " : " + inspect.getmoduleinfo(__file__).name
     CommonUtil.ExecLog(sModuleInfo, "Inside Enter Text In Text Box function", 1)
     try:
@@ -799,18 +655,19 @@ def Get_All_Elements(parameter, value, parent=False):
         return "failed"
 
 
-#Validation of step data passed on by the user
 def Validate_Step_Data(step_data):
+    ''' Ensures step data is accurate, and returns only the pertinent values '''
+    
     sModuleInfo = inspect.stack()[0][3] + " : " + inspect.getmoduleinfo(__file__).name
     CommonUtil.ExecLog(sModuleInfo, "Function: Validate_Step_Data", 1)
     try:    
-        if (len(step_data)==1):
-            element_parameter = step_data[0][0]
-            element_value = step_data[0][2]
+        if (len(step_data)==1): # One row in the data set
+            element_parameter = step_data[0][0] # Get Field (element object)
+            element_value = step_data[0][2] # Get element value
             reference_parameter = False
             reference_value = False    
             reference_is_parent_or_child = False
-#         elif (len(step_data)==2):
+#         elif (len(step_data)==2): #??? Whys is this commented out ???
 #             for each in step_data:
 #                 if each[1]=="element parameter 1 of 2":
 #                     element_parameter = each[0]
@@ -819,21 +676,21 @@ def Validate_Step_Data(step_data):
 #                     reference_parameter = each[0]
 #                     reference_value = each[2]
 #             reference_is_parent_or_child = False
-        elif (len(step_data)==3):
-            for each in step_data:
-                if each[1]=="element parameter":
-                    element_parameter = each[0]
-                    element_value = each[2]
-                elif each[1]=="reference parameter":
-                    reference_parameter = each[0]
-                    reference_value = each[2]
-                elif each[1]=="relation type":
-                    reference_is_parent_or_child = each[2]
-        else:
+        elif (len(step_data)==3): # Three rows in the data set
+            for each in step_data: # For each row
+                if each[1]=="element parameter": # If Sub-Field is element parameter
+                    element_parameter = each[0] # Get Field (element object)
+                    element_value = each[2] # Get element value
+                elif each[1]=="reference parameter": # If Sub-FIeld is reference parameter
+                    reference_parameter = each[0] # Get Field (element object)
+                    reference_value = each[2] # Get element value
+                elif each[1]=="relation type": # If Sub-Field is relation type
+                    reference_is_parent_or_child = each[2] # Get reference value
+        else: # Invalid step data
             CommonUtil.ExecLog(sModuleInfo, "Data set incorrect. Please provide accurate data set(s) information.", 3)
             return "failed"
         validated_data = (element_parameter, element_value, reference_parameter, reference_value, reference_is_parent_or_child)
-        return validated_data
+        return validated_data # Return data as tuple
     except Exception, e:
             exc_type, exc_obj, exc_tb = sys.exc_info()        
             fname = os.path.split(exc_tb.tb_frame.f_code.co_filename)[1]
@@ -919,38 +776,6 @@ def Exception_Info(sModuleInfo, errMsg):
     Error_Detail = ((str(exc_type).replace("type ", "Error Type: ")) + ";" +  "Error Message: " + str(exc_obj) +";" + "File Name: " + fname + ";" + "Line: "+ str(exc_tb.tb_lineno))
     CommonUtil.ExecLog(sModuleInfo, errMsg + ".  Error: %s"%(Error_Detail), 3)
     return "failed"
-
-
-def SendKey_Enter():
-    sModuleInfo = inspect.stack()[0][3] + " : " + inspect.getmoduleinfo(__file__).name
-    try:
-        CommonUtil.ExecLog(sModuleInfo, "Trying to send enter key...", 1)
-        driver.keyevent(66)
-        CommonUtil.ExecLog(sModuleInfo, "Sent enter key successfully", 1)
-        return "passed"
-    except Exception, e:
-        exc_type, exc_obj, exc_tb = sys.exc_info()
-        fname = os.path.split(exc_tb.tb_frame.f_code.co_filename)[1]
-        Error_Detail = ((str(exc_type).replace("type ", "Error Type: ")) + ";" + "Error Message: " + str(
-            exc_obj) + ";" + "File Name: " + fname + ";" + "Line: " + str(exc_tb.tb_lineno))
-        CommonUtil.ExecLog(sModuleInfo, "Unable to send enter key. %s" % Error_Detail, 3)
-        return "failed"
-
-
-def Go_Back():
-    sModuleInfo = inspect.stack()[0][3] + " : " + inspect.getmoduleinfo(__file__).name
-    try:
-        CommonUtil.ExecLog(sModuleInfo, "Trying to go back...", 1)
-        driver.back()
-        CommonUtil.ExecLog(sModuleInfo, "Went back successfully", 1)
-        return "passed"
-    except Exception, e:
-        exc_type, exc_obj, exc_tb = sys.exc_info()
-        fname = os.path.split(exc_tb.tb_frame.f_code.co_filename)[1]
-        Error_Detail = ((str(exc_type).replace("type ", "Error Type: ")) + ";" + "Error Message: " + str(
-            exc_obj) + ";" + "File Name: " + fname + ";" + "Line: " + str(exc_tb.tb_lineno))
-        CommonUtil.ExecLog(sModuleInfo, "Unable to go back. %s" % Error_Detail, 3)
-        return "failed"
 
 
 def Wait(time_to_wait):
@@ -2149,8 +1974,6 @@ def Action_Handler_Appium(action_step_data, action_name):
             result = Wait(action_value) # !!! Lucas: I think this needs the element, and WAit() has the line needed to wait on an element commented out
         elif action_name == "tap": # Tap an element
             result = Tap(related_field, related_value)
-        elif action_name == "enter": # Press enter key #!!!To be replaced with Keystroke_Appium()
-            result = SendKey_Enter()
         elif action_name == "validate full text" or action_name == "validate partial text": # Test if text string exists
             result = Validate_Text(action_step_data)
         elif action_name == "save text": # Save text string
@@ -2178,12 +2001,10 @@ def Action_Handler_Appium(action_step_data, action_name):
             result = wait(int(action_value))
         elif action_name == "swipe": # Swipe screen
             result = swipe_handler(action_value)
-        elif action_name == "go back": # Press back button #!!!To be replaced with Keystroke_Appium()
-            result = Go_Back()
         elif action_name == "close": # Close foreground application
             result = close_application()
         elif action_name == "uninstall": # Uninstall application
-            result = remove(action_value)
+            result = uninstall_app(action_value)
         elif action_name == 'teardown': # Cleanup Appium instance
             result = teardown_appium()
         elif action_name == 'keypress': # Press hardware, software or virtual key
@@ -2483,7 +2304,6 @@ def Android_Keystroke_Key_Mapping(keystroke):
     except Exception, e:
         return CommonUtil.Exception_Handler(sys.exc_info())
 
-"""MINAR: PLEASE CHECK IF THIS IS POSSIBLE FOR AN iOS"""
 def iOS_Keystroke_Key_Mapping(keystroke):
     sModuleInfo = inspect.stack()[0][3] + " : " + inspect.getmoduleinfo(__file__).name
     CommonUtil.ExecLog(sModuleInfo, "Function: iOS_Keystroke_Key_Mapping", 1)
