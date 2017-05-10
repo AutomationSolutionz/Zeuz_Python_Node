@@ -28,6 +28,11 @@ driver = None
 if CommonUtil.Test_Shared_Variables('appium_driver'): # Check if driver is already set in shared variables
     driver = CommonUtil.Get_Shared_Variables('appium_driver') # Retreive appium driver
 
+# Recall dependency, if not already set
+dependency = 'Android' #{'Mobile OS':'Android'} #!!! Will be updated by sequential_actions_appium() in the future
+if CommonUtil.Test_Shared_Variables('dependency'): # Check if driver is already set in shared variables
+    dependency = CommonUtil.Get_Shared_Variables('dependency') # Retreive appium driver
+ 
 
 global WebDriver_Wait 
 WebDriver_Wait = 20
@@ -175,37 +180,77 @@ def start_appium_instances(port_to_connect, file_location, hub_address = '127.0.
         return False
 ################################### UNUSED - SEEMS TO INVOLVE SETTING UP APPIUM #########################################
 
-def launch_and_start_driver(package_name, activity_name):
+def launch_application(package_name, activity_name):
+    ''' Launch the application the appium instance was created with, and create the instance if necessary '''
+    
     sModuleInfo = inspect.stack()[0][3] + " : " + inspect.getmoduleinfo(__file__).name
     try:
-        CommonUtil.ExecLog(sModuleInfo,"Trying to launch the app...",1)
-        desired_caps = {}
-        desired_caps['platformName'] = 'Android'
-        df = adbOptions.get_android_version().strip()
-        CommonUtil.ExecLog(sModuleInfo,df,1)
-        desired_caps['platformVersion'] = df
-        df = adbOptions.get_device_model().strip()
-        CommonUtil.ExecLog(sModuleInfo,df,1)
-        desired_caps['newCommandTimeout'] = 300 # Set command timeout in seconds (defualt is 60 seconds)
-
-        desired_caps['deviceName'] = df
-        desired_caps['appPackage'] = package_name.strip()
-        desired_caps['appActivity'] = activity_name.strip()
-        global driver
         if driver == None: # Only create a new appium instance if we haven't already (may be done by install_and_start_driver())
-            driver = webdriver.Remote('http://localhost:4723/wd/hub', desired_caps)
-            CommonUtil.Set_Shared_Variables('appium_driver', driver) # Save driver instance to make available to other modules
+            result = start_appium_driver(package_name, activity_name)
+            if result == 'failed':
+                return 'failed'
+        
+        driver.launch_app() # Launch program configured in the Appium capabilities
         CommonUtil.ExecLog(sModuleInfo,"Launched the app successfully.",1)
-
         return "passed"
     except Exception, e:
-        CommonUtil.ExecLog(sModuleInfo, "Exception: %s" % e, 3)
-        exc_type, exc_obj, exc_tb = sys.exc_info()        
-        fname = os.path.split(exc_tb.tb_frame.f_code.co_filename)[1]
-        Error_Detail = ((str(exc_type).replace("type ", "Error Type: ")) + ";" +  "Error Message: " + str(exc_obj) +";" + "File Name: " + fname + ";" + "Line: "+ str(exc_tb.tb_lineno))
-        CommonUtil.ExecLog(sModuleInfo, "Unable to start WebDriver. %s"%Error_Detail, 3)
-        return "failed"
-        
+        return CommonUtil.Exception_Handler(sys.exc_info())
+
+def start_appium_driver(package_name = '', activity_name = '', filename = ''):
+    ''' Creates appium instance using discovered and provided capabilities '''
+    # Does not execute application
+    
+    sModuleInfo = inspect.stack()[0][3] + " : " + inspect.getmoduleinfo(__file__).name
+    CommonUtil.ExecLog(sModuleInfo,"Trying to create Appium instance...",1)
+    
+    try:
+        if driver == None:
+            # Setup capabilities
+            desired_caps = {}
+            desired_caps['platformName'] = dependency # Set platform name
+            desired_caps['autoLaunch'] = 'false' # Do not launch application
+            
+            if dependency == 'Android':
+                CommonUtil.ExecLog(sModuleInfo,"Setting up with Android",1)
+                desired_caps['platformVersion'] = adbOptions.get_android_version().strip()
+                desired_caps['deviceName'] = adbOptions.get_device_model().strip()
+                if package_name:
+                    desired_caps['appPackage'] = package_name.strip()
+                if activity_name:
+                    desired_caps['appActivity'] = activity_name.strip()
+                if filename and package_name == '': # User must specify package or file, not both. Specifying filename instructs Appium to install
+                    desired_caps['app'] = PATH(filename).strip()
+            elif dependency == 'IOS':
+                CommonUtil.ExecLog(sModuleInfo,"Setting up with IOS",1)
+                desired_caps['platformVersion'] = '' # Read version
+                desired_caps['deviceName'] = '' # Read model
+                desired_caps['bundleId'] = package_name
+                desired_caps['udid'] = '' # Read UDID
+                CommonUtil.ExecLog(sModuleInfo, "IOS not yet supported", 3)
+                return 'failed'
+            else:
+                CommonUtil.ExecLog(sModuleInfo, "Invalid dependency: " + dependency, 3)
+                return 'failed'
+            CommonUtil.ExecLog(sModuleInfo,"Capabilities: %s" % str(desired_caps),1)
+            
+            # Create Appium instance with capabilities
+            global driver
+            driver = webdriver.Remote('http://localhost:4723/wd/hub', desired_caps) # Create instance
+            if driver: # Make sure we get the instance
+                CommonUtil.Set_Shared_Variables('appium_driver', driver) # Save driver instance to make available to other modules
+                CommonUtil.ExecLog(sModuleInfo,"Launched the app successfully.",1)
+                return "passed"
+            else: # Error during setup, reset
+                driver = None
+                CommonUtil.ExecLog(sModuleInfo,"Error during Appium setup", 3)
+                return 'failed'
+        else: # Driver is already setup, don't do anything
+            CommonUtil.ExecLog(sModuleInfo,"Driver already configured, not re-doing",1)
+            return 'passed'
+    except Exception, e:
+        return CommonUtil.Exception_Handler(sys.exc_info())
+    
+    
 def teardown_appium():
     ''' Teardown of appium instance '''
     
@@ -236,29 +281,21 @@ def close_application():
         return "failed"
     
     
-def install_and_start_driver(app_location, app_activity=''):
+def install_application(app_location, activity_name=''):
+    ''' Install application to device '''
+    # Webdriver does the installation and verification
+    # If the user tries to call install again, nothing will happen because we don't want to create another instance. User should teardown(), then install
+    
     sModuleInfo = inspect.stack()[0][3] + " : " + inspect.getmoduleinfo(__file__).name
+    CommonUtil.ExecLog(sModuleInfo,"Trying to install and then launch the app...",1)
+    
     try:
-        CommonUtil.ExecLog(sModuleInfo,"Trying to install and then launch the app...",1)
-        desired_caps = {}
-        desired_caps['platformName'] = 'Android'
-        df = adbOptions.get_android_version().strip()
-        CommonUtil.ExecLog(sModuleInfo,df,1)
-        #adbOptions.kill_adb_server()
-        desired_caps['platformVersion'] = df
-        df = adbOptions.get_device_model().strip()
-        CommonUtil.ExecLog(sModuleInfo,df,1)
-        #adbOptions.kill_adb_server()
-        desired_caps['deviceName'] = df
-        desired_caps['app'] = PATH(app_location).strip()
-        if app_activity: # If user passed an Activity name, add it to the capabilities to override the default
-            desired_caps['appActivity'] = app_activity 
-        global driver
-        driver = webdriver.Remote('http://localhost:4723/wd/hub', desired_caps)
-        CommonUtil.Set_Shared_Variables('appium_driver', driver) # Save driver instance to make available to other modules
+        if driver == None: # Only create a new appium instance if we haven't already (may be done by install_and_start_driver())
+            result = start_appium_driver('', activity_name, app_location) # Install application and create driver instance. First parameter is always empty. We specify the third parameter with the file, and optionally the second parameter with the activity name if it's needed
+            if result == 'failed':
+                return 'failed'
+
         CommonUtil.ExecLog(sModuleInfo,"Installed and launched the app successfully.",1)
-        time.sleep(10)
-        driver.implicitly_wait(5)
         return "passed"
     except Exception, e:
         exc_type, exc_obj, exc_tb = sys.exc_info()        
@@ -268,23 +305,6 @@ def install_and_start_driver(app_location, app_activity=''):
         return "failed"
 
 
-def open():
-    ''' Launch the program specified in the launch_and_start_driver() capabilities '''
-    
-    sModuleInfo = inspect.stack()[0][3] + " : " + inspect.getmoduleinfo(__file__).name
-    try:
-        CommonUtil.ExecLog(sModuleInfo,"Trying to open the app",1)
-        driver.launch_app()
-        CommonUtil.ExecLog(sModuleInfo,"Opened the app successfully",1)
-        return "passed"
-    except Exception, e:
-        exc_type, exc_obj, exc_tb = sys.exc_info()        
-        fname = os.path.split(exc_tb.tb_frame.f_code.co_filename)[1]
-        Error_Detail = ((str(exc_type).replace("type ", "Error Type: ")) + ";" +  "Error Message: " + str(exc_obj) +";" + "File Name: " + fname + ";" + "Line: "+ str(exc_tb.tb_lineno))
-        CommonUtil.ExecLog(sModuleInfo, "Unable to open the app. %s"%Error_Detail, 3)
-        return "failed"
-    
-    
 def wait(_time):
     sModuleInfo = inspect.stack()[0][3] + " : " + inspect.getmoduleinfo(__file__).name
     try:
@@ -301,7 +321,7 @@ def wait(_time):
         return "failed"
 
     
-def uninstall_app(app_package):
+def uninstall_application(app_package):
     ''' Uninstalls/removes application from device '''
     
     sModuleInfo = inspect.stack()[0][3] + " : " + inspect.getmoduleinfo(__file__).name
@@ -1871,7 +1891,6 @@ def Sequential_Actions_Appium(step_data):
                 # If middle column = conditional action, evaluate data set
                 elif row[1]=="conditional action":
                     CommonUtil.ExecLog(sModuleInfo, "Checking the logical conditional action to be performed in the conditional action row: %s" % str(row), 1)
-                    logic_decision=""
                     logic_row.append(row)
                     
                     # Only run this when we have two conditional actions for this data set (a true and a false preferably)
@@ -1986,9 +2005,9 @@ def Action_Handler_Appium(action_step_data, action_name):
             else:
                 result = 'passed'
         elif action_name == "install": # Install and execute application
-            result = install_and_start_driver(action_value, related_value) # file location, activity_name(optional)
+            result = install_application(action_value, related_value) # file location, activity_name(optional)
         elif action_name == "launch": # Launch program and get appium driver instance
-            result = launch_and_start_driver(action_value, related_value) # Package name, Activity name
+            result = launch_application(action_value, related_value) # Package name, Activity name
         elif action_name == "get location":
             position = get_element_location_by_id(related_value) # Get x,y coordinates of the pass button
             if position != 'failed':
@@ -2004,7 +2023,7 @@ def Action_Handler_Appium(action_step_data, action_name):
         elif action_name == "close": # Close foreground application
             result = close_application()
         elif action_name == "uninstall": # Uninstall application
-            result = uninstall_app(action_value)
+            result = uninstall_application(action_value)
         elif action_name == 'teardown': # Cleanup Appium instance
             result = teardown_appium()
         elif action_name == 'keypress': # Press hardware, software or virtual key
@@ -2267,7 +2286,7 @@ def Android_Keystroke_Key_Mapping(keystroke):
     keystroke = keystroke.replace('_', ' ')
     
     try:
-        if keystroke == "return":
+        if keystroke == "return" or keystroke == "enter":
             driver.keyevent(66)
         elif keystroke == "go back":
             driver.back()
