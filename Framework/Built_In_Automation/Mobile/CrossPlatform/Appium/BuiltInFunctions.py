@@ -13,6 +13,7 @@ from selenium.webdriver.support.ui import WebDriverWait
 from selenium.webdriver.support import expected_conditions as EC
 from selenium.webdriver.common.by import By
 from dropbox.files import Dimensions
+from Framework.Built_In_Automation.Shared_Resources import BuiltInFunctionSharedResources as Shared_Resources
 
 
 passed_tag_list=['Pass','pass','PASS','PASSED','Passed','passed','true','TRUE','True','1','Success','success','SUCCESS',True]
@@ -25,13 +26,13 @@ PATH = lambda p: os.path.abspath(
 # Recall appium driver, if not already set - needed between calls in a Zeuz test case
 global driver
 driver = None
-if CommonUtil.Test_Shared_Variables('appium_driver'): # Check if driver is already set in shared variables
-    driver = CommonUtil.Get_Shared_Variables('appium_driver') # Retreive appium driver
+if Shared_Resources.Test_Shared_Variables('appium_driver'): # Check if driver is already set in shared variables
+    driver = Shared_Resources.Get_Shared_Variables('appium_driver') # Retreive appium driver
 
 # Recall dependency, if not already set
 dependency = 'Android' #{'Mobile OS':'Android'} #!!! Will be updated by sequential_actions_appium() in the future
-if CommonUtil.Test_Shared_Variables('dependency'): # Check if driver is already set in shared variables
-    dependency = CommonUtil.Get_Shared_Variables('dependency') # Retreive appium driver
+if Shared_Resources.Test_Shared_Variables('dependency'): # Check if driver is already set in shared variables
+    dependency = Shared_Resources.Get_Shared_Variables('dependency') # Retreive appium driver
  
 
 global WebDriver_Wait 
@@ -237,7 +238,7 @@ def start_appium_driver(package_name = '', activity_name = '', filename = ''):
             global driver
             driver = webdriver.Remote('http://localhost:4723/wd/hub', desired_caps) # Create instance
             if driver: # Make sure we get the instance
-                CommonUtil.Set_Shared_Variables('appium_driver', driver) # Save driver instance to make available to other modules
+                Shared_Resources.Set_Shared_Variables('appium_driver', driver) # Save driver instance to make available to other modules
                 CommonUtil.ExecLog(sModuleInfo,"Launched the app successfully.",1)
                 return "passed"
             else: # Error during setup, reset
@@ -260,7 +261,7 @@ def teardown_appium():
         global driver
         driver.quit() # Tell appium to shutdown instance
         driver = None # Clear driver variable, so next run will be fresh
-        CommonUtil.Set_Shared_Variables('appium_driver', '') # Clear the driver from shared variables
+        Shared_Resources.Set_Shared_Variables('appium_driver', '') # Clear the driver from shared variables
         CommonUtil.ExecLog(sModuleInfo,"Appium cleaned up successfully.",1)
         return 'passed'
     except Exception:
@@ -1085,12 +1086,12 @@ def Save_Text(step_data, variable_name):
     sModuleInfo = inspect.stack()[0][3] + " : " + inspect.getmoduleinfo(__file__).name
     CommonUtil.ExecLog(sModuleInfo, "Function: Save Text", 1)
     try:
-        if ((1 < len(step_data[0][0]) >= 5)):
+        if ((1 < len(step_data[0]) >= 5)):
             CommonUtil.ExecLog(sModuleInfo, "The information in the data-set(s) are incorrect. Please provide accurate data set(s) information.",3)
             return "failed"
         else:
             for each in step_data:
-                element_step_data = Get_Element_Step_Data_Appium([step_data])
+                element_step_data = Get_Element_Step_Data_Appium(step_data)
                 returned_step_data_list = Validate_Step_Data(element_step_data)
                 if ((returned_step_data_list == []) or (returned_step_data_list == "failed")):
                     return "failed"
@@ -1109,12 +1110,12 @@ def Save_Text(step_data, variable_name):
                 if each_text_item != "":
                     visible_list_of_element_text+=each_text_item
 
-            result = CommonUtil.Set_Shared_Variables(variable_name, visible_list_of_element_text)
+            result = Shared_Resources.Set_Shared_Variables(variable_name, visible_list_of_element_text)
             if result in failed_tag_list:
                 CommonUtil.ExecLog(sModuleInfo, "Value of Variable '%s' could not be saved!!!", 3)
                 return "failed"
             else:
-                CommonUtil.Show_All_Shared_Variables()
+                Shared_Resources.Show_All_Shared_Variables()
                 return "passed"
     except Exception:
         return CommonUtil.Exception_Handler(sys.exc_info())
@@ -1129,53 +1130,7 @@ def Compare_Variables(step_data):
         if ((element_step_data == []) or (element_step_data == "failed")):
             return "failed"
         else:
-            pass_count = 0
-            fail_count = 0
-            variable_list1 = []
-            variable_list2 = []
-            result = []
-            for each_step_data_item in step_data:
-                if each_step_data_item[1]!="action":
-                    if '%|' in each_step_data_item[0].strip():
-                        previous_name = each_step_data_item[0].strip()
-                        new_name = CommonUtil.get_previous_response_variables_in_strings(each_step_data_item[0].strip())
-                        tuple1 = ('Variable',"'%s'"%previous_name,new_name)
-                    else:
-                        tuple1 = ('Text','',each_step_data_item[0].strip())
-                    variable_list1.append(tuple1)
-
-                    if '%|' in each_step_data_item[2].strip():
-                        previous_name = each_step_data_item[2].strip()
-                        new_name = CommonUtil.get_previous_response_variables_in_strings(each_step_data_item[2].strip())
-                        tuple2 = ('Variable',"'%s'"%previous_name,new_name)
-                    else:
-                        tuple2 = ('Text','',each_step_data_item[2].strip())
-                    variable_list2.append(tuple2)
-
-
-            for i in range(0,len(variable_list1)):
-                if variable_list1[i][2] == variable_list2[i][2]:
-                    result.append(True)
-                    pass_count+=1
-                else:
-                    result.append(False)
-                    fail_count+=1
-
-            CommonUtil.ExecLog(sModuleInfo,"###Variable Comaparison Results###",1)
-            CommonUtil.ExecLog(sModuleInfo,"Matched Variables: %d"%pass_count,1)
-            CommonUtil.ExecLog(sModuleInfo, "Not Matched Variables: %d" % fail_count, 1)
-
-            for i in range(0, len(variable_list1)):
-                if result[i] == True:
-                    CommonUtil.ExecLog(sModuleInfo,"Item %d. %s %s - %s :: %s %s - %s : Matched"%(i+1,variable_list1[i][0],variable_list1[i][1],variable_list1[i][2],variable_list2[i][0],variable_list2[i][1],variable_list2[i][2]),1)
-                else:
-                    CommonUtil.ExecLog(sModuleInfo, "Item %d. %s %s - %s :: %s %s - %s : Not Matched" % (i + 1, variable_list1[i][0], variable_list1[i][1], variable_list1[i][2], variable_list2[i][0],variable_list2[i][1], variable_list2[i][2]),3)
-
-            if fail_count > 0:
-                CommonUtil.ExecLog(sModuleInfo,"Error: %d item(s) did not match"%fail_count,3)
-                return "failed"
-            else:
-                return "passed"
+            Shared_Resources.Compare_Variables([step_data])
     except Exception:
         return CommonUtil.Exception_Handler(sys.exc_info())
 
@@ -1879,7 +1834,7 @@ def Sequential_Actions_Appium(step_data):
             logic_row=[]
             for row in each: # For each row of the data set
                 # Don't process these items right now, but also dont' fail
-                if ((row[1] == "element parameter") or (row[1] == "reference parameter") or (row[1] == "relation type") or (row[1] == "element parameter 1 of 2") or (row[1] == "element parameter 2 of 2")):
+                if ((row[1] == "element parameter") or (row[1] == "reference parameter") or (row[1] == "relation type") or (row[1] == "element parameter 1 of 2") or (row[1] == "element parameter 2 of 2") or (row[1] == "compare")):
                     continue
                 # If middle column = action, call action handler
                 elif row[1]=="action":
@@ -1977,7 +1932,7 @@ def Action_Handler_Appium(action_step_data, action_name):
                 CommonUtil.ExecLog(sModuleInfo, "Shared Variable: %s" % action_value, 1)
                 action_value = action_value.replace("%|", "") # Strip special variable characters
                 action_value = action_value.replace("|%", "")
-                action_value = CommonUtil.Get_Shared_Variables(action_value) # Get the string for this shared variable
+                action_value = Shared_Resources.Get_Shared_Variables(action_value) # Get the string for this shared variable
                 if action_value == 'failed':
                     CommonUtil.ExecLog(sModuleInfo, "Invalid shared variable", 3)
                     return "failed"
@@ -1999,6 +1954,18 @@ def Action_Handler_Appium(action_step_data, action_name):
             result = Save_Text([action_step_data],action_value)
         elif action_name == "compare variable": # Compare two "shared" variables
             result = Compare_Variables(action_step_data)
+        elif (str(action_name).lower().strip().startswith('insert into list')):
+            result = Insert_Into_List([action_step_data])
+            if result == "failed":
+                return "failed"
+        elif action_name == "initialize list":
+            result = Shared_Resources.Initialize_List([action_step_data])
+            if result == "failed":
+                return "failed"
+        elif (action_name == "compare list"):
+            result = Compare_Lists(action_step_data)
+            if result == "failed":
+                return "failed"
         elif action_name == "step result": # Result from step data the user wants to specify (passed/failed)
             if action_value in failed_tag_list: # Convert user specified pass/fail into standard result
                 result = 'failed'
@@ -2011,7 +1978,7 @@ def Action_Handler_Appium(action_step_data, action_name):
         elif action_name == "get location":
             position = get_element_location_by_id(related_value) # Get x,y coordinates of the pass button
             if position != 'failed':
-                result = CommonUtil.Set_Shared_Variables(action_value, position)
+                result = Shared_Resources.Set_Shared_Variables(action_value, position)
             else:
                 result = 'passed'
 
@@ -2464,4 +2431,124 @@ def Validate_Text_Appium(step_data):
             exc_obj) + ";" + "File Name: " + fname + ";" + "Line: " + str(exc_tb.tb_lineno))
         CommonUtil.ExecLog(sModuleInfo, "Could not compare text as requested.  Error: %s" % (Error_Detail), 3)
         return "failed"
+
+
+#Inserting a field into a list of shared variables
+def Insert_Into_List(step_data):
+    sModuleInfo = inspect.stack()[0][3] + " : " + inspect.getmoduleinfo(__file__).name
+    CommonUtil.ExecLog(sModuleInfo, "Function: Insert_Into_List", 1)
+    try:
+        if len(step_data[0]) == 1: #will have to test #saving direct input string data
+            list_name = ''
+            key = ''
+            value = ''
+
+            for each_step_data_item in step_data[0]:
+                if each_step_data_item[1]=="action":
+                    full_input_key_value_name = each_step_data_item[2]
+                    full_input_action_name = each_step_data_item[0]
+
+            temp_list = full_input_action_name.split(':')
+            if len(temp_list) == 1:
+                CommonUtil.ExecLog(sModuleInfo,
+                                   "The information in the data-set(s) are incorrect. Please provide accurate data set(s) information.",
+                                   3)
+                return "failed"
+            else:
+                list_name = str(temp_list[1]).strip()
+
+            temp_list = full_input_key_value_name.split(',')
+            if len(temp_list) == 1:
+                CommonUtil.ExecLog(sModuleInfo,
+                                   "The information in the data-set(s) are incorrect. Please provide accurate data set(s) information.",
+                                   3)
+                return "failed"
+            else:
+                key_string = temp_list[0]
+                value_string = temp_list[1]
+
+                key = str(key_string).split(':')[1].strip()
+                value = str(value_string).split(':')[1].strip()
+
+            result = Shared_Resources.Set_List_Shared_Variables(list_name,key, value)
+            if result in failed_tag_list:
+                CommonUtil.ExecLog(sModuleInfo, "In list '%s' Value of Variable '%s' could not be saved!!!"%(list_name, key), 3)
+                return "failed"
+            else:
+                Shared_Resources.Show_All_Shared_Variables()
+                return "passed"
+
+
+
+        elif len(step_data[0]) > 1 and len(step_data[0]) <=5:
+            for each in step_data[0]:
+                element_step_data = Get_Element_Step_Data_Appium(step_data)
+                returned_step_data_list = Validate_Step_Data(element_step_data)
+                if ((returned_step_data_list == []) or (returned_step_data_list == "failed")):
+                    return "failed"
+                else:
+                    try:
+                        Element = Get_Element_Appium(returned_step_data_list[0], returned_step_data_list[1], returned_step_data_list[2], returned_step_data_list[3], returned_step_data_list[4])
+                        break
+
+                    except Exception:
+                        errMsg = "Could not get element based on the information provided."
+                        return CommonUtil.Exception_Handler(sys.exc_info(),None,errMsg)
+
+            list_name = ''
+            key = ''
+            for each_step_data_item in step_data[0]:
+                if each_step_data_item[1]=="action":
+                    key = each_step_data_item[2]
+                    full_input_action_name = each_step_data_item[0]
+
+            #get list name from full input_string
+
+            temp_list = full_input_action_name.split(':')
+            if len(temp_list) == 1:
+                CommonUtil.ExecLog(sModuleInfo,
+                                   "The information in the data-set(s) are incorrect. Please provide accurate data set(s) information.",
+                                   3)
+                return "failed"
+            else:
+                list_name = str(temp_list[1]).strip()
+
+            #get text from selenium element
+            list_of_element_text = Element.text.split('\n')
+            visible_list_of_element_text = ""
+            for each_text_item in list_of_element_text:
+                if each_text_item != "":
+                    visible_list_of_element_text+=each_text_item
+
+            #save text in the list of shared variables in CommonUtil
+            result = Shared_Resources.Set_List_Shared_Variables(list_name,key, visible_list_of_element_text)
+            if result in failed_tag_list:
+                CommonUtil.ExecLog(sModuleInfo, "In list '%s' Value of Variable '%s' could not be saved!!!"%(list_name, key), 3)
+                return "failed"
+            else:
+                Shared_Resources.Show_All_Shared_Variables()
+                return "passed"
+        else:
+            CommonUtil.ExecLog(sModuleInfo,
+                               "The information in the data-set(s) are incorrect. Please provide accurate data set(s) information.",
+                               3)
+            return "failed"
+
+    except Exception:
+        return CommonUtil.Exception_Handler(sys.exc_info())
+
+
+#Validating text from an element given information regarding the expected text
+def Compare_Lists(step_data):
+    sModuleInfo = inspect.stack()[0][3] + " : " + inspect.getmoduleinfo(__file__).name
+    CommonUtil.ExecLog(sModuleInfo, "Function: Compare_Lists", 1)
+    try:
+        element_step_data = Get_Element_Step_Data_Appium([step_data])
+        if ((element_step_data == []) or (element_step_data == "failed")):
+            return "failed"
+        else:
+            return Shared_Resources.Compare_Lists([step_data])
+    except:
+        return CommonUtil.Exception_Handler(sys.exc_info())
+
 '===================== ===x=== Sequential Actions Section Ends ===x=== ======================'

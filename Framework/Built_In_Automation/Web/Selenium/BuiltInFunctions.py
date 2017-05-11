@@ -27,6 +27,7 @@ from selenium.webdriver.common.by import By
 from Framework.Utilities import CommonUtil
 
 from selenium.webdriver.support import expected_conditions as EC
+from Framework.Built_In_Automation.Shared_Resources import BuiltInFunctionSharedResources as Shared_Resources
 
 
 global WebDriver_Wait
@@ -65,7 +66,7 @@ def Open_Browser(dependency):
             selenium_driver.implicitly_wait(WebDriver_Wait)
             selenium_driver.maximize_window()
             CommonUtil.ExecLog(sModuleInfo, "Started Chrome Browser", 1)
-            CommonUtil.Set_Shared_Variables('selenium_driver',selenium_driver)
+            Shared_Resources.Set_Shared_Variables('selenium_driver',selenium_driver)
             return "passed"
 
 
@@ -96,14 +97,14 @@ def Open_Browser(dependency):
             selenium_driver.implicitly_wait(WebDriver_Wait)
             selenium_driver.maximize_window()
             CommonUtil.ExecLog(sModuleInfo, "Started Firefox Browser", 1)
-            CommonUtil.Set_Shared_Variables('selenium_driver', selenium_driver)
+            Shared_Resources.Set_Shared_Variables('selenium_driver', selenium_driver)
             return "passed"
         elif "ie" in browser:
             selenium_driver = webdriver.Ie()
             selenium_driver.implicitly_wait(WebDriver_Wait)
             selenium_driver.maximize_window()
             CommonUtil.ExecLog(sModuleInfo, "Started Internet Explorer Browser", 1)
-            CommonUtil.Set_Shared_Variables('selenium_driver', selenium_driver)
+            Shared_Resources.Set_Shared_Variables('selenium_driver', selenium_driver)
             return "passed"
 
         elif "safari" in browser:
@@ -112,7 +113,7 @@ def Open_Browser(dependency):
             selenium_driver.implicitly_wait(WebDriver_Wait)
             selenium_driver.maximize_window()
             CommonUtil.ExecLog(sModuleInfo, "Started Safari Browser", 1)
-            CommonUtil.Set_Shared_Variables('selenium_driver', selenium_driver)
+            Shared_Resources.Set_Shared_Variables('selenium_driver', selenium_driver)
             return "passed"
 
         else:
@@ -216,7 +217,7 @@ def Action_Handler(action_step_data, action_name):
             if result == "failed":
                 return "failed"
         elif action_name == "initialize list":
-            result = Initialize_List(action_step_data)
+            result = Shared_Resources.Initialize_List(action_step_data)
             if result == "failed":
                 return "failed"
         elif (action_name == "validate full text" or action_name == "validate partial text"):
@@ -586,6 +587,19 @@ def Wait_For_New_Element(step_data):
     except Exception:
         return CommonUtil.Exception_Handler(sys.exc_info())
 
+#Validating text from an element given information regarding the expected text
+def Compare_Lists(step_data):
+    sModuleInfo = inspect.stack()[0][3] + " : " + inspect.getmoduleinfo(__file__).name
+    CommonUtil.ExecLog(sModuleInfo, "Function: Compare_Lists", 1)
+    try:
+        element_step_data = Get_Element_Step_Data(step_data)
+        if ((element_step_data == []) or (element_step_data == "failed")):
+            return "failed"
+        else:
+            return Shared_Resources.Compare_Lists(step_data)
+    except:
+        return CommonUtil.Exception_Handler(sys.exc_info())
+
 
 #Validating text from an element given information regarding the expected text
 def Compare_Variables(step_data):
@@ -596,166 +610,8 @@ def Compare_Variables(step_data):
         if ((element_step_data == []) or (element_step_data == "failed")):
             return "failed"
         else:
-            pass_count = 0
-            fail_count = 0
-            variable_list1 = []
-            variable_list2 = []
-            result = []
-            for each_step_data_item in step_data[0]:
-                if each_step_data_item[1]!="action":
-                    if '%|' in each_step_data_item[0].strip():
-                        previous_name = each_step_data_item[0].strip()
-                        new_name = CommonUtil.get_previous_response_variables_in_strings(each_step_data_item[0].strip())
-                        tuple1 = ('Variable',"'%s'"%previous_name,new_name)
-                    else:
-                        tuple1 = ('Text','',each_step_data_item[0].strip())
-                    variable_list1.append(tuple1)
-
-                    if '%|' in each_step_data_item[2].strip():
-                        previous_name = each_step_data_item[2].strip()
-                        new_name = CommonUtil.get_previous_response_variables_in_strings(each_step_data_item[2].strip())
-                        tuple2 = ('Variable',"'%s'"%previous_name,new_name)
-                    else:
-                        tuple2 = ('Text','',each_step_data_item[2].strip())
-                    variable_list2.append(tuple2)
-
-
-            for i in range(0,len(variable_list1)):
-                if variable_list1[i][2] == variable_list2[i][2]:
-                    result.append(True)
-                    pass_count+=1
-                else:
-                    result.append(False)
-                    fail_count+=1
-
-            CommonUtil.ExecLog(sModuleInfo,"###Variable Comaparison Results###",1)
-            CommonUtil.ExecLog(sModuleInfo,"Matched Variables: %d"%pass_count,1)
-            CommonUtil.ExecLog(sModuleInfo, "Not Matched Variables: %d" % fail_count, 1)
-
-            for i in range(0, len(variable_list1)):
-                if result[i] == True:
-                    CommonUtil.ExecLog(sModuleInfo,"Item %d. %s %s - %s :: %s %s - %s : Matched"%(i+1,variable_list1[i][0],variable_list1[i][1],variable_list1[i][2],variable_list2[i][0],variable_list2[i][1],variable_list2[i][2]),1)
-                else:
-                    CommonUtil.ExecLog(sModuleInfo, "Item %d. %s %s - %s :: %s %s - %s : Not Matched" % (i + 1, variable_list1[i][0], variable_list1[i][1], variable_list1[i][2], variable_list2[i][0],variable_list2[i][1], variable_list2[i][2]),3)
-
-            if fail_count > 0:
-                CommonUtil.ExecLog(sModuleInfo,"Error: %d item(s) did not match"%fail_count,3)
-                return "failed"
-            else:
-                return "passed"
-    except Exception:
-        return CommonUtil.Exception_Handler(sys.exc_info())
-
-
-#Validating text from an element given information regarding the expected text
-def Compare_Lists(step_data):
-    sModuleInfo = inspect.stack()[0][3] + " : " + inspect.getmoduleinfo(__file__).name
-    CommonUtil.ExecLog(sModuleInfo, "Function: Compare_Lists", 1)
-    try:
-        element_step_data = Get_Element_Step_Data(step_data)
-        if ((element_step_data == []) or (element_step_data == "failed")):
-            return "failed"
-        else:
-            pass_count = 0
-            fail_count = 0
-            extra_count = 0
-            variable_list1 = []
-            variable_list2 = []
-            result = []
-            taken = []
-            list1_name = ''
-            list2_name = ''
-            ignore_extra = True
-            for each_step_data_item in step_data[0]:
-                if each_step_data_item[1] == "compare":
-                    list1_name = each_step_data_item[0]
-                    list2_name = each_step_data_item[2]
-                if each_step_data_item[1] == "action":
-                    if str(each_step_data_item[2]).lower().strip().startswith('exact match'):
-                        ignore_extra = False
-
-            if list1_name == '' or list2_name == '':
-                CommonUtil.ExecLog(sModuleInfo,"The information in the data-set(s) are incorrect. Please provide accurate data set(s) information.",3)
-                return "failed"
-
-            list1 = CommonUtil.Get_List_from_Shared_Variables(list1_name)
-            list2 = CommonUtil.Get_List_from_Shared_Variables(list2_name)
-
-            if list1 in failed_tag_list or list2 in failed_tag_list:
-                CommonUtil.ExecLog(sModuleInfo,"The information in the data-set(s) are incorrect. Please provide accurate data set(s) information.",3)
-                return "failed"
-
-            for key in list1:
-                if key in list2:
-                    if key not in taken:
-                        new_tuple = (key,list1[key])
-                        variable_list1.append(new_tuple)
-                        new_tuple = (key,list2[key])
-                        variable_list2.append(new_tuple)
-                        taken.append(key)
-                        if str(list1[key]).lower().strip() == str(list2[key]).lower().strip():
-                            pass_count+=1
-                            result.append('pass')
-                        else:
-                            fail_count+=1
-                            result.append('fail')
-                else:
-                    if key not in taken:
-                        new_tuple = (key,list1[key])
-                        variable_list1.append(new_tuple)
-                        new_tuple = (key,'N/A')
-                        variable_list2.append(new_tuple)
-                        extra_count += 1
-                        result.append('extra')
-                        taken.append(key)
-
-            for key in list2:
-                if key in list1:
-                    if key not in taken:
-                        new_tuple = (key,list1[key])
-                        variable_list1.append(new_tuple)
-                        new_tuple = (key,list2[key])
-                        variable_list2.append(new_tuple)
-                        taken.append(key)
-                        if str(list1[key]).lower().strip() == str(list2[key]).lower().strip():
-                            pass_count+=1
-                            result.append('pass')
-                        else:
-                            fail_count+=1
-                            result.append('fail')
-                else:
-                    if key not in taken:
-                        new_tuple = (key,'N/A')
-                        variable_list1.append(new_tuple)
-                        new_tuple = (key,list2[key])
-                        variable_list2.append(new_tuple)
-                        extra_count += 1
-                        result.append('extra')
-                        taken.append(key)
-
-            CommonUtil.ExecLog(sModuleInfo,"###Comaparison Results of List '%s' and List '%s'###"%(list1_name,list2_name),1)
-            CommonUtil.ExecLog(sModuleInfo,"Matched Variables: %d"%pass_count,1)
-            CommonUtil.ExecLog(sModuleInfo, "Not Matched Variables: %d" % fail_count, 1)
-            CommonUtil.ExecLog(sModuleInfo, "Extra Variables: %d" % extra_count, 1)
-            for i in range(0, len(variable_list1)):
-                if result[i] == 'pass':
-                    CommonUtil.ExecLog(sModuleInfo,"Item %d. Variable Name : %s :: %s - %s : Matched"%(i+1,variable_list1[i][0],variable_list1[i][1],variable_list2[i][1]),1)
-                elif result[i] == 'fail':
-                    CommonUtil.ExecLog(sModuleInfo, "Item %d. Variable Name : %s :: %s - %s : Not Matched" % (i + 1, variable_list1[i][0], variable_list1[i][1], variable_list2[i][1]), 1)
-                else:
-                    CommonUtil.ExecLog(sModuleInfo, "Item %d. Variable Name : %s :: %s - %s : Extra" % (i + 1, variable_list1[i][0], variable_list1[i][1], variable_list2[i][1]), 1)
-
-
-            if fail_count > 0:
-                CommonUtil.ExecLog(sModuleInfo,"Error: %d item(s) did not match"%fail_count,3)
-                return "failed"
-            else:
-                if extra_count > 0 and ignore_extra == False:
-                    CommonUtil.ExecLog(sModuleInfo, "Error: %d item(s) extra found" % extra_count, 3)
-                    return "failed"
-                else:
-                    return "passed"
-    except Exception:
+            return Shared_Resources.Compare_Variables(step_data)
+    except:
         return CommonUtil.Exception_Handler(sys.exc_info())
 
 
@@ -796,12 +652,12 @@ def Insert_Into_List(step_data):
                 key = str(key_string).split(':')[1].strip()
                 value = str(value_string).split(':')[1].strip()
 
-            result = CommonUtil.Set_List_Shared_Variables(list_name,key, value)
+            result = Shared_Resources.Set_List_Shared_Variables(list_name,key, value)
             if result in failed_tag_list:
                 CommonUtil.ExecLog(sModuleInfo, "In list '%s' Value of Variable '%s' could not be saved!!!"%(list_name, key), 3)
                 return "failed"
             else:
-                CommonUtil.Show_All_Shared_Variables()
+                Shared_Resources.Show_All_Shared_Variables()
                 return "passed"
 
 
@@ -847,12 +703,12 @@ def Insert_Into_List(step_data):
                     visible_list_of_element_text+=each_text_item
 
             #save text in the list of shared variables in CommonUtil
-            result = CommonUtil.Set_List_Shared_Variables(list_name,key, visible_list_of_element_text)
+            result = Shared_Resources.Set_List_Shared_Variables(list_name,key, visible_list_of_element_text)
             if result in failed_tag_list:
                 CommonUtil.ExecLog(sModuleInfo, "In list '%s' Value of Variable '%s' could not be saved!!!"%(list_name, key), 3)
                 return "failed"
             else:
-                CommonUtil.Show_All_Shared_Variables()
+                Shared_Resources.Show_All_Shared_Variables()
                 return "passed"
         else:
             CommonUtil.ExecLog(sModuleInfo,
@@ -897,12 +753,12 @@ def Save_Text(step_data):
                 if each_text_item != "":
                     visible_list_of_element_text+=each_text_item
 
-            result = CommonUtil.Set_Shared_Variables(variable_name, visible_list_of_element_text)
+            result = Shared_Resources.Set_Shared_Variables(variable_name, visible_list_of_element_text)
             if result in failed_tag_list:
                 CommonUtil.ExecLog(sModuleInfo, "Value of Variable '%s' could not be saved!!!"%variable_name, 3)
                 return "failed"
             else:
-                CommonUtil.Show_All_Shared_Variables()
+                Shared_Resources.Show_All_Shared_Variables()
                 return "passed"
     except Exception:
         return CommonUtil.Exception_Handler(sys.exc_info())
@@ -994,30 +850,6 @@ def Validate_Text(step_data):
                 CommonUtil.ExecLog(sModuleInfo, "Incorrect validation type. Please check step data", 3)
                 return "failed"
 
-    except Exception:
-        return CommonUtil.Exception_Handler(sys.exc_info())
-
-
-#Method to initialize an empty list
-def Initialize_List(step_data):
-    sModuleInfo = inspect.stack()[0][3] + " : " + inspect.getmoduleinfo(__file__).name
-    CommonUtil.ExecLog(sModuleInfo, "Function: Initialize_List", 1)
-    try:
-        if ((len(step_data) != 1)):
-            CommonUtil.ExecLog(sModuleInfo,
-                               "The information in the data-set(s) are incorrect. Please provide accurate data set(s) information.",
-                               3)
-            return "failed"
-        else:
-            list_name = str(step_data[0][0][2]).lower().strip()
-            new_list = {}
-            result = CommonUtil.Set_Shared_Variables(list_name,new_list)
-            if result in failed_tag_list:
-                CommonUtil.ExecLog(sModuleInfo,"Could not initialize empty list named %s"%list_name,3)
-                return "failed"
-            else:
-                CommonUtil.ExecLog(sModuleInfo,"Successfully initialized empty list named %s"%list_name,1)
-                return "passed"
     except Exception:
         return CommonUtil.Exception_Handler(sys.exc_info())
 
@@ -1189,7 +1021,7 @@ def Sequential_Actions(step_data):
                     if row[0] == 'compare variable':
                         result = Action_Handler([each],row[0])
                     else:
-                        new_data_set = CommonUtil.Handle_Step_Data_Variables([each])
+                        new_data_set = Shared_Resources.Handle_Step_Data_Variables([each])
                         if new_data_set in failed_tag_list:
                             return 'failed'
                         result = Action_Handler(new_data_set,row[0])
