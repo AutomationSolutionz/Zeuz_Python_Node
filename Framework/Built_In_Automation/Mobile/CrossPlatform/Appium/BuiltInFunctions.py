@@ -1871,7 +1871,7 @@ def Get_Element_Step_Data_Appium(step_data):
 
 
 def Sequential_Actions_Appium(step_data):
-    ''' Main Sequential Actions functino - Performs logical decisions based on user input '''
+    ''' Main Sequential Actions function - Performs logical decisions based on user input '''
     
     sModuleInfo = inspect.stack()[0][3] + " : " + inspect.getmoduleinfo(__file__).name
     try:            
@@ -1881,12 +1881,21 @@ def Sequential_Actions_Appium(step_data):
                 # Don't process these items right now, but also dont' fail
                 if ((row[1] == "element parameter") or (row[1] == "reference parameter") or (row[1] == "relation type") or (row[1] == "element parameter 1 of 2") or (row[1] == "element parameter 2 of 2")):
                     continue
+
                 # If middle column = action, call action handler
                 elif row[1]=="action":
                     CommonUtil.ExecLog(sModuleInfo, "Checking the action to be performed in the action row: %s" % str(row), 1)
                     result = Action_Handler_Appium(each,row[0]) # Pass data set, and action_name to action handler
                     if result == [] or result == "failed": # Check result of action handler
                         return "failed"
+                
+                # If middle column = action, call action handler, but always return a pass
+                elif row[1]=="optional action":
+                    CommonUtil.ExecLog(sModuleInfo, "Checking the optional action to be performed in the action row: %s" % str(row), 1)
+                    result = Action_Handler_Appium(each,row[0]) # Pass data set, and action_name to action handler
+                    if result == 'failed':
+                        CommonUtil.ExecLog(sModuleInfo, "Optional action failed. Returning pass anyway", 2)
+                    result = 'passed'
                     
                 # If middle column = conditional action, evaluate data set
                 elif row[1]=="conditional action":
@@ -1944,8 +1953,8 @@ def Conditional_Action_Handler(step_data, each, row, logic_row):
                 for each_item in list_of_steps: # For each data set number we need to process before finishing
                     CommonUtil.ExecLog(sModuleInfo, "Processing conditional step %s" % str(each_item), 1)
                     data_set_index = int(each_item) - 1 # data set number, -1 to offset for data set numbering system
-                    Sequential_Actions_Appium([step_data[data_set_index]]) # Recursively call this function until all called data sets are complete
-                return "passed"
+                    result = Sequential_Actions_Appium([step_data[data_set_index]]) # Recursively call this function until all called data sets are complete
+                return result # Return only the last result of the last row of the last data set processed - This should generally be a "step result action" command
 
     # Shouldn't get here, but just in case
     return 'passed'
