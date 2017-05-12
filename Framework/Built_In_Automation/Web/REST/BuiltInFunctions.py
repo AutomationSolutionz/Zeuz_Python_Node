@@ -277,6 +277,7 @@ def handle_rest_call(data, fields_to_be_saved, save_into_list = False, list_name
     sModuleInfo = inspect.stack()[0][3] + " : " + inspect.getmoduleinfo(__file__).name
     CommonUtil.ExecLog(sModuleInfo, "Function: handle rest call", 1)
     try:
+        Shared_Resources.Set_Shared_Variables('status_code', 0) # Reset this shared variable, so we do not get confused with any previous run
         url = data[0]
         method = data[1]
         body = data[2]
