@@ -16,6 +16,7 @@ sys.path.append("..")
 import ast
 import time
 import inspect
+from Framework.Built_In_Automation.Shared_Resources import BuiltInFunctionSharedResources as Shared_Resources
 
 requests.packages.urllib3.disable_warnings()
 
@@ -61,8 +62,21 @@ def Action_Handler(action_step_data, action_row):
             result = Compare_Variables(action_step_data)
             if result == "failed":
                 return "failed"
+        elif action_name == "compare list":
+            result = Compare_Lists(action_step_data)
+            if result == "failed":
+                return "failed"
         elif action_name == "sleep":
             result = Sleep(action_step_data)
+            if result == "failed":
+                return "failed"
+        elif action_name == "initialize list":
+            result = Shared_Resources.Initialize_List(action_step_data)
+            if result == "failed":
+                return "failed"
+        elif (str(action_name).lower().strip().startswith('insert into list')):
+            fields_to_be_saved = action_row[2]
+            result = Insert_Into_List(action_step_data, fields_to_be_saved)
             if result == "failed":
                 return "failed"
         else:
@@ -74,6 +88,33 @@ def Action_Handler(action_step_data, action_row):
 
 
 # Method to get previous response variables
+
+#Validating text from an element given information regarding the expected text
+def Compare_Lists(step_data):
+    sModuleInfo = inspect.stack()[0][3] + " : " + inspect.getmoduleinfo(__file__).name
+    CommonUtil.ExecLog(sModuleInfo, "Function: Compare_Lists", 1)
+    try:
+        element_step_data = Get_Element_Step_Data(step_data)
+        if ((element_step_data == []) or (element_step_data == "failed")):
+            return "failed"
+        else:
+            return Shared_Resources.Compare_Lists(step_data)
+    except:
+        return CommonUtil.Exception_Handler(sys.exc_info())
+
+
+#Validating text from an element given information regarding the expected text
+def Compare_Variables(step_data):
+    sModuleInfo = inspect.stack()[0][3] + " : " + inspect.getmoduleinfo(__file__).name
+    CommonUtil.ExecLog(sModuleInfo, "Function: Compare_Variables", 1)
+    try:
+        element_step_data = Get_Element_Step_Data(step_data)
+        if ((element_step_data == []) or (element_step_data == "failed")):
+            return "failed"
+        else:
+            return Shared_Resources.Compare_Variables(step_data)
+    except:
+        return CommonUtil.Exception_Handler(sys.exc_info())
 
 
 # Method to return dictonaries from string
@@ -95,7 +136,7 @@ def save_fields_from_rest_call(result_dict, fields_to_be_saved):
         if fields_to_be_saved[0].lower().strip() == 'all':
             for each in result_dict:
                 field = each.strip()
-                CommonUtil.Set_Shared_Variables(field,result_dict[field])
+                Shared_Resources.Set_Shared_Variables(field,result_dict[field])
             CommonUtil.ExecLog(sModuleInfo, "All response fields are saved", 1)
         elif fields_to_be_saved[0].lower().strip() == 'none':
             CommonUtil.ExecLog(sModuleInfo, "No response fields are saved", 1)
@@ -106,17 +147,133 @@ def save_fields_from_rest_call(result_dict, fields_to_be_saved):
                 field = each.strip()
                 if field in result_dict:
                     which_are_saved.append(field)
-                    CommonUtil.Set_Shared_Variables(field, result_dict[field])
+                    Shared_Resources.Set_Shared_Variables(field, result_dict[field])
 
             CommonUtil.ExecLog(sModuleInfo, "%s response fields are saved"%(", ".join(str(x) for x in which_are_saved)),1)
 
-        CommonUtil.Show_All_Shared_Variables()
+        Shared_Resources.Show_All_Shared_Variables()
+    except Exception:
+        return CommonUtil.Exception_Handler(sys.exc_info())
+
+
+def insert_fields_from_rest_call_into_list(result_dict, fields_to_be_saved, list_name):
+    sModuleInfo = inspect.stack()[0][3] + " : " + inspect.getmoduleinfo(__file__).name
+    CommonUtil.ExecLog(sModuleInfo, "Function: save fields from rest call", 1)
+    try:
+        fields_to_be_saved = fields_to_be_saved.split(",")
+        if fields_to_be_saved[0].lower().strip() == 'all':
+            for each in result_dict:
+                field = each.strip()
+                Shared_Resources.Set_List_Shared_Variables(list_name, field,result_dict[field])
+            CommonUtil.ExecLog(sModuleInfo, "All response fields are saved", 1)
+        elif fields_to_be_saved[0].lower().strip() == 'none':
+            CommonUtil.ExecLog(sModuleInfo, "No response fields are saved", 1)
+            return
+        else:
+            which_are_saved = []
+            for each in fields_to_be_saved:
+                field = each.strip()
+                if field in result_dict:
+                    which_are_saved.append(field)
+                    Shared_Resources.Set_List_Shared_Variables(list_name, field, result_dict[field])
+
+            CommonUtil.ExecLog(sModuleInfo, "%s response fields are saved"%(", ".join(str(x) for x in which_are_saved)),1)
+
+        Shared_Resources.Show_All_Shared_Variables()
+    except Exception:
+        return CommonUtil.Exception_Handler(sys.exc_info())
+
+
+#Inserting a field into a list of shared variables
+def Insert_Into_List(step_data, fields_to_be_saved):
+    sModuleInfo = inspect.stack()[0][3] + " : " + inspect.getmoduleinfo(__file__).name
+    CommonUtil.ExecLog(sModuleInfo, "Function: Insert_Into_List", 1)
+    try:
+        if len(step_data[0]) == 1: #will have to test #saving direct input string data
+            list_name = ''
+            key = ''
+            value = ''
+
+            for each_step_data_item in step_data[0]:
+                if each_step_data_item[1]=="action":
+                    full_input_key_value_name = each_step_data_item[2]
+                    full_input_action_name = each_step_data_item[0]
+
+            temp_list = full_input_action_name.split(':')
+            if len(temp_list) == 1:
+                CommonUtil.ExecLog(sModuleInfo,
+                                   "The information in the data-set(s) are incorrect. Please provide accurate data set(s) information.",
+                                   3)
+                return "failed"
+            else:
+                list_name = str(temp_list[1]).strip()
+
+            temp_list = full_input_key_value_name.split(',')
+            if len(temp_list) == 1:
+                CommonUtil.ExecLog(sModuleInfo,
+                                   "The information in the data-set(s) are incorrect. Please provide accurate data set(s) information.",
+                                   3)
+                return "failed"
+            else:
+                key_string = temp_list[0]
+                value_string = temp_list[1]
+
+                key = str(key_string).split(':')[1].strip()
+                value = str(value_string).split(':')[1].strip()
+
+            result = Shared_Resources.Set_List_Shared_Variables(list_name,key, value)
+            if result in failed_tag_list:
+                CommonUtil.ExecLog(sModuleInfo, "In list '%s' Value of Variable '%s' could not be saved!!!"%(list_name, key), 3)
+                return "failed"
+            else:
+                Shared_Resources.Show_All_Shared_Variables()
+                return "passed"
+
+
+
+        else:
+            element_step_data = Get_Element_Step_Data(step_data)
+
+            returned_step_data_list = Validate_Step_Data(element_step_data)
+
+            if ((returned_step_data_list == []) or (returned_step_data_list == "failed")):
+                return "failed"
+            else:
+                try:
+
+                    list_name = ''
+                    key = ''
+                    for each_step_data_item in step_data[0]:
+                        if each_step_data_item[1] == "action":
+                            key = each_step_data_item[2]
+                            full_input_action_name = each_step_data_item[0]
+
+                    # get list name from full input_string
+
+                    temp_list = full_input_action_name.split(':')
+                    if len(temp_list) == 1:
+                        CommonUtil.ExecLog(sModuleInfo,
+                                           "The information in the data-set(s) are incorrect. Please provide accurate data set(s) information.",
+                                           3)
+                        return "failed"
+                    else:
+                        list_name = str(temp_list[1]).strip()
+
+                    return_result = handle_rest_call(returned_step_data_list, fields_to_be_saved, True, list_name)
+
+
+
+                    return return_result
+                except Exception:
+                    return CommonUtil.Exception_Handler(sys.exc_info())
+
+
     except Exception:
         return CommonUtil.Exception_Handler(sys.exc_info())
 
 
 # Method to handle rest calls
-def handle_rest_call(data, fields_to_be_saved):
+def handle_rest_call(data, fields_to_be_saved, save_into_list = False, list_name = ""):
     sModuleInfo = inspect.stack()[0][3] + " : " + inspect.getmoduleinfo(__file__).name
     CommonUtil.ExecLog(sModuleInfo, "Function: handle rest call", 1)
     try:
@@ -141,7 +298,7 @@ def handle_rest_call(data, fields_to_be_saved):
         else:
             return "failed"
         status_code = int(result.status_code)
-        CommonUtil.Set_Shared_Variables('status_code',result.status_code)
+        Shared_Resources.Set_Shared_Variables('status_code',result.status_code)
         CommonUtil.ExecLog(sModuleInfo,'Post Call returned status code: %d'%status_code,1)
         if status_code >=400:
             CommonUtil.ExecLog(sModuleInfo,'Post Call Returned Bad Response',3)
@@ -149,7 +306,13 @@ def handle_rest_call(data, fields_to_be_saved):
         else:
             CommonUtil.ExecLog(sModuleInfo, 'Post Call Returned Response Successfully', 1)
             CommonUtil.ExecLog(sModuleInfo,"Received Response: %s"%result.json(),1)
-            save_fields_from_rest_call(result.json(), fields_to_be_saved)
+            if not save_into_list:
+                save_fields_from_rest_call(result.json(), fields_to_be_saved)
+            else:
+                if list_name == "":
+                    CommonUtil.ExecLog(sModuleInfo,"List name not defined!",3)
+                    return "failed"
+                insert_fields_from_rest_call_into_list(result.json(), fields_to_be_saved, list_name)
             return "passed"
     except Exception:
         return CommonUtil.Exception_Handler(sys.exc_info())
@@ -232,7 +395,7 @@ def Sequential_Actions(step_data):
                     if row[0] == 'compare variable':
                         result = Action_Handler([each], row)
                     else:
-                        new_data_set = CommonUtil.Handle_Step_Data_Variables([each])
+                        new_data_set = Shared_Resources.Handle_Step_Data_Variables([each])
                         if new_data_set in failed_tag_list:
                             return 'failed'
                         result = Action_Handler(new_data_set, row)
@@ -249,7 +412,7 @@ def Sequential_Actions(step_data):
                     logic_row.append(row)
                     if len(logic_row) == 2:
                         # element_step_data = each[0:len(step_data[0])-2:1]
-                        new_data_set = CommonUtil.Handle_Step_Data_Variables([each])
+                        new_data_set = Shared_Resources.Handle_Step_Data_Variables([each])
                         if new_data_set in failed_tag_list:
                             return_result = 'failed'
 
@@ -335,63 +498,3 @@ def Validate_Step_Data(step_data):
             exc_obj) + ";" + "File Name: " + fname + ";" + "Line: " + str(exc_tb.tb_lineno))
         CommonUtil.ExecLog(sModuleInfo, "Could not find the new page element requested.  Error: %s" % (Error_Detail), 3)
         return "failed"
-
-
-#Validating text from an element given information regarding the expected text
-def Compare_Variables(step_data):
-    sModuleInfo = inspect.stack()[0][3] + " : " + inspect.getmoduleinfo(__file__).name
-    CommonUtil.ExecLog(sModuleInfo, "Function: Compare Variables", 1)
-    try:
-        element_step_data = Get_Element_Step_Data(step_data)
-        if ((element_step_data == []) or (element_step_data == "failed")):
-            return "failed"
-        else:
-            pass_count = 0
-            fail_count = 0
-            variable_list1 = []
-            variable_list2 = []
-            result = []
-            for each_step_data_item in step_data[0]:
-                if each_step_data_item[1]!="action":
-                    if '%|' in each_step_data_item[0].strip():
-                        previous_name = each_step_data_item[0].strip()
-                        new_name = CommonUtil.get_previous_response_variables_in_strings(each_step_data_item[0].strip())
-                        tuple1 = ('Variable',"'%s'"%previous_name,new_name)
-                    else:
-                        tuple1 = ('Text','',each_step_data_item[0].strip())
-                    variable_list1.append(tuple1)
-
-                    if '%|' in each_step_data_item[2].strip():
-                        previous_name = each_step_data_item[2].strip()
-                        new_name = CommonUtil.get_previous_response_variables_in_strings(each_step_data_item[2].strip())
-                        tuple2 = ('Variable',"'%s'"%previous_name,new_name)
-                    else:
-                        tuple2 = ('Text','',each_step_data_item[2].strip())
-                    variable_list2.append(tuple2)
-
-
-            for i in range(0,len(variable_list1)):
-                if variable_list1[i][2] == variable_list2[i][2]:
-                    result.append(True)
-                    pass_count+=1
-                else:
-                    result.append(False)
-                    fail_count+=1
-
-            CommonUtil.ExecLog(sModuleInfo,"###Variable Comaparison Results###",1)
-            CommonUtil.ExecLog(sModuleInfo,"Matched Variables: %d"%pass_count,1)
-            CommonUtil.ExecLog(sModuleInfo, "Not Matched Variables: %d" % fail_count, 1)
-
-            for i in range(0, len(variable_list1)):
-                if result[i] == True:
-                    CommonUtil.ExecLog(sModuleInfo,"Item %d. %s %s - %s :: %s %s - %s : Matched"%(i+1,variable_list1[i][0],variable_list1[i][1],variable_list1[i][2],variable_list2[i][0],variable_list2[i][1],variable_list2[i][2]),1)
-                else:
-                    CommonUtil.ExecLog(sModuleInfo, "Item %d. %s %s - %s :: %s %s - %s : Not Matched" % (i + 1, variable_list1[i][0], variable_list1[i][1], variable_list1[i][2], variable_list2[i][0],variable_list2[i][1], variable_list2[i][2]),3)
-
-            if fail_count > 0:
-                CommonUtil.ExecLog(sModuleInfo,"Error: %d item(s) did not match"%fail_count,3)
-                return "failed"
-            else:
-                return "passed"
-    except Exception:
-        return CommonUtil.Exception_Handler(sys.exc_info())
