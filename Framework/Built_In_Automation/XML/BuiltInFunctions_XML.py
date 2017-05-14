@@ -44,6 +44,14 @@ def xml_sequential_actions(step_data):
                     action_result = action_handler([each],row[0], row[2])
                     if action_result == [] or action_result == "Failed":
                         return "Failed"
+
+                # If middle column = optional action, call action handler, but always return a pass
+                elif row[1] == "optional action":
+                    CommonUtil.ExecLog(sModuleInfo,"Checking the optional action to be performed in the action row: %s" % str(row), 1)
+                    result = action_handler(each, row[0], row[2])  # Pass data set, and action_name to action handler
+                    if result == 'failed':
+                        CommonUtil.ExecLog(sModuleInfo, "Optional action failed. Returning pass anyway", 2)
+                    result = 'passed'
                 
                 else:
                     CommonUtil.ExecLog(sModuleInfo, "The sub-field information is incorrect. Please provide accurate information in the data set(s).", 3)
