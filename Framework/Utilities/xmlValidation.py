@@ -1,4 +1,6 @@
-__author__='minar'
+# -*- coding: utf-8 -*-
+# -*- coding: cp1252 -*-
+
 import os, sys, subprocess, inspect
 from Framework.Utilities import CommonUtil
 

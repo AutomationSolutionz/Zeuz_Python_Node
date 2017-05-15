@@ -1,4 +1,5 @@
-#Sample Test Case
+# -*- coding: utf-8 -*-
+# -*- coding: cp1252 -*-
 
 from Built_In_Automation.API.REST.BuiltInFunctions import HttpMethods
 from Built_In_Automation.API.REST.Files.DataFromUI import *

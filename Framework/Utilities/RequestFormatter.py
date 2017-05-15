@@ -1,3 +1,6 @@
+# -*- coding: utf-8 -*-
+# -*- coding: cp1252 -*-
+
 from . import ConfigModule
 import requests,json
 SERVER_TAG='Server'

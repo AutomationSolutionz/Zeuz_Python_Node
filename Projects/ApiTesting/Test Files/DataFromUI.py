@@ -1,5 +1,5 @@
-# File Created By: Md. Asifur Rouf
-# This file have been created for test purpose,will be deleted Later
+# -*- coding: utf-8 -*-
+# -*- coding: cp1252 -*-
 
 
 url_ip = 'https://httpbin.org/ip'

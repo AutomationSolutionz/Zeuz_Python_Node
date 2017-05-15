@@ -1,3 +1,6 @@
+# -*- coding: utf-8 -*-
+# -*- coding: cp1252 -*-
+
 import inspect,os,time,sys,urllib2,Queue,importlib,requests,threading
 from datetime import datetime
 from Utilities import ConfigModule,FileUtilities as FL,CommonUtil,RequestFormatter

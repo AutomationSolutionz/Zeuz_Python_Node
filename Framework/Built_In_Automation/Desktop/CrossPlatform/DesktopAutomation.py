@@ -1,4 +1,6 @@
-__author__ = 'shetu'
+# -*- coding: utf-8 -*-
+# -*- coding: cp1252 -*-
+
 import pyautogui as gui
 import numpy as np
 import imutils

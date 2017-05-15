@@ -1,3 +1,5 @@
+# -*- coding: utf-8 -*-
+# -*- coding: cp1252 -*-
 '''
 @author: Automation Solutionz
 '''

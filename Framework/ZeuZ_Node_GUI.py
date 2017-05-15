@@ -1,8 +1,5 @@
-'''
-Created on August 17, 2016
-
-@author: minar
-'''
+# -*- coding: utf-8 -*-
+# -*- coding: cp1252 -*-
 
 import json
 import os

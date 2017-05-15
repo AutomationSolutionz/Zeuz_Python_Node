@@ -1,4 +1,6 @@
-__author__='shetu'
+# -*- coding: utf-8 -*-
+# -*- coding: cp1252 -*-
+
 import inspect
 import copy
 from Framework.Utilities import CommonUtil

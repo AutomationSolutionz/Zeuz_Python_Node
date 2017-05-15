@@ -1,9 +1,5 @@
-'''
-Created on Apr 20, 2017
-
-@author: mchowdhury
-Comment: Not published yet
-'''
+# -*- coding: utf-8 -*-
+# -*- coding: cp1252 -*-
 
 from Framework.Built_In_Automation.XML import BuiltInFunctions_XML as bf_xml
 

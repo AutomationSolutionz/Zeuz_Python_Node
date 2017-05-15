@@ -1,3 +1,6 @@
+# -*- coding: utf-8 -*-
+# -*- coding: cp1252 -*-
+
 import os,sys,time
 sys.path.append(os.path.dirname(os.getcwd()))
 from Utilities import ConfigModule,RequestFormatter,CommonUtil,FileUtilities

@@ -1,4 +1,6 @@
 # -*- coding: utf-8 -*-
+# -*- coding: cp1252 -*-
+
 import sys
 import inspect
 import os, psutil

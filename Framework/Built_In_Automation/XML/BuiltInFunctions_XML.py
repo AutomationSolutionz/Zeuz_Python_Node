@@ -1,3 +1,6 @@
+# -*- coding: utf-8 -*-
+# -*- coding: cp1252 -*-
+
 '''
 Created on Mar 30, 2017
 

@@ -1,3 +1,6 @@
+# -*- coding: utf-8 -*-
+# -*- coding: cp1252 -*-
+
 # shared_variables
 
 import inspect,sys

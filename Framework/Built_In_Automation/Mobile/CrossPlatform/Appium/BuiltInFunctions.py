@@ -1,4 +1,5 @@
-
+# -*- coding: utf-8 -*-
+# -*- coding: cp1252 -*-
 # Android environment
 from appium import webdriver
 import os, sys, time, inspect, json

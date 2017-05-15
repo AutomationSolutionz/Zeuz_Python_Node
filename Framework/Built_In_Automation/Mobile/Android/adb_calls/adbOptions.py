@@ -1,3 +1,6 @@
+# -*- coding: utf-8 -*-
+# -*- coding: cp1252 -*-
+
 #Android Debug Bridge (ADB) options to get the android devices info connected via usb/wi-fi
 __author__='minar'
 import subprocess, inspect, os

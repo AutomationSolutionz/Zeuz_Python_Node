@@ -1,3 +1,6 @@
+# -*- coding: utf-8 -*-
+# -*- coding: cp1252 -*-
+
 import requests
 
 R=requests.get('https://stackexchange.com/oauth', auth=('zeuz.framework@gmail.com', 'asdfQWER1234'))

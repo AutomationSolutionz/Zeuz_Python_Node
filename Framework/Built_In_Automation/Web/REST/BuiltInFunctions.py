@@ -1,4 +1,4 @@
-
+# -*- coding: utf-8 -*-
 # -*- coding: cp1252 -*-
 '''
 Created on April 10, 2017

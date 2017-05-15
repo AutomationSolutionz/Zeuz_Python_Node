@@ -1,3 +1,5 @@
+# -*- coding: utf-8 -*-
+# -*- coding: cp1252 -*-
 import sys, os, re, inspect
 import json
 import requests
