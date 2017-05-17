@@ -608,7 +608,7 @@ escape_dict = {
     '\a': r'\a',
 }
 
-
+#code to generate raw string
 def raw(text):
     """Returns a raw string representation of text"""
     new_string = ''
