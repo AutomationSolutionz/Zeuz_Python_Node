@@ -1547,37 +1547,5 @@ def Sequential_Actions(step_data):
 
 '===================== ===x=== Sequential Action Section Ends ===x=== ======================'
 
-if __name__ == '__main__':
-    '''dataset = [
-
-        [
-            ['/Documents/b/b/tt.py', 'path', '', False, False],
-            ['true', 'conditional action', '2', False, False],
-            ['false', 'conditional action', '3', False, False]
-        ],
-        [
-            ['/Documents/b/b/tt.py', 'path', '/Documents/b/b/testt.py', False, False],
-            ['rename', 'action', 'file', False, False]
-        ],
-        [
-            ['', 'path', '/Documents/b/b/tt.py', False, False],
-            ['create', 'action', 'file', False, False]
-        ]
-    ]'''
-    '''dataset=[
-        [
-
-            ['/Documents/books.zip', 'path', '/Documents/books', False, False],
-            ['unzip', 'action', 'file', False, False]
-        ]
-    ]'''
-    # dataset=[[['skip','action','',False, False]],[['empty    ', 'Action_____   ____', '', False, False]]]
-    # dataset = [[['skip', 'action', '', False, False]], [['empty', 'action', '', False, False]]]
-    # dataset = [[['empty    ', 'Action_____   ____', '', False, False]]]
-    # dataset = [[['skip', 'action', '', False, False]], [['C:\\Users\\User\\Pictures\\Camera Roll','path','C:\\Users\\User\\Pictures\\Camera Roll.zip', False, False],['zip', 'action', 'file', False, False]]]
-    # dataset = [ [['current documents', 'action', '', False, False]]]
-    dataset = [[['/Documents/Important/b/abc.py', 'path', '/Documents/b/abc.py', False, False],
-                ['copy', 'action', 'file', False, False]]]
-    Sequential_Actions(dataset)
 
 
