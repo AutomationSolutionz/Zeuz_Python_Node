@@ -248,7 +248,12 @@ def Action_Handler(action_step_data, action_name):
                 return "failed"
         elif (action_name == "step result"):
             result = Step_Result(action_step_data)
-            return result
+            if result in failed_tag_list: # Convert user specified pass/fail into standard result
+                return 'failed'
+            elif result in passed_tag_list:
+                return 'passed'
+            elif result in skipped_tag_list:
+                return 'skipped'
             #if result == "failed":
             #    return "failed"
         elif (action_name == "deselect all" or action_name == "select by visible text" or action_name == "deselect by visible text" or action_name == "select by value" or action_name == "deselect by value" or action_name =="select by index" or action_name == "deselect by index"):

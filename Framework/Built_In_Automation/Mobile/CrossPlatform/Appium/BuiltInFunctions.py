@@ -19,6 +19,7 @@ from Framework.Built_In_Automation.Shared_Resources import BuiltInFunctionShared
 
 passed_tag_list=['Pass','pass','PASS','PASSED','Passed','passed','true','TRUE','True','1','Success','success','SUCCESS',True]
 failed_tag_list=['Fail','fail','FAIL','Failed','failed','FAILED','false','False','FALSE','0',False]
+skipped_tag_list=['skip','SKIP','Skip','skipped','SKIPPED','Skipped']
 
 PATH = lambda p: os.path.abspath(
     os.path.join(os.path.dirname(__file__), p)
@@ -1844,6 +1845,8 @@ def Sequential_Actions_Appium(step_data):
                     result = Action_Handler_Appium(each,row[0]) # Pass data set, and action_name to action handler
                     if result == [] or result == "failed": # Check result of action handler
                         return "failed"
+                    elif result in skipped_tag_list:
+                        return "skipped"
                 
                 # If middle column = action, call action handler, but always return a pass
                 elif row[1]=="optional action":
@@ -1979,8 +1982,10 @@ def Action_Handler_Appium(action_step_data, action_name):
         elif action_name == "step result": # Result from step data the user wants to specify (passed/failed)
             if action_value in failed_tag_list: # Convert user specified pass/fail into standard result
                 result = 'failed'
-            else:
+            elif action_value in passed_tag_list:
                 result = 'passed'
+            elif action_value in skipped_tag_list:
+                result = 'skipped'
         elif action_name == "install": # Install and execute application
             result = install_application(action_value, related_value) # file location, activity_name(optional)
         elif action_name == "launch": # Launch program and get appium driver instance
@@ -2016,6 +2021,8 @@ def Action_Handler_Appium(action_step_data, action_name):
         # Check result of the above if() statement
         if result == "failed":
             return "failed"
+        elif result == 'skipped':
+            return "skipped"
 
         
     except Exception, e:
