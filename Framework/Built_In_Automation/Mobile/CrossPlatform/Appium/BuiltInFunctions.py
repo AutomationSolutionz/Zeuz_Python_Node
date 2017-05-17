@@ -6,14 +6,9 @@ import os, sys, time, inspect, json
 from Framework.Utilities import CommonUtil, FileUtilities
 from Framework.Built_In_Automation.Mobile.Android.adb_calls import adbOptions
 from appium.webdriver.common.touch_action import TouchAction
-#from Built_In_Automation.Mobile.CrossPlatform.Appium import clickinteraction as ci
-#from Built_In_Automation.Mobile.CrossPlatform.Appium import textinteraction as ti
-
-#from selenium import webdriver as webdriverSelenium
 from selenium.webdriver.support.ui import WebDriverWait
 from selenium.webdriver.support import expected_conditions as EC
 from selenium.webdriver.common.by import By
-from dropbox.files import Dimensions
 from Framework.Built_In_Automation.Shared_Resources import BuiltInFunctionSharedResources as Shared_Resources
 
 
@@ -276,12 +271,9 @@ def close_application():
         driver.close_app()
         CommonUtil.ExecLog(sModuleInfo,"Closed the app successfully",1)
         return "passed"
-    except Exception, e:
-        exc_type, exc_obj, exc_tb = sys.exc_info()        
-        fname = os.path.split(exc_tb.tb_frame.f_code.co_filename)[1]
-        Error_Detail = ((str(exc_type).replace("type ", "Error Type: ")) + ";" +  "Error Message: " + str(exc_obj) +";" + "File Name: " + fname + ";" + "Line: "+ str(exc_tb.tb_lineno))
-        CommonUtil.ExecLog(sModuleInfo, "Unable to close the driver. %s"%Error_Detail, 3)
-        return "failed"
+    except Exception:
+        errMsg = "Unable to close the driver."
+        return CommonUtil.Exception_Handler(sys.exc_info(),None,errMsg)
     
     
 def install_application(app_location, activity_name=''):
@@ -300,12 +292,9 @@ def install_application(app_location, activity_name=''):
 
         CommonUtil.ExecLog(sModuleInfo,"Installed and launched the app successfully.",1)
         return "passed"
-    except Exception, e:
-        exc_type, exc_obj, exc_tb = sys.exc_info()        
-        fname = os.path.split(exc_tb.tb_frame.f_code.co_filename)[1]
-        Error_Detail = ((str(exc_type).replace("type ", "Error Type: ")) + ";" +  "Error Message: " + str(exc_obj) +";" + "File Name: " + fname + ";" + "Line: "+ str(exc_tb.tb_lineno))
-        CommonUtil.ExecLog(sModuleInfo, "Unable to start WebDriver. %s"%Error_Detail, 3)
-        return "failed"
+    except Exception:
+        errMsg = "Unable to start WebDriver."
+        return CommonUtil.Exception_Handler(sys.exc_info(),None,errMsg)
 
 
 def wait(_time):
@@ -316,12 +305,9 @@ def wait(_time):
         time.sleep(_time) # Stop here the specified amount of time
         CommonUtil.ExecLog(sModuleInfo,"Waited successfully",1)
         return "passed"
-    except Exception, e:
-        exc_type, exc_obj, exc_tb = sys.exc_info()        
-        fname = os.path.split(exc_tb.tb_frame.f_code.co_filename)[1]
-        Error_Detail = ((str(exc_type).replace("type ", "Error Type: ")) + ";" +  "Error Message: " + str(exc_obj) +";" + "File Name: " + fname + ";" + "Line: "+ str(exc_tb.tb_lineno))
-        CommonUtil.ExecLog(sModuleInfo, "Unable to wait. %s"%Error_Detail, 3)
-        return "failed"
+    except Exception:
+        errMsg = "Unable to wait."
+        return CommonUtil.Exception_Handler(sys.exc_info(),None,errMsg)
 
     
 def uninstall_application(app_package):
@@ -332,23 +318,12 @@ def uninstall_application(app_package):
         CommonUtil.ExecLog(sModuleInfo,"Trying to remove app with package name %s..."%app_package,1)
         #if driver.is_app_installed(app_package):
             #CommonUtil.ExecLog(sModuleInfo,"App is installed. Now removing...",1)
-        try:
-            driver.remove_app(app_package)
-            CommonUtil.ExecLog(sModuleInfo,"App is removed successfully.",1)
-            return "passed"
-        except:
-            CommonUtil.ExecLog(sModuleInfo, "Unable to remove the app", 3)
-            return "failed"
-        """else:   
-            CommonUtil.ExecLog(sModuleInfo,"App is not found.",3)
-            return "failed" """
-        
-    except Exception, e:
-        exc_type, exc_obj, exc_tb = sys.exc_info()        
-        fname = os.path.split(exc_tb.tb_frame.f_code.co_filename)[1]
-        Error_Detail = ((str(exc_type).replace("type ", "Error Type: ")) + ";" +  "Error Message: " + str(exc_obj) +";" + "File Name: " + fname + ";" + "Line: "+ str(exc_tb.tb_lineno))
-        CommonUtil.ExecLog(sModuleInfo, "Unable to wait. %s"%Error_Detail, 3)
-        return "failed"
+        driver.remove_app(app_package)
+        CommonUtil.ExecLog(sModuleInfo,"App is removed successfully.",1)
+        return "passed"
+    except Exception:
+        errMsg = "Unable to uninstall"
+        return CommonUtil.Exception_Handler(sys.exc_info(),None,errMsg)
 
 
 #################################Generic functions###################################
@@ -365,13 +340,9 @@ def Get_Element(element_parameter, element_value, reference_parameter=False, ref
             return "failed"
         #element = Element_Validation(element)
         return element
-    except Exception, e:
-        exc_type, exc_obj, exc_tb = sys.exc_info()
-        fname = os.path.split(exc_tb.tb_frame.f_code.co_filename)[1]
-        Error_Detail = ((str(exc_type).replace("type ", "Error Type: ")) + ";" + "Error Message: " + str(
-            exc_obj) + ";" + "File Name: " + fname + ";" + "Line: " + str(exc_tb.tb_lineno))
-        CommonUtil.ExecLog(sModuleInfo, "Could not find your element.  Error: %s" % (Error_Detail), 3)
-        return "failed"
+    except Exception:
+        errMsg = "Could not find your element."
+        return CommonUtil.Exception_Handler(sys.exc_info(),None,errMsg)
 
 
 def Click_Element(element_parameter, element_value):
@@ -407,14 +378,9 @@ def Click_Element(element_parameter, element_value):
                 else:
                     CommonUtil.ExecLog(sModuleInfo, "Unable to click. The element is disabled.", 3)
                     return "failed"
-            except Exception, e:
-                CommonUtil.ExecLog(sModuleInfo, "Exception: %s" % e, 3)
-                exc_type, exc_obj, exc_tb = sys.exc_info()
-                fname = os.path.split(exc_tb.tb_frame.f_code.co_filename)[1]
-                Error_Detail = ((str(exc_type).replace("type ", "Error Type: ")) + ";" + "Error Message: " + str(
-                    exc_obj) + ";" + "File Name: " + fname + ";" + "Line: " + str(exc_tb.tb_lineno))
-                CommonUtil.ExecLog(sModuleInfo, "Unable to click on the element. %s" % Error_Detail, 3)
-                return "failed"
+            except Exception:
+                errMsg = "Unable to click on the element"
+                return CommonUtil.Exception_Handler(sys.exc_info(),None,errMsg)
 
         if result == "passed":
             CommonUtil.ExecLog(sModuleInfo, "Clicked on element successfully", 1)
@@ -432,14 +398,9 @@ def Click_Element(element_parameter, element_value):
         else:
             CommonUtil.ExecLog(sModuleInfo, "Unable to click. The element is disabled.", 3)
             return "failed" """
-    except Exception, e:
-        CommonUtil.ExecLog(sModuleInfo, "Exception: %s" % e, 3)
-        exc_type, exc_obj, exc_tb = sys.exc_info()
-        fname = os.path.split(exc_tb.tb_frame.f_code.co_filename)[1]
-        Error_Detail = ((str(exc_type).replace("type ", "Error Type: ")) + ";" + "Error Message: " + str(
-            exc_obj) + ";" + "File Name: " + fname + ";" + "Line: " + str(exc_tb.tb_lineno))
-        CommonUtil.ExecLog(sModuleInfo, "Unable to click on the element. %s" % Error_Detail, 3)
-        return "failed"
+    except Exception:
+        errMsg = "Unable to click on the element."
+        return CommonUtil.Exception_Handler(sys.exc_info(),None,errMsg)
 
 
 # Method to enter texts in a text box; step data passed on by the user
@@ -479,14 +440,9 @@ def Set_Text(element_parameter, element_value, text_value):
             CommonUtil.ExecLog(sModuleInfo, "Unable to enter text.", 3)
             return "failed"
 
-    except Exception, e:
-        CommonUtil.ExecLog(sModuleInfo, "Exception: %s" % e, 3)
-        exc_type, exc_obj, exc_tb = sys.exc_info()
-        fname = os.path.split(exc_tb.tb_frame.f_code.co_filename)[1]
-        Error_Detail = ((str(exc_type).replace("type ", "Error Type: ")) + ";" + "Error Message: " + str(
-            exc_obj) + ";" + "File Name: " + fname + ";" + "Line: " + str(exc_tb.tb_lineno))
-        CommonUtil.ExecLog(sModuleInfo, "Could not set text.  Error: %s" % (Error_Detail), 3)
-        return "failed"
+    except Exception:
+        errMsg = "Could not set text."
+        return CommonUtil.Exception_Handler(sys.exc_info(),None,errMsg)
 
 
 # Method to enter text in a text box and press enter to search of something
@@ -505,29 +461,24 @@ def Set_Text_Enter(element_parameter, element_value, text_value):
         return "passed"
         CommonUtil.ExecLog(sModuleInfo, "Entered and searched text successfully", 1)
 
-    except Exception, e:
-        CommonUtil.ExecLog(sModuleInfo, "Exception: %s" % e, 3)
-        exc_type, exc_obj, exc_tb = sys.exc_info()
-        fname = os.path.split(exc_tb.tb_frame.f_code.co_filename)[1]
-        Error_Detail = ((str(exc_type).replace("type ", "Error Type: ")) + ";" + "Error Message: " + str(
-            exc_obj) + ";" + "File Name: " + fname + ";" + "Line: " + str(exc_tb.tb_lineno))
-        CommonUtil.ExecLog(sModuleInfo, "Could not set text and search.  Error: %s" % (Error_Detail), 3)
-        return "failed"
+    except Exception:
+        errMsg = "Could not set text and search."
+        return CommonUtil.Exception_Handler(sys.exc_info(),None,errMsg)
 
 # Method to enter texts in a text box; step data passed on by the user
-def Enter_Text_In_Text_Box(step_data):
+def Enter_Text_In_Text_Box(data_set):
     # !!! Should be removed - can be performed with two sequential actions (text & click, element & ENTER key)
     sModuleInfo = inspect.stack()[0][3] + " : " + inspect.getmoduleinfo(__file__).name
     CommonUtil.ExecLog(sModuleInfo, "Inside Enter Text In Text Box function", 1)
     try:
         # If there are no two separate data-sets, or if the first data-set is not between 1 to 3 items, or if the second data-set doesn't have only 1 item
-        if ((len(step_data) != 1) or (1 < len(step_data[0]) >= 5)):  # or (len(step_data[1]) != 1)):
+        if ((len(data_set) != 1) or (1 < len(data_set[0]) >= 5)):  # or (len(step_data[1]) != 1)):
             CommonUtil.ExecLog(sModuleInfo,
                                "The information in the data-set(s) are incorrect. Please provide accurate data set(s) information.",
                                3)
             return "failed"
         else:
-            element_step_data = step_data[0][0:len(step_data[0]) - 1:1]
+            element_step_data = data_set[0][0:len(data_set[0]) - 1:1]
             returned_step_data_list = Validate_Step_Data(element_step_data)
             # returned_step_data_list = Validate_Step_Data(step_data[0])
             if ((returned_step_data_list == []) or (returned_step_data_list == "failed")):
@@ -537,7 +488,7 @@ def Enter_Text_In_Text_Box(step_data):
                     Element = Get_Element(returned_step_data_list[0], returned_step_data_list[1],
                                           returned_step_data_list[2], returned_step_data_list[3],
                                           returned_step_data_list[4])
-                    text_value = step_data[0][len(step_data[0]) - 1][2]
+                    text_value = data_set[0][len(data_set[0]) - 1][2]
                     # text_value = step[1][0][2]
                     # text_value=step_data[1][0][1]
                     Element.click()
@@ -548,24 +499,13 @@ def Enter_Text_In_Text_Box(step_data):
                     CommonUtil.ExecLog(sModuleInfo, "Successfully set the value of to text to: %s" % text_value,
                                        1)
                     return "passed"
-                except Exception, e:
-                    exc_type, exc_obj, exc_tb = sys.exc_info()
-                    fname = os.path.split(exc_tb.tb_frame.f_code.co_filename)[1]
-                    Error_Detail = (
-                    (str(exc_type).replace("type ", "Error Type: ")) + ";" + "Error Message: " + str(
-                        exc_obj) + ";" + "File Name: " + fname + ";" + "Line: " + str(exc_tb.tb_lineno))
-                    CommonUtil.ExecLog(sModuleInfo,
-                                       "Could not select/click your element.  Error: %s" % (Error_Detail), 3)
-                    return "failed"
+                except Exception:
+                    errMsg = "Could not select/click your element."
+                    return CommonUtil.Exception_Handler(sys.exc_info(),None,errMsg)
 
-    except Exception, e:
-        CommonUtil.ExecLog(sModuleInfo, "Exception: %s" % e, 3)
-        exc_type, exc_obj, exc_tb = sys.exc_info()
-        fname = os.path.split(exc_tb.tb_frame.f_code.co_filename)[1]
-        Error_Detail = ((str(exc_type).replace("type ", "Error Type: ")) + ";" + "Error Message: " + str(
-            exc_obj) + ";" + "File Name: " + fname + ";" + "Line: " + str(exc_tb.tb_lineno))
-        CommonUtil.ExecLog(sModuleInfo, "Could not find your element.  Error: %s" % (Error_Detail), 3)
-        return "failed"
+    except Exception:
+        errMsg = "Could not find your element."
+        return CommonUtil.Exception_Handler(sys.exc_info(),None,errMsg)
 
 
 
@@ -621,13 +561,9 @@ def Get_Single_Element(parameter, value, parent=False):
                 All_Elements == driver.find_element_by_xpath("//*[@%s='%s']"%(parameter,value))
 
         return All_Elements
-    except Exception, e:
-        exc_type, exc_obj, exc_tb = sys.exc_info()
-        fname = os.path.split(exc_tb.tb_frame.f_code.co_filename)[1]
-        Error_Detail = ((str(exc_type).replace("type ", "Error Type: ")) + ";" + "Error Message: " + str(
-            exc_obj) + ";" + "File Name: " + fname + ";" + "Line: " + str(exc_tb.tb_lineno))
-        CommonUtil.ExecLog(sModuleInfo, "Unable to get the element.  Error: %s" % (Error_Detail), 3)
-        return "failed"
+    except Exception:
+        errMsg = "Unable to get the element."
+        return CommonUtil.Exception_Handler(sys.exc_info(),None,errMsg)
 
 
 # Method to get the elements based on type - more methods may be added in the future
@@ -669,29 +605,25 @@ def Get_All_Elements(parameter, value, parent=False):
                 All_Elements == driver.find_elements_by_android_uiautomator('new UiSelector().description('+value+')')
 
         return All_Elements
-    except Exception, e:
-        exc_type, exc_obj, exc_tb = sys.exc_info()
-        fname = os.path.split(exc_tb.tb_frame.f_code.co_filename)[1]
-        Error_Detail = ((str(exc_type).replace("type ", "Error Type: ")) + ";" + "Error Message: " + str(
-            exc_obj) + ";" + "File Name: " + fname + ";" + "Line: " + str(exc_tb.tb_lineno))
-        CommonUtil.ExecLog(sModuleInfo, "Unable to get the element.  Error: %s" % (Error_Detail), 3)
-        return "failed"
+    except Exception:
+        errMsg = "Unable to get the element."
+        return CommonUtil.Exception_Handler(sys.exc_info(),None,errMsg)
 
 
-def Validate_Step_Data(step_data):
+def Validate_Step_Data(data_set):
     ''' Ensures step data is accurate, and returns only the pertinent values '''
     
     sModuleInfo = inspect.stack()[0][3] + " : " + inspect.getmoduleinfo(__file__).name
     CommonUtil.ExecLog(sModuleInfo, "Function: Validate_Step_Data", 1)
     try:    
-        if (len(step_data)==1): # One row in the data set
-            element_parameter = step_data[0][0] # Get Field (element object)
-            element_value = step_data[0][2] # Get element value
+        if (len(data_set)==1): # One row in the data set
+            element_parameter = data_set[0][0] # Get Field (element object)
+            element_value = data_set[0][2] # Get element value
             reference_parameter = False
             reference_value = False    
             reference_is_parent_or_child = False
-#         elif (len(step_data)==2): #??? Whys is this commented out ???
-#             for each in step_data:
+#         elif (len(data_set)==2): #??? Whys is this commented out ???
+#             for each in data_set:
 #                 if each[1]=="element parameter 1 of 2":
 #                     element_parameter = each[0]
 #                     element_value = each[2]
@@ -699,8 +631,8 @@ def Validate_Step_Data(step_data):
 #                     reference_parameter = each[0]
 #                     reference_value = each[2]
 #             reference_is_parent_or_child = False
-        elif (len(step_data)==3): # Three rows in the data set
-            for each in step_data: # For each row
+        elif (len(data_set)==3): # Three rows in the data set
+            for each in data_set: # For each row
                 if each[1]=="element parameter": # If Sub-Field is element parameter
                     element_parameter = each[0] # Get Field (element object)
                     element_value = each[2] # Get element value
@@ -714,12 +646,9 @@ def Validate_Step_Data(step_data):
             return "failed"
         validated_data = (element_parameter, element_value, reference_parameter, reference_value, reference_is_parent_or_child)
         return validated_data # Return data as tuple
-    except Exception, e:
-            exc_type, exc_obj, exc_tb = sys.exc_info()        
-            fname = os.path.split(exc_tb.tb_frame.f_code.co_filename)[1]
-            Error_Detail = ((str(exc_type).replace("type ", "Error Type: ")) + ";" +  "Error Message: " + str(exc_obj) +";" + "File Name: " + fname + ";" + "Line: "+ str(exc_tb.tb_lineno))
-            CommonUtil.ExecLog(sModuleInfo, "Could not find the new page element requested.  Error: %s"%(Error_Detail), 3)
-            return "failed"
+    except Exception:
+        errMsg = "Could not find the new page element requested."
+        return CommonUtil.Exception_Handler(sys.exc_info(),None,errMsg)
 
 
 def Element_Validation(All_Elements_Found):#, index):
@@ -767,24 +696,21 @@ def Element_Validation(All_Elements_Found):#, index):
             CommonUtil.ExecLog(sModuleInfo, "Could not find element by given parameters and values", 3)
             return "failed"
 
-    except Exception, e:
-        exc_type, exc_obj, exc_tb = sys.exc_info()
-        fname = os.path.split(exc_tb.tb_frame.f_code.co_filename)[1]
-        Error_Detail = ((str(exc_type).replace("type ", "Error Type: ")) + ";" +  "Error Message: " + str(exc_obj) +";" + "File Name: " + fname + ";" + "Line: "+ str(exc_tb.tb_lineno))
-        CommonUtil.ExecLog(sModuleInfo, "Unable to get the element.  Error: %s"%(Error_Detail), 3)
-        return "failed"
+    except Exception:
+        errMsg = "Unable to get the element."
+        return CommonUtil.Exception_Handler(sys.exc_info(),None,errMsg)
 
-def Sleep(step_data):
+def Sleep(data_set):
     sModuleInfo = inspect.stack()[0][3] + " : " + inspect.getmoduleinfo(__file__).name
     CommonUtil.ExecLog(sModuleInfo, "Function: Sleep", 1)
     try:
-        if ((len(step_data) != 1) or (1 < len(step_data[0]) >= 5)):
+        if ((len(data_set) != 1) or (1 < len(data_set[0]) >= 5)):
             CommonUtil.ExecLog(sModuleInfo,
                                    "The information in the data-set(s) are incorrect. Please provide accurate data set(s) information.",
                                    3)
             return "failed"
         else:
-            tuple = step_data[0][0]
+            tuple = data_set[0][0]
             seconds = int(tuple[2])
             CommonUtil.ExecLog(sModuleInfo, "Sleeping for %s seconds" % seconds, 1)
             time.sleep(seconds)
@@ -792,14 +718,6 @@ def Sleep(step_data):
 
     except Exception:
         return CommonUtil.Exception_Handler(sys.exc_info())
-
-def Exception_Info(sModuleInfo, errMsg):
-    exc_type, exc_obj, exc_tb = sys.exc_info()
-    fname = os.path.split(exc_tb.tb_frame.f_code.co_filename)[1]
-    Error_Detail = ((str(exc_type).replace("type ", "Error Type: ")) + ";" +  "Error Message: " + str(exc_obj) +";" + "File Name: " + fname + ";" + "Line: "+ str(exc_tb.tb_lineno))
-    CommonUtil.ExecLog(sModuleInfo, errMsg + ".  Error: %s"%(Error_Detail), 3)
-    return "failed"
-
 
 def Wait(time_to_wait):
     sModuleInfo = inspect.stack()[0][3] + " : " + inspect.getmoduleinfo(__file__).name
@@ -810,13 +728,9 @@ def Wait(time_to_wait):
         #time.sleep(float(time_to_wait))
         CommonUtil.ExecLog(sModuleInfo, "Waited successfully", 1)
         return "passed"
-    except Exception, e:
-        exc_type, exc_obj, exc_tb = sys.exc_info()
-        fname = os.path.split(exc_tb.tb_frame.f_code.co_filename)[1]
-        Error_Detail = ((str(exc_type).replace("type ", "Error Type: ")) + ";" + "Error Message: " + str(
-            exc_obj) + ";" + "File Name: " + fname + ";" + "Line: " + str(exc_tb.tb_lineno))
-        CommonUtil.ExecLog(sModuleInfo, "Unable to wait. %s" % Error_Detail, 3)
-        return "failed"
+    except Exception:
+        errMsg = "Unable to wait."
+        return CommonUtil.Exception_Handler(sys.exc_info(),None,errMsg)
 
 
 def Swipe(x_start, y_start, x_end, y_end, duration = 1000):
@@ -830,13 +744,9 @@ def Swipe(x_start, y_start, x_end, y_end, duration = 1000):
         driver.swipe(x_start, y_start, x_end, y_end, duration)
         CommonUtil.ExecLog(sModuleInfo, "Swiped the screen successfully", 1)
         return "passed"
-    except Exception, e:
-        exc_type, exc_obj, exc_tb = sys.exc_info()
-        fname = os.path.split(exc_tb.tb_frame.f_code.co_filename)[1]
-        Error_Detail = ((str(exc_type).replace("type ", "Error Type: ")) + ";" + "Error Message: " + str(
-            exc_obj) + ";" + "File Name: " + fname + ";" + "Line: " + str(exc_tb.tb_lineno))
-        CommonUtil.ExecLog(sModuleInfo, "Unable to swipe. %s" % Error_Detail, 3)
-        return "failed"
+    except Exception:
+        errMsg = "Unable to swipe."
+        return CommonUtil.Exception_Handler(sys.exc_info(),None,errMsg)
 
 def swipe_handler(action_value):
     ''' Swipe screen based on user input '''
@@ -994,37 +904,33 @@ def Tap(element_parameter, element_value):
         else:
             CommonUtil.ExecLog(sModuleInfo, "Unable to tap. The element is disabled.", 3)
             return "failed"
-    except Exception, e:
-        exc_type, exc_obj, exc_tb = sys.exc_info()
-        fname = os.path.split(exc_tb.tb_frame.f_code.co_filename)[1]
-        Error_Detail = ((str(exc_type).replace("type ", "Error Type: ")) + ";" + "Error Message: " + str(
-            exc_obj) + ";" + "File Name: " + fname + ";" + "Line: " + str(exc_tb.tb_lineno))
-        CommonUtil.ExecLog(sModuleInfo, "Unable to tap. %s" % Error_Detail, 3)
-        return "failed"
+    except Exception:
+        errMsg = "Unable to tap."
+        return CommonUtil.Exception_Handler(sys.exc_info(),None,errMsg)
 
 
 # Validating text from an element given information regarding the expected text
-def Validate_Text(step_data):
+def Validate_Text(data_set):
     sModuleInfo = inspect.stack()[0][3] + " : " + inspect.getmoduleinfo(__file__).name
     CommonUtil.ExecLog(sModuleInfo, "Function: Compare_Text_Data", 1)
     try:
-        if ((len(step_data) != 1) or (1 < len(step_data[0]) >= 5)):
+        if ((len(data_set) != 1) or (1 < len(data_set[0]) >= 5)):
             CommonUtil.ExecLog(sModuleInfo, "The information in the data-set(s) are incorrect. Please provide accurate data set(s) information.", 3)
             return "failed"
         else:
             dimension = driver.get_window_size('current')
             print dimension
             
-            for each in step_data[0]:
+            for each in data_set[0]:
                 if each[0] == "current_page":
                     try:
                         Element = Get_Element_Appium('tag', 'html')
                         break
-                    except Exception, e:
+                    except Exception:
                         errMsg = "Could not get element from the current page."
-                        Exception_Info(sModuleInfo, errMsg)
+                        return CommonUtil.Exception_Handler(sys.exc_info(),None,errMsg)
                 else:
-                    element_step_data = Get_Element_Step_Data_Appium(step_data)
+                    element_step_data = Get_Element_Step_Data_Appium(data_set)
                     returned_step_data_list = Validate_Step_Data(element_step_data)
                     if ((returned_step_data_list == []) or (returned_step_data_list == "failed")):
                         return "failed"
@@ -1032,11 +938,11 @@ def Validate_Text(step_data):
                         try:
                             Element = Get_Element_Appium(returned_step_data_list[0], returned_step_data_list[1], returned_step_data_list[2], returned_step_data_list[3], returned_step_data_list[4])
                             break
-                        except Exception, e:
-                            errMsg = "Could not get element based on the information provided."
-                            Exception_Info(sModuleInfo, errMsg)            
+                        except Exception:
+                            errMsg = "Could not get element based on the information provided.",
+                            return CommonUtil.Exception_Handler(sys.exc_info(),None,errMsg)
  
-            for each_step_data_item in step_data[0]:
+            for each_step_data_item in data_set[0]:
                 if each_step_data_item[1]=="action":
                     expected_text_data = each_step_data_item[2]
                     validation_type = each_step_data_item[0]
@@ -1074,26 +980,22 @@ def Validate_Text(step_data):
                 CommonUtil.ExecLog(sModuleInfo, "Incorrect validation type. Please check step data", 3)
                 return "failed"
 
-    except Exception, e:
-        exc_type, exc_obj, exc_tb = sys.exc_info()
-        fname = os.path.split(exc_tb.tb_frame.f_code.co_filename)[1]
-        Error_Detail = ((str(exc_type).replace("type ", "Error Type: ")) + ";" + "Error Message: " + str(
-            exc_obj) + ";" + "File Name: " + fname + ";" + "Line: " + str(exc_tb.tb_lineno))
-        CommonUtil.ExecLog(sModuleInfo, "Could not compare text as requested.  Error: %s" % (Error_Detail), 3)
-        return "failed"
+    except Exception:
+        errMsg = "Could not compare text as requested."
+        return CommonUtil.Exception_Handler(sys.exc_info(),None,errMsg)
 
 
 #Validating text from an element given information regarding the expected text
-def Save_Text(step_data, variable_name):
+def Save_Text(data_set, variable_name):
     sModuleInfo = inspect.stack()[0][3] + " : " + inspect.getmoduleinfo(__file__).name
     CommonUtil.ExecLog(sModuleInfo, "Function: Save Text", 1)
     try:
-        if ((1 < len(step_data[0]) >= 5)):
+        if ((1 < len(data_set[0]) >= 5)):
             CommonUtil.ExecLog(sModuleInfo, "The information in the data-set(s) are incorrect. Please provide accurate data set(s) information.",3)
             return "failed"
         else:
-            for each in step_data:
-                element_step_data = Get_Element_Step_Data_Appium(step_data)
+            for each in data_set:
+                element_step_data = Get_Element_Step_Data_Appium(data_set)
                 returned_step_data_list = Validate_Step_Data(element_step_data)
                 if ((returned_step_data_list == []) or (returned_step_data_list == "failed")):
                     return "failed"
@@ -1124,15 +1026,15 @@ def Save_Text(step_data, variable_name):
 
 
 #Validating text from an element given information regarding the expected text
-def Compare_Variables(step_data):
+def Compare_Variables(data_set):
     sModuleInfo = inspect.stack()[0][3] + " : " + inspect.getmoduleinfo(__file__).name
     CommonUtil.ExecLog(sModuleInfo, "Function: Compare Variables", 1)
     try:
-        element_step_data = Get_Element_Step_Data_Appium([step_data])
+        element_step_data = Get_Element_Step_Data_Appium([data_set])
         if ((element_step_data == []) or (element_step_data == "failed")):
             return "failed"
         else:
-            Shared_Resources.Compare_Variables([step_data])
+            Shared_Resources.Compare_Variables([data_set])
     except Exception:
         return CommonUtil.Exception_Handler(sys.exc_info())
 
@@ -1152,7 +1054,7 @@ def read_screen_heirarchy():
             return data
         else:
             return False
-    except:
+    except Exception:
         CommonUtil.ExecLog(sModuleInfo,"Read screen heirarchy unsuccessfully",3)
         return False
 
@@ -1165,9 +1067,9 @@ def tap_location(positions):
         driver.tap(positions) # Tap the location (must be in list format)
         CommonUtil.ExecLog(sModuleInfo,"Tapped on location successfully",1)
         return 'passed'
-    except:
-        CommonUtil.ExecLog(sModuleInfo,"Tapped on location unsuccessfully",3)
-        return 'failed'
+    except Exception:
+        errMsg = "Tapped on location unsuccessfully"
+        return CommonUtil.Exception_Handler(sys.exc_info(),None,errMsg)
     
 def get_element_location_by_id(_id):
     ''' Find and return an element's x,y coordinates '''
@@ -1181,9 +1083,9 @@ def get_element_location_by_id(_id):
         positions.append((location['x'], location['y'])) # Put them on an array - Needs to be in this format for dirver.tap()
         CommonUtil.ExecLog(sModuleInfo,"Retreived location successfully",1)
         return positions # Return array
-    except:
-        CommonUtil.ExecLog(sModuleInfo,"Retreived location unsuccessfully",3)
-        return 'failed'
+    except Exception:
+        errMsg = "Retreived location unsuccessfully"
+        return CommonUtil.Exception_Handler(sys.exc_info(),None,errMsg)
         
 
 def get_window_size():
@@ -1195,27 +1097,20 @@ def get_window_size():
     try:
         return driver.get_window_size() # Get window resolution in dictionary
         CommonUtil.ExecLog(sModuleInfo,"Read window size successfully",1)
-    except:
-        CommonUtil.ExecLog(sModuleInfo,"Read window size unsuccessfully",1)
-        return 'failed'
+    except Exception:
+        errMsg = "Read window size unsuccessfully"
+        return CommonUtil.Exception_Handler(sys.exc_info(),None,errMsg)
     
     
-#location
-
-
-
-
 def locate_element_by_id(driver, _id):
     sModuleInfo = inspect.stack()[0][3] + " : " + inspect.getmoduleinfo(__file__).name
     try:
         CommonUtil.ExecLog(sModuleInfo,"Trying to locate element by id: %s"%_id,1)
         elem = driver.find_element_by_id(_id)
         return elem
-    except Exception, e:
-        exc_type, exc_obj, exc_tb = sys.exc_info()        
-        fname = os.path.split(exc_tb.tb_frame.f_code.co_filename)[1]
-        Error_Detail = ((str(exc_type).replace("type ", "Error Type: ")) + ";" +  "Error Message: " + str(exc_obj) +";" + "File Name: " + fname + ";" + "Line: "+ str(exc_tb.tb_lineno))
-        CommonUtil.ExecLog(sModuleInfo, "Unable to locate the element. %s"%Error_Detail, 3)
+    except Exception:
+        errMsg = "Unable to locate the element."
+        return CommonUtil.Exception_Handler(sys.exc_info(),None,errMsg)
 
 def locate_elements_by_id(driver, _id):
     sModuleInfo = inspect.stack()[0][3] + " : " + inspect.getmoduleinfo(__file__).name
@@ -1223,11 +1118,9 @@ def locate_elements_by_id(driver, _id):
         CommonUtil.ExecLog(sModuleInfo,"Trying to locate elements by id: %s"%_id,1)
         elems = driver.find_elements_by_id(_id)
         return elems
-    except Exception, e:
-        exc_type, exc_obj, exc_tb = sys.exc_info()        
-        fname = os.path.split(exc_tb.tb_frame.f_code.co_filename)[1]
-        Error_Detail = ((str(exc_type).replace("type ", "Error Type: ")) + ";" +  "Error Message: " + str(exc_obj) +";" + "File Name: " + fname + ";" + "Line: "+ str(exc_tb.tb_lineno))
-        CommonUtil.ExecLog(sModuleInfo, "Unable to locate elements. %s"%Error_Detail, 3)
+    except Exception:
+        errMsg = "Unable to locate elements."
+        return CommonUtil.Exception_Handler(sys.exc_info(),None,errMsg)
 
     
 def locate_element_by_name(driver, _name):
@@ -1236,11 +1129,9 @@ def locate_element_by_name(driver, _name):
         CommonUtil.ExecLog(sModuleInfo,"Trying to locate element by name: %s"%_name,1)
         elem = driver.find_element_by_name(_name)
         return elem
-    except Exception, e:
-        exc_type, exc_obj, exc_tb = sys.exc_info()        
-        fname = os.path.split(exc_tb.tb_frame.f_code.co_filename)[1]
-        Error_Detail = ((str(exc_type).replace("type ", "Error Type: ")) + ";" +  "Error Message: " + str(exc_obj) +";" + "File Name: " + fname + ";" + "Line: "+ str(exc_tb.tb_lineno))
-        CommonUtil.ExecLog(sModuleInfo, "Unable to locate the element. %s"%Error_Detail, 3)
+    except Exception:
+        errMsg = "Unable to locate the element."
+        return CommonUtil.Exception_Handler(sys.exc_info(),None,errMsg)
     
     
 def locate_element_by_class_name(driver, _class):
@@ -1249,11 +1140,9 @@ def locate_element_by_class_name(driver, _class):
         CommonUtil.ExecLog(sModuleInfo,"Trying to locate element by class: %s"%_class,1)
         elem = driver.find_element_by_class_name(_class)
         return elem
-    except Exception, e:
-        exc_type, exc_obj, exc_tb = sys.exc_info()        
-        fname = os.path.split(exc_tb.tb_frame.f_code.co_filename)[1]
-        Error_Detail = ((str(exc_type).replace("type ", "Error Type: ")) + ";" +  "Error Message: " + str(exc_obj) +";" + "File Name: " + fname + ";" + "Line: "+ str(exc_tb.tb_lineno))
-        CommonUtil.ExecLog(sModuleInfo, "Unable to locate the element. %s"%Error_Detail, 3)
+    except Exception:
+        errMsg = "Unable to locate the element."
+        return CommonUtil.Exception_Handler(sys.exc_info(),None,errMsg)
     
     
 def locate_element_by_xpath(driver, _classpath):
@@ -1262,11 +1151,9 @@ def locate_element_by_xpath(driver, _classpath):
         CommonUtil.ExecLog(sModuleInfo,"Trying to locate element by xpath: %s"%_classpath,1)
         elem = driver.find_element_by_xpath(_classpath)
         return elem
-    except Exception, e:
-        exc_type, exc_obj, exc_tb = sys.exc_info()        
-        fname = os.path.split(exc_tb.tb_frame.f_code.co_filename)[1]
-        Error_Detail = ((str(exc_type).replace("type ", "Error Type: ")) + ";" +  "Error Message: " + str(exc_obj) +";" + "File Name: " + fname + ";" + "Line: "+ str(exc_tb.tb_lineno))
-        CommonUtil.ExecLog(sModuleInfo, "Unable to locate the element. %s"%Error_Detail, 3)
+    except Exception:
+        errMsg = "Unable to locate the element."
+        return CommonUtil.Exception_Handler(sys.exc_info(),None,errMsg)
     
 def locate_element_by_accessibility_id(driver, _id):
     sModuleInfo = inspect.stack()[0][3] + " : " + inspect.getmoduleinfo(__file__).name
@@ -1274,11 +1161,9 @@ def locate_element_by_accessibility_id(driver, _id):
         CommonUtil.ExecLog(sModuleInfo,"Trying to locate element by accessibility id: %s"%_id,1)
         elem = driver.find_element_by_accessibility_id(_id)
         return elem
-    except Exception, e:
-        exc_type, exc_obj, exc_tb = sys.exc_info()        
-        fname = os.path.split(exc_tb.tb_frame.f_code.co_filename)[1]
-        Error_Detail = ((str(exc_type).replace("type ", "Error Type: ")) + ";" +  "Error Message: " + str(exc_obj) +";" + "File Name: " + fname + ";" + "Line: "+ str(exc_tb.tb_lineno))
-        CommonUtil.ExecLog(sModuleInfo, "Unable to locate the element. %s"%Error_Detail, 3)
+    except Exception:
+        errMsg = "Unable to locate the element."
+        return CommonUtil.Exception_Handler(sys.exc_info(),None,errMsg)
 
 
 def locate_element_by_android_uiautomator_text(driver, _text):
@@ -1287,11 +1172,9 @@ def locate_element_by_android_uiautomator_text(driver, _text):
         CommonUtil.ExecLog(sModuleInfo,"Trying to locate element by android uiautomator text: %s"%_text,1)
         elem = driver.find_element_by_android_uiautomator('new UiSelector().text('+_text+')')
         return elem
-    except Exception, e:
-        exc_type, exc_obj, exc_tb = sys.exc_info()        
-        fname = os.path.split(exc_tb.tb_frame.f_code.co_filename)[1]
-        Error_Detail = ((str(exc_type).replace("type ", "Error Type: ")) + ";" +  "Error Message: " + str(exc_obj) +";" + "File Name: " + fname + ";" + "Line: "+ str(exc_tb.tb_lineno))
-        CommonUtil.ExecLog(sModuleInfo, "Unable to locate the element. %s"%Error_Detail, 3)
+    except Exception:
+        errMsg = "Unable to locate the element."
+        return CommonUtil.Exception_Handler(sys.exc_info(),None,errMsg)
 
 
 def locate_element_by_android_uiautomator_description(driver, _description):
@@ -1300,11 +1183,9 @@ def locate_element_by_android_uiautomator_description(driver, _description):
         CommonUtil.ExecLog(sModuleInfo,"Trying to locate element by android uiautomator description: %s"%_description,1)
         elem = driver.find_element_by_android_uiautomator('new UiSelector().description('+_description+')')
         return elem
-    except Exception, e:
-        exc_type, exc_obj, exc_tb = sys.exc_info()        
-        fname = os.path.split(exc_tb.tb_frame.f_code.co_filename)[1]
-        Error_Detail = ((str(exc_type).replace("type ", "Error Type: ")) + ";" +  "Error Message: " + str(exc_obj) +";" + "File Name: " + fname + ";" + "Line: "+ str(exc_tb.tb_lineno))
-        CommonUtil.ExecLog(sModuleInfo, "Unable to locate the element. %s"%Error_Detail, 3)
+    except Exception:
+        errMsg = "Unable to locate the element."
+        return CommonUtil.Exception_Handler(sys.exc_info(),None,errMsg)
 
 
 def locate_element_by_ios_uiautomation(driver, _description):
@@ -1313,17 +1194,9 @@ def locate_element_by_ios_uiautomation(driver, _description):
         CommonUtil.ExecLog(sModuleInfo,"Trying to locate element by ios uiautomatoion: %s"%_description,1)
         elem = driver.find_element_by_ios_uiautomation('.elements()[0]')
         return elem
-    except Exception, e:
-        exc_type, exc_obj, exc_tb = sys.exc_info()
-        fname = os.path.split(exc_tb.tb_frame.f_code.co_filename)[1]
-        Error_Detail = ((str(exc_type).replace("type ", "Error Type: ")) + ";" +  "Error Message: " + str(exc_obj) +";" + "File Name: " + fname + ";" + "Line: "+ str(exc_tb.tb_lineno))
-        CommonUtil.ExecLog(sModuleInfo, "Unable to locate the element. %s"%Error_Detail, 3)
-
-
-
-
-    
-#Click
+    except Exception:
+        errMsg = "Unable to locate the element."
+        return CommonUtil.Exception_Handler(sys.exc_info(),None,errMsg)
 
     
 def click_element_by_id(driver, _id):
@@ -1338,13 +1211,9 @@ def click_element_by_id(driver, _id):
         else:
             CommonUtil.ExecLog(sModuleInfo,"Unable to click. The element is disabled.",3)
             return "failed"
-    except Exception, e:
-        CommonUtil.ExecLog(sModuleInfo, "Exception: %s" % e, 3)
-        exc_type, exc_obj, exc_tb = sys.exc_info()        
-        fname = os.path.split(exc_tb.tb_frame.f_code.co_filename)[1]
-        Error_Detail = ((str(exc_type).replace("type ", "Error Type: ")) + ";" +  "Error Message: " + str(exc_obj) +";" + "File Name: " + fname + ";" + "Line: "+ str(exc_tb.tb_lineno))
-        CommonUtil.ExecLog(sModuleInfo, "Unable to click on the element. %s"%Error_Detail, 3)
-        return "failed"
+    except Exception:
+        errMsg = "Unable to click on the element."
+        return CommonUtil.Exception_Handler(sys.exc_info(),None,errMsg)
     
 def click_element_by_name(driver, _name):
     sModuleInfo = inspect.stack()[0][3] + " : " + inspect.getmoduleinfo(__file__).name
@@ -1358,13 +1227,9 @@ def click_element_by_name(driver, _name):
         else:
             CommonUtil.ExecLog(sModuleInfo,"Unable to click. The element is disabled.",3)
             return "failed"
-    except Exception, e:
-        CommonUtil.ExecLog(sModuleInfo, "Exception: %s" % e, 3)
-        exc_type, exc_obj, exc_tb = sys.exc_info()        
-        fname = os.path.split(exc_tb.tb_frame.f_code.co_filename)[1]
-        Error_Detail = ((str(exc_type).replace("type ", "Error Type: ")) + ";" +  "Error Message: " + str(exc_obj) +";" + "File Name: " + fname + ";" + "Line: "+ str(exc_tb.tb_lineno))
-        CommonUtil.ExecLog(sModuleInfo, "Unable to click on the element. %s"%Error_Detail, 3)
-        return "failed"
+    except Exception:
+        errMsg = "Unable to click on the element."
+        return CommonUtil.Exception_Handler(sys.exc_info(),None,errMsg)
     
 def click_element_by_class_name(driver, _class):
     sModuleInfo = inspect.stack()[0][3] + " : " + inspect.getmoduleinfo(__file__).name
@@ -1378,13 +1243,9 @@ def click_element_by_class_name(driver, _class):
         else:
             CommonUtil.ExecLog(sModuleInfo,"Unable to click. The element is disabled.",3)
             return "failed"
-    except Exception, e:
-        CommonUtil.ExecLog(sModuleInfo, "Exception: %s" % e, 3)
-        exc_type, exc_obj, exc_tb = sys.exc_info()        
-        fname = os.path.split(exc_tb.tb_frame.f_code.co_filename)[1]
-        Error_Detail = ((str(exc_type).replace("type ", "Error Type: ")) + ";" +  "Error Message: " + str(exc_obj) +";" + "File Name: " + fname + ";" + "Line: "+ str(exc_tb.tb_lineno))
-        CommonUtil.ExecLog(sModuleInfo, "Unable to click on the element. %s"%Error_Detail, 3)
-        return "failed"
+    except Exception:
+        errMsg = "Unable to click on the element."
+        return CommonUtil.Exception_Handler(sys.exc_info(),None,errMsg)
     
 def click_element_by_xpath(driver, _classpath):
     sModuleInfo = inspect.stack()[0][3] + " : " + inspect.getmoduleinfo(__file__).name
@@ -1398,13 +1259,9 @@ def click_element_by_xpath(driver, _classpath):
         else:
             CommonUtil.ExecLog(sModuleInfo,"Unable to click. The element is disabled.",3)
             return "failed"
-    except Exception, e:
-        CommonUtil.ExecLog(sModuleInfo, "Exception: %s" % e, 3)
-        exc_type, exc_obj, exc_tb = sys.exc_info()        
-        fname = os.path.split(exc_tb.tb_frame.f_code.co_filename)[1]
-        Error_Detail = ((str(exc_type).replace("type ", "Error Type: ")) + ";" +  "Error Message: " + str(exc_obj) +";" + "File Name: " + fname + ";" + "Line: "+ str(exc_tb.tb_lineno))
-        CommonUtil.ExecLog(sModuleInfo, "Unable to click on the element. %s"%Error_Detail, 3)
-        return "failed"
+    except Exception:
+        errMsg = "Unable to click on the element."
+        return CommonUtil.Exception_Handler(sys.exc_info(),None,errMsg)
     
 def click_element_by_accessibility_id(driver, _id):
     sModuleInfo = inspect.stack()[0][3] + " : " + inspect.getmoduleinfo(__file__).name
@@ -1418,12 +1275,9 @@ def click_element_by_accessibility_id(driver, _id):
         else:
             CommonUtil.ExecLog(sModuleInfo,"Unable to click. The element is disabled.",3)
             return "failed"
-    except Exception, e:
-        exc_type, exc_obj, exc_tb = sys.exc_info()        
-        fname = os.path.split(exc_tb.tb_frame.f_code.co_filename)[1]
-        Error_Detail = ((str(exc_type).replace("type ", "Error Type: ")) + ";" +  "Error Message: " + str(exc_obj) +";" + "File Name: " + fname + ";" + "Line: "+ str(exc_tb.tb_lineno))
-        CommonUtil.ExecLog(sModuleInfo, "Unable to click on the element. %s"%Error_Detail, 3)
-        return "failed"
+    except Exception:
+        errMsg = "Unable to click on the element."
+        return CommonUtil.Exception_Handler(sys.exc_info(),None,errMsg)
     
 def click_element_by_android_uiautomator_text(driver, _text):
     sModuleInfo = inspect.stack()[0][3] + " : " + inspect.getmoduleinfo(__file__).name
@@ -1437,12 +1291,9 @@ def click_element_by_android_uiautomator_text(driver, _text):
         else:
             CommonUtil.ExecLog(sModuleInfo,"Unable to click. The element is disabled.",3)
             return "failed"
-    except Exception, e:
-        exc_type, exc_obj, exc_tb = sys.exc_info()        
-        fname = os.path.split(exc_tb.tb_frame.f_code.co_filename)[1]
-        Error_Detail = ((str(exc_type).replace("type ", "Error Type: ")) + ";" +  "Error Message: " + str(exc_obj) +";" + "File Name: " + fname + ";" + "Line: "+ str(exc_tb.tb_lineno))
-        CommonUtil.ExecLog(sModuleInfo, "Unable to click on the element. %s"%Error_Detail, 3)
-        return "failed"
+    except Exception:
+        errMsg = "Unable to click on the element."
+        return CommonUtil.Exception_Handler(sys.exc_info(),None,errMsg)
     
 def click_element_by_android_uiautomator_description(driver, _description):
     sModuleInfo = inspect.stack()[0][3] + " : " + inspect.getmoduleinfo(__file__).name
@@ -1456,12 +1307,9 @@ def click_element_by_android_uiautomator_description(driver, _description):
         else:
             CommonUtil.ExecLog(sModuleInfo,"Unable to click. The element is disabled.",3)
             return "failed"
-    except Exception, e:
-        exc_type, exc_obj, exc_tb = sys.exc_info()        
-        fname = os.path.split(exc_tb.tb_frame.f_code.co_filename)[1]
-        Error_Detail = ((str(exc_type).replace("type ", "Error Type: ")) + ";" +  "Error Message: " + str(exc_obj) +";" + "File Name: " + fname + ";" + "Line: "+ str(exc_tb.tb_lineno))
-        CommonUtil.ExecLog(sModuleInfo, "Unable to click on the element. %s"%Error_Detail, 3)
-        return "failed"
+    except Exception:
+        errMsg = "Unable to click on the element."
+        return CommonUtil.Exception_Handler(sys.exc_info(),None,errMsg)
 
 
 def click_element_by_ios_uiautomation(driver, _description):
@@ -1476,14 +1324,9 @@ def click_element_by_ios_uiautomation(driver, _description):
         else:
             CommonUtil.ExecLog(sModuleInfo,"Unable to click. The element is disabled.",3)
             return "failed"
-    except Exception, e:
-        exc_type, exc_obj, exc_tb = sys.exc_info()
-        fname = os.path.split(exc_tb.tb_frame.f_code.co_filename)[1]
-        Error_Detail = ((str(exc_type).replace("type ", "Error Type: ")) + ";" +  "Error Message: " + str(exc_obj) +";" + "File Name: " + fname + ";" + "Line: "+ str(exc_tb.tb_lineno))
-        CommonUtil.ExecLog(sModuleInfo, "Unable to click on the element. %s"%Error_Detail, 3)
-        return "failed"
-
-#text
+    except Exception:
+        errMsg = "Unable to click on the element."
+        return CommonUtil.Exception_Handler(sys.exc_info(),None,errMsg)
 
 
 
@@ -1506,13 +1349,9 @@ def set_text_by_id(driver, _id, text):
             return "failed"
         #driver.set_value(elem, text)
 
-    except Exception, e:
-        CommonUtil.ExecLog(sModuleInfo, "Exception: %s" % e, 3)
-        exc_type, exc_obj, exc_tb = sys.exc_info()        
-        fname = os.path.split(exc_tb.tb_frame.f_code.co_filename)[1]
-        Error_Detail = ((str(exc_type).replace("type ", "Error Type: ")) + ";" +  "Error Message: " + str(exc_obj) +";" + "File Name: " + fname + ";" + "Line: "+ str(exc_tb.tb_lineno))
-        CommonUtil.ExecLog(sModuleInfo, "Unable to set text on the element. %s"%Error_Detail, 3)
-        return "failed"
+    except Exception:
+        errMsg = "Unable to set text on the element."
+        return CommonUtil.Exception_Handler(sys.exc_info(),None,errMsg)
 
 
 def set_text_by_name(driver, _name, text):
@@ -1530,13 +1369,9 @@ def set_text_by_name(driver, _name, text):
             CommonUtil.ExecLog(sModuleInfo, "Unable to set text. The element is hidden.", 3)
             return "failed"
 
-    except Exception, e:
-        CommonUtil.ExecLog(sModuleInfo, "Exception: %s" % e, 3)
-        exc_type, exc_obj, exc_tb = sys.exc_info()        
-        fname = os.path.split(exc_tb.tb_frame.f_code.co_filename)[1]
-        Error_Detail = ((str(exc_type).replace("type ", "Error Type: ")) + ";" +  "Error Message: " + str(exc_obj) +";" + "File Name: " + fname + ";" + "Line: "+ str(exc_tb.tb_lineno))
-        CommonUtil.ExecLog(sModuleInfo, "Unable to set text on the element. %s"%Error_Detail, 3)
-        return "failed"
+    except Exception:
+        errMsg = "Unable to set text on the element."
+        return CommonUtil.Exception_Handler(sys.exc_info(),None,errMsg)
 
 
 def set_text_by_class_name(driver, _class, text):
@@ -1554,13 +1389,9 @@ def set_text_by_class_name(driver, _class, text):
             CommonUtil.ExecLog(sModuleInfo, "Unable to set text. The element is hidden.", 3)
             return "failed"
 
-    except Exception, e:
-        CommonUtil.ExecLog(sModuleInfo, "Exception: %s" % e, 3)
-        exc_type, exc_obj, exc_tb = sys.exc_info()        
-        fname = os.path.split(exc_tb.tb_frame.f_code.co_filename)[1]
-        Error_Detail = ((str(exc_type).replace("type ", "Error Type: ")) + ";" +  "Error Message: " + str(exc_obj) +";" + "File Name: " + fname + ";" + "Line: "+ str(exc_tb.tb_lineno))
-        CommonUtil.ExecLog(sModuleInfo, "Unable to set text on the element. %s"%Error_Detail, 3)
-        return "failed"
+    except Exception:
+        errMsg = "Unable to set text on the element."
+        return CommonUtil.Exception_Handler(sys.exc_info(),None,errMsg)
 
 
 def set_text_by_xpath(driver, _classpath, text):
@@ -1577,13 +1408,9 @@ def set_text_by_xpath(driver, _classpath, text):
         else:
             CommonUtil.ExecLog(sModuleInfo, "Unable to set text. The element is hidden.", 3)
             return "failed"
-    except Exception, e:
-        CommonUtil.ExecLog(sModuleInfo, "Exception: %s" % e, 3)
-        exc_type, exc_obj, exc_tb = sys.exc_info()        
-        fname = os.path.split(exc_tb.tb_frame.f_code.co_filename)[1]
-        Error_Detail = ((str(exc_type).replace("type ", "Error Type: ")) + ";" +  "Error Message: " + str(exc_obj) +";" + "File Name: " + fname + ";" + "Line: "+ str(exc_tb.tb_lineno))
-        CommonUtil.ExecLog(sModuleInfo, "Unable to set text on the element. %s"%Error_Detail, 3)
-        return "failed"
+    except Exception:
+        errMsg = "Unable to set text on the element."
+        return CommonUtil.Exception_Handler(sys.exc_info(),None,errMsg)
 
 
 def set_text_by_accessibility_id(driver, _id, text):
@@ -1600,13 +1427,9 @@ def set_text_by_accessibility_id(driver, _id, text):
         else:
             CommonUtil.ExecLog(sModuleInfo, "Unable to set text. The element is hidden.", 3)
             return "failed"
-    except Exception, e:
-        exc_type, exc_obj, exc_tb = sys.exc_info()
-        fname = os.path.split(exc_tb.tb_frame.f_code.co_filename)[1]
-        Error_Detail = ((str(exc_type).replace("type ", "Error Type: ")) + ";" + "Error Message: " + str(
-            exc_obj) + ";" + "File Name: " + fname + ";" + "Line: " + str(exc_tb.tb_lineno))
-        CommonUtil.ExecLog(sModuleInfo, "Unable to set text on the element. %s" % Error_Detail, 3)
-        return "failed"
+    except Exception:
+        errMsg = "Unable to set text on the element."
+        return CommonUtil.Exception_Handler(sys.exc_info(),None,errMsg)
 
 
 def set_text_by_android_uiautomator_text(driver, _text, text_value):
@@ -1623,13 +1446,9 @@ def set_text_by_android_uiautomator_text(driver, _text, text_value):
         else:
             CommonUtil.ExecLog(sModuleInfo, "Unable to set text. The element is hidden.", 3)
             return "failed"
-    except Exception, e:
-        exc_type, exc_obj, exc_tb = sys.exc_info()
-        fname = os.path.split(exc_tb.tb_frame.f_code.co_filename)[1]
-        Error_Detail = ((str(exc_type).replace("type ", "Error Type: ")) + ";" + "Error Message: " + str(
-            exc_obj) + ";" + "File Name: " + fname + ";" + "Line: " + str(exc_tb.tb_lineno))
-        CommonUtil.ExecLog(sModuleInfo, "Unable to click on the element. %s" % Error_Detail, 3)
-        return "failed"
+    except Exception:
+        errMsg = "Unable to set text on the element."
+        return CommonUtil.Exception_Handler(sys.exc_info(),None,errMsg)
 
 
 def set_text_by_android_uiautomator_description(driver, _description, text):
@@ -1647,13 +1466,9 @@ def set_text_by_android_uiautomator_description(driver, _description, text):
         else:
             CommonUtil.ExecLog(sModuleInfo, "Unable to set text. The element is hidden.", 3)
             return "failed"
-    except Exception, e:
-        exc_type, exc_obj, exc_tb = sys.exc_info()
-        fname = os.path.split(exc_tb.tb_frame.f_code.co_filename)[1]
-        Error_Detail = ((str(exc_type).replace("type ", "Error Type: ")) + ";" + "Error Message: " + str(
-            exc_obj) + ";" + "File Name: " + fname + ";" + "Line: " + str(exc_tb.tb_lineno))
-        CommonUtil.ExecLog(sModuleInfo, "Unable to click on the element. %s" % Error_Detail, 3)
-        return "failed"
+    except Exception:
+        errMsg = "Unable to set text on the element."
+        return CommonUtil.Exception_Handler(sys.exc_info(),None,errMsg)
 
 
 def set_text_by_ios_uiautomation(driver, _description, text):
@@ -1671,13 +1486,9 @@ def set_text_by_ios_uiautomation(driver, _description, text):
         else:
             CommonUtil.ExecLog(sModuleInfo, "Unable to set text. The element is hidden.", 3)
             return "failed"
-    except Exception, e:
-        exc_type, exc_obj, exc_tb = sys.exc_info()
-        fname = os.path.split(exc_tb.tb_frame.f_code.co_filename)[1]
-        Error_Detail = ((str(exc_type).replace("type ", "Error Type: ")) + ";" + "Error Message: " + str(
-            exc_obj) + ";" + "File Name: " + fname + ";" + "Line: " + str(exc_tb.tb_lineno))
-        CommonUtil.ExecLog(sModuleInfo, "Unable to click on the element. %s" % Error_Detail, 3)
-        return "failed"
+    except Exception:
+        errMsg = "Unable to set text on the element."
+        return CommonUtil.Exception_Handler(sys.exc_info(),None,errMsg)
 
 """=======================Riasat======================="""
 '============================= Get Elements Section Begins =============================='    
@@ -1742,12 +1553,9 @@ def Get_Element_Appium(element_parameter,element_value,reference_parameter=False
             result = Element_Validation(All_Elements_Found)#, index)
             return result
     
-    except Exception, e:
-        exc_type, exc_obj, exc_tb = sys.exc_info()        
-        fname = os.path.split(exc_tb.tb_frame.f_code.co_filename)[1]
-        Error_Detail = ((str(exc_type).replace("type ", "Error Type: ")) + ";" +  "Error Message: " + str(exc_obj) +";" + "File Name: " + fname + ";" + "Line: "+ str(exc_tb.tb_lineno))
-        CommonUtil.ExecLog(sModuleInfo, "Could not find your element.  Error: %s"%(Error_Detail), 3)
-        return "failed"       
+    except Exception:
+        errMsg = "Could not find your element"
+        return CommonUtil.Exception_Handler(sys.exc_info(),None,errMsg)
 
 
 #Method to get the elements based on type - more methods may be added in the future
@@ -1792,25 +1600,22 @@ def Get_All_Elements_Appium(parameter,value,parent=False):
                 All_Elements = WebDriverWait(parent, WebDriver_Wait).until(lambda driver: driver.find_elements_by_xpath("//*[@%s='%s']" %(parameter,value)))    
         
         return All_Elements
-    except Exception, e:
-        exc_type, exc_obj, exc_tb = sys.exc_info()        
-        fname = os.path.split(exc_tb.tb_frame.f_code.co_filename)[1]
-        Error_Detail = ((str(exc_type).replace("type ", "Error Type: ")) + ";" +  "Error Message: " + str(exc_obj) +";" + "File Name: " + fname + ";" + "Line: "+ str(exc_tb.tb_lineno))
-        CommonUtil.ExecLog(sModuleInfo, "Unable to get the element.  Error: %s"%(Error_Detail), 3)
-        return "failed"
+    except Exception:
+        errMsg = "Unable to get the element."
+        return CommonUtil.Exception_Handler(sys.exc_info(),None,errMsg)
 
 
 '===================== ===x=== Get Element Section Ends ===x=== ======================'    
     
-'============================= Sequential Actions Section Begins =============================='
-'=================== Riasat ======================'
+'============================= NEW Sequential Actions Section Begins =============================='
+
 #Method to get the element step data from the original step_data
-def Get_Element_Step_Data_Appium(step_data):
+def Get_Element_Step_Data_Appium(data_set):
     sModuleInfo = inspect.stack()[0][3] + " : " + inspect.getmoduleinfo(__file__).name
     CommonUtil.ExecLog(sModuleInfo, "Function - Get Element Step Data", 1)
     try:
         element_step_data=[]
-        for each in step_data[0]:
+        for each in data_set[0]:
             if (each[1]=="action" or each[1]=="conditional action"):
                 CommonUtil.ExecLog(sModuleInfo, "Not a part of element step data", 2)
                 continue
@@ -1819,12 +1624,9 @@ def Get_Element_Step_Data_Appium(step_data):
                  
         return element_step_data
     
-    except Exception, e:
-        exc_type, exc_obj, exc_tb = sys.exc_info()        
-        fname = os.path.split(exc_tb.tb_frame.f_code.co_filename)[1]
-        Error_Detail = ((str(exc_type).replace("type ", "Error Type: ")) + ";" +  "Error Message: " + str(exc_obj) +";" + "File Name: " + fname + ";" + "Line: "+ str(exc_tb.tb_lineno))
-        CommonUtil.ExecLog(sModuleInfo, "Could not get element step data.  Error: %s"%(Error_Detail), 3)
-        return "failed"
+    except Exception:
+        errMsg = "Could not get element step data."
+        return CommonUtil.Exception_Handler(sys.exc_info(),None,errMsg)
 
 
 def Sequential_Actions_Appium(step_data):
@@ -1832,9 +1634,9 @@ def Sequential_Actions_Appium(step_data):
     
     sModuleInfo = inspect.stack()[0][3] + " : " + inspect.getmoduleinfo(__file__).name
     try:            
-        for each in step_data: # For each data set within step data
-            logic_row=[]
-            for row in each: # For each row of the data set
+        for data_set in step_data: # For each data set within step data
+            logic_row=[] # Initialize conditional action list
+            for row in data_set: # For each row of the data set
                 # Don't process these items right now, but also dont' fail
                 if ((row[1] == "element parameter") or (row[1] == "reference parameter") or (row[1] == "relation type") or (row[1] == "element parameter 1 of 2") or (row[1] == "element parameter 2 of 2") or (row[1] == "compare")):
                     continue
@@ -1842,7 +1644,7 @@ def Sequential_Actions_Appium(step_data):
                 # If middle column = action, call action handler
                 elif row[1]=="action":
                     CommonUtil.ExecLog(sModuleInfo, "Checking the action to be performed in the action row: %s" % str(row), 1)
-                    result = Action_Handler_Appium(each,row[0]) # Pass data set, and action_name to action handler
+                    result = Action_Handler_Appium(data_set,row[0]) # Pass data set, and action_name to action handler
                     if result == [] or result == "failed": # Check result of action handler
                         return "failed"
                     elif result in skipped_tag_list:
@@ -1851,7 +1653,7 @@ def Sequential_Actions_Appium(step_data):
                 # If middle column = action, call action handler, but always return a pass
                 elif row[1]=="optional action":
                     CommonUtil.ExecLog(sModuleInfo, "Checking the optional action to be performed in the action row: %s" % str(row), 1)
-                    result = Action_Handler_Appium(each,row[0]) # Pass data set, and action_name to action handler
+                    result = Action_Handler_Appium(data_set,row[0]) # Pass data set, and action_name to action handler
                     if result == 'failed':
                         CommonUtil.ExecLog(sModuleInfo, "Optional action failed. Returning pass anyway", 2)
                     result = 'passed'
@@ -1864,7 +1666,7 @@ def Sequential_Actions_Appium(step_data):
                     # Only run this when we have two conditional actions for this data set (a true and a false preferably)
                     if len(logic_row) == 2:
                         CommonUtil.ExecLog(sModuleInfo, "Found 2 conditional actions - moving ahead with them", 1)
-                        return Conditional_Action_Handler(step_data, each, row, logic_row) # Pass step_data, and current iteration of data set to decide which data sets will be processed next
+                        return Conditional_Action_Handler(step_data, data_set, row, logic_row) # Pass step_data, and current iteration of data set to decide which data sets will be processed next
                 
                 # Middle column not listed above, so data set is wrong
                 else:
@@ -1874,12 +1676,8 @@ def Sequential_Actions_Appium(step_data):
         # No failures, return pass
         return "passed"
 
-    except Exception, e:
-        exc_type, exc_obj, exc_tb = sys.exc_info()
-        fname = os.path.split(exc_tb.tb_frame.f_code.co_filename)[1]
-        Error_Detail = ((str(exc_type).replace("type ", "Error Type: ")) + ";" +  "Error Message: " + str(exc_obj) +";" + "File Name: " + fname + ";" + "Line: "+ str(exc_tb.tb_lineno))
-        print "%s"%Error_Detail
-        return "failed"
+    except Exception:
+        return CommonUtil.Exception_Handler(sys.exc_info())
     
 def Conditional_Action_Handler(step_data, each, row, logic_row):
     ''' Process conditional actions, called only by Sequential_Actions() '''
@@ -1899,10 +1697,9 @@ def Conditional_Action_Handler(step_data, each, row, logic_row):
                 logic_decision = "false"
             else: # Any other return means we found the element, proceed with the step data following the pass/true pass
                 logic_decision = "true"
-        except Exception, errMsg: # Element doesn't exist, proceed with the step data following the fail/false path
+        except Exception: # Element doesn't exist, proceed with the step data following the fail/false path
             errMsg = "Could not find element in the by the criteria..."
-            Exception_Info(sModuleInfo, errMsg)
-            logic_decision = "false"
+            return CommonUtil.Exception_Handler(sys.exc_info(),None,errMsg)
                     
         # Process the path as defined above (pass/fail)
         for conditional_steps in logic_row: # For each conditional action from the data set
@@ -2025,25 +1822,21 @@ def Action_Handler_Appium(action_step_data, action_name):
             return "skipped"
 
         
-    except Exception, e:
-        exc_type, exc_obj, exc_tb = sys.exc_info()
-        fname = os.path.split(exc_tb.tb_frame.f_code.co_filename)[1]
-        Error_Detail = ((str(exc_type).replace("type ", "Error Type: ")) + ";" +  "Error Message: " + str(exc_obj) +";" + "File Name: " + fname + ";" + "Line: "+ str(exc_tb.tb_lineno))
-        print "%s"%Error_Detail
-        return "failed"
+    except Exception:
+        return CommonUtil.Exception_Handler(sys.exc_info())
 
 
 #Method to click on element; step data passed on by the user
-def Click_Element_Appium(step_data):
+def Click_Element_Appium(data_set):
     sModuleInfo = inspect.stack()[0][3] + " : " + inspect.getmoduleinfo(__file__).name
     CommonUtil.ExecLog(sModuleInfo, "Function: Click_Element_Appium", 1)
     try:
-        if ((len(step_data) != 1) or (1 < len(step_data[0]) >= 5)):
+        if ((len(data_set) != 1) or (1 < len(data_set[0]) >= 5)):
             CommonUtil.ExecLog(sModuleInfo, "The information in the data-set(s) are incorrect. Please provide accurate data set(s) information.", 3)
             return "failed"
         else:
             #element_step_data = step_data[0][0:len(step_data[0])-1:1]
-            element_step_data = Get_Element_Step_Data_Appium(step_data)            
+            element_step_data = Get_Element_Step_Data_Appium(data_set)            
             returned_step_data_list = Validate_Step_Data(element_step_data) 
             if ((returned_step_data_list == []) or (returned_step_data_list == "failed")):
                 return "failed"
@@ -2059,30 +1852,24 @@ def Click_Element_Appium(step_data):
                         CommonUtil.TakeScreenShot(sModuleInfo)
                         CommonUtil.ExecLog(sModuleInfo, "Element not enabled. Unable to click.", 3)
                         return "failed"
-                except Exception, e:
-                    exc_type, exc_obj, exc_tb = sys.exc_info()        
-                    fname = os.path.split(exc_tb.tb_frame.f_code.co_filename)[1]
-                    Error_Detail = ((str(exc_type).replace("type ", "Error Type: ")) + ";" +  "Error Message: " + str(exc_obj) +";" + "File Name: " + fname + ";" + "Line: "+ str(exc_tb.tb_lineno))
-                    CommonUtil.ExecLog(sModuleInfo, "Could not select/click your element.  Error: %s"%(Error_Detail), 3)
-                    return "failed"
+                except Exception:
+                    errMsg = "Could not select/click your element."
+                    return CommonUtil.Exception_Handler(sys.exc_info(),None,errMsg)
 
-    except Exception, e:
-        exc_type, exc_obj, exc_tb = sys.exc_info()        
-        fname = os.path.split(exc_tb.tb_frame.f_code.co_filename)[1]
-        Error_Detail = ((str(exc_type).replace("type ", "Error Type: ")) + ";" +  "Error Message: " + str(exc_obj) +";" + "File Name: " + fname + ";" + "Line: "+ str(exc_tb.tb_lineno))
-        CommonUtil.ExecLog(sModuleInfo, "Could not find/click your element.  Error: %s"%(Error_Detail), 3)
-        return "failed"
+    except Exception:
+        errMsg = "Could not find/click your element."
+        return CommonUtil.Exception_Handler(sys.exc_info(),None,errMsg)
     
     
-def Tap_Appium(step_data):
+def Tap_Appium(data_set):
     sModuleInfo = inspect.stack()[0][3] + " : " + inspect.getmoduleinfo(__file__).name
     CommonUtil.ExecLog(sModuleInfo, "Function: Tap_Appium", 1)
     try:
-        if ((len(step_data) != 1) or (1 < len(step_data[0]) >= 5)):
+        if ((len(data_set) != 1) or (1 < len(data_set[0]) >= 5)):
             CommonUtil.ExecLog(sModuleInfo, "The information in the data-set(s) are incorrect. Please provide accurate data set(s) information.", 3)
             return "failed"
         else:    
-            element_step_data = Get_Element_Step_Data_Appium(step_data)            
+            element_step_data = Get_Element_Step_Data_Appium(data_set)            
             returned_step_data_list = Validate_Step_Data(element_step_data) 
             if ((returned_step_data_list == []) or (returned_step_data_list == "failed")):
                 return "failed"
@@ -2098,34 +1885,27 @@ def Tap_Appium(step_data):
                         CommonUtil.TakeScreenShot(sModuleInfo)
                         CommonUtil.ExecLog(sModuleInfo, "Element not enabled. Unable to click.", 3)
                         return "failed"
-                except Exception, e:
-                    exc_type, exc_obj, exc_tb = sys.exc_info()        
-                    fname = os.path.split(exc_tb.tb_frame.f_code.co_filename)[1]
-                    Error_Detail = ((str(exc_type).replace("type ", "Error Type: ")) + ";" +  "Error Message: " + str(exc_obj) +";" + "File Name: " + fname + ";" + "Line: "+ str(exc_tb.tb_lineno))
-                    CommonUtil.ExecLog(sModuleInfo, "Could not select/click your element.  Error: %s"%(Error_Detail), 3)
-                    return "failed"
+                except Exception:
+                    errMsg = "Could not select/click your element."
+                    return CommonUtil.Exception_Handler(sys.exc_info(),None,errMsg)
                 
-    except Exception, e:
-        exc_type, exc_obj, exc_tb = sys.exc_info()
-        fname = os.path.split(exc_tb.tb_frame.f_code.co_filename)[1]
-        Error_Detail = ((str(exc_type).replace("type ", "Error Type: ")) + ";" + "Error Message: " + str(
-            exc_obj) + ";" + "File Name: " + fname + ";" + "Line: " + str(exc_tb.tb_lineno))
-        CommonUtil.ExecLog(sModuleInfo, "Unable to tap. %s" % Error_Detail, 3)
-        return "failed"
+    except Exception:
+        errMsg = "Unable to tap."
+        return CommonUtil.Exception_Handler(sys.exc_info(),None,errMsg)
 
 # def Double_Tap_Appium_asifurrouf
 
-def Double_Tap_Appium(step_data):
+def Double_Tap_Appium(data_set):
     sModuleInfo = inspect.stack()[0][3] + " : " + inspect.getmoduleinfo(__file__).name
     CommonUtil.ExecLog(sModuleInfo, "Function:Double_Tap_Appium", 1)
     try:
-        if ((len(step_data) != 1) or (1 < len(step_data[0]) >= 5)):
+        if ((len(data_set) != 1) or (1 < len(data_set[0]) >= 5)):
             CommonUtil.ExecLog(sModuleInfo,
                                "The information in the data-set(s) are incorrect. Please provide accurate data set(s) information.",
                                3)
             return "failed"
         else:
-            element_step_data = Get_Element_Step_Data_Appium(step_data)
+            element_step_data = Get_Element_Step_Data_Appium(data_set)
             returned_step_data_list = Validate_Step_Data(element_step_data)
             if ((returned_step_data_list == []) or (returned_step_data_list == "failed")):
                 return "failed"
@@ -2145,36 +1925,27 @@ def Double_Tap_Appium(step_data):
                         CommonUtil.TakeScreenShot(sModuleInfo)
                         CommonUtil.ExecLog(sModuleInfo, "Element not enabled. Unable to click.", 3)
                         return "failed"
-                except Exception, e:
-                    exc_type, exc_obj, exc_tb = sys.exc_info()
-                    fname = os.path.split(exc_tb.tb_frame.f_code.co_filename)[1]
-                    Error_Detail = ((str(exc_type).replace("type ", "Error Type: ")) + ";" + "Error Message: " + str(
-                        exc_obj) + ";" + "File Name: " + fname + ";" + "Line: " + str(exc_tb.tb_lineno))
-                    CommonUtil.ExecLog(sModuleInfo, "Could not select/click your element.  Error: %s" % (Error_Detail),
-                                       3)
-                    return "failed"
+                except Exception:
+                    errMsg = "Could not select/click your element."
+                    return CommonUtil.Exception_Handler(sys.exc_info(),None,errMsg)
 
-    except Exception, e:
-        exc_type, exc_obj, exc_tb = sys.exc_info()
-        fname = os.path.split(exc_tb.tb_frame.f_code.co_filename)[1]
-        Error_Detail = ((str(exc_type).replace("type ", "Error Type: ")) + ";" + "Error Message: " + str(
-            exc_obj) + ";" + "File Name: " + fname + ";" + "Line: " + str(exc_tb.tb_lineno))
-        CommonUtil.ExecLog(sModuleInfo, "Unable to tap. %s" % Error_Detail, 3)
-        return "failed"
+    except Exception:
+        errMsg = "Unable to tap."
+        return CommonUtil.Exception_Handler(sys.exc_info(),None,errMsg)
 
 # Long_Press_Appium_asifurrouf_fixed Long Press time
 
-def Long_Press_Appium(step_data):
+def Long_Press_Appium(data_set):
     sModuleInfo = inspect.stack()[0][3] + " : " + inspect.getmoduleinfo(__file__).name
     CommonUtil.ExecLog(sModuleInfo, "Function: Long_Press_Appium", 1)
     try:
-        if ((len(step_data) != 1) or (1 < len(step_data[0]) >= 5)):
+        if ((len(data_set) != 1) or (1 < len(data_set[0]) >= 5)):
             CommonUtil.ExecLog(sModuleInfo,
                                "The information in the data-set(s) are incorrect. Please provide accurate data set(s) information.",
                                3)
             return "failed"
         else:
-            element_step_data = Get_Element_Step_Data_Appium(step_data)
+            element_step_data = Get_Element_Step_Data_Appium(data_set)
             returned_step_data_list = Validate_Step_Data(element_step_data)
             if ((returned_step_data_list == []) or (returned_step_data_list == "failed")):
                 return "failed"
@@ -2194,42 +1965,33 @@ def Long_Press_Appium(step_data):
                         CommonUtil.TakeScreenShot(sModuleInfo)
                         CommonUtil.ExecLog(sModuleInfo, "Element not enabled. Unable to click.", 3)
                         return "failed"
-                except Exception, e:
-                    exc_type, exc_obj, exc_tb = sys.exc_info()
-                    fname = os.path.split(exc_tb.tb_frame.f_code.co_filename)[1]
-                    Error_Detail = ((str(exc_type).replace("type ", "Error Type: ")) + ";" + "Error Message: " + str(
-                        exc_obj) + ";" + "File Name: " + fname + ";" + "Line: " + str(exc_tb.tb_lineno))
-                    CommonUtil.ExecLog(sModuleInfo, "Could not select/click your element.  Error: %s" % (Error_Detail),
-                                       3)
-                    return "failed"
+                except Exception:
+                    errMsg = "Could not select/click your element."
+                    return CommonUtil.Exception_Handler(sys.exc_info(),None,errMsg)
 
-    except Exception, e:
-        exc_type, exc_obj, exc_tb = sys.exc_info()
-        fname = os.path.split(exc_tb.tb_frame.f_code.co_filename)[1]
-        Error_Detail = ((str(exc_type).replace("type ", "Error Type: ")) + ";" + "Error Message: " + str(
-            exc_obj) + ";" + "File Name: " + fname + ";" + "Line: " + str(exc_tb.tb_lineno))
-        CommonUtil.ExecLog(sModuleInfo, "Unable to tap. %s" % Error_Detail, 3)
-        return "failed"
+    except Exception:
+        errMsg = "Unable to tap."
+        return CommonUtil.Exception_Handler(sys.exc_info(),None,errMsg)
 
 #asifurrouf_long_press_double_tap
 
 #Method to enter texts in a text box; step data passed on by the user
-def Enter_Text_Appium(step_data):
+def Enter_Text_Appium(data_set):
     sModuleInfo = inspect.stack()[0][3] + " : " + inspect.getmoduleinfo(__file__).name
     CommonUtil.ExecLog(sModuleInfo, "Function: Enter_Text_Appium", 1)
     try:
-        if ((len(step_data) != 1) or (1 < len(step_data[0]) >= 5)):
+        if ((len(data_set) != 1) or (1 < len(data_set[0]) >= 5)):
             CommonUtil.ExecLog(sModuleInfo, "The information in the data-set(s) are incorrect. Please provide accurate data set(s) information.", 3)
             return "failed"
         else:
-            element_step_data=Get_Element_Step_Data_Appium(step_data)
+            element_step_data=Get_Element_Step_Data_Appium(data_set)
             returned_step_data_list = Validate_Step_Data(element_step_data) 
             if ((returned_step_data_list == []) or (returned_step_data_list == "failed")):
                 return "failed"
             else:
                 try:
                     Element = Get_Element_Appium(returned_step_data_list[0], returned_step_data_list[1], returned_step_data_list[2], returned_step_data_list[3], returned_step_data_list[4])
-                    for each in step_data[0]:
+                    for each in data_set[0]:
                         if each[1]=="action":
                             text_value=each[2]
                         else:
@@ -2242,19 +2004,13 @@ def Enter_Text_Appium(step_data):
                     CommonUtil.TakeScreenShot(sModuleInfo)
                     CommonUtil.ExecLog(sModuleInfo, "Successfully set the value of to text to: %s"%text_value, 1)
                     return "passed"
-                except Exception, e:
-                    exc_type, exc_obj, exc_tb = sys.exc_info()        
-                    fname = os.path.split(exc_tb.tb_frame.f_code.co_filename)[1]
-                    Error_Detail = ((str(exc_type).replace("type ", "Error Type: ")) + ";" +  "Error Message: " + str(exc_obj) +";" + "File Name: " + fname + ";" + "Line: "+ str(exc_tb.tb_lineno))
-                    CommonUtil.ExecLog(sModuleInfo, "Could not enter text in the desired element.  Error: %s"%(Error_Detail), 3)
-                    return "failed"
+                except Exception:
+                    errMsg = "Could not enter text in the desired element."
+                    return CommonUtil.Exception_Handler(sys.exc_info(),None,errMsg)
 
-    except Exception, e:
-        exc_type, exc_obj, exc_tb = sys.exc_info()        
-        fname = os.path.split(exc_tb.tb_frame.f_code.co_filename)[1]
-        Error_Detail = ((str(exc_type).replace("type ", "Error Type: ")) + ";" +  "Error Message: " + str(exc_obj) +";" + "File Name: " + fname + ";" + "Line: "+ str(exc_tb.tb_lineno))
-        CommonUtil.ExecLog(sModuleInfo, "Could not find your element.  Error: %s"%(Error_Detail), 3)
-        return "failed"
+    except Exception:
+        errMsg = "Could not find your element."
+        return CommonUtil.Exception_Handler(sys.exc_info(),None,errMsg)
 
 
 def Android_Keystroke_Key_Mapping(keystroke):
@@ -2324,24 +2080,21 @@ def iOS_Keystroke_Key_Mapping(keystroke):
         elif keystroke == "END CALL":
             driver.keyevent(6)
                                      
-    except Exception, e:
-        exc_type, exc_obj, exc_tb = sys.exc_info()        
-        fname = os.path.split(exc_tb.tb_frame.f_code.co_filename)[1]
-        Error_Detail = ((str(exc_type).replace("type ", "Error Type: ")) + ";" +  "Error Message: " + str(exc_obj) +";" + "File Name: " + fname + ";" + "Line: "+ str(exc_tb.tb_lineno))
-        CommonUtil.ExecLog(sModuleInfo, "Could not press enter for your element.  Error: %s"%(Error_Detail), 3)
-        return "failed"   
+    except Exception:
+        errMsg = "Could not press enter for your element."
+        return CommonUtil.Exception_Handler(sys.exc_info(),None,errMsg)
 
 
 #Method to click on element; step data passed on by the user
-def Keystroke_Appium(step_data):
+def Keystroke_Appium(data_set):
     sModuleInfo = inspect.stack()[0][3] + " : " + inspect.getmoduleinfo(__file__).name
     CommonUtil.ExecLog(sModuleInfo, "Function: Keystroke_Appium", 1)
     try:
-        if ((len(step_data) != 1) or (1 < len(step_data[0]) >= 5)):
+        if ((len(data_set) != 1) or (1 < len(data_set[0]) >= 5)):
             CommonUtil.ExecLog(sModuleInfo, "The information in the data-set(s) are incorrect. Please provide accurate data set(s) information.", 3)
             return "failed"
         else:
-            for each in step_data[0]:
+            for each in data_set[0]:
                 if each[1]=="action":
                     if each[0]=="iOS keystroke":
                         keystroke_value=(each[2]).upper()
@@ -2364,34 +2117,31 @@ def Keystroke_Appium(step_data):
                 CommonUtil.ExecLog(sModuleInfo, "Could not enter keystroke for the element with given parameters and values", 3)
                 return "failed"
               
-    except Exception, e:
-        exc_type, exc_obj, exc_tb = sys.exc_info()        
-        fname = os.path.split(exc_tb.tb_frame.f_code.co_filename)[1]
-        Error_Detail = ((str(exc_type).replace("type ", "Error Type: ")) + ";" +  "Error Message: " + str(exc_obj) +";" + "File Name: " + fname + ";" + "Line: "+ str(exc_tb.tb_lineno))
-        CommonUtil.ExecLog(sModuleInfo, "Could not enter keystroke.  Error: %s"%(Error_Detail), 3)
-        return "failed"
+    except Exception:
+        errMsg = "Could not enter keystroke."
+        return CommonUtil.Exception_Handler(sys.exc_info(),None,errMsg)
 
 
 """NEED TO BE CHANGED QUITE A BIT. CURRENT_PAGE WILL BE MODIFIED TO HAVE SOMETHING ELSE"""
 #Validating text from an element given information regarding the expected text
-def Validate_Text_Appium(step_data):
+def Validate_Text_Appium(data_set):
     sModuleInfo = inspect.stack()[0][3] + " : " + inspect.getmoduleinfo(__file__).name
     CommonUtil.ExecLog(sModuleInfo, "Function: Validate_Text", 1)
     try:
-        if ((len(step_data) != 1) or (1 < len(step_data[0]) >= 5)):
+        if ((len(data_set) != 1) or (1 < len(data_set[0]) >= 5)):
             CommonUtil.ExecLog(sModuleInfo, "The information in the data-set(s) are incorrect. Please provide accurate data set(s) information.",3)
             return "failed"
         else:
-            for each in step_data[0]:
+            for each in data_set[0]:
                 if each[0] == "current_page":
                     try:
                         Element = Get_Element_Appium('tag', 'html')
                         break
-                    except Exception, e:
+                    except Exception:
                         errMsg = "Could not get element from the current page."
-                        Exception_Info(sModuleInfo, errMsg)
+                        return CommonUtil.Exception_Handler(sys.exc_info(),None,errMsg)
                 else:
-                    element_step_data = Get_Element_Step_Data_Appium(step_data)
+                    element_step_data = Get_Element_Step_Data_Appium(data_set)
                     returned_step_data_list = Validate_Step_Data(element_step_data)
                     if ((returned_step_data_list == []) or (returned_step_data_list == "failed")):
                         return "failed"
@@ -2399,11 +2149,11 @@ def Validate_Text_Appium(step_data):
                         try:
                             Element = Get_Element_Appium(returned_step_data_list[0], returned_step_data_list[1], returned_step_data_list[2], returned_step_data_list[3], returned_step_data_list[4])
                             break
-                        except Exception, e:
+                        except Exception:
                             errMsg = "Could not get element based on the information provided."
-                            Exception_Info(sModuleInfo, errMsg)            
+                            return CommonUtil.Exception_Handler(sys.exc_info(),None,errMsg)           
  
-            for each_step_data_item in step_data[0]:
+            for each_step_data_item in data_set[0]:
                 if each_step_data_item[1]=="action":
                     expected_text_data = each_step_data_item[2]
                     validation_type = each_step_data_item[0]
@@ -2441,26 +2191,22 @@ def Validate_Text_Appium(step_data):
                 CommonUtil.ExecLog(sModuleInfo, "Incorrect validation type. Please check step data", 3)
                 return "failed"
  
-    except Exception, e:
-        exc_type, exc_obj, exc_tb = sys.exc_info()
-        fname = os.path.split(exc_tb.tb_frame.f_code.co_filename)[1]
-        Error_Detail = ((str(exc_type).replace("type ", "Error Type: ")) + ";" + "Error Message: " + str(
-            exc_obj) + ";" + "File Name: " + fname + ";" + "Line: " + str(exc_tb.tb_lineno))
-        CommonUtil.ExecLog(sModuleInfo, "Could not compare text as requested.  Error: %s" % (Error_Detail), 3)
-        return "failed"
+    except Exception:
+        errMsg = "Could not compare text as requested."
+        return CommonUtil.Exception_Handler(sys.exc_info(),None,errMsg)
 
 
 #Inserting a field into a list of shared variables
-def Insert_Into_List(step_data):
+def Insert_Into_List(data_set):
     sModuleInfo = inspect.stack()[0][3] + " : " + inspect.getmoduleinfo(__file__).name
     CommonUtil.ExecLog(sModuleInfo, "Function: Insert_Into_List", 1)
     try:
-        if len(step_data[0]) == 1: #will have to test #saving direct input string data
+        if len(data_set[0]) == 1: #will have to test #saving direct input string data
             list_name = ''
             key = ''
             value = ''
 
-            for each_step_data_item in step_data[0]:
+            for each_step_data_item in data_set[0]:
                 if each_step_data_item[1]=="action":
                     full_input_key_value_name = each_step_data_item[2]
                     full_input_action_name = each_step_data_item[0]
@@ -2497,9 +2243,9 @@ def Insert_Into_List(step_data):
 
 
 
-        elif len(step_data[0]) > 1 and len(step_data[0]) <=5:
-            for each in step_data[0]:
-                element_step_data = Get_Element_Step_Data_Appium(step_data)
+        elif len(data_set[0]) > 1 and len(data_set[0]) <=5:
+            for each in data_set[0]:
+                element_step_data = Get_Element_Step_Data_Appium(data_set)
                 returned_step_data_list = Validate_Step_Data(element_step_data)
                 if ((returned_step_data_list == []) or (returned_step_data_list == "failed")):
                     return "failed"
@@ -2514,7 +2260,7 @@ def Insert_Into_List(step_data):
 
             list_name = ''
             key = ''
-            for each_step_data_item in step_data[0]:
+            for each_step_data_item in data_set[0]:
                 if each_step_data_item[1]=="action":
                     key = each_step_data_item[2]
                     full_input_action_name = each_step_data_item[0]
@@ -2556,16 +2302,16 @@ def Insert_Into_List(step_data):
 
 
 #Validating text from an element given information regarding the expected text
-def Compare_Lists(step_data):
+def Compare_Lists(data_set):
     sModuleInfo = inspect.stack()[0][3] + " : " + inspect.getmoduleinfo(__file__).name
     CommonUtil.ExecLog(sModuleInfo, "Function: Compare_Lists", 1)
     try:
-        element_step_data = Get_Element_Step_Data_Appium([step_data])
+        element_step_data = Get_Element_Step_Data_Appium([data_set])
         if ((element_step_data == []) or (element_step_data == "failed")):
             return "failed"
         else:
-            return Shared_Resources.Compare_Lists([step_data])
-    except:
+            return Shared_Resources.Compare_Lists([data_set])
+    except Exception:
         return CommonUtil.Exception_Handler(sys.exc_info())
 
 '===================== ===x=== Sequential Actions Section Ends ===x=== ======================'
