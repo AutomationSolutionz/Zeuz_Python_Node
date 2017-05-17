@@ -105,6 +105,7 @@ def Result_Analyzer(sTestStepReturnStatus,temp_q):
     sModuleInfo = inspect.stack()[0][3] + " : " + inspect.getmoduleinfo(__file__).name
     passed_tag_list=['Pass','pass','PASS','PASSED','Passed','passed','true','TRUE','True',True,1,'1','Success','success','SUCCESS']
     failed_tag_list=['Fail','fail','FAIL','Failed','failed','FAILED','false','False','FALSE',False,0,'0']
+    skipped_tag_list = ['skip', 'SKIP', 'Skip', 'skipped', 'SKIPPED', 'Skipped']
     try:
         if sTestStepReturnStatus in passed_tag_list:
             temp_q.put("passed")
@@ -112,6 +113,9 @@ def Result_Analyzer(sTestStepReturnStatus,temp_q):
         elif sTestStepReturnStatus in failed_tag_list:
             temp_q.put("failed")
             return "failed"
+        elif sTestStepReturnStatus in skipped_tag_list:
+            temp_q.put("skipped")
+            return "skipped"
         else:
             ExecLog(sModuleInfo,"Step return type unknown: %s" %(sTestStepReturnStatus),3)
             temp_q.put("failed")

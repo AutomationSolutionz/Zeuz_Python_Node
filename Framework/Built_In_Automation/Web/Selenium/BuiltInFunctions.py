@@ -41,6 +41,7 @@ selenium_driver = None
 
 passed_tag_list=['Pass','pass','PASS','PASSED','Passed','passed','true','TRUE','True','1','Success','success','SUCCESS']
 failed_tag_list=['Fail','fail','FAIL','Failed','failed','FAILED','false','False','FALSE','0']
+skipped_tag_list=['skip','SKIP','Skip','skipped','SKIPPED','Skipped']
 
 def Open_Browser(dependency):
     global selenium_driver
@@ -247,8 +248,9 @@ def Action_Handler(action_step_data, action_name):
                 return "failed"
         elif (action_name == "step result"):
             result = Step_Result(action_step_data)
-            if result == "failed":
-                return "failed"
+            return result
+            #if result == "failed":
+            #    return "failed"
         elif (action_name == "deselect all" or action_name == "select by visible text" or action_name == "deselect by visible text" or action_name == "select by value" or action_name == "deselect by value" or action_name =="select by index" or action_name == "deselect by index"):
             result = Select_Deselect(action_step_data)
             if result == "failed":
@@ -921,6 +923,8 @@ def Step_Result(step_data):
             step_result = step_data[0][0][2]
             if step_result == 'pass':
                 result = "passed"
+            elif step_result == 'skip':
+                result = 'skipped'
             elif step_result == 'fail':
                 result = "failed"
 
@@ -1029,6 +1033,8 @@ def Sequential_Actions(step_data):
 
                     if result == [] or result == "failed":
                         return "failed"
+                    elif result in skipped_tag_list:
+                        return "skipped"
 
                 # If middle column = optional action, call action handler, but always return a pass
                 elif row[1] == "optional action":
@@ -1070,6 +1076,8 @@ def Sequential_Actions(step_data):
                                 cond_result = Sequential_Actions([step_data[data_set_index]])
                                 if cond_result == "failed":
                                     return "failed"
+                                elif cond_result == "skipped":
+                                    return "skipped"
                             return "passed"
 
                 else:

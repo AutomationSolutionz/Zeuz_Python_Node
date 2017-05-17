@@ -11,6 +11,7 @@ import Drivers
 '''Constants'''
 PROGRESS_TAG = 'In-Progress'
 PASSED_TAG='Passed'
+SKIPPED_TAG='Skipped'
 WARNING_TAG='Warning'
 FAILED_TAG='Failed'
 NOT_RUN_TAG='Not Run'
@@ -19,6 +20,7 @@ CANCELLED_TAG='Cancelled'
 COMPLETE_TAG='Complete'
 passed_tag_list=['Pass','pass','PASS','PASSED','Passed','passed','true','TRUE','True','1','Success','success','SUCCESS']
 failed_tag_list=['Fail','fail','FAIL','Failed','failed','FAILED','false','False','FALSE','0']
+skipped_tag_list=['skip','SKIP','Skip','skipped','SKIPPED','Skipped']
 
 
 #returns all drivers
@@ -348,6 +350,8 @@ def call_driver_function_of_test_step(sModuleInfo, TestStepsList, StepSeq, step_
                     sStepResult = 'PASSED'
                 elif sStepResult in failed_tag_list:
                     sStepResult = 'FAILED'
+                elif sStepResult in skipped_tag_list:
+                    sStepResult = 'SKIPPED'
                 else:
                     CommonUtil.ExecLog(sModuleInfo, "sStepResult not an acceptable type", 3)
                     CommonUtil.ExecLog(sModuleInfo, "Acceptable pass string(s): %s" % (passed_tag_list), 3)
@@ -447,6 +451,10 @@ def run_all_test_steps_in_a_test_case(Stepscount, test_case, sModuleInfo, run_id
             # Step Passed
             CommonUtil.ExecLog(sModuleInfo, "%s : Test Step Passed" % current_step_name, 1)
             after_execution_dict.update({'status': PASSED_TAG})
+        elif sStepResult.upper() == SKIPPED_TAG.upper():
+            # Step Passed
+            CommonUtil.ExecLog(sModuleInfo, "%s : Test Step Skipped" % current_step_name, 1)
+            after_execution_dict.update({'status': SKIPPED_TAG})
         elif sStepResult.upper() == WARNING_TAG.upper():
             CommonUtil.ExecLog(sModuleInfo, "%s : Test Step Warning" % current_step_name, 2)
             after_execution_dict.update({'status': WARNING_TAG})
@@ -528,6 +536,20 @@ def calculate_test_case_result(sModuleInfo, TestCaseID, run_id, sTestStepResultL
         print "Test Case Contain Not Run Steps"
         CommonUtil.ExecLog(sModuleInfo, "Test Case Contain Warning(s)", 2)
         sTestCaseStatus = "Failed"
+    elif 'SKIPPED' in sTestStepResultList:
+        print "Test Case Contain Skipped Steps"
+        CommonUtil.ExecLog(sModuleInfo, "Test Case Contain Skipped Step(s)", 1)
+        skipped = True
+        for each in sTestStepResultList:
+            if each not in skipped_tag_list:
+                skipped = False
+                break
+        if skipped:
+            sTestCaseStatus = "Skipped"
+            CommonUtil.ExecLog(sModuleInfo, "Test Case Skipped", 1)
+        else:
+            sTestCaseStatus = "Passed"
+            CommonUtil.ExecLog(sModuleInfo, "Test Case Passed", 1)
     elif 'PASSED' in sTestStepResultList:
         print "Test Case Passed"
         CommonUtil.ExecLog(sModuleInfo, "Test Case Passed", 1)
