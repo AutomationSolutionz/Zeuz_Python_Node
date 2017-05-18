@@ -351,6 +351,8 @@ def Click_Element(element_parameter, element_value):
         CommonUtil.ExecLog(sModuleInfo, "Trying to click on element...", 1)
         if element_parameter == "name":
             result = click_element_by_name(driver, element_value)
+        elif element_parameter == "text":
+            result = click_element_by_xpath(driver, "//*[@text='%s']" % element_value)
         elif element_parameter == "id":
             result = click_element_by_id(driver, element_value)
         elif element_parameter == "accessibility_id":
@@ -411,6 +413,8 @@ def Set_Text(element_parameter, element_value, text_value):
         CommonUtil.ExecLog(sModuleInfo, "Trying to set text in the textbox...", 1)
         if element_parameter == "name":
             result = set_text_by_name(driver, element_value, text_value)
+        elif element_parameter == "text":
+            result = click_element_by_xpath(driver, "//*[@text='%s']" % text_value)
         elif element_parameter == "id":
             result = set_text_by_id(driver, element_value, text_value)
         elif element_parameter == "accessibility_id":
@@ -701,17 +705,19 @@ def Element_Validation(All_Elements_Found):#, index):
         return CommonUtil.Exception_Handler(sys.exc_info(),None,errMsg)
 
 def Sleep(data_set):
+    ''' Sleep a specific number of seconds '''
+    
     sModuleInfo = inspect.stack()[0][3] + " : " + inspect.getmoduleinfo(__file__).name
     CommonUtil.ExecLog(sModuleInfo, "Function: Sleep", 1)
+
     try:
-        if ((len(data_set) != 1) or (1 < len(data_set[0]) >= 5)):
+        if ((len(data_set) != 1) or (len(data_set[0][0]) == 0) or (len(data_set[0][1]) == 0)):
             CommonUtil.ExecLog(sModuleInfo,
                                    "The information in the data-set(s) are incorrect. Please provide accurate data set(s) information.",
                                    3)
             return "failed"
         else:
-            tuple = data_set[0][0]
-            seconds = int(tuple[2])
+            seconds = int(data_set[0][2])
             CommonUtil.ExecLog(sModuleInfo, "Sleeping for %s seconds" % seconds, 1)
             time.sleep(seconds)
             return "passed"
