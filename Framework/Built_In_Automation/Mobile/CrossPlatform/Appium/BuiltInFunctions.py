@@ -297,19 +297,6 @@ def install_application(app_location, activity_name=''):
         return CommonUtil.Exception_Handler(sys.exc_info(),None,errMsg)
 
 
-def wait(_time):
-    sModuleInfo = inspect.stack()[0][3] + " : " + inspect.getmoduleinfo(__file__).name
-    try:
-        CommonUtil.ExecLog(sModuleInfo,"Starting waiting for %s seconds.."%_time,1)
-        driver.implicitly_wait(float(_time)) # Instructs appium not to timeout while we wait (it has a 60 second timeout by default)
-        time.sleep(_time) # Stop here the specified amount of time
-        CommonUtil.ExecLog(sModuleInfo,"Waited successfully",1)
-        return "passed"
-    except Exception:
-        errMsg = "Unable to wait."
-        return CommonUtil.Exception_Handler(sys.exc_info(),None,errMsg)
-
-    
 def uninstall_application(app_package):
     ''' Uninstalls/removes application from device '''
     
@@ -467,48 +454,6 @@ def Set_Text_Enter(element_parameter, element_value, text_value):
 
     except Exception:
         errMsg = "Could not set text and search."
-        return CommonUtil.Exception_Handler(sys.exc_info(),None,errMsg)
-
-# Method to enter texts in a text box; step data passed on by the user
-def Enter_Text_In_Text_Box(data_set):
-    # !!! Should be removed - can be performed with two sequential actions (text & click, element & ENTER key)
-    sModuleInfo = inspect.stack()[0][3] + " : " + inspect.getmoduleinfo(__file__).name
-    CommonUtil.ExecLog(sModuleInfo, "Inside Enter Text In Text Box function", 1)
-    try:
-        # If there are no two separate data-sets, or if the first data-set is not between 1 to 3 items, or if the second data-set doesn't have only 1 item
-        if ((len(data_set) != 1) or (1 < len(data_set[0]) >= 5)):  # or (len(step_data[1]) != 1)):
-            CommonUtil.ExecLog(sModuleInfo,
-                               "The information in the data-set(s) are incorrect. Please provide accurate data set(s) information.",
-                               3)
-            return "failed"
-        else:
-            element_step_data = data_set[0][0:len(data_set[0]) - 1:1]
-            returned_step_data_list = Validate_Step_Data(element_step_data)
-            # returned_step_data_list = Validate_Step_Data(step_data[0])
-            if ((returned_step_data_list == []) or (returned_step_data_list == "failed")):
-                return "failed"
-            else:
-                try:
-                    Element = Get_Element(returned_step_data_list[0], returned_step_data_list[1],
-                                          returned_step_data_list[2], returned_step_data_list[3],
-                                          returned_step_data_list[4])
-                    text_value = data_set[0][len(data_set[0]) - 1][2]
-                    # text_value = step[1][0][2]
-                    # text_value=step_data[1][0][1]
-                    Element.click()
-                    Element.clear()
-                    Element.set_value(text_value)
-                    Element.click()
-                    CommonUtil.TakeScreenShot(sModuleInfo)
-                    CommonUtil.ExecLog(sModuleInfo, "Successfully set the value of to text to: %s" % text_value,
-                                       1)
-                    return "passed"
-                except Exception:
-                    errMsg = "Could not select/click your element."
-                    return CommonUtil.Exception_Handler(sys.exc_info(),None,errMsg)
-
-    except Exception:
-        errMsg = "Could not find your element."
         return CommonUtil.Exception_Handler(sys.exc_info(),None,errMsg)
 
 
@@ -711,32 +656,57 @@ def Sleep(data_set):
     CommonUtil.ExecLog(sModuleInfo, "Function: Sleep", 1)
 
     try:
-        if ((len(data_set) != 1) or (len(data_set[0][0]) == 0) or (len(data_set[0][1]) == 0)):
-            CommonUtil.ExecLog(sModuleInfo,
-                                   "The information in the data-set(s) are incorrect. Please provide accurate data set(s) information.",
-                                   3)
-            return "failed"
-        else:
-            seconds = int(data_set[0][2])
-            CommonUtil.ExecLog(sModuleInfo, "Sleeping for %s seconds" % seconds, 1)
-            time.sleep(seconds)
-            return "passed"
-
+        seconds = int(data_set[0][2])
+        CommonUtil.ExecLog(sModuleInfo, "Sleeping for %s seconds" % seconds, 1)
+        time.sleep(seconds)
+        return "passed"
     except Exception:
         return CommonUtil.Exception_Handler(sys.exc_info())
 
-def Wait(time_to_wait):
+
+def Wait_For_New_Element(data_set):
+    ''' Continuously monitors an element for a specified amount of time and returns whether or not it is available '''
+    
     sModuleInfo = inspect.stack()[0][3] + " : " + inspect.getmoduleinfo(__file__).name
+    CommonUtil.ExecLog(sModuleInfo, "Function: Wait_For_New_Page_Element", 1)
+    
     try:
-        CommonUtil.ExecLog(sModuleInfo, "Starting waiting for %s seconds.." % time_to_wait, 1)
-        #function_data = Validate_Step_Data(step_data)
-        driver.implicitly_wait(float(time_to_wait))
-        #time.sleep(float(time_to_wait))
-        CommonUtil.ExecLog(sModuleInfo, "Waited successfully", 1)
-        return "passed"
+        element_step_data = Get_Element_Step_Data_Appium(data_set)
+        returned_step_data_list = Validate_Step_Data(element_step_data)
+        if ((returned_step_data_list == []) or (returned_step_data_list == "failed")):
+            return "failed"
+        else:
+            try:
+                # Find the wait time from the data set
+                for each in data_set[0]:
+                    if each[1]=="action":
+                        timeout_duration = int(each[2])
+
+                # Check for element every second 
+                end_time = time.time() + timeout_duration # Time at which we should stop looking
+                for i in range(timeout_duration): # Keep testing element until this is reached
+                    # Wait and then test if we are over our alloted time limit
+                    time.sleep(1)
+                    if time.time() >= end_time: # Keep testing element until this is reached (ensures we wait exactly the specified amount of time)
+                        break
+                    
+                    # Test if element exists and exit loop if it does
+                    Element = Get_Element(returned_step_data_list[0], returned_step_data_list[1], returned_step_data_list[2], returned_step_data_list[3], returned_step_data_list[4])
+                    if Element != [] and Element not in failed_tag_list: # Expect Element == failed when it doesn't exist
+                        break
+                
+                # Test whether or not timeout was reached
+                if ((Element == []) or (Element == "failed")):
+                    return "failed"
+                else:
+                    return "passed" # Didn't timeout, so element must exist
+            except Exception:
+                element_attributes = Element.get_attribute('outerHTML')
+                CommonUtil.ExecLog(sModuleInfo, "Element Attributes: %s"%(element_attributes),3)
+                errMsg = "Could not find the new page element requested."
+                return CommonUtil.Exception_Handler(sys.exc_info(),None,errMsg)
     except Exception:
-        errMsg = "Unable to wait."
-        return CommonUtil.Exception_Handler(sys.exc_info(),None,errMsg)
+        return CommonUtil.Exception_Handler(sys.exc_info())
 
 
 def Swipe(x_start, y_start, x_end, y_end, duration = 1000):
@@ -815,7 +785,7 @@ def swipe_handler(action_value):
         # Perform swipe as many times as specified, or once if not specified 
         for i in range(0, count):
             driver.swipe(x1, y1, x2, y2)
-            wait(1) # Small sleep, so action animation (if any) can complete
+            time.sleep(1) # Small sleep, so action animation (if any) can complete
         
     # Handle a series of almost identical gestures (swipe horizontally at different locations for example)
     elif action_value.count(',') == 2:
@@ -1639,6 +1609,11 @@ def Sequential_Actions_Appium(step_data):
     ''' Main Sequential Actions function - Performs logical decisions based on user input '''
     
     sModuleInfo = inspect.stack()[0][3] + " : " + inspect.getmoduleinfo(__file__).name
+    
+    if verify_step_data(step_data) in failed_tag_list:
+        CommonUtil.ExecLog(sModuleInfo, "The information in the data-set(s) are incorrect. Please provide accurate data set(s) information.", 3)
+        return "failed"
+
     try:            
         for data_set in step_data: # For each data set within step data
             logic_row=[] # Initialize conditional action list
@@ -1685,12 +1660,12 @@ def Sequential_Actions_Appium(step_data):
     except Exception:
         return CommonUtil.Exception_Handler(sys.exc_info())
     
-def Conditional_Action_Handler(step_data, each, row, logic_row):
+def Conditional_Action_Handler(step_data, data_set, row, logic_row):
     ''' Process conditional actions, called only by Sequential_Actions() '''
     
     sModuleInfo = inspect.stack()[0][3] + " : " + inspect.getmoduleinfo(__file__).name
     
-    element_step_data = Get_Element_Step_Data_Appium([each]) # Pass data set as a list, and get back anything that's not an "action" or "conditional action"
+    element_step_data = Get_Element_Step_Data_Appium([data_set]) # Pass data set as a list, and get back anything that's not an "action" or "conditional action"
     returned_step_data_list = Validate_Step_Data(element_step_data) # Make sure the element step data we got back from above is good
     if ((returned_step_data_list == []) or (returned_step_data_list == "failed")): # Element step data is bad, so fail
         CommonUtil.ExecLog(sModuleInfo, "Element data is bad: %s" % str(element_step_data), 3)
@@ -1722,7 +1697,7 @@ def Conditional_Action_Handler(step_data, each, row, logic_row):
     return 'passed'
 
 #Handles actions for the sequential logic, based on the input from the mentioned function
-def Action_Handler_Appium(action_step_data, action_name):
+def Action_Handler_Appium(data_set, action_name):
     ''' Handle Sub-Field=Action from step data, called only by Sequential_Actions() '''
     
     sModuleInfo = inspect.stack()[0][3] + " : " + inspect.getmoduleinfo(__file__).name
@@ -1730,7 +1705,7 @@ def Action_Handler_Appium(action_step_data, action_name):
     # Put data set values in friendly variables
     action_field, action_subfield, action_value = ('','','')
     related_field, related_subfield, related_value = ('','','')
-    for row in action_step_data:
+    for row in data_set:
         if row[0] == action_name: # Action line
             action_field = row[0]
             action_subfield = row[1]
@@ -1761,25 +1736,25 @@ def Action_Handler_Appium(action_step_data, action_name):
         elif action_name == "text search": # Enter text string and enter key (for fields that don't have a button)
             result = Set_Text_Enter(related_field, related_value, action_value)
         elif action_name == "wait": # Wait until element is available/enabled
-            result = Wait(action_value) # !!! Lucas: I think this needs the element, and WAit() has the line needed to wait on an element commented out
+            result = Wait_For_New_Element([data_set])
         elif action_name == "tap": # Tap an element
             result = Tap(related_field, related_value)
         elif action_name == "validate full text" or action_name == "validate partial text": # Test if text string exists
-            result = Validate_Text(action_step_data)
+            result = Validate_Text(data_set)
         elif action_name == "save text": # Save text string
-            result = Save_Text([action_step_data],action_value)
+            result = Save_Text([data_set],action_value)
         elif action_name == "compare variable": # Compare two "shared" variables
-            result = Compare_Variables(action_step_data)
+            result = Compare_Variables(data_set)
         elif (str(action_name).lower().strip().startswith('insert into list')):
-            result = Insert_Into_List([action_step_data])
+            result = Insert_Into_List([data_set])
             if result == "failed":
                 return "failed"
         elif action_name == "initialize list":
-            result = Shared_Resources.Initialize_List([action_step_data])
+            result = Shared_Resources.Initialize_List([data_set])
             if result == "failed":
                 return "failed"
         elif (action_name == "compare list"):
-            result = Compare_Lists(action_step_data)
+            result = Compare_Lists(data_set)
             if result == "failed":
                 return "failed"
         elif action_name == "step result": # Result from step data the user wants to specify (passed/failed)
@@ -1802,7 +1777,7 @@ def Action_Handler_Appium(action_step_data, action_name):
 
         # Single row actions
         elif action_name == "sleep": # Sleep a specific amount of time
-            result = wait(int(action_value))
+            result = Sleep(data_set)
         elif action_name == "swipe": # Swipe screen
             result = swipe_handler(action_value)
         elif action_name == "close": # Close foreground application
@@ -1831,6 +1806,25 @@ def Action_Handler_Appium(action_step_data, action_name):
     except Exception:
         return CommonUtil.Exception_Handler(sys.exc_info())
 
+def verify_step_data(step_data):
+    ''' Verify step data is valid '''
+    
+    sModuleInfo = inspect.stack()[0][3] + " : " + inspect.getmoduleinfo(__file__).name
+    CommonUtil.ExecLog(sModuleInfo, "Verifying Step Data", 1)
+    
+    try:
+        for data_set in step_data:
+            for row in data_set:
+                if len(row[0]) == 0:
+                    CommonUtil.ExecLog(sModuleInfo, "Data Set Field is empty", 3)
+                    return 'failed'
+                elif len(row[1]) == 0:
+                    CommonUtil.ExecLog(sModuleInfo, "Data Set Sub-Field is empty", 3)
+                    return 'failed'
+        return 'passed'
+    except Exception:
+        return CommonUtil.Exception_Handler(sys.exc_info())
+    
 
 #Method to click on element; step data passed on by the user
 def Click_Element_Appium(data_set):
