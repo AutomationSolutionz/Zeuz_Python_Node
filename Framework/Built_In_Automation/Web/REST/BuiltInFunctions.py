@@ -24,6 +24,7 @@ from Framework.Utilities import CommonUtil
 
 passed_tag_list=['Pass','pass','PASS','PASSED','Passed','passed','true','TRUE','True','1','Success','success','SUCCESS']
 failed_tag_list=['Fail','fail','FAIL','Failed','failed','FAILED','false','False','FALSE','0']
+skipped_tag_list=['skip','SKIP','Skip','skipped','SKIPPED','Skipped']
 
 '============================= Sequential Action Section Begins=============================='
 
@@ -74,6 +75,14 @@ def Action_Handler(action_step_data, action_row):
             result = Shared_Resources.Initialize_List(action_step_data)
             if result == "failed":
                 return "failed"
+        elif (action_name == "step result"):
+            result = Step_Result(action_step_data)
+            if result in failed_tag_list: # Convert user specified pass/fail into standard result
+                return 'failed'
+            elif result in passed_tag_list:
+                return 'passed'
+            elif result in skipped_tag_list:
+                return 'skipped'
         elif (str(action_name).lower().strip().startswith('insert into list')):
             fields_to_be_saved = action_row[2]
             result = Insert_Into_List(action_step_data, fields_to_be_saved)
@@ -339,7 +348,14 @@ def Get_Response(step_data, fields_to_be_saved):
     except Exception:
         return CommonUtil.Exception_Handler(sys.exc_info())
 
-
+def Get_Element(returned_step_data_list, fields_to_be_saved):
+        sModuleInfo = inspect.stack()[0][3] + " : " + inspect.getmoduleinfo(__file__).name
+        CommonUtil.ExecLog(sModuleInfo, "Function: Get_Response", 1)
+        try:
+            return_result = handle_rest_call(returned_step_data_list, fields_to_be_saved)
+            return return_result
+        except Exception:
+            return CommonUtil.Exception_Handler(sys.exc_info())
 
 # Method to sleep for a particular duration
 def Sleep(step_data):
@@ -362,21 +378,20 @@ def Step_Result(step_data):
     CommonUtil.ExecLog(sModuleInfo, "Function: Step_Result", 1)
     try:
         if ((len(step_data) != 1) or (1 < len(step_data[0]) >= 5)):
-            CommonUtil.ExecLog(sModuleInfo,
-                               "The information in the data-set(s) are incorrect. Please provide accurate data set(s) information.",
-                               3)
+            CommonUtil.ExecLog(sModuleInfo,"The information in the data-set(s) are incorrect. Please provide accurate data set(s) information.",3)
             result = "failed"
         else:
             step_result = step_data[0][0][2]
             if step_result == 'pass':
                 result = "passed"
+            elif step_result == 'skip':
+                result = 'skipped'
             elif step_result == 'fail':
                 result = "failed"
-
+        print result
         return result
     except Exception:
         return CommonUtil.Exception_Handler(sys.exc_info())
-
 
 # Performs a series of action or conditional logical action decisions based on user input
 def Sequential_Actions(step_data):
@@ -402,6 +417,8 @@ def Sequential_Actions(step_data):
                         result = Action_Handler(new_data_set, row)
                     if result in failed_tag_list:
                         return "failed"
+                    elif result in skipped_tag_list:
+                        return "skipped"
 
                 # If middle column = optional action, call action handler, but always return a pass
                 elif row[1] == "optional action":
@@ -414,39 +431,41 @@ def Sequential_Actions(step_data):
 
                 elif row[1] == "body" or row[1] == "header" or row[1] == "headers":
                     continue
-                elif row[1] == "conditional action":
-                    CommonUtil.ExecLog(sModuleInfo,
-                                       "Checking the logical conditional action to be performed in the conditional action row",
-                                       1)
-                    logic_decision = ""
+                elif row[1]=="conditional action":
+                    CommonUtil.ExecLog(sModuleInfo, "Checking the logical conditional action to be performed in the conditional action row", 1)
+                    logic_decision=""
                     logic_row.append(row)
-                    if len(logic_row) == 2:
-                        # element_step_data = each[0:len(step_data[0])-2:1]
-                        new_data_set = Shared_Resources.Handle_Step_Data_Variables([each])
-                        if new_data_set in failed_tag_list:
-                            return_result = 'failed'
-
-                        return_result = Get_Response(new_data_set, 'all')
-                        if return_result == 'failed':
-                            logic_decision = "false"
+                    if len(logic_row)==2:
+                        #element_step_data = each[0:len(step_data[0])-2:1]
+                        element_step_data = Get_Element_Step_Data([each])
+                        returned_step_data_list = Validate_Step_Data(element_step_data)
+                        if ((returned_step_data_list == []) or (returned_step_data_list == "failed")):
+                            return "failed"
                         else:
-                            logic_decision = "true"
-
+                            try:
+                                Element = Get_Element(returned_step_data_list, "all")
+                                if Element == 'failed':
+                                    logic_decision = "false"
+                                else:
+                                    logic_decision = "true"
+                            except Exception, errMsg:
+                                errMsg = "Could not find element in the by the criteria..."
+                                return CommonUtil.Exception_Handler(sys.exc_info(),None,errMsg)
                     else:
                         continue
 
                     for conditional_steps in logic_row:
                         if logic_decision in conditional_steps:
                             print conditional_steps[2]
-                            print logic_decision
                             list_of_steps = conditional_steps[2].split(",")
                             for each_item in list_of_steps:
                                 data_set_index = int(each_item) - 1
                                 cond_result = Sequential_Actions([step_data[data_set_index]])
                                 if cond_result == "failed":
                                     return "failed"
+                                elif cond_result == "skipped":
+                                    return "skipped"
                             return "passed"
-
                 else:
                     CommonUtil.ExecLog(sModuleInfo,
                                        "The sub-field information is incorrect. Please provide accurate information on the data set(s).",
@@ -508,3 +527,6 @@ def Validate_Step_Data(step_data):
             exc_obj) + ";" + "File Name: " + fname + ";" + "Line: " + str(exc_tb.tb_lineno))
         CommonUtil.ExecLog(sModuleInfo, "Could not find the new page element requested.  Error: %s" % (Error_Detail), 3)
         return "failed"
+
+
+
