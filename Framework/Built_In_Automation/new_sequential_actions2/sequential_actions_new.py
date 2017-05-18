@@ -5,7 +5,7 @@
 
 import inspect, sys
 from Framework.Utilities import CommonUtil
-import common_functions # Functions that are common to all modules
+from common_functions import * # Functions that are common to all modules
 from Framework.Built_In_Automation.Shared_Resources import BuiltInFunctionSharedResources as sr
 
 
@@ -54,7 +54,7 @@ def Sequential_Actions(step_data):
     CommonUtil.ExecLog(sModuleInfo, "Starting Sequential Actions", 1)
     
     # Prepare step data for processing
-    step_data = common_functions.sanitize(step_data) # Sanitize Field and Sub-Field
+    step_data = sanitize(step_data) # Sanitize Field and Sub-Field
     step_data = shared_variable_to_value(step_data) # Convert shared variables into their values for all step data
     
     try:            
@@ -150,12 +150,16 @@ def Conditional_Action_Handler(step_data, each, row, logic_row):
     # Shouldn't get here, but just in case
     return 'passed'
 
-def Action_Handler(action_step_data, action_row):
+def Action_Handler(data_set, action_row):
     ''' Finds the appropriate function for the requested action in the step data and executes it '''
     
     sModuleInfo = inspect.stack()[0][3] + " : " + inspect.getmoduleinfo(__file__).name
     CommonUtil.ExecLog(sModuleInfo, "Function: Action_Handler", 1)
     
+    data_set = shared_variable_to_value(data_set)
+    if data_set in failed_tag_list:
+        return 'failed'
+
     # Split data set row into the usable parts
     action_name = action_row[0]
     action_subfield = action_row[1]
@@ -163,9 +167,9 @@ def Action_Handler(action_step_data, action_row):
     
     try:
         if action_name == "step result": # Result from step data the user wants to specify (passed/failed)
-            if action_value in common_functions.failed_tag_list: # Convert user specified pass/fail into standard result
+            if action_value in failed_tag_list: # Convert user specified pass/fail into standard result
                 return 'failed'
-            elif action_value in common_functions.passed_tag_list:
+            elif action_value in passed_tag_list:
                 return 'passed'
             else:
                 CommonUtil.ExecLog(sModuleInfo, "The action you entered is incorrect. Please provide accurate information on the data set(s).", 3)
@@ -181,7 +185,7 @@ def Action_Handler(action_step_data, action_row):
                     return 'failed'
                 
                 run_function = getattr(eval(module), function) # create a function we can use
-                result = run_function(action_step_data) # Execute function, providing all step data
+                result = run_function(data_set) # Execute function, providing all step data
                 return result
             else:
                 CommonUtil.ExecLog(sModuleInfo, "The action you entered is incorrect. Please provide accurate information on the data set(s).", 3)
@@ -216,27 +220,28 @@ def get_module_and_function(action_name, action_sub_field):
         return CommonUtil.Exception_Handler(sys.exc_info())
 
 
-def shared_variable_to_value(step_data): #!!! Should be moved to Shared_Variable.py
+def shared_variable_to_value(data_set): #!!! Should be moved to Shared_Variable.py
     ''' Look for any Shared Variable strings in step data, convert them into their values, and return '''
     
     sModuleInfo = inspect.stack()[0][3] + " : " + inspect.getmoduleinfo(__file__).name
+    new_data = [] # Rebuild the data_set with the new variable (because it's a list of tuples which we can't update)
 
     try:
-        for each in step_data: # For each data set within step data
-            for row in each: # For each row of the data set
-                for i in range(0, 3): # For each field (Field, Sub-Field, Value)
-                    if row[i] != False:
-                        if "%|" in row[i] and "|%" in row[i]: # If string contains these characters, it's a shared variable
-                            CommonUtil.ExecLog(sModuleInfo, "Shared Variable: %s" % row[i], 1)
-                            left_index = row[i].index('%|') # Get index of left marker
-                            right_index = row[i].index('|%') # Get index of right marker
-                            var = row[i][left_index:right_index + 2] # Copy entire shared variable
-                            var_clean = var[2:len(var)-2] # Remove markers
-                            row[i] = sr.Get_Shared_Variables(var_clean) # Get the string for this shared variable
-                            if row[i] == 'failed':
-                                CommonUtil.ExecLog(sModuleInfo, "Invalid shared variable", 3)
-                                return "failed"
-        return step_data
+        for row in data_set: # For each row of the data set
+            data_row = list(row) # Convert row which is a tuple to a list, so we can update it if we need to
+            for i in range(0, 3): # For each field (Field, Sub-Field, Value)
+                if row[i] != False:
+                    if "%|" in row[i] and "|%" in row[i]: # If string contains these characters, it's a shared variable
+                        #CommonUtil.ExecLog(sModuleInfo, "Shared Variable: %s" % row[i], 1)
+                        left_index = row[i].index('%|') # Get index of left marker
+                        right_index = row[i].index('|%') # Get index of right marker
+                        var = row[i][left_index:right_index + 2] # Copy entire shared variable
+                        var_clean = var[2:len(var)-2] # Remove markers
+                        data_row[i] = Shared_Resources.Get_Shared_Variables(var_clean) # Get the string for this shared variable 
+                        if row[i] == 'failed':
+                            CommonUtil.ExecLog(sModuleInfo, "Invalid shared variable", 3)
+                            return "failed"
+            new_data.append(tuple(data_row)) # Convert row from list to tuple, and append to new data_set
+        return new_data
     except Exception:
         return CommonUtil.Exception_Handler(sys.exc_info())
-

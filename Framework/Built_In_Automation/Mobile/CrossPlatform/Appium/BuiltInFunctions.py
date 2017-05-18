@@ -724,13 +724,20 @@ def Swipe(x_start, y_start, x_end, y_end, duration = 1000):
         errMsg = "Unable to swipe."
         return CommonUtil.Exception_Handler(sys.exc_info(),None,errMsg)
 
-def swipe_handler(action_value):
+def swipe_handler(data_set):
     ''' Swipe screen based on user input '''
     # Functions: General swipe (up/down/left/right), multiple swipes (X coordinate (from-to), Y coordinate (from-to), stepsize)
     # action_value: comma delimited string containing swipe details
     
     sModuleInfo = inspect.stack()[0][3] + " : " + inspect.getmoduleinfo(__file__).name
     CommonUtil.ExecLog(sModuleInfo, "Starting swipe handler", 1)
+
+    # Parse data set
+    try:
+        action_value = data_set[0][2]
+    except Exception:
+        errMsg = "Unable to parse data set"
+        return CommonUtil.Exception_Handler(sys.exc_info(),None,errMsg)
 
     # Get screen size for calculations
     window_size = get_window_size()
@@ -1034,11 +1041,19 @@ def read_screen_heirarchy():
         CommonUtil.ExecLog(sModuleInfo,"Read screen heirarchy unsuccessfully",3)
         return False
 
-def tap_location(positions):
+def tap_location(data_set):
     ''' Tap the provided position using x,y cooridnates '''
     # positions: list containing x,y coordinates
     
     sModuleInfo = inspect.stack()[0][3] + " : " + inspect.getmoduleinfo(__file__).name
+
+    # Parse data set
+    try:
+        positions = (data_set[0][2])
+    except Exception:
+        errMsg = "Unable to parse data set"
+        return CommonUtil.Exception_Handler(sys.exc_info(),None,errMsg)
+
     try:
         driver.tap(positions) # Tap the location (must be in list format)
         CommonUtil.ExecLog(sModuleInfo,"Tapped on location successfully",1)
@@ -1717,16 +1732,10 @@ def Action_Handler_Appium(data_set, action_name):
             
     # Perform an action based on Field from step data
     try:
-        # Handle shared variable string
-        if action_value != False:
-            if "%|" in action_value and "|%" in action_value: # If string contains these characters, it's a shared variable
-                CommonUtil.ExecLog(sModuleInfo, "Shared Variable: %s" % action_value, 1)
-                action_value = action_value.replace("%|", "") # Strip special variable characters
-                action_value = action_value.replace("|%", "")
-                action_value = Shared_Resources.Get_Shared_Variables(action_value) # Get the string for this shared variable
-                if action_value == 'failed':
-                    CommonUtil.ExecLog(sModuleInfo, "Invalid shared variable", 3)
-                    return "failed"
+        # Convert shared variables to their string equivelent
+        data_set = shared_variable_to_value(data_set)
+        if data_set in failed_tag_list:
+            return 'failed'
 
         # Multiple row actions
         if action_name == "click": # Click an element
@@ -1779,7 +1788,7 @@ def Action_Handler_Appium(data_set, action_name):
         elif action_name == "sleep": # Sleep a specific amount of time
             result = Sleep(data_set)
         elif action_name == "swipe": # Swipe screen
-            result = swipe_handler(action_value)
+            result = swipe_handler(data_set)
         elif action_name == "close": # Close foreground application
             result = close_application()
         elif action_name == "uninstall": # Uninstall application
@@ -1789,7 +1798,7 @@ def Action_Handler_Appium(data_set, action_name):
         elif action_name == 'keypress': # Press hardware, software or virtual key
             result = Android_Keystroke_Key_Mapping(action_value) # To be replaced with handler dependent on android/ios
         elif action_name == "tap location":
-            result = tap_location(action_value)
+            result = tap_location(data_set)
 
         # Anything else is an invalid action
         else:
@@ -1805,6 +1814,33 @@ def Action_Handler_Appium(data_set, action_name):
         
     except Exception:
         return CommonUtil.Exception_Handler(sys.exc_info())
+
+def shared_variable_to_value(data_set): #!!! Should be moved to Shared_Variable.py
+    ''' Look for any Shared Variable strings in step data, convert them into their values, and return '''
+    
+    sModuleInfo = inspect.stack()[0][3] + " : " + inspect.getmoduleinfo(__file__).name
+    new_data = [] # Rebuild the data_set with the new variable (because it's a list of tuples which we can't update)
+
+    try:
+        for row in data_set: # For each row of the data set
+            data_row = list(row) # Convert row which is a tuple to a list, so we can update it if we need to
+            for i in range(0, 3): # For each field (Field, Sub-Field, Value)
+                if row[i] != False:
+                    if "%|" in row[i] and "|%" in row[i]: # If string contains these characters, it's a shared variable
+                        #CommonUtil.ExecLog(sModuleInfo, "Shared Variable: %s" % row[i], 1)
+                        left_index = row[i].index('%|') # Get index of left marker
+                        right_index = row[i].index('|%') # Get index of right marker
+                        var = row[i][left_index:right_index + 2] # Copy entire shared variable
+                        var_clean = var[2:len(var)-2] # Remove markers
+                        data_row[i] = Shared_Resources.Get_Shared_Variables(var_clean) # Get the string for this shared variable 
+                        if row[i] == 'failed':
+                            CommonUtil.ExecLog(sModuleInfo, "Invalid shared variable", 3)
+                            return "failed"
+            new_data.append(tuple(data_row)) # Convert row from list to tuple, and append to new data_set
+        return new_data
+    except Exception:
+        return CommonUtil.Exception_Handler(sys.exc_info())
+
 
 def verify_step_data(step_data):
     ''' Verify step data is valid '''
