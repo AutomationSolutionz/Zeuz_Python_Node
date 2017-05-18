@@ -12,12 +12,15 @@ passed_tag_list=['Pass','pass','PASS','PASSED','Passed','passed','true','TRUE','
 failed_tag_list=['Fail','fail','FAIL','Failed','failed','FAILED','false','False','FALSE','0',False]
 
 def sanitize(step_data):
-    ''' Sanitize step data Field and Sub-Field ''' 
+    ''' Sanitize step data Field and Sub-Field '''
+    # Needs to be updated to allow underscores in certain areas, and to handle more types of invalid data
+    
     for each in step_data: # For each data set within step data
         for row in each: # For each row of the data set
             for i in range(0, 2): # For first 2 fields (Field, Sub-Field)
                 row[i] = row[i].replace('  ', ' ')
                 row[i] = row[i].replace('_', ' ')
+                row[i] = row[i].strip()
     return step_data
 
 

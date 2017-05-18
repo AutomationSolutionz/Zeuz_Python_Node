@@ -228,9 +228,11 @@ def shared_variable_to_value(step_data): #!!! Should be moved to Shared_Variable
                     if row[i] != False:
                         if "%|" in row[i] and "|%" in row[i]: # If string contains these characters, it's a shared variable
                             CommonUtil.ExecLog(sModuleInfo, "Shared Variable: %s" % row[i], 1)
-                            row[i] = row[i].replace("%|", "") # Strip special variable characters
-                            row[i] = row[i].replace("|%", "")
-                            row[i] = sr.Get_Shared_Variables(row[i]) # Get the string for this shared variable
+                            left_index = row[i].index('%|') # Get index of left marker
+                            right_index = row[i].index('|%') # Get index of right marker
+                            var = row[i][left_index:right_index + 2] # Copy entire shared variable
+                            var_clean = var[2:len(var)-2] # Remove markers
+                            row[i] = sr.Get_Shared_Variables(var_clean) # Get the string for this shared variable
                             if row[i] == 'failed':
                                 CommonUtil.ExecLog(sModuleInfo, "Invalid shared variable", 3)
                                 return "failed"
