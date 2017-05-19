@@ -178,10 +178,28 @@ def start_appium_instances(port_to_connect, file_location, hub_address = '127.0.
         return False
 ################################### UNUSED - SEEMS TO INVOLVE SETTING UP APPIUM #########################################
 
-def launch_application(package_name, activity_name):
+def launch_application(data_set):
     ''' Launch the application the appium instance was created with, and create the instance if necessary '''
     
     sModuleInfo = inspect.stack()[0][3] + " : " + inspect.getmoduleinfo(__file__).name
+    CommonUtil.ExecLog(sModuleInfo,"Launching application", 1)
+    
+    # Parse data set
+    try:
+        package_name = '' # Name of application package
+        activity_name = '' # Name of application activity
+        for row in data_set: # Find required data
+            if row[0] == 'launch' and row[1] == 'action':
+                package_name = row[2]
+            elif row[0] == 'app_activity' and row[1] == 'element parameter':
+                activity_name = row[2]
+        if package_name == '' or activity_name == '':
+            CommonUtil.ExecLog(sModuleInfo,"Could not find package or activity name", 3)
+            return 'failed'
+    except Exception:
+        errMsg = "Unable to parse data set"
+        return CommonUtil.Exception_Handler(sys.exc_info(),None,errMsg)
+
     try:
         if driver == None: # Only create a new appium instance if we haven't already (may be done by install_and_start_driver())
             result = start_appium_driver(package_name, activity_name)
@@ -276,14 +294,30 @@ def close_application():
         return CommonUtil.Exception_Handler(sys.exc_info(),None,errMsg)
     
     
-def install_application(app_location, activity_name=''):
+def install_application(data_set): #app_location, activity_name=''
     ''' Install application to device '''
     # Webdriver does the installation and verification
     # If the user tries to call install again, nothing will happen because we don't want to create another instance. User should teardown(), then install
     
     sModuleInfo = inspect.stack()[0][3] + " : " + inspect.getmoduleinfo(__file__).name
-    CommonUtil.ExecLog(sModuleInfo,"Trying to install and then launch the app...",1)
+    CommonUtil.ExecLog(sModuleInfo,"Trying to install and then launch the app...", 1)
     
+    # Parse data set
+    try:
+        app_location = '' # File location on disk
+        activity_name = '' # Optional value needed for some programs
+        for row in data_set: # Find required data
+            if row[0] == 'install' and row[1] == 'action':
+                app_location = row[2]
+            elif row[0] == 'app_activity' and row[1] == 'element parameter': # Optional parameter
+                activity_name = row[2]
+        if app_location == '':
+            CommonUtil.ExecLog(sModuleInfo,"Could not find file location", 3)
+            return 'failed'
+    except Exception:
+        errMsg = "Unable to parse data set"
+        return CommonUtil.Exception_Handler(sys.exc_info(),None,errMsg)
+
     try:
         if driver == None: # Only create a new appium instance if we haven't already (may be done by install_and_start_driver())
             result = start_appium_driver('', activity_name, app_location) # Install application and create driver instance. First parameter is always empty. We specify the third parameter with the file, and optionally the second parameter with the activity name if it's needed
@@ -297,10 +331,19 @@ def install_application(app_location, activity_name=''):
         return CommonUtil.Exception_Handler(sys.exc_info(),None,errMsg)
 
 
-def uninstall_application(app_package):
+def uninstall_application(data_set):
     ''' Uninstalls/removes application from device '''
     
     sModuleInfo = inspect.stack()[0][3] + " : " + inspect.getmoduleinfo(__file__).name
+    CommonUtil.ExecLog(sModuleInfo,"Uninstalling application", 1)
+    
+    # Parse data set
+    try:
+        app_package = data_set[0][2]
+    except Exception:
+        errMsg = "Unable to parse data set"
+        return CommonUtil.Exception_Handler(sys.exc_info(),None,errMsg)
+
     try:
         CommonUtil.ExecLog(sModuleInfo,"Trying to remove app with package name %s..."%app_package,1)
         #if driver.is_app_installed(app_package):
@@ -331,130 +374,6 @@ def Get_Element(element_parameter, element_value, reference_parameter=False, ref
         errMsg = "Could not find your element."
         return CommonUtil.Exception_Handler(sys.exc_info(),None,errMsg)
 
-
-def Click_Element(element_parameter, element_value):
-    sModuleInfo = inspect.stack()[0][3] + " : " + inspect.getmoduleinfo(__file__).name
-    try:
-        CommonUtil.ExecLog(sModuleInfo, "Trying to click on element...", 1)
-        if element_parameter == "name":
-            result = click_element_by_name(driver, element_value)
-        elif element_parameter == "text":
-            result = click_element_by_xpath(driver, "//*[@text='%s']" % element_value)
-        elif element_parameter == "id":
-            result = click_element_by_id(driver, element_value)
-        elif element_parameter == "accessibility_id":
-            result = click_element_by_accessibility_id(driver, element_value)
-        elif element_parameter == "class_name":
-            result = click_element_by_class_name(driver, element_value)
-        elif element_parameter == "xpath":
-            result = click_element_by_xpath(driver, element_value)
-        elif element_parameter == "android_uiautomator_text":
-            result = click_element_by_android_uiautomator_text(driver, element_value)
-        elif element_parameter == "android_uiautomator_description":
-            result = click_element_by_android_uiautomator_description(driver, element_value)
-        elif element_parameter == "ios_uiautomation":
-            result = click_element_by_ios_uiautomation(driver, element_value)
-        else:
-            try:
-                CommonUtil.ExecLog(sModuleInfo,
-                                   "Trying to click on element with parameter - %s and value - %s ..." % (element_parameter, element_value),
-                                   1)
-                elem = driver.find_element_by_xpath("//*[@%s='%s']" % (element_parameter, element_value))
-                if elem.is_enabled():
-                    elem.click()
-                    CommonUtil.ExecLog(sModuleInfo, "Clicked on element successfully", 1)
-                    return "passed"
-                else:
-                    CommonUtil.ExecLog(sModuleInfo, "Unable to click. The element is disabled.", 3)
-                    return "failed"
-            except Exception:
-                errMsg = "Unable to click on the element"
-                return CommonUtil.Exception_Handler(sys.exc_info(),None,errMsg)
-
-        if result == "passed":
-            CommonUtil.ExecLog(sModuleInfo, "Clicked on element successfully", 1)
-            return "passed"
-        elif result == "failed":
-            CommonUtil.ExecLog(sModuleInfo, "Unable to click. The element is disabled.", 3)
-            return "failed"
-
-        """element_data = Validate_Step_Data(step_data)
-        elem = Get_Element(element_data[0], element_data[1])
-        if elem.is_enabled():
-            elem.click()
-            CommonUtil.ExecLog(sModuleInfo, "Clicked on element successfully", 1)
-            return "passed"
-        else:
-            CommonUtil.ExecLog(sModuleInfo, "Unable to click. The element is disabled.", 3)
-            return "failed" """
-    except Exception:
-        errMsg = "Unable to click on the element."
-        return CommonUtil.Exception_Handler(sys.exc_info(),None,errMsg)
-
-
-# Method to enter texts in a text box; step data passed on by the user
-def Set_Text(element_parameter, element_value, text_value):
-    sModuleInfo = inspect.stack()[0][3] + " : " + inspect.getmoduleinfo(__file__).name
-    CommonUtil.ExecLog(sModuleInfo, "Inside Enter Text In Text Box function", 1)
-    try:
-        CommonUtil.ExecLog(sModuleInfo, "Trying to set text in the textbox...", 1)
-        if element_parameter == "name":
-            result = set_text_by_name(driver, element_value, text_value)
-        elif element_parameter == "text":
-            result = click_element_by_xpath(driver, "//*[@text='%s']" % text_value)
-        elif element_parameter == "id":
-            result = set_text_by_id(driver, element_value, text_value)
-        elif element_parameter == "accessibility_id":
-            result = set_text_by_accessibility_id(driver, element_value, text_value)
-        elif element_parameter == "class_name":
-            result = set_text_by_class_name(driver, element_value, text_value)
-        elif element_parameter == "xpath":
-            result = set_text_by_xpath(driver, element_value, text_value)
-        elif element_parameter == "android_uiautomator_text":
-            result = set_text_by_android_uiautomator_text(driver, element_value, text_value)
-        elif element_parameter == "android_uiautomator_description":
-            result = set_text_by_android_uiautomator_description(driver, element_value, text_value)
-        elif element_parameter == "ios_uiautomation":
-            result = set_text_by_ios_uiautomation(driver, element_value, text_value)
-        else:
-            elem = driver.find_element_by_xpath("//*[@%s='%s']" % (element_parameter, element_value))
-            elem.click()
-            elem.send_keys(text_value)
-            driver.hide_keyboard()
-            CommonUtil.ExecLog(sModuleInfo, "Entered text on element successfully", 1)
-            return "passed"
-
-        if result == "passed":
-            CommonUtil.ExecLog(sModuleInfo, "Entered text successfully", 1)
-            return "passed"
-        elif result == "failed":
-            CommonUtil.ExecLog(sModuleInfo, "Unable to enter text.", 3)
-            return "failed"
-
-    except Exception:
-        errMsg = "Could not set text."
-        return CommonUtil.Exception_Handler(sys.exc_info(),None,errMsg)
-
-
-# Method to enter text in a text box and press enter to search of something
-def Set_Text_Enter(element_parameter, element_value, text_value):
-    # !!! Should be removed - can be performed with two sequential actions (text & click, element & ENTER key)
-    sModuleInfo = inspect.stack()[0][3] + " : " + inspect.getmoduleinfo(__file__).name
-    CommonUtil.ExecLog(sModuleInfo, "Inside Enter Text In Text Box function", 1)
-    try:
-        CommonUtil.ExecLog(sModuleInfo, "Trying to set text in the textbox...", 1)
-
-        #elem = driver.find_element_by_xpath("//*[@%s='%s']" % (element_parameter, element_value))
-        elem = Get_Single_Element(element_parameter, element_value)
-        elem.click()
-        elem.send_keys(text_value + "\n")
-        CommonUtil.ExecLog(sModuleInfo, "Entered text on element successfully", 1)
-        return "passed"
-        CommonUtil.ExecLog(sModuleInfo, "Entered and searched text successfully", 1)
-
-    except Exception:
-        errMsg = "Could not set text and search."
-        return CommonUtil.Exception_Handler(sys.exc_info(),None,errMsg)
 
 
 
@@ -671,6 +590,7 @@ def Wait_For_New_Element(data_set):
     CommonUtil.ExecLog(sModuleInfo, "Function: Wait_For_New_Page_Element", 1)
     
     try:
+        data_set = [data_set]
         element_step_data = Get_Element_Step_Data_Appium(data_set)
         returned_step_data_list = Validate_Step_Data(element_step_data)
         if ((returned_step_data_list == []) or (returned_step_data_list == "failed")):
@@ -873,25 +793,6 @@ def swipe_handler(data_set):
     CommonUtil.ExecLog(sModuleInfo, "Swipe completed successfully", 1)    
     return 'passed'
 
-def Tap(element_parameter, element_value):
-    sModuleInfo = inspect.stack()[0][3] + " : " + inspect.getmoduleinfo(__file__).name
-    try:
-        CommonUtil.ExecLog(sModuleInfo, "Starting to tap the element...", 1)
-        #element_data = Validate_Step_Data(step_data)
-        elem = Get_Element(element_parameter, element_value)
-        if elem.is_enabled():
-            action = TouchAction(driver)
-            action.tap(elem).perform()
-            CommonUtil.ExecLog(sModuleInfo, "Tapped on element successfully", 1)
-            return "passed"
-        else:
-            CommonUtil.ExecLog(sModuleInfo, "Unable to tap. The element is disabled.", 3)
-            return "failed"
-    except Exception:
-        errMsg = "Unable to tap."
-        return CommonUtil.Exception_Handler(sys.exc_info(),None,errMsg)
-
-
 # Validating text from an element given information regarding the expected text
 def Validate_Text(data_set):
     sModuleInfo = inspect.stack()[0][3] + " : " + inspect.getmoduleinfo(__file__).name
@@ -969,11 +870,28 @@ def Validate_Text(data_set):
 
 
 #Validating text from an element given information regarding the expected text
-def Save_Text(data_set, variable_name):
+def Save_Text(data_set):
     sModuleInfo = inspect.stack()[0][3] + " : " + inspect.getmoduleinfo(__file__).name
     CommonUtil.ExecLog(sModuleInfo, "Function: Save Text", 1)
+    
+    data_set = [data_set]
+    
+    # Parse data set
     try:
-        if ((1 < len(data_set[0]) >= 5)):
+        variable_name = ''
+        for each in data_set:
+            for row in each:
+                if row[1] == 'action':
+                    variable_name = row[2]
+        if variable_name == '':
+            CommonUtil.ExecLog(sModuleInfo, "Unable to parse data set", 3)
+            return 'failed'
+    except Exception:
+        errMsg = "Unable to parse data set"
+        return CommonUtil.Exception_Handler(sys.exc_info(),None,errMsg)
+
+    try:
+        if (len(data_set[0]) < 1):
             CommonUtil.ExecLog(sModuleInfo, "The information in the data-set(s) are incorrect. Please provide accurate data set(s) information.",3)
             return "failed"
         else:
@@ -1062,11 +980,25 @@ def tap_location(data_set):
         errMsg = "Tapped on location unsuccessfully"
         return CommonUtil.Exception_Handler(sys.exc_info(),None,errMsg)
     
-def get_element_location_by_id(_id):
+def get_element_location_by_id(data_set):
     ''' Find and return an element's x,y coordinates '''
     
     sModuleInfo = inspect.stack()[0][3] + " : " + inspect.getmoduleinfo(__file__).name
+    CommonUtil.ExecLog(sModuleInfo,"Searching for coordinates", 1)
     
+    # Parse data set
+    try:
+        _id = ''
+        for row in data_set: # Find element name from element parameter
+            if row[1] == 'element parameter':
+                _id = (row[2])
+        if _id == '':
+            CommonUtil.ExecLog(sModuleInfo,"Could not find element parameter", 3)
+            return 'failed'
+    except Exception:
+        errMsg = "Unable to parse data set"
+        return CommonUtil.Exception_Handler(sys.exc_info(),None,errMsg)
+
     try:
         positions = []
         elem = locate_element_by_id(driver, _id) # Get element object for given id
@@ -1189,299 +1121,6 @@ def locate_element_by_ios_uiautomation(driver, _description):
         errMsg = "Unable to locate the element."
         return CommonUtil.Exception_Handler(sys.exc_info(),None,errMsg)
 
-    
-def click_element_by_id(driver, _id):
-    sModuleInfo = inspect.stack()[0][3] + " : " + inspect.getmoduleinfo(__file__).name
-    try:
-        CommonUtil.ExecLog(sModuleInfo,"Trying to click on element by id: %s"%_id,1)
-        elem = locate_element_by_id(driver, _id)
-        if elem.is_enabled():
-            elem.click()
-            CommonUtil.ExecLog(sModuleInfo,"Clicked on element successfully",1)
-            return "Passed"
-        else:
-            CommonUtil.ExecLog(sModuleInfo,"Unable to click. The element is disabled.",3)
-            return "failed"
-    except Exception:
-        errMsg = "Unable to click on the element."
-        return CommonUtil.Exception_Handler(sys.exc_info(),None,errMsg)
-    
-def click_element_by_name(driver, _name):
-    sModuleInfo = inspect.stack()[0][3] + " : " + inspect.getmoduleinfo(__file__).name
-    try:
-        CommonUtil.ExecLog(sModuleInfo,"Trying to click on element by name: %s"%_name,1)
-        elem = locate_element_by_name(driver, _name)
-        if elem.is_enabled():
-            elem.click()
-            CommonUtil.ExecLog(sModuleInfo,"Clicked on element successfully",1)
-            return "Passed"
-        else:
-            CommonUtil.ExecLog(sModuleInfo,"Unable to click. The element is disabled.",3)
-            return "failed"
-    except Exception:
-        errMsg = "Unable to click on the element."
-        return CommonUtil.Exception_Handler(sys.exc_info(),None,errMsg)
-    
-def click_element_by_class_name(driver, _class):
-    sModuleInfo = inspect.stack()[0][3] + " : " + inspect.getmoduleinfo(__file__).name
-    try:
-        CommonUtil.ExecLog(sModuleInfo,"Trying to click on element by class: %s"%_class,1)
-        elem = locate_element_by_class_name(driver, _class)
-        if elem.is_enabled():
-            elem.click()
-            CommonUtil.ExecLog(sModuleInfo,"Clicked on element successfully",1)
-            return "Passed"
-        else:
-            CommonUtil.ExecLog(sModuleInfo,"Unable to click. The element is disabled.",3)
-            return "failed"
-    except Exception:
-        errMsg = "Unable to click on the element."
-        return CommonUtil.Exception_Handler(sys.exc_info(),None,errMsg)
-    
-def click_element_by_xpath(driver, _classpath):
-    sModuleInfo = inspect.stack()[0][3] + " : " + inspect.getmoduleinfo(__file__).name
-    try:
-        CommonUtil.ExecLog(sModuleInfo,"Trying to click on element by xpath: %s"%_classpath,1)
-        elem = locate_element_by_xpath(driver, _classpath)
-        if elem.is_enabled():
-            elem.click()
-            CommonUtil.ExecLog(sModuleInfo,"Clicked on element successfully",1)
-            return "Passed"
-        else:
-            CommonUtil.ExecLog(sModuleInfo,"Unable to click. The element is disabled.",3)
-            return "failed"
-    except Exception:
-        errMsg = "Unable to click on the element."
-        return CommonUtil.Exception_Handler(sys.exc_info(),None,errMsg)
-    
-def click_element_by_accessibility_id(driver, _id):
-    sModuleInfo = inspect.stack()[0][3] + " : " + inspect.getmoduleinfo(__file__).name
-    try:
-        CommonUtil.ExecLog(sModuleInfo,"Trying to click on element by accessibility id: %s"%_id,1)
-        elem = locate_element_by_accessibility_id(driver, _id)
-        if elem.is_enabled():
-            elem.click()
-            CommonUtil.ExecLog(sModuleInfo,"Clicked on element successfully",1)
-            return "Passed"
-        else:
-            CommonUtil.ExecLog(sModuleInfo,"Unable to click. The element is disabled.",3)
-            return "failed"
-    except Exception:
-        errMsg = "Unable to click on the element."
-        return CommonUtil.Exception_Handler(sys.exc_info(),None,errMsg)
-    
-def click_element_by_android_uiautomator_text(driver, _text):
-    sModuleInfo = inspect.stack()[0][3] + " : " + inspect.getmoduleinfo(__file__).name
-    try:
-        CommonUtil.ExecLog(sModuleInfo,"Trying to click on element by android uiautomator text: %s"%_text,1)
-        elem = locate_element_by_android_uiautomator_text(driver, _text)
-        if elem.is_enabled():
-            elem.click()
-            CommonUtil.ExecLog(sModuleInfo,"Clicked on element successfully",1)
-            return "Passed"
-        else:
-            CommonUtil.ExecLog(sModuleInfo,"Unable to click. The element is disabled.",3)
-            return "failed"
-    except Exception:
-        errMsg = "Unable to click on the element."
-        return CommonUtil.Exception_Handler(sys.exc_info(),None,errMsg)
-    
-def click_element_by_android_uiautomator_description(driver, _description):
-    sModuleInfo = inspect.stack()[0][3] + " : " + inspect.getmoduleinfo(__file__).name
-    try:
-        CommonUtil.ExecLog(sModuleInfo,"Trying to click on element by android uiautomator description: %s"%_description,1)
-        elem = locate_element_by_android_uiautomator_description(driver, _description)
-        if elem.is_enabled():
-            elem.click()
-            CommonUtil.ExecLog(sModuleInfo,"Clicked on element successfully",1)
-            return "Passed"
-        else:
-            CommonUtil.ExecLog(sModuleInfo,"Unable to click. The element is disabled.",3)
-            return "failed"
-    except Exception:
-        errMsg = "Unable to click on the element."
-        return CommonUtil.Exception_Handler(sys.exc_info(),None,errMsg)
-
-
-def click_element_by_ios_uiautomation(driver, _description):
-    sModuleInfo = inspect.stack()[0][3] + " : " + inspect.getmoduleinfo(__file__).name
-    try:
-        CommonUtil.ExecLog(sModuleInfo,"Trying to click on element by android uiautomator description: %s"%_description,1)
-        elem = locate_element_by_ios_uiautomation(driver, _description)
-        if elem.is_enabled():
-            elem.click()
-            CommonUtil.ExecLog(sModuleInfo,"Clicked on element successfully",1)
-            return "Passed"
-        else:
-            CommonUtil.ExecLog(sModuleInfo,"Unable to click. The element is disabled.",3)
-            return "failed"
-    except Exception:
-        errMsg = "Unable to click on the element."
-        return CommonUtil.Exception_Handler(sys.exc_info(),None,errMsg)
-
-
-
-def set_text_by_id(driver, _id, text):
-    sModuleInfo = inspect.stack()[0][3] + " : " + inspect.getmoduleinfo(__file__).name
-    try:
-        CommonUtil.ExecLog(sModuleInfo,"Trying to set text on element by id: %s"%_id,1)
-        elem = locate_element_by_id(driver, _id)
-        if elem.is_displayed():
-            elem.click()
-            #driver.hide_keyboard()
-            #elem.set_value(text)
-            #driver.set_value(elem, text)
-            elem.send_keys(text)
-            driver.hide_keyboard()
-            CommonUtil.ExecLog(sModuleInfo, "Text set on element successfully", 1)
-            return "Passed"
-        else:
-            CommonUtil.ExecLog(sModuleInfo, "Unable to set text. The element is hidden.", 3)
-            return "failed"
-        #driver.set_value(elem, text)
-
-    except Exception:
-        errMsg = "Unable to set text on the element."
-        return CommonUtil.Exception_Handler(sys.exc_info(),None,errMsg)
-
-
-def set_text_by_name(driver, _name, text):
-    sModuleInfo = inspect.stack()[0][3] + " : " + inspect.getmoduleinfo(__file__).name
-    try:
-        CommonUtil.ExecLog(sModuleInfo,"Trying to set text on element by name: %s"%_name,1)
-        elem = locate_element_by_name(driver, _name)
-        if elem.is_displayed():
-            elem.click()
-            elem.send_keys(text)
-            driver.hide_keyboard()
-            CommonUtil.ExecLog(sModuleInfo, "Text set on element successfully", 1)
-            return "Passed"
-        else:
-            CommonUtil.ExecLog(sModuleInfo, "Unable to set text. The element is hidden.", 3)
-            return "failed"
-
-    except Exception:
-        errMsg = "Unable to set text on the element."
-        return CommonUtil.Exception_Handler(sys.exc_info(),None,errMsg)
-
-
-def set_text_by_class_name(driver, _class, text):
-    sModuleInfo = inspect.stack()[0][3] + " : " + inspect.getmoduleinfo(__file__).name
-    try:
-        CommonUtil.ExecLog(sModuleInfo,"Trying to set text on element by class: %s"%_class,1)
-        elem = locate_element_by_class_name(driver, _class)
-        if elem.is_displayed():
-            elem.click()
-            elem.send_keys(text)
-            driver.hide_keyboard()
-            CommonUtil.ExecLog(sModuleInfo, "Text set on element successfully", 1)
-            return "Passed"
-        else:
-            CommonUtil.ExecLog(sModuleInfo, "Unable to set text. The element is hidden.", 3)
-            return "failed"
-
-    except Exception:
-        errMsg = "Unable to set text on the element."
-        return CommonUtil.Exception_Handler(sys.exc_info(),None,errMsg)
-
-
-def set_text_by_xpath(driver, _classpath, text):
-    sModuleInfo = inspect.stack()[0][3] + " : " + inspect.getmoduleinfo(__file__).name
-    try:
-        CommonUtil.ExecLog(sModuleInfo,"Trying to set text on element by xpath: %s"%_classpath,1)
-        elem = locate_element_by_xpath(driver, _classpath)
-        if elem.is_displayed():
-            elem.click()
-            elem.send_keys(text)
-            driver.hide_keyboard()
-            CommonUtil.ExecLog(sModuleInfo, "Text set on element successfully", 1)
-            return "Passed"
-        else:
-            CommonUtil.ExecLog(sModuleInfo, "Unable to set text. The element is hidden.", 3)
-            return "failed"
-    except Exception:
-        errMsg = "Unable to set text on the element."
-        return CommonUtil.Exception_Handler(sys.exc_info(),None,errMsg)
-
-
-def set_text_by_accessibility_id(driver, _id, text):
-    sModuleInfo = inspect.stack()[0][3] + " : " + inspect.getmoduleinfo(__file__).name
-    try:
-        CommonUtil.ExecLog(sModuleInfo,"Trying to set text on element by accessibility id: %s"%_id,1)
-        elem = locate_element_by_accessibility_id(driver, _id)
-        if elem.is_displayed():
-            elem.click()
-            elem.send_keys(text)
-            driver.hide_keyboard()
-            CommonUtil.ExecLog(sModuleInfo, "Text set on element successfully", 1)
-            return "Passed"
-        else:
-            CommonUtil.ExecLog(sModuleInfo, "Unable to set text. The element is hidden.", 3)
-            return "failed"
-    except Exception:
-        errMsg = "Unable to set text on the element."
-        return CommonUtil.Exception_Handler(sys.exc_info(),None,errMsg)
-
-
-def set_text_by_android_uiautomator_text(driver, _text, text_value):
-    sModuleInfo = inspect.stack()[0][3] + " : " + inspect.getmoduleinfo(__file__).name
-    try:
-        CommonUtil.ExecLog(sModuleInfo, "Trying to click on element by android uiautomator text: %s" % _text, 1)
-        elem = locate_element_by_android_uiautomator_text(driver, _text)
-        if elem.is_displayed():
-            elem.click()
-            elem.send_keys(text_value)
-            driver.hide_keyboard()
-            CommonUtil.ExecLog(sModuleInfo, "Text set on element successfully", 1)
-            return "Passed"
-        else:
-            CommonUtil.ExecLog(sModuleInfo, "Unable to set text. The element is hidden.", 3)
-            return "failed"
-    except Exception:
-        errMsg = "Unable to set text on the element."
-        return CommonUtil.Exception_Handler(sys.exc_info(),None,errMsg)
-
-
-def set_text_by_android_uiautomator_description(driver, _description, text):
-    sModuleInfo = inspect.stack()[0][3] + " : " + inspect.getmoduleinfo(__file__).name
-    try:
-        CommonUtil.ExecLog(sModuleInfo,
-                           "Trying to click on element by android uiautomator description: %s" % _description, 1)
-        elem = locate_element_by_android_uiautomator_description(driver, _description)
-        if elem.is_displayed():
-            elem.click()
-            elem.send_keys(text)
-            driver.hide_keyboard()
-            CommonUtil.ExecLog(sModuleInfo, "Text set on element successfully", 1)
-            return "Passed"
-        else:
-            CommonUtil.ExecLog(sModuleInfo, "Unable to set text. The element is hidden.", 3)
-            return "failed"
-    except Exception:
-        errMsg = "Unable to set text on the element."
-        return CommonUtil.Exception_Handler(sys.exc_info(),None,errMsg)
-
-
-def set_text_by_ios_uiautomation(driver, _description, text):
-    sModuleInfo = inspect.stack()[0][3] + " : " + inspect.getmoduleinfo(__file__).name
-    try:
-        CommonUtil.ExecLog(sModuleInfo,
-                           "Trying to click on element by android uiautomator description: %s" % _description, 1)
-        elem = locate_element_by_ios_uiautomation(driver, _description)
-        if elem.is_displayed():
-            elem.click()
-            elem.send_keys(text)
-            driver.hide_keyboard()
-            CommonUtil.ExecLog(sModuleInfo, "Text set on element successfully", 1)
-            return "Passed"
-        else:
-            CommonUtil.ExecLog(sModuleInfo, "Unable to set text. The element is hidden.", 3)
-            return "failed"
-    except Exception:
-        errMsg = "Unable to set text on the element."
-        return CommonUtil.Exception_Handler(sys.exc_info(),None,errMsg)
-
-"""=======================Riasat======================="""
 '============================= Get Elements Section Begins =============================='    
 
 def Get_Element_Appium(element_parameter,element_value,reference_parameter=False,reference_value=False,reference_is_parent_or_child=False,get_all_unvalidated_elements=False):
@@ -1712,10 +1351,23 @@ def Conditional_Action_Handler(step_data, data_set, row, logic_row):
     return 'passed'
 
 #Handles actions for the sequential logic, based on the input from the mentioned function
-def Action_Handler_Appium(data_set, action_name):
+def Action_Handler_Appium(_data_set, action_name):
     ''' Handle Sub-Field=Action from step data, called only by Sequential_Actions() '''
     
     sModuleInfo = inspect.stack()[0][3] + " : " + inspect.getmoduleinfo(__file__).name
+
+    # Strip the "optional" keyword, so functions work properly
+    data_set = []
+    for row in _data_set:
+        new_row = list(row)
+        if 'optional' in row[1]:
+            new_row[1] = row[1].replace('optional', '').strip()
+        data_set.append(tuple(new_row))
+    
+    # Convert shared variables to their string equivelent !!! Needs to be moved within try block after below for row in data_set is removed
+    data_set = shared_variable_to_value(data_set)
+    if data_set in failed_tag_list:
+        return 'failed'
     
     # Put data set values in friendly variables
     action_field, action_subfield, action_value = ('','','')
@@ -1732,26 +1384,19 @@ def Action_Handler_Appium(data_set, action_name):
             
     # Perform an action based on Field from step data
     try:
-        # Convert shared variables to their string equivelent
-        data_set = shared_variable_to_value(data_set)
-        if data_set in failed_tag_list:
-            return 'failed'
-
         # Multiple row actions
         if action_name == "click": # Click an element
-            result = Click_Element(related_field, related_value)
+            result = Click_Element_Appium(data_set)
         elif action_name == "text": # Enter text string into element
-            result = Set_Text(related_field, related_value, action_value)
-        elif action_name == "text search": # Enter text string and enter key (for fields that don't have a button)
-            result = Set_Text_Enter(related_field, related_value, action_value)
+            result = Enter_Text_Appium(data_set)
         elif action_name == "wait": # Wait until element is available/enabled
-            result = Wait_For_New_Element([data_set])
+            result = Wait_For_New_Element(data_set)
         elif action_name == "tap": # Tap an element
-            result = Tap(related_field, related_value)
+            result = Tap_Appium(data_set)
         elif action_name == "validate full text" or action_name == "validate partial text": # Test if text string exists
             result = Validate_Text(data_set)
         elif action_name == "save text": # Save text string
-            result = Save_Text([data_set],action_value)
+            result = Save_Text(data_set)
         elif action_name == "compare variable": # Compare two "shared" variables
             result = Compare_Variables(data_set)
         elif (str(action_name).lower().strip().startswith('insert into list')):
@@ -1774,11 +1419,11 @@ def Action_Handler_Appium(data_set, action_name):
             elif action_value in skipped_tag_list:
                 result = 'skipped'
         elif action_name == "install": # Install and execute application
-            result = install_application(action_value, related_value) # file location, activity_name(optional)
+            result = install_application(data_set) # file location, activity_name(optional)
         elif action_name == "launch": # Launch program and get appium driver instance
-            result = launch_application(action_value, related_value) # Package name, Activity name
+            result = launch_application(data_set) # Package name, Activity name
         elif action_name == "get location":
-            position = get_element_location_by_id(related_value) # Get x,y coordinates of the pass button
+            position = get_element_location_by_id(data_set) # Get x,y coordinates of the pass button
             if position != 'failed':
                 result = Shared_Resources.Set_Shared_Variables(action_value, position)
             else:
@@ -1827,7 +1472,7 @@ def shared_variable_to_value(data_set): #!!! Should be moved to Shared_Variable.
             for i in range(0, 3): # For each field (Field, Sub-Field, Value)
                 if row[i] != False:
                     if "%|" in row[i] and "|%" in row[i]: # If string contains these characters, it's a shared variable
-                        #CommonUtil.ExecLog(sModuleInfo, "Shared Variable: %s" % row[i], 1)
+                        CommonUtil.ExecLog(sModuleInfo, "Shared Variable: %s" % row[i], 1)
                         left_index = row[i].index('%|') # Get index of left marker
                         right_index = row[i].index('|%') # Get index of right marker
                         var = row[i][left_index:right_index + 2] # Copy entire shared variable
@@ -1866,8 +1511,11 @@ def verify_step_data(step_data):
 def Click_Element_Appium(data_set):
     sModuleInfo = inspect.stack()[0][3] + " : " + inspect.getmoduleinfo(__file__).name
     CommonUtil.ExecLog(sModuleInfo, "Function: Click_Element_Appium", 1)
+    
+    data_set = [data_set]
+    print ">>>>>",len(data_set), len(data_set[0]),data_set
     try:
-        if ((len(data_set) != 1) or (1 < len(data_set[0]) >= 5)):
+        if len(data_set[0]) < 1:
             CommonUtil.ExecLog(sModuleInfo, "The information in the data-set(s) are incorrect. Please provide accurate data set(s) information.", 3)
             return "failed"
         else:
@@ -1898,10 +1546,15 @@ def Click_Element_Appium(data_set):
     
     
 def Tap_Appium(data_set):
+    ''' Execute "Tap" for an element '''
+    
     sModuleInfo = inspect.stack()[0][3] + " : " + inspect.getmoduleinfo(__file__).name
     CommonUtil.ExecLog(sModuleInfo, "Function: Tap_Appium", 1)
+    
+    data_set = [data_set]
+    
     try:
-        if ((len(data_set) != 1) or (1 < len(data_set[0]) >= 5)):
+        if (len(data_set) != 1):
             CommonUtil.ExecLog(sModuleInfo, "The information in the data-set(s) are incorrect. Please provide accurate data set(s) information.", 3)
             return "failed"
         else:    
@@ -2015,6 +1668,9 @@ def Long_Press_Appium(data_set):
 def Enter_Text_Appium(data_set):
     sModuleInfo = inspect.stack()[0][3] + " : " + inspect.getmoduleinfo(__file__).name
     CommonUtil.ExecLog(sModuleInfo, "Function: Enter_Text_Appium", 1)
+    
+    data_set = [data_set]
+    
     try:
         if ((len(data_set) != 1) or (1 < len(data_set[0]) >= 5)):
             CommonUtil.ExecLog(sModuleInfo, "The information in the data-set(s) are incorrect. Please provide accurate data set(s) information.", 3)
@@ -2033,11 +1689,11 @@ def Enter_Text_Appium(data_set):
                         else:
                             continue
                     #text_value=step_data[0][len(step_data[0])-1][2]
-                    Element.click()
-                    Element.clear()
-                    Element.send_keys(text_value)
-                    Element.click()
-                    CommonUtil.TakeScreenShot(sModuleInfo)
+                    Element.click() # Set focus to textbox
+                    Element.clear() # Remove any text already existing
+                    Element.send_keys(text_value) # Enter the user specified text
+                    driver.hide_keyboard() # Remove keyboard
+                    CommonUtil.TakeScreenShot(sModuleInfo) # Capture screen
                     CommonUtil.ExecLog(sModuleInfo, "Successfully set the value of to text to: %s"%text_value, 1)
                     return "passed"
                 except Exception:
