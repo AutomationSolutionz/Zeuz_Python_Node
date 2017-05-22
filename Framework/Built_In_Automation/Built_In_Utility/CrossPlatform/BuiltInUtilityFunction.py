@@ -18,8 +18,7 @@ import random
 from Framework.Utilities import CommonUtil
 from sys import platform as _platform
 
-passed_tag_list = ['Pass', 'pass', 'PASS', 'PASSED', 'Passed', 'passed', 'true', 'TRUE', 'True', '1', 'Success',
-                   'success', 'SUCCESS', True]
+passed_tag_list = ['Pass', 'pass', 'PASS', 'PASSED', 'Passed', 'passed', 'true', 'TRUE', 'True', '1', 'Success','success', 'SUCCESS', True]
 failed_tag_list = ['Fail', 'fail', 'FAIL', 'Failed', 'failed', 'FAILED', 'false', 'False', 'FALSE', '0', False]
 
 import os, subprocess, shutil
@@ -56,7 +55,7 @@ def CreateFolder(folderPath, forced=True):
         CommonUtil.ExecLog(sModuleInfo, "Create Folder %s" % folderPath, 1)
         if os.path.isdir(folderPath):
             if forced == False:
-                print "folder already exists"
+                #print "folder already exists"
                 CommonUtil.ExecLog(sModuleInfo, "Folder already exists", 1)
                 return True
             DeleteFolder(folderPath)
@@ -81,10 +80,11 @@ def CreateFile(sFilePath):
         CommonUtil.ExecLog(sModuleInfo, "Create File %s" % sFilePath, 1)
         if os.path.isfile(sFilePath):
             CommonUtil.ExecLog(sModuleInfo, "File already exists", 1)
-            print "File already exists"
+            #print "File already exists"
             return False
         else:
-            print "Creating new file"
+            #print "Creating new file"
+            CommonUtil.ExecLog(sModuleInfo, "Creating new file", 1)
             newfile = open(sFilePath, 'w')
             newfile.close()
             CommonUtil.ExecLog(sModuleInfo, "Returning result of create file function", 1)
@@ -356,7 +356,7 @@ def empty_trash(trash_path):
     """
 
             :param trash_path: path of the trash
-            :return: Exception if Exception otherwise return the result
+            :return: Exception if Exception occurs or "falied" if trash is already empty
                 """
     sModuleInfo = inspect.stack()[0][3] + " : " + inspect.getmoduleinfo(__file__).name
     CommonUtil.ExecLog(sModuleInfo, "Function: empty trash", 1)
@@ -369,9 +369,22 @@ def empty_trash(trash_path):
                 os.system("tree ./")
             elif sys.argv[1] == '-l' or sys.argv[1] == '-L':
                 os.system("ls -al")
-        result = os.system("rm -rf *")
+        flag = 0
+        for dir, sub_dirs, files in os.walk(trash_path):      #checking if trash is empty or not
+            if not files:
+                CommonUtil.ExecLog(sModuleInfo, "Trying to find files/folders in trash", 1)
+            else:
+                flag=1    # Trash is not empty. Trash will be cleared if flag is changed to 1
+        if flag==1:
+            CommonUtil.ExecLog(sModuleInfo, "Files/folders found in trash.... So trying to empty it", 1)
+            result = os.system("rm -rf *")  #Empty Trash
 
-        CommonUtil.ExecLog(sModuleInfo, "Empting trash %s is complete" % trash_path, 1)
+        else:
+            CommonUtil.ExecLog(sModuleInfo, "Trash is empty already", 1)
+            return "failed"   #return "failed" if trash is already cleared
+
+
+        CommonUtil.ExecLog(sModuleInfo, "Emptying trash %s is complete" % trash_path, 1)
 
     except Exception:
         return CommonUtil.Exception_Handler(sys.exc_info())
@@ -420,17 +433,28 @@ def copy_file(src, dest):
 # function to empty recycle bin for windows
 def empty_recycle_bin():
     """
-                :return: Exception if Exception occurs otherwise return the result
+                :return: Exception if Exception occurs or "failed if bin is empty otherwise return the result
                     """
     sModuleInfo = inspect.stack()[0][3] + " : " + inspect.getmoduleinfo(__file__).name
     CommonUtil.ExecLog(sModuleInfo, "Function: Empty Recycle Bin", 1)
     try:
         import winshell
         CommonUtil.ExecLog(sModuleInfo, "Staring to empty recycle bin", 1)
-        result = winshell.recycle_bin().empty(confirm=False, show_progress=False, sound=False)
-        print result
+        recycle_bin = winshell.recycle_bin()
+        List_recycle = list(recycle_bin)
+        flag = 0
+        if len(List_recycle) > 0:  #checking if trash is empty or not
+            flag=1        # Trash is not empty. Trash will be cleared if flag is changed to 1
+        if flag == 1:
+            CommonUtil.ExecLog(sModuleInfo, "Files/folders found in recycle bin.... So trying to empty it", 1)
+            result = winshell.recycle_bin().empty(confirm=False, show_progress=False, sound=False)       #Empty Trash
+
+        else:
+            CommonUtil.ExecLog(sModuleInfo, "Recycle Bin is empty already", 1)
+            return "failed"   #return "failed" if trash is already cleared
+
         CommonUtil.ExecLog(sModuleInfo, "Returning result of empty recycle bin function", 1)
-        CommonUtil.ExecLog(sModuleInfo, "Empting recycle bin is complete", 1)
+        CommonUtil.ExecLog(sModuleInfo, "Emptying recycle bin is complete", 1)
         return result
     except Exception:
         return CommonUtil.Exception_Handler(sys.exc_info())
@@ -452,8 +476,8 @@ def run_win_cmd(cmd):
             result.append(line)
         errcode = process.returncode
         for line in result:
-            print(line)
-
+            #print(line)
+            CommonUtil.ExecLog(sModuleInfo, "%s" %line, 1)
         if errcode is not None:
             CommonUtil.ExecLog(sModuleInfo, 'cmd %s failed, see above for details' % cmd, 3)
             raise Exception('cmd %s failed, see above for details', cmd)
@@ -492,7 +516,7 @@ def run_cmd(command, return_status=False, is_shell=True, stdout_val=subprocess.P
             result.append(line)
         errcode = status.returncode
         for line in result:
-            print(line)
+            CommonUtil.ExecLog(sModuleInfo, "%s" % line, 1)
         if return_status:
             return status
         else:
@@ -530,7 +554,7 @@ def random_string_generator(pattern='nluc', size=10):
 
 
 # not done properly...need more works
-def change_path_for_windows(src):
+'''def change_path_for_windows(src):
     sModuleInfo = inspect.stack()[0][3] + " : " + inspect.getmoduleinfo(__file__).name
     CommonUtil.ExecLog(sModuleInfo, "Function: Change path for Windows", 1)
     print src
@@ -538,7 +562,7 @@ def change_path_for_windows(src):
     print string_list
     print src
     return src
-
+'''
 
 '============================= Sanitization Begins =============================='
 
@@ -632,7 +656,7 @@ def Copy_File_or_Folder(step_data):
     try:
         if _platform == "linux" or _platform == "linux2":
             # linux
-            print "linux"
+            CommonUtil.ExecLog(sModuleInfo, "linux", 1)
             from_path = get_home_folder() + str(step_data[0][0][0]).strip()  # location of the file/folder to be copied
             to_path = get_home_folder() + str(step_data[0][0][2]).strip()  # location where to copy the file/folder
             file_or_folder = str(step_data[0][1][2]).strip()  # get if it is file/folder to copy
@@ -640,34 +664,26 @@ def Copy_File_or_Folder(step_data):
                 # copy file "from_path" to "to_path"
                 result = copy_file(from_path, to_path)
                 if result in failed_tag_list:
-                    CommonUtil.ExecLog(sModuleInfo,
-                                       "Could not copy file '%s' to the destination '%s'" % (from_path, to_path), 3)
+                    CommonUtil.ExecLog(sModuleInfo,"Could not copy file '%s' to the destination '%s'" % (from_path, to_path), 3)
                     return "failed"
                 else:
-                    CommonUtil.ExecLog(sModuleInfo,
-                                       "File '%s' copied to the destination '%s' successfully" % (from_path, to_path),
-                                       1)
+                    CommonUtil.ExecLog(sModuleInfo,"File '%s' copied to the destination '%s' successfully" % (from_path, to_path),1)
                     return "passed"
             elif file_or_folder.lower() == 'folder':
                 # copy folder "from_path" to "to_path"
                 result = copy_folder(from_path, to_path)
                 if result in failed_tag_list:
-                    CommonUtil.ExecLog(sModuleInfo,
-                                       "Could not copy folder '%s' to the destination '%s'" % (from_path, to_path), 3)
+                    CommonUtil.ExecLog(sModuleInfo,"Could not copy folder '%s' to the destination '%s'" % (from_path, to_path), 3)
                     return "failed"
                 else:
-                    CommonUtil.ExecLog(sModuleInfo,
-                                       "Folder '%s' copied to the destination '%s' successfully" % (from_path, to_path),
-                                       1)
+                    CommonUtil.ExecLog(sModuleInfo,"Folder '%s' copied to the destination '%s' successfully" % (from_path, to_path),1)
                     return "passed"
             else:
-                CommonUtil.ExecLog(sModuleInfo,
-                                   "The information in the data-set(s) are incorrect. Please provide accurate data set(s) information.",
-                                   3)
+                CommonUtil.ExecLog(sModuleInfo,"The information in the data-set(s) are incorrect. Please provide accurate data set(s) information.",3)
                 return 'failed'
         elif _platform == "win32":
             # linux
-            print "windows"
+            CommonUtil.ExecLog(sModuleInfo, "windows", 1)
             from_path = raw(str(step_data[0][0][0]).strip())  # location of the file/folder to be copied
             to_path = raw(str(step_data[0][0][2]).strip())  # location where to copy the file/folder
             file_or_folder = str(step_data[0][1][2]).strip()  # get if it is file/folder to copy
@@ -675,30 +691,22 @@ def Copy_File_or_Folder(step_data):
                 # copy file "from_path" to "to_path"
                 result = copy_file(from_path, to_path)
                 if result in failed_tag_list:
-                    CommonUtil.ExecLog(sModuleInfo,
-                                       "Could not copy file '%s' to the destination '%s'" % (from_path, to_path), 3)
+                    CommonUtil.ExecLog(sModuleInfo,"Could not copy file '%s' to the destination '%s'" % (from_path, to_path), 3)
                     return "failed"
                 else:
-                    CommonUtil.ExecLog(sModuleInfo,
-                                       "File '%s' copied to the destination '%s' successfully" % (from_path, to_path),
-                                       1)
+                    CommonUtil.ExecLog(sModuleInfo,"File '%s' copied to the destination '%s' successfully" % (from_path, to_path),1)
                     return "passed"
             elif file_or_folder.lower() == 'folder':
                 # copy folder "from_path" to "to_path"
                 result = copy_folder(from_path, to_path)
                 if result in failed_tag_list:
-                    CommonUtil.ExecLog(sModuleInfo,
-                                       "Could not copy folder '%s' to the destination '%s'" % (from_path, to_path), 3)
+                    CommonUtil.ExecLog(sModuleInfo,"Could not copy folder '%s' to the destination '%s'" % (from_path, to_path), 3)
                     return "failed"
                 else:
-                    CommonUtil.ExecLog(sModuleInfo,
-                                       "Folder '%s' copied to the destination '%s' successfully" % (from_path, to_path),
-                                       1)
+                    CommonUtil.ExecLog(sModuleInfo,"Folder '%s' copied to the destination '%s' successfully" % (from_path, to_path),1)
                     return "passed"
             else:
-                CommonUtil.ExecLog(sModuleInfo,
-                                   "The information in the data-set(s) are incorrect. Please provide accurate data set(s) information.",
-                                   3)
+                CommonUtil.ExecLog(sModuleInfo,"The information in the data-set(s) are incorrect. Please provide accurate data set(s) information.",3)
                 return 'failed'
 
                 # return result
@@ -713,7 +721,7 @@ def Delete_File_or_Folder(step_data):
     try:
         if _platform == "linux" or _platform == "linux2":
             # linux
-            print "linux"
+            CommonUtil.ExecLog(sModuleInfo, "linux", 1)
             path = get_home_folder() + str(step_data[0][0][0]).strip()  # path of the file/folder to be deleted
             file_or_folder = str(step_data[0][1][2]).strip()  # get if it is file/folder to delete
             if file_or_folder.lower() == 'file':
@@ -735,13 +743,11 @@ def Delete_File_or_Folder(step_data):
                     CommonUtil.ExecLog(sModuleInfo, "Folder '%s' deleted successfully" % (path), 1)
                     return "passed"
             else:
-                CommonUtil.ExecLog(sModuleInfo,
-                                   "The information in the data-set(s) are incorrect. Please provide accurate data set(s) information.",
-                                   3)
+                CommonUtil.ExecLog(sModuleInfo,"The information in the data-set(s) are incorrect. Please provide accurate data set(s) information.",3)
                 return 'failed'
         elif _platform == "win32":
             # linux
-            print "windows"
+            CommonUtil.ExecLog(sModuleInfo, "windows", 1)
             path = raw(str(step_data[0][0][0]).strip())  # path of the file/folder to be deleted
             file_or_folder = str(step_data[0][1][2]).strip()  # get if it is file/folder to delete
             if file_or_folder.lower() == 'file':
@@ -763,9 +769,7 @@ def Delete_File_or_Folder(step_data):
                     CommonUtil.ExecLog(sModuleInfo, "Folder '%s' deleted successfully" % (path), 1)
                     return "passed"
             else:
-                CommonUtil.ExecLog(sModuleInfo,
-                                   "The information in the data-set(s) are incorrect. Please provide accurate data set(s) information.",
-                                   3)
+                CommonUtil.ExecLog(sModuleInfo,"The information in the data-set(s) are incorrect. Please provide accurate data set(s) information.",3)
                 return 'failed'
 
     except Exception:
@@ -790,9 +794,7 @@ def Find_File(step_data):
                 return "passed"
 
         else:
-            CommonUtil.ExecLog(sModuleInfo,
-                               "The information in the data-set(s) are incorrect. Please provide accurate data set(s) information.",
-                               3)
+            CommonUtil.ExecLog(sModuleInfo,"The information in the data-set(s) are incorrect. Please provide accurate data set(s) information.",3)
             return 'failed'
 
     except Exception:
@@ -806,9 +808,9 @@ def Empty_Trash(step_data):
     try:
         if _platform == "linux" or _platform == "linux2":
             # linux
-            print "linux"
+            CommonUtil.ExecLog(sModuleInfo, "linux", 1)
             path = get_home_folder() + '/.local/share/Trash'  # location of trash for linux
-            print path
+            #print path
 
             result = empty_trash(path)
             if result in failed_tag_list:
@@ -819,7 +821,7 @@ def Empty_Trash(step_data):
                 return "passed"
         elif _platform == "win32":
             # linux
-            print "windows"
+            CommonUtil.ExecLog(sModuleInfo, "windows", 1)
             result = empty_recycle_bin()  # location of the recycle bin
             if result in failed_tag_list:
                 CommonUtil.ExecLog(sModuleInfo, "Could not empty recycle bin ", 3)
@@ -838,7 +840,7 @@ def Get_User_Name(step_data):
     try:
         if _platform == "linux" or _platform == "linux2":
             # linux
-            print "linux"
+            CommonUtil.ExecLog(sModuleInfo, "linux", 1)
             path = get_home_folder()  # get the path of the home directory
             list_elemnet = path.split("/")  # list the parts of path by spliting it by "/"
             name = list_elemnet[len(list_elemnet) - 1]  # name of the user
@@ -850,7 +852,7 @@ def Get_User_Name(step_data):
                 return "passed"
         elif _platform == "win32":
             # linux
-            print "windows"
+            CommonUtil.ExecLog(sModuleInfo, "windows", 1)
             CommonUtil.ExecLog(sModuleInfo, "Could not find user name as it is windows", 3)
             return "failed"
     except Exception:
@@ -864,7 +866,7 @@ def Run_Sudo_Command(step_data):
     try:
         if _platform == "linux" or _platform == "linux2":
             # linux
-            print "linux"
+            CommonUtil.ExecLog(sModuleInfo, "linux", 1)
             command = str(step_data[0][0][0]).strip()
             result = run_cmd(command)
             if result in failed_tag_list:
@@ -875,7 +877,7 @@ def Run_Sudo_Command(step_data):
                 return "passed"
         elif _platform == "win32":
             # linux
-            print "windows"
+            CommonUtil.ExecLog(sModuleInfo, "windows", 1)
             CommonUtil.ExecLog(sModuleInfo, "Could not run sudo command as it is windows", 3)
             return "failed"
     except Exception:
@@ -889,7 +891,7 @@ def Run_Command(step_data):
     try:
         if _platform == "win32":
             # linux
-            print "windows"
+            CommonUtil.ExecLog(sModuleInfo, "windows", 1)
             command = str(step_data[0][0][0]).strip()
             result = run_win_cmd(command)
             if result in failed_tag_list:
@@ -910,9 +912,10 @@ def Get_Home_Directory(step_data):
     try:
         if _platform == "linux" or _platform == "linux2":
             # linux
-            print "linux"
+            CommonUtil.ExecLog(sModuleInfo, "linux", 1)
             path = get_home_folder()
-            print path
+            #print path
+            CommonUtil.ExecLog(sModuleInfo, "Home Directory Path is '%s'"%(path), 1)
             if path in failed_tag_list:
                 CommonUtil.ExecLog(sModuleInfo, "Could not find home directory '%s'" % (path), 3)
                 return "failed"
@@ -921,7 +924,7 @@ def Get_Home_Directory(step_data):
                 return "passed"
         elif _platform == "win32":
             # linux
-            print "windows"
+            CommonUtil.ExecLog(sModuleInfo, "windows", 1)
             CommonUtil.ExecLog(sModuleInfo, "Could not find home directory as it is windows", 3)
             return "failed"
 
@@ -936,9 +939,10 @@ def Get_Current_Desktop(step_data):
     try:
         if _platform == "linux" or _platform == "linux2":
             # linux
-            print "linux"
+            CommonUtil.ExecLog(sModuleInfo, "linux", 1)
             path = get_home_folder() + "/Desktop"  # concate home folder path with "/Desktop"
-            print path
+            #print path
+            CommonUtil.ExecLog(sModuleInfo, "Desktop Path is '%s'" % (path), 1)
             if path in failed_tag_list:
                 CommonUtil.ExecLog(sModuleInfo, "Could not find desktop '%s'" % (path), 3)
                 return "failed"
@@ -947,9 +951,10 @@ def Get_Current_Desktop(step_data):
                 return "passed"
         elif _platform == "win32":
             # linux
-            print "windows"
+            CommonUtil.ExecLog(sModuleInfo, "windows", 1)
             path = os.path.join(os.environ["HOMEPATH"], "Desktop")
-            print path
+            #print path
+            CommonUtil.ExecLog(sModuleInfo, "Desktop Path is '%s'" % (path), 1)
             if path in failed_tag_list:
                 CommonUtil.ExecLog(sModuleInfo, "Could not find desktop '%s'" % (path), 3)
                 return "failed"
@@ -967,9 +972,10 @@ def Get_Current_Documents(step_data):
     try:
         if _platform == "linux" or _platform == "linux2":
             # linux
-            print "linux"
+            CommonUtil.ExecLog(sModuleInfo, "linux", 1)
             path = get_home_folder() + "/Documents"  # concate home folder path with "/Documents"
-            print path
+            #print path
+            CommonUtil.ExecLog(sModuleInfo, "Documents Path is '%s'" % (path), 1)
             if path in failed_tag_list:
                 CommonUtil.ExecLog(sModuleInfo, "Could not find Documents '%s'" % (path), 3)
                 return "failed"
@@ -978,9 +984,10 @@ def Get_Current_Documents(step_data):
                 return "passed"
         elif _platform == "win32":
             # linux
-            print "windows"
+            CommonUtil.ExecLog(sModuleInfo, "windows", 1)
             path = os.path.join(os.environ["HOMEPATH"], "Documents")
-            print path
+            #print path
+            CommonUtil.ExecLog(sModuleInfo, "Documents Path is '%s'" % (path), 1)
             if path in failed_tag_list:
                 CommonUtil.ExecLog(sModuleInfo, "Could not find Documents '%s'" % (path), 3)
                 return "failed"
@@ -1009,9 +1016,7 @@ def Create_File(step_data):
                 return "passed"
 
         else:
-            CommonUtil.ExecLog(sModuleInfo,
-                               "The information in the data-set(s) are incorrect. Please provide accurate data set(s) information.",
-                               3)
+            CommonUtil.ExecLog(sModuleInfo,"The information in the data-set(s) are incorrect. Please provide accurate data set(s) information.",3)
             return 'failed'
 
     except Exception:
@@ -1025,7 +1030,7 @@ def Compare_File(step_data):
     try:
         if _platform == "linux" or _platform == "linux2":
             # linux
-            print "linux"
+            CommonUtil.ExecLog(sModuleInfo, "linux", 1)
             from_path = get_home_folder() + str(step_data[0][0][0]).strip()  # location of file path to be compared
             to_path = get_home_folder() + str(step_data[0][0][2]).strip()  # location of file path to be compared
             file_or_folder = str(step_data[0][1][2]).strip()
@@ -1040,19 +1045,17 @@ def Compare_File(step_data):
                     return "passed"
 
             else:
-                CommonUtil.ExecLog(sModuleInfo,
-                                   "The information in the data-set(s) are incorrect. Please provide accurate data set(s) information.",
-                                   3)
+                CommonUtil.ExecLog(sModuleInfo,"The information in the data-set(s) are incorrect. Please provide accurate data set(s) information.",3)
                 return 'failed'
         elif _platform == "win32":
             # linux
-            print "windows"
-            print step_data[0][0][0]
-            print str(step_data[0][0][0])
+            CommonUtil.ExecLog(sModuleInfo, "windows", 1)
+            #print step_data[0][0][0]
+            #print str(step_data[0][0][0])
             from_path = raw(str(step_data[0][0][0]).strip())  # location of file path to be compared
-            print  from_path
+            #print  from_path
             to_path = raw(str(step_data[0][0][2]).strip())  # location of file path to be compared
-            print to_path
+            #print to_path
             file_or_folder = str(step_data[0][1][2]).strip()
             if file_or_folder.lower() == 'file':
                 # compare file "from_path" and "to_path"
@@ -1065,9 +1068,7 @@ def Compare_File(step_data):
                     return "passed"
 
             else:
-                CommonUtil.ExecLog(sModuleInfo,
-                                   "The information in the data-set(s) are incorrect. Please provide accurate data set(s) information.",
-                                   3)
+                CommonUtil.ExecLog(sModuleInfo,"The information in the data-set(s) are incorrect. Please provide accurate data set(s) information.",3)
                 return 'failed'
 
     except Exception:
@@ -1081,7 +1082,7 @@ def Rename_File_or_Folder(step_data):
     try:
         if _platform == "linux" or _platform == "linux2":
             # linux
-            print "linux"
+            CommonUtil.ExecLog(sModuleInfo, "linux", 1)
             from_path = get_home_folder() + str(step_data[0][0][0]).strip()  # location of the file/folder to be renamed
             to_path = get_home_folder() + str(step_data[0][0][2]).strip()  # location where to rename the file/folder
             file_or_folder = str(step_data[0][1][2]).strip()  # get if it is file/folder to rename
@@ -1105,13 +1106,11 @@ def Rename_File_or_Folder(step_data):
                                        1)
                     return "passed"
             else:
-                CommonUtil.ExecLog(sModuleInfo,
-                                   "The information in the data-set(s) are incorrect. Please provide accurate data set(s) information.",
-                                   3)
+                CommonUtil.ExecLog(sModuleInfo,"The information in the data-set(s) are incorrect. Please provide accurate data set(s) information.",3)
                 return 'failed'
         elif _platform == "win32":
             # linux
-            print "windows"
+            CommonUtil.ExecLog(sModuleInfo, "windows", 1)
             from_path = raw(str(step_data[0][0][0]).strip())  # location of the file/folder to be renamed
             to_path = raw(str(step_data[0][0][2]).strip())  # location where to rename the file/folder
             file_or_folder = str(step_data[0][1][2]).strip()  # get if it is file/folder to rename
@@ -1135,9 +1134,7 @@ def Rename_File_or_Folder(step_data):
                                        1)
                     return "passed"
             else:
-                CommonUtil.ExecLog(sModuleInfo,
-                                   "The information in the data-set(s) are incorrect. Please provide accurate data set(s) information.",
-                                   3)
+                CommonUtil.ExecLog(sModuleInfo,"The information in the data-set(s) are incorrect. Please provide accurate data set(s) information.",3)
                 return 'failed'
 
     except Exception:
@@ -1151,7 +1148,7 @@ def Zip_File_or_Folder(step_data):
     try:
         if _platform == "linux" or _platform == "linux2":
             # linux
-            print "linux"
+            CommonUtil.ExecLog(sModuleInfo, "linux", 1)
             from_path = get_home_folder() + str(step_data[0][0][0]).strip()  # location of the file/folder to be zipped
             to_path = get_home_folder() + str(step_data[0][0][2]).strip()  # location where to zip the file/folder
             file_or_folder = str(step_data[0][1][2]).strip()  # get if it is file/folder to zip
@@ -1172,13 +1169,11 @@ def Zip_File_or_Folder(step_data):
                     CommonUtil.ExecLog(sModuleInfo, "Folder '%s' zipped to '%s' successfully" % (from_path, to_path), 1)
                     return "passed"
             else:
-                CommonUtil.ExecLog(sModuleInfo,
-                                   "The information in the data-set(s) are incorrect. Please provide accurate data set(s) information.",
-                                   3)
+                CommonUtil.ExecLog(sModuleInfo,"The information in the data-set(s) are incorrect. Please provide accurate data set(s) information.",3)
                 return 'failed'
         elif _platform == "win32":
             # linux
-            print "windows"
+            CommonUtil.ExecLog(sModuleInfo, "windows", 1)
             from_path = raw(str(step_data[0][0][0]).strip())  # location of the file/folder to be zipped
             to_path = raw(str(step_data[0][0][2]).strip())  # location where to zip the file/folder
             file_or_folder = str(step_data[0][1][2]).strip()  # get if it is file/folder to zip
@@ -1199,9 +1194,7 @@ def Zip_File_or_Folder(step_data):
                     CommonUtil.ExecLog(sModuleInfo, "Folder '%s' zipped to '%s' successfully" % (from_path, to_path), 1)
                     return "passed"
             else:
-                CommonUtil.ExecLog(sModuleInfo,
-                                   "The information in the data-set(s) are incorrect. Please provide accurate data set(s) information.",
-                                   3)
+                CommonUtil.ExecLog(sModuleInfo,"The information in the data-set(s) are incorrect. Please provide accurate data set(s) information.",3)
                 return 'failed'
     except Exception:
         return CommonUtil.Exception_Handler(sys.exc_info())
@@ -1214,7 +1207,7 @@ def Unzip_File_or_Folder(step_data):
     try:
         if _platform == "linux" or _platform == "linux2":
             # linux
-            print "linux"
+            CommonUtil.ExecLog(sModuleInfo, "linux", 1)
             from_path = get_home_folder() + str(
                 step_data[0][0][0]).strip()  # location of the file/folder to be unzipped
             to_path = get_home_folder() + str(step_data[0][0][2]).strip()  # location where to unzip the file/folder
@@ -1231,7 +1224,7 @@ def Unzip_File_or_Folder(step_data):
 
         elif _platform == "win32":
             # linux
-            print "windows"
+            CommonUtil.ExecLog(sModuleInfo, "windows", 1)
             from_path = raw(str(step_data[0][0][0]).strip())  # location of the file/folder to be unzipped
             to_path = raw(str(step_data[0][0][2]).strip())  # location where to unzip the file/folder
 
@@ -1257,7 +1250,7 @@ def Move_File_or_Folder(step_data):
     try:
         if _platform == "linux" or _platform == "linux2":
             # linux
-            print "linux"
+            CommonUtil.ExecLog(sModuleInfo, "linux", 1)
             from_path = get_home_folder() + str(step_data[0][0][0]).strip()  # location of the file/folder to be moved
             to_path = get_home_folder() + str(step_data[0][0][2]).strip()  # location where to move the file/folder
             file_or_folder = str(step_data[0][1][2]).strip()  # get if it is file/folder to move
@@ -1280,13 +1273,11 @@ def Move_File_or_Folder(step_data):
                     CommonUtil.ExecLog(sModuleInfo, "Folder '%s' moved to '%s' successfully" % (from_path, to_path), 1)
                     return "passed"
             else:
-                CommonUtil.ExecLog(sModuleInfo,
-                                   "The information in the data-set(s) are incorrect. Please provide accurate data set(s) information.",
-                                   3)
+                CommonUtil.ExecLog(sModuleInfo,"The information in the data-set(s) are incorrect. Please provide accurate data set(s) information.",3)
                 return 'failed'
         elif _platform == "win32":
             # linux
-            print "windows"
+            CommonUtil.ExecLog(sModuleInfo, "windows", 1)
             from_path = raw(str(step_data[0][0][0]).strip())  # location of the file/folder to be moved
             to_path = raw(str(step_data[0][0][2]).strip())  # location where to move the file/folder
             file_or_folder = str(step_data[0][1][2]).strip()  # get if it is file/folder to move
@@ -1309,9 +1300,7 @@ def Move_File_or_Folder(step_data):
                     CommonUtil.ExecLog(sModuleInfo, "Folder '%s' moved to '%s' successfully" % (from_path, to_path), 1)
                     return "passed"
             else:
-                CommonUtil.ExecLog(sModuleInfo,
-                                   "The information in the data-set(s) are incorrect. Please provide accurate data set(s) information.",
-                                   3)
+                CommonUtil.ExecLog(sModuleInfo,"The information in the data-set(s) are incorrect. Please provide accurate data set(s) information.",3)
                 return 'failed'
     except Exception:
         return CommonUtil.Exception_Handler(sys.exc_info())
@@ -1323,9 +1312,7 @@ def Sleep(step_data):
     CommonUtil.ExecLog(sModuleInfo, "Function: Sleep", 1)
     try:
         if ((len(step_data) != 1) or (1 < len(step_data[0]) >= 5)):
-            CommonUtil.ExecLog(sModuleInfo,
-                               "The information in the data-set(s) are incorrect. Please provide accurate data set(s) information.",
-                               3)
+            CommonUtil.ExecLog(sModuleInfo,"The information in the data-set(s) are incorrect. Please provide accurate data set(s) information.",3)
             return "failed"
         else:
             tuple = step_data[0][0]
@@ -1416,9 +1403,7 @@ def Action_Handler(action_step_data, action_name):
                 return "failed"
 
         else:
-            CommonUtil.ExecLog(sModuleInfo,
-                               "The action you entered is incorrect. Please provide accurate information on the data set(s).",
-                               3)
+            CommonUtil.ExecLog(sModuleInfo,"The action you entered is incorrect. Please provide accurate information on the data set(s).",3)
             return "failed"
 
     except Exception:
@@ -1463,8 +1448,7 @@ def Validate_Path_Step_Data(step_data):
     except Exception:
         exc_type, exc_obj, exc_tb = sys.exc_info()
         fname = os.path.split(exc_tb.tb_frame.f_code.co_filename)[1]
-        Error_Detail = ((str(exc_type).replace("type ", "Error Type: ")) + ";" + "Error Message: " + str(
-            exc_obj) + ";" + "File Name: " + fname + ";" + "Line: " + str(exc_tb.tb_lineno))
+        Error_Detail = ((str(exc_type).replace("type ", "Error Type: ")) + ";" + "Error Message: " + str(exc_obj) + ";" + "File Name: " + fname + ";" + "Line: " + str(exc_tb.tb_lineno))
         CommonUtil.ExecLog(sModuleInfo, "Could not find the new page element requested.  Error: %s" % (Error_Detail), 3)
         return "failed"
 
@@ -1497,9 +1481,7 @@ def Sequential_Actions(step_data):
                     if result == [] or result == "failed":
                         return "failed"
                 elif row[1] == "conditional action":
-                    CommonUtil.ExecLog(sModuleInfo,
-                                       "Checking the logical conditional action to be performed in the conditional action row",
-                                       1)
+                    CommonUtil.ExecLog(sModuleInfo,"Checking the logical conditional action to be performed in the conditional action row",1)
                     logic_decision = ""
                     logic_row.append(row)
                     if len(logic_row) == 2:
@@ -1525,7 +1507,7 @@ def Sequential_Actions(step_data):
                     # handle the conditional action
                     for conditional_steps in logic_row:
                         if logic_decision in conditional_steps:
-                            print conditional_steps[2]
+                            #print conditional_steps[2]
                             list_of_steps = conditional_steps[2].split(",")
                             for each_item in list_of_steps:
                                 data_set_index = int(each_item) - 1
@@ -1535,9 +1517,7 @@ def Sequential_Actions(step_data):
                             return "passed"
 
                 else:
-                    CommonUtil.ExecLog(sModuleInfo,
-                                       "The sub-field information is incorrect. Please provide accurate information on the data set(s).",
-                                       3)
+                    CommonUtil.ExecLog(sModuleInfo,"The sub-field information is incorrect. Please provide accurate information on the data set(s).",3)
                     return "failed"
         return "passed"
 
@@ -1546,6 +1526,7 @@ def Sequential_Actions(step_data):
 
 
 '===================== ===x=== Sequential Action Section Ends ===x=== ======================'
+
 
 
 
