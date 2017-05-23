@@ -483,6 +483,14 @@ def Validate_Step_Data(data_set):
     
     sModuleInfo = inspect.stack()[0][3] + " : " + inspect.getmoduleinfo(__file__).name
     CommonUtil.ExecLog(sModuleInfo, "Function: Validate_Step_Data", 1)
+
+    # Initialize variables
+    element_parameter = False
+    element_value = False
+    reference_parameter = False
+    reference_value = False    
+    reference_is_parent_or_child = False
+
     try:    
         if (len(data_set)==1): # One row in the data set
             element_parameter = data_set[0][0] # Get Field (element object)
@@ -512,6 +520,7 @@ def Validate_Step_Data(data_set):
         else: # Invalid step data
             CommonUtil.ExecLog(sModuleInfo, "Data set incorrect. Please provide accurate data set(s) information.", 3)
             return "failed"
+
         validated_data = (element_parameter, element_value, reference_parameter, reference_value, reference_is_parent_or_child)
         return validated_data # Return data as tuple
     except Exception:
