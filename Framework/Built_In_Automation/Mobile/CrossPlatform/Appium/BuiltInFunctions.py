@@ -1507,7 +1507,7 @@ def step_result(data_set):
     try:
         action_value = ''
         for row in data_set: # Find required data
-            if row[0] == 'step data':
+            if row[0] == 'step result':
                 action_value = row[2]
         if action_value == '':
             CommonUtil.ExecLog(sModuleInfo,"Could not find step result", 3)
