@@ -1407,7 +1407,7 @@ def Action_Handler_Appium(_data_set, action_name):
         elif (str(action_name).lower().strip().startswith('insert into list')):
             result = Insert_Into_List([data_set])
         elif action_name == "initialize list":
-            result = Shared_Resources.Initialize_List([data_set])
+            result = Initialize_List(data_set)
         elif (action_name == "compare list"):
             result = Compare_Lists(data_set)
         elif action_name == "step result": # Result from step data the user wants to specify (passed/failed)
@@ -1523,6 +1523,10 @@ def step_result(data_set):
     elif action_value in skipped_tag_list:
         result = 'skipped'
     return result
+
+def Initialize_List(data_set):
+    ''' Temporary wrapper until we can convert everything to use just data_set and not need the extra [] '''
+    return Shared_Resources.Initialize_List([data_set])
 
 #Method to click on element; step data passed on by the user
 def Click_Element_Appium(data_set):
