@@ -193,3 +193,13 @@ def get_device_cpu_info():
     except Exception, e:
         CommonUtil.ExecLog(sModuleInfo, "Unable to get device CPU info", 3)
         return "ADB shell command failed"
+
+def get_package_name():
+    sModuleInfo = inspect.stack()[0][3] + " : " + inspect.getmoduleinfo(__file__).name
+    try:
+        output = subprocess.check_output("adb shell pm list packages", shell=True)
+        CommonUtil.ExecLog(sModuleInfo, "Getting Packages Name of Installed Applications", 1)
+        return output
+    except Exception, e:
+        CommonUtil.ExecLog(sModuleInfo,"Unable to get Packages Name", 3)
+        return "ADB shell command failed"
