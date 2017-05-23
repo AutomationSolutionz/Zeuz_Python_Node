@@ -989,10 +989,13 @@ def get_element_location_by_id(data_set):
     # Parse data set
     try:
         _id = ''
+        action_value = ''
         for row in data_set: # Find element name from element parameter
             if row[1] == 'element parameter':
                 _id = (row[2])
-        if _id == '':
+            elif row[1] == 'action':
+                action_value = row[2]
+        if _id == '' or action_value == '':
             CommonUtil.ExecLog(sModuleInfo,"Could not find element parameter", 3)
             return 'failed'
     except Exception:
@@ -1005,7 +1008,9 @@ def get_element_location_by_id(data_set):
         location = elem.location # Get element x,y coordinates
         positions.append((location['x'], location['y'])) # Put them on an array - Needs to be in this format for dirver.tap()
         CommonUtil.ExecLog(sModuleInfo,"Retreived location successfully",1)
-        return positions # Return array
+        
+        result = Shared_Resources.Set_Shared_Variables(action_value, positions) # Save position in shared variables
+        return result
     except Exception:
         errMsg = "Retreived location unsuccessfully"
         return CommonUtil.Exception_Handler(sys.exc_info(),None,errMsg)
@@ -1401,33 +1406,18 @@ def Action_Handler_Appium(_data_set, action_name):
             result = Compare_Variables(data_set)
         elif (str(action_name).lower().strip().startswith('insert into list')):
             result = Insert_Into_List([data_set])
-            if result == "failed":
-                return "failed"
         elif action_name == "initialize list":
             result = Shared_Resources.Initialize_List([data_set])
-            if result == "failed":
-                return "failed"
         elif (action_name == "compare list"):
             result = Compare_Lists(data_set)
-            if result == "failed":
-                return "failed"
         elif action_name == "step result": # Result from step data the user wants to specify (passed/failed)
-            if action_value in failed_tag_list: # Convert user specified pass/fail into standard result
-                result = 'failed'
-            elif action_value in passed_tag_list:
-                result = 'passed'
-            elif action_value in skipped_tag_list:
-                result = 'skipped'
+            result = step_result(data_set)
         elif action_name == "install": # Install and execute application
             result = install_application(data_set) # file location, activity_name(optional)
         elif action_name == "launch": # Launch program and get appium driver instance
             result = launch_application(data_set) # Package name, Activity name
         elif action_name == "get location":
-            position = get_element_location_by_id(data_set) # Get x,y coordinates of the pass button
-            if position != 'failed':
-                result = Shared_Resources.Set_Shared_Variables(action_value, position)
-            else:
-                result = 'passed'
+            result = get_element_location_by_id(data_set) # Get x,y coordinates of the pass button
 
         # Single row actions
         elif action_name == "sleep": # Sleep a specific amount of time
@@ -1437,11 +1427,11 @@ def Action_Handler_Appium(_data_set, action_name):
         elif action_name == "close": # Close foreground application
             result = close_application()
         elif action_name == "uninstall": # Uninstall application
-            result = uninstall_application(action_value)
+            result = uninstall_application(data_set)
         elif action_name == 'teardown': # Cleanup Appium instance
             result = teardown_appium()
         elif action_name == 'keypress': # Press hardware, software or virtual key
-            result = Android_Keystroke_Key_Mapping(action_value) # To be replaced with handler dependent on android/ios
+            result = Keystroke_Appium(data_set) # To be replaced with handler dependent on android/ios
         elif action_name == "tap location":
             result = tap_location(data_set)
 
@@ -1507,13 +1497,40 @@ def verify_step_data(step_data):
         return CommonUtil.Exception_Handler(sys.exc_info())
     
 
+def step_result(data_set):
+    ''' Process what the user specified as the outcome with step result '''
+    
+    sModuleInfo = inspect.stack()[0][3] + " : " + inspect.getmoduleinfo(__file__).name
+    CommonUtil.ExecLog(sModuleInfo, "Verifying step data", 1)
+    
+    # Parse data set
+    try:
+        action_value = ''
+        for row in data_set: # Find required data
+            if row[0] == 'step data':
+                action_value = row[2]
+        if action_value == '':
+            CommonUtil.ExecLog(sModuleInfo,"Could not find step result", 3)
+            return 'failed'
+    except Exception:
+        errMsg = "Unable to parse data set"
+        return CommonUtil.Exception_Handler(sys.exc_info(),None,errMsg)
+
+    if action_value in failed_tag_list: # Convert user specified pass/fail into standard result
+        result = 'failed'
+    elif action_value in passed_tag_list:
+        result = 'passed'
+    elif action_value in skipped_tag_list:
+        result = 'skipped'
+    return result
+
 #Method to click on element; step data passed on by the user
 def Click_Element_Appium(data_set):
     sModuleInfo = inspect.stack()[0][3] + " : " + inspect.getmoduleinfo(__file__).name
     CommonUtil.ExecLog(sModuleInfo, "Function: Click_Element_Appium", 1)
     
     data_set = [data_set]
-    print ">>>>>",len(data_set), len(data_set[0]),data_set
+
     try:
         if len(data_set[0]) < 1:
             CommonUtil.ExecLog(sModuleInfo, "The information in the data-set(s) are incorrect. Please provide accurate data set(s) information.", 3)
@@ -1720,7 +1737,7 @@ def Android_Keystroke_Key_Mapping(keystroke):
     try:
         if keystroke == "return" or keystroke == "enter":
             driver.keyevent(66)
-        elif keystroke == "go back":
+        elif keystroke == "go back" or keystroke == "back":
             driver.back()
         elif keystroke == "spacebar":
             driver.keyevent(62)
@@ -1781,33 +1798,34 @@ def iOS_Keystroke_Key_Mapping(keystroke):
 def Keystroke_Appium(data_set):
     sModuleInfo = inspect.stack()[0][3] + " : " + inspect.getmoduleinfo(__file__).name
     CommonUtil.ExecLog(sModuleInfo, "Function: Keystroke_Appium", 1)
+    
+    # Parse data set
     try:
-        if ((len(data_set) != 1) or (1 < len(data_set[0]) >= 5)):
-            CommonUtil.ExecLog(sModuleInfo, "The information in the data-set(s) are incorrect. Please provide accurate data set(s) information.", 3)
-            return "failed"
+        keystroke_value = data_set[0][2]
+        if keystroke_value == '':
+            CommonUtil.ExecLog(sModuleInfo,"Could not find keystroke value", 3)
+            return 'failed'
+    except Exception:
+        errMsg = "Unable to parse data set"
+        return CommonUtil.Exception_Handler(sys.exc_info(),None,errMsg)
+
+    try:
+        # Execute the correct key stroke handler for the dependency
+        if dependency == 'Android':
+            result = Android_Keystroke_Key_Mapping(keystroke_value)
+        elif dependency == 'iOS':
+            result = iOS_Keystroke_Key_Mapping(keystroke_value)
         else:
-            for each in data_set[0]:
-                if each[1]=="action":
-                    if each[0]=="iOS keystroke":
-                        keystroke_value=(each[2]).upper()
-                        result = iOS_Keystroke_Key_Mapping(keystroke_value)
-                    elif each[0] == "Android keystroke":
-                        keystroke_value=(each[2]).upper()
-                        result = Android_Keystroke_Key_Mapping(keystroke_value)
-                    else:
-                        CommonUtil.ExecLog(sModuleInfo, "The correct parameter for the action has not been entered. Please check for errors.", 2)
-                        result = "failed"
-                else:
-                    continue
+            result = 'failed'
                 
-            if (result != "failed"):
-                CommonUtil.TakeScreenShot(sModuleInfo)
-                CommonUtil.ExecLog(sModuleInfo, "Successfully entered keystroke for the element with given parameters and values", 1)
-                return "passed"
-            else:
-                CommonUtil.TakeScreenShot(sModuleInfo)
-                CommonUtil.ExecLog(sModuleInfo, "Could not enter keystroke for the element with given parameters and values", 3)
-                return "failed"
+        if result in passed_tag_list:
+            CommonUtil.TakeScreenShot(sModuleInfo)
+            CommonUtil.ExecLog(sModuleInfo, "Successfully entered keystroke for the element with given parameters and values", 1)
+            return "passed"
+        else:
+            CommonUtil.TakeScreenShot(sModuleInfo)
+            CommonUtil.ExecLog(sModuleInfo, "Could not enter keystroke for the element with given parameters and values", 3)
+            return "failed"
               
     except Exception:
         errMsg = "Could not enter keystroke."
