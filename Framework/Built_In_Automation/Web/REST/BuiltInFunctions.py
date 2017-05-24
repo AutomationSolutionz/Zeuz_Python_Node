@@ -75,7 +75,7 @@ def Action_Handler(action_step_data, action_row):
             result = Shared_Resources.Initialize_List(action_step_data)
             if result == "failed":
                 return "failed"
-        elif (action_name == "step result"):
+        elif action_name == "step result":
             result = Step_Result(action_step_data)
             if result in failed_tag_list: # Convert user specified pass/fail into standard result
                 return 'failed'
@@ -83,7 +83,7 @@ def Action_Handler(action_step_data, action_row):
                 return 'passed'
             elif result in skipped_tag_list:
                 return 'skipped'
-        elif (str(action_name).lower().strip().startswith('insert into list')):
+        elif action_name == "insert into list":
             fields_to_be_saved = action_row[2]
             result = Insert_Into_List(action_step_data, fields_to_be_saved)
             if result == "failed":
@@ -202,20 +202,11 @@ def Insert_Into_List(step_data, fields_to_be_saved):
             list_name = ''
             key = ''
             value = ''
+            full_input_key_value_name = ''
 
             for each_step_data_item in step_data[0]:
                 if each_step_data_item[1]=="action":
                     full_input_key_value_name = each_step_data_item[2]
-                    full_input_action_name = each_step_data_item[0]
-
-            temp_list = full_input_action_name.split(':')
-            if len(temp_list) == 1:
-                CommonUtil.ExecLog(sModuleInfo,
-                                   "The information in the data-set(s) are incorrect. Please provide accurate data set(s) information.",
-                                   3)
-                return "failed"
-            else:
-                list_name = str(temp_list[1]).strip()
 
             temp_list = full_input_key_value_name.split(',')
             if len(temp_list) == 1:
@@ -224,11 +215,9 @@ def Insert_Into_List(step_data, fields_to_be_saved):
                                    3)
                 return "failed"
             else:
-                key_string = temp_list[0]
-                value_string = temp_list[1]
-
-                key = str(key_string).split(':')[1].strip()
-                value = str(value_string).split(':')[1].strip()
+                list_name = temp_list[0].split(':')[1].strip()
+                key = temp_list[1].split(':')[1].strip()
+                value = temp_list[2].split(':')[1].strip()
 
             result = Shared_Resources.Set_List_Shared_Variables(list_name,key, value)
             if result in failed_tag_list:
@@ -255,18 +244,23 @@ def Insert_Into_List(step_data, fields_to_be_saved):
                     for each_step_data_item in step_data[0]:
                         if each_step_data_item[1] == "action":
                             key = each_step_data_item[2]
-                            full_input_action_name = each_step_data_item[0]
 
                     # get list name from full input_string
 
-                    temp_list = full_input_action_name.split(':')
+                    temp_list = key.split(',')
                     if len(temp_list) == 1:
                         CommonUtil.ExecLog(sModuleInfo,
                                            "The information in the data-set(s) are incorrect. Please provide accurate data set(s) information.",
                                            3)
                         return "failed"
                     else:
-                        list_name = str(temp_list[1]).strip()
+                        list_name = str(temp_list[0]).split(':')[1].strip()
+
+                    fields_to_be_saved = ''
+                    for i in range(1, len(temp_list)):
+                        fields_to_be_saved += temp_list[i]
+                        if i != len(temp_list)-1:
+                            fields_to_be_saved+=","
 
                     return_result = handle_rest_call(returned_step_data_list, fields_to_be_saved, True, list_name)
 
@@ -535,4 +529,3 @@ def Validate_Step_Data(step_data):
             exc_obj) + ";" + "File Name: " + fname + ";" + "Line: " + str(exc_tb.tb_lineno))
         CommonUtil.ExecLog(sModuleInfo, "Could not find the new page element requested.  Error: %s" % (Error_Detail), 3)
         return "failed"
-

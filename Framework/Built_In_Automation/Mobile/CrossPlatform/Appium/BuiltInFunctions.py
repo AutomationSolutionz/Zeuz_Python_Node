@@ -1413,7 +1413,7 @@ def Action_Handler_Appium(_data_set, action_name):
             result = Save_Text(data_set)
         elif action_name == "compare variable": # Compare two "shared" variables
             result = Compare_Variables(data_set)
-        elif (str(action_name).lower().strip().startswith('insert into list')):
+        elif action_name == "insert into list":
             result = Insert_Into_List([data_set])
         elif action_name == "initialize list":
             result = Initialize_List(data_set)
@@ -1928,20 +1928,11 @@ def Insert_Into_List(data_set):
             list_name = ''
             key = ''
             value = ''
+            full_input_key_value_name = ''
 
             for each_step_data_item in data_set[0]:
                 if each_step_data_item[1]=="action":
                     full_input_key_value_name = each_step_data_item[2]
-                    full_input_action_name = each_step_data_item[0]
-
-            temp_list = full_input_action_name.split(':')
-            if len(temp_list) == 1:
-                CommonUtil.ExecLog(sModuleInfo,
-                                   "The information in the data-set(s) are incorrect. Please provide accurate data set(s) information.",
-                                   3)
-                return "failed"
-            else:
-                list_name = str(temp_list[1]).strip()
 
             temp_list = full_input_key_value_name.split(',')
             if len(temp_list) == 1:
@@ -1950,11 +1941,9 @@ def Insert_Into_List(data_set):
                                    3)
                 return "failed"
             else:
-                key_string = temp_list[0]
-                value_string = temp_list[1]
-
-                key = str(key_string).split(':')[1].strip()
-                value = str(value_string).split(':')[1].strip()
+                list_name = temp_list[0].split(':')[1].strip()
+                key = temp_list[1].split(':')[1].strip()
+                value = temp_list[2].split(':')[1].strip()
 
             result = Shared_Resources.Set_List_Shared_Variables(list_name,key, value)
             if result in failed_tag_list:
@@ -1963,8 +1952,6 @@ def Insert_Into_List(data_set):
             else:
                 Shared_Resources.Show_All_Shared_Variables()
                 return "passed"
-
-
 
         elif len(data_set[0]) > 1 and len(data_set[0]) <=5:
             for each in data_set[0]:
@@ -1984,20 +1971,20 @@ def Insert_Into_List(data_set):
             list_name = ''
             key = ''
             for each_step_data_item in data_set[0]:
-                if each_step_data_item[1]=="action":
+                if each_step_data_item[1] == "action":
                     key = each_step_data_item[2]
-                    full_input_action_name = each_step_data_item[0]
 
-            #get list name from full input_string
+            # get list name from full input_string
 
-            temp_list = full_input_action_name.split(':')
+            temp_list = key.split(',')
             if len(temp_list) == 1:
                 CommonUtil.ExecLog(sModuleInfo,
-                                   "The information in the data-set(s) are incorrect. Please provide accurate data set(s) information.",
-                                   3)
+                    "The information in the data-set(s) are incorrect. Please provide accurate data set(s) information.",
+                        3)
                 return "failed"
             else:
-                list_name = str(temp_list[1]).strip()
+                list_name = str(temp_list[0]).split(':')[1].strip()
+                key = str(temp_list[1]).strip()
 
             #get text from selenium element
             list_of_element_text = Element.text.split('\n')
@@ -2005,6 +1992,7 @@ def Insert_Into_List(data_set):
             for each_text_item in list_of_element_text:
                 if each_text_item != "":
                     visible_list_of_element_text+=each_text_item
+
 
             #save text in the list of shared variables in CommonUtil
             result = Shared_Resources.Set_List_Shared_Variables(list_name,key, visible_list_of_element_text)
