@@ -1383,19 +1383,6 @@ def Action_Handler_Appium(_data_set, action_name):
     if data_set in failed_tag_list:
         return 'failed'
     
-    # Put data set values in friendly variables
-    action_field, action_subfield, action_value = ('','','')
-    related_field, related_subfield, related_value = ('','','')
-    for row in data_set:
-        if row[0] == action_name: # Action line
-            action_field = row[0]
-            action_subfield = row[1]
-            action_value = row[2]
-        elif ((row[1] == "element parameter") or (row[1] == "reference parameter") or (row[1] == "relation type") or (row[1] == "element parameter 1 of 2") or (row[1] == "element parameter 2 of 2")): # Related information line
-            related_field = row[0]
-            related_subfield = row[1]
-            related_value = row[2]
-            
     # Perform an action based on Field from step data
     try:
         # Multiple row actions
@@ -1414,7 +1401,7 @@ def Action_Handler_Appium(_data_set, action_name):
         elif action_name == "compare variable": # Compare two "shared" variables
             result = Compare_Variables(data_set)
         elif action_name == "insert into list":
-            result = Insert_Into_List([data_set])
+            result = Insert_Into_List(data_set)
         elif action_name == "initialize list":
             result = Initialize_List(data_set)
         elif (action_name == "compare list"):
@@ -1923,6 +1910,8 @@ def Validate_Text_Appium(data_set):
 def Insert_Into_List(data_set):
     sModuleInfo = inspect.stack()[0][3] + " : " + inspect.getmoduleinfo(__file__).name
     CommonUtil.ExecLog(sModuleInfo, "Function: Insert_Into_List", 1)
+    data_set = [data_set]
+    
     try:
         if len(data_set[0]) == 1: #will have to test #saving direct input string data
             list_name = ''
