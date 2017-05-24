@@ -106,14 +106,53 @@ def RenameFile(file_to_be_renamed, new_name_of_the_file):
     CommonUtil.ExecLog(sModuleInfo, "Function: Rename File", 1)
     try:
         CommonUtil.ExecLog(sModuleInfo, "Renaming file %s to %s" % (file_to_be_renamed, new_name_of_the_file), 1)
-        result = shutil.move(file_to_be_renamed, new_name_of_the_file)
-        CommonUtil.ExecLog(sModuleInfo, "Returning result of rename file function", 1)
-        CommonUtil.ExecLog(sModuleInfo, "Renaming file %s to %s complete" % (file_to_be_renamed, new_name_of_the_file),
-                           1)
-        return result
+        shutil.move(file_to_be_renamed, new_name_of_the_file)
+        CommonUtil.ExecLog(sModuleInfo, "Checking whether file is renamed properly", 1)
+        # after performing shutil.move() we have to check that if the file with new name exists in correct location.
+        # if the file exists in correct position then return passed
+        # if the file doesn't exist in correct position then return failed
+        if os.path.isfile(new_name_of_the_file):
+            CommonUtil.ExecLog(sModuleInfo, "Returning result of rename file function", 1)
+            CommonUtil.ExecLog(sModuleInfo, "file exists... rename function is done properly", 1)
+            return "passed"
+        else:
+            CommonUtil.ExecLog(sModuleInfo, "Returning result of rename file function", 1)
+            CommonUtil.ExecLog(sModuleInfo, "file doesn't exist... rename function is not done properly", 3)
+            return "failed"
+        CommonUtil.ExecLog(sModuleInfo, "Renaming file %s to %s complete" % (file_to_be_renamed, new_name_of_the_file),1)
+
     except Exception:
         return CommonUtil.Exception_Handler(sys.exc_info())
 
+# function to move file a to b
+def MoveFile(file_to_be_moved, new_name_of_the_file):
+    """
+
+        :param file_to_be_moved: location of source file to be renamed
+        :param new_name_of_the_file: location of destination file
+        :return: Exception if Exception occurs otherwise return result  
+        """
+    sModuleInfo = inspect.stack()[0][3] + " : " + inspect.getmoduleinfo(__file__).name
+    CommonUtil.ExecLog(sModuleInfo, "Function: Move File", 1)
+    try:
+        CommonUtil.ExecLog(sModuleInfo, "Moving file %s to %s" % (file_to_be_moved, new_name_of_the_file), 1)
+        shutil.move(file_to_be_moved, new_name_of_the_file)
+        CommonUtil.ExecLog(sModuleInfo, "Checking whether file is moved properly", 1)
+        # after performing shutil.move() we have to check that if the file with new name exists in correct location.
+        # if the file exists in correct position then return passed
+        # if the file doesn't exist in correct position then return failed
+        if os.path.isfile(new_name_of_the_file):
+            CommonUtil.ExecLog(sModuleInfo, "Returning result of move file function", 1)
+            CommonUtil.ExecLog(sModuleInfo, "file exists... move function is done properly", 1)
+            return "passed"
+        else:
+            CommonUtil.ExecLog(sModuleInfo, "Returning result of move file function", 1)
+            CommonUtil.ExecLog(sModuleInfo, "file doesn't exist... move function is not done properly", 3)
+            return "failed"
+        CommonUtil.ExecLog(sModuleInfo, "Moving file %s to %s complete" % (file_to_be_renamed, new_name_of_the_file),1)
+
+    except Exception:
+        return CommonUtil.Exception_Handler(sys.exc_info())
 
 # function to rename folder a to b
 def RenameFolder(folder_to_be_renamed, new_name_of_the_folder):
@@ -127,10 +166,50 @@ def RenameFolder(folder_to_be_renamed, new_name_of_the_folder):
     CommonUtil.ExecLog(sModuleInfo, "Function: Rename Folder", 1)
     try:
         CommonUtil.ExecLog(sModuleInfo, "Renaming folder %s to %s" % (folder_to_be_renamed, new_name_of_the_folder), 1)
-        result = shutil.move(folder_to_be_renamed, new_name_of_the_folder)
-        CommonUtil.ExecLog(sModuleInfo, "Returning result of rename folder function", 1)
-        CommonUtil.ExecLog(sModuleInfo,
-                           "Renaming folder %s to %s is complete" % (folder_to_be_renamed, new_name_of_the_folder), 1)
+        shutil.move(folder_to_be_renamed, new_name_of_the_folder)
+        CommonUtil.ExecLog(sModuleInfo, "Checking whether folder is renamed properly", 1)
+        # after performing shutil.move() we have to check that if the folder with new name exists in correct location.
+        # if the folder exists in correct position then return passed
+        # if the folder doesn't exist in correct position then return failed
+        if os.path.isdir(new_name_of_the_folder):
+            CommonUtil.ExecLog(sModuleInfo, "Returning result of rename folder function", 1)
+            CommonUtil.ExecLog(sModuleInfo, "folder exists... rename function is done properly", 1)
+            return "passed"
+        else:
+            CommonUtil.ExecLog(sModuleInfo, "Returning result of rename folder function", 1)
+            CommonUtil.ExecLog(sModuleInfo, "folder doesn't exist... rename function is not done properly", 3)
+            return "failed"
+        CommonUtil.ExecLog(sModuleInfo,"Renaming folder %s to %s is complete" % (folder_to_be_renamed, new_name_of_the_folder), 1)
+        return result
+    except Exception:
+        return CommonUtil.Exception_Handler(sys.exc_info())
+
+# function to move folder a to b
+def MoveFolder(folder_to_be_moved, new_name_of_the_folder):
+    """
+
+        :param folder_to_be_moved: location of source folder to be renamed
+        :param new_name_of_the_folder: full location of destination folder
+        :return: Exception if Exception occurs otherwise return result  
+        """
+    sModuleInfo = inspect.stack()[0][3] + " : " + inspect.getmoduleinfo(__file__).name
+    CommonUtil.ExecLog(sModuleInfo, "Function: Rename Folder", 1)
+    try:
+        CommonUtil.ExecLog(sModuleInfo, "Moving folder %s to %s" % (folder_to_be_moved, new_name_of_the_folder), 1)
+        shutil.move(folder_to_be_moved, new_name_of_the_folder)
+        CommonUtil.ExecLog(sModuleInfo, "Checking whether folder is moved properly", 1)
+        # after performing shutil.move() we have to check that if the folder with new name exists in correct location.
+        # if the folder exists in correct position then return passed
+        # if the folder doesn't exist in correct position then return failed
+        if os.path.isdir(new_name_of_the_folder):
+            CommonUtil.ExecLog(sModuleInfo, "Returning result of move folder function", 1)
+            CommonUtil.ExecLog(sModuleInfo, "folder exists... move function is done properly", 1)
+            return "passed"
+        else:
+            CommonUtil.ExecLog(sModuleInfo, "Returning result of move folder function", 1)
+            CommonUtil.ExecLog(sModuleInfo, "folder doesn't exist... move function is not done properly", 3)
+            return "failed"
+        CommonUtil.ExecLog(sModuleInfo,"Moving folder %s to %s is complete" % (folder_to_be_renamed, new_name_of_the_folder), 1)
         return result
     except Exception:
         return CommonUtil.Exception_Handler(sys.exc_info())
@@ -153,9 +232,7 @@ def UnZip(file_to_be_unzipped, location_where_to_unzip):
             zip_ref.extractall(location_where_to_unzip)
             result = zip_ref.close()
             CommonUtil.ExecLog(sModuleInfo, "Returning result of unzip  function", 1)
-            CommonUtil.ExecLog(sModuleInfo,
-                               "Unzipping file %s to %s is complete" % (file_to_be_unzipped, location_where_to_unzip),
-                               1)
+            CommonUtil.ExecLog(sModuleInfo,"Unzipping file %s to %s is complete" % (file_to_be_unzipped, location_where_to_unzip),1)
             return result
         else:
             CommonUtil.ExecLog(sModuleInfo, "can't unzip file as it doesn't exist", 3)
@@ -178,8 +255,7 @@ def CompareFile(file_to_be_compared1, file_to_be_compared2):
         CommonUtil.ExecLog(sModuleInfo, "Comparing files %s and %s" % (file_to_be_compared1, file_to_be_compared2), 1)
         result = filecmp.cmp(file_to_be_compared1, file_to_be_compared2)
         CommonUtil.ExecLog(sModuleInfo, "Returning result of compare file function", 1)
-        CommonUtil.ExecLog(sModuleInfo,
-                           "Comparing files %s and %s is complete" % (file_to_be_compared1, file_to_be_compared2), 1)
+        CommonUtil.ExecLog(sModuleInfo,"Comparing files %s and %s is complete" % (file_to_be_compared1, file_to_be_compared2), 1)
         return result
     except Exception:
         return CommonUtil.Exception_Handler(sys.exc_info())
@@ -204,8 +280,7 @@ def ZipFile(file_to_be_zipped, location_where_to_zip):
             os.chdir(value)
             result = zipfile.ZipFile(list2[len(list2) - 1], mode='w').write(list1[len(list1) - 1])
             CommonUtil.ExecLog(sModuleInfo, "Returning result of zip file function", 1)
-            CommonUtil.ExecLog(sModuleInfo,
-                               "Zipping file %s to %s is complete" % (file_to_be_zipped, location_where_to_zip), 1)
+            CommonUtil.ExecLog(sModuleInfo,"Zipping file %s to %s is complete" % (file_to_be_zipped, location_where_to_zip), 1)
             return result
         else:
             CommonUtil.ExecLog(sModuleInfo, "can't zip file as file doesn't exist", 3)
@@ -233,8 +308,7 @@ def ZipFile_for_windows(file_to_be_zipped, location_where_to_zip):
             os.chdir(value)
             result = zipfile.ZipFile(list2[len(list2) - 1], mode='w').write(list1[len(list1) - 1])
             CommonUtil.ExecLog(sModuleInfo, "Returning result of zip file for windows function", 1)
-            CommonUtil.ExecLog(sModuleInfo,
-                               "Zipping file %s to %s is complete" % (file_to_be_zipped, location_where_to_zip), 1)
+            CommonUtil.ExecLog(sModuleInfo,"Zipping file %s to %s is complete" % (file_to_be_zipped, location_where_to_zip), 1)
             return result
         else:
             CommonUtil.ExecLog(sModuleInfo, "can't zip file for windows as file doesn't exist", 3)
@@ -299,10 +373,21 @@ def DeleteFile(sFilePath):
     try:
         CommonUtil.ExecLog(sModuleInfo, "Deleting file %s" % sFilePath, 1)
         if os.path.isfile(sFilePath):
-            result = os.remove(sFilePath)
-            CommonUtil.ExecLog(sModuleInfo, "Returning result of delete file function", 1)
+            os.remove(sFilePath)
+            CommonUtil.ExecLog(sModuleInfo, "Checking whether folder is deleted properly", 1)
+            # after performing os.remove() we have to check that if the file still exists in that location.
+            # if the file exists in that position then return failed as it is not deleted
+            # if the file doesn't exist in that position then return passed
+            if os.path.isfile(sFilePath):
+                CommonUtil.ExecLog(sModuleInfo, "Returning result of delete file function", 1)
+                CommonUtil.ExecLog(sModuleInfo, "file exists... delete function is not done properly", 3)
+                return "failed"
+            else:
+                CommonUtil.ExecLog(sModuleInfo, "Returning result of delete file function", 1)
+                CommonUtil.ExecLog(sModuleInfo, "file doesn't exist... delete function is done properly", 1)
+                return "passed"
             CommonUtil.ExecLog(sModuleInfo, "Deleting file %s is complete" % sFilePath, 1)
-            return result
+
         else:
             CommonUtil.ExecLog(sModuleInfo, "can't delete file as file doesn't exist", 3)
             return False
@@ -324,7 +409,19 @@ def DeleteFolder(sFolderPath):
         # print os.path.isdir(sFolderPath)
         if os.path.isdir(sFolderPath):
             shutil.rmtree(sFolderPath)
-            CommonUtil.ExecLog(sModuleInfo, "Deleting folder %s is complete" % sFolderPath, 1)
+            CommonUtil.ExecLog(sModuleInfo, "Checking whether folder is deleted properly", 1)
+            # after performing os.remove() we have to check that if the folder still exists in that location.
+            # if the folder exists in that position then return failed as it is not deleted
+            # if the folder doesn't exist in that position then return passed
+            if os.path.isdir(sFolderPath):
+                CommonUtil.ExecLog(sModuleInfo, "Returning result of delete folder function", 1)
+                CommonUtil.ExecLog(sModuleInfo, "folder exists... delete function is not done properly", 3)
+                return "failed"
+            else:
+                CommonUtil.ExecLog(sModuleInfo, "Returning result of delete folder function", 1)
+                CommonUtil.ExecLog(sModuleInfo, "folder doesn't exist... delete function is done properly", 1)
+                return "passed"
+            CommonUtil.ExecLog(sModuleInfo, "Deleting folder %s is complete" % sFilePath, 1)
         else:
             CommonUtil.ExecLog(sModuleInfo, "can't delete folder as folder doesn't exist", 3)
             return False
@@ -380,8 +477,8 @@ def empty_trash(trash_path):
             result = os.system("rm -rf *")  #Empty Trash
 
         else:
-            CommonUtil.ExecLog(sModuleInfo, "Trash is empty already", 1)
-            return "failed"   #return "failed" if trash is already cleared
+            CommonUtil.ExecLog(sModuleInfo, "------Trash is empty already------", 1)
+            return "passed"   #return "failed" if trash is already cleared
 
 
         CommonUtil.ExecLog(sModuleInfo, "Emptying trash %s is complete" % trash_path, 1)
@@ -402,8 +499,19 @@ def copy_folder(src, dest):
     CommonUtil.ExecLog(sModuleInfo, "Function: Copy Folder", 1)
     try:
         CommonUtil.ExecLog(sModuleInfo, "Coping folder %s to %s" % (src, dest), 1)
-        result = shutil.copytree(src, dest)
-        CommonUtil.ExecLog(sModuleInfo, "Returning result of copy folder function", 1)
+        shutil.copytree(src, dest)
+        CommonUtil.ExecLog(sModuleInfo, "Checking whether folder is copied properly", 1)
+        # after performing shutil.copytree() we have to check that if the folder is created correct location.
+        # if the folder exists in correct position then return passed
+        # if the folder doesn't exist in correct position then return failed
+        if os.path.isdir(dest):
+            CommonUtil.ExecLog(sModuleInfo, "Returning result of copy folder function", 1)
+            CommonUtil.ExecLog(sModuleInfo, "folder exists... copy function is done properly", 1)
+            return "passed"
+        else:
+            CommonUtil.ExecLog(sModuleInfo, "Returning result of rename folder function", 1)
+            CommonUtil.ExecLog(sModuleInfo, "folder doesn't exist... copy function is not done properly", 3)
+            return "failed"
         CommonUtil.ExecLog(sModuleInfo, "Coping folder %s to %s is complete" % (src, dest), 1)
         return result
     except Exception:
@@ -422,10 +530,20 @@ def copy_file(src, dest):
     CommonUtil.ExecLog(sModuleInfo, "Function: Copy File", 1)
     try:
         CommonUtil.ExecLog(sModuleInfo, "Coping file %s to %s" % (src, dest), 1)
-        result = shutil.copyfile(src, dest)
-        CommonUtil.ExecLog(sModuleInfo, "Returning result of copy file function", 1)
+        shutil.copyfile(src, dest)
+        CommonUtil.ExecLog(sModuleInfo, "Checking whether file is copied properly", 1)
+        # after performing shutil.copyfile() we have to check that if the file with new name exists in correct location.
+        # if the file exists in correct position then return passed
+        # if the file doesn't exist in correct position then return failed
+        if os.path.isfile(dest):
+            CommonUtil.ExecLog(sModuleInfo, "Returning result of copy file function", 1)
+            CommonUtil.ExecLog(sModuleInfo, "file exists... copy function is done properly", 1)
+            return "passed"
+        else:
+            CommonUtil.ExecLog(sModuleInfo, "Returning result of rename file function", 1)
+            CommonUtil.ExecLog(sModuleInfo, "file doesn't exist... copy function is not done properly", 3)
+            return "failed"
         CommonUtil.ExecLog(sModuleInfo, "Coping file %s to %s is complete" % (src, dest), 1)
-        return result
     except Exception:
         return CommonUtil.Exception_Handler(sys.exc_info())
 
@@ -450,8 +568,8 @@ def empty_recycle_bin():
             result = winshell.recycle_bin().empty(confirm=False, show_progress=False, sound=False)       #Empty Trash
 
         else:
-            CommonUtil.ExecLog(sModuleInfo, "Recycle Bin is empty already", 1)
-            return "failed"   #return "failed" if trash is already cleared
+            CommonUtil.ExecLog(sModuleInfo, "------Recycle Bin is empty already------", 1)
+            return "passed"   #return "failed" if trash is already cleared
 
         CommonUtil.ExecLog(sModuleInfo, "Returning result of empty recycle bin function", 1)
         CommonUtil.ExecLog(sModuleInfo, "Emptying recycle bin is complete", 1)
@@ -1256,7 +1374,7 @@ def Move_File_or_Folder(step_data):
             file_or_folder = str(step_data[0][1][2]).strip()  # get if it is file/folder to move
             if file_or_folder.lower() == 'file':
                 # move file "from_path to "to_path"
-                result = RenameFile(from_path, to_path)
+                result = MoveFile(from_path, to_path)
                 if result in failed_tag_list:
                     CommonUtil.ExecLog(sModuleInfo, "Could not move file '%s' to '%s'" % (from_path, to_path), 3)
                     return "failed"
@@ -1265,7 +1383,7 @@ def Move_File_or_Folder(step_data):
                     return "passed"
             elif file_or_folder.lower() == 'folder':
                 # move folder "from_path" to "to_path"
-                result = RenameFolder(from_path, to_path)
+                result = MoveFolder(from_path, to_path)
                 if result in failed_tag_list:
                     CommonUtil.ExecLog(sModuleInfo, "Could not move folder '%s' to '%s'" % (from_path, to_path), 3)
                     return "failed"
@@ -1283,7 +1401,7 @@ def Move_File_or_Folder(step_data):
             file_or_folder = str(step_data[0][1][2]).strip()  # get if it is file/folder to move
             if file_or_folder.lower() == 'file':
                 # move file "from_path" to "to_path"
-                result = RenameFile(from_path, to_path)
+                result = MoveFile(from_path, to_path)
                 if result in failed_tag_list:
                     CommonUtil.ExecLog(sModuleInfo, "Could not move file '%s' to '%s'" % (from_path, to_path), 3)
                     return "failed"
@@ -1292,7 +1410,7 @@ def Move_File_or_Folder(step_data):
                     return "passed"
             elif file_or_folder.lower() == 'folder':
                 # move folder "from_path" to "to_path"
-                result = RenameFolder(from_path, to_path)
+                result = MoveFolder(from_path, to_path)
                 if result in failed_tag_list:
                     CommonUtil.ExecLog(sModuleInfo, "Could not move folder '%s' to '%s'" % (from_path, to_path), 3)
                     return "failed"
