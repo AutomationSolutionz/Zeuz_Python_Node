@@ -10,6 +10,7 @@ from Framework.Built_In_Automation.Shared_Resources import BuiltInFunctionShared
 
 
 # Dictionary of supported actions and their respective modules
+# Rules: Action NAME must be lower case, no underscores, single spaces, no trailing whitespace
 actions = { # Numbers are arbitrary, and are not used anywhere. Name and module must be lower case.
     200: {'module': 'appium', 'name': 'step result', 'function': 'step_result'},
     100: {'module': 'appium', 'name': 'click', 'function': 'Click_Element_Appium'},
@@ -131,7 +132,7 @@ def Sequential_Actions(step_data, dependency = '', file_attachment = ''):
 
  
 
-def Conditional_Action_Handler(step_data, each, row, logic_row):
+def Conditional_Action_Handler(step_data, data_set, row, logic_row):
     ''' Process conditional actions, called only by Sequential_Actions() '''
      
     sModuleInfo = inspect.stack()[0][3] + " : " + inspect.getmoduleinfo(__file__).name
@@ -139,7 +140,7 @@ def Conditional_Action_Handler(step_data, each, row, logic_row):
     module = row[1].split(' ')[0]    
     if module:
         Get_Element_Step_Data_Appium = getattr(eval(module), 'Get_Element_Step_Data_Appium')
-        element_step_data = Get_Element_Step_Data_Appium([each]) # Pass data set as a list, and get back anything that's not an "action" or "conditional action"
+        element_step_data = Get_Element_Step_Data_Appium([data_set]) # Pass data set as a list, and get back anything that's not an "action" or "conditional action"
         Validate_Step_Data = getattr(eval(module), 'Validate_Step_Data')
         returned_step_data_list = Validate_Step_Data(element_step_data) # Make sure the element step data we got back from above is good
         if ((returned_step_data_list == []) or (returned_step_data_list == "failed")): # Element step data is bad, so fail
@@ -167,7 +168,11 @@ def Conditional_Action_Handler(step_data, each, row, logic_row):
                     for each_item in list_of_steps: # For each data set number we need to process before finishing
                         CommonUtil.ExecLog(sModuleInfo, "Processing conditional step %s" % str(each_item), 1)
                         data_set_index = int(each_item) - 1 # data set number, -1 to offset for data set numbering system
-                        result = Sequential_Actions([step_data[data_set_index]]) # Recursively call this function until all called data sets are complete
+                        
+                        if step_data[data_set_index] == data_set: # If the data set we are GOING to pass back to sequential_actions() is the same one that called THIS function in the first place, then the step data is calling itself again, and we must pass all of the step data instead, so it doesn't crash later when it tries to refer to data sets that don't exist
+                            result = Sequential_Actions(step_data) # Pass the step data to sequential_actions() - Mainly used when the step data is in a deliberate recursive loop of conditional actions
+                        else: # Normal process - most conditional actions will come here
+                            result = Sequential_Actions([step_data[data_set_index]]) # Recursively call this function until all called data sets are complete
                     return result # Return only the last result of the last row of the last data set processed - This should generally be a "step result action" command
     else:
         CommonUtil.ExecLog(sModuleInfo, "The conditional action you entered is incorrect. Please provide accurate information on the data set(s).", 3)
@@ -277,12 +282,13 @@ def shared_variable_to_value(data_set): #!!! Should be moved to Shared_Variable.
                         right_index = data_row[i].index('|%') # Get index of right marker
                         var = data_row[i][left_index:right_index + 2] # Copy entire shared variable
                         var_clean = var[2:len(var)-2] # Remove markers
-                        data_row[i] = data_row.replace(var, sr.Get_Shared_Variables(var_clean)) # Get the string for this shared variable 
-                        if data_row[i] == 'failed':
+                        var_str = sr.Get_Shared_Variables(var_clean) # Convert variable name to it's value
+                        data_row[i] = data_row[i].replace(var, str(var_str)) # replace just the variable name with it's value (has to be in string format)
+                        if data_row[i] == 'failed': #!!!this won't work if there's extra strings around the shared variable 
                             CommonUtil.ExecLog(sModuleInfo, "Invalid shared variable", 3)
                             return "failed"
             new_data.append(tuple(data_row)) # Convert row from list to tuple, and append to new data_set
-        return new_data
+        return new_data # Return parsed data_set
     except Exception:
         return CommonUtil.Exception_Handler(sys.exc_info())
 
