@@ -20,7 +20,7 @@ from sys import platform as _platform
 
 passed_tag_list = ['Pass', 'pass', 'PASS', 'PASSED', 'Passed', 'passed', 'true', 'TRUE', 'True', '1', 'Success','success', 'SUCCESS', True]
 failed_tag_list = ['Fail', 'fail', 'FAIL', 'Failed', 'failed', 'FAILED', 'false', 'False', 'FALSE', '0', False]
-
+from Framework.Built_In_Automation.Shared_Resources import BuiltInFunctionSharedResources as Shared_Resources
 import os, subprocess, shutil
 
 add_sanitization = True
@@ -179,7 +179,8 @@ def RenameFolder(folder_to_be_renamed, new_name_of_the_folder):
             CommonUtil.ExecLog(sModuleInfo, "Returning result of rename folder function", 1)
             CommonUtil.ExecLog(sModuleInfo, "folder doesn't exist... rename function is not done properly", 3)
             return "failed"
-        CommonUtil.ExecLog(sModuleInfo,"Renaming folder %s to %s is complete" % (folder_to_be_renamed, new_name_of_the_folder), 1)
+        CommonUtil.ExecLog(sModuleInfo,
+                           "Renaming folder %s to %s is complete" % (folder_to_be_renamed, new_name_of_the_folder), 1)
         return result
     except Exception:
         return CommonUtil.Exception_Handler(sys.exc_info())
@@ -209,7 +210,8 @@ def MoveFolder(folder_to_be_moved, new_name_of_the_folder):
             CommonUtil.ExecLog(sModuleInfo, "Returning result of move folder function", 1)
             CommonUtil.ExecLog(sModuleInfo, "folder doesn't exist... move function is not done properly", 3)
             return "failed"
-        CommonUtil.ExecLog(sModuleInfo,"Moving folder %s to %s is complete" % (folder_to_be_renamed, new_name_of_the_folder), 1)
+        CommonUtil.ExecLog(sModuleInfo,
+                           "Moving folder %s to %s is complete" % (folder_to_be_renamed, new_name_of_the_folder), 1)
         return result
     except Exception:
         return CommonUtil.Exception_Handler(sys.exc_info())
@@ -232,7 +234,9 @@ def UnZip(file_to_be_unzipped, location_where_to_unzip):
             zip_ref.extractall(location_where_to_unzip)
             result = zip_ref.close()
             CommonUtil.ExecLog(sModuleInfo, "Returning result of unzip  function", 1)
-            CommonUtil.ExecLog(sModuleInfo,"Unzipping file %s to %s is complete" % (file_to_be_unzipped, location_where_to_unzip),1)
+            CommonUtil.ExecLog(sModuleInfo,
+                               "Unzipping file %s to %s is complete" % (file_to_be_unzipped, location_where_to_unzip),
+                               1)
             return result
         else:
             CommonUtil.ExecLog(sModuleInfo, "can't unzip file as it doesn't exist", 3)
@@ -255,7 +259,8 @@ def CompareFile(file_to_be_compared1, file_to_be_compared2):
         CommonUtil.ExecLog(sModuleInfo, "Comparing files %s and %s" % (file_to_be_compared1, file_to_be_compared2), 1)
         result = filecmp.cmp(file_to_be_compared1, file_to_be_compared2)
         CommonUtil.ExecLog(sModuleInfo, "Returning result of compare file function", 1)
-        CommonUtil.ExecLog(sModuleInfo,"Comparing files %s and %s is complete" % (file_to_be_compared1, file_to_be_compared2), 1)
+        CommonUtil.ExecLog(sModuleInfo,
+                           "Comparing files %s and %s is complete" % (file_to_be_compared1, file_to_be_compared2), 1)
         return result
     except Exception:
         return CommonUtil.Exception_Handler(sys.exc_info())
@@ -280,7 +285,8 @@ def ZipFile(file_to_be_zipped, location_where_to_zip):
             os.chdir(value)
             result = zipfile.ZipFile(list2[len(list2) - 1], mode='w').write(list1[len(list1) - 1])
             CommonUtil.ExecLog(sModuleInfo, "Returning result of zip file function", 1)
-            CommonUtil.ExecLog(sModuleInfo,"Zipping file %s to %s is complete" % (file_to_be_zipped, location_where_to_zip), 1)
+            CommonUtil.ExecLog(sModuleInfo,
+                               "Zipping file %s to %s is complete" % (file_to_be_zipped, location_where_to_zip), 1)
             return result
         else:
             CommonUtil.ExecLog(sModuleInfo, "can't zip file as file doesn't exist", 3)
@@ -308,7 +314,8 @@ def ZipFile_for_windows(file_to_be_zipped, location_where_to_zip):
             os.chdir(value)
             result = zipfile.ZipFile(list2[len(list2) - 1], mode='w').write(list1[len(list1) - 1])
             CommonUtil.ExecLog(sModuleInfo, "Returning result of zip file for windows function", 1)
-            CommonUtil.ExecLog(sModuleInfo,"Zipping file %s to %s is complete" % (file_to_be_zipped, location_where_to_zip), 1)
+            CommonUtil.ExecLog(sModuleInfo,
+                               "Zipping file %s to %s is complete" % (file_to_be_zipped, location_where_to_zip), 1)
             return result
         else:
             CommonUtil.ExecLog(sModuleInfo, "can't zip file for windows as file doesn't exist", 3)
@@ -960,7 +967,7 @@ def Get_User_Name(step_data):
             # linux
             CommonUtil.ExecLog(sModuleInfo, "linux", 1)
             path = get_home_folder()  # get the path of the home directory
-            list_elemnet = path.split("/")  # list the parts of path by spliting it by "/"
+            list_elemnet = path.split("/")  # list the parts of path by splitting it by "/"
             name = list_elemnet[len(list_elemnet) - 1]  # name of the user
             if name in failed_tag_list:
                 CommonUtil.ExecLog(sModuleInfo, "Could not find user name '%s'" % (name), 3)
@@ -976,6 +983,37 @@ def Get_User_Name(step_data):
     except Exception:
         return CommonUtil.Exception_Handler(sys.exc_info())
 
+# Method to Calculate
+def Calculate(step_data):
+    sModuleInfo = inspect.stack()[0][3] + " : " + inspect.getmoduleinfo(__file__).name
+    CommonUtil.ExecLog(sModuleInfo, "Function: Calculate", 1)
+    try:
+        if _platform == "linux" or _platform == "linux2":
+            # linux
+            CommonUtil.ExecLog(sModuleInfo, "linux", 1)
+            statement= str(step_data[0][0][2]).strip() # get the statement for math function
+              # list the parts of statement by splitting it by "="
+            list = statement.split("=")
+            direc = {}
+            #eval() funtion is used to evaluate a string
+            # eval()  does the auto calculation from a string.
+            CommonUtil.ExecLog(sModuleInfo, "Evaluating the string for the statement %s" %statement, 1)
+            direc[list[0]] = eval(list[1])  # save the variable in the directory
+            CommonUtil.ExecLog(sModuleInfo, "current directory %s" %direc, 1)
+        elif _platform == "win32":
+            # linux
+            CommonUtil.ExecLog(sModuleInfo, "windows", 1)
+            statement = str(step_data[0][0][2]).strip()  # get the statement for math function
+            # list the parts of statement by splitting it by "="
+            list = statement.split("=")
+            direc = {}
+            # eval() funtion is used to evaluate a string
+            # eval()  does the auto calculation from a string.
+            CommonUtil.ExecLog(sModuleInfo, "Evaluating the string for the statement %s" % statement, 1)
+            direc[list[0]] = eval(list[1])  # save the variable in the directory
+            CommonUtil.ExecLog(sModuleInfo, "current directory %s" % direc, 1)
+    except Exception:
+        return CommonUtil.Exception_Handler(sys.exc_info())
 
 # Method to Run Sudo Command
 def Run_Sudo_Command(step_data):
@@ -1442,6 +1480,21 @@ def Sleep(step_data):
     except Exception:
         return CommonUtil.Exception_Handler(sys.exc_info())
 
+# Method to save text
+def Save_Text(step_data):
+    sModuleInfo = inspect.stack()[0][3] + " : " + inspect.getmoduleinfo(__file__).name
+    CommonUtil.ExecLog(sModuleInfo, "Function: Save Text", 1)
+    try:
+        result = Shared_Resources.Set_Shared_Variables(step_data[0][1][2],int(step_data[0][0][2]) )   # setting the shared variables
+        if result in failed_tag_list:
+            CommonUtil.ExecLog(sModuleInfo, "Value of Variable '%s' could not be saved!!!", 3)
+            return "failed"
+        else:
+            CommonUtil.ExecLog(sModuleInfo, "Showing saved variables", 1)
+            Shared_Resources.Show_All_Shared_Variables()
+            return "passed"
+    except Exception:
+        return CommonUtil.Exception_Handler(sys.exc_info())
 
 # Handles actions for the sequential logic, based on the input from the mentioned function
 def Action_Handler(action_step_data, action_name):
@@ -1451,6 +1504,14 @@ def Action_Handler(action_step_data, action_name):
         if action_name == "skip":
             # skip the sanitization
             return "passed"
+        elif action_name == "math":
+            result = Calculate(action_step_data)  # copy file/folder
+            if result == "failed":
+                return "failed"
+        elif action_name == "save text":
+            result = Save_Text(action_step_data)  # copy file/folder
+            if result == "failed":
+                return "failed"
         elif action_name == "copy":
             result = Copy_File_or_Folder(action_step_data)  # copy file/folder
             if result == "failed":
@@ -1587,15 +1648,17 @@ def Sequential_Actions(step_data):
             for row in each:
                 # finding what to do for each dataset
                 # if len(row)==5 and row[1] != "":     ##modifying the filter for changes to be made in the sub-field of the step data. May remove this part of the if statement
-                if ((row[
-                         1] == "path")):  ##modifying the filter for changes to be made in the sub-field of the step data. May remove this part of the if statement
+                if (row[1] == "path" or row[1] == "value"):  ##modifying the filter for changes to be made in the sub-field of the step data. May remove this part of the if statement
                     continue
 
                 elif row[1] == "action":
                     # finding the action to be performed
                     CommonUtil.ExecLog(sModuleInfo, "Checking the action to be performed in the action row", 1)
                     # handle the action
-                    result = Action_Handler([each], row[0])
+                    new_data_set = Shared_Resources.Handle_Step_Data_Variables([each])
+                    if new_data_set in failed_tag_list:
+                        return 'failed'
+                    result = Action_Handler(new_data_set, row[0])
                     if result == [] or result == "failed":
                         return "failed"
                 elif row[1] == "conditional action":
@@ -1644,7 +1707,6 @@ def Sequential_Actions(step_data):
 
 
 '===================== ===x=== Sequential Action Section Ends ===x=== ======================'
-
 
 
 
