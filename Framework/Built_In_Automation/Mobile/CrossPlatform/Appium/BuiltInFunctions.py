@@ -812,7 +812,6 @@ def Validate_Text(data_set):
             return "failed"
         else:
             dimension = driver.get_window_size('current')
-            print dimension
             
             for each in data_set[0]:
                 if each[0] == "current_page":
@@ -976,7 +975,9 @@ def tap_location(data_set):
 
     # Parse data set
     try:
-        positions = (data_set[0][2])
+        positions = []
+        posX, posY = data_set[0][2].replace(' ','').split(',')
+        positions.append((posX, posY)) # Put coordinates in a tuple inside of a list - must be this way for driver.tap
     except Exception:
         errMsg = "Unable to parse data set"
         return CommonUtil.Exception_Handler(sys.exc_info(),None,errMsg)
@@ -1012,10 +1013,9 @@ def get_element_location_by_id(data_set):
         return CommonUtil.Exception_Handler(sys.exc_info(),None,errMsg)
 
     try:
-        positions = []
         elem = locate_element_by_id(driver, _id) # Get element object for given id
         location = elem.location # Get element x,y coordinates
-        positions.append((location['x'], location['y'])) # Put them on an array - Needs to be in this format for dirver.tap()
+        positions = "%s,%s" % (location['x'], location['y']) # Save as a string - The function that uses this will need to put it in the format it needs
         CommonUtil.ExecLog(sModuleInfo,"Retreived location successfully",1)
         
         result = Shared_Resources.Set_Shared_Variables(action_value, positions) # Save position in shared variables
