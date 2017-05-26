@@ -1297,35 +1297,71 @@ def Validate_Table_Helper(expected_table_data, actual_table_data, validation_opt
 
 #Validate table
 def Validate_Table(step_data):
+    '''
+    Text to read must come after validate table, and not be the last row
+    
+    '''
     sModuleInfo = inspect.stack()[0][3] + " : " + inspect.getmoduleinfo(__file__).name
     try:
         #element_step_data = Get_Element_Step_Data(step_data)
         table_validate_index = 0
-        for each in step_data[0]:
-            if each[1]=="":
-                table_validate_index = table_validate_index + 1
-            else:
-                get_element_last_item = table_validate_index - 1
-                print get_element_last_item
-                break
+#         for each in step_data[0]:
+#             print ">>>>>FOR:",each
+#             if each[1]=="": # LOOK FOR SOMETHING WITH A BLANK SUB-FIELD????? WHAT USES THAT? Looks more like it's counting how many it found
+#                 table_validate_index = table_validate_index + 1
+#                 print ">>>>FOR BL", table_validate_index
+#             else:
+#                 get_element_last_item = table_validate_index - 1
+#                 print ">>>>FOR NO", get_element_last_item
+#                 print get_element_last_item
+#                 break
+            
+        ''' *** TEMPORARY WORKAROUND TO MAKE TRY BLOCK WORK AS DESIGNED ***
+            REQUIRED FORMAT:
+                Element parameters
+                Validate Table
+                Table data...
+                ...
+                !!!!!something is wrong with what we give to webdirver.table > get_table_elements
+        '''
+        
+        # Find validate table, which is the divider between element data and table data we want to verify
+        for row in range(len(step_data[0])):
+            if step_data[0][row][1] == 'validate table':
+                table_validate_index = row
+        print ">>>>table_validate_index",table_validate_index
 
+        # Using location of validate table, everything above it is element data        
+        get_element_last_item = table_validate_index
         if get_element_last_item == 0:
             element_step_data = step_data[0][0]
         else:
             element_step_data = step_data[0][0:get_element_last_item:1]
-        ##print statement to be removed
-        print element_step_data
+        print ">>>>>element_step_data",element_step_data
+        
+        # Using location of validate table, everything below it is table data we want to verify
+        expected_table_step_data = step_data[0][table_validate_index + 1:len(step_data[0]):1]
+
+
+        # Validate step data - providing just the element data
         returned_step_data_list = Validate_Step_Data([element_step_data])
+        print ">>>>>validate step data:",returned_step_data_list
         if ((returned_step_data_list == []) or (returned_step_data_list == "failed")):
             return "failed"
+
+        # Process and validate the table data
         else:
             try:
                 #oCompare = CompareModule()
-                expected_table_step_data = (step_data[0][table_validate_index+1:len(step_data[0])-1:1])
+                #expected_table_step_data = (step_data[0][table_validate_index+1:len(step_data[0])-1:1])
+                print ">>>>>>EXP:",expected_table_step_data
                 actual_table_dataset = Get_Table_Elements(returned_step_data_list[0], returned_step_data_list[1], returned_step_data_list[2], returned_step_data_list[3], returned_step_data_list[4])
+                print ">>>>>ACTUAL:",actual_table_dataset
 
                 try:
-                    validation_option=step_data[0][table_validate_index][2]
+                    validation_option=step_data[0][table_validate_index][2] # The "default" (case sensitive). Other type is not implemented
+
+                    # Process slightly differently depending on if the user wants to ignore a row or column, or match exactly                    
                     if (step_data[0][table_validate_index][0] == "exact"):
                         modelled_actual_table_step_data = Model_Actual_Data(actual_table_dataset)
                         modelled_expected_table_step_data = Model_Expected_Data(expected_table_step_data)
