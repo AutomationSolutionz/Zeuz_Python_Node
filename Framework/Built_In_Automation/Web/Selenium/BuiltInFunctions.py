@@ -1534,6 +1534,16 @@ def Get_All_Elements(parameter,value,parent=False):
 #Use two parameters on the same level to get a specific element
 #Called by: Get_Element
 def Get_Double_Matching_Elements(param_1, value_1, param_2, value_2):
+    '''
+    We need to simplify this function:
+    data set can look something like this:
+    field = name, type  
+    subfield = multiple element parameters 
+    value = continue, button
+    
+    driver.find_element_by_xpath('//*[contains(@name,'continue'][contains(@type,'button']')
+    
+    '''
     sModuleInfo = inspect.stack()[0][3] + " : " + inspect.getmoduleinfo(__file__).name
     try:
         #text, tagname,linktext/href,css,partiallinktext
