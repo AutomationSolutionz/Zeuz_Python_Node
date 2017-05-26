@@ -538,6 +538,7 @@ def Element_Validation(All_Elements_Found):#, index):
         if All_Elements_Found == []:
             CommonUtil.ExecLog(sModuleInfo, "Could not find your element by given parameters and values", 3)
             return "failed"
+        # If only one element found
         elif len(All_Elements_Found) == 1:
             for each_elem in All_Elements_Found:
                 #Case 1: Found only one invisible element - pass with warning
@@ -553,14 +554,16 @@ def Element_Validation(All_Elements_Found):#, index):
                     return "failed"
             return return_element[0]
 
-        elif len(All_Elements_Found) > 1:
+        # If max 5 elements found
+        elif len(All_Elements_Found) > 1 and len(All_Elements_Found) <= 5:
             CommonUtil.ExecLog(sModuleInfo, "Found more than one element by given parameters and values, validating visible and invisible elements. Total number of elements found: %s"%(len(All_Elements_Found)), 2)
+            # If at least one is_displayed() elements, add that in visible elements list, else add that in invisible elements list
             for each_elem in All_Elements_Found:
                 if each_elem.is_displayed() == True:
                     all_visible_elements.append(each_elem)
                 else:
                     all_invisible_elements.append(each_elem)
-            #sequential logic - if at least one is_displayed() elements, show that, else allow invisible elements
+            # If at least one is_displayed() elements, show that, else allow invisible elements
             if len(all_visible_elements) > 0:
                 CommonUtil.ExecLog(sModuleInfo, "Found at least one visible element for given parameters and values, returning the first one or by the index specified", 2)
                 return_element = all_visible_elements
@@ -569,6 +572,24 @@ def Element_Validation(All_Elements_Found):#, index):
                 return_element = all_invisible_elements
             return return_element[0]#[index]
 
+        # If more that 5 elements found
+        elif len(All_Elements_Found) > 5:
+            CommonUtil.ExecLog(sModuleInfo, "Found more than ten element by given parameters and values, validating visible and invisible elements. Total number of elements found: %s"%(len(All_Elements_Found)), 2)
+            # If at least one is_displayed() elements, add that in visible elements list, else add that in invisible elements list
+            for each_elem in All_Elements_Found:
+                if each_elem.is_displayed() == True:
+                    all_visible_elements.append(each_elem)
+                else:
+                    all_invisible_elements.append(each_elem)
+            # If at least one is_displayed() elements, show that, else allow invisible elements
+            if len(all_visible_elements) > 0:
+                CommonUtil.ExecLog(sModuleInfo, "Found at least one visible element for given parameters and values, returning the first one or by the index specified", 2)
+                return_element = all_visible_elements
+            else:
+                CommonUtil.ExecLog(sModuleInfo, "Did not find a visible element, however, invisible elements present", 2)
+                return_element = all_invisible_elements
+            return return_element
+        
         else:
             CommonUtil.ExecLog(sModuleInfo, "Could not find element by given parameters and values", 3)
             return "failed"
@@ -1141,7 +1162,9 @@ def Get_Element_Appium(element_parameter,element_value,reference_parameter=False
     sModuleInfo = inspect.stack()[0][3] + " : " + inspect.getmoduleinfo(__file__).name
     try:
         All_Elements_Found = []
+        # Get the element(s) if parent and/or child value not provided in the step data
         if reference_is_parent_or_child == False:
+            # Get the element(s) if parent value not provided in the step data
             if ((reference_parameter == False) and (reference_value == False)):
                 All_Elements = Get_All_Elements_Appium(element_parameter,element_value)     
                 if ((All_Elements == []) or (All_Elements == 'failed')):        
@@ -1161,6 +1184,7 @@ def Get_Element_Appium(element_parameter,element_value,reference_parameter=False
                 CommonUtil.ExecLog(sModuleInfo, "Could not find your element because you are missing at least one parameter", 3)
                 return "failed"
             
+        # Get the element(s) if child value not provided in the step data
         elif reference_is_parent_or_child == "parent":     
             CommonUtil.ExecLog(sModuleInfo, "Locating all parents elements", 1)   
             all_parent_elements = Get_All_Elements_Appium(reference_parameter,reference_value)#,"parent")
@@ -1172,6 +1196,7 @@ def Get_Element_Appium(element_parameter,element_value,reference_parameter=False
                         all_matching_elements.append(each_matching)
             All_Elements_Found = all_matching_elements
 
+        # Get the element(s) if parent value not provided in the step data
         elif reference_is_parent_or_child == "child":        
             all_parent_elements = Get_All_Elements_Appium(element_parameter,element_value)
             all_matching_elements = []
@@ -1189,7 +1214,7 @@ def Get_Element_Appium(element_parameter,element_value,reference_parameter=False
             CommonUtil.ExecLog(sModuleInfo, "Unable to run based on the current inputs, please check the inputs and re-enter values", 3)
             return "failed"
         
-        #this method returns all the elements found without validation
+        # This method returns all the elements found without validation
         if(get_all_unvalidated_elements!=False):
             return All_Elements_Found
         else:
@@ -1217,6 +1242,8 @@ def Get_All_Elements_Appium(parameter,value,parent=False):
                 All_Elements = WebDriverWait(driver, WebDriver_Wait).until(lambda driver: driver.find_elements_by_class_name(value))
             elif parameter == "xpath":
                 All_Elements = WebDriverWait(driver, WebDriver_Wait).until(lambda driver: driver.find_elements_by_xpath(value))
+            elif parameter == "current_screen": # Read full screen text
+                All_Elements = WebDriverWait(driver, WebDriver_Wait).until(lambda driver: driver.find_elements_by_xpath("//*"))
             elif parameter == "accessibility_id":
                 All_Elements = WebDriverWait(driver, WebDriver_Wait).until(lambda driver: driver.find_elements_by_accessibility_id(value))    
             elif parameter == "android_uiautomator":
@@ -1394,8 +1421,8 @@ def Action_Handler_Appium(_data_set, action_name):
             result = Wait_For_New_Element(data_set)
         elif action_name == "tap": # Tap an element
             result = Tap_Appium(data_set)
-        elif action_name == "validate full text" or action_name == "validate partial text": # Test if text string exists
-            result = Validate_Text(data_set)
+        elif action_name == "validate screen text" or action_name == "validate full text" or action_name == "validate partial text": # Test if text string exists
+            result = Validate_Text_Appium([data_set])
         elif action_name == "save text": # Save text string
             result = Save_Text(data_set)
         elif action_name == "compare variable": # Compare two "shared" variables
@@ -1842,7 +1869,10 @@ def Validate_Text_Appium(data_set):
             CommonUtil.ExecLog(sModuleInfo, "The information in the data-set(s) are incorrect. Please provide accurate data set(s) information.",3)
             return "failed"
         else:
+            Element = []
+            Elements = []
             for each in data_set[0]:
+                # Get all elements from current screen based on step_data
                 if each[0] == "current_page":
                     try:
                         Element = Get_Element_Appium('tag', 'html')
@@ -1850,53 +1880,99 @@ def Validate_Text_Appium(data_set):
                     except Exception:
                         errMsg = "Could not get element from the current page."
                         return CommonUtil.Exception_Handler(sys.exc_info(),None,errMsg)
+                    
+                # Get all elements from current screen based on step_data
+                elif each[0] == "current_screen":
+                    try:
+                        Elements = Get_Element_Appium(each[0], '')
+                        break
+                    except Exception, e:
+                        errMsg = "Could not get element from the current screen."
+                        return CommonUtil.Exception_Handler(sys.exc_info(),None,errMsg) 
+                    
                 else:
+                    # Get all the element step data(s) other than 'action' and 'conditional action'
                     element_step_data = Get_Element_Step_Data_Appium(data_set)
+                    # Get all the element step data's parameter and value
                     returned_step_data_list = Validate_Step_Data(element_step_data)
                     if ((returned_step_data_list == []) or (returned_step_data_list == "failed")):
                         return "failed"
                     else:
                         try:
+                            # Get single element from the device based on step_data
                             Element = Get_Element_Appium(returned_step_data_list[0], returned_step_data_list[1], returned_step_data_list[2], returned_step_data_list[3], returned_step_data_list[4])
                             break
                         except Exception:
                             errMsg = "Could not get element based on the information provided."
                             return CommonUtil.Exception_Handler(sys.exc_info(),None,errMsg)           
  
+            # Get the 'action' parameter and 'value' from step data
             for each_step_data_item in data_set[0]:
                 if each_step_data_item[1]=="action":
-                    expected_text_data = each_step_data_item[2]
+                    expected_text_data = each_step_data_item[2].split('||') # Split the separator in case multiple string provided in the same data_set
                     validation_type = each_step_data_item[0]
-            #expected_text_data = step_data[0][len(step_data[0]) - 1][2]
-            list_of_element_text = Element.text.split('\n')
+            
             visible_list_of_element_text = []
-            for each_text_item in list_of_element_text:
-                if each_text_item != "":
-                    visible_list_of_element_text.append(each_text_item)
+            # Get the string for a single element
+            if Element != []:
+                list_of_element_text = Element.text.split('\n') # Extract the text element
+                visible_list_of_element_text = []
+                for each_text_item in list_of_element_text:
+                    if each_text_item != "":
+                        visible_list_of_element_text.append(each_text_item)
+
+            # Get all the strings for multiple elements
+            elif Elements != []:
+                for each_item in Elements:
+                    each_text_item = each_item.text # Extract the text element
+                    if each_text_item != '':
+                        visible_list_of_element_text.append(each_text_item)
              
-            #if step_data[0][len(step_data[0])-1][0] == "validate partial text":
+            # Validate the partial text/string provided in the step data with the text obtained from the device
             if validation_type == "validate partial text":
                 actual_text_data = visible_list_of_element_text
-                CommonUtil.ExecLog(sModuleInfo, "Expected Text: " + expected_text_data, 1)
-                CommonUtil.ExecLog(sModuleInfo, "Actual Text: " + str(actual_text_data), 1)
+                CommonUtil.ExecLog(sModuleInfo, ">>>>>> Expected Text: %s" %expected_text_data, 1)
+                CommonUtil.ExecLog(sModuleInfo, ">>>>>>>> Actual Text: %s" %actual_text_data, 1)
                 for each_actual_text_data_item in actual_text_data:
-                    if expected_text_data in each_actual_text_data_item:
+                    if expected_text_data[0] in each_actual_text_data_item: # index [0] used to remove the unicode 'u' from the text string
                         CommonUtil.ExecLog(sModuleInfo, "The text has been validated by a partial match.", 1)
                         return "passed"
-                CommonUtil.ExecLog(sModuleInfo, "Unable to validate using partial match.", 3)
-                return "failed"
-            #if step_data[0][len(step_data[0])-1][0] == "validate full text":
+                    else:
+                        CommonUtil.ExecLog(sModuleInfo, "Unable to validate using partial match.", 3)
+                        return "failed"
+            
+            # Validate the full text/string provided in the step data with the text obtained from the device
             if validation_type == "validate full text":
                 actual_text_data = visible_list_of_element_text
-                CommonUtil.ExecLog(sModuleInfo, "Expected Text: " + expected_text_data, 1)
-                CommonUtil.ExecLog(sModuleInfo, "Actual Text: " + str(actual_text_data), 1)
-                if (expected_text_data in actual_text_data):
+                CommonUtil.ExecLog(sModuleInfo, ">>>>>> Expected Text: %s" %expected_text_data, 1)
+                CommonUtil.ExecLog(sModuleInfo, ">>>>>>>> Actual Text: %s" %actual_text_data, 1)
+                if (expected_text_data[0] == actual_text_data[0]): # index [0] used to remove the unicode 'u' from the text string
                     CommonUtil.ExecLog(sModuleInfo, "The text has been validated by using complete match.", 1)
                     return "passed"
                 else:
                     CommonUtil.ExecLog(sModuleInfo, "Unable to validate using complete match.", 3)
                     return "failed"
-             
+
+            # Validate all the text/string provided in the step data with the text obtained from the device
+            if validation_type == "validate screen text":
+                CommonUtil.ExecLog(sModuleInfo, ">>>>>> Expected Text: %s" %expected_text_data, 1)
+                CommonUtil.ExecLog(sModuleInfo, ">>>>>>>> Actual Text: %s" %visible_list_of_element_text, 1)
+                i = 0
+                for x in xrange(0, len(visible_list_of_element_text)): 
+                    if (visible_list_of_element_text[x] == expected_text_data[i]): # Validate the matching string
+                        CommonUtil.ExecLog(sModuleInfo, "The text element '%s' has been validated by using complete match." %visible_list_of_element_text[x], 1)
+                        i += 1
+                    else:
+                        visible_elem = [ve for ve in visible_list_of_element_text[x].split()]
+                        expected_elem = [ee for ee in expected_text_data[i].split()]
+                        for elem in visible_elem: # Validate the matching word
+                            if elem in expected_elem:
+                                CommonUtil.ExecLog(sModuleInfo, "Validate the element '%s' using element match." %elem, 1)
+                            else:
+                                CommonUtil.ExecLog(sModuleInfo, "Unable to validate the element '%s'. Check the element(s) in step_data(s) and/or in screen text." %elem, 1)
+                        if (visible_elem[0] in expected_elem):
+                            i += 1
+                            
             else:
                 CommonUtil.ExecLog(sModuleInfo, "Incorrect validation type. Please check step data", 3)
                 return "failed"
