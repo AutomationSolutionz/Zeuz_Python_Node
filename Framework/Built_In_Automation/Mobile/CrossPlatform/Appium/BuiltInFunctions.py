@@ -27,7 +27,7 @@ if Shared_Resources.Test_Shared_Variables('appium_driver'): # Check if driver is
     driver = Shared_Resources.Get_Shared_Variables('appium_driver') # Retreive appium driver
 
 # Recall dependency, if not already set
-dependency = 'Android' #{'Mobile OS':'Android'} #!!! Will be updated by sequential_actions_appium() in the future
+dependency = {'Mobile':'Android'} #!!! TEMP - Replace with None for production
 if Shared_Resources.Test_Shared_Variables('dependency'): # Check if driver is already set in shared variables
     dependency = Shared_Resources.Get_Shared_Variables('dependency') # Retreive appium driver
  
@@ -223,10 +223,10 @@ def start_appium_driver(package_name = '', activity_name = '', filename = ''):
         if driver == None:
             # Setup capabilities
             desired_caps = {}
-            desired_caps['platformName'] = dependency # Set platform name
+            desired_caps['platformName'] = dependency['Mobile'] # Set platform name
             desired_caps['autoLaunch'] = 'false' # Do not launch application
             
-            if dependency == 'Android':
+            if dependency['Mobile'] == 'Android':
                 CommonUtil.ExecLog(sModuleInfo,"Setting up with Android",1)
                 desired_caps['platformVersion'] = adbOptions.get_android_version().strip()
                 desired_caps['deviceName'] = adbOptions.get_device_model().strip()
@@ -236,7 +236,7 @@ def start_appium_driver(package_name = '', activity_name = '', filename = ''):
                     desired_caps['appActivity'] = activity_name.strip()
                 if filename and package_name == '': # User must specify package or file, not both. Specifying filename instructs Appium to install
                     desired_caps['app'] = PATH(filename).strip()
-            elif dependency == 'IOS':
+            elif dependency['Mobile'] == 'IOS':
                 CommonUtil.ExecLog(sModuleInfo,"Setting up with IOS",1)
                 desired_caps['platformVersion'] = '' # Read version
                 desired_caps['deviceName'] = '' # Read model
@@ -245,7 +245,7 @@ def start_appium_driver(package_name = '', activity_name = '', filename = ''):
                 CommonUtil.ExecLog(sModuleInfo, "IOS not yet supported", 3)
                 return 'failed'
             else:
-                CommonUtil.ExecLog(sModuleInfo, "Invalid dependency: " + dependency, 3)
+                CommonUtil.ExecLog(sModuleInfo, "Invalid dependency: " + dependency['Mobile'], 3)
                 return 'failed'
             CommonUtil.ExecLog(sModuleInfo,"Capabilities: %s" % str(desired_caps),1)
             
@@ -1838,9 +1838,9 @@ def Keystroke_Appium(data_set):
 
     try:
         # Execute the correct key stroke handler for the dependency
-        if dependency == 'Android':
+        if dependency['Mobile'] == 'Android':
             result = Android_Keystroke_Key_Mapping(keystroke_value)
-        elif dependency == 'iOS':
+        elif dependency['Mobile'] == 'iOS':
             result = iOS_Keystroke_Key_Mapping(keystroke_value)
         else:
             result = 'failed'

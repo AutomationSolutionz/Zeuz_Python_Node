@@ -3,6 +3,15 @@
     Function: Handles incoming step data and distributes it to the specified functions
 '''
 
+### TODO ###
+'''
+-Create a list of accepted Fields for element parameter, or all accepted fields for action_support, then verify before doing anything
+--After that, can move the if action_support, and the ELSE statement out of sequential_actions(), so the verification of data is done in one place
+-Move shared_variable_to_value() to Shared_Resources
+-Teardown on error: Find each used module (if !=''), AND an Error or fail ocurred, execute their teardown
+'''
+### TODO ###
+
 import inspect, sys
 from Framework.Utilities import CommonUtil
 import common_functions as common # Functions that are common to all modules
@@ -10,8 +19,8 @@ from Framework.Built_In_Automation.Shared_Resources import BuiltInFunctionShared
 
 
 # Dictionary of supported actions and their respective modules
-# Rules: Action NAME must be lower case, no underscores, single spaces, no trailing whitespace
-actions = { # Numbers are arbitrary, and are not used anywhere. Name and module must be lower case.
+# Rules: Action NAME must be lower case, no underscores, single spaces, no trailing whitespace. Module names must match those used in load_sa_modules()
+actions = { # Numbers are arbitrary, and are not used anywhere
     200: {'module': 'appium', 'name': 'step result', 'function': 'step_result'},
     100: {'module': 'appium', 'name': 'click', 'function': 'Click_Element_Appium'},
     101: {'module': 'appium', 'name': 'text', 'function': 'Enter_Text_Appium'},
@@ -137,7 +146,7 @@ def Conditional_Action_Handler(step_data, data_set, row, logic_row):
      
     sModuleInfo = inspect.stack()[0][3] + " : " + inspect.getmoduleinfo(__file__).name
 
-    module = row[1].split(' ')[0]    
+    module = row[1].split(' ')[0]
     if module:
         Get_Element_Step_Data_Appium = getattr(eval(module), 'Get_Element_Step_Data_Appium')
         element_step_data = Get_Element_Step_Data_Appium([data_set]) # Pass data set as a list, and get back anything that's not an "action" or "conditional action"
