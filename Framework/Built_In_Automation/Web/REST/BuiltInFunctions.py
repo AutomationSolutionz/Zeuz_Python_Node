@@ -439,7 +439,8 @@ def Sequential_Actions(step_data):
                     logic_row.append(row)
                     if len(logic_row)==2:
                         #element_step_data = each[0:len(step_data[0])-2:1]
-                        element_step_data = Get_Element_Step_Data([each])
+                        element_step_data = Shared_Resources.Handle_Step_Data_Variables([each])
+                        element_step_data = Get_Element_Step_Data(element_step_data)
                         returned_step_data_list = Validate_Step_Data(element_step_data)
                         if ((returned_step_data_list == []) or (returned_step_data_list == "failed")):
                             return "failed"
