@@ -1137,14 +1137,14 @@ def Model_Actual_Data_Ignoring_Row(actual_data):
     try:
         Modeled_Data_Set = []
         row_count = 1
-        for each_row in actual_data:
+        for each_row in actual_data: # For each row in the table data
             column_count = 1
-            for each_column in each_row:
-                temp_data_model = ["column "+str(column_count)]
-                temp_data_model.append(each_column.strip())
+            for each_column in each_row: # For each column of this row
+                temp_data_model = ["column "+str(column_count)] # ??
+                temp_data_model.append(each_column.strip()) # Save the column
                 #temp_data_model.append("False")
                 #temp_data_model.append("False")
-                Modeled_Data_Set.append(temp_data_model)
+                Modeled_Data_Set.append(temp_data_model) # Add row to result array
                 column_count = column_count +1
             row_count = row_count+1
         return Modeled_Data_Set
@@ -1208,15 +1208,15 @@ def Model_Expected_Data_Ignoring_Row(expected_data):
     try:
         Modeled_Data_Set = []
         row_count = 1
-        for each_row in expected_data:
+        for each_row in expected_data: # For each row in step data (just the table data)
             column_count = 1
             temp_data_model = []
-            for each_column in each_row:
+            for each_column in each_row: # For each column on this row
                 if column_count <= 3:
                     if column_count == 2:
                         column_count = column_count + 1
                     else:
-                        temp_data_model.append(each_column.strip())
+                        temp_data_model.append(each_column.strip()) # Save column
                         column_count = column_count +1
                 else:
                     break
@@ -1303,49 +1303,55 @@ def Validate_Table(step_data):
     '''
     sModuleInfo = inspect.stack()[0][3] + " : " + inspect.getmoduleinfo(__file__).name
     try:
-        #element_step_data = Get_Element_Step_Data(step_data)
-        table_validate_index = 0
-#         for each in step_data[0]:
-#             print ">>>>>FOR:",each
-#             if each[1]=="": # LOOK FOR SOMETHING WITH A BLANK SUB-FIELD????? WHAT USES THAT? Looks more like it's counting how many it found
-#                 table_validate_index = table_validate_index + 1
-#                 print ">>>>FOR BL", table_validate_index
-#             else:
-#                 get_element_last_item = table_validate_index - 1
-#                 print ">>>>FOR NO", get_element_last_item
-#                 print get_element_last_item
-#                 break
             
         ''' *** TEMPORARY WORKAROUND TO MAKE TRY BLOCK WORK AS DESIGNED ***
             REQUIRED FORMAT:
-                Element parameters
+                ...Element parameters...
                 Validate Table
-                Table data...
-                ...
-                !!!!!something is wrong with what we give to webdirver.table > get_table_elements
+                ...Table data...
+                * relation type, can use a number in the "Field" field to represent the nTH element if more than one is matched
+                
         '''
         
+        # Convert tuples in step data to lists, to work with current implementation
+        new_step_data = []
+        for data_set in step_data:
+            new_data_set = []
+            for row in data_set:
+                new_data_set.append(list(row))
+            new_step_data.append(new_data_set)
+        step_data = new_step_data
+
+        # Find relation type, and get the table number, if specified
+        preferred_match = 1
+        for row in range(len(step_data[0])):
+            if step_data[0][row][1] == 'relation type':
+                try:
+                    preferred_match = int(step_data[0][row][0]) # User specified a specific match - because there was more than one
+                    CommonUtil.ExecLog(sModuleInfo, 'Will use matching table number %d' % preferred_match, 1)
+                except:
+                    pass
+            
         # Find validate table, which is the divider between element data and table data we want to verify
+        table_validate_index = ''
         for row in range(len(step_data[0])):
             if step_data[0][row][1] == 'validate table':
                 table_validate_index = row
-        print ">>>>table_validate_index",table_validate_index
+        if table_validate_index == '':
+            CommonUtil.ExecLog(sModuleInfo, 'Step data missing "validate table" action', 3)
+            return 'failed'
 
         # Using location of validate table, everything above it is element data        
         get_element_last_item = table_validate_index
-        if get_element_last_item == 0:
-            element_step_data = step_data[0][0]
-        else:
-            element_step_data = step_data[0][0:get_element_last_item:1]
-        print ">>>>>element_step_data",element_step_data
+        element_step_data = step_data[0][0:get_element_last_item:1]
+        #element_step_data = Get_Element_Step_Data([step_data]) # Adds extra brackets around step data that creat an issue with validate 
         
         # Using location of validate table, everything below it is table data we want to verify
         expected_table_step_data = step_data[0][table_validate_index + 1:len(step_data[0]):1]
 
 
         # Validate step data - providing just the element data
-        returned_step_data_list = Validate_Step_Data([element_step_data])
-        print ">>>>>validate step data:",returned_step_data_list
+        returned_step_data_list = Validate_Step_Data(element_step_data)
         if ((returned_step_data_list == []) or (returned_step_data_list == "failed")):
             return "failed"
 
@@ -1354,9 +1360,10 @@ def Validate_Table(step_data):
             try:
                 #oCompare = CompareModule()
                 #expected_table_step_data = (step_data[0][table_validate_index+1:len(step_data[0])-1:1])
-                print ">>>>>>EXP:",expected_table_step_data
-                actual_table_dataset = Get_Table_Elements(returned_step_data_list[0], returned_step_data_list[1], returned_step_data_list[2], returned_step_data_list[3], returned_step_data_list[4])
-                print ">>>>>ACTUAL:",actual_table_dataset
+                actual_table_dataset = Get_Table_Elements(returned_step_data_list[0], returned_step_data_list[1], returned_step_data_list[2], returned_step_data_list[3], returned_step_data_list[4], preferred_match = preferred_match)
+                if actual_table_dataset in failed_tag_list:
+                    CommonUtil.ExecLog(sModuleInfo, "Could not get table elements", 3)
+                    return 'failed'
 
                 try:
                     validation_option=step_data[0][table_validate_index][2] # The "default" (case sensitive). Other type is not implemented
@@ -1365,22 +1372,24 @@ def Validate_Table(step_data):
                     if (step_data[0][table_validate_index][0] == "exact"):
                         modelled_actual_table_step_data = Model_Actual_Data(actual_table_dataset)
                         modelled_expected_table_step_data = Model_Expected_Data(expected_table_step_data)
-                        Validate_Table_Helper(modelled_expected_table_step_data, modelled_actual_table_step_data, validation_option)
+                        result = Validate_Table_Helper(modelled_expected_table_step_data, modelled_actual_table_step_data, validation_option)
 
-                    elif step_data[0][table_validate_index][0]== "ignore_row":
+                    elif step_data[0][table_validate_index][0]== "ignore row":
                         modelled_actual_table_step_data = Model_Actual_Data_Ignoring_Row(actual_table_dataset)
                         modelled_expected_table_step_data = Model_Expected_Data_Ignoring_Row(expected_table_step_data)
-                        Validate_Table_Helper(modelled_expected_table_step_data, modelled_actual_table_step_data, validation_option)
+                        result = Validate_Table_Helper(modelled_expected_table_step_data, modelled_actual_table_step_data, validation_option)
 
-                    elif step_data[0][table_validate_index][0]== "ignore_column":
+                    elif step_data[0][table_validate_index][0]== "ignore column":
                         modelled_actual_table_step_data = Model_Actual_Data_Ignoring_Column(actual_table_dataset)
                         modelled_expected_table_step_data = Model_Expected_Data_Ignoring_Column(expected_table_step_data)
-                        Validate_Table_Helper(modelled_expected_table_step_data, modelled_actual_table_step_data, validation_option)
+                        result = Validate_Table_Helper(modelled_expected_table_step_data, modelled_actual_table_step_data, validation_option)
 
                     else:
                         CommonUtil.ExecLog(sModuleInfo, "The information in the table validation index is incorrect. Please provide the appropriate information", 3)
                         return "failed"
 
+                    if result in failed_tag_list:
+                        return 'failed'
                     #status = oCompare.compare([expected_table_step_data], [modelled_actual_table_step_data])
                     #print status
                 except Exception:
@@ -1390,7 +1399,7 @@ def Validate_Table(step_data):
             except Exception:
                 errMsg = "Unable to get table element. Please check if the correct information has been provided."
                 return CommonUtil.Exception_Handler(sys.exc_info(),None,errMsg)
-
+        return 'passed'
     except Exception:
         return CommonUtil.Exception_Handler(sys.exc_info(),None,"Could not find your element.")
 
@@ -1402,8 +1411,11 @@ def Validate_Table(step_data):
 
 '============================= Get Elements Section Begins =============================='
 
-def Get_Element(element_parameter,element_value,reference_parameter=False,reference_value=False,reference_is_parent_or_child=False,get_all_unvalidated_elements=False):
+def Get_Element(element_parameter,element_value,reference_parameter=False,reference_value=False,reference_is_parent_or_child=False,get_all_unvalidated_elements=False, preferred_match = 1):
     sModuleInfo = inspect.stack()[0][3] + " : " + inspect.getmoduleinfo(__file__).name
+    
+    # preferred_match is used to find an element when there are multiple identical elements, and we have no other way to distinguish them
+    matches = 0
     try:
         All_Elements_Found = []
         if reference_is_parent_or_child == False:
@@ -1431,8 +1443,9 @@ def Get_Element(element_parameter,element_value,reference_parameter=False,refere
             all_parent_elements = Get_All_Elements(reference_parameter,reference_value)#,"parent")
             all_matching_elements = []
             for each_parent in all_parent_elements:
+                matches += 1
                 interested_elem = Get_All_Elements(element_parameter,element_value,each_parent) #can there be a problem when we send in each parent, or does this contain both param and value?
-                if interested_elem != "failed":
+                if interested_elem != "failed" and matches == preferred_match:
                     for each_matching in interested_elem:
                         all_matching_elements.append(each_matching)
             All_Elements_Found = all_matching_elements
@@ -1441,8 +1454,9 @@ def Get_Element(element_parameter,element_value,reference_parameter=False,refere
             all_parent_elements = Get_All_Elements(element_parameter,element_value)
             all_matching_elements = []
             for each_parent in all_parent_elements:
+                matches += 1
                 interested_elem = Get_All_Elements(reference_parameter,reference_value,each_parent)
-                if interested_elem != "failed":
+                if interested_elem != "failed" and matches == preferred_match:
                     all_matching_elements.append(each_parent)
             All_Elements_Found=all_matching_elements
 
@@ -1736,10 +1750,10 @@ def Get_Double_Matching_Elements(param_1, value_1, param_2, value_2):
         return "failed"
 
 
-def Get_Table_Elements(table_parameter,table_value, reference_parameter=False,reference_value=False,reference_is_parent_or_child=False,get_all_unvalidated_elements=False):
+def Get_Table_Elements(table_parameter,table_value, reference_parameter=False,reference_value=False,reference_is_parent_or_child=False,get_all_unvalidated_elements=False, preferred_match = 1):
     sModuleInfo = inspect.stack()[0][3] + " : " + inspect.getmoduleinfo(__file__).name
     try:
-        table = Get_Element(table_parameter, table_value,reference_parameter,reference_value,reference_is_parent_or_child)
+        table = Get_Element(table_parameter, table_value,reference_parameter,reference_value,reference_is_parent_or_child, preferred_match=preferred_match)
         all_rows = WebDriverWait(table, WebDriver_Wait).until(EC.presence_of_all_elements_located((By.XPATH, "*")))
         master_text_table = []
         for each_row_obj in all_rows:
@@ -1826,6 +1840,13 @@ def Element_Validation(All_Elements_Found):#, index):
 def Validate_Step_Data(step_data):
     sModuleInfo = inspect.stack()[0][3] + " : " + inspect.getmoduleinfo(__file__).name
     CommonUtil.ExecLog(sModuleInfo, "Function: Validate_Step_Data", 1)
+    
+    element_parameter = False
+    element_value = False
+    reference_parameter = False
+    reference_value = False
+    reference_is_parent_or_child = False
+    
     try:
         if (len(step_data)==1):
             element_parameter = step_data[0][0]

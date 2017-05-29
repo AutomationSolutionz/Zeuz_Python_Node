@@ -1385,7 +1385,12 @@ def Conditional_Action_Handler(step_data, data_set, row, logic_row):
                 for each_item in list_of_steps: # For each data set number we need to process before finishing
                     CommonUtil.ExecLog(sModuleInfo, "Processing conditional step %s" % str(each_item), 1)
                     data_set_index = int(each_item) - 1 # data set number, -1 to offset for data set numbering system
-                    result = Sequential_Actions_Appium([step_data[data_set_index]]) # Recursively call this function until all called data sets are complete
+
+                    if step_data[data_set_index] == data_set: # If the data set we are GOING to pass back to sequential_actions() is the same one that called THIS function in the first place, then the step data is calling itself again, and we must pass all of the step data instead, so it doesn't crash later when it tries to refer to data sets that don't exist
+                        result = Sequential_Actions_Appium(step_data) # Pass the step data to sequential_actions() - Mainly used when the step data is in a deliberate recursive loop of conditional actions
+                    else: # Normal process - most conditional actions will come here
+                            result = Sequential_Actions_Appium([step_data[data_set_index]]) # Recursively call this function until all called data sets are complete
+
                 return result # Return only the last result of the last row of the last data set processed - This should generally be a "step result action" command
 
     # Shouldn't get here, but just in case
