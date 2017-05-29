@@ -306,20 +306,20 @@ def handle_rest_call(data, fields_to_be_saved, save_into_list = False, list_name
         CommonUtil.ExecLog(sModuleInfo,'Post Call returned status code: %d'%status_code,1)
         try:
             if result.json():
-                if status_code >=400:
+                '''if status_code >=400:
                     CommonUtil.ExecLog(sModuleInfo,'Post Call Returned Bad Response',3)
                     return "failed"
+                else:'''
+                CommonUtil.ExecLog(sModuleInfo, 'Post Call Returned Response Successfully', 1)
+                CommonUtil.ExecLog(sModuleInfo,"Received Response: %s"%result.json(),1)
+                if not save_into_list:
+                    save_fields_from_rest_call(result.json(), fields_to_be_saved)
                 else:
-                    CommonUtil.ExecLog(sModuleInfo, 'Post Call Returned Response Successfully', 1)
-                    CommonUtil.ExecLog(sModuleInfo,"Received Response: %s"%result.json(),1)
-                    if not save_into_list:
-                        save_fields_from_rest_call(result.json(), fields_to_be_saved)
-                    else:
-                        if list_name == "":
-                            CommonUtil.ExecLog(sModuleInfo,"List name not defined!",3)
-                            return "failed"
-                        insert_fields_from_rest_call_into_list(result.json(), fields_to_be_saved, list_name)
-                    return "passed"
+                    if list_name == "":
+                        CommonUtil.ExecLog(sModuleInfo,"List name not defined!",3)
+                        return "failed"
+                    insert_fields_from_rest_call_into_list(result.json(), fields_to_be_saved, list_name)
+                return "passed"
         except Exception:
             CommonUtil.ExecLog(sModuleInfo,"REST Call did not respond in json format",1)
             CommonUtil.ExecLog(sModuleInfo,"Saving REST Call Response Text", 1)
