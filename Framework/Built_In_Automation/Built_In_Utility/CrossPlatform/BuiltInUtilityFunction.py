@@ -179,8 +179,7 @@ def RenameFolder(folder_to_be_renamed, new_name_of_the_folder):
             CommonUtil.ExecLog(sModuleInfo, "Returning result of rename folder function", 1)
             CommonUtil.ExecLog(sModuleInfo, "folder doesn't exist... rename function is not done properly", 3)
             return "failed"
-        CommonUtil.ExecLog(sModuleInfo,
-                           "Renaming folder %s to %s is complete" % (folder_to_be_renamed, new_name_of_the_folder), 1)
+        CommonUtil.ExecLog(sModuleInfo,"Renaming folder %s to %s is complete" % (folder_to_be_renamed, new_name_of_the_folder), 1)
         return result
     except Exception:
         return CommonUtil.Exception_Handler(sys.exc_info())
@@ -210,8 +209,7 @@ def MoveFolder(folder_to_be_moved, new_name_of_the_folder):
             CommonUtil.ExecLog(sModuleInfo, "Returning result of move folder function", 1)
             CommonUtil.ExecLog(sModuleInfo, "folder doesn't exist... move function is not done properly", 3)
             return "failed"
-        CommonUtil.ExecLog(sModuleInfo,
-                           "Moving folder %s to %s is complete" % (folder_to_be_renamed, new_name_of_the_folder), 1)
+        CommonUtil.ExecLog(sModuleInfo,"Moving folder %s to %s is complete" % (folder_to_be_renamed, new_name_of_the_folder), 1)
         return result
     except Exception:
         return CommonUtil.Exception_Handler(sys.exc_info())
@@ -234,9 +232,7 @@ def UnZip(file_to_be_unzipped, location_where_to_unzip):
             zip_ref.extractall(location_where_to_unzip)
             result = zip_ref.close()
             CommonUtil.ExecLog(sModuleInfo, "Returning result of unzip  function", 1)
-            CommonUtil.ExecLog(sModuleInfo,
-                               "Unzipping file %s to %s is complete" % (file_to_be_unzipped, location_where_to_unzip),
-                               1)
+            CommonUtil.ExecLog(sModuleInfo,"Unzipping file %s to %s is complete" % (file_to_be_unzipped, location_where_to_unzip),1)
             return result
         else:
             CommonUtil.ExecLog(sModuleInfo, "can't unzip file as it doesn't exist", 3)
@@ -259,8 +255,7 @@ def CompareFile(file_to_be_compared1, file_to_be_compared2):
         CommonUtil.ExecLog(sModuleInfo, "Comparing files %s and %s" % (file_to_be_compared1, file_to_be_compared2), 1)
         result = filecmp.cmp(file_to_be_compared1, file_to_be_compared2)
         CommonUtil.ExecLog(sModuleInfo, "Returning result of compare file function", 1)
-        CommonUtil.ExecLog(sModuleInfo,
-                           "Comparing files %s and %s is complete" % (file_to_be_compared1, file_to_be_compared2), 1)
+        CommonUtil.ExecLog(sModuleInfo,"Comparing files %s and %s is complete" % (file_to_be_compared1, file_to_be_compared2), 1)
         return result
     except Exception:
         return CommonUtil.Exception_Handler(sys.exc_info())
@@ -283,11 +278,21 @@ def ZipFile(file_to_be_zipped, location_where_to_zip):
             list2 = location_where_to_zip.split('/')
             value = file_to_be_zipped[:len(file_to_be_zipped) - len(list1[len(list1) - 1])]
             os.chdir(value)
-            result = zipfile.ZipFile(list2[len(list2) - 1], mode='w').write(list1[len(list1) - 1])
-            CommonUtil.ExecLog(sModuleInfo, "Returning result of zip file function", 1)
-            CommonUtil.ExecLog(sModuleInfo,
-                               "Zipping file %s to %s is complete" % (file_to_be_zipped, location_where_to_zip), 1)
-            return result
+            zipfile.ZipFile(list2[len(list2) - 1], mode='w').write(list1[len(list1) - 1])
+            CommonUtil.ExecLog(sModuleInfo, "Checking whether file is zipped properly", 1)
+            # after performing zipfile() we have to check that if the file with new name exists in correct location.
+            # if the file exists in correct position then return passed
+            # if the file doesn't exist in correct position then return failed
+            if os.path.isfile(location_where_to_zip):
+                CommonUtil.ExecLog(sModuleInfo, "Returning result of zip file function", 1)
+                CommonUtil.ExecLog(sModuleInfo, "file exists... zip function is done properly", 1)
+                return "passed"
+            else:
+                CommonUtil.ExecLog(sModuleInfo, "Returning result of zip file function", 1)
+                CommonUtil.ExecLog(sModuleInfo, "file doesn't exist... zip function is not done properly", 3)
+                return "failed"
+            CommonUtil.ExecLog(sModuleInfo,"Zipping file %s to %s is complete" % (file_to_be_zipped, location_where_to_zip), 1)
+
         else:
             CommonUtil.ExecLog(sModuleInfo, "can't zip file as file doesn't exist", 3)
             return False
@@ -314,8 +319,7 @@ def ZipFile_for_windows(file_to_be_zipped, location_where_to_zip):
             os.chdir(value)
             result = zipfile.ZipFile(list2[len(list2) - 1], mode='w').write(list1[len(list1) - 1])
             CommonUtil.ExecLog(sModuleInfo, "Returning result of zip file for windows function", 1)
-            CommonUtil.ExecLog(sModuleInfo,
-                               "Zipping file %s to %s is complete" % (file_to_be_zipped, location_where_to_zip), 1)
+            CommonUtil.ExecLog(sModuleInfo,"Zipping file %s to %s is complete" % (file_to_be_zipped, location_where_to_zip), 1)
             return result
         else:
             CommonUtil.ExecLog(sModuleInfo, "can't zip file for windows as file doesn't exist", 3)
@@ -354,11 +358,20 @@ def ZipFolder(dir_to_be_zipped, location_where_to_zip):
                     if f not in location_where_to_zip:
                         zip.write(fullpath, archive_name, zipfile.ZIP_DEFLATED)
 
-            result = zip.close()
-            CommonUtil.ExecLog(sModuleInfo, "Returning result of zip folder function", 1)
-            CommonUtil.ExecLog(sModuleInfo,
-                               "Zipping folder %s to %s is complete" % (dir_to_be_zipped, location_where_to_zip), 1)
-            return result
+            zip.close()
+            CommonUtil.ExecLog(sModuleInfo, "Checking whether folder is zipped properly", 1)
+            # after performing zip.close() we have to check that if the file with new name exists in correct location.
+            # if the file exists in correct position then return passed
+            # if the file doesn't exist in correct position then return failed
+            if os.path.isfile(location_where_to_zip):
+                CommonUtil.ExecLog(sModuleInfo, "Returning result of zip folder function", 1)
+                CommonUtil.ExecLog(sModuleInfo, "file exists... zip function is done properly", 1)
+                return "passed"
+            else:
+                CommonUtil.ExecLog(sModuleInfo, "Returning result of zip folder function", 1)
+                CommonUtil.ExecLog(sModuleInfo, "file doesn't exist... zip function is not done properly", 3)
+                return "failed"
+            CommonUtil.ExecLog(sModuleInfo,"Zipping folder %s to %s is complete" % (dir_to_be_zipped, location_where_to_zip), 1)
 
         else:
             CommonUtil.ExecLog(sModuleInfo, "can't zip folder as folder doesn't exist", 3)
@@ -1314,7 +1327,7 @@ def Zip_File_or_Folder(step_data):
                     CommonUtil.ExecLog(sModuleInfo, "Can't not zip file '%s' to '%s'" % (from_path, to_path), 3)
                     return "failed"
                 else:
-                    CommonUtil.ExecLog(sModuleInfo, "File '%s' renamed to '%s' successfully" % (from_path, to_path), 1)
+                    CommonUtil.ExecLog(sModuleInfo, "File '%s' zipped to '%s' successfully" % (from_path, to_path), 1)
                     return "passed"
             elif file_or_folder.lower() == 'folder':
                 result = ZipFolder(from_path, to_path)
@@ -1707,6 +1720,4 @@ def Sequential_Actions(step_data):
 
 
 '===================== ===x=== Sequential Action Section Ends ===x=== ======================'
-
-
 
