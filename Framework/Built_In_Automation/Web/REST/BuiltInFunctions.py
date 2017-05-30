@@ -35,7 +35,7 @@ def Get_Element_Step_Data(step_data):
     CommonUtil.ExecLog(sModuleInfo, "Function: Get Element Step Data", 1)
     try:
         element_step_data = []
-        for each in step_data[0]:
+        for each in step_data:
             if (each[1] == "action" or each[1] == "conditional action"):
                 #CommonUtil.ExecLog(sModuleInfo, "Not a part of element step data", 2)
                 continue
@@ -55,8 +55,7 @@ def Action_Handler(action_step_data, action_row):
     try:
         action_name = action_row[0]
         if action_name == "save response":
-            fields_to_be_saved = action_row[2]
-            result = Get_Response(action_step_data, fields_to_be_saved)
+            result = Get_Response(action_step_data)
             if result == "failed":
                 return "failed"
         elif action_name == "compare variable":
@@ -72,7 +71,7 @@ def Action_Handler(action_step_data, action_row):
             if result == "failed":
                 return "failed"
         elif action_name == "initialize list":
-            result = Shared_Resources.Initialize_List(action_step_data)
+            result = Initialize_List(action_step_data)
             if result == "failed":
                 return "failed"
         elif action_name == "step result":
@@ -84,8 +83,7 @@ def Action_Handler(action_step_data, action_row):
             elif result in skipped_tag_list:
                 return 'skipped'
         elif action_name == "insert into list":
-            fields_to_be_saved = action_row[2]
-            result = Insert_Into_List(action_step_data, fields_to_be_saved)
+            result = Insert_Into_List(action_step_data)
             if result == "failed":
                 return "failed"
         else:
@@ -96,7 +94,9 @@ def Action_Handler(action_step_data, action_row):
         return CommonUtil.Exception_Handler(sys.exc_info())
 
 
-# Method to get previous response variables
+def Initialize_List(data_set):
+    ''' Temporary wrapper until we can convert everything to use just data_set and not need the extra [] '''
+    return Shared_Resources.Initialize_List([data_set])
 
 #Validating text from an element given information regarding the expected text
 def Compare_Lists(step_data):
@@ -107,7 +107,7 @@ def Compare_Lists(step_data):
         if ((element_step_data == []) or (element_step_data == "failed")):
             return "failed"
         else:
-            return Shared_Resources.Compare_Lists(step_data)
+            return Shared_Resources.Compare_Lists([step_data])
     except:
         return CommonUtil.Exception_Handler(sys.exc_info())
 
@@ -194,17 +194,23 @@ def insert_fields_from_rest_call_into_list(result_dict, fields_to_be_saved, list
 
 
 #Inserting a field into a list of shared variables
-def Insert_Into_List(step_data, fields_to_be_saved):
+def Insert_Into_List(step_data):
     sModuleInfo = inspect.stack()[0][3] + " : " + inspect.getmoduleinfo(__file__).name
     CommonUtil.ExecLog(sModuleInfo, "Function: Insert_Into_List", 1)
     try:
-        if len(step_data[0]) == 1: #will have to test #saving direct input string data
+        fields_to_be_saved = ''
+        for row in step_data:
+            if row[1] == 'action':
+                fields_to_be_saved = row[2]
+
+
+        if len(step_data) == 1: #will have to test #saving direct input string data
             list_name = ''
             key = ''
             value = ''
             full_input_key_value_name = ''
 
-            for each_step_data_item in step_data[0]:
+            for each_step_data_item in step_data:
                 if each_step_data_item[1]=="action":
                     full_input_key_value_name = each_step_data_item[2]
 
@@ -241,7 +247,7 @@ def Insert_Into_List(step_data, fields_to_be_saved):
 
                     list_name = ''
                     key = ''
-                    for each_step_data_item in step_data[0]:
+                    for each_step_data_item in step_data:
                         if each_step_data_item[1] == "action":
                             key = each_step_data_item[2]
 
@@ -331,10 +337,15 @@ def handle_rest_call(data, fields_to_be_saved, save_into_list = False, list_name
 
 
 # Method to get responses
-def Get_Response(step_data, fields_to_be_saved):
+def Get_Response(step_data):
     sModuleInfo = inspect.stack()[0][3] + " : " + inspect.getmoduleinfo(__file__).name
     CommonUtil.ExecLog(sModuleInfo, "Function: Get_Response", 1)
     try:
+        fields_to_be_saved = ''
+        for row in step_data:
+            if row[1] == 'action':
+                fields_to_be_saved = row[2]
+
         element_step_data = Get_Element_Step_Data(step_data)
 
         returned_step_data_list = Validate_Step_Data(element_step_data)
@@ -364,7 +375,7 @@ def Sleep(step_data):
     sModuleInfo = inspect.stack()[0][3] + " : " + inspect.getmoduleinfo(__file__).name
     CommonUtil.ExecLog(sModuleInfo, "Function: Sleep", 1)
     try:
-            tuple = step_data[0][0]
+            tuple = step_data[0]
             seconds = int(tuple[2])
             CommonUtil.ExecLog(sModuleInfo, "Sleeping for %s seconds" % seconds, 1)
             time.sleep(seconds)
@@ -411,12 +422,12 @@ def Sequential_Actions(step_data):
                 elif row[1] == "action":
                     CommonUtil.ExecLog(sModuleInfo, "Checking the action to be performed in the action row", 1)
                     if row[0] == 'compare variable':
-                        result = Action_Handler([each], row)
+                        result = Action_Handler(each, row)
                     else:
                         new_data_set = Shared_Resources.Handle_Step_Data_Variables([each])
                         if new_data_set in failed_tag_list:
                             return 'failed'
-                        result = Action_Handler(new_data_set, row)
+                        result = Action_Handler(new_data_set[0], row)
                     if result in failed_tag_list:
                         return "failed"
                     elif result in skipped_tag_list:
@@ -440,7 +451,7 @@ def Sequential_Actions(step_data):
                     if len(logic_row)==2:
                         #element_step_data = each[0:len(step_data[0])-2:1]
                         element_step_data = Shared_Resources.Handle_Step_Data_Variables([each])
-                        element_step_data = Get_Element_Step_Data(element_step_data)
+                        element_step_data = Get_Element_Step_Data(element_step_data[0])
                         returned_step_data_list = Validate_Step_Data(element_step_data)
                         if ((returned_step_data_list == []) or (returned_step_data_list == "failed")):
                             return "failed"
@@ -530,3 +541,4 @@ def Validate_Step_Data(step_data):
             exc_obj) + ";" + "File Name: " + fname + ";" + "Line: " + str(exc_tb.tb_lineno))
         CommonUtil.ExecLog(sModuleInfo, "Could not find the new page element requested.  Error: %s" % (Error_Detail), 3)
         return "failed"
+

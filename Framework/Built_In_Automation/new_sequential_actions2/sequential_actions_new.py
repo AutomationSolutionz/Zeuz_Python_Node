@@ -43,6 +43,13 @@ actions = { # Numbers are arbitrary, and are not used anywhere
     118: {'module': 'appium', 'name': 'teardown', 'function': 'teardown_appium'},
     119: {'module': 'appium', 'name': 'keypress', 'function': 'Keystroke_Appium'},
     120: {'module': 'appium', 'name': 'tap location', 'function': 'tap_location'},
+    121: {'module': 'rest', 'name': 'save response', 'function': 'Get_Response'},
+    122: {'module': 'rest', 'name': 'compare variable', 'function': 'Compare_Variables'},
+    123: {'module': 'rest', 'name': 'compare list', 'function': 'Compare_Lists'},
+    124: {'module': 'rest', 'name': 'sleep', 'function': 'Sleep'},
+    125: {'module': 'rest', 'name': 'initialize list', 'function': 'Initialize_List'},
+    126: {'module': 'rest', 'name': 'step result', 'function': 'Step_Result'},
+    127: {'module': 'rest', 'name': 'insert into list', 'function': 'Insert_Into_List'}
 }
 
 # List of support for the actions
@@ -52,6 +59,12 @@ action_support = [
     'relation type',
     'element parameter 1 of 2',
     'element parameter 2 of 2',
+    'method',
+    'url',
+    'body',
+    'header',
+    'headers',
+    'compare'
 ]
 
 # Recall dependency, if not already set
@@ -147,7 +160,8 @@ def Conditional_Action_Handler(step_data, data_set, row, logic_row):
     sModuleInfo = inspect.stack()[0][3] + " : " + inspect.getmoduleinfo(__file__).name
 
     module = row[1].split(' ')[0]
-    if module:
+    load_sa_modules(module)
+    if module == 'appium':
         Get_Element_Step_Data_Appium = getattr(eval(module), 'Get_Element_Step_Data_Appium')
         element_step_data = Get_Element_Step_Data_Appium([data_set]) # Pass data set as a list, and get back anything that's not an "action" or "conditional action"
         Validate_Step_Data = getattr(eval(module), 'Validate_Step_Data')
@@ -183,6 +197,51 @@ def Conditional_Action_Handler(step_data, data_set, row, logic_row):
                         else: # Normal process - most conditional actions will come here
                             result = Sequential_Actions([step_data[data_set_index]]) # Recursively call this function until all called data sets are complete
                     return result # Return only the last result of the last row of the last data set processed - This should generally be a "step result action" command
+    elif module == 'rest':
+        Get_Element_Step_Data = getattr(eval(module), 'Get_Element_Step_Data')
+        element_step_data = Get_Element_Step_Data(
+            [data_set])  # Pass data set as a list, and get back anything that's not an "action" or "conditional action"
+        Validate_Step_Data = getattr(eval(module), 'Validate_Step_Data')
+        returned_step_data_list = Validate_Step_Data(
+            element_step_data[0])  # Make sure the element step data we got back from above is good
+        if ((returned_step_data_list == []) or (
+            returned_step_data_list == "failed")):  # Element step data is bad, so fail
+            CommonUtil.ExecLog(sModuleInfo, "Element data is bad: %s" % str(element_step_data), 3)
+            return "failed"
+        else:  # Element step data is good, so continue
+            # Check if element from data set exists on device
+            try:
+                Get_Response = getattr(eval(module), 'Get_Response')
+                Element = Get_Response(element_step_data[0])
+                if Element == 'failed':  # Element doesn't exist, proceed with the step data following the fail/false path
+                    logic_decision = "false"
+                else:  # Any other return means we found the element, proceed with the step data following the pass/true pass
+                    logic_decision = "true"
+            except Exception:  # Element doesn't exist, proceed with the step data following the fail/false path
+                CommonUtil.ExecLog(sModuleInfo, "Could not find element in the by the criteria...", 3)
+                logic_decision = "false"
+                return CommonUtil.Exception_Handler(sys.exc_info())
+
+            # Process the path as defined above (pass/fail)
+            for conditional_steps in logic_row:  # For each conditional action from the data set
+                CommonUtil.ExecLog(sModuleInfo, "Processing conditional action: %s" % str(conditional_steps), 1)
+                if logic_decision in conditional_steps:  # If we have a result from the element check above (true/false)
+                    list_of_steps = conditional_steps[2].split(
+                        ",")  # Get the data set numbers for this conditional action and put them in a list
+                    for each_item in list_of_steps:  # For each data set number we need to process before finishing
+                        CommonUtil.ExecLog(sModuleInfo, "Processing conditional step %s" % str(each_item), 1)
+                        data_set_index = int(
+                            each_item) - 1  # data set number, -1 to offset for data set numbering system
+
+                        if step_data[
+                            data_set_index] == data_set:  # If the data set we are GOING to pass back to sequential_actions() is the same one that called THIS function in the first place, then the step data is calling itself again, and we must pass all of the step data instead, so it doesn't crash later when it tries to refer to data sets that don't exist
+                            result = Sequential_Actions(
+                                step_data)  # Pass the step data to sequential_actions() - Mainly used when the step data is in a deliberate recursive loop of conditional actions
+                        else:  # Normal process - most conditional actions will come here
+                            result = Sequential_Actions([step_data[
+                                                             data_set_index]])  # Recursively call this function until all called data sets are complete
+                    return result  # Return only the last result of the last row of the last data set processed - This should generally be a "step result action" command
+
     else:
         CommonUtil.ExecLog(sModuleInfo, "The conditional action you entered is incorrect. Please provide accurate information on the data set(s).", 3)
         return "failed"
@@ -287,12 +346,12 @@ def shared_variable_to_value(data_set): #!!! Should be moved to Shared_Variable.
                 if row[i] != False: # !!!! Probbly not needed
                     while "%|" in data_row[i] and "|%" in data_row[i]: # If string contains these characters, it's a shared variable
                         CommonUtil.ExecLog(sModuleInfo, "Shared Variable: %s" % row[i], 1)
-                        left_index = data_row[i].index('%|') # Get index of left marker
-                        right_index = data_row[i].index('|%') # Get index of right marker
-                        var = data_row[i][left_index:right_index + 2] # Copy entire shared variable
-                        var_clean = var[2:len(var)-2] # Remove markers
-                        var_str = sr.Get_Shared_Variables(var_clean) # Convert variable name to it's value
-                        data_row[i] = data_row[i].replace(var, str(var_str)) # replace just the variable name with it's value (has to be in string format)
+                        #left_index = data_row[i].index('%|') # Get index of left marker
+                        #right_index = data_row[i].index('|%') # Get index of right marker
+                        #var = data_row[i][left_index:right_index + 2] # Copy entire shared variable
+                        #var_clean = var[2:len(var)-2] # Remove markers
+                        #var_str =  # Convert variable name to it's value
+                        data_row[i] = sr.get_previous_response_variables_in_strings(data_row[i])# replace just the variable name with it's value (has to be in string format)
                         if data_row[i] == 'failed': #!!!this won't work if there's extra strings around the shared variable 
                             CommonUtil.ExecLog(sModuleInfo, "Invalid shared variable", 3)
                             return "failed"
@@ -305,4 +364,3 @@ def shared_variable_to_value(data_set): #!!! Should be moved to Shared_Variable.
 if __name__ == '__main__':
     step_data = [ [ ( 'app_activity' , 'element parameter' , 'com.assetscience.recell.device.android.prodiagnostics.gui.aftersalesRMA.AftersalesRMAPairingActivity' , False , False , '' ) , ( 'launch' , 'appium action' , 'com.assetscience.vodafone.prod' , False , False , '' ) ] ]
     Sequential_Actions(step_data)
-
