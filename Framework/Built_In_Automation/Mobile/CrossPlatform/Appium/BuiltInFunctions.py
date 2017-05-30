@@ -3,6 +3,7 @@
 # Android environment
 from appium import webdriver
 import os, sys, time, inspect, json
+import subprocess,re
 from Framework.Utilities import CommonUtil, FileUtilities
 from Framework.Built_In_Automation.Mobile.Android.adb_calls import adbOptions
 from appium.webdriver.common.touch_action import TouchAction
@@ -188,11 +189,17 @@ def launch_application(data_set):
     try:
         package_name = '' # Name of application package
         activity_name = '' # Name of application activity
+        package_only = False
         for row in data_set: # Find required data
-            if row[0] == 'launch' and row[1] == 'action':
-                package_name = row[2]
-            elif row[0] == 'app_activity' and row[1] == 'element parameter':
-                activity_name = row[2]
+            if row[0] == 'package' and row[1] == 'element parameter':
+                package_name,activity_name = get_program_names(row[2])
+                activity_name = package_name+activity_name
+                package_only = True
+            if not package_only:
+                if row[0] == 'launch' and row[1] == 'action':
+                    package_name = row[2]
+                elif row[0] == 'app_activity' and row[1] == 'element parameter':
+                    activity_name = row[2]
         if package_name == '' or activity_name == '':
             CommonUtil.ExecLog(sModuleInfo,"Could not find package or activity name", 3)
             return 'failed'
@@ -2096,3 +2103,37 @@ def Compare_Lists(data_set):
         return CommonUtil.Exception_Handler(sys.exc_info())
 
 '===================== ===x=== Sequential Actions Section Ends ===x=== ======================'
+
+
+def get_program_names(search_name):
+    print "Trying to find package and activity names"
+    # Find package name for the program that's already installed
+    cmd = 'adb shell pm list packages'
+    res = subprocess.Popen(cmd.split(' '), stdout=subprocess.PIPE).communicate(0)
+    ary = str(res).split('\\r\\n')
+    p = re.compile('package(.*?' + search_name + '.*?)$')
+    package_name = ''
+    for line in ary:
+        m = p.search(str(line))
+        if m:
+            package_name = m.group(1)[1:]
+            break
+
+    # Launch program using only package name
+    print "Trying to launch", package_name
+    cmd = 'adb shell monkey -p ' + m.group(1)[1:] + ' -c android.intent.category.LAUNCHER 1'
+    res = subprocess.Popen(cmd.split(' '))
+    time.sleep(3)
+
+    # Get the activity name
+    cmd = 'adb shell dumpsys window windows'
+    res = subprocess.Popen(cmd.split(' '), stdout=subprocess.PIPE).communicate(0)
+    m = re.search('CurrentFocus=.*?FocusedApp.*?ActivityRecord{\w+\s+\w+\s+(.*?)/(.*?)\s+', str(res))
+
+    # Return package and activity names
+    if m.group(1) != '' and m.group(2) != '':
+        print "Package name:", m.group(1)
+        print "Activity name:", m.group(2)
+        return m.group(1), m.group(2)
+    else:
+        return '', ''
