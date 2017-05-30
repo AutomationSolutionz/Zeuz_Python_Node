@@ -346,15 +346,25 @@ def uninstall_application(data_set):
     
     # Parse data set
     try:
-        app_package = data_set[0][2]
+        sample_package = False
+        app_package = ''
+        for row in data_set:
+            if row[0].strip() == 'package':
+                app_package,app_activity = get_program_names(row[2].strip())
+                app_activity=app_package+app_activity
+                sample_package = True
+        if not sample_package:
+            app_package = data_set[0][2]
     except Exception:
         errMsg = "Unable to parse data set"
         return CommonUtil.Exception_Handler(sys.exc_info(),None,errMsg)
 
     try:
-        CommonUtil.ExecLog(sModuleInfo,"Trying to remove app with package name %s..."%app_package,1)
+        CommonUtil.ExecLog(sModuleInfo,"Trying to remove app with package name %s"%app_package,1)
         #if driver.is_app_installed(app_package):
             #CommonUtil.ExecLog(sModuleInfo,"App is installed. Now removing...",1)
+        if driver == None:
+            start_appium_driver(app_package,app_activity)
         driver.remove_app(app_package)
         CommonUtil.ExecLog(sModuleInfo,"App is removed successfully.",1)
         return "passed"
