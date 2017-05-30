@@ -121,7 +121,7 @@ def Compare_Variables(step_data):
         if ((element_step_data == []) or (element_step_data == "failed")):
             return "failed"
         else:
-            return Shared_Resources.Compare_Variables(step_data)
+            return Shared_Resources.Compare_Variables([step_data])
     except:
         return CommonUtil.Exception_Handler(sys.exc_info())
 
@@ -541,4 +541,3 @@ def Validate_Step_Data(step_data):
             exc_obj) + ";" + "File Name: " + fname + ";" + "Line: " + str(exc_tb.tb_lineno))
         CommonUtil.ExecLog(sModuleInfo, "Could not find the new page element requested.  Error: %s" % (Error_Detail), 3)
         return "failed"
-

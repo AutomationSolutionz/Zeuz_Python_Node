@@ -236,7 +236,7 @@ def Compare_Variables(step_data):
         variable_list1 = []
         variable_list2 = []
         result = []
-        for each_step_data_item in step_data:
+        for each_step_data_item in step_data[0]:
             if each_step_data_item[1]!="action":
                 if '%|' in each_step_data_item[0].strip():
                     previous_name = each_step_data_item[0].strip()
