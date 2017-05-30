@@ -7,8 +7,8 @@
 '''
 -Create a list of accepted Fields for element parameter, or all accepted fields for action_support, then verify before doing anything
 --After that, can move the if action_support, and the ELSE statement out of sequential_actions(), so the verification of data is done in one place
--Move shared_variable_to_value() to Shared_Resources
 -Teardown on error: Find each used module (if !=''), AND an Error or fail ocurred, execute their teardown
+-Conditional action sections for rest and appium need to be merged somehow
 '''
 ### TODO ###
 
@@ -21,7 +21,6 @@ from Framework.Built_In_Automation.Shared_Resources import BuiltInFunctionShared
 # Dictionary of supported actions and their respective modules
 # Rules: Action NAME must be lower case, no underscores, single spaces, no trailing whitespace. Module names must match those used in load_sa_modules()
 actions = { # Numbers are arbitrary, and are not used anywhere
-    200: {'module': 'appium', 'name': 'step result', 'function': 'step_result'},
     100: {'module': 'appium', 'name': 'click', 'function': 'Click_Element_Appium'},
     101: {'module': 'appium', 'name': 'text', 'function': 'Enter_Text_Appium'},
     102: {'module': 'appium', 'name': 'wait', 'function': 'Wait_For_New_Element'},
@@ -68,7 +67,7 @@ action_support = [
 ]
 
 # Recall dependency, if not already set
-dependency = 'Android' #{'Mobile OS':'Android'} #!!! Will be updated by sequential_actions_appium() in the future
+dependency = {'Mobile':'Android'} # !!! TEMP - Set to None for production
 if sr.Test_Shared_Variables('dependency'): # Check if driver is already set in shared variables
     dependency = sr.Get_Shared_Variables('dependency') # Retreive appium driver
 
@@ -260,15 +259,18 @@ def Action_Handler(_data_set, action_row):
     action_subfield = action_row[1]
     action_value = action_row[2]
 
-    # Get module and function for this action    
-    module, function = get_module_and_function(action_name, action_subfield) # New, get the module to execute
-    CommonUtil.ExecLog(sModuleInfo, "Function identified as function: %s in module: %s" % (function, module), 1)
-
-    if module in common.failed_tag_list or module == '' or function == '': # New, make sure we have a function
-        CommonUtil.ExecLog(sModuleInfo, "The action you entered is incorrect. Please provide accurate information on the data set(s).", 3)
-        if function == '': # A little more information for the user
-            CommonUtil.ExecLog(sModuleInfo, "You probably didn't add the module as part of the action. Eg: appium action", 2)
-        return "failed"
+    # Get module and function for this action
+    module = ''
+    function = ''
+    if action_name != 'step result': # Step result is handle here becaue it's common to all functions
+        module, function = get_module_and_function(action_name, action_subfield) # New, get the module to execute
+        CommonUtil.ExecLog(sModuleInfo, "Function identified as function: %s in module: %s" % (function, module), 1)
+    
+        if module in common.failed_tag_list or module == '' or function == '': # New, make sure we have a function
+            CommonUtil.ExecLog(sModuleInfo, "The action you entered is incorrect. Please provide accurate information on the data set(s).", 3)
+            if function == '': # A little more information for the user
+                CommonUtil.ExecLog(sModuleInfo, "You probably didn't add the module as part of the action. Eg: appium action", 2)
+            return "failed"
 
     # Strip the "optional" keyword, and module, so functions work properly (result of optional action is handled by sequential_actions)
     data_set = []
@@ -333,7 +335,7 @@ def get_module_and_function(action_name, action_sub_field):
         return CommonUtil.Exception_Handler(sys.exc_info())
 
 
-def shared_variable_to_value(data_set): #!!! Should be moved to Shared_Variable.py
+def shared_variable_to_value(data_set):
     ''' Look for any Shared Variable strings in step data, convert them into their values, and return '''
     
     sModuleInfo = inspect.stack()[0][3] + " : " + inspect.getmoduleinfo(__file__).name
