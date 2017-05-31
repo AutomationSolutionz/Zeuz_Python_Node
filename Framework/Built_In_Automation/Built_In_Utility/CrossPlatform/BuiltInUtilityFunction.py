@@ -1010,15 +1010,18 @@ def Add_Log(step_data):
         if _platform == "linux" or _platform == "linux2":
             # linux
             CommonUtil.ExecLog(sModuleInfo, "linux", 1)
-            direc = {"aaaarer", "stgs", 'gsre'}
-            Comment = str(step_data[0][0][2]).strip()  # get the statement for math function
-            LogLevel = int(str(step_data[0][1][2]).strip())
+            log_info = str(step_data[0][0][0]).strip() #get the log level info from the step data
+            list = log_info.split("_") # log level in step data is given as log_1/log_2/log_3 , so to get the level split it by "_"
+            Comment = str(step_data[0][0][2]).strip()  # get the comment
+            LogLevel = int(list[1]) #get the level
             CommonUtil.ExecLog(sModuleInfo, "%s" % Comment, LogLevel)
         elif _platform == "win32":
             # linux
             CommonUtil.ExecLog(sModuleInfo, "windows", 1)
-            Comment = str(step_data[0][0][2]).strip()  # get the statement for math function
-            LogLevel = int(str(step_data[0][1][2]).strip())
+            log_info = str(step_data[0][0][0]).strip() #get the log level info from the step data
+            list = log_info.split("_") # log level in step data is given as log_1/log_2/log_3 , so to get the level split it by "_"
+            Comment = str(step_data[0][0][2]).strip()   # get the comment
+            LogLevel = int(list[1]) #get the level
             CommonUtil.ExecLog(sModuleInfo, "%s" % Comment, LogLevel)
     except Exception:
         return CommonUtil.Exception_Handler(sys.exc_info())
@@ -1081,6 +1084,30 @@ def Run_Sudo_Command(step_data):
     except Exception:
         return CommonUtil.Exception_Handler(sys.exc_info())
 
+
+# Method to Clear Cache
+def Clear_Cache(step_data):
+    sModuleInfo = inspect.stack()[0][3] + " : " + inspect.getmoduleinfo(__file__).name
+    CommonUtil.ExecLog(sModuleInfo, "Function: Clear Cache", 1)
+    try:
+        if _platform == "linux" or _platform == "linux2":
+            # linux
+            CommonUtil.ExecLog(sModuleInfo, "linux", 1)
+            command = "adb shell pm clear " + str(step_data[0][0][2]).strip()  #get the package name
+            result = run_cmd(command) # run the command
+            if result in failed_tag_list:
+                CommonUtil.ExecLog(sModuleInfo, "Could not run command '%s' and could not clear cache" % (command), 3)
+                return "failed"
+            else:
+                CommonUtil.ExecLog(sModuleInfo, "Cache is cleared properly '%s'" % (command), 1)
+                return "passed"
+        elif _platform == "win32":
+            # linux
+            CommonUtil.ExecLog(sModuleInfo, "windows", 1)
+            CommonUtil.ExecLog(sModuleInfo, "Could not run sudo command as it is windows", 3)
+            return "failed"
+    except Exception:
+        return CommonUtil.Exception_Handler(sys.exc_info())
 
 # Method to Run Command
 def Run_Command(step_data):
@@ -1536,6 +1563,52 @@ def TimeStamp(format):
 
     return TimeStamp
 
+# Copy/paste file to zeuz log uploader
+def Upload(step_data):
+    sModuleInfo = inspect.stack()[0][3] + " : " + inspect.getmoduleinfo(__file__).name
+    CommonUtil.ExecLog(sModuleInfo, "Function: Copy/paste file to zeuz log uploader", 1)
+    try:
+        if _platform == "linux" or _platform == "linux2":
+            # linux
+            CommonUtil.ExecLog(sModuleInfo, "linux", 1)
+            from_path = get_home_folder() + str(step_data[0][2]).strip()  # location of the file/folder to be copied\
+            temp_ini_file = get_home_folder() + "/Desktop/AutomationLog/temp_config.ini"
+            list = from_path.split("/")
+            to_path = ConfigModule.get_config_value('sectionOne', 'test_case_folder', temp_ini_file) +"/"+ list[len(list) - 1]  # location where to copy the file/folder
+
+            result = copy_file(from_path, to_path)
+            if result in failed_tag_list:
+                CommonUtil.ExecLog(sModuleInfo,
+                                   "Could not copy file '%s' to the log uploader '%s'" % (from_path, to_path), 3)
+                return "failed"
+            else:
+                CommonUtil.ExecLog(sModuleInfo,
+                                   "File '%s' copied to the log uploader '%s' successfully" % (from_path, to_path), 1)
+                return "passed"
+        elif _platform == "win32":
+            # linux
+            CommonUtil.ExecLog(sModuleInfo, "windows", 1)
+            from_path = raw(str(step_data[0][0]).strip())  # location of the file/folder to be copied
+            temp_ini_file = get_home_folder() + raw("\Desktop\AutomationLog\temp_config.ini")
+            list = from_path.split("\\")
+            to_path = ConfigModule.get_config_value('sectionOne', 'test_case_folder', temp_ini_file) + "\\" + list[len(list) - 1]
+
+            result = copy_file(from_path, to_path)
+            if result in failed_tag_list:
+                CommonUtil.ExecLog(sModuleInfo,
+                                   "Could not copy file '%s' to the log uploader '%s'" % (from_path, to_path), 3)
+                return "failed"
+            else:
+                CommonUtil.ExecLog(sModuleInfo,
+                                   "File '%s' copied to the log uploader '%s' successfully" % (from_path, to_path), 1)
+                return "passed"
+
+
+    except Exception:
+        return CommonUtil.Exception_Handler(sys.exc_info())
+
+
+
 
 temp_config = os.path.join(os.path.join(get_home_folder(), os.path.join('Desktop', os.path.join('AutomationLog',ConfigModule.get_config_value('Temp', '_file')))))
 
@@ -1677,6 +1750,10 @@ def Action_Handler(action_step_data, action_name):
             result = Calculate(action_step_data)  # math function
             if result == "failed":
                 return "failed"
+        elif action_name == "upload":
+            result = Upload(action_step_data)  # copy/paste file to zeuz log uploader
+            if result == "failed":
+                return "failed"
         elif action_name == "save text":
             result = Save_Text(action_step_data)  # save text
             if result == "failed":
@@ -1745,12 +1822,16 @@ def Action_Handler(action_step_data, action_name):
             result = Run_Command(action_step_data)  # run admin command
             if result == "failed":
                 return "failed"
-        elif action_name == "add log":
-            result = Add_Log(action_step_data)  # run admin command
+        elif action_name == "log_1" or action_name == "log_2" or action_name == "log_3":
+            result = Add_Log(action_step_data)  # add logging
             if result == "failed":
                 return "failed"
         elif action_name == "take screen shot":
             result = TakeScreenShot('image')  # take screen shot
+            if result == "failed":
+                return "failed"
+        elif action_name == "clear cache":
+            result = Clear_Cache(action_step_data)  # clear the cache
             if result == "failed":
                 return "failed"
         elif action_name == "sleep":
@@ -1841,9 +1922,7 @@ def Sequential_Actions(step_data):
                     if result == [] or result == "failed":
                         return "failed"
                 elif row[1] == "conditional action":
-                    CommonUtil.ExecLog(sModuleInfo,
-                                       "Checking the logical conditional action to be performed in the conditional action row",
-                                       1)
+                    CommonUtil.ExecLog(sModuleInfo,"Checking the logical conditional action to be performed in the conditional action row", 1)
                     logic_decision = ""
                     logic_row.append(row)
                     if len(logic_row) == 2:
