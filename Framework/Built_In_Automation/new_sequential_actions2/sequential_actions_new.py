@@ -48,7 +48,34 @@ actions = { # Numbers are arbitrary, and are not used anywhere
     124: {'module': 'rest', 'name': 'sleep', 'function': 'Sleep'},
     125: {'module': 'rest', 'name': 'initialize list', 'function': 'Initialize_List'},
     126: {'module': 'rest', 'name': 'step result', 'function': 'Step_Result'},
-    127: {'module': 'rest', 'name': 'insert into list', 'function': 'Insert_Into_List'}
+    127: {'module': 'rest', 'name': 'insert into list', 'function': 'Insert_Into_List'},
+    128: {'module': 'selenium', 'name': 'click', 'function': 'Click_Element'},
+    129: {'module': 'selenium', 'name': 'click and hold', 'function': 'Click_and_Hold_Element'},
+    130: {'module': 'selenium', 'name': 'context click', 'function': 'Context_Click_Element'},
+    131: {'module': 'selenium', 'name': 'double click', 'function': 'Double_Click_Element'},
+    132: {'module': 'selenium', 'name': 'move to element', 'function': 'Move_To_Element'},
+    133: {'module': 'selenium', 'name': 'hover', 'function': 'Hover_Over_Element'},
+    134: {'module': 'selenium', 'name': 'keystroke keys', 'function': 'Keystroke_For_Element'},
+    135: {'module': 'selenium', 'name': 'keystroke chars', 'function': 'Keystroke_For_Element'},
+    136: {'module': 'selenium', 'name': 'text', 'function': 'Enter_Text_In_Text_Box'},
+    137: {'module': 'selenium', 'name': 'wait', 'function': 'Wait_For_New_Element'},
+    138: {'module': 'selenium', 'name': 'sleep', 'function': 'Sleep'},
+    139: {'module': 'selenium', 'name': 'initialize list', 'function': 'Initialize_List'},
+    140: {'module': 'selenium', 'name': 'validate full text', 'function': 'Validate_Text'},
+    141: {'module': 'selenium', 'name': 'validate partial text', 'function': 'Validate_Text'},
+    142: {'module': 'selenium', 'name': 'save text', 'function': 'Save_Text'},
+    143: {'module': 'selenium', 'name': 'compare variable', 'function': 'Compare_Variables'},
+    144: {'module': 'selenium', 'name': 'compare list', 'function': 'Compare_Lists'},
+    145: {'module': 'selenium', 'name': 'insert into list', 'function': 'Insert_Into_List'},
+    146: {'module': 'selenium', 'name': 'scroll', 'function': 'Scroll'},
+    147: {'module': 'selenium', 'name': 'step result', 'function': 'Step_Result'},
+    148: {'module': 'selenium', 'name': 'deselect all', 'function': 'Select_Deselect'},
+    149: {'module': 'selenium', 'name': 'select by visible text', 'function': 'Select_Deselect'},
+    150: {'module': 'selenium', 'name': 'deselect by visible text', 'function': 'Select_Deselect'},
+    151: {'module': 'selenium', 'name': 'select by value', 'function': 'Select_Deselect'},
+    152: {'module': 'selenium', 'name': 'deselect by value', 'function': 'Select_Deselect'},
+    153: {'module': 'selenium', 'name': 'select by index', 'function': 'Select_Deselect'},
+    154: {'module': 'selenium', 'name': 'deselect by index', 'function': 'Select_Deselect'}
 }
 
 # List of support for the actions
@@ -240,7 +267,50 @@ def Conditional_Action_Handler(step_data, data_set, row, logic_row):
                             result = Sequential_Actions([step_data[
                                                              data_set_index]])  # Recursively call this function until all called data sets are complete
                     return result  # Return only the last result of the last row of the last data set processed - This should generally be a "step result action" command
+    elif module == 'selenium':
+        Get_Element_Step_Data = getattr(eval(module), 'Get_Element_Step_Data')
+        element_step_data = Get_Element_Step_Data(
+            data_set)  # Pass data set as a list, and get back anything that's not an "action" or "conditional action"
+        Validate_Step_Data = getattr(eval(module), 'Validate_Step_Data')
+        returned_step_data_list = Validate_Step_Data(
+            [element_step_data[0]])  # Make sure the element step data we got back from above is good
+        if ((returned_step_data_list == []) or (
+            returned_step_data_list == "failed")):  # Element step data is bad, so fail
+            CommonUtil.ExecLog(sModuleInfo, "Element data is bad: %s" % str(element_step_data), 3)
+            return "failed"
+        else:  # Element step data is good, so continue
+            # Check if element from data set exists on device
+            try:
+                Get_Element = getattr(eval(module), 'Get_Element')
+                Element = Get_Element(returned_step_data_list[0], returned_step_data_list[1], returned_step_data_list[2], returned_step_data_list[3], returned_step_data_list[4])
+                if Element == 'failed':  # Element doesn't exist, proceed with the step data following the fail/false path
+                    logic_decision = "false"
+                else:  # Any other return means we found the element, proceed with the step data following the pass/true pass
+                    logic_decision = "true"
+            except Exception:  # Element doesn't exist, proceed with the step data following the fail/false path
+                CommonUtil.ExecLog(sModuleInfo, "Could not find element in the by the criteria...", 3)
+                logic_decision = "false"
+                return CommonUtil.Exception_Handler(sys.exc_info())
 
+            # Process the path as defined above (pass/fail)
+            for conditional_steps in logic_row:  # For each conditional action from the data set
+                CommonUtil.ExecLog(sModuleInfo, "Processing conditional action: %s" % str(conditional_steps), 1)
+                if logic_decision in conditional_steps:  # If we have a result from the element check above (true/false)
+                    list_of_steps = conditional_steps[2].split(
+                        ",")  # Get the data set numbers for this conditional action and put them in a list
+                    for each_item in list_of_steps:  # For each data set number we need to process before finishing
+                        CommonUtil.ExecLog(sModuleInfo, "Processing conditional step %s" % str(each_item), 1)
+                        data_set_index = int(
+                            each_item) - 1  # data set number, -1 to offset for data set numbering system
+
+                        if step_data[
+                            data_set_index] == data_set:  # If the data set we are GOING to pass back to sequential_actions() is the same one that called THIS function in the first place, then the step data is calling itself again, and we must pass all of the step data instead, so it doesn't crash later when it tries to refer to data sets that don't exist
+                            result = Sequential_Actions(
+                                step_data)  # Pass the step data to sequential_actions() - Mainly used when the step data is in a deliberate recursive loop of conditional actions
+                        else:  # Normal process - most conditional actions will come here
+                            result = Sequential_Actions([step_data[
+                                                             data_set_index]])  # Recursively call this function until all called data sets are complete
+                    return result  # Return only the last result of the last row of the last data set processed - This should generally be a "step result action" command
     else:
         CommonUtil.ExecLog(sModuleInfo, "The conditional action you entered is incorrect. Please provide accurate information on the data set(s).", 3)
         return "failed"

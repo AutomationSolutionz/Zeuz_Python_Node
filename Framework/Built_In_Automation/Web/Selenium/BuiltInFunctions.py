@@ -154,7 +154,7 @@ def Get_Element_Step_Data(step_data):
     CommonUtil.ExecLog(sModuleInfo, "Function: Get_Element_Step_Data", 1)
     try:
         element_step_data=[]
-        for each in step_data[0]:
+        for each in step_data:
             #if each[1]=="":
 #             if (each[1]!="action" or each[1]!="logic"):
 #                 element_step_data.append(each)
@@ -202,7 +202,7 @@ def Action_Handler(action_step_data, action_name):
             result = Hover_Over_Element(action_step_data)
             if result == "failed":
                 return "failed"
-        elif (action_name == "keystroke_keys" or action_name == "keystroke_chars"):
+        elif (action_name == "keystroke keys" or action_name == "keystroke chars"):
             result = Keystroke_For_Element(action_step_data)
             if result == "failed":
                 return "failed"
@@ -219,7 +219,7 @@ def Action_Handler(action_step_data, action_name):
             if result == "failed":
                 return "failed"
         elif action_name == "initialize list":
-            result = Shared_Resources.Initialize_List(action_step_data)
+            result = Initialize_List(action_step_data)
             if result == "failed":
                 return "failed"
         elif (action_name == "validate full text" or action_name == "validate partial text"):
@@ -267,18 +267,21 @@ def Action_Handler(action_step_data, action_name):
     except Exception:
         return CommonUtil.Exception_Handler(sys.exc_info())
 
+def Initialize_List(data_set):
+    ''' Temporary wrapper until we can convert everything to use just data_set and not need the extra [] '''
+    return Shared_Resources.Initialize_List([data_set])
+
 #Method to enter texts in a text box; step data passed on by the user
 def Enter_Text_In_Text_Box(step_data):
     sModuleInfo = inspect.stack()[0][3] + " : " + inspect.getmoduleinfo(__file__).name
     CommonUtil.ExecLog(sModuleInfo, "Function: Enter_Text_In_Text_Box", 1)
     try:
         #If there are no two separate data-sets, or if the first data-set is not between 1 to 3 items, or if the second data-set doesn't have only 1 item
-        if ((len(step_data) != 1) or (1 < len(step_data[0]) >= 5)):# or (len(step_data[1]) != 1)):
+        if ((1 < len(step_data) >= 5)):# or (len(step_data[1]) != 1)):
             CommonUtil.ExecLog(sModuleInfo, "The information in the data-set(s) are incorrect. Please provide accurate data set(s) information.", 3)
             return "failed"
         else:
             element_step_data=Get_Element_Step_Data(step_data)
-            #element_step_data = step_data[0][0:len(step_data[0])-1:1]
             returned_step_data_list = Validate_Step_Data(element_step_data)
             #returned_step_data_list = Validate_Step_Data(step_data[0])
             if ((returned_step_data_list == []) or (returned_step_data_list == "failed")):
@@ -286,7 +289,7 @@ def Enter_Text_In_Text_Box(step_data):
             else:
                 try:
                     Element = Get_Element(returned_step_data_list[0], returned_step_data_list[1], returned_step_data_list[2], returned_step_data_list[3], returned_step_data_list[4])
-                    for each in step_data[0]:
+                    for each in step_data:
                         if each[1]=="action":
                             text_value=each[2]
                         else:
@@ -313,25 +316,24 @@ def Keystroke_For_Element(step_data):
     sModuleInfo = inspect.stack()[0][3] + " : " + inspect.getmoduleinfo(__file__).name
     CommonUtil.ExecLog(sModuleInfo, "Function: Keystroke_For_Element", 1)
     try:
-        if ((len(step_data) != 1) or (1 < len(step_data[0]) >= 5)):
+        if ((1 < len(step_data) >= 5)):# or (len(step_data[1]) != 1)):
             CommonUtil.ExecLog(sModuleInfo, "The information in the data-set(s) are incorrect. Please provide accurate data set(s) information.", 3)
             return "failed"
         else:
-            #element_step_data = step_data[0][0:len(step_data[0])-1:1]
-            element_step_data = Get_Element_Step_Data(step_data)
+            element_step_data=Get_Element_Step_Data(step_data)
             returned_step_data_list = Validate_Step_Data(element_step_data)
             if ((returned_step_data_list == []) or (returned_step_data_list == "failed")):
                 return "failed"
             else:
                 try:
                     Element = Get_Element(returned_step_data_list[0], returned_step_data_list[1], returned_step_data_list[2], returned_step_data_list[3], returned_step_data_list[4])
-                    for each in step_data[0]:
+                    for each in step_data:
                         if each[1]=="action":
-                            if each[0]=="keystroke_keys":
+                            if each[0]=="keystroke keys":
                                 keystroke_value=(each[2]).upper()
                                 get_keystroke_value = getattr(Keys, keystroke_value)
                                 result = Element.send_keys(get_keystroke_value)
-                            elif each[0] == "keystroke_chars":
+                            elif each[0] == "keystroke chars":
                                 keystroke_value=(each[2])
                                 result = Element.send_keys(keystroke_value)
                             else:
@@ -374,12 +376,11 @@ def Click_Element(step_data):
     sModuleInfo = inspect.stack()[0][3] + " : " + inspect.getmoduleinfo(__file__).name
     CommonUtil.ExecLog(sModuleInfo, "Function: Click_Element", 1)
     try:
-        if ((len(step_data) != 1) or (1 < len(step_data[0]) >= 5)):
+        if ((1 < len(step_data) >= 5)):# or (len(step_data[1]) != 1)):
             CommonUtil.ExecLog(sModuleInfo, "The information in the data-set(s) are incorrect. Please provide accurate data set(s) information.", 3)
             return "failed"
         else:
-            #element_step_data = step_data[0][0:len(step_data[0])-1:1]
-            element_step_data = Get_Element_Step_Data(step_data)
+            element_step_data=Get_Element_Step_Data(step_data)
             returned_step_data_list = Validate_Step_Data(element_step_data)
             if ((returned_step_data_list == []) or (returned_step_data_list == "failed")):
                 return "failed"
@@ -404,7 +405,7 @@ def Click_and_Hold_Element(step_data):
     sModuleInfo = inspect.stack()[0][3] + " : " + inspect.getmoduleinfo(__file__).name
     CommonUtil.ExecLog(sModuleInfo, "Function: Click_and_Hold_Element", 1)
     try:
-        if ((len(step_data) != 1) or (1 < len(step_data[0]) >= 5)):
+        if ((1 < len(step_data) >= 5)):
             CommonUtil.ExecLog(sModuleInfo, "The information in the data-set(s) are incorrect. Please provide accurate data set(s) information.", 3)
             return "failed"
         else:
@@ -435,7 +436,7 @@ def Context_Click_Element(step_data):
     sModuleInfo = inspect.stack()[0][3] + " : " + inspect.getmoduleinfo(__file__).name
     CommonUtil.ExecLog(sModuleInfo, "Function: Context_Click_Element", 1)
     try:
-        if ((len(step_data) != 1) or (1 < len(step_data[0]) >= 5)):
+        if ((1 < len(step_data) >= 5)):
             CommonUtil.ExecLog(sModuleInfo, "The information in the data-set(s) are incorrect. Please provide accurate data set(s) information.", 3)
             return "failed"
         else:
@@ -465,7 +466,7 @@ def Double_Click_Element(step_data):
     sModuleInfo = inspect.stack()[0][3] + " : " + inspect.getmoduleinfo(__file__).name
     CommonUtil.ExecLog(sModuleInfo, "Function: Double_Click_Element", 1)
     try:
-        if ((len(step_data) != 1) or (1 < len(step_data[0]) >= 5)):
+        if ((1 < len(step_data) >= 5)):
             CommonUtil.ExecLog(sModuleInfo, "The information in the data-set(s) are incorrect. Please provide accurate data set(s) information.", 3)
             return "failed"
         else:
@@ -496,7 +497,7 @@ def Move_To_Element(step_data):
     sModuleInfo = inspect.stack()[0][3] + " : " + inspect.getmoduleinfo(__file__).name
     CommonUtil.ExecLog(sModuleInfo, "Function: Move_To_Element", 1)
     try:
-        if ((len(step_data) != 1) or (1 < len(step_data[0]) >= 5)):
+        if ((1 < len(step_data) >= 5)):
             CommonUtil.ExecLog(sModuleInfo, "The information in the data-set(s) are incorrect. Please provide accurate data set(s) information.", 3)
             return "failed"
         else:
@@ -526,7 +527,7 @@ def Hover_Over_Element(step_data):
     sModuleInfo = inspect.stack()[0][3] + " : " + inspect.getmoduleinfo(__file__).name
     CommonUtil.ExecLog(sModuleInfo, "Function: Hover_Over_Element", 1)
     try:
-        if ((len(step_data) != 1) or (1 < len(step_data[0]) >= 5)):
+        if ((1 < len(step_data) >= 5)):
             CommonUtil.ExecLog(sModuleInfo, "The information in the data-set(s) are incorrect. Please provide accurate data set(s) information.", 3)
             return "failed"
         else:
@@ -557,7 +558,7 @@ def Wait_For_New_Element(step_data):
     sModuleInfo = inspect.stack()[0][3] + " : " + inspect.getmoduleinfo(__file__).name
     CommonUtil.ExecLog(sModuleInfo, "Function: Wait_For_New_Page_Element", 1)
     try:
-        if ((len(step_data) != 1) or (1 < len(step_data[0]) >= 5)):# or (len(step_data[1]) != 1)):
+        if ((1 < len(step_data) >= 5)):# or (len(step_data[1]) != 1)):
             CommonUtil.ExecLog(sModuleInfo, "The information in the data-set(s) are incorrect. Please provide accurate data set(s) information.", 3)
             return "failed"
         else:
@@ -568,14 +569,14 @@ def Wait_For_New_Element(step_data):
                 return "failed"
             else:
                 try:
-                    for each in step_data[0]:
+                    for each in step_data:
                         if each[1]=="action":
                             timeout_duration = int(each[2])
 
                     start_time = time.time()
                     interval = 1
                     for i in range(timeout_duration):
-                        time.sleep(start_time + i*interval - time.time())
+                        time.sleep(time.time() + i*interval - start_time)
                         Element = Get_Element(returned_step_data_list[0], returned_step_data_list[1], returned_step_data_list[2], returned_step_data_list[3], returned_step_data_list[4])
                         if (Element == []):
                             continue
@@ -604,7 +605,7 @@ def Compare_Lists(step_data):
         if ((element_step_data == []) or (element_step_data == "failed")):
             return "failed"
         else:
-            return Shared_Resources.Compare_Lists(step_data)
+            return Shared_Resources.Compare_Lists([step_data])
     except:
         return CommonUtil.Exception_Handler(sys.exc_info())
 
@@ -618,7 +619,7 @@ def Compare_Variables(step_data):
         if ((element_step_data == []) or (element_step_data == "failed")):
             return "failed"
         else:
-            return Shared_Resources.Compare_Variables(step_data)
+            return Shared_Resources.Compare_Variables([step_data])
     except:
         return CommonUtil.Exception_Handler(sys.exc_info())
 
@@ -628,13 +629,13 @@ def Insert_Into_List(step_data):
     sModuleInfo = inspect.stack()[0][3] + " : " + inspect.getmoduleinfo(__file__).name
     CommonUtil.ExecLog(sModuleInfo, "Function: Insert_Into_List", 1)
     try:
-        if len(step_data[0]) == 1: #will have to test #saving direct input string data
+        if len(step_data) == 1: #will have to test #saving direct input string data
             list_name = ''
             key = ''
             value = ''
             full_input_key_value_name = ''
 
-            for each_step_data_item in step_data[0]:
+            for each_step_data_item in step_data:
                 if each_step_data_item[1]=="action":
                     full_input_key_value_name = each_step_data_item[2]
 
@@ -657,8 +658,8 @@ def Insert_Into_List(step_data):
                 Shared_Resources.Show_All_Shared_Variables()
                 return "passed"
 
-        elif len(step_data[0]) > 1 and len(step_data[0]) <=5:
-            for each in step_data[0]:
+        elif 1 < len(step_data) <= 5:
+            for each in step_data:
                 element_step_data = Get_Element_Step_Data(step_data)
                 returned_step_data_list = Validate_Step_Data(element_step_data)
                 if ((returned_step_data_list == []) or (returned_step_data_list == "failed")):
@@ -674,7 +675,7 @@ def Insert_Into_List(step_data):
 
             list_name = ''
             key = ''
-            for each_step_data_item in step_data[0]:
+            for each_step_data_item in step_data:
                 if each_step_data_item[1] == "action":
                     key = each_step_data_item[2]
 
@@ -721,11 +722,11 @@ def Save_Text(step_data):
     sModuleInfo = inspect.stack()[0][3] + " : " + inspect.getmoduleinfo(__file__).name
     CommonUtil.ExecLog(sModuleInfo, "Function: Save_Text", 1)
     try:
-        if ((len(step_data) != 1) or (1 < len(step_data[0]) >= 5)):
+        if ((1 < len(step_data) >= 5)):
             CommonUtil.ExecLog(sModuleInfo, "The information in the data-set(s) are incorrect. Please provide accurate data set(s) information.",3)
             return "failed"
         else:
-            for each in step_data[0]:
+            for each in step_data:
                 element_step_data = Get_Element_Step_Data(step_data)
                 returned_step_data_list = Validate_Step_Data(element_step_data)
                 if ((returned_step_data_list == []) or (returned_step_data_list == "failed")):
@@ -739,7 +740,7 @@ def Save_Text(step_data):
                         errMsg = "Could not get element based on the information provided."
                         return CommonUtil.Exception_Handler(sys.exc_info(),None,errMsg)
 
-            for each_step_data_item in step_data[0]:
+            for each_step_data_item in step_data:
                 if each_step_data_item[1]=="action":
                     variable_name = each_step_data_item[2]
 
@@ -765,11 +766,11 @@ def Validate_Text(step_data):
     sModuleInfo = inspect.stack()[0][3] + " : " + inspect.getmoduleinfo(__file__).name
     CommonUtil.ExecLog(sModuleInfo, "Function: Validate_Text", 1)
     try:
-        if ((len(step_data) != 1) or (1 < len(step_data[0]) >= 5)):
+        if ((1 < len(step_data) >= 5)):
             CommonUtil.ExecLog(sModuleInfo, "The information in the data-set(s) are incorrect. Please provide accurate data set(s) information.",3)
             return "failed"
         else:
-            for each in step_data[0]:
+            for each in step_data:
                 if each[0] == "current_page":
                     try:
                         Element = Get_Element('tag', 'html')
@@ -808,7 +809,7 @@ def Validate_Text(step_data):
 #                     except Exception:
 #                         errMsg = "Could not get element based on the information provided."
 #                         return CommonUtil.Exception_Handler(sys.exc_info(),None,errMsg)
-            for each_step_data_item in step_data[0]:
+            for each_step_data_item in step_data:
                 if each_step_data_item[1]=="action":
                     expected_text_data = each_step_data_item[2]
                     validation_type = each_step_data_item[0]
@@ -855,13 +856,13 @@ def Sleep(step_data):
     sModuleInfo = inspect.stack()[0][3] + " : " + inspect.getmoduleinfo(__file__).name
     CommonUtil.ExecLog(sModuleInfo, "Function: Sleep", 1)
     try:
-        if ((len(step_data) != 1) or (1 < len(step_data[0]) >= 5)):
+        if ((1 < len(step_data) >= 5)):
             CommonUtil.ExecLog(sModuleInfo,
                                "The information in the data-set(s) are incorrect. Please provide accurate data set(s) information.",
                                3)
             return "failed"
         else:
-            tuple = step_data[0][0]
+            tuple = step_data[0]
             seconds = int(tuple[2])
             CommonUtil.ExecLog(sModuleInfo,"Sleeping for %s seconds"%seconds,1)
             time.sleep(seconds)
@@ -876,13 +877,13 @@ def Scroll(step_data):
     sModuleInfo = inspect.stack()[0][3] + " : " + inspect.getmoduleinfo(__file__).name
     CommonUtil.ExecLog(sModuleInfo, "Function: Scroll", 1)
     try:
-        if ((len(step_data) != 1) or (1 < len(step_data[0]) >= 5)):
+        if ((1 < len(step_data) >= 5)):
             CommonUtil.ExecLog(sModuleInfo,
                                "The information in the data-set(s) are incorrect. Please provide accurate data set(s) information.",
                                3)
             return "failed"
         else:
-            tuple = step_data[0][0]
+            tuple = step_data[0]
             scroll_direction = tuple[2]
             if scroll_direction == 'down':
                 CommonUtil.ExecLog(sModuleInfo,"Scrolling down",1)
@@ -909,11 +910,11 @@ def Step_Result(step_data):
     sModuleInfo = inspect.stack()[0][3] + " : " + inspect.getmoduleinfo(__file__).name
     CommonUtil.ExecLog(sModuleInfo, "Function: Step_Result", 1)
     try:
-        if ((len(step_data) != 1) or (1 < len(step_data[0]) >= 5)):
+        if ((1 < len(step_data) >= 5)):
             CommonUtil.ExecLog(sModuleInfo,"The information in the data-set(s) are incorrect. Please provide accurate data set(s) information.",3)
             result = "failed"
         else:
-            step_result = step_data[0][0][2]
+            step_result = step_data[0][2]
             if step_result == 'pass':
                 result = "passed"
             elif step_result == 'skip':
@@ -930,7 +931,7 @@ def Select_Deselect(step_data):
     sModuleInfo = inspect.stack()[0][3] + " : " + inspect.getmoduleinfo(__file__).name
     CommonUtil.ExecLog(sModuleInfo, "Function: Step_Result", 1)
     try:
-        if ((len(step_data) != 1) or (1 < len(step_data[0]) >= 5)):
+        if ((1 < len(step_data) >= 5)):
             CommonUtil.ExecLog(sModuleInfo, "The information in the data-set(s) are incorrect. Please provide accurate data set(s) information.", 3)
             return "failed"
         else:
@@ -942,7 +943,7 @@ def Select_Deselect(step_data):
             else:
                 try:
                     Element = Get_Element(returned_step_data_list[0], returned_step_data_list[1], returned_step_data_list[2], returned_step_data_list[3], returned_step_data_list[4])
-                    for each in step_data[0]:
+                    for each in step_data:
                         if each[1]=="action":
                             if each[0]=="deselect all":
                                 CommonUtil.ExecLog(sModuleInfo, "Deselect all elements", 1)
@@ -1017,12 +1018,12 @@ def Sequential_Actions(step_data):
                 elif row[1]=="action":
                     CommonUtil.ExecLog(sModuleInfo, "Checking the action to be performed in the action row", 1)
                     if row[0] == 'compare variable':
-                        result = Action_Handler([each],row[0])
+                        result = Action_Handler(each,row[0])
                     else:
                         new_data_set = Shared_Resources.Handle_Step_Data_Variables([each])
                         if new_data_set in failed_tag_list:
                             return 'failed'
-                        result = Action_Handler(new_data_set,row[0])
+                        result = Action_Handler(new_data_set[0],row[0])
 
                     if result == [] or result == "failed":
                         return "failed"
@@ -1043,7 +1044,7 @@ def Sequential_Actions(step_data):
                     logic_row.append(row)
                     if len(logic_row)==2:
                         #element_step_data = each[0:len(step_data[0])-2:1]
-                        element_step_data = Get_Element_Step_Data([each])
+                        element_step_data = Get_Element_Step_Data(each)
                         returned_step_data_list = Validate_Step_Data(element_step_data)
                         if ((returned_step_data_list == []) or (returned_step_data_list == "failed")):
                             return "failed"
@@ -2054,6 +2055,4 @@ def Get_Plain_Text_Element(element_parameter, element_value, parent=False):
 
 def get_driver():
     return selenium_driver
-
-
 
