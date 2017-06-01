@@ -510,6 +510,7 @@ def Validate_Step_Data(step_data):
         url = ""
         body = "{"
         headers = "{"
+        plain_body_text = False
         for each in step_data:
             if each[1].lower().strip() == "element parameter":
                 element_parameter = each[0]
@@ -518,10 +519,15 @@ def Validate_Step_Data(step_data):
                 elif element_parameter.lower().strip() == 'url':
                     url = each[2]
             elif each[1].lower().strip() == 'body':
-                if body == "{":
-                       body+="'%s' : '%s'"%(each[0], each[2])
+                if each[0].lower().strip() == 'plain text':
+                    body = each[2]
+                    plain_body_text = True
                 else:
-                       body += ", '%s' : '%s'" % (each[0], each[2])
+                    if body == "{":
+                           body+="'%s' : '%s'"%(each[0], each[2])
+                    else:
+                           body += ", '%s' : '%s'" % (each[0], each[2])
+
             elif each[1].lower().strip() == 'header' or each[1].lower().strip() == 'headers':
                 if headers == "{":
                    headers+="'%s' : '%s'"%(each[0], each[2])
@@ -529,7 +535,8 @@ def Validate_Step_Data(step_data):
                     headers += ", '%s' : '%s'" % (each[0], each[2])
 
         headers += "}"
-        body += "}"
+        if not plain_body_text:
+            body += "}"
 
 
         validated_data = (url, method, body, headers)
@@ -541,3 +548,4 @@ def Validate_Step_Data(step_data):
             exc_obj) + ";" + "File Name: " + fname + ";" + "Line: " + str(exc_tb.tb_lineno))
         CommonUtil.ExecLog(sModuleInfo, "Could not find the new page element requested.  Error: %s" % (Error_Detail), 3)
         return "failed"
+
