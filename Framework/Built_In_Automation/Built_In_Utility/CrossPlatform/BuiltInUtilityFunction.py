@@ -16,6 +16,7 @@ import string
 from Framework.Utilities import ConfigModule
 import filecmp
 import random
+import requests
 from Framework.Utilities import CommonUtil
 from sys import platform as _platform
 
@@ -694,6 +695,42 @@ def random_string_generator(pattern='nluc', size=10):
     except Exception:
         return CommonUtil.Exception_Handler(sys.exc_info())
 
+#Method to download file using url
+def download_file_using_url(file_url, location_of_file):
+    sModuleInfo = inspect.stack()[0][3] + " : " + inspect.getmoduleinfo(__file__).name
+    CommonUtil.ExecLog(sModuleInfo, "Function: Download File Using Url ", 1)
+    try:
+        ''' Setting stream parameter to True will cause the download of response headers only and the connection remains open.
+          This avoids reading the content all at once into memory for large responses.
+         A fixed chunk will be loaded each time while r.iter_content is iterated.'''
+        r = requests.get(file_url, stream=True)
+
+        list_the_parts_of_url = file_url.split("/") #get file name from the url
+
+        file_name = location_of_file + list_the_parts_of_url[len(list_the_parts_of_url) - 1] #complete file location
+
+        with open(file_name, "wb") as f:
+            for chunk in r.iter_content(chunk_size=1024):
+
+            # writing one chunk at a time to pdf file
+                if chunk:
+                    f.write(chunk)
+        # after performing the download operation we have to check that if the file with new name exists in correct location.
+        # if the file exists in correct position then return passed
+        # if the file doesn't exist in correct position then return failed
+        if os.path.isfile(file_name):
+            CommonUtil.ExecLog(sModuleInfo, "Returning result of download file using url function", 1)
+            CommonUtil.ExecLog(sModuleInfo, "file exists... downloading file using url function is done properly", 1)
+            return "passed"
+        else:
+            CommonUtil.ExecLog(sModuleInfo, "Returning result of download file using url function", 1)
+            CommonUtil.ExecLog(sModuleInfo, "file doesn't exist... downloading file using url function is not done properly", 3)
+            return "failed"
+        CommonUtil.ExecLog(sModuleInfo, "Download file using url %s is complete" % file_name, 1)
+
+    except Exception:
+        return CommonUtil.Exception_Handler(sys.exc_info())
+
 
 # not done properly...need more works
 '''def change_path_for_windows(src):
@@ -1075,31 +1112,6 @@ def Run_Sudo_Command(step_data):
                 return "failed"
             else:
                 CommonUtil.ExecLog(sModuleInfo, "sudo command is run properly '%s'" % (command), 1)
-                return "passed"
-        elif _platform == "win32":
-            # linux
-            CommonUtil.ExecLog(sModuleInfo, "windows", 1)
-            CommonUtil.ExecLog(sModuleInfo, "Could not run sudo command as it is windows", 3)
-            return "failed"
-    except Exception:
-        return CommonUtil.Exception_Handler(sys.exc_info())
-
-
-# Method to Clear Cache
-def Clear_Cache(step_data):
-    sModuleInfo = inspect.stack()[0][3] + " : " + inspect.getmoduleinfo(__file__).name
-    CommonUtil.ExecLog(sModuleInfo, "Function: Clear Cache", 1)
-    try:
-        if _platform == "linux" or _platform == "linux2":
-            # linux
-            CommonUtil.ExecLog(sModuleInfo, "linux", 1)
-            command = "adb shell pm clear " + str(step_data[0][0][2]).strip()  #get the package name
-            result = run_cmd(command) # run the command
-            if result in failed_tag_list:
-                CommonUtil.ExecLog(sModuleInfo, "Could not run command '%s' and could not clear cache" % (command), 3)
-                return "failed"
-            else:
-                CommonUtil.ExecLog(sModuleInfo, "Cache is cleared properly '%s'" % (command), 1)
                 return "passed"
         elif _platform == "win32":
             # linux
@@ -1737,6 +1749,69 @@ def Save_Text(step_data):
     except Exception:
         return CommonUtil.Exception_Handler(sys.exc_info())
 
+# Method to download file
+def Download_file(step_data):
+    sModuleInfo = inspect.stack()[0][3] + " : " + inspect.getmoduleinfo(__file__).name
+    CommonUtil.ExecLog(sModuleInfo, "Function: Download File", 1)
+    try:
+        if _platform == "linux" or _platform == "linux2":
+            # linux
+            CommonUtil.ExecLog(sModuleInfo, "linux", 1)
+            url =  str(step_data[0][0][2]).strip()  # url to be downloaded
+            file_location =  str(step_data[0][1][2]).strip()  # location where to download the file/folder
+            if file_location == "":
+                #if no location is given
+                file_location = get_home_folder()+"/Downloads/" # download to the Downloads folder
+                result = download_file_using_url(url,file_location)
+                if result in failed_tag_list:
+                    CommonUtil.ExecLog(sModuleInfo,"Download from url '%s' to location '%s' is not done" % (url, file_location), 3)
+                    return "failed"
+                else:
+                    CommonUtil.ExecLog(sModuleInfo,"Download from url '%s' to location '%s' is done" % (url, file_location), 1)
+                    return "passed"
+            else:
+                # if location to download is given
+                file_location = get_home_folder() + file_location +"/"
+                result = download_file_using_url(url, file_location)
+                if result in failed_tag_list:
+                    CommonUtil.ExecLog(sModuleInfo,"Download from url '%s' to location '%s' is not done" % (url, file_location), 3)
+                    return "failed"
+                else:
+                    CommonUtil.ExecLog(sModuleInfo,"Download from url '%s' to location '%s' is done" % (url, file_location), 1)
+                    return "passed"
+
+        elif _platform == "win32":
+            # linux
+            CommonUtil.ExecLog(sModuleInfo, "windows", 1)
+            url = str(step_data[0][0][2]).strip()  # url to be downloaded
+            file_location = str(step_data[0][1][2]).strip()  # location where to download the file/folder
+            # if no location is given
+            if file_location == "":
+                file_location = raw(get_home_folder() + "\Downloads"+"\\") # download to the Downloads folder
+                result = download_file_using_url(url, file_location)
+                if result in failed_tag_list:
+                    CommonUtil.ExecLog(sModuleInfo,"Download from url '%s' to location '%s' is not done" % (url, file_location), 3)
+                    return "failed"
+                else:
+                    CommonUtil.ExecLog(sModuleInfo,"Download from url '%s' to location '%s' is done" % (url, file_location), 1)
+                    return "passed"
+            else:
+                # if location to download is given
+                file_location = raw(get_home_folder() + file_location+ '\\')
+                result = download_file_using_url(url, file_location)
+                if result in failed_tag_list:
+                    CommonUtil.ExecLog(sModuleInfo,
+                                       "Download from url '%s' to location '%s' is not done" % (url, file_location), 3)
+                    return "failed"
+                else:
+                    CommonUtil.ExecLog(sModuleInfo,
+                                       "Download from url '%s' to location '%s' is done" % (url, file_location), 1)
+                    return "passed"
+
+                # return result
+    except Exception:
+        return CommonUtil.Exception_Handler(sys.exc_info())
+
 
 # Handles actions for the sequential logic, based on the input from the mentioned function
 def Action_Handler(action_step_data, action_name):
@@ -1830,8 +1905,8 @@ def Action_Handler(action_step_data, action_name):
             result = TakeScreenShot('image')  # take screen shot
             if result == "failed":
                 return "failed"
-        elif action_name == "clear cache":
-            result = Clear_Cache(action_step_data)  # clear the cache
+        elif action_name == "download":
+            result = Download_file(action_step_data)  # download file
             if result == "failed":
                 return "failed"
         elif action_name == "sleep":
@@ -1967,4 +2042,3 @@ def Sequential_Actions(step_data):
 
 
 '===================== ===x=== Sequential Action Section Ends ===x=== ======================'
-
