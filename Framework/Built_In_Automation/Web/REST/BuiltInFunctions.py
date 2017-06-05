@@ -385,23 +385,23 @@ def Sleep(step_data):
         return CommonUtil.Exception_Handler(sys.exc_info())
 
 
-# Method to return pass or fail for the step outcome
+#Method to return pass or fail for the step outcome
 def Step_Result(step_data):
     sModuleInfo = inspect.stack()[0][3] + " : " + inspect.getmoduleinfo(__file__).name
     CommonUtil.ExecLog(sModuleInfo, "Function: Step_Result", 1)
     try:
-        if ((len(step_data) != 1) or (1 < len(step_data[0]) >= 5)):
+        if ((1 < len(step_data) >= 5)):
             CommonUtil.ExecLog(sModuleInfo,"The information in the data-set(s) are incorrect. Please provide accurate data set(s) information.",3)
             result = "failed"
         else:
-            step_result = step_data[0][0][2]
+            step_result = step_data[0][2]
             if step_result == 'pass':
                 result = "passed"
             elif step_result == 'skip':
                 result = 'skipped'
             elif step_result == 'fail':
                 result = "failed"
-        print result
+
         return result
     except Exception:
         return CommonUtil.Exception_Handler(sys.exc_info())
