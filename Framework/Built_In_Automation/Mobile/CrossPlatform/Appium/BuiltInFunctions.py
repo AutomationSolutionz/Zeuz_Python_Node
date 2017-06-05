@@ -193,30 +193,35 @@ def launch_application(data_set):
         for row in data_set: # Find required data
             if row[0] == 'package' and row[1] == 'element parameter':
                 package_name,activity_name = get_program_names(row[2])
-                activity_name = package_name+activity_name
                 package_only = True
             if not package_only:
                 if row[0] == 'launch' and row[1] == 'action':
                     package_name = row[2]
                 elif row[0] == 'app_activity' and row[1] == 'element parameter':
                     activity_name = row[2]
-        if package_name == '' or activity_name == '':
-            CommonUtil.ExecLog(sModuleInfo,"Could not find package or activity name", 3)
+        
+        if package_name == '':
+            CommonUtil.ExecLog(sModuleInfo,"Could not find package name", 3)
+            return 'failed'
+        elif package_only == False and activity_name == '':
+            CommonUtil.ExecLog(sModuleInfo,"Could not find activity name", 3)
             return 'failed'
     except Exception:
         errMsg = "Unable to parse data set"
         return CommonUtil.Exception_Handler(sys.exc_info(),None,errMsg)
 
+    # Launch application
     try:
         if driver == None: # Only create a new appium instance if we haven't already (may be done by install_and_start_driver())
             result = start_appium_driver(package_name, activity_name)
             if result == 'failed':
                 return 'failed'
         
+        CommonUtil.ExecLog(sModuleInfo,"Launching application.",1)
         driver.launch_app() # Launch program configured in the Appium capabilities
-        CommonUtil.ExecLog(sModuleInfo,"Launched the app successfully.",1)
+        CommonUtil.ExecLog(sModuleInfo,"Launched the application successfully.",1)
         return "passed"
-    except Exception, e:
+    except Exception:
         return CommonUtil.Exception_Handler(sys.exc_info())
 
 def start_appium_driver(package_name = '', activity_name = '', filename = ''):
@@ -261,7 +266,7 @@ def start_appium_driver(package_name = '', activity_name = '', filename = ''):
             driver = webdriver.Remote('http://localhost:4723/wd/hub', desired_caps) # Create instance
             if driver: # Make sure we get the instance
                 Shared_Resources.Set_Shared_Variables('appium_driver', driver) # Save driver instance to make available to other modules
-                CommonUtil.ExecLog(sModuleInfo,"Launched the app successfully.",1)
+                CommonUtil.ExecLog(sModuleInfo,"Appium driver created successfully.",1)
                 return "passed"
             else: # Error during setup, reset
                 driver = None

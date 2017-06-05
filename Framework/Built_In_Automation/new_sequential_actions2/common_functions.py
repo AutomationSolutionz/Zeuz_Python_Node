@@ -50,31 +50,3 @@ def verify_step_data(step_data):
         return CommonUtil.Exception_Handler(sys.exc_info())
 
 
-def step_result(data_set):
-    ''' Process what the user specified as the outcome with step result '''
-    
-    sModuleInfo = inspect.stack()[0][3] + " : " + inspect.getmoduleinfo(__file__).name
-    CommonUtil.ExecLog(sModuleInfo, "Verifying step data", 1)
-    
-    # Parse data set
-    try:
-        action_value = ''
-        for row in data_set: # Find required data
-            if row[0] == 'step result':
-                action_value = row[2]
-        if action_value == '':
-            CommonUtil.ExecLog(sModuleInfo,"Could not find step result", 3)
-            return 'failed'
-    except Exception:
-        errMsg = "Unable to parse data set"
-        return CommonUtil.Exception_Handler(sys.exc_info(),None,errMsg)
-
-    if action_value in failed_tag_list: # Convert user specified pass/fail into standard result
-        result = 'failed'
-    elif action_value in passed_tag_list:
-        result = 'passed'
-    elif action_value in skipped_tag_list:
-        result = 'skipped'
-    return result
-
-

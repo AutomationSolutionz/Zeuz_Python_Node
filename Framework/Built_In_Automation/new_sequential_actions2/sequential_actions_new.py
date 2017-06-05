@@ -7,7 +7,6 @@
 '''
 -Create a list of accepted Fields for element parameter, or all accepted fields for action_support, then verify before doing anything
 --After that, can move the if action_support, and the ELSE statement out of sequential_actions(), so the verification of data is done in one place
--Teardown on error: Find each used module (if !=''), AND an Error or fail ocurred, execute their teardown
 -Conditional action sections for rest and appium need to be merged somehow
 '''
 ### TODO ###
@@ -98,8 +97,7 @@ actions = { # Numbers are arbitrary, and are not used anywhere
     174: {'module': 'utility', 'name': 'download', 'function': 'Download_file'},
     175: {'module': 'utility', 'name': 'sleep', 'function': 'Sleep'},
     176: {'module': 'utility', 'name': 'step result', 'function': 'Step_Result'},
-    177: {'module': 'utility', 'name': 'log', 'function': 'Add_Log'}
-
+    177: {'module': 'utility', 'name': 'log', 'function': 'Add_Log'},
 }
 
 # List of support for the actions
@@ -149,11 +147,20 @@ def load_sa_modules(module): # Load module "AS" must match module name we get fr
     return 'passed'
 
 
-def Sequential_Actions(step_data, dependency = '', file_attachment = ''):
+def Sequential_Actions(step_data, _dependency = {}, _run_time_params = '', _file_attachment = '', _temp_q = ''):
     ''' Main Sequential Actions function - Performs logical decisions based on user input '''
     
     sModuleInfo = inspect.stack()[0][3] + " : " + inspect.getmoduleinfo(__file__).name
     CommonUtil.ExecLog(sModuleInfo, "Starting Sequential Actions", 1)
+    
+    # Set dependency, file_attachemnt as global variables
+    global dependency, file_attachment
+    if _dependency != {}:
+        dependency = _dependency
+        sr.Set_Shared_Variables('dependency', _dependency)
+    if _file_attachment != '':
+        file_attachment = _file_attachment
+        sr.Set_Shared_Variables('file_attachment', _file_attachment)
     
     # Prepare step data for processing
     if common.verify_step_data(step_data) in common.failed_tag_list: # Verify step data is in correct format
@@ -405,7 +412,7 @@ def Action_Handler(_data_set, action_row):
     # Get module and function for this action
     module = ''
     function = ''
-    if action_name != 'step result': # Step result is handle here becaue it's common to all functions
+    if action_name != 'step result': # Step result is handle here becaue it's common to all functions - we use this line because we don't want to process it as a module
         module, function = get_module_and_function(action_name, action_subfield) # New, get the module to execute
         CommonUtil.ExecLog(sModuleInfo, "Function identified as function: %s in module: %s" % (function, module), 1)
     
@@ -434,6 +441,8 @@ def Action_Handler(_data_set, action_row):
         if action_name == "step result": # Result from step data the user wants to specify (passed/failed)
             if action_value in common.failed_tag_list: # Convert user specified pass/fail into standard result
                 return 'failed'
+            elif action_value in common.skipped_tag_list:
+                return 'skipped'
             elif action_value in common.passed_tag_list:
                 return 'passed'
             else:
@@ -491,11 +500,6 @@ def shared_variable_to_value(data_set):
                 if row[i] != False: # !!!! Probbly not needed
                     while "%|" in data_row[i] and "|%" in data_row[i]: # If string contains these characters, it's a shared variable
                         CommonUtil.ExecLog(sModuleInfo, "Shared Variable: %s" % row[i], 1)
-                        #left_index = data_row[i].index('%|') # Get index of left marker
-                        #right_index = data_row[i].index('|%') # Get index of right marker
-                        #var = data_row[i][left_index:right_index + 2] # Copy entire shared variable
-                        #var_clean = var[2:len(var)-2] # Remove markers
-                        #var_str =  # Convert variable name to it's value
                         data_row[i] = sr.get_previous_response_variables_in_strings(data_row[i])# replace just the variable name with it's value (has to be in string format)
                         if data_row[i] == 'failed': #!!!this won't work if there's extra strings around the shared variable 
                             CommonUtil.ExecLog(sModuleInfo, "Invalid shared variable", 3)
