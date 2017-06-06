@@ -187,6 +187,7 @@ def launch_application(data_set):
     
     # Parse data set
     try:
+        print data_set
         package_name = '' # Name of application package
         activity_name = '' # Name of application activity
         package_only = False
@@ -197,7 +198,7 @@ def launch_application(data_set):
             if not package_only:
                 if row[0] == 'launch' and row[1] == 'action':
                     package_name = row[2]
-                elif row[0] == 'app_activity' and row[1] == 'element parameter':
+                elif row[0] == 'app activity' and row[1] == 'element parameter':
                     activity_name = row[2]
         
         if package_name == '':
@@ -322,7 +323,7 @@ def install_application(data_set): #app_location, activity_name=''
         for row in data_set: # Find required data
             if row[0] == 'install' and row[1] == 'action':
                 app_location = row[2]
-            elif row[0] == 'app_activity' and row[1] == 'element parameter': # Optional parameter
+            elif row[0] == 'app activity' and row[1] == 'element parameter': # Optional parameter
                 activity_name = row[2]
         if app_location == '':
             CommonUtil.ExecLog(sModuleInfo,"Could not find file location", 3)
@@ -412,19 +413,19 @@ def Get_Single_Element(parameter, value, parent=False):
                 All_Elements = driver.find_element_by_name(value)
             elif parameter == "id":
                 All_Elements = driver.find_element_by_id(value)
-            elif parameter == "accessibility_id":
+            elif parameter == "accessibility id":
                 All_Elements = driver.find_element_by_accessibility_id(value)
-            elif parameter == "class_name":
+            elif parameter == "class name":
                 All_Elements = driver.find_element_by_class_name(value)
             elif parameter == "xpath":
                 #All_Elements = driver.find_element_by_xpath(value)
                 All_Elements == driver.find_element_by_xpath("//*[@%s='%s']" % (parameter, value))
-            elif parameter == "android_uiautomator_text":
+            elif parameter == "android uiautomator text":
                 All_Elements == driver.find_element_by_android_uiautomator('new UiSelector().text(' + value + ')')
-            elif parameter == "android_uiautomator_description":
+            elif parameter == "android uiautomator description":
                 All_Elements == driver.find_element_by_android_uiautomator(
                     'new UiSelector().description(' + value + ')')
-            elif parameter == "ios_uiautomation":
+            elif parameter == "ios uiautomation":
                 All_Elements == driver.find_element_by_ios_uiautomation('.elements()[0]')
             else:
                 All_Elements == driver.find_element_by_xpath("//*[@%s='%s']"%(parameter, value))
@@ -434,19 +435,19 @@ def Get_Single_Element(parameter, value, parent=False):
                 All_Elements = driver.find_element_by_xpath("//*[@text='%s']" % value)
             elif parameter == "id":
                 All_Elements = driver.find_element_by_id(value)
-            elif parameter == "accessibility_id":
+            elif parameter == "accessibility id":
                 All_Elements = driver.find_element_by_accessibility_id(value)
-            elif parameter == "class_name":
+            elif parameter == "class name":
                 All_Elements = driver.find_element_by_class_name(value)
             elif parameter == "xpath":
                 #All_Elements = driver.find_element_by_xpath(value)
                 All_Elements == driver.find_element_by_xpath("//*[@%s='%s']" % (parameter, value))
-            elif parameter == "android_uiautomator_text":
+            elif parameter == "android uiautomator text":
                 All_Elements == driver.find_element_by_android_uiautomator('new UiSelector().text(' + value + ')')
-            elif parameter == "android_uiautomator_description":
+            elif parameter == "android uiautomator description":
                 All_Elements == driver.find_element_by_android_uiautomator(
                     'new UiSelector().description(' + value + ')')
-            elif parameter == "ios_uiautomation":
+            elif parameter == "ios uiautomation":
                 All_Elements == driver.find_element_by_ios_uiautomation('.elements()[0]')
             else:
                 All_Elements == driver.find_element_by_xpath("//*[@%s='%s']"%(parameter,value))
@@ -469,30 +470,30 @@ def Get_All_Elements(parameter, value, parent=False):
                 All_Elements = driver.find_elements_by_name(value)
             elif parameter == "id":
                 All_Elements = driver.find_elements_by_id(value)
-            elif parameter == "accessibility_id":
+            elif parameter == "accessibility id":
                 All_Elements = driver.find_elements_by_accessibility_id(value)
-            elif parameter == "class_name":
+            elif parameter == "class name":
                 All_Elements = driver.find_elements_by_class_name(value)
             elif parameter == "xpath":
                 All_Elements = driver.find_elements_by_xpath(value)
-            elif parameter == "android_uiautomator_text":
+            elif parameter == "android uiautomator text":
                 All_Elements == driver.find_elements_by_android_uiautomator('new UiSelector().text('+value+')')
-            elif parameter == "android_uiautomator_description":
+            elif parameter == "android uiautomator description":
                 All_Elements == driver.find_elements_by_android_uiautomator('new UiSelector().description('+value+')')
         elif parent == True:
             if parameter == "name":
                 All_Elements = driver.find_elements_by_name(value)
             elif parameter == "id":
                 All_Elements = driver.find_elements_by_id(value)
-            elif parameter == "accessibility_id":
+            elif parameter == "accessibility id":
                 All_Elements = driver.find_elements_by_accessibility_id(value)
-            elif parameter == "class_name":
+            elif parameter == "class name":
                 All_Elements = driver.find_elements_by_class_name(value)
             elif parameter == "xpath":
                 All_Elements = driver.find_elements_by_xpath(value)
-            elif parameter == "android_uiautomator_text":
+            elif parameter == "android uiautomator text":
                 All_Elements == driver.find_elements_by_android_uiautomator('new UiSelector().text('+value+')')
-            elif parameter == "android_uiautomator_description":
+            elif parameter == "android uiautomator description":
                 All_Elements == driver.find_elements_by_android_uiautomator('new UiSelector().description('+value+')')
 
         return All_Elements
@@ -858,7 +859,7 @@ def Validate_Text(data_set):
             dimension = driver.get_window_size('current')
             
             for each in data_set[0]:
-                if each[0] == "current_page":
+                if each[0] == "current page":
                     try:
                         Element = Get_Element_Appium('tag', 'html')
                         break
@@ -1261,17 +1262,17 @@ def Get_All_Elements_Appium(parameter,value,parent=False):
                 All_Elements = WebDriverWait(driver, WebDriver_Wait).until(lambda driver: driver.find_elements_by_id(value))
             elif parameter == "name":
                 All_Elements = WebDriverWait(driver, WebDriver_Wait).until(lambda driver: driver.find_elements_by_name(value))
-            elif parameter == "class_name":
+            elif parameter == "class name":
                 All_Elements = WebDriverWait(driver, WebDriver_Wait).until(lambda driver: driver.find_elements_by_class_name(value))
             elif parameter == "xpath":
                 All_Elements = WebDriverWait(driver, WebDriver_Wait).until(lambda driver: driver.find_elements_by_xpath(value))
-            elif parameter == "current_screen": # Read full screen text
+            elif parameter == "current screen": # Read full screen text
                 All_Elements = WebDriverWait(driver, WebDriver_Wait).until(lambda driver: driver.find_elements_by_xpath("//*"))
-            elif parameter == "accessibility_id":
+            elif parameter == "accessibility id":
                 All_Elements = WebDriverWait(driver, WebDriver_Wait).until(lambda driver: driver.find_elements_by_accessibility_id(value))    
-            elif parameter == "android_uiautomator":
+            elif parameter == "android uiautomator":
                 All_Elements = WebDriverWait(driver, WebDriver_Wait).until(lambda driver: driver.find_elements_by_android_uiautomator(value))    
-            elif parameter == "ios_uiautomation":
+            elif parameter == "ios uiautomation":
                 All_Elements = WebDriverWait(driver, WebDriver_Wait).until(lambda driver: driver.find_elements_by_ios_uiautomation(value))    
             else:
                 All_Elements = WebDriverWait(driver, WebDriver_Wait).until(lambda driver: driver.find_elements_by_xpath("//*[@%s='%s']" %(parameter,value)))
@@ -1280,15 +1281,15 @@ def Get_All_Elements_Appium(parameter,value,parent=False):
                 All_Elements = WebDriverWait(parent, WebDriver_Wait).until(lambda driver: driver.find_elements_by_id(value))
             elif parameter == "name":
                 All_Elements = WebDriverWait(parent, WebDriver_Wait).until(lambda driver: driver.find_elements_by_name(value))
-            elif parameter == "class_name":
+            elif parameter == "class name":
                 All_Elements = WebDriverWait(parent, WebDriver_Wait).until(lambda driver: driver.find_elements_by_class_name(value))
             elif parameter == "xpath":
                 All_Elements = WebDriverWait(parent, WebDriver_Wait).until(lambda driver: driver.find_elements_by_xpath(value))
-            elif parameter == "accessibility_id":
+            elif parameter == "accessibility id":
                 All_Elements = WebDriverWait(parent, WebDriver_Wait).until(lambda driver: driver.find_elements_by_accessibility_id(value))    
-            elif parameter == "android_uiautomator":
+            elif parameter == "android uiautomator":
                 All_Elements = WebDriverWait(parent, WebDriver_Wait).until(lambda driver: driver.find_elements_by_android_uiautomator(value))    
-            elif parameter == "ios_uiautomation":
+            elif parameter == "ios uiautomation":
                 All_Elements = WebDriverWait(parent, WebDriver_Wait).until(lambda driver: driver.find_elements_by_ios_uiautomation(value))    
             else:
                 All_Elements = WebDriverWait(parent, WebDriver_Wait).until(lambda driver: driver.find_elements_by_xpath("//*[@%s='%s']" %(parameter,value)))    
@@ -1331,6 +1332,10 @@ def Sequential_Actions_Appium(step_data):
     if verify_step_data(step_data) in failed_tag_list:
         CommonUtil.ExecLog(sModuleInfo, "The information in the data-set(s) are incorrect. Please provide accurate data set(s) information.", 3)
         return "failed"
+    
+    # Just used during switch over to new sequential actions for anything still using this function
+    from Framework.Built_In_Automation.new_sequential_actions2 import common_functions as common
+    step_data = common.sanitize(step_data) # Sanitize Field and Sub-Field
 
     try:            
         for data_set in step_data: # For each data set within step data
@@ -1901,7 +1906,7 @@ def Validate_Text_Appium(data_set):
             Elements = []
             for each in data_set[0]:
                 # Get all elements from current screen based on step_data
-                if each[0] == "current_page":
+                if each[0] == "current page":
                     try:
                         Element = Get_Element_Appium('tag', 'html')
                         break
@@ -1910,7 +1915,7 @@ def Validate_Text_Appium(data_set):
                         return CommonUtil.Exception_Handler(sys.exc_info(),None,errMsg)
                     
                 # Get all elements from current screen based on step_data
-                elif each[0] == "current_screen":
+                elif each[0] == "current screen":
                     try:
                         Elements = Get_Element_Appium(each[0], '')
                         break
