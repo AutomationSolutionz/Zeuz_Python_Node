@@ -291,7 +291,10 @@ def handle_rest_call(data, fields_to_be_saved, save_into_list = False, list_name
         method = data[1]
         body = data[2]
         headers = data[3]
-        body = get_value_as_list(body)
+        temp = get_value_as_list(body)
+        if temp not in failed_tag_list:
+            body = temp
+
         headers = get_value_as_list(headers)
 
         CommonUtil.ExecLog(sModuleInfo,"Calling %s method"%method,1)
