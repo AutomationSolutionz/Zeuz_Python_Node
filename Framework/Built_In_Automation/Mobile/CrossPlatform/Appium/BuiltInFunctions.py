@@ -187,14 +187,17 @@ def launch_application(data_set):
     
     # Parse data set
     try:
-        print data_set
         package_name = '' # Name of application package
         activity_name = '' # Name of application activity
         package_only = False
         for row in data_set: # Find required data
             if row[0] == 'package' and row[1] == 'element parameter':
-                package_name,activity_name = get_program_names(row[2])
+                if dependency['Mobile'].lower() == 'android':
+                    package_name, activity_name = get_program_names(row[2]) # Android only to match a partial package name if provided by the user
+                else:
+                    package_name = row[2] # IOS package name
                 package_only = True
+                    
             if not package_only:
                 if row[0] == 'launch' and row[1] == 'action':
                     package_name = row[2]
@@ -204,7 +207,7 @@ def launch_application(data_set):
         if package_name == '':
             CommonUtil.ExecLog(sModuleInfo,"Could not find package name", 3)
             return 'failed'
-        elif dependency['Mobile'].lower == 'android' and activity_name == '':
+        elif dependency['Mobile'].lower() == 'android' and activity_name == '':
             CommonUtil.ExecLog(sModuleInfo,"Could not find activity name", 3)
             return 'failed'
     except Exception:
@@ -218,7 +221,7 @@ def launch_application(data_set):
             if result == 'failed':
                 return 'failed'
         
-        CommonUtil.ExecLog(sModuleInfo,"Launching application.",1)
+        CommonUtil.ExecLog(sModuleInfo,"Sending driver call.",1)
         driver.launch_app() # Launch program configured in the Appium capabilities
         CommonUtil.ExecLog(sModuleInfo,"Launched the application successfully.",1)
         return "passed"
@@ -239,6 +242,7 @@ def start_appium_driver(package_name = '', activity_name = '', filename = ''):
             desired_caps['platformName'] = dependency['Mobile'] # Set platform name
             desired_caps['autoLaunch'] = 'false' # Do not launch application
             desired_caps['fullReset'] = 'false' # Do not clear application cache when complete
+            desired_caps['sendKeyStrategy'] = 'setValue' #!!! Needed for send_keys?
             
             if dependency['Mobile'].lower() == 'android':
                 CommonUtil.ExecLog(sModuleInfo,"Setting up with Android",1)
@@ -250,15 +254,14 @@ def start_appium_driver(package_name = '', activity_name = '', filename = ''):
                     desired_caps['appActivity'] = activity_name.strip()
                 if filename and package_name == '': # User must specify package or file, not both. Specifying filename instructs Appium to install
                     desired_caps['app'] = PATH(filename).strip()
-            elif dependency['Mobile'].lower == 'ios':
+            elif dependency['Mobile'].lower() == 'ios':
                 CommonUtil.ExecLog(sModuleInfo,"Setting up with IOS",1)
                 desired_caps['platformVersion'] = '10.3' # Read version #!!! Temporarily hard coded
                 desired_caps['deviceName'] = 'iPhone' # Read model (only needs to be unique if using more than one)
                 desired_caps['bundleId'] = package_name
                 desired_caps['udid'] = 'auto' # Device unique identifier - use auto if using only one phone
-                return 'failed'
             else:
-                CommonUtil.ExecLog(sModuleInfo, "Invalid dependency: " + dependency, 3)
+                CommonUtil.ExecLog(sModuleInfo, "Invalid dependency: %s" % str(dependency), 3)
                 return 'failed'
             CommonUtil.ExecLog(sModuleInfo,"Capabilities: %s" % str(desired_caps),1)
             
@@ -1850,18 +1853,22 @@ def Android_Keystroke_Key_Mapping(keystroke):
 def iOS_Keystroke_Key_Mapping(keystroke):
     sModuleInfo = inspect.stack()[0][3] + " : " + inspect.getmoduleinfo(__file__).name
     CommonUtil.ExecLog(sModuleInfo, "Function: iOS_Keystroke_Key_Mapping", 1)
+    
+    CommonUtil.ExecLog(sModuleInfo, "IOS key events not yet supported" % keystroke, 3)
+    return 'failed'
+
     try:
-        if keystroke == "RETURN":
+        if keystroke == "return" or keystroke == 'enter':
             driver.keyevent(13)
-        #elif keystroke == "GO BACK":
-        #    driver.back()
-        elif keystroke == "SPACE":
+        elif keystroke == "go back" or keystroke == "back":
+            driver.back()
+        elif keystroke == "space":
             driver.keyevent(32)
-        elif keystroke == "BACKSPACE":
+        elif keystroke == "backspace":
             driver.keyevent(8)
-        elif keystroke == "CALL":
+        elif keystroke == "call":
             driver.keyevent(5)            
-        elif keystroke == "END CALL":
+        elif keystroke == "end call":
             driver.keyevent(6)
                                      
     except Exception:
@@ -1886,9 +1893,9 @@ def Keystroke_Appium(data_set):
 
     try:
         # Execute the correct key stroke handler for the dependency
-        if dependency['Mobile'] == 'Android':
+        if dependency['Mobile'].lower() == 'android':
             result = Android_Keystroke_Key_Mapping(keystroke_value)
-        elif dependency['Mobile'] == 'iOS':
+        elif dependency['Mobile'].lower() == 'ios':
             result = iOS_Keystroke_Key_Mapping(keystroke_value)
         else:
             result = 'failed'
