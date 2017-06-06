@@ -21,6 +21,7 @@ def sanitize(step_data):
         for row in data_set: # For each row of the data set
             new_row = list(row) # Copy tuple of row as list, so we can change it
             for i in range(0, 2): # For first 2 fields (Field, Sub-Field)
+                new_row[i] = new_row[i].replace('~', '=')  # Tilde to equal sign
                 new_row[i] = new_row[i].replace('  ', ' ') # Double space to single space
                 new_row[i] = new_row[i].replace('_', ' ') # Replace underscore with single space
                 new_row[i] = new_row[i].strip() # Remove leading and trailing whitespace
