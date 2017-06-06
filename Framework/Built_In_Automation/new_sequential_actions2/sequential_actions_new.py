@@ -41,6 +41,7 @@ actions = { # Numbers are arbitrary, and are not used anywhere
     118: {'module': 'appium', 'name': 'teardown', 'function': 'teardown_appium'},
     119: {'module': 'appium', 'name': 'keypress', 'function': 'Keystroke_Appium'},
     120: {'module': 'appium', 'name': 'tap location', 'function': 'tap_location'},
+    200: {'module': 'appium', 'name': 'reset', 'function': 'reset_application'},
     121: {'module': 'rest', 'name': 'save response', 'function': 'Get_Response'},
     122: {'module': 'rest', 'name': 'compare variable', 'function': 'Compare_Variables'},
     123: {'module': 'rest', 'name': 'compare list', 'function': 'Compare_Lists'},

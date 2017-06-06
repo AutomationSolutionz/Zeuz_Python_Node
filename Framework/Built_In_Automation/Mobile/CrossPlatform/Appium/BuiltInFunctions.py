@@ -296,7 +296,9 @@ def teardown_appium(data_set):
     except Exception:
         return CommonUtil.Exception_Handler(sys.exc_info())
 
-def close_application():
+def close_application(data_set):
+    ''' Exit the application '''
+    
     sModuleInfo = inspect.stack()[0][3] + " : " + inspect.getmoduleinfo(__file__).name
     try:
         CommonUtil.ExecLog(sModuleInfo,"Trying to close the app",1)
@@ -304,7 +306,21 @@ def close_application():
         CommonUtil.ExecLog(sModuleInfo,"Closed the app successfully",1)
         return "passed"
     except Exception:
-        errMsg = "Unable to close the driver."
+        errMsg = "Unable to close the application."
+        return CommonUtil.Exception_Handler(sys.exc_info(),None,errMsg)
+    
+    
+def reset_application(data_set):
+    ''' Resets / clears the application cache '''
+    
+    sModuleInfo = inspect.stack()[0][3] + " : " + inspect.getmoduleinfo(__file__).name
+    try:
+        CommonUtil.ExecLog(sModuleInfo,"Trying to reset the app",1)
+        driver.reset() # Reset / clear application cache
+        CommonUtil.ExecLog(sModuleInfo,"Reset the app successfully",1)
+        return "passed"
+    except Exception:
+        errMsg = "Unable to Reset the application."
         return CommonUtil.Exception_Handler(sys.exc_info(),None,errMsg)
     
     
@@ -1481,7 +1497,7 @@ def Action_Handler_Appium(_data_set, action_name):
         elif action_name == "swipe": # Swipe screen
             result = swipe_handler(data_set)
         elif action_name == "close": # Close foreground application
-            result = close_application()
+            result = close_application(data_set)
         elif action_name == "uninstall": # Uninstall application
             result = uninstall_application(data_set)
         elif action_name == 'teardown': # Cleanup Appium instance
