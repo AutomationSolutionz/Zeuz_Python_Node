@@ -237,6 +237,7 @@ def start_appium_driver(package_name = '', activity_name = '', filename = ''):
             desired_caps = {}
             desired_caps['platformName'] = dependency['Mobile'] # Set platform name
             desired_caps['autoLaunch'] = 'false' # Do not launch application
+            desired_caps['fullReset'] = 'false' # Do not clear application cache when complete
             
             if dependency['Mobile'] == 'Android':
                 CommonUtil.ExecLog(sModuleInfo,"Setting up with Android",1)
@@ -279,7 +280,7 @@ def start_appium_driver(package_name = '', activity_name = '', filename = ''):
         return CommonUtil.Exception_Handler(sys.exc_info())
     
     
-def teardown_appium():
+def teardown_appium(data_set):
     ''' Teardown of appium instance '''
     
     sModuleInfo = inspect.stack()[0][3] + " : " + inspect.getmoduleinfo(__file__).name
@@ -1479,7 +1480,7 @@ def Action_Handler_Appium(_data_set, action_name):
         elif action_name == "uninstall": # Uninstall application
             result = uninstall_application(data_set)
         elif action_name == 'teardown': # Cleanup Appium instance
-            result = teardown_appium()
+            result = teardown_appium(data_set)
         elif action_name == 'keypress': # Press hardware, software or virtual key
             result = Keystroke_Appium(data_set) # To be replaced with handler dependent on android/ios
         elif action_name == "tap location":
