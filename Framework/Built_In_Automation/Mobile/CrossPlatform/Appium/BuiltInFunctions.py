@@ -204,7 +204,7 @@ def launch_application(data_set):
         if package_name == '':
             CommonUtil.ExecLog(sModuleInfo,"Could not find package name", 3)
             return 'failed'
-        elif package_only == False and activity_name == '':
+        elif dependency['Mobile'].lower == 'android' and activity_name == '':
             CommonUtil.ExecLog(sModuleInfo,"Could not find activity name", 3)
             return 'failed'
     except Exception:
@@ -240,7 +240,7 @@ def start_appium_driver(package_name = '', activity_name = '', filename = ''):
             desired_caps['autoLaunch'] = 'false' # Do not launch application
             desired_caps['fullReset'] = 'false' # Do not clear application cache when complete
             
-            if dependency['Mobile'] == 'Android':
+            if dependency['Mobile'].lower() == 'android':
                 CommonUtil.ExecLog(sModuleInfo,"Setting up with Android",1)
                 desired_caps['platformVersion'] = adbOptions.get_android_version().strip()
                 desired_caps['deviceName'] = adbOptions.get_device_model().strip()
@@ -250,16 +250,15 @@ def start_appium_driver(package_name = '', activity_name = '', filename = ''):
                     desired_caps['appActivity'] = activity_name.strip()
                 if filename and package_name == '': # User must specify package or file, not both. Specifying filename instructs Appium to install
                     desired_caps['app'] = PATH(filename).strip()
-            elif dependency['Mobile'] == 'IOS':
+            elif dependency['Mobile'].lower == 'ios':
                 CommonUtil.ExecLog(sModuleInfo,"Setting up with IOS",1)
-                desired_caps['platformVersion'] = '' # Read version
-                desired_caps['deviceName'] = '' # Read model
+                desired_caps['platformVersion'] = '10.3' # Read version #!!! Temporarily hard coded
+                desired_caps['deviceName'] = 'iPhone' # Read model (only needs to be unique if using more than one)
                 desired_caps['bundleId'] = package_name
-                desired_caps['udid'] = '' # Read UDID
-                CommonUtil.ExecLog(sModuleInfo, "IOS not yet supported", 3)
+                desired_caps['udid'] = 'auto' # Device unique identifier - use auto if using only one phone
                 return 'failed'
             else:
-                CommonUtil.ExecLog(sModuleInfo, "Invalid dependency: " + dependency['Mobile'], 3)
+                CommonUtil.ExecLog(sModuleInfo, "Invalid dependency: " + dependency, 3)
                 return 'failed'
             CommonUtil.ExecLog(sModuleInfo,"Capabilities: %s" % str(desired_caps),1)
             
@@ -277,7 +276,7 @@ def start_appium_driver(package_name = '', activity_name = '', filename = ''):
         else: # Driver is already setup, don't do anything
             CommonUtil.ExecLog(sModuleInfo,"Driver already configured, not re-doing",1)
             return 'passed'
-    except Exception, e:
+    except Exception:
         return CommonUtil.Exception_Handler(sys.exc_info())
     
     
