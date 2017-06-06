@@ -61,11 +61,21 @@ def CreateFolder(folderPath, forced=True):
             if forced == False:
                 # print "folder already exists"
                 CommonUtil.ExecLog(sModuleInfo, "Folder already exists", 1)
-                return True
+                return "passed"
             DeleteFolder(folderPath)
         os.makedirs(folderPath)
-        CommonUtil.ExecLog(sModuleInfo, "Creating folder %s is complete" % folderPath, 1)
-        return True
+        CommonUtil.ExecLog(sModuleInfo, "Checking whether folder is created properly", 1)
+        # after performing os.makedirs() we have to check that if the folder with new name exists in correct location.
+        # if the folder exists in correct position then return passed
+        # if the folder doesn't exist in correct position then return failed
+        if os.path.isdir(folderPath):
+            CommonUtil.ExecLog(sModuleInfo, "Returning result of create folder function", 1)
+            CommonUtil.ExecLog(sModuleInfo, "folder exists... create folder function is done properly", 1)
+            return "passed"
+        else:
+            CommonUtil.ExecLog(sModuleInfo, "Returning result of create file function", 1)
+            CommonUtil.ExecLog(sModuleInfo, "file doesn't exist... create folder function is not done properly", 3)
+            return "failed"
     except Exception:
         return CommonUtil.Exception_Handler(sys.exc_info())
 
@@ -243,7 +253,7 @@ def UnZip(file_to_be_unzipped, location_where_to_unzip):
             return result
         else:
             CommonUtil.ExecLog(sModuleInfo, "can't unzip file as it doesn't exist", 3)
-            return False
+            return "failed"
     except Exception:
         return CommonUtil.Exception_Handler(sys.exc_info())
 
@@ -728,6 +738,59 @@ def download_file_using_url(file_url, location_of_file):
             CommonUtil.ExecLog(sModuleInfo, "file doesn't exist... downloading file using url function is not done properly", 3)
             return "failed"
         CommonUtil.ExecLog(sModuleInfo, "Download file using url %s is complete" % file_name, 1)
+
+    except Exception:
+        return CommonUtil.Exception_Handler(sys.exc_info())
+
+#Method to download and unzip file
+def download_and_unzip_file(file_url, location_of_file):
+    sModuleInfo = inspect.stack()[0][3] + " : " + inspect.getmoduleinfo(__file__).name
+    CommonUtil.ExecLog(sModuleInfo, "Function: Download and Unzip file", 1)
+    try:
+        ''' Setting stream parameter to True will cause the download of response headers only and the connection remains open.
+          This avoids reading the content all at once into memory for large responses.
+         A fixed chunk will be loaded each time while r.iter_content is iterated.'''
+        r = requests.get(file_url, stream=True)
+
+        list_the_parts_of_url = file_url.split("/") #get file name from the url
+
+        file_name = location_of_file + list_the_parts_of_url[len(list_the_parts_of_url) - 1] #complete file location
+
+        with open(file_name, "wb") as f:
+            for chunk in r.iter_content(chunk_size=1024):
+
+            # writing one chunk at a time to pdf file
+                if chunk:
+                    f.write(chunk)
+        # after performing the download operation we have to check that if the file with new name exists in correct location.
+        # if the file exists in correct position then return passed
+        # if the file doesn't exist in correct position then return failed
+        if os.path.isfile(file_name):
+            CommonUtil.ExecLog(sModuleInfo, "Returning result of download file using url function", 1)
+            CommonUtil.ExecLog(sModuleInfo, "file exists... downloading file using url function is done properly", 1)
+        else:
+            CommonUtil.ExecLog(sModuleInfo, "Returning result of download file using url function", 1)
+            CommonUtil.ExecLog(sModuleInfo, "file doesn't exist... downloading file using url function is not done properly", 3)
+            return "failed"
+
+        unzip_location = location_of_file + "latest_directory"
+        CommonUtil.ExecLog(sModuleInfo, "Creating the directory '%s' " % unzip_location, 1)
+        result1 = CreateFolder(unzip_location)
+        if result1 in failed_tag_list:
+            CommonUtil.ExecLog(sModuleInfo, "Can't not create folder '%s' " % unzip_location, 3)
+            return "failed"
+        CommonUtil.ExecLog(sModuleInfo, "Folder '%s' is created " % unzip_location, 1)
+        CommonUtil.ExecLog(sModuleInfo, "Unzipping file '%s' to '%s'" % (file_name, unzip_location), 1)
+        result = UnZip(file_name,unzip_location)
+        if result in failed_tag_list:
+            CommonUtil.ExecLog(sModuleInfo, "Can't not unzip file '%s' to '%s'" % (file_name, unzip_location), 3)
+            return "failed"
+        CommonUtil.ExecLog(sModuleInfo, "Unzipping file '%s' to '%s' is complete" % (file_name, unzip_location), 1)
+        CommonUtil.ExecLog(sModuleInfo, "Saving directory location to shared resources" , 1)
+        Shared_Resources.Set_Shared_Variables("latest_directory", unzip_location)
+        Shared_Resources.Show_All_Shared_Variables()
+        return "passed"
+
 
     except Exception:
         return CommonUtil.Exception_Handler(sys.exc_info())
@@ -1813,6 +1876,68 @@ def Download_file(step_data):
     except Exception:
         return CommonUtil.Exception_Handler(sys.exc_info())
 
+# Method to download file and unzip
+def Download_File_and_Unzip(step_data):
+    sModuleInfo = inspect.stack()[0][3] + " : " + inspect.getmoduleinfo(__file__).name
+    CommonUtil.ExecLog(sModuleInfo, "Function: Download File and Unzip", 1)
+    try:
+        if _platform == "linux" or _platform == "linux2":
+            # linux
+            CommonUtil.ExecLog(sModuleInfo, "linux", 1)
+            url =  str(step_data[0][2]).strip()  # url to be downloaded
+            file_location =  str(step_data[1][2]).strip()  # location where to download the file/folder
+            if file_location == "":
+                #if no location is given
+                file_location = get_home_folder()+"/Downloads/" # download to the Downloads folder
+                result = download_and_unzip_file(url,file_location)
+                if result in failed_tag_list:
+                    CommonUtil.ExecLog(sModuleInfo,"Downloading from url '%s' to location '%s' and unzipping is not done" % (url, file_location), 3)
+                    return "failed"
+                else:
+                    CommonUtil.ExecLog(sModuleInfo,"Download from url '%s' to location '%s' and unzipping is done" % (url, file_location), 1)
+                    return "passed"
+            else:
+                # if location to download is given
+                file_location = get_home_folder() + file_location +"/"
+                result = download_and_unzip_file(url, file_location)
+                if result in failed_tag_list:
+                    CommonUtil.ExecLog(sModuleInfo,"Download from url '%s' to location '%s' and unzipping is not done" % (url, file_location), 3)
+                    return "failed"
+                else:
+                    CommonUtil.ExecLog(sModuleInfo,"Download from url '%s' to location '%s' and unzipping is done" % (url, file_location), 1)
+                    return "passed"
+
+        elif _platform == "win32":
+            # linux
+            CommonUtil.ExecLog(sModuleInfo, "windows", 1)
+            url = str(step_data[0][2]).strip()  # url to be downloaded
+            file_location = str(step_data[1][2]).strip()  # location where to download the file/folder
+            # if no location is given
+            if file_location == "":
+                file_location = raw(get_home_folder() + "\Downloads"+"\\") # download to the Downloads folder
+                result = download_and_unzip_file(url, file_location)
+                if result in failed_tag_list:
+                    CommonUtil.ExecLog(sModuleInfo,"Download from url '%s' to location '%s' and unzipping is not done" % (url, file_location), 3)
+                    return "failed"
+                else:
+                    CommonUtil.ExecLog(sModuleInfo,"Download from url '%s' to location '%s' and unzipping is done" % (url, file_location), 1)
+                    return "passed"
+            else:
+                # if location to download is given
+                file_location = raw(get_home_folder() + file_location+ '\\')
+                result = download_and_unzip_file(url, file_location)
+                if result in failed_tag_list:
+                    CommonUtil.ExecLog(sModuleInfo,
+                                       "Download from url '%s' to location '%s' and unzipping is not done" % (url, file_location), 3)
+                    return "failed"
+                else:
+                    CommonUtil.ExecLog(sModuleInfo,
+                                       "Download from url '%s' to location '%s' and unzipping is done" % (url, file_location), 1)
+                    return "passed"
+
+                # return result
+    except Exception:
+        return CommonUtil.Exception_Handler(sys.exc_info())
 
 #Method to return pass or fail for the step outcome
 def Step_Result(step_data):
@@ -1930,6 +2055,10 @@ def Action_Handler(action_step_data, action_name):
                 return "failed"
         elif action_name == "download":
             result = Download_file(action_step_data)  # download file
+            if result == "failed":
+                return "failed"
+        elif action_name == "download and unzip":
+            result = Download_File_and_Unzip(action_step_data)  # download file
             if result == "failed":
                 return "failed"
         elif action_name == "sleep":
@@ -2073,3 +2202,5 @@ def Sequential_Actions(step_data):
 
 
 '===================== ===x=== Sequential Action Section Ends ===x=== ======================'
+
+
