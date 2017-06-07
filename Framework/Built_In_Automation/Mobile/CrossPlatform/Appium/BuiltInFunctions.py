@@ -1351,10 +1351,6 @@ def Sequential_Actions_Appium(step_data):
         CommonUtil.ExecLog(sModuleInfo, "The information in the data-set(s) are incorrect. Please provide accurate data set(s) information.", 3)
         return "failed"
     
-    # Just used during switch over to new sequential actions for anything still using this function
-    from Framework.Built_In_Automation.new_sequential_actions2 import common_functions as common
-    step_data = common.sanitize(step_data) # Sanitize Field and Sub-Field
-
     try:            
         for data_set in step_data: # For each data set within step data
             logic_row=[] # Initialize conditional action list
@@ -1786,7 +1782,10 @@ def Enter_Text_Appium(data_set):
                     #text_value=step_data[0][len(step_data[0])-1][2]
                     Element.click() # Set focus to textbox
                     Element.clear() # Remove any text already existing
-                    Element.send_keys(text_value) # Enter the user specified text
+                    if dependency['Mobile'].lower() == 'ios':
+                        Element.set_value(text_value) # Work around for IOS issue in Appium v1.6.4 where send_keys() doesn't work
+                    else:
+                        Element.send_keys(text_value) # Enter the user specified text
                     driver.hide_keyboard() # Remove keyboard
                     CommonUtil.TakeScreenShot(sModuleInfo) # Capture screen
                     CommonUtil.ExecLog(sModuleInfo, "Successfully set the value of to text to: %s"%text_value, 1)

@@ -167,7 +167,7 @@ def Sequential_Actions(step_data, _dependency = {}, _run_time_params = '', _file
     if common.verify_step_data(step_data) in common.failed_tag_list: # Verify step data is in correct format
         CommonUtil.ExecLog(sModuleInfo, "The information in the data-set(s) are incorrect. Please provide accurate data set(s) information.", 3)
         return "failed"
-    step_data = common.sanitize(step_data) # Sanitize Field and Sub-Field
+    step_data = common.sanitize(step_data, column = 1) # Sanitize Sub-Field
     
     try:            
         for data_set in step_data: # For each data set within step data
