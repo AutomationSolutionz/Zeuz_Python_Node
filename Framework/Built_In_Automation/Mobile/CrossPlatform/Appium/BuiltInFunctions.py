@@ -1006,7 +1006,7 @@ def Compare_Variables(data_set):
         if ((element_step_data == []) or (element_step_data == "failed")):
             return "failed"
         else:
-            Shared_Resources.Compare_Variables([data_set])
+            return Shared_Resources.Compare_Variables([data_set])
     except Exception:
         return CommonUtil.Exception_Handler(sys.exc_info())
 
