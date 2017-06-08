@@ -81,7 +81,7 @@ actions = { # Numbers are arbitrary, and are not used anywhere
     157: {'module': 'utility', 'name': 'save text', 'function': 'Save_Text'},
     158: {'module': 'utility', 'name': 'copy', 'function': 'Copy_File_or_Folder'},
     159: {'module': 'utility', 'name': 'delete', 'function': 'Delete_File_or_Folder'},
-    160: {'module': 'utility', 'name': 'create', 'function': 'Create_File'},
+    160: {'module': 'utility', 'name': 'create', 'function': 'Create_File_or_Folder'},
     161: {'module': 'utility', 'name': 'find', 'function': 'Find_File'},
     162: {'module': 'utility', 'name': 'rename', 'function': 'Rename_File_or_Folder'},
     163: {'module': 'utility', 'name': 'move', 'function': 'Move_File_or_Folder'},
@@ -98,7 +98,10 @@ actions = { # Numbers are arbitrary, and are not used anywhere
     174: {'module': 'utility', 'name': 'download', 'function': 'Download_file'},
     175: {'module': 'utility', 'name': 'sleep', 'function': 'Sleep'},
     176: {'module': 'utility', 'name': 'step result', 'function': 'Step_Result'},
-    177: {'module': 'utility', 'name': 'log', 'function': 'Add_Log'},
+    177: {'module': 'utility', 'name': 'log 2', 'function': 'Add_Log'},
+    178: {'module': 'utility', 'name': 'log 3', 'function': 'Add_Log'},
+    179: {'module': 'utility', 'name': 'log 1', 'function': 'Add_Log'},
+    180: {'module': 'utility', 'name': 'download and unzip', 'function': 'Download_File_and_Unzip'}
 }
 
 # List of support for the actions
