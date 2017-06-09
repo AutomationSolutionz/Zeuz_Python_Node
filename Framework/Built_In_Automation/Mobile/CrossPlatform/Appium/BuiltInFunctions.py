@@ -762,12 +762,12 @@ def swipe_handler(data_set):
         # Check for direction and calculate accordingly
         if action_value == 'up':
             x1 = 50 * w / 100 # Middle horizontal
-            x2 = x1 # Midle horizontal
+            x2 = x1 # Middle horizontal
             y1 = 75 * h / 100 # 75% down 
             y2 = 1 # To top
         elif action_value == 'down':
             x1 = 50 * w / 100 # Middle horizontal
-            x2 = x1 # Midle horizontal
+            x2 = x1 # Middle horizontal
             y1 = 25 * h / 100 # 25% down 
             y2 = h - 1 # To bottom
         elif action_value == 'left':
@@ -851,10 +851,16 @@ def swipe_handler(data_set):
             stepsize *= -1 # Convert stepsize to negative, so range() works as expected
     
         # Perform swipe given computed dimensions above
-        for y in range(ystart, ystop, stepsize): # For each row, assuming stepsize, swipe and move to next row
-            result = Swipe(xstart, y, xstop, y) # Swipe screen - y must be the same for horizontal swipes
-            if result == 'failed':
-                return 'failed'
+        if dependency['Mobile'].lower() == 'ios': # In Appium v1.6.4, IOS doesn't swipe properly - always swipes at angles. We get around this by touching one spot, all over the screen. Slow, but works
+            for y in range(ystart, ystop, stepsize):
+                for x in range(xstart, xstop, stepsize):
+                    result = Swipe(x, y, x, y, 100) # Swipe screen - y must be the same for horizontal swipes
+        else: # This is the proper swiping technique. Use this after IOS is fixed
+            for y in range(ystart, ystop, stepsize): # For each row, assuming stepsize, swipe and move to next row
+                result = Swipe(xstart, y, xstop, y) # Swipe screen - y must be the same for horizontal swipes
+                if result == 'failed':
+                    return 'failed'
+
 
     # Invalid value
     else:

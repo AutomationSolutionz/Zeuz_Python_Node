@@ -97,3 +97,33 @@ def take_screenshot(UDID = ''):
     except Exception:
         return CommonUtil.Exception_Handler(sys.exc_info())
 
+def ios_reboot(UDID = ''):
+    ''' Reboots the device '''
+    
+    sModuleInfo = inspect.stack()[0][3] + " : " + inspect.getmoduleinfo(__file__).name
+    CommonUtil.ExecLog(sModuleInfo, "Started", 1)
+    try:
+        cmd = 'idevicediagnostics restart'
+        if UDID != '': cmd + ' -u' + UDID # User specified id, so append that to the command
+        output = run_program(cmd)
+        if output == None: return ''
+        output = output.split(' ')[3] # Get just the filename
+        return output
+    except Exception:
+        return CommonUtil.Exception_Handler(sys.exc_info())
+
+def ios_shutdown(UDID = ''):
+    ''' Turns off the device '''
+    
+    sModuleInfo = inspect.stack()[0][3] + " : " + inspect.getmoduleinfo(__file__).name
+    CommonUtil.ExecLog(sModuleInfo, "Started", 1)
+    try:
+        cmd = 'idevicediagnostics shutdown'
+        if UDID != '': cmd + ' -u' + UDID # User specified id, so append that to the command
+        output = run_program(cmd)
+        if output == None: return ''
+        output = output.split(' ')[3] # Get just the filename
+        return output
+    except Exception:
+        return CommonUtil.Exception_Handler(sys.exc_info())
+
