@@ -5,6 +5,7 @@
 
 import inspect, sys, time
 from Framework.Utilities import CommonUtil
+from Framework.Built_In_Automation.Shared_Resources import BuiltInFunctionSharedResources as sr
 
 # Allowed return strings, used to normalize pass/fail
 passed_tag_list=['Pass','pass','PASS','PASSED','Passed','passed','true','TRUE','True','1','Success','success','SUCCESS',True]
@@ -53,7 +54,7 @@ def sanitize(step_data, valid_chars = '', clean_whitespace_only = False, column 
 
                 new_row[i] = new_row[i].replace('  ', ' ') # Double space to single space
                 new_row[i] = new_row[i].strip() # Remove leading and trailing whitespace
-            new_data_set.append(new_row) # Append list as tuple to data set list
+            new_data_set.append(tuple(new_row)) # Append list as tuple to data set list
         new_step_data.append(new_data_set) # Append data set to step data
     return new_step_data # Step data is now clean and in the same format as it arrived in
 
@@ -77,4 +78,42 @@ def verify_step_data(step_data):
     except Exception:
         return CommonUtil.Exception_Handler(sys.exc_info())
 
+
+def adjust_element_parameters(step_data):
+    ''' Strip out element parameters that do not match the dependency '''
+
+    sModuleInfo = inspect.stack()[0][3] + " : " + inspect.getmoduleinfo(__file__).name
+    CommonUtil.ExecLog(sModuleInfo, "Adjusting element parameters", 1)
+    
+    # List of supported mobile platforms - must be lower case
+    platforms = ('android', 'ios')
+    
+    # Get saved dependency
+    if sr.Test_Shared_Variables('dependency') == False: # No dependency
+        CommonUtil.ExecLog(sModuleInfo, "No dependency set - functions may not work properly if step data contains platform names", 2)
+        return step_data # Return unmodified
+    dependency = sr.Get_Shared_Variables('dependency')
+    print dependency
+    
+    new_step_data = [] # Create empty list that will contain the data sets
+    for data_set in step_data: # For each data set within step data
+        new_data_set = [] # Create empty list that will have new data appended
+        for row in data_set: # For each row of the data set
+            new_row = list(row) # Copy tuple of row as list, so we can change it
+            
+            # Remove any element parameter that doesn't match the dependency
+            if dependency['Mobile'].lower() in new_row[1]: # If dependency matches this Sub-Field, then save it
+                new_row[1] = new_row[1].replace(dependency['Mobile'].lower(),'').replace('  ', ' ').strip() # Remove word and clean up spaces 
+                new_data_set.append(tuple(new_row)) # Append list as tuple to data set list
+            else: # This dependency doesn't match. Figure out if this is an element parameter we don't want, or any other row we do want
+                b = False
+                for p in platforms: # For each platform
+                    if p in new_row[1]: # If one of the platforms matches (we already found the one we want above, so this is for anything we don't want), then we don't want it 
+                        b = True
+                if b == False: # This row did not match unwanted platforms, so we keep it
+                    new_data_set.append(tuple(new_row)) # Append list as tuple to data set list
+            
+        new_step_data.append(new_data_set) # Append data set to step data
+
+    return new_step_data # Return cleaned step_data that contains only the element paramters we are interested in
 

@@ -24,8 +24,8 @@ actions = { # Numbers are arbitrary, and are not used anywhere
     101: {'module': 'appium', 'name': 'text', 'function': 'Enter_Text_Appium'},
     102: {'module': 'appium', 'name': 'wait', 'function': 'Wait_For_New_Element'},
     103: {'module': 'appium', 'name': 'tap', 'function': 'Tap_Appium'},
-    104: {'module': 'appium', 'name': 'validate full text', 'function': 'Validate_Text'},
-    105: {'module': 'appium', 'name': 'validate partial text', 'function': 'Validate_Text'},
+    104: {'module': 'appium', 'name': 'validate full text', 'function': 'Validate_Text_Appium'},
+    105: {'module': 'appium', 'name': 'validate partial text', 'function': 'Validate_Text_Appium'},
     106: {'module': 'appium', 'name': 'save text', 'function': 'Save_Text'},
     107: {'module': 'appium', 'name': 'compare variable', 'function': 'Compare_Variables'},
     108: {'module': 'appium', 'name': 'initialize list', 'function': 'Initialize_List'},
@@ -164,8 +164,8 @@ def Sequential_Actions(step_data, _dependency={}, _run_time_params = '', _file_a
     # Set dependency, file_attachemnt as global variables
     global dependency, file_attachment
     if _dependency != {}:
-        for key in _dependency:
-            sr.Set_Shared_Variables(str(key).lower(), _dependency[key])
+        dependency = _dependency # Save to global variable
+        sr.Set_Shared_Variables('dependency', _dependency) # Save in Shared Variables
     if _file_attachment != '':
         file_attachment = _file_attachment
         sr.Set_Shared_Variables('file_attachment', _file_attachment)
@@ -175,6 +175,7 @@ def Sequential_Actions(step_data, _dependency={}, _run_time_params = '', _file_a
         CommonUtil.ExecLog(sModuleInfo, "The information in the data-set(s) are incorrect. Please provide accurate data set(s) information.", 3)
         return "failed"
     step_data = common.sanitize(step_data, column = 1) # Sanitize Sub-Field
+    step_data = common.adjust_element_parameters(step_data) # Parse any mobile platform related fields
     
     try:            
         for data_set in step_data: # For each data set within step data

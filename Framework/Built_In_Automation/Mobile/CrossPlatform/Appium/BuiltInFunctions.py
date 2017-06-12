@@ -870,80 +870,6 @@ def swipe_handler(data_set):
     CommonUtil.ExecLog(sModuleInfo, "Swipe completed successfully", 1)    
     return 'passed'
 
-# Validating text from an element given information regarding the expected text
-def Validate_Text(data_set):
-    sModuleInfo = inspect.stack()[0][3] + " : " + inspect.getmoduleinfo(__file__).name
-    CommonUtil.ExecLog(sModuleInfo, "Function: Compare_Text_Data", 1)
-    try:
-        if ((len(data_set) != 1) or (1 < len(data_set[0]) >= 5)):
-            CommonUtil.ExecLog(sModuleInfo, "The information in the data-set(s) are incorrect. Please provide accurate data set(s) information.", 3)
-            return "failed"
-        else:
-            dimension = driver.get_window_size('current')
-            
-            for each in data_set[0]:
-                if each[0] == "current page":
-                    try:
-                        Element = Get_Element_Appium('tag', 'html')
-                        break
-                    except Exception:
-                        errMsg = "Could not get element from the current page."
-                        return CommonUtil.Exception_Handler(sys.exc_info(),None,errMsg)
-                else:
-                    element_step_data = Get_Element_Step_Data_Appium(data_set)
-                    returned_step_data_list = Validate_Step_Data(element_step_data)
-                    if ((returned_step_data_list == []) or (returned_step_data_list == "failed")):
-                        return "failed"
-                    else:
-                        try:
-                            Element = Get_Element_Appium(returned_step_data_list[0], returned_step_data_list[1], returned_step_data_list[2], returned_step_data_list[3], returned_step_data_list[4])
-                            break
-                        except Exception:
-                            errMsg = "Could not get element based on the information provided.",
-                            return CommonUtil.Exception_Handler(sys.exc_info(),None,errMsg)
- 
-            for each_step_data_item in data_set[0]:
-                if each_step_data_item[1]=="action":
-                    expected_text_data = each_step_data_item[2]
-                    validation_type = each_step_data_item[0]
-            #expected_text_data = step_data[0][len(step_data[0]) - 1][2]
-            list_of_element_text = Element.text.split('\n')
-            visible_list_of_element_text = []
-            for each_text_item in list_of_element_text:
-                if each_text_item != "":
-                    visible_list_of_element_text.append(each_text_item)
-            
-            #if step_data[0][len(step_data[0])-1][0] == "validate partial text":
-            if validation_type == "validate partial text":
-                actual_text_data = visible_list_of_element_text
-                CommonUtil.ExecLog(sModuleInfo, "Expected Text: " + expected_text_data, 1)
-                CommonUtil.ExecLog(sModuleInfo, "Actual Text: " + str(actual_text_data), 1)
-                for each_actual_text_data_item in actual_text_data:
-                    if expected_text_data in each_actual_text_data_item:
-                        CommonUtil.ExecLog(sModuleInfo, "The text has been validated by a partial match.", 1)
-                        return "passed"
-                CommonUtil.ExecLog(sModuleInfo, "Unable to validate using partial match.", 3)
-                return "failed"
-            #if step_data[0][len(step_data[0])-1][0] == "validate full text":
-            if validation_type == "validate full text":
-                actual_text_data = visible_list_of_element_text
-                CommonUtil.ExecLog(sModuleInfo, "Expected Text: " + expected_text_data, 1)
-                CommonUtil.ExecLog(sModuleInfo, "Actual Text: " + str(actual_text_data), 1)
-                if (expected_text_data in actual_text_data):
-                    CommonUtil.ExecLog(sModuleInfo, "The text has been validated by using complete match.", 1)
-                    return "passed"
-                else:
-                    CommonUtil.ExecLog(sModuleInfo, "Unable to validate using complete match.", 3)
-                    return "failed"
-            
-            else:
-                CommonUtil.ExecLog(sModuleInfo, "Incorrect validation type. Please check step data", 3)
-                return "failed"
-
-    except Exception:
-        errMsg = "Could not compare text as requested."
-        return CommonUtil.Exception_Handler(sys.exc_info(),None,errMsg)
-
 
 #Validating text from an element given information regarding the expected text
 def Save_Text(data_set):
@@ -1918,11 +1844,12 @@ def Keystroke_Appium(data_set):
         return CommonUtil.Exception_Handler(sys.exc_info(),None,errMsg)
 
 
-"""NEED TO BE CHANGED QUITE A BIT. CURRENT_PAGE WILL BE MODIFIED TO HAVE SOMETHING ELSE"""
 #Validating text from an element given information regarding the expected text
 def Validate_Text_Appium(data_set):
     sModuleInfo = inspect.stack()[0][3] + " : " + inspect.getmoduleinfo(__file__).name
     CommonUtil.ExecLog(sModuleInfo, "Function: Validate_Text", 1)
+    
+    data_set = [data_set]
     try:
         if ((len(data_set) != 1) or (1 < len(data_set[0]) >= 5)):
             CommonUtil.ExecLog(sModuleInfo, "The information in the data-set(s) are incorrect. Please provide accurate data set(s) information.",3)
