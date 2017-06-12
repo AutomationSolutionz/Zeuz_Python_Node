@@ -164,8 +164,8 @@ def Sequential_Actions(step_data, _dependency = {}, _run_time_params = '', _file
     # Set dependency, file_attachemnt as global variables
     global dependency, file_attachment
     if _dependency != {}:
-        dependency = _dependency
-        sr.Set_Shared_Variables('dependency', _dependency)
+        for key in _dependency:
+            sr.Set_Shared_Variables(key, _dependency[key])
     if _file_attachment != '':
         file_attachment = _file_attachment
         sr.Set_Shared_Variables('file_attachment', _file_attachment)

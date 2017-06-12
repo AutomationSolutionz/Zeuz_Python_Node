@@ -104,7 +104,7 @@ def Add_to_Cart(search_text):
             first_element.click()
             time.sleep(10)
             CommonUtil.TakeScreenShot(sModuleInfo)
-            CommonUtil.ExecLog(sModuleInfo, "Clicked on the first search result elemnt successfully", 1)
+            CommonUtil.ExecLog(sModuleInfo, "Clicked on the first search result element successfully", 1)
         else:
             CommonUtil.TakeScreenShot(sModuleInfo)
             CommonUtil.ExecLog(sModuleInfo, "Failed to find the first search result element", 3)
