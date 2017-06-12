@@ -1161,7 +1161,7 @@ def Get_User_Name(step_data):
             # linux
             CommonUtil.ExecLog(sModuleInfo, "windows", 1)
             CommonUtil.ExecLog(sModuleInfo, "Could not find user name as it is windows", 3)
-            return "passed"
+            return "failed"
     except Exception:
         return CommonUtil.Exception_Handler(sys.exc_info())
 
@@ -1183,7 +1183,7 @@ def Add_Log(step_data):
             # linux
             CommonUtil.ExecLog(sModuleInfo, "windows", 1)
             log_info = str(step_data[0][0]).strip() #get the log level info from the step data
-            list = log_info.split("_") # log level in step data is given as log_1/log_2/log_3 , so to get the level split it by "_"
+            list = log_info.split(" ") # log level in step data is given as log_1/log_2/log_3 , so to get the level split it by "_"
             Comment = str(step_data[0][2]).strip()   # get the comment
             LogLevel = int(list[1]) #get the level
             CommonUtil.ExecLog(sModuleInfo, "%s" % Comment, LogLevel)
@@ -1214,7 +1214,7 @@ def Calculate(step_data):
             CommonUtil.ExecLog(sModuleInfo, "windows", 1)
             statement = str(step_data[0][2]).strip()  # get the statement for math function
             # list the parts of statement by splitting it by "="
-            list = statement.split("~")
+            list = statement.split("=")
             direc = {}
             # eval() funtion is used to evaluate a string
             # eval()  does the auto calculation from a string.
@@ -1233,7 +1233,7 @@ def Run_Sudo_Command(step_data):
         if _platform == "linux" or _platform == "linux2":
             # linux
             CommonUtil.ExecLog(sModuleInfo, "linux", 1)
-            command = str(step_data[0][0]).strip()
+            command = str(step_data[0][2]).strip()
             result = run_cmd(command)
             if result in failed_tag_list:
                 CommonUtil.ExecLog(sModuleInfo, "Could not run sudo command '%s'" % (command), 3)
@@ -1257,7 +1257,7 @@ def Run_Command(step_data):
         if _platform == "win32":
             # linux
             CommonUtil.ExecLog(sModuleInfo, "windows", 1)
-            command = str(step_data[0][0]).strip()
+            command = str(step_data[0][2]).strip()
             result = run_win_cmd(command)
             if result in failed_tag_list:
                 CommonUtil.ExecLog(sModuleInfo, "Could not run sudo command '%s'" % (command), 3)
@@ -1265,6 +1265,11 @@ def Run_Command(step_data):
             else:
                 CommonUtil.ExecLog(sModuleInfo, "sudo command is run properly '%s'" % (command), 1)
                 return "passed"
+        elif _platform == "linux" or _platform == "linux2":
+            # linux
+            CommonUtil.ExecLog(sModuleInfo, "linux", 1)
+            CommonUtil.ExecLog(sModuleInfo, "Could not run command as it is linux", 3)
+            return "failed"
 
     except Exception:
         return CommonUtil.Exception_Handler(sys.exc_info())
@@ -1291,7 +1296,7 @@ def Get_Home_Directory(step_data):
             # linux
             CommonUtil.ExecLog(sModuleInfo, "windows", 1)
             CommonUtil.ExecLog(sModuleInfo, "Could not find home directory as it is windows", 3)
-            return "passed"
+            return "failed"
 
     except Exception:
         return CommonUtil.Exception_Handler(sys.exc_info())
@@ -1867,8 +1872,10 @@ def Save_Text(step_data):
     sModuleInfo = inspect.stack()[0][3] + " : " + inspect.getmoduleinfo(__file__).name
     CommonUtil.ExecLog(sModuleInfo, "Function: Save Text", 1)
     try:
-        result = Shared_Resources.Set_Shared_Variables(step_data[1][2],
-                                                       int(step_data[0][2]))  # setting the shared variables
+        if( step_data[0][1] == 'value'):
+            result = Shared_Resources.Set_Shared_Variables(step_data[0][2],int(step_data[1][2]))  # setting the shared variables
+        else:
+            result = Shared_Resources.Set_Shared_Variables(step_data[0][2],step_data[1][2])  # setting the shared variables
         if result in failed_tag_list:
             CommonUtil.ExecLog(sModuleInfo, "Value of Variable '%s' could not be saved!!!", 3)
             return "failed"
@@ -1927,7 +1934,7 @@ def Download_file(step_data):
                     return "passed"
             else:
                 # if location to download is given
-                file_location = raw(get_home_folder() + file_location+ '\\')
+                file_location = raw(file_location+ '\\')
                 result = download_file_using_url(url, file_location)
                 if result in failed_tag_list:
                     CommonUtil.ExecLog(sModuleInfo,
@@ -1990,7 +1997,7 @@ def Download_File_and_Unzip(step_data):
                     return "passed"
             else:
                 # if location to download is given
-                file_location = raw(get_home_folder() + file_location+ '\\')
+                file_location = raw(file_location+ '\\')
                 result = download_and_unzip_file(url, file_location)
                 if result in failed_tag_list:
                     CommonUtil.ExecLog(sModuleInfo,
@@ -2032,7 +2039,7 @@ def Action_Handler(action_step_data, action_name):
     sModuleInfo = inspect.stack()[0][3] + " : " + inspect.getmoduleinfo(__file__).name
     CommonUtil.ExecLog(sModuleInfo, "Function: Action_Handler", 1)
     try:
-        print action_name
+
         if action_name == "skip":
             # skip the sanitization
             return "passed"
@@ -2224,6 +2231,9 @@ def Sequential_Actions(step_data):
                     result = Action_Handler(new_data_set[0], row[0])
                     if result == [] or result == "failed":
                         return "failed"
+                    elif result in skipped_tag_list:
+                        return "skipped"
+
                 elif row[1] == "conditional action":
                     CommonUtil.ExecLog(sModuleInfo,"Checking the logical conditional action to be performed in the conditional action row", 1)
                     logic_decision = ""
@@ -2258,6 +2268,8 @@ def Sequential_Actions(step_data):
                                 cond_result = Sequential_Actions([step_data[data_set_index]])
                                 if cond_result == "failed":
                                     return "failed"
+                                elif cond_result == "skipped":
+                                    return "skipped"
                             return "passed"
 
                 else:

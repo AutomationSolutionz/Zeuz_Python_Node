@@ -101,7 +101,8 @@ actions = { # Numbers are arbitrary, and are not used anywhere
     177: {'module': 'utility', 'name': 'log 2', 'function': 'Add_Log'},
     178: {'module': 'utility', 'name': 'log 3', 'function': 'Add_Log'},
     179: {'module': 'utility', 'name': 'log 1', 'function': 'Add_Log'},
-    180: {'module': 'utility', 'name': 'download and unzip', 'function': 'Download_File_and_Unzip'}
+    180: {'module': 'utility', 'name': 'download and unzip', 'function': 'Download_File_and_Unzip'},
+    181: {'module': 'utility', 'name': 'take screen shot', 'function': 'TakeScreenShot' }
 }
 
 # List of support for the actions
