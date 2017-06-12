@@ -76,6 +76,8 @@ actions = { # Numbers are arbitrary, and are not used anywhere
     152: {'module': 'selenium', 'name': 'deselect by value', 'function': 'Select_Deselect'},
     153: {'module': 'selenium', 'name': 'select by index', 'function': 'Select_Deselect'},
     154: {'module': 'selenium', 'name': 'deselect by index', 'function': 'Select_Deselect'},
+    181: {'module': 'selenium', 'name': 'open browser', 'function': 'Open_Browser_Wrapper'},
+    182: {'module': 'selenium', 'name': 'go to link', 'function': 'Go_To_Link'},
     155: {'module': 'utility', 'name': 'math', 'function': 'Calculate'},
     156: {'module': 'utility', 'name': 'upload', 'function': 'Upload'},
     157: {'module': 'utility', 'name': 'save text', 'function': 'Save_Text'},

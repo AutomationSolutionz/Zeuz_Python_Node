@@ -125,13 +125,27 @@ def Open_Browser(dependency):
     except Exception:
         return CommonUtil.Exception_Handler(sys.exc_info())
 
+def Open_Browser_Wrapper(step_data):
+    #this function needs work with validating page title.  We need to check if user entered any title.
+    #if not then we don't do the validation
+    sModuleInfo = inspect.stack()[0][3] + " : " + inspect.getmoduleinfo(__file__).name
+    try:
+        browser=step_data[0][2]
+        dict = {'Browser':browser}
+        Open_Browser(dict)
+        return "passed"
+    except Exception:
+        ErrorMessage =  "failed to open browser: %s" %(browser)
+        return CommonUtil.Exception_Handler(sys.exc_info(), None, ErrorMessage)
+
+
 def Go_To_Link(step_data, page_title=False):
     #this function needs work with validating page title.  We need to check if user entered any title.
     #if not then we don't do the validation
     sModuleInfo = inspect.stack()[0][3] + " : " + inspect.getmoduleinfo(__file__).name
     try:
 
-        web_link=step_data[0][0][2]
+        web_link=step_data[0][2]
         selenium_driver.get(web_link)
         selenium_driver.implicitly_wait(WebDriver_Wait)
         CommonUtil.ExecLog(sModuleInfo, "Successfully opened your link: %s" % web_link, 1)
@@ -180,6 +194,14 @@ def Action_Handler(action_step_data, action_name):
     try:
         if action_name =="click":
             result = Click_Element(action_step_data)
+            if result == "failed":
+                return "failed"
+        elif action_name =="open browser":
+            result = Open_Browser_Wrapper(action_step_data)
+            if result == "failed":
+                return "failed"
+        elif action_name =="go to link":
+            result = Go_To_Link(action_step_data)
             if result == "failed":
                 return "failed"
         elif action_name =="click and hold":
@@ -2055,4 +2077,3 @@ def Get_Plain_Text_Element(element_parameter, element_value, parent=False):
 
 def get_driver():
     return selenium_driver
-
