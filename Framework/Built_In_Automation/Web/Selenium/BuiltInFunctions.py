@@ -132,8 +132,7 @@ def Open_Browser_Wrapper(step_data):
     try:
         browser=step_data[0][2]
         dict = {'Browser':browser}
-        Open_Browser(dict)
-        return "passed"
+        return Open_Browser(dict)
     except Exception:
         ErrorMessage =  "failed to open browser: %s" %(browser)
         return CommonUtil.Exception_Handler(sys.exc_info(), None, ErrorMessage)
