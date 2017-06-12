@@ -155,7 +155,7 @@ def load_sa_modules(module): # Load module "AS" must match module name we get fr
     return 'passed'
 
 
-def Sequential_Actions(step_data, _dependency = {}, _run_time_params = '', _file_attachment = '', _temp_q = ''):
+def Sequential_Actions(step_data, _dependency={}, _run_time_params = '', _file_attachment = '', _temp_q = ''):
     ''' Main Sequential Actions function - Performs logical decisions based on user input '''
     
     sModuleInfo = inspect.stack()[0][3] + " : " + inspect.getmoduleinfo(__file__).name
@@ -165,7 +165,7 @@ def Sequential_Actions(step_data, _dependency = {}, _run_time_params = '', _file
     global dependency, file_attachment
     if _dependency != {}:
         for key in _dependency:
-            sr.Set_Shared_Variables(key, _dependency[key])
+            sr.Set_Shared_Variables(str(key).lower(), _dependency[key])
     if _file_attachment != '':
         file_attachment = _file_attachment
         sr.Set_Shared_Variables('file_attachment', _file_attachment)
