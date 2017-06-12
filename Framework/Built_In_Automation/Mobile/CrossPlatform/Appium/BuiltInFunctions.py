@@ -749,7 +749,7 @@ def swipe_handler(data_set):
         x1, y1, x2, y2 = action_value.split(',')
         Swipe(int(x1), int(y1), int(x2), int(y2))
     
-    # Check for and handle simple gestures (swipe up/down/left/right), and may have a set number of swipes to exceute
+    # Check for and handle simple gestures (swipe up/down/left/right), and may have a set number of swipes to execute
     elif action_value.count(',') == 0 or action_value.count(',') == 1:
         # Process number of swipes as well
         if action_value.count(',') == 1:
@@ -775,11 +775,13 @@ def swipe_handler(data_set):
             x2 = 10 * w / 100 # End 10% on left
             y1 = 50 * h / 100 # Middle vertical 
             y2 = y1 # Middle vertical
+            if dependency['Mobile'].lower() == 'ios': y2 = 0 # In Appium v1.6.4, IOS doesn't swipe properly - always swipes at angles because y2 is added to y, which is different from Android. This gets around that issue
         elif action_value == 'right':
             x1 = 10 * w / 100 # Start 10% on left
             x2 = 90 * w / 100 # End 90% on right
             y1 = 50 * h / 100 # Middle vertical
             y2 = y1 # Middle vertical
+            if dependency['Mobile'].lower() == 'ios': y2 = 0 # In Appium v1.6.4, IOS doesn't swipe properly - always swipes at angles because y2 is added to y, which is different from Android. This gets around that issue
 
         # Perform swipe as many times as specified, or once if not specified 
         for i in range(0, count):
@@ -851,15 +853,12 @@ def swipe_handler(data_set):
             stepsize *= -1 # Convert stepsize to negative, so range() works as expected
     
         # Perform swipe given computed dimensions above
-        if dependency['Mobile'].lower() == 'ios': # In Appium v1.6.4, IOS doesn't swipe properly - always swipes at angles. We get around this by touching one spot, all over the screen. Slow, but works
-            for y in range(ystart, ystop, stepsize):
-                for x in range(xstart, xstop, stepsize):
-                    result = Swipe(x, y, x, y, 100) # Swipe screen - y must be the same for horizontal swipes
-        else: # This is the proper swiping technique. Use this after IOS is fixed
-            for y in range(ystart, ystop, stepsize): # For each row, assuming stepsize, swipe and move to next row
-                result = Swipe(xstart, y, xstop, y) # Swipe screen - y must be the same for horizontal swipes
-                if result == 'failed':
-                    return 'failed'
+        for y in range(ystart, ystop, stepsize): # For each row, assuming stepsize, swipe and move to next row
+            y2 = y
+            if dependency['Mobile'].lower() == 'ios': y2 = 0 # In Appium v1.6.4, IOS doesn't swipe properly - always swipes at angles because y2 is added to y, which is different from Android. This gets around that issue
+            result = Swipe(xstart, y, xstop, y2) # Swipe screen - y must be the same for horizontal swipes
+            if result == 'failed':
+                return 'failed'
 
 
     # Invalid value
