@@ -76,8 +76,6 @@ actions = { # Numbers are arbitrary, and are not used anywhere
     152: {'module': 'selenium', 'name': 'deselect by value', 'function': 'Select_Deselect'},
     153: {'module': 'selenium', 'name': 'select by index', 'function': 'Select_Deselect'},
     154: {'module': 'selenium', 'name': 'deselect by index', 'function': 'Select_Deselect'},
-    181: {'module': 'selenium', 'name': 'open browser', 'function': 'Open_Browser_Wrapper'},
-    182: {'module': 'selenium', 'name': 'go to link', 'function': 'Go_To_Link'},
     155: {'module': 'utility', 'name': 'math', 'function': 'Calculate'},
     156: {'module': 'utility', 'name': 'upload', 'function': 'Upload'},
     157: {'module': 'utility', 'name': 'save text', 'function': 'Save_Text'},
@@ -104,7 +102,10 @@ actions = { # Numbers are arbitrary, and are not used anywhere
     178: {'module': 'utility', 'name': 'log 3', 'function': 'Add_Log'},
     179: {'module': 'utility', 'name': 'log 1', 'function': 'Add_Log'},
     180: {'module': 'utility', 'name': 'download and unzip', 'function': 'Download_File_and_Unzip'},
-    181: {'module': 'utility', 'name': 'take screen shot', 'function': 'TakeScreenShot' }
+    181: {'module': 'utility', 'name': 'take screen shot', 'function': 'TakeScreenShot' },
+    182: {'module': 'selenium', 'name': 'open browser', 'function': 'Open_Browser_Wrapper'},
+    183: {'module': 'selenium', 'name': 'go to link', 'function': 'Go_To_Link'},
+    184: {'module': 'selenium', 'name': 'tear down browser', 'function': 'Tear_Down_Selenium'}
 }
 
 # List of support for the actions

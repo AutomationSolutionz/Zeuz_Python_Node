@@ -195,6 +195,10 @@ def Action_Handler(action_step_data, action_name):
             result = Click_Element(action_step_data)
             if result == "failed":
                 return "failed"
+        elif action_name =="tear down browser":
+            result = Tear_Down_Selenium(action_step_data)
+            if result == "failed":
+                return "failed"
         elif action_name =="open browser":
             result = Open_Browser_Wrapper(action_step_data)
             if result == "failed":
@@ -2011,7 +2015,7 @@ def Scroll_StandAlone(scroll_direction):
 '===================== ===x=== Stand-alone Action Section Ends ===x=== ======================'
 
 
-def Tear_Down_Selenium():
+def Tear_Down_Selenium(step_data = [[[]]]):
     sModuleInfo = inspect.stack()[0][3] + " : " + inspect.getmoduleinfo(__file__).name
     try:
         CommonUtil.ExecLog(sModuleInfo, "Trying to tear down the page and close the browser...", 1)
