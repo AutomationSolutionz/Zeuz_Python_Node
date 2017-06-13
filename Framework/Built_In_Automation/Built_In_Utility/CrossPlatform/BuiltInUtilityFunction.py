@@ -734,6 +734,8 @@ def download_file_using_url(file_url, location_of_file):
         if os.path.isfile(file_name):
             CommonUtil.ExecLog(sModuleInfo, "Returning result of download file using url function", 1)
             CommonUtil.ExecLog(sModuleInfo, "file exists... downloading file using url function is done properly", 1)
+            Shared_Resources.Set_Shared_Variables("downloaded_file", file_name)
+            Shared_Resources.Show_All_Shared_Variables()
             return "passed"
         else:
             CommonUtil.ExecLog(sModuleInfo, "Returning result of download file using url function", 1)
@@ -757,7 +759,7 @@ def download_and_unzip_file(file_url, location_of_file):
         list_the_parts_of_url = file_url.split("/") #get file name from the url
 
         file_name = location_of_file + list_the_parts_of_url[len(list_the_parts_of_url) - 1] #complete file location
-
+        actual_file_name = list_the_parts_of_url[len(list_the_parts_of_url) - 1]
         with open(file_name, "wb") as f:
             for chunk in r.iter_content(chunk_size=1024):
 
@@ -789,7 +791,8 @@ def download_and_unzip_file(file_url, location_of_file):
             return "failed"
         CommonUtil.ExecLog(sModuleInfo, "Unzipping file '%s' to '%s' is complete" % (file_name, unzip_location), 1)
         CommonUtil.ExecLog(sModuleInfo, "Saving directory location to shared resources" , 1)
-        Shared_Resources.Set_Shared_Variables("latest_directory", unzip_location)
+        #Shared_Resources.Set_Shared_Variables("latest_directory", unzip_location)
+        Shared_Resources.Set_Shared_Variables("downloaded_file", unzip_location + actual_file_name)
         Shared_Resources.Show_All_Shared_Variables()
         return "passed"
 
