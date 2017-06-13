@@ -155,7 +155,7 @@ def load_sa_modules(module): # Load module "AS" must match module name we get fr
     return 'passed'
 
 
-def Sequential_Actions(step_data, _dependency={}, _run_time_params = '', _file_attachment = '', _temp_q = ''):
+def Sequential_Actions(step_data, _dependency = {}, _run_time_params = '', _file_attachment = {}, _temp_q = ''):
     ''' Main Sequential Actions function - Performs logical decisions based on user input '''
     
     sModuleInfo = inspect.stack()[0][3] + " : " + inspect.getmoduleinfo(__file__).name
@@ -166,9 +166,12 @@ def Sequential_Actions(step_data, _dependency={}, _run_time_params = '', _file_a
     if _dependency != {}:
         dependency = _dependency # Save to global variable
         sr.Set_Shared_Variables('dependency', _dependency) # Save in Shared Variables
-    if _file_attachment != '':
-        file_attachment = _file_attachment
-        sr.Set_Shared_Variables('file_attachment', _file_attachment)
+    
+    if _file_attachment != '': # If a file attachment was passed
+        file_attachment = _file_attachment # Save as a global variable
+        sr.Set_Shared_Variables('file_attachment', _file_attachment) # Add entire file attachment dictionary to Shared Variables
+        for file_attachment_name in _file_attachment: # Add each attachment as it's own Shared Variable, so the user can easily refer to it
+            sr.Set_Shared_Variables(file_attachment_name, _file_attachment[file_attachment_name])
     
     # Prepare step data for processing
     if common.verify_step_data(step_data) in common.failed_tag_list: # Verify step data is in correct format
