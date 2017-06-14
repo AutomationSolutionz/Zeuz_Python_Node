@@ -135,57 +135,61 @@ def ExecLog(sModuleInfo, sDetails, iLogLevel=1, local_run=False, sStatus=""):
         # ";" is not supported for logging.  So replacing them
         sDetails = sDetails.replace(";", ":")
         sDetails = sDetails.replace("=", "~")
+
+        # Parse logging details
+        log_id=ConfigModule.get_config_value('sectionOne','sTestStepExecLogId',temp_config)
+        FWLogFile = ConfigModule.get_config_value('sectionOne','log_folder',temp_config)
+        if FWLogFile=='':
+            FWLogFile=ConfigModule.get_config_value('sectionOne','temp_run_file_path',temp_config)+os.sep+'execlog.log'
+        else:
+            FWLogFile=FWLogFile+os.sep+'temp.log'
         
-        
-        if local_run == False or local_run == 'False':
-            print sModuleInfo, ":", sDetails
-            log_id=ConfigModule.get_config_value('sectionOne','sTestStepExecLogId',temp_config)
-            FWLogFile = ConfigModule.get_config_value('sectionOne','log_folder',temp_config)
-            if FWLogFile=='':
-                FWLogFile=ConfigModule.get_config_value('sectionOne','temp_run_file_path',temp_config)+os.sep+'execlog.log'
-            else:
-                FWLogFile=FWLogFile+os.sep+'temp.log'
-            
-            logger = logging.getLogger(__name__)
-            if os.name == 'posix':
-                try:
-                    hdlr = logging.FileHandler(FWLogFile)
-                except:
-                    pass
-            elif os.name == 'nt':
+        logger = logging.getLogger(__name__)
+        hdlr = None
+        if os.name == 'posix':
+            try:
                 hdlr = logging.FileHandler(FWLogFile)
-            formatter = logging.Formatter('%(asctime)s - %(levelname)s - %(message)s')
+            except:
+                pass
+        elif os.name == 'nt':
+            hdlr = logging.FileHandler(FWLogFile)
+        formatter = logging.Formatter('%(asctime)s - %(levelname)s - %(message)s')
+        if hdlr != None:
             hdlr.setFormatter(formatter)
             logger.addHandler(hdlr)
-            logger.setLevel(logging.DEBUG)
-            
-            #conn = DB.ConnectToDataBase()
-            sDetails = encode_to_exclude_symbol(to_unicode(sDetails))
-            if iLogLevel == 1:
-                logger.info(sModuleInfo + ' - ' + sDetails + '' + sStatus)
-                #DB.InsertNewRecordInToTable(conn, 'execution_log', logid=log_id, modulename=sModuleInfo, details=sDetails, status="Passed", loglevel=iLogLevel)
-                status = 'Passed'
-            elif iLogLevel == 2:
-                logger.warning(sModuleInfo + ' - ' + sDetails + '' + sStatus)
-                #DB.InsertNewRecordInToTable(conn, 'execution_log', logid=log_id, modulename=sModuleInfo, details=sDetails, status="Warning", loglevel=iLogLevel)
-                status = 'Warning'
+        logger.setLevel(logging.DEBUG)
         
-            elif iLogLevel == 3:
-                logger.error(sModuleInfo + ' - ' + sDetails + '' + sStatus)
-                #DB.InsertNewRecordInToTable(conn, 'execution_log', logid=log_id, modulename=sModuleInfo, details=sDetails, status="Error", loglevel=iLogLevel)
-                status = 'Error'
-        
-            elif iLogLevel == 4:
-                logger.info(sModuleInfo + ' - ' + sDetails + '' + sStatus)
-                status = 'Error'
-            else:
-                print "unknown log level"
-                status = ''
-            logger.removeHandler(hdlr)
-            #conn.close()
-            r = RequestFormatter.Get('log_execution',{'logid': log_id, 'modulename': sModuleInfo, 'details': sDetails, 'status': status,'loglevel': iLogLevel})
+        #conn = DB.ConnectToDataBase()
+        sDetails = encode_to_exclude_symbol(to_unicode(sDetails))
+        if iLogLevel == 1:
+            logger.info(sModuleInfo + ' - ' + sDetails + '' + sStatus)
+            #DB.InsertNewRecordInToTable(conn, 'execution_log', logid=log_id, modulename=sModuleInfo, details=sDetails, status="Passed", loglevel=iLogLevel)
+            status = 'Passed'
+        elif iLogLevel == 2:
+            logger.warning(sModuleInfo + ' - ' + sDetails + '' + sStatus)
+            #DB.InsertNewRecordInToTable(conn, 'execution_log', logid=log_id, modulename=sModuleInfo, details=sDetails, status="Warning", loglevel=iLogLevel)
+            status = 'Warning'
+    
+        elif iLogLevel == 3:
+            logger.error(sModuleInfo + ' - ' + sDetails + '' + sStatus)
+            #DB.InsertNewRecordInToTable(conn, 'execution_log', logid=log_id, modulename=sModuleInfo, details=sDetails, status="Error", loglevel=iLogLevel)
+            status = 'Error'
+    
+        elif iLogLevel == 4:
+            logger.info(sModuleInfo + ' - ' + sDetails + '' + sStatus)
+            status = 'Error'
         else:
-            print sModuleInfo, ":", sDetails
+            print "unknown log level"
+            status = ''
+        logger.removeHandler(hdlr)
+        #conn.close()
+        
+        # Display on console
+        print "%s - %s - %s" % (status.upper(), sModuleInfo, sDetails)
+
+        # Upload to server
+        if local_run == False or local_run == 'False':
+            r = RequestFormatter.Get('log_execution',{'logid': log_id, 'modulename': sModuleInfo, 'details': sDetails, 'status': status,'loglevel': iLogLevel})
     except Exception, e:
         exc_type, exc_obj, exc_tb = sys.exc_info()        
         fname = os.path.split(exc_tb.tb_frame.f_code.co_filename)[1]
