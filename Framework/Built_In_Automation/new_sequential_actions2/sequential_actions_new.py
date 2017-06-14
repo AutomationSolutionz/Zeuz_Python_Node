@@ -11,7 +11,7 @@
 '''
 ### TODO ###
 
-import inspect, sys
+import inspect, sys, os
 from Framework.Utilities import CommonUtil
 import common_functions as common # Functions that are common to all modules
 from Framework.Built_In_Automation.Shared_Resources import BuiltInFunctionSharedResources as sr
@@ -153,6 +153,37 @@ def load_sa_modules(module): # Load module "AS" must match module name we get fr
         CommonUtil.ExecLog(sModuleInfo, "Invalid sequential actions module: %s" % module, 3)
         return 'failed'
     return 'passed'
+# funtion to get the path of home folder in linux
+def get_home_folder():
+    """
+
+    :return: give the path of home folder
+    """
+    sModuleInfo = inspect.stack()[0][3] + " : " + inspect.getmoduleinfo(__file__).name
+    CommonUtil.ExecLog(sModuleInfo, "Function: Get Home Folder", 1)
+    try:
+        CommonUtil.ExecLog(sModuleInfo, "Returning the path of home folder", 1)
+        return os.path.expanduser("~")
+    except Exception:
+        return CommonUtil.Exception_Handler(sys.exc_info())
+
+
+def Save_File():
+    len1=len(os.path.join('Desktop', 'Attachments'))
+    dir_to_search = os.path.join(get_home_folder(), os.path.join('Desktop', 'Attachments'))
+    len2=len(dir_to_search)
+    root_len = len(os.path.abspath(dir_to_search))
+
+    for root, dirs, files in os.walk(dir_to_search):
+        archive_root = os.path.abspath(root)[root_len:]
+        for f in files:
+
+
+            fullpath = os.path.join(root, f)
+            path = fullpath[(len2-len1-1):]
+            sr.Set_Shared_Variables(f,path)
+
+    print sr.Show_All_Shared_Variables()
 
 
 def Sequential_Actions(step_data, _dependency = {}, _run_time_params = '', _file_attachment = {}, _temp_q = ''):
@@ -172,7 +203,7 @@ def Sequential_Actions(step_data, _dependency = {}, _run_time_params = '', _file
         sr.Set_Shared_Variables('file_attachment', _file_attachment) # Add entire file attachment dictionary to Shared Variables
         for file_attachment_name in _file_attachment: # Add each attachment as it's own Shared Variable, so the user can easily refer to it
             sr.Set_Shared_Variables(file_attachment_name, _file_attachment[file_attachment_name])
-    
+    Save_File()
     # Prepare step data for processing
     if common.verify_step_data(step_data) in common.failed_tag_list: # Verify step data is in correct format
         CommonUtil.ExecLog(sModuleInfo, "The information in the data-set(s) are incorrect. Please provide accurate data set(s) information.", 3)
