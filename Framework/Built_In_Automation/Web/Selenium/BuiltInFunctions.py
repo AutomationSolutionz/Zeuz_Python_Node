@@ -1315,7 +1315,7 @@ def Validate_Table_Helper(expected_table_data, actual_table_data, validation_opt
         #print mismatch_count, match_count, mismatch_list, matched_list
 
     except Exception:
-        return CommonUtil.Exception_Handler(sys.exc_info(),None,"Could not model expected data")
+
 
         errMsg = "Error when comparing the exact expected and actual data."
         return CommonUtil.Exception_Handler(sys.exc_info(),None,errMsg)
@@ -1768,12 +1768,10 @@ def Get_Double_Matching_Elements(param_1, value_1, param_2, value_2):
             else:
                 return "failed"
 
+
     except Exception:
-        exc_type, exc_obj, exc_tb = sys.exc_info()
-        fname = os.path.split(exc_tb.tb_frame.f_code.co_filename)[1]
-        Error_Detail = ((str(exc_type).replace("type ", "Error Type: ")) + ";" +  "Error Message: " + str(exc_obj) +";" + "File Name: " + fname + ";" + "Line: "+ str(exc_tb.tb_lineno))
-        CommonUtil.ExecLog(sModuleInfo, "Unable to get the element.  Error: %s"%(Error_Detail), 3)
-        return "failed"
+        errMsg = "Unable to get the element."
+        return CommonUtil.Exception_Handler(sys.exc_info(),None,errMsg)
 
 
 def Get_Table_Elements(table_parameter,table_value, reference_parameter=False,reference_value=False,reference_is_parent_or_child=False,get_all_unvalidated_elements=False, preferred_match = 1):
@@ -1796,12 +1794,11 @@ def Get_Table_Elements(table_parameter,table_value, reference_parameter=False,re
 #         print master_text_table
         return master_text_table
 
+
     except Exception:
-        exc_type, exc_obj, exc_tb = sys.exc_info()
-        fname = os.path.split(exc_tb.tb_frame.f_code.co_filename)[1]
-        Error_Detail = ((str(exc_type).replace("type ", "Error Type: ")) + ";" +  "Error Message: " + str(exc_obj) +";" + "File Name: " + fname + ";" + "Line: "+ str(exc_tb.tb_lineno))
-        CommonUtil.ExecLog(sModuleInfo, "Unable to get the element.  Error: %s"%(Error_Detail), 3)
-        return "failed"
+        errMsg = "Unable to get the element."
+        return CommonUtil.Exception_Handler(sys.exc_info(),None,errMsg)
+
 
 
 '===================== ===x=== Get Element Section Ends ===x=== ======================'
@@ -1854,12 +1851,12 @@ def Element_Validation(All_Elements_Found):#, index):
             CommonUtil.ExecLog(sModuleInfo, "Could not find element by given parameters and values", 3)
             return "failed"
 
+
     except Exception:
-        exc_type, exc_obj, exc_tb = sys.exc_info()
-        fname = os.path.split(exc_tb.tb_frame.f_code.co_filename)[1]
-        Error_Detail = ((str(exc_type).replace("type ", "Error Type: ")) + ";" +  "Error Message: " + str(exc_obj) +";" + "File Name: " + fname + ";" + "Line: "+ str(exc_tb.tb_lineno))
-        CommonUtil.ExecLog(sModuleInfo, "Unable to get the element.  Error: %s"%(Error_Detail), 3)
-        return "failed"
+        errMsg = "Unable to get the element."
+        return CommonUtil.Exception_Handler(sys.exc_info(),None,errMsg)
+
+
 
 
 #Validation of step data passed on by the user
@@ -1904,12 +1901,10 @@ def Validate_Step_Data(step_data):
             return "failed"
         validated_data = (element_parameter, element_value, reference_parameter, reference_value, reference_is_parent_or_child)
         return validated_data
+
     except Exception:
-            exc_type, exc_obj, exc_tb = sys.exc_info()
-            fname = os.path.split(exc_tb.tb_frame.f_code.co_filename)[1]
-            Error_Detail = ((str(exc_type).replace("type ", "Error Type: ")) + ";" +  "Error Message: " + str(exc_obj) +";" + "File Name: " + fname + ";" + "Line: "+ str(exc_tb.tb_lineno))
-            CommonUtil.ExecLog(sModuleInfo, "Could not find the new page element requested.  Error: %s"%(Error_Detail), 3)
-            return "failed"
+        errMsg = "Could not find the new page element requested."
+        return CommonUtil.Exception_Handler(sys.exc_info(),None,errMsg)
 
 '===================== ===x=== Validation Section Ends ===x=== ======================'
 

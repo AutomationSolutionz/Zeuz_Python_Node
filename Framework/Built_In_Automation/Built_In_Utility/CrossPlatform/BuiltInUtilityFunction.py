@@ -2285,5 +2285,3 @@ def Sequential_Actions(step_data):
 
 
 '===================== ===x=== Sequential Action Section Ends ===x=== ======================'
-
-

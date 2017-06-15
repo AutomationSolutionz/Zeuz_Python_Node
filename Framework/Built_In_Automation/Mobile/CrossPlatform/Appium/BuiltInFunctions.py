@@ -48,16 +48,20 @@ def getDriversList():
 def getDriver(index):
     try:
         return APPIUM_DRIVER_LIST[index]
-    except Exception, e:
-        return False
+
+    except Exception:
+        return CommonUtil.Exception_Handler(sys.exc_info())
+
 
 
 def addDriver(position, driver, port):
     try:
         APPIUM_DRIVER_LIST.update({position: {'driver':driver, 'port': port}})
         return True
-    except Exception, e:
-        return False
+
+    except Exception:
+        return CommonUtil.Exception_Handler(sys.exc_info())
+
 
 
 def start_selenium_hub(file_location = os.path.join(FileUtilities.get_home_folder(), os.path.join('Desktop', 'selenium-server-standalone-2.43.1.jar'))):
@@ -67,25 +71,19 @@ def start_selenium_hub(file_location = os.path.join(FileUtilities.get_home_folde
         console_run("java -jar %s -role hub" % file_location)
         CommonUtil.ExecLog(sModuleInfo, "Selenium Hub Command given", 1)
         return True
-    except Exception, e:
-        exc_type, exc_obj, exc_tb = sys.exc_info()
-        fname = os.path.split(exc_tb.tb_frame.f_code.co_filename)[1]
-        Error_Detail = ((str(exc_type).replace("type ", "Error Type: ")) + ";" + "Error Message: " + str(
-            exc_obj) + ";" + "File Name: " + fname + ";" + "Line: " + str(exc_tb.tb_lineno))
-        CommonUtil.ExecLog(sModuleInfo, "Unable to Start Selenium Hub: Error:%s" % (Error_Detail), 3)
-        return False
+    except Exception:
+        errMsg = "Unable to Start Selenium Hub"
+        return CommonUtil.Exception_Handler(sys.exc_info(),None,errMsg)
 
 def console_run(run_command):
     sModuleInfo = inspect.stack()[0][3] + " : " + inspect.getmoduleinfo(__file__).name
     try:
         os.system("gnome-terminal --working-directory %s -e 'bash -c \"%s ;exec bash\"'" % (FileUtilities.get_home_folder(),run_command))
-    except Exception, e:
-        exc_type, exc_obj, exc_tb = sys.exc_info()
-        fname = os.path.split(exc_tb.tb_frame.f_code.co_filename)[1]
-        Error_Detail = ((str(exc_type).replace("type ", "Error Type: ")) + ";" + "Error Message: " + str(
-            exc_obj) + ";" + "File Name: " + fname + ";" + "Line: " + str(exc_tb.tb_lineno))
-        CommonUtil.ExecLog(sModuleInfo, "Unable to run command", 3)
-        return False
+
+    except Exception:
+        errMsg = "Unable to run command"
+        return CommonUtil.Exception_Handler(sys.exc_info(),None,errMsg)
+
 
 
 def init_config_for_device(port_to_connect, device_index, hub_address='127.0.0.1', hub_port=4444, base_location = os.path.join(FileUtilities.get_home_folder(), os.path.join('Desktop', 'appiumConfig')), **kwargs):
@@ -119,13 +117,11 @@ def init_config_for_device(port_to_connect, device_index, hub_address='127.0.0.1
         set_appium_specific_variable()
         start_appium_instances(port_to_connect, file_location)
         return True
-    except Exception, e:
-        exc_type, exc_obj, exc_tb = sys.exc_info()
-        fname = os.path.split(exc_tb.tb_frame.f_code.co_filename)[1]
-        Error_Detail = ((str(exc_type).replace("type ", "Error Type: ")) + ";" + "Error Message: " + str(
-            exc_obj) + ";" + "File Name: " + fname + ";" + "Line: " + str(exc_tb.tb_lineno))
-        CommonUtil.ExecLog(sModuleInfo, "Unable to initiate appium instance for device:%d"%device_index, 3)
-        return False
+
+    except Exception:
+        errMsg = "Unable to initiate appium instance for device: %d" %device_index
+        return CommonUtil.Exception_Handler(sys.exc_info(),None,errMsg)
+
 
 
 def set_appium_specific_variable():
@@ -157,26 +153,22 @@ def set_appium_specific_variable():
                                  env_vars['ANDROID_HOME'] + "/platform-tools"
             env_vars['PATH'] = env_vars['PATH'] + ":" + env_vars['ANDROID_HOME'] + "/tools:" + \
                                env_vars['ANDROID_HOME'] + "/platform-tools"
-    except Exception, e:
-        exc_type, exc_obj, exc_tb = sys.exc_info()
-        fname = os.path.split(exc_tb.tb_frame.f_code.co_filename)[1]
-        Error_Detail = ((str(exc_type).replace("type ", "Error Type: ")) + ";" + "Error Message: " + str(
-            exc_obj) + ";" + "File Name: " + fname + ";" + "Line: " + str(exc_tb.tb_lineno))
-        CommonUtil.ExecLog(sModuleInfo, "Unable to set appium variable", 3)
-        return False
+
+    except Exception:
+        errMsg = "Unable to set appium variable"
+        return CommonUtil.Exception_Handler(sys.exc_info(),None,errMsg)
+
 
 def start_appium_instances(port_to_connect, file_location, hub_address = '127.0.0.1' ):
     sModuleInfo = inspect.stack()[0][3] + " : " + inspect.getmoduleinfo(__file__).name
     try:
         run_command = "appium -a %s -p %d --nodeconfig %s" % (hub_address, port_to_connect, file_location)
         console_run(run_command)
-    except Exception, e:
-        exc_type, exc_obj, exc_tb = sys.exc_info()
-        fname = os.path.split(exc_tb.tb_frame.f_code.co_filename)[1]
-        Error_Detail = ((str(exc_type).replace("type ", "Error Type: ")) + ";" + "Error Message: " + str(
-            exc_obj) + ";" + "File Name: " + fname + ";" + "Line: " + str(exc_tb.tb_lineno))
-        CommonUtil.ExecLog(sModuleInfo, "Unable to start appium instance at port :%d"%port_to_connect, 3)
-        return False
+
+    except Exception:
+        errMsg = "Unable to start appium instance at port: %d" %port_to_connect
+        return CommonUtil.Exception_Handler(sys.exc_info(),None,errMsg)
+
 ################################### UNUSED - SEEMS TO INVOLVE SETTING UP APPIUM #########################################
 
 def launch_application(data_set):

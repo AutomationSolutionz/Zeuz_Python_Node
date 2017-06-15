@@ -41,13 +41,10 @@ def Get_Element_Step_Data(step_data):
 
         return element_step_data
 
-    except Exception, e:
-        exc_type, exc_obj, exc_tb = sys.exc_info()
-        fname = os.path.split(exc_tb.tb_frame.f_code.co_filename)[1]
-        Error_Detail = ((str(exc_type).replace("type ", "Error Type: ")) + ";" + "Error Message: " + str(
-            exc_obj) + ";" + "File Name: " + fname + ";" + "Line: " + str(exc_tb.tb_lineno))
-        CommonUtil.ExecLog(sModuleInfo, "Could not get element step data.  Error: %s" % (Error_Detail), 3, local_run)
-        return "failed"
+    except Exception:
+        errMsg = "Could not get element step data"
+        return CommonUtil.Exception_Handler(sys.exc_info(),None,errMsg)
+
 
 
 # Handles actions for the sequential logic, based on the input from the mentioned function
@@ -89,13 +86,10 @@ def Action_Handler(action_step_data, action_name,file_attachment):
                                3, local_run)
             return "failed"
 
-    except Exception, e:
-        exc_type, exc_obj, exc_tb = sys.exc_info()
-        fname = os.path.split(exc_tb.tb_frame.f_code.co_filename)[1]
-        Error_Detail = ((str(exc_type).replace("type ", "Error Type: ")) + ";" + "Error Message: " + str(
-            exc_obj) + ";" + "File Name: " + fname + ";" + "Line: " + str(exc_tb.tb_lineno))
-        print "%s" % Error_Detail
-        return "failed"
+
+    except Exception:
+
+        return CommonUtil.Exception_Handler(sys.exc_info())
 
 
 # Method to enter texts in a text box; step data passed on by the user
@@ -126,23 +120,17 @@ def Enter_Text_In_Text_Box(step_data):
                 CommonUtil.ExecLog(sModuleInfo, "Successfully set the value of to text to: %s" % text_value, 1,
                                        local_run)
                 return "passed"
-            except Exception, e:
-                CommonUtil.ExecLog(sModuleInfo, "Failed to Enter Text in text Box", 3, local_run)
-                exc_type, exc_obj, exc_tb = sys.exc_info()
-                fname = os.path.split(exc_tb.tb_frame.f_code.co_filename)[1]
-                Error_Detail = ((str(exc_type).replace("type ", "Error Type: ")) + ";" + "Error Message: " + str(
-                    exc_obj) + ";" + "File Name: " + fname + ";" + "Line: " + str(exc_tb.tb_lineno))
-                CommonUtil.ExecLog(sModuleInfo, "Could not select/click your element.  Error: %s" % (Error_Detail),
-                                       3, local_run)
-                return "failed"
 
-    except Exception, e:
-        exc_type, exc_obj, exc_tb = sys.exc_info()
-        fname = os.path.split(exc_tb.tb_frame.f_code.co_filename)[1]
-        Error_Detail = ((str(exc_type).replace("type ", "Error Type: ")) + ";" + "Error Message: " + str(
-            exc_obj) + ";" + "File Name: " + fname + ";" + "Line: " + str(exc_tb.tb_lineno))
-        CommonUtil.ExecLog(sModuleInfo, "Could not find your element.  Error: %s" % (Error_Detail), 3, local_run)
-        return "failed"
+            except Exception:
+                errMsg = "Could not select/click your element."
+                return CommonUtil.Exception_Handler(sys.exc_info(), None, errMsg)
+
+
+
+    except Exception:
+        errMsg = "Could not find your element. "
+        return CommonUtil.Exception_Handler(sys.exc_info(),None,errMsg)
+
 
 
 # Method to click on element; step data passed on by the user
@@ -209,25 +197,17 @@ def Keystroke_For_Element(step_data):
                                            3, local_run)
                     return "failed"
 
-            except Exception, e:
-                CommonUtil.ExecLog(sModuleInfo, "Failed to Enter Keystroke", 3, local_run)
-                exc_type, exc_obj, exc_tb = sys.exc_info()
-                fname = os.path.split(exc_tb.tb_frame.f_code.co_filename)[1]
-                Error_Detail = ((str(exc_type).replace("type ", "Error Type: ")) + ";" + "Error Message: " + str(
-                    exc_obj) + ";" + "File Name: " + fname + ";" + "Line: " + str(exc_tb.tb_lineno))
-                CommonUtil.ExecLog(sModuleInfo,
-                                   "Could not enter keystroke for your element.  Error: %s" % (Error_Detail), 3,
-                                   local_run)
-                return "failed"
 
-    except Exception, e:
-        exc_type, exc_obj, exc_tb = sys.exc_info()
-        fname = os.path.split(exc_tb.tb_frame.f_code.co_filename)[1]
-        Error_Detail = ((str(exc_type).replace("type ", "Error Type: ")) + ";" + "Error Message: " + str(
-            exc_obj) + ";" + "File Name: " + fname + ";" + "Line: " + str(exc_tb.tb_lineno))
-        CommonUtil.ExecLog(sModuleInfo, "Could not enter keystroke for your element.  Error: %s" % (Error_Detail), 3,
-                           local_run)
-        return "failed"
+            except Exception:
+                errMsg = "Could not enter keystroke for your element."
+                return CommonUtil.Exception_Handler(sys.exc_info(), None, errMsg)
+
+
+
+    except Exception:
+        errMsg = "Could not enter keystroke for your element."
+        return CommonUtil.Exception_Handler(sys.exc_info(),None,errMsg)
+
 
 
 # Method to click on element; step data passed on by the user
@@ -251,14 +231,10 @@ def click_on_image(file_name, file_attachment,no_of_clicks):
             CommonUtil.ExecLog(sModuleInfo, "Successfully Clicked on Button %s" % file_name, 1)
             return Passed
 
+    except Exception:
+        errMsg = "Unable to click using image"
+        return CommonUtil.Exception_Handler(sys.exc_info(),None,errMsg)
 
-    except Exception, e:
-
-        exc_type, exc_obj, exc_tb = sys.exc_info()
-        fname = os.path.split(exc_tb.tb_frame.f_code.co_filename)[1]
-        error_detail = ((str(exc_type).replace("type ", "Error Type: ")) + ";" + "Error Message: " + str(exc_obj) +
-                        ";" + "File Name: " + fname + ";" + "Line: " + str(exc_tb.tb_lineno))
-        CommonUtil.ExecLog(sModuleInfo, "Unable to click using image " , 3, local_run)
 
 
 def click_on_text(text,no_of_click):
@@ -284,13 +260,10 @@ def click_on_text(text,no_of_click):
         CommonUtil.ExecLog(sModuleInfo, "Successfully Clicked on Text %s" % text, 1)
         return Passed
 
-    except Exception, e:
 
-        exc_type, exc_obj, exc_tb = sys.exc_info()
-        fname = os.path.split(exc_tb.tb_frame.f_code.co_filename)[1]
-        error_detail = ((str(exc_type).replace("type ", "Error Type: ")) + ";" + "Error Message: " + str(exc_obj) +
-                        ";" + "File Name: " + fname + ";" + "Line: " + str(exc_tb.tb_lineno))
-        CommonUtil.ExecLog(sModuleInfo, "Unable to click using image ", 3, local_run)
+    except Exception:
+        errMsg = "Unable to click using text"
+        return CommonUtil.Exception_Handler(sys.exc_info(),None,errMsg)
 
 
 def get_center_using_image(file_name, file_attachment):
@@ -303,13 +276,10 @@ def get_center_using_image(file_name, file_attachment):
         result = da.getCenter(logo)
         return result
 
-    except Exception, e:
 
-        exc_type, exc_obj, exc_tb = sys.exc_info()
-        fname = os.path.split(exc_tb.tb_frame.f_code.co_filename)[1]
-        error_detail = ((str(exc_type).replace("type ", "Error Type: ")) + ";" + "Error Message: " + str(exc_obj) +
-                        ";" + "File Name: " + fname + ";" + "Line: " + str(exc_tb.tb_lineno))
-        CommonUtil.ExecLog(sModuleInfo, "Unable to get center using image " , 3, local_run)
+    except Exception:
+        errMsg = "Unable to get center using image"
+        return CommonUtil.Exception_Handler(sys.exc_info(),None,errMsg)
 
 
 def get_center_using_text(text):
@@ -319,13 +289,10 @@ def get_center_using_text(text):
         result =  vim.get_center()
         return result
 
-    except Exception, e:
 
-        exc_type, exc_obj, exc_tb = sys.exc_info()
-        fname = os.path.split(exc_tb.tb_frame.f_code.co_filename)[1]
-        error_detail = ((str(exc_type).replace("type ", "Error Type: ")) + ";" + "Error Message: " + str(exc_obj) +
-                        ";" + "File Name: " + fname + ";" + "Line: " + str(exc_tb.tb_lineno))
-        CommonUtil.ExecLog(sModuleInfo, "Unable to get center using image ", 3, local_run)
+    except Exception:
+        errMsg = "Unable to get center using text"
+        return CommonUtil.Exception_Handler(sys.exc_info(),None,errMsg)
 
 
 
@@ -364,13 +331,10 @@ def Click_Element(step_data, file_attachment,no_of_click):
                                local_run)
             return Failed
 
-    except Exception, e:
 
-        exc_type, exc_obj, exc_tb = sys.exc_info()
-        fname = os.path.split(exc_tb.tb_frame.f_code.co_filename)[1]
-        error_detail = ((str(exc_type).replace("type ", "Error Type: ")) + ";" + "Error Message: " + str(exc_obj) +
-                        ";" + "File Name: " + fname + ";" + "Line: " + str(exc_tb.tb_lineno))
-        CommonUtil.ExecLog(sModuleInfo, "Unable to click using image/text " , 3, local_run)
+    except Exception:
+        errMsg = "Unable to click using image/text"
+        return CommonUtil.Exception_Handler(sys.exc_info(),None,errMsg)
 
 
 def Hover_Over_Element(step_data, file_attachment):
@@ -412,13 +376,10 @@ def Hover_Over_Element(step_data, file_attachment):
                                local_run)
             return Failed
 
-    except Exception, e:
 
-        exc_type, exc_obj, exc_tb = sys.exc_info()
-        fname = os.path.split(exc_tb.tb_frame.f_code.co_filename)[1]
-        error_detail = ((str(exc_type).replace("type ", "Error Type: ")) + ";" + "Error Message: " + str(exc_obj) +
-                        ";" + "File Name: " + fname + ";" + "Line: " + str(exc_tb.tb_lineno))
-        CommonUtil.ExecLog(sModuleInfo, "Unable to hover using image/text " , 3, local_run)
+    except Exception:
+        errMsg = "Unable to hover using image/text"
+        return CommonUtil.Exception_Handler(sys.exc_info(),None,errMsg)
 
 
 # Method to sleep for a particular duration
@@ -438,15 +399,9 @@ def Sleep(step_data):
             result = time.sleep(seconds)
 
         return result
-    except Exception, e:
-        exc_type, exc_obj, exc_tb = sys.exc_info()
-        fname = os.path.split(exc_tb.tb_frame.f_code.co_filename)[1]
-        Error_Detail = ((str(exc_type).replace("type ", "Error Type: ")) + ";" + "Error Message: " + str(
-            exc_obj) + ";" + "File Name: " + fname + ";" + "Line: " + str(exc_tb.tb_lineno))
-        print "%s" % Error_Detail
-        return "failed"
 
-
+    except Exception:
+        return CommonUtil.Exception_Handler(sys.exc_info())
 
 
 
@@ -468,13 +423,9 @@ def Step_Result(step_data):
                 result = "failed"
 
         return result
-    except Exception, e:
-        exc_type, exc_obj, exc_tb = sys.exc_info()
-        fname = os.path.split(exc_tb.tb_frame.f_code.co_filename)[1]
-        Error_Detail = ((str(exc_type).replace("type ", "Error Type: ")) + ";" + "Error Message: " + str(
-            exc_obj) + ";" + "File Name: " + fname + ";" + "Line: " + str(exc_tb.tb_lineno))
-        print "%s" % Error_Detail
-        return "failed"
+
+    except Exception:
+        return CommonUtil.Exception_Handler(sys.exc_info())
 
 
 # Performs a series of action or conditional logical action decisions based on user input
@@ -511,15 +462,9 @@ def Sequential_Actions(step_data,file_attachment):
                     return "failed"
         return "passed"
 
-    except Exception, e:
-        CommonUtil.ExecLog(sModuleInfo, "Exception: %s" % e, 3, local_run)
-        exc_type, exc_obj, exc_tb = sys.exc_info()
-        fname = os.path.split(exc_tb.tb_frame.f_code.co_filename)[1]
-        Error_Detail = ((str(exc_type).replace("type ", "Error Type: ")) + ";" + "Error Message: " + str(
-            exc_obj) + ";" + "File Name: " + fname + ";" + "Line: " + str(exc_tb.tb_lineno))
-        print "%s" % Error_Detail
-        CommonUtil.ExecLog(sModuleInfo, "Error: %s" % Error_Detail, 3, local_run)
-        return "failed"
+
+    except Exception:
+        return CommonUtil.Exception_Handler(sys.exc_info())
 
 
 '===================== ===x=== Sequential Action Section Ends ===x=== ======================'
@@ -541,14 +486,11 @@ def Validate_Step_Data(step_data):
         validated_data = (
         element_parameter, element_value, reference_parameter, reference_value, reference_is_parent_or_child)
         return validated_data
-    except Exception, e:
-        exc_type, exc_obj, exc_tb = sys.exc_info()
-        fname = os.path.split(exc_tb.tb_frame.f_code.co_filename)[1]
-        Error_Detail = ((str(exc_type).replace("type ", "Error Type: ")) + ";" + "Error Message: " + str(
-            exc_obj) + ";" + "File Name: " + fname + ";" + "Line: " + str(exc_tb.tb_lineno))
-        CommonUtil.ExecLog(sModuleInfo, "Could not find the new page element requested.  Error: %s" % (Error_Detail), 3,
-                           local_run)
-        return "failed"
+
+    except Exception:
+        errMsg = "Could not find the new page element requested."
+        return CommonUtil.Exception_Handler(sys.exc_info(),None,errMsg)
+
 
 
 '===================== ===x=== Validation Section Ends ===x=== ======================'

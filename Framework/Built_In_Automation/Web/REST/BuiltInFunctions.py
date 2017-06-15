@@ -544,11 +544,8 @@ def Validate_Step_Data(step_data):
 
         validated_data = (url, method, body, headers)
         return validated_data
+
     except Exception:
-        exc_type, exc_obj, exc_tb = sys.exc_info()
-        fname = os.path.split(exc_tb.tb_frame.f_code.co_filename)[1]
-        Error_Detail = ((str(exc_type).replace("type ", "Error Type: ")) + ";" + "Error Message: " + str(
-            exc_obj) + ";" + "File Name: " + fname + ";" + "Line: " + str(exc_tb.tb_lineno))
-        CommonUtil.ExecLog(sModuleInfo, "Could not find the new page element requested.  Error: %s" % (Error_Detail), 3)
-        return "failed"
+        errMsg = "Could not find the new page element requested. "
+        return CommonUtil.Exception_Handler(sys.exc_info(),None,errMsg)
 
