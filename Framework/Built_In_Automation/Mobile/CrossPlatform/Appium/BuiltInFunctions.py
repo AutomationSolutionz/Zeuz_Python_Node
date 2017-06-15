@@ -22,10 +22,10 @@ PATH = lambda p: os.path.abspath(
 )
 
 # Recall appium driver, if not already set - needed between calls in a Zeuz test case
-global driver
-driver = None
+global appium_driver
+appium_driver = None
 if Shared_Resources.Test_Shared_Variables('appium_driver'): # Check if driver is already set in shared variables
-    driver = Shared_Resources.Get_Shared_Variables('appium_driver') # Retreive appium driver
+    appium_driver = Shared_Resources.Get_Shared_Variables('appium_driver') # Retreive appium driver
 
 # Recall dependency, if not already set
 dependency = {'Mobile':'Android'} #!!! TEMP - Replace with None for production
@@ -208,13 +208,13 @@ def launch_application(data_set):
 
     # Launch application
     try:
-        if driver == None: # Only create a new appium instance if we haven't already (may be done by install_and_start_driver())
+        if appium_driver == None: # Only create a new appium instance if we haven't already (may be done by install_and_start_driver())
             result = start_appium_driver(package_name, activity_name)
             if result == 'failed':
                 return 'failed'
         
         CommonUtil.ExecLog(sModuleInfo,"Sending driver call.",1)
-        driver.launch_app() # Launch program configured in the Appium capabilities
+        appium_driver.launch_app() # Launch program configured in the Appium capabilities
         CommonUtil.ExecLog(sModuleInfo,"Launched the application successfully.",1)
         return "passed"
     except Exception:
@@ -228,7 +228,7 @@ def start_appium_driver(package_name = '', activity_name = '', filename = ''):
     CommonUtil.ExecLog(sModuleInfo,"Trying to create Appium instance...",1)
     
     try:
-        if driver == None:
+        if appium_driver == None:
             # Setup capabilities
             desired_caps = {}
             desired_caps['platformName'] = dependency['Mobile'] # Set platform name
@@ -258,14 +258,14 @@ def start_appium_driver(package_name = '', activity_name = '', filename = ''):
             CommonUtil.ExecLog(sModuleInfo,"Capabilities: %s" % str(desired_caps),1)
             
             # Create Appium instance with capabilities
-            global driver
-            driver = webdriver.Remote('http://localhost:4723/wd/hub', desired_caps) # Create instance
-            if driver: # Make sure we get the instance
-                Shared_Resources.Set_Shared_Variables('appium_driver', driver) # Save driver instance to make available to other modules
+            global appium_driver
+            appium_driver = webdriver.Remote('http://localhost:4723/wd/hub', desired_caps) # Create instance
+            if appium_driver: # Make sure we get the instance
+                Shared_Resources.Set_Shared_Variables('appium_driver', appium_driver) # Save driver instance to make available to other modules
                 CommonUtil.ExecLog(sModuleInfo,"Appium driver created successfully.",1)
                 return "passed"
             else: # Error during setup, reset
-                driver = None
+                appium_driver = None
                 CommonUtil.ExecLog(sModuleInfo,"Error during Appium setup", 3)
                 return 'failed'
         else: # Driver is already setup, don't do anything
@@ -281,9 +281,9 @@ def teardown_appium(data_set):
     sModuleInfo = inspect.stack()[0][3] + " : " + inspect.getmoduleinfo(__file__).name
     CommonUtil.ExecLog(sModuleInfo,"Starting Appium cleanup.",1)
     try:
-        global driver
-        driver.quit() # Tell appium to shutdown instance
-        driver = None # Clear driver variable, so next run will be fresh
+        global appium_driver
+        appium_driver.quit() # Tell appium to shutdown instance
+        appium_driver = None # Clear driver variable, so next run will be fresh
         Shared_Resources.Set_Shared_Variables('appium_driver', '') # Clear the driver from shared variables
         CommonUtil.ExecLog(sModuleInfo,"Appium cleaned up successfully.",1)
         return 'passed'
@@ -296,7 +296,7 @@ def close_application(data_set):
     sModuleInfo = inspect.stack()[0][3] + " : " + inspect.getmoduleinfo(__file__).name
     try:
         CommonUtil.ExecLog(sModuleInfo,"Trying to close the app",1)
-        driver.close_app()
+        appium_driver.close_app()
         CommonUtil.ExecLog(sModuleInfo,"Closed the app successfully",1)
         return "passed"
     except Exception:
@@ -310,7 +310,7 @@ def reset_application(data_set):
     sModuleInfo = inspect.stack()[0][3] + " : " + inspect.getmoduleinfo(__file__).name
     try:
         CommonUtil.ExecLog(sModuleInfo,"Trying to reset the app",1)
-        driver.reset() # Reset / clear application cache
+        appium_driver.reset() # Reset / clear application cache
         CommonUtil.ExecLog(sModuleInfo,"Reset the app successfully",1)
         return "passed"
     except Exception:
@@ -343,7 +343,7 @@ def install_application(data_set): #app_location, activity_name=''
         return CommonUtil.Exception_Handler(sys.exc_info(),None,errMsg)
 
     try:
-        if driver == None: # Only create a new appium instance if we haven't already (may be done by install_and_start_driver())
+        if appium_driver == None: # Only create a new appium instance if we haven't already (may be done by install_and_start_driver())
             result = start_appium_driver('', activity_name, app_location) # Install application and create driver instance. First parameter is always empty. We specify the third parameter with the file, and optionally the second parameter with the activity name if it's needed
             if result == 'failed':
                 return 'failed'
@@ -378,11 +378,11 @@ def uninstall_application(data_set):
 
     try:
         CommonUtil.ExecLog(sModuleInfo,"Trying to remove app with package name %s"%app_package,1)
-        #if driver.is_app_installed(app_package):
+        #if appium_driver.is_app_installed(app_package):
             #CommonUtil.ExecLog(sModuleInfo,"App is installed. Now removing...",1)
-        if driver == None:
+        if appium_driver == None:
             start_appium_driver(app_package,app_activity)
-        driver.remove_app(app_package)
+        appium_driver.remove_app(app_package)
         CommonUtil.ExecLog(sModuleInfo,"App is removed successfully.",1)
         return "passed"
     except Exception:
@@ -420,47 +420,47 @@ def Get_Single_Element(parameter, value, parent=False):
         All_Elements = []
         if parent == False:
             if parameter == "name":
-                All_Elements = driver.find_element_by_name(value)
+                All_Elements = appium_driver.find_element_by_name(value)
             elif parameter == "id":
-                All_Elements = driver.find_element_by_id(value)
+                All_Elements = appium_driver.find_element_by_id(value)
             elif parameter == "accessibility id":
-                All_Elements = driver.find_element_by_accessibility_id(value)
+                All_Elements = appium_driver.find_element_by_accessibility_id(value)
             elif parameter == "class name":
-                All_Elements = driver.find_element_by_class_name(value)
+                All_Elements = appium_driver.find_element_by_class_name(value)
             elif parameter == "xpath":
-                #All_Elements = driver.find_element_by_xpath(value)
-                All_Elements == driver.find_element_by_xpath("//*[@%s='%s']" % (parameter, value))
+                #All_Elements = appium_driver.find_element_by_xpath(value)
+                All_Elements == appium_driver.find_element_by_xpath("//*[@%s='%s']" % (parameter, value))
             elif parameter == "android uiautomator text":
-                All_Elements == driver.find_element_by_android_uiautomator('new UiSelector().text(' + value + ')')
+                All_Elements == appium_driver.find_element_by_android_uiautomator('new UiSelector().text(' + value + ')')
             elif parameter == "android uiautomator description":
-                All_Elements == driver.find_element_by_android_uiautomator(
+                All_Elements == appium_driver.find_element_by_android_uiautomator(
                     'new UiSelector().description(' + value + ')')
             elif parameter == "ios uiautomation":
-                All_Elements == driver.find_element_by_ios_uiautomation('.elements()[0]')
+                All_Elements == appium_driver.find_element_by_ios_uiautomation('.elements()[0]')
             else:
-                All_Elements == driver.find_element_by_xpath("//*[@%s='%s']"%(parameter, value))
+                All_Elements == appium_driver.find_element_by_xpath("//*[@%s='%s']"%(parameter, value))
 
         elif parent == True:
             if parameter == "name":
-                All_Elements = driver.find_element_by_xpath("//*[@text='%s']" % value)
+                All_Elements = appium_driver.find_element_by_xpath("//*[@text='%s']" % value)
             elif parameter == "id":
-                All_Elements = driver.find_element_by_id(value)
+                All_Elements = appium_driver.find_element_by_id(value)
             elif parameter == "accessibility id":
-                All_Elements = driver.find_element_by_accessibility_id(value)
+                All_Elements = appium_driver.find_element_by_accessibility_id(value)
             elif parameter == "class name":
-                All_Elements = driver.find_element_by_class_name(value)
+                All_Elements = appium_driver.find_element_by_class_name(value)
             elif parameter == "xpath":
-                #All_Elements = driver.find_element_by_xpath(value)
-                All_Elements == driver.find_element_by_xpath("//*[@%s='%s']" % (parameter, value))
+                #All_Elements = appium_driver.find_element_by_xpath(value)
+                All_Elements == appium_driver.find_element_by_xpath("//*[@%s='%s']" % (parameter, value))
             elif parameter == "android uiautomator text":
-                All_Elements == driver.find_element_by_android_uiautomator('new UiSelector().text(' + value + ')')
+                All_Elements == appium_driver.find_element_by_android_uiautomator('new UiSelector().text(' + value + ')')
             elif parameter == "android uiautomator description":
-                All_Elements == driver.find_element_by_android_uiautomator(
+                All_Elements == appium_driver.find_element_by_android_uiautomator(
                     'new UiSelector().description(' + value + ')')
             elif parameter == "ios uiautomation":
-                All_Elements == driver.find_element_by_ios_uiautomation('.elements()[0]')
+                All_Elements == appium_driver.find_element_by_ios_uiautomation('.elements()[0]')
             else:
-                All_Elements == driver.find_element_by_xpath("//*[@%s='%s']"%(parameter,value))
+                All_Elements == appium_driver.find_element_by_xpath("//*[@%s='%s']"%(parameter,value))
 
         return All_Elements
     except Exception:
@@ -477,34 +477,34 @@ def Get_All_Elements(parameter, value, parent=False):
         All_Elements = []
         if parent == False:
             if parameter == "name":
-                All_Elements = driver.find_elements_by_name(value)
+                All_Elements = appium_driver.find_elements_by_name(value)
             elif parameter == "id":
-                All_Elements = driver.find_elements_by_id(value)
+                All_Elements = appium_driver.find_elements_by_id(value)
             elif parameter == "accessibility id":
-                All_Elements = driver.find_elements_by_accessibility_id(value)
+                All_Elements = appium_driver.find_elements_by_accessibility_id(value)
             elif parameter == "class name":
-                All_Elements = driver.find_elements_by_class_name(value)
+                All_Elements = appium_driver.find_elements_by_class_name(value)
             elif parameter == "xpath":
-                All_Elements = driver.find_elements_by_xpath(value)
+                All_Elements = appium_driver.find_elements_by_xpath(value)
             elif parameter == "android uiautomator text":
-                All_Elements == driver.find_elements_by_android_uiautomator('new UiSelector().text('+value+')')
+                All_Elements == appium_driver.find_elements_by_android_uiautomator('new UiSelector().text('+value+')')
             elif parameter == "android uiautomator description":
-                All_Elements == driver.find_elements_by_android_uiautomator('new UiSelector().description('+value+')')
+                All_Elements == appium_driver.find_elements_by_android_uiautomator('new UiSelector().description('+value+')')
         elif parent == True:
             if parameter == "name":
-                All_Elements = driver.find_elements_by_name(value)
+                All_Elements = appium_driver.find_elements_by_name(value)
             elif parameter == "id":
-                All_Elements = driver.find_elements_by_id(value)
+                All_Elements = appium_driver.find_elements_by_id(value)
             elif parameter == "accessibility id":
-                All_Elements = driver.find_elements_by_accessibility_id(value)
+                All_Elements = appium_driver.find_elements_by_accessibility_id(value)
             elif parameter == "class name":
-                All_Elements = driver.find_elements_by_class_name(value)
+                All_Elements = appium_driver.find_elements_by_class_name(value)
             elif parameter == "xpath":
-                All_Elements = driver.find_elements_by_xpath(value)
+                All_Elements = appium_driver.find_elements_by_xpath(value)
             elif parameter == "android uiautomator text":
-                All_Elements == driver.find_elements_by_android_uiautomator('new UiSelector().text('+value+')')
+                All_Elements == appium_driver.find_elements_by_android_uiautomator('new UiSelector().text('+value+')')
             elif parameter == "android uiautomator description":
-                All_Elements == driver.find_elements_by_android_uiautomator('new UiSelector().description('+value+')')
+                All_Elements == appium_driver.find_elements_by_android_uiautomator('new UiSelector().description('+value+')')
 
         return All_Elements
     except Exception:
@@ -701,7 +701,7 @@ def Swipe(x_start, y_start, x_end, y_end, duration = 1000):
     
     try:
         CommonUtil.ExecLog(sModuleInfo, "Starting to swipe the screen...", 1)
-        driver.swipe(x_start, y_start, x_end, y_end, duration)
+        appium_driver.swipe(x_start, y_start, x_end, y_end, duration)
         CommonUtil.ExecLog(sModuleInfo, "Swiped the screen successfully", 1)
         return "passed"
     except Exception:
@@ -777,7 +777,7 @@ def swipe_handler(data_set):
 
         # Perform swipe as many times as specified, or once if not specified 
         for i in range(0, count):
-            driver.swipe(x1, y1, x2, y2)
+            appium_driver.swipe(x1, y1, x2, y2)
             time.sleep(1) # Small sleep, so action animation (if any) can complete
         
     # Handle a series of almost identical gestures (swipe horizontally at different locations for example)
@@ -811,7 +811,7 @@ def swipe_handler(data_set):
             xstart = xstart * w / 100 # Convert from percentage to pixels
             xstop = int(xstop.replace('%', '')) # Convert to integer
             xstop = xstop * w / 100 # Convert from percentage to pixels
-            if xstart <= 0: # driver.swipe fails if we are outside the boundary, so correct any values necessary
+            if xstart <= 0: # appium_driver.swipe fails if we are outside the boundary, so correct any values necessary
                 xstart = 1
             if xstop >= w:
                 xstop = w - 1
@@ -832,7 +832,7 @@ def swipe_handler(data_set):
             ystart = ystart * h / 100 # Convert from percentage to pixels
             ystop = int(ystop.replace('%', '')) # Convert to integer
             ystop = ystop * h / 100 # Convert from percentage to pixels
-            if ystart <= 0: # driver.swipe fails if we are outside the boundary, so correct any values necessary
+            if ystart <= 0: # appium_driver.swipe fails if we are outside the boundary, so correct any values necessary
                 ystart = 1
             if ystop >= h:
                 ystop = h - 1
@@ -943,7 +943,7 @@ def read_screen_heirarchy():
     sModuleInfo = inspect.stack()[0][3] + " : " + inspect.getmoduleinfo(__file__).name
     
     try:
-        data = driver.page_source # Read screen and get xml formatted text
+        data = appium_driver.page_source # Read screen and get xml formatted text
         CommonUtil.ExecLog(sModuleInfo,"Read screen heirarchy successfully",1)
         if data:
             return data
@@ -963,13 +963,13 @@ def tap_location(data_set):
     try:
         positions = []
         posX, posY = data_set[0][2].replace(' ','').split(',')
-        positions.append((posX, posY)) # Put coordinates in a tuple inside of a list - must be this way for driver.tap
+        positions.append((posX, posY)) # Put coordinates in a tuple inside of a list - must be this way for appium_driver.tap
     except Exception:
         errMsg = "Unable to parse data set"
         return CommonUtil.Exception_Handler(sys.exc_info(),None,errMsg)
 
     try:
-        driver.tap(positions) # Tap the location (must be in list format)
+        appium_driver.tap(positions) # Tap the location (must be in list format)
         CommonUtil.ExecLog(sModuleInfo,"Tapped on location successfully",1)
         return 'passed'
     except Exception:
@@ -999,7 +999,7 @@ def get_element_location_by_id(data_set):
         return CommonUtil.Exception_Handler(sys.exc_info(),None,errMsg)
 
     try:
-        elem = locate_element_by_id(driver, _id) # Get element object for given id
+        elem = locate_element_by_id(appium_driver, _id) # Get element object for given id
         location = elem.location # Get element x,y coordinates
         positions = "%s,%s" % (location['x'], location['y']) # Save as a string - The function that uses this will need to put it in the format it needs
         CommonUtil.ExecLog(sModuleInfo,"Retreived location successfully",1)
@@ -1018,104 +1018,104 @@ def get_window_size():
     sModuleInfo = inspect.stack()[0][3] + " : " + inspect.getmoduleinfo(__file__).name
     
     try:
-        return driver.get_window_size() # Get window resolution in dictionary
+        return appium_driver.get_window_size() # Get window resolution in dictionary
         CommonUtil.ExecLog(sModuleInfo,"Read window size successfully",1)
     except Exception:
         errMsg = "Read window size unsuccessfully"
         return CommonUtil.Exception_Handler(sys.exc_info(),None,errMsg)
     
     
-def locate_element_by_id(driver, _id):
+def locate_element_by_id(appium_driver, _id):
     sModuleInfo = inspect.stack()[0][3] + " : " + inspect.getmoduleinfo(__file__).name
     try:
         CommonUtil.ExecLog(sModuleInfo,"Trying to locate element by id: %s"%_id,1)
-        elem = driver.find_element_by_id(_id)
+        elem = appium_driver.find_element_by_id(_id)
         return elem
     except Exception:
         errMsg = "Unable to locate the element."
         return CommonUtil.Exception_Handler(sys.exc_info(),None,errMsg)
 
-def locate_elements_by_id(driver, _id):
+def locate_elements_by_id(appium_driver, _id):
     sModuleInfo = inspect.stack()[0][3] + " : " + inspect.getmoduleinfo(__file__).name
     try:
         CommonUtil.ExecLog(sModuleInfo,"Trying to locate elements by id: %s"%_id,1)
-        elems = driver.find_elements_by_id(_id)
+        elems = appium_driver.find_elements_by_id(_id)
         return elems
     except Exception:
         errMsg = "Unable to locate elements."
         return CommonUtil.Exception_Handler(sys.exc_info(),None,errMsg)
 
     
-def locate_element_by_name(driver, _name):
+def locate_element_by_name(appium_driver, _name):
     sModuleInfo = inspect.stack()[0][3] + " : " + inspect.getmoduleinfo(__file__).name
     try:
         CommonUtil.ExecLog(sModuleInfo,"Trying to locate element by name: %s"%_name,1)
-        elem = driver.find_element_by_name(_name)
+        elem = appium_driver.find_element_by_name(_name)
         return elem
     except Exception:
         errMsg = "Unable to locate the element."
         return CommonUtil.Exception_Handler(sys.exc_info(),None,errMsg)
     
     
-def locate_element_by_class_name(driver, _class):
+def locate_element_by_class_name(appium_driver, _class):
     sModuleInfo = inspect.stack()[0][3] + " : " + inspect.getmoduleinfo(__file__).name
     try:
         CommonUtil.ExecLog(sModuleInfo,"Trying to locate element by class: %s"%_class,1)
-        elem = driver.find_element_by_class_name(_class)
+        elem = appium_driver.find_element_by_class_name(_class)
         return elem
     except Exception:
         errMsg = "Unable to locate the element."
         return CommonUtil.Exception_Handler(sys.exc_info(),None,errMsg)
     
     
-def locate_element_by_xpath(driver, _classpath):
+def locate_element_by_xpath(appium_driver, _classpath):
     sModuleInfo = inspect.stack()[0][3] + " : " + inspect.getmoduleinfo(__file__).name
     try:
         CommonUtil.ExecLog(sModuleInfo,"Trying to locate element by xpath: %s"%_classpath,1)
-        elem = driver.find_element_by_xpath(_classpath)
+        elem = appium_driver.find_element_by_xpath(_classpath)
         return elem
     except Exception:
         errMsg = "Unable to locate the element."
         return CommonUtil.Exception_Handler(sys.exc_info(),None,errMsg)
     
-def locate_element_by_accessibility_id(driver, _id):
+def locate_element_by_accessibility_id(appium_driver, _id):
     sModuleInfo = inspect.stack()[0][3] + " : " + inspect.getmoduleinfo(__file__).name
     try:
         CommonUtil.ExecLog(sModuleInfo,"Trying to locate element by accessibility id: %s"%_id,1)
-        elem = driver.find_element_by_accessibility_id(_id)
+        elem = appium_driver.find_element_by_accessibility_id(_id)
         return elem
     except Exception:
         errMsg = "Unable to locate the element."
         return CommonUtil.Exception_Handler(sys.exc_info(),None,errMsg)
 
 
-def locate_element_by_android_uiautomator_text(driver, _text):
+def locate_element_by_android_uiautomator_text(appium_driver, _text):
     sModuleInfo = inspect.stack()[0][3] + " : " + inspect.getmoduleinfo(__file__).name
     try:
         CommonUtil.ExecLog(sModuleInfo,"Trying to locate element by android uiautomator text: %s"%_text,1)
-        elem = driver.find_element_by_android_uiautomator('new UiSelector().text('+_text+')')
+        elem = appium_driver.find_element_by_android_uiautomator('new UiSelector().text('+_text+')')
         return elem
     except Exception:
         errMsg = "Unable to locate the element."
         return CommonUtil.Exception_Handler(sys.exc_info(),None,errMsg)
 
 
-def locate_element_by_android_uiautomator_description(driver, _description):
+def locate_element_by_android_uiautomator_description(appium_driver, _description):
     sModuleInfo = inspect.stack()[0][3] + " : " + inspect.getmoduleinfo(__file__).name
     try:
         CommonUtil.ExecLog(sModuleInfo,"Trying to locate element by android uiautomator description: %s"%_description,1)
-        elem = driver.find_element_by_android_uiautomator('new UiSelector().description('+_description+')')
+        elem = appium_driver.find_element_by_android_uiautomator('new UiSelector().description('+_description+')')
         return elem
     except Exception:
         errMsg = "Unable to locate the element."
         return CommonUtil.Exception_Handler(sys.exc_info(),None,errMsg)
 
 
-def locate_element_by_ios_uiautomation(driver, _description):
+def locate_element_by_ios_uiautomation(appium_driver, _description):
     sModuleInfo = inspect.stack()[0][3] + " : " + inspect.getmoduleinfo(__file__).name
     try:
         CommonUtil.ExecLog(sModuleInfo,"Trying to locate element by ios uiautomatoion: %s"%_description,1)
-        elem = driver.find_element_by_ios_uiautomation('.elements()[0]')
+        elem = appium_driver.find_element_by_ios_uiautomation('.elements()[0]')
         return elem
     except Exception:
         errMsg = "Unable to locate the element."
@@ -1200,40 +1200,40 @@ def Get_All_Elements_Appium(parameter,value,parent=False):
     try:
         if parent == False:
             if parameter == "id":
-                All_Elements = WebDriverWait(driver, WebDriver_Wait).until(lambda driver: driver.find_elements_by_id(value))
+                All_Elements = WebDriverWait(appium_driver, WebDriver_Wait).until(lambda driver: appium_driver.find_elements_by_id(value))
             elif parameter == "name":
-                All_Elements = WebDriverWait(driver, WebDriver_Wait).until(lambda driver: driver.find_elements_by_name(value))
+                All_Elements = WebDriverWait(appium_driver, WebDriver_Wait).until(lambda driver: appium_driver.find_elements_by_name(value))
             elif parameter == "class name":
-                All_Elements = WebDriverWait(driver, WebDriver_Wait).until(lambda driver: driver.find_elements_by_class_name(value))
+                All_Elements = WebDriverWait(appium_driver, WebDriver_Wait).until(lambda driver: appium_driver.find_elements_by_class_name(value))
             elif parameter == "xpath":
-                All_Elements = WebDriverWait(driver, WebDriver_Wait).until(lambda driver: driver.find_elements_by_xpath(value))
+                All_Elements = WebDriverWait(appium_driver, WebDriver_Wait).until(lambda driver: appium_driver.find_elements_by_xpath(value))
             elif parameter == "current screen": # Read full screen text
-                All_Elements = WebDriverWait(driver, WebDriver_Wait).until(lambda driver: driver.find_elements_by_xpath("//*"))
+                All_Elements = WebDriverWait(appium_driver, WebDriver_Wait).until(lambda driver: appium_driver.find_elements_by_xpath("//*"))
             elif parameter == "accessibility id":
-                All_Elements = WebDriverWait(driver, WebDriver_Wait).until(lambda driver: driver.find_elements_by_accessibility_id(value))    
+                All_Elements = WebDriverWait(appium_driver, WebDriver_Wait).until(lambda driver: appium_driver.find_elements_by_accessibility_id(value))
             elif parameter == "android uiautomator":
-                All_Elements = WebDriverWait(driver, WebDriver_Wait).until(lambda driver: driver.find_elements_by_android_uiautomator(value))    
+                All_Elements = WebDriverWait(appium_driver, WebDriver_Wait).until(lambda driver: appium_driver.find_elements_by_android_uiautomator(value))
             elif parameter == "ios uiautomation":
-                All_Elements = WebDriverWait(driver, WebDriver_Wait).until(lambda driver: driver.find_elements_by_ios_uiautomation(value))    
+                All_Elements = WebDriverWait(appium_driver, WebDriver_Wait).until(lambda driver: appium_driver.find_elements_by_ios_uiautomation(value))
             else:
-                All_Elements = WebDriverWait(driver, WebDriver_Wait).until(lambda driver: driver.find_elements_by_xpath("//*[@%s='%s']" %(parameter,value)))
+                All_Elements = WebDriverWait(appium_driver, WebDriver_Wait).until(lambda driver: appium_driver.find_elements_by_xpath("//*[@%s='%s']" %(parameter,value)))
         else:
             if parameter == "id":
-                All_Elements = WebDriverWait(parent, WebDriver_Wait).until(lambda driver: driver.find_elements_by_id(value))
+                All_Elements = WebDriverWait(parent, WebDriver_Wait).until(lambda driver: appium_driver.find_elements_by_id(value))
             elif parameter == "name":
-                All_Elements = WebDriverWait(parent, WebDriver_Wait).until(lambda driver: driver.find_elements_by_name(value))
+                All_Elements = WebDriverWait(parent, WebDriver_Wait).until(lambda driver: appium_driver.find_elements_by_name(value))
             elif parameter == "class name":
-                All_Elements = WebDriverWait(parent, WebDriver_Wait).until(lambda driver: driver.find_elements_by_class_name(value))
+                All_Elements = WebDriverWait(parent, WebDriver_Wait).until(lambda driver: appium_driver.find_elements_by_class_name(value))
             elif parameter == "xpath":
-                All_Elements = WebDriverWait(parent, WebDriver_Wait).until(lambda driver: driver.find_elements_by_xpath(value))
+                All_Elements = WebDriverWait(parent, WebDriver_Wait).until(lambda driver: appium_driver.find_elements_by_xpath(value))
             elif parameter == "accessibility id":
-                All_Elements = WebDriverWait(parent, WebDriver_Wait).until(lambda driver: driver.find_elements_by_accessibility_id(value))    
+                All_Elements = WebDriverWait(parent, WebDriver_Wait).until(lambda driver: appium_driver.find_elements_by_accessibility_id(value))
             elif parameter == "android uiautomator":
-                All_Elements = WebDriverWait(parent, WebDriver_Wait).until(lambda driver: driver.find_elements_by_android_uiautomator(value))    
+                All_Elements = WebDriverWait(parent, WebDriver_Wait).until(lambda driver: appium_driver.find_elements_by_android_uiautomator(value))
             elif parameter == "ios uiautomation":
-                All_Elements = WebDriverWait(parent, WebDriver_Wait).until(lambda driver: driver.find_elements_by_ios_uiautomation(value))    
+                All_Elements = WebDriverWait(parent, WebDriver_Wait).until(lambda driver: appium_driver.find_elements_by_ios_uiautomation(value))
             else:
-                All_Elements = WebDriverWait(parent, WebDriver_Wait).until(lambda driver: driver.find_elements_by_xpath("//*[@%s='%s']" %(parameter,value)))    
+                All_Elements = WebDriverWait(parent, WebDriver_Wait).until(lambda driver: appium_driver.find_elements_by_xpath("//*[@%s='%s']" %(parameter,value)))
         
         return All_Elements
     except Exception:
@@ -1580,7 +1580,7 @@ def Tap_Appium(data_set):
                 try:
                     Element = Get_Element_Appium(returned_step_data_list[0], returned_step_data_list[1], returned_step_data_list[2], returned_step_data_list[3], returned_step_data_list[4])
                     if Element.is_enabled():
-                        action = TouchAction(driver)
+                        action = TouchAction(appium_driver)
                         action.tap(Element).perform()
                         CommonUtil.ExecLog(sModuleInfo, "Tapped on element successfully", 1)
                         return "passed"
@@ -1618,7 +1618,7 @@ def Double_Tap_Appium(data_set):
                                                  returned_step_data_list[2], returned_step_data_list[3],
                                                  returned_step_data_list[4])
                     if Element.is_enabled():
-                        action = TouchAction(driver)
+                        action = TouchAction(appium_driver)
 
                         action.press(Element).wait(100).release().press(Element).wait(100).release().perform()
 
@@ -1658,7 +1658,7 @@ def Long_Press_Appium(data_set):
                                                  returned_step_data_list[2], returned_step_data_list[3],
                                                  returned_step_data_list[4])
                     if Element.is_enabled():
-                        action = TouchAction(driver)
+                        action = TouchAction(appium_driver)
 
                         action.long_press(Element, 150, 10).release().perform()
 
@@ -1709,10 +1709,10 @@ def Enter_Text_Appium(data_set):
                         Element.set_value(text_value) # Work around for IOS issue in Appium v1.6.4 where send_keys() doesn't work
                     else:
                         Element.send_keys(text_value) # Enter the user specified text
-                    driver.hide_keyboard() # Remove keyboard
-                    CommonUtil.TakeScreenShot(sModuleInfo) # Capture screen
-                    CommonUtil.ExecLog(sModuleInfo, "Successfully set the value of to text to: %s"%text_value, 1)
-                    return "passed"
+                        appium_driver.hide_keyboard() # Remove keyboard
+                        CommonUtil.TakeScreenShot(sModuleInfo) # Capture screen
+                        CommonUtil.ExecLog(sModuleInfo, "Successfully set the value of to text to: %s"%text_value, 1)
+                        return "passed"
                 except Exception:
                     errMsg = "Could not enter text in the desired element."
                     return CommonUtil.Exception_Handler(sys.exc_info(),None,errMsg)
@@ -1736,35 +1736,35 @@ def Android_Keystroke_Key_Mapping(keystroke):
     
     try:
         if keystroke == "return" or keystroke == "enter":
-            driver.keyevent(66)
+            appium_driver.keyevent(66)
         elif keystroke == "go back" or keystroke == "back":
-            driver.back()
+            appium_driver.back()
         elif keystroke == "spacebar":
-            driver.keyevent(62)
+            appium_driver.keyevent(62)
         elif keystroke == "backspace":
-            driver.keyevent(67)
+            appium_driver.keyevent(67)
         elif keystroke == "call": # Press call connect, or starts phone program if not already started
-            driver.keyevent(5)
+            appium_driver.keyevent(5)
         elif keystroke == "end call":
-            driver.keyevent(6)
+            appium_driver.keyevent(6)
         elif keystroke == "home":
-            driver.keyevent(3)
+            appium_driver.keyevent(3)
         elif keystroke == "mute":
-            driver.keyevent(164)
+            appium_driver.keyevent(164)
         elif keystroke == "volume down":
-            driver.keyevent(25)
+            appium_driver.keyevent(25)
         elif keystroke == "volume up":
-            driver.keyevent(24)
+            appium_driver.keyevent(24)
         elif keystroke == "wake":
-            driver.keyevent(224)
+            appium_driver.keyevent(224)
         elif keystroke == "power":
-            driver.keyevent(26)
+            appium_driver.keyevent(26)
         elif keystroke == "app switch": # Task switcher / overview screen
-            driver.keyevent(187)
+            appium_driver.keyevent(187)
         elif keystroke == "page down":
-            driver.keyevent(93)
+            appium_driver.keyevent(93)
         elif keystroke == "page up":
-            driver.keyevent(92)
+            appium_driver.keyevent(92)
         else:
             CommonUtil.ExecLog(sModuleInfo, "Unsupported key event: %s" % keystroke, 3)
 
@@ -1781,17 +1781,17 @@ def iOS_Keystroke_Key_Mapping(keystroke):
 
     try:
         if keystroke == "return" or keystroke == 'enter':
-            driver.keyevent(13)
+            appium_driver.keyevent(13)
         elif keystroke == "go back" or keystroke == "back":
-            driver.back()
+            appium_driver.back()
         elif keystroke == "space":
-            driver.keyevent(32)
+            appium_driver.keyevent(32)
         elif keystroke == "backspace":
-            driver.keyevent(8)
+            appium_driver.keyevent(8)
         elif keystroke == "call":
-            driver.keyevent(5)            
+            appium_driver.keyevent(5)
         elif keystroke == "end call":
-            driver.keyevent(6)
+            appium_driver.keyevent(6)
                                      
     except Exception:
         errMsg = "Could not press enter for your element."
