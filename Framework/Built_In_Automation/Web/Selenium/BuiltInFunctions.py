@@ -39,6 +39,10 @@ WebDriver_Wait_Short = 10
 global selenium_driver
 selenium_driver = None
 
+dependency = None #!!! TEMP - Replace with None for production
+if Shared_Resources.Test_Shared_Variables('dependency'): # Check if driver is already set in shared variables
+    dependency = Shared_Resources.Get_Shared_Variables('dependency') # Retreive selenium driver
+
 passed_tag_list=['Pass','pass','PASS','PASSED','Passed','passed','true','TRUE','True','1','Success','success','SUCCESS']
 failed_tag_list=['Fail','fail','FAIL','Failed','failed','FAILED','false','False','FALSE','0']
 skipped_tag_list=['skip','SKIP','Skip','skipped','SKIPPED','Skipped']
