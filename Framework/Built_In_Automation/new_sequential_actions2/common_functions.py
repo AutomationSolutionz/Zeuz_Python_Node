@@ -89,11 +89,15 @@ def adjust_element_parameters(step_data):
     platforms = ('android', 'ios')
     
     # Get saved dependency
-    if sr.Test_Shared_Variables('dependency') == False: # No dependency
+    if sr.Test_Shared_Variables('dependency') == False: # No dependency at all
         CommonUtil.ExecLog(sModuleInfo, "No dependency set - functions may not work properly if step data contains platform names", 2)
         return step_data # Return unmodified
-    dependency = sr.Get_Shared_Variables('dependency')
-    print dependency
+    else: # Have dependency
+        dependency = sr.Get_Shared_Variables('dependency') # Save locally
+        if 'Mobile' not in dependency: # We have a dependency, but not a mobile, so we don't need to do anything
+            CommonUtil.ExecLog(sModuleInfo, "No mobile dependency set - exiting", 1)
+            return step_data # Return unmodified
+            
     
     new_step_data = [] # Create empty list that will contain the data sets
     for data_set in step_data: # For each data set within step data

@@ -182,7 +182,8 @@ def Sequential_Actions(step_data, _dependency = {}, _run_time_params = '', _file
     step_data = common.sanitize(step_data, column = 1) # Sanitize Sub-Field
     step_data = common.adjust_element_parameters(step_data) # Parse any mobile platform related fields
     
-    try:            
+    try:
+        result = 'failed' # Initialize result            
         for data_set in step_data: # For each data set within step data
             logic_row=[] # Holds conditional actions
             for row in data_set: # For each row of the data set

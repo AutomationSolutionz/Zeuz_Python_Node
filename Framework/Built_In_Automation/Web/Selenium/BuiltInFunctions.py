@@ -39,7 +39,7 @@ WebDriver_Wait_Short = 10
 global selenium_driver
 selenium_driver = None
 
-dependency = None #!!! TEMP - Replace with None for production
+dependency = None
 if Shared_Resources.Test_Shared_Variables('dependency'): # Check if driver is already set in shared variables
     dependency = Shared_Resources.Get_Shared_Variables('dependency') # Retreive selenium driver
 
@@ -134,7 +134,7 @@ def Open_Browser_Wrapper(step_data):
     #if not then we don't do the validation
     sModuleInfo = inspect.stack()[0][3] + " : " + inspect.getmoduleinfo(__file__).name
     try:
-        browser=step_data[0][2]
+        browser = dependency['Browser']
         dict = {'Browser':browser}
         return Open_Browser(dict)
     except Exception:
