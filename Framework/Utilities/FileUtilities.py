@@ -1,8 +1,8 @@
 # -*- coding: utf-8 -*-
 # -*- coding: cp1252 -*-
 
-import os,subprocess,shutil
-
+import os,subprocess,shutil,sys
+from Framework.Utilities import CommonUtil
 
 def get_home_folder():
     """
@@ -27,9 +27,8 @@ def CreateFolder(folderPath, forced=True):
             DeleteFolder(folderPath)
         os.makedirs(folderPath)
         return True
-    except Exception, e:
-        return "Error: %s" % e
-
+    except Exception:
+        return CommonUtil.Exception_Handler(sys.exc_info())
 
 def DeleteFolder(sFolderPath):
     """
@@ -49,8 +48,9 @@ def DeleteFolder(sFolderPath):
             return True
         else:
             return False
-    except Exception, e:
-        return "Error: %s" % e
+
+    except Exception:
+        return CommonUtil.Exception_Handler(sys.exc_info())
 
 
 def CreateFile(sFilePath):
@@ -63,8 +63,8 @@ def CreateFile(sFilePath):
             newfile = open(sFilePath, 'w')
             newfile.close()
             return True
-    except Exception, e:
-        return "Error: %s" % e
+    except Exception:
+        return CommonUtil.Exception_Handler(sys.exc_info())
 
 
 def ZipFolder(dir, zip_file):
@@ -88,9 +88,8 @@ def ZipFolder(dir, zip_file):
 
         zip.close()
         return zip_file
-    except Exception, e:
-        print "Exception :", e
-        return False
+    except Exception:
+        return CommonUtil.Exception_Handler(sys.exc_info())
 
 
 def DeleteFile(sFilePath):
@@ -98,8 +97,8 @@ def DeleteFile(sFilePath):
         if os.path.isfile(sFilePath):
             os.remove(sFilePath)
             return True
-    except Exception, e:
-        return "Error: %s" % e
+    except Exception:
+        return CommonUtil.Exception_Handler(sys.exc_info())
 
 
 def copy_folder(src, dest):
@@ -112,9 +111,8 @@ def copy_folder(src, dest):
     try:
         shutil.copytree(src, dest)
         return True
-    except Exception, e:
-        print "Error: %s" % e
-        return False
+    except Exception:
+        return CommonUtil.Exception_Handler(sys.exc_info())
 
 
 def copy_file(src, dest):
@@ -127,6 +125,5 @@ def copy_file(src, dest):
     try:
         shutil.copyfile(src, dest)
         return True
-    except Exception, e:
-        print "Error: %s" % e
-        return False
+    except Exception:
+        return CommonUtil.Exception_Handler(sys.exc_info())

@@ -56,10 +56,13 @@ def validate_xml(filepath):
         try:
             xmlschema.validate(doc)
             CommonUtil.ExecLog(sModuleInfo, "%s file is validated." % filepath, 1)
-        except Exception, e:
-            CommonUtil.ExecLog(sModuleInfo, "%s file is not validated. %s" % (filepath, e), 3)
-    except Exception, e:
-        CommonUtil.ExecLog(sModuleInfo, "Exception: %s" % e, 3)
+
+        except Exception:
+            errMsg = "%s file is not validated." % filepath
+            return CommonUtil.Exception_Handler(sys.exc_info(), None, errMsg)
+
+    except Exception:
+        return CommonUtil.Exception_Handler(sys.exc_info())
 
 
 def check_form(filepath):
@@ -67,8 +70,10 @@ def check_form(filepath):
     try:
         x = ET.fromstring(filepath)
         CommonUtil.ExecLog(sModuleInfo, "%s file is well-formed. %s" % filepath, 1)
-    except Exception, e:
-        CommonUtil.ExecLog(sModuleInfo, "%s file is not well-formed. %s" % (filepath, e), 3)
+
+    except Exception:
+        errMsg = "%s file is not well-formed." % filepath
+        return CommonUtil.Exception_Handler(sys.exc_info(), None, errMsg)
 
 def check_wellformed(filename):
     sModuleInfo = inspect.stack()[0][3] + " : " + inspect.getmoduleinfo(__file__).name
@@ -78,8 +83,10 @@ def check_wellformed(filename):
         parser.setContentHandler(ContentHandler( ))
         parser.parse(filename)
         CommonUtil.ExecLog(sModuleInfo, "%s is well-formed. %s" % filename, 1)
-    except Exception, e:
-        CommonUtil.ExecLog(sModuleInfo, "%s is NOT well-formed! %s" % (filename, e), 3)
+
+    except Exception:
+        errMsg = "%s is NOT well-formed! " % filename
+        return CommonUtil.Exception_Handler(sys.exc_info(), None, errMsg)
 
 
 def check_exist(filepath):
@@ -94,9 +101,10 @@ def check_exist(filepath):
             CommonUtil.ExecLog(sModuleInfo, "%s file is not found." % filepath, 3)
             return "Failed"
 
-    except Exception, e:
-        CommonUtil.ExecLog(sModuleInfo, "%s file existence is not checked. %s" % (filepath, e), 3)
-        return "Failed"
+
+    except Exception:
+        errMsg = "%s file existence is not checked." % filepath
+        return CommonUtil.Exception_Handler(sys.exc_info(), None, errMsg)
 
 
 def check_tags_exist(filepath, tag, subtag):
@@ -117,6 +125,7 @@ def check_tags_exist(filepath, tag, subtag):
                 else:
                     CommonUtil.ExecLog(sModuleInfo, "%s tag is found in %s." % (subtag, tag), 1) 
 
-    except Exception, e:
-        CommonUtil.ExecLog(sModuleInfo, "%s - %s tag existence is not checked. %s" % (filepath, tag, e), 3)
-        return "Failed"
+
+    except Exception:
+        errMsg = "%s - %s tag existence is not checked. " % (filepath, tag)
+        return CommonUtil.Exception_Handler(sys.exc_info(), None, errMsg)
