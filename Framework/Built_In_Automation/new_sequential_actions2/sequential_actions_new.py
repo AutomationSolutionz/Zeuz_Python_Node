@@ -209,6 +209,7 @@ def Sequential_Actions(step_data, _dependency = {}, _run_time_params = '', _file
                     if len(logic_row) == 2:
                         CommonUtil.ExecLog(sModuleInfo, "Found 2 conditional actions - moving ahead with them", 1)
                         return Conditional_Action_Handler(step_data, data_set, row, logic_row) # Pass step_data, and current iteration of data set to decide which data sets will be processed next
+                        # At this point, we don't process any more data sets, which is why we return here. The conditional action function takes care of the rest of the execution
                 
                 # If middle column = action, call action handler
                 elif "action" in action_name: # Must be last, since it's a single word that also exists in other action types
@@ -222,8 +223,8 @@ def Sequential_Actions(step_data, _dependency = {}, _run_time_params = '', _file
                     CommonUtil.ExecLog(sModuleInfo, "The sub-field information is incorrect. Please provide accurate information on the data set(s).", 3)
                     return "failed"                 
         
-        # No failures, return pass
-        return "passed"
+        # No failures, return result
+        return result
 
     except Exception:
         return CommonUtil.Exception_Handler(sys.exc_info())
