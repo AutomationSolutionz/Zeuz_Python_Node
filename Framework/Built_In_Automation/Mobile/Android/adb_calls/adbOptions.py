@@ -3,7 +3,7 @@
 
 #Android Debug Bridge (ADB) options to get the android devices info connected via usb/wi-fi
 __author__='minar'
-import subprocess, inspect, os
+import subprocess, inspect, os, sys
 from Framework.Utilities import CommonUtil
 
 def start_adb_server():
@@ -12,9 +12,10 @@ def start_adb_server():
         output = subprocess.check_output("adb start server", shell=True)
         CommonUtil.ExecLog(sModuleInfo, "Starting adb server", 1)
         return output
-    except Exception, e:
-        CommonUtil.ExecLog(sModuleInfo, "Unable to start adb server", 3)
-        return "ADB shell command failed"
+
+    except Exception:
+        errMsg = "Unable to start adb server"
+        return CommonUtil.Exception_Handler(sys.exc_info(),None,errMsg)
 
 def kill_adb_server():
     sModuleInfo = inspect.stack()[0][3] + " : " + inspect.getmoduleinfo(__file__).name
@@ -22,9 +23,10 @@ def kill_adb_server():
         output = subprocess.check_output("adb kill-server", shell=True)
         CommonUtil.ExecLog(sModuleInfo, "Killing adb server", 1)
         return output
-    except Exception, e:
-        CommonUtil.ExecLog(sModuleInfo, "Unable to kill adb server", 3)
-        return "ADB shell command failed"
+
+    except Exception:
+        errMsg = "Unable to kill adb server"
+        return CommonUtil.Exception_Handler(sys.exc_info(),None,errMsg)
 
 
 def get_android_version():
@@ -33,9 +35,10 @@ def get_android_version():
         output = subprocess.check_output("adb shell getprop ro.build.version.release", shell=True)
         CommonUtil.ExecLog(sModuleInfo, "%s"%output, 1)
         return output
-    except Exception, e:
-        CommonUtil.ExecLog(sModuleInfo, "Unable to get android version", 3)
-        return "ADB shell command failed"
+
+    except Exception:
+        errMsg = "Unable to get android version"
+        return CommonUtil.Exception_Handler(sys.exc_info(),None,errMsg)
     
 def get_device_model():
     sModuleInfo = inspect.stack()[0][3] + " : " + inspect.getmoduleinfo(__file__).name
@@ -43,9 +46,10 @@ def get_device_model():
         output = subprocess.check_output("adb shell getprop ro.product.model", shell=True)
         CommonUtil.ExecLog(sModuleInfo, "%s"%output, 1)
         return output
-    except Exception, e:
-        CommonUtil.ExecLog(sModuleInfo, "Unable to get device model", 3)
-        return "ADB shell command failed"
+
+    except Exception:
+        errMsg = "Unable to get device model"
+        return CommonUtil.Exception_Handler(sys.exc_info(),None,errMsg)
     
 def get_device_name():
     sModuleInfo = inspect.stack()[0][3] + " : " + inspect.getmoduleinfo(__file__).name
@@ -53,9 +57,10 @@ def get_device_name():
         output = subprocess.check_output("adb shell getprop ro.product.name", shell=True)
         CommonUtil.ExecLog(sModuleInfo, "%s"%output, 1)
         return output
-    except Exception, e:
-        CommonUtil.ExecLog(sModuleInfo, "Unable to get device name", 3)
-        return "ADB shell command failed"
+
+    except Exception:
+        errMsg = "Unableto get device name"
+        return CommonUtil.Exception_Handler(sys.exc_info(),None,errMsg)
     
 def get_device_manufacturer():
     sModuleInfo = inspect.stack()[0][3] + " : " + inspect.getmoduleinfo(__file__).name
@@ -63,9 +68,10 @@ def get_device_manufacturer():
         output = subprocess.check_output("adb shell getprop ro.product.manufacturer", shell=True)
         CommonUtil.ExecLog(sModuleInfo, "%s"%output, 1)
         return output
-    except Exception, e:
-        CommonUtil.ExecLog(sModuleInfo, "Unable to get device manufacturer", 3)
-        return "ADB shell command failed"
+
+    except Exception:
+        errMsg = "Unable to get device manufacturer."
+        return CommonUtil.Exception_Handler(sys.exc_info(),None,errMsg)
     
 def get_device_imei_info():
     sModuleInfo = inspect.stack()[0][3] + " : " + inspect.getmoduleinfo(__file__).name
@@ -73,9 +79,10 @@ def get_device_imei_info():
         output = subprocess.check_output("adb shell dumpsys iphonesubinfo", shell=True)
         CommonUtil.ExecLog(sModuleInfo, "%s"%output, 1)
         return output
-    except Exception, e:
-        CommonUtil.ExecLog(sModuleInfo, "Unable to get device IMEI info", 3)
-        return "ADB shell command failed"
+
+    except Exception:
+        errMsg = "Unable to get device IMEI info"
+        return CommonUtil.Exception_Handler(sys.exc_info(),None,errMsg)
     
 def get_device_summary():
     sModuleInfo = inspect.stack()[0][3] + " : " + inspect.getmoduleinfo(__file__).name
@@ -83,9 +90,10 @@ def get_device_summary():
         output = subprocess.check_output("adb devices -l", shell=True)
         CommonUtil.ExecLog(sModuleInfo, "%s"%output, 1)
         return output
-    except Exception, e:
-        CommonUtil.ExecLog(sModuleInfo, "Unable to get device summary", 3)
-        return "ADB shell command failed"
+
+    except Exception:
+        errMsg = "Unable to get device summary"
+        return CommonUtil.Exception_Handler(sys.exc_info(),None,errMsg)
     
 def get_device_complete_info():
     sModuleInfo = inspect.stack()[0][3] + " : " + inspect.getmoduleinfo(__file__).name
@@ -93,9 +101,10 @@ def get_device_complete_info():
         output = subprocess.check_output("adb devices -l", shell=True)
         CommonUtil.ExecLog(sModuleInfo, "%s"%output, 1)
         return output
-    except Exception, e:
-        CommonUtil.ExecLog(sModuleInfo, "Unable to get device complete info", 3)
-        return "ADB shell command failed"
+
+    except Exception:
+        errMsg = "Unable to get device complete info"
+        return CommonUtil.Exception_Handler(sys.exc_info(),None,errMsg)
 
 def get_devices():
     sModuleInfo = inspect.stack()[0][3] + " : " + inspect.getmoduleinfo(__file__).name
@@ -103,9 +112,10 @@ def get_devices():
         output = subprocess.check_output("adb devices", shell=True)
         CommonUtil.ExecLog(sModuleInfo, "%s"%output, 1)
         return output
-    except Exception, e:
-        CommonUtil.ExecLog(sModuleInfo, "Unable to get devices", 3)
-        return "ADB shell command failed"
+
+    except Exception:
+        errMsg = "Unable to get devices"
+        return CommonUtil.Exception_Handler(sys.exc_info(),None,errMsg)
 
 def get_android_sdk():
     sModuleInfo = inspect.stack()[0][3] + " : " + inspect.getmoduleinfo(__file__).name
@@ -113,9 +123,10 @@ def get_android_sdk():
         output = subprocess.check_output("adb shell getprop ro.build.version.sdk", shell=True)
         CommonUtil.ExecLog(sModuleInfo, "%s"%output, 1)
         return output
-    except Exception, e:
-        CommonUtil.ExecLog(sModuleInfo, "Unable to get android sdk", 3)
-        return "ADB shell command failed"
+
+    except Exception:
+        errMsg = "Unable to get android sdk"
+        return CommonUtil.Exception_Handler(sys.exc_info(),None,errMsg)
     
 def install_app(apk_path):
     sModuleInfo = inspect.stack()[0][3] + " : " + inspect.getmoduleinfo(__file__).name
@@ -123,9 +134,10 @@ def install_app(apk_path):
         output = subprocess.check_output("adb install %s"%apk_path, shell=True)
         CommonUtil.ExecLog(sModuleInfo, "Installed app located %s"%apk_path, 1)
         return output
-    except Exception, e:
-        CommonUtil.ExecLog(sModuleInfo, "Unable to install app located %s"%apk_path, 3)
-        return "ADB shell command failed"
+
+    except Exception:
+        errMsg = "Unable to install app located %s"%apk_path
+        return CommonUtil.Exception_Handler(sys.exc_info(),None,errMsg)
 
 def connect_device_via_wifi(device_ip):
     sModuleInfo = inspect.stack()[0][3] + " : " + inspect.getmoduleinfo(__file__).name
@@ -137,9 +149,10 @@ def connect_device_via_wifi(device_ip):
         output = subprocess.check_output("adb devices", shell=True)
         CommonUtil.ExecLog(sModuleInfo, "%s"%output, 1)
         return output
-    except Exception, e:
-        CommonUtil.ExecLog(sModuleInfo, "Unable to connect device via wifi", 3)
-        return "ADB shell command failed"
+
+    except Exception:
+        errMsg = "Unable to connect device via wifi"
+        return CommonUtil.Exception_Handler(sys.exc_info(),None,errMsg)
 
 def take_screenshot(image_name):
     sModuleInfo = inspect.stack()[0][3] + " : " + inspect.getmoduleinfo(__file__).name
@@ -149,9 +162,10 @@ def take_screenshot(image_name):
         os.system("adb pull /sdcard/%s.png"%image_name)
         CommonUtil.ExecLog(sModuleInfo, "Screenshot taken as %s.png"%image_name, 1)
         return "Screen shot taken"
-    except Exception, e:
-        CommonUtil.ExecLog(sModuleInfo, "Unable to take screenshot", 3)
-        return "ADB shell command failed"
+
+    except Exception:
+        errMsg = "Unable to take screenshot"
+        return CommonUtil.Exception_Handler(sys.exc_info(),None,errMsg)
 
 def record_screen(folder_path,video_name):
     sModuleInfo = inspect.stack()[0][3] + " : " + inspect.getmoduleinfo(__file__).name
@@ -160,9 +174,10 @@ def record_screen(folder_path,video_name):
         os.system("adb pull /sdcard/%s.mp4"%video_name)
         CommonUtil.ExecLog(sModuleInfo, "Screen recorded as %s.mp4"%video_name, 1)
         return "Screen recorded"
-    except Exception, e:
-        CommonUtil.ExecLog(sModuleInfo, "Unable to record", 3)
-        return "ADB shell command failed"
+
+    except Exception:
+        errMsg = "Unable to record"
+        return CommonUtil.Exception_Handler(sys.exc_info(),None,errMsg)
 
 def get_device_battery_info():
     sModuleInfo = inspect.stack()[0][3] + " : " + inspect.getmoduleinfo(__file__).name
@@ -170,9 +185,10 @@ def get_device_battery_info():
         output = subprocess.check_output("adb shell dumpsys battery", shell=True)
         CommonUtil.ExecLog(sModuleInfo, "%s"%output, 1)
         return output
-    except Exception, e:
-        CommonUtil.ExecLog(sModuleInfo, "Unable to get device battery info", 3)
-        return "ADB shell command failed"
+
+    except Exception:
+        errMsg = "Unable to get device battery info"
+        return CommonUtil.Exception_Handler(sys.exc_info(),None,errMsg)
        
 def get_device_wifi_info():
     sModuleInfo = inspect.stack()[0][3] + " : " + inspect.getmoduleinfo(__file__).name
@@ -180,9 +196,10 @@ def get_device_wifi_info():
         output = subprocess.check_output("adb shell dumpsys wifi", shell=True)
         CommonUtil.ExecLog(sModuleInfo, "%s"%output, 1)
         return output
-    except Exception, e:
-        CommonUtil.ExecLog(sModuleInfo, "Unable to get device wifi info", 3)
-        return "ADB shell command failed"
+
+    except Exception:
+        errMsg = "Unable to get device wifi info"
+        return CommonUtil.Exception_Handler(sys.exc_info(),None,errMsg)
     
 def get_device_cpu_info():
     sModuleInfo = inspect.stack()[0][3] + " : " + inspect.getmoduleinfo(__file__).name
@@ -190,9 +207,10 @@ def get_device_cpu_info():
         output = subprocess.check_output("adb shell dumpsys cpuinfo", shell=True)
         CommonUtil.ExecLog(sModuleInfo, "%s"%output, 1)
         return output
-    except Exception, e:
-        CommonUtil.ExecLog(sModuleInfo, "Unable to get device CPU info", 3)
-        return "ADB shell command failed"
+
+    except Exception:
+        errMsg = "Unable to get device CPU info"
+        return CommonUtil.Exception_Handler(sys.exc_info(),None,errMsg)
 
 def get_package_name():
     sModuleInfo = inspect.stack()[0][3] + " : " + inspect.getmoduleinfo(__file__).name
@@ -200,6 +218,7 @@ def get_package_name():
         output = subprocess.check_output("adb shell pm list packages", shell=True)
         CommonUtil.ExecLog(sModuleInfo, "Getting Packages Name of Installed Applications", 1)
         return output
-    except Exception, e:
-        CommonUtil.ExecLog(sModuleInfo,"Unable to get Packages Name", 3)
-        return "ADB shell command failed"
+
+    except Exception:
+        errMsg = "Unable to get Packages Name"
+        return CommonUtil.Exception_Handler(sys.exc_info(),None,errMsg)

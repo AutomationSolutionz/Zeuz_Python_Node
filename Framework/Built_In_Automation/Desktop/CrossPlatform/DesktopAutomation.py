@@ -6,6 +6,7 @@ import numpy as np
 import imutils
 import glob
 import cv2
+import sys
 import os
 from Framework.Utilities import CommonUtil
 from Framework.Utilities import FileUtilities as FL
@@ -124,8 +125,11 @@ def click(logo, num_of_clicks=1):
 
         return "Failed"
 
-    except Exception, e:
-        return "Failed"
+
+    except Exception:
+
+        return CommonUtil.Exception_Handler(sys.exc_info())
+
 
 '''def main():
     click('/home/batman/Desktop/Untitled Folder/template4.png',1)

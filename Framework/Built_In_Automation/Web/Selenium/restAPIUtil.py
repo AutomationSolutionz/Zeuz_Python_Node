@@ -69,9 +69,11 @@ def rest_API_Helper(rest_call_type,url,headers=False,payload_type=False,body=Fal
             else:
                 CommonUtil.ExecLog(sModuleInfo, "Error in REST request. Status Code: %s"%response.status_code, 3)
                 
-    except Exception, e:
+
+    except Exception:
         errMsg = "rest_API_Helper not successful in returning data. Please check the data entered."
-        Exception_Info(sModuleInfo, errMsg)
+        return CommonUtil.Exception_Handler(sys.exc_info(),None,errMsg)
+
 
 
 # Internal method
@@ -106,9 +108,10 @@ def _response_Validation(payload_type, response, extraction_data=False):
             #CommonUtil.ExecLog(sModuleInfo, "Validation not yet implemented. Failing validation step.", 2)  
             #return "failed"
             
-    except Exception, e:
+
+    except Exception:
         errMsg = "Unable to validate response."
-        Exception_Info(sModuleInfo, errMsg)
+        return CommonUtil.Exception_Handler(sys.exc_info(),None,errMsg)
 
         
 def Exception_Info(sModuleInfo, errMsg):
