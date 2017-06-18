@@ -21,10 +21,8 @@ from Framework.Built_In_Automation.Shared_Resources import BuiltInFunctionShared
 requests.packages.urllib3.disable_warnings()
 
 from Framework.Utilities import CommonUtil
+from Framework.Utilities.CommonUtil import passed_tag_list, failed_tag_list, skipped_tag_list
 
-passed_tag_list=['Pass','pass','PASS','PASSED','Passed','passed','true','TRUE','True','1','Success','success','SUCCESS']
-failed_tag_list=['Fail','fail','FAIL','Failed','failed','FAILED','false','False','FALSE','0']
-skipped_tag_list=['skip','SKIP','Skip','skipped','SKIPPED','Skipped']
 
 '============================= Sequential Action Section Begins=============================='
 

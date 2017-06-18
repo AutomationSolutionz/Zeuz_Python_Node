@@ -29,7 +29,7 @@ from Framework.Utilities import CommonUtil
 
 from selenium.webdriver.support import expected_conditions as EC
 from Framework.Built_In_Automation.Shared_Resources import BuiltInFunctionSharedResources as Shared_Resources
-
+from Framework.Utilities.CommonUtil import passed_tag_list, failed_tag_list, skipped_tag_list
 
 global WebDriver_Wait
 WebDriver_Wait = 20
@@ -43,9 +43,7 @@ dependency = None
 if Shared_Resources.Test_Shared_Variables('dependency'): # Check if driver is already set in shared variables
     dependency = Shared_Resources.Get_Shared_Variables('dependency') # Retreive selenium driver
 
-passed_tag_list=['Pass','pass','PASS','PASSED','Passed','passed','true','TRUE','True','1','Success','success','SUCCESS']
-failed_tag_list=['Fail','fail','FAIL','Failed','failed','FAILED','false','False','FALSE','0']
-skipped_tag_list=['skip','SKIP','Skip','skipped','SKIPPED','Skipped']
+
 
 def Open_Browser(dependency):
     global selenium_driver

@@ -7,13 +7,11 @@ import inspect,sys
 import string
 import random
 from Framework.Utilities import CommonUtil
-
+from Framework.Utilities.CommonUtil import passed_tag_list, failed_tag_list
 
 global shared_variables
 shared_variables = {}
 
-passed_tag_list=['Pass','pass','PASS','PASSED','Passed','passed','true','TRUE','True','1','Success','success','SUCCESS']
-failed_tag_list=['Fail','fail','FAIL','Failed','failed','FAILED','false','False','FALSE','0']
 
 def Set_Shared_Variables(key, value):
     try:

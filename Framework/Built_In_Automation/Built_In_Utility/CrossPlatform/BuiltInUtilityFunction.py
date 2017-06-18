@@ -19,11 +19,8 @@ import random
 import requests
 from Framework.Utilities import CommonUtil
 from sys import platform as _platform
+from Framework.Utilities.CommonUtil import passed_tag_list, failed_tag_list, skipped_tag_list
 
-passed_tag_list = ['Pass', 'pass', 'PASS', 'PASSED', 'Passed', 'passed', 'true', 'TRUE', 'True', '1', 'Success',
-                   'success', 'SUCCESS', True]
-failed_tag_list = ['Fail', 'fail', 'FAIL', 'Failed', 'failed', 'FAILED', 'false', 'False', 'FALSE', '0', False]
-skipped_tag_list=['skip','SKIP','Skip','skipped','SKIPPED','Skipped']
 from Framework.Built_In_Automation.Shared_Resources import BuiltInFunctionSharedResources as Shared_Resources
 import os, subprocess, shutil
 
@@ -2285,3 +2282,4 @@ def Sequential_Actions(step_data):
 
 
 '===================== ===x=== Sequential Action Section Ends ===x=== ======================'
+

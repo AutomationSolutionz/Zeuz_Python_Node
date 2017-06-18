@@ -3,9 +3,7 @@ import inspect
 from Framework.Utilities import CommonUtil
 from Projects.Sample_Amazon_Testing import Amazon
 
-passed_tag_list=['Pass','pass','PASS','PASSED','Passed','passed','true','TRUE','True',True,1,'1','Success','success','SUCCESS']
-failed_tag_list=['Fail','fail','FAIL','Failed','failed','FAILED','false','False','FALSE',False,0,'0']
-
+from Framework.Utilities.CommonUtil import passed_tag_list, failed_tag_list
 
 def search_an_item_on_amazon(dependency,run_time_params,step_data,file_attachment,temp_q):
     sModuleInfo = inspect.stack()[0][3] + " : " + inspect.getmoduleinfo(__file__).name
