@@ -6,9 +6,8 @@
 import inspect, sys, time
 from Framework.Utilities import CommonUtil
 from Framework.Built_In_Automation.Shared_Resources import BuiltInFunctionSharedResources as sr
+from sequential_actions_new import actions, action_support
 
-# Allowed return strings, used to normalize pass/fail
-from Framework.Utilities.CommonUtil import passed_tag_list, failed_tag_list, skipped_tag_list
 
 def sanitize(step_data, valid_chars = '', clean_whitespace_only = False, column = ''):
     ''' Sanitize step data Field and Sub-Field '''
@@ -64,14 +63,44 @@ def verify_step_data(step_data):
     CommonUtil.ExecLog(sModuleInfo, "Verifying Step Data", 1)
     
     try:
+        data_set_index = 0
         for data_set in step_data:
+            data_set_index += 1
+            module_test = False
+            field_text = True # !!! This should be set to false, but we are not using this for now
+            
             for row in data_set:
                 if len(row[0]) == 0:
-                    CommonUtil.ExecLog(sModuleInfo, "Data Set Field is empty", 3)
+                    CommonUtil.ExecLog(sModuleInfo, "Field for data set %d cannot empty: %s" % (data_set_index, str(row)), 3)
                     return 'failed'
                 elif len(row[1]) == 0:
-                    CommonUtil.ExecLog(sModuleInfo, "Data Set Sub-Field is empty", 3)
+                    CommonUtil.ExecLog(sModuleInfo, "Sub-Field for data set %d cannot empty: %s" % (data_set_index, str(row)), 3)
                     return 'failed'
+                elif row[1] not in action_support: # Check against list of allowed Sub-Fields
+                    if 'action' not in row[1]: #!!! Temporary until module handling is all moved into it's own function
+                        CommonUtil.ExecLog(sModuleInfo, "Sub-Field for data set %d contains invalid data: %s" % (data_set_index, str(row)), 3)
+                        return 'failed'
+                        
+                # Make sure Sub-Field has a module name
+                if 'action' in row[1]: # Only apply to actions rows
+                    for action_index in actions:
+                        if actions[action_index]['module'] in row[1]: # If one of the modules is in the Sub-Field
+                            module_test = True # Flag it's good
+                            break
+                    if module_test == False:
+                        CommonUtil.ExecLog(sModuleInfo, "Sub-Field for data set %d is missing a module name: %s" % (data_set_index, str(row)), 3)
+                        return 'failed'
+                
+                # Make sure Field has a valid action call
+                if 'action' in row[1]: # Only apply to actions rows
+                    for action_index in actions:
+                        if actions[action_index]['name'] == row[0]: # If one of the action names in the Field
+                            field_text = True # Flag it's good
+                            break
+                    if field_text == False:
+                        CommonUtil.ExecLog(sModuleInfo, "Field for data set %d contains invalid data: %s" % (data_set_index, str(row)), 3)
+                        return 'failed'
+
         return 'passed'
     except Exception:
         return CommonUtil.Exception_Handler(sys.exc_info())
