@@ -11,16 +11,12 @@ from Framework.Utilities import FileUtilities as FL
 import uuid
 from Framework.Utilities import RequestFormatter
 import subprocess
+temp_config=os.path.join(os.path.join(FL.get_home_folder(),os.path.join('Desktop',os.path.join('AutomationLog',ConfigModule.get_config_value('Temp','_file')))))
 
-temp_config = os.path.join(os.path.join(FL.get_home_folder(), os.path.join('Desktop', os.path.join('AutomationLog',
-                                                                                                   ConfigModule.get_config_value(
-                                                                                                       'Temp',
-                                                                                                       '_file')))))
-
-passed_tag_list = ['Pass', 'pass', 'PASS', 'PASSED', 'Passed', 'passed', 'true', 'TRUE', 'True', '1', 'Success',
-                   'success', 'SUCCESS', True]
+passed_tag_list = ['Pass', 'pass', 'PASS', 'PASSED', 'Passed', 'passed', 'true', 'TRUE', 'True', '1', 'Success','success', 'SUCCESS', True]
 failed_tag_list = ['Fail', 'fail', 'FAIL', 'Failed', 'failed', 'FAILED', 'false', 'False', 'FALSE', '0', False]
-skipped_tag_list = ['skip', 'SKIP', 'Skip', 'skipped', 'SKIPPED', 'Skipped']
+skipped_tag_list=['skip','SKIP','Skip','skipped','SKIPPED','Skipped']
+
 
 
 def to_unicode(obj, encoding='utf-8'):
@@ -29,9 +25,8 @@ def to_unicode(obj, encoding='utf-8'):
             obj = unicode(obj, encoding)
         return obj
 
-
 def encode_to_exclude_symbol(sDetails):
-    replace_dict = {
+    replace_dict={
         '#': '||6||',
         '=': '||5||'
     }
@@ -39,12 +34,11 @@ def encode_to_exclude_symbol(sDetails):
         sDetails = sDetails.replace(e, replace_dict[e])
     return sDetails
 
-
 def Add_Folder_To_Current_Test_Case_Log(src):
     try:
-        # get the current test case locations
-        dest_folder = ConfigModule.get_config_value('sectionOne', 'test_case_folder', temp_config)
-        folder_name = filter(lambda x: x != '', src.split('/'))[-1]
+        #get the current test case locations
+        dest_folder = ConfigModule.get_config_value('sectionOne', 'test_case_folder',temp_config)
+        folder_name = filter(lambda x:x!='', src.split('/'))[-1]
         if folder_name:
             des_path = os.path.join(dest_folder, folder_name)
             FL.copy_folder(src, des_path)
@@ -52,14 +46,19 @@ def Add_Folder_To_Current_Test_Case_Log(src):
         else:
             return False
     except Exception, e:
-        return Exception_Handler(sys.exc_info())
+        exc_type, exc_obj, exc_tb = sys.exc_info()
+        fname = os.path.split(exc_tb.tb_frame.f_code.co_filename)[1]
+        Error_Detail = ((str(exc_type).replace("type ", "Error Type: ")) + ";" + "Error Message: " + str(
+            exc_obj) + ";" + "File Name: " + fname + ";" + "Line: " + str(exc_tb.tb_lineno))
+        print Error_Detail
+        return False
 
 
 def Add_File_To_Current_Test_Case_Log(src):
     try:
-        # get the current test case locations
-        dest_folder = ConfigModule.get_config_value('sectionOne', 'test_case_folder', temp_config)
-        file_name = filter(lambda x: x != '', src.split('/'))[-1]
+        #get the current test case locations
+        dest_folder = ConfigModule.get_config_value('sectionOne', 'test_case_folder',temp_config)
+        file_name = filter(lambda x:x!='', src.split('/'))[-1]
         if file_name:
             des_path = os.path.join(dest_folder, file_name)
             FL.copy_file(src, des_path)
@@ -67,10 +66,15 @@ def Add_File_To_Current_Test_Case_Log(src):
         else:
             return False
     except Exception, e:
-        return Exception_Handler(sys.exc_info())
+        exc_type, exc_obj, exc_tb = sys.exc_info()
+        fname = os.path.split(exc_tb.tb_frame.f_code.co_filename)[1]
+        Error_Detail = ((str(exc_type).replace("type ", "Error Type: ")) + ";" + "Error Message: " + str(
+            exc_obj) + ";" + "File Name: " + fname + ";" + "Line: " + str(exc_tb.tb_lineno))
+        print Error_Detail
+        return False
 
+def Exception_Handler(exec_info, temp_q=None,UserMessage=None):
 
-def Exception_Handler(exec_info, temp_q=None, UserMessage=None):
     try:
         sModuleInfo_Local = inspect.stack()[0][3] + " : " + inspect.getmoduleinfo(__file__).name
         exc_type, exc_obj, exc_tb = exec_info
@@ -79,13 +83,12 @@ def Exception_Handler(exec_info, temp_q=None, UserMessage=None):
         File_Name = os.path.split(exc_tb.tb_frame.f_code.co_filename)[1]
         Function_Name = os.path.split(exc_tb.tb_frame.f_code.co_name)[1]
         Line_Number = str(exc_tb.tb_lineno)
-        Error_Detail = "Error Type ~ %s: Error Message ~ %s: File Name ~ %s: Function Name ~ %s: Line ~ %s" % (
-        Error_Type, Error_Message, File_Name, Function_Name, Line_Number)
-        sModuleInfo = Function_Name + ":" + File_Name
-        ExecLog(sModuleInfo, "Following exception occurred: %s" % (Error_Detail), 3)
-        TakeScreenShot(Function_Name + "~" + File_Name)
+        Error_Detail = "Error Type ~ %s: Error Message ~ %s: File Name ~ %s: Function Name ~ %s: Line ~ %s"%(Error_Type, Error_Message, File_Name, Function_Name,Line_Number)
+        sModuleInfo = Function_Name + ":" +File_Name
+        ExecLog(sModuleInfo, "Following exception occurred: %s" %( Error_Detail), 3)
+        TakeScreenShot(Function_Name+"~"+File_Name)
         if UserMessage != None:
-            ExecLog(sModuleInfo, "Following error message is custom: %s" % (UserMessage), 3)
+                ExecLog(sModuleInfo, "Following error message is custom: %s" %(UserMessage), 3)
         if temp_q != None:
             temp_q.put("failed")
 
@@ -94,13 +97,12 @@ def Exception_Handler(exec_info, temp_q=None, UserMessage=None):
     except Exception:
         exc_type_local, exc_obj_local, exc_tb_local = sys.exc_info()
         fname_local = os.path.split(exc_tb.tb_frame.f_code.co_filename)[1]
-        Error_Detail_Local = ((str(exc_type_local).replace("type ", "Error Type: ")) + ";" + "Error Message: " + str(
-            exc_obj_local) + ";" + "File Name: " + fname_local + ";" + "Line: " + str(exc_tb_local.tb_lineno))
-        ExecLog(sModuleInfo_Local, "Following exception occurred: %s" % (Error_Detail_Local), 3)
+        Error_Detail_Local = ((str(exc_type_local).replace("type ", "Error Type: ")) + ";" +  "Error Message: " + str(exc_obj_local) +";" + "File Name: " + fname_local + ";" + "Line: "+ str(exc_tb_local.tb_lineno))
+        ExecLog(sModuleInfo_Local, "Following exception occurred: %s" %( Error_Detail_Local), 3)
         return "failed"
 
 
-def Result_Analyzer(sTestStepReturnStatus, temp_q):
+def Result_Analyzer(sTestStepReturnStatus,temp_q):
     sModuleInfo = inspect.stack()[0][3] + " : " + inspect.getmoduleinfo(__file__).name
 
     try:
@@ -114,22 +116,26 @@ def Result_Analyzer(sTestStepReturnStatus, temp_q):
             temp_q.put("skipped")
             return "skipped"
         else:
-            ExecLog(sModuleInfo, "Step return type unknown: %s" % (sTestStepReturnStatus), 3)
+            ExecLog(sModuleInfo,"Step return type unknown: %s" %(sTestStepReturnStatus),3)
             temp_q.put("failed")
             return "failed"
 
     except Exception, e:
-        return Exception_Handler(sys.exc_info())
-
+        exc_type, exc_obj, exc_tb = sys.exc_info()
+        fname = os.path.split(exc_tb.tb_frame.f_code.co_filename)[1]
+        Error_Detail = ((str(exc_type).replace("type ", "Error Type: ")) + ";" +  "Error Message: " + str(exc_obj) +";" + "File Name: " + fname + ";" + "Line: "+ str(exc_tb.tb_lineno))
+        ExecLog(sModuleInfo, "Step results was not recognized:%s" %( Error_Detail), 3)
+        temp_q.put("failed")
+        return "failed"
 
 def ExecLog(sModuleInfo, sDetails, iLogLevel=1, local_run=False, sStatus=""):
     try:
-        local_run = ConfigModule.get_config_value('RunDefinition', 'local_run')
+        local_run = ConfigModule.get_config_value('RunDefinition','local_run')
         # ";" is not supported for logging.  So replacing them
         sDetails = sDetails.replace(";", ":")
         sDetails = sDetails.replace("=", "~")
         sDetails = encode_to_exclude_symbol(to_unicode(sDetails))
-        # Convert logLevel from int to str
+        #Convert logLevel from int to str
         if iLogLevel == 1:
             status = 'Passed'
         elif iLogLevel == 2:
@@ -142,18 +148,17 @@ def ExecLog(sModuleInfo, sDetails, iLogLevel=1, local_run=False, sStatus=""):
             print "unknown log level"
             status = 'Warning'
 
-            # Display on console
+        # Display on console
         print "%s - %s - %s" % (status.upper(), sModuleInfo, sDetails)
 
         # Upload logs to server if local run is not set to False
         if local_run == False or local_run == 'False':
-            log_id = ConfigModule.get_config_value('sectionOne', 'sTestStepExecLogId', temp_config)
-            FWLogFile = ConfigModule.get_config_value('sectionOne', 'log_folder', temp_config)
-            if FWLogFile == '':
-                FWLogFile = ConfigModule.get_config_value('sectionOne', 'temp_run_file_path',
-                                                          temp_config) + os.sep + 'execlog.log'
+            log_id=ConfigModule.get_config_value('sectionOne','sTestStepExecLogId',temp_config)
+            FWLogFile = ConfigModule.get_config_value('sectionOne','log_folder',temp_config)
+            if FWLogFile=='':
+                FWLogFile=ConfigModule.get_config_value('sectionOne','temp_run_file_path',temp_config)+os.sep+'execlog.log'
             else:
-                FWLogFile = FWLogFile + os.sep + 'temp.log'
+                FWLogFile=FWLogFile+os.sep+'temp.log'
             logger = logging.getLogger(__name__)
             hdlr = None
             if os.name == 'posix':
@@ -170,186 +175,181 @@ def ExecLog(sModuleInfo, sDetails, iLogLevel=1, local_run=False, sStatus=""):
             logger.setLevel(logging.DEBUG)
             logger.info(sModuleInfo + ' - ' + sDetails + '' + sStatus)
             logger.removeHandler(hdlr)
-            r = RequestFormatter.Get('log_execution',
-                                     {'logid': log_id, 'modulename': sModuleInfo, 'details': sDetails, 'status': status,
-                                      'loglevel': iLogLevel})
+            r = RequestFormatter.Get('log_execution',{'logid': log_id, 'modulename': sModuleInfo, 'details': sDetails, 'status': status,'loglevel': iLogLevel})
 
 
 
     except Exception, e:
-        return Exception_Handler(sys.exc_info())
-
+        exc_type, exc_obj, exc_tb = sys.exc_info()
+        fname = os.path.split(exc_tb.tb_frame.f_code.co_filename)[1]
+        Error_Detail = ((str(exc_type).replace("type ", "Error Type: ")) + ";" +  "Error Message: " + str(exc_obj) +";" + "File Name: " + fname + ";" + "Line: "+ str(exc_tb.tb_lineno))
+        print Error_Detail
 
 def FormatSeconds(sec):
-    hours, remainder = divmod(sec, 3600)
-    minutes, seconds = divmod(remainder, 60)
-    duration_formatted = '%d:%02d:%02d' % (hours, minutes, seconds)
-    return duration_formatted
-
+        hours, remainder = divmod(sec, 3600)
+        minutes, seconds = divmod(remainder, 60)
+        duration_formatted = '%d:%02d:%02d' % (hours, minutes, seconds)
+        return duration_formatted
 
 def PhysicalAvailableMemory():
     try:
         return (int(str(psutil.virtual_memory().available))) / (1024 * 1024)
     except Exception, e:
-        return Exception_Handler(sys.exc_info())
+        print "Exception %s" % e
+        return 0
 
-
-def TakeScreenShot(ImageName, local_run=False):
+def TakeScreenShot(ImageName,local_run=False):
     """
     Takes screenshot and saves it as jpg file
     name is the name of the file to be saved appended with timestamp
     #TakeScreenShot("TestStepName")
     """
-    # file Name don't contain \/?*"<>|
+    #file Name don't contain \/?*"<>|
 
     take_screenshot_settings = ConfigModule.get_config_value('RunDefinition', 'take_screenshot')
     if take_screenshot_settings == 'True':
 
-        local_run = ConfigModule.get_config_value('RunDefinition', 'local_run')
-        chars_to_remove = ["?", "*", "\"", "<", ">", "|", "\\", "\/", ":"]
-        ImageName = (ImageName.translate(None, ''.join(chars_to_remove))).replace(" ", "_").strip()
-        print ImageName
-        try:
-            if local_run == 'False':
-                image_folder = ConfigModule.get_config_value('sectionOne', 'screen_capture_folder', temp_config)
-                # ImageFolder = Global.TCLogFolder + os.sep + "Screenshots"
-                ImageFolder = image_folder
-                if os.name == 'posix':
-                    """
-                    ImageFolder = FileUtil.ConvertWinPathToMac(ImageFolder)
-                    path = ImageFolder + os.sep + TimeStamp("utc") + "_" + ImageName + ".png"
-   
-                    newpath = ImageFolder + os.sep + TimeStamp("utc") + "_" + ImageName + ".jpg"
-                    path = path.replace(" ", "_")
-                    newpath = newpath.replace(" ", "_")
-                    os.system("screencapture \"" + path + "\"")
-                    #reduce size of image
-                    os.system("sips -s format jpeg -s formatOptions 30 " + path + " -o " + newpath)
-                    os.system("rm " + path)
-                    """
+     local_run = ConfigModule.get_config_value('RunDefinition', 'local_run')
+     chars_to_remove=["?","*","\"","<",">","|","\\","\/",":"]
+     ImageName=(ImageName.translate(None,''.join(chars_to_remove))).replace(" ","_").strip()
+     print ImageName
+     try:
+         if local_run == 'False':
+             image_folder=ConfigModule.get_config_value('sectionOne','screen_capture_folder',temp_config)
+             #ImageFolder = Global.TCLogFolder + os.sep + "Screenshots"
+             ImageFolder=image_folder
+             if os.name == 'posix':
+                 """
+                 ImageFolder = FileUtil.ConvertWinPathToMac(ImageFolder)
+                 path = ImageFolder + os.sep + TimeStamp("utc") + "_" + ImageName + ".png"
+    
+                 newpath = ImageFolder + os.sep + TimeStamp("utc") + "_" + ImageName + ".jpg"
+                 path = path.replace(" ", "_")
+                 newpath = newpath.replace(" ", "_")
+                 os.system("screencapture \"" + path + "\"")
+                 #reduce size of image
+                 os.system("sips -s format jpeg -s formatOptions 30 " + path + " -o " + newpath)
+                 os.system("rm " + path)
+                 """
 
-                    # linux working copy
-                    full_location = ImageFolder + os.sep + TimeStamp("utc") + "_" + ImageName + '.png'
-                    # os.system("import -window root %s"%full_location)
+                 #linux working copy
+                 full_location=ImageFolder+os.sep+TimeStamp("utc")+"_"+ImageName+'.png'
+                 #os.system("import -window root %s"%full_location)
 
-                    try:
-                        from gi.repository import Gdk
+                 try:
+                     from gi.repository import Gdk
 
-                    except ImportError:
-                        print 'could not import python package needed for screenshot...installing package "gi"'
-                        os.system('pip install gi')
+                 except ImportError:
+                     print 'could not import python package needed for screenshot...installing package "gi"'
+                     os.system('pip install gi')
 
-                    # set the root window as the window we want for screenshot
-                    window = Gdk.get_default_root_window()
-                    # get dimensions of the window
-                    x, y, width, height = window.get_geometry()
+                 # set the root window as the window we want for screenshot
+                 window = Gdk.get_default_root_window()
+                 # get dimensions of the window
+                 x, y, width, height = window.get_geometry()
 
-                    print 'taking screenshot...'
-                    # take screenshot
-                    img = Gdk.pixbuf_get_from_window(window, x, y, width, height)
+                 print 'taking screenshot...'
+                 # take screenshot
+                 img = Gdk.pixbuf_get_from_window(window, x, y, width, height)
 
-                    if img:
-                        from PIL import Image
-                        img.savev(full_location, "png", (), ())
-                        file1 = full_location
-                        file2 = full_location
-                        size = 800, 450
+                 if img:
+                     from PIL import Image
+                     img.savev(full_location, "png", (), ())
+                     file1 = full_location
+                     file2 = full_location
+                     size = 800, 450
 
-                        im = Image.open(file1)
-                        im.thumbnail(size, Image.ANTIALIAS)
-                        im.save(file2, "JPEG")
-                        print 'screenshot saved as: "%s"' % full_location
-                    else:
-                        print "unable to take screenshot..."
+                     im = Image.open(file1)
+                     im.thumbnail(size, Image.ANTIALIAS)
+                     im.save(file2, "JPEG")
+                     print 'screenshot saved as: "%s"' % full_location
+                 else:
+                     print "unable to take screenshot..."
 
-                    # mobile device working copy
-                    if sys.platform == 'linux2':
-                        # mobile device connected to linux machine
+                 #mobile device working copy
+                 if sys.platform == 'linux2':
+                     #mobile device connected to linux machine
 
-                        # android working copy
-                        try:
-                            output = os.system("adb devices")
-                            if output is not None:
-                                full_location = ImageFolder + os.sep + TimeStamp(
-                                    "utc") + "_" + ImageName + '_android.png'
-                                # os.system("adb shell screencap -p | perl -pe 's/\x0D\x0A/\x0A/g' > %s"%full_location)
-                                os.system("adb shell screencap -p /sdcard/screen.png")
-                                os.system("adb pull /sdcard/screen.png %s" % full_location)
+                     #android working copy
+                     try:
+                         output = os.system("adb devices")
+                         if output is not None:
+                             full_location=ImageFolder+os.sep+TimeStamp("utc")+"_"+ImageName+'_android.png'
+                             #os.system("adb shell screencap -p | perl -pe 's/\x0D\x0A/\x0A/g' > %s"%full_location)
+                             os.system("adb shell screencap -p /sdcard/screen.png")
+                             os.system("adb pull /sdcard/screen.png %s"%full_location)
+                     except Exception, e:
+                         print e
 
-                        except Exception, e:
-                            return Exception_Handler(sys.exc_info())
+                     #ios device working copy
+                     full_location=ImageFolder+os.sep+TimeStamp("utc")+"_"+ImageName+'_ios.tiff'
+                     os.system("idevicescreenshot"%full_location)
 
-                        # ios device working copy
-                        full_location = ImageFolder + os.sep + TimeStamp("utc") + "_" + ImageName + '_ios.tiff'
-                        os.system("idevicescreenshot" % full_location)
+                 elif sys.platform == 'darwin':
+                     #mobile device connected to mac os x machine
 
-                    elif sys.platform == 'darwin':
-                        # mobile device connected to mac os x machine
+                     #ios device working copy
+                     full_location=ImageFolder+os.sep+TimeStamp("utc")+"_"+ImageName+'.png'
+                     os.system("screencapture ~%s"%full_location)
 
-                        # ios device working copy
-                        full_location = ImageFolder + os.sep + TimeStamp("utc") + "_" + ImageName + '.png'
-                        os.system("screencapture ~%s" % full_location)
+                     #android working copy
+                     output = os.system("adb devices")
+                     if output is not None:
+                         full_location=ImageFolder+os.sep+TimeStamp("utc")+"_"+ImageName+'_android.png'
+                         #os.system("adb shell screencap -p | perl -pe 's/\x0D\x0A/\x0A/g' > %s"%full_location)
+                         os.system("adb shell screencap -p /sdcard/screen.png")
+                         os.system("adb pull /sdcard/screen.png %s"%full_location)
 
-                        # android working copy
-                        output = os.system("adb devices")
-                        if output is not None:
-                            full_location = ImageFolder + os.sep + TimeStamp("utc") + "_" + ImageName + '_android.png'
-                            # os.system("adb shell screencap -p | perl -pe 's/\x0D\x0A/\x0A/g' > %s"%full_location)
-                            os.system("adb shell screencap -p /sdcard/screen.png")
-                            os.system("adb pull /sdcard/screen.png %s" % full_location)
+                     #iphone working copy
+                     output = os.system("ioreg -w -p IOUSB | grep -w iPhone")
+                     if output is not None:
+                         full_location=ImageFolder+os.sep+TimeStamp("utc")+"_"+ImageName+'_ios.tiff'
+                         os.system("idevicescreenshot %s"%full_location)
 
-                        # iphone working copy
-                        output = os.system("ioreg -w -p IOUSB | grep -w iPhone")
-                        if output is not None:
-                            full_location = ImageFolder + os.sep + TimeStamp("utc") + "_" + ImageName + '_ios.tiff'
-                            os.system("idevicescreenshot %s" % full_location)
+                     #ipad working copy
+                     output = os.system("ioreg -w -p IOUSB | grep -w iPad")
+                     if output is not None:
+                         full_location=ImageFolder+os.sep+TimeStamp("utc")+"_"+ImageName+'_ios.tiff'
+                         os.system("idevicescreenshot"%full_location)
 
-                        # ipad working copy
-                        output = os.system("ioreg -w -p IOUSB | grep -w iPad")
-                        if output is not None:
-                            full_location = ImageFolder + os.sep + TimeStamp("utc") + "_" + ImageName + '_ios.tiff'
-                            os.system("idevicescreenshot" % full_location)
+                 else:
+                     #linux working copy
+                     full_location=ImageFolder+os.sep+TimeStamp("utc")+"_"+ImageName+'.png'
+                     os.system("import -window root %s"%full_location)
 
-                    else:
-                        # linux working copy
-                        full_location = ImageFolder + os.sep + TimeStamp("utc") + "_" + ImageName + '.png'
-                        os.system("import -window root %s" % full_location)
+                     #android working copy
+                     output = os.system("adb devices")
+                     if output is not None:
+                         full_location=ImageFolder+os.sep+TimeStamp("utc")+"_"+ImageName+'_android.png'
+                         #os.system("adb shell screencap -p | perl -pe 's/\x0D\x0A/\x0A/g' > %s"%full_location)
+                         os.system("adb shell screencap -p /sdcard/screen.png")
+                         os.system("adb pull /sdcard/screen.png %s"%full_location)
 
-                        # android working copy
-                        output = os.system("adb devices")
-                        if output is not None:
-                            full_location = ImageFolder + os.sep + TimeStamp("utc") + "_" + ImageName + '_android.png'
-                            # os.system("adb shell screencap -p | perl -pe 's/\x0D\x0A/\x0A/g' > %s"%full_location)
-                            os.system("adb shell screencap -p /sdcard/screen.png")
-                            os.system("adb pull /sdcard/screen.png %s" % full_location)
+             elif os.name == 'nt':
+                 # windows working copy
+                 from PIL import ImageGrab
+                 from PIL import Image
+                 path = ImageFolder + os.sep + TimeStamp("utc") + "_" + ImageName + ".jpg"
+                 img = ImageGrab.grab()
+                 basewidth = 1200
+                 wpercent = (basewidth/float(img.size[0]))
+                 hsize = int((float(img.size[1])*float(wpercent)))
+                 img = img.resize((basewidth,hsize), Image.ANTIALIAS)
+                 img.save(path, 'JPEG')
 
-                elif os.name == 'nt':
-                    # windows working copy
-                    from PIL import ImageGrab
-                    from PIL import Image
-                    path = ImageFolder + os.sep + TimeStamp("utc") + "_" + ImageName + ".jpg"
-                    img = ImageGrab.grab()
-                    basewidth = 1200
-                    wpercent = (basewidth / float(img.size[0]))
-                    hsize = int((float(img.size[1]) * float(wpercent)))
-                    img = img.resize((basewidth, hsize), Image.ANTIALIAS)
-                    img.save(path, 'JPEG')
+                 # android working copy
+                 try:
+                     output = os.system("adb devices")
+                     if output is not None:
+                         full_location = ImageFolder + os.sep + TimeStamp("utc") + "_" + ImageName + '_android.png'
+                         # os.system("adb shell screencap -p | perl -pe 's/\x0D\x0A/\x0A/g' > %s"%full_location)
+                         os.system("adb shell screencap -p /sdcard/screen.png")
+                         os.system("adb pull /sdcard/screen.png %s" % full_location)
+                 except Exception, e:
+                     print e
 
-                    # android working copy
-                    try:
-                        output = os.system("adb devices")
-                        if output is not None:
-                            full_location = ImageFolder + os.sep + TimeStamp("utc") + "_" + ImageName + '_android.png'
-                            # os.system("adb shell screencap -p | perl -pe 's/\x0D\x0A/\x0A/g' > %s"%full_location)
-                            os.system("adb shell screencap -p /sdcard/screen.png")
-                            os.system("adb pull /sdcard/screen.png %s" % full_location)
-
-                    except Exception, e:
-                        return Exception_Handler(sys.exc_info())
-
-        except Exception, e:
-            return Exception_Handler(sys.exc_info())
-
+     except Exception, e:
+         print "Exception : ", e
 
 def TimeStamp(format):
     """
@@ -393,80 +393,85 @@ class MachineInfo():
         try:
             import socket
             s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
-            s.connect(("gmail.com", 80))
+            s.connect(("gmail.com",80))
             ip = (s.getsockname()[0])
             s.close()
             return ip
-
         except Exception, e:
-            return Exception_Handler(sys.exc_info())
+            print "Exception: ", e
+            return False
 
     def getLocalUser(self):
         """
         :return: returns the local pc name
         """
         try:
-            node_id_file_path = os.path.join(FL.get_home_folder(), os.path.join('Desktop', 'node_id.conf'))
+            node_id_file_path=os.path.join(FL.get_home_folder(),os.path.join('Desktop','node_id.conf'))
             if os.path.isfile(node_id_file_path):
-                unique_id = ConfigModule.get_config_value('UniqueID', 'id', node_id_file_path)
-                if unique_id == '':
+                unique_id=ConfigModule.get_config_value('UniqueID','id',node_id_file_path)
+                if unique_id=='':
                     ConfigModule.clean_config_file(node_id_file_path)
                     ConfigModule.add_section('UniqueID', node_id_file_path)
                     unique_id = uuid.uuid4()
                     unique_id = str(unique_id)[:10]
-                    ConfigModule.add_config_value('UniqueID', 'id', unique_id, node_id_file_path)
-                    machine_name = ConfigModule.get_config_value('Authentication', 'username') + '_' + str(unique_id)
+                    ConfigModule.add_config_value('UniqueID', 'id', unique_id,node_id_file_path)
+                    machine_name = ConfigModule.get_config_value('Authentication', 'username') +'_' +str(unique_id)
                     return machine_name[:100]
-                machine_name = ConfigModule.get_config_value('Authentication', 'username') + '_' + str(unique_id)
+                machine_name = ConfigModule.get_config_value('Authentication', 'username') +'_' +str(unique_id)
             else:
-                # create the file name
-                f = open(node_id_file_path, 'w')
+                #create the file name
+                f=open(node_id_file_path,'w')
                 f.close()
-                unique_id = uuid.uuid4()
-                unique_id = str(unique_id)[:10]
-                ConfigModule.add_section('UniqueID', node_id_file_path)
-                ConfigModule.add_config_value('UniqueID', 'id', unique_id, node_id_file_path)
-                machine_name = ConfigModule.get_config_value('Authentication', 'username') + '_' + str(unique_id)
+                unique_id=uuid.uuid4()
+                unique_id=str(unique_id)[:10]
+                ConfigModule.add_section('UniqueID',node_id_file_path)
+                ConfigModule.add_config_value('UniqueID','id',unique_id,node_id_file_path)
+                machine_name = ConfigModule.get_config_value('Authentication', 'username') +'_' +str(unique_id)
             return machine_name[:100]
 
-
         except Exception, e:
-            return Exception_Handler(sys.exc_info())
+            #incase exception happens for whatever reason.. we will return the timestamp...
+            print "Exception: ", e
+            print "Unable to set create a Node key.  Please check class MachineInfo() in commonutil"
+            return False
 
     def getUniqueId(self):
         """
         :return: returns the local pc unique ID
         """
         try:
-            node_id_file_path = os.path.join(FL.get_home_folder(), os.path.join('Desktop', 'node_id.conf'))
+            node_id_file_path=os.path.join(FL.get_home_folder(),os.path.join('Desktop','node_id.conf'))
             if os.path.isfile(node_id_file_path):
-                unique_id = ConfigModule.get_config_value('UniqueID', 'id', node_id_file_path)
-                if unique_id == '':
+                unique_id=ConfigModule.get_config_value('UniqueID','id',node_id_file_path)
+                if unique_id=='':
                     ConfigModule.clean_config_file(node_id_file_path)
                     ConfigModule.add_section('UniqueID', node_id_file_path)
                     unique_id = uuid.uuid4()
                     unique_id = str(unique_id)[:10]
-                    ConfigModule.add_config_value('UniqueID', 'id', unique_id, node_id_file_path)
+                    ConfigModule.add_config_value('UniqueID', 'id', unique_id,node_id_file_path)
                     machine_name = str(unique_id)
                     return machine_name[:100]
                 machine_name = str(unique_id)
             else:
-                # create the file name
-                f = open(node_id_file_path, 'w')
+                #create the file name
+                f=open(node_id_file_path,'w')
                 f.close()
-                unique_id = uuid.uuid4()
-                unique_id = str(unique_id)[:10]
-                ConfigModule.add_section('UniqueID', node_id_file_path)
-                ConfigModule.add_config_value('UniqueID', 'id', unique_id, node_id_file_path)
+                unique_id=uuid.uuid4()
+                unique_id=str(unique_id)[:10]
+                ConfigModule.add_section('UniqueID',node_id_file_path)
+                ConfigModule.add_config_value('UniqueID','id',unique_id,node_id_file_path)
                 machine_name = str(unique_id)
             return machine_name[:100]
 
-
         except Exception, e:
-            return Exception_Handler(sys.exc_info())
+            #incase exception happens for whatever reason.. we will return the timestamp...
+            print "Exception: ", e
+            print "Unable to set create a Node key.  Please check class MachineInfo() in commonutil"
+            return False
 
 
 def run_cmd(command, return_status=False, is_shell=True, stdout_val=subprocess.PIPE, local_run=False):
+
     '''Begin Constants'''
     Passed = "Passed"
     Failed = "Failed"
@@ -477,7 +482,7 @@ def run_cmd(command, return_status=False, is_shell=True, stdout_val=subprocess.P
     sModuleInfo = inspect.stack()[0][3] + " : " + inspect.getmoduleinfo(__file__).name
     subprocess_dict = {}
     try:
-        # global subprocess_dict
+        #global subprocess_dict
         ExecLog(sModuleInfo, "Trying to run command: %s" % command, 1, local_run)
 
         # open a subprocess with command, and assign a session id to the shell process
