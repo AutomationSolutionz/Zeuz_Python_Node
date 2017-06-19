@@ -164,9 +164,9 @@ def Sequential_Actions(step_data, _dependency = {}, _run_time_params = '', _file
     global dependency, file_attachment
     if _dependency != {}:
         dependency = _dependency # Save to global variable
-        for key in _dependency:
-            sr.Set_Shared_Variables(str(key).lower(), _dependency[key])
-        #sr.Set_Shared_Variables('dependency', _dependency) # Save in Shared Variables
+        #for key in _dependency:
+        #    sr.Set_Shared_Variables(str(key).lower(), _dependency[key])
+        sr.Set_Shared_Variables('dependency', _dependency) # Save in Shared Variables
     if dependency == {}:
         CommonUtil.ExecLog(sModuleInfo, "No dependency set - Can't run automation", 3)
         return 'failed' 
@@ -526,3 +526,5 @@ def shared_variable_to_value(data_set):
         return new_data # Return parsed data_set
     except Exception:
         return CommonUtil.Exception_Handler(sys.exc_info())
+
+

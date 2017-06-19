@@ -39,7 +39,11 @@ WebDriver_Wait_Short = 10
 global selenium_driver
 selenium_driver = None
 
-dependency = None
+if Shared_Resources.Test_Shared_Variables('selenium_driver'): # Check if driver is already set in shared variables
+    selenium_driver = Shared_Resources.Get_Shared_Variables('selenium_driver') # Retreive appium driver
+
+global dependency
+dependency = {'Browser':'chrome'}
 if Shared_Resources.Test_Shared_Variables('dependency'): # Check if driver is already set in shared variables
     dependency = Shared_Resources.Get_Shared_Variables('dependency') # Retreive selenium driver
 
@@ -132,11 +136,12 @@ def Open_Browser_Wrapper(step_data):
     #if not then we don't do the validation
     sModuleInfo = inspect.stack()[0][3] + " : " + inspect.getmoduleinfo(__file__).name
     try:
-        browser = step_data[0][2]
-        dict = {'Browser':browser}
-        return Open_Browser(dict)
+        global dependency
+        #browser = dependency['Browser']
+        #dict = {'Browser':browser}
+        return Open_Browser(dependency)
     except Exception:
-        ErrorMessage =  "failed to open browser: %s" %(browser)
+        ErrorMessage =  "failed to open browser"
         return CommonUtil.Exception_Handler(sys.exc_info(), None, ErrorMessage)
 
 
