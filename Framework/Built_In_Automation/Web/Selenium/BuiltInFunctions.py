@@ -132,7 +132,7 @@ def Open_Browser_Wrapper(step_data):
     #if not then we don't do the validation
     sModuleInfo = inspect.stack()[0][3] + " : " + inspect.getmoduleinfo(__file__).name
     try:
-        browser = dependency['Browser']
+        browser = step_data[0][2]
         dict = {'Browser':browser}
         return Open_Browser(dict)
     except Exception:
