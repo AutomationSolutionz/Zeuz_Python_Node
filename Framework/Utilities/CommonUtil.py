@@ -45,13 +45,9 @@ def Add_Folder_To_Current_Test_Case_Log(src):
             return True
         else:
             return False
+
     except Exception, e:
-        exc_type, exc_obj, exc_tb = sys.exc_info()
-        fname = os.path.split(exc_tb.tb_frame.f_code.co_filename)[1]
-        Error_Detail = ((str(exc_type).replace("type ", "Error Type: ")) + ";" + "Error Message: " + str(
-            exc_obj) + ";" + "File Name: " + fname + ";" + "Line: " + str(exc_tb.tb_lineno))
-        print Error_Detail
-        return False
+        return Exception_Handler(sys.exc_info())
 
 
 def Add_File_To_Current_Test_Case_Log(src):
@@ -65,13 +61,9 @@ def Add_File_To_Current_Test_Case_Log(src):
             return True
         else:
             return False
+
     except Exception, e:
-        exc_type, exc_obj, exc_tb = sys.exc_info()
-        fname = os.path.split(exc_tb.tb_frame.f_code.co_filename)[1]
-        Error_Detail = ((str(exc_type).replace("type ", "Error Type: ")) + ";" + "Error Message: " + str(
-            exc_obj) + ";" + "File Name: " + fname + ";" + "Line: " + str(exc_tb.tb_lineno))
-        print Error_Detail
-        return False
+        return Exception_Handler(sys.exc_info())
 
 def Exception_Handler(exec_info, temp_q=None,UserMessage=None):
 
@@ -120,13 +112,9 @@ def Result_Analyzer(sTestStepReturnStatus,temp_q):
             temp_q.put("failed")
             return "failed"
 
+
     except Exception, e:
-        exc_type, exc_obj, exc_tb = sys.exc_info()
-        fname = os.path.split(exc_tb.tb_frame.f_code.co_filename)[1]
-        Error_Detail = ((str(exc_type).replace("type ", "Error Type: ")) + ";" +  "Error Message: " + str(exc_obj) +";" + "File Name: " + fname + ";" + "Line: "+ str(exc_tb.tb_lineno))
-        ExecLog(sModuleInfo, "Step results was not recognized:%s" %( Error_Detail), 3)
-        temp_q.put("failed")
-        return "failed"
+        return Exception_Handler(sys.exc_info())
 
 def ExecLog(sModuleInfo, sDetails, iLogLevel=1, local_run=False, sStatus=""):
     try:
@@ -179,11 +167,9 @@ def ExecLog(sModuleInfo, sDetails, iLogLevel=1, local_run=False, sStatus=""):
 
 
 
+
     except Exception, e:
-        exc_type, exc_obj, exc_tb = sys.exc_info()
-        fname = os.path.split(exc_tb.tb_frame.f_code.co_filename)[1]
-        Error_Detail = ((str(exc_type).replace("type ", "Error Type: ")) + ";" +  "Error Message: " + str(exc_obj) +";" + "File Name: " + fname + ";" + "Line: "+ str(exc_tb.tb_lineno))
-        print Error_Detail
+        return Exception_Handler(sys.exc_info())
 
 def FormatSeconds(sec):
         hours, remainder = divmod(sec, 3600)
@@ -194,9 +180,9 @@ def FormatSeconds(sec):
 def PhysicalAvailableMemory():
     try:
         return (int(str(psutil.virtual_memory().available))) / (1024 * 1024)
+
     except Exception, e:
-        print "Exception %s" % e
-        return 0
+        return Exception_Handler(sys.exc_info())
 
 def TakeScreenShot(ImageName,local_run=False):
     """
@@ -278,8 +264,9 @@ def TakeScreenShot(ImageName,local_run=False):
                              #os.system("adb shell screencap -p | perl -pe 's/\x0D\x0A/\x0A/g' > %s"%full_location)
                              os.system("adb shell screencap -p /sdcard/screen.png")
                              os.system("adb pull /sdcard/screen.png %s"%full_location)
+
                      except Exception, e:
-                         print e
+                         return Exception_Handler(sys.exc_info())
 
                      #ios device working copy
                      full_location=ImageFolder+os.sep+TimeStamp("utc")+"_"+ImageName+'_ios.tiff'
@@ -345,11 +332,13 @@ def TakeScreenShot(ImageName,local_run=False):
                          # os.system("adb shell screencap -p | perl -pe 's/\x0D\x0A/\x0A/g' > %s"%full_location)
                          os.system("adb shell screencap -p /sdcard/screen.png")
                          os.system("adb pull /sdcard/screen.png %s" % full_location)
+
                  except Exception, e:
-                     print e
+                     return Exception_Handler(sys.exc_info())
+
 
      except Exception, e:
-         print "Exception : ", e
+         return Exception_Handler(sys.exc_info())
 
 def TimeStamp(format):
     """
@@ -397,9 +386,9 @@ class MachineInfo():
             ip = (s.getsockname()[0])
             s.close()
             return ip
+
         except Exception, e:
-            print "Exception: ", e
-            return False
+            return Exception_Handler(sys.exc_info())
 
     def getLocalUser(self):
         """
@@ -429,12 +418,10 @@ class MachineInfo():
                 machine_name = ConfigModule.get_config_value('Authentication', 'username') +'_' +str(unique_id)
             return machine_name[:100]
 
-        except Exception, e:
-            #incase exception happens for whatever reason.. we will return the timestamp...
-            print "Exception: ", e
-            print "Unable to set create a Node key.  Please check class MachineInfo() in commonutil"
-            return False
 
+        except Exception:
+            ErrorMessage =  "Unable to set create a Node key.  Please check class MachineInfo() in commonutil"
+            return Exception_Handler(sys.exc_info(), None, ErrorMessage)
     def getUniqueId(self):
         """
         :return: returns the local pc unique ID
@@ -463,11 +450,10 @@ class MachineInfo():
                 machine_name = str(unique_id)
             return machine_name[:100]
 
-        except Exception, e:
-            #incase exception happens for whatever reason.. we will return the timestamp...
-            print "Exception: ", e
-            print "Unable to set create a Node key.  Please check class MachineInfo() in commonutil"
-            return False
+
+        except Exception:
+            ErrorMessage =  "Unable to set create a Node key.  Please check class MachineInfo() in commonutil"
+            return Exception_Handler(sys.exc_info(), None, ErrorMessage)
 
 
 def run_cmd(command, return_status=False, is_shell=True, stdout_val=subprocess.PIPE, local_run=False):
