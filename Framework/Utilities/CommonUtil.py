@@ -270,7 +270,7 @@ def TakeScreenShot(ImageName,local_run=False):
 
                      #ios device working copy
                      full_location=ImageFolder+os.sep+TimeStamp("utc")+"_"+ImageName+'_ios.tiff'
-                     os.system("idevicescreenshot"%full_location)
+                     os.system("idevicescreenshot %s"%full_location)
 
                  elif sys.platform == 'darwin':
                      #mobile device connected to mac os x machine
@@ -297,7 +297,7 @@ def TakeScreenShot(ImageName,local_run=False):
                      output = os.system("ioreg -w -p IOUSB | grep -w iPad")
                      if output is not None:
                          full_location=ImageFolder+os.sep+TimeStamp("utc")+"_"+ImageName+'_ios.tiff'
-                         os.system("idevicescreenshot"%full_location)
+                         os.system("idevicescreenshot %s"%full_location)
 
                  else:
                      #linux working copy
