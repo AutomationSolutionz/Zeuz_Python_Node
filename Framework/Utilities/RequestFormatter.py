@@ -15,3 +15,6 @@ def form_uri(resource_path):
 
 def Get(resource_path,payload={}):
     return requests.get(form_uri(resource_path),params=json.dumps(payload)).json()
+
+def Head(resource_path):
+    return requests.head(form_uri(resource_path))

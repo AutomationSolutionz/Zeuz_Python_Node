@@ -26,21 +26,37 @@ def Login():
         'project':project,
         'team':team
     }
-    r = RequestFormatter.Get('login_api',user_info_object)
-    print "Authentication check for user='%s', project='%s', team='%s'"%(username,project,team)
-    if r:
-        print "Authentication Successful"
-        machine_object=update_machine(dependency_collection())
-        if machine_object['registered']:
-            tester_id=machine_object['name']
-            RunAgain = RunProcess(tester_id)
-            if RunAgain == True:
-                Login()
+    
+    while True:
+        # Test to ensure server is up before attempting to login
+        try:
+            r = False
+            r = RequestFormatter.Head('login_api')
+        except: # Occurs when server is down
+            r = False 
+            
+        # Login to server
+        if r != False: # Server is up
+            r = RequestFormatter.Get('login_api',user_info_object)
+            print "Authentication check for user='%s', project='%s', team='%s'"%(username,project,team)
+            if r:
+                print "Authentication Successful"
+                machine_object=update_machine(dependency_collection())
+                if machine_object['registered']:
+                    tester_id=machine_object['name']
+                    RunAgain = RunProcess(tester_id)
+                    if RunAgain == True:
+                        Login()
+                else:
+                    return False
+            else:
+                print "Authentication Failed"
+                return False
+        
+        # Server down, wait and retry
         else:
-            return False
-    else:
-        print "Authentication Failed"
-        return False
+            print "Server down, waiting 60 seconds before trying again"
+            time.sleep(6)
 def RunProcess(sTesterid):
     while (1):
         try:
@@ -61,7 +77,7 @@ def RunProcess(sTesterid):
             fname = os.path.split(exc_tb.tb_frame.f_code.co_filename)[1]
             Error_Detail = ((str(exc_type).replace("type ", "Error Type: ")) + ";" +  "Error Message: " + str(exc_obj) +";" + "File Name: " + fname + ";" + "Line: "+ str(exc_tb.tb_lineno))
             print Error_Detail
-            break # Exit back to login() - Should never get here
+            break # Exit back to login() - In some circumstances, this while loop will get into a state when certain errors occur, where nothing runs, but loops forever. This stops that from happening 
     return True
 def PreProcess():
     current_path = os.path.join(FileUtilities.get_home_folder(), os.path.join('Desktop', 'AutomationLog'))

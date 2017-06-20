@@ -233,6 +233,7 @@ def start_appium_driver(package_name = '', activity_name = '', filename = ''):
             desired_caps['sendKeyStrategy'] = 'setValue' #!!! Needed for send_keys?
             
             if dependency['Mobile'].lower() == 'android':
+                adbOptions.wake_android() # Send wake up command to avoid issues with devices ignoring appium when they are in lower power mode (android 6.0+)
                 CommonUtil.ExecLog(sModuleInfo,"Setting up with Android",1)
                 desired_caps['platformVersion'] = adbOptions.get_android_version().strip()
                 desired_caps['deviceName'] = adbOptions.get_device_model().strip()
