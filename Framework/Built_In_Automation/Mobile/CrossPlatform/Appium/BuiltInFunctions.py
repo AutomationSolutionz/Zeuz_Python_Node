@@ -309,9 +309,8 @@ def teardown_appium(data_set):
         global appium_driver
         appium_driver.quit() # Tell appium to shutdown instance
         CommonUtil.ExecLog(sModuleInfo,"Appium cleaned up successfully.",1)
-        result = 'passed'
     except:
-        result = CommonUtil.Exception_Handler(sys.exc_info())
+        CommonUtil.ExecLog(sModuleInfo,"Error destroying Appium instance - appium may have already disconnected", 2)
     appium_driver = None # Clear driver variable, so next run will be fresh
     Shared_Resources.Set_Shared_Variables('appium_driver', '') # Clear the driver from shared variables
 
@@ -327,7 +326,7 @@ def teardown_appium(data_set):
     # Cleanup shared variables
     Shared_Resources.Clean_Up_Shared_Variables()
         
-    return result
+    return 'passed'
 
 def close_application(data_set):
     ''' Exit the application '''
