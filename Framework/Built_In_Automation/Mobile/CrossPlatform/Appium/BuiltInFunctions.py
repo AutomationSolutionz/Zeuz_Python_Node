@@ -216,6 +216,26 @@ def launch_application(data_set):
     except Exception:
         return CommonUtil.Exception_Handler(sys.exc_info())
 
+def start_appium_server():
+    ''' Starts the external Appium server '''
+    sModuleInfo = inspect.stack()[0][3] + " : " + inspect.getmoduleinfo(__file__).name
+    appium_binary = 'appium' # Appium directory/filename - Needs to be moved to settings.conf
+     
+    if Shared_Resources.Test_Shared_Variables('appium_server'): # Check if the appium server was previously run (likely not)
+        appium_server = Shared_Resources.Get_Shared_Variables('appium_server') # Get the subprocess object
+        try:
+            appium_server.kill() # Kill the server
+        except:
+            pass
+    try:
+        appium_server = subprocess.Popen([appium_binary], stdout=subprocess.PIPE, stderr=subprocess.STDOUT) # Start the appium server
+    except Exception, returncode: # Couldn't run server
+        CommonUtil.ExecLog(sModuleInfo,"Couldn't start Appium server: %s" % returncode, 3)
+        return 'failed'
+    Shared_Resources.Set_Shared_Variables('appium_server', appium_server) # Save the server object, so we can retrieve it later
+    CommonUtil.ExecLog(sModuleInfo,"Waiting 10 seconds for server to start", 1)
+    time.sleep(10) # Wait for server to get to ready state
+
 def start_appium_driver(package_name = '', activity_name = '', filename = ''):
     ''' Creates appium instance using discovered and provided capabilities '''
     # Does not execute application
@@ -225,12 +245,18 @@ def start_appium_driver(package_name = '', activity_name = '', filename = ''):
     
     try:
         if appium_driver == None:
+            # Start Appium server
+            start_appium_server()
+            
+            # Create Appium driver
+    
             # Setup capabilities
             desired_caps = {}
             desired_caps['platformName'] = dependency['Mobile'] # Set platform name
             desired_caps['autoLaunch'] = 'false' # Do not launch application
             desired_caps['fullReset'] = 'false' # Do not clear application cache when complete
-            desired_caps['sendKeyStrategy'] = 'setValue' #!!! Needed for send_keys?
+            desired_caps['sendKeyStrategy'] = 'setValue' # Send text to element faster
+            desired_caps['newCommandTimeout'] = 600 # Command timeout before appium destroys instance
             
             if dependency['Mobile'].lower() == 'android':
                 adbOptions.wake_android() # Send wake up command to avoid issues with devices ignoring appium when they are in lower power mode (android 6.0+)
@@ -277,15 +303,31 @@ def teardown_appium(data_set):
     
     sModuleInfo = inspect.stack()[0][3] + " : " + inspect.getmoduleinfo(__file__).name
     CommonUtil.ExecLog(sModuleInfo,"Starting Appium cleanup.",1)
+    
+    # Appium instance
     try:
         global appium_driver
         appium_driver.quit() # Tell appium to shutdown instance
-        appium_driver = None # Clear driver variable, so next run will be fresh
-        Shared_Resources.Set_Shared_Variables('appium_driver', '') # Clear the driver from shared variables
         CommonUtil.ExecLog(sModuleInfo,"Appium cleaned up successfully.",1)
-        return 'passed'
-    except Exception:
-        return CommonUtil.Exception_Handler(sys.exc_info())
+        result = 'passed'
+    except:
+        result = CommonUtil.Exception_Handler(sys.exc_info())
+    appium_driver = None # Clear driver variable, so next run will be fresh
+    Shared_Resources.Set_Shared_Variables('appium_driver', '') # Clear the driver from shared variables
+
+    # Appium server
+    try:
+        CommonUtil.ExecLog(sModuleInfo,"Destroying Appium server",1)
+        appium_server = Shared_Resources.Get_Shared_Variables('appium_server') # Get the subprocess object
+        Shared_Resources.Set_Shared_Variables('appium_server', '') # Remove shared variable
+        appium_server.kill() # Send kill appium process
+    except:
+        CommonUtil.ExecLog(sModuleInfo,"Error destroying Appium server - may already be down", 2)
+        
+    # Cleanup shared variables
+    Shared_Resources.Clean_Up_Shared_Variables()
+        
+    return result
 
 def close_application(data_set):
     ''' Exit the application '''
