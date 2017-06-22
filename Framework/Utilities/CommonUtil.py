@@ -11,6 +11,7 @@ from Framework.Utilities import FileUtilities as FL
 import uuid
 from Framework.Utilities import RequestFormatter
 import subprocess
+
 temp_config=os.path.join(os.path.join(FL.get_home_folder(),os.path.join('Desktop',os.path.join('AutomationLog',ConfigModule.get_config_value('Temp','_file')))))
 
 passed_tag_list = ['Pass', 'pass', 'PASS', 'PASSED', 'Passed', 'passed', 'true', 'TRUE', 'True', '1', 'Success','success', 'SUCCESS', True]
@@ -264,6 +265,9 @@ def TakeScreenShot(ImageName,local_run=False):
                              #os.system("adb shell screencap -p | perl -pe 's/\x0D\x0A/\x0A/g' > %s"%full_location)
                              os.system("adb shell screencap -p /sdcard/screen.png")
                              os.system("adb pull /sdcard/screen.png %s"%full_location)
+                             from PIL import Image
+                             im = Image.open(full_location)
+                             im.save(full_location, format="JPEG", quality=4)
 
                      except Exception, e:
                          return Exception_Handler(sys.exc_info())
@@ -286,6 +290,9 @@ def TakeScreenShot(ImageName,local_run=False):
                          #os.system("adb shell screencap -p | perl -pe 's/\x0D\x0A/\x0A/g' > %s"%full_location)
                          os.system("adb shell screencap -p /sdcard/screen.png")
                          os.system("adb pull /sdcard/screen.png %s"%full_location)
+                         from PIL import Image
+                         im = Image.open(full_location)
+                         im.save(full_location, format="JPEG", quality=4)
 
                      #iphone working copy
                      output = os.system("ioreg -w -p IOUSB | grep -w iPhone")
@@ -311,6 +318,9 @@ def TakeScreenShot(ImageName,local_run=False):
                          #os.system("adb shell screencap -p | perl -pe 's/\x0D\x0A/\x0A/g' > %s"%full_location)
                          os.system("adb shell screencap -p /sdcard/screen.png")
                          os.system("adb pull /sdcard/screen.png %s"%full_location)
+                         from PIL import Image
+                         im = Image.open(full_location)
+                         im.save(full_location, format="JPEG", quality=4)
 
              elif os.name == 'nt':
                  # windows working copy
@@ -332,6 +342,9 @@ def TakeScreenShot(ImageName,local_run=False):
                          # os.system("adb shell screencap -p | perl -pe 's/\x0D\x0A/\x0A/g' > %s"%full_location)
                          os.system("adb shell screencap -p /sdcard/screen.png")
                          os.system("adb pull /sdcard/screen.png %s" % full_location)
+                         from PIL import Image
+                         im = Image.open(full_location)
+                         im.save(full_location, format="JPEG", quality=4)
 
                  except Exception, e:
                      return Exception_Handler(sys.exc_info())
