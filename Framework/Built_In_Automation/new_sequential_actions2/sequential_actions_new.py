@@ -170,12 +170,7 @@ def Sequential_Actions(step_data, _dependency = {}, _run_time_params = '', _file
     global dependency, file_attachment
     if _dependency != {}:
         dependency = _dependency # Save to global variable
-        #for key in _dependency:
-        #    sr.Set_Shared_Variables(str(key).lower(), _dependency[key])
         sr.Set_Shared_Variables('dependency', _dependency) # Save in Shared Variables
-    if dependency == None:
-        CommonUtil.ExecLog(sModuleInfo, "No dependency set - Can't run automation", 3)
-        return 'failed' 
     
     if _file_attachment != {}: # If a file attachment was passed
         file_attachment = _file_attachment # Save as a global variable
