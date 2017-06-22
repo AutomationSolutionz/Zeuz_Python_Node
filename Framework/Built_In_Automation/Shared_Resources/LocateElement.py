@@ -9,16 +9,26 @@ Created on Jun 21, 2017
 
 
 import sys
+import inspect
 from Framework.Utilities import CommonUtil
 from Framework.Utilities.CommonUtil import passed_tag_list, failed_tag_list
+global generic_driver 
+generic_driver = None
 
 def Get_Element(step_data_set,driver):
     '''
     This funciton will return "Failed" if something went wrong, else it will always return a single element
     '''
     try:
-        global driver
-        
+        generic_driver = driver
+        global generic_driver
+        # We need to swith to default content just incase previous action switched to something else
+        try:
+            generic_driver.switch_to_default_content()
+        except:
+            True
+        #here we switch driver if we need to
+        _switch(step_data_set)
         index_number = _locate_index_number(step_data_set)
         element_query, query_type = _construct_query (step_data_set)
         if element_query == False:
@@ -40,20 +50,26 @@ def _construct_query (step_data_set):
         # find out if ref exists.  If it exists, it will set the value to True else False
         child_ref_exits = any("child parameter" in s for s in step_data_set)
         parent_ref_exits = any("parent parameter" in s for s in step_data_set)
+        
+        #* need to test and delete this 
         #remove index.  We need to remove index, because they dont get used to construct the xpath pat
+        # we may not need this as I am currently excluding when constructing this.. need some testing
         remove_index_child = filter(lambda x: 'index' not in x[0], step_data_set)  
         remove_index_element = filter(lambda x: 'index' not in x[0], step_data_set) 
         remove_index_parent = filter(lambda x: 'index' not in x[0], step_data_set) 
+        
         #get all child, element, and parent only
-        child_parameter_list = filter(lambda x: 'child parameter' in x[1], remove_index_child) 
-        element_parameter_list = filter(lambda x: 'element parameter' in x[1], remove_index_element) 
-        parent_parameter_list = filter(lambda x: 'parent parameter' in x[1], remove_index_parent) 
+        child_parameter_list = filter(lambda x: 'child parameter' in x[1], step_data_set) 
+        element_parameter_list = filter(lambda x: 'element parameter' in x[1], step_data_set) 
+        parent_parameter_list = filter(lambda x: 'parent parameter' in x[1], step_data_set) 
         
         if "css" in collect_all_attribute and "xpath" not in collect_all_attribute:
-            # return the raw css command with css as type
+            # return the raw css command with css as type.  We do this so that even if user enters other data, we will ignore them.  
+            # here we expect to get raw css query
             return ((filter(lambda x: 'css' in x[0], step_data_set) [0][2]), "css")
         elif "xpath" in collect_all_attribute and "css" not in collect_all_attribute:
-            # return the raw xpath command with xpath as type
+            # return the raw xpath command with xpath as type.  We do this so that even if user enters other data, we will ignore them.  
+            # here we expect to get raw xpath query
             return ((filter(lambda x: 'xpath' in x[0], step_data_set) [0][2]), "xpath" )       
         elif child_ref_exits == False and parent_ref_exits == False :
             '''  If  there are no child or parent as reference, then we construct the xpath differently'''
@@ -88,7 +104,7 @@ def _construct_xpath_list(parameter_list,add_dot=False):
     try:
         element_main_body_list = []
         #these are special cases where we cannot treat their attribute as any other attribute such as id, class and so on...  
-        excluded_attribute = ["*text", "text", "tag", "css", "index","xpath"]
+        excluded_attribute = ["*text", "text", "tag", "css", "index","xpath","switch frame","switch window","switch alert","switch active"]
         for each_data_row in parameter_list:
             attribute = (each_data_row[0].strip()).lower()
             attribute_value = each_data_row[2]
@@ -130,6 +146,40 @@ def _construct_xpath_string_from_list(xpath_list):
     except Exception:
         return CommonUtil.Exception_Handler(sys.exc_info())    
 
+def _switch(step_data_set):
+    "here we switch the global driver to any of the switch call"
+    try:
+        sModuleInfo = inspect.stack()[0][3] + " : " + inspect.getmoduleinfo(__file__).name
+        # find if frame switch is there.  If user enters more than one frame, it will ignore
+        # user should enter multiple frame in this order parent > child > grand child ... and so on
+        if "switch frame" in [x[0] for x in step_data_set]: 
+            CommonUtil.ExecLog(sModuleInfo, "switching frame", 1)
+            frame_switch = filter(lambda x: 'switch frame' == x[0], step_data_set) [0][2]
+            # first we split by > and then we reconstruct the list by striping trailing spaces and lowering all letters
+            frame_switch_list = [(x.strip()).lower() for x in (frame_switch.split(">"))]
+            # we switch each frame in order 
+            for each_frame in frame_switch_list:
+                generic_driver.switch_to_frame(each_frame)
+            return  generic_driver  
+        elif "switch window" in [x[0] for x in step_data_set]: 
+            window_switch = filter(lambda x: 'switch window' == x[0], step_data_set) [0][2]
+            # first we split by > and then we reconstruct the list by striping trailing spaces and lowering all letters
+            window_switch_list = [(x.strip()).lower() for x in (window_switch.split(">"))]
+            # we switch each window in order 
+            for each_window in window_switch_list:
+                generic_driver.switch_to_window(each_window) 
+            return  generic_driver  
+        elif "switch alert" in [x[0] for x in step_data_set]:  
+            generic_driver.switch_to_alert()
+            return generic_driver 
+        elif "switch active" in [x[0] for x in step_data_set]:  
+            generic_driver.switch_to_active_element()
+            return generic_driver 
+        else:
+            return True
+    except Exception:
+        return CommonUtil.Exception_Handler(sys.exc_info())   
+
 def _get_xpath_or_css_element(element_query,css_xpath, index_number=False):  
     '''
     Here, we actually execute the query based on css/xpath and then analyze if there are multiple.
@@ -138,11 +188,12 @@ def _get_xpath_or_css_element(element_query,css_xpath, index_number=False):
     '''
     try: 
         all_matching_elements = []
+ 
         if css_xpath == "xpath":
-            all_matching_elements = driver.find_elements_by_xpath(element_query)
-        elif css_xpath == "css":
-            all_matching_elements = driver.find_elements_by_css_selector(element_query)
+            all_matching_elements = generic_driver.find_elements_by_xpath(element_query)
 
+        elif css_xpath == "css":
+            all_matching_elements = generic_driver.find_elements_by_css_selector(element_query)
 
         if len(all_matching_elements)== 0:
             return False
@@ -183,3 +234,6 @@ def _locate_index_number(step_data_set):
     except Exception:
         return CommonUtil.Exception_Handler(sys.exc_info())
     
+
+
+
