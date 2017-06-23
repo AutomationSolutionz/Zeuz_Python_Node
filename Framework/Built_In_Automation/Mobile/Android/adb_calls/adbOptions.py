@@ -3,7 +3,7 @@
 
 #Android Debug Bridge (ADB) options to get the android devices info connected via usb/wi-fi
 __author__='minar'
-import subprocess, inspect, os, sys
+import subprocess, inspect, os, sys, re
 from Framework.Utilities import CommonUtil
 
 def start_adb_server():
@@ -227,8 +227,8 @@ def wake_android():
     sModuleInfo = inspect.stack()[0][3] + " : " + inspect.getmoduleinfo(__file__).name
     try:
         output = subprocess.check_output("adb shell wm size", shell=True) # Need size for swipe calculation
-        size = output.split(' ')[2] # Get size by itself
-        w,h = size.split('x') # Put width and height into variables
+        m = re.search('(\d+)x(\d+)', output) # Find w and h using regular expression
+        w, h = (m.group(1), m.group(2)) # Save w and h
         spos = int(int(h) * 0.7) # Calculate 70% of height as starting position
         epos = int(int(h) * 0.1) # Calculate 10% of height as ending position
         centre = int(int(w) / 2) # Calculate centre of screen horizontally
