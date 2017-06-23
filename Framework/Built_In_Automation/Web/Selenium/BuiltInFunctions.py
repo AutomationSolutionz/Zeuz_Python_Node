@@ -165,9 +165,6 @@ def Go_To_Link(step_data, page_title=False):
         return CommonUtil.Exception_Handler(sys.exc_info(), None, ErrorMessage)
 
 
-
-'============================= Sequential Action Section Begins=============================='
-
 #Method to get the element step data from the original step_data
 def Get_Element_Step_Data(step_data):
     sModuleInfo = inspect.stack()[0][3] + " : " + inspect.getmoduleinfo(__file__).name
@@ -267,18 +264,6 @@ def Keystroke_For_Element(step_data):
                                 result = "failed"
                         else:
                             continue
-#                     if step_data[0][len(step_data[0])-1][0] == "keystroke_keys":
-#                         keystroke_value=(step_data[0][len(step_data[0])-1][2]).upper()
-#                         get_keystroke_value = getattr(Keys, keystroke_value)
-#                         result = Element.send_keys(get_keystroke_value)
-# #                        Keystroke_Key_Mapping(Element, keystroke_value)
-#                     elif step_data[0][len(step_data[0])-1][0] == "keystroke_chars":
-#                         keystroke_value=(step_data[0][len(step_data[0])-1][2])
-#                         result = Element.send_keys(keystroke_value)
-#                     else:
-#                         CommonUtil.ExecLog(sModuleInfo, "The correct parameter for the action has not been entered. Please check for errors.", 2)
-#                         result = "failed"
-
                     if (result != "failed"):
                         CommonUtil.TakeScreenShot(sModuleInfo)
                         CommonUtil.ExecLog(sModuleInfo, "Successfully entered keystroke for the element with given parameters and values", 1)
@@ -716,25 +701,6 @@ def Validate_Text(step_data):
                         except Exception:
                             errMsg = "Could not get element based on the information provided."
                             return CommonUtil.Exception_Handler(sys.exc_info(),None,errMsg)
-
-#             if step_data[0][0][0] == "current_page":
-#                 try:
-#                     Element = Get_Element('tag', 'html')
-#                 except Exception:
-#                     errMsg = "Could not get element from the current page."
-#                     return CommonUtil.Exception_Handler(sys.exc_info(),None,errMsg)
-#             else:
-#                 element_step_data = Get_Element_Step_Data(step_data)
-#                 # element_step_data = step_data[0][0:len(step_data[0])-1:1]
-#                 returned_step_data_list = Validate_Step_Data(element_step_data)
-#                 if ((returned_step_data_list == []) or (returned_step_data_list == "failed")):
-#                     return "failed"
-#                 else:
-#                     try:
-#                         Element = Get_Element(returned_step_data_list[0], returned_step_data_list[1], returned_step_data_list[2], returned_step_data_list[3], returned_step_data_list[4])
-#                     except Exception:
-#                         errMsg = "Could not get element based on the information provided."
-#                         return CommonUtil.Exception_Handler(sys.exc_info(),None,errMsg)
             for each_step_data_item in step_data:
                 if each_step_data_item[1]=="action":
                     expected_text_data = each_step_data_item[2]
@@ -987,8 +953,6 @@ def Model_Actual_Data_Ignoring_Column(actual_data):
             for each_column in each_row:
                 temp_data_model = ["row "+str(row_count)]
                 temp_data_model.append(each_column.strip())
-                #temp_data_model.append("False")
-                #temp_data_model.append("False")
                 Modeled_Data_Set.append(temp_data_model)
                 column_count = column_count +1
             row_count = row_count+1
@@ -1009,8 +973,6 @@ def Model_Actual_Data_Ignoring_Row(actual_data):
             for each_column in each_row: # For each column of this row
                 temp_data_model = ["column "+str(column_count)] # ??
                 temp_data_model.append(each_column.strip()) # Save the column
-                #temp_data_model.append("False")
-                #temp_data_model.append("False")
                 Modeled_Data_Set.append(temp_data_model) # Add row to result array
                 column_count = column_count +1
             row_count = row_count+1
