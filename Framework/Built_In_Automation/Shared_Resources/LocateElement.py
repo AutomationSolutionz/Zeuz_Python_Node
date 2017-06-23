@@ -1,13 +1,9 @@
 # -*- coding: utf-8 -*-
 # -*- coding: cp1252 -*-
-
 '''
 Created on Jun 21, 2017
 @author: Built_In_Automation Solutionz Inc.
 '''
-
-
-
 import sys
 import inspect
 from Framework.Utilities import CommonUtil
@@ -20,23 +16,29 @@ def Get_Element(step_data_set,driver):
     This funciton will return "Failed" if something went wrong, else it will always return a single element
     '''
     try:
+        sModuleInfo = inspect.stack()[0][3] + " : " + inspect.getmoduleinfo(__file__).name
         generic_driver = driver
         global generic_driver
-        # We need to swith to default content just incase previous action switched to something else
+        # We need to switch to default content just in case previous action switched to something else
         try:
             generic_driver.switch_to_default_content()
         except:
+            # Tested that if you switch to default even when it is default doesn't cause anything.
+            # for xml, we need to do some verification
             True
         #here we switch driver if we need to
         _switch(step_data_set)
         index_number = _locate_index_number(step_data_set)
         element_query, query_type = _construct_query (step_data_set)
+        CommonUtil.ExecLog(sModuleInfo, "Element query used to locate the element: %s. Query method used: %s "%(element_query,query_type), 1)
         if element_query == False:
-            return "Failed"
+            return "failed"
         elif query_type == "xpath" and element_query != False:
             return _get_xpath_or_css_element(element_query,"xpath",index_number)
         elif query_type == "css" and element_query != False:
             return _get_xpath_or_css_element(element_query,"css",index_number)
+        else:
+            return "failed"
     except Exception:
         return CommonUtil.Exception_Handler(sys.exc_info())
 
@@ -50,14 +52,6 @@ def _construct_query (step_data_set):
         # find out if ref exists.  If it exists, it will set the value to True else False
         child_ref_exits = any("child parameter" in s for s in step_data_set)
         parent_ref_exits = any("parent parameter" in s for s in step_data_set)
-        
-        #* need to test and delete this 
-        #remove index.  We need to remove index, because they dont get used to construct the xpath pat
-        # we may not need this as I am currently excluding when constructing this.. need some testing
-        remove_index_child = filter(lambda x: 'index' not in x[0], step_data_set)  
-        remove_index_element = filter(lambda x: 'index' not in x[0], step_data_set) 
-        remove_index_parent = filter(lambda x: 'index' not in x[0], step_data_set) 
-        
         #get all child, element, and parent only
         child_parameter_list = filter(lambda x: 'child parameter' in x[1], step_data_set) 
         element_parameter_list = filter(lambda x: 'element parameter' in x[1], step_data_set) 
@@ -153,28 +147,32 @@ def _switch(step_data_set):
         # find if frame switch is there.  If user enters more than one frame, it will ignore
         # user should enter multiple frame in this order parent > child > grand child ... and so on
         if "switch frame" in [x[0] for x in step_data_set]: 
-            CommonUtil.ExecLog(sModuleInfo, "switching frame", 1)
             frame_switch = filter(lambda x: 'switch frame' == x[0], step_data_set) [0][2]
             # first we split by > and then we reconstruct the list by striping trailing spaces and lowering all letters
             frame_switch_list = [(x.strip()).lower() for x in (frame_switch.split(">"))]
             # we switch each frame in order 
             for each_frame in frame_switch_list:
+                CommonUtil.ExecLog(sModuleInfo, "switching frame; %s"%each_frame, 1)
                 generic_driver.switch_to_frame(each_frame)
-            return  generic_driver  
+            return  True 
         elif "switch window" in [x[0] for x in step_data_set]: 
+            #get the value of switch window
             window_switch = filter(lambda x: 'switch window' == x[0], step_data_set) [0][2]
             # first we split by > and then we reconstruct the list by striping trailing spaces and lowering all letters
             window_switch_list = [(x.strip()).lower() for x in (window_switch.split(">"))]
             # we switch each window in order 
             for each_window in window_switch_list:
+                CommonUtil.ExecLog(sModuleInfo, "switching window; %s"%each_window, 1)
                 generic_driver.switch_to_window(each_window) 
-            return  generic_driver  
+            return  True  
         elif "switch alert" in [x[0] for x in step_data_set]:  
             generic_driver.switch_to_alert()
-            return generic_driver 
+            CommonUtil.ExecLog(sModuleInfo, "switching to alert", 1)
+            return  True 
         elif "switch active" in [x[0] for x in step_data_set]:  
+            CommonUtil.ExecLog(sModuleInfo, "switching to active element", 1)
             generic_driver.switch_to_active_element()
-            return generic_driver 
+            return  True 
         else:
             return True
     except Exception:
@@ -188,28 +186,28 @@ def _get_xpath_or_css_element(element_query,css_xpath, index_number=False):
     '''
     try: 
         all_matching_elements = []
- 
+        sModuleInfo = inspect.stack()[0][3] + " : " + inspect.getmoduleinfo(__file__).name
         if css_xpath == "xpath":
             all_matching_elements = generic_driver.find_elements_by_xpath(element_query)
-
         elif css_xpath == "css":
             all_matching_elements = generic_driver.find_elements_by_css_selector(element_query)
-
+            
         if len(all_matching_elements)== 0:
             return False
         elif len(all_matching_elements)==1 and index_number == False:
             return all_matching_elements[0]
         elif len(all_matching_elements)>1 and index_number == False:
-            print "Warning: found more than one element with given condition.  Returning first item.  Consider providing index"
+            CommonUtil.ExecLog(sModuleInfo, "Warning: found %s elements with given condition.  Returning first item.  Consider providing index"%len(all_matching_elements), 2)
             return all_matching_elements[0]  
         elif len(all_matching_elements)==1 and abs(index_number) >0:
-            print "Warning: we only found single element but you provided an index number greater than 0.  Returning the only element"  
+            CommonUtil.ExecLog(sModuleInfo, "Warning: we only found single element but you provided an index number greater than 0.  Returning the only element", 2)
             return all_matching_elements[0]
         elif len(all_matching_elements) >1 and index_number != False:
             if (len(all_matching_elements)-1) < abs(index_number):
-                print "Warning: your index exceed the the number of elements found. Returning the last element instead"
+                CommonUtil.ExecLog(sModuleInfo,  "Warning: your index: %s exceed the the number of elements found: %s. Returning the last element instead.  Index used:%s"%(index_number, len(all_matching_elements)-1), 2)
                 return all_matching_elements[(len(all_matching_elements)-1)]
             else:
+                CommonUtil.ExecLog(sModuleInfo, "Total elements found are: %s but returning element number: %s" %(len(all_matching_elements),index_number), 2)
                 return all_matching_elements[index_number]    
         else:
             return "Failed"   
