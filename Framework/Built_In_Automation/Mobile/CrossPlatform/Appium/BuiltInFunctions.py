@@ -30,7 +30,7 @@ if Shared_Resources.Test_Shared_Variables('dependency'): # Check if driver is al
  
 # Appium element wait time in seconds
 global WebDriver_Wait 
-WebDriver_Wait = 3
+WebDriver_Wait = 20
 
 def get_driver():
     ''' For custom functions external to this script that need access to the driver '''
