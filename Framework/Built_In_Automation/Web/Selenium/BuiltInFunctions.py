@@ -937,6 +937,26 @@ def Scroll(step_data):
         return CommonUtil.Exception_Handler(sys.exc_info())
 
 
+
+#Method to return pass or fail for the step outcome
+def Navigate(step_data):
+    sModuleInfo = inspect.stack()[0][3] + " : " + inspect.getmoduleinfo(__file__).name
+    CommonUtil.ExecLog(sModuleInfo, "Function: Step_Result", 1)
+    try:
+            navigate = step_data[0][2]
+            if navigate == 'back':
+                selenium_driver.back()
+                CommonUtil.ExecLog(sModuleInfo, "Performing browser back", 1)
+            elif navigate == 'forward':
+                selenium_driver.forward()
+                CommonUtil.ExecLog(sModuleInfo, "Performing browser forward", 1)
+            elif navigate == 'refresh':
+                selenium_driver.refresh()
+                CommonUtil.ExecLog(sModuleInfo, "Performing browser refresh", 1)
+            return "passed"
+    except Exception:
+        return CommonUtil.Exception_Handler(sys.exc_info())
+
 #Method to return pass or fail for the step outcome
 def Step_Result(step_data):
     sModuleInfo = inspect.stack()[0][3] + " : " + inspect.getmoduleinfo(__file__).name
