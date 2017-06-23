@@ -165,9 +165,6 @@ def Go_To_Link(step_data, page_title=False):
         return CommonUtil.Exception_Handler(sys.exc_info(), None, ErrorMessage)
 
 
-
-'============================= Sequential Action Section Begins=============================='
-
 #Method to get the element step data from the original step_data
 def Get_Element_Step_Data(step_data):
     sModuleInfo = inspect.stack()[0][3] + " : " + inspect.getmoduleinfo(__file__).name
@@ -192,112 +189,6 @@ def Get_Element_Step_Data(step_data):
     except Exception:
         return CommonUtil.Exception_Handler(sys.exc_info())
 
-
-#Handles actions for the sequential logic, based on the input from the mentioned function
-def Action_Handler(action_step_data, action_name):
-    sModuleInfo = inspect.stack()[0][3] + " : " + inspect.getmoduleinfo(__file__).name
-    CommonUtil.ExecLog(sModuleInfo, "Function: Action_Handler", 1)
-    try:
-        if action_name =="click":
-            result = Click_Element(action_step_data)
-            if result == "failed":
-                return "failed"
-        elif action_name =="tear down browser":
-            result = Tear_Down_Selenium(action_step_data)
-            if result == "failed":
-                return "failed"
-        elif action_name =="open browser":
-            result = Open_Browser_Wrapper(action_step_data)
-            if result == "failed":
-                return "failed"
-        elif action_name =="go to link":
-            result = Go_To_Link(action_step_data)
-            if result == "failed":
-                return "failed"
-        elif action_name =="click and hold":
-            result = Click_and_Hold_Element(action_step_data)
-            if result == "failed":
-                return "failed"
-        elif action_name =="context click":
-            result = Context_Click_Element(action_step_data)
-            if result == "failed":
-                return "failed"
-        elif action_name =="double click":
-            result = Double_Click_Element(action_step_data)
-            if result == "failed":
-                return "failed"
-        elif action_name =="move to element":
-            result = Move_To_Element(action_step_data)
-            if result == "failed":
-                return "failed"
-        elif action_name == "hover":
-            result = Hover_Over_Element(action_step_data)
-            if result == "failed":
-                return "failed"
-        elif (action_name == "keystroke keys" or action_name == "keystroke chars"):
-            result = Keystroke_For_Element(action_step_data)
-            if result == "failed":
-                return "failed"
-        elif action_name=="text":
-            result = Enter_Text_In_Text_Box(action_step_data)
-            if result == "failed":
-                return "failed"
-        elif action_name =="wait":
-            result = Wait_For_New_Element(action_step_data)
-            if result == "failed":
-                return "failed"
-        elif action_name == "sleep":
-            result = Sleep(action_step_data)
-            if result == "failed":
-                return "failed"
-        elif action_name == "initialize list":
-            result = Initialize_List(action_step_data)
-            if result == "failed":
-                return "failed"
-        elif (action_name == "validate full text" or action_name == "validate partial text"):
-            result = Validate_Text(action_step_data)
-            if result == "failed":
-                return "failed"
-        elif (action_name == "save text"):
-            result = Save_Text(action_step_data)
-            if result == "failed":
-                return "failed"
-        elif (action_name == "compare variable"):
-            result = Compare_Variables(action_step_data)
-            if result == "failed":
-                return "failed"
-        elif (action_name == "compare list"):
-            result = Compare_Lists(action_step_data)
-            if result == "failed":
-                return "failed"
-        elif (action_name == 'insert into list'):
-            result = Insert_Into_List(action_step_data)
-            if result == "failed":
-                return "failed"
-        elif (action_name == "scroll"):
-            result = Scroll(action_step_data)
-            if result == "failed":
-                return "failed"
-        elif (action_name == "step result"):
-            result = Step_Result(action_step_data)
-            if result in failed_tag_list: # Convert user specified pass/fail into standard result
-                return 'failed'
-            elif result in passed_tag_list:
-                return 'passed'
-            elif result in skipped_tag_list:
-                return 'skipped'
-            #if result == "failed":
-            #    return "failed"
-        elif (action_name == "deselect all" or action_name == "select by visible text" or action_name == "deselect by visible text" or action_name == "select by value" or action_name == "deselect by value" or action_name =="select by index" or action_name == "deselect by index"):
-            result = Select_Deselect(action_step_data)
-            if result == "failed":
-                return "failed"
-        else:
-            CommonUtil.ExecLog(sModuleInfo, "The action you entered is incorrect. Please provide accurate information on the data set(s).", 3)
-            return "failed"
-
-    except Exception:
-        return CommonUtil.Exception_Handler(sys.exc_info())
 
 def Initialize_List(data_set):
     ''' Temporary wrapper until we can convert everything to use just data_set and not need the extra [] '''
@@ -373,18 +264,6 @@ def Keystroke_For_Element(step_data):
                                 result = "failed"
                         else:
                             continue
-#                     if step_data[0][len(step_data[0])-1][0] == "keystroke_keys":
-#                         keystroke_value=(step_data[0][len(step_data[0])-1][2]).upper()
-#                         get_keystroke_value = getattr(Keys, keystroke_value)
-#                         result = Element.send_keys(get_keystroke_value)
-# #                        Keystroke_Key_Mapping(Element, keystroke_value)
-#                     elif step_data[0][len(step_data[0])-1][0] == "keystroke_chars":
-#                         keystroke_value=(step_data[0][len(step_data[0])-1][2])
-#                         result = Element.send_keys(keystroke_value)
-#                     else:
-#                         CommonUtil.ExecLog(sModuleInfo, "The correct parameter for the action has not been entered. Please check for errors.", 2)
-#                         result = "failed"
-
                     if (result != "failed"):
                         CommonUtil.TakeScreenShot(sModuleInfo)
                         CommonUtil.ExecLog(sModuleInfo, "Successfully entered keystroke for the element with given parameters and values", 1)
@@ -822,25 +701,6 @@ def Validate_Text(step_data):
                         except Exception:
                             errMsg = "Could not get element based on the information provided."
                             return CommonUtil.Exception_Handler(sys.exc_info(),None,errMsg)
-
-#             if step_data[0][0][0] == "current_page":
-#                 try:
-#                     Element = Get_Element('tag', 'html')
-#                 except Exception:
-#                     errMsg = "Could not get element from the current page."
-#                     return CommonUtil.Exception_Handler(sys.exc_info(),None,errMsg)
-#             else:
-#                 element_step_data = Get_Element_Step_Data(step_data)
-#                 # element_step_data = step_data[0][0:len(step_data[0])-1:1]
-#                 returned_step_data_list = Validate_Step_Data(element_step_data)
-#                 if ((returned_step_data_list == []) or (returned_step_data_list == "failed")):
-#                     return "failed"
-#                 else:
-#                     try:
-#                         Element = Get_Element(returned_step_data_list[0], returned_step_data_list[1], returned_step_data_list[2], returned_step_data_list[3], returned_step_data_list[4])
-#                     except Exception:
-#                         errMsg = "Could not get element based on the information provided."
-#                         return CommonUtil.Exception_Handler(sys.exc_info(),None,errMsg)
             for each_step_data_item in step_data:
                 if each_step_data_item[1]=="action":
                     expected_text_data = each_step_data_item[2]
@@ -936,6 +796,26 @@ def Scroll(step_data):
     except Exception:
         return CommonUtil.Exception_Handler(sys.exc_info())
 
+
+
+#Method to return pass or fail for the step outcome
+def Navigate(step_data):
+    sModuleInfo = inspect.stack()[0][3] + " : " + inspect.getmoduleinfo(__file__).name
+    CommonUtil.ExecLog(sModuleInfo, "Function: Step_Result", 1)
+    try:
+            navigate = step_data[0][2]
+            if navigate == 'back':
+                selenium_driver.back()
+                CommonUtil.ExecLog(sModuleInfo, "Performing browser back", 1)
+            elif navigate == 'forward':
+                selenium_driver.forward()
+                CommonUtil.ExecLog(sModuleInfo, "Performing browser forward", 1)
+            elif navigate == 'refresh':
+                selenium_driver.refresh()
+                CommonUtil.ExecLog(sModuleInfo, "Performing browser refresh", 1)
+            return "passed"
+    except Exception:
+        return CommonUtil.Exception_Handler(sys.exc_info())
 
 #Method to return pass or fail for the step outcome
 def Step_Result(step_data):
@@ -1034,86 +914,6 @@ def Select_Deselect(step_data):
         return CommonUtil.Exception_Handler(sys.exc_info())
 
 
-#Performs a series of action or conditional logical action decisions based on user input
-def Sequential_Actions(step_data):
-    sModuleInfo = inspect.stack()[0][3] + " : " + inspect.getmoduleinfo(__file__).name
-    CommonUtil.ExecLog(sModuleInfo, "Function: Sequential_Actions", 1)
-    try:
-        for each in step_data:
-            logic_row=[]
-            for row in each:
-                #finding what to do for each dataset
-                #if len(row)==5 and row[1] != "":     ##modifying the filter for changes to be made in the sub-field of the step data. May remove this part of the if statement
-                if ((row[1] == "element parameter") or (row[1] == "reference parameter") or (row[1] == "relation type") or (row[1] == "element parameter 1 of 2") or (row[1] == "element parameter 2 of 2") or (row[1] == "compare")):     ##modifying the filter for changes to be made in the sub-field of the step data. May remove this part of the if statement
-                    continue
-
-                elif row[1]=="action":
-                    CommonUtil.ExecLog(sModuleInfo, "Checking the action to be performed in the action row", 1)
-                    if row[0] == 'compare variable':
-                        result = Action_Handler(each,row[0])
-                    else:
-                        new_data_set = Shared_Resources.Handle_Step_Data_Variables([each])
-                        if new_data_set in failed_tag_list:
-                            return 'failed'
-                        result = Action_Handler(new_data_set[0],row[0])
-
-                    if result == [] or result == "failed":
-                        return "failed"
-                    elif result in skipped_tag_list:
-                        return "skipped"
-
-                # If middle column = optional action, call action handler, but always return a pass
-                elif row[1] == "optional action":
-                    CommonUtil.ExecLog(sModuleInfo,"Checking the optional action to be performed in the action row: %s" % str(row), 1)
-                    result = Action_Handler(each, row[0])  # Pass data set, and action_name to action handler
-                    if result == 'failed':
-                        CommonUtil.ExecLog(sModuleInfo, "Optional action failed. Returning pass anyway", 2)
-                    result = 'passed'
-
-                elif row[1]=="conditional action":
-                    CommonUtil.ExecLog(sModuleInfo, "Checking the logical conditional action to be performed in the conditional action row", 1)
-                    logic_decision=""
-                    logic_row.append(row)
-                    if len(logic_row)==2:
-                        #element_step_data = each[0:len(step_data[0])-2:1]
-                        element_step_data = Get_Element_Step_Data(each)
-                        returned_step_data_list = Validate_Step_Data(element_step_data)
-                        if ((returned_step_data_list == []) or (returned_step_data_list == "failed")):
-                            return "failed"
-                        else:
-                            try:
-                                Element = Get_Element(returned_step_data_list[0], returned_step_data_list[1], returned_step_data_list[2], returned_step_data_list[3], returned_step_data_list[4])
-                                if Element == 'failed':
-                                    logic_decision = "false"
-                                else:
-                                    logic_decision = "true"
-                            except Exception, errMsg:
-                                errMsg = "Could not find element in the by the criteria..."
-                                return CommonUtil.Exception_Handler(sys.exc_info(),None,errMsg)
-                    else:
-                        continue
-
-                    for conditional_steps in logic_row:
-                        if logic_decision in conditional_steps:
-                            print conditional_steps[2]
-                            list_of_steps = conditional_steps[2].split(",")
-                            for each_item in list_of_steps:
-                                data_set_index = int(each_item) - 1
-                                cond_result = Sequential_Actions([step_data[data_set_index]])
-                                if cond_result == "failed":
-                                    return "failed"
-                                elif cond_result == "skipped":
-                                    return "skipped"
-                            return "passed"
-
-                else:
-                    CommonUtil.ExecLog(sModuleInfo, "The sub-field information is incorrect. Please provide accurate information on the data set(s).", 3)
-                    return "failed"
-        return "passed"
-
-    except Exception:
-        return CommonUtil.Exception_Handler(sys.exc_info())
-
 '===================== ===x=== Sequential Action Section Ends ===x=== ======================'
 
 
@@ -1153,8 +953,6 @@ def Model_Actual_Data_Ignoring_Column(actual_data):
             for each_column in each_row:
                 temp_data_model = ["row "+str(row_count)]
                 temp_data_model.append(each_column.strip())
-                #temp_data_model.append("False")
-                #temp_data_model.append("False")
                 Modeled_Data_Set.append(temp_data_model)
                 column_count = column_count +1
             row_count = row_count+1
@@ -1175,8 +973,6 @@ def Model_Actual_Data_Ignoring_Row(actual_data):
             for each_column in each_row: # For each column of this row
                 temp_data_model = ["column "+str(column_count)] # ??
                 temp_data_model.append(each_column.strip()) # Save the column
-                #temp_data_model.append("False")
-                #temp_data_model.append("False")
                 Modeled_Data_Set.append(temp_data_model) # Add row to result array
                 column_count = column_count +1
             row_count = row_count+1
