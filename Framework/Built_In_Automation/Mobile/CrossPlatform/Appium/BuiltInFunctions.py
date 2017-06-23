@@ -2,9 +2,9 @@
 # -*- coding: cp1252 -*-
 # Android environment
 from appium import webdriver
-import os, sys, time, inspect, json
+import os, sys, time, inspect
 import subprocess,re
-from Framework.Utilities import CommonUtil, FileUtilities
+from Framework.Utilities import CommonUtil
 from Framework.Built_In_Automation.Mobile.Android.adb_calls import adbOptions
 from appium.webdriver.common.touch_action import TouchAction
 from selenium.webdriver.support.ui import WebDriverWait
@@ -24,148 +24,18 @@ if Shared_Resources.Test_Shared_Variables('appium_driver'): # Check if driver is
     appium_driver = Shared_Resources.Get_Shared_Variables('appium_driver') # Retreive appium driver
 
 # Recall dependency, if not already set
-dependency = {'Mobile':'Android'} #!!! TEMP - Replace with None for production
+dependency = None
 if Shared_Resources.Test_Shared_Variables('dependency'): # Check if driver is already set in shared variables
     dependency = Shared_Resources.Get_Shared_Variables('dependency') # Retreive appium driver
  
-
+# Appium element wait time in seconds
 global WebDriver_Wait 
-WebDriver_Wait = 20
+WebDriver_Wait = 3
 
-################################### UNUSED - SEEMS TO INVOLVE SETTING UP APPIUM #########################################
-global APPIUM_DRIVER_LIST
-APPIUM_DRIVER_LIST = {}
-
-
-def getDriversList():
-    return APPIUM_DRIVER_LIST
-
-
-def getDriver(index):
-    try:
-        return APPIUM_DRIVER_LIST[index]
-
-    except Exception:
-        return CommonUtil.Exception_Handler(sys.exc_info())
-
-
-
-def addDriver(position, driver, port):
-    try:
-        APPIUM_DRIVER_LIST.update({position: {'driver':driver, 'port': port}})
-        return True
-
-    except Exception:
-        return CommonUtil.Exception_Handler(sys.exc_info())
-
-
-
-def start_selenium_hub(file_location = os.path.join(FileUtilities.get_home_folder(), os.path.join('Desktop', 'selenium-server-standalone-2.43.1.jar'))):
-    sModuleInfo = inspect.stack()[0][3] + " : " + inspect.getmoduleinfo(__file__).name
-    try:
-        CommonUtil.ExecLog(sModuleInfo, "Starting Selenium Hub", 1)
-        console_run("java -jar %s -role hub" % file_location)
-        CommonUtil.ExecLog(sModuleInfo, "Selenium Hub Command given", 1)
-        return True
-    except Exception:
-        errMsg = "Unable to Start Selenium Hub"
-        return CommonUtil.Exception_Handler(sys.exc_info(),None,errMsg)
-
-def console_run(run_command):
-    sModuleInfo = inspect.stack()[0][3] + " : " + inspect.getmoduleinfo(__file__).name
-    try:
-        os.system("gnome-terminal --working-directory %s -e 'bash -c \"%s ;exec bash\"'" % (FileUtilities.get_home_folder(),run_command))
-
-    except Exception:
-        errMsg = "Unable to run command"
-        return CommonUtil.Exception_Handler(sys.exc_info(),None,errMsg)
-
-
-
-def init_config_for_device(port_to_connect, device_index, hub_address='127.0.0.1', hub_port=4444, base_location = os.path.join(FileUtilities.get_home_folder(), os.path.join('Desktop', 'appiumConfig')), **kwargs):
-    sModuleInfo = inspect.stack()[0][3] + " : " + inspect.getmoduleinfo(__file__).name
-    try:
-        dictJson={
-            "configuration":
-                {
-                    "nodeTimeout": 120,
-                    "port": port_to_connect,
-                    "hubPort": hub_port,
-                    "proxy": "org.openqa.grid.selenium.proxy.DefaultRemoteProxy",
-                    "url": "http://%s:%d/wd/hub"%(hub_address,port_to_connect),
-                    "hub": "%s:%d/grid/register"%(hub_address, hub_port),
-                    "hubHost": "%s"%(hub_address),
-                    "nodePolling": 2000,
-                    "registerCycle": 10000,
-                    "register": True,
-                    "cleanUpCycle": 2000,
-                    "timeout": 30000,
-                    "maxSession": 1
-                }
-        }
-        dictJson.update({'capabilities':[kwargs]})
-        if not os.path.exists(base_location):
-            FileUtilities.CreateFolder(base_location)
-        file_location = os.path.join(base_location, 'nodeConfig%d.json'%device_index)
-        with open(file_location, 'w') as txtfile:
-            json.dump(dictJson, txtfile)
-        #start appium instance
-        set_appium_specific_variable()
-        start_appium_instances(port_to_connect, file_location)
-        return True
-
-    except Exception:
-        errMsg = "Unable to initiate appium instance for device: %d" %device_index
-        return CommonUtil.Exception_Handler(sys.exc_info(),None,errMsg)
-
-
-
-def set_appium_specific_variable():
-    sModuleInfo = inspect.stack()[0][3] + " : " + inspect.getmoduleinfo(__file__).name
-    try:
-        env_vars = {'PATH': '', 'LD_LIBRARY_PATH': '', 'ANDROID_HOME': '', 'HOME': ''}
-        not_set = False
-
-        for var in env_vars.keys():
-            env_value = os.getenv(var)
-
-            if env_value:
-                env_vars[var] = env_value
-
-            elif not env_value:
-                not_set = True
-
-        if not_set:
-            os.environ['PATH'] = env_vars['HOME'] + "/.linuxbrew/bin:" + env_vars['PATH']
-            env_vars['PATH'] = env_vars['HOME'] + "/.linuxbrew/bin:" + env_vars['PATH']
-
-            os.environ['LD_LIBRARY_PATH'] = env_vars['HOME'] + "/.linuxbrew/lib:" + env_vars['LD_LIBRARY_PATH']
-            env_vars['LD_LIBRARY_PATH'] = env_vars['HOME'] + "/.linuxbrew/lib:" + env_vars['LD_LIBRARY_PATH']
-
-            os.environ['ANDROID_HOME'] = os.path.join(FileUtilities.get_home_folder(), "android-sdk-linux")
-            env_vars['ANDROID_HOME'] = os.path.join(FileUtilities.get_home_folder(), "android-sdk-linux")
-
-            os.environ['PATH'] = env_vars['PATH'] + ":" + env_vars['ANDROID_HOME'] + "/tools:" + \
-                                 env_vars['ANDROID_HOME'] + "/platform-tools"
-            env_vars['PATH'] = env_vars['PATH'] + ":" + env_vars['ANDROID_HOME'] + "/tools:" + \
-                               env_vars['ANDROID_HOME'] + "/platform-tools"
-
-    except Exception:
-        errMsg = "Unable to set appium variable"
-        return CommonUtil.Exception_Handler(sys.exc_info(),None,errMsg)
-
-
-def start_appium_instances(port_to_connect, file_location, hub_address = '127.0.0.1' ):
-    sModuleInfo = inspect.stack()[0][3] + " : " + inspect.getmoduleinfo(__file__).name
-    try:
-        run_command = "appium -a %s -p %d --nodeconfig %s" % (hub_address, port_to_connect, file_location)
-        console_run(run_command)
-
-    except Exception:
-        errMsg = "Unable to start appium instance at port: %d" %port_to_connect
-        return CommonUtil.Exception_Handler(sys.exc_info(),None,errMsg)
-
-################################### UNUSED - SEEMS TO INVOLVE SETTING UP APPIUM #########################################
+def get_driver():
+    ''' For custom functions external to this script that need access to the driver '''
+    # Caveat: create_appium_driver() must be executed before this variable is populated
+    return appium_driver
 
 def launch_application(data_set):
     ''' Launch the application the appium instance was created with, and create the instance if necessary '''
@@ -2110,7 +1980,8 @@ def Compare_Lists(data_set):
 
 
 def get_program_names(search_name):
-    print "Trying to find package and activity names"
+    ''' Find Package and Activity name based on wildcard match '''
+    
     # Find package name for the program that's already installed
     cmd = 'adb shell pm list packages'
     res = subprocess.Popen(cmd.split(' '), stdout=subprocess.PIPE).communicate(0)
@@ -2124,7 +1995,6 @@ def get_program_names(search_name):
             break
 
     # Launch program using only package name
-    print "Trying to launch", package_name
     cmd = 'adb shell monkey -p ' + m.group(1)[1:] + ' -c android.intent.category.LAUNCHER 1'
     res = subprocess.Popen(cmd.split(' '))
     time.sleep(3)
@@ -2136,8 +2006,6 @@ def get_program_names(search_name):
 
     # Return package and activity names
     if m.group(1) != '' and m.group(2) != '':
-        print "Package name:", m.group(1)
-        print "Activity name:", m.group(2)
         return m.group(1), m.group(2)
     else:
         return '', ''
