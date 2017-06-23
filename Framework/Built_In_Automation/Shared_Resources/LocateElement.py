@@ -210,7 +210,7 @@ def _get_xpath_or_css_element(element_query,css_xpath, index_number=False):
                 CommonUtil.ExecLog(sModuleInfo, "Total elements found are: %s but returning element number: %s" %(len(all_matching_elements),index_number), 2)
                 return all_matching_elements[index_number]    
         else:
-            return "Failed"   
+            return "failed"   
     except Exception:
         return CommonUtil.Exception_Handler(sys.exc_info())     
 
