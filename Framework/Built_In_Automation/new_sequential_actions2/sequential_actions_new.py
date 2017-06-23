@@ -101,7 +101,8 @@ actions = { # Numbers are arbitrary, and are not used anywhere
     181: {'module': 'utility', 'name': 'take screen shot', 'function': 'TakeScreenShot' },
     182: {'module': 'selenium', 'name': 'open browser', 'function': 'Open_Browser_Wrapper'},
     183: {'module': 'selenium', 'name': 'go to link', 'function': 'Go_To_Link'},
-    184: {'module': 'selenium', 'name': 'tear down browser', 'function': 'Tear_Down_Selenium'}
+    184: {'module': 'selenium', 'name': 'tear down browser', 'function': 'Tear_Down_Selenium'},
+    185: {'module': 'selenium', 'name': 'navigate', 'function': 'Navigate'}
 }
 
 # List of Sub-Field keywords, must be all lowercase, and using single spaces - no underscores
