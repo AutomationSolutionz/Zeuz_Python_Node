@@ -196,13 +196,14 @@ def PhysicalAvailableMemory():
 
 
 def TakeScreenShot(ImageName,local_run=False):
+
     """
     Takes screenshot and saves it as jpg file
     name is the name of the file to be saved appended with timestamp
     #TakeScreenShot("TestStepName")
     """
     #file Name don't contain \/?*"<>|
- 
+    sModuleInfo = inspect.stack()[0][3] + " : " + inspect.getmoduleinfo(__file__).name
     take_screenshot_settings = ConfigModule.get_config_value('RunDefinition', 'take_screenshot')
     if take_screenshot_settings == 'True':
         local_run = ConfigModule.get_config_value('RunDefinition', 'local_run')
@@ -262,7 +263,7 @@ def TakeScreenShot(ImageName,local_run=False):
                         print "unable to take screenshot..."
  
                 #mobile device working copy
-                if sys.platform == 'linux2':
+                elif sys.platform == 'linux2':
                     #mobile device connected to linux machine
                      
                     #android working copy
@@ -314,24 +315,25 @@ def TakeScreenShot(ImageName,local_run=False):
                         full_location=ImageFolder+os.sep+TimeStamp("utc")+"_"+ImageName+'_ios.tiff'
                         os.system("idevicescreenshot %s"%full_location)
  
-                else:
-                    #linux working copy
-                    full_location=ImageFolder+os.sep+TimeStamp("utc")+"_"+ImageName+'.png'
-                    os.system("import -window root %s"%full_location)
- 
-                    #android working copy
-                    output = os.system("adb devices")
-                    if output is not None:
-                        full_location=ImageFolder+os.sep+TimeStamp("utc")+"_"+ImageName+'_android.png'
-                        #os.system("adb shell screencap -p | perl -pe 's/\x0D\x0A/\x0A/g' > %s"%full_location)
-                        os.system("adb shell screencap -p /sdcard/screen.png")
-                        os.system("adb pull /sdcard/screen.png %s"%full_location)
-                        from PIL import Image
-                        im = Image.open(full_location)
-                        im.save(full_location, format="JPEG", quality=4)
+                    else:
+                        #linux working copy
+                        full_location=ImageFolder+os.sep+TimeStamp("utc")+"_"+ImageName+'.png'
+                        os.system("import -window root %s"%full_location)
+     
+                        #android working copy
+                        output = os.system("adb devices")
+                        if output is not None:
+                            full_location=ImageFolder+os.sep+TimeStamp("utc")+"_"+ImageName+'_android.png'
+                            #os.system("adb shell screencap -p | perl -pe 's/\x0D\x0A/\x0A/g' > %s"%full_location)
+                            os.system("adb shell screencap -p /sdcard/screen.png")
+                            os.system("adb pull /sdcard/screen.png %s"%full_location)
+                            from PIL import Image
+                            im = Image.open(full_location)
+                            im.save(full_location, format="JPEG", quality=4)
  
             elif os.name == 'nt':
                 #windows working copy
+
 
                 from PIL import ImageGrab
                 from PIL import Image
@@ -364,7 +366,10 @@ def TakeScreenShot(ImageName,local_run=False):
 
                 except Exception, e:
                     return Exception_Handler(sys.exc_info())
- 
+            else:
+                ExecLog(sModuleInfo,"OS is unknown: %s" %(os.name),3)
+                return Exception_Handler(sys.exc_info())
+                
  
         except Exception, e:
             return Exception_Handler(sys.exc_info())
