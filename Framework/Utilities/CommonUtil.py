@@ -185,6 +185,8 @@ def PhysicalAvailableMemory():
     except Exception, e:
         return Exception_Handler(sys.exc_info())
 
+
+
 def TakeScreenShot(ImageName,local_run=False):
     """
     Takes screenshot and saves it as jpg file
@@ -192,166 +194,165 @@ def TakeScreenShot(ImageName,local_run=False):
     #TakeScreenShot("TestStepName")
     """
     #file Name don't contain \/?*"<>|
-
+ 
     take_screenshot_settings = ConfigModule.get_config_value('RunDefinition', 'take_screenshot')
     if take_screenshot_settings == 'True':
+        local_run = ConfigModule.get_config_value('RunDefinition', 'local_run')
+        chars_to_remove=["?","*","\"","<",">","|","\\","\/",":"]
+        ImageName=(ImageName.translate(None,''.join(chars_to_remove))).replace(" ","_").strip()
+        print ImageName
+        try:
+            if local_run == 'False':
+                image_folder=ConfigModule.get_config_value('sectionOne','screen_capture_folder',temp_config)
+                #ImageFolder = Global.TCLogFolder + os.sep + "Screenshots"
+                ImageFolder=image_folder
+                if os.name == 'posix':
+                    """
+                    ImageFolder = FileUtil.ConvertWinPathToMac(ImageFolder)
+                    path = ImageFolder + os.sep + TimeStamp("utc") + "_" + ImageName + ".png"
+                     
+                    newpath = ImageFolder + os.sep + TimeStamp("utc") + "_" + ImageName + ".jpg"
+                    path = path.replace(" ", "_")
+                    newpath = newpath.replace(" ", "_")
+                    os.system("screencapture \"" + path + "\"")
+                    #reduce size of image
+                    os.system("sips -s format jpeg -s formatOptions 30 " + path + " -o " + newpath)
+                    os.system("rm " + path)
+                    """
+                     
+                    #linux working copy
+                    full_location=ImageFolder+os.sep+TimeStamp("utc")+"_"+ImageName+'.png'
+                    #os.system("import -window root %s"%full_location)
+                     
+                    try:
+                        from gi.repository import Gdk
+ 
+                    except ImportError:
+                        print 'could not import python package needed for screenshot...installing package "gi"'
+                        os.system('pip install gi')
+                # set the root window as the window we want for screenshot
+                    window = Gdk.get_default_root_window()
+                    # get dimensions of the window
+                    x, y, width, height = window.get_geometry()
+                     
+                    print 'taking screenshot...'
+                    # take screenshot
+                    img = Gdk.pixbuf_get_from_window(window, x, y, width, height)
+                     
+                    if img:
+                        from PIL import Image
+                        img.savev(full_location, "png", (), ())
+                        file1 = full_location
+                        file2 = full_location
+                        size = 800, 450
+                     
+                        im = Image.open(file1)
+                        im.thumbnail(size, Image.ANTIALIAS)
+                        im.save(file2, "JPEG")
+                        print 'screenshot saved as: "%s"' % full_location
+                    else:
+                        print "unable to take screenshot..."
+ 
+                #mobile device working copy
+                if sys.platform == 'linux2':
+                    #mobile device connected to linux machine
+                     
+                    #android working copy
+                    try:
+                        output = os.system("adb devices")
+                        if output is not None:
+                            full_location=ImageFolder+os.sep+TimeStamp("utc")+"_"+ImageName+'_android.png'
+                            #os.system("adb shell screencap -p | perl -pe 's/\x0D\x0A/\x0A/g' > %s"%full_location)
+                            os.system("adb shell screencap -p /sdcard/screen.png")
+                            os.system("adb pull /sdcard/screen.png %s"%full_location)
+                            from PIL import Image
+                            im = Image.open(full_location)
+                            im.save(full_location, format="JPEG", quality=4)
+ 
+                    except Exception, e:
+                        return Exception_Handler(sys.exc_info())
+ 
+                    #ios device working copy
+                    full_location=ImageFolder+os.sep+TimeStamp("utc")+"_"+ImageName+'_ios.tiff'
+                    os.system("idevicescreenshot %s"%full_location)
+ 
+                elif sys.platform == 'darwin':
+                    #mobile device connected to mac os x machine
+ 
+                    #ios device working copy
+                    full_location=ImageFolder+os.sep+TimeStamp("utc")+"_"+ImageName+'.png'
+                    os.system("screencapture ~%s"%full_location)
+ 
+                    #android working copy
+                    output = os.system("adb devices")
+                    if output is not None:
+                        full_location=ImageFolder+os.sep+TimeStamp("utc")+"_"+ImageName+'_android.png'
+                        #os.system("adb shell screencap -p | perl -pe 's/\x0D\x0A/\x0A/g' > %s"%full_location)
+                        os.system("adb shell screencap -p /sdcard/screen.png")
+                        os.system("adb pull /sdcard/screen.png %s"%full_location)
+                        from PIL import Image
+                        im = Image.open(full_location)
+                        im.save(full_location, format="JPEG", quality=4)
+ 
+                    #iphone working copy
+                    output = os.system("ioreg -w -p IOUSB | grep -w iPhone")
+                    if output is not None:
+                        full_location=ImageFolder+os.sep+TimeStamp("utc")+"_"+ImageName+'_ios.tiff'
+                        os.system("idevicescreenshot %s"%full_location)
+ 
+                    #ipad working copy
+                    output = os.system("ioreg -w -p IOUSB | grep -w iPad")
+                    if output is not None:
+                        full_location=ImageFolder+os.sep+TimeStamp("utc")+"_"+ImageName+'_ios.tiff'
+                        os.system("idevicescreenshot %s"%full_location)
+ 
+                else:
+                    #linux working copy
+                    full_location=ImageFolder+os.sep+TimeStamp("utc")+"_"+ImageName+'.png'
+                    os.system("import -window root %s"%full_location)
+ 
+                    #android working copy
+                    output = os.system("adb devices")
+                    if output is not None:
+                        full_location=ImageFolder+os.sep+TimeStamp("utc")+"_"+ImageName+'_android.png'
+                        #os.system("adb shell screencap -p | perl -pe 's/\x0D\x0A/\x0A/g' > %s"%full_location)
+                        os.system("adb shell screencap -p /sdcard/screen.png")
+                        os.system("adb pull /sdcard/screen.png %s"%full_location)
+                        from PIL import Image
+                        im = Image.open(full_location)
+                        im.save(full_location, format="JPEG", quality=4)
+ 
+            elif os.name == 'nt':
+                #windows working copy
 
-     local_run = ConfigModule.get_config_value('RunDefinition', 'local_run')
-     chars_to_remove=["?","*","\"","<",">","|","\\","\/",":"]
-     ImageName=(ImageName.translate(None,''.join(chars_to_remove))).replace(" ","_").strip()
-     print ImageName
-     try:
-         if local_run == 'False':
-             image_folder=ConfigModule.get_config_value('sectionOne','screen_capture_folder',temp_config)
-             #ImageFolder = Global.TCLogFolder + os.sep + "Screenshots"
-             ImageFolder=image_folder
-             if os.name == 'posix':
-                 """
-                 ImageFolder = FileUtil.ConvertWinPathToMac(ImageFolder)
-                 path = ImageFolder + os.sep + TimeStamp("utc") + "_" + ImageName + ".png"
-    
-                 newpath = ImageFolder + os.sep + TimeStamp("utc") + "_" + ImageName + ".jpg"
-                 path = path.replace(" ", "_")
-                 newpath = newpath.replace(" ", "_")
-                 os.system("screencapture \"" + path + "\"")
-                 #reduce size of image
-                 os.system("sips -s format jpeg -s formatOptions 30 " + path + " -o " + newpath)
-                 os.system("rm " + path)
-                 """
+                from PIL import ImageGrab
+                from PIL import Image
+                path = ImageFolder + os.sep + TimeStamp("utc") + "_" + ImageName + ".jpg"
+                img = ImageGrab.grab()
+                basewidth = 1200
+                wpercent = (basewidth/float(img.size[0]))
+                hsize = int((float(img.size[1])*float(wpercent)))
+                img = img.resize((basewidth,hsize), Image.ANTIALIAS)
+                img.save(path, 'JPEG')
 
-                 #linux working copy
-                 full_location=ImageFolder+os.sep+TimeStamp("utc")+"_"+ImageName+'.png'
-                 #os.system("import -window root %s"%full_location)
+                # android working copy
+                try:
+                    output = os.system("adb devices")
+                    if output is not None:
+                        full_location = ImageFolder + os.sep + TimeStamp("utc") + "_" + ImageName + '_android.png'
+                        # os.system("adb shell screencap -p | perl -pe 's/\x0D\x0A/\x0A/g' > %s"%full_location)
+                        os.system("adb shell screencap -p /sdcard/screen.png")
+                        os.system("adb pull /sdcard/screen.png %s" % full_location)
+                        from PIL import Image
+                        im = Image.open(full_location)
+                        im.save(full_location, format="JPEG", quality=4)
 
-                 try:
-                     from gi.repository import Gdk
-
-                 except ImportError:
-                     print 'could not import python package needed for screenshot...installing package "gi"'
-                     os.system('pip install gi')
-
-                 # set the root window as the window we want for screenshot
-                 window = Gdk.get_default_root_window()
-                 # get dimensions of the window
-                 x, y, width, height = window.get_geometry()
-
-                 print 'taking screenshot...'
-                 # take screenshot
-                 img = Gdk.pixbuf_get_from_window(window, x, y, width, height)
-
-                 if img:
-                     from PIL import Image
-                     img.savev(full_location, "png", (), ())
-                     file1 = full_location
-                     file2 = full_location
-                     size = 800, 450
-
-                     im = Image.open(file1)
-                     im.thumbnail(size, Image.ANTIALIAS)
-                     im.save(file2, "JPEG")
-                     print 'screenshot saved as: "%s"' % full_location
-                 else:
-                     print "unable to take screenshot..."
-
-                 #mobile device working copy
-                 if sys.platform == 'linux2':
-                     #mobile device connected to linux machine
-
-                     #android working copy
-                     try:
-                         output = os.system("adb devices")
-                         if output is not None:
-                             full_location=ImageFolder+os.sep+TimeStamp("utc")+"_"+ImageName+'_android.png'
-                             #os.system("adb shell screencap -p | perl -pe 's/\x0D\x0A/\x0A/g' > %s"%full_location)
-                             os.system("adb shell screencap -p /sdcard/screen.png")
-                             os.system("adb pull /sdcard/screen.png %s"%full_location)
-                             from PIL import Image
-                             im = Image.open(full_location)
-                             im.save(full_location, format="JPEG", quality=4)
-
-                     except Exception, e:
-                         return Exception_Handler(sys.exc_info())
-
-                     #ios device working copy
-                     full_location=ImageFolder+os.sep+TimeStamp("utc")+"_"+ImageName+'_ios.tiff'
-                     os.system("idevicescreenshot %s"%full_location)
-
-                 elif sys.platform == 'darwin':
-                     #mobile device connected to mac os x machine
-
-                     #ios device working copy
-                     full_location=ImageFolder+os.sep+TimeStamp("utc")+"_"+ImageName+'.png'
-                     os.system("screencapture ~%s"%full_location)
-
-                     #android working copy
-                     output = os.system("adb devices")
-                     if output is not None:
-                         full_location=ImageFolder+os.sep+TimeStamp("utc")+"_"+ImageName+'_android.png'
-                         #os.system("adb shell screencap -p | perl -pe 's/\x0D\x0A/\x0A/g' > %s"%full_location)
-                         os.system("adb shell screencap -p /sdcard/screen.png")
-                         os.system("adb pull /sdcard/screen.png %s"%full_location)
-                         from PIL import Image
-                         im = Image.open(full_location)
-                         im.save(full_location, format="JPEG", quality=4)
-
-                     #iphone working copy
-                     output = os.system("ioreg -w -p IOUSB | grep -w iPhone")
-                     if output is not None:
-                         full_location=ImageFolder+os.sep+TimeStamp("utc")+"_"+ImageName+'_ios.tiff'
-                         os.system("idevicescreenshot %s"%full_location)
-
-                     #ipad working copy
-                     output = os.system("ioreg -w -p IOUSB | grep -w iPad")
-                     if output is not None:
-                         full_location=ImageFolder+os.sep+TimeStamp("utc")+"_"+ImageName+'_ios.tiff'
-                         os.system("idevicescreenshot %s"%full_location)
-
-                 else:
-                     #linux working copy
-                     full_location=ImageFolder+os.sep+TimeStamp("utc")+"_"+ImageName+'.png'
-                     os.system("import -window root %s"%full_location)
-
-                     #android working copy
-                     output = os.system("adb devices")
-                     if output is not None:
-                         full_location=ImageFolder+os.sep+TimeStamp("utc")+"_"+ImageName+'_android.png'
-                         #os.system("adb shell screencap -p | perl -pe 's/\x0D\x0A/\x0A/g' > %s"%full_location)
-                         os.system("adb shell screencap -p /sdcard/screen.png")
-                         os.system("adb pull /sdcard/screen.png %s"%full_location)
-                         from PIL import Image
-                         im = Image.open(full_location)
-                         im.save(full_location, format="JPEG", quality=4)
-
-             elif os.name == 'nt':
-                 # windows working copy
-                 from PIL import ImageGrab
-                 from PIL import Image
-                 path = ImageFolder + os.sep + TimeStamp("utc") + "_" + ImageName + ".jpg"
-                 img = ImageGrab.grab()
-                 basewidth = 1200
-                 wpercent = (basewidth/float(img.size[0]))
-                 hsize = int((float(img.size[1])*float(wpercent)))
-                 img = img.resize((basewidth,hsize), Image.ANTIALIAS)
-                 img.save(path, 'JPEG')
-
-                 # android working copy
-                 try:
-                     output = os.system("adb devices")
-                     if output is not None:
-                         full_location = ImageFolder + os.sep + TimeStamp("utc") + "_" + ImageName + '_android.png'
-                         # os.system("adb shell screencap -p | perl -pe 's/\x0D\x0A/\x0A/g' > %s"%full_location)
-                         os.system("adb shell screencap -p /sdcard/screen.png")
-                         os.system("adb pull /sdcard/screen.png %s" % full_location)
-                         from PIL import Image
-                         im = Image.open(full_location)
-                         im.save(full_location, format="JPEG", quality=4)
-
-                 except Exception, e:
-                     return Exception_Handler(sys.exc_info())
-
-
-     except Exception, e:
-         return Exception_Handler(sys.exc_info())
+                except Exception, e:
+                    return Exception_Handler(sys.exc_info())
+ 
+ 
+        except Exception, e:
+            return Exception_Handler(sys.exc_info())
 
 def TimeStamp(format):
     """
@@ -469,32 +470,6 @@ class MachineInfo():
             return Exception_Handler(sys.exc_info(), None, ErrorMessage)
 
 
-def run_cmd(command, return_status=False, is_shell=True, stdout_val=subprocess.PIPE, local_run=False):
 
-    '''Begin Constants'''
-    Passed = "Passed"
-    Failed = "Failed"
-    Running = 'running'
-    '''End Constants'''
-
-    # Run 'command' via command line in a bash shell, and store outputs to stdout_val
-    sModuleInfo = inspect.stack()[0][3] + " : " + inspect.getmoduleinfo(__file__).name
-    subprocess_dict = {}
-    try:
-        #global subprocess_dict
-        ExecLog(sModuleInfo, "Trying to run command: %s" % command, 1, local_run)
-
-        # open a subprocess with command, and assign a session id to the shell process
-        # this is will make the shell process the group leader for all the child processes spawning from it
-        status = subprocess.Popen(command, shell=is_shell, stdout=stdout_val, preexec_fn=os.setsid)
-        subprocess_dict[status] = Running
-
-        if return_status:
-            return status
-        else:
-            return Passed
-
-    except Exception, e:
-        return Exception_Handler(sys.exc_info())
 
 
