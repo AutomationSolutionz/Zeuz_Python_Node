@@ -120,35 +120,43 @@ def Result_Analyzer(sTestStepReturnStatus,temp_q):
 def ExecLog(sModuleInfo, sDetails, iLogLevel=1, local_run=False, sStatus=""):
     try:
         local_run = ConfigModule.get_config_value('RunDefinition','local_run')
+        debug_mode = ConfigModule.get_config_value('RunDefinition', 'debug_mode')
+        
         # ";" is not supported for logging.  So replacing them
         sDetails = sDetails.replace(";", ":")
         sDetails = sDetails.replace("=", "~")
         sDetails = encode_to_exclude_symbol(to_unicode(sDetails))
-        #Convert logLevel from int to str
-        if iLogLevel == 1:
+        
+        #Convert logLevel from int to string for clarity
+        if iLogLevel == 0:
+            if debug_mode.lower() == 'true':
+                status = 'Debug' # This is not displayed on the server log, just in the console
+            else: # Do not display this log line anywhere
+                return
+        elif iLogLevel == 1:
             status = 'Passed'
         elif iLogLevel == 2:
             status = 'Warning'
         elif iLogLevel == 3:
             status = 'Error'
-        elif iLogLevel == 4:
-            status = 'Error'
         else:
-            print "unknown log level"
+            print "*** Unknown log level- Set to Warning ***"
             status = 'Warning'
 
         # Display on console
-        print "%s - %s - %s" % (status.upper(), sModuleInfo, sDetails)
+        print "%s - %s\n\t%s" % (status.upper(), sModuleInfo, sDetails)
 
         # Upload logs to server if local run is not set to False
-        if local_run == False or local_run == 'False':
+        if (local_run == False or local_run == 'False') and iLogLevel > 0:
             log_id=ConfigModule.get_config_value('sectionOne','sTestStepExecLogId',temp_config)
             FWLogFile = ConfigModule.get_config_value('sectionOne','log_folder',temp_config)
             if FWLogFile=='':
                 FWLogFile=ConfigModule.get_config_value('sectionOne','temp_run_file_path',temp_config)+os.sep+'execlog.log'
             else:
                 FWLogFile=FWLogFile+os.sep+'temp.log'
+            
             logger = logging.getLogger(__name__)
+            
             hdlr = None
             if os.name == 'posix':
                 try:
@@ -161,13 +169,13 @@ def ExecLog(sModuleInfo, sDetails, iLogLevel=1, local_run=False, sStatus=""):
             if hdlr != None:
                 hdlr.setFormatter(formatter)
                 logger.addHandler(hdlr)
+            
             logger.setLevel(logging.DEBUG)
             logger.info(sModuleInfo + ' - ' + sDetails + '' + sStatus)
             logger.removeHandler(hdlr)
+
+            # Write log line to server
             r = RequestFormatter.Get('log_execution',{'logid': log_id, 'modulename': sModuleInfo, 'details': sDetails, 'status': status,'loglevel': iLogLevel})
-
-
-
 
     except Exception, e:
         return Exception_Handler(sys.exc_info())

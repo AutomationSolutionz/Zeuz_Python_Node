@@ -140,7 +140,7 @@ def load_sa_modules(module): # Load module "AS" must match module name we get fr
     ''' Dynamically loads modules when needed '''
     
     sModuleInfo = inspect.stack()[0][3] + " : " + inspect.getmoduleinfo(__file__).name
-    CommonUtil.ExecLog(sModuleInfo, "Dynamically loading module %s" % module, 1)
+    CommonUtil.ExecLog(sModuleInfo,"Function Start", 0)
     
     if module == 'appium':
         global appium
@@ -163,7 +163,7 @@ def Sequential_Actions(step_data, _dependency = {}, _run_time_params = '', _file
     ''' Main Sequential Actions function - Performs logical decisions based on user input '''
     
     sModuleInfo = inspect.stack()[0][3] + " : " + inspect.getmoduleinfo(__file__).name
-    CommonUtil.ExecLog(sModuleInfo, "Starting Sequential Actions", 1)
+    CommonUtil.ExecLog(sModuleInfo,"Function Start", 0)
     
     # Set dependency, file_attachemnt as global variables
     global dependency, file_attachment
@@ -180,9 +180,7 @@ def Sequential_Actions(step_data, _dependency = {}, _run_time_params = '', _file
     # Prepare step data for processing
     step_data = common.sanitize(step_data, column = 1) # Sanitize Sub-Field
     step_data = common.adjust_element_parameters(step_data) # Parse any mobile platform related fields
-    if common.verify_step_data(step_data) in failed_tag_list: # Verify step data is in correct format
-        CommonUtil.ExecLog(sModuleInfo, "The information in the data-set(s) are incorrect. Please provide accurate data set(s) information.", 3)
-        return "failed"
+    if common.verify_step_data(step_data) in failed_tag_list: return 'failed' # Verify step data is in correct format
     
     try:
         result = 'failed' # Initialize result            
@@ -197,7 +195,7 @@ def Sequential_Actions(step_data, _dependency = {}, _run_time_params = '', _file
 
                 # If middle column = action, call action handler, but always return a pass
                 elif "optional action" in action_name:
-                    CommonUtil.ExecLog(sModuleInfo, "Checking the optional action to be performed in the action row: %s" % str(row), 1)
+                    CommonUtil.ExecLog(sModuleInfo, "Checking the optional action to be performed in the action row: %s" % str(row), 0)
                     result = Action_Handler(data_set, row) # Pass data set, and action_name to action handler
                     if result == 'failed':
                         CommonUtil.ExecLog(sModuleInfo, "Optional action failed. Returning pass anyway", 2)
@@ -205,7 +203,7 @@ def Sequential_Actions(step_data, _dependency = {}, _run_time_params = '', _file
                     
                 # If middle column = conditional action, evaluate data set
                 elif "conditional action" in action_name:
-                    CommonUtil.ExecLog(sModuleInfo, "Checking the logical conditional action to be performed in the conditional action row: %s" % str(row), 1)
+                    CommonUtil.ExecLog(sModuleInfo, "Checking the logical conditional action to be performed in the conditional action row: %s" % str(row), 0)
                     logic_row.append(row)
                     
                     # Only run this when we have two conditional actions for this data set (a true and a false preferably)
@@ -216,7 +214,7 @@ def Sequential_Actions(step_data, _dependency = {}, _run_time_params = '', _file
                 
                 # If middle column = action, call action handler
                 elif "action" in action_name: # Must be last, since it's a single word that also exists in other action types
-                    CommonUtil.ExecLog(sModuleInfo, "Checking the action to be performed in the action row: %s" % str(row), 1)
+                    CommonUtil.ExecLog(sModuleInfo, "Checking the action to be performed in the action row: %s" % str(row), 0)
                     result = Action_Handler(data_set, row) # Pass data set, and action_name to action handler
                     if result == [] or result == "failed": # Check result of action handler
                         return "failed"
@@ -238,6 +236,7 @@ def Conditional_Action_Handler(step_data, data_set, row, logic_row):
     ''' Process conditional actions, called only by Sequential_Actions() '''
      
     sModuleInfo = inspect.stack()[0][3] + " : " + inspect.getmoduleinfo(__file__).name
+    CommonUtil.ExecLog(sModuleInfo,"Function Start", 0)
 
     module = row[1].split(' ')[0]
     load_sa_modules(module)
@@ -364,7 +363,7 @@ def Action_Handler(_data_set, action_row):
     ''' Finds the appropriate function for the requested action in the step data and executes it '''
     
     sModuleInfo = inspect.stack()[0][3] + " : " + inspect.getmoduleinfo(__file__).name
-    CommonUtil.ExecLog(sModuleInfo, "Function: Action_Handler", 1)
+    CommonUtil.ExecLog(sModuleInfo,"Function Start", 0)
 
     # Split data set row into the usable parts
     action_name = action_row[0]
@@ -376,12 +375,10 @@ def Action_Handler(_data_set, action_row):
     function = ''
     if action_name != 'step result': # Step result is handle here becaue it's common to all functions - we use this line because we don't want to process it as a module
         module, function = get_module_and_function(action_name, action_subfield) # New, get the module to execute
-        CommonUtil.ExecLog(sModuleInfo, "Function identified as function: %s in module: %s" % (function, module), 1)
+        CommonUtil.ExecLog(sModuleInfo, "Function identified as function: %s in module: %s" % (function, module), 0)
     
         if module in failed_tag_list or module == '' or function == '': # New, make sure we have a function
-            CommonUtil.ExecLog(sModuleInfo, "The action you entered is incorrect. Please provide accurate information on the data set(s).", 3)
-            if function == '': # A little more information for the user
-                CommonUtil.ExecLog(sModuleInfo, "You probably didn't add the module as part of the action. Eg: appium action", 2)
+            CommonUtil.ExecLog(sModuleInfo, "You probably didn't add the module as part of the action. Eg: appium action", 3)
             return "failed"
 
     # Strip the "optional" keyword, and module, so functions work properly (result of optional action is handled by sequential_actions)
@@ -408,7 +405,7 @@ def Action_Handler(_data_set, action_row):
             elif action_value in passed_tag_list:
                 return 'passed'
             else:
-                CommonUtil.ExecLog(sModuleInfo, "The action you entered is incorrect. Please provide accurate information on the data set(s).", 3)
+                CommonUtil.ExecLog(sModuleInfo, "Step Result action has invalid VALUE", 3)
                 return 'failed'
         else:
             result = load_sa_modules(module) # Load the appropriate module
@@ -461,7 +458,7 @@ def shared_variable_to_value(data_set):
             for i in range(0, 3): # For each field (Field, Sub-Field, Value)
                 if row[i] != False: # !!!! Probbly not needed
                     while "%|" in data_row[i] and "|%" in data_row[i]: # If string contains these characters, it's a shared variable
-                        CommonUtil.ExecLog(sModuleInfo, "Shared Variable: %s" % row[i], 1)
+                        CommonUtil.ExecLog(sModuleInfo, "Shared Variable: %s" % row[i], 0)
                         data_row[i] = sr.get_previous_response_variables_in_strings(data_row[i])# replace just the variable name with it's value (has to be in string format)
                         if data_row[i] == 'failed': #!!!this won't work if there's extra strings around the shared variable 
                             CommonUtil.ExecLog(sModuleInfo, "Invalid shared variable", 3)

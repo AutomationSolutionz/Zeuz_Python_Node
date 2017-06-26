@@ -21,7 +21,7 @@ def Set_Shared_Variables(key, value):
             return "failed"
         else:
             shared_variables[key] = value
-            CommonUtil.ExecLog(sModuleInfo, "Variable value of '%s' is set as: %s" % (key, value), 1)
+            CommonUtil.ExecLog(sModuleInfo, "Variable value of '%s' is set as: %s" % (key, value), 0)
             return "passed"
     except:
         CommonUtil.Exception_Handler(sys.exc_info())
@@ -36,7 +36,7 @@ def Set_List_Shared_Variables(list_name, key, value):
         else:
             if list_name in shared_variables:
                 shared_variables[list_name][key] = value
-                CommonUtil.ExecLog(sModuleInfo, "In List '%s' Variable value of '%s' is set as: %s" % (list_name, key, value), 1)
+                CommonUtil.ExecLog(sModuleInfo, "In List '%s' Variable value of '%s' is set as: %s" % (list_name, key, value), 0)
                 return "passed"
             else:
                 CommonUtil.ExecLog(sModuleInfo,
@@ -56,7 +56,7 @@ def Get_Shared_Variables(key):
         else:
             if key in shared_variables:
                 value = shared_variables[key]
-                CommonUtil.ExecLog(sModuleInfo, "Variable value of '%s' is: %s" % (str(key), value), 1)
+                CommonUtil.ExecLog(sModuleInfo, "Variable value of '%s' is: %s" % (str(key), value), 0)
                 return value
             else:
                 CommonUtil.ExecLog(sModuleInfo, "No Such variable named '%s' found in shared variables" % key, 3)
@@ -96,7 +96,7 @@ def Test_Shared_Variables(key):
                 CommonUtil.ExecLog(sModuleInfo, "Variable %s exists" % key, 1)
                 return True
             else:
-                CommonUtil.ExecLog(sModuleInfo, "No Such variable named '%s' found in shared variables" % key, 1)
+                CommonUtil.ExecLog(sModuleInfo, "No Such variable named '%s' found in shared variables" % key, 0)
                 return False
     except:
         CommonUtil.Exception_Handler(sys.exc_info())
@@ -144,7 +144,7 @@ def Handle_Step_Data_Variables(step_data):
 
 def get_previous_response_variables_in_strings(step_data_string_input):
     sModuleInfo = inspect.stack()[0][3] + " : " + inspect.getmoduleinfo(__file__).name
-    CommonUtil.ExecLog(sModuleInfo, "Function: get previous response variables in strings", 1)
+    CommonUtil.ExecLog(sModuleInfo, "Function: get previous response variables in strings", 0)
     try:
         changed = False
         input = step_data_string_input
@@ -176,7 +176,7 @@ def get_previous_response_variables_in_strings(step_data_string_input):
                         return "failed"
 
                     output += random_string
-                    CommonUtil.ExecLog(sModuleInfo, 'Replacing variable "%s" with its value "%s"' % (parts[0], random_string), 1)
+                    CommonUtil.ExecLog(sModuleInfo, 'Replacing variable "%s" with its value "%s"' % (parts[0], random_string), 0)
                 else:
                     var_value = Get_Shared_Variables(parts[0])
                     if var_value == 'failed':
@@ -184,14 +184,14 @@ def get_previous_response_variables_in_strings(step_data_string_input):
                         return "failed"
                     else:
                         output += str(var_value)
-                        CommonUtil.ExecLog(sModuleInfo, 'Replacing variable "%s" with its value "%s"' % (parts[0], var_value), 1)
+                        CommonUtil.ExecLog(sModuleInfo, 'Replacing variable "%s" with its value "%s"' % (parts[0], var_value), 0)
                 output += parts[1]
             else:
                 output += each
         if changed == True:
-            CommonUtil.ExecLog(sModuleInfo, "Input string is changed by variable substitution", 1)
-            CommonUtil.ExecLog(sModuleInfo, "Input string before change: %s" % input, 1)
-            CommonUtil.ExecLog(sModuleInfo, "Input string after change: %s" % output, 1)
+            CommonUtil.ExecLog(sModuleInfo, "Input string is changed by variable substitution", 0)
+            CommonUtil.ExecLog(sModuleInfo, "Input string before change: %s" % input, 0)
+            CommonUtil.ExecLog(sModuleInfo, "Input string after change: %s" % output, 0)
 
         return output
 
@@ -201,7 +201,7 @@ def get_previous_response_variables_in_strings(step_data_string_input):
 
 def random_string_generator(pattern='nluc', size=10):
     sModuleInfo = inspect.stack()[0][3] + " : " + inspect.getmoduleinfo(__file__).name
-    CommonUtil.ExecLog(sModuleInfo, "Function: random string generator", 1)
+    CommonUtil.ExecLog(sModuleInfo, "Function: random string generator", 0)
     try:
         pattern = pattern.lower().strip()
         punctuation = '`~!@#$%^&.'
@@ -227,7 +227,7 @@ def random_string_generator(pattern='nluc', size=10):
 #Validating text from an element given information regarding the expected text
 def Compare_Variables(step_data):
     sModuleInfo = inspect.stack()[0][3] + " : " + inspect.getmoduleinfo(__file__).name
-    CommonUtil.ExecLog(sModuleInfo, "Function: Compare_Variables", 1)
+    CommonUtil.ExecLog(sModuleInfo, "Function: Compare_Variables", 0)
     try:
         pass_count = 0
         fail_count = 0
@@ -283,7 +283,7 @@ def Compare_Variables(step_data):
 #Validating text from an element given information regarding the expected text
 def Compare_Lists(step_data):
     sModuleInfo = inspect.stack()[0][3] + " : " + inspect.getmoduleinfo(__file__).name
-    CommonUtil.ExecLog(sModuleInfo, "Function: Compare_Lists", 1)
+    CommonUtil.ExecLog(sModuleInfo, "Function: Compare_Lists", 0)
     try:
         pass_count = 0
         fail_count = 0
@@ -391,7 +391,7 @@ def Compare_Lists(step_data):
 #Method to initialize an empty list
 def Initialize_List(step_data):
     sModuleInfo = inspect.stack()[0][3] + " : " + inspect.getmoduleinfo(__file__).name
-    CommonUtil.ExecLog(sModuleInfo, "Function: Initialize_List", 1)
+    CommonUtil.ExecLog(sModuleInfo, "Function: Initialize_List", 0)
     try:
         if ((len(step_data) != 1)):
             CommonUtil.ExecLog(sModuleInfo,
@@ -406,14 +406,14 @@ def Initialize_List(step_data):
                 CommonUtil.ExecLog(sModuleInfo,"Could not initialize empty list named %s"%list_name,3)
                 return "failed"
             else:
-                CommonUtil.ExecLog(sModuleInfo,"Successfully initialized empty list named %s"%list_name,1)
+                CommonUtil.ExecLog(sModuleInfo,"Successfully initialized empty list named %s"%list_name, 0)
                 return "passed"
     except Exception:
         return CommonUtil.Exception_Handler(sys.exc_info())
 
 def Clean_Up_Shared_Variables():
     sModuleInfo = inspect.stack()[0][3] + " : " + inspect.getmoduleinfo(__file__).name
-    CommonUtil.ExecLog(sModuleInfo, "Function: clean up shared variables", 1)
+    CommonUtil.ExecLog(sModuleInfo, "Function: clean up shared variables", 0)
     try:
         global shared_variables
         shared_variables = {}
