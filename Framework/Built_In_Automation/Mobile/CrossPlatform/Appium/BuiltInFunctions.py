@@ -1384,6 +1384,9 @@ def Enter_Text_Appium(data_set):
             try:
                 # Get element object
                 Element = Get_Element_Appium(returned_step_data_list[0], returned_step_data_list[1], returned_step_data_list[2], returned_step_data_list[3], returned_step_data_list[4])
+                if Element in failed_tag_list:
+                    CommonUtil.ExecLog(sModuleInfo, "Appium returned failed for element %s" % returned_step_data_list[1], 3)
+                    return 'failed'
                 
                 # Enter text into element
                 Element.click() # Set focus to textbox
