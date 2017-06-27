@@ -1198,38 +1198,34 @@ def Initialize_List(data_set):
     ''' Temporary wrapper until we can convert everything to use just data_set and not need the extra [] '''
     return Shared_Resources.Initialize_List([data_set])
 
-#Method to click on element; step data passed on by the user
 def Click_Element_Appium(data_set):
+    ''' Click on an element '''
+    
     sModuleInfo = inspect.stack()[0][3] + " : " + inspect.getmoduleinfo(__file__).name
     CommonUtil.ExecLog(sModuleInfo,"Function Start", 0)
     
     data_set = [data_set]
 
     try:
-        if len(data_set[0]) < 1:
-            CommonUtil.ExecLog(sModuleInfo, "The information in the data-set(s) are incorrect. Please provide accurate data set(s) information.", 3)
+        element_step_data = Get_Element_Step_Data_Appium(data_set)            
+        returned_step_data_list = Validate_Step_Data(element_step_data) 
+        if ((returned_step_data_list == []) or (returned_step_data_list == "failed")):
             return "failed"
         else:
-            #element_step_data = step_data[0][0:len(step_data[0])-1:1]
-            element_step_data = Get_Element_Step_Data_Appium(data_set)            
-            returned_step_data_list = Validate_Step_Data(element_step_data) 
-            if ((returned_step_data_list == []) or (returned_step_data_list == "failed")):
-                return "failed"
-            else:
-                try:
-                    Element = Get_Element_Appium(returned_step_data_list[0], returned_step_data_list[1], returned_step_data_list[2], returned_step_data_list[3], returned_step_data_list[4])
-                    if Element.is_enabled():
-                        Element.click()
-                        CommonUtil.TakeScreenShot(sModuleInfo)
-                        CommonUtil.ExecLog(sModuleInfo, "Successfully clicked the element with given parameters and values", 1)
-                        return "passed"
-                    else:
-                        CommonUtil.TakeScreenShot(sModuleInfo)
-                        CommonUtil.ExecLog(sModuleInfo, "Element not enabled. Unable to click.", 3)
-                        return "failed"
-                except Exception:
-                    errMsg = "Could not select/click your element."
-                    return CommonUtil.Exception_Handler(sys.exc_info(),None,errMsg)
+            try:
+                Element = Get_Element_Appium(returned_step_data_list[0], returned_step_data_list[1], returned_step_data_list[2], returned_step_data_list[3], returned_step_data_list[4])
+                if Element.is_enabled():
+                    Element.click()
+                    CommonUtil.TakeScreenShot(sModuleInfo)
+                    CommonUtil.ExecLog(sModuleInfo, "Successfully clicked the element with given parameters and values", 1)
+                    return "passed"
+                else:
+                    CommonUtil.TakeScreenShot(sModuleInfo)
+                    CommonUtil.ExecLog(sModuleInfo, "Element not enabled. Unable to click.", 3)
+                    return "failed"
+            except Exception:
+                errMsg = "Could not select/click your element."
+                return CommonUtil.Exception_Handler(sys.exc_info(),None,errMsg)
 
     except Exception:
         errMsg = "Could not find/click your element."
@@ -1245,69 +1241,58 @@ def Tap_Appium(data_set):
     data_set = [data_set]
     
     try:
-        if (len(data_set) != 1):
-            CommonUtil.ExecLog(sModuleInfo, "The information in the data-set(s) are incorrect. Please provide accurate data set(s) information.", 3)
+        element_step_data = Get_Element_Step_Data_Appium(data_set)            
+        returned_step_data_list = Validate_Step_Data(element_step_data) 
+        if ((returned_step_data_list == []) or (returned_step_data_list == "failed")):
             return "failed"
-        else:    
-            element_step_data = Get_Element_Step_Data_Appium(data_set)            
-            returned_step_data_list = Validate_Step_Data(element_step_data) 
-            if ((returned_step_data_list == []) or (returned_step_data_list == "failed")):
-                return "failed"
-            else:
-                try:
-                    Element = Get_Element_Appium(returned_step_data_list[0], returned_step_data_list[1], returned_step_data_list[2], returned_step_data_list[3], returned_step_data_list[4])
-                    if Element.is_enabled():
-                        action = TouchAction(appium_driver)
-                        action.tap(Element).perform()
-                        CommonUtil.ExecLog(sModuleInfo, "Tapped on element successfully", 1)
-                        return "passed"
-                    else:
-                        CommonUtil.TakeScreenShot(sModuleInfo)
-                        CommonUtil.ExecLog(sModuleInfo, "Element not enabled. Unable to click.", 3)
-                        return "failed"
-                except Exception:
-                    errMsg = "Could not select/click your element."
-                    return CommonUtil.Exception_Handler(sys.exc_info(),None,errMsg)
+        else:
+            try:
+                Element = Get_Element_Appium(returned_step_data_list[0], returned_step_data_list[1], returned_step_data_list[2], returned_step_data_list[3], returned_step_data_list[4])
+                if Element.is_enabled():
+                    action = TouchAction(appium_driver)
+                    action.tap(Element).perform()
+                    CommonUtil.ExecLog(sModuleInfo, "Tapped on element successfully", 1)
+                    return "passed"
+                else:
+                    CommonUtil.TakeScreenShot(sModuleInfo)
+                    CommonUtil.ExecLog(sModuleInfo, "Element not enabled. Unable to click.", 3)
+                    return "failed"
+            except Exception:
+                errMsg = "Could not select/click your element."
+                return CommonUtil.Exception_Handler(sys.exc_info(),None,errMsg)
                 
     except Exception:
         errMsg = "Unable to tap."
         return CommonUtil.Exception_Handler(sys.exc_info(),None,errMsg)
 
-# def Double_Tap_Appium_asifurrouf
-
 def Double_Tap_Appium(data_set):
+    #!!!not yet tested or used
     sModuleInfo = inspect.stack()[0][3] + " : " + inspect.getmoduleinfo(__file__).name
     CommonUtil.ExecLog(sModuleInfo,"Function Start", 0)
     try:
-        if ((len(data_set) != 1) or (1 < len(data_set[0]) >= 5)):
-            CommonUtil.ExecLog(sModuleInfo,
-                               "The information in the data-set(s) are incorrect. Please provide accurate data set(s) information.",
-                               3)
+        element_step_data = Get_Element_Step_Data_Appium(data_set)
+        returned_step_data_list = Validate_Step_Data(element_step_data)
+        if ((returned_step_data_list == []) or (returned_step_data_list == "failed")):
             return "failed"
         else:
-            element_step_data = Get_Element_Step_Data_Appium(data_set)
-            returned_step_data_list = Validate_Step_Data(element_step_data)
-            if ((returned_step_data_list == []) or (returned_step_data_list == "failed")):
-                return "failed"
-            else:
-                try:
-                    Element = Get_Element_Appium(returned_step_data_list[0], returned_step_data_list[1],
-                                                 returned_step_data_list[2], returned_step_data_list[3],
-                                                 returned_step_data_list[4])
-                    if Element.is_enabled():
-                        action = TouchAction(appium_driver)
+            try:
+                Element = Get_Element_Appium(returned_step_data_list[0], returned_step_data_list[1],
+                                             returned_step_data_list[2], returned_step_data_list[3],
+                                             returned_step_data_list[4])
+                if Element.is_enabled():
+                    action = TouchAction(appium_driver)
 
-                        action.press(Element).wait(100).release().press(Element).wait(100).release().perform()
+                    action.press(Element).wait(100).release().press(Element).wait(100).release().perform()
 
-                        CommonUtil.ExecLog(sModuleInfo, "Double Tapped on element successfully", 1)
-                        return "passed"
-                    else:
-                        CommonUtil.TakeScreenShot(sModuleInfo)
-                        CommonUtil.ExecLog(sModuleInfo, "Element not enabled. Unable to click.", 3)
-                        return "failed"
-                except Exception:
-                    errMsg = "Could not select/click your element."
-                    return CommonUtil.Exception_Handler(sys.exc_info(),None,errMsg)
+                    CommonUtil.ExecLog(sModuleInfo, "Double Tapped on element successfully", 1)
+                    return "passed"
+                else:
+                    CommonUtil.TakeScreenShot(sModuleInfo)
+                    CommonUtil.ExecLog(sModuleInfo, "Element not enabled. Unable to click.", 3)
+                    return "failed"
+            except Exception:
+                errMsg = "Could not select/click your element."
+                return CommonUtil.Exception_Handler(sys.exc_info(),None,errMsg)
 
     except Exception:
         errMsg = "Unable to tap."
@@ -1316,39 +1301,34 @@ def Double_Tap_Appium(data_set):
 # Long_Press_Appium_asifurrouf_fixed Long Press time
 
 def Long_Press_Appium(data_set):
+    #!!!!Not yet tested or used
     sModuleInfo = inspect.stack()[0][3] + " : " + inspect.getmoduleinfo(__file__).name
     CommonUtil.ExecLog(sModuleInfo,"Function Start", 0)
     
     try:
-        if ((len(data_set) != 1) or (1 < len(data_set[0]) >= 5)):
-            CommonUtil.ExecLog(sModuleInfo,
-                               "The information in the data-set(s) are incorrect. Please provide accurate data set(s) information.",
-                               3)
+        element_step_data = Get_Element_Step_Data_Appium(data_set)
+        returned_step_data_list = Validate_Step_Data(element_step_data)
+        if ((returned_step_data_list == []) or (returned_step_data_list == "failed")):
             return "failed"
         else:
-            element_step_data = Get_Element_Step_Data_Appium(data_set)
-            returned_step_data_list = Validate_Step_Data(element_step_data)
-            if ((returned_step_data_list == []) or (returned_step_data_list == "failed")):
-                return "failed"
-            else:
-                try:
-                    Element = Get_Element_Appium(returned_step_data_list[0], returned_step_data_list[1],
-                                                 returned_step_data_list[2], returned_step_data_list[3],
-                                                 returned_step_data_list[4])
-                    if Element.is_enabled():
-                        action = TouchAction(appium_driver)
+            try:
+                Element = Get_Element_Appium(returned_step_data_list[0], returned_step_data_list[1],
+                                             returned_step_data_list[2], returned_step_data_list[3],
+                                             returned_step_data_list[4])
+                if Element.is_enabled():
+                    action = TouchAction(appium_driver)
 
-                        action.long_press(Element, 150, 10).release().perform()
+                    action.long_press(Element, 150, 10).release().perform()
 
-                        CommonUtil.ExecLog(sModuleInfo, "Long Pressed on element successfully", 1)
-                        return "passed"
-                    else:
-                        CommonUtil.TakeScreenShot(sModuleInfo)
-                        CommonUtil.ExecLog(sModuleInfo, "Element not enabled. Unable to click.", 3)
-                        return "failed"
-                except Exception:
-                    errMsg = "Could not select/click your element."
-                    return CommonUtil.Exception_Handler(sys.exc_info(),None,errMsg)
+                    CommonUtil.ExecLog(sModuleInfo, "Long Pressed on element successfully", 1)
+                    return "passed"
+                else:
+                    CommonUtil.TakeScreenShot(sModuleInfo)
+                    CommonUtil.ExecLog(sModuleInfo, "Element not enabled. Unable to click.", 3)
+                    return "failed"
+            except Exception:
+                errMsg = "Could not select/click your element."
+                return CommonUtil.Exception_Handler(sys.exc_info(),None,errMsg)
 
     except Exception:
         errMsg = "Unable to tap."
@@ -1529,118 +1509,114 @@ def Validate_Text_Appium(data_set):
     
     data_set = [data_set]
     try:
-        if ((len(data_set) != 1) or (1 < len(data_set[0]) >= 5)):
-            CommonUtil.ExecLog(sModuleInfo, "The information in the data-set(s) are incorrect. Please provide accurate data set(s) information.",3)
-            return "failed"
-        else:
-            Element = []
-            Elements = []
-            for each in data_set[0]:
-                # Get all elements from current screen based on step_data
-                if each[0] == "current page":
+        Element = []
+        Elements = []
+        for each in data_set[0]:
+            # Get all elements from current screen based on step_data
+            if each[0] == "current page":
+                try:
+                    Element = Get_Element_Appium('tag', 'html')
+                    break
+                except Exception:
+                    errMsg = "Could not get element from the current page."
+                    return CommonUtil.Exception_Handler(sys.exc_info(),None,errMsg)
+                
+            # Get all elements from current screen based on step_data
+            elif each[0] == "current screen":
+                try:
+                    Elements = Get_Element_Appium(each[0], '')
+                    break
+                except Exception, e:
+                    errMsg = "Could not get element from the current screen."
+                    return CommonUtil.Exception_Handler(sys.exc_info(),None,errMsg) 
+                
+            else:
+                # Get all the element step data(s) other than 'action' and 'conditional action'
+                element_step_data = Get_Element_Step_Data_Appium(data_set)
+                # Get all the element step data's parameter and value
+                returned_step_data_list = Validate_Step_Data(element_step_data)
+                if ((returned_step_data_list == []) or (returned_step_data_list == "failed")):
+                    return "failed"
+                else:
                     try:
-                        Element = Get_Element_Appium('tag', 'html')
+                        # Get single element from the device based on step_data
+                        Element = Get_Element_Appium(returned_step_data_list[0], returned_step_data_list[1], returned_step_data_list[2], returned_step_data_list[3], returned_step_data_list[4])
                         break
                     except Exception:
-                        errMsg = "Could not get element from the current page."
-                        return CommonUtil.Exception_Handler(sys.exc_info(),None,errMsg)
-                    
-                # Get all elements from current screen based on step_data
-                elif each[0] == "current screen":
-                    try:
-                        Elements = Get_Element_Appium(each[0], '')
-                        break
-                    except Exception, e:
-                        errMsg = "Could not get element from the current screen."
-                        return CommonUtil.Exception_Handler(sys.exc_info(),None,errMsg) 
-                    
-                else:
-                    # Get all the element step data(s) other than 'action' and 'conditional action'
-                    element_step_data = Get_Element_Step_Data_Appium(data_set)
-                    # Get all the element step data's parameter and value
-                    returned_step_data_list = Validate_Step_Data(element_step_data)
-                    if ((returned_step_data_list == []) or (returned_step_data_list == "failed")):
-                        return "failed"
-                    else:
-                        try:
-                            # Get single element from the device based on step_data
-                            Element = Get_Element_Appium(returned_step_data_list[0], returned_step_data_list[1], returned_step_data_list[2], returned_step_data_list[3], returned_step_data_list[4])
-                            break
-                        except Exception:
-                            errMsg = "Could not get element based on the information provided."
-                            return CommonUtil.Exception_Handler(sys.exc_info(),None,errMsg)           
- 
-            # Get the 'action' parameter and 'value' from step data
-            for each_step_data_item in data_set[0]:
-                if each_step_data_item[1]=="action":
-                    expected_text_data = each_step_data_item[2].split('||') # Split the separator in case multiple string provided in the same data_set
-                    validation_type = each_step_data_item[0]
-            
+                        errMsg = "Could not get element based on the information provided."
+                        return CommonUtil.Exception_Handler(sys.exc_info(),None,errMsg)           
+        
+        # Get the 'action' parameter and 'value' from step data
+        for each_step_data_item in data_set[0]:
+            if each_step_data_item[1]=="action":
+                expected_text_data = each_step_data_item[2].split('||') # Split the separator in case multiple string provided in the same data_set
+                validation_type = each_step_data_item[0]
+        
+        visible_list_of_element_text = []
+        # Get the string for a single element
+        if Element != []:
+            list_of_element_text = Element.text.split('\n') # Extract the text element
             visible_list_of_element_text = []
-            # Get the string for a single element
-            if Element != []:
-                list_of_element_text = Element.text.split('\n') # Extract the text element
-                visible_list_of_element_text = []
-                for each_text_item in list_of_element_text:
-                    if each_text_item != "":
-                        visible_list_of_element_text.append(each_text_item)
-
-            # Get all the strings for multiple elements
-            elif Elements != []:
-                for each_item in Elements:
-                    each_text_item = each_item.text # Extract the text element
-                    if each_text_item != '':
-                        visible_list_of_element_text.append(each_text_item)
-             
-            # Validate the partial text/string provided in the step data with the text obtained from the device
-            if validation_type == "validate partial text":
-                actual_text_data = visible_list_of_element_text
-                CommonUtil.ExecLog(sModuleInfo, ">>>>>> Expected Text: %s" %expected_text_data, 0)
-                CommonUtil.ExecLog(sModuleInfo, ">>>>>>>> Actual Text: %s" %actual_text_data, 0)
-                for each_actual_text_data_item in actual_text_data:
-                    if expected_text_data[0] in each_actual_text_data_item: # index [0] used to remove the unicode 'u' from the text string
-                        CommonUtil.ExecLog(sModuleInfo, "The text has been validated by a partial match.", 0)
-                        return "passed"
-                    else:
-                        CommonUtil.ExecLog(sModuleInfo, "Unable to validate using partial match.", 3)
-                        return "failed"
-            
-            # Validate the full text/string provided in the step data with the text obtained from the device
-            if validation_type == "validate full text":
-                actual_text_data = visible_list_of_element_text
-                CommonUtil.ExecLog(sModuleInfo, ">>>>>> Expected Text: %s" %expected_text_data, 0)
-                CommonUtil.ExecLog(sModuleInfo, ">>>>>>>> Actual Text: %s" %actual_text_data, 0)
-                if (expected_text_data[0] == actual_text_data[0]): # index [0] used to remove the unicode 'u' from the text string
-                    CommonUtil.ExecLog(sModuleInfo, "The text has been validated by using complete match.", 0)
+            for each_text_item in list_of_element_text:
+                if each_text_item != "":
+                    visible_list_of_element_text.append(each_text_item)
+        
+        # Get all the strings for multiple elements
+        elif Elements != []:
+            for each_item in Elements:
+                each_text_item = each_item.text # Extract the text element
+                if each_text_item != '':
+                    visible_list_of_element_text.append(each_text_item)
+         
+        # Validate the partial text/string provided in the step data with the text obtained from the device
+        if validation_type == "validate partial text":
+            actual_text_data = visible_list_of_element_text
+            CommonUtil.ExecLog(sModuleInfo, ">>>>>> Expected Text: %s" %expected_text_data, 0)
+            CommonUtil.ExecLog(sModuleInfo, ">>>>>>>> Actual Text: %s" %actual_text_data, 0)
+            for each_actual_text_data_item in actual_text_data:
+                if expected_text_data[0] in each_actual_text_data_item: # index [0] used to remove the unicode 'u' from the text string
+                    CommonUtil.ExecLog(sModuleInfo, "The text has been validated by a partial match.", 0)
                     return "passed"
                 else:
-                    CommonUtil.ExecLog(sModuleInfo, "Unable to validate using complete match.", 3)
+                    CommonUtil.ExecLog(sModuleInfo, "Unable to validate using partial match.", 3)
                     return "failed"
-
-            # Validate all the text/string provided in the step data with the text obtained from the device
-            if validation_type == "validate screen text":
-                CommonUtil.ExecLog(sModuleInfo, ">>>>>> Expected Text: %s" %expected_text_data, 0)
-                CommonUtil.ExecLog(sModuleInfo, ">>>>>>>> Actual Text: %s" %visible_list_of_element_text, 0)
-                i = 0
-                for x in xrange(0, len(visible_list_of_element_text)): 
-                    if (visible_list_of_element_text[x] == expected_text_data[i]): # Validate the matching string
-                        CommonUtil.ExecLog(sModuleInfo, "The text element '%s' has been validated by using complete match." %visible_list_of_element_text[x], 1)
-                        i += 1
-                    else:
-                        visible_elem = [ve for ve in visible_list_of_element_text[x].split()]
-                        expected_elem = [ee for ee in expected_text_data[i].split()]
-                        for elem in visible_elem: # Validate the matching word
-                            if elem in expected_elem:
-                                CommonUtil.ExecLog(sModuleInfo, "Validate the element '%s' using element match." %elem, 1)
-                            else:
-                                CommonUtil.ExecLog(sModuleInfo, "Unable to validate the element '%s'. Check the element(s) in step_data(s) and/or in screen text." %elem, 1)
-                        if (visible_elem[0] in expected_elem):
-                            i += 1
-                            
+        
+        # Validate the full text/string provided in the step data with the text obtained from the device
+        if validation_type == "validate full text":
+            actual_text_data = visible_list_of_element_text
+            CommonUtil.ExecLog(sModuleInfo, ">>>>>> Expected Text: %s" %expected_text_data, 0)
+            CommonUtil.ExecLog(sModuleInfo, ">>>>>>>> Actual Text: %s" %actual_text_data, 0)
+            if (expected_text_data[0] == actual_text_data[0]): # index [0] used to remove the unicode 'u' from the text string
+                CommonUtil.ExecLog(sModuleInfo, "The text has been validated by using complete match.", 0)
+                return "passed"
             else:
-                CommonUtil.ExecLog(sModuleInfo, "Incorrect validation type. Please check step data", 3)
+                CommonUtil.ExecLog(sModuleInfo, "Unable to validate using complete match.", 3)
                 return "failed"
- 
+        
+        # Validate all the text/string provided in the step data with the text obtained from the device
+        if validation_type == "validate screen text":
+            CommonUtil.ExecLog(sModuleInfo, ">>>>>> Expected Text: %s" %expected_text_data, 0)
+            CommonUtil.ExecLog(sModuleInfo, ">>>>>>>> Actual Text: %s" %visible_list_of_element_text, 0)
+            i = 0
+            for x in xrange(0, len(visible_list_of_element_text)): 
+                if (visible_list_of_element_text[x] == expected_text_data[i]): # Validate the matching string
+                    CommonUtil.ExecLog(sModuleInfo, "The text element '%s' has been validated by using complete match." %visible_list_of_element_text[x], 1)
+                    i += 1
+                else:
+                    visible_elem = [ve for ve in visible_list_of_element_text[x].split()]
+                    expected_elem = [ee for ee in expected_text_data[i].split()]
+                    for elem in visible_elem: # Validate the matching word
+                        if elem in expected_elem:
+                            CommonUtil.ExecLog(sModuleInfo, "Validate the element '%s' using element match." %elem, 1)
+                        else:
+                            CommonUtil.ExecLog(sModuleInfo, "Unable to validate the element '%s'. Check the element(s) in step_data(s) and/or in screen text." %elem, 1)
+                    if (visible_elem[0] in expected_elem):
+                        i += 1
+                        
+        else:
+            CommonUtil.ExecLog(sModuleInfo, "Incorrect validation type. Please check step data", 3)
+            return "failed"
+        
     except Exception:
         errMsg = "Could not compare text as requested."
         return CommonUtil.Exception_Handler(sys.exc_info(),None,errMsg)
