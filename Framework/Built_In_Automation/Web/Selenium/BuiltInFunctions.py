@@ -979,7 +979,7 @@ def Validate_Table(step_data):
         try:
             #oCompare = CompareModule()
             #expected_table_step_data = (step_data[0][table_validate_index+1:len(step_data[0])-1:1])
-            actual_table_dataset = Get_Table_Elements(step_data, preferred_match = preferred_match)
+            actual_table_dataset = Get_Table_Elements(step_data[0], preferred_match = preferred_match)
             if actual_table_dataset in failed_tag_list:
                 CommonUtil.ExecLog(sModuleInfo, "Could not get table elements", 3)
                 return 'failed'
