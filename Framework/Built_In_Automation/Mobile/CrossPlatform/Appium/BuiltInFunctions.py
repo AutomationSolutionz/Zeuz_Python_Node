@@ -1742,7 +1742,8 @@ def get_program_names(search_name):
     try:
         cmd = 'adb shell pm list packages'
         res = subprocess.Popen(cmd.split(' '), stdout=subprocess.PIPE).communicate(0)
-        ary = str(res).split('\\r\\n')
+        res = str(res).replace('\\r','')
+        ary = res.split('\\n')
         p = re.compile('package(.*?' + search_name + '.*?)$')
         package_name = ''
         for line in ary:
