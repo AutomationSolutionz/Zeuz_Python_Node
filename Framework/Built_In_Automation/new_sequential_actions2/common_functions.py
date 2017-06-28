@@ -110,7 +110,7 @@ def adjust_element_parameters(step_data):
     ''' Strip out element parameters that do not match the dependency '''
 
     sModuleInfo = inspect.stack()[0][3] + " : " + inspect.getmoduleinfo(__file__).name
-    CommonUtil.ExecLog(sModuleInfo, "Adjusting element parameters", 1)
+    CommonUtil.ExecLog(sModuleInfo, "Function Start", 0)
     
     # List of supported mobile platforms - must be lower case
     platforms = ('android', 'ios')
@@ -122,7 +122,7 @@ def adjust_element_parameters(step_data):
     else: # Have dependency
         dependency = sr.Get_Shared_Variables('dependency') # Save locally
         if 'Mobile' not in dependency: # We have a dependency, but not a mobile, so we don't need to do anything
-            CommonUtil.ExecLog(sModuleInfo, "No mobile dependency set - exiting", 1)
+            CommonUtil.ExecLog(sModuleInfo, "No mobile dependency set - Can't verify element data", 0)
             return step_data # Return unmodified
             
     
@@ -131,6 +131,10 @@ def adjust_element_parameters(step_data):
         new_data_set = [] # Create empty list that will have new data appended
         for row in data_set: # For each row of the data set
             new_row = list(row) # Copy tuple of row as list, so we can change it
+
+            # Special handling of "id"
+            if new_row[0] == 'id' and dependency['Mobile'].lower() == 'android': new_row[0] = 'resource-id' # If user specifies id, they likely mean "resource-id"
+            if new_row[0] == 'id' and dependency['Mobile'].lower() == 'ios': new_row[0] = 'accessibility id' # If user specifies id, they likely mean "resource-id" 
             
             # Remove any element parameter that doesn't match the dependency
             if dependency['Mobile'].lower() in new_row[1]: # If dependency matches this Sub-Field, then save it
@@ -143,7 +147,7 @@ def adjust_element_parameters(step_data):
                         b = True
                 if b == False: # This row did not match unwanted platforms, so we keep it
                     new_data_set.append(tuple(new_row)) # Append list as tuple to data set list
-            
+
         new_step_data.append(new_data_set) # Append data set to step data
 
     return new_step_data # Return cleaned step_data that contains only the element paramters we are interested in
