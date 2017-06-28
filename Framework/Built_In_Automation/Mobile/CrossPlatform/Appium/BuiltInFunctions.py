@@ -509,6 +509,11 @@ def swipe_handler(data_set):
 #Validating text from an element given information regarding the expected text
 
 def Save_Text(data_set):
+    
+    '''
+    @sreejoy, this needs your review and fix. 
+    
+    '''
     sModuleInfo = inspect.stack()[0][3] + " : " + inspect.getmoduleinfo(__file__).name
     CommonUtil.ExecLog(sModuleInfo,"Function Start", 0)
     
@@ -529,23 +534,16 @@ def Save_Text(data_set):
         return CommonUtil.Exception_Handler(sys.exc_info(),None,errMsg)
 
     try:
-        if (len(data_set[0]) < 1):
-            CommonUtil.ExecLog(sModuleInfo, "The information in the data-set(s) are incorrect. Please provide accurate data set(s) information.",3)
-            return "failed"
-        else:
             for each in data_set:
-                element_step_data = Get_Element_Step_Data_Appium(data_set)
-                returned_step_data_list = Validate_Step_Data(element_step_data)
-                if ((returned_step_data_list == []) or (returned_step_data_list == "failed")):
-                    return "failed"
-                else:
-                    try:
-                        Element = Get_Element_Appium(returned_step_data_list[0], returned_step_data_list[1], returned_step_data_list[2], returned_step_data_list[3], returned_step_data_list[4])
-                        break
 
-                    except Exception:
-                        errMsg = "Could not get element based on the information provided."
-                        return CommonUtil.Exception_Handler(sys.exc_info(),None,errMsg)
+                try:
+                    Element = LocateElement.Get_Element(data_set,appium_driver)
+                    if Element == "failed":
+                        CommonUtil.ExecLog(sModuleInfo, "Unable to locate your element with given data.", 3)
+                        return "failed" 
+                except Exception:
+                    errMsg = "Could not get element based on the information provided."
+                    return CommonUtil.Exception_Handler(sys.exc_info(),None,errMsg)
 
             list_of_element_text = Element.text.split('\n')
             visible_list_of_element_text = ""
@@ -569,9 +567,10 @@ def Compare_Variables(data_set):
     sModuleInfo = inspect.stack()[0][3] + " : " + inspect.getmoduleinfo(__file__).name
     CommonUtil.ExecLog(sModuleInfo,"Function Start", 0)
     try:
-        element_step_data = Get_Element_Step_Data_Appium([data_set])
-        if ((element_step_data == []) or (element_step_data == "failed")):
-            return "failed"
+        Element = LocateElement.Get_Element(data_set,appium_driver)
+        if Element == "failed":
+            CommonUtil.ExecLog(sModuleInfo, "Unable to locate your element with given data.", 3)
+            return "failed" 
         else:
             return Shared_Resources.Compare_Variables([data_set])
     except Exception:
@@ -642,8 +641,11 @@ def get_element_location_by_id(data_set):
         return CommonUtil.Exception_Handler(sys.exc_info(),None,errMsg)
 
     try:
-        elem = locate_element_by_id(appium_driver, _id) # Get element object for given id
-        location = elem.location # Get element x,y coordinates
+        Element = LocateElement.Get_Element(data_set,appium_driver)
+        if Element == "failed":
+            CommonUtil.ExecLog(sModuleInfo, "Unable to locate your element with given data.", 3)
+            return "failed" 
+        location = Element.location # Get element x,y coordinates
         positions = "%s,%s" % (location['x'], location['y']) # Save as a string - The function that uses this will need to put it in the format it needs
         CommonUtil.ExecLog(sModuleInfo,"Retreived location successfully",1)
         
@@ -669,10 +671,6 @@ def get_window_size():
         return CommonUtil.Exception_Handler(sys.exc_info(),None,errMsg)
     
 
-
-
-
-
 def Initialize_List(data_set):
     ''' Temporary wrapper until we can convert everything to use just data_set and not need the extra [] '''
     return Shared_Resources.Initialize_List([data_set])
@@ -682,17 +680,15 @@ def Click_Element_Appium(data_set):
     
     sModuleInfo = inspect.stack()[0][3] + " : " + inspect.getmoduleinfo(__file__).name
     CommonUtil.ExecLog(sModuleInfo,"Function Start", 0)
-    
-    data_set = [data_set]
 
     try:
-        element_step_data = Get_Element_Step_Data_Appium(data_set)            
-        returned_step_data_list = Validate_Step_Data(element_step_data) 
-        if ((returned_step_data_list == []) or (returned_step_data_list == "failed")):
-            return "failed"
+        Element = LocateElement.Get_Element(data_set,appium_driver)
+        if Element == "failed":
+            CommonUtil.ExecLog(sModuleInfo, "Unable to locate your element with given data.", 3)
+            return "failed" 
         else:
             try:
-                Element = Get_Element_Appium(returned_step_data_list[0], returned_step_data_list[1], returned_step_data_list[2], returned_step_data_list[3], returned_step_data_list[4])
+               
                 if Element.is_enabled():
                     Element.click()
                     CommonUtil.TakeScreenShot(sModuleInfo)
@@ -716,17 +712,14 @@ def Tap_Appium(data_set):
     
     sModuleInfo = inspect.stack()[0][3] + " : " + inspect.getmoduleinfo(__file__).name
     CommonUtil.ExecLog(sModuleInfo,"Function Start", 0)
-    
-    data_set = [data_set]
-    
+
     try:
-        element_step_data = Get_Element_Step_Data_Appium(data_set)            
-        returned_step_data_list = Validate_Step_Data(element_step_data) 
-        if ((returned_step_data_list == []) or (returned_step_data_list == "failed")):
-            return "failed"
+        Element = LocateElement.Get_Element(data_set,appium_driver)
+        if Element == "failed":
+            CommonUtil.ExecLog(sModuleInfo, "Unable to locate your element with given data.", 3)
+            return "failed" 
         else:
             try:
-                Element = Get_Element_Appium(returned_step_data_list[0], returned_step_data_list[1], returned_step_data_list[2], returned_step_data_list[3], returned_step_data_list[4])
                 if Element.is_enabled():
                     action = TouchAction(appium_driver)
                     action.tap(Element).perform()
@@ -749,15 +742,12 @@ def Double_Tap_Appium(data_set):
     sModuleInfo = inspect.stack()[0][3] + " : " + inspect.getmoduleinfo(__file__).name
     CommonUtil.ExecLog(sModuleInfo,"Function Start", 0)
     try:
-        element_step_data = Get_Element_Step_Data_Appium(data_set)
-        returned_step_data_list = Validate_Step_Data(element_step_data)
-        if ((returned_step_data_list == []) or (returned_step_data_list == "failed")):
-            return "failed"
+        Element = LocateElement.Get_Element(data_set,appium_driver)
+        if Element == "failed":
+            CommonUtil.ExecLog(sModuleInfo, "Unable to locate your element with given data.", 3)
+            return "failed" 
         else:
             try:
-                Element = Get_Element_Appium(returned_step_data_list[0], returned_step_data_list[1],
-                                             returned_step_data_list[2], returned_step_data_list[3],
-                                             returned_step_data_list[4])
                 if Element.is_enabled():
                     action = TouchAction(appium_driver)
 
@@ -785,15 +775,12 @@ def Long_Press_Appium(data_set):
     CommonUtil.ExecLog(sModuleInfo,"Function Start", 0)
     
     try:
-        element_step_data = Get_Element_Step_Data_Appium(data_set)
-        returned_step_data_list = Validate_Step_Data(element_step_data)
-        if ((returned_step_data_list == []) or (returned_step_data_list == "failed")):
-            return "failed"
+        Element = LocateElement.Get_Element(data_set,appium_driver)
+        if Element == "failed":
+            CommonUtil.ExecLog(sModuleInfo, "Unable to locate your element with given data.", 3)
+            return "failed" 
         else:
             try:
-                Element = Get_Element_Appium(returned_step_data_list[0], returned_step_data_list[1],
-                                             returned_step_data_list[2], returned_step_data_list[3],
-                                             returned_step_data_list[4])
                 if Element.is_enabled():
                     action = TouchAction(appium_driver)
 
@@ -835,18 +822,12 @@ def Enter_Text_Appium(data_set):
     
     # Enter text into element
     try:
-        element_step_data=Get_Element_Step_Data_Appium([data_set])
-        returned_step_data_list = Validate_Step_Data(element_step_data) 
-        if ((returned_step_data_list == []) or (returned_step_data_list == "failed")):
-            return "failed"
+        Element = LocateElement.Get_Element(data_set,appium_driver)
+        if Element == "failed":
+            CommonUtil.ExecLog(sModuleInfo, "Unable to locate your element with given data.", 3)
+            return "failed" 
         else:
             try:
-                # Get element object
-                Element = Get_Element_Appium(returned_step_data_list[0], returned_step_data_list[1], returned_step_data_list[2], returned_step_data_list[3], returned_step_data_list[4])
-                if Element in failed_tag_list:
-                    CommonUtil.ExecLog(sModuleInfo, "Appium returned failed for element %s" % returned_step_data_list[1], 3)
-                    return 'failed'
-                
                 # Enter text into element
                 Element.click() # Set focus to textbox
                 Element.clear() # Remove any text already existing
@@ -983,47 +964,21 @@ def Keystroke_Appium(data_set):
 
 #Validating text from an element given information regarding the expected text
 def Validate_Text_Appium(data_set):
+    '''
+
+    @sreejoy, this will need your review 
+
+    This needs more time to fix.
+    Should be a lot more simple design
+    '''
     sModuleInfo = inspect.stack()[0][3] + " : " + inspect.getmoduleinfo(__file__).name
     CommonUtil.ExecLog(sModuleInfo,"Function Start", 0)
-    
     data_set = [data_set]
     try:
-        Element = []
-        Elements = []
-        for each in data_set[0]:
-            # Get all elements from current screen based on step_data
-            if each[0] == "current page":
-                try:
-                    Element = Get_Element_Appium('tag', 'html')
-                    break
-                except Exception:
-                    errMsg = "Could not get element from the current page."
-                    return CommonUtil.Exception_Handler(sys.exc_info(),None,errMsg)
-                
-            # Get all elements from current screen based on step_data
-            elif each[0] == "current screen":
-                try:
-                    Elements = Get_Element_Appium(each[0], '')
-                    break
-                except Exception, e:
-                    errMsg = "Could not get element from the current screen."
-                    return CommonUtil.Exception_Handler(sys.exc_info(),None,errMsg) 
-                
-            else:
-                # Get all the element step data(s) other than 'action' and 'conditional action'
-                element_step_data = Get_Element_Step_Data_Appium(data_set)
-                # Get all the element step data's parameter and value
-                returned_step_data_list = Validate_Step_Data(element_step_data)
-                if ((returned_step_data_list == []) or (returned_step_data_list == "failed")):
-                    return "failed"
-                else:
-                    try:
-                        # Get single element from the device based on step_data
-                        Element = Get_Element_Appium(returned_step_data_list[0], returned_step_data_list[1], returned_step_data_list[2], returned_step_data_list[3], returned_step_data_list[4])
-                        break
-                    except Exception:
-                        errMsg = "Could not get element based on the information provided."
-                        return CommonUtil.Exception_Handler(sys.exc_info(),None,errMsg)           
+        Element = LocateElement.Get_Element(data_set[0],appium_driver)
+        if Element == "failed":
+            CommonUtil.ExecLog(sModuleInfo, "Unable to locate your element with given data.", 3)
+            return "failed" 
         
         # Get the 'action' parameter and 'value' from step data
         for each_step_data_item in data_set[0]:
@@ -1040,12 +995,7 @@ def Validate_Text_Appium(data_set):
                 if each_text_item != "":
                     visible_list_of_element_text.append(each_text_item)
         
-        # Get all the strings for multiple elements
-        elif Elements != []:
-            for each_item in Elements:
-                each_text_item = each_item.text # Extract the text element
-                if each_text_item != '':
-                    visible_list_of_element_text.append(each_text_item)
+
          
         # Validate the partial text/string provided in the step data with the text obtained from the device
         if validation_type == "validate partial text":
@@ -1103,6 +1053,14 @@ def Validate_Text_Appium(data_set):
 
 #Inserting a field into a list of shared variables
 def Insert_Into_List(data_set):
+    '''
+
+    @sreejoy, this will need your review 
+
+    This is probably broken as well.. i am not sure why we are using dataset with [dataset]
+    
+    '''
+    
     sModuleInfo = inspect.stack()[0][3] + " : " + inspect.getmoduleinfo(__file__).name
     CommonUtil.ExecLog(sModuleInfo,"Function Start", 0)
     
@@ -1137,21 +1095,12 @@ def Insert_Into_List(data_set):
             else:
                 Shared_Resources.Show_All_Shared_Variables()
                 return "passed"
-
-        elif len(data_set[0]) > 1 and len(data_set[0]) <=5:
-            for each in data_set[0]:
-                element_step_data = Get_Element_Step_Data_Appium(data_set)
-                returned_step_data_list = Validate_Step_Data(element_step_data)
-                if ((returned_step_data_list == []) or (returned_step_data_list == "failed")):
-                    return "failed"
-                else:
-                    try:
-                        Element = Get_Element_Appium(returned_step_data_list[0], returned_step_data_list[1], returned_step_data_list[2], returned_step_data_list[3], returned_step_data_list[4])
-                        break
-
-                    except Exception:
-                        errMsg = "Could not get element based on the information provided."
-                        return CommonUtil.Exception_Handler(sys.exc_info(),None,errMsg)
+    
+            Element = LocateElement.Get_Element(data_set[0],appium_driver)
+            if Element == "failed":
+                CommonUtil.ExecLog(sModuleInfo, "Unable to locate your element with given data.", 3)
+                return "failed" 
+        
 
             list_name = ''
             key = ''
@@ -1199,13 +1148,18 @@ def Insert_Into_List(data_set):
 
 #Validating text from an element given information regarding the expected text
 def Compare_Lists(data_set):
+    '''
+    @sreejoy, this will need your review 
+    '''
     sModuleInfo = inspect.stack()[0][3] + " : " + inspect.getmoduleinfo(__file__).name
     CommonUtil.ExecLog(sModuleInfo,"Function Start", 0)
     
     try:
-        element_step_data = Get_Element_Step_Data_Appium([data_set])
-        if ((element_step_data == []) or (element_step_data == "failed")):
-            return "failed"
+        Element = LocateElement.Get_Element(data_set,appium_driver)
+        if Element == "failed":
+            CommonUtil.ExecLog(sModuleInfo, "Unable to locate your element with given data.", 3)
+            return "failed" 
+        
         else:
             return Shared_Resources.Compare_Lists([data_set])
     except Exception:
