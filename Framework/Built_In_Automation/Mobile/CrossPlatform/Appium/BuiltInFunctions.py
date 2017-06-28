@@ -2,14 +2,10 @@
 # -*- coding: cp1252 -*-
 # Android environment
 from appium import webdriver
-import os, sys, time, inspect
-import subprocess,re
+import os, sys, time, inspect, subprocess, re
 from Framework.Utilities import CommonUtil
 from Framework.Built_In_Automation.Mobile.Android.adb_calls import adbOptions
 from appium.webdriver.common.touch_action import TouchAction
-from selenium.webdriver.support.ui import WebDriverWait
-from selenium.webdriver.support import expected_conditions as EC
-from selenium.webdriver.common.by import By
 from Framework.Built_In_Automation.Shared_Resources import BuiltInFunctionSharedResources as Shared_Resources
 from Framework.Utilities.CommonUtil import passed_tag_list, failed_tag_list, skipped_tag_list
 from Framework.Built_In_Automation.Shared_Resources import LocateElement
@@ -19,14 +15,14 @@ PATH = lambda p: os.path.abspath(
     os.path.join(os.path.dirname(__file__), p)
 )
 
+ # Appium directory/filename - May need to move to settings.conf
 appium_binary = None
 if os.name == 'posix':
-    appium_binary = 'appium' # Appium directory/filename - May need to move to settings.conf
+    appium_binary = 'appium'
 else:
     CommonUtil.ExecLog(__name__ + " : " + __file__, "Platform doesn't have an appium location defined: %s" % str(os.name), 3)
     
 # Recall appium driver, if not already set - needed between calls in a Zeuz test case
-global appium_driver
 appium_driver = None
 if Shared_Resources.Test_Shared_Variables('appium_driver'): # Check if driver is already set in shared variables
     appium_driver = Shared_Resources.Get_Shared_Variables('appium_driver') # Retreive appium driver
@@ -37,11 +33,6 @@ if Shared_Resources.Test_Shared_Variables('dependency'): # Check if driver is al
     dependency = Shared_Resources.Get_Shared_Variables('dependency') # Retreive appium driver
 else:
     CommonUtil.ExecLog(__name__ + " : " + __file__, "No dependency set - Cannot run", 3)
-
- 
-# Appium element wait time in seconds
-global WebDriver_Wait 
-WebDriver_Wait = 20
 
 def get_driver():
     ''' For custom functions external to this script that need access to the driver '''
@@ -319,6 +310,40 @@ def uninstall_application(data_set):
         errMsg = "Unable to uninstall"
         return CommonUtil.Exception_Handler(sys.exc_info(),None,errMsg)
 
+def Wait_For_New_Element(data_set):
+    ''' Continuously monitors an element for a specified amount of time and returns whether or not it is available '''
+    
+    sModuleInfo = inspect.stack()[0][3] + " : " + inspect.getmoduleinfo(__file__).name
+    CommonUtil.ExecLog(sModuleInfo,"Function Start", 0)
+    
+    try:
+        # Find the wait time from the data set
+        for row in data_set:
+            if row[1] == "action":
+                timeout_duration = int(row[2])
+
+        # Check for element every second 
+        end_time = time.time() + timeout_duration # Time at which we should stop looking
+        for i in range(timeout_duration): # Keep testing element until this is reached (likely never hit due to timeout below)
+            # Wait and then test if we are over our alloted time limit
+            time.sleep(1)
+            if time.time() >= end_time: # Keep testing element until this is reached (ensures we wait exactly the specified amount of time)
+                break
+            
+            # Test if element exists and exit loop if it does
+            Element = LocateElement.Get_Element(data_set,appium_driver)
+            if Element != "failed":
+                CommonUtil.ExecLog(sModuleInfo, "Found element", 1)
+                return 'passed'
+            else:
+                CommonUtil.ExecLog(sModuleInfo, "Element does not exist. Sleep and try again - %d" % i, 0)
+
+        # Element not found        
+        CommonUtil.ExecLog(sModuleInfo, "Wait for element failed - Does not exist", 3)
+        return 'failed'
+
+    except Exception:
+        return CommonUtil.Exception_Handler(sys.exc_info())
 
 
 def Sleep(data_set):
