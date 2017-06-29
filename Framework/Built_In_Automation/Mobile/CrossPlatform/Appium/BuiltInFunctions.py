@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 # -*- coding: cp1252 -*-
-# Android environment
+
 from appium import webdriver
 import os, sys, time, inspect, subprocess, re
 from Framework.Utilities import CommonUtil
@@ -135,7 +135,6 @@ def start_appium_driver(package_name = '', activity_name = '', filename = ''):
             desired_caps['platformName'] = dependency['Mobile'] # Set platform name
             desired_caps['autoLaunch'] = 'false' # Do not launch application
             desired_caps['fullReset'] = 'false' # Do not clear application cache when complete
-            desired_caps['sendKeyStrategy'] = 'setValue' # Send text to element faster
             desired_caps['newCommandTimeout'] = 600 # Command timeout before appium destroys instance
             
             if dependency['Mobile'].lower() == 'android':
@@ -151,6 +150,7 @@ def start_appium_driver(package_name = '', activity_name = '', filename = ''):
                     desired_caps['app'] = PATH(filename).strip()
             elif dependency['Mobile'].lower() == 'ios':
                 CommonUtil.ExecLog(sModuleInfo,"Setting up with IOS",1)
+                desired_caps['sendKeyStrategy'] = 'setValue' # Use set_value() for writing to element
                 desired_caps['platformVersion'] = '10.3' # Read version #!!! Temporarily hard coded
                 desired_caps['deviceName'] = 'iPhone' # Read model (only needs to be unique if using more than one)
                 desired_caps['bundleId'] = package_name
