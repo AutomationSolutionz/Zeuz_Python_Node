@@ -8,6 +8,12 @@ import sys
 import inspect
 from Framework.Utilities import CommonUtil
 from Framework.Utilities.CommonUtil import passed_tag_list, failed_tag_list
+from selenium.webdriver.support.ui import WebDriverWait
+from selenium.webdriver.support import expected_conditions as EC
+from selenium.webdriver.common.by import By
+
+global WebDriver_Wait
+WebDriver_Wait = 10
 global generic_driver 
 generic_driver = None
 
@@ -91,23 +97,47 @@ def _construct_query (step_data_set):
     except Exception:
         return CommonUtil.Exception_Handler(sys.exc_info())
 
+def _driver_type():
+    '''
+    This function will find out what type of driver it is.  For xml, we may need to change some of our queries so we will use this as well
+    '''
+    try:
+        if 'appium' in str(getattr(generic_driver, '__module__')): 
+            driver_type = "appium"
+        else:
+            driver_type = "generic"
+        return driver_type
+    except Exception:
+        return CommonUtil.Exception_Handler(sys.exc_info())
+
 def _construct_xpath_list(parameter_list,add_dot=False):
     '''
     This function constructs the raw data from step data into a xpath friendly format but in a list
     '''
     try:
+        #Setting the list empty
         element_main_body_list = []
+        #identifying type of driver and based on it query will be adjusted
+        driver_type = _driver_type()
+        if driver_type in failed_tag_list:
+            driver_type = "generic"
         #these are special cases where we cannot treat their attribute as any other attribute such as id, class and so on...  
         excluded_attribute = ["*text", "text", "tag", "css", "index","xpath","switch frame","switch window","switch alert","switch active"]
         for each_data_row in parameter_list:
             attribute = (each_data_row[0].strip())
             attribute_value = each_data_row[2]
-            if attribute == "text":
+            if attribute == "text" and driver_type == "generic":
                 text_value = '[text()="%s"]'%attribute_value
                 element_main_body_list.append(text_value)
-            elif attribute == "*text":
+            elif attribute == "*text" and driver_type == "generic":
                 text_value = '[contains(text(),"%s")]'%attribute_value    
                 element_main_body_list.append(text_value)
+            elif attribute == "text" and driver_type == "appium":
+                text_value = '[@text="%s"]'%attribute_value
+                element_main_body_list.append(text_value)
+            elif attribute == "*text" and driver_type == "appium":
+                text_value = '[contains(@text,"%s")]'%attribute_value    
+                element_main_body_list.append(text_value)            
             elif attribute not in excluded_attribute and '*' not in attribute:
                 other_value = '[@%s="%s"]'%(attribute,attribute_value)
                 element_main_body_list.append(other_value)
@@ -188,10 +218,9 @@ def _get_xpath_or_css_element(element_query,css_xpath, index_number=False):
         all_matching_elements = []
         sModuleInfo = inspect.stack()[0][3] + " : " + inspect.getmoduleinfo(__file__).name
         if css_xpath == "xpath":
-            all_matching_elements = generic_driver.find_elements_by_xpath(element_query)
+            all_matching_elements = WebDriverWait(generic_driver, WebDriver_Wait).until(EC.presence_of_all_elements_located((By.XPATH, element_query)))
         elif css_xpath == "css":
-            all_matching_elements = generic_driver.find_elements_by_css_selector(element_query)
-            
+            all_matching_elements = WebDriverWait(generic_driver, WebDriver_Wait).until(EC.presence_of_all_elements_located((By.CSS_SELECTOR, element_query)))
         if len(all_matching_elements)== 0:
             return False
         elif len(all_matching_elements)==1 and index_number == False:
