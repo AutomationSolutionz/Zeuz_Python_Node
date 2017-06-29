@@ -129,6 +129,7 @@ from Framework.Utilities import CommonUtil
 import common_functions as common # Functions that are common to all modules
 from Framework.Built_In_Automation.Shared_Resources import BuiltInFunctionSharedResources as sr
 from Framework.Utilities.CommonUtil import passed_tag_list, failed_tag_list, skipped_tag_list # Allowed return strings, used to normalize pass/fail
+from Framework.Built_In_Automation.Shared_Resources import LocateElement
 
 # Recall dependency, if not already set
 dependency = None
@@ -209,14 +210,14 @@ def Sequential_Actions(step_data, _dependency = {}, _run_time_params = '', _file
                     # Only run this when we have two conditional actions for this data set (a true and a false preferably)
                     if len(logic_row) == 2:
                         CommonUtil.ExecLog(sModuleInfo, "Found 2 conditional actions - moving ahead with them", 1)
-                        return Conditional_Action_Handler(step_data, data_set, row, logic_row) # Pass step_data, and current iteration of data set to decide which data sets will be processed next
+                        return Conditional_Action_Handler(step_data, data_set, row, logic_row, result) # Pass step_data, and current iteration of data set to decide which data sets will be processed next
                         # At this point, we don't process any more data sets, which is why we return here. The conditional action function takes care of the rest of the execution
                 
                 # If middle column = action, call action handler
                 elif "action" in action_name: # Must be last, since it's a single word that also exists in other action types
                     CommonUtil.ExecLog(sModuleInfo, "Checking the action to be performed in the action row: %s" % str(row), 0)
                     result = Action_Handler(data_set, row) # Pass data set, and action_name to action handler
-                    if result == [] or result == "failed": # Check result of action handler
+                    if result in failed_tag_list: # Check result of action handler
                         return "failed"
                 
                 # Middle column not listed above, so data set is wrong
@@ -232,35 +233,27 @@ def Sequential_Actions(step_data, _dependency = {}, _run_time_params = '', _file
 
  
 
-def Conditional_Action_Handler(step_data, data_set, row, logic_row):
+def Conditional_Action_Handler(step_data, data_set, row, logic_row, result):
     ''' Process conditional actions, called only by Sequential_Actions() '''
      
     sModuleInfo = inspect.stack()[0][3] + " : " + inspect.getmoduleinfo(__file__).name
     CommonUtil.ExecLog(sModuleInfo,"Function Start", 0)
 
+    # Get module and dynamically load it
     module = row[1].split(' ')[0]
     load_sa_modules(module)
-    if module == 'appium':
-        Get_Element_Step_Data_Appium = getattr(eval(module), 'Get_Element_Step_Data_Appium')
-        element_step_data = Get_Element_Step_Data_Appium([data_set]) # Pass data set as a list, and get back anything that's not an "action" or "conditional action"
-        Validate_Step_Data = getattr(eval(module), 'Validate_Step_Data')
-        returned_step_data_list = Validate_Step_Data(element_step_data) # Make sure the element step data we got back from above is good
-        if ((returned_step_data_list == []) or (returned_step_data_list == "failed")): # Element step data is bad, so fail
-            CommonUtil.ExecLog(sModuleInfo, "Element data is bad: %s" % str(element_step_data), 3)
-            return "failed"
-        else: # Element step data is good, so continue
-            # Check if element from data set exists on device
-            try:
-                Get_Element_Appium = getattr(eval(module), 'Get_Element_Appium')
-                Element = Get_Element_Appium(returned_step_data_list[0], returned_step_data_list[1], returned_step_data_list[2], returned_step_data_list[3], returned_step_data_list[4])
-                if Element == 'failed': # Element doesn't exist, proceed with the step data following the fail/false path
-                    logic_decision = "false"
-                else: # Any other return means we found the element, proceed with the step data following the pass/true pass
-                    logic_decision = "true"
-            except Exception: # Element doesn't exist, proceed with the step data following the fail/false path
-                CommonUtil.ExecLog(sModuleInfo, "Could not find element in the by the criteria...", 3)
+    
+    if module == 'appium' or module == 'selenium':
+        try:
+            Element = LocateElement.Get_Element(data_set, eval(module).get_driver()) # Get the element object or 'failed'
+            if Element in failed_tag_list:
+                CommonUtil.ExecLog(sModuleInfo, "Conditional Actions could not find the element", 3)
                 logic_decision = "false"
-                return CommonUtil.Exception_Handler(sys.exc_info())
+            else:
+                logic_decision = "true"
+        except: # Element doesn't exist, proceed with the step data following the fail/false path
+            CommonUtil.ExecLog(sModuleInfo, "Conditional Actions could not find the element", 3)
+            logic_decision = "false"
                          
     elif module == 'rest':
         Get_Element_Step_Data = getattr(eval(module), 'Get_Element_Step_Data')
@@ -278,31 +271,6 @@ def Conditional_Action_Handler(step_data, data_set, row, logic_row):
             try:
                 Get_Response = getattr(eval(module), 'Get_Response')
                 Element = Get_Response(element_step_data[0])
-                if Element == 'failed':  # Element doesn't exist, proceed with the step data following the fail/false path
-                    logic_decision = "false"
-                else:  # Any other return means we found the element, proceed with the step data following the pass/true pass
-                    logic_decision = "true"
-            except Exception:  # Element doesn't exist, proceed with the step data following the fail/false path
-                CommonUtil.ExecLog(sModuleInfo, "Could not find element in the by the criteria...", 3)
-                logic_decision = "false"
-                return CommonUtil.Exception_Handler(sys.exc_info())
-
-    elif module == 'selenium':
-        Get_Element_Step_Data = getattr(eval(module), 'Get_Element_Step_Data')
-        element_step_data = Get_Element_Step_Data(
-            data_set)  # Pass data set as a list, and get back anything that's not an "action" or "conditional action"
-        Validate_Step_Data = getattr(eval(module), 'Validate_Step_Data')
-        returned_step_data_list = Validate_Step_Data(
-            [element_step_data[0]])  # Make sure the element step data we got back from above is good
-        if ((returned_step_data_list == []) or (
-            returned_step_data_list == "failed")):  # Element step data is bad, so fail
-            CommonUtil.ExecLog(sModuleInfo, "Element data is bad: %s" % str(element_step_data), 3)
-            return "failed"
-        else:  # Element step data is good, so continue
-            # Check if element from data set exists on device
-            try:
-                Get_Element = getattr(eval(module), 'Get_Element')
-                Element = Get_Element(returned_step_data_list[0], returned_step_data_list[1], returned_step_data_list[2], returned_step_data_list[3], returned_step_data_list[4])
                 if Element == 'failed':  # Element doesn't exist, proceed with the step data following the fail/false path
                     logic_decision = "false"
                 else:  # Any other return means we found the element, proceed with the step data following the pass/true pass
@@ -338,7 +306,7 @@ def Conditional_Action_Handler(step_data, data_set, row, logic_row):
                 return CommonUtil.Exception_Handler(sys.exc_info())
 
     else:
-        CommonUtil.ExecLog(sModuleInfo, "The conditional action you entered is incorrect. Please provide accurate information on the data set(s).", 3)
+        CommonUtil.ExecLog(sModuleInfo, "Either no module was specified in the Conditional Action line, or it is incorrect", 3)
         return "failed"
 
     # Process the path as defined above (pass/fail)
