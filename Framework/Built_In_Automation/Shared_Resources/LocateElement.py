@@ -100,7 +100,7 @@ def _construct_xpath_list(parameter_list,add_dot=False):
         #these are special cases where we cannot treat their attribute as any other attribute such as id, class and so on...  
         excluded_attribute = ["*text", "text", "tag", "css", "index","xpath","switch frame","switch window","switch alert","switch active"]
         for each_data_row in parameter_list:
-            attribute = (each_data_row[0].strip()).lower()
+            attribute = (each_data_row[0].strip())
             attribute_value = each_data_row[2]
             if attribute == "text":
                 text_value = '[text()="%s"]'%attribute_value
@@ -148,8 +148,8 @@ def _switch(step_data_set):
         # user should enter multiple frame in this order parent > child > grand child ... and so on
         if "switch frame" in [x[0] for x in step_data_set]: 
             frame_switch = filter(lambda x: 'switch frame' == x[0], step_data_set) [0][2]
-            # first we split by > and then we reconstruct the list by striping trailing spaces and lowering all letters
-            frame_switch_list = [(x.strip()).lower() for x in (frame_switch.split(">"))]
+            # first we split by > and then we reconstruct the list by striping trailing spaces 
+            frame_switch_list = [(x.strip()) for x in (frame_switch.split(">"))]
             # we switch each frame in order 
             for each_frame in frame_switch_list:
                 CommonUtil.ExecLog(sModuleInfo, "switching frame; %s"%each_frame, 1)
@@ -158,8 +158,8 @@ def _switch(step_data_set):
         elif "switch window" in [x[0] for x in step_data_set]: 
             #get the value of switch window
             window_switch = filter(lambda x: 'switch window' == x[0], step_data_set) [0][2]
-            # first we split by > and then we reconstruct the list by striping trailing spaces and lowering all letters
-            window_switch_list = [(x.strip()).lower() for x in (window_switch.split(">"))]
+            # first we split by > and then we reconstruct the list by striping trailing spaces 
+            window_switch_list = [(x.strip()) for x in (window_switch.split(">"))]
             # we switch each window in order 
             for each_window in window_switch_list:
                 CommonUtil.ExecLog(sModuleInfo, "switching window; %s"%each_window, 1)
