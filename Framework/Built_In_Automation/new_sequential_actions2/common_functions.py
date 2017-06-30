@@ -133,8 +133,10 @@ def adjust_element_parameters(step_data):
             new_row = list(row) # Copy tuple of row as list, so we can change it
 
             # Special handling of "id"
-            if new_row[0] == 'id' and dependency['Mobile'].lower() == 'android': new_row[0] = 'resource-id' # If user specifies id, they likely mean "resource-id"
-            if new_row[0] == 'id' and dependency['Mobile'].lower() == 'ios': new_row[0] = 'accessibility id' # If user specifies id, they likely mean "resource-id" 
+            for id_adj_row in data_set: # Find if this is an appium test step
+                if 'appium' in id_adj_row[1]: # Yes, so adjust
+                    if new_row[0] == 'id' and dependency['Mobile'].lower() == 'android': new_row[0] = 'resource-id' # If user specifies id, they likely mean "resource-id"
+                    if new_row[0] == 'id' and dependency['Mobile'].lower() == 'ios': new_row[0] = 'accessibility id' # If user specifies id, they likely mean "resource-id" 
             
             # Remove any element parameter that doesn't match the dependency
             if dependency['Mobile'].lower() in new_row[1]: # If dependency matches this Sub-Field, then save it

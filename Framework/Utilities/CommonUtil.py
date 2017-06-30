@@ -193,6 +193,56 @@ def PhysicalAvailableMemory():
     except Exception, e:
         return Exception_Handler(sys.exc_info())
 
+#####New screenshot testing
+#!!! STATUS: UNTESTED. NEED TO KNOW HOW TO DECIDE IF DESKTOP OR MOBILE SCREENSHOT
+#sudo pip install pyscreenshot
+
+from PIL import Image # Picture quality
+try: from PIL import ImageGrab as ImageGrab_Mac_Win # Screen capture for Mac and Windows
+except: pass
+try: import pyscreenshot as ImageGrab_Linux # Screen capture for Linux/Unix
+except: pass
+
+temp_config=os.path.join(os.path.join(FL.get_home_folder(),os.path.join('Desktop',os.path.join('AutomationLog',ConfigModule.get_config_value('Temp','_file')))))
+
+def TakeScreenShot_LUCAS_NEW(ImageName,local_run=False):
+    ''' Capture screen of mobile or desktop '''
+    
+    # Define variables
+    sModuleInfo = inspect.stack()[0][3] + " : " + inspect.getmoduleinfo(__file__).name
+    chars_to_remove = ["?","*","\"","<",">","|","\\","\/",":"] # Symbols that can't be used in filename
+    picture_quality = 4 # Quality of picture
+    picture_size = 800, 600 # Size of image (for reduction in file size)
+
+    # Read values from config file
+    take_screenshot_settings = ConfigModule.get_config_value('RunDefinition', 'take_screenshot') # True/False to take screenshot from settings.conf
+    local_run = ConfigModule.get_config_value('RunDefinition', 'local_run') # True/False to run only locally, in which case we do not take screenshot from settings.conf
+    image_folder=ConfigModule.get_config_value('sectionOne','screen_capture_folder', temp_config) # Get screen capture directory from temporary config file that is dynamically created
+
+    # Decide if screenshot should be captured
+    if take_screenshot_settings.lower() == 'false' or local_run.lower() == 'false':
+        return
+
+    # Adjust filename and create full path (remove invalid characters, convert spaces to underscore, remove leading and trailing spaces)
+    ImageName=os.path.join(image_folder, TimeStamp("utc") + "_" + (ImageName.translate(None,''.join(chars_to_remove))).strip().replace(" ","_") + ".jpg")
+
+    # Capture screenshot of desktop
+    if os.name == 'posix':
+        # Need to install the module!!!!
+        pass # Remove this!!!
+        #image = ImageGrab_Linux.grab()
+    elif os.name == 'nt' or os.name == 'darwin':
+        image = ImageGrab_Mac_Win.grab()
+    image.save(ImageName, format = "JPEG") # Save to disk
+
+    # Capture screenshot of mobile
+    #??? Where do we get this? How to get from Zeuz ??? Do we need to pass the driver?
+    #How to get driver?: driver.save_screenshot(ImageName)
+    
+    # Lower the picture quality
+    image = Image.open(ImageName) # Re-open in standard format
+    image.thumbnail(picture_size, Image.ANTIALIAS) # Resize picture to lower file size
+    image.save(ImageName, format = "JPEG", quality = picture_quality) # Change quality to reduce file size
 
 
 def TakeScreenShot(ImageName,local_run=False):
