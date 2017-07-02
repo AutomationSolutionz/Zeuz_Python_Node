@@ -242,6 +242,10 @@ def Conditional_Action_Handler(step_data, data_set, row, logic_row, result):
     # Get module and dynamically load it
     module = row[1].split(' ')[0]
     load_sa_modules(module)
+
+    data_set = shared_variable_to_value(data_set)
+    if data_set in failed_tag_list:
+        return 'failed'
     
     if module == 'appium' or module == 'selenium':
         try:
@@ -435,5 +439,4 @@ def shared_variable_to_value(data_set):
         return new_data # Return parsed data_set
     except Exception:
         return CommonUtil.Exception_Handler(sys.exc_info())
-
 
