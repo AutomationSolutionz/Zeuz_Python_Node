@@ -205,7 +205,7 @@ except: pass
 
 temp_config=os.path.join(os.path.join(FL.get_home_folder(),os.path.join('Desktop',os.path.join('AutomationLog',ConfigModule.get_config_value('Temp','_file')))))
 
-def TakeScreenShot_LUCAS_NEW(ImageName,local_run=False):
+def TakeScreenShot(ImageName,local_run=False):
     ''' Capture screen of mobile or desktop '''
     
     # Define variables
@@ -227,11 +227,9 @@ def TakeScreenShot_LUCAS_NEW(ImageName,local_run=False):
     ImageName=os.path.join(image_folder, TimeStamp("utc") + "_" + (ImageName.translate(None,''.join(chars_to_remove))).strip().replace(" ","_") + ".jpg")
 
     # Capture screenshot of desktop
-    if os.name == 'posix':
-        # Need to install the module!!!!
-        pass # Remove this!!!
-        #image = ImageGrab_Linux.grab()
-    elif os.name == 'nt' or os.name == 'darwin':
+    if sys.platform == 'linux2':
+        image = ImageGrab_Linux.grab()
+    elif sys.platform  == 'win32' or sys.platform  == 'darwin':
         image = ImageGrab_Mac_Win.grab()
     image.save(ImageName, format = "JPEG") # Save to disk
 
@@ -245,7 +243,7 @@ def TakeScreenShot_LUCAS_NEW(ImageName,local_run=False):
     image.save(ImageName, format = "JPEG", quality = picture_quality) # Change quality to reduce file size
 
 
-def TakeScreenShot(ImageName,local_run=False):
+def TakeScreenShot_old(ImageName,local_run=False):
 
     """
     Takes screenshot and saves it as jpg file
@@ -265,7 +263,7 @@ def TakeScreenShot(ImageName,local_run=False):
                 image_folder=ConfigModule.get_config_value('sectionOne','screen_capture_folder',temp_config)
                 #ImageFolder = Global.TCLogFolder + os.sep + "Screenshots"
                 ImageFolder=image_folder
-                if os.name == 'posix':
+                if sys.platform == 'posix':
                     """
                     ImageFolder = FileUtil.ConvertWinPathToMac(ImageFolder)
                     path = ImageFolder + os.sep + TimeStamp("utc") + "_" + ImageName + ".png"
@@ -317,6 +315,7 @@ def TakeScreenShot(ImageName,local_run=False):
                     #mobile device connected to linux machine
                      
                     #android working copy
+                    '''
                     try:
                         output = os.system("adb devices")
                         if output is not None:
@@ -334,6 +333,7 @@ def TakeScreenShot(ImageName,local_run=False):
                     #ios device working copy
                     full_location=ImageFolder+os.sep+TimeStamp("utc")+"_"+ImageName+'_ios.tiff'
                     os.system("idevicescreenshot %s"%full_location)
+                    '''
  
                 elif sys.platform == 'darwin':
                     #mobile device connected to mac os x machine
