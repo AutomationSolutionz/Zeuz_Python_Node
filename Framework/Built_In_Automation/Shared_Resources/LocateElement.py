@@ -20,23 +20,25 @@ generic_driver = None
 global driver_type 
 driver_type = None
 
-def Get_Element(step_data_set,driver):
+def Get_Element(step_data_set,driver,query_debug=False):
     '''
     This funciton will return "Failed" if something went wrong, else it will always return a single element
+    if you are trying to produce a query from a step dataset, make sure you provide query_debug =True.  This is
+    good when you are just trying to see how your step data would be converted to a query for testing local runs
     '''
     try:
         sModuleInfo = inspect.stack()[0][3] + " : " + inspect.getmoduleinfo(__file__).name
         generic_driver = driver
         global generic_driver
         #Check the driver that is given and set the driver type
-        driver_type =_driver_type()
+        driver_type =_driver_type(query_debug)
         global driver_type
         if driver_type == None:
             CommonUtil.ExecLog(sModuleInfo, "Incorrect driver.  Please validate driver", 3)
             return "failed"
         # We need to switch to default content just in case previous action switched to something else
         try:
-            if driver_type != 'xml':
+            if driver_type != 'xml' or driver_type != "debug":
                 generic_driver.switch_to_default_content()
         except:
             CommonUtil.ExecLog(sModuleInfo, "Incorrect driver.  Unable to switch to default content", 3)
@@ -47,6 +49,12 @@ def Get_Element(step_data_set,driver):
         index_number = _locate_index_number(step_data_set)
         element_query, query_type = _construct_query (step_data_set)
         CommonUtil.ExecLog(sModuleInfo, "Element query used to locate the element: %s. Query method used: %s "%(element_query,query_type), 1)
+        
+        if query_debug == True:
+            print "This query will not be run as query_debu is enabled.  It will only print out in console"
+            print "Your query from the step data provided is:  %s" %element_query
+            print "Your query type is: %s" %query_type
+            return "passed"
         if element_query == False:
             return "failed"
         elif query_type == "xpath" and element_query != False:
@@ -121,7 +129,7 @@ def _construct_query (step_data_set):
     except Exception:
         return CommonUtil.Exception_Handler(sys.exc_info())
 
-def _driver_type():
+def _driver_type(query_debug):
     '''
     This function will find out what type of driver it is.  Query changes slightly for certain cases based on appium, selenium and xml.
     '''
@@ -129,7 +137,9 @@ def _driver_type():
     #check if its Appium, selenium or XML
     try:
         driver_string = str(generic_driver)
-        if "selenium" in driver_string:
+        if query_debug == True:
+            return "debug"
+        elif "selenium" in driver_string:
             driver_type = "selenium"
         elif "appium" in driver_string:
             driver_type = "appium"
