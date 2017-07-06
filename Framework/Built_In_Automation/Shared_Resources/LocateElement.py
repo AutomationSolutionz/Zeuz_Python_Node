@@ -16,6 +16,9 @@ global WebDriver_Wait
 WebDriver_Wait = 10
 global generic_driver 
 generic_driver = None
+#driver type will be set globally so we can use it anytime
+global driver_type 
+driver_type = None
 
 def Get_Element(step_data_set,driver):
     '''
@@ -25,13 +28,20 @@ def Get_Element(step_data_set,driver):
         sModuleInfo = inspect.stack()[0][3] + " : " + inspect.getmoduleinfo(__file__).name
         generic_driver = driver
         global generic_driver
+        #Check the driver that is given and set the driver type
+        driver_type =_driver_type()
+        global driver_type
+        if driver_type == None:
+            CommonUtil.ExecLog(sModuleInfo, "Incorrect driver.  Please validate driver", 3)
+            return "failed"
         # We need to switch to default content just in case previous action switched to something else
         try:
-            generic_driver.switch_to_default_content()
+            if driver_type != 'xml':
+                generic_driver.switch_to_default_content()
         except:
-            # Tested that if you switch to default even when it is default doesn't cause anything.
-            # for xml, we need to do some verification
-            True
+            CommonUtil.ExecLog(sModuleInfo, "Incorrect driver.  Unable to switch to default content", 3)
+            return "failed"
+            
         #here we switch driver if we need to
         _switch(step_data_set)
         index_number = _locate_index_number(step_data_set)
@@ -54,6 +64,7 @@ def _construct_query (step_data_set):
     other feature such as child parameter or multiple element parameter to locate the element
     '''
     try:
+        sModuleInfo = inspect.stack()[0][3] + " : " + inspect.getmoduleinfo(__file__).name
         collect_all_attribute = [x[0] for x in step_data_set]
         # find out if ref exists.  If it exists, it will set the value to True else False
         child_ref_exits = any("child parameter" in s for s in step_data_set)
@@ -84,7 +95,7 @@ def _construct_query (step_data_set):
             #Take the first element, remove ]; add the 'and'; add back the ]; put the modified back into list. 
             xpath_element_list[1] = (xpath_element_list[1]).replace("]","") + ' and ' + child_xpath_string + "]"
             return (_construct_xpath_string_from_list(xpath_element_list), "xpath")
-        elif child_ref_exits == False and parent_ref_exits == True:
+        elif child_ref_exits == False and parent_ref_exits == True and (driver_type=="appium" or driver_type == "selenium"):
             '''  If  There is parent but making sure no child'''
             xpath_parent_list =  _construct_xpath_list(parent_parameter_list)
             parent_xpath_string = _construct_xpath_string_from_list(xpath_parent_list) 
@@ -92,6 +103,19 @@ def _construct_query (step_data_set):
             #Take the first element, remove ]; add the 'and'; add back the ]; put the modified back into list. 
             xpath_element_list[1] = (xpath_element_list[1]).replace("]","") + ' and ' + parent_xpath_string + "]"
             return (_construct_xpath_string_from_list(xpath_element_list), "xpath")
+        elif child_ref_exits == False and parent_ref_exits == True and (driver_type=="xml"):
+            '''  If  There is parent but making sure no child'''
+            xpath_parent_list =  _construct_xpath_list(parent_parameter_list)
+            parent_xpath_string = _construct_xpath_string_from_list(xpath_parent_list) 
+            #For xml we just put parent first and element later
+            xpath_element_list = _construct_xpath_list(element_parameter_list,True)
+            element_xpath_string = _construct_xpath_string_from_list(xpath_element_list)
+            xpath_element_list_combined = parent_xpath_string + element_xpath_string
+            return (_construct_xpath_string_from_list(xpath_element_list_combined), "xpath")
+        elif child_ref_exits == True  and (driver_type=="xml"):
+            '''Currently we do not support child as reference for xml'''
+            CommonUtil.ExecLog(sModuleInfo, "Currently we do not support child as reference for xml.  Please contact info@automationsolutionz.com for help", 3)          
+            return False, False
         else:
             return False, False
     except Exception:
@@ -99,13 +123,20 @@ def _construct_query (step_data_set):
 
 def _driver_type():
     '''
-    This function will find out what type of driver it is.  For xml, we may need to change some of our queries so we will use this as well
+    This function will find out what type of driver it is.  Query changes slightly for certain cases based on appium, selenium and xml.
     '''
+    driver_type = None
+    #check if its Appium, selenium or XML
     try:
-        if 'appium' in str(getattr(generic_driver, '__module__')): 
+        driver_string = str(generic_driver)
+        if "selenium" in driver_string:
+            driver_type = "selenium"
+        elif "appium" in driver_string:
             driver_type = "appium"
+        elif "Element" in driver_string:
+            driver_type = "xml"
         else:
-            driver_type = "generic"
+            driver_type = None
         return driver_type
     except Exception:
         return CommonUtil.Exception_Handler(sys.exc_info())
@@ -117,19 +148,15 @@ def _construct_xpath_list(parameter_list,add_dot=False):
     try:
         #Setting the list empty
         element_main_body_list = []
-        #identifying type of driver and based on it query will be adjusted
-        driver_type = _driver_type()
-        if driver_type in failed_tag_list:
-            driver_type = "generic"
         #these are special cases where we cannot treat their attribute as any other attribute such as id, class and so on...  
         excluded_attribute = ["*text", "text", "tag", "css", "index","xpath","switch frame","switch window","switch alert","switch active"]
         for each_data_row in parameter_list:
             attribute = (each_data_row[0].strip())
             attribute_value = each_data_row[2]
-            if attribute == "text" and driver_type == "generic":
+            if attribute == "text" and (driver_type == "selenium" or driver_type == "xml"):
                 text_value = '[text()="%s"]'%attribute_value
                 element_main_body_list.append(text_value)
-            elif attribute == "*text" and driver_type == "generic":
+            elif attribute == "*text" and (driver_type == "selenium" or driver_type == "xml"):
                 text_value = '[contains(text(),"%s")]'%attribute_value    
                 element_main_body_list.append(text_value)
             elif attribute == "text" and driver_type == "appium":
