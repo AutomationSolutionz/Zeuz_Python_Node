@@ -38,7 +38,7 @@ def Get_Element(step_data_set,driver,query_debug=False):
             return "failed"
         # We need to switch to default content just in case previous action switched to something else
         try:
-            if driver_type != 'xml' or driver_type != "debug":
+            if not (driver_type == 'xml' or driver_type == "debug"):
                 generic_driver.switch_to_default_content()
         except:
             CommonUtil.ExecLog(sModuleInfo, "Incorrect driver.  Unable to switch to default content", 3)
@@ -300,4 +300,10 @@ def _locate_index_number(step_data_set):
     
 
 
-
+'''
+Sample Example:
+step_data_set =  [ ( 'id' , 'element parameter' , 'twotabsearchtextbox' , False , False ) , ( 'text' , 'selenium action' , 'Camera' , False , False ) ]
+driver = None
+query_debug = True
+Get_Element(step_data_set,driver,query_debug)
+'''
