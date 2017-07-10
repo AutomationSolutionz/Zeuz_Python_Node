@@ -37,26 +37,35 @@ def Login():
             
         # Login to server
         if r != False: # Server is up
-            r = RequestFormatter.Get('login_api',user_info_object)
-            print "Authentication check for user='%s', project='%s', team='%s'"%(username,project,team)
-            if r:
-                print "Authentication Successful"
-                machine_object=update_machine(dependency_collection())
-                if machine_object['registered']:
-                    tester_id=machine_object['name']
-                    RunAgain = RunProcess(tester_id)
-                    if RunAgain == True:
-                        Login()
+            try:
+                r = RequestFormatter.Get('login_api',user_info_object)
+                print "Authentication check for user='%s', project='%s', team='%s'"%(username,project,team)
+                if r:
+                    print "Authentication Successful"
+                    machine_object=update_machine(dependency_collection())
+                    if machine_object['registered']:
+                        tester_id=machine_object['name']
+                        RunAgain = RunProcess(tester_id)
+                        if RunAgain == True:
+                            Login()
+                    else:
+                        return False
                 else:
+                    print "Authentication Failed"
                     return False
-            else:
-                print "Authentication Failed"
-                return False
+            except Exception, e:
+                exc_type, exc_obj, exc_tb = sys.exc_info()
+                fname = os.path.split(exc_tb.tb_frame.f_code.co_filename)[1]
+                Error_Detail = ((str(exc_type).replace("type ", "Error Type: ")) + ";" +  "Error Message: " + str(exc_obj) +";" + "File Name: " + fname + ";" + "Line: "+ str(exc_tb.tb_lineno))
+                print Error_Detail
+                print "Error logging in, waiting 60 seconds before trying again"
+                time.sleep(60)
         
         # Server down, wait and retry
         else:
             print "Server down, waiting 60 seconds before trying again"
-            time.sleep(6)
+            time.sleep(60)
+            
 def RunProcess(sTesterid):
     while (1):
         try:
