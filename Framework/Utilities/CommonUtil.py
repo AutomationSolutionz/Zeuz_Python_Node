@@ -193,23 +193,37 @@ def PhysicalAvailableMemory():
     except Exception, e:
         return Exception_Handler(sys.exc_info())
 
-#####New screenshot testing
-#!!! STATUS: UNTESTED. NEED TO KNOW HOW TO DECIDE IF DESKTOP OR MOBILE SCREENSHOT
-#sudo pip install pyscreenshot
-
 from PIL import Image # Picture quality
 try: from PIL import ImageGrab as ImageGrab_Mac_Win # Screen capture for Mac and Windows
 except: pass
 try: import pyscreenshot as ImageGrab_Linux # Screen capture for Linux/Unix
 except: pass
 
+
+#import Framework.Built_In_Automation.Shared_Resources.BuiltInFunctionSharedResources.Get_Shared_Variables 
+#Test_Shared_Variables = Framework.Built_In_Automation.Shared_Resources.BuiltInFunctionSharedResources.Test_Shared_Variables
+#Get_Shared_Variables = Framework.Built_In_Automation.Shared_Resources.BuiltInFunctionSharedResources.Get_Shared_Variables
+#del Framework.Built_In_Automation.Shared_Resources.BuiltInFunctionSharedResources
+#Test_Shared_Variables = __import__('Framework.Built_In_Automation.Shared_Resources.BuiltInFunctionSharedResources.Test_Shared_Variables', globals(), locals(), [], -1)
+#Get_Shared_Variables = __import__('Framework.Built_In_Automation.Shared_Resources.BuiltInFunctionSharedResources.Get_Shared_Variables', globals(), locals(), [], -1)
+
 temp_config=os.path.join(os.path.join(FL.get_home_folder(),os.path.join('Desktop',os.path.join('AutomationLog',ConfigModule.get_config_value('Temp','_file')))))
+
+
+screen_capture_type = 'desktop'
+screen_capture_driver = None
+def set_screen_capture_type(stype, driver):
+    global screen_capture_type, screen_capture_driver
+    screen_capture_type = stype
+    screen_capture_driver = driver
+    print "NEW>>>>>>>>>>>>>>>>>>>>>",screen_capture_type, screen_capture_driver
 
 def TakeScreenShot(ImageName,local_run=False):
     ''' Capture screen of mobile or desktop '''
     
     # Define variables
     sModuleInfo = inspect.stack()[0][3] + " : " + inspect.getmoduleinfo(__file__).name
+    ExecLog(sModuleInfo, "Function start", 0)
     chars_to_remove = ["?","*","\"","<",">","|","\\","\/",":"] # Symbols that can't be used in filename
     picture_quality = 4 # Quality of picture
     picture_size = 800, 600 # Size of image (for reduction in file size)
@@ -218,29 +232,38 @@ def TakeScreenShot(ImageName,local_run=False):
     take_screenshot_settings = ConfigModule.get_config_value('RunDefinition', 'take_screenshot') # True/False to take screenshot from settings.conf
     local_run = ConfigModule.get_config_value('RunDefinition', 'local_run') # True/False to run only locally, in which case we do not take screenshot from settings.conf
     image_folder=ConfigModule.get_config_value('sectionOne','screen_capture_folder', temp_config) # Get screen capture directory from temporary config file that is dynamically created
-
+    
     # Decide if screenshot should be captured
-    if take_screenshot_settings.lower() == 'false' or local_run.lower() == 'false':
+    if take_screenshot_settings.lower() == 'false' or local_run.lower() == 'true':
+        ExecLog(sModuleInfo, "Skipping screenshot due to screenshot or local_run setting", 0)
         return
 
     # Adjust filename and create full path (remove invalid characters, convert spaces to underscore, remove leading and trailing spaces)
     ImageName=os.path.join(image_folder, TimeStamp("utc") + "_" + (ImageName.translate(None,''.join(chars_to_remove))).strip().replace(" ","_") + ".jpg")
-
-    # Capture screenshot of desktop
-    if sys.platform == 'linux2':
-        image = ImageGrab_Linux.grab()
-    elif sys.platform  == 'win32' or sys.platform  == 'darwin':
-        image = ImageGrab_Mac_Win.grab()
-    image.save(ImageName, format = "JPEG") # Save to disk
-
-    # Capture screenshot of mobile
-    #??? Where do we get this? How to get from Zeuz ??? Do we need to pass the driver?
-    #How to get driver?: driver.save_screenshot(ImageName)
     
+    print ">>>>>>",screen_capture_type, screen_capture_driver, ImageName
+
+    try:
+        if screen_capture_type == 'desktop': # Capture screenshot of desktop
+            if sys.platform == 'linux2':
+                image = ImageGrab_Linux.grab()
+                image.save(ImageName, format = "JPEG") # Save to disk
+            elif sys.platform  == 'win32' or sys.platform  == 'darwin':
+                image = ImageGrab_Mac_Win.grab()
+                image.save(ImageName, format = "JPEG") # Save to disk
+        elif screen_capture_driver != None: # Capture screenshot of mobile
+            screen_capture_driver.save_screenshot(ImageName)
+        else:
+            ExecLog(sModuleInfo, "Unknown capture type: %s, or invalid driver: %s" % (str(screen_capture_type), str(screen_capture_driver)), 3)
+    except Exception, e: return Exception_Handler(sys.exc_info())
+
     # Lower the picture quality
-    image = Image.open(ImageName) # Re-open in standard format
-    image.thumbnail(picture_size, Image.ANTIALIAS) # Resize picture to lower file size
-    image.save(ImageName, format = "JPEG", quality = picture_quality) # Change quality to reduce file size
+    if os.path.exists(ImageName): # Make sure image was saved
+        image = Image.open(ImageName) # Re-open in standard format
+        image.thumbnail(picture_size, Image.ANTIALIAS) # Resize picture to lower file size
+        image.save(ImageName, format = "JPEG", quality = picture_quality) # Change quality to reduce file size
+    else:
+        print "Error saving %s screenshot to %s" % (screen_capture_type, ImageName)
 
 
 def TakeScreenShot_old(ImageName,local_run=False):

@@ -177,6 +177,12 @@ def Sequential_Actions(step_data, _dependency = {}, _run_time_params = '', _file
         sr.Set_Shared_Variables('file_attachment', _file_attachment) # Add entire file attachment dictionary to Shared Variables
         for file_attachment_name in _file_attachment: # Add each attachment as it's own Shared Variable, so the user can easily refer to it
             sr.Set_Shared_Variables(file_attachment_name, _file_attachment[file_attachment_name])
+    
+    # Set screen capture type (desktop/mobile) as shared variable, so TakeScreenShot() can read it
+    appium_driver = None
+    sr.Set_Shared_Variables('screen_capture', screen_capture.lower().strip()) # Save the screen capture type
+    if sr.Test_Shared_Variables('appium_driver'): appium_driver = sr.Get_Shared_Variables('appium_driver') # If the appium driver was set, get the driver object
+    CommonUtil.set_screen_capture_type(sr.Get_Shared_Variables('screen_capture'), appium_driver) # Update the screen capture with the type and driver object if available
 
     # Prepare step data for processing
     step_data = common.sanitize(step_data, column = 1) # Sanitize Sub-Field
