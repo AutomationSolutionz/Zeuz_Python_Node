@@ -10,7 +10,7 @@ from Framework.Utilities import CommonUtil
 from Framework.Built_In_Automation.XML import BuiltInFunctions_XML
 
 
-def sequential_actions_xml(dependency,run_time_params,step_data,file_attachment,temp_q):
+def sequential_actions_xml(dependency,run_time_params,step_data,file_attachment,temp_q,screen_capture):
     try:
         sTestStepReturnStatus = BuiltInFunctions_XML.xml_sequential_actions(step_data)
         return CommonUtil.Result_Analyzer(sTestStepReturnStatus,temp_q)    

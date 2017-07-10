@@ -14,7 +14,7 @@ local_run = False
 
 
 
-def sequential_actions_desktop(dependency,run_time_params,step_data,file_attachment,temp_q):
+def sequential_actions_desktop(dependency,run_time_params,step_data,file_attachment,temp_q,screen_capture):
     sModuleInfo = inspect.stack()[0][3] + " : " + inspect.getmoduleinfo(__file__).name
     try:
         CommonUtil.ExecLog(sModuleInfo,"Enter: Step - Sequential Actions",1,local_run)

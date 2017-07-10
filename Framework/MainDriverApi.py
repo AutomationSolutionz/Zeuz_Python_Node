@@ -89,6 +89,15 @@ def update_test_case_progress_on_server(run_id, test_case, sTestCaseStartTime):
 def get_all_steps_of_a_test_case(run_id, test_case):
     return RequestFormatter.Get('test_step_fetch_for_test_case_run_id_api',{'run_id': run_id, 'test_case': test_case})
 
+#returns step_id of a test step
+def get_step_id_of_a_test_step(stepname):
+    return RequestFormatter.Get('test_step_id_fetch_from_step_name_api',{'stepname': stepname})
+
+
+#returns screen cature settings of a test step
+def get_screen_capture_settings_of_a_test_step(step_id):
+    return RequestFormatter.Get('screen_capture_fetch_for_test_step_api',{'step_id': step_id})
+
 
 #returns test step details needed to run the test step
 def get_step_meta_data_of_a_step(run_id, test_case, StepSeq):
@@ -299,15 +308,19 @@ def call_driver_function_of_test_step(sModuleInfo, TestStepsList, StepSeq, step_
                     step_name = (TestStepsList[StepSeq - 1][7]).strip()
                 else:
                     step_name = current_step_name
+                step_id = get_step_id_of_a_test_step(step_name)
+                step_id = step_id[0]
                 step_name = step_name.lower().replace(' ', '_')
                 try:
                     # importing functions from driver
                     functionTocall = getattr(module_name, step_name)
                     simple_queue = Queue.Queue()
+                    screen_capture = get_screen_capture_settings_of_a_test_step(step_id)
+                    screen_capture = screen_capture[0]
 
                     if ConfigModule.get_config_value('RunDefinition', 'Threading') in passed_tag_list:
                         stepThread = threading.Thread(target=functionTocall, args=(
-                            final_dependency, final_run_params, test_steps_data, file_specific_steps, simple_queue))
+                            final_dependency, final_run_params, test_steps_data, file_specific_steps, simple_queue,screen_capture))
                         CommonUtil.ExecLog(sModuleInfo, "Starting Test Step Thread..", 1)
                         stepThread.start()
                         # Wait for the Thread to finish or until timeout
@@ -341,7 +354,7 @@ def call_driver_function_of_test_step(sModuleInfo, TestStepsList, StepSeq, step_
                                     CommonUtil.Exception_Handler(sys.exc_info())
                     else:
                         sStepResult = functionTocall(final_dependency, final_run_params, test_steps_data,
-                                                     file_specific_steps, simple_queue)
+                                                     file_specific_steps, simple_queue,screen_capture)
                 except:
                     CommonUtil.Exception_Handler(sys.exc_info())
                     sStepResult = "Failed"
