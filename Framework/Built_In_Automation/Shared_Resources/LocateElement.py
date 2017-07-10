@@ -38,7 +38,7 @@ def Get_Element(step_data_set,driver,query_debug=False):
             return "failed"
         # We need to switch to default content just in case previous action switched to something else
         try:
-            if not (driver_type == 'xml' or driver_type == "debug"):
+            if driver_type == 'selenium':
                 generic_driver.switch_to_default_content()
         except:
             CommonUtil.ExecLog(sModuleInfo, "Incorrect driver.  Unable to switch to default content", 3)
