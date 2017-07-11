@@ -12,6 +12,15 @@ import uuid
 from Framework.Utilities import RequestFormatter
 import subprocess
 
+# For TakeScreenShot()
+from PIL import Image # Picture quality
+try: from PIL import ImageGrab as ImageGrab_Mac_Win # Screen capture for Mac and Windows
+except: pass
+try: import pyscreenshot as ImageGrab_Linux # Screen capture for Linux/Unix
+except: pass
+import Framework.Built_In_Automation.Shared_Resources.BuiltInFunctionSharedResources # Must be imported in this manor in avoid circular imports
+
+# Get file path for temporary config file
 temp_config=os.path.join(os.path.join(FL.get_home_folder(),os.path.join('Desktop',os.path.join('AutomationLog',ConfigModule.get_config_value('Temp','_file')))))
 
 passed_tag_list = ['Pass', 'pass', 'PASS', 'PASSED', 'Passed', 'passed', 'true', 'TRUE', 'True', '1', 'Success','success', 'SUCCESS', True]
@@ -193,33 +202,10 @@ def PhysicalAvailableMemory():
     except Exception, e:
         return Exception_Handler(sys.exc_info())
 
-from PIL import Image # Picture quality
-try: from PIL import ImageGrab as ImageGrab_Mac_Win # Screen capture for Mac and Windows
-except: pass
-try: import pyscreenshot as ImageGrab_Linux # Screen capture for Linux/Unix
-except: pass
-
-
-#import Framework.Built_In_Automation.Shared_Resources.BuiltInFunctionSharedResources.Get_Shared_Variables 
-#Test_Shared_Variables = Framework.Built_In_Automation.Shared_Resources.BuiltInFunctionSharedResources.Test_Shared_Variables
-#Get_Shared_Variables = Framework.Built_In_Automation.Shared_Resources.BuiltInFunctionSharedResources.Get_Shared_Variables
-#del Framework.Built_In_Automation.Shared_Resources.BuiltInFunctionSharedResources
-#Test_Shared_Variables = __import__('Framework.Built_In_Automation.Shared_Resources.BuiltInFunctionSharedResources.Test_Shared_Variables', globals(), locals(), [], -1)
-#Get_Shared_Variables = __import__('Framework.Built_In_Automation.Shared_Resources.BuiltInFunctionSharedResources.Get_Shared_Variables', globals(), locals(), [], -1)
-
-temp_config=os.path.join(os.path.join(FL.get_home_folder(),os.path.join('Desktop',os.path.join('AutomationLog',ConfigModule.get_config_value('Temp','_file')))))
-
-
-screen_capture_type = 'desktop'
-screen_capture_driver = None
-def set_screen_capture_type(stype, driver = None):
-    global screen_capture_type, screen_capture_driver
-    screen_capture_type = stype
-    screen_capture_driver = driver
-    print "NEW>>>>>>>>>>>>>>>>>>>>>",screen_capture_type, screen_capture_driver
 
 def TakeScreenShot(ImageName,local_run=False):
     ''' Capture screen of mobile or desktop '''
+    # Do not include extension in ImageName, it will be added
     
     # Define variables
     sModuleInfo = inspect.stack()[0][3] + " : " + inspect.getmoduleinfo(__file__).name
@@ -227,37 +213,62 @@ def TakeScreenShot(ImageName,local_run=False):
     chars_to_remove = ["?","*","\"","<",">","|","\\","\/",":"] # Symbols that can't be used in filename
     picture_quality = 20 # Quality of picture
     picture_size = 800, 600 # Size of image (for reduction in file size)
-
+    
     # Read values from config file
     take_screenshot_settings = ConfigModule.get_config_value('RunDefinition', 'take_screenshot') # True/False to take screenshot from settings.conf
     local_run = ConfigModule.get_config_value('RunDefinition', 'local_run') # True/False to run only locally, in which case we do not take screenshot from settings.conf
     image_folder=ConfigModule.get_config_value('sectionOne','screen_capture_folder', temp_config) # Get screen capture directory from temporary config file that is dynamically created
+
+    # Get screen capture type from Shared Variables
+    if Framework.Built_In_Automation.Shared_Resources.BuiltInFunctionSharedResources.Test_Shared_Variables('screen_capture'):
+        screen_capture_type = Framework.Built_In_Automation.Shared_Resources.BuiltInFunctionSharedResources.Get_Shared_Variables('screen_capture')
+    else:
+        screen_capture_type = 'none'
     
     # Decide if screenshot should be captured
-    if take_screenshot_settings.lower() == 'false' or local_run.lower() == 'true':
+    if take_screenshot_settings.lower() == 'false' or local_run.lower() == 'true' or screen_capture_type == 'none':
         ExecLog(sModuleInfo, "Skipping screenshot due to screenshot or local_run setting", 0)
         return
 
+    # Get selenium/appium driver if available
+    screen_capture_driver = None
+    if screen_capture_type == 'web':
+        if Framework.Built_In_Automation.Shared_Resources.BuiltInFunctionSharedResources.Test_Shared_Variables('selenium_driver'):
+            screen_capture_driver = Framework.Built_In_Automation.Shared_Resources.BuiltInFunctionSharedResources.Get_Shared_Variables('selenium_driver')  # If the appium driver was set, get the driver object
+    elif screen_capture_type == 'mobile':
+        if Framework.Built_In_Automation.Shared_Resources.BuiltInFunctionSharedResources.Test_Shared_Variables('appium_driver'):
+            screen_capture_driver = Framework.Built_In_Automation.Shared_Resources.BuiltInFunctionSharedResources.Get_Shared_Variables('appium_driver') # If the appium driver was set, get the driver object
+
     # Adjust filename and create full path (remove invalid characters, convert spaces to underscore, remove leading and trailing spaces)
     ImageName=os.path.join(image_folder, TimeStamp("utc") + "_" + (ImageName.translate(None,''.join(chars_to_remove))).strip().replace(" ","_") + ".jpg")
+    ExecLog(sModuleInfo, "Capturing screen on %s, with driver: %s, and saving to %s" % (str(screen_capture_type), str(screen_capture_driver), ImageName), 0)
     
-    print ">>>>>>",screen_capture_type, screen_capture_driver, ImageName
-
     try:
-        if screen_capture_type == 'desktop': # Capture screenshot of desktop
+        # Capture screenshot of desktop
+        if screen_capture_type == 'desktop':
             if sys.platform == 'linux2':
                 image = ImageGrab_Linux.grab()
                 image.save(ImageName, format = "JPEG") # Save to disk
             elif sys.platform  == 'win32' or sys.platform  == 'darwin':
                 image = ImageGrab_Mac_Win.grab()
                 image.save(ImageName, format = "JPEG") # Save to disk
-        elif screen_capture_type == 'web': # Capture screenshot of mobile
+        
+        # Exit if we don't have a driver yet (happens when Test Step is set to mobile/web, but we haven't setup the driver)
+        elif screen_capture_driver == None and (screen_capture_type == 'mobile' or screen_capture_type == 'web'):
+            ExecLog(sModuleInfo, "Can't capture screen, driver not available for type: %s, or invalid driver: %s" % (str(screen_capture_type), str(screen_capture_driver)), 1)
+            return
+        
+        # Capture screenshot of web browser
+        elif screen_capture_type == 'web':
             screen_capture_driver.get_screenshot_as_file(ImageName)
-        elif screen_capture_type == 'mobile': # Capture screenshot of mobile
+            
+        # Capture screenshot of mobile
+        elif screen_capture_type == 'mobile':
             screen_capture_driver.save_screenshot(ImageName)
         else:
             ExecLog(sModuleInfo, "Unknown capture type: %s, or invalid driver: %s" % (str(screen_capture_type), str(screen_capture_driver)), 3)
-    except Exception, e: return Exception_Handler(sys.exc_info())
+    except Exception, e:
+        return Exception_Handler(sys.exc_info())
 
     # Lower the picture quality
     if os.path.exists(ImageName): # Make sure image was saved
@@ -267,187 +278,6 @@ def TakeScreenShot(ImageName,local_run=False):
     else:
         print "Error saving %s screenshot to %s" % (screen_capture_type, ImageName)
 
-
-def TakeScreenShot_old(ImageName,local_run=False):
-
-    """
-    Takes screenshot and saves it as jpg file
-    name is the name of the file to be saved appended with timestamp
-    #TakeScreenShot("TestStepName")
-    """
-    #file Name don't contain \/?*"<>|
-    sModuleInfo = inspect.stack()[0][3] + " : " + inspect.getmoduleinfo(__file__).name
-    take_screenshot_settings = ConfigModule.get_config_value('RunDefinition', 'take_screenshot')
-    if take_screenshot_settings == 'True':
-        local_run = ConfigModule.get_config_value('RunDefinition', 'local_run')
-        chars_to_remove=["?","*","\"","<",">","|","\\","\/",":"]
-        ImageName=(ImageName.translate(None,''.join(chars_to_remove))).replace(" ","_").strip()
-        print ImageName
-        try:
-            if local_run == 'False':
-                image_folder=ConfigModule.get_config_value('sectionOne','screen_capture_folder',temp_config)
-                #ImageFolder = Global.TCLogFolder + os.sep + "Screenshots"
-                ImageFolder=image_folder
-                if sys.platform == 'posix':
-                    """
-                    ImageFolder = FileUtil.ConvertWinPathToMac(ImageFolder)
-                    path = ImageFolder + os.sep + TimeStamp("utc") + "_" + ImageName + ".png"
-                     
-                    newpath = ImageFolder + os.sep + TimeStamp("utc") + "_" + ImageName + ".jpg"
-                    path = path.replace(" ", "_")
-                    newpath = newpath.replace(" ", "_")
-                    os.system("screencapture \"" + path + "\"")
-                    #reduce size of image
-                    os.system("sips -s format jpeg -s formatOptions 30 " + path + " -o " + newpath)
-                    os.system("rm " + path)
-                    """
-                     
-                    #linux working copy
-                    full_location=ImageFolder+os.sep+TimeStamp("utc")+"_"+ImageName+'.png'
-                    #os.system("import -window root %s"%full_location)
-                     
-                    try:
-                        from gi.repository import Gdk
- 
-                    except ImportError:
-                        print 'could not import python package needed for screenshot...installing package "gi"'
-                        os.system('pip install gi')
-                # set the root window as the window we want for screenshot
-                    window = Gdk.get_default_root_window()
-                    # get dimensions of the window
-                    x, y, width, height = window.get_geometry()
-                     
-                    print 'taking screenshot...'
-                    # take screenshot
-                    img = Gdk.pixbuf_get_from_window(window, x, y, width, height)
-                     
-                    if img:
-                        from PIL import Image
-                        img.savev(full_location, "png", (), ())
-                        file1 = full_location
-                        file2 = full_location
-                        size = 800, 450
-                     
-                        im = Image.open(file1)
-                        im.thumbnail(size, Image.ANTIALIAS)
-                        im.save(file2, "JPEG")
-                        print 'screenshot saved as: "%s"' % full_location
-                    else:
-                        print "unable to take screenshot..."
- 
-                #mobile device working copy
-                elif sys.platform == 'linux2':
-                    #mobile device connected to linux machine
-                     
-                    #android working copy
-                    '''
-                    try:
-                        output = os.system("adb devices")
-                        if output is not None:
-                            full_location=ImageFolder+os.sep+TimeStamp("utc")+"_"+ImageName+'_android.png'
-                            #os.system("adb shell screencap -p | perl -pe 's/\x0D\x0A/\x0A/g' > %s"%full_location)
-                            os.system("adb shell screencap -p /sdcard/screen.png")
-                            os.system("adb pull /sdcard/screen.png %s"%full_location)
-                            from PIL import Image
-                            im = Image.open(full_location)
-                            im.save(full_location, format="JPEG", quality=4)
- 
-                    except Exception, e:
-                        return Exception_Handler(sys.exc_info())
- 
-                    #ios device working copy
-                    full_location=ImageFolder+os.sep+TimeStamp("utc")+"_"+ImageName+'_ios.tiff'
-                    os.system("idevicescreenshot %s"%full_location)
-                    '''
- 
-                elif sys.platform == 'darwin':
-                    #mobile device connected to mac os x machine
- 
-                    #ios device working copy
-                    full_location=ImageFolder+os.sep+TimeStamp("utc")+"_"+ImageName+'.png'
-                    os.system("screencapture ~%s"%full_location)
- 
-                    #android working copy
-                    output = os.system("adb devices")
-                    if output is not None:
-                        full_location=ImageFolder+os.sep+TimeStamp("utc")+"_"+ImageName+'_android.png'
-                        #os.system("adb shell screencap -p | perl -pe 's/\x0D\x0A/\x0A/g' > %s"%full_location)
-                        os.system("adb shell screencap -p /sdcard/screen.png")
-                        os.system("adb pull /sdcard/screen.png %s"%full_location)
-                        from PIL import Image
-                        im = Image.open(full_location)
-                        im.save(full_location, format="JPEG", quality=4)
- 
-                    #iphone working copy
-                    output = os.system("ioreg -w -p IOUSB | grep -w iPhone")
-                    if output is not None:
-                        full_location=ImageFolder+os.sep+TimeStamp("utc")+"_"+ImageName+'_ios.tiff'
-                        os.system("idevicescreenshot %s"%full_location)
- 
-                    #ipad working copy
-                    output = os.system("ioreg -w -p IOUSB | grep -w iPad")
-                    if output is not None:
-                        full_location=ImageFolder+os.sep+TimeStamp("utc")+"_"+ImageName+'_ios.tiff'
-                        os.system("idevicescreenshot %s"%full_location)
- 
-                    else:
-                        #linux working copy
-                        full_location=ImageFolder+os.sep+TimeStamp("utc")+"_"+ImageName+'.png'
-                        os.system("import -window root %s"%full_location)
-     
-                        #android working copy
-                        output = os.system("adb devices")
-                        if output is not None:
-                            full_location=ImageFolder+os.sep+TimeStamp("utc")+"_"+ImageName+'_android.png'
-                            #os.system("adb shell screencap -p | perl -pe 's/\x0D\x0A/\x0A/g' > %s"%full_location)
-                            os.system("adb shell screencap -p /sdcard/screen.png")
-                            os.system("adb pull /sdcard/screen.png %s"%full_location)
-                            from PIL import Image
-                            im = Image.open(full_location)
-                            im.save(full_location, format="JPEG", quality=4)
- 
-            elif os.name == 'nt':
-                #windows working copy
-
-
-                from PIL import ImageGrab
-                from PIL import Image
-                path = ImageFolder + os.sep + TimeStamp("utc") + "_" + ImageName + ".jpg"
-                print path
-                img = ImageGrab.grab()
-                basewidth = 1200
-                wpercent = (basewidth/float(img.size[0]))
-                hsize = int((float(img.size[1])*float(wpercent)))
-                img = img.resize((basewidth,hsize), Image.ANTIALIAS)
-                img.save(path, 'JPEG')
-
-                # android working copy
-                try:
-                    '''
-                    @sreejoy please make sure this is handled nicely.  This is very much hard coded. and causing a lot of issues.
-                    we should also consider iOS as well.
-                    right now returning pass so i can run test cases
-                    '''
-                    return 'passed' 
-                    output = os.system("adb devices")
-                    if output is not None:
-                        full_location = ImageFolder + os.sep + TimeStamp("utc") + "_" + ImageName + '_android.png'
-                        # os.system("adb shell screencap -p | perl -pe 's/\x0D\x0A/\x0A/g' > %s"%full_location)
-                        os.system("adb shell screencap -p /sdcard/screen.png")
-                        os.system("adb pull /sdcard/screen.png %s" % full_location)
-                        from PIL import Image
-                        im = Image.open(full_location)
-                        im.save(full_location, format="JPEG", quality=4)
-
-                except Exception, e:
-                    return Exception_Handler(sys.exc_info())
-            else:
-                ExecLog(sModuleInfo,"OS is unknown: %s" %(os.name),3)
-                return Exception_Handler(sys.exc_info())
-                
- 
-        except Exception, e:
-            return Exception_Handler(sys.exc_info())
 
 def TimeStamp(format):
     """

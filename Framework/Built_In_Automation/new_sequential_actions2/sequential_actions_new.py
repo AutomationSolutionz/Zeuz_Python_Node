@@ -179,19 +179,7 @@ def Sequential_Actions(step_data, _dependency = {}, _run_time_params = '', _file
             sr.Set_Shared_Variables(file_attachment_name, _file_attachment[file_attachment_name])
     
     # Set screen capture type (desktop/mobile) as shared variable, so TakeScreenShot() can read it
-    appium_driver = None
-    screen_capture = screen_capture.lower().strip()
-    sr.Set_Shared_Variables('screen_capture', screen_capture) # Save the screen capture type
-    if screen_capture == 'desktop':
-        CommonUtil.set_screen_capture_type(sr.Get_Shared_Variables('screen_capture'))
-    elif screen_capture == 'web':
-        if sr.Test_Shared_Variables('selenium_driver'):
-            selenium_driver = sr.Get_Shared_Variables('selenium_driver')  # If the appium driver was set, get the driver object
-            CommonUtil.set_screen_capture_type(sr.Get_Shared_Variables('screen_capture'), selenium_driver)
-    elif screen_capture == 'mobile':
-        if sr.Test_Shared_Variables('appium_driver'):
-            appium_driver = sr.Get_Shared_Variables('appium_driver') # If the appium driver was set, get the driver object
-            CommonUtil.set_screen_capture_type(sr.Get_Shared_Variables('screen_capture'), appium_driver) # Update the screen capture with the type and driver object if available
+    sr.Set_Shared_Variables('screen_capture', screen_capture.lower().strip()) # Save the screen capture type
 
     # Prepare step data for processing
     step_data = common.sanitize(step_data, column = 1) # Sanitize Sub-Field
