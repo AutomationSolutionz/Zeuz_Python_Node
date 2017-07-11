@@ -2358,7 +2358,7 @@ def Action_Handler(action_step_data, action_name):
             if result == "failed":
                 return "failed"
         elif action_name == "take screen shot":
-            result = TakeScreenShot(action_step_data)  # take screen shot
+            result = CommonUtil.TakeScreenShot()  # take screen shot
             if result == "failed":
                 return "failed"
         elif action_name == "download":

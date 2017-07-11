@@ -212,7 +212,7 @@ temp_config=os.path.join(os.path.join(FL.get_home_folder(),os.path.join('Desktop
 
 screen_capture_type = 'desktop'
 screen_capture_driver = None
-def set_screen_capture_type(stype, driver):
+def set_screen_capture_type(stype, driver = None):
     global screen_capture_type, screen_capture_driver
     screen_capture_type = stype
     screen_capture_driver = driver
@@ -225,7 +225,7 @@ def TakeScreenShot(ImageName,local_run=False):
     sModuleInfo = inspect.stack()[0][3] + " : " + inspect.getmoduleinfo(__file__).name
     ExecLog(sModuleInfo, "Function start", 0)
     chars_to_remove = ["?","*","\"","<",">","|","\\","\/",":"] # Symbols that can't be used in filename
-    picture_quality = 4 # Quality of picture
+    picture_quality = 20 # Quality of picture
     picture_size = 800, 600 # Size of image (for reduction in file size)
 
     # Read values from config file
@@ -251,7 +251,9 @@ def TakeScreenShot(ImageName,local_run=False):
             elif sys.platform  == 'win32' or sys.platform  == 'darwin':
                 image = ImageGrab_Mac_Win.grab()
                 image.save(ImageName, format = "JPEG") # Save to disk
-        elif screen_capture_driver != None: # Capture screenshot of mobile
+        elif screen_capture_type == 'web': # Capture screenshot of mobile
+            screen_capture_driver.get_screenshot_as_file(ImageName)
+        elif screen_capture_type == 'mobile': # Capture screenshot of mobile
             screen_capture_driver.save_screenshot(ImageName)
         else:
             ExecLog(sModuleInfo, "Unknown capture type: %s, or invalid driver: %s" % (str(screen_capture_type), str(screen_capture_driver)), 3)
