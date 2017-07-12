@@ -180,6 +180,7 @@ def Sequential_Actions(step_data, _dependency = {}, _run_time_params = '', _file
     
     # Set screen capture type (desktop/mobile) as shared variable, so TakeScreenShot() can read it
     sr.Set_Shared_Variables('screen_capture', screen_capture.lower().strip()) # Save the screen capture type
+    CommonUtil.set_screenshot_vars(sr.Shared_Variable_Export()) # Get all the shared variables, and pass them to CommonUtil
 
     # Prepare step data for processing
     step_data = common.sanitize(step_data, column = 1) # Sanitize Sub-Field

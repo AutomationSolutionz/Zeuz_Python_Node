@@ -420,3 +420,7 @@ def Clean_Up_Shared_Variables():
         return "passed"
     except Exception:
         return CommonUtil.Exception_Handler(sys.exc_info())
+
+def Shared_Variable_Export():
+    ''' Exports all shared variables if for some reason modules can't use the functions herein '''
+    return shared_variables

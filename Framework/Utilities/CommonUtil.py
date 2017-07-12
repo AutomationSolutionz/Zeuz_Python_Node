@@ -18,7 +18,6 @@ try: from PIL import ImageGrab as ImageGrab_Mac_Win # Screen capture for Mac and
 except: pass
 try: import pyscreenshot as ImageGrab_Linux # Screen capture for Linux/Unix
 except: pass
-import Framework.Built_In_Automation.Shared_Resources.BuiltInFunctionSharedResources # Must be imported in this manor in avoid circular imports
 
 # Get file path for temporary config file
 temp_config=os.path.join(os.path.join(FL.get_home_folder(),os.path.join('Desktop',os.path.join('AutomationLog',ConfigModule.get_config_value('Temp','_file')))))
@@ -202,6 +201,22 @@ def PhysicalAvailableMemory():
     except Exception, e:
         return Exception_Handler(sys.exc_info())
 
+screen_capture_driver, screen_capture_type = None, 'none' # Initialize global variables for TakeScreenShot()
+def set_screenshot_vars(shared_variables):
+    ''' Save screen capture type and selenium/appium driver objects as global variables, so TakeScreenShot() can access them '''
+    # We can't import Shared Variables due to cyclic imports causing local runs to break, so this is the work around
+
+    global screen_capture_driver, screen_capture_type
+    
+    if 'screen_capture' in shared_variables: # Type of screenshot (desktop/mobile)
+        screen_capture_type = shared_variables['screen_capture']
+    if screen_capture_type == 'mobile': # Appium driver object
+        if 'appium_driver' in shared_variables:
+            screen_capture_driver = shared_variables['appium_driver']
+    if screen_capture_type == 'web': # Selenium driver object
+        if 'selenium_driver' in shared_variables:
+            screen_capture_driver = shared_variables['selenium_driver']
+
 
 def TakeScreenShot(ImageName,local_run=False):
     ''' Capture screen of mobile or desktop '''
@@ -219,25 +234,10 @@ def TakeScreenShot(ImageName,local_run=False):
     local_run = ConfigModule.get_config_value('RunDefinition', 'local_run') # True/False to run only locally, in which case we do not take screenshot from settings.conf
     image_folder=ConfigModule.get_config_value('sectionOne','screen_capture_folder', temp_config) # Get screen capture directory from temporary config file that is dynamically created
 
-    # Get screen capture type from Shared Variables
-    if Framework.Built_In_Automation.Shared_Resources.BuiltInFunctionSharedResources.Test_Shared_Variables('screen_capture'):
-        screen_capture_type = Framework.Built_In_Automation.Shared_Resources.BuiltInFunctionSharedResources.Get_Shared_Variables('screen_capture')
-    else:
-        screen_capture_type = 'none'
-    
     # Decide if screenshot should be captured
     if take_screenshot_settings.lower() == 'false' or local_run.lower() == 'true' or screen_capture_type == 'none':
         ExecLog(sModuleInfo, "Skipping screenshot due to screenshot or local_run setting", 0)
         return
-
-    # Get selenium/appium driver if available
-    screen_capture_driver = None
-    if screen_capture_type == 'web':
-        if Framework.Built_In_Automation.Shared_Resources.BuiltInFunctionSharedResources.Test_Shared_Variables('selenium_driver'):
-            screen_capture_driver = Framework.Built_In_Automation.Shared_Resources.BuiltInFunctionSharedResources.Get_Shared_Variables('selenium_driver')  # If the appium driver was set, get the driver object
-    elif screen_capture_type == 'mobile':
-        if Framework.Built_In_Automation.Shared_Resources.BuiltInFunctionSharedResources.Test_Shared_Variables('appium_driver'):
-            screen_capture_driver = Framework.Built_In_Automation.Shared_Resources.BuiltInFunctionSharedResources.Get_Shared_Variables('appium_driver') # If the appium driver was set, get the driver object
 
     # Adjust filename and create full path (remove invalid characters, convert spaces to underscore, remove leading and trailing spaces)
     ImageName=os.path.join(image_folder, TimeStamp("utc") + "_" + (ImageName.translate(None,''.join(chars_to_remove))).strip().replace(" ","_") + ".jpg")
