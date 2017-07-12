@@ -1323,8 +1323,14 @@ def Calculate(step_data):
             CommonUtil.ExecLog(sModuleInfo, "Evaluating the string for the statement %s" % statement, 1)
             #print list
             direc[list[0]] = eval(list[1])  # save the variable in the directory
-            CommonUtil.ExecLog(sModuleInfo, "current directory %s" % direc, 1)
-            return "passed"
+
+            if direc[list[0]] in failed_tag_list and direc[list[0]] != 0:
+                CommonUtil.ExecLog(sModuleInfo, "Could not calculate the value" , 3)
+                return "failed"
+            else:
+                CommonUtil.ExecLog(sModuleInfo, "current directory %s" % direc, 1)
+                return "passed"
+
         elif _platform == "win32":
             # windows
             CommonUtil.ExecLog(sModuleInfo, "windows", 1)
@@ -1336,8 +1342,12 @@ def Calculate(step_data):
             # eval()  does the auto calculation from a string.
             CommonUtil.ExecLog(sModuleInfo, "Evaluating the string for the statement %s" % statement, 1)
             direc[list[0]] = eval(list[1])  # save the variable in the directory
-            CommonUtil.ExecLog(sModuleInfo, "current directory %s" % direc, 1)
-            return "passed"
+            if direc[list[0]] in failed_tag_list and direc[list[0]] != 0:
+                CommonUtil.ExecLog(sModuleInfo, "Could not calculate the value" , 3)
+                return "failed"
+            else:
+                CommonUtil.ExecLog(sModuleInfo, "current directory %s" % direc, 1)
+                return "passed"
         elif _platform == "darwin":
             # mac
             CommonUtil.ExecLog(sModuleInfo, "mac", 1)
@@ -1350,8 +1360,12 @@ def Calculate(step_data):
             CommonUtil.ExecLog(sModuleInfo, "Evaluating the string for the statement %s" % statement, 1)
             #print list
             direc[list[0]] = eval(list[1])  # save the variable in the directory
-            CommonUtil.ExecLog(sModuleInfo, "current directory %s" % direc, 1)
-            return "passed"
+            if direc[list[0]] in failed_tag_list and direc[list[0]] != 0:
+                CommonUtil.ExecLog(sModuleInfo, "Could not calculate the value" , 3)
+                return "failed"
+            else:
+                CommonUtil.ExecLog(sModuleInfo, "current directory %s" % direc, 1)
+                return "passed"
     except Exception:
         return CommonUtil.Exception_Handler(sys.exc_info())
 
