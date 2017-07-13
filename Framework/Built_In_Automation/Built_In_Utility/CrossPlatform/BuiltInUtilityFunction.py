@@ -1308,64 +1308,24 @@ def Add_Log(step_data):
 
 # Method to Calculate
 def Calculate(step_data):
+    ''' Perform any mathematical calculation exactly as written by the user '''
+    # Format: shared_var_name=1+(2*3)....etc
+     
     sModuleInfo = inspect.stack()[0][3] + " : " + inspect.getmoduleinfo(__file__).name
-    CommonUtil.ExecLog(sModuleInfo, "Function: Calculate", 1)
+    CommonUtil.ExecLog(sModuleInfo, "Function start", 0)
+    
     try:
-        if _platform == "linux" or _platform == "linux2":
-            # linux
-            CommonUtil.ExecLog(sModuleInfo, "linux", 1)
-            statement = str(step_data[0][2]).strip()  # get the statement for math function
-            # list the parts of statement by splitting it by "="
-            list = statement.split("=")
-            direc = {}
-            # eval() funtion is used to evaluate a string
-            # eval()  does the auto calculation from a string.
-            CommonUtil.ExecLog(sModuleInfo, "Evaluating the string for the statement %s" % statement, 1)
-            #print list
-            direc[list[0]] = eval(list[1])  # save the variable in the directory
-
-            if direc[list[0]] in failed_tag_list and direc[list[0]] != 0:
-                CommonUtil.ExecLog(sModuleInfo, "Could not calculate the value" , 3)
-                return "failed"
-            else:
-                CommonUtil.ExecLog(sModuleInfo, "current directory %s" % direc, 1)
-                return "passed"
-
-        elif _platform == "win32":
-            # windows
-            CommonUtil.ExecLog(sModuleInfo, "windows", 1)
-            statement = str(step_data[0][2]).strip()  # get the statement for math function
-            # list the parts of statement by splitting it by "="
-            list = statement.split("=")
-            direc = {}
-            # eval() funtion is used to evaluate a string
-            # eval()  does the auto calculation from a string.
-            CommonUtil.ExecLog(sModuleInfo, "Evaluating the string for the statement %s" % statement, 1)
-            direc[list[0]] = eval(list[1])  # save the variable in the directory
-            if direc[list[0]] in failed_tag_list and direc[list[0]] != 0:
-                CommonUtil.ExecLog(sModuleInfo, "Could not calculate the value" , 3)
-                return "failed"
-            else:
-                CommonUtil.ExecLog(sModuleInfo, "current directory %s" % direc, 1)
-                return "passed"
-        elif _platform == "darwin":
-            # mac
-            CommonUtil.ExecLog(sModuleInfo, "mac", 1)
-            statement = str(step_data[0][2]).strip()  # get the statement for math function
-            # list the parts of statement by splitting it by "="
-            list = statement.split("=")
-            direc = {}
-            # eval() funtion is used to evaluate a string
-            # eval()  does the auto calculation from a string.
-            CommonUtil.ExecLog(sModuleInfo, "Evaluating the string for the statement %s" % statement, 1)
-            #print list
-            direc[list[0]] = eval(list[1])  # save the variable in the directory
-            if direc[list[0]] in failed_tag_list and direc[list[0]] != 0:
-                CommonUtil.ExecLog(sModuleInfo, "Could not calculate the value" , 3)
-                return "failed"
-            else:
-                CommonUtil.ExecLog(sModuleInfo, "current directory %s" % direc, 1)
-                return "passed"
+        # Prepare data
+        statement = str(step_data[0][2]).strip().replace(' ', '')  # get the statement for math function
+        params_list = statement.split("=") # list the parts of statement by splitting it by "="
+        var_name = params_list[0] # Save name of shared variable
+        math_string = params_list[1] # Save mathematical calculation
+        
+        # Calculate and save result
+        result = eval(math_string) # eval()  does the auto calculation from a string.
+        CommonUtil.ExecLog(sModuleInfo, "Calculation: %s = %s" % (math_string, result), 1)
+        Shared_Resources.Set_Shared_Variables(var_name, result)
+        return "passed"
     except Exception:
         return CommonUtil.Exception_Handler(sys.exc_info())
 
