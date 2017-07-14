@@ -120,7 +120,8 @@ action_support = [
     'headers',
     'compare',
     'path',
-    'value'
+    'value',
+    'result'
 ]
 
 # Import modules
@@ -214,14 +215,24 @@ def Sequential_Actions(step_data, _dependency = {}, _run_time_params = '', _file
                     # Only run this when we have two conditional actions for this data set (a true and a false preferably)
                     if len(logic_row) == 2:
                         CommonUtil.ExecLog(sModuleInfo, "Found 2 conditional actions - moving ahead with them", 1)
-                        return Conditional_Action_Handler(step_data, data_set, row, logic_row, result) # Pass step_data, and current iteration of data set to decide which data sets will be processed next
+                        return Conditional_Action_Handler(step_data, data_set, row, logic_row) # Pass step_data, and current iteration of data set to decide which data sets will be processed next
                         # At this point, we don't process any more data sets, which is why we return here. The conditional action function takes care of the rest of the execution
                 
                 # If middle column = action, call action handler
                 elif "action" in action_name: # Must be last, since it's a single word that also exists in other action types
                     CommonUtil.ExecLog(sModuleInfo, "Checking the action to be performed in the action row: %s" % str(row), 0)
                     result = Action_Handler(data_set, row) # Pass data set, and action_name to action handler
-                    if result in failed_tag_list: # Check result of action handler
+
+                    # Check if user wants to store the result for later use
+                    stored = False
+                    for r in data_set:
+                        if r[0].lower().strip() == 'store' and r[1].lower().strip() == 'result': # If Field = store and Sub-Field = result
+                            CommonUtil.ExecLog(sModuleInfo, "Storing result for later use. Will not exit if action failed: %s" % result, 1)
+                            sr.Set_Shared_Variables(r[2].strip(), result) # Use the Value as the shared variable name, and save the result
+                            stored = True # In the case of a failed result, skip the return that comes after this
+                            
+                    # Check result of action handler 
+                    if stored == False and result in failed_tag_list:
                         return "failed"
                 
                 # Middle column not listed above, so data set is wrong
@@ -237,7 +248,7 @@ def Sequential_Actions(step_data, _dependency = {}, _run_time_params = '', _file
 
  
 
-def Conditional_Action_Handler(step_data, data_set, row, logic_row, result):
+def Conditional_Action_Handler(step_data, data_set, row, logic_row):
     ''' Process conditional actions, called only by Sequential_Actions() '''
      
     sModuleInfo = inspect.stack()[0][3] + " : " + inspect.getmoduleinfo(__file__).name
@@ -247,11 +258,36 @@ def Conditional_Action_Handler(step_data, data_set, row, logic_row, result):
     module = row[1].split(' ')[0]
     load_sa_modules(module)
 
+    # Convert any shared variables into their strings
     data_set = shared_variable_to_value(data_set)
     if data_set in failed_tag_list:
         return 'failed'
     
-    if module == 'appium' or module == 'selenium':
+    # Test if data set contains the recall line, and if so, get the saved result from the previous action
+    try:
+        stored = False
+        for row in data_set:
+            if row[0].lower().strip() == 'recall' and row[1].lower().strip() == 'result': # If Field = recall and Sub-Field = result
+                CommonUtil.ExecLog(sModuleInfo, "Recalled result: %s" % str(row[2]), 1)
+                stored = True
+                result = row[2] # Retrieve the saved result (already converted from shared variable)
+    except:
+        errMsg = "Error reading stored result. Perhaps it was not stored, or you failed to include the store result line in your previous action"
+        return CommonUtil.Exception_Handler(sys.exc_info(),None,errMsg)
+
+    if stored == False: # Just to be clear, we can't to log that we are using the old method
+        CommonUtil.ExecLog(sModuleInfo, "Could not find the recall result row. It's either missing or mispelled. Trying old method of Conditional Action, but suggest you update to the currently accepted method", 2)
+        
+    if stored == True: # Use saved result from previous data set
+        if result in failed_tag_list: # Check result from previous action 
+            logic_decision = "false"
+        else: # Passed / Skipped
+            logic_decision = "true"
+
+
+    # *** Old method of conditional actions in the if statements below. Only kept for backwards compatibility *** #
+    
+    elif module == 'appium' or module == 'selenium':
         try:
             Element = LocateElement.Get_Element(data_set, eval(module).get_driver()) # Get the element object or 'failed'
             if Element in failed_tag_list:
@@ -313,6 +349,8 @@ def Conditional_Action_Handler(step_data, data_set, row, logic_row, result):
                 logic_decision = "false"
                 return CommonUtil.Exception_Handler(sys.exc_info())
 
+    # *** Old method of conditional actions in the if statements above. Only kept for backwards compatibility *** #
+    
     else:
         CommonUtil.ExecLog(sModuleInfo, "Either no module was specified in the Conditional Action line, or it is incorrect", 3)
         return "failed"
@@ -436,9 +474,6 @@ def shared_variable_to_value(data_set):
                     while "%|" in data_row[i] and "|%" in data_row[i]: # If string contains these characters, it's a shared variable
                         CommonUtil.ExecLog(sModuleInfo, "Shared Variable: %s" % row[i], 0)
                         data_row[i] = sr.get_previous_response_variables_in_strings(data_row[i])# replace just the variable name with it's value (has to be in string format)
-                        if data_row[i] == 'failed': #!!!this won't work if there's extra strings around the shared variable 
-                            CommonUtil.ExecLog(sModuleInfo, "Invalid shared variable", 3)
-                            return "failed"
             new_data.append(tuple(data_row)) # Convert row from list to tuple, and append to new data_set
         return new_data # Return parsed data_set
     except Exception:
