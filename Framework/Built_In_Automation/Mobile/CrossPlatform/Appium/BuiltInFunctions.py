@@ -17,8 +17,10 @@ PATH = lambda p: os.path.abspath(
 
  # Appium directory/filename - May need to move to settings.conf
 appium_binary = None
-if os.name == 'posix':
+if 'linux' in sys.platform:
     appium_binary = 'appium'
+elif 'win' in sys.platform:
+    appium_binary = os.path.join(os.getenv('ProgramFiles'), 'APPIUM\Appium.exe')
 else:
     CommonUtil.ExecLog(__name__ + " : " + __file__, "Platform doesn't have an appium location defined: %s" % str(os.name), 3)
     
