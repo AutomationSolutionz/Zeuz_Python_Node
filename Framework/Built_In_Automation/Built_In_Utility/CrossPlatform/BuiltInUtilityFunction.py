@@ -34,10 +34,16 @@ def get_home_folder():
     :return: give the path of home folder
     """
     sModuleInfo = inspect.stack()[0][3] + " : " + inspect.getmoduleinfo(__file__).name
-    CommonUtil.ExecLog(sModuleInfo, "Function: Get Home Folder", 1)
+    CommonUtil.ExecLog(sModuleInfo, "Function start", 0)
     try:
-        CommonUtil.ExecLog(sModuleInfo, "Returning the path of home folder", 1)
-        return os.path.expanduser("~")
+        if _platform == "linux" or _platform == "linux2" or _platform == "darwin":
+            path = os.getenv('HOME') 
+        elif _platform == "win32":
+            path = os.getenv('USERPROFILE')
+            
+        if path in failed_tag_list:
+            return 'failed'
+        return path
     except Exception:
         return CommonUtil.Exception_Handler(sys.exc_info())
 
@@ -1397,40 +1403,24 @@ def Run_Command(step_data):
 
 
 # Method to Get Home Directory
-def Get_Home_Directory(step_data):
+def Get_Home_Directory(data_set):
     sModuleInfo = inspect.stack()[0][3] + " : " + inspect.getmoduleinfo(__file__).name
-    CommonUtil.ExecLog(sModuleInfo, "Function: Get Home Directory", 1)
+    CommonUtil.ExecLog(sModuleInfo, "Function start", 0)
+    
     try:
-        if _platform == "linux" or _platform == "linux2":
-            # linux
-            CommonUtil.ExecLog(sModuleInfo, "linux", 1)
-            path = get_home_folder()
-            # print path
-            CommonUtil.ExecLog(sModuleInfo, "Home Directory Path is '%s'" % (path), 1)
-            if path in failed_tag_list:
-                CommonUtil.ExecLog(sModuleInfo, "Could not find home directory '%s'" % (path), 3)
-                return "failed"
-            else:
-                CommonUtil.ExecLog(sModuleInfo, "home directory is '%s'" % (path), 1)
-                return "passed"
-        elif _platform == "win32":
-            # windows
-            CommonUtil.ExecLog(sModuleInfo, "windows", 1)
-            CommonUtil.ExecLog(sModuleInfo, "Could not find home directory as it is windows", 3)
-            return "failed"
-        elif _platform == "darwin":
-            # mac
-            CommonUtil.ExecLog(sModuleInfo, "mac", 1)
-            path = get_home_folder()
-            # print path
-            CommonUtil.ExecLog(sModuleInfo, "Home Directory Path is '%s'" % (path), 1)
-            if path in failed_tag_list:
-                CommonUtil.ExecLog(sModuleInfo, "Could not find home directory '%s'" % (path), 3)
-                return "failed"
-            else:
-                CommonUtil.ExecLog(sModuleInfo, "home directory is '%s'" % (path), 1)
-                return "passed"
-
+        home_dir = data_set[0][2] # Get shared variable name from Value on action row
+    except:
+        return CommonUtil.Exception_Handler(sys.exc_info())
+    
+    try:
+        path = get_home_folder() # Get home directory path
+        if path in failed_tag_list:
+            CommonUtil.ExecLog(sModuleInfo, "Could not find home directory: '%s'" % str(path), 3)
+            return 'failed'
+        CommonUtil.ExecLog(sModuleInfo, "Home Directory Path is '%s'" % (path), 1)
+        
+        Shared_Resources.Set_Shared_Variables(home_dir, path) # Store home directory in shared variable
+        return 'passed'
     except Exception:
         return CommonUtil.Exception_Handler(sys.exc_info())
 
@@ -2352,151 +2342,6 @@ def Download_File_and_Unzip(step_data):
     except Exception:
         return CommonUtil.Exception_Handler(sys.exc_info())
 
-#Method to return pass or fail for the step outcome
-def Step_Result(step_data):
-    sModuleInfo = inspect.stack()[0][3] + " : " + inspect.getmoduleinfo(__file__).name
-    CommonUtil.ExecLog(sModuleInfo, "Function: Step_Result", 1)
-    try:
-        if ((1 < len(step_data) >= 5)):
-            CommonUtil.ExecLog(sModuleInfo,"The information in the data-set(s) are incorrect. Please provide accurate data set(s) information.",3)
-            result = "failed"
-        else:
-            step_result = step_data[0][2]
-            if step_result == 'pass':
-                result = "passed"
-            elif step_result == 'skip':
-                result = 'skipped'
-            elif step_result == 'fail':
-                result = "failed"
-
-        return result
-    except Exception:
-        return CommonUtil.Exception_Handler(sys.exc_info())
-
-
-# Handles actions for the sequential logic, based on the input from the mentioned function
-def Action_Handler(action_step_data, action_name):
-    sModuleInfo = inspect.stack()[0][3] + " : " + inspect.getmoduleinfo(__file__).name
-    CommonUtil.ExecLog(sModuleInfo, "Function: Action_Handler", 1)
-    try:
-
-        if action_name == "skip":
-            # skip the sanitization
-            return "passed"
-        elif action_name == "math":
-            result = Calculate(action_step_data)  # math function
-            if result == "failed":
-                return "failed"
-        elif action_name == "upload":
-            result = Upload(action_step_data)  # copy/paste file to zeuz log uploader
-            if result == "failed":
-                return "failed"
-        elif action_name == "save text":
-            result = Save_Text(action_step_data)  # save text
-            if result == "failed":
-                return "failed"
-        elif action_name == "copy":
-            result = Copy_File_or_Folder(action_step_data)  # copy file/folder
-            if result == "failed":
-                return "failed"
-        elif action_name == "delete":
-            result = Delete_File_or_Folder(action_step_data)  # delete file/folder
-            if result == "failed":
-                return "failed"
-        elif action_name == "create":
-            result = Create_File_or_Folder(action_step_data)  # create file
-            if result == "failed":
-                return "failed"
-        elif action_name == "find":
-            result = Find_File(action_step_data)  # find file
-            if result == "failed":
-                return "failed"
-        elif action_name == "rename":
-            result = Rename_File_or_Folder(action_step_data)  # rename file/folder
-            if result == "failed":
-                return "failed"
-        elif action_name == "move":
-            result = Move_File_or_Folder(action_step_data)  # move file/folder
-            if result == "failed":
-                return "failed"
-        elif action_name == "zip":
-            result = Zip_File_or_Folder(action_step_data)  # zip file/folder
-            if result == "failed":
-                return "failed"
-        elif action_name == "unzip":
-            result = Unzip_File_or_Folder(action_step_data)  # unzip
-            if result == "failed":
-                return "failed"
-        elif action_name == "compare":
-            result = Compare_File(action_step_data)  # compare file
-            if result == "failed":
-                return "failed"
-        elif action_name == "empty":
-            result = Empty_Trash(action_step_data)  # empty trash/recycle bin
-            if result == "failed":
-                return "failed"
-        elif action_name == "user name":
-            result = Get_User_Name(action_step_data)  # get user name
-            if result == "failed":
-                return "failed"
-        elif action_name == "current documents":
-            result = Get_Current_Documents(action_step_data)  # get current documents
-            if result == "failed":
-                return "failed"
-        elif action_name == "current desktop":
-            result = Get_Current_Desktop(action_step_data)  # get current desktop
-            if result == "failed":
-                return "failed"
-        elif action_name == "home directory":
-            result = Get_Home_Directory(action_step_data)  # get home directory
-            if result == "failed":
-                return "failed"
-        elif action_name == "run sudo":
-            result = Run_Sudo_Command(action_step_data)  # run sudo command
-            if result == "failed":
-                return "failed"
-        elif action_name == "run command":
-            result = Run_Command(action_step_data)  # run admin command
-            if result == "failed":
-                return "failed"
-        elif action_name == "log 1" or action_name == 'log 2' or action_name == 'log 3':
-            result = Add_Log(action_step_data)  # add logging
-            if result == "failed":
-                return "failed"
-        elif action_name == "take screen shot":
-            result = TakeScreenShot(action_step_data)  # take screen shot
-            if result == "failed":
-                return "failed"
-        elif action_name == "download":
-            result = Download_file(action_step_data)  # download file
-            if result == "failed":
-                return "failed"
-        elif action_name == "download and unzip":
-            result = Download_File_and_Unzip(action_step_data)  # download file
-            if result == "failed":
-                return "failed"
-        elif action_name == "sleep":
-            result = Sleep(action_step_data)
-            if result == "failed":
-                return "failed"
-        elif action_name == "step result":
-            result = Step_Result(action_step_data)
-            if result in failed_tag_list: # Convert user specified pass/fail into standard result
-                return 'failed'
-            elif result in passed_tag_list:
-                return 'passed'
-            elif result in skipped_tag_list:
-                return 'skipped'
-
-
-        else:
-            CommonUtil.ExecLog(sModuleInfo, "The action you entered is incorrect. Please provide accurate information on the data set(s).",3)
-            return "failed"
-
-    except Exception:
-        return CommonUtil.Exception_Handler(sys.exc_info())
-
-
 # return only the path step data
 def Get_Path_Step_Data(step_data):
     sModuleInfo = inspect.stack()[0][3] + " : " + inspect.getmoduleinfo(__file__).name
@@ -2541,85 +2386,4 @@ def Validate_Path_Step_Data(step_data):
         return "failed"
 
 
-# Performs a series of action or conditional logical action decisions based on user input
-def Sequential_Actions(step_data):
-    sModuleInfo = inspect.stack()[0][3] + " : " + inspect.getmoduleinfo(__file__).name
-    CommonUtil.ExecLog(sModuleInfo, "Function: Sequential_Actions", 1)
-    try:
-        '''global add_sanitization
-        if step_data[0][0][0]=="skip" and step_data[0][0][1]=="action":
-            add_sanitization = False
-        print step_data
-        sanitize(step_data,add_sanitization)
-        print step_data'''
-        for each in step_data:
-            logic_row = []
-            for row in each:
-                # finding what to do for each dataset
-                # if len(row)==5 and row[1] != "":     ##modifying the filter for changes to be made in the sub-field of the step data. May remove this part of the if statement
-                if (row[1] == "path" or row[1] == "value" or row[
-                    1] == "element parameter"):  ##modifying the filter for changes to be made in the sub-field of the step data. May remove this part of the if statement
-                    continue
-
-                elif row[1] == "action":
-                    # finding the action to be performed
-                    CommonUtil.ExecLog(sModuleInfo, "Checking the action to be performed in the action row", 1)
-                    # handle the action
-                    new_data_set = Shared_Resources.Handle_Step_Data_Variables([each])
-                    if new_data_set in failed_tag_list:
-                        return 'failed'
-                    result = Action_Handler(new_data_set[0], row[0])
-                    if result == [] or result == "failed":
-                        return "failed"
-                    elif result in skipped_tag_list:
-                        return "skipped"
-
-                elif row[1] == "conditional action":
-                    CommonUtil.ExecLog(sModuleInfo,"Checking the logical conditional action to be performed in the conditional action row", 1)
-                    logic_decision = ""
-                    logic_row.append(row)
-                    if len(logic_row) == 2:
-                        # element_step_data = each[0:len(step_data[0])-2:1]
-                        path_step_data = Get_Path_Step_Data(each)
-                        returned_step_data_list = Validate_Path_Step_Data(path_step_data)
-                        if ((returned_step_data_list == []) or (returned_step_data_list == "failed")):
-                            return "failed"
-                        else:
-                            try:
-                                Element = find(returned_step_data_list[0])
-                                if Element == False:
-                                    logic_decision = "false"
-                                else:
-                                    logic_decision = "true"
-                            except Exception, errMsg:
-                                errMsg = "Could not find element in the by the criteria..."
-                                return CommonUtil.Exception_Handler(sys.exc_info(), None, errMsg)
-                    else:
-                        # continue until length  of logic_row is 2
-                        continue
-
-                    # handle the conditional action
-                    for conditional_steps in logic_row:
-                        if logic_decision in conditional_steps:
-                            # print conditional_steps[2]
-                            list_of_steps = conditional_steps[2].split(",")
-                            for each_item in list_of_steps:
-                                data_set_index = int(each_item) - 1
-                                cond_result = Sequential_Actions([step_data[data_set_index]])
-                                if cond_result == "failed":
-                                    return "failed"
-                                elif cond_result == "skipped":
-                                    return "skipped"
-                            return "passed"
-
-                else:
-                    CommonUtil.ExecLog(sModuleInfo,"The sub-field information is incorrect. Please provide accurate information on the data set(s).",3)
-                    return "failed"
-        return "passed"
-
-    except Exception:
-        return CommonUtil.Exception_Handler(sys.exc_info())
-
-
-'===================== ===x=== Sequential Action Section Ends ===x=== ======================'
 
