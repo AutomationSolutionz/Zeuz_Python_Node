@@ -187,7 +187,7 @@ def _construct_xpath_list(parameter_list,add_dot=False):
             tag_item = "//"+ filter(lambda x: 'tag' in x, parameter_list)[0][2]
         else:
             tag_item = "//*"
-        if add_dot != False:
+        if add_dot != False and driver_type != 'xml':
             tag_item = '.'+tag_item
         element_main_body_list.append(tag_item)
         #We need to reverse the list so that tag comes at the begining 
@@ -254,8 +254,10 @@ def _get_xpath_or_css_element(element_query,css_xpath, index_number=False):
     try: 
         all_matching_elements = []
         sModuleInfo = inspect.stack()[0][3] + " : " + inspect.getmoduleinfo(__file__).name
-        if css_xpath == "xpath":
+        if css_xpath == "xpath" and driver_type != 'xml':
             all_matching_elements = WebDriverWait(generic_driver, WebDriver_Wait).until(EC.presence_of_all_elements_located((By.XPATH, element_query)))
+        elif css_xpath == "xpath" and driver_type == 'xml':
+            all_matching_elements = generic_driver.xpath(element_query)
         elif css_xpath == "css":
             all_matching_elements = WebDriverWait(generic_driver, WebDriver_Wait).until(EC.presence_of_all_elements_located((By.CSS_SELECTOR, element_query)))
         if len(all_matching_elements)== 0:
