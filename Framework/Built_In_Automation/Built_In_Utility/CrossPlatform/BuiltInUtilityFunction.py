@@ -760,8 +760,7 @@ def download_and_unzip_file(file_url, location_of_file):
         r = requests.get(file_url, stream=True)
 
         list_the_parts_of_url = file_url.split("/") #get file name from the url
-
-        file_name = location_of_file + list_the_parts_of_url[len(list_the_parts_of_url) - 1] #complete file location
+        file_name = os.path.join(location_of_file, list_the_parts_of_url[len(list_the_parts_of_url) - 1])
         actual_file_name = list_the_parts_of_url[len(list_the_parts_of_url) - 1]
         with open(file_name, "wb") as f:
             for chunk in r.iter_content(chunk_size=1024):
@@ -779,8 +778,7 @@ def download_and_unzip_file(file_url, location_of_file):
             CommonUtil.ExecLog(sModuleInfo, "Returning result of download file using url function", 1)
             CommonUtil.ExecLog(sModuleInfo, "file doesn't exist... downloading file using url function is not done properly", 3)
             return "failed"
-
-        unzip_location = location_of_file + "latest_directory"
+        unzip_location = os.path.join(location_of_file,"latest_directory" )
         CommonUtil.ExecLog(sModuleInfo, "Creating the directory '%s' " % unzip_location, 1)
         result1 = CreateFolder(unzip_location)
         if result1 in failed_tag_list:
@@ -795,7 +793,8 @@ def download_and_unzip_file(file_url, location_of_file):
         CommonUtil.ExecLog(sModuleInfo, "Unzipping file '%s' to '%s' is complete" % (file_name, unzip_location), 1)
         CommonUtil.ExecLog(sModuleInfo, "Saving directory location to shared resources" , 1)
         #Shared_Resources.Set_Shared_Variables("latest_directory", unzip_location)
-        Shared_Resources.Set_Shared_Variables("downloaded_file", unzip_location + actual_file_name)
+        downloaded_file = os.path.join(unzip_location,actual_file_name )
+        Shared_Resources.Set_Shared_Variables("downloaded_file", downloaded_file)
         Shared_Resources.Show_All_Shared_Variables()
         return "passed"
 
@@ -1281,33 +1280,13 @@ def Add_Log(step_data):
     sModuleInfo = inspect.stack()[0][3] + " : " + inspect.getmoduleinfo(__file__).name
     CommonUtil.ExecLog(sModuleInfo, "Function: Add Log", 1)
     try:
-        if _platform == "linux" or _platform == "linux2":
-            # linux
-            CommonUtil.ExecLog(sModuleInfo, "linux", 1)
-            log_info = str(step_data[0][0]).strip() #get the log level info from the step data
-            list = log_info.split(" ") # log level in step data is given as log_1/log_2/log_3 , so to get the level split it by "_"
-            Comment = str(step_data[0][2]).strip()  # get the comment
-            LogLevel = int(list[1]) #get the level
-            CommonUtil.ExecLog(sModuleInfo, "%s" % Comment, LogLevel)
-            return "passed"
-        elif _platform == "win32":
-            # windows
-            CommonUtil.ExecLog(sModuleInfo, "windows", 1)
-            log_info = str(step_data[0][0]).strip() #get the log level info from the step data
-            list = log_info.split(" ") # log level in step data is given as log_1/log_2/log_3 , so to get the level split it by "_"
-            Comment = str(step_data[0][2]).strip()   # get the comment
-            LogLevel = int(list[1]) #get the level
-            CommonUtil.ExecLog(sModuleInfo, "%s" % Comment, LogLevel)
-            return "passed"
-        elif _platform == "darwin":
-            # mac
-            CommonUtil.ExecLog(sModuleInfo, "mac", 1)
-            log_info = str(step_data[0][0]).strip() #get the log level info from the step data
-            list = log_info.split(" ") # log level in step data is given as log_1/log_2/log_3 , so to get the level split it by "_"
-            Comment = str(step_data[0][2]).strip()  # get the comment
-            LogLevel = int(list[1]) #get the level
-            CommonUtil.ExecLog(sModuleInfo, "%s" % Comment, LogLevel)
-            return "passed"
+        log_info = str(step_data[0][0]).strip() #get the log level info from the step data
+        list = log_info.split(" ") # log level in step data is given as log_1/log_2/log_3 , so to get the level split it by "_"
+        Comment = str(step_data[0][2]).strip()  # get the comment
+        LogLevel = int(list[1]) #get the level
+        CommonUtil.ExecLog(sModuleInfo, "%s" % Comment, LogLevel)
+        return "passed"
+
     except Exception:
         return CommonUtil.Exception_Handler(sys.exc_info())
 
@@ -2258,86 +2237,28 @@ def Download_File_and_Unzip(step_data):
     sModuleInfo = inspect.stack()[0][3] + " : " + inspect.getmoduleinfo(__file__).name
     CommonUtil.ExecLog(sModuleInfo, "Function: Download File and Unzip", 1)
     try:
-        if _platform == "linux" or _platform == "linux2":
-            # linux
-            CommonUtil.ExecLog(sModuleInfo, "linux", 1)
-            url =  str(step_data[0][2]).strip()  # url to be downloaded
-            file_location =  str(step_data[1][2]).strip()  # location where to download the file/folder
-            if file_location == "":
-                #if no location is given
-                file_location = get_home_folder()+"/Downloads/" # download to the Downloads folder
-                result = download_and_unzip_file(url,file_location)
-                if result in failed_tag_list:
-                    CommonUtil.ExecLog(sModuleInfo,"Downloading from url '%s' to location '%s' and unzipping is not done" % (url, file_location), 3)
-                    return "failed"
-                else:
-                    CommonUtil.ExecLog(sModuleInfo,"Download from url '%s' to location '%s' and unzipping is done" % (url, file_location), 1)
-                    return "passed"
-            else:
-                # if location to download is given
-                file_location = get_home_folder() + file_location +"/"
-                result = download_and_unzip_file(url, file_location)
-                if result in failed_tag_list:
-                    CommonUtil.ExecLog(sModuleInfo,"Download from url '%s' to location '%s' and unzipping is not done" % (url, file_location), 3)
-                    return "failed"
-                else:
-                    CommonUtil.ExecLog(sModuleInfo,"Download from url '%s' to location '%s' and unzipping is done" % (url, file_location), 1)
-                    return "passed"
-
-        elif _platform == "win32":
-            # windows
-            CommonUtil.ExecLog(sModuleInfo, "windows", 1)
-            url = str(step_data[0][2]).strip()  # url to be downloaded
-            file_location = str(step_data[1][2]).strip()  # location where to download the file/folder
+        url = str(step_data[0][2]).strip()  # url to be downloaded
+        file_location = str(step_data[1][2]).strip()  # location where to download the file/folder
+        if file_location == "":
             # if no location is given
-            if file_location == "":
-                file_location = raw(get_home_folder() + "\Downloads"+"\\") # download to the Downloads folder
-                result = download_and_unzip_file(url, file_location)
-                if result in failed_tag_list:
-                    CommonUtil.ExecLog(sModuleInfo,"Download from url '%s' to location '%s' and unzipping is not done" % (url, file_location), 3)
-                    return "failed"
-                else:
-                    CommonUtil.ExecLog(sModuleInfo,"Download from url '%s' to location '%s' and unzipping is done" % (url, file_location), 1)
-                    return "passed"
+            file_location = os.path.join(get_home_folder(), 'Downloads')  # download to the Downloads folder
+            result = download_and_unzip_file(url, file_location)
+            if result in failed_tag_list:
+                CommonUtil.ExecLog(sModuleInfo, "Downloading from url '%s' to location '%s' and unzipping is not done" % (url, file_location), 3)
+                return "failed"
             else:
-                # if location to download is given
-                file_location = raw(file_location+ '\\')
-                result = download_and_unzip_file(url, file_location)
-                if result in failed_tag_list:
-                    CommonUtil.ExecLog(sModuleInfo,
-                                       "Download from url '%s' to location '%s' and unzipping is not done" % (url, file_location), 3)
-                    return "failed"
-                else:
-                    CommonUtil.ExecLog(sModuleInfo,
-                                       "Download from url '%s' to location '%s' and unzipping is done" % (url, file_location), 1)
-                    return "passed"
-        if _platform == "darwin":
-            # mac
-            CommonUtil.ExecLog(sModuleInfo, "mac", 1)
-            url =  str(step_data[0][2]).strip()  # url to be downloaded
-            file_location =  str(step_data[1][2]).strip()  # location where to download the file/folder
-            if file_location == "":
-                #if no location is given
-                file_location = get_home_folder()+"/Downloads/" # download to the Downloads folder
-                result = download_and_unzip_file(url,file_location)
-                if result in failed_tag_list:
-                    CommonUtil.ExecLog(sModuleInfo,"Downloading from url '%s' to location '%s' and unzipping is not done" % (url, file_location), 3)
-                    return "failed"
-                else:
-                    CommonUtil.ExecLog(sModuleInfo,"Download from url '%s' to location '%s' and unzipping is done" % (url, file_location), 1)
-                    return "passed"
+                CommonUtil.ExecLog(sModuleInfo,"Download from url '%s' to location '%s' and unzipping is done" % (url, file_location),1)
+                return "passed"
+        else:
+            # if location to download is given
+            file_location = os.path.join(get_home_folder(), file_location)
+            result = download_and_unzip_file(url, file_location)
+            if result in failed_tag_list:
+                CommonUtil.ExecLog(sModuleInfo, "Download from url '%s' to location '%s' and unzipping is not done" % (url, file_location), 3)
+                return "failed"
             else:
-                # if location to download is given
-                file_location = get_home_folder() + file_location +"/"
-                result = download_and_unzip_file(url, file_location)
-                if result in failed_tag_list:
-                    CommonUtil.ExecLog(sModuleInfo,"Download from url '%s' to location '%s' and unzipping is not done" % (url, file_location), 3)
-                    return "failed"
-                else:
-                    CommonUtil.ExecLog(sModuleInfo,"Download from url '%s' to location '%s' and unzipping is done" % (url, file_location), 1)
-                    return "passed"
-
-                # return result
+                CommonUtil.ExecLog(sModuleInfo,"Download from url '%s' to location '%s' and unzipping is done" % (url, file_location),1)
+                return "passed"
 
     except Exception:
         return CommonUtil.Exception_Handler(sys.exc_info())
