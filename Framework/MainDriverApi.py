@@ -308,15 +308,20 @@ def call_driver_function_of_test_step(sModuleInfo, TestStepsList, StepSeq, step_
                     step_name = (TestStepsList[StepSeq - 1][7]).strip()
                 else:
                     step_name = current_step_name
-                step_id = get_step_id_of_a_test_step(step_name)
-                step_id = step_id[0]
+                #step_id = get_step_id_of_a_test_step(step_name)
+                #step_id = step_id[0]
+                #will search in the original step not in the alias step for screen capture settings
+                step_id = TestStepsList[StepSeq - 1][0]
                 step_name = step_name.lower().replace(' ', '_')
                 try:
                     # importing functions from driver
                     functionTocall = getattr(module_name, step_name)
                     simple_queue = Queue.Queue()
                     screen_capture = get_screen_capture_settings_of_a_test_step(step_id)
-                    screen_capture = screen_capture[0]
+                    if len(screen_capture) > 0:
+                        screen_capture = screen_capture[0]
+                    else:
+                        screen_capture = 'Desktop'
 
                     if ConfigModule.get_config_value('RunDefinition', 'Threading') in passed_tag_list:
                         stepThread = threading.Thread(target=functionTocall, args=(
