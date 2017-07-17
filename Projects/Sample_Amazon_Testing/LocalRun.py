@@ -9,7 +9,7 @@ import time
 
 sys.path.append(os.path.dirname(os.getcwd()))
 from Projects.Sample_Amazon_Testing import Amazon as amazon
-from Framework.Built_In_Automation.new_sequential_actions2 import sequential_actions_new as Sequential_Actions
+from Framework.Built_In_Automation.Sequential_Actions import sequential_actions as Sequential_Actions
 
 
 web_link_step = [ ( 'web_page' , '' , 'http://amazon.ca' , False , False , '' ) ]

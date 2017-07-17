@@ -6,7 +6,7 @@
 import inspect, sys, time
 from Framework.Utilities import CommonUtil
 from Framework.Built_In_Automation.Shared_Resources import BuiltInFunctionSharedResources as sr
-from sequential_actions_new import actions, action_support
+from Framework.Built_In_Automation.Sequential_Actions.sequential_actions import actions, action_support
 
 
 def sanitize(step_data, valid_chars = '', clean_whitespace_only = False, column = ''):

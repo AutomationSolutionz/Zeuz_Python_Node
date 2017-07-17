@@ -6,7 +6,7 @@ Created on May 15, 2016
 
 import sys
 from Framework.Utilities import CommonUtil
-from Framework.Built_In_Automation.new_sequential_actions2 import sequential_actions_new as sa
+from Framework.Built_In_Automation.Sequential_Actions import sequential_actions as sa
 
 def sequential_actions(dependency, run_time_params, step_data, file_attachment, temp_q,screen_capture):
     try:
