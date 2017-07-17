@@ -102,7 +102,11 @@ actions = { # Numbers are arbitrary, and are not used anywhere
     182: {'module': 'selenium', 'name': 'open browser', 'function': 'Open_Browser_Wrapper'},
     183: {'module': 'selenium', 'name': 'go to link', 'function': 'Go_To_Link'},
     184: {'module': 'selenium', 'name': 'tear down browser', 'function': 'Tear_Down_Selenium'},
-    185: {'module': 'selenium', 'name': 'navigate', 'function': 'Navigate'}
+    185: {'module': 'selenium', 'name': 'navigate', 'function': 'Navigate'},
+    186: {'module': 'xml', 'name': 'update', 'function': 'update_element'},
+    187: {'module': 'xml', 'name': 'add', 'function': 'add_element'},
+    188: {'module': 'xml', 'name': 'read', 'function': 'read_element'},
+    189: {'module': 'xml', 'name': 'delete', 'function': 'delete_element'}
 }
 
 # List of Sub-Field keywords, must be all lowercase, and using single spaces - no underscores
@@ -113,6 +117,7 @@ action_support = [
     'element parameter',
     'child parameter',
     'parent parameter',
+    'target parameter',
     'method',
     'url',
     'body',
@@ -156,6 +161,9 @@ def load_sa_modules(module): # Load module "AS" must match module name we get fr
     elif module == 'utility':
         global utility
         from Framework.Built_In_Automation.Built_In_Utility.CrossPlatform import BuiltInUtilityFunction as utility
+    elif module == 'xml':
+        global xml
+        from Framework.Built_In_Automation.XML import BuiltInFunctions_XML as xml
     else:
         CommonUtil.ExecLog(sModuleInfo, "Invalid sequential actions module: %s" % module, 3)
         return 'failed'
