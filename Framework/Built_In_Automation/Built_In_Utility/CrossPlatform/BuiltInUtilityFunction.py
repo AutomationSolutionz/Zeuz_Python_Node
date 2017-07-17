@@ -1315,68 +1315,40 @@ def Calculate(step_data):
         return CommonUtil.Exception_Handler(sys.exc_info())
 
 
-# Method to Run Sudo Command
-def Run_Sudo_Command(step_data):
-    sModuleInfo = inspect.stack()[0][3] + " : " + inspect.getmoduleinfo(__file__).name
-    CommonUtil.ExecLog(sModuleInfo, "Function: Run Sudo Command", 1)
-    try:
-        if _platform == "linux" or _platform == "linux2":
-            # linux
-            CommonUtil.ExecLog(sModuleInfo, "linux", 1)
-            command = str(step_data[0][2]).strip()
-            result = run_cmd(command)
-            if result in failed_tag_list:
-                CommonUtil.ExecLog(sModuleInfo, "Could not run sudo command '%s'" % (command), 3)
-                return "failed"
-            else:
-                CommonUtil.ExecLog(sModuleInfo, "sudo command is run properly '%s'" % (command), 1)
-                return "passed"
-        elif _platform == "win32":
-            # windows
-            CommonUtil.ExecLog(sModuleInfo, "windows", 1)
-            CommonUtil.ExecLog(sModuleInfo, "Could not run sudo command as it is windows", 3)
-            return "failed"
-        elif _platform == "darwin":
-            # mac
-            CommonUtil.ExecLog(sModuleInfo, "mac", 1)
-            command = str(step_data[0][2]).strip()
-            result = run_cmd(command)
-            if result in failed_tag_list:
-                CommonUtil.ExecLog(sModuleInfo, "Could not run sudo command '%s'" % (command), 3)
-                return "failed"
-            else:
-                CommonUtil.ExecLog(sModuleInfo, "sudo command is run properly '%s'" % (command), 1)
-                return "passed"
-    except Exception:
-        return CommonUtil.Exception_Handler(sys.exc_info())
-
 # Method to Run Command
 def Run_Command(step_data):
     sModuleInfo = inspect.stack()[0][3] + " : " + inspect.getmoduleinfo(__file__).name
     CommonUtil.ExecLog(sModuleInfo, "Function: Run command for windows", 1)
     try:
-        if _platform == "win32":
-            # windows
-            CommonUtil.ExecLog(sModuleInfo, "windows", 1)
-            command = str(step_data[0][2]).strip()
-            result = run_win_cmd(command)
-            if result in failed_tag_list:
-                CommonUtil.ExecLog(sModuleInfo, "Could not run sudo command '%s'" % (command), 3)
-                return "failed"
-            else:
-                CommonUtil.ExecLog(sModuleInfo, "sudo command is run properly '%s'" % (command), 1)
-                return "passed"
-        elif _platform == "linux" or _platform == "linux2":
-            # linux
-            CommonUtil.ExecLog(sModuleInfo, "linux", 1)
-            CommonUtil.ExecLog(sModuleInfo, "Could not run command as it is linux", 3)
-            return "failed"
-        elif _platform == "darwin":
-            # mac
-            CommonUtil.ExecLog(sModuleInfo, "mac", 1)
-            CommonUtil.ExecLog(sModuleInfo, "Could not run command as it is mac", 3)
-            return "failed"
+        if step_data[0][0] == "run command":
+            if _platform == "win32":
+                # windows
+                command = str(step_data[0][2]).strip()
+                result = run_win_cmd(command)
+                if result in failed_tag_list:
+                    CommonUtil.ExecLog(sModuleInfo, "Could not run sudo command '%s'" % (command), 3)
+                    return "failed"
+                else:
+                    CommonUtil.ExecLog(sModuleInfo, "sudo command is run properly '%s'" % (command), 1)
+                    return "passed"
+            elif _platform == "linux" or _platform == "linux2" or _platform == "darwin":
 
+                CommonUtil.ExecLog(sModuleInfo, "Could not run admin command for linux/mac", 3)
+                return "failed"
+        elif step_data[0][0] == "run sudo":
+            if _platform == "linux" or _platform == "linux2" or _platform == "darwin":
+                command = str(step_data[0][2]).strip()
+                result = run_cmd(command)
+                if result in failed_tag_list:
+                    CommonUtil.ExecLog(sModuleInfo, "Could not run sudo command '%s'" % (command), 3)
+                    return "failed"
+                else:
+                    CommonUtil.ExecLog(sModuleInfo, "sudo command is run properly '%s'" % (command), 1)
+                    return "passed"
+            elif _platform == "win32":
+                # windows
+                CommonUtil.ExecLog(sModuleInfo, "Could not run sudo command as it is windows", 3)
+                return "failed"
     except Exception:
         return CommonUtil.Exception_Handler(sys.exc_info())
 
@@ -1409,43 +1381,16 @@ def Get_Current_Desktop(step_data):
     sModuleInfo = inspect.stack()[0][3] + " : " + inspect.getmoduleinfo(__file__).name
     CommonUtil.ExecLog(sModuleInfo, "Function: Get Current Desktop", 1)
     try:
-        if _platform == "linux" or _platform == "linux2":
-            # linux
-            CommonUtil.ExecLog(sModuleInfo, "linux", 1)
-            path = get_home_folder() + "/Desktop"  # concate home folder path with "/Desktop"
-            # print path
-            CommonUtil.ExecLog(sModuleInfo, "Desktop Path is '%s'" % (path), 1)
-            if path in failed_tag_list:
-                CommonUtil.ExecLog(sModuleInfo, "Could not find desktop '%s'" % (path), 3)
-                return "failed"
-            else:
-                CommonUtil.ExecLog(sModuleInfo, "desktop path is '%s'" % (path), 1)
-                return "passed"
-        elif _platform == "win32":
-            # windows
-            CommonUtil.ExecLog(sModuleInfo, "windows", 1)
-            #path = os.path.join(os.environ["HOMEPATH"], "Desktop")
-            path = get_home_folder() + "\Desktop"
-            # print path
-            CommonUtil.ExecLog(sModuleInfo, "Desktop Path is '%s'" % (path), 1)
-            if path in failed_tag_list:
-                CommonUtil.ExecLog(sModuleInfo, "Could not find desktop '%s'" % (path), 3)
-                return "failed"
-            else:
-                CommonUtil.ExecLog(sModuleInfo, "desktop path is '%s'" % (path), 1)
-                return "passed"
-        elif _platform == "darwin":
-            # mac
-            CommonUtil.ExecLog(sModuleInfo, "mac", 1)
-            path = get_home_folder() + "/Desktop"  # concate home folder path with "/Desktop"
-            # print path
-            CommonUtil.ExecLog(sModuleInfo, "Desktop Path is '%s'" % (path), 1)
-            if path in failed_tag_list:
-                CommonUtil.ExecLog(sModuleInfo, "Could not find desktop '%s'" % (path), 3)
-                return "failed"
-            else:
-                CommonUtil.ExecLog(sModuleInfo, "desktop path is '%s'" % (path), 1)
-                return "passed"
+        path = os.path.join(get_home_folder(), 'Desktop') # concate home folder path with "/Desktop"
+
+        if path in failed_tag_list:
+            CommonUtil.ExecLog(sModuleInfo, "Could not find desktop '%s'" % (path), 3)
+            return "failed"
+
+        CommonUtil.ExecLog(sModuleInfo, "desktop path is '%s'" % (path), 1)
+        Shared_Resources.Set_Shared_Variables("Desktop", path)
+        return "passed"
+
     except Exception:
         return CommonUtil.Exception_Handler(sys.exc_info())
 
@@ -1455,43 +1400,15 @@ def Get_Current_Documents(step_data):
     sModuleInfo = inspect.stack()[0][3] + " : " + inspect.getmoduleinfo(__file__).name
     CommonUtil.ExecLog(sModuleInfo, "Function: Get Current Documents", 1)
     try:
-        if _platform == "linux" or _platform == "linux2":
-            # linux
-            CommonUtil.ExecLog(sModuleInfo, "linux", 1)
-            path = get_home_folder() + "/Documents"  # concate home folder path with "/Documents"
-            # print path
-            CommonUtil.ExecLog(sModuleInfo, "Documents Path is '%s'" % (path), 1)
-            if path in failed_tag_list:
-                CommonUtil.ExecLog(sModuleInfo, "Could not find Documents '%s'" % (path), 3)
-                return "failed"
-            else:
-                CommonUtil.ExecLog(sModuleInfo, "Documents path is '%s'" % (path), 1)
-                return "passed"
-        elif _platform == "win32":
-            # windows
-            CommonUtil.ExecLog(sModuleInfo, "windows", 1)
-            #path = os.path.join(os.environ["HOMEPATH"], "Documents")
-            path = get_home_folder()+"\Documents"
-            # print path
-            CommonUtil.ExecLog(sModuleInfo, "Documents Path is '%s'" % (path), 1)
-            if path in failed_tag_list:
-                CommonUtil.ExecLog(sModuleInfo, "Could not find Documents '%s'" % (path), 3)
-                return "failed"
-            else:
-                CommonUtil.ExecLog(sModuleInfo, "Documents path is '%s'" % (path), 1)
-                return "passed"
-        elif _platform == "darwin":
-            # mac
-            CommonUtil.ExecLog(sModuleInfo, "mac", 1)
-            path = get_home_folder() + "/Documents"  # concate home folder path with "/Documents"
-            # print path
-            CommonUtil.ExecLog(sModuleInfo, "Documents Path is '%s'" % (path), 1)
-            if path in failed_tag_list:
-                CommonUtil.ExecLog(sModuleInfo, "Could not find Documents '%s'" % (path), 3)
-                return "failed"
-            else:
-                CommonUtil.ExecLog(sModuleInfo, "Documents path is '%s'" % (path), 1)
-                return "passed"
+        path = os.path.join(get_home_folder(), 'Documents') # concate home folder path with "/Desktop"
+
+        if path in failed_tag_list:
+            CommonUtil.ExecLog(sModuleInfo, "Could not find Documents path '%s'" % (path), 3)
+            return "failed"
+
+        CommonUtil.ExecLog(sModuleInfo, "Documents path is '%s'" % (path), 1)
+        Shared_Resources.Set_Shared_Variables("Documents", path)
+        return "passed"
     except Exception:
         return CommonUtil.Exception_Handler(sys.exc_info())
 

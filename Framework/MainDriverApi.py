@@ -342,7 +342,7 @@ def call_driver_function_of_test_step(sModuleInfo, TestStepsList, StepSeq, step_
                         except Queue.Empty:
                             # Global.DefaultTestStepTimeout
                             ErrorMessage = "Test Step didn't return after %d seconds" % step_time
-                            CommonUtil.Exception_Handler(sys.exc_info())
+                            CommonUtil.Exception_Handler(sys.exc_info(),None,ErrorMessage)
                             sStepResult = "Failed"
                             q.put(sStepResult)
                             # Clean up

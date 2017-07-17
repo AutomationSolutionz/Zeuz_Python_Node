@@ -89,7 +89,7 @@ actions = { # Numbers are arbitrary, and are not used anywhere
     169: {'module': 'utility', 'name': 'current documents', 'function': 'Get_Current_Documents'},
     170: {'module': 'utility', 'name': 'current desktop', 'function': 'Get_Current_Desktop'},
     171: {'module': 'utility', 'name': 'home directory', 'function': 'Get_Home_Directory'},
-    172: {'module': 'utility', 'name': 'run sudo', 'function': 'Run_Sudo_Command'},
+    172: {'module': 'utility', 'name': 'run sudo', 'function': 'Run_Command'},
     173: {'module': 'utility', 'name': 'run command', 'function': 'Run_Command'},
     174: {'module': 'utility', 'name': 'download', 'function': 'Download_file'},
     175: {'module': 'utility', 'name': 'sleep', 'function': 'Sleep'},
