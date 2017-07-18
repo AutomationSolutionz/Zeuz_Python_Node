@@ -905,89 +905,35 @@ def Copy_File_or_Folder(step_data):
     sModuleInfo = inspect.stack()[0][3] + " : " + inspect.getmoduleinfo(__file__).name
     CommonUtil.ExecLog(sModuleInfo, "Function: Copy File or Folder", 1)
     try:
-        if _platform == "linux" or _platform == "linux2":
-            # linux
-            CommonUtil.ExecLog(sModuleInfo, "linux", 1)
+        if _platform == "linux" or _platform == "linux2" or _platform == "darwin":
             from_path = get_home_folder() + str(step_data[0][2]).strip()  # location of the file/folder to be copied
             to_path = get_home_folder() + str(step_data[1][2]).strip()  # location where to copy the file/folder
-            file_or_folder = str(step_data[2][2]).strip()  # get if it is file/folder to copy
-            if file_or_folder.lower() == 'file':
-                # copy file "from_path" to "to_path"
-                result = copy_file(from_path, to_path)
-                if result in failed_tag_list:
-                    CommonUtil.ExecLog(sModuleInfo,"Could not copy file '%s' to the destination '%s'" % (from_path, to_path), 3)
-                    return "failed"
-                else:
-                    CommonUtil.ExecLog(sModuleInfo,"File '%s' copied to the destination '%s' successfully" % (from_path, to_path), 1)
-                    return "passed"
-            elif file_or_folder.lower() == 'folder':
-                # copy folder "from_path" to "to_path"
-                result = copy_folder(from_path, to_path)
-                if result in failed_tag_list:
-                    CommonUtil.ExecLog(sModuleInfo,"Could not copy folder '%s' to the destination '%s'" % (from_path, to_path), 3)
-                    return "failed"
-                else:
-                    CommonUtil.ExecLog(sModuleInfo,"Folder '%s' copied to the destination '%s' successfully" % (from_path, to_path),1)
-                    return "passed"
-            else:
-                CommonUtil.ExecLog(sModuleInfo,"The information in the data-set(s) are incorrect. Please provide accurate data set(s) information.",3)
-                return 'failed'
         elif _platform == "win32":
-            # windows
-            CommonUtil.ExecLog(sModuleInfo, "windows", 1)
             from_path = raw(str(step_data[0][2]).strip())  # location of the file/folder to be copied
             to_path = raw(str(step_data[1][2]).strip())  # location where to copy the file/folder
-            file_or_folder = str(step_data[2][2]).strip()  # get if it is file/folder to copy
-            if file_or_folder.lower() == 'file':
+        file_or_folder = str(step_data[2][2]).strip()  # get if it is file/folder to copy
+        if file_or_folder.lower() == 'file':
                 # copy file "from_path" to "to_path"
-                result = copy_file(from_path, to_path)
-                if result in failed_tag_list:
-                    CommonUtil.ExecLog(sModuleInfo,"Could not copy file '%s' to the destination '%s'" % (from_path, to_path), 3)
-                    return "failed"
-                else:
-                    CommonUtil.ExecLog(sModuleInfo,"File '%s' copied to the destination '%s' successfully" % (from_path, to_path),1)
-                    return "passed"
-            elif file_or_folder.lower() == 'folder':
-                # copy folder "from_path" to "to_path"
-                result = copy_folder(from_path, to_path)
-                if result in failed_tag_list:
-                    CommonUtil.ExecLog(sModuleInfo,"Could not copy folder '%s' to the destination '%s'" % (from_path, to_path), 3)
-                    return "failed"
-                else:
-                    CommonUtil.ExecLog(sModuleInfo,"Folder '%s' copied to the destination '%s' successfully" % (from_path, to_path), 1)
-                    return "passed"
+            result = copy_file(from_path, to_path)
+            if result in failed_tag_list:
+                CommonUtil.ExecLog(sModuleInfo,"Could not copy file '%s' to the destination '%s'" % (from_path, to_path), 3)
+                return "failed"
             else:
-                CommonUtil.ExecLog(sModuleInfo,"The information in the data-set(s) are incorrect. Please provide accurate data set(s) information.", 3)
-                return 'failed'
-        elif _platform == "darwin":
-            # mac
-            CommonUtil.ExecLog(sModuleInfo, "mac", 1)
-            from_path = get_home_folder() + str(step_data[0][2]).strip()  # location of the file/folder to be copied
-            to_path = get_home_folder() + str(step_data[1][2]).strip()  # location where to copy the file/folder
-            file_or_folder = str(step_data[2][2]).strip()  # get if it is file/folder to copy
-            if file_or_folder.lower() == 'file':
-                # copy file "from_path" to "to_path"
-                result = copy_file(from_path, to_path)
-                if result in failed_tag_list:
-                    CommonUtil.ExecLog(sModuleInfo,"Could not copy file '%s' to the destination '%s'" % (from_path, to_path), 3)
-                    return "failed"
-                else:
-                    CommonUtil.ExecLog(sModuleInfo,"File '%s' copied to the destination '%s' successfully" % (from_path, to_path), 1)
-                    return "passed"
-            elif file_or_folder.lower() == 'folder':
-                # copy folder "from_path" to "to_path"
-                result = copy_folder(from_path, to_path)
-                if result in failed_tag_list:
-                    CommonUtil.ExecLog(sModuleInfo,"Could not copy folder '%s' to the destination '%s'" % (from_path, to_path), 3)
-                    return "failed"
-                else:
-                    CommonUtil.ExecLog(sModuleInfo,"Folder '%s' copied to the destination '%s' successfully" % (from_path, to_path),1)
-                    return "passed"
+                CommonUtil.ExecLog(sModuleInfo,"File '%s' copied to the destination '%s' successfully" % (from_path, to_path), 1)
+                return "passed"
+        elif file_or_folder.lower() == 'folder':
+            # copy folder "from_path" to "to_path"
+            result = copy_folder(from_path, to_path)
+            if result in failed_tag_list:
+                CommonUtil.ExecLog(sModuleInfo,"Could not copy folder '%s' to the destination '%s'" % (from_path, to_path), 3)
+                return "failed"
             else:
-                CommonUtil.ExecLog(sModuleInfo,"The information in the data-set(s) are incorrect. Please provide accurate data set(s) information.",3)
-                return 'failed'
+                CommonUtil.ExecLog(sModuleInfo,"Folder '%s' copied to the destination '%s' successfully" % (from_path, to_path),1)
+                return "passed"
+        else:
+            CommonUtil.ExecLog(sModuleInfo,"The information in the data-set(s) are incorrect. Please provide accurate data set(s) information.",3)
+            return 'failed'
 
-                # return result
     except Exception:
         return CommonUtil.Exception_Handler(sys.exc_info())
 
@@ -997,84 +943,35 @@ def Delete_File_or_Folder(step_data):
     sModuleInfo = inspect.stack()[0][3] + " : " + inspect.getmoduleinfo(__file__).name
     CommonUtil.ExecLog(sModuleInfo, "Function: Delete File or Folder", 1)
     try:
-        if _platform == "linux" or _platform == "linux2":
-            # linux
-            CommonUtil.ExecLog(sModuleInfo, "linux", 1)
+        if _platform == "linux" or _platform == "linux2" or _platform == "darwin":
+
             path = get_home_folder() + str(step_data[0][2]).strip()  # path of the file/folder to be deleted
-            file_or_folder = str(step_data[1][2]).strip()  # get if it is file/folder to delete
-            if file_or_folder.lower() == 'file':
-                # delete file "path"
-                result = DeleteFile(path)
-                if result in failed_tag_list:
-                    CommonUtil.ExecLog(sModuleInfo, "Could not delete file '%s'" % (path), 3)
-                    return "failed"
-                else:
-                    CommonUtil.ExecLog(sModuleInfo, "File '%s' deleted successfully" % (path), 1)
-                    return "passed"
-            elif file_or_folder.lower() == 'folder':
-                # delte folder "path"
-                result = DeleteFolder(path)
-                if result in failed_tag_list:
-                    CommonUtil.ExecLog(sModuleInfo, "Could not delete folder '%s'" % (path), 3)
-                    return "failed"
-                else:
-                    CommonUtil.ExecLog(sModuleInfo, "Folder '%s' deleted successfully" % (path), 1)
-                    return "passed"
-            else:
-                CommonUtil.ExecLog(sModuleInfo, "The information in the data-set(s) are incorrect. Please provide accurate data set(s) information.", 3)
-                return 'failed'
         elif _platform == "win32":
-            # windows
-            CommonUtil.ExecLog(sModuleInfo, "windows", 1)
-            path = raw(str(step_data[0][2]).strip())  # path of the file/folder to be deleted
-            file_or_folder = str(step_data[1][2]).strip()  # get if it is file/folder to delete
-            if file_or_folder.lower() == 'file':
+            path = raw(str(step_data[0][2]).strip())
+        file_or_folder = str(step_data[1][2]).strip()  # get if it is file/folder to delete
+
+        if file_or_folder.lower() == 'file':
                 # delete file "path"
-                result = DeleteFile(path)
-                if result in failed_tag_list:
-                    CommonUtil.ExecLog(sModuleInfo, "Could not delete file '%s'" % (path), 3)
-                    return "failed"
-                else:
-                    CommonUtil.ExecLog(sModuleInfo, "File '%s' deleted successfully" % (path), 1)
-                    return "passed"
-            elif file_or_folder.lower() == 'folder':
-                # delete folder "path"
-                result = DeleteFolder(path)
-                if result in failed_tag_list:
-                    CommonUtil.ExecLog(sModuleInfo, "Could not delete folder '%s'" % (path), 3)
-                    return "failed"
-                else:
-                    CommonUtil.ExecLog(sModuleInfo, "Folder '%s' deleted successfully" % (path), 1)
-                    return "passed"
+            result = DeleteFile(path)
+            if result in failed_tag_list:
+                CommonUtil.ExecLog(sModuleInfo, "Could not delete file '%s'" % (path), 3)
+                return "failed"
             else:
-                CommonUtil.ExecLog(sModuleInfo,"The information in the data-set(s) are incorrect. Please provide accurate data set(s) information.",3)
-                return 'failed'
-        elif _platform == "darwin":
-            # mac
-            CommonUtil.ExecLog(sModuleInfo, "mac", 1)
-            path = get_home_folder() + str(step_data[0][2]).strip()  # path of the file/folder to be deleted
-            file_or_folder = str(step_data[1][2]).strip()  # get if it is file/folder to delete
-            if file_or_folder.lower() == 'file':
-                # delete file "path"
-                result = DeleteFile(path)
-                if result in failed_tag_list:
-                    CommonUtil.ExecLog(sModuleInfo, "Could not delete file '%s'" % (path), 3)
-                    return "failed"
-                else:
-                    CommonUtil.ExecLog(sModuleInfo, "File '%s' deleted successfully" % (path), 1)
-                    return "passed"
-            elif file_or_folder.lower() == 'folder':
+                CommonUtil.ExecLog(sModuleInfo, "File '%s' deleted successfully" % (path), 1)
+                return "passed"
+        elif file_or_folder.lower() == 'folder':
                 # delte folder "path"
-                result = DeleteFolder(path)
-                if result in failed_tag_list:
-                    CommonUtil.ExecLog(sModuleInfo, "Could not delete folder '%s'" % (path), 3)
-                    return "failed"
-                else:
-                    CommonUtil.ExecLog(sModuleInfo, "Folder '%s' deleted successfully" % (path), 1)
-                    return "passed"
+            result = DeleteFolder(path)
+            if result in failed_tag_list:
+                CommonUtil.ExecLog(sModuleInfo, "Could not delete folder '%s'" % (path), 3)
+                return "failed"
             else:
-                CommonUtil.ExecLog(sModuleInfo, "The information in the data-set(s) are incorrect. Please provide accurate data set(s) information.", 3)
-                return 'failed'
+                CommonUtil.ExecLog(sModuleInfo, "Folder '%s' deleted successfully" % (path), 1)
+                return "passed"
+        else:
+            CommonUtil.ExecLog(sModuleInfo, "The information in the data-set(s) are incorrect. Please provide accurate data set(s) information.", 3)
+            return 'failed'
+
 
     except Exception:
         return CommonUtil.Exception_Handler(sys.exc_info())
@@ -1443,67 +1340,28 @@ def Compare_File(step_data):
     sModuleInfo = inspect.stack()[0][3] + " : " + inspect.getmoduleinfo(__file__).name
     CommonUtil.ExecLog(sModuleInfo, "Function: Compare File", 1)
     try:
-        if _platform == "linux" or _platform == "linux2":
-            # linux
-            CommonUtil.ExecLog(sModuleInfo, "linux", 1)
+        if _platform == "linux" or _platform == "linux2" or _platform == "darwin":
             from_path = get_home_folder() + str(step_data[0][2]).strip()  # location of file path to be compared
             to_path = get_home_folder() + str(step_data[1][2]).strip()  # location of file path to be compared
-            file_or_folder = str(step_data[2][2]).strip()
-            if file_or_folder.lower() == 'file':
-                # compare file "from_path" and "to_path"
-                result = CompareFile(from_path, to_path)
-                if result in failed_tag_list:
-                    CommonUtil.ExecLog(sModuleInfo, "Files %s and %s are not equal '%s'" % (to_path, from_path), 3)
-                    return "failed"
-                else:
-                    CommonUtil.ExecLog(sModuleInfo, "File '%s' and %s are equal " % (to_path, from_path), 1)
-                    return "passed"
-
-            else:
-                CommonUtil.ExecLog(sModuleInfo,"The information in the data-set(s) are incorrect. Please provide accurate data set(s) information.",3)
-                return 'failed'
         elif _platform == "win32":
-            # windows
-            CommonUtil.ExecLog(sModuleInfo, "windows", 1)
-            # print step_data[0][0][0]
-            # print str(step_data[0][0][0])
             from_path = raw(str(step_data[0][2]).strip())  # location of file path to be compared
             # print  from_path
             to_path = raw(str(step_data[1][2]).strip())  # location of file path to be compared
-            # print to_path
-            file_or_folder = str(step_data[2][2]).strip()
-            if file_or_folder.lower() == 'file':
-                # compare file "from_path" and "to_path"
-                result = CompareFile(from_path, to_path)
-                if result in failed_tag_list:
-                    CommonUtil.ExecLog(sModuleInfo, "Files %s and %s are not equal '%s'" % (to_path, from_path), 3)
-                    return "failed"
-                else:
-                    CommonUtil.ExecLog(sModuleInfo, "File '%s' and %s are equal " % (to_path, from_path), 1)
-                    return "passed"
 
+        file_or_folder = str(step_data[2][2]).strip()
+        if file_or_folder.lower() == 'file':
+            # compare file "from_path" and "to_path"
+            result = CompareFile(from_path, to_path)
+            if result in failed_tag_list:
+                CommonUtil.ExecLog(sModuleInfo, "Files %s and %s are not equal '%s'" % (to_path, from_path), 3)
+                return "failed"
             else:
-                CommonUtil.ExecLog(sModuleInfo, "The information in the data-set(s) are incorrect. Please provide accurate data set(s) information.",3)
-                return 'failed'
-        elif _platform == "darwin":
-            # mac
-            CommonUtil.ExecLog(sModuleInfo, "mac", 1)
-            from_path = get_home_folder() + str(step_data[0][2]).strip()  # location of file path to be compared
-            to_path = get_home_folder() + str(step_data[1][2]).strip()  # location of file path to be compared
-            file_or_folder = str(step_data[2][2]).strip()
-            if file_or_folder.lower() == 'file':
-                # compare file "from_path" and "to_path"
-                result = CompareFile(from_path, to_path)
-                if result in failed_tag_list:
-                    CommonUtil.ExecLog(sModuleInfo, "Files %s and %s are not equal '%s'" % (to_path, from_path), 3)
-                    return "failed"
-                else:
-                    CommonUtil.ExecLog(sModuleInfo, "File '%s' and %s are equal " % (to_path, from_path), 1)
-                    return "passed"
+                CommonUtil.ExecLog(sModuleInfo, "File '%s' and %s are equal " % (to_path, from_path), 1)
+                return "passed"
 
-            else:
-                CommonUtil.ExecLog(sModuleInfo,"The information in the data-set(s) are incorrect. Please provide accurate data set(s) information.",3)
-                return 'failed'
+        else:
+            CommonUtil.ExecLog(sModuleInfo,"The information in the data-set(s) are incorrect. Please provide accurate data set(s) information.",3)
+            return 'failed'
 
     except Exception:
         return CommonUtil.Exception_Handler(sys.exc_info())
@@ -1514,89 +1372,38 @@ def Rename_File_or_Folder(step_data):
     sModuleInfo = inspect.stack()[0][3] + " : " + inspect.getmoduleinfo(__file__).name
     CommonUtil.ExecLog(sModuleInfo, "Function: Rename File or Folder", 1)
     try:
-        if _platform == "linux" or _platform == "linux2":
-            # linux
-            CommonUtil.ExecLog(sModuleInfo, "linux", 1)
+        if _platform == "linux" or _platform == "linux2" or _platform == "darwin" :
+
             from_path = get_home_folder() + str(step_data[0][2]).strip()  # location of the file/folder to be renamed
             to_path = get_home_folder() + str(step_data[1][2]).strip()  # location where to rename the file/folder
-            file_or_folder = str(step_data[2][2]).strip()  # get if it is file/folder to rename
-            if file_or_folder.lower() == 'file':
-                # rename file "from_path" to "to_path"
-                result = RenameFile(from_path, to_path)
-                if result in failed_tag_list:
-                    CommonUtil.ExecLog(sModuleInfo, "Could not rename file '%s' to '%s'" % (from_path, to_path), 3)
-                    return "failed"
-                else:
-                    CommonUtil.ExecLog(sModuleInfo, "File '%s' renamed to '%s' successfully" % (from_path, to_path), 1)
-                    return "passed"
-            elif file_or_folder.lower() == 'folder':
-                # rename folder "from_path" to "to_path"
-                result = RenameFolder(from_path, to_path)
-                if result in failed_tag_list:
-                    CommonUtil.ExecLog(sModuleInfo, "Could not rename folder '%s' to '%s'" % (from_path, to_path), 3)
-                    return "failed"
-                else:
-                    CommonUtil.ExecLog(sModuleInfo, "Folder '%s' renamed to '%s' successfully" % (from_path, to_path),
-                                       1)
-                    return "passed"
-            else:
-                CommonUtil.ExecLog(sModuleInfo,"The information in the data-set(s) are incorrect. Please provide accurate data set(s) information.", 3)
-                return 'failed'
         elif _platform == "win32":
-            # windows
-            CommonUtil.ExecLog(sModuleInfo, "windows", 1)
             from_path = raw(str(step_data[0][2]).strip())  # location of the file/folder to be renamed
             to_path = raw(str(step_data[1][2]).strip())  # location where to rename the file/folder
-            file_or_folder = str(step_data[2][2]).strip()  # get if it is file/folder to rename
-            if file_or_folder.lower() == 'file':
+
+        file_or_folder = str(step_data[2][2]).strip()  # get if it is file/folder to rename
+        if file_or_folder.lower() == 'file':
                 # rename file "from_path" to "to_path"
-                result = RenameFile(from_path, to_path)
-                if result in failed_tag_list:
-                    CommonUtil.ExecLog(sModuleInfo, "Could not rename file '%s' to '%s'" % (from_path, to_path), 3)
-                    return "failed"
-                else:
-                    CommonUtil.ExecLog(sModuleInfo, "File '%s' renamed to '%s' successfully" % (from_path, to_path), 1)
-                    return "passed"
-            elif file_or_folder.lower() == 'folder':
-                # rename folder 'from_path" to "to_path"
-                result = RenameFolder(from_path, to_path)
-                if result in failed_tag_list:
-                    CommonUtil.ExecLog(sModuleInfo, "Could not rename folder '%s' to '%s'" % (from_path, to_path), 3)
-                    return "failed"
-                else:
-                    CommonUtil.ExecLog(sModuleInfo, "Folder '%s' renamed to '%s' successfully" % (from_path, to_path), 1)
-                    return "passed"
+            result = RenameFile(from_path, to_path)
+            if result in failed_tag_list:
+                CommonUtil.ExecLog(sModuleInfo, "Could not rename file '%s' to '%s'" % (from_path, to_path), 3)
+                return "failed"
             else:
-                CommonUtil.ExecLog(sModuleInfo, "The information in the data-set(s) are incorrect. Please provide accurate data set(s) information.", 3)
-                return 'failed'
-        elif _platform == "darwin":
-            # mac
-            CommonUtil.ExecLog(sModuleInfo, "mac", 1)
-            from_path = get_home_folder() + str(step_data[0][2]).strip()  # location of the file/folder to be renamed
-            to_path = get_home_folder() + str(step_data[1][2]).strip()  # location where to rename the file/folder
-            file_or_folder = str(step_data[2][2]).strip()  # get if it is file/folder to rename
-            if file_or_folder.lower() == 'file':
-                # rename file "from_path" to "to_path"
-                result = RenameFile(from_path, to_path)
-                if result in failed_tag_list:
-                    CommonUtil.ExecLog(sModuleInfo, "Could not rename file '%s' to '%s'" % (from_path, to_path), 3)
-                    return "failed"
-                else:
-                    CommonUtil.ExecLog(sModuleInfo, "File '%s' renamed to '%s' successfully" % (from_path, to_path), 1)
-                    return "passed"
-            elif file_or_folder.lower() == 'folder':
+                CommonUtil.ExecLog(sModuleInfo, "File '%s' renamed to '%s' successfully" % (from_path, to_path), 1)
+                return "passed"
+        elif file_or_folder.lower() == 'folder':
                 # rename folder "from_path" to "to_path"
-                result = RenameFolder(from_path, to_path)
-                if result in failed_tag_list:
-                    CommonUtil.ExecLog(sModuleInfo, "Could not rename folder '%s' to '%s'" % (from_path, to_path), 3)
-                    return "failed"
-                else:
-                    CommonUtil.ExecLog(sModuleInfo, "Folder '%s' renamed to '%s' successfully" % (from_path, to_path),
-                                       1)
-                    return "passed"
+            result = RenameFolder(from_path, to_path)
+            if result in failed_tag_list:
+                CommonUtil.ExecLog(sModuleInfo, "Could not rename folder '%s' to '%s'" % (from_path, to_path), 3)
+                return "failed"
             else:
-                CommonUtil.ExecLog(sModuleInfo,"The information in the data-set(s) are incorrect. Please provide accurate data set(s) information.", 3)
-                return 'failed'
+                CommonUtil.ExecLog(sModuleInfo, "Folder '%s' renamed to '%s' successfully" % (from_path, to_path),
+                                       1)
+                return "passed"
+        else:
+            CommonUtil.ExecLog(sModuleInfo,"The information in the data-set(s) are incorrect. Please provide accurate data set(s) information.", 3)
+            return 'failed'
+
 
     except Exception:
         return CommonUtil.Exception_Handler(sys.exc_info())
@@ -1750,87 +1557,35 @@ def Move_File_or_Folder(step_data):
     sModuleInfo = inspect.stack()[0][3] + " : " + inspect.getmoduleinfo(__file__).name
     CommonUtil.ExecLog(sModuleInfo, "Function: Move File or Folder", 1)
     try:
-        if _platform == "linux" or _platform == "linux2":
-            # linux
-            CommonUtil.ExecLog(sModuleInfo, "linux", 1)
+        if _platform == "linux" or _platform == "linux2" or _platform == "darwin":
             from_path = get_home_folder() + str(step_data[0][2]).strip()  # location of the file/folder to be moved
             to_path = get_home_folder() + str(step_data[1][2]).strip()  # location where to move the file/folder
-            file_or_folder = str(step_data[2][2]).strip()  # get if it is file/folder to move
-            if file_or_folder.lower() == 'file':
-                # move file "from_path to "to_path"
-                result = MoveFile(from_path, to_path)
-                if result in failed_tag_list:
-                    CommonUtil.ExecLog(sModuleInfo, "Could not move file '%s' to '%s'" % (from_path, to_path), 3)
-                    return "failed"
-                else:
-                    CommonUtil.ExecLog(sModuleInfo, "File '%s' moved to '%s' successfully" % (from_path, to_path), 1)
-                    return "passed"
-            elif file_or_folder.lower() == 'folder':
-                # move folder "from_path" to "to_path"
-                result = MoveFolder(from_path, to_path)
-                if result in failed_tag_list:
-                    CommonUtil.ExecLog(sModuleInfo, "Could not move folder '%s' to '%s'" % (from_path, to_path), 3)
-                    return "failed"
-                else:
-                    CommonUtil.ExecLog(sModuleInfo, "Folder '%s' moved to '%s' successfully" % (from_path, to_path), 1)
-                    return "passed"
-            else:
-                CommonUtil.ExecLog(sModuleInfo,"The information in the data-set(s) are incorrect. Please provide accurate data set(s) information.",3)
-                return 'failed'
         elif _platform == "win32":
-            # windows
-            CommonUtil.ExecLog(sModuleInfo, "windows", 1)
             from_path = raw(str(step_data[0][2]).strip())  # location of the file/folder to be moved
             to_path = raw(str(step_data[1][2]).strip())  # location where to move the file/folder
-            file_or_folder = str(step_data[2][2]).strip()  # get if it is file/folder to move
-            if file_or_folder.lower() == 'file':
-                # move file "from_path" to "to_path"
-                result = MoveFile(from_path, to_path)
-                if result in failed_tag_list:
-                    CommonUtil.ExecLog(sModuleInfo, "Could not move file '%s' to '%s'" % (from_path, to_path), 3)
-                    return "failed"
-                else:
-                    CommonUtil.ExecLog(sModuleInfo, "File '%s' moved to '%s' successfully" % (from_path, to_path), 1)
-                    return "passed"
-            elif file_or_folder.lower() == 'folder':
-                # move folder "from_path" to "to_path"
-                result = MoveFolder(from_path, to_path)
-                if result in failed_tag_list:
-                    CommonUtil.ExecLog(sModuleInfo, "Could not move folder '%s' to '%s'" % (from_path, to_path), 3)
-                    return "failed"
-                else:
-                    CommonUtil.ExecLog(sModuleInfo, "Folder '%s' moved to '%s' successfully" % (from_path, to_path), 1)
-                    return "passed"
-            else:
-                CommonUtil.ExecLog(sModuleInfo,"The information in the data-set(s) are incorrect. Please provide accurate data set(s) information.",3)
-                return 'failed'
-        elif _platform == "darwin":
-            # mac
-            CommonUtil.ExecLog(sModuleInfo, "mac", 1)
-            from_path = get_home_folder() + str(step_data[0][2]).strip()  # location of the file/folder to be moved
-            to_path = get_home_folder() + str(step_data[1][2]).strip()  # location where to move the file/folder
-            file_or_folder = str(step_data[2][2]).strip()  # get if it is file/folder to move
-            if file_or_folder.lower() == 'file':
+        file_or_folder = str(step_data[2][2]).strip()  # get if it is file/folder to move
+        if file_or_folder.lower() == 'file':
                 # move file "from_path to "to_path"
-                result = MoveFile(from_path, to_path)
-                if result in failed_tag_list:
-                    CommonUtil.ExecLog(sModuleInfo, "Could not move file '%s' to '%s'" % (from_path, to_path), 3)
-                    return "failed"
-                else:
-                    CommonUtil.ExecLog(sModuleInfo, "File '%s' moved to '%s' successfully" % (from_path, to_path), 1)
-                    return "passed"
-            elif file_or_folder.lower() == 'folder':
-                # move folder "from_path" to "to_path"
-                result = MoveFolder(from_path, to_path)
-                if result in failed_tag_list:
-                    CommonUtil.ExecLog(sModuleInfo, "Could not move folder '%s' to '%s'" % (from_path, to_path), 3)
-                    return "failed"
-                else:
-                    CommonUtil.ExecLog(sModuleInfo, "Folder '%s' moved to '%s' successfully" % (from_path, to_path), 1)
-                    return "passed"
+            result = MoveFile(from_path, to_path)
+            if result in failed_tag_list:
+                CommonUtil.ExecLog(sModuleInfo, "Could not move file '%s' to '%s'" % (from_path, to_path), 3)
+                return "failed"
             else:
-                CommonUtil.ExecLog(sModuleInfo,"The information in the data-set(s) are incorrect. Please provide accurate data set(s) information.",3)
-                return 'failed'
+                CommonUtil.ExecLog(sModuleInfo, "File '%s' moved to '%s' successfully" % (from_path, to_path), 1)
+                return "passed"
+        elif file_or_folder.lower() == 'folder':
+                # move folder "from_path" to "to_path"
+            result = MoveFolder(from_path, to_path)
+            if result in failed_tag_list:
+                CommonUtil.ExecLog(sModuleInfo, "Could not move folder '%s' to '%s'" % (from_path, to_path), 3)
+                return "failed"
+            else:
+                CommonUtil.ExecLog(sModuleInfo, "Folder '%s' moved to '%s' successfully" % (from_path, to_path), 1)
+                return "passed"
+        else:
+            CommonUtil.ExecLog(sModuleInfo,"The information in the data-set(s) are incorrect. Please provide accurate data set(s) information.",3)
+            return 'failed'
+
     except Exception:
         return CommonUtil.Exception_Handler(sys.exc_info())
 
