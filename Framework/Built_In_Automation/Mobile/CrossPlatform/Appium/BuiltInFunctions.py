@@ -17,13 +17,13 @@ PATH = lambda p: os.path.abspath(
 )
 
  # Appium directory/filename - May need to move to settings.conf
-appium_binary = None
+appium_binary = 'appium' # Default filename of appium, assume in the PATH
 if 'linux' in sys.platform:
     appium_binary = 'appium'
 elif 'win' in sys.platform:
     appium_binary = os.path.join(os.getenv('ProgramFiles'), 'APPIUM\Appium.exe')
 else:
-    CommonUtil.ExecLog(__name__ + " : " + __file__, "Platform doesn't have an appium location defined: %s" % str(os.name), 3)
+    CommonUtil.ExecLog(__name__ + " : " + __file__, "Unrecognized platform. Assuming 'appium' is in the PATH" % str(os.name), 3)
     
 # Recall appium driver, if not already set - needed between calls in a Zeuz test case
 appium_driver = None
@@ -96,17 +96,22 @@ def start_appium_server():
     sModuleInfo = inspect.stack()[0][3] + " : " + inspect.getmoduleinfo(__file__).name
     CommonUtil.ExecLog(sModuleInfo,"Function Start", 0)
      
+    # Shutdown appium server if it's already running
     if Shared_Resources.Test_Shared_Variables('appium_server'): # Check if the appium server was previously run (likely not)
         appium_server = Shared_Resources.Get_Shared_Variables('appium_server') # Get the subprocess object
         try:
             appium_server.kill() # Kill the server
         except:
             pass
+        
+    # Execute appium server
     try:
         appium_server = subprocess.Popen([appium_binary], stdout=subprocess.PIPE, stderr=subprocess.STDOUT) # Start the appium server
     except Exception, returncode: # Couldn't run server
-        CommonUtil.ExecLog(sModuleInfo,"Couldn't start Appium server: %s" % returncode, 3)
+        CommonUtil.ExecLog(sModuleInfo,"Couldn't start Appium server. May not be installed, or not in your PATH: %s" % returncode, 3)
         return 'failed'
+    
+    # Wait for server to startup and return
     Shared_Resources.Set_Shared_Variables('appium_server', appium_server) # Save the server object, so we can retrieve it later
     CommonUtil.ExecLog(sModuleInfo,"Waiting 10 seconds for server to start", 0)
     time.sleep(10) # Wait for server to get to ready state
