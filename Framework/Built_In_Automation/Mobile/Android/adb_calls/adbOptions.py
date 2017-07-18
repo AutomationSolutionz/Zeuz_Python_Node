@@ -74,14 +74,38 @@ def get_device_manufacturer():
         return CommonUtil.Exception_Handler(sys.exc_info(),None,errMsg)
     
 def get_device_imei_info():
+    ''' Returns the device's IMEI '''
+    # Output: IMEI as a string
+    
     sModuleInfo = inspect.stack()[0][3] + " : " + inspect.getmoduleinfo(__file__).name
     try:
-        output = subprocess.check_output("adb shell dumpsys iphonesubinfo", shell=True)
-        CommonUtil.ExecLog(sModuleInfo, "%s"%output, 1)
+        output=subprocess.Popen('adb shell dumpsys iphonesubinfo'.split(' '), stdout=subprocess.PIPE).communicate()[0]
+        
+        # Use dumpsys (Below Android v6)
+        if output != '':
+            output = output.split("\n")[2]
+            output = output.split(' ')[5].strip()
+            
+        # Use service call (Above Android v6)
+        else:
+            output=subprocess.Popen('adb shell service call iphonesubinfo 1'.split(' '), stdout=subprocess.PIPE).communicate()[0]
+            output=output.split(' ') # Contains hex output, and characters that need to be removed
+            tmp = ''
+            for val in output:
+                if "'" in val: tmp += val # Look for values that have a single quote, they are the ones with a portion of the IMEI
+        
+            chars = "\r\n.')"
+            output = tmp.translate(None, chars) # Remove characters we don't want
+
+        if len(output) != 14 and len(output) != 15:
+            CommonUtil.ExecLog(sModuleInfo, "Could not read the IMEI from the device", 3)
+            return 'failed'
+        
+        CommonUtil.ExecLog(sModuleInfo, "%s" % output, 0)
         return output
 
     except Exception:
-        errMsg = "Unable to get device IMEI info"
+        errMsg = "Error while trying to read IMEI from the device"
         return CommonUtil.Exception_Handler(sys.exc_info(),None,errMsg)
     
 def get_device_summary():
