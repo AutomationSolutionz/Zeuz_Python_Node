@@ -129,13 +129,3 @@ def click(logo, num_of_clicks=1):
     except Exception:
 
         return CommonUtil.Exception_Handler(sys.exc_info())
-
-
-'''def main():
-    click('/home/batman/Desktop/Untitled Folder/template4.png',1)
-
-
-
-
-if __name__ == '__main__':
-    main()'''

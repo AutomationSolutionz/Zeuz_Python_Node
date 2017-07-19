@@ -109,6 +109,13 @@ actions = { # Numbers are arbitrary, and are not used anywhere
     189: {'module': 'xml', 'name': 'delete', 'function': 'delete_element'},
     190: {'module': 'appium', 'name': 'imei', 'function': 'device_information'},
     191: {'module': 'selenium', 'name': 'wait disable', 'function': 'Wait_For_New_Element'}
+    192: {'module': 'desktop', 'name': 'click', 'function': 'Click_Element'},
+    193: {'module': 'desktop', 'name': 'double click', 'function': 'Double_Click_Element'},
+    194: {'module': 'desktop', 'name': 'hover', 'function': 'Hover_Over_Element'},
+    195: {'module': 'desktop', 'name': 'keystroke keys', 'function': 'Keystroke_For_Element'},
+    196: {'module': 'desktop', 'name': 'keystroke chars', 'function': 'Keystroke_For_Element'},
+    197: {'module': 'desktop', 'name': 'enter text', 'function': 'Enter_Text_In_Text_Box'},
+    198: {'module': 'desktop', 'name': 'wait', 'function': 'Sleep'}
 }
 
 # List of Sub-Field keywords, must be all lowercase, and using single spaces - no underscores
