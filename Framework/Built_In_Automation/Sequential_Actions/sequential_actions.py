@@ -108,7 +108,7 @@ actions = { # Numbers are arbitrary, and are not used anywhere
     188: {'module': 'xml', 'name': 'read', 'function': 'read_element'},
     189: {'module': 'xml', 'name': 'delete', 'function': 'delete_element'},
     190: {'module': 'appium', 'name': 'imei', 'function': 'device_information'},
-    191: {'module': 'selenium', 'name': 'wait disable', 'function': 'Wait_For_New_Element'}
+    191: {'module': 'selenium', 'name': 'wait disable', 'function': 'Wait_For_New_Element'},
     192: {'module': 'desktop', 'name': 'click', 'function': 'Click_Element'},
     193: {'module': 'desktop', 'name': 'double click', 'function': 'Double_Click_Element'},
     194: {'module': 'desktop', 'name': 'hover', 'function': 'Hover_Over_Element'},
