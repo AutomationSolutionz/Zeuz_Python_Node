@@ -378,19 +378,31 @@ def Wait_For_New_Element(step_data):
     try:
         sModuleInfo = inspect.stack()[0][3] + " : " + inspect.getmoduleinfo(__file__).name
         Element = LocateElement.Get_Element(step_data,selenium_driver)
+        wait_for_element_to_disappear = False
         for each in step_data:
             if each[1]=="action":
                 timeout_duration = int(each[2])
+                if(each[0] == 'wait disable'):
+                    wait_for_element_to_disappear = True
         start_time = time.time()
         interval = 1
         for i in range(timeout_duration):
             time.sleep(time.time() + i*interval - start_time)
             Element = LocateElement.Get_Element(step_data,selenium_driver)
-            if (Element == 'failed'):
-                continue
+            if wait_for_element_to_disappear == False:
+                if (Element == 'failed'):
+                    continue
+                else:
+                    return 'passed'
             else:
-                return 'passed'
-        CommonUtil.ExecLog(sModuleInfo, "Waited for %s seconds but couldnt locate your element", 3)
+                if (Element == 'failed'):
+                    return 'passed'
+                else:
+                    continue
+        if wait_for_element_to_disappear == False:
+            CommonUtil.ExecLog(sModuleInfo, "Waited for %s seconds but couldnt locate your element", 3)
+        else:
+            CommonUtil.ExecLog(sModuleInfo, "Waited for %s seconds but your element still exists", 3)
         return 'failed'
     except Exception:
         return CommonUtil.Exception_Handler(sys.exc_info())

@@ -107,7 +107,8 @@ actions = { # Numbers are arbitrary, and are not used anywhere
     187: {'module': 'xml', 'name': 'add', 'function': 'add_element'},
     188: {'module': 'xml', 'name': 'read', 'function': 'read_element'},
     189: {'module': 'xml', 'name': 'delete', 'function': 'delete_element'},
-    190: {'module': 'appium', 'name': 'imei', 'function': 'device_information'}
+    190: {'module': 'appium', 'name': 'imei', 'function': 'device_information'},
+    191: {'module': 'selenium', 'name': 'wait disable', 'function': 'Wait_For_New_Element'}
 }
 
 # List of Sub-Field keywords, must be all lowercase, and using single spaces - no underscores
