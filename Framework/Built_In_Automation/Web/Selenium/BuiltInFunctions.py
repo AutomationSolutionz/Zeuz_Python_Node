@@ -53,6 +53,10 @@ def Open_Browser(dependency):
     global selenium_driver
     sModuleInfo = inspect.stack()[0][3] + " : " + inspect.getmoduleinfo(__file__).name
 
+    # Get the dependency again in case it was missed
+    if Shared_Resources.Test_Shared_Variables('dependency'): # Check if driver is already set in shared variables
+        dependency = Shared_Resources.Get_Shared_Variables('dependency') # Retreive selenium driver
+
     try:
         browser=dependency['Browser']
     except Exception:
