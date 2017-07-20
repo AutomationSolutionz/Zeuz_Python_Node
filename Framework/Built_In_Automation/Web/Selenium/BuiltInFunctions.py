@@ -44,6 +44,7 @@ if Shared_Resources.Test_Shared_Variables('selenium_driver'): # Check if driver 
     selenium_driver = Shared_Resources.Get_Shared_Variables('selenium_driver') # Retreive appium driver
 
 global dependency
+dependency = None
 if Shared_Resources.Test_Shared_Variables('dependency'): # Check if driver is already set in shared variables
     dependency = Shared_Resources.Get_Shared_Variables('dependency') # Retreive selenium driver
 
@@ -52,10 +53,6 @@ if Shared_Resources.Test_Shared_Variables('dependency'): # Check if driver is al
 def Open_Browser(dependency):
     global selenium_driver
     sModuleInfo = inspect.stack()[0][3] + " : " + inspect.getmoduleinfo(__file__).name
-
-    # Get the dependency again in case it was missed
-    if Shared_Resources.Test_Shared_Variables('dependency'): # Check if driver is already set in shared variables
-        dependency = Shared_Resources.Get_Shared_Variables('dependency') # Retreive selenium driver
 
     try:
         browser=dependency['Browser']
@@ -141,6 +138,11 @@ def Open_Browser_Wrapper(step_data):
     sModuleInfo = inspect.stack()[0][3] + " : " + inspect.getmoduleinfo(__file__).name
     try:
         global dependency
+        # Get the dependency again in case it was missed
+        if Shared_Resources.Test_Shared_Variables('dependency'): # Check if driver is already set in shared variables
+            dependency = Shared_Resources.Get_Shared_Variables('dependency') # Retreive selenium driver
+    
+
         return Open_Browser(dependency)
     except Exception:
         ErrorMessage =  "failed to open browser"
