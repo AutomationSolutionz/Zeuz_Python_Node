@@ -7,7 +7,7 @@ import inspect, sys, time
 from Framework.Utilities import CommonUtil
 from Framework.Built_In_Automation.Shared_Resources import BuiltInFunctionSharedResources as sr
 from Framework.Built_In_Automation.Sequential_Actions.sequential_actions import actions, action_support
-
+from Framework.Utilities.CommonUtil import passed_tag_list, failed_tag_list, skipped_tag_list # Allowed return strings, used to normalize pass/fail
 
 def sanitize(step_data, valid_chars = '', clean_whitespace_only = False, column = ''):
     ''' Sanitize step data Field and Sub-Field '''
@@ -160,3 +160,94 @@ def adjust_element_parameters(step_data):
 
     return new_step_data # Return cleaned step_data that contains only the element paramters we are interested in
 
+def get_module_and_function(action_name, action_sub_field):
+    ''' Function to split module from the action name, and with the action name tries to find the corrosponding function name '''
+    
+    function = ''
+    module = ''
+    try:
+        
+        action_list = action_sub_field.split(' ') # Split sub-field, so we can get moudle name from step data
+        if action_list > 1: # Should be at least two words in the sub-field
+
+            # Check if this action is a common action, so we can modify the module accordingly
+            for i in actions:
+                for j in actions[i]: # For each entry in the sub-dictionary
+                    if actions[i]['module'] == 'common' and actions[i]['name'] == action_name:
+                        module = 'common' # Set module as common
+                        function = actions[i]['function'] # Save function
+                        return module, function, action_list[0] # Return module and function name
+
+            # Not a common function, so find the function matching the module
+            module = action_list[0] # Module should be first item
+            for i in actions: # For each dictionary in the dictionary
+                for j in actions[i]: # For each entry in the sub-dictionary
+                    if actions[i]['module'] == module and actions[i]['name'] == action_name: # Module and action name match
+                        function = actions[i]['function'] # Save function
+                        return module, function, '' # Return module and function name
+        
+        # Not enough words in the Sub-Field
+        else:
+            return '','' # Error handled in calling function
+    except Exception:
+        return CommonUtil.Exception_Handler(sys.exc_info())
+
+
+def shared_variable_to_value(data_set):
+    ''' Look for any Shared Variable strings in step data, convert them into their values, and return '''
+    
+    sModuleInfo = inspect.stack()[0][3] + " : " + inspect.getmoduleinfo(__file__).name
+    new_data = [] # Rebuild the data_set with the new variable (because it's a list of tuples which we can't update)
+
+    try:
+        for row in data_set: # For each row of the data set
+            data_row = list(row) # Convert row which is a tuple to a list, so we can update it if we need to
+            for i in range(0, 3): # For each field (Field, Sub-Field, Value)
+                if row[i] != False: # !!!! Probbly not needed
+                    while "%|" in data_row[i] and "|%" in data_row[i]: # If string contains these characters, it's a shared variable
+                        CommonUtil.ExecLog(sModuleInfo, "Shared Variable: %s" % row[i], 0)
+                        data_row[i] = sr.get_previous_response_variables_in_strings(data_row[i])# replace just the variable name with it's value (has to be in string format)
+            new_data.append(tuple(data_row)) # Convert row from list to tuple, and append to new data_set
+        return new_data # Return parsed data_set
+    except Exception:
+        return CommonUtil.Exception_Handler(sys.exc_info())
+
+
+### *********************************** Begin common built in functions *************************************** ### 
+# These functions are common with more than one of the BuiltInFunctions.py files (Selenium, Appium, REST, etc)
+
+def step_result(data_set):
+    sModuleInfo = inspect.stack()[0][3] + " : " + inspect.getmoduleinfo(__file__).name
+    CommonUtil.ExecLog(sModuleInfo,"Function Start", 0)
+    
+    try:
+        action_value = ''
+        for row in data_set:
+            if row[0] == 'step result' and row[1] == 'action':
+                action_value = row[2]
+    except:
+        return CommonUtil.Exception_Handler(sys.exc_info())
+    
+    if action_value in failed_tag_list: # Convert user specified pass/fail into standard result
+        return 'failed'
+    elif action_value in skipped_tag_list:
+        return 'skipped'
+    elif action_value in passed_tag_list:
+        return 'passed'
+    else:
+        CommonUtil.ExecLog(sModuleInfo, "Step Result action has invalid VALUE", 3)
+        return 'failed'
+
+def Sleep(data_set):
+    ''' Sleep a specific number of seconds '''
+    
+    sModuleInfo = inspect.stack()[0][3] + " : " + inspect.getmoduleinfo(__file__).name
+    CommonUtil.ExecLog(sModuleInfo,"Function Start", 0)
+
+    try:
+        seconds = int(data_set[0][2])
+        CommonUtil.ExecLog(sModuleInfo, "Sleeping for %s seconds" % seconds, 1)
+        time.sleep(seconds)
+        return "passed"
+    except Exception:
+        return CommonUtil.Exception_Handler(sys.exc_info())
