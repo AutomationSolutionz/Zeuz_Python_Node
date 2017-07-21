@@ -69,6 +69,12 @@ def verify_step_data(step_data):
             module_test = False
             field_text = True # !!! This should be set to false, but we are not using this for now
             
+            # Check each data set
+            if len(data_set) == 0:
+                CommonUtil.ExecLog(sModuleInfo, "Data set %d cannot be empty" % data_set_index, 3)
+                return 'failed'
+            
+            # Check each row
             for row in data_set:
                 if len(row[0]) == 0:
                     CommonUtil.ExecLog(sModuleInfo, "Field for data set %d cannot empty: %s" % (data_set_index, str(row)), 3)
