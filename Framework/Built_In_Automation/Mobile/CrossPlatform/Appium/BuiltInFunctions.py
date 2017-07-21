@@ -868,10 +868,27 @@ def Enter_Text_Appium(data_set):
                 # Enter text into element
                 Element.click() # Set focus to textbox
                 Element.clear() # Remove any text already existing
+
                 if dependency['Mobile'].lower() == 'ios':
                     Element.set_value(text_value) # Work around for IOS issue in Appium v1.6.4 where send_keys() doesn't work
-                else:
+            except Exception:
+                errMsg = "Found element, but couldn't write text to it"
+                return CommonUtil.Exception_Handler(sys.exc_info(),None,errMsg)
+
+            # This is wrapped in it's own try block because we sometimes get an error from send_keys stating "Parameters were incorrect". However, most devices work only with send_keys
+            try:
+                if dependency['Mobile'].lower() != 'ios':
                     Element.send_keys(text_value) # Enter the user specified text
+            except Exception:
+                CommonUtil.ExecLog(sModuleInfo, "Found element, but couldn't write text to it. Trying another method", 2)
+                try:
+                    Element.set_value(text_value) # Enter the user specified text
+                except Exception:
+                    errMsg = "Found element, but couldn't write text to it. Giving up"
+                    return CommonUtil.Exception_Handler(sys.exc_info(),None,errMsg)
+
+            # Complete the action
+            try:
                 appium_driver.hide_keyboard() # Remove keyboard
                 CommonUtil.TakeScreenShot(sModuleInfo) # Capture screen
                 CommonUtil.ExecLog(sModuleInfo, "Successfully set the value of to text to: %s" % text_value, 1)
@@ -879,7 +896,6 @@ def Enter_Text_Appium(data_set):
             except Exception:
                 errMsg = "Found element, but couldn't write text to it"
                 return CommonUtil.Exception_Handler(sys.exc_info(),None,errMsg)
-
     except Exception:
         errMsg = "Could not find element."
         return CommonUtil.Exception_Handler(sys.exc_info(),None,errMsg)
