@@ -75,39 +75,21 @@ def Enter_Text_In_Text_Box(step_data):
     sModuleInfo = inspect.stack()[0][3] + " : " + inspect.getmoduleinfo(__file__).name
     CommonUtil.ExecLog(sModuleInfo, "Function: Enter_Text_In_Text_Box", 1, local_run)
     try:
-        # If there are no two separate data-sets, or if the first data-set is not between 1 to 3 items, or if the second data-set doesn't have only 1 item
-        if ((len(step_data[0]) >= 5)):  # or (len(step_data[1]) != 1)):
-            CommonUtil.ExecLog(sModuleInfo,
-                               "The information in the data-set(s) are incorrect. Please provide accurate data set(s) information.",
-                               3, local_run)
-            return "failed"
-        else:
-            #element_step_data = Get_Element_Step_Data(step_data)
-            # element_step_data = step_data[0][0:len(step_data[0])-1:1]
-            #returned_step_data_list = Validate_Step_Data(element_step_data)
-            # returned_step_data_list = Validate_Step_Data(step_data[0])
-            try:
-                for each in step_data[0]:
-                    if each[1] == "action":
-                        text_value = each[2]
-                    else:
-                        continue
+        for each in step_data:
+            if "action" in each[1]:
+                text_value = each[2]
+            else:
+                continue
                 # text_value=step_data[0][len(step_data[0])-1][2]
-                da.type_text(text_value)
-                CommonUtil.TakeScreenShot(sModuleInfo, local_run)
-                CommonUtil.ExecLog(sModuleInfo, "Successfully set the value of to text to: %s" % text_value, 1,
+        da.type_text(text_value)
+        CommonUtil.TakeScreenShot(sModuleInfo, local_run)
+        CommonUtil.ExecLog(sModuleInfo, "Successfully set the value of to text to: %s" % text_value, 1,
                                        local_run)
-                return "passed"
-
-            except Exception:
-                errMsg = "Could not select/click your element."
-                return CommonUtil.Exception_Handler(sys.exc_info(), None, errMsg)
-
-
+        return "passed"
 
     except Exception:
-        errMsg = "Could not find your element. "
-        return CommonUtil.Exception_Handler(sys.exc_info(),None,errMsg)
+        errMsg = "Could not select/click your element."
+        return CommonUtil.Exception_Handler(sys.exc_info(), None, errMsg)
 
 
 
@@ -118,7 +100,7 @@ def Keystroke_For_Element(step_data):
     try:
         result = ""
         for each in step_data:
-            if each[1] == "action":
+            if "action" in each[1]:
                 if each[0] == "keystroke_keys":
                     keystroke_value = str(each[2]).lower()
 
@@ -338,16 +320,10 @@ def Sleep(step_data):
     sModuleInfo = inspect.stack()[0][3] + " : " + inspect.getmoduleinfo(__file__).name
     CommonUtil.ExecLog(sModuleInfo, "Function: Sleep", 1, local_run)
     try:
-        if ((len(step_data[0]) >= 5)):
-            CommonUtil.ExecLog(sModuleInfo,
-                               "The information in the data-set(s) are incorrect. Please provide accurate data set(s) information.",
-                               3, local_run)
-            return "failed"
-        else:
-            tuple = step_data[0][0]
-            seconds = int(tuple[2])
-            CommonUtil.ExecLog(sModuleInfo, "Sleeping for %s seconds" % seconds, 1, local_run)
-            result = time.sleep(seconds)
+        tuple = step_data[0][0]
+        seconds = int(tuple[2])
+        CommonUtil.ExecLog(sModuleInfo, "Sleeping for %s seconds" % seconds, 1, local_run)
+        result = time.sleep(seconds)
 
         return result
 
@@ -361,17 +337,11 @@ def Step_Result(step_data):
     sModuleInfo = inspect.stack()[0][3] + " : " + inspect.getmoduleinfo(__file__).name
     CommonUtil.ExecLog(sModuleInfo, "Function: Step_Result", 1, local_run)
     try:
-        if ((len(step_data) != 1) or (1 < len(step_data[0]) >= 5)):
-            CommonUtil.ExecLog(sModuleInfo,
-                               "The information in the data-set(s) are incorrect. Please provide accurate data set(s) information.",
-                               3, local_run)
-            return "failed"
-        else:
-            step_result = step_data[0][0][2]
-            if step_result == 'pass':
-                result = "passed"
-            elif step_result == 'fail':
-                result = "failed"
+        step_result = step_data[0][0][2]
+        if step_result == 'pass':
+            result = "passed"
+        elif step_result == 'fail':
+            result = "failed"
 
         return result
 

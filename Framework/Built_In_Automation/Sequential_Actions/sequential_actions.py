@@ -173,6 +173,9 @@ def load_sa_modules(module): # Load module "AS" must match module name we get fr
     elif module == 'xml':
         global xml
         from Framework.Built_In_Automation.XML import BuiltInFunctions_XML as xml
+    elif module == 'desktop':
+        global desktop
+        from Framework.Built_In_Automation.Desktop.CrossPlatform import BuiltInFunctions as desktop
     else:
         CommonUtil.ExecLog(sModuleInfo, "Invalid sequential actions module: %s" % module, 3)
         return 'failed'

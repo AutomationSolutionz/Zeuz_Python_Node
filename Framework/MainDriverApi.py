@@ -317,10 +317,13 @@ def call_driver_function_of_test_step(sModuleInfo, TestStepsList, StepSeq, step_
                     # importing functions from driver
                     functionTocall = getattr(module_name, step_name)
                     simple_queue = Queue.Queue()
-                    screen_capture = get_screen_capture_settings_of_a_test_step(step_id)
-                    if len(screen_capture) > 0:
-                        screen_capture = screen_capture[0]
-                    else:
+                    try:
+                        screen_capture = get_screen_capture_settings_of_a_test_step(step_id)
+                        if len(screen_capture) > 0:
+                            screen_capture = screen_capture[0]
+                        else:
+                            screen_capture = 'Desktop'
+                    except:
                         screen_capture = 'Desktop'
 
                     if ConfigModule.get_config_value('RunDefinition', 'Threading') in passed_tag_list:
