@@ -76,6 +76,7 @@ def Open_Browser(dependency):
             selenium_driver.maximize_window()
             CommonUtil.ExecLog(sModuleInfo, "Started Chrome Browser", 1)
             Shared_Resources.Set_Shared_Variables('selenium_driver',selenium_driver)
+            CommonUtil.set_screenshot_vars(Shared_Resources.Shared_Variable_Export())
             return "passed"
 
 
@@ -107,6 +108,7 @@ def Open_Browser(dependency):
             selenium_driver.maximize_window()
             CommonUtil.ExecLog(sModuleInfo, "Started Firefox Browser", 1)
             Shared_Resources.Set_Shared_Variables('selenium_driver', selenium_driver)
+            CommonUtil.set_screenshot_vars(Shared_Resources.Shared_Variable_Export())
             return "passed"
         elif "ie" in browser:
             selenium_driver = webdriver.Ie()
@@ -114,6 +116,7 @@ def Open_Browser(dependency):
             selenium_driver.maximize_window()
             CommonUtil.ExecLog(sModuleInfo, "Started Internet Explorer Browser", 1)
             Shared_Resources.Set_Shared_Variables('selenium_driver', selenium_driver)
+            CommonUtil.set_screenshot_vars(Shared_Resources.Shared_Variable_Export())
             return "passed"
 
         elif "safari" in browser:
@@ -123,6 +126,7 @@ def Open_Browser(dependency):
             selenium_driver.maximize_window()
             CommonUtil.ExecLog(sModuleInfo, "Started Safari Browser", 1)
             Shared_Resources.Set_Shared_Variables('selenium_driver', selenium_driver)
+            CommonUtil.set_screenshot_vars(Shared_Resources.Shared_Variable_Export())
             return "passed"
 
         else:
