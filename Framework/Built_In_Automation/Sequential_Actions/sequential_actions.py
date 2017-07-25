@@ -115,6 +115,8 @@ actions = { # Numbers are arbitrary, and are not used anywhere
     198: {'module': 'desktop', 'name': 'wait', 'function': 'Sleep'},
     199: {'module': 'selenium', 'name': 'get location', 'function': 'get_location_of_element'},
     201: {'module': 'appium', 'name': 'validate screen text', 'function': 'Validate_Text_Appium'},
+    202: {'module': 'appium', 'name': 'model name', 'function': 'device_information'},
+    203: {'module': 'appium', 'name': 'version', 'function': 'device_information'}
 }
 
 # List of Sub-Field keywords, must be all lowercase, and using single spaces - no underscores

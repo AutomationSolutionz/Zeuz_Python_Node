@@ -80,7 +80,6 @@ def get_device_imei_info():
     sModuleInfo = inspect.stack()[0][3] + " : " + inspect.getmoduleinfo(__file__).name
     try:
         output=subprocess.Popen('adb shell dumpsys iphonesubinfo'.split(' '), stdout=subprocess.PIPE).communicate()[0]
-        
         # Use dumpsys (Below Android v6)
         if output != '':
             output = output.split("\n")[2]

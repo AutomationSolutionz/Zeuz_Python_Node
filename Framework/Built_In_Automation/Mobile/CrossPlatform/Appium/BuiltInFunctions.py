@@ -139,7 +139,7 @@ def start_appium_driver(package_name = '', activity_name = '', filename = ''):
             # Start Appium server
             if start_appium_server() in failed_tag_list:
                 return 'failed'
-            
+
             # Create Appium driver
     
             # Setup capabilities
@@ -171,7 +171,6 @@ def start_appium_driver(package_name = '', activity_name = '', filename = ''):
                 CommonUtil.ExecLog(sModuleInfo, "Invalid dependency: %s" % str(dependency), 3)
                 return 'failed'
             CommonUtil.ExecLog(sModuleInfo,"Capabilities: %s" % str(desired_caps), 0)
-            
             # Create Appium instance with capabilities
             appium_driver = webdriver.Remote('http://localhost:4723/wd/hub', desired_caps) # Create instance
             if appium_driver: # Make sure we get the instance
@@ -1288,6 +1287,11 @@ def device_information(data_set):
         if cmd == 'imei':
             if dep == 'android': output = adbOptions.get_device_imei_info()
             elif dep == 'ios': output = iosOptions.get_ios_imei()
+        elif cmd == 'version':
+            if dep == 'android':
+                output = adbOptions.get_android_version().strip()
+        elif cmd == 'model name':
+            if dep == 'android': output = adbOptions.get_device_model().strip()
         else:
             CommonUtil.ExecLog(sModuleInfo,"Action's Field contains incorrect information", 3)
             return 'failed'
