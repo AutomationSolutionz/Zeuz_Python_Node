@@ -1158,8 +1158,6 @@ def Validate_Table(step_data):
 '===================== ===x=== Validate Table Section Ends ===x=== ======================'
 
 
-
-
 def Get_Table_Elements(step_data,get_all_unvalidated_elements=False, preferred_match = 1):
     sModuleInfo = inspect.stack()[0][3] + " : " + inspect.getmoduleinfo(__file__).name
     try:
@@ -1191,6 +1189,134 @@ def Get_Table_Elements(step_data,get_all_unvalidated_elements=False, preferred_m
         errMsg = "Unable to get the element."
         return CommonUtil.Exception_Handler(sys.exc_info(),None,errMsg)
 
+
+
+
+
+'*************************************** New table ********************************************'
+# Rebuilding validate table. Do not touch - Lucas
+
+# Notes: add "table parameter" to sequential actions:action_support
+# Basic functionality: working theoretically. Need to add in case sensitive, ignore type
+# Add sanitize for Field
+
+def validate_table_new(data_set):
+    ''' Compare the table provided in step data with the one found on the web page '''
+
+    sModuleInfo = inspect.stack()[0][3] + " : " + inspect.getmoduleinfo(__file__).name
+    CommonUtil.ExecLog(sModuleInfo, "Function start", 0)
+    
+    # Parse data set
+    have_table = False
+    case_sensitive = True
+    ignore_type = ''
+    user_table = {}
+    
+    try:
+        for row in data_set:
+            if row[1] == 'table parameter':
+                # Parse table instructions
+                if row[0] == 'ignore row' or row[0] == 'ignore rows':
+                    ignore_type = 'row'
+                elif row[0] == 'ignore column' or row[0] == 'ignore columns':
+                    ignore_type = 'column'
+                elif row[0] == 'match':
+                    if row[2].lower().strip() == 'exact' or row[2].lower().strip() == 'sensitive':
+                        case_sensitive = False
+                    elif row[2].lower().strip() == 'insensitive':
+                        case_sensitive = True
+                
+                # Create user-defined table 
+                else:
+                    try:
+                        table_row, table_col = ('', '')
+                        table_row, table_col = row[0].split(',')
+                        if row != '' and table_col != '': # Check to ensure this was a table cell identifier - may not be
+                            user_table["%s,%s" % (table_row, table_col)] = row[2] # Save value using the row,col as an identifier
+                            have_table = True
+                    except: # Row may have been blank, or some other issue continue nevertheless ignoring it
+                        pass
+
+        # Ensure we have a table from the user
+        if have_table == False:
+            CommonUtil.ExecLog(sModuleInfo, "No table values found, or they were not entered in the format of row,column (Eg: 1,2). Please create a table as defined in the documentation", 3)
+            return 'failed'
+    except Exception:
+        return CommonUtil.Exception_Handler(sys.exc_info(), None, "Error while parsing the data set")
+   
+    # Get table from web page
+    webpage_table = get_webpage_table(data_set) # Produces an array that should match the user array
+    webpage_table = {'8,1': 'Status', '8,2': 'FAIL'}
+    print ">>>>>>>>",webpage_table
+    if webpage_table in failed_tag_list:
+        CommonUtil.ExecLog(sModuleInfo, "Unable to locate your element with given data.", 3)
+        return "failed"  
+    
+    # Check if arrays match
+    failed_matches = []
+    for id in webpage_table: # For each table cell on the webpage table
+        if id in user_table: # If that table cell is also in the user defined table
+            if webpage_table[id] != user_table[id]: # Check if the values of these two cells match
+                failed_matches.append("%s:%s != %s:%s" % (id, user_table[id], id, webpage_table[id])) # Record the unmatched cells
+        else: # Not in user table
+            failed_matches.append("Cell %s is not defined in the step data" % id)
+            
+                
+    if len(failed_matches) > 0:
+        CommonUtil.ExecLog(sModuleInfo, "Tables do not match - %s" % str(failed_matches), 3)
+        return 'failed'
+    
+    CommonUtil.ExecLog(sModuleInfo, "Tables match", 1)
+    return 'passed'
+    
+    
+
+def get_webpage_table(data_set):
+    ''' Find a table given the elements, extract the text and return as a list containing lists holding the data '''
+    
+    sModuleInfo = inspect.stack()[0][3] + " : " + inspect.getmoduleinfo(__file__).name
+    CommonUtil.ExecLog(sModuleInfo, "Function start", 0)
+    
+    try:
+        # Get element representing entire table
+        table = LocateElement.Get_Element(data_set, selenium_driver)
+        if table in failed_tag_list:
+            CommonUtil.ExecLog(sModuleInfo, "Unable to locate your element with given data.", 3)
+            return "failed"  
+           
+        # Get element for all rows
+        all_rows = WebDriverWait(table, WebDriver_Wait).until(EC.presence_of_all_elements_located((By.XPATH, "*")))
+        
+        master_text_table = {}
+        table_row = 1
+        for row_obj in all_rows: # For each row
+            if row_obj.is_displayed() != False:
+                try:
+                    # Get elements for each column 
+                    col_element = WebDriverWait(row_obj, WebDriver_Wait).until(EC.presence_of_all_elements_located((By.XPATH, "*")))
+                    
+                    #temp_row_holder = []
+                    table_col = 1
+                    for column_obj in col_element: # For each column on the row
+                        #temp_row_holder.append(column_obj.text) # Extract cell data as text and save
+                        master_text_table["%s,%s" % (table_row, table_col)] = column_obj.text
+                        table_col += 1
+                        
+                except Exception:
+                    return CommonUtil.Exception_Handler(sys.exc_info(), None, "Could not find table row elements")
+                
+                table_row += 1
+                #master_text_table.append(temp_row_holder) # Save all text from this row
+
+        return master_text_table # Return table text as dictionary
+    except Exception:
+        return CommonUtil.Exception_Handler(sys.exc_info(), None, "Error while parsing the table")
+
+
+
+
+
+'*************************************** New table ********************************************'
 
 
 '===================== ===x=== Get Element Section Ends ===x=== ======================'
