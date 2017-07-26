@@ -841,427 +841,116 @@ def Select_Deselect(step_data):
     except Exception:
         return CommonUtil.Exception_Handler(sys.exc_info())
 
-
-'===================== ===x=== Sequential Action Section Ends ===x=== ======================'
-
-
-'============================= Validate Table Section Begins =============================='
-
-def Model_Actual_Data(actual_data):
-    sModuleInfo = inspect.stack()[0][3] + " : " + inspect.getmoduleinfo(__file__).name
-    CommonUtil.ExecLog(sModuleInfo, "Function start", 0)
-    try:
-        Modeled_Data_Set = []
-        row_count = 1
-        for each_row in actual_data:
-            column_count = 1
-            for each_column in each_row:
-                temp_data_model = ["column "+ str(column_count), "row "+str(row_count)]
-                temp_data_model.append(each_column.strip())
-                #temp_data_model.append("False")
-                #temp_data_model.append("False")
-                Modeled_Data_Set.append(temp_data_model)
-                column_count = column_count +1
-            row_count = row_count+1
-        return Modeled_Data_Set
-
-    except Exception:
-        return CommonUtil.Exception_Handler(sys.exc_info(),None,"Could not model actual data")
-
-
-
-def Model_Actual_Data_Ignoring_Column(actual_data):
-    sModuleInfo = inspect.stack()[0][3] + " : " + inspect.getmoduleinfo(__file__).name
-    CommonUtil.ExecLog(sModuleInfo, "Function start", 0)
-    try:
-        Modeled_Data_Set = []
-        row_count = 1
-        for each_row in actual_data:
-            column_count = 1
-            for each_column in each_row:
-                temp_data_model = ["row "+str(row_count)]
-                temp_data_model.append(each_column.strip())
-                Modeled_Data_Set.append(temp_data_model)
-                column_count = column_count +1
-            row_count = row_count+1
-        return Modeled_Data_Set
-    except Exception:
-        return CommonUtil.Exception_Handler(sys.exc_info(),None,"Could not model actual data ignoring column")
-
-
-
-def Model_Actual_Data_Ignoring_Row(actual_data):
-    sModuleInfo = inspect.stack()[0][3] + " : " + inspect.getmoduleinfo(__file__).name
-    CommonUtil.ExecLog(sModuleInfo, "Function start", 0)
-    try:
-        Modeled_Data_Set = []
-        row_count = 1
-        for each_row in actual_data: # For each row in the table data
-            column_count = 1
-            for each_column in each_row: # For each column of this row
-                temp_data_model = ["column "+str(column_count)] # ??
-                temp_data_model.append(each_column.strip()) # Save the column
-                Modeled_Data_Set.append(temp_data_model) # Add row to result array
-                column_count = column_count +1
-            row_count = row_count+1
-        return Modeled_Data_Set
-    except Exception:
-        return CommonUtil.Exception_Handler(sys.exc_info(),None,"Could not model actual data ignoring column")
-
-
-
-def Model_Expected_Data(expected_data):
-    sModuleInfo = inspect.stack()[0][3] + " : " + inspect.getmoduleinfo(__file__).name
-    CommonUtil.ExecLog(sModuleInfo, "Function start", 0)
-    try:
-        Modeled_Data_Set = []
-        row_count = 1
-        for each_row in expected_data:
-            column_count = 1
-            temp_data_model = []
-            for each_column in each_row:
-                if column_count <= 3:
-                    temp_data_model.append(each_column.strip())
-                    column_count = column_count +1
-                else:
-                    break
-            Modeled_Data_Set.append(temp_data_model)
-            row_count = row_count+1
-        return Modeled_Data_Set
-    except Exception:
-        return CommonUtil.Exception_Handler(sys.exc_info(),None,"Could not model expected data")
-
-
-
-def Model_Expected_Data_Ignoring_Column(expected_data):
-    sModuleInfo = inspect.stack()[0][3] + " : " + inspect.getmoduleinfo(__file__).name
-    CommonUtil.ExecLog(sModuleInfo, "Function start", 0)
-    try:
-        Modeled_Data_Set = []
-        row_count = 1
-        for each_row in expected_data:
-            column_count = 1
-            temp_data_model = []
-            for each_column in each_row:
-                if column_count <= 3:
-                    if column_count == 1:
-                        column_count = column_count + 1
-                    else:
-                        temp_data_model.append(each_column.strip())
-                        column_count = column_count +1
-                else:
-                    break
-            Modeled_Data_Set.append(temp_data_model)
-            row_count = row_count+1
-        return Modeled_Data_Set
-    except Exception:
-        return CommonUtil.Exception_Handler(sys.exc_info(),None,"Could not model expected data ignoring column.")
-
-
-
-def Model_Expected_Data_Ignoring_Row(expected_data):
-    sModuleInfo = inspect.stack()[0][3] + " : " + inspect.getmoduleinfo(__file__).name
-    CommonUtil.ExecLog(sModuleInfo, "Function start", 0)
-    try:
-        Modeled_Data_Set = []
-        row_count = 1
-        for each_row in expected_data: # For each row in step data (just the table data)
-            column_count = 1
-            temp_data_model = []
-            for each_column in each_row: # For each column on this row
-                if column_count <= 3:
-                    if column_count == 2:
-                        column_count = column_count + 1
-                    else:
-                        temp_data_model.append(each_column.strip()) # Save column
-                        column_count = column_count +1
-                else:
-                    break
-            Modeled_Data_Set.append(temp_data_model)
-            row_count = row_count+1
-        return Modeled_Data_Set
-    except Exception:
-        return CommonUtil.Exception_Handler(sys.exc_info(),None,"Could not model expected data ignoring row.")
-
-
-
-def Model_Expected_Column_Row(expect_data):
-    #collect all column name
-    sModuleInfo = inspect.stack()[0][3] + " : " + inspect.getmoduleinfo(__file__).name
-    CommonUtil.ExecLog(sModuleInfo, "Function start", 0)
-    try:
-        column_names = []
-        row_names = []
-        for each in expect_data:
-            if each[0] not in column_names:
-                column_names.append(each[0])
-            if each[1] not in row_names:
-                row_names.append(each[1])
-        return  column_names, row_names
-    except Exception:
-        return CommonUtil.Exception_Handler(sys.exc_info(),None,"Could not model expected column row. ")
-
-
-
-##Helper function for validate table - Exact Matching
-def Validate_Table_Helper(expected_table_data, actual_table_data, validation_option):
-    sModuleInfo = inspect.stack()[0][3] + " : " + inspect.getmoduleinfo(__file__).name
-    try:
-        match_count = 0
-        mismatch_count = 0
-        matched_list = []
-        mismatch_list = []
-
-        actual_table_length = len(actual_table_data)
-        expected_table_length = len(expected_table_data)
-        if (actual_table_length != expected_table_length):
-            CommonUtil.ExecLog(sModuleInfo, "Size of the tables do not match!", 2)
-
-        for each_item in expected_table_data:
-            if validation_option == "default":
-                ##Do default action
-                if each_item in actual_table_data:
-                    matched_list.append(each_item)
-                    match_count = match_count + 1
-                else:
-                    mismatch_list.append(each_item)
-                    mismatch_count = mismatch_count + 1
-
-            ##Need to be implemented!
-            elif validation_option == "case_insensitive":
-                CommonUtil.ExecLog(sModuleInfo, "Function yet to be provided. Please wait for the update.", 2)
-
-        #sequential logical flow
-        if mismatch_count == 0:
-            CommonUtil.ExecLog(sModuleInfo, "There were 0 mismatches! Table has been validated.", 1)
-            CommonUtil.ExecLog(sModuleInfo, "List of matched items: %s"%(matched_list), 1)
-            CommonUtil.ExecLog(sModuleInfo, "List of mismatched items: %s"%(mismatch_list), 1)
-            return "passed"
-        else:
-            CommonUtil.ExecLog(sModuleInfo, "There were mismatches! Table has invalid data.", 3)
-            CommonUtil.ExecLog(sModuleInfo, "List of matched items: %s"%(matched_list), 3)
-            CommonUtil.ExecLog(sModuleInfo, "List of mismatched items: %s"%(mismatch_list), 3)
-            return "failed"
-
-        #print mismatch_count, match_count, mismatch_list, matched_list
-
-    except Exception:
-
-
-        errMsg = "Error when comparing the exact expected and actual data."
-        return CommonUtil.Exception_Handler(sys.exc_info(),None,errMsg)
-
-
-#Validate table
-def Validate_Table(step_data):
-    '''
-    Text to read must come after validate table, and not be the last row
-    
-    '''
-    sModuleInfo = inspect.stack()[0][3] + " : " + inspect.getmoduleinfo(__file__).name
-    try:
-            
-        ''' *** TEMPORARY WORKAROUND TO MAKE TRY BLOCK WORK AS DESIGNED ***
-            REQUIRED FORMAT:
-                ...Element parameters...
-                Validate Table
-                ...Table data...
-                * relation type, can use a number in the "Field" field to represent the nTH element if more than one is matched
-                
-        '''
-        
-        # Convert tuples in step data to lists, to work with current implementation
-        new_step_data = []
-        for data_set in step_data:
-            new_data_set = []
-            for row in data_set:
-                new_data_set.append(list(row))
-            new_step_data.append(new_data_set)
-        step_data = new_step_data
-
-        # Find relation type, and get the table number, if specified
-        preferred_match = 1
-        for row in range(len(step_data[0])):
-            if step_data[0][row][1] == 'relation type':
-                try:
-                    preferred_match = int(step_data[0][row][0]) # User specified a specific match - because there was more than one
-                    CommonUtil.ExecLog(sModuleInfo, 'Will use matching table number %d' % preferred_match, 1)
-                except:
-                    pass
-            
-        # Find validate table, which is the divider between element data and table data we want to verify
-        table_validate_index = ''
-        for row in range(len(step_data[0])):
-            if step_data[0][row][1] == 'validate table':
-                table_validate_index = row
-        if table_validate_index == '':
-            CommonUtil.ExecLog(sModuleInfo, 'Step data missing "validate table" action', 3)
-            return 'failed'
-
-        # Using location of validate table, everything above it is element data        
-        get_element_last_item = table_validate_index
-        element_step_data = step_data[0][0:get_element_last_item:1]
-        #element_step_data = Get_Element_Step_Data([step_data]) # Adds extra brackets around step data that creat an issue with validate 
-        
-        # Using location of validate table, everything below it is table data we want to verify
-        expected_table_step_data = step_data[0][table_validate_index + 1:len(step_data[0]):1]
-
-
-        try:
-            #oCompare = CompareModule()
-            #expected_table_step_data = (step_data[0][table_validate_index+1:len(step_data[0])-1:1])
-            actual_table_dataset = Get_Table_Elements(step_data[0], preferred_match = preferred_match)
-            if actual_table_dataset in failed_tag_list:
-                CommonUtil.ExecLog(sModuleInfo, "Could not get table elements", 3)
-                return 'failed'
-
-            try:
-                validation_option=step_data[0][table_validate_index][2] # The "default" (case sensitive). Other type is not implemented
-
-                # Process slightly differently depending on if the user wants to ignore a row or column, or match exactly                    
-                if (step_data[0][table_validate_index][0] == "exact"):
-                    modelled_actual_table_step_data = Model_Actual_Data(actual_table_dataset)
-                    modelled_expected_table_step_data = Model_Expected_Data(expected_table_step_data)
-                    result = Validate_Table_Helper(modelled_expected_table_step_data, modelled_actual_table_step_data, validation_option)
-
-                elif step_data[0][table_validate_index][0]== "ignore row":
-                    modelled_actual_table_step_data = Model_Actual_Data_Ignoring_Row(actual_table_dataset)
-                    modelled_expected_table_step_data = Model_Expected_Data_Ignoring_Row(expected_table_step_data)
-                    result = Validate_Table_Helper(modelled_expected_table_step_data, modelled_actual_table_step_data, validation_option)
-
-                elif step_data[0][table_validate_index][0]== "ignore column":
-                    modelled_actual_table_step_data = Model_Actual_Data_Ignoring_Column(actual_table_dataset)
-                    modelled_expected_table_step_data = Model_Expected_Data_Ignoring_Column(expected_table_step_data)
-                    result = Validate_Table_Helper(modelled_expected_table_step_data, modelled_actual_table_step_data, validation_option)
-
-                else:
-                    CommonUtil.ExecLog(sModuleInfo, "The information in the table validation index is incorrect. Please provide the appropriate information", 3)
-                    return "failed"
-
-                if result in failed_tag_list:
-                    return 'failed'
-                #status = oCompare.compare([expected_table_step_data], [modelled_actual_table_step_data])
-                #print status
-            except Exception:
-                errMsg = "Error when comparing the expected and actual data."
-                return CommonUtil.Exception_Handler(sys.exc_info(),None,errMsg)
-
-        except Exception:
-            errMsg = "Unable to get table element. Please check if the correct information has been provided."
-            return CommonUtil.Exception_Handler(sys.exc_info(),None,errMsg)
-        return 'passed'
-    except Exception:
-        return CommonUtil.Exception_Handler(sys.exc_info(),None,"Could not find your element.")
-
-
-
-'===================== ===x=== Validate Table Section Ends ===x=== ======================'
-
-
-def Get_Table_Elements(step_data,get_all_unvalidated_elements=False, preferred_match = 1):
-    sModuleInfo = inspect.stack()[0][3] + " : " + inspect.getmoduleinfo(__file__).name
-    try:
-        
-        table = LocateElement.Get_Element(step_data,selenium_driver)
-        if table == "failed":
-            CommonUtil.ExecLog(sModuleInfo, "Unable to locate your element with given data.", 3)
-            return "failed"  
-           
-        
-        all_rows = WebDriverWait(table, WebDriver_Wait).until(EC.presence_of_all_elements_located((By.XPATH, "*")))
-        master_text_table = []
-        for each_row_obj in all_rows:
-            if (each_row_obj.is_displayed()!=False):
-                try:
-                    row_element = WebDriverWait(each_row_obj, WebDriver_Wait).until(EC.presence_of_all_elements_located((By.XPATH, "*")))
-                    temp_row_holder = []
-                    for each_column_obj in row_element:
-                        temp_row_holder.append(each_column_obj.text)
-                except Exception:
-                    errMsg = "Could not find table row elements"
-                    return CommonUtil.Exception_Handler(sys.exc_info(),None,errMsg)
-                master_text_table.append(temp_row_holder)
-#         print master_text_table
-        return master_text_table
-
-
-    except Exception:
-        errMsg = "Unable to get the element."
-        return CommonUtil.Exception_Handler(sys.exc_info(),None,errMsg)
-
-
-
-
-
-'*************************************** New table ********************************************'
-# Rebuilding validate table. Do not touch - Lucas
-
-# Notes: add "table parameter" to sequential actions:action_support
-# Basic functionality: working theoretically. Need to add in case sensitive, ignore type
-# Add sanitize for Field
-
-def validate_table_new(data_set):
+def validate_table(data_set):
     ''' Compare the table provided in step data with the one found on the web page '''
+    # Compare a webpage table with one specified in the step data
+    # All inputs have the sub-field set as "table parameter"
+    # Valid table parameters:
+    # > ignore rows: Ignores the comma delimited rows specified in the Value field
+    # > ignore columns: Ignores the comma delimited columns specified in the Value field
+    # > case: Value=Sensitive: This is the default, and values must match exactly. Value=insensitive: Perform case insensitive matching
+    # > exact: True (default) do nothing. False= Infer which cells to ignore. This is similar to ignore rows/cols, but can ignore specific cells if the user does not specify them. Mutually exclusive of ignore rows/cols
 
     sModuleInfo = inspect.stack()[0][3] + " : " + inspect.getmoduleinfo(__file__).name
     CommonUtil.ExecLog(sModuleInfo, "Function start", 0)
+    
+    # Initialize variables
+    have_table = False # Tells us if we read a table from the step data
+    case_sensitive = True # Case sensitive search
+    ignore_rows = [] # List of rows to ignore/skip
+    ignore_cols = [] # List of columns to ignore/skip
+    user_table = {} # Constructed user-defined table
+    webpage_table = {} # Constructed webpage table
+    exact_table = True # Require exact table match
     
     # Parse data set
-    have_table = False
-    case_sensitive = True
-    ignore_type = ''
-    user_table = {}
-    
     try:
         for row in data_set:
-            if row[1] == 'table parameter':
+            field, subfield, value = row[0], row[1], row[2] # Put data row in understandable variables
+            
+            if subfield == 'table parameter': # Inspect the table parameters (element parameters go to a different section)
+                
                 # Parse table instructions
-                if row[0] == 'ignore row' or row[0] == 'ignore rows':
-                    ignore_type = 'row'
-                elif row[0] == 'ignore column' or row[0] == 'ignore columns':
-                    ignore_type = 'column'
-                elif row[0] == 'match':
-                    if row[2].lower().strip() == 'exact' or row[2].lower().strip() == 'sensitive':
-                        case_sensitive = False
-                    elif row[2].lower().strip() == 'insensitive':
+                if field == 'ignore row' or field == 'ignore rows': # User specified list of rows to ignore
+                    ignore_rows = value.split(',') # Get rows as comma delimited string and store in list
+                    ignore_rows = map(int, ignore_rows) # Convert to integers
+                elif field == 'ignore column' or field == 'ignore columns': # User specified list of columns to ignore
+                    ignore_cols = value.split(',') # Get columns as comma delimited string and store in list
+                    ignore_cols = map(int, ignore_cols) # Convert to integers
+                elif field == 'case': # User specified case sensitivity
+                    if value.lower().strip() == 'exact' or value.lower().strip() == 'sensitive': # Sensitive match (default)
                         case_sensitive = True
+                    elif value.lower().strip() == 'insensitive': # Insensitive match - we'll convert everything to lower case
+                        case_sensitive = False
+                elif field == 'exact': # User specified type of table matching
+                    if value.lower().strip() == 'true' or value.lower().strip() == 'yes': # Exact table match, but user can specify rows/columns to ignore
+                        exact_table = True
+                    elif value.lower().strip() == 'false' or value.lower().strip() == 'no': # Not an exact match for all cells, only match the ones the user specified
+                        exact_table = False
+                    else:
+                        CommonUtil.ExecLog(sModuleInfo, "Unknown Value for table parameter 'exact'. Should be true or false.", 3)
+                        return 'failed'
                 
                 # Create user-defined table 
                 else:
                     try:
                         table_row, table_col = ('', '')
-                        table_row, table_col = row[0].split(',')
-                        if row != '' and table_col != '': # Check to ensure this was a table cell identifier - may not be
-                            user_table["%s,%s" % (table_row, table_col)] = row[2] # Save value using the row,col as an identifier
-                            have_table = True
-                    except: # Row may have been blank, or some other issue continue nevertheless ignoring it
-                        pass
+                        table_row, table_col = field.split(',') # Field should be in the format of ROW,COL
+                        if table_row != '' and table_col != '': # Check to ensure this was a table cell identifier - may not be
+                            if case_sensitive == False: # User specified case insensitive serach
+                                value = value.lower() # Prepare this table by setting all cell values to lowercase
+                            user_table["%s,%s" % (table_row, table_col)] = value # Save value using the row,col as an identifier
+                            have_table = True # Indicate we have at least one cell of a table specified
+                        else:
+                            CommonUtil.ExecLog(sModuleInfo, "Unknown Field for table parameter", 3)
+                            return 'failed'
+                    except: # Row may have been blank, or some other issue
+                        return CommonUtil.Exception_Handler(sys.exc_info(), None, "Unknown Field for table parameter")
 
         # Ensure we have a table from the user
         if have_table == False:
             CommonUtil.ExecLog(sModuleInfo, "No table values found, or they were not entered in the format of row,column (Eg: 1,2). Please create a table as defined in the documentation", 3)
             return 'failed'
+        CommonUtil.ExecLog(sModuleInfo, "Table parameters - Case Sensitive: %s - ignore_rows: %s - ignore_cols: %s - exact: %s" % (str(case_sensitive), str(ignore_rows), str(ignore_cols), str(exact_table)), 0)
     except Exception:
         return CommonUtil.Exception_Handler(sys.exc_info(), None, "Error while parsing the data set")
    
     # Get table from web page
-    webpage_table = get_webpage_table(data_set) # Produces an array that should match the user array
-    webpage_table = {'8,1': 'Status', '8,2': 'FAIL'}
-    print ">>>>>>>>",webpage_table
+    webpage_table = get_webpage_table(data_set, ignore_rows, ignore_cols, case_sensitive) # Produces an array that should match the user array
+    CommonUtil.ExecLog(sModuleInfo, "Webpage table  : %s" % webpage_table, 0)
+    CommonUtil.ExecLog(sModuleInfo, "Step data table: %s" % user_table, 0)
     if webpage_table in failed_tag_list:
         CommonUtil.ExecLog(sModuleInfo, "Unable to locate your element with given data.", 3)
-        return "failed"  
+        return "failed"
+    
+    # If user did not specify any rows or columns to ignore, we will infer that rows and columns NOT defined are meant to be ignored
+    # We do this by modifying the webpage table to remove rows and columns that don't match
+    if exact_table == False and ignore_rows == [] and ignore_cols == []: # If user did not specify anything to ignore
+        CommonUtil.ExecLog(sModuleInfo, "Inferring which cells from the webpage table to ignore", 0)
+        unmatched_cells = []
+        for ids in webpage_table: # For each table cell on the user table - basically looking for items that are specified, but not found
+            if ids not in user_table: # if cell from user table not found in webpage table
+                unmatched_cells.append(ids) # Keep list of cell IDs we want to trim from the webpage table
+        CommonUtil.ExecLog(sModuleInfo, "Removing inferred cells: %s" % str(unmatched_cells), 0)
+        for ids in unmatched_cells: # Remove these cells from the webpage table
+            if ids in webpage_table: # Check if the ID exists in case the user specified something that's not actually in the webpage table
+                del(webpage_table[ids])
+
     
     # Check if arrays match
     failed_matches = []
-    for id in webpage_table: # For each table cell on the webpage table
-        if id in user_table: # If that table cell is also in the user defined table
-            if webpage_table[id] != user_table[id]: # Check if the values of these two cells match
-                failed_matches.append("%s:%s != %s:%s" % (id, user_table[id], id, webpage_table[id])) # Record the unmatched cells
+    for ids in webpage_table: # For each table cell on the webpage table
+        if ids in user_table: # If that table cell is also in the user defined table
+            if webpage_table[ids] != user_table[ids]: # Check if the values of these two cells match
+                failed_matches.append('%s:"%s" != %s:"%s"' % (ids, user_table[ids], ids, webpage_table[ids])) # Record the unmatched cells
         else: # Not in user table
-            failed_matches.append("Cell %s is not defined in the step data" % id)
+            failed_matches.append("Cell %s is not defined in the step data" % ids)
+    
+    for ids in user_table: # For each table cell on the user table - basically looking for items that are specified, but not found
+        if ids not in webpage_table: # if cell from user table not found in webpage table
+            failed_matches.append("Cell %s is not found in the webpage table" % ids)
             
-                
+    # If any failed matches, list them in the log, so the user can see and exit
     if len(failed_matches) > 0:
         CommonUtil.ExecLog(sModuleInfo, "Tables do not match - %s" % str(failed_matches), 3)
         return 'failed'
@@ -1271,8 +960,12 @@ def validate_table_new(data_set):
     
     
 
-def get_webpage_table(data_set):
-    ''' Find a table given the elements, extract the text and return as a list containing lists holding the data '''
+def get_webpage_table(data_set, ignore_rows = [], ignore_cols = [], retain_case = True):
+    ''' Find a table given the elements, extract the text and return as a dictionary containing lists holding the data '''
+    # data_set: Contains user defined identifiers used to get the element of table
+    # ignore_rows: List containing rows to ignore
+    # ignore_cols: List containing columns to ignore
+    # retain_case: Set to true to keep data exactly as is. Set to false to set it to lower case which is useful for case insensitive matching
     
     sModuleInfo = inspect.stack()[0][3] + " : " + inspect.getmoduleinfo(__file__).name
     CommonUtil.ExecLog(sModuleInfo, "Function start", 0)
@@ -1288,38 +981,29 @@ def get_webpage_table(data_set):
         all_rows = WebDriverWait(table, WebDriver_Wait).until(EC.presence_of_all_elements_located((By.XPATH, "*")))
         
         master_text_table = {}
-        table_row = 1
+        table_row = 0
         for row_obj in all_rows: # For each row
+            table_row += 1
             if row_obj.is_displayed() != False:
-                try:
-                    # Get elements for each column 
-                    col_element = WebDriverWait(row_obj, WebDriver_Wait).until(EC.presence_of_all_elements_located((By.XPATH, "*")))
-                    
-                    #temp_row_holder = []
-                    table_col = 1
-                    for column_obj in col_element: # For each column on the row
-                        #temp_row_holder.append(column_obj.text) # Extract cell data as text and save
-                        master_text_table["%s,%s" % (table_row, table_col)] = column_obj.text
-                        table_col += 1
+                if table_row not in ignore_rows: # Skip rows the user wants to ignore
+                    try:
+                        # Get elements for each column 
+                        col_element = WebDriverWait(row_obj, WebDriver_Wait).until(EC.presence_of_all_elements_located((By.XPATH, "*")))
                         
-                except Exception:
-                    return CommonUtil.Exception_Handler(sys.exc_info(), None, "Could not find table row elements")
-                
-                table_row += 1
-                #master_text_table.append(temp_row_holder) # Save all text from this row
-
+                        table_col = 0
+                        for column_obj in col_element: # For each column on the row
+                            table_col += 1
+                            if table_col not in ignore_cols: # Skip columns the user wants to ignore
+                                value = str(column_obj.text).strip() # Save the text from this cell (also removing any HTML tags that may be in it)
+                                if retain_case == False: value = value.lower() # change cell text to lower case
+                                master_text_table["%s,%s" % (table_row, table_col)] = value # Put value from cell in dictionary
+                            
+                    except Exception:
+                        return CommonUtil.Exception_Handler(sys.exc_info(), None, "Could not find table row elements")
         return master_text_table # Return table text as dictionary
     except Exception:
         return CommonUtil.Exception_Handler(sys.exc_info(), None, "Error while parsing the table")
 
-
-
-
-
-'*************************************** New table ********************************************'
-
-
-'===================== ===x=== Get Element Section Ends ===x=== ======================'
 
 def Tear_Down_Selenium(step_data = [[[]]]):
     sModuleInfo = inspect.stack()[0][3] + " : " + inspect.getmoduleinfo(__file__).name
