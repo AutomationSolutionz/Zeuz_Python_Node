@@ -67,7 +67,7 @@ def verify_step_data(step_data):
         for data_set in step_data:
             data_set_index += 1
             module_test = False
-            field_text = True # !!! This should be set to false, but we are not using this for now
+            field_text = False
             
             # Check each data set
             if len(data_set) == 0:
@@ -109,6 +109,7 @@ def verify_step_data(step_data):
                         CommonUtil.ExecLog(sModuleInfo, "Field for data set %d contains invalid data: %s" % (data_set_index, str(row)), 3)
                         return 'failed'
                     
+            # Make sure each data set has an action row
             if action == False:
                 CommonUtil.ExecLog(sModuleInfo, "Data set %d is missing an action line, or it's misspelled" % data_set_index, 3)
                 return 'failed'
@@ -169,13 +170,12 @@ def adjust_element_parameters(step_data):
 def get_module_and_function(action_name, action_sub_field):
     ''' Function to split module from the action name, and with the action name tries to find the corrosponding function name '''
     
+    sModuleInfo = inspect.stack()[0][3] + " : " + inspect.getmoduleinfo(__file__).name
     function = ''
     module = ''
     try:
-        
         action_list = action_sub_field.split(' ') # Split sub-field, so we can get moudle name from step data
         if action_list > 1: # Should be at least two words in the sub-field
-
             # Check if this action is a common action, so we can modify the module accordingly
             for i in actions:
                 for j in actions[i]: # For each entry in the sub-dictionary
@@ -185,16 +185,22 @@ def get_module_and_function(action_name, action_sub_field):
                         return module, function, action_list[0] # Return module and function name
 
             # Not a common function, so find the function matching the module
-            module = action_list[0] # Module should be first item
+            #module = action_list[0] # Module should be first item
+            for item in action_list: # Loop through split string
+                if item not in ('optional', 'conditional', 'action'): # Find the module name
+                    module = item # Save it
+                    break
             for i in actions: # For each dictionary in the dictionary
                 for j in actions[i]: # For each entry in the sub-dictionary
                     if actions[i]['module'] == module and actions[i]['name'] == action_name: # Module and action name match
                         function = actions[i]['function'] # Save function
                         return module, function, '' # Return module and function name
-        
+            
+            CommonUtil.ExecLog(sModuleInfo, "Could not find module or action_name is invalid", 3)
+            return '','','' # Should never get here if verify_step_data() works properly
         # Not enough words in the Sub-Field
         else:
-            return '','' # Error handled in calling function
+            return '','','' # Error handled in calling function
     except Exception:
         return CommonUtil.Exception_Handler(sys.exc_info())
 
