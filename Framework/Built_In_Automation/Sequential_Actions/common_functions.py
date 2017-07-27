@@ -75,6 +75,7 @@ def verify_step_data(step_data):
                 return 'failed'
             
             # Check each row
+            action = False # used to ensure there is an action for each data set
             for row in data_set:
                 if len(row[0]) == 0:
                     CommonUtil.ExecLog(sModuleInfo, "Field for data set %d cannot empty: %s" % (data_set_index, str(row)), 3)
@@ -89,6 +90,7 @@ def verify_step_data(step_data):
                         
                 # Make sure Sub-Field has a module name
                 if 'action' in row[1]: # Only apply to actions rows
+                    action = True
                     for action_index in actions:
                         if actions[action_index]['module'] in row[1]: # If one of the modules is in the Sub-Field
                             module_test = True # Flag it's good
@@ -106,6 +108,10 @@ def verify_step_data(step_data):
                     if field_text == False:
                         CommonUtil.ExecLog(sModuleInfo, "Field for data set %d contains invalid data: %s" % (data_set_index, str(row)), 3)
                         return 'failed'
+                    
+            if action == False:
+                CommonUtil.ExecLog(sModuleInfo, "Data set %d is missing an action line, or it's misspelled" % data_set_index, 3)
+                return 'failed'
 
         return 'passed'
     except Exception:
