@@ -862,13 +862,20 @@ def validate_table(data_set):
     user_table = {} # Constructed user-defined table
     webpage_table = {} # Constructed webpage table
     exact_table = True # Require exact table match
+    table_type = '' # Type of table (css/html)
     
     # Parse data set
     try:
         for row in data_set:
             field, subfield, value = row[0], row[1], row[2] # Put data row in understandable variables
             
-            if subfield == 'table parameter': # Inspect the table parameters (element parameters go to a different section)
+            if subfield == 'action':
+                if value.strip().lower() in ('css', 'html'):
+                    table_type = value
+                else:
+                    CommonUtil.ExecLog(sModuleInfo, "Invalid table type in Value on Action line. Should be 'html' or 'css'", 3)
+                    return 'failed'
+            elif subfield == 'table parameter': # Inspect the table parameters (element parameters go to a different section)
                 
                 # Parse table instructions
                 if field == 'ignore row' or field == 'ignore rows': # User specified list of rows to ignore
@@ -916,7 +923,10 @@ def validate_table(data_set):
         return CommonUtil.Exception_Handler(sys.exc_info(), None, "Error while parsing the data set")
    
     # Get table from web page
-    webpage_table = get_webpage_table(data_set, ignore_rows, ignore_cols, case_sensitive) # Produces an array that should match the user array
+    if table_type == 'html': # HTML type table
+        webpage_table = get_webpage_table_html(data_set, ignore_rows, ignore_cols, case_sensitive) # Produces an array that should match the user array
+    elif table_type == 'css': # CSS type table
+        webpage_table = get_webpage_table_css(data_set, ignore_rows, ignore_cols, case_sensitive) # Produces an array that should match the user array
     CommonUtil.ExecLog(sModuleInfo, "Webpage table  : %s" % webpage_table, 0)
     CommonUtil.ExecLog(sModuleInfo, "Step data table: %s" % user_table, 0)
     if webpage_table in failed_tag_list:
@@ -960,8 +970,44 @@ def validate_table(data_set):
     
     
 
-def get_webpage_table(data_set, ignore_rows = [], ignore_cols = [], retain_case = True):
-    ''' Find a table given the elements, extract the text and return as a dictionary containing lists holding the data '''
+def get_webpage_table_html(data_set, ignore_rows = [], ignore_cols = [], retain_case = True):
+    ''' Find an HTML table given the elements, extract the text and return as a dictionary containing lists holding the data '''
+    # data_set: Contains user defined identifiers used to get the element of table
+    # ignore_rows: List containing rows to ignore
+    # ignore_cols: List containing columns to ignore
+    # retain_case: Set to true to keep data exactly as is. Set to false to set it to lower case which is useful for case insensitive matching
+    
+    sModuleInfo = inspect.stack()[0][3] + " : " + inspect.getmoduleinfo(__file__).name
+    CommonUtil.ExecLog(sModuleInfo, "Function start", 0)
+    
+    try:
+        # Get element representing entire table
+        table = LocateElement.Get_Element(data_set, selenium_driver)
+        if table in failed_tag_list:
+            CommonUtil.ExecLog(sModuleInfo, "Unable to locate your element with given data.", 3)
+            return "failed"  
+       
+        master_text_table = {}
+        table_row = 0
+        tr_list = table.find_elements_by_tag_name('tr') # Get element list for all rows
+        for tr in tr_list: # For each row element
+            table_row += 1
+            table_col = 0
+            td_list = tr.find_elements_by_tag_name('td') # Get element list for all columns in this row
+            if len(td_list) == 0: # No <TD> type columns, so check if there were header type columns, and use those instead
+                td_list = tr.find_elements_by_tag_name('th') # Get element list for all header columns in this row
+            for td in td_list: # For each column element
+                table_col += 1
+                value = str(td.text).strip() # Save the text from this cell (also removing any HTML tags that may be in it)
+                if retain_case == False: value = value.lower() # change cell text to lower case
+                master_text_table["%s,%s" % (table_row, table_col)] = value # Put value from cell in dictionary
+
+        return master_text_table # Return table text as dictionary
+    except Exception:
+        return CommonUtil.Exception_Handler(sys.exc_info(), None, "Error while parsing the table")
+
+def get_webpage_table_css(data_set, ignore_rows = [], ignore_cols = [], retain_case = True):
+    ''' Find a CSS table given the elements, extract the text and return as a dictionary containing lists holding the data '''
     # data_set: Contains user defined identifiers used to get the element of table
     # ignore_rows: List containing rows to ignore
     # ignore_cols: List containing columns to ignore
@@ -998,8 +1044,12 @@ def get_webpage_table(data_set, ignore_rows = [], ignore_cols = [], retain_case 
                                 if retain_case == False: value = value.lower() # change cell text to lower case
                                 master_text_table["%s,%s" % (table_row, table_col)] = value # Put value from cell in dictionary
                             
-                    except Exception:
-                        return CommonUtil.Exception_Handler(sys.exc_info(), None, "Could not find table row elements")
+                    except: # This will crash for single column tables or lists
+                        table_col = 1 # Likely only one column
+                        value = str(row_obj.text).strip() # Save the text from this cell (also removing any HTML tags that may be in it)
+                        if retain_case == False: value = value.lower() # change cell text to lower case
+                        master_text_table["%s,%s" % (table_row, table_col)] = value # Put value from cell in dictionary
+
         return master_text_table # Return table text as dictionary
     except Exception:
         return CommonUtil.Exception_Handler(sys.exc_info(), None, "Error while parsing the table")
