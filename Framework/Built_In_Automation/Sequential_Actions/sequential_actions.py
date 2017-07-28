@@ -19,10 +19,11 @@
 actions = { # Numbers are arbitrary, and are not used anywhere
     900: {'module': 'common', 'name': 'step result', 'function': 'step_result'},
     901: {'module': 'common', 'name': 'sleep', 'function': 'Sleep'},
+    902: {'module': 'common', 'name': 'wait', 'function': 'Wait_For_Element'},
+    903: {'module': 'common', 'name': 'wait disable', 'function': 'Wait_For_Element'},
     
     100: {'module': 'appium', 'name': 'click', 'function': 'Click_Element_Appium'},
     101: {'module': 'appium', 'name': 'text', 'function': 'Enter_Text_Appium'},
-    102: {'module': 'appium', 'name': 'wait', 'function': 'Wait_For_New_Element'},
     103: {'module': 'appium', 'name': 'tap', 'function': 'Tap_Appium'},
     104: {'module': 'appium', 'name': 'validate full text', 'function': 'Validate_Text_Appium'},
     105: {'module': 'appium', 'name': 'validate partial text', 'function': 'Validate_Text_Appium'},
@@ -55,7 +56,6 @@ actions = { # Numbers are arbitrary, and are not used anywhere
     134: {'module': 'selenium', 'name': 'keystroke keys', 'function': 'Keystroke_For_Element'},
     135: {'module': 'selenium', 'name': 'keystroke chars', 'function': 'Keystroke_For_Element'},
     136: {'module': 'selenium', 'name': 'text', 'function': 'Enter_Text_In_Text_Box'},
-    137: {'module': 'selenium', 'name': 'wait', 'function': 'Wait_For_New_Element'},
     139: {'module': 'selenium', 'name': 'initialize list', 'function': 'Initialize_List'},
     140: {'module': 'selenium', 'name': 'validate full text', 'function': 'Validate_Text'},
     141: {'module': 'selenium', 'name': 'validate partial text', 'function': 'Validate_Text'},
@@ -105,7 +105,6 @@ actions = { # Numbers are arbitrary, and are not used anywhere
     188: {'module': 'xml', 'name': 'read', 'function': 'read_element'},
     189: {'module': 'xml', 'name': 'delete', 'function': 'delete_element'},
     190: {'module': 'appium', 'name': 'imei', 'function': 'device_information'},
-    191: {'module': 'selenium', 'name': 'wait disable', 'function': 'Wait_For_New_Element'},
     192: {'module': 'desktop', 'name': 'click', 'function': 'Click_Element'},
     193: {'module': 'desktop', 'name': 'double click', 'function': 'Double_Click_Element'},
     194: {'module': 'desktop', 'name': 'hover', 'function': 'Hover_Over_Element'},
@@ -411,6 +410,7 @@ def Action_Handler(_data_set, action_row):
     # Get module and function for this action
     module = ''
     function = ''
+    original_module = ''
     module, function, original_module = common.get_module_and_function(action_name, action_subfield) # New, get the module to execute
     CommonUtil.ExecLog(sModuleInfo, "Function identified as function: %s in module: %s" % (function, module), 0)
 
@@ -418,6 +418,13 @@ def Action_Handler(_data_set, action_row):
         CommonUtil.ExecLog(sModuleInfo, "You probably didn't add the module as part of the action. Eg: appium action", 3)
         return "failed"
 
+    # If this is a common function, try to get the webdriver for it, if there is one, and save it to shared variables. This will allow common functions to work with whichever webdriver they need
+    if original_module != '': # This was identified as a common module
+        try:
+            common_driver = eval(original_module).get_driver() # Get webdriver object
+            sr.Set_Shared_Variables('common_driver', common_driver) # Save in shared variable
+        except: pass # Not all modules have get_driver, so don't worry if this crashes
+    
     # Strip the "optional" keyword, and module, so functions work properly (result of optional action is handled by sequential_actions)
     data_set = []
     for row in _data_set:
@@ -435,6 +442,7 @@ def Action_Handler(_data_set, action_row):
     if data_set in failed_tag_list:
         return 'failed'
 
+    # Execute the action's function
     try:
         result = load_sa_modules(module) # Load the appropriate module
         if result == 'failed':

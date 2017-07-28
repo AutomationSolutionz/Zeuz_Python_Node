@@ -8,6 +8,7 @@ from Framework.Utilities import CommonUtil
 from Framework.Built_In_Automation.Shared_Resources import BuiltInFunctionSharedResources as sr
 from Framework.Built_In_Automation.Sequential_Actions.sequential_actions import actions, action_support
 from Framework.Utilities.CommonUtil import passed_tag_list, failed_tag_list, skipped_tag_list # Allowed return strings, used to normalize pass/fail
+from Framework.Built_In_Automation.Shared_Resources import LocateElement
 
 def sanitize(step_data, valid_chars = '', clean_whitespace_only = False, column = ''):
     ''' Sanitize step data Field and Sub-Field '''
@@ -176,20 +177,24 @@ def get_module_and_function(action_name, action_sub_field):
     try:
         action_list = action_sub_field.split(' ') # Split sub-field, so we can get moudle name from step data
         if action_list > 1: # Should be at least two words in the sub-field
+            # Find the function matching the module (decide later if we need it or not)
+            for item in action_list: # Loop through split string
+                for action_index in actions:
+                    if actions[action_index]['module'] == item: # Found the matching module
+                        module = item # Save it
+                        break
+                if module != '': break
+
             # Check if this action is a common action, so we can modify the module accordingly
             for i in actions:
                 for j in actions[i]: # For each entry in the sub-dictionary
                     if actions[i]['module'] == 'common' and actions[i]['name'] == action_name:
+                        # Now we'll overwrite the module with the common module, and continue as normal
+                        original_module = module
                         module = 'common' # Set module as common
                         function = actions[i]['function'] # Save function
-                        return module, function, action_list[0] # Return module and function name
+                        return module, function, original_module # Return module and function name
 
-            # Not a common function, so find the function matching the module
-            #module = action_list[0] # Module should be first item
-            for item in action_list: # Loop through split string
-                if item not in ('optional', 'conditional', 'action'): # Find the module name
-                    module = item # Save it
-                    break
             for i in actions: # For each dictionary in the dictionary
                 for j in actions[i]: # For each entry in the sub-dictionary
                     if actions[i]['module'] == module and actions[i]['name'] == action_name: # Module and action name match
@@ -263,3 +268,61 @@ def Sleep(data_set):
         return "passed"
     except Exception:
         return CommonUtil.Exception_Handler(sys.exc_info())
+
+def Wait_For_Element(data_set):
+    ''' Continuously monitors an element for a specified amount of time and returns pass when it's state is changed '''
+    # Handles two types:
+    # wait: Wait for element to appear/available
+    # wait disable: Wait for element to disappear/hide
+    
+    sModuleInfo = inspect.stack()[0][3] + " : " + inspect.getmoduleinfo(__file__).name
+    CommonUtil.ExecLog(sModuleInfo,"Function Start", 0)
+    
+    # Get webdriver
+    if sr.Test_Shared_Variables('common_driver'):
+        common_driver = sr.Get_Shared_Variables('common_driver')
+    else:
+        CommonUtil.ExecLog(sModuleInfo, "Could not dynamically locate correct driver. You either did not initiate it with a valid action that populates it, or you called this function with a module name that doesn't support this function", 3)
+        return 'failed' 
+    
+    try:
+        wait_for_element_to_disappear = False
+        
+        # Find the wait time from the data set
+        for row in data_set:
+            if row[1] == "action":
+                if row[0] == 'wait disable': wait_for_element_to_disappear = True
+                timeout_duration = int(row[2])
+       
+        # Check for element every second 
+        end_time = time.time() + timeout_duration # Time at which we should stop looking
+        for i in range(timeout_duration): # Keep testing element until this is reached (likely never hit due to timeout below)
+            # Wait and then test if we are over our alloted time limit
+            time.sleep(1)
+            if time.time() >= end_time: # Keep testing element until this is reached (ensures we wait exactly the specified amount of time)
+                break
+
+            # Test if element exists or not
+            Element = LocateElement.Get_Element(data_set, common_driver)
+            
+            # Check if element exists or not, depending on the type of wait the user wanted
+            if wait_for_element_to_disappear == False: # Wait for it to appear
+                if Element not in failed_tag_list: # Element found
+                    CommonUtil.ExecLog(sModuleInfo, "Found element", 1)
+                    return 'passed'
+                else: # Element not found, keep waiting
+                    CommonUtil.ExecLog(sModuleInfo, "Element does not exist. Sleep and try again - %d" % i, 0)
+            else: # Wait for it to be removed/hidden/disabled
+                if Element in failed_tag_list: # Element removed
+                    CommonUtil.ExecLog(sModuleInfo, "Element disappeared", 1)
+                    return 'passed'
+                else: # Element found, keep waiting
+                    CommonUtil.ExecLog(sModuleInfo, "Element still exists. Sleep and try again - %d" % i, 0)
+
+        # Element status not changed after time elapsed, to exit with failure        
+        CommonUtil.ExecLog(sModuleInfo, "Wait for element failed", 3)
+        return 'failed'
+
+    except Exception:
+        return CommonUtil.Exception_Handler(sys.exc_info())
+
