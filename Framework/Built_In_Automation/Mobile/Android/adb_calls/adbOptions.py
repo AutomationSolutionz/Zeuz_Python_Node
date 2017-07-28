@@ -130,16 +130,47 @@ def get_device_complete_info():
         return CommonUtil.Exception_Handler(sys.exc_info(),None,errMsg)
 
 def get_devices():
+    ''' Retrieves a list of connected devices in the format of "SERIAL_NO STATE" and returns as a list '''
+    # State may be "device" if connected and we can talk to it, or "unauthorized" if we can't talk to it
+    
     sModuleInfo = inspect.stack()[0][3] + " : " + inspect.getmoduleinfo(__file__).name
     try:
+        # Get list of connected devices
         output = subprocess.check_output("adb devices", shell=True)
-        CommonUtil.ExecLog(sModuleInfo, "%s"%output, 1)
+        
+        # Cleanup data
+        output = output.replace("\r", '')
+        output = output.replace("\t", ' ')
+        output = output.split("\n")
+        output.pop(0) # Remove "list of..." string
+        output = [line for line in output if line != '']
+        
+        # Return as list 
+        CommonUtil.ExecLog(sModuleInfo, "Connected devices: %s" % str(output), 0)
         return output
 
     except Exception:
         errMsg = "Unable to get devices"
         return CommonUtil.Exception_Handler(sys.exc_info(),None,errMsg)
 
+def is_android_connected():
+    ''' Return True/False if at least one device is connected '''
+    
+    sModuleInfo = inspect.stack()[0][3] + " : " + inspect.getmoduleinfo(__file__).name
+    
+    devices = get_devices()
+    
+    if devices != []:
+        for device in devices:
+            if 'device' in device:
+                CommonUtil.ExecLog(sModuleInfo, "Android connected", 0)
+                return True
+        CommonUtil.ExecLog(sModuleInfo, "Android connected, but not authorized. Ensure USB debugging is enabled in developer options, and that you authorized this computer to connect to it.", 2)
+        return False
+    else:
+        CommonUtil.ExecLog(sModuleInfo, "No Android connected", 0)
+        return False
+    
 def get_android_sdk():
     sModuleInfo = inspect.stack()[0][3] + " : " + inspect.getmoduleinfo(__file__).name
     try:

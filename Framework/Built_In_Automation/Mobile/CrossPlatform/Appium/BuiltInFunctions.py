@@ -15,16 +15,7 @@ from Framework.Built_In_Automation.Shared_Resources import LocateElement
 PATH = lambda p: os.path.abspath(
     os.path.join(os.path.dirname(__file__), p)
 )
-
- # Appium directory/filename - May need to move to settings.conf
-appium_binary = 'appium' # Default filename of appium, assume in the PATH
-if 'linux' in sys.platform:
-    appium_binary = 'appium'
-elif 'win' in sys.platform:
-    appium_binary = os.path.join(os.getenv('ProgramFiles'), 'APPIUM\Appium.exe')
-else:
-    CommonUtil.ExecLog(__name__ + " : " + __file__, "Unrecognized platform. Assuming 'appium' is in the PATH" % str(os.name), 3)
-    
+   
 # Recall appium driver, if not already set - needed between calls in a Zeuz test case
 appium_driver = None
 if Shared_Resources.Test_Shared_Variables('appium_driver'): # Check if driver is already set in shared variables
@@ -36,6 +27,44 @@ if Shared_Resources.Test_Shared_Variables('dependency'): # Check if driver is al
     dependency = Shared_Resources.Get_Shared_Variables('dependency') # Retreive appium driver
 else:
     CommonUtil.ExecLog(__name__ + " : " + __file__, "No dependency set - Cannot run", 3)
+
+def find_appium():
+    ''' Do our very best to find the appium executable '''
+    
+    sModuleInfo = inspect.stack()[0][3] + " : " + inspect.getmoduleinfo(__file__).name
+    CommonUtil.ExecLog(sModuleInfo,"Function Start", 0)
+
+    # Expected locations
+    appium_list = [
+        '/usr/bin/appium',
+        os.path.join(str(os.getenv('HOME')), '.linuxbrew/bin/appium'),
+        os.path.join(str(os.getenv('ProgramFiles')), 'APPIUM','Appium.exe')
+        ] # getenv() must be wrapped in str(), so it doesn't fail on other platforms
+    
+    # Try to find the appium executable
+    global appium_binary
+    appium_binary = ''
+    for binary in appium_list:
+        if os.path.exists(binary):
+            appium_binary = binary
+            break
+    
+    if appium_binary == '': # Didn't find where appium was installed
+        CommonUtil.ExecLog(sModuleInfo, "Appium not found. Trying to locate via which", 0)
+        try: appium_binary = subprocess.Popen(['which', 'appium'], stdout = subprocess.PIPE).communicate()[0].strip()
+        except: pass
+        
+        if appium_binary == '': # Didn't find where appium was installed
+            appium_binary = 'appium' # Default filename of appium, assume in the PATH
+            CommonUtil.ExecLog(sModuleInfo,"Appium still not found. Assuming it's in the PATH.", 2)
+        else:
+            CommonUtil.ExecLog(sModuleInfo,"Found appium: %s" % appium_binary, 1)
+    else: # Found appium's path
+        CommonUtil.ExecLog(sModuleInfo,"Found appium: %s" % appium_binary, 1)
+
+# Try to find appium
+appium_binary = ''
+find_appium()
 
 def get_driver():
     ''' For custom functions external to this script that need access to the driver '''
@@ -150,6 +179,10 @@ def start_appium_driver(package_name = '', activity_name = '', filename = ''):
             desired_caps['newCommandTimeout'] = 600 # Command timeout before appium destroys instance
             
             if dependency['Mobile'].lower() == 'android':
+                if adbOptions.is_android_connected() == False:
+                    CommonUtil.ExecLog(sModuleInfo, "Could not detect any connected Android devices", 3)
+                    return 'failed'
+
                 adbOptions.wake_android() # Send wake up command to avoid issues with devices ignoring appium when they are in lower power mode (android 6.0+)
                 CommonUtil.ExecLog(sModuleInfo,"Setting up with Android",1)
                 desired_caps['platformVersion'] = adbOptions.get_android_version().strip()
@@ -1221,9 +1254,17 @@ def Compare_Lists(data_set):
 
 def get_program_names(search_name):
     ''' Find Package and Activity name based on wildcard match '''
+    # Android only
+    
+    sModuleInfo = inspect.stack()[0][3] + " : " + inspect.getmoduleinfo(__file__).name
+    CommonUtil.ExecLog(sModuleInfo,"Function Start", 0)
     
     # Find package name for the program that's already installed
     try:
+        if adbOptions.is_android_connected() == False:
+            CommonUtil.ExecLog(sModuleInfo, "Could not detect any connected Android devices", 3)
+            return '', '' # Failure handling in calling function
+
         cmd = 'adb shell pm list packages'
         res = subprocess.Popen(cmd.split(' '), stdout=subprocess.PIPE).communicate(0)
         res = str(res).replace('\\r','')
