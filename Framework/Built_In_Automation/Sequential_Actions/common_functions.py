@@ -326,3 +326,50 @@ def Wait_For_Element(data_set):
     except Exception:
         return CommonUtil.Exception_Handler(sys.exc_info())
 
+def Save_Text(data_set):
+    sModuleInfo = inspect.stack()[0][3] + " : " + inspect.getmoduleinfo(__file__).name
+    CommonUtil.ExecLog(sModuleInfo,"Function Start", 0)
+    
+    # Get webdriver
+    if sr.Test_Shared_Variables('common_driver'):
+        common_driver = sr.Get_Shared_Variables('common_driver')
+    else:
+        CommonUtil.ExecLog(sModuleInfo, "Could not dynamically locate correct driver. You either did not initiate it with a valid action that populates it, or you called this function with a module name that doesn't support this function", 3)
+        return 'failed' 
+
+    # Parse data set
+    try:
+        variable_name = ''
+        for row in data_set:
+            if row[1] == 'action':
+                variable_name = row[2] # Save action Value as the shared variable name
+        if variable_name == '':
+            CommonUtil.ExecLog(sModuleInfo, "Missing variable name to save text as from Value field on action line", 3)
+            return 'failed'
+    except Exception:
+        return CommonUtil.Exception_Handler(sys.exc_info(), None, "Error parsing data set")
+
+    # Find element
+    Element = LocateElement.Get_Element(data_set, common_driver)
+    if Element in failed_tag_list:
+        CommonUtil.ExecLog(sModuleInfo, "Unable to locate your element with given data.", 3)
+        return "failed" 
+        
+    try:
+        # !!! Seems like a really round about way of just removing \n. Why not use replace()?
+        list_of_element_text = Element.text.split('\n') # Split multi-line text
+        visible_list_of_element_text = ""
+        for each_text_item in list_of_element_text: # For each line of text
+            if each_text_item != "":
+                visible_list_of_element_text+=each_text_item # Append each line into one string
+
+        result = sr.Set_Shared_Variables(variable_name, visible_list_of_element_text) # Save element text into shared variable using name given by user
+        if result in failed_tag_list:
+            CommonUtil.ExecLog(sModuleInfo, "Value of Variable '%s' could not be saved" % variable_name, 3)
+            return "failed"
+        else:
+            CommonUtil.ExecLog(sModuleInfo, "Element text saved", 1)
+            return "passed"
+    except Exception:
+        return CommonUtil.Exception_Handler(sys.exc_info(), None, "Error reading and saving element text")
+
