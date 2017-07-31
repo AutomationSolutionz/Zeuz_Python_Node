@@ -1060,7 +1060,13 @@ def Validate_Text_Appium(data_set):
     CommonUtil.ExecLog(sModuleInfo,"Function Start", 0)
     data_set = [data_set]
     try:
-        Element = LocateElement.Get_Element(data_set[0],appium_driver)
+        for each_step_data_item in data_set[0]:
+            if each_step_data_item[1]=="element parameter" and each_step_data_item[2] == '':
+                Element = appium_driver.find_elements_by_xpath("//*[@%s]" %each_step_data_item[0])
+            if each_step_data_item[1]=="element parameter" and each_step_data_item[2] != '':
+                Element = LocateElement.Get_Element(data_set[0],appium_driver)
+                Element = [Element]
+                
         if Element == "failed":
             CommonUtil.ExecLog(sModuleInfo, "Unable to locate your element with given data.", 3)
             return "failed" 
@@ -1071,17 +1077,24 @@ def Validate_Text_Appium(data_set):
                 expected_text_data = each_step_data_item[2].split('||') # Split the separator in case multiple string provided in the same data_set
                 validation_type = each_step_data_item[0]
         
+        #Get the string for a single and multiple element(s)
+        list_of_element_text = []
+        list_of_element = []
+        if len(Element)== 0:
+            return False
+        elif len(Element) >= 1:           
+            for each_text in Element:
+                list_of_element = each_text.text.split('\n') # Extract the text element
+                list_of_element_text.append(list_of_element[0])
+        else:
+            return "failed"
+            
+        #Extract only the visible element(s)
         visible_list_of_element_text = []
-        # Get the string for a single element
-        if Element != []:
-            list_of_element_text = Element.text.split('\n') # Extract the text element
-            visible_list_of_element_text = []
-            for each_text_item in list_of_element_text:
-                if each_text_item != "":
-                    visible_list_of_element_text.append(each_text_item)
+        for each_text_item in list_of_element_text:
+            if each_text_item != "":
+                visible_list_of_element_text.append(each_text_item)
         
-
-         
         # Validate the partial text/string provided in the step data with the text obtained from the device
         if validation_type == "validate partial text":
             actual_text_data = visible_list_of_element_text
@@ -1089,7 +1102,7 @@ def Validate_Text_Appium(data_set):
             CommonUtil.ExecLog(sModuleInfo, ">>>>>>>> Actual Text: %s" %actual_text_data, 0)
             for each_actual_text_data_item in actual_text_data:
                 if expected_text_data[0] in each_actual_text_data_item: # index [0] used to remove the unicode 'u' from the text string
-                    CommonUtil.ExecLog(sModuleInfo, "The text has been validated by a partial match.", 0)
+                    CommonUtil.ExecLog(sModuleInfo, "The text has been validated by using partial match.", 0)
                     return "passed"
                 else:
                     CommonUtil.ExecLog(sModuleInfo, "Unable to validate using partial match.", 3)
