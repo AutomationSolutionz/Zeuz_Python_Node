@@ -117,7 +117,7 @@ def Result_Analyzer(sTestStepReturnStatus,temp_q):
             temp_q.put("skipped")
             return "skipped"
         else:
-            ExecLog(sModuleInfo,"Step return type unknown: %s" %(sTestStepReturnStatus),3)
+            ExecLog(sModuleInfo,"Step return type unknown: %s. The last function did not return a valid type (passed/failed/etc)" %(sTestStepReturnStatus),3)
             temp_q.put("failed")
             return "failed"
 
