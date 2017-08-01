@@ -77,6 +77,15 @@ def launch_application(data_set):
     sModuleInfo = inspect.stack()[0][3] + " : " + inspect.getmoduleinfo(__file__).name
     CommonUtil.ExecLog(sModuleInfo,"Function Start", 0)
     
+    # Get the dependency again in case it was missed
+    if Shared_Resources.Test_Shared_Variables('dependency'): # Check if driver is already set in shared variables
+        dependency = Shared_Resources.Get_Shared_Variables('dependency') # Retreive selenium driver
+
+    # Ensure dependency is set
+    if 'Mobile' not in dependency:
+        CommonUtil.ExecLog(sModuleInfo, "Mobile dependency not set. You must set it when deploying a run.", 3)
+        return 'failed'
+    
     # Parse data set
     try:
         package_name = '' # Name of application package
@@ -162,6 +171,11 @@ def start_appium_driver(package_name = '', activity_name = '', filename = ''):
     if Shared_Resources.Test_Shared_Variables('dependency'): # Check if driver is already set in shared variables
         dependency = Shared_Resources.Get_Shared_Variables('dependency') # Retreive selenium driver
 
+    # Ensure dependency is set
+    if 'Mobile' not in dependency:
+        CommonUtil.ExecLog(sModuleInfo, "Mobile dependency not set. You must set it when deploying a run.", 3)
+        return 'failed'
+    
     try:
         global appium_driver
         if appium_driver == None:
@@ -219,8 +233,7 @@ def start_appium_driver(package_name = '', activity_name = '', filename = ''):
             return 'passed'
     except Exception:
         return CommonUtil.Exception_Handler(sys.exc_info())
-    
-    
+
 def teardown_appium(data_set):
     ''' Teardown of appium instance '''
     
