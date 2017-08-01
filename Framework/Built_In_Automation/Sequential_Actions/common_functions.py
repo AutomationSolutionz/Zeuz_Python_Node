@@ -1,6 +1,8 @@
 '''
     Common Functions
-    Function: Contains functions common to all modules 
+    Function: Contains functions common to all modules, and helper functions for Sequential Actions
+    
+    Caveat: Functions common to multiple Built In Functions must have action names that are unique, because we search the common functions first, regardless of the module name passed by the user 
 '''
 
 import inspect, sys, time
@@ -101,7 +103,7 @@ def verify_step_data(step_data):
                         return 'failed'
                 
                 # Make sure Field has a valid action call
-                if 'action' in row[1]: # Only apply to actions rows
+                if 'action' in row[1] and 'conditional' not in row[1]: # Only apply to actions rows
                     for action_index in actions:
                         if actions[action_index]['name'] == row[0]: # If one of the action names in the Field
                             field_text = True # Flag it's good
@@ -232,8 +234,14 @@ def shared_variable_to_value(data_set):
 
 ### *********************************** Begin common built in functions *************************************** ### 
 # These functions are common with more than one of the BuiltInFunctions.py files (Selenium, Appium, REST, etc)
+# How it works: We do not require the user to specify "common" in the action row. They just use whatever module they 
+# built the rest of the data set with, so as to make it easy for them. When action_handler() gets the data set, it
+# first searches the actions dictionary for any common actions that match the name provided by the user. If found,
+# it will remove the module the user specified, replace it with the "common" module, and continue as normal.
 
 def step_result(data_set):
+    ''' Returns passed/failed in the standard format, when the user specifies it in the step data '''
+    
     sModuleInfo = inspect.stack()[0][3] + " : " + inspect.getmoduleinfo(__file__).name
     CommonUtil.ExecLog(sModuleInfo,"Function Start", 0)
     
@@ -263,7 +271,7 @@ def Sleep(data_set):
 
     try:
         seconds = int(data_set[0][2])
-        CommonUtil.ExecLog(sModuleInfo, "Sleeping for %s seconds" % seconds, 1)
+        CommonUtil.ExecLog(sModuleInfo, "Sleeping for %d seconds" % seconds, 1)
         time.sleep(seconds)
         return "passed"
     except Exception:
@@ -327,6 +335,8 @@ def Wait_For_Element(data_set):
         return CommonUtil.Exception_Handler(sys.exc_info())
 
 def Save_Text(data_set):
+    ''' Save the text from the given element to shared variables under the variable name provided '''
+     
     sModuleInfo = inspect.stack()[0][3] + " : " + inspect.getmoduleinfo(__file__).name
     CommonUtil.ExecLog(sModuleInfo,"Function Start", 0)
     
@@ -373,3 +383,118 @@ def Save_Text(data_set):
     except Exception:
         return CommonUtil.Exception_Handler(sys.exc_info(), None, "Error reading and saving element text")
 
+def Compare_Variables(data_set):
+    ''' Compare shared variables / strings to eachother '''
+    # Compares two variables from Field and Value on any line that is not the action line
+    sModuleInfo = inspect.stack()[0][3] + " : " + inspect.getmoduleinfo(__file__).name
+    CommonUtil.ExecLog(sModuleInfo,"Function Start", 0)
+    return sr.Compare_Variables([data_set])
+
+def Initialize_List(data_set):
+    ''' Prepares an empty list in shared variables '''
+    sModuleInfo = inspect.stack()[0][3] + " : " + inspect.getmoduleinfo(__file__).name
+    CommonUtil.ExecLog(sModuleInfo,"Function Start", 0)
+    return sr.Initialize_List([data_set])
+
+def Compare_Lists(data_set):
+    ''' Compare two lists stored in shared variables '''
+    sModuleInfo = inspect.stack()[0][3] + " : " + inspect.getmoduleinfo(__file__).name
+    CommonUtil.ExecLog(sModuleInfo,"Function Start", 0)
+    return sr.Compare_Lists([data_set])
+
+
+def Insert_Into_List(data_set):
+    ''' Ad text to a list '''
+    # Function 1: One row containing only the action - Use information in the Value field to add to the list
+    # Function 2: Action row and element parameter row - Get element value, and insert that into the list
+    
+    sModuleInfo = inspect.stack()[0][3] + " : " + inspect.getmoduleinfo(__file__).name
+    CommonUtil.ExecLog(sModuleInfo,"Function Start", 0)
+    
+    try:
+        # User specified only the action line, so we expect all information to be contained in the Value field
+        if len(data_set) == 1:
+            list_name = ''
+            key = ''
+            value = ''
+            full_input_key_value_name = ''
+
+            # Get shared variable names from action line
+            for row in data_set:
+                if row[1]=="action":
+                    full_input_key_value_name = row[2]
+
+            # Get list of shared variables, which should be comma separated
+            temp_list = full_input_key_value_name.split(',')
+            if len(temp_list) == 1:
+                CommonUtil.ExecLog(sModuleInfo,
+                                   "The information in the data-set(s) are incorrect. Please provide accurate data set(s) information.",
+                                   3)
+                return "failed"
+            else:
+                list_name = temp_list[0].split(':')[1].strip() # ??? First variable, split, keep second value
+                key = temp_list[1].split(':')[1].strip() # ??? Second variable, split, keep second value
+                value = temp_list[2].split(':')[1].strip() # ??? Third variable, split, keep second value
+
+            # Give parsed information to function that will perform the comparison
+            result = sr.Set_List_Shared_Variables(list_name,key, value)
+            if result in failed_tag_list:
+                CommonUtil.ExecLog(sModuleInfo, "In list '%s' Value of Variable '%s' could not be saved!!!"%(list_name, key), 3)
+                return "failed"
+            else:
+                CommonUtil.ExecLog(sModuleInfo, "List insertion complete", 1)
+                return "passed"
+    
+        # Multiple rows indicating we should read the element text and store it
+        else:
+            # Get webdriver
+            if sr.Test_Shared_Variables('common_driver'):
+                common_driver = sr.Get_Shared_Variables('common_driver')
+            else:
+                CommonUtil.ExecLog(sModuleInfo, "Could not dynamically locate correct driver. You either did not initiate it with a valid action that populates it, or you called this function with a module name that doesn't support this function", 3)
+                return 'failed' 
+    
+            # Get element object
+            Element = LocateElement.Get_Element(data_set, common_driver)
+            if Element == "failed":
+                CommonUtil.ExecLog(sModuleInfo, "Unable to locate your element with given data.", 3)
+                return "failed" 
+        
+            # Get shared variable name from action line
+            list_name = ''
+            key = ''
+            for each_step_data_item in data_set:
+                if each_step_data_item[1] == "action":
+                    key = each_step_data_item[2] # Save shared variable name from Value field
+
+            temp_list = key.split(',')
+            if len(temp_list) == 1:
+                CommonUtil.ExecLog(sModuleInfo,
+                    "The information in the data-set(s) are incorrect. Please provide accurate data set(s) information.",
+                        3)
+                return "failed"
+            else:
+                list_name = str(temp_list[0]).split(':')[1].strip()
+                key = str(temp_list[1]).strip()
+
+            #get text from selenium element
+            list_of_element_text = Element.text.split('\n')
+            visible_list_of_element_text = ""
+            for each_text_item in list_of_element_text:
+                if each_text_item != "":
+                    visible_list_of_element_text+=each_text_item
+
+
+            #save text in the list of shared variables in CommonUtil
+            result = sr.Set_List_Shared_Variables(list_name,key, visible_list_of_element_text)
+            if result in failed_tag_list:
+                CommonUtil.ExecLog(sModuleInfo, "In list '%s' Value of Variable '%s' could not be saved!!!"%(list_name, key), 3)
+                return "failed"
+            else:
+                CommonUtil.ExecLog(sModuleInfo, "List insertion complete", 1)
+                return "passed"
+
+    except Exception:
+        return CommonUtil.Exception_Handler(sys.exc_info())
+    
+    
