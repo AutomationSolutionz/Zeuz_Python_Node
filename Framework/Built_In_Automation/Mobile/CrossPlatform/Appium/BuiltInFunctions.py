@@ -1103,9 +1103,9 @@ def Validate_Text_Appium(data_set):
         if validation_type == "validate partial text":
             actual_text_data = visible_list_of_element_text
             CommonUtil.ExecLog(sModuleInfo, ">>>>>> Expected Text: %s" %expected_text_data, 0)
-            print (">>>>>> Expected Text: %s" %expected_text_data)
+#             print (">>>>>> Expected Text: %s" %expected_text_data)
             CommonUtil.ExecLog(sModuleInfo, ">>>>>>>> Actual Text: %s" %actual_text_data, 0)
-            print (">>>>>>>> Actual Text: %s" %actual_text_data)
+#             print (">>>>>>>> Actual Text: %s" %actual_text_data)
             for each_actual_text_data_item in actual_text_data:
                 if expected_text_data[0] in each_actual_text_data_item: # index [0] used to remove the unicode 'u' from the text string
                     CommonUtil.ExecLog(sModuleInfo, "Validate the text element %s using partial match." %visible_list_of_element_text, 0)
@@ -1118,9 +1118,9 @@ def Validate_Text_Appium(data_set):
         if validation_type == "validate full text":
             actual_text_data = visible_list_of_element_text
             CommonUtil.ExecLog(sModuleInfo, ">>>>>> Expected Text: %s" %expected_text_data, 0)
-            print (">>>>>> Expected Text: %s" %expected_text_data)
+#             print (">>>>>> Expected Text: %s" %expected_text_data)
             CommonUtil.ExecLog(sModuleInfo, ">>>>>>>> Actual Text: %s" %actual_text_data, 0)
-            print (">>>>>>>> Actual Text: %s" %actual_text_data)
+#             print (">>>>>>>> Actual Text: %s" %actual_text_data)
             if (expected_text_data[0] == actual_text_data[0]): # index [0] used to remove the unicode 'u' from the text string
                 CommonUtil.ExecLog(sModuleInfo, "Validate the text element %s using complete match." %visible_list_of_element_text, 0)
                 return "passed"
@@ -1131,22 +1131,25 @@ def Validate_Text_Appium(data_set):
         # Validate all the text/string provided in the step data with the text obtained from the device
         if validation_type == "validate screen text":
             CommonUtil.ExecLog(sModuleInfo, ">>>>>> Expected Text: %s" %expected_text_data, 0)
-            print (">>>>>> Expected Text: %s" %expected_text_data)
+#             print (">>>>>> Expected Text: %s" %expected_text_data)
             CommonUtil.ExecLog(sModuleInfo, ">>>>>>>> Actual Text: %s" %visible_list_of_element_text, 0)
-            print (">>>>>>>> Actual Text: %s" %visible_list_of_element_text)
+#             print (">>>>>>>> Actual Text: %s" %visible_list_of_element_text)
             i = 0
             for x in xrange(0, len(visible_list_of_element_text)): 
                 if (visible_list_of_element_text[x] == expected_text_data[i]): # Validate the matching string
                     CommonUtil.ExecLog(sModuleInfo, "The text element '%s' has been validated by using complete match." %visible_list_of_element_text[x], 1)
                     i += 1
+                    return "passed"
                 else:
                     visible_elem = [ve for ve in visible_list_of_element_text[x].split()]
                     expected_elem = [ee for ee in expected_text_data[i].split()]
                     for elem in visible_elem: # Validate the matching word
                         if elem in expected_elem:
                             CommonUtil.ExecLog(sModuleInfo, "Validate the text element '%s' using element match." %elem, 1)
+                            return "passed"
                         else:
                             CommonUtil.ExecLog(sModuleInfo, "Unable to validate the text element '%s'. Check the text element(s) in step_data(s) and/or in screen text." %elem, 1)
+                            return "failed"
                     if (visible_elem[0] in expected_elem):
                         i += 1
                         
