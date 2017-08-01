@@ -3,15 +3,11 @@ Created on May 1, 2017
 Updated on June 31, 2017
 
 @author: mchowdhury
-Comment: Not published yet
 '''
 
-from Framework.Built_In_Automation.Sequential_Actions import sequential_actions as sa
-#from Framework.Built_In_Automation.Mobile.CrossPlatform.Appium import BuiltInFunctions as bf
 import time
-from Framework.Built_In_Automation.Web.REST import BuiltInFunctions as bfr
-# from Projects.AfterSale import prod_tests as prod    [ [ ( 'text' , 'element parameter' , 'LCD Fill' , False , False ) , ( 'true' , 'appium conditional action' , '2,3' , False , False ) , ( 'false' , 'appium conditional action' , '4' , False , False ) ]  , [ ( 'swipe' , 'appium action' , 'right,3' , False , False ) ]  , [ ( 'id' , 'element parameter' , 'com.assetscience.tauschrausch:id/passButtonTextView' , False , False ) , ( 'click' , 'appium action' , 'click' , False , False ) , ( 'step result' , 'appium action' , 'pass' , False , False ) ]  , [ ( 'step result' , 'appium action' , 'fail' , False , False ) ] ]
-# import AfterSales_UITest as aui
+from Framework.Built_In_Automation.Sequential_Actions import sequential_actions as sa
+
 dependency = {'Mobile':'Android', 'Browser':'Chrome'}
 
 def shutdown():
@@ -34,8 +30,6 @@ def AfterSaleRunThroughPassAll ():
 #Step-2.1: Comparer partial string
 #     validateDisclaimerScreenData = [ [ ( 'text' , 'element parameter' , 'Submitting Results' , False , False , '' ),( 'validate partial text' , 'appium action' , 'Submitting' , False , False , '' )] ]
 ## Amazon Kindle
-# Note: use '*' before the 'text' if partial value enter in the element parameter
-#     validateDisclaimerScreenData = [ [ ( '*text' , 'element parameter' , 'Get Kindle' , False , False , '' ),( 'validate full text' , 'appium action' , 'Kindle', False , False , '' )] ]
 #     validateDisclaimerScreenData = [ [ ( 'text' , 'element parameter' , 'Get Kindle for Android' , False , False , '' ),( 'validate partial text' , 'appium action' , 'Kindle' , False , False , '' )] ]
 
 #Step-2.2: Compare full string
@@ -189,7 +183,7 @@ def AfterSaleRunThroughPassAll ():
 #Step-16(s): Compare (all) string(s) of Result Sent screen
 #     expectedResultScreenText = 'Test Results||Sending results||LCD Paint||Bluetooth||Device Protection||LCD Fill||Receiver Speaker||Secondary Microphone Loopback||Secondary Microphone Record||Loudspeaker||Battery Health||Main Microphone Loopback||Main Microphone Record||IMEI/MEID||WiFi'
     expectedResultScreenText = 'Your test results have been submitted'
-    validateResultScreenData = [ [ ( 'text' , 'element parameter' , '' , False , False , '' ),( 'validate screen text' , 'appium action' , expectedResultScreenText , False , False , '' )] ]
+    validateResultScreenData = [ [ ( 'text' , 'element parameter' , expectedResultScreenText , False , False , '' ),( 'validate full text' , 'appium action' , expectedResultScreenText , False , False , '' )] ]
     if sa.Sequential_Actions(validateResultScreenData) == 'failed': shutdown()
 
 #Step-16.1: Result Sent
@@ -214,11 +208,6 @@ def AfterSaleRunThroughPassAll ():
     sa.Sequential_Actions(tearDownData)
     
 # Calling the function(s) locally
-def TestSet1():
-    AfterSaleRunThroughPassAll ()
+AfterSaleRunThroughPassAll ()
 
 
-print TestSet1()    
-# print TestSet2()
-
-#TEST-2412
