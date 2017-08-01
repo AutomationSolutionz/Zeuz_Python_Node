@@ -1086,7 +1086,7 @@ def Validate_Text_Appium(data_set):
             for each_text in Element:
                 list_of_element = each_text.text # Extract the text element
                 list_of_element_text.append(list_of_element)
-        elif len(Element) >= 1:           
+        elif len(Element) > 1:           
             for each_text in Element:
                 list_of_element = each_text.text.split('\n') # Extract the text elements
                 list_of_element_text.append(list_of_element[0])
