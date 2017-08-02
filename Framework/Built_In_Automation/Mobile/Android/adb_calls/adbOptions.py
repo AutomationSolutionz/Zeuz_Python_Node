@@ -61,7 +61,18 @@ def get_device_name():
     except Exception:
         errMsg = "Unableto get device name"
         return CommonUtil.Exception_Handler(sys.exc_info(),None,errMsg)
-    
+
+def get_device_serial_no():
+    sModuleInfo = inspect.stack()[0][3] + " : " + inspect.getmoduleinfo(__file__).name
+    try:
+        output = subprocess.check_output("adb get-serialno", shell=True)
+        CommonUtil.ExecLog(sModuleInfo, "%s"%output, 1)
+        return output
+
+    except Exception:
+        errMsg = "Unableto get device serial no"
+        return CommonUtil.Exception_Handler(sys.exc_info(),None,errMsg)
+
 def get_device_manufacturer():
     sModuleInfo = inspect.stack()[0][3] + " : " + inspect.getmoduleinfo(__file__).name
     try:

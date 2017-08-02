@@ -1372,6 +1372,8 @@ def device_information(data_set):
                 output = adbOptions.get_android_version().strip()
         elif cmd == 'model name':
             if dep == 'android': output = adbOptions.get_device_model().strip()
+        elif cmd == 'serial no':
+            if dep == 'android': output = adbOptions.get_device_serial_no().strip()
         else:
             CommonUtil.ExecLog(sModuleInfo,"Action's Field contains incorrect information", 3)
             return 'failed'
