@@ -77,6 +77,7 @@ def get_device_storage():
     sModuleInfo = inspect.stack()[0][3] + " : " + inspect.getmoduleinfo(__file__).name
     try:
         output = subprocess.check_output("adb shell df /data", shell=True)
+        CommonUtil.ExecLog(sModuleInfo, "%s" % output, 1)
         storageList = ' '.join(output.split())
         storageList = storageList.split(" ")
         storage = storageList[6]
