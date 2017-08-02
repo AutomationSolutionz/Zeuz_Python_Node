@@ -3,7 +3,7 @@
 
 #Android Debug Bridge (ADB) options to get the android devices info connected via usb/wi-fi
 __author__='minar'
-import subprocess, inspect, os, sys, re
+import subprocess, inspect, os, sys, re, math
 from Framework.Utilities import CommonUtil
 
 def start_adb_server():
@@ -71,6 +71,29 @@ def get_device_serial_no():
 
     except Exception:
         errMsg = "Unableto get device serial no"
+        return CommonUtil.Exception_Handler(sys.exc_info(),None,errMsg)
+
+def get_device_storage():
+    sModuleInfo = inspect.stack()[0][3] + " : " + inspect.getmoduleinfo(__file__).name
+    try:
+        output = subprocess.check_output("adb shell df /data", shell=True)
+        storageList = ' '.join(output.split())
+        storageList = storageList.split(" ")
+        storage = storageList[6]
+        storage = storage.replace('G','')
+        storage = float(storage)
+        final_storage = 0
+        exp = 2
+        while True:
+            gb = math.pow(2,exp)
+            if storage < gb:
+                final_storage = gb
+                break
+            exp+=1
+        return final_storage
+
+    except Exception:
+        errMsg = "Unableto get device storage"
         return CommonUtil.Exception_Handler(sys.exc_info(),None,errMsg)
 
 def get_device_manufacturer():

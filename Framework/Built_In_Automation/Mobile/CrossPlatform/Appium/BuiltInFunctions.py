@@ -1374,6 +1374,8 @@ def device_information(data_set):
             if dep == 'android': output = adbOptions.get_device_model().strip()
         elif cmd == 'serial no':
             if dep == 'android': output = adbOptions.get_device_serial_no().strip()
+        elif cmd == 'storage':
+            if dep == 'android': output = adbOptions.get_device_storage()
         else:
             CommonUtil.ExecLog(sModuleInfo,"Action's Field contains incorrect information", 3)
             return 'failed'
