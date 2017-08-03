@@ -1343,6 +1343,11 @@ def device_information(data_set):
 
     # Parse data set
     try:
+        # Ensure dependency is set
+        if 'Mobile' not in dependency:
+            CommonUtil.ExecLog(sModuleInfo, "Mobile dependency not set. You must set it when deploying a run.", 3)
+            return 'failed'
+
         dep = dependency['Mobile'].lower()
         cmd = ''
         shared_var = ''
@@ -1369,16 +1374,20 @@ def device_information(data_set):
             elif dep == 'ios': output = iosOptions.get_ios_imei()
         elif cmd == 'version':
             if dep == 'android':
-                output = adbOptions.get_android_version().strip()
+                output = adbOptions.get_android_version()
         elif cmd == 'model name':
-            if dep == 'android': output = adbOptions.get_device_model().strip()
+            if dep == 'android': output = adbOptions.get_device_model()
         elif cmd == 'serial no':
-            if dep == 'android': output = adbOptions.get_device_serial_no().strip()
+            if dep == 'android': output = adbOptions.get_device_serial_no()
         elif cmd == 'storage':
             if dep == 'android': output = adbOptions.get_device_storage()
         else:
             CommonUtil.ExecLog(sModuleInfo,"Action's Field contains incorrect information", 3)
             return 'failed'
+
+        if output in failed_tag_list or output=='':
+            CommonUtil.ExecLog(sModuleInfo, "Could not find the device info about '%s'" % (cmd), 3)
+            return "failed"
             
         # Save the output to the user specified shared variable
         Shared_Resources.Set_Shared_Variables(shared_var, output)
