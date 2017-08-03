@@ -1337,6 +1337,8 @@ def get_program_names(search_name):
 
 def device_information(data_set):
     ''' Returns the requested device information '''
+    # This is the sequential action interface for much of the adbOptions.py and iosOptions.py, which provides direct device access via their standard comman line tools
+    # Note: This function does not require an Appium instance, so it can be called without calling launch_application() first
     
     sModuleInfo = inspect.stack()[0][3] + " : " + inspect.getmoduleinfo(__file__).name
     CommonUtil.ExecLog(sModuleInfo,"Function Start", 0)
@@ -1366,6 +1368,12 @@ def device_information(data_set):
             return 'failed'
     except Exception:
         return CommonUtil.Exception_Handler(sys.exc_info(), None, "Error when trying to read Field and Value for action")
+
+    # Ensure device is connected
+    if dep == 'android':
+        if adbOptions.is_android_connected() == False:
+            CommonUtil.ExecLog(sModuleInfo, "Could not detect any connected Android devices", 3)
+            return 'failed'
 
     # Get device information
     try:
