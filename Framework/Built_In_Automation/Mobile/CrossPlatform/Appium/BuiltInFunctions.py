@@ -738,7 +738,7 @@ def get_element_location_by_id(data_set):
         return CommonUtil.Exception_Handler(sys.exc_info(),None,errMsg)
         
 
-def get_window_size():
+def get_window_size(read_type = False):
     ''' Read the device's LCD resolution / screen size '''
     # Returns a dictionary of width and height
     
@@ -746,7 +746,10 @@ def get_window_size():
     CommonUtil.ExecLog(sModuleInfo,"Function Start", 0)
     
     try:
-        return appium_driver.get_window_size() # Get window resolution in dictionary
+        if read_type:
+            return appium_driver.find_element_by_xpath("//*[not(*)]").size # Works well at reading height in full screen mode, but Appium may complain if you work outside the boundaries it has set
+        else:
+            return appium_driver.get_window_size() # Read the screen size as reported by the device - this is always the safe value to work within
         CommonUtil.ExecLog(sModuleInfo,"Read window size successfully", 0)
     except Exception:
         errMsg = "Read window size unsuccessfully"

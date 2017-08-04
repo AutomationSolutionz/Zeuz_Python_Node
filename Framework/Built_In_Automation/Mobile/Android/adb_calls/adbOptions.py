@@ -314,6 +314,8 @@ def get_package_name():
         return CommonUtil.Exception_Handler(sys.exc_info(),None,errMsg)
     
 def wake_android():
+    ''' Sends the wakeup keypress and a swipe up gesture to try to unlock the device and get it to a usable state for automation '''
+    
     sModuleInfo = inspect.stack()[0][3] + " : " + inspect.getmoduleinfo(__file__).name
     try:
         output = subprocess.check_output("adb shell wm size", shell=True) # Need size for swipe calculation
@@ -330,3 +332,13 @@ def wake_android():
     except Exception:
         errMsg = "Unable to wake device"
         return CommonUtil.Exception_Handler(sys.exc_info(),None,errMsg)
+
+def swipe_android(Xstart, Xend, Ystart, Yend):
+    ''' Sends a swipe gesture to a device '''
+    
+    sModuleInfo = inspect.stack()[0][3] + " : " + inspect.getmoduleinfo(__file__).name
+    try:
+        CommonUtil.ExecLog(sModuleInfo, "Sending swipe gesture", 0)
+        subprocess.check_output("adb shell input touchscreen swipe %d %d %d %d" % (Xstart, Xend, Ystart, Yend), shell=True) # Send swipe gesture
+    except Exception:
+        return CommonUtil.Exception_Handler(sys.exc_info(), None, "Error while performing swipe gesture")
