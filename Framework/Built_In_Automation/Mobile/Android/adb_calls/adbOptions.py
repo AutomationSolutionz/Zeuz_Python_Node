@@ -333,12 +333,12 @@ def wake_android():
         errMsg = "Unable to wake device"
         return CommonUtil.Exception_Handler(sys.exc_info(),None,errMsg)
 
-def swipe_android(Xstart, Xend, Ystart, Yend):
+def swipe_android(x_start, y_start, x_end, y_end):
     ''' Sends a swipe gesture to a device '''
     
     sModuleInfo = inspect.stack()[0][3] + " : " + inspect.getmoduleinfo(__file__).name
     try:
-        CommonUtil.ExecLog(sModuleInfo, "Sending swipe gesture", 0)
-        subprocess.check_output("adb shell input touchscreen swipe %d %d %d %d" % (Xstart, Xend, Ystart, Yend), shell=True) # Send swipe gesture
+        CommonUtil.ExecLog(sModuleInfo, "Sending swipe gesture to %d %d %d %d" % (x_start, y_start, x_end, y_end), 0)
+        subprocess.check_output("adb shell input touchscreen swipe %d %d %d %d 1000" % (x_start, y_start, x_end, y_end), shell=True) # Send swipe gesture
     except Exception:
         return CommonUtil.Exception_Handler(sys.exc_info(), None, "Error while performing swipe gesture")

@@ -127,7 +127,7 @@ def launch_application(data_set):
         CommonUtil.ExecLog(sModuleInfo,"Launched the application successfully.",1)
         return "passed"
     except Exception:
-        return CommonUtil.Exception_Handler(sys.exc_info())
+        return CommonUtil.Exception_Handler(sys.exc_info(), None, "Could not create Appium Driver, Either device is not connected, or authorized, or a capability is incorrect.")
 
 def start_appium_server():
     ''' Starts the external Appium server '''
@@ -417,7 +417,7 @@ def Sleep(data_set):
     except Exception:
         return CommonUtil.Exception_Handler(sys.exc_info())
 
-def Swipe(x_start, y_start, x_end, y_end, duration = 1000):
+def Swipe(x_start, y_start, x_end, y_end, duration = 1000, adb = False):
     ''' Perform single swipe gesture with provided start and end positions '''
     # duration in mS - how long the gesture should take
     
@@ -426,7 +426,11 @@ def Swipe(x_start, y_start, x_end, y_end, duration = 1000):
     
     try:
         CommonUtil.ExecLog(sModuleInfo, "Starting to swipe the screen...", 0)
-        appium_driver.swipe(x_start, y_start, x_end, y_end, duration)
+        if adb:
+            CommonUtil.ExecLog(sModuleInfo, "Using ADB swipe method", 0)
+            adbOptions.swipe_android(x_start, y_start, x_end, y_end) # Use adb if specifically asked for it
+        else:
+            appium_driver.swipe(x_start, y_start, x_end, y_end, duration) # Use Appium to swipe by default
         CommonUtil.ExecLog(sModuleInfo, "Swiped the screen successfully", 1)
         return "passed"
     except Exception:
@@ -449,11 +453,17 @@ def swipe_handler(data_set):
         return CommonUtil.Exception_Handler(sys.exc_info(),None,errMsg)
 
     # Get screen size for calculations
-    window_size = get_window_size()
+    adb_swipe_method = False
+    window_size1 = get_window_size() # get_size method (standard)
+    window_size = get_window_size(True) # xpath() method
     if window_size == 'failed':
         return 'failed'
     w = int(window_size['width'])
     h = int(window_size['height'])
+    height_with_navbar = int(window_size1['height']) # Read standard height (on devices with a nav bar, this is not the actual height of the screen)
+    if height_with_navbar < h: # Detected full screen mode and the height readings were different, indicating a navigation bar needs to be compensated for
+        CommonUtil.ExecLog(sModuleInfo, "Detected navigation bar. Enabling ADB swipe for that area", 0)
+        adb_swipe_method = True # Flag to use adb to swipe later on
 
     # Sanitize input
     action_value = str(action_value) # Convert to string
@@ -569,14 +579,18 @@ def swipe_handler(data_set):
             ystop = 1
             stepsize *= -1 # Convert stepsize to negative, so range() works as expected
     
-        # Perform swipe given computed dimensions above
+        #Everything will be calculated off the larger height value
         for y in range(ystart, ystop, stepsize): # For each row, assuming stepsize, swipe and move to next row
             y2 = y
             if dependency['Mobile'].lower() == 'ios': y2 = 0 # In Appium v1.6.4, IOS doesn't swipe properly - always swipes at angles because y2 is added to y, which is different from Android. This gets around that issue
-            result = Swipe(xstart, y, xstop, y2) # Swipe screen - y must be the same for horizontal swipes
+
+            if adb_swipe_method == True and y >= height_with_navbar: # Swipe in the navigation bar area if the device has one
+                result = Swipe(xstart, y, xstop, y2, adb = True) # Using adb to perform gesture, because Appium errors when we try to acces it
+            else: # Swipe via appium by default
+                result = Swipe(xstart, y, xstop, y2) # Swipe screen - y must be the same for horizontal swipes
+
             if result == 'failed':
                 return 'failed'
-
 
     # Invalid value
     else:
