@@ -719,7 +719,7 @@ def main():
     for TestRunID in TestRunLists:
         project_id = TestRunID[3]
         team_id = int(TestRunID[4])
-        run_description = TestRunID[1]
+        run_description = (TestRunID[1].replace("run_dependency",'')).replace('dependency_filter','')
         run_id=TestRunID[0]
         final_dependency = get_all_dependencies(project_id,team_id,run_description) #get dependencies
         final_run_params = get_all_runtime_parameters(run_id) #get runtime params
