@@ -455,15 +455,20 @@ def swipe_handler(data_set):
     # Get screen size for calculations
     adb_swipe_method = False
     window_size1 = get_window_size() # get_size method (standard)
-    window_size = get_window_size(True) # xpath() method
-    if window_size == 'failed':
+    window_size2 = get_window_size(True) # xpath() method
+    if window_size1 == 'failed':
         return 'failed'
-    w = int(window_size['width'])
-    h = int(window_size['height'])
     height_with_navbar = int(window_size1['height']) # Read standard height (on devices with a nav bar, this is not the actual height of the screen)
-    if height_with_navbar < h: # Detected full screen mode and the height readings were different, indicating a navigation bar needs to be compensated for
+    height_without_navbar = int(window_size2['height']) # Read full screen height (not at all accurate on devices without a navbar
+    if height_with_navbar < height_without_navbar: # Detected full screen mode and the height readings were different, indicating a navigation bar needs to be compensated for
+        w = int(window_size2['width'])
+        h = int(window_size2['height'])
         CommonUtil.ExecLog(sModuleInfo, "Detected navigation bar. Enabling ADB swipe for that area", 0)
         adb_swipe_method = True # Flag to use adb to swipe later on
+    else:
+        w = int(window_size1['width'])
+        h = int(window_size1['height'])
+
 
     # Sanitize input
     action_value = str(action_value) # Convert to string
@@ -510,7 +515,7 @@ def swipe_handler(data_set):
             y2 = y1 # Middle vertical
             if dependency['Mobile'].lower() == 'ios': y2 = 0 # In Appium v1.6.4, IOS doesn't swipe properly - always swipes at angles because y2 is added to y, which is different from Android. This gets around that issue
 
-        # Perform swipe as many times as specified, or once if not specified 
+        # Perform swipe as many times as specified, or once if not specified
         for i in range(0, count):
             appium_driver.swipe(x1, y1, x2, y2)
             time.sleep(1) # Small sleep, so action animation (if any) can complete
