@@ -101,7 +101,7 @@ def Keystroke_For_Element(step_data):
         result = ""
         for each in step_data:
             if "action" in each[1]:
-                if each[0] == "keystroke_keys":
+                if each[0] == "keystroke keys":
                     keystroke_value = str(each[2]).lower()
 
                     keys = keystroke_value.split('+')
