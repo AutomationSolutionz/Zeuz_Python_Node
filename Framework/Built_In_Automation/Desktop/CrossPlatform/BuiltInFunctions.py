@@ -204,7 +204,7 @@ def get_center_using_image(file_name, file_attachment):
         return CommonUtil.Exception_Handler(sys.exc_info(),None,errMsg)
 
 
-def Double_Click_Element(step_data, _file_attachment):
+def Double_Click_Element(step_data, _file_attachment=[]):
     sModuleInfo = inspect.stack()[0][3] + " : " + inspect.getmoduleinfo(__file__).name
     try:
         if _file_attachment == []:
