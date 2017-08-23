@@ -29,45 +29,6 @@ if sr.Test_Shared_Variables('file_attachment'):
 
 
 
-# Handles actions for the sequential logic, based on the input from the mentioned function
-def Action_Handler(action_step_data, action_name,file_attachment=[]):
-    sModuleInfo = inspect.stack()[0][3] + " : " + inspect.getmoduleinfo(__file__).name
-    CommonUtil.ExecLog(sModuleInfo, "Function: Action_Handler", 1, local_run)
-    try:
-        if action_name == "click":
-            result = Click_Element(action_step_data,file_attachment)
-            if result == "failed":
-                return "failed"
-        elif action_name == "double click":
-            result = Double_Click_Element(action_step_data, file_attachment)
-            if result == "failed":
-                return "failed"
-        elif action_name == "hover":
-            result = Hover_Over_Element(action_step_data,file_attachment)
-            if result == "failed":
-                return "failed"
-        elif (action_name == "keystroke keys" or action_name == "keystroke chars"):
-            result = Keystroke_For_Element(action_step_data)
-            if result == "failed":
-                return "failed"
-        elif action_name == "enter text":
-            result = Enter_Text_In_Text_Box(action_step_data)
-            if result == "failed":
-                return "failed"
-        elif action_name == "wait":
-            result = Sleep(action_step_data)
-            if result == "failed":
-                return "failed"
-        else:
-            CommonUtil.ExecLog(sModuleInfo,
-                               "The action you entered is incorrect. Please provide accurate information on the data set(s).",
-                               3, local_run)
-            return "failed"
-
-
-    except Exception:
-
-        return CommonUtil.Exception_Handler(sys.exc_info())
 
 
 # Method to enter texts in a text box; step data passed on by the user
@@ -315,21 +276,6 @@ def Hover_Over_Element(step_data, _file_attachment=[]):
         return CommonUtil.Exception_Handler(sys.exc_info(),None,errMsg)
 
 
-# Method to sleep for a particular duration
-def Sleep(step_data):
-    sModuleInfo = inspect.stack()[0][3] + " : " + inspect.getmoduleinfo(__file__).name
-    CommonUtil.ExecLog(sModuleInfo, "Function: Sleep", 1, local_run)
-    try:
-        tuple = step_data[0][0]
-        seconds = int(tuple[2])
-        CommonUtil.ExecLog(sModuleInfo, "Sleeping for %s seconds" % seconds, 1, local_run)
-        result = time.sleep(seconds)
-
-        return result
-
-    except Exception:
-        return CommonUtil.Exception_Handler(sys.exc_info())
-
 
 
 # Method to return pass or fail for the step outcome
@@ -349,46 +295,7 @@ def Step_Result(step_data):
         return CommonUtil.Exception_Handler(sys.exc_info())
 
 
-# Performs a series of action or conditional logical action decisions based on user input
-def Sequential_Actions(step_data,file_attachment):
-    sModuleInfo = inspect.stack()[0][3] + " : " + inspect.getmoduleinfo(__file__).name
-    CommonUtil.ExecLog(sModuleInfo, "Function: Sequential_Actions", 1, local_run)
-    try:
-        for each in step_data:
-            for row in each:
-                # finding what to do for each dataset
-                # if len(row)==5 and row[1] != "":     ##modifying the filter for changes to be made in the sub-field of the step data. May remove this part of the if statement
-                if ((row[1] == "element parameter")):  ##modifying the filter for changes to be made in the sub-field of the step data. May remove this part of the if statement
-                    continue
 
-                elif row[1] == "action":
-                    CommonUtil.ExecLog(sModuleInfo, "Checking the action to be performed in the action row", 1,
-                                       local_run)
-                    result = Action_Handler(each, row[0], file_attachment)
-                    if result == [] or result == "failed":
-                        return "failed"
-
-                # If middle column = optional action, call action handler, but always return a pass
-                elif row[1] == "optional action":
-                    CommonUtil.ExecLog(sModuleInfo,"Checking the optional action to be performed in the action row: %s" % str(row), 1)
-                    result = Action_Handler(each, row[0] , file_attachment)  # Pass data set, and action_name to action handler
-                    if result == 'failed':
-                        CommonUtil.ExecLog(sModuleInfo, "Optional action failed. Returning pass anyway", 2)
-                    result = 'passed'
-
-                else:
-                    CommonUtil.ExecLog(sModuleInfo,
-                                       "The sub-field information is incorrect. Please provide accurate information on the data set(s).",
-                                       3, local_run)
-                    return "failed"
-        return "passed"
-
-
-    except Exception:
-        return CommonUtil.Exception_Handler(sys.exc_info())
-
-
-'===================== ===x=== Sequential Action Section Ends ===x=== ======================'
 # Validation of step data passed on by the user
 def Validate_Step_Data(step_data):
     sModuleInfo = inspect.stack()[0][3] + " : " + inspect.getmoduleinfo(__file__).name
