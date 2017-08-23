@@ -10,6 +10,7 @@ Created on May 15, 2016
 import pyautogui as gui
 import os,sys,time
 import inspect
+import subprocess
 from Framework.Utilities import CommonUtil, FileUtilities  as FL
 from Framework.Built_In_Automation.Desktop.CrossPlatform import DesktopAutomation as da
 from Framework.Built_In_Automation.Built_In_Utility.CrossPlatform import BuiltInUtilityFunction
@@ -162,6 +163,56 @@ def get_center_using_image(file_name, file_attachment):
 
     except Exception:
         errMsg = "Unable to get center using image"
+        return CommonUtil.Exception_Handler(sys.exc_info(),None,errMsg)
+
+
+def run_cmd(command, return_status=False, is_shell=True, stdout_val=subprocess.PIPE, local_run=False):
+
+    '''Begin Constants'''
+    Passed = "Passed"
+    Failed = "Failed"
+    Running = 'running'
+    '''End Constants'''
+
+    # Run 'command' via command line in a bash shell, and store outputs to stdout_val
+    sModuleInfo = inspect.stack()[0][3] + " : " + inspect.getmoduleinfo(__file__).name
+    subprocess_dict = {}
+    try:
+        #global subprocess_dict
+        CommonUtil.ExecLog(sModuleInfo, "Trying to run command: %s" % command, 1, local_run)
+
+        # open a subprocess with command, and assign a session id to the shell process
+        # this is will make the shell process the group leader for all the child processes spawning from it
+        status = subprocess.Popen(command, shell=is_shell, stdout=stdout_val, preexec_fn=os.setsid)
+        subprocess_dict[status] = Running
+
+        if return_status:
+            return status
+        else:
+            return Passed
+
+    except Exception, e:
+        return CommonUtil.Exception_Handler(sys.exc_info())
+
+def close_program(step_data):
+    sModuleInfo = inspect.stack()[0][3] + " : " + inspect.getmoduleinfo(__file__).name
+    try:
+        CommonUtil.ExecLog(sModuleInfo, "Closing DSE.", 1, local_run)
+        print step_data[0][2]
+        command = 'pkill '+ step_data[0][2]
+        close_status = run_cmd(command)
+
+        if close_status == Passed:
+            CommonUtil.ExecLog(sModuleInfo, "Sent signal to close DSE.", 1, local_run)
+            return Passed
+        elif close_status == Failed:
+            CommonUtil.ExecLog(sModuleInfo, "Could send signal to close DSE.", 3, local_run)
+            return Failed
+
+
+
+    except Exception:
+        errMsg = "Could not close the program"
         return CommonUtil.Exception_Handler(sys.exc_info(),None,errMsg)
 
 
