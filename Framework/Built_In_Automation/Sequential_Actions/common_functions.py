@@ -402,6 +402,21 @@ def Compare_Lists(data_set):
     CommonUtil.ExecLog(sModuleInfo,"Function Start", 0)
     return sr.Compare_Lists([data_set])
 
+def Save_Variable(data_set):
+    ''' Assign a value to a variable stored in shared variables '''
+    sModuleInfo = inspect.stack()[0][3] + " : " + inspect.getmoduleinfo(__file__).name
+    CommonUtil.ExecLog(sModuleInfo,"Function Start", 0)
+    variable_name = ''
+    variable_value = ''
+    for each in data_set:
+        if each[1] == 'element parameter':
+            variable_name = each[0]
+            variable_value = each[2]
+    if variable_name != '' and variable_value != '':
+        return sr.Set_Shared_Variables(variable_name,variable_value)
+    else:
+        return 'failed'
+
 
 def Insert_Into_List(data_set):
     ''' Ad text to a list '''
