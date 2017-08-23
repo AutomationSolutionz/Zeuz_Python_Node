@@ -27,6 +27,7 @@ actions = { # Numbers are arbitrary, and are not used anywhere
     906: {'module': 'common', 'name': 'initialize list', 'function': 'Initialize_List'},
     907: {'module': 'common', 'name': 'compare list', 'function': 'Compare_Lists'},
     908: {'module': 'common', 'name': 'insert into list', 'function': 'Insert_Into_List'},
+    909: {'module': 'common', 'name': 'save variable', 'function': 'Save_Variable'},
     
     100: {'module': 'appium', 'name': 'click', 'function': 'Click_Element_Appium'},
     101: {'module': 'appium', 'name': 'text', 'function': 'Enter_Text_Appium'},
