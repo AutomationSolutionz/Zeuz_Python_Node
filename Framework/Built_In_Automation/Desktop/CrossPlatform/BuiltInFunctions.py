@@ -13,13 +13,20 @@ import inspect
 import subprocess
 from Framework.Utilities import CommonUtil, FileUtilities  as FL
 from Framework.Built_In_Automation.Desktop.CrossPlatform import DesktopAutomation as da
-from Framework.Built_In_Automation.Built_In_Utility.CrossPlatform import BuiltInUtilityFunction
+from Framework.Built_In_Automation.Built_In_Utility.CrossPlatform import BuiltInUtilityFunction as FU
+from Framework.Built_In_Automation.Shared_Resources import BuiltInFunctionSharedResources as Shared_Resources
 local_run = False
 
 Passed = "Passed"
 Failed = "Failed"
 from Framework.Built_In_Automation.Shared_Resources import BuiltInFunctionSharedResources as sr
 
+# Recall dependency, if not already set
+dependency = None
+if Shared_Resources.Test_Shared_Variables('dependency'): # Check if driver is already set in shared variables
+    dependency = Shared_Resources.Get_Shared_Variables('dependency') # Retreive appium driver
+else:
+    CommonUtil.ExecLog(__name__ + " : " + __file__, "No dependency set - Cannot run", 3)
 '============================================'
 
 '============================= Sequential Action Section Begins=============================='
@@ -197,20 +204,27 @@ def run_cmd(command, return_status=False, is_shell=True, stdout_val=subprocess.P
 def close_program(step_data):
     sModuleInfo = inspect.stack()[0][3] + " : " + inspect.getmoduleinfo(__file__).name
     try:
-        CommonUtil.ExecLog(sModuleInfo, "Closing DSE.", 1, local_run)
-        print step_data[0][2]
-        command = 'pkill '+ step_data[0][2]
-        close_status = run_cmd(command)
+        CommonUtil.ExecLog(sModuleInfo, "Closing program.", 1, local_run)
+        if dependency['PC'].lower() == 'linux' or dependency['PC'].lower() == 'mac':
+            command = 'pkill '+ step_data[0][2]
+            close_status = run_cmd(command)
 
-        if close_status == Passed:
-            CommonUtil.ExecLog(sModuleInfo, "Sent signal to close DSE.", 1, local_run)
-            return Passed
-        elif close_status == Failed:
-            CommonUtil.ExecLog(sModuleInfo, "Could send signal to close DSE.", 3, local_run)
-            return Failed
+            if close_status == Passed:
+                CommonUtil.ExecLog(sModuleInfo, "Sent signal to close program.", 0, local_run)
+                return Passed
+            elif close_status == Failed:
+                CommonUtil.ExecLog(sModuleInfo, "Could send signal to close program.", 3, local_run)
+                return Failed
+        elif dependency['PC'].lower() == 'windows':
+            command = "taskkill /F /IM "+step_data[0][2]+".exe"
+            close_status = FU.run_win_cmd(command)
 
-
-
+            if close_status == Passed:
+                CommonUtil.ExecLog(sModuleInfo, "Sent signal to close program.", 0, local_run)
+                return Passed
+            elif close_status == Failed:
+                CommonUtil.ExecLog(sModuleInfo, "Could send signal to close program.", 3, local_run)
+                return Failed
     except Exception:
         errMsg = "Could not close the program"
         return CommonUtil.Exception_Handler(sys.exc_info(),None,errMsg)
