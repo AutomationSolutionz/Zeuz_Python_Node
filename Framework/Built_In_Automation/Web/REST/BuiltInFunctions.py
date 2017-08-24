@@ -306,6 +306,8 @@ def handle_rest_call(data, fields_to_be_saved, save_into_list = False, list_name
             result = requests.put(url, json=body, headers=headers, verify=False)
         elif method.lower().strip() == 'get':
             result = requests.get(url, json=body, headers=headers, verify=False)
+        elif method.lower().strip() == 'delete':
+            result = requests.delete(url, json=body, headers=headers, verify=False)
         else:
             return "failed"
         status_code = int(result.status_code)
