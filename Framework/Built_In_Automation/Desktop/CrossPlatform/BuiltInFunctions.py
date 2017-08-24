@@ -70,6 +70,21 @@ def get_center_using_image(file_name, file_attachment):
         errMsg = "Unable to get center using image"
         return CommonUtil.Exception_Handler(sys.exc_info(),None,errMsg)
 
+def get_exec_from_icon(file_name):
+    sModuleInfo = inspect.stack()[0][3] + " : " + inspect.getmoduleinfo(__file__).name
+    CommonUtil.ExecLog(sModuleInfo,"Function Start", 0)
+
+    try:
+        with open(file_name, "r") as myfile:
+            data = myfile.readlines()
+        for element in data:
+            if element[:5] == "Exec=":
+                return element[5:].strip()
+
+    except Exception:
+        errMsg = "Can't get the exec of the file"
+        return CommonUtil.Exception_Handler(sys.exc_info(),None,errMsg)
+
 
 # Method to click on element; step data passed on by the user
 def click_on_image(file_name, _file_attachment=[],no_of_clicks=1):
