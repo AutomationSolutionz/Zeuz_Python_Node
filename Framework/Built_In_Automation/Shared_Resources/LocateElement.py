@@ -43,6 +43,11 @@ def Get_Element(step_data_set,driver,query_debug=False):
         except:
             CommonUtil.ExecLog(sModuleInfo, "Incorrect driver.  Unable to switch to default content", 3)
             return "failed"
+        
+        # If driver is pyautogui, perform specific get element function and exit
+        if driver_type == 'pyautogui':
+            result = _pyautogui(step_data_set)
+            return result
             
         #here we switch driver if we need to
         _switch(step_data_set)
@@ -145,6 +150,8 @@ def _driver_type(query_debug):
             driver_type = "appium"
         elif "Element" in driver_string:
             driver_type = "xml"
+        elif "pyautogui" in driver_string:
+            driver_type = "pyautogui"
         else:
             driver_type = None
         return driver_type
@@ -301,6 +308,29 @@ def _locate_index_number(step_data_set):
         return CommonUtil.Exception_Handler(sys.exc_info())
     
 
+def _pyautogui(step_data_set):
+    ''' Gets coordinates for pyautogui (doesn't provide an object) '''
+    
+    import pyautogui
+    
+    try:
+        file_name = ''
+        for row in step_data_set:
+            if row[1] == 'element parameter': # Find element line
+                file_name = row[2] # Save Value as the filename
+            elif row[1] == 'action' and file_name == '': # Alternative method, there is no element parameter, so filename is expected on the action line
+                file_name = row[2] # Save Value as the filename
+                
+        if file_name == '':
+            return 'failed'
+        
+        element = pyautogui.locateOnScreen(file_name) # Get coordinates of element
+        if element == '':
+            return 'failed'
+        else:
+            return element
+    except:
+        return CommonUtil.Exception_Handler(sys.exc_info())
 
 '''
 Sample Example:
