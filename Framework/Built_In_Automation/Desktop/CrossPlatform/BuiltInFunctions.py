@@ -338,3 +338,51 @@ def check_for_element(data_set):
         errMsg = "Error parsing data set"
         return CommonUtil.Exception_Handler(sys.exc_info(),None,errMsg)
 
+
+def launch_program(data_set):
+    ''' Read the Exec line from a Linux icon file '''
+
+    sModuleInfo = inspect.stack()[0][3] + " : " + inspect.getmoduleinfo(__file__).name
+    CommonUtil.ExecLog(sModuleInfo, "Function Start", 0)
+
+    try:
+        path = os.path.join(FU.get_home_folder(), 'Desktop')
+        file_name = os.path.join(path,data_set[0][2])
+        # Open file and read into memory
+        with open(file_name, "rb") as myfile:
+            data = myfile.read()[:16]
+
+        if data.strip() == "[Desktop Entry]":
+            Command = get_exec_from_icon(file_name)
+            if dependency['PC'].lower() == 'linux' or dependency['PC'].lower() == 'mac':
+                launch_status = FU.run_cmd(Command)
+
+                if launch_status in passed_tag_list:
+                    CommonUtil.ExecLog(sModuleInfo, "Program launched successfully.", 1)
+                    return 'passed'
+                elif launch_status in failed_tag_list:
+                    CommonUtil.ExecLog(sModuleInfo, "Could not launch the program", 3)
+                    return 'failed'
+
+            elif dependency['PC'].lower() == 'windows':
+                launch_status = FU.run_win_cmd(Command)
+
+                if launch_status in passed_tag_list:
+                    CommonUtil.ExecLog(sModuleInfo, "Program launched successfully.", 1)
+                    return 'passed'
+                elif launch_status in failed_tag_list:
+                    CommonUtil.ExecLog(sModuleInfo, "Could not launch the program", 3)
+                    return 'failed'
+            else:
+                CommonUtil.ExecLog(sModuleInfo, "Unknown dependency %s" % dependency['PC'], 3)
+                return 'failed'
+
+
+        else:
+            CommonUtil.ExecLog(sModuleInfo, "It is not an icon", 3)
+            return 'failed'
+
+
+    except Exception:
+        errMsg = "Can't get the exec of the file"
+        return CommonUtil.Exception_Handler(sys.exc_info(), None, errMsg)
