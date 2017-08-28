@@ -101,11 +101,10 @@ actions = { # Numbers are arbitrary, and are not used anywhere
     190: {'module': 'appium', 'name': 'imei', 'function': 'device_information'},
     192: {'module': 'desktop', 'name': 'click', 'function': 'Click_Element'},
     193: {'module': 'desktop', 'name': 'double click', 'function': 'Double_Click_Element'},
-    194: {'module': 'desktop', 'name': 'hover', 'function': 'Hover_Over_Element'},
+    194: {'module': 'desktop', 'name': 'hover', 'function': 'move_mouse'},
     195: {'module': 'desktop', 'name': 'keystroke keys', 'function': 'Keystroke_For_Element'},
     196: {'module': 'desktop', 'name': 'keystroke chars', 'function': 'Keystroke_For_Element'},
-    197: {'module': 'desktop', 'name': 'enter text', 'function': 'Enter_Text_In_Text_Box'},
-    198: {'module': 'desktop', 'name': 'wait', 'function': 'Sleep'},
+    197: {'module': 'desktop', 'name': 'text', 'function': 'Enter_Text'},
     199: {'module': 'selenium', 'name': 'get location', 'function': 'get_location_of_element'},
     201: {'module': 'appium', 'name': 'validate screen text', 'function': 'Validate_Text_Appium'},
     202: {'module': 'appium', 'name': 'model name', 'function': 'device_information'},
@@ -114,7 +113,9 @@ actions = { # Numbers are arbitrary, and are not used anywhere
     205: {'module': 'appium', 'name': 'serial no', 'function': 'device_information'},
     206: {'module': 'appium', 'name': 'storage', 'function': 'device_information'},
     207: {'module': 'desktop', 'name': 'close program', 'function': 'close_program'},
-    208: {'module': 'desktop', 'name': 'launch program', 'function': 'launch_program'}
+    208: {'module': 'desktop', 'name': 'launch program', 'function': 'launch_program'},
+    209: {'module': 'desktop', 'name': 'check', 'function': 'check_for_element'},
+    210: {'module': 'desktop', 'name': 'move', 'function': 'move_mouse'},
 }
 
 # List of Sub-Field keywords, must be all lowercase, and using single spaces - no underscores

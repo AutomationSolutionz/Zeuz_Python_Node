@@ -15,6 +15,10 @@ from Framework.Built_In_Automation.Built_In_Utility.CrossPlatform import BuiltIn
 from Framework.Built_In_Automation.Shared_Resources import BuiltInFunctionSharedResources as Shared_Resources
 from Framework.Utilities.CommonUtil import passed_tag_list, failed_tag_list, skipped_tag_list # Allowed return strings, used to normalize pass/fail
 from Framework.Built_In_Automation.Shared_Resources import BuiltInFunctionSharedResources as sr
+from Framework.Built_In_Automation.Shared_Resources import LocateElement
+
+# Valid image positions
+positions = ('left', 'right', 'centre', 'center')
 
 # Recall dependency, if not already set
 dependency = None
@@ -30,26 +34,46 @@ if sr.Test_Shared_Variables('file_attachment'):
 
 ''' **************************** Helper functions **************************** '''
 
+def get_driver():
+    ''' Returns pyautogui as the driver for compatibility with other modules '''
+    return gui
 
-def get_center_using_image(file_name):
+def getCoordinates(element, position):
     ''' Return coordinates of attachment's centre '''
     
     sModuleInfo = inspect.stack()[0][3] + " : " + inspect.getmoduleinfo(__file__).name
     CommonUtil.ExecLog(sModuleInfo,"Function Start", 0)
-    
+
+    # Parse input
     try:
-        result = gui.center(file_attachment[file_name]) # Get coordinates of centre of image
+        x = element[0]
+        y = element[1]
+        w = element[2]
+        h = element[3]
+        position = position.lower().strip()
         
-        if result in failed_tag_list:
-            CommonUtil.ExecLog(sModuleInfo, "Looking for centre of image %s" % file_name, 0)
+        if position not in positions:
+            CommonUtil.ExecLog(sModuleInfo,"Position must be one of: %s" % positions, 3)
             return 'failed'
-        CommonUtil.ExecLog(sModuleInfo, "Successfully found centre of image", 0)
-        return result
-
-
     except Exception:
-        errMsg = "Unable to get center using image"
-        return CommonUtil.Exception_Handler(sys.exc_info(),None,errMsg)
+        return CommonUtil.Exception_Handler(sys.exc_info(), None, "Error parsing coordinates")
+    
+    # Perform calculations
+    try:
+        if position in ('center', 'centre'):
+            result_x, result_y = gui.center(element)
+        elif position == 'left':
+            result_x = x + (w * 0.01)
+            result_y = y + (h / 2)
+        elif position == 'right':
+            result_x = x + (w * 0.99)
+            result_y = y + (h / 2)
+
+        if result_x in failed_tag_list or result_x == '' or result_x == None:
+            return 'failed', ''
+        return int(result_x), int(result_y)
+    except Exception:
+        return CommonUtil.Exception_Handler(sys.exc_info(), None, "Error calculating coordinates")
 
 def get_exec_from_icon(file_name):
     ''' Read the Exec line from a Linux icon file '''
@@ -197,41 +221,60 @@ def move_mouse(data_set):
     try:
         cmd = ''
         file_name = ''
+        position = 'centre'
         for row in data_set:
             if row[1] == 'action':
-                if row[0] == 'move':
-                    cmd = 'move'
-                    file_name = row[2] # Just re-using the same filename, even though this is not a file. Should be "x,y"
                 if row[0] == 'hover':
                     cmd = 'hover'
-                    file_name = row[2]
+                    position = row[2] # Store coordinates
+                elif row[0] == 'move':
+                    cmd = 'move'
+                    file_name = row[2] # Store position (see positions at top)
+            elif row[1] == 'element parameter':
+                file_name = row[2] # Store filename for hover
         
-        if cmd == '' or file_name == '':
-            CommonUtil.ExecLog(sModuleInfo, "Valid action not found. Exected Field set to 'click' or 'doubleclick', and the Value set to a filename representing an attachment", 3)
+        if cmd == '':
+            CommonUtil.ExecLog(sModuleInfo, "Valid action not found. Expected Field set to 'move' or 'hover'", 3)
             return 'failed'
+        
+        if cmd == 'hover':
+            if file_name == '':
+                CommonUtil.ExecLog(sModuleInfo, "Valid element not found. Expected Sub-Field to be 'element parameter', and Value to be a filename", 3)
+                return 'failed'
+            
+            if position not in positions:
+                CommonUtil.ExecLog(sModuleInfo, "Valid action not found. Expected Value to be set to one of: %s" % positions, 3)
+                return 'failed'
+        elif cmd == 'move':
+            if file_name == '':
+                CommonUtil.ExecLog(sModuleInfo, "Valid action not found. Expected Value to be coordinates in format of 'x,y'", 3)
+                return 'failed'
         
     except Exception:
         errMsg = "Error parsing data set"
-        return CommonUtil.Exception_Handler(sys.exc_info(),None,errMsg)
-    
+        return CommonUtil.Exception_Handler(sys.exc_info(),None,errMsg)    
     # Perform action
     try:
         if cmd == 'hover':
-            if file_name not in file_attachment and os.path.exists(file_name) == False:
-                CommonUtil.ExecLog(sModuleInfo, "Could not find file attachment called %s, and could not find it locally" % file_name, 3)
-                return 'failed'
-            if file_name in file_attachment: file_name = file_attachment[file_name] # In file is an attachment, get the full path
-
-            # Find image, and get coordinates of centre
+            # Find image coordinates
             CommonUtil.ExecLog(sModuleInfo, "Performing %s action on file %s" % (cmd, file_name), 0)
-            element = gui.locateOnScreen(file_name) # Get coordinates of element
-            x, y = gui.center(element) # Find centre
+            element = LocateElement.Get_Element(data_set, gui) # (x, y, w, h)
+            if element in failed_tag_list: # Error reason logged by Get_Element
+                return 'failed'
+            
+            # Get coordinates for position user specified
+            x, y = getCoordinates(element, position) # Find coordinates (x,y)
+            if x in failed_tag_list: # Error reason logged by Get_Element
+                CommonUtil.ExecLog(sModuleInfo, "Error calculating coordinates", 3)
+                return 'failed'
+            CommonUtil.ExecLog(sModuleInfo, "Image coordinates on screen %d x %d" % (x, y), 0)
         
         elif cmd == 'move':
             x, y = file_name.replace(' ', '').split(',') # Get the coordinates
             x = int(x)
             y = int(y)
 
+        # Move mouse pointer
         CommonUtil.ExecLog(sModuleInfo, "Image coordinates on screen %d x %d" % (x, y), 0)
         result = gui.moveTo(x, y) # Move to element / Hover over element
 
@@ -258,17 +301,24 @@ def Click_Element(data_set):
     try:
         cmd = ''
         file_name = ''
+        position = 'centre'
         for row in data_set:
             if row[1] == 'action':
                 if row[0] == 'click':
                     cmd = 'click'
-                    file_name = row[2]
+                    position = row[2]
                 elif row[0] in ('doubleclick', 'double click'):
                     cmd = 'doubleclick'
-                    file_name = row[2]
+                    position = row[2]
+            elif row[1] == 'element parameter':
+                file_name = row[2]
         
-        if cmd == '' or file_name == '':
-            CommonUtil.ExecLog(sModuleInfo, "Valid action not found. Exected Field set to 'click' or 'doubleclick', and the Value set to a filename representing an attachment", 3)
+        if cmd == '' or position not in positions:
+            CommonUtil.ExecLog(sModuleInfo, "Valid action not found. Expected Field set to 'click' or 'doubleclick', and the Value one of: %s" % positions, 3)
+            return 'failed'
+        
+        if file_name == '':
+            CommonUtil.ExecLog(sModuleInfo, "Valid element not found. Expected Sub-Field to be 'element parameter', and Value to be a filename", 3)
             return 'failed'
         
     except Exception:
@@ -277,15 +327,17 @@ def Click_Element(data_set):
     
     # Perform action
     try:
-        if file_name not in file_attachment and os.path.exists(file_name) == False:
-            CommonUtil.ExecLog(sModuleInfo, "Could not find file attachment called %s, and could not find it locally" % file_name, 3)
-            return 'failed'
-        if file_name in file_attachment: file_name = file_attachment[file_name] # In file is an attachment, get the full path
-
-        # Find image, and get coordinates of centre
+        # Find image coordinates
         CommonUtil.ExecLog(sModuleInfo, "Performing %s action on file %s" % (cmd, file_name), 0)
-        element = gui.locateOnScreen(file_name) # Get coordinates of element
-        x, y = gui.center(element) # Find centre
+        element = LocateElement.Get_Element(data_set, gui) # (x, y, w, h)
+        if element in failed_tag_list: # Error reason logged by Get_Element
+            return 'failed'
+        
+        # Get coordinates for position user specified
+        x, y = getCoordinates(element, position) # Find coordinates (x,y)
+        if x in failed_tag_list: # Error reason logged by Get_Element
+            CommonUtil.ExecLog(sModuleInfo, "Error calculating coordinates", 3)
+            return 'failed'
         CommonUtil.ExecLog(sModuleInfo, "Image coordinates on screen %d x %d" % (x, y), 0)
         
         # Click on image
@@ -294,6 +346,7 @@ def Click_Element(data_set):
         elif cmd == 'doubleclick':
             result = gui.doubleClick(x, y) # Double click
 
+        # Check result and return
         if result in failed_tag_list:
             CommonUtil.ExecLog(sModuleInfo, "Couldn't click on element with given images", 3)
             return 'failed'
@@ -311,29 +364,32 @@ def check_for_element(data_set):
     sModuleInfo = inspect.stack()[0][3] + " : " + inspect.getmoduleinfo(__file__).name
     CommonUtil.ExecLog(sModuleInfo,"Function Start", 0)
 
+    # Parse data set
     try:
         file_name = ''
         for row in data_set:
-            if row[1] == 'action' and row[0] == 'check':
+            if row[1] == 'element parameter':
                 file_name = row[2]
-                
+        
         if file_name == '':
-            CommonUtil.ExecLog(sModuleInfo, "Could not find action. Expected 'check' in Field and filename in Value", 3)
+            CommonUtil.ExecLog(sModuleInfo, "Valid element not found. Expected Sub-Field to be 'element parameter', and Value to be a filename", 3)
             return 'failed'
         
     except Exception:
         errMsg = "Error parsing data set"
         return CommonUtil.Exception_Handler(sys.exc_info(),None,errMsg)
 
+    # Perform action
     try:
         CommonUtil.ExecLog(sModuleInfo, "Performing check action on file %s" % (file_name), 0)
-        element = gui.locateOnScreen(file_name) # Get coordinates of element
-        if element:
-            CommonUtil.ExecLog(sModuleInfo, "Found element", 1)
-            return 'passed'
-        else:
+        element = LocateElement.Get_Element(data_set, gui) # (x, y, w, h)
+        if element in failed_tag_list:
             CommonUtil.ExecLog(sModuleInfo, "Element not found", 3)
             return 'failed'
+        else:
+            CommonUtil.ExecLog(sModuleInfo, "Found element", 1)
+            return 'passed'
+        
     except Exception:
         errMsg = "Error parsing data set"
         return CommonUtil.Exception_Handler(sys.exc_info(),None,errMsg)
