@@ -8,7 +8,7 @@ Created on May 15, 2016
 
 
 import pyautogui as gui # https://pyautogui.readthedocs.io/en/latest/
-import os, os.path, sys, time, inspect
+import os, os.path, sys, time, inspect, subprocess
 from Framework.Utilities import CommonUtil, FileUtilities  as FL
 #from Framework.Built_In_Automation.Desktop.CrossPlatform import DesktopAutomation as da
 from Framework.Built_In_Automation.Built_In_Utility.CrossPlatform import BuiltInUtilityFunction as FU
@@ -402,43 +402,64 @@ def launch_program(data_set):
     CommonUtil.ExecLog(sModuleInfo, "Function Start", 0)
 
     try:
-        path = os.path.join(FU.get_home_folder(), 'Desktop')
-        file_name = os.path.join(path,data_set[0][2])
-        # Open file and read into memory
-        with open(file_name, "rb") as myfile:
-            data = myfile.read()[:16]
+        file_name = data_set[0][2] # Get filename from data set
+        Command = ''
 
-        if data.strip() == "[Desktop Entry]":
-            Command = get_exec_from_icon(file_name)
-            if dependency['PC'].lower() == 'linux' or dependency['PC'].lower() == 'mac':
-                launch_status = FU.run_cmd(Command)
+        # Check if filename from data set is an icon file on the desktop by using full or partial match
+        path = os.path.join(FU.get_home_folder(), 'Desktop') # Prepare path for desktop if needed
+        files = [f for f in os.listdir(path) if os.path.isfile(os.path.join(path, f))] # Get list of files in specified directory
+        for f in files: # For each file found
+            if file_name in f: # If filename from data set matches fully or partially
+                # Save full path/file
+                file_name = os.path.join(path, f)
 
-                if launch_status in passed_tag_list:
-                    CommonUtil.ExecLog(sModuleInfo, "Program launched successfully.", 1)
-                    return 'passed'
-                elif launch_status in failed_tag_list:
-                    CommonUtil.ExecLog(sModuleInfo, "Could not launch the program", 3)
-                    return 'failed'
+                # Read first line to check if it's an icon file
+                with open(file_name, "rb") as myfile:
+                    data = myfile.read()[:16]
+                    if data.strip() == "[Desktop Entry]":
+                        Command = get_exec_from_icon(file_name)
+                
+                break
 
-            elif dependency['PC'].lower() == 'windows':
-                launch_status = FU.run_win_cmd(Command)
+        # Try to find the image file
+        if file_name not in file_attachment and os.path.exists(file_name) == False:
+            CommonUtil.ExecLog(sModuleInfo, "Could not find file attachment called %s, and could not find it locally" % file_name, 3)
+            return 'failed'
+        if file_name in file_attachment:
+            Command = file_attachment[file_name] # In file is an attachment, get the full path
+        elif os.path.exists(file_name) and Command == '': # User provided correct path
+            Command = file_name
 
-                if launch_status in passed_tag_list:
-                    CommonUtil.ExecLog(sModuleInfo, "Program launched successfully.", 1)
-                    return 'passed'
-                elif launch_status in failed_tag_list:
-                    CommonUtil.ExecLog(sModuleInfo, "Could not launch the program", 3)
-                    return 'failed'
-            else:
-                CommonUtil.ExecLog(sModuleInfo, "Unknown dependency %s" % dependency['PC'], 3)
-                return 'failed'
+        # Now file_name should have a directory/file pointing to the correct image
 
+        # Execute program
+        if dependency['PC'].lower() == 'linux' or dependency['PC'].lower() == 'mac':
+            launch_status = subprocess.Popen(Command.split(' ')) # FU.run_cmd() blocks further execution, so we'll just use subprocess here
+
+        elif dependency['PC'].lower() == 'windows':
+            launch_status = FU.run_win_cmd(Command)
 
         else:
-            CommonUtil.ExecLog(sModuleInfo, "It is not an icon", 3)
+            CommonUtil.ExecLog(sModuleInfo, "Unknown dependency %s" % dependency['PC'], 3)
             return 'failed'
+
+        # Check result and return
+        if launch_status in failed_tag_list:
+            CommonUtil.ExecLog(sModuleInfo, "Could not launch the program", 3)
+            return 'failed'
+        else:
+            CommonUtil.ExecLog(sModuleInfo, "Program launched successfully.", 1)
+            return 'passed'
 
 
     except Exception:
-        errMsg = "Can't get the exec of the file"
+        errMsg = "Can't execute the program"
         return CommonUtil.Exception_Handler(sys.exc_info(), None, errMsg)
+    
+def teardown(data_set):
+    ''' Cleanup automation '''
+    
+    # Cleanup shared variables
+    Shared_Resources.Clean_Up_Shared_Variables()
+        
+    return 'passed'
