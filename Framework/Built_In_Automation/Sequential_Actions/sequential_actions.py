@@ -420,6 +420,11 @@ def Action_Handler(_data_set, action_row):
     # If this is a common function, try to get the webdriver for it, if there is one, and save it to shared variables. This will allow common functions to work with whichever webdriver they need
     if original_module != '': # This was identified as a common module
         try:
+            result = load_sa_modules(original_module) # Load the appropriate module (in case its never been run before this common action has started)
+            if result == 'failed':
+                CommonUtil.ExecLog(sModuleInfo, "Can't find module for %s" % original_module, 3)
+                return 'failed'
+
             common_driver = eval(original_module).get_driver() # Get webdriver object
             sr.Set_Shared_Variables('common_driver', common_driver) # Save in shared variable
         except: pass # Not all modules have get_driver, so don't worry if this crashes
