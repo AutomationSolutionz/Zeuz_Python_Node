@@ -432,6 +432,38 @@ def DeleteFolder(sFolderPath):
         return CommonUtil.Exception_Handler(sys.exc_info())
 
 
+def delete_line(file_name, line):
+    sModuleInfo = inspect.stack()[0][3] + " : " + inspect.getmoduleinfo(__file__).name
+    CommonUtil.ExecLog(sModuleInfo, "Function start", 0)
+    try:
+        f = open(file_name, "r+")
+        d = f.readlines()
+        f.seek(0)
+        for i in d:
+            if i != line:
+                f.write(i)
+        f.truncate()
+        f.close()
+    except Exception:
+        return CommonUtil.Exception_Handler(sys.exc_info())
+
+def add_line(file_name, where_to_add, line):
+    sModuleInfo = inspect.stack()[0][3] + " : " + inspect.getmoduleinfo(__file__).name
+    CommonUtil.ExecLog(sModuleInfo, "Function start", 0)
+    try:
+        f = open(file_name, "r")
+        contents = f.readlines()
+        f.close()
+
+        contents.insert(where_to_add, line)
+
+        f = open("path_to_file", "w")
+        contents = "".join(contents)
+        f.write(contents)
+        f.close()
+    except Exception:
+        return CommonUtil.Exception_Handler(sys.exc_info())
+
 # function to check a file exists or not
 def find(sFilePath):
     """
