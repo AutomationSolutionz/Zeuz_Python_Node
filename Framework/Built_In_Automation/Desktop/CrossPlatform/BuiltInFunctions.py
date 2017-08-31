@@ -110,10 +110,13 @@ def Enter_Text(data_set):
     
     # Parse data set
     try:
+        element_parameter = False
         text_value = ''
         for row in data_set:
             if "action" in row[1]:
                 text_value = row[2]
+            if row[1] == 'element parameter': # Indicates we should find the element instead of assuming we have keyboard focus
+                element_parameter = True
                 
         if text_value == '':
             CommonUtil.ExecLog(sModuleInfo, "Could not find value for this action", 3)
@@ -123,6 +126,24 @@ def Enter_Text(data_set):
     
     # Perform action
     try:
+        # Find image coordinates
+        if element_parameter:
+            CommonUtil.ExecLog(sModuleInfo, "Trying to locate element", 0)
+            element = LocateElement.Get_Element(data_set, gui) # (x, y, w, h)
+            if element in failed_tag_list: # Error reason logged by Get_Element
+                return 'failed'
+            
+            # Get coordinates for position user specified
+            x, y = getCoordinates(element, 'centre') # Find coordinates (x,y)
+            if x in failed_tag_list: # Error reason logged by Get_Element
+                CommonUtil.ExecLog(sModuleInfo, "Error calculating coordinates", 3)
+                return 'failed'
+            CommonUtil.ExecLog(sModuleInfo, "Image coordinates on screen %d x %d" % (x, y), 0)
+            gui.click(x, y) # Single click
+        else:
+            CommonUtil.ExecLog(sModuleInfo, "No element provided. Assuming textbox has keyboard focus", 0)
+
+        # Enter text
         gui.typewrite(text_value)
         CommonUtil.ExecLog(sModuleInfo, "Successfully set the value of to text to: %s" % text_value, 1)
         return "passed"
@@ -181,31 +202,55 @@ def close_program(data_set):
     sModuleInfo = inspect.stack()[0][3] + " : " + inspect.getmoduleinfo(__file__).name
     CommonUtil.ExecLog(sModuleInfo,"Function Start", 0)
     
+    # Parse data set
+    try:
+        program_name = ''
+        for row in data_set:
+            if row[1] == 'action':
+                program_name = row[2] # Program name passed by user
+                
+        if program_name == '':
+            CommonUtil.ExecLog(sModuleInfo,"Expected a program name in Value", 3)
+            return 'failed'
+    except Exception:
+        errMsg = "Error parsing data set"
+        return CommonUtil.Exception_Handler(sys.exc_info(),None,errMsg)
+    
     try:
         if dependency['PC'].lower() == 'linux' or dependency['PC'].lower() == 'mac':
-            command = 'pkill '+ data_set[2]
-            close_status = FU.run_cmd(command)
+            command = 'pkill -f '+ program_name # Try Process Kill with full command checking set, which finds most programs automatically
+            close_status, output = FU.run_cmd(command, return_status=True) # Execute command and return the return code
 
-            if close_status in passed_tag_list:
-                CommonUtil.ExecLog(sModuleInfo, "Sent signal to close program.", 1)
-                return 'passed'
-            elif close_status in failed_tag_list:
-                CommonUtil.ExecLog(sModuleInfo, "Could send signal to close program.", 3)
-                return 'failed'
-            
+            # Check result
+            if close_status == None or close_status < 1:
+                close_status = 'passed'
+
+            # pkill failed, try another method
+            else:
+                CommonUtil.ExecLog(sModuleInfo,"pKill command failed, trying another method", 0)
+                command = "ps aux | grep -i '%s' | grep -v grep | awk '{print $2}'" % program_name # Try to find the PID
+                close_status, output = FU.run_cmd(command, return_status=True) # Run the command above and return the output which should contain a list of PIDs found
+                if output != []:
+                    output = output[0].strip() # First PID found
+                    close_status = FU.run_cmd("kill -9 %s" % output) # Send the terminate signal to this PID
+                else: close_status = 'failed' # No PID received - error occurred or program doesn't exist
+
         elif dependency['PC'].lower() == 'windows':
-            command = "taskkill /F /IM " + data_set[2] + ".exe"
+            command = "taskkill /F /IM " + program_name + ".exe"
             close_status = FU.run_win_cmd(command)
 
-            if close_status in passed_tag_list:
-                CommonUtil.ExecLog(sModuleInfo, "Sent signal to close program.", 1)
-                return 'passed'
-            elif close_status in failed_tag_list:
-                CommonUtil.ExecLog(sModuleInfo, "Could send signal to close program.", 3)
-                return 'failed'
         else:
             CommonUtil.ExecLog(sModuleInfo, "Uknown dependency %s" % dependency['PC'], 3)
             return 'failed'
+
+        # Check result
+        if close_status in failed_tag_list:
+            CommonUtil.ExecLog(sModuleInfo, "Could not send signal to close program.", 3)
+            return 'failed'
+        else:
+            CommonUtil.ExecLog(sModuleInfo, "Sent signal to close program.", 1)
+            return 'passed'
+        
             
     except Exception:
         errMsg = "Could not close the program"

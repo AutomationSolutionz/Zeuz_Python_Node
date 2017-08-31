@@ -618,15 +618,21 @@ def run_cmd(command, return_status=False, is_shell=True, stdout_val=subprocess.P
         # this is will make the shell process the group leader for all the child processes spawning from it
         status = subprocess.Popen(command, shell=is_shell, stdout=stdout_val, preexec_fn=os.setsid)
         subprocess_dict[status] = Running
+        status.wait() # Wait for process to complete, and populate returncode
+        errcode = status.returncode
+        
         for line in status.stdout:
             result.append(line)
-        errcode = status.returncode
+        
         for line in result:
             CommonUtil.ExecLog(sModuleInfo, "%s" % line, 1)
+        
         if return_status:
-            return status
-        else:
+            return errcode, result
+        elif errcode == 0:
             return Passed
+        else:
+            return Failed
 
     except Exception:
         return CommonUtil.Exception_Handler(sys.exc_info())

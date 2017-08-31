@@ -308,7 +308,6 @@ def _locate_index_number(step_data_set):
     except Exception:
         return CommonUtil.Exception_Handler(sys.exc_info())
     
-
 def _pyautogui(step_data_set):
     ''' Gets coordinates for pyautogui (doesn't provide an object) '''
     
@@ -348,15 +347,13 @@ def _pyautogui(step_data_set):
 
     # Find element information
     try:
-        element = pyautogui.locateOnScreen(file_name, grayscale=True) # Get coordinates of element. Use greyscale for increased speed and better matching across machines. May cause higher number of false-positives
+        element = pyautogui.locateOnScreen(file_name.encode('ascii'), grayscale=True) # Get coordinates of element. Use greyscale for increased speed and better matching across machines. May cause higher number of false-positives
         if element == None or element in failed_tag_list or element == '':
             return 'failed'
         else:
             return element
     except:
         return CommonUtil.Exception_Handler(sys.exc_info())
-
-
 
 
 '''
