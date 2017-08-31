@@ -13,6 +13,7 @@ import time
 import inspect
 import zipfile
 import string
+import ConfigParser
 from Framework.Utilities import ConfigModule
 import filecmp
 import random
@@ -432,37 +433,6 @@ def DeleteFolder(sFolderPath):
         return CommonUtil.Exception_Handler(sys.exc_info())
 
 
-def delete_line(file_name, line):
-    sModuleInfo = inspect.stack()[0][3] + " : " + inspect.getmoduleinfo(__file__).name
-    CommonUtil.ExecLog(sModuleInfo, "Function start", 0)
-    try:
-        f = open(file_name, "r+")
-        d = f.readlines()
-        f.seek(0)
-        for i in d:
-            if i != line:
-                f.write(i)
-        f.truncate()
-        f.close()
-    except Exception:
-        return CommonUtil.Exception_Handler(sys.exc_info())
-
-def add_line(file_name, where_to_add, line):
-    sModuleInfo = inspect.stack()[0][3] + " : " + inspect.getmoduleinfo(__file__).name
-    CommonUtil.ExecLog(sModuleInfo, "Function start", 0)
-    try:
-        f = open(file_name, "r")
-        contents = f.readlines()
-        f.close()
-
-        contents.insert(where_to_add, line)
-
-        f = open("path_to_file", "w")
-        contents = "".join(contents)
-        f.write(contents)
-        f.close()
-    except Exception:
-        return CommonUtil.Exception_Handler(sys.exc_info())
 
 # function to check a file exists or not
 def find(sFilePath):
@@ -1769,6 +1739,123 @@ def Download_File_and_Unzip(step_data):
 
     except Exception:
         return CommonUtil.Exception_Handler(sys.exc_info())
+
+def Change_Value_ini(step_data):
+    sModuleInfo = inspect.stack()[0][3] + " : " + inspect.getmoduleinfo(__file__).name
+    CommonUtil.ExecLog(sModuleInfo, "Function start", 0)
+    try:
+
+        file_name = step_data[0][2]
+        if os.path.isfile(file_name):
+            section_name = step_data[1][2]
+            name = step_data[2][2]
+            expected_value = step_data[3][2]
+            config = ConfigParser.SafeConfigParser()
+            config.read(file_name)
+            list_of_sections = config.sections()
+            if section_name in list_of_sections:
+                options = config.options(section_name)
+                # check if this name exists
+                if name in options:
+                    config.set(section_name, name, expected_value)
+                    #writeback file
+                    with open(file_name, 'wb') as configfile:
+                        config.write(configfile)
+                    #check if line is changed properly
+                    config.read(file_name)
+                    check_value = config.get(section_name, name)
+                    if check_value == expected_value:
+                        CommonUtil.ExecLog(sModuleInfo, "Line is added successfully", 1)
+                        return "passed"
+
+        CommonUtil.ExecLog(sModuleInfo, "Can't add line", 3)
+        return "failed"
+
+
+    except Exception:
+        return CommonUtil.Exception_Handler(sys.exc_info())
+
+
+def Add_line_ini(step_data):
+    sModuleInfo = inspect.stack()[0][3] + " : " + inspect.getmoduleinfo(__file__).name
+    CommonUtil.ExecLog(sModuleInfo, "Function start", 0)
+    try:
+
+        file_name = step_data[0][2]
+        if os.path.isfile(file_name):
+            section_name = step_data[1][2]
+            name = step_data[2][2]
+            expected_value = step_data[3][2]
+            config = ConfigParser.SafeConfigParser()
+            config.read(file_name)
+            list_of_sections = config.sections()
+            if section_name in list_of_sections:
+                config.set(section_name, name, expected_value)
+
+                with open(file_name, 'wb') as configfile:
+                    config.write(configfile)
+                # check if line is added properly
+                config.read(file_name)
+                options = config.options(section_name)
+                if name in options:
+                    check_value = config.get(section_name, name)
+                    if check_value == expected_value:
+                        CommonUtil.ExecLog(sModuleInfo,"LIne is added successfully" ,1)
+                        return "passed"
+
+        CommonUtil.ExecLog(sModuleInfo, "Can't add line", 3)
+        return "failed"
+
+
+    except Exception:
+        return CommonUtil.Exception_Handler(sys.exc_info())
+
+def Delete_line_ini(step_data):
+    sModuleInfo = inspect.stack()[0][3] + " : " + inspect.getmoduleinfo(__file__).name
+    CommonUtil.ExecLog(sModuleInfo, "Function start", 0)
+    try:
+
+        file_name = step_data[0][2]
+        if os.path.isfile(file_name):
+            section_name = step_data[1][2]
+            name = step_data[2][2]
+            config = ConfigParser.SafeConfigParser()
+            config.read(file_name)
+            config.remove_option(section_name, name)
+            with open(file_name, 'wb') as configfile:
+                config.write(configfile)
+            config.read(file_name)
+            options = config.options(section_name)
+            if name in options:
+                CommonUtil.ExecLog(sModuleInfo, "Can't delete line", 3)
+                return "failed"
+
+        CommonUtil.ExecLog(sModuleInfo, "The line is no more in the config file", 1)
+        return "passed"
+
+
+    except Exception:
+        return CommonUtil.Exception_Handler(sys.exc_info())
+
+def Read_line_name_and_value(step_data):
+    file_name = step_data[0][2]
+    if os.path.isfile(file_name):
+
+        config = ConfigParser.SafeConfigParser()
+        config.read(file_name)
+        list_of_sections = config.sections()
+        dir ={}
+        for section in list_of_sections:
+            options = config.options(section)
+            for option in options:
+                dir[section+"|"+option] = config.get(section,option)
+        #save in shared variable
+        Shared_Resources.Set_Shared_Variables(step_data[1][2], dir)
+        return "passed"
+
+
+    return "failed"
+
 
 # return only the path step data
 def Get_Path_Step_Data(step_data):

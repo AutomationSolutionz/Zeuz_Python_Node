@@ -105,6 +105,10 @@ actions = { # Numbers are arbitrary, and are not used anywhere
     522: {'module': 'utility', 'name': 'log 1', 'function': 'Add_Log'},
     523: {'module': 'utility', 'name': 'download and unzip', 'function': 'Download_File_and_Unzip'},
     524: {'module': 'utility', 'name': 'take screen shot', 'function': 'TakeScreenShot' },
+    525: {'module': 'utility', 'name': 'change value', 'function': 'Change_Value_ini' },
+    526: {'module': 'utility', 'name': 'add line', 'function': 'Add_line_ini' },
+    527: {'module': 'utility', 'name': 'delete line', 'function': 'Delete_line_ini' },
+    528: {'module': 'utility', 'name': 'read name_value', 'function': 'Read_line_name_and_value' },
 
     600: {'module': 'xml', 'name': 'update', 'function': 'update_element'},
     601: {'module': 'xml', 'name': 'add', 'function': 'add_element'},
