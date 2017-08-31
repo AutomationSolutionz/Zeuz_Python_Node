@@ -1,5 +1,18 @@
 '''
-Created on May 15, 2016
+Created on April 11, 2017
 
-@author: RizDesktop
+@author: AutomationSolutionz Inc.
 '''
+
+import os,sys
+import inspect
+from Framework.Utilities import CommonUtil
+from Framework.Built_In_Automation.Desktop.Windows import NETAutomation
+
+
+def copy_attachments_to_sharepoint(dependency,run_time_params,step_data,file_attachment,temp_q,screen_capture):
+    try:
+        sTestStepReturnStatus=NETAutomation.outlookstuff(step_data)
+        return CommonUtil.Result_Analyzer(sTestStepReturnStatus,temp_q)
+    except Exception:
+        return CommonUtil.Exception_Handler(sys.exc_info(), temp_q)

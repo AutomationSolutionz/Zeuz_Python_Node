@@ -18,6 +18,7 @@ from System.Threading import Thread
 from System.Windows.Forms import SendKeys
 import time,datetime
 import win32api,win32con
+import pyautogui
 import win32gui
 
 import autoit
@@ -404,7 +405,7 @@ def find_element(root, element_name, element_class, automation_id, control_type)
     return None
 
 # menu_bar = get_element("Skype", "RECENT", None, None, "tab item")
-menu_bar = get_element("Skype", "RECENT")
+'''menu_bar = get_element("Skype", "RECENT")
 
 #Element_Class = None
 #menu_bar = Get_Element("Skype", "Call mobiles and landlines from the dial pad.",None,None,None)
@@ -446,5 +447,24 @@ if menu_bar:
 #     s3='Skype™ - Options'.decode('utf-8')
 #     s3='Untitled - Notepad'.decode('utf-8')
 #     if a == s3:
-#         print "found your shit"
+#         print "found your thing"
 
+'''
+
+
+def outlookstuff(step_data):
+    #outlookWindow = get_element("Outlook", "Sync")
+    #print outlookWindow
+    #Click_Element_None_Mouse(outlookWindow, Expand=True, Invoke=None, Select=None, Toggle=None)
+    outlookWindow = get_element("Outlook", "Copy Attachments Only")
+    print outlookWindow
+    Click_Element_None_Mouse(outlookWindow, Expand=None, Invoke=True, Select=None, Toggle=None)
+    time.sleep(5)
+    pyautogui.press('enter')
+    time.sleep(5)
+    pyautogui.press('enter')
+    return "passed"
+    # Click_Element_Mouse(outlookWindow)
+
+
+#outlookstuff()
