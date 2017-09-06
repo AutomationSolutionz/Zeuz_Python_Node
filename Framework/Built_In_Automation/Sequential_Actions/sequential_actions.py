@@ -50,6 +50,7 @@ actions = { # Numbers are arbitrary, and are not used anywhere
     218: {'module': 'appium', 'name': 'version', 'function': 'device_information'},
     219: {'module': 'appium', 'name': 'serial no', 'function': 'device_information'},
     220: {'module': 'appium', 'name': 'storage', 'function': 'device_information'},
+    221: {'module': 'appium', 'name': 'reboot', 'function': 'device_information'},
 
     300: {'module': 'rest', 'name': 'save response', 'function': 'Get_Response'},
     
@@ -149,6 +150,14 @@ action_support = [
     'table parameter'
 ]
 
+# List of supported mobile platforms - must be lower case
+supported_platforms = (
+    'android',
+    'ios'
+)
+    
+
+
 # Import modules
 import inspect, sys, os
 from Framework.Utilities import CommonUtil
@@ -218,7 +227,8 @@ def Sequential_Actions(step_data, _dependency = {}, _run_time_params = '', _file
 
     # Prepare step data for processing
     step_data = common.sanitize(step_data, column = 1) # Sanitize Sub-Field
-    step_data = common.adjust_element_parameters(step_data) # Parse any mobile platform related fields
+    step_data = common.adjust_element_parameters(step_data, supported_platforms) # Parse any mobile platform related fields
+    if step_data in failed_tag_list: return 'failed'
     if common.verify_step_data(step_data) in failed_tag_list: return 'failed' # Verify step data is in correct format
     
     try:

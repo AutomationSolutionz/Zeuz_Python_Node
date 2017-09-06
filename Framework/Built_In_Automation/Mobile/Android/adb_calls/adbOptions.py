@@ -342,3 +342,29 @@ def swipe_android(x_start, y_start, x_end, y_end):
         subprocess.check_output("adb shell input touchscreen swipe %d %d %d %d 1000" % (x_start, y_start, x_end, y_end), shell=True) # Send swipe gesture
     except Exception:
         return CommonUtil.Exception_Handler(sys.exc_info(), None, "Error while performing swipe gesture")
+
+def reset_android(serial = ''):
+    ''' Resets the specified device, or the only device connected '''
+    
+    sModuleInfo = inspect.stack()[0][3] + " : " + inspect.getmoduleinfo(__file__).name
+    try:
+        CommonUtil.ExecLog(sModuleInfo, "Resetting device %s" % serial, 0)
+        if serial != '':
+            serial = '-s %s' % serial # Prepend the command line switch to add the serial number
+        subprocess.check_output("adb %s reboot" % serial, shell=True) # Send reset
+    except Exception:
+        return CommonUtil.Exception_Handler(sys.exc_info(), None, "Error while performing swipe gesture")
+
+def reset_all_android():
+    ''' Resets all connected devices '''
+    
+    try:
+        # Get list of all connected devices
+        devices = get_devices()
+        
+        # For each device, reset it
+        for serial in devices:
+            reset_android(str(serial.split(' ')[0]).strip()) # Send reset
+    except Exception:
+        return CommonUtil.Exception_Handler(sys.exc_info(), None, "Error while performing swipe gesture")
+

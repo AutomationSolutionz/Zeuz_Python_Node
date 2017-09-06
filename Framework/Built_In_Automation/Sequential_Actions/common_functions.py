@@ -121,26 +121,44 @@ def verify_step_data(step_data):
     except Exception:
         return CommonUtil.Exception_Handler(sys.exc_info())
 
+def check_action_types(module, step_data):
+    ''' Check for a specific module in the step data type and return true/false '''
+    # To be used when we don't have a dependency, and need to know the type of actions the user have specified
+    
+    sModuleInfo = inspect.stack()[0][3] + " : " + inspect.getmoduleinfo(__file__).name
+    CommonUtil.ExecLog(sModuleInfo, "Function Start", 0)
 
-def adjust_element_parameters(step_data):
+    for data_set in step_data:
+        for row in data_set:
+            subfield = row[1].lower()
+            if module in subfield:
+                return True
+    return False
+
+
+def adjust_element_parameters(step_data, platforms):
     ''' Strip out element parameters that do not match the dependency '''
 
     sModuleInfo = inspect.stack()[0][3] + " : " + inspect.getmoduleinfo(__file__).name
     CommonUtil.ExecLog(sModuleInfo, "Function Start", 0)
     
-    # List of supported mobile platforms - must be lower case
-    platforms = ('android', 'ios')
-    
-    # Get saved dependency
+    # Get saved dependency and verify if we have the correct dependency
     if sr.Test_Shared_Variables('dependency') == False: # No dependency at all
-        CommonUtil.ExecLog(sModuleInfo, "No dependency set - functions may not work properly if step data contains platform names", 2)
-        return step_data # Return unmodified
+        if check_action_types('Mobile', step_data) == True:
+            CommonUtil.ExecLog(sModuleInfo, "No dependency set - functions may not work properly if step data contains platform names", 3)
+            return 'failed'
+        else:
+            CommonUtil.ExecLog(sModuleInfo, "Not a mobile Test Case", 0)
+            return step_data # Return unmodified
     else: # Have dependency
         dependency = sr.Get_Shared_Variables('dependency') # Save locally
         if 'Mobile' not in dependency: # We have a dependency, but not a mobile, so we don't need to do anything
-            CommonUtil.ExecLog(sModuleInfo, "No mobile dependency set - Can't verify element data", 0)
-            return step_data # Return unmodified
-            
+            if check_action_types('Mobile', step_data) == False: # No mobile actions in step data
+                CommonUtil.ExecLog(sModuleInfo, "Not a mobile Test Case", 0)
+                return step_data
+            else: # Mobile actions in step data
+                CommonUtil.ExecLog(sModuleInfo, "Mobile (Appium) actions found in Step Data, but no Mobile dependency set", 3)
+                return 'failed' # Return unmodified
     
     new_step_data = [] # Create empty list that will contain the data sets
     for data_set in step_data: # For each data set within step data

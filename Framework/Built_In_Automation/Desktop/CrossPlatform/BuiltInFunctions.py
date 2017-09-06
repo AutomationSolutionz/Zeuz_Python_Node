@@ -286,10 +286,8 @@ def move_mouse(data_set):
             if file_name == '':
                 CommonUtil.ExecLog(sModuleInfo, "Valid element not found. Expected Sub-Field to be 'element parameter', and Value to be a filename", 3)
                 return 'failed'
-            
             if position not in positions:
-                CommonUtil.ExecLog(sModuleInfo, "Valid action not found. Expected Value to be set to one of: %s" % str(positions), 3)
-                return 'failed'
+                CommonUtil.ExecLog(sModuleInfo, "Will click on centre of element. Expected Value to be one of: %s" % str(positions), 2)
         elif cmd == 'move':
             if file_name == '':
                 CommonUtil.ExecLog(sModuleInfo, "Valid action not found. Expected Value to be coordinates in format of 'x,y'", 3)
@@ -358,9 +356,11 @@ def Click_Element(data_set):
             elif row[1] == 'element parameter':
                 file_name = row[2]
         
-        if cmd == '' or position not in positions:
+        if cmd == '':
             CommonUtil.ExecLog(sModuleInfo, "Valid action not found. Expected Field set to 'click' or 'doubleclick', and the Value one of: %s" % str(positions), 3)
             return 'failed'
+        if position not in positions:
+            CommonUtil.ExecLog(sModuleInfo, "Will click on centre of element. Expected Value to be one of: %s" % str(positions), 2)
         
         if file_name == '':
             CommonUtil.ExecLog(sModuleInfo, "Valid element not found. Expected Sub-Field to be 'element parameter', and Value to be a filename", 3)
