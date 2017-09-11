@@ -1757,12 +1757,12 @@ def Change_Value_ini(data_set):
         new_expected_value_of_line = ''
         for row in data_set:
             if "action" in row[1]:
-                new_expected_value_of_line = row[2]
+                new_expected_value_of_line = row[2]    #previous value should be changed to this value
             if row[1] == 'path':
-                file_name = row[2]
+                file_name = row[2]    # name of the file where the change should be made
             if row[1] == 'value':
-                section_name = row[0]
-                line_name = row[2]
+                section_name = row[0]   # name of the section where th change should be made
+                line_name = row[2]    # name of the line where value should be changed
 
         if file_name == '':
             CommonUtil.ExecLog(sModuleInfo, "Could not find ini file name for this action", 3)
@@ -1781,7 +1781,8 @@ def Change_Value_ini(data_set):
 
     # Perform action
     try:
-        if os.path.isfile(file_name):
+        if os.path.isfile(file_name): # check if the file exists or not
+            '''change the value'''
             config = ConfigParser.SafeConfigParser()
             config.read(file_name)
             list_of_sections = config.sections()
@@ -1789,11 +1790,12 @@ def Change_Value_ini(data_set):
                 options = config.options(section_name)
                 # check if this name exists
                 if line_name in options:
-                    config.set(section_name, line_name, new_expected_value_of_line)
+                    config.set(section_name, line_name, new_expected_value_of_line)  # change value
                     #writeback file
                     with open(file_name, 'wb') as configfile:
                         config.write(configfile)
-                    #check if line is changed properly
+
+                    '''check if line is changed properly'''
                     config.read(file_name)
                     check_value = config.get(section_name, line_name)
                     if check_value == new_expected_value_of_line:
@@ -1822,12 +1824,12 @@ def Add_line_ini(data_set):
         value_of_line = ''
         for row in data_set:
             if "action" in row[1]:
-                value_of_line = row[2]
+                value_of_line = row[2]   # value of the new line
             if row[1] == 'path':
-                file_name = row[2]
+                file_name = row[2]         # name of the file where the change should be made
             if row[1] == 'value':
-                section_name = row[0]
-                line_name = row[2]
+                section_name = row[0]       # name of the section where the new line should be added
+                line_name = row[2]       # name of the new line to be added
 
         if file_name == '':
             CommonUtil.ExecLog(sModuleInfo, "Could not find ini file name for this action", 3)
@@ -1846,17 +1848,18 @@ def Add_line_ini(data_set):
 
     # Perform action
     try:
-        if os.path.isfile(file_name):
-
+        if os.path.isfile(file_name):    # check if the file exists or not
+            '''add line'''
             config = ConfigParser.SafeConfigParser()
             config.read(file_name)
             list_of_sections = config.sections()
             if section_name in list_of_sections:
-                config.set(section_name, line_name, value_of_line)
-
+                config.set(section_name, line_name, value_of_line)  #add line
+                # writeback file
                 with open(file_name, 'wb') as configfile:
                     config.write(configfile)
-                # check if line is added properly
+
+                '''check if line is added properly'''
                 config.read(file_name)
                 options = config.options(section_name)
                 if line_name in options:
@@ -1885,10 +1888,10 @@ def Delete_line_ini(data_set):
         line_name = ''
         for row in data_set:
             if row[1] == 'path':
-                file_name = row[2]
+                file_name = row[2]   # name of the file where the change should be made
             if row[1] == 'value':
-                section_name = row[0]
-                line_name = row[2]
+                section_name = row[0]    # name of the section from where line should be deleted
+                line_name = row[2]    # name of the line to be deleted
 
         if file_name == '':
             CommonUtil.ExecLog(sModuleInfo, "Could not find ini file name for this action", 3)
@@ -1902,14 +1905,18 @@ def Delete_line_ini(data_set):
     except:
         return CommonUtil.Exception_Handler(sys.exc_info(), None, "Error parsing data set")
 
-        # Perform action
+    # Perform action
     try:
-        if os.path.isfile(file_name):
+        if os.path.isfile(file_name):   # check if the file exists or not
+            '''delete the line'''
             config = ConfigParser.SafeConfigParser()
             config.read(file_name)
-            config.remove_option(section_name, line_name)
+            config.remove_option(section_name, line_name)   #delete file
+            # writeback file
             with open(file_name, 'wb') as configfile:
                 config.write(configfile)
+
+            '''check if the line is deleted properly'''
             config.read(file_name)
             options = config.options(section_name)
             if line_name in options:
@@ -1935,9 +1942,9 @@ def Read_line_name_and_value(data_set):
         save_line_name_value = ''
         for row in data_set:
             if row[1] == 'path':
-                file_name = row[2]
+                file_name = row[2]    # name of the file from where line name and value should be read
             if "action" in row[1]:
-                save_line_name_value = row[2]
+                save_line_name_value = row[2]    #user will provide the vaiable to the save the line name and values
 
 
         if file_name == '':
@@ -1949,8 +1956,8 @@ def Read_line_name_and_value(data_set):
     except:
         return CommonUtil.Exception_Handler(sys.exc_info(), None, "Error parsing data set")
     try:
-        if os.path.isfile(file_name):
-
+        if os.path.isfile(file_name):    # check if the file exists or not
+            '''read file and save'''
             config = ConfigParser.SafeConfigParser()
             config.read(file_name)
             list_of_sections = config.sections()
