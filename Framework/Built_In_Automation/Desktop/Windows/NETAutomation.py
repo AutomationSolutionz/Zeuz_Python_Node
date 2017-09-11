@@ -10,6 +10,12 @@ import clr,System, inspect, time,datetime, os, sys
 from _elementtree import Element # What is this for?
 from Framework.Utilities import CommonUtil
 
+#this needs to be here on top, otherwise will return error
+clr.AddReference('UIAutomationClient')
+clr.AddReference('UIAutomationTypes')
+clr.AddReference('UIAutomationProvider')
+clr.AddReference('System.Windows.Forms')
+
 # Do these need to be here?
 from System.Windows.Automation import *
 from System.Threading import Thread
@@ -20,10 +26,7 @@ import pyautogui # Should be removed after we complete sequential actions
 import win32gui # Needed?
 import autoit # The likely method we'll use
 
-clr.AddReference('UIAutomationClient')
-clr.AddReference('UIAutomationTypes')
-clr.AddReference('UIAutomationProvider')
-clr.AddReference('System.Windows.Forms')
+
 
 global recur_count
 recur_count = 0 # To be deleted
@@ -522,13 +525,39 @@ def save_email_attachment_to_sharepoint(step_data):
     copy_Attachments = get_element("Outlook", "Copy Attachments Only")
     print copy_Attachments
     Click_Element_None_Mouse(copy_Attachments, Expand=None, Invoke=True, Select=None, Toggle=None)
-    time.sleep(5)
+    time.sleep(3)
     pyautogui.press('enter')
-    time.sleep(5)
+    time.sleep(3)
     pyautogui.press('enter')
-    time.sleep(5)
+    time.sleep(3)
     return "passed"
     # Click_Element_Mouse(outlookWindow)
 
+def synchronize_all_emails_using_colligo(step_data):
+    sync_icon = get_element("Outlook", "Sync")
+    print sync_icon
+    Click_Element_None_Mouse(sync_icon, Expand=True, Invoke=None, Select=None, Toggle=None)
+    time.sleep(3)
+    sync_all_icon = get_element("Outlook", "Synchronize All")
+    print sync_all_icon
+    Click_Element_None_Mouse(sync_all_icon, Expand=None, Invoke=None, Select=True, Toggle=None)
+    time.sleep(3)
 
-#save_email_attachment_to_sharepoint([[['subject','','Zeuz Colligo Attachment Test',False,False]]])
+    return "passed"
+
+def view_info_about_colligo(step_data):
+    sync_icon = get_element("Outlook", "Options")
+    print sync_icon
+    Click_Element_None_Mouse(sync_icon, Expand=True, Invoke=None, Select=None, Toggle=None)
+    time.sleep(3)
+    sync_all_icon = get_element("Outlook", "About")
+    print sync_all_icon
+    Click_Element_None_Mouse(sync_all_icon, Expand=None, Invoke=None, Select=True, Toggle=None)
+    time.sleep(3)
+
+    return "passed"
+
+'''if __name__ == '__main__':
+    #save_email_attachment_to_sharepoint([[['subject','','Zeuz Colligo Attachment Test',False,False]]])
+    #synchronize_all_emails_using_colligo([[[]]])
+    view_info_about_colligo([[[]]])'''
