@@ -150,3 +150,53 @@ def get_ios_imei(UDID = ''):
     except Exception:
         return CommonUtil.Exception_Handler(sys.exc_info())
 
+def get_ios_version(UDID = ''):
+    ''' Reads the device version '''
+
+    sModuleInfo = inspect.stack()[0][3] + " : " + inspect.getmoduleinfo(__file__).name
+    CommonUtil.ExecLog(sModuleInfo, "Started", 0)
+
+    try:
+        output = get_device_info(UDID) # Get device info in list format
+        tmp = ''
+        version = ''
+        for line in output:
+            if 'productversion' in line.lower():
+                tmp = line
+        if ( tmp != ''):
+            version = tmp[1].strip()
+
+        if version == '':
+            CommonUtil.ExecLog(sModuleInfo, "Could not read the iOS version from the device", 3)
+            return 'failed'
+
+        CommonUtil.ExecLog(sModuleInfo, "%s" % version, 0)
+        return version
+    except Exception:
+        return CommonUtil.Exception_Handler(sys.exc_info())
+
+
+def get_phone_name(UDID=''):
+    ''' Reads the phone name '''
+
+    sModuleInfo = inspect.stack()[0][3] + " : " + inspect.getmoduleinfo(__file__).name
+    CommonUtil.ExecLog(sModuleInfo, "Started", 0)
+
+    try:
+        output = get_device_info(UDID)  # Get device info in list format
+        tmp = ''
+        phone_name = ''
+        for line in output:
+            if 'devicename' in line.lower():
+                tmp = line
+        if (tmp != ''):
+            phone_name = tmp[1].strip()
+
+        if phone_name == '':
+            CommonUtil.ExecLog(sModuleInfo, "Could not read the iOS version from the device", 3)
+            return 'failed'
+
+        CommonUtil.ExecLog(sModuleInfo, "%s" % phone_name, 0)
+        return phone_name
+    except Exception:
+        return CommonUtil.Exception_Handler(sys.exc_info())

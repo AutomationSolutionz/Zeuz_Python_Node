@@ -51,6 +51,7 @@ actions = { # Numbers are arbitrary, and are not used anywhere
     219: {'module': 'appium', 'name': 'serial no', 'function': 'device_information'},
     220: {'module': 'appium', 'name': 'storage', 'function': 'device_information'},
     221: {'module': 'appium', 'name': 'reboot', 'function': 'device_information'},
+    222: {'module': 'appium', 'name': 'phone name', 'function': 'device_information'},
 
     300: {'module': 'rest', 'name': 'save response', 'function': 'Get_Response'},
     
