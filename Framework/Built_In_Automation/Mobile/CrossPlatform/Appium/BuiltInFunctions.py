@@ -2846,6 +2846,7 @@ def device_information(data_set):
             if dep == 'ios': output = iosOptions.get_phone_name()
         elif cmd == 'model name':
             if dep == 'android': output = adbOptions.get_device_model()
+            elif dep == 'ios': output = iosOptions.get_product_name()
         elif cmd == 'serial no':
             if dep == 'android': output = adbOptions.get_device_serial_no()
         elif cmd == 'storage':
