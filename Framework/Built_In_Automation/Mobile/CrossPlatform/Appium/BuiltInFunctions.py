@@ -1403,10 +1403,13 @@ def device_information(data_set):
             if dep == 'android': output = adbOptions.get_device_imei_info()
             elif dep == 'ios': output = iosOptions.get_ios_imei()
         elif cmd == 'version':
-            if dep == 'android':
-                output = adbOptions.get_android_version()
+            if dep == 'android':output = adbOptions.get_android_version()
+            elif dep == 'ios': output = iosOptions.get_ios_version()
         elif cmd == 'model name':
             if dep == 'android': output = adbOptions.get_device_model()
+            elif dep == 'ios': output = iosOptions.get_product_name()
+        elif cmd == 'phone name':
+            if dep == 'ios': output = iosOptions.get_phone_name()
         elif cmd == 'serial no':
             if dep == 'android': output = adbOptions.get_device_serial_no()
         elif cmd == 'storage':
