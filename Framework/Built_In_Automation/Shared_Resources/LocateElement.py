@@ -310,9 +310,12 @@ def _locate_index_number(step_data_set):
     
 def _pyautogui(step_data_set):
     ''' Gets coordinates for pyautogui (doesn't provide an object) '''
+    # If provided, scales image to fit currently displayed resolution, so as to provide a more accurate match
     
     # Only used by desktop, so only import here
-    import pyautogui, os.path
+    import pyautogui, os.path, re
+    from PIL import Image
+    from decimal import Decimal
     
     sModuleInfo = inspect.stack()[0][3] + " : " + inspect.getmoduleinfo(__file__).name
     CommonUtil.ExecLog(sModuleInfo,"Function Start", 0)
@@ -321,7 +324,7 @@ def _pyautogui(step_data_set):
     file_attachment = []
     if sr.Test_Shared_Variables('file_attachment'):
         file_attachment = sr.Get_Shared_Variables('file_attachment')
-    
+
     # Parse data set
     try:
         file_name = ''
@@ -334,26 +337,66 @@ def _pyautogui(step_data_set):
         # Check that we have some value                
         if file_name == '':
             return 'failed'
-        
+
         # Try to find the image file
         if file_name not in file_attachment and os.path.exists(file_name) == False:
             CommonUtil.ExecLog(sModuleInfo, "Could not find file attachment called %s, and could not find it locally" % file_name, 3)
             return 'failed'
         if file_name in file_attachment: file_name = file_attachment[file_name] # In file is an attachment, get the full path
+
         # Now file_name should have a directory/file pointing to the correct image
+        
+        # There's a problem when running from Zeuz with encoding. pyautogui seems sensitive to it. This fixes that
+        file_name = file_name.encode('ascii')
 
     except:
         return CommonUtil.Exception_Handler(sys.exc_info(), None, "Error parsing data set")
-
+    
     # Find element information
     try:
-        element = pyautogui.locateOnScreen(file_name.encode('ascii'), grayscale=True) # Get coordinates of element. Use greyscale for increased speed and better matching across machines. May cause higher number of false-positives
+        # Scale image if required
+        match = re.search('(\d+)x(\d+)', file_name) # Search for resolution within filename (this is the resolution of the screen the image was captured on)
+        if match != None: # Match found, so scale
+            CommonUtil.ExecLog(sModuleInfo, "Scaling image", 0)
+            
+            try:
+                # Open image file
+                file_name = open(file_name, 'rb') # Read file into memory
+                file_name = Image.open(file_name) # Convert to PIL format
+    
+                # Read sizes
+                screen_w, screen_h = pyautogui.size() # Read screen resolution
+                size_w, size_h = int(match.group(1)), int(match.group(2)) # Extract width, height from match (is screen resolution of desktop image was taken on)
+                image_w, image_h = file_name.size # Read the image element's actual size
+                
+                # Calculate new image size
+                if size_w > screen_w: # Make sure we create the scaling ratio in the proper direction
+                    ratio = Decimal(size_w) / Decimal(screen_w) # Get ratio (assume same for height)
+                    size = (int(image_w * ratio), int(image_h * ratio)) # Calculate new resolution of image element
+                else:
+                    ratio = Decimal(screen_w) / Decimal(size_w) # Get ratio (assume same for height)
+                    size = (int(image_w * ratio), int(image_h * ratio)) # Calculate new resolution of image element
+
+    
+                # Scale image
+                file_name.thumbnail(size, Image.ANTIALIAS) # Resize image per calculation above
+            except:
+                return CommonUtil.Exception_Handler(sys.exc_info(), None, "Error scaling image")
+        else:
+            CommonUtil.ExecLog(sModuleInfo, "Not scaling image", 0)
+        
+        # Find image on screen
+        element = pyautogui.locateOnScreen(file_name, grayscale=True) # Get coordinates of element. Use greyscale for increased speed and better matching across machines. May cause higher number of false-positives
+
+        # Check result
         if element == None or element in failed_tag_list or element == '':
             return 'failed'
         else:
             return element
+        
     except:
         return CommonUtil.Exception_Handler(sys.exc_info())
+    
 
 
 '''
