@@ -527,6 +527,7 @@ def save_email_attachment_to_sharepoint(step_data):
     print copy_Attachments
     Click_Element_None_Mouse(copy_Attachments, Expand=None, Invoke=True, Select=None, Toggle=None)
     time.sleep(3)
+    pyautogui.typewrite('documents')
     pyautogui.press('enter')
     time.sleep(3)
     pyautogui.press('enter')
