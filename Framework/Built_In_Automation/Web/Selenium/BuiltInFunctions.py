@@ -21,6 +21,7 @@ import time
 import inspect
 from selenium.webdriver.support.ui import WebDriverWait
 from selenium.webdriver.common.action_chains import ActionChains
+from selenium.common.exceptions import NoAlertPresentException
 from selenium.webdriver.common.keys import Keys
 #Ver1.0
 from selenium.webdriver.common.by import By
@@ -169,6 +170,36 @@ def Go_To_Link(step_data, page_title=False):
         return "passed"
     except Exception:
         ErrorMessage =  "failed to open your link: %s" %(web_link)
+        return CommonUtil.Exception_Handler(sys.exc_info(), None, ErrorMessage)
+
+
+def Handle_Browser_Alert(step_data):
+    #accepts browser alert
+    sModuleInfo = inspect.stack()[0][3] + " : " + inspect.getmoduleinfo(__file__).name
+    try:
+        choice = str(step_data[0][2]).lower()
+        if choice == 'accept' or choice == 'pass' or choice == 'yes' or choice == 'ok':
+            try:
+                selenium_driver.switch_to_alert().accept()
+                CommonUtil.ExecLog(sModuleInfo, "Browser alert accepted", 1)
+                return "passed"
+            except NoAlertPresentException as e:
+                CommonUtil.ExecLog(sModuleInfo, "Browser alert not found", 2)
+                return "passed"
+        elif choice == 'reject' or choice == 'fail' or choice == 'no' or choice == 'cancel':
+            try:
+                selenium_driver.switch_to_alert().dismiss()
+                CommonUtil.ExecLog(sModuleInfo, "Browser alert rejected", 1)
+                return "passed"
+            except NoAlertPresentException as e:
+                CommonUtil.ExecLog(sModuleInfo, "Browser alert not found", 2)
+                return "passed"
+        else:
+            CommonUtil.ExecLog(sModuleInfo, "Wrong Step Data", 3)
+            return "failed"
+
+    except Exception:
+        ErrorMessage =  "Failed to accept browser alert"
         return CommonUtil.Exception_Handler(sys.exc_info(), None, ErrorMessage)
 
 

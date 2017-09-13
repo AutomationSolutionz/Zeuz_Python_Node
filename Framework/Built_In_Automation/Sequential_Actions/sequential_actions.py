@@ -61,7 +61,7 @@ actions = { # Numbers are arbitrary, and are not used anywhere
     404: {'module': 'selenium', 'name': 'double click', 'function': 'Double_Click_Element'},
     405: {'module': 'selenium', 'name': 'move to element', 'function': 'Move_To_Element'},
     406: {'module': 'selenium', 'name': 'hover', 'function': 'Hover_Over_Element'},
-    406: {'module': 'selenium', 'name': 'keystroke keys', 'function': 'Keystroke_For_Element'},
+    407: {'module': 'selenium', 'name': 'keystroke keys', 'function': 'Keystroke_For_Element'},
     408: {'module': 'selenium', 'name': 'keystroke chars', 'function': 'Keystroke_For_Element'},
     409: {'module': 'selenium', 'name': 'text', 'function': 'Enter_Text_In_Text_Box'},
     410: {'module': 'selenium', 'name': 'initialize list', 'function': 'Initialize_List'},
@@ -81,6 +81,7 @@ actions = { # Numbers are arbitrary, and are not used anywhere
     424: {'module': 'selenium', 'name': 'navigate', 'function': 'Navigate'},
     425: {'module': 'selenium', 'name': 'get location', 'function': 'get_location_of_element'},
     426: {'module': 'selenium', 'name': 'validate table', 'function': 'validate_table'},
+    427: {'module': 'selenium', 'name': 'handle alert', 'function': 'Handle_Browser_Alert'},
     
     500: {'module': 'utility', 'name': 'math', 'function': 'Calculate'},
     501: {'module': 'utility', 'name': 'upload', 'function': 'Upload'},
@@ -481,5 +482,3 @@ def Action_Handler(_data_set, action_row):
 
     except Exception:
         return CommonUtil.Exception_Handler(sys.exc_info())
- 
-
