@@ -532,6 +532,8 @@ def save_email_attachment_to_sharepoint(step_data):
     time.sleep(3)
     pyautogui.press('enter')
     time.sleep(3)
+    pyautogui.press('enter')
+    time.sleep(3)
     return "passed"
     # Click_Element_Mouse(outlookWindow)
 
