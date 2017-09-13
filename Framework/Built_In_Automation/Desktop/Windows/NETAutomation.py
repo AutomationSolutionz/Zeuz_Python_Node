@@ -503,6 +503,7 @@ def save_email_attachment_to_sharepoint(step_data):
     #Click_Element_None_Mouse(outlookWindow, Expand=True, Invoke=None, Select=None, Toggle=None)
 
     email_subject = step_data[0][0][2]
+    file_name = step_data[0][1][2]
 
     #click search icon
     search_icon = get_element("Outlook","Search Query")
@@ -516,7 +517,7 @@ def save_email_attachment_to_sharepoint(step_data):
     time.sleep(3)
 
     #click on attachment
-    attachment = get_element("Outlook", "AS_Logo.png25 KB1 of 1 attachmentsUse alt + down arrow to open the options menu")
+    attachment = get_element("Outlook", file_name)
     print attachment
     Click_Element_None_Mouse(attachment, Expand=None, Invoke=None, Select=True, Toggle=None)
     time.sleep(3)
