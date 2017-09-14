@@ -310,7 +310,13 @@ def _locate_index_number(step_data_set):
     
 def _pyautogui(step_data_set):
     ''' Gets coordinates for pyautogui (doesn't provide an object) '''
-    # If provided, scales image to fit currently displayed resolution, so as to provide a more accurate match
+    
+    ''' If provided, scales image to fit currently displayed resolution, so as to provide a more accurate match 
+        There are three modes of operation:
+            No resolution - don't re-scale: (image, element paramater, filename.png)
+            Resolution in filename - scale accordingly: (image, element paramater, filename-1920x1080.png)
+            Resolution in step data - scale accordingly: (1920x1080, element paramater, filename.png)
+    '''
     
     # Only used by desktop, so only import here
     import pyautogui, os.path, re
@@ -331,6 +337,7 @@ def _pyautogui(step_data_set):
         for row in step_data_set:
             if row[1] == 'element parameter': # Find element line
                 file_name = row[2] # Save Value as the filename
+                resolution = row[0] # Save the resolution of the source of the image, if provided
             elif row[1] == 'action' and file_name == '': # Alternative method, there is no element parameter, so filename is expected on the action line
                 file_name = row[2] # Save Value as the filename
 
@@ -355,9 +362,12 @@ def _pyautogui(step_data_set):
     # Find element information
     try:
         # Scale image if required
-        match = re.search('(\d+)x(\d+)', file_name) # Search for resolution within filename (this is the resolution of the screen the image was captured on)
+        match = re.search('(\d+)\s+x\s+(\d+)', file_name) # Search for resolution within filename (this is the resolution of the screen the image was captured on)
+        if match == None:
+            match = re.search('(\d+)\s+x\s+(\d+)', resolution) # Search for resolution within the Field of the element paramter row (this is the resolution of the screen the image was captured on)
+
         if match != None: # Match found, so scale
-            CommonUtil.ExecLog(sModuleInfo, "Scaling image", 0)
+            CommonUtil.ExecLog(sModuleInfo, "Scaling image (%s)" % match.group(0), 0)
             
             try:
                 # Open image file
@@ -372,11 +382,10 @@ def _pyautogui(step_data_set):
                 # Calculate new image size
                 if size_w > screen_w: # Make sure we create the scaling ratio in the proper direction
                     ratio = Decimal(size_w) / Decimal(screen_w) # Get ratio (assume same for height)
-                    size = (int(image_w * ratio), int(image_h * ratio)) # Calculate new resolution of image element
                 else:
                     ratio = Decimal(screen_w) / Decimal(size_w) # Get ratio (assume same for height)
-                    size = (int(image_w * ratio), int(image_h * ratio)) # Calculate new resolution of image element
-
+                CommonUtil.ExecLog(sModuleInfo, "Scaling ratio %s" %ratio, 0)
+                size = (int(image_w * ratio), int(image_h * ratio)) # Calculate new resolution of image element
     
                 # Scale image
                 file_name.thumbnail(size, Image.ANTIALIAS) # Resize image per calculation above
@@ -385,7 +394,7 @@ def _pyautogui(step_data_set):
         else:
             CommonUtil.ExecLog(sModuleInfo, "Not scaling image", 0)
         
-        # Find image on screen
+        # Find image on screen (file_name here is either an actual directory/file or a PIL image object after scaling)
         element = pyautogui.locateOnScreen(file_name, grayscale=True) # Get coordinates of element. Use greyscale for increased speed and better matching across machines. May cause higher number of false-positives
 
         # Check result
