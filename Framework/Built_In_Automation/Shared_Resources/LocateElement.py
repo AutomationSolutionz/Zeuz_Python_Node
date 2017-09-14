@@ -415,7 +415,7 @@ def _pyautogui(step_data_set):
                 else: # Subsequent runs, compare distances
                     if distance_new[0] < distance_best[0] or distance_new[1] < distance_best[1]: # If horozontal or vertical is closer than our best/closest distance that we've found thus far
                         element_result = e # Save this element as the best match
-                        distance_best = distance_new # Save the distance for further comparison
+                        distance_best = list(distance_new) # Save the distance for further comparison
                         
             # Whether there is one or more matches, we now have the closest image to our reference, so save the result in the common variable
             element = element_result
