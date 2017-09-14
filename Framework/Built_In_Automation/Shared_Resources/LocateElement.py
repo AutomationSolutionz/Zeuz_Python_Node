@@ -316,12 +316,12 @@ def _pyautogui(step_data_set):
             No resolution - don't re-scale: (image, element paramater, filename.png)
             Resolution in filename - scale accordingly: (image, element paramater, filename-1920x1080.png)
             Resolution in step data - scale accordingly: (1920x1080, element paramater, filename.png)
+            
+        If a reference element is provided (parent/child parameter, name doens't matter), then we'll attempt to find the closest match and provide that
     '''
     
     # Only used by desktop, so only import here
     import pyautogui, os.path, re
-    from PIL import Image
-    from decimal import Decimal
     
     sModuleInfo = inspect.stack()[0][3] + " : " + inspect.getmoduleinfo(__file__).name
     CommonUtil.ExecLog(sModuleInfo,"Function Start", 0)
@@ -334,10 +334,14 @@ def _pyautogui(step_data_set):
     # Parse data set
     try:
         file_name = ''
+        file_name_parent = ''
+        resolution = ''
         for row in step_data_set:
             if row[1] == 'element parameter': # Find element line
                 file_name = row[2] # Save Value as the filename
                 resolution = row[0] # Save the resolution of the source of the image, if provided
+            if row[1] in ('child parameter', 'parent parameter'): # Find a related image, that we'll use as a reference point
+                file_name_parent = row[2] # Save Value as the filename
             elif row[1] == 'action' and file_name == '': # Alternative method, there is no element parameter, so filename is expected on the action line
                 file_name = row[2] # Save Value as the filename
 
@@ -350,6 +354,13 @@ def _pyautogui(step_data_set):
             CommonUtil.ExecLog(sModuleInfo, "Could not find file attachment called %s, and could not find it locally" % file_name, 3)
             return 'failed'
         if file_name in file_attachment: file_name = file_attachment[file_name] # In file is an attachment, get the full path
+        
+        if file_name_parent != '':
+            if file_name_parent not in file_attachment and os.path.exists(file_name_parent) == False:
+                CommonUtil.ExecLog(sModuleInfo, "Could not find file attachment called %s, and could not find it locally" % file_name_parent, 3)
+                return 'failed'
+            if file_name_parent in file_attachment: file_name_parent = file_attachment[file_name_parent] # In file is an attachment, get the full path
+
 
         # Now file_name should have a directory/file pointing to the correct image
         
@@ -362,40 +373,52 @@ def _pyautogui(step_data_set):
     # Find element information
     try:
         # Scale image if required
-        match = re.search('(\d+)\s+x\s+(\d+)', file_name) # Search for resolution within filename (this is the resolution of the screen the image was captured on)
-        if match == None:
-            match = re.search('(\d+)\s+x\s+(\d+)', resolution) # Search for resolution within the Field of the element paramter row (this is the resolution of the screen the image was captured on)
+        regex = re.compile('(\d+)\s*x\s*(\d+)', re.IGNORECASE) # Create regex object with expression
+        match = regex.search(file_name) # Search for resolution within filename (this is the resolution of the screen the image was captured on)
+        if match == None and resolution != '': # If resolution not in filename, try to find it in the step data
+            match = regex.search(resolution) # Search for resolution within the Field of the element paramter row (this is the resolution of the screen the image was captured on)
 
         if match != None: # Match found, so scale
             CommonUtil.ExecLog(sModuleInfo, "Scaling image (%s)" % match.group(0), 0)
-            
-            try:
-                # Open image file
-                file_name = open(file_name, 'rb') # Read file into memory
-                file_name = Image.open(file_name) # Convert to PIL format
-    
-                # Read sizes
-                screen_w, screen_h = pyautogui.size() # Read screen resolution
-                size_w, size_h = int(match.group(1)), int(match.group(2)) # Extract width, height from match (is screen resolution of desktop image was taken on)
-                image_w, image_h = file_name.size # Read the image element's actual size
-                
-                # Calculate new image size
-                if size_w > screen_w: # Make sure we create the scaling ratio in the proper direction
-                    ratio = Decimal(size_w) / Decimal(screen_w) # Get ratio (assume same for height)
-                else:
-                    ratio = Decimal(screen_w) / Decimal(size_w) # Get ratio (assume same for height)
-                CommonUtil.ExecLog(sModuleInfo, "Scaling ratio %s" %ratio, 0)
-                size = (int(image_w * ratio), int(image_h * ratio)) # Calculate new resolution of image element
-    
-                # Scale image
-                file_name.thumbnail(size, Image.ANTIALIAS) # Resize image per calculation above
-            except:
-                return CommonUtil.Exception_Handler(sys.exc_info(), None, "Error scaling image")
+            size_w, size_h = int(match.group(1)), int(match.group(2)) # Extract width, height from match (is screen resolution of desktop image was taken on)
+            file_name = _scale_image(file_name, size_w, size_h) # Scale image element
+            file_name_parent = _scale_image(file_name_parent, size_w, size_h) # Scale parent image element
         else:
             CommonUtil.ExecLog(sModuleInfo, "Not scaling image", 0)
         
         # Find image on screen (file_name here is either an actual directory/file or a PIL image object after scaling)
-        element = pyautogui.locateOnScreen(file_name, grayscale=True) # Get coordinates of element. Use greyscale for increased speed and better matching across machines. May cause higher number of false-positives
+        element = pyautogui.locateAllOnScreen(file_name, grayscale=True) # Get coordinates of element. Use greyscale for increased speed and better matching across machines. May cause higher number of false-positives
+        if file_name_parent == '': # If no reference image, just return the first match
+            element = tuple(element)[0] # First match reassigned as the only element
+        else: # Reference image specified, so find the closest image element to it
+            CommonUtil.ExecLog(sModuleInfo, "Locating with a reference element", 0)
+            
+            # Get coordinates of reference image
+            element_parent = pyautogui.locateOnScreen(file_name_parent, grayscale=True)
+            
+            # Initialize variables
+            parent_centre = element_parent[0] + int(element_parent[2] / 2), element_parent[1] + int(element_parent[3] / 2) # Calculate centre coordinates of parent
+            element_result = [] # This will hold the best match that we've found as we check them all
+            distance_new = [0, 0] # This will hold the current distance
+            distance_best = [0, 0] # This will hold the distance for the best match
+            
+            # Loop through all found elements, and find the one that is closest to the reference image element
+            for e in element:
+                # Calculate centre of image to centre of reference image
+                distance_new[0] = abs(parent_centre[0] - (e[0] + int(e[2] / 2)))
+                distance_new[1] = abs(parent_centre[1] - (e[1] + int(e[3] / 2)))
+                
+                # Compare distances
+                if element_result == []: # First run, just save this as the closest match
+                    element_result = e
+                    distance_best = list(distance_new) # Very important! - this must be saved with the list(), because python will make distance_best a pointer to distance_new without it, thus screwing up what we are trying to do. Thanks Python.
+                else: # Subsequent runs, compare distances
+                    if distance_new[0] < distance_best[0] or distance_new[1] < distance_best[1]: # If horozontal or vertical is closer than our best/closest distance that we've found thus far
+                        element_result = e # Save this element as the best match
+                        distance_best = distance_new # Save the distance for further comparison
+                        
+            # Whether there is one or more matches, we now have the closest image to our reference, so save the result in the common variable
+            element = element_result
 
         # Check result
         if element == None or element in failed_tag_list or element == '':
@@ -406,6 +429,40 @@ def _pyautogui(step_data_set):
     except:
         return CommonUtil.Exception_Handler(sys.exc_info())
     
+
+def _scale_image(file_name, size_w, size_h):
+    ''' This function calculates ratio and scales an image for comparison by _pyautogui() '''
+    
+    sModuleInfo = inspect.stack()[0][3] + " : " + inspect.getmoduleinfo(__file__).name
+    
+    # Only used by desktop, so only import here
+    import pyautogui
+    from PIL import Image
+    from decimal import Decimal
+
+    try:
+        # Open image file
+        file_name = open(file_name, 'rb') # Read file into memory
+        file_name = Image.open(file_name) # Convert to PIL format
+
+        # Read sizes
+        screen_w, screen_h = pyautogui.size() # Read screen resolution
+        image_w, image_h = file_name.size # Read the image element's actual size
+        
+        # Calculate new image size
+        if size_w > screen_w: # Make sure we create the scaling ratio in the proper direction
+            ratio = Decimal(size_w) / Decimal(screen_w) # Get ratio (assume same for height)
+        else:
+            ratio = Decimal(screen_w) / Decimal(size_w) # Get ratio (assume same for height)
+        CommonUtil.ExecLog(sModuleInfo, "Scaling ratio %s" %ratio, 0)
+        size = (int(image_w * ratio), int(image_h * ratio)) # Calculate new resolution of image element
+
+        # Scale image
+        file_name.thumbnail(size, Image.ANTIALIAS) # Resize image per calculation above
+        
+        return file_name # Return the scaled image object
+    except:
+        return CommonUtil.Exception_Handler(sys.exc_info(), None, "Error scaling image")
 
 
 '''
