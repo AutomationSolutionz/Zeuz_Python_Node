@@ -313,9 +313,16 @@ def move_mouse(data_set):
             CommonUtil.ExecLog(sModuleInfo, "Image coordinates on screen %d x %d" % (x, y), 0)
         
         elif cmd == 'move':
-            x, y = file_name.replace(' ', '').split(',') # Get the coordinates
-            x = int(x)
-            y = int(y)
+            try:
+                if ',' not in file_name.replace(' ', '').split(','):
+                    CommonUtil.ExecLog(sModuleInfo, "Expected Value to be 'X,Y' format for coordinates. If you want to use an image, try using the 'hover' action", 3)
+                    return 'failed'
+                
+                x, y = file_name.replace(' ', '').split(',') # Get the coordinates
+                x = int(x)
+                y = int(y)
+            except:
+                return CommonUtil.Exception_Handler(sys.exc_info(), None, "Expected Value to be 'X,Y' format for coordinates. If you want to use an image, try using the 'hover' action")
 
         # Move mouse pointer
         CommonUtil.ExecLog(sModuleInfo, "Image coordinates on screen %d x %d" % (x, y), 0)
@@ -508,3 +515,83 @@ def teardown(data_set):
     Shared_Resources.Clean_Up_Shared_Variables()
         
     return 'passed'
+
+def Drag_Element(data_set):
+    ''' Drag element from one location to the next '''
+    # !!!! Not yet working !!!!
+    
+    sModuleInfo = inspect.stack()[0][3] + " : " + inspect.getmoduleinfo(__file__).name
+    CommonUtil.ExecLog(sModuleInfo,"Function Start", 0)
+    
+    # Parse data set
+    try:
+        cmd = ''
+        file_name = ''
+        position = 'centre'
+        for row in data_set:
+            if row[1] == 'action':
+                if row[0] == 'drag':
+                    cmd = 'drag'
+                    position = row[2]
+            elif row[1] == 'element parameter':
+                file_name = row[2]
+        
+        if cmd == '':
+            CommonUtil.ExecLog(sModuleInfo, "Valid action not found. Expected Field set to 'click' or 'doubleclick', and the Value one of: %s" % str(positions), 3)
+            return 'failed'
+        if position not in positions:
+            CommonUtil.ExecLog(sModuleInfo, "Will click on centre of element. Expected Value to be one of: %s" % str(positions), 2)
+        
+        if file_name == '':
+            CommonUtil.ExecLog(sModuleInfo, "Valid element not found. Expected Sub-Field to be 'element parameter', and Value to be a filename", 3)
+            return 'failed'
+        
+    except Exception:
+        errMsg = "Error parsing data set"
+        return CommonUtil.Exception_Handler(sys.exc_info(),None,errMsg)
+    
+    # Perform action
+    try:
+        # Find image coordinates for destination element
+        CommonUtil.ExecLog(sModuleInfo, "Performing %s action on file %s" % (cmd, file_name), 0)
+        element = LocateElement.Get_Element(data_set, gui) # (x, y, w, h)
+        if element in failed_tag_list: # Error reason logged by Get_Element
+            return 'failed'
+
+        # Find image coordinates for source element
+        CommonUtil.ExecLog(sModuleInfo, "Performing %s action on file %s" % (cmd, file_name), 0)
+        element = LocateElement.Get_Element(data_set, gui) # (x, y, w, h)
+        if element in failed_tag_list: # Error reason logged by Get_Element
+            return 'failed'
+        
+        # SOURCE - Get coordinates for position user specified
+        x, y = getCoordinates(element, position) # Find coordinates (x,y)
+        if x in failed_tag_list: # Error reason logged by Get_Element
+            CommonUtil.ExecLog(sModuleInfo, "Error calculating coordinates", 3)
+            return 'failed'
+        CommonUtil.ExecLog(sModuleInfo, "Image coordinates on screen %d x %d" % (x, y), 0)
+
+        # DESTINATION  Get coordinates for position user specified
+        x, y = getCoordinates(element, position) # Find coordinates (x,y)
+        if x in failed_tag_list: # Error reason logged by Get_Element
+            CommonUtil.ExecLog(sModuleInfo, "Error calculating coordinates", 3)
+            return 'failed'
+        CommonUtil.ExecLog(sModuleInfo, "Image coordinates on screen %d x %d" % (x, y), 0)
+
+        # Drag source to destination
+        gui.moveTo(x, y) # Move to source
+        result = gui.dragTo(x, y, button = 'left') # Click and drag to destination, then release
+
+        # Check result and return
+        if result in failed_tag_list:
+            CommonUtil.ExecLog(sModuleInfo, "Couldn't dragged element with given images", 3)
+            return 'failed'
+        else:
+            CommonUtil.ExecLog(sModuleInfo, "Successfully dragged element with given images", 1)
+            return 'passed'
+
+    except Exception:
+        errMsg = "Error while trying to perform drag action"
+        return CommonUtil.Exception_Handler(sys.exc_info(),None,errMsg)
+    
+    
