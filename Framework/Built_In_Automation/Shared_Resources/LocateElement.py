@@ -311,13 +311,23 @@ def _locate_index_number(step_data_set):
 def _pyautogui(step_data_set):
     ''' Gets coordinates for pyautogui (doesn't provide an object) '''
     
-    ''' If provided, scales image to fit currently displayed resolution, so as to provide a more accurate match 
+    ''' 
+    Valid files:
+        We do our best to find the file for the user, it can be:
+            Full path. Eg: /home/user/test.png
+            Local directory. Eg: test.png
+            Zeuz File Attachment. Eg: test.png - The full path is in the Shared Variables under the filename
+
+    If provided, scales image to fit currently displayed resolution, so as to provide a more accurate match 
         There are three modes of operation:
             No resolution - don't re-scale: (image, element paramater, filename.png)
             Resolution in filename - scale accordingly: (image, element paramater, filename-1920x1080.png)
             Resolution in step data - scale accordingly: (1920x1080, element paramater, filename.png)
             
-        If a reference element is provided (parent/child parameter, name doens't matter), then we'll attempt to find the closest match and provide that
+    If a reference element is provided (parent/child parameter, name doens't matter), then we have three methods by which to locate the element of interest:
+        Field = left, right, up, down - we'll favour any elements in this direction and return it
+        Field = INDEX NUMBER - If a number is provided (>=1), we'll return the nTH element found
+        Field = ANYTHING ELSE - We'll find the closest element to it
     '''
     
     # Only used by desktop, so only import here
@@ -336,12 +346,15 @@ def _pyautogui(step_data_set):
         file_name = ''
         file_name_parent = ''
         resolution = ''
+        direction = 'all'
+        index = False
         for row in step_data_set:
             if row[1] == 'element parameter': # Find element line
                 file_name = row[2] # Save Value as the filename
                 resolution = row[0] # Save the resolution of the source of the image, if provided
             if row[1] in ('child parameter', 'parent parameter'): # Find a related image, that we'll use as a reference point
                 file_name_parent = row[2] # Save Value as the filename
+                direction = row[0].lower().strip() # Save Field as a possible distance or index
             elif row[1] == 'action' and file_name == '': # Alternative method, there is no element parameter, so filename is expected on the action line
                 file_name = row[2] # Save Value as the filename
 
@@ -366,9 +379,28 @@ def _pyautogui(step_data_set):
         
         # There's a problem when running from Zeuz with encoding. pyautogui seems sensitive to it. This fixes that
         file_name = file_name.encode('ascii')
+        if file_name_parent != '': file_name_parent = file_name_parent.encode('ascii')
 
     except:
         return CommonUtil.Exception_Handler(sys.exc_info(), None, "Error parsing data set")
+    
+    # Parse direction (physical direction, index or nothing)
+    if direction != 'all': # If a reference image was specified (direction would be set to a different value)
+        try:
+            if direction in ('left', 'right', 'up', 'down'): # User specified a direction to look for the element
+                CommonUtil.ExecLog(sModuleInfo, "Reference provided direction is %s" % direction, 0)
+                pass
+            else:
+                try:
+                    direction = int(direction)# Test if it's a number, if so, format it properly
+                    index = True
+                    CommonUtil.ExecLog(sModuleInfo, "Reference provided index is %d" % direction, 0)
+                    direction -= 1 #  Offset by one, because user will set first element as one, but in the array it's element zero
+                except: # Not a number
+                    direction = 'all' # Default to search all directions equally (find the closest image alement to the reference)
+                    CommonUtil.ExecLog(sModuleInfo, "Reference provided direction is %s" % direction, 0)
+        except:
+            return CommonUtil.Exception_Handler(sys.exc_info(), None, "Error parsing direction")
     
     # Find element information
     try:
@@ -388,9 +420,17 @@ def _pyautogui(step_data_set):
         
         # Find image on screen (file_name here is either an actual directory/file or a PIL image object after scaling)
         element = pyautogui.locateAllOnScreen(file_name, grayscale=True) # Get coordinates of element. Use greyscale for increased speed and better matching across machines. May cause higher number of false-positives
-        if file_name_parent == '': # If no reference image, just return the first match
+        
+        ################################################################################
+        ######################### ALL PIECES SET - FIND ELEMENT ########################
+        ################################################################################
+        
+        # If no reference image, just return the first match
+        if file_name_parent == '':
             element = tuple(element)[0] # First match reassigned as the only element
-        else: # Reference image specified, so find the closest image element to it
+        
+        # Reference image specified, so find the closest image element to it
+        else:
             CommonUtil.ExecLog(sModuleInfo, "Locating with a reference element", 0)
             
             # Get coordinates of reference image
@@ -402,23 +442,52 @@ def _pyautogui(step_data_set):
             distance_new = [0, 0] # This will hold the current distance
             distance_best = [0, 0] # This will hold the distance for the best match
             
-            # Loop through all found elements, and find the one that is closest to the reference image element
-            for e in element:
-                # Calculate centre of image to centre of reference image
-                distance_new[0] = abs(parent_centre[0] - (e[0] + int(e[2] / 2)))
-                distance_new[1] = abs(parent_centre[1] - (e[1] + int(e[3] / 2)))
-                
-                # Compare distances
-                if element_result == []: # First run, just save this as the closest match
-                    element_result = e
-                    distance_best = list(distance_new) # Very important! - this must be saved with the list(), because python will make distance_best a pointer to distance_new without it, thus screwing up what we are trying to do. Thanks Python.
-                else: # Subsequent runs, compare distances
-                    if distance_new[0] < distance_best[0] or distance_new[1] < distance_best[1]: # If horozontal or vertical is closer than our best/closest distance that we've found thus far
-                        element_result = e # Save this element as the best match
-                        distance_best = list(distance_new) # Save the distance for further comparison
+            # User provided an index number, so find the nTH element
+            if index == True:
+                try: element = tuple(element)[direction]
+                except: return CommonUtil.Exception_Handler(sys.exc_info(), None, "Provided index number is invalid")
+            
+            # User provided a direction, or no indication, so try to find the element based on that
+            else:
+                # Loop through all found elements, and find the one that is closest to the reference image element
+                for e in element:
+                    # Calculate centre of image to centre of reference image
+                    distance_new[0] = parent_centre[0] - (e[0] + int(e[2] / 2))
+                    distance_new[1] = parent_centre[1] - (e[1] + int(e[3] / 2))
+
+                    # Remove negavite values, depending on direction. This allows us to favour a certain direction by keeping the original number                    
+                    if direction == 'all':
+                        distance_new[0] = abs(distance_new[0]) # Remove negative sign for x
+                        distance_new[1] = abs(distance_new[1]) # Remove negative sign for y
+                    elif direction in ('up', 'down'):
+                        distance_new[0] = abs(distance_new[0]) # Remove negative sign for x - we don't care about that direction
+                    elif direction in ('left', 'right'):
+                        distance_new[1] = abs(distance_new[1]) # Remove negative sign for y - we don't care about that direction
+    
+                    # Compare distances
+                    if element_result == []: # First run, just save this as the closest match
+                        element_result = e
+                        distance_best = list(distance_new) # Very important! - this must be saved with the list(), because python will make distance_best a pointer to distance_new without it, thus screwing up what we are trying to do. Thanks Python.
+                    else: # Subsequent runs, compare distances
+                        if direction == 'all' and (distance_new[0] < distance_best[0] or distance_new[1] < distance_best[1]): # If horozontal or vertical is closer than our best/closest distance that we've found thus far
+                            element_result = e # Save this element as the best match
+                            distance_best = list(distance_new) # Save the distance for further comparison
+                        elif direction == 'up' and (distance_new[0] < distance_best[0] or distance_new[1] > distance_best[1]): # Favour Y direction up
+                            element_result = e # Save this element as the best match
+                            distance_best = list(distance_new) # Save the distance for further comparison
+                        elif direction == 'down' and (distance_new[0] < distance_best[0] or distance_new[1] < distance_best[1]): # Favour Y direction down
+                            element_result = e # Save this element as the best match
+                            distance_best = list(distance_new) # Save the distance for further comparison
+                        elif direction == 'left' and (distance_new[0] > distance_best[0] or distance_new[1] < distance_best[1]): # Favour X direction left
+                            element_result = e # Save this element as the best match
+                            distance_best = list(distance_new) # Save the distance for further comparison
+                        elif direction == 'right' and (distance_new[0] < distance_best[0] or distance_new[1] < distance_best[1]): # Favour X direction right
+                            element_result = e # Save this element as the best match
+                            distance_best = list(distance_new) # Save the distance for further comparison
+
                         
-            # Whether there is one or more matches, we now have the closest image to our reference, so save the result in the common variable
-            element = element_result
+                # Whether there is one or more matches, we now have the closest image to our reference, so save the result in the common variable
+                element = element_result
 
         # Check result
         if element == None or element in failed_tag_list or element == '':
