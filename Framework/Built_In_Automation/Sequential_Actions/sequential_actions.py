@@ -182,29 +182,32 @@ def load_sa_modules(module): # Load module "AS" must match module name we get fr
     sModuleInfo = inspect.stack()[0][3] + " : " + inspect.getmoduleinfo(__file__).name
     CommonUtil.ExecLog(sModuleInfo,"Function Start", 0)
     
-    if module == 'common':
-        pass # Already imported at top of this file
-    elif module == 'appium':
-        global appium
-        from Framework.Built_In_Automation.Mobile.CrossPlatform.Appium import BuiltInFunctions as appium
-    elif module == 'selenium':
-        global selenium
-        from Framework.Built_In_Automation.Web.Selenium import BuiltInFunctions as selenium
-    elif module == 'rest':
-        global rest
-        from Framework.Built_In_Automation.Web.REST import BuiltInFunctions as rest
-    elif module == 'utility':
-        global utility
-        from Framework.Built_In_Automation.Built_In_Utility.CrossPlatform import BuiltInUtilityFunction as utility
-    elif module == 'xml':
-        global xml
-        from Framework.Built_In_Automation.XML import BuiltInFunctions_XML as xml
-    elif module == 'desktop':
-        global desktop
-        from Framework.Built_In_Automation.Desktop.CrossPlatform import BuiltInFunctions as desktop
-    else:
-        CommonUtil.ExecLog(sModuleInfo, "Invalid sequential actions module: %s" % module, 3)
-        return 'failed'
+    try:
+        if module == 'common':
+            pass # Already imported at top of this file
+        elif module == 'appium':
+            global appium
+            from Framework.Built_In_Automation.Mobile.CrossPlatform.Appium import BuiltInFunctions as appium
+        elif module == 'selenium':
+            global selenium
+            from Framework.Built_In_Automation.Web.Selenium import BuiltInFunctions as selenium
+        elif module == 'rest':
+            global rest
+            from Framework.Built_In_Automation.Web.REST import BuiltInFunctions as rest
+        elif module == 'utility':
+            global utility
+            from Framework.Built_In_Automation.Built_In_Utility.CrossPlatform import BuiltInUtilityFunction as utility
+        elif module == 'xml':
+            global xml
+            from Framework.Built_In_Automation.XML import BuiltInFunctions_XML as xml
+        elif module == 'desktop':
+            global desktop
+            from Framework.Built_In_Automation.Desktop.CrossPlatform import BuiltInFunctions as desktop
+        else:
+            CommonUtil.ExecLog(sModuleInfo, "Invalid sequential actions module: %s" % module, 3)
+            return 'failed'
+    except:
+        return CommonUtil.Exception_Handler(sys.exc_info())
     return 'passed'
 
 def Sequential_Actions(step_data, _dependency = {}, _run_time_params = '', _file_attachment = {}, _temp_q = '',screen_capture='Desktop'):

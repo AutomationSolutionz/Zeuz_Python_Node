@@ -23,7 +23,7 @@ dependency = None
 if Shared_Resources.Test_Shared_Variables('dependency'): # Check if driver is already set in shared variables
     dependency = Shared_Resources.Get_Shared_Variables('dependency') # Retreive appium driver
 else:
-    CommonUtil.ExecLog(__name__ + " : " + __file__, "No dependency set - Cannot run", 3)
+    raise ValueError("No dependency set - Cannot run")
 
 # Recall file attachment, if not already set
 file_attachment = []

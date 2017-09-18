@@ -44,10 +44,12 @@ selenium_driver = None
 if Shared_Resources.Test_Shared_Variables('selenium_driver'): # Check if driver is already set in shared variables
     selenium_driver = Shared_Resources.Get_Shared_Variables('selenium_driver') # Retreive appium driver
 
-global dependency
+# Recall dependency, if not already set
 dependency = None
 if Shared_Resources.Test_Shared_Variables('dependency'): # Check if driver is already set in shared variables
-    dependency = Shared_Resources.Get_Shared_Variables('dependency') # Retreive selenium driver
+    dependency = Shared_Resources.Get_Shared_Variables('dependency') # Retreive appium driver
+else:
+    raise ValueError("No dependency set - Cannot run")
 
 
 
