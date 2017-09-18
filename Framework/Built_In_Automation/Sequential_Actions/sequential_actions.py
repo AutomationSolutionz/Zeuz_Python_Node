@@ -130,6 +130,7 @@ actions = { # Numbers are arbitrary, and are not used anywhere
     709: {'module': 'desktop', 'name': 'move', 'function': 'move_mouse'},
     710: {'module': 'desktop', 'name': 'teardown', 'function': 'teardown'},
     711: {'module': 'desktop', 'name': 'drag', 'function': 'Drag_Element'},
+    712: {'module': 'desktop', 'name': 'listbox', 'function': 'navigate_listbox'},
 }
 
 # List of Sub-Field keywords, must be all lowercase, and using single spaces - no underscores

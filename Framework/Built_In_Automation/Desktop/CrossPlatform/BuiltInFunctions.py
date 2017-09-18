@@ -611,4 +611,60 @@ def Drag_Element(data_set):
         errMsg = "Error while trying to perform drag action"
         return CommonUtil.Exception_Handler(sys.exc_info(),None,errMsg)
     
+def navigate_listbox(data_set):
+    ''' Scroll listbox until image element is found or timeout is hit '''
+    # Continually presses page down and checks for the image
+    # Assumptions: Listbox already has focus - user ought to use click action to click on the listbox, or the drop down menu's arrow
+    # Assumptions: User has image of the list item they want to find
+    # Produces: Pass/Fail - User is responsible for performing the action they desire now that the listbox is where their element is visible
+    
+    sModuleInfo = inspect.stack()[0][3] + " : " + inspect.getmoduleinfo(__file__).name
+    CommonUtil.ExecLog(sModuleInfo,"Function Start", 0)
+    
+    # Maximum number of tries to find the element. Have no way of knowing when we hit the last list item, so we have to hard code a value
+    max_tries = 10
+    
+    # Delay before checking for image element
+    delay = 1
+    
+    # Parse data set
+    try:
+        file_name = ''
+        for row in data_set:
+            if row[1] == 'element parameter':
+                file_name = row[2]
+            elif row[1] == 'action':
+                try:
+                    delay = int(row[2]) # Test if user specified a delay on the action line
+                    CommonUtil.ExecLog(sModuleInfo, "Using customer specified delay of %d" % delay, 1)
+                except: delay = 1 # Default delay - user did not specify
+        
+        if file_name == '':
+            CommonUtil.ExecLog(sModuleInfo, "Valid element not found. Expected Sub-Field to be 'element parameter', and Value to be a filename", 3)
+            return 'failed'
+    except Exception:
+        errMsg = "Error parsing data set"
+        return CommonUtil.Exception_Handler(sys.exc_info(),None,errMsg)
+    
+    # Perform action
+    try:
+        # Get coordinates for source and destiniation
+        for i in range(max_tries):
+            CommonUtil.ExecLog(sModuleInfo, "Checking listbox for element", 0)
+            element = LocateElement.Get_Element(data_set, gui) # (x, y, w, h)
+            if element in failed_tag_list: # Error reason logged by Get_Element
+                CommonUtil.ExecLog(sModuleInfo, "Could not locate element - trying a new position. Attempt #%d" % i, 0)
+                gui.hotkey('pgdn')
+                time.sleep(delay) # Wait for listbox to update
+            else:
+                CommonUtil.ExecLog(sModuleInfo, "Found element", 1)
+                return 'passed'
+        
+        CommonUtil.ExecLog(sModuleInfo, "Could not locate element after %d attempts" % max_tries, 3)
+        return 'failed'
+    
+    except Exception:
+        errMsg = "Error while trying to perform drag action"
+        return CommonUtil.Exception_Handler(sys.exc_info(),None,errMsg)
+    
     
