@@ -10,11 +10,9 @@ Created on May 15, 2016
 import pyautogui as gui # https://pyautogui.readthedocs.io/en/latest/
 import os, os.path, sys, time, inspect, subprocess
 from Framework.Utilities import CommonUtil, FileUtilities  as FL
-#from Framework.Built_In_Automation.Desktop.CrossPlatform import DesktopAutomation as da
 from Framework.Built_In_Automation.Built_In_Utility.CrossPlatform import BuiltInUtilityFunction as FU
 from Framework.Built_In_Automation.Shared_Resources import BuiltInFunctionSharedResources as Shared_Resources
 from Framework.Utilities.CommonUtil import passed_tag_list, failed_tag_list, skipped_tag_list # Allowed return strings, used to normalize pass/fail
-from Framework.Built_In_Automation.Shared_Resources import BuiltInFunctionSharedResources as sr
 from Framework.Built_In_Automation.Shared_Resources import LocateElement
 
 # Valid image positions
@@ -29,8 +27,8 @@ else:
 
 # Recall file attachment, if not already set
 file_attachment = []
-if sr.Test_Shared_Variables('file_attachment'):
-    file_attachment = sr.Get_Shared_Variables('file_attachment')
+if Shared_Resources.Test_Shared_Variables('file_attachment'):
+    file_attachment = Shared_Resources.Get_Shared_Variables('file_attachment')
 
 ''' **************************** Helper functions **************************** '''
 
@@ -158,6 +156,7 @@ def Enter_Text(data_set):
 def Keystroke_For_Element(data_set):
     ''' Insert characters - mainly key combonations'''
     # Example: Ctrl+c
+    # Repeats keypress if a number follows, example: tab,3 
     
     sModuleInfo = inspect.stack()[0][3] + " : " + inspect.getmoduleinfo(__file__).name
     CommonUtil.ExecLog(sModuleInfo,"Function Start", 0)
@@ -216,7 +215,8 @@ def close_program(data_set):
     except Exception:
         errMsg = "Error parsing data set"
         return CommonUtil.Exception_Handler(sys.exc_info(),None,errMsg)
-    
+
+    # Perform action    
     try:
         if dependency['PC'].lower() == 'linux' or dependency['PC'].lower() == 'mac':
             command = 'pkill -f '+ program_name # Try Process Kill with full command checking set, which finds most programs automatically
@@ -258,7 +258,7 @@ def close_program(data_set):
         return CommonUtil.Exception_Handler(sys.exc_info(),None,errMsg)
 
 def move_mouse(data_set):
-    ''' Hover over element or move to coordinates '''
+    ''' Hover over element or move to specified x,y coordinates '''
 
     sModuleInfo = inspect.stack()[0][3] + " : " + inspect.getmoduleinfo(__file__).name
     CommonUtil.ExecLog(sModuleInfo,"Function Start", 0)
@@ -297,6 +297,7 @@ def move_mouse(data_set):
     except Exception:
         errMsg = "Error parsing data set"
         return CommonUtil.Exception_Handler(sys.exc_info(),None,errMsg)    
+
     # Perform action
     try:
         if cmd == 'hover':
@@ -451,15 +452,26 @@ def check_for_element(data_set):
 
 
 def launch_program(data_set):
-    ''' Read the Exec line from a Linux icon file '''
+    ''' Execute a program or desktop icon '''
+    # If a linux desktop icon filename is specified, then it will read the file, and extract the Exec line to execute it directly
+    # Anything else is executed, including if it's an attachment
 
     sModuleInfo = inspect.stack()[0][3] + " : " + inspect.getmoduleinfo(__file__).name
     CommonUtil.ExecLog(sModuleInfo, "Function Start", 0)
 
+    # Parse data set
     try:
         file_name = data_set[0][2] # Get filename from data set
         Command = ''
+        if file_name == '':
+            CommonUtil.ExecLog(sModuleInfo, "Value field empty. Expected filename or full file path", 3)
+            return 'failed'
+    except:
+        errMsg = "Error parsing data set"
+        return CommonUtil.Exception_Handler(sys.exc_info(), None, errMsg)
 
+    # Execute program    
+    try:
         # Check if filename from data set is an icon file on the desktop by using full or partial match
         path = os.path.join(FU.get_home_folder(), 'Desktop') # Prepare path for desktop if needed
         files = [f for f in os.listdir(path) if os.path.isfile(os.path.join(path, f))] # Get list of files in specified directory
@@ -516,7 +528,6 @@ def teardown(data_set):
     
     # Cleanup shared variables
     Shared_Resources.Clean_Up_Shared_Variables()
-        
     return 'passed'
 
 def Drag_Element(data_set):

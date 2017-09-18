@@ -93,7 +93,7 @@ def Test_Shared_Variables(key):
             return "failed"
         else:  # Valid input
             if key in shared_variables:  # Test if key/variable exists
-                CommonUtil.ExecLog(sModuleInfo, "Variable %s exists" % key, 1)
+                CommonUtil.ExecLog(sModuleInfo, "Variable %s exists" % key, 0)
                 return True
             else:
                 CommonUtil.ExecLog(sModuleInfo, "No Such variable named '%s' found in shared variables" % key, 0)
@@ -261,13 +261,13 @@ def Compare_Variables(step_data):
                 result.append(False)
                 fail_count+=1
 
-        CommonUtil.ExecLog(sModuleInfo,"###Variable Comaparison Results###",1)
-        CommonUtil.ExecLog(sModuleInfo,"Matched Variables: %d"%pass_count,1)
+        CommonUtil.ExecLog(sModuleInfo,"###Variable Comaparison Results###",0)
+        CommonUtil.ExecLog(sModuleInfo,"Matched Variables: %d"%pass_count,0)
         CommonUtil.ExecLog(sModuleInfo, "Not Matched Variables: %d" % fail_count, 1)
 
         for i in range(0, len(variable_list1)):
             if result[i] == True:
-                CommonUtil.ExecLog(sModuleInfo,"Item %d. %s %s - %s :: %s %s - %s : Matched"%(i+1,variable_list1[i][0],variable_list1[i][1],variable_list1[i][2],variable_list2[i][0],variable_list2[i][1],variable_list2[i][2]),1)
+                CommonUtil.ExecLog(sModuleInfo,"Item %d. %s %s - %s :: %s %s - %s : Matched"%(i+1,variable_list1[i][0],variable_list1[i][1],variable_list1[i][2],variable_list2[i][0],variable_list2[i][1],variable_list2[i][2]),0)
             else:
                 CommonUtil.ExecLog(sModuleInfo, "Item %d. %s %s - %s :: %s %s - %s : Not Matched" % (i + 1, variable_list1[i][0], variable_list1[i][1], variable_list1[i][2], variable_list2[i][0],variable_list2[i][1], variable_list2[i][2]),3)
 
@@ -304,14 +304,14 @@ def Compare_Lists(step_data):
                     ignore_extra = False
 
         if list1_name == '' or list2_name == '':
-            CommonUtil.ExecLog(sModuleInfo,"The information in the data-set(s) are incorrect. Please provide accurate data set(s) information.",3)
+            CommonUtil.ExecLog(sModuleInfo,"Error parsing data set. Expected Field and Value fields to be set",3)
             return "failed"
 
         list1 = Get_List_from_Shared_Variables(list1_name)
         list2 = Get_List_from_Shared_Variables(list2_name)
 
         if list1 in failed_tag_list or list2 in failed_tag_list:
-            CommonUtil.ExecLog(sModuleInfo,"The information in the data-set(s) are incorrect. Please provide accurate data set(s) information.",3)
+            CommonUtil.ExecLog(sModuleInfo,"Error converting Shared Variable in Field or Value fields to strings",3)
             return "failed"
 
         for key in list1:
@@ -362,13 +362,13 @@ def Compare_Lists(step_data):
                     result.append('extra')
                     taken.append(key)
 
-        CommonUtil.ExecLog(sModuleInfo,"###Comaparison Results of List '%s' and List '%s'###"%(list1_name,list2_name),1)
-        CommonUtil.ExecLog(sModuleInfo,"Matched Variables: %d"%pass_count,1)
+        CommonUtil.ExecLog(sModuleInfo,"###Comaparison Results of List '%s' and List '%s'###"%(list1_name,list2_name),0)
+        CommonUtil.ExecLog(sModuleInfo,"Matched Variables: %d"%pass_count,0)
         CommonUtil.ExecLog(sModuleInfo, "Not Matched Variables: %d" % fail_count, 1)
         CommonUtil.ExecLog(sModuleInfo, "Extra Variables: %d" % extra_count, 1)
         for i in range(0, len(variable_list1)):
             if result[i] == 'pass':
-                CommonUtil.ExecLog(sModuleInfo,"Item %d. Variable Name : %s :: %s - %s : Matched"%(i+1,variable_list1[i][0],variable_list1[i][1],variable_list2[i][1]),1)
+                CommonUtil.ExecLog(sModuleInfo,"Item %d. Variable Name : %s :: %s - %s : Matched"%(i+1,variable_list1[i][0],variable_list1[i][1],variable_list2[i][1]),0)
             elif result[i] == 'fail':
                 CommonUtil.ExecLog(sModuleInfo, "Item %d. Variable Name : %s :: %s - %s : Not Matched" % (i + 1, variable_list1[i][0], variable_list1[i][1], variable_list2[i][1]), 1)
             else:
@@ -395,7 +395,7 @@ def Initialize_List(step_data):
     try:
         if ((len(step_data) != 1)):
             CommonUtil.ExecLog(sModuleInfo,
-                               "The information in the data-set(s) are incorrect. Please provide accurate data set(s) information.",
+                               "Error parsing data set. Too many rows. Expected only the action row.",
                                3)
             return "failed"
         else:
