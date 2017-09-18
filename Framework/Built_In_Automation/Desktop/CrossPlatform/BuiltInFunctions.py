@@ -131,6 +131,7 @@ def Enter_Text(data_set):
             CommonUtil.ExecLog(sModuleInfo, "Trying to locate element", 0)
             element = LocateElement.Get_Element(data_set, gui) # (x, y, w, h)
             if element in failed_tag_list: # Error reason logged by Get_Element
+                CommonUtil.ExecLog(sModuleInfo, "Could not locate element", 3)
                 return 'failed'
             
             # Get coordinates for position user specified
@@ -303,6 +304,7 @@ def move_mouse(data_set):
             CommonUtil.ExecLog(sModuleInfo, "Performing %s action on file %s" % (cmd, file_name), 0)
             element = LocateElement.Get_Element(data_set, gui) # (x, y, w, h)
             if element in failed_tag_list: # Error reason logged by Get_Element
+                CommonUtil.ExecLog(sModuleInfo, "Could not locate element", 3)
                 return 'failed'
             
             # Get coordinates for position user specified
@@ -383,6 +385,7 @@ def Click_Element(data_set):
         CommonUtil.ExecLog(sModuleInfo, "Performing %s action on file %s" % (cmd, file_name), 0)
         element = LocateElement.Get_Element(data_set, gui) # (x, y, w, h)
         if element in failed_tag_list: # Error reason logged by Get_Element
+            CommonUtil.ExecLog(sModuleInfo, "Could not locate element", 3)
             return 'failed'
         
         # Get coordinates for position user specified
@@ -517,8 +520,7 @@ def teardown(data_set):
     return 'passed'
 
 def Drag_Element(data_set):
-    ''' Drag element from one location to the next '''
-    # !!!! Not yet working !!!!
+    ''' Drag element from source to destination '''
     
     sModuleInfo = inspect.stack()[0][3] + " : " + inspect.getmoduleinfo(__file__).name
     CommonUtil.ExecLog(sModuleInfo,"Function Start", 0)
@@ -527,6 +529,7 @@ def Drag_Element(data_set):
     try:
         cmd = ''
         file_name = ''
+        src_file_name = ''
         position = 'centre'
         for row in data_set:
             if row[1] == 'action':
@@ -535,6 +538,8 @@ def Drag_Element(data_set):
                     position = row[2]
             elif row[1] == 'element parameter':
                 file_name = row[2]
+            elif row[1] == 'source parameter':
+                src_file_name = row[2]
         
         if cmd == '':
             CommonUtil.ExecLog(sModuleInfo, "Valid action not found. Expected Field set to 'click' or 'doubleclick', and the Value one of: %s" % str(positions), 3)
@@ -546,41 +551,42 @@ def Drag_Element(data_set):
             CommonUtil.ExecLog(sModuleInfo, "Valid element not found. Expected Sub-Field to be 'element parameter', and Value to be a filename", 3)
             return 'failed'
         
+        if src_file_name == '':
+            CommonUtil.ExecLog(sModuleInfo, "Valid element not found. Expected Sub-Field to be 'source parameter', and Value to be a filename", 3)
+            return 'failed'
+        
     except Exception:
         errMsg = "Error parsing data set"
         return CommonUtil.Exception_Handler(sys.exc_info(),None,errMsg)
     
     # Perform action
     try:
-        # Find image coordinates for destination element
-        CommonUtil.ExecLog(sModuleInfo, "Performing %s action on file %s" % (cmd, file_name), 0)
-        element = LocateElement.Get_Element(data_set, gui) # (x, y, w, h)
-        if element in failed_tag_list: # Error reason logged by Get_Element
-            return 'failed'
-
-        # Find image coordinates for source element
-        CommonUtil.ExecLog(sModuleInfo, "Performing %s action on file %s" % (cmd, file_name), 0)
-        element = LocateElement.Get_Element(data_set, gui) # (x, y, w, h)
-        if element in failed_tag_list: # Error reason logged by Get_Element
-            return 'failed'
-        
-        # SOURCE - Get coordinates for position user specified
-        x, y = getCoordinates(element, position) # Find coordinates (x,y)
-        if x in failed_tag_list: # Error reason logged by Get_Element
-            CommonUtil.ExecLog(sModuleInfo, "Error calculating coordinates", 3)
-            return 'failed'
-        CommonUtil.ExecLog(sModuleInfo, "Image coordinates on screen %d x %d" % (x, y), 0)
-
-        # DESTINATION  Get coordinates for position user specified
-        x, y = getCoordinates(element, position) # Find coordinates (x,y)
-        if x in failed_tag_list: # Error reason logged by Get_Element
-            CommonUtil.ExecLog(sModuleInfo, "Error calculating coordinates", 3)
-            return 'failed'
-        CommonUtil.ExecLog(sModuleInfo, "Image coordinates on screen %d x %d" % (x, y), 0)
+        # Get coordinates for source and destiniation
+        for filename in (file_name, src_file_name):
+            tmp_data_set = [('image', 'element parameter', filename)]
+            # Find image coordinates for destination element
+            CommonUtil.ExecLog(sModuleInfo, "Performing %s action on file %s" % (cmd, filename), 0)
+            element = LocateElement.Get_Element(tmp_data_set, gui) # (x, y, w, h)
+            if element in failed_tag_list: # Error reason logged by Get_Element
+                CommonUtil.ExecLog(sModuleInfo, "Could not locate element: %s" % filename, 3)
+                return 'failed'
+    
+            # DESTINATION  Get coordinates for position user specified
+            x, y = getCoordinates(element, position) # Find coordinates (x,y)
+            if x in failed_tag_list: # Error reason logged by Get_Element
+                CommonUtil.ExecLog(sModuleInfo, "Error calculating coordinates", 3)
+                return 'failed'
+            CommonUtil.ExecLog(sModuleInfo, "Image coordinates on screen %d x %d" % (x, y), 0)
+            
+            # Put the x,y in usable variables
+            if filename == file_name:
+                dst_x, dst_y = x, y
+            else:
+                src_x, src_y = x, y
 
         # Drag source to destination
-        gui.moveTo(x, y) # Move to source
-        result = gui.dragTo(x, y, button = 'left') # Click and drag to destination, then release
+        gui.moveTo(src_x, src_y) # Move to source
+        result = gui.dragTo(dst_x, dst_y, 2, button = 'left') # Click and drag to destination, taking two seconds, then release - the 2 seconds is important for some drags because without the time, it happens too fast and the drag command is missed by the window manager
 
         # Check result and return
         if result in failed_tag_list:

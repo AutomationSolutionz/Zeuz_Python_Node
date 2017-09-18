@@ -129,6 +129,7 @@ actions = { # Numbers are arbitrary, and are not used anywhere
     708: {'module': 'desktop', 'name': 'check', 'function': 'check_for_element'},
     709: {'module': 'desktop', 'name': 'move', 'function': 'move_mouse'},
     710: {'module': 'desktop', 'name': 'teardown', 'function': 'teardown'},
+    711: {'module': 'desktop', 'name': 'drag', 'function': 'Drag_Element'},
 }
 
 # List of Sub-Field keywords, must be all lowercase, and using single spaces - no underscores
@@ -149,7 +150,8 @@ action_support = [
     'path',
     'value',
     'result',
-    'table parameter'
+    'table parameter',
+    'source parameter'
 ]
 
 # List of supported mobile platforms - must be lower case
