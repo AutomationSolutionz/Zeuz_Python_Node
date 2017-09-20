@@ -414,12 +414,16 @@ def _pyautogui(step_data_set):
             CommonUtil.ExecLog(sModuleInfo, "Scaling image (%s)" % match.group(0), 0)
             size_w, size_h = int(match.group(1)), int(match.group(2)) # Extract width, height from match (is screen resolution of desktop image was taken on)
             file_name = _scale_image(file_name, size_w, size_h) # Scale image element
-            file_name_parent = _scale_image(file_name_parent, size_w, size_h) # Scale parent image element
+            if file_name_parent != '': file_name_parent = _scale_image(file_name_parent, size_w, size_h) # Scale parent image element
         else:
             CommonUtil.ExecLog(sModuleInfo, "Not scaling image", 0)
         
         # Find image on screen (file_name here is either an actual directory/file or a PIL image object after scaling)
         element = pyautogui.locateAllOnScreen(file_name, grayscale=True) # Get coordinates of element. Use greyscale for increased speed and better matching across machines. May cause higher number of false-positives
+#         if len(tuple(tmp)) == 0: # !!! This should work, but accessing the generator causes it to lose one or more of it's results, thus causing an error when we  try to use it with a single image
+#             print ">>>>IN", element
+#             CommonUtil.ExecLog(sModuleInfo, "Image element not found", 0)
+#             return 'failed'
         
         ################################################################################
         ######################### ALL PIECES SET - FIND ELEMENT ########################
@@ -435,6 +439,9 @@ def _pyautogui(step_data_set):
             
             # Get coordinates of reference image
             element_parent = pyautogui.locateOnScreen(file_name_parent, grayscale=True)
+            if element_parent == None:
+                CommonUtil.ExecLog(sModuleInfo, "Reference image not found", 0)
+                return 'failed'
             
             # Initialize variables
             parent_centre = element_parent[0] + int(element_parent[2] / 2), element_parent[1] + int(element_parent[3] / 2) # Calculate centre coordinates of parent

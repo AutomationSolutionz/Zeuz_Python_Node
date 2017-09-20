@@ -914,38 +914,58 @@ def Copy_File_or_Folder(step_data):
 
 
 # Method to delete file/folder
-def Delete_File_or_Folder(step_data):
+def Delete_File_or_Folder(data_set):
     sModuleInfo = inspect.stack()[0][3] + " : " + inspect.getmoduleinfo(__file__).name
     CommonUtil.ExecLog(sModuleInfo, "Function start", 0)
+    
+    # Parse data set
     try:
-        if _platform == "linux" or _platform == "linux2" or _platform == "darwin":
-
-            path = get_home_folder() + str(step_data[0][2]).strip()  # path of the file/folder to be deleted
-        elif _platform == "win32":
-            path = raw(str(step_data[0][2]).strip())
-        file_or_folder = str(step_data[1][2]).strip()  # get if it is file/folder to delete
-
-        if file_or_folder.lower() == 'file':
-                # delete file "path"
-            result = DeleteFile(path)
-            if result in failed_tag_list:
-                CommonUtil.ExecLog(sModuleInfo, "Could not delete file '%s'" % (path), 3)
-                return "failed"
-            else:
-                CommonUtil.ExecLog(sModuleInfo, "File '%s' deleted successfully" % (path), 1)
-                return "passed"
-        elif file_or_folder.lower() == 'folder':
-                # delte folder "path"
-            result = DeleteFolder(path)
-            if result in failed_tag_list:
-                CommonUtil.ExecLog(sModuleInfo, "Could not delete folder '%s'" % (path), 3)
-                return "failed"
-            else:
-                CommonUtil.ExecLog(sModuleInfo, "Folder '%s' deleted successfully" % (path), 1)
-                return "passed"
-        else:
-            CommonUtil.ExecLog(sModuleInfo, "The information in the data-set(s) are incorrect. Please provide accurate data set(s) information.", 3)
+        filename = ''
+        path = ''
+        for row in data_set:
+            if row[1] == 'action':
+                if row[2] in ('file', 'folder'): continue # Skip these old methods
+                filename = row[2].strip()
+            elif row[1] in ('path', 'element paraneter') and filename == '': # Just in case someone used a second row to specify the filename, we'll use that
+                filename = row[2].strip()
+        
+        if filename == '':
+            CommonUtil.ExecLog(sModuleInfo,"Could not find filename or path to file in Value field of action line", 3)
             return 'failed'
+        
+    except Exception:
+        return CommonUtil.Exception_Handler(sys.exc_info(), None, "Error parsing data set")
+    
+    # Perform action
+    try:
+        if os.path.exists(filename) == False: # Check if file exists as it is (local directory or fully specified), if not...
+            tmp = filename # Save copy of filename to work with it
+            if tmp[:1] == os.sep: tmp = tmp[1:] # If it has a leading slash, remove it
+            tmp = os.path.join(get_home_folder(), tmp)  # path of the file/folder to be deleted, in case user specified path relative to home directory
+            if os.path.exists(tmp) == False: # Check if file is in home directory, or path is partially specified, we'll complete it with the home directory
+                CommonUtil.ExecLog(sModuleInfo,"Could not find file in attachments, home directory or in the local directory: %s" % filename, 3)
+                return 'failed'
+            else:
+                filename = tmp # Save the constructed path
+        # Should now have a full path to the filename
+            
+
+        # Delete file/directory
+        if os.path.isfile(filename):
+            result = DeleteFile(filename)
+        elif os.path.isdir(filename):
+            result = DeleteFolder(filename)
+        else:
+            CommonUtil.ExecLog(sModuleInfo, "File/directory specified does exist, but is neither a file nor a directory. It could not be deleted", 3)
+            return 'failed'
+        
+        # Verify result
+        if result in failed_tag_list:
+            CommonUtil.ExecLog(sModuleInfo, "Could not delete file '%s'" % (filename), 3)
+            return "failed"
+        else:
+            CommonUtil.ExecLog(sModuleInfo, "File '%s' deleted successfully" % (filename), 1)
+            return "passed"
 
 
     except Exception:
