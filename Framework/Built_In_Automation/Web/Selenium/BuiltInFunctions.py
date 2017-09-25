@@ -160,15 +160,31 @@ def Go_To_Link(step_data, page_title=False):
     #this function needs work with validating page title.  We need to check if user entered any title.
     #if not then we don't do the validation
     sModuleInfo = inspect.stack()[0][3] + " : " + inspect.getmoduleinfo(__file__).name
+    
+    # Open browser and create driver if user has not already done so
     try:
-        web_link=step_data[0][2]
-        selenium_driver.get(web_link)
-        selenium_driver.implicitly_wait(WebDriver_Wait)
+        if Shared_Resources.Test_Shared_Variables('selenium_driver') == False:
+            CommonUtil.ExecLog(sModuleInfo, "Browser not previously opened, doing so now", 1)
+            global dependency
+            # Get the dependency again in case it was missed
+            if Shared_Resources.Test_Shared_Variables('dependency'): # Check if driver is already set in shared variables
+                dependency = Shared_Resources.Get_Shared_Variables('dependency') # Retreive selenium driver
+        
+    
+            result = Open_Browser(dependency)
+            if result in failed_tag_list:
+                return 'failed'
+    except Exception:
+        ErrorMessage =  "failed to open browser"
+        return CommonUtil.Exception_Handler(sys.exc_info(), None, ErrorMessage)
+
+    # Open URL in browser
+    try:
+        web_link=step_data[0][2] # Save Value field (URL)
+        selenium_driver.get(web_link) # Open in browser
+        selenium_driver.implicitly_wait(WebDriver_Wait) # Wait for page to load
         CommonUtil.ExecLog(sModuleInfo, "Successfully opened your link: %s" % web_link, 1)
         CommonUtil.TakeScreenShot(sModuleInfo)
-#         if page_title != False:
-#             assert page_title in selenium_driver.title
-        #time.sleep(3)
         return "passed"
     except Exception:
         ErrorMessage =  "failed to open your link: %s" %(web_link)
