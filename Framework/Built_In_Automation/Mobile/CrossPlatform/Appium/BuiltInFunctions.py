@@ -254,13 +254,10 @@ def teardown_appium(data_set):
     try:
         CommonUtil.ExecLog(sModuleInfo,"Destroying Appium server", 0)
         appium_server = Shared_Resources.Get_Shared_Variables('appium_server') # Get the subprocess object
-        #Shared_Resources.Set_Shared_Variables('appium_server', '') # Remove shared variable
+        Shared_Resources.Set_Shared_Variables('appium_server', '') # Remove shared variable
         appium_server.kill() # Send kill appium process
     except:
         CommonUtil.ExecLog(sModuleInfo,"Error destroying Appium server - may already be down", 2)
-        
-    # Cleanup shared variables
-    Shared_Resources.Clean_Up_Shared_Variables()
         
     return 'passed'
 
