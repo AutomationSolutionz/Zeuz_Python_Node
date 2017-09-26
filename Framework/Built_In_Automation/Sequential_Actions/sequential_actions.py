@@ -180,6 +180,7 @@ if sr.Test_Shared_Variables('dependency'): # Check if driver is already set in s
 # Initialize bypass data set (need to be global, so separate test cases can access them)
 bypass_data_set = []
 bypass_row = []
+loaded_modules = []
 
 def load_sa_modules(module): # Load module "AS" must match module name we get from step data (See actions variable above)
     ''' Dynamically loads modules when needed '''
@@ -188,6 +189,9 @@ def load_sa_modules(module): # Load module "AS" must match module name we get fr
     CommonUtil.ExecLog(sModuleInfo,"Function Start", 0)
     
     try:
+        global loaded_modules
+        loaded_modules.append(module) # Save the module name - we need to check it under certain circumstances
+        
         if module == 'common':
             pass # Already imported at top of this file
         elif module == 'appium':
@@ -297,8 +301,13 @@ def Sequential_Actions(step_data, _dependency = {}, _run_time_params = '', _file
                     # Check result of action handler and use bypass action if specified
                     if stored == False and result in failed_tag_list:
                         if bypass_data_set != []: # User specified a bypass action, so let's try it before we fail
-                            #!!!Should we just call sequential actions again? or just call action_handler
+                            action_module = [x for x in loaded_modules if str(x) in str(row[1])] # Save module for the original action
                             for i in range(len(bypass_data_set)):
+                                bypass_module = [x for x in loaded_modules if str(x) in str(bypass_row[i][1])] # Save module for the bypass action
+                                if action_module != bypass_module:
+                                    CommonUtil.ExecLog(sModuleInfo, "Skipping bypass #%d because it's not the same module" % (i + 1), 1)
+                                    continue
+
                                 CommonUtil.ExecLog(sModuleInfo, "Action failed. Trying bypass #%d" % (i + 1), 1)
                                 result = Action_Handler(bypass_data_set[i], bypass_row[i])
                                 if result in failed_tag_list: # This also failed, so chances are first failure was real
