@@ -530,4 +530,16 @@ def Insert_Into_List(data_set):
     except Exception:
         return CommonUtil.Exception_Handler(sys.exc_info())
     
+def delete_all_shared_variables(data_set):
+    ''' Delete all shared variables - Wrapper for Clean_Up_Shared_Variables() '''
+    # To delete only one, use the action "save variable", and set it to an empty string
+    # Takes no inputs
     
+    sModuleInfo = inspect.stack()[0][3] + " : " + inspect.getmoduleinfo(__file__).name
+    CommonUtil.ExecLog(sModuleInfo,"Function Start", 0)
+
+    try:
+        return sr.Clean_Up_Shared_Variables()
+    except Exception:
+        return CommonUtil.Exception_Handler(sys.exc_info())
+

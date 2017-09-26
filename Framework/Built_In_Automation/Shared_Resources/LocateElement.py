@@ -288,7 +288,10 @@ def _get_xpath_or_css_element(element_query,css_xpath, index_number=False):
         else:
             return "failed"   
     except Exception:
-        return CommonUtil.Exception_Handler(sys.exc_info())     
+        #return CommonUtil.Exception_Handler(sys.exc_info())
+        # Don't want to show error messages from here, especially for wait_for_element()
+        CommonUtil.ExecLog(sModuleInfo, "Exception caught - %s" % str(sys.exc_info()), 0)
+        return 'failed'     
 
 def _locate_index_number(step_data_set):
     '''

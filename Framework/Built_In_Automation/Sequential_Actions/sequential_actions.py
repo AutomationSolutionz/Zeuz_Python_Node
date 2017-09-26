@@ -28,6 +28,7 @@ actions = { # Numbers are arbitrary, and are not used anywhere
     107: {'module': 'common', 'name': 'compare list', 'function': 'Compare_Lists'},
     108: {'module': 'common', 'name': 'insert into list', 'function': 'Insert_Into_List'},
     109: {'module': 'common', 'name': 'save variable', 'function': 'Save_Variable'},
+    110: {'module': 'common', 'name': 'delete shared variables', 'function': 'delete_all_shared_variables'},
     
     200: {'module': 'appium', 'name': 'click', 'function': 'Click_Element_Appium'},
     201: {'module': 'appium', 'name': 'text', 'function': 'Enter_Text_Appium'},
@@ -176,6 +177,9 @@ dependency = None
 if sr.Test_Shared_Variables('dependency'): # Check if driver is already set in shared variables
     dependency = sr.Get_Shared_Variables('dependency') # Retreive appium driver
 
+# Initialize bypass data set (need to be global, so separate test cases can access them)
+bypass_data_set = []
+bypass_row = []
 
 def load_sa_modules(module): # Load module "AS" must match module name we get from step data (See actions variable above)
     ''' Dynamically loads modules when needed '''
@@ -250,6 +254,14 @@ def Sequential_Actions(step_data, _dependency = {}, _run_time_params = '', _file
                 if action_name in action_support:
                     continue
 
+                # If middle coloumn = bypass action, store the data set for later use if needed
+                elif "bypass action" in action_name:
+                    CommonUtil.ExecLog(sModuleInfo, "Bypass action found, storing data set for later use", 1)
+                    global bypass_data_set, bypass_row
+                    bypass_data_set.append(data_set) # Save this data set - see "action" if block below for further processing
+                    bypass_row.append(row)
+                    result = 'passed'
+                    
                 # If middle column = action, call action handler, but always return a pass
                 elif "optional action" in action_name:
                     CommonUtil.ExecLog(sModuleInfo, "Checking the optional action to be performed in the action row: %s" % str(row), 0)
@@ -282,9 +294,25 @@ def Sequential_Actions(step_data, _dependency = {}, _run_time_params = '', _file
                             sr.Set_Shared_Variables(r[2].strip(), result) # Use the Value as the shared variable name, and save the result
                             stored = True # In the case of a failed result, skip the return that comes after this
                             
-                    # Check result of action handler 
+                    # Check result of action handler and use bypass action if specified
                     if stored == False and result in failed_tag_list:
-                        return "failed"
+                        if bypass_data_set != []: # User specified a bypass action, so let's try it before we fail
+                            #!!!Should we just call sequential actions again? or just call action_handler
+                            for i in range(len(bypass_data_set)):
+                                CommonUtil.ExecLog(sModuleInfo, "Action failed. Trying bypass #%d" % (i + 1), 1)
+                                result = Action_Handler(bypass_data_set[i], bypass_row[i])
+                                if result in failed_tag_list: # This also failed, so chances are first failure was real
+                                    continue # Try the next bypass, if any
+                                else: # Bypass passed, which indicates there was something blocking the element in the first place
+                                    CommonUtil.ExecLog(sModuleInfo, "Bypass passed. Retrying original action", 1)
+                                    result = Action_Handler(data_set, row) # Retry failed original data set
+                                    if result in failed_tag_list: # Still a failure, give up
+                                        return 'failed'
+                                    break # No need to process more bypasses
+                            if result in failed_tag_list: # All bypass actions failed
+                                return 'failed'
+                        else: # Yup, it's a failure, and no bypass specified
+                            return "failed"
                 
                 # Middle column not listed above, so data set is wrong
                 else:
@@ -463,6 +491,8 @@ def Action_Handler(_data_set, action_row):
         new_row = list(row)
         if 'optional' in row[1]:
             new_row[1] = new_row[1].replace('optional', '').strip()
+        if 'bypass' in row[1]:
+            new_row[1] = new_row[1].replace('bypass', '').strip()
         if module in row[1]:
             new_row[1] = new_row[1].replace(module, '').strip()
         if original_module != '' and original_module in row[1]:
