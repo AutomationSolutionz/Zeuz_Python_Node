@@ -116,6 +116,9 @@ def Result_Analyzer(sTestStepReturnStatus,temp_q):
         elif sTestStepReturnStatus in skipped_tag_list:
             temp_q.put("skipped")
             return "skipped"
+        elif sTestStepReturnStatus.lower() == 'cancelled': # Special use to stop a scheduled run without failing it
+            temp_q.put("cancelled")
+            return "cancelled"
         else:
             ExecLog(sModuleInfo,"Step return type unknown: %s. The last function did not return a valid type (passed/failed/etc)" %(sTestStepReturnStatus),3)
             temp_q.put("failed")

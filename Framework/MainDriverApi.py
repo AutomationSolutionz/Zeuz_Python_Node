@@ -377,6 +377,8 @@ def call_driver_function_of_test_step(sModuleInfo, TestStepsList, StepSeq, step_
                     sStepResult = 'FAILED'
                 elif sStepResult in skipped_tag_list:
                     sStepResult = 'SKIPPED'
+                elif sStepResult.upper() == CANCELLED_TAG.upper():
+                    sStepResult = 'CANCELLED'
                 else:
                     CommonUtil.ExecLog(sModuleInfo, "sStepResult not an acceptable type", 3)
                     CommonUtil.ExecLog(sModuleInfo, "Acceptable pass string(s): %s" % (passed_tag_list), 3)
@@ -538,6 +540,9 @@ def calculate_test_case_result(sModuleInfo, TestCaseID, run_id, sTestStepResultL
     if 'BLOCKED' in sTestStepResultList:
         CommonUtil.ExecLog(sModuleInfo, "Test Case Blocked", 3)
         sTestCaseStatus = "Blocked"
+    elif 'CANCELLED' in sTestStepResultList:
+        CommonUtil.ExecLog(sModuleInfo, "Test Case Cancelled", 3)
+        sTestCaseStatus = "CANCELLED"
     elif 'FAILED' in sTestStepResultList:
         CommonUtil.ExecLog(sModuleInfo, "Test Case Failed", 3)
         step_index = 1
