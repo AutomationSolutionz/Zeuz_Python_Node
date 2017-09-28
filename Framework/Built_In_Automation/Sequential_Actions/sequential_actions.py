@@ -53,6 +53,7 @@ actions = { # Numbers are arbitrary, and are not used anywhere
     220: {'module': 'appium', 'name': 'storage', 'function': 'device_information'},
     221: {'module': 'appium', 'name': 'reboot', 'function': 'device_information'},
     222: {'module': 'appium', 'name': 'phone name', 'function': 'device_information'},
+    223: {'module': 'appium', 'name': 'device password', 'function': 'set_device_password'},
 
     300: {'module': 'rest', 'name': 'save response', 'function': 'Get_Response'},
     
@@ -319,6 +320,7 @@ def Sequential_Actions(step_data, _dependency = {}, _run_time_params = '', _file
                                         return 'failed'
                                     break # No need to process more bypasses
                             if result in failed_tag_list: # All bypass actions failed
+                                CommonUtil.ExecLog(sModuleInfo, "All bypass actions failed", 3)
                                 return 'failed'
                         else: # Yup, it's a failure, and no bypass specified
                             return "failed"

@@ -197,7 +197,11 @@ def start_appium_driver(package_name = '', activity_name = '', filename = ''):
                     CommonUtil.ExecLog(sModuleInfo, "Could not detect any connected Android devices", 3)
                     return 'failed'
 
-                adbOptions.wake_android() # Send wake up command to avoid issues with devices ignoring appium when they are in lower power mode (android 6.0+)
+                # Send wake up command to avoid issues with devices ignoring appium when they are in lower power mode (android 6.0+), and unlock if passworded
+                result = adbOptions.wake_android()
+                if result in failed_tag_list:
+                    return 'failed'
+                
                 CommonUtil.ExecLog(sModuleInfo,"Setting up with Android",1)
                 desired_caps['platformVersion'] = adbOptions.get_android_version().strip()
                 desired_caps['deviceName'] = adbOptions.get_device_model().strip()
@@ -1433,3 +1437,25 @@ def device_information(data_set):
         return 'passed'
     except Exception:
         return CommonUtil.Exception_Handler(sys.exc_info())
+
+def set_device_password(data_set):
+    ''' Saves the device password to shared variables for use in unlocking the phone '''
+    # Caveat: Only allows one password stored at a time
+    
+    sModuleInfo = inspect.stack()[0][3] + " : " + inspect.getmoduleinfo(__file__).name
+    CommonUtil.ExecLog(sModuleInfo,"Function Start", 0)
+
+    # Parse data set
+    try:
+        password = data_set[0][2].strip() # Read password from Value field
+        if password != '':
+            Shared_Resources.Set_Shared_Variables('device_password', password)
+            CommonUtil.ExecLog(sModuleInfo, "Device password saved as: %s" % password, 1)
+            return 'passed'
+        else:
+            CommonUtil.ExecLog(sModuleInfo, "Password cannot be blank. Expected Value field of action row to be a PIN or PASSWORD", 3)
+            return 'failed'
+        
+    except Exception:
+        return CommonUtil.Exception_Handler(sys.exc_info(), None, "Error when trying to read Field and Value for action")
+

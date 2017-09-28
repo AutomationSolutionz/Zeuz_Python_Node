@@ -3,8 +3,9 @@
 
 #Android Debug Bridge (ADB) options to get the android devices info connected via usb/wi-fi
 __author__='minar'
-import subprocess, inspect, os, sys, re, math
+import subprocess, inspect, os, sys, re, math, time
 from Framework.Utilities import CommonUtil
+from Framework.Built_In_Automation.Shared_Resources import BuiltInFunctionSharedResources as sr
 
 def start_adb_server():
     sModuleInfo = inspect.stack()[0][3] + " : " + inspect.getmoduleinfo(__file__).name
@@ -318,19 +319,73 @@ def wake_android():
     
     sModuleInfo = inspect.stack()[0][3] + " : " + inspect.getmoduleinfo(__file__).name
     try:
+        # Get screen size, and calculate swipe gesture to get to home screen
         output = subprocess.check_output("adb shell wm size", shell=True) # Need size for swipe calculation
         m = re.search('(\d+)x(\d+)', output) # Find w and h using regular expression
         w, h = (m.group(1), m.group(2)) # Save w and h
         spos = int(int(h) * 0.7) # Calculate 70% of height as starting position
         epos = int(int(h) * 0.1) # Calculate 10% of height as ending position
         centre = int(int(w) / 2) # Calculate centre of screen horizontally
-        output = subprocess.check_output("adb shell input keyevent KEYCODE_WAKEUP", shell=True) # Send wakeup command (puts us on lock screen)
-        output = subprocess.check_output("adb shell input touchscreen swipe %d %d %d %d" % (centre, spos, centre, epos), shell=True) # Send vertical swipe command (takes us to home screen)
+        
+        # Wake device and send swipe gesture
+        subprocess.check_output("adb shell input keyevent KEYCODE_WAKEUP", shell=True) # Send wakeup command (puts us on lock screen)
+        subprocess.check_output("adb shell input touchscreen swipe %d %d %d %d" % (centre, spos, centre, epos), shell=True) # Send vertical swipe command (takes us to home screen)
         CommonUtil.ExecLog(sModuleInfo, "Waking device", 0)
-        return output
+        
+        # If there is a password, handle it
+        output = detect_foreground_android() # Check if we are on the password screen
+        if output == 'Bouncer':
+            output = unlock_android()
+            if output == 'failed':
+                return 'failed'
+        
+        return 'passed'
 
     except Exception:
         errMsg = "Unable to wake device"
+        return CommonUtil.Exception_Handler(sys.exc_info(),None,errMsg)
+    
+def unlock_android():
+    ''' Attempt to enter password for locked phone '''
+    # Caveat 1: Only works if device has PIN or PASSWORD, not if they use a pattern, or pattern as a fingerprint backup
+    # Caveat 2: Only works if the user connects USB and unlocks the phone. Then, if the phone is locked, we still have an ADB connection, and can work with it.
+    
+    sModuleInfo = inspect.stack()[0][3] + " : " + inspect.getmoduleinfo(__file__).name
+    try:
+        # Get password
+        if sr.Test_Shared_Variables('device_password') == False: # Make sure user stored password in shared variables
+            CommonUtil.ExecLog(sModuleInfo, "Can't unlock phone - no password specified. Please call the 'device password' action before attempting to unlock", 3)
+            return 'failed'
+        password = sr.Get_Shared_Variables('device_password') # Read device password from shared variables
+        
+        # Unlock phone
+        subprocess.check_output("adb shell input text %s" % password, shell=True) # Enter password
+        subprocess.check_output("adb shell input keyevent KEYCODE_ENTER", shell=True) # Press ENTER key
+        time.sleep(3) # Give time for foreground to switch and unlock to complete
+
+        # Verify success
+        output = detect_foreground_android() # Check if we are still on the password screen
+        if output == 'Bouncer': # Password didn't work
+            CommonUtil.ExecLog(sModuleInfo, "Unlocking failed. Password may be invalid - %s" % password, 3)
+            return 'failed'
+        else: # Hopefully, we unlocked and are on the last run program or home screen
+            return 'passed'
+        
+    except Exception:
+        errMsg = "Unable to unlock device"
+        return CommonUtil.Exception_Handler(sys.exc_info(),None,errMsg)
+
+def detect_foreground_android():
+    ''' Return whatever has the foreground '''
+    
+    sModuleInfo = inspect.stack()[0][3] + " : " + inspect.getmoduleinfo(__file__).name
+    try:
+        output = subprocess.check_output("adb shell dumpsys window windows", shell=True) # Get list of windows
+        p = re.compile('CurrentFocus=Window{\w+\s+\w+\s+\w+\s+(.*?)}', re.MULTILINE) # Find CurrentFocus line, and return package/activity
+        m = p.search(output) # Perform regex
+        return str(m.group(1)) # Return package/activity
+    except Exception:
+        errMsg = "Error detecting foreground application"
         return CommonUtil.Exception_Handler(sys.exc_info(),None,errMsg)
 
 def swipe_android(x_start, y_start, x_end, y_end):
