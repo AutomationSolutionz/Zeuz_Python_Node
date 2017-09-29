@@ -38,7 +38,8 @@ def find_appium():
     appium_list = [
         '/usr/bin/appium',
         os.path.join(str(os.getenv('HOME')), '.linuxbrew/bin/appium'),
-        os.path.join(str(os.getenv('ProgramFiles')), 'APPIUM','Appium.exe')
+        os.path.join(str(os.getenv('ProgramFiles')), 'APPIUM','Appium.exe'),
+        os.path.join(str(os.getenv('USERPROFILE')), 'AppData', 'Roaming', 'npm','appium.cmd')
         ] # getenv() must be wrapped in str(), so it doesn't fail on other platforms
     
     # Try to find the appium executable
@@ -49,6 +50,16 @@ def find_appium():
             appium_binary = binary
             break
     
+    # Try to find the appium executable in the PATH variable
+    if appium_binary == '': # Didn't find where appium was installed
+        CommonUtil.ExecLog(sModuleInfo, "Searching PATH for appium", 0)
+        for exe in ('appium', 'appium.exe', 'appium.bat', 'appium.cmd'):
+            result = find_exe_in_path(exe) # Get path and search for executable with in
+            if result != 'failed':
+                appium_binary = result
+                break
+
+    # Verify if we have the binary location    
     if appium_binary == '': # Didn't find where appium was installed
         CommonUtil.ExecLog(sModuleInfo, "Appium not found. Trying to locate via which", 0)
         try: appium_binary = subprocess.Popen(['which', 'appium'], stdout = subprocess.PIPE).communicate()[0].strip()
@@ -61,6 +72,31 @@ def find_appium():
             CommonUtil.ExecLog(sModuleInfo,"Found appium: %s" % appium_binary, 1)
     else: # Found appium's path
         CommonUtil.ExecLog(sModuleInfo,"Found appium: %s" % appium_binary, 1)
+
+def find_exe_in_path(exe):
+    ''' Search the path for an executable '''
+    
+    try:
+        path = os.getenv('PATH') # Linux/Windows path
+        
+        if ';' in path: # Windows delimiter
+            dirs = path.split(';')
+        elif ':' in path: # Linux delimiter
+            dirs = path.split(':')
+        else:
+            return 'failed'
+        
+        for directory in dirs: # Try each directory
+            filename = os.path.join(directory, exe) # Create full path
+            if os.path.isfile(filename): # If it exists, return it and stop
+                return filename
+        
+        # No matches
+        return 'failed'
+
+    except Exception:
+        errMsg = "Error searching PATH"
+        return CommonUtil.Exception_Handler(sys.exc_info(),None,errMsg)
 
 # Try to find appium
 appium_binary = ''
