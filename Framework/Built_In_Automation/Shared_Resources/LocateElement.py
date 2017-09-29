@@ -42,8 +42,8 @@ def Get_Element(step_data_set,driver,query_debug=False):
             if driver_type == 'selenium':
                 generic_driver.switch_to_default_content()
         except:
-            CommonUtil.ExecLog(sModuleInfo, "Incorrect driver.  Unable to switch to default content", 3)
-            return "failed"
+            pass # Exceptions happen when we have an alert, but is not a problem
+
         
         # If driver is pyautogui, perform specific get element function and exit
         if driver_type == 'pyautogui':
