@@ -552,7 +552,7 @@ def calculate_test_case_result(sModuleInfo, TestCaseID, run_id, sTestStepResultL
             else:
                 step_index += 1
         datasetid = TestCaseID[0] + '_s' + str(step_index)
-        status = 11
+        status = check_if_step_is_verification_point(run_id,datasetid)
         if status:
             sTestCaseStatus = 'Failed'
         else:
