@@ -73,6 +73,17 @@ def find_appium():
     else: # Found appium's path
         CommonUtil.ExecLog(sModuleInfo,"Found appium: %s" % appium_binary, 1)
 
+def kill_appium_on_windows(appium_server):
+    ''' Killing Appium server on windows involves killing off it's children '''
+    
+    import psutil, signal
+        
+    for child in psutil.Process(appium_server.pid).children(recursive=True): # For eah child in process
+        cpid = int(str(child.as_dict(attrs=['pid'])['pid']).replace("'", "")) # Get child PID
+        psutil.Process(cpid).send_signal(signal.SIGTERM) # Send kill to it
+        #print h.terminate()
+
+
 def find_exe_in_path(exe):
     ''' Search the path for an executable '''
     
@@ -180,7 +191,11 @@ def start_appium_server():
         
     # Execute appium server
     try:
-        appium_server = subprocess.Popen([appium_binary], stdout=subprocess.PIPE, stderr=subprocess.STDOUT) # Start the appium server
+        if sys.platform  == 'win32': # We need to open appium in it's own command dos box on Windows
+            cmd = 'start "Appium Server" /wait /min cmd /c %s' % appium_binary # Use start to execute and minimize, then cmd /c will remove the dos box when appium is killed
+            appium_server = subprocess.Popen(cmd, shell=True) # Needs to run in a shell due to the execution command
+        else:
+            appium_server = subprocess.Popen([appium_binary], stdout=subprocess.PIPE, stderr=subprocess.STDOUT) # Start the appium server
     except Exception, returncode: # Couldn't run server
         CommonUtil.ExecLog(sModuleInfo,"Couldn't start Appium server. May not be installed, or not in your PATH: %s" % returncode, 3)
         return 'failed'
@@ -300,6 +315,9 @@ def teardown_appium(data_set):
         CommonUtil.ExecLog(sModuleInfo,"Destroying Appium server", 0)
         appium_server = Shared_Resources.Get_Shared_Variables('appium_server') # Get the subprocess object
         Shared_Resources.Set_Shared_Variables('appium_server', '') # Remove shared variable
+        
+        if sys.platform  == 'win32': # Special kill for appium children on Windows
+            kill_appium_on_windows(appium_server)
         appium_server.kill() # Send kill appium process
     except:
         CommonUtil.ExecLog(sModuleInfo,"Error destroying Appium server - may already be down", 2)
