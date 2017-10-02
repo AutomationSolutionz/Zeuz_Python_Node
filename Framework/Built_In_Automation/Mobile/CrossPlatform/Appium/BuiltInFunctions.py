@@ -258,16 +258,21 @@ def start_appium_driver(package_name = '', activity_name = '', filename = ''):
                 CommonUtil.ExecLog(sModuleInfo, "Invalid dependency: %s" % str(dependency), 3)
                 return 'failed'
             CommonUtil.ExecLog(sModuleInfo,"Capabilities: %s" % str(desired_caps), 0)
+            
             # Create Appium instance with capabilities
-            appium_driver = webdriver.Remote('http://localhost:4723/wd/hub', desired_caps) # Create instance
-            if appium_driver: # Make sure we get the instance
-                Shared_Resources.Set_Shared_Variables('appium_driver', appium_driver) # Save driver instance to make available to other modules
-                CommonUtil.ExecLog(sModuleInfo,"Appium driver created successfully.",1)
-                return "passed"
-            else: # Error during setup, reset
-                appium_driver = None
-                CommonUtil.ExecLog(sModuleInfo,"Error during Appium setup", 3)
-                return 'failed'
+            try:
+                appium_driver = webdriver.Remote('http://localhost:4723/wd/hub', desired_caps) # Create instance
+                if appium_driver: # Make sure we get the instance
+                    Shared_Resources.Set_Shared_Variables('appium_driver', appium_driver) # Save driver instance to make available to other modules
+                    CommonUtil.ExecLog(sModuleInfo,"Appium driver created successfully.",1)
+                    return "passed"
+                else: # Error during setup, reset
+                    appium_driver = None
+                    CommonUtil.ExecLog(sModuleInfo,"Error during Appium setup", 3)
+                    return 'failed'
+            except:
+                return CommonUtil.Exception_Handler(sys.exc_info(), None, "Error connecting to Appium server to create driver instance")
+
         else: # Driver is already setup, don't do anything
             CommonUtil.ExecLog(sModuleInfo,"Driver already configured, not re-doing", 0)
             return 'passed'

@@ -84,6 +84,7 @@ actions = { # Numbers are arbitrary, and are not used anywhere
     425: {'module': 'selenium', 'name': 'get location', 'function': 'get_location_of_element'},
     426: {'module': 'selenium', 'name': 'validate table', 'function': 'validate_table'},
     427: {'module': 'selenium', 'name': 'handle alert', 'function': 'Handle_Browser_Alert'},
+    428: {'module': 'selenium', 'name': 'browser', 'function': 'Open_Browser_Wrapper'},
     
     500: {'module': 'utility', 'name': 'math', 'function': 'Calculate'},
     501: {'module': 'utility', 'name': 'upload', 'function': 'Upload'},

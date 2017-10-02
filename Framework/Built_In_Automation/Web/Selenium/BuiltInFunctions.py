@@ -149,8 +149,13 @@ def Open_Browser_Wrapper(step_data):
         if Shared_Resources.Test_Shared_Variables('dependency'): # Check if driver is already set in shared variables
             dependency = Shared_Resources.Get_Shared_Variables('dependency') # Retreive selenium driver
     
-
-        return Open_Browser(dependency)
+        cmd = step_data[0][2] # Expected "open" or "close" for current method. May contain other strings for old method of Field="open browser"
+        if cmd.lower().strip() == 'close': # User issued close command
+            try: selenium_driver.close()
+            except: pass
+            return 'passed'
+        else: # User issued "open" command or used old method of "open browser"
+            return Open_Browser(dependency)
     except Exception:
         ErrorMessage =  "failed to open browser"
         return CommonUtil.Exception_Handler(sys.exc_info(), None, ErrorMessage)
