@@ -28,6 +28,12 @@ if Shared_Resources.Test_Shared_Variables('dependency'): # Check if driver is al
 else:
     raise ValueError("No dependency set - Cannot run")
 
+# Recall device serial number, if set by the user
+device_serial = ''
+if Shared_Resources.Test_Shared_Variables('device_serial'):
+    device_serial = Shared_Resources.Get_Shared_Variables('device_serial')
+    
+    
 def find_appium():
     ''' Do our very best to find the appium executable '''
     
@@ -137,27 +143,42 @@ def launch_application(data_set):
     try:
         package_name = '' # Name of application package
         activity_name = '' # Name of application activity
-        package_only = False
+        serial = '' # Serial number (may also be random string like "launch", "na", etc)
+
         for row in data_set: # Find required data
             if row[0] == 'package' and row[1] == 'element parameter':
-                if dependency['Mobile'].lower() == 'android':
-                    package_name, activity_name = get_program_names(row[2]) # Android only to match a partial package name if provided by the user
-                else:
-                    package_name = row[2] # IOS package name
-                package_only = True
-                    
-            if not package_only:
-                if row[0] == 'launch' and row[1] == 'action':
-                    package_name = row[2]
-                elif row[0] == 'app activity' and row[1] == 'element parameter':
-                    activity_name = row[2]
-        
+                package_name = row[2]
+            elif row[0] in ('app activity', 'activity') and row[1] == 'element parameter':
+                activity_name = row[2]
+            elif row[1] == 'action':
+                serial = row[2].upper().strip()
+                
+        # If android, then we will try to find the activity name, IOS doesn't need this
+        if activity_name == '':
+            if dependency['Mobile'].lower() == 'android':
+                package_name, activity_name = get_program_names(package_name) # Android only to match a partial package name if provided by the user
+            
+        # Verify data
         if package_name == '' or package_name in failed_tag_list:
             CommonUtil.ExecLog(sModuleInfo,"Could not find package name", 3)
             return 'failed'
         elif dependency['Mobile'].lower() == 'android' and activity_name == '':
             CommonUtil.ExecLog(sModuleInfo,"Could not find activity name", 3)
             return 'failed'
+        
+        # Check if serial provided is a real serial number or rubish that should be ignored
+        devices = adbOptions.get_devices() # Get list of connected devices
+        serial_check = False
+        for device in devices: # For each device (SERIAL word)
+            if serial == device.split(' ')[0].upper().strip():
+                serial_check = True # Flag as found
+                break
+        if serial_check: # If found, save it, if not, do nothing - the functions will use whatever is connected
+            global device_serial
+            device_serial = serial
+            Shared_Resources.Set_Shared_Variables('device_serial', serial)
+            CommonUtil.ExecLog(sModuleInfo,"Matched provided device identifier as %s" % serial, 1)
+        
     except Exception:
         errMsg = "Unable to parse data set"
         return CommonUtil.Exception_Handler(sys.exc_info(),None,errMsg)
@@ -1513,6 +1534,30 @@ def set_device_password(data_set):
             return 'passed'
         else:
             CommonUtil.ExecLog(sModuleInfo, "Password cannot be blank. Expected Value field of action row to be a PIN or PASSWORD", 3)
+            return 'failed'
+        
+    except Exception:
+        return CommonUtil.Exception_Handler(sys.exc_info(), None, "Error when trying to read Field and Value for action")
+
+def switch_device(data_set):
+    ''' When multiple devices are connected, switches focus to one in particular given the serial number '''
+    # Device will be set as default until this function is called again
+    # Not needed when only one device is connected
+    
+    sModuleInfo = inspect.stack()[0][3] + " : " + inspect.getmoduleinfo(__file__).name
+    CommonUtil.ExecLog(sModuleInfo,"Function Start", 0)
+
+    # Parse data set
+    try:
+        serial = data_set[0][2].strip() # Read password from Value field
+        if serial != '':
+            global device_serial
+            device_serial = serial # Save as global variable
+            Shared_Resources.Set_Shared_Variables('device_serial', serial) # Save as shared variable, in case we need to recall it while running multiple test cases
+            CommonUtil.ExecLog(sModuleInfo, "Device serial set as: %s" % serial, 1)
+            return 'passed'
+        else:
+            CommonUtil.ExecLog(sModuleInfo, "Serial number cannot be blank. Expected Value field of action row to be a serial number or UUID of the device connected via USB", 3)
             return 'failed'
         
     except Exception:
