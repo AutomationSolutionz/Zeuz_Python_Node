@@ -17,6 +17,8 @@ PATH = lambda p: os.path.abspath(
 )
    
 # Recall appium driver, if not already set - needed between calls in a Zeuz test case
+appium_port = 4722 # Default appium port - changes if we have multiple devices
+appium_details = {} # Used to store device serial number, appium driver, if multiple devices are used
 appium_driver = None
 if Shared_Resources.Test_Shared_Variables('appium_driver'): # Check if driver is already set in shared variables
     appium_driver = Shared_Resources.Get_Shared_Variables('appium_driver') # Retreive appium driver
@@ -130,6 +132,8 @@ def launch_application(data_set):
     sModuleInfo = inspect.stack()[0][3] + " : " + inspect.getmoduleinfo(__file__).name
     CommonUtil.ExecLog(sModuleInfo,"Function Start", 0)
     
+    global device_serial, appium_details, appium_driver
+    
     # Get the dependency again in case it was missed
     if Shared_Resources.Test_Shared_Variables('dependency'): # Check if driver is already set in shared variables
         dependency = Shared_Resources.Get_Shared_Variables('dependency') # Retreive selenium driver
@@ -174,10 +178,19 @@ def launch_application(data_set):
                 serial_check = True # Flag as found
                 break
         if serial_check: # If found, save it, if not, do nothing - the functions will use whatever is connected
-            global device_serial
+            # Update all variables that hold this information
+            appium_details[serial] = {}
+            appium_details[serial]['serial'] = serial
             device_serial = serial
-            Shared_Resources.Set_Shared_Variables('device_serial', serial)
+            Shared_Resources.Set_Shared_Variables('device_serial', device_serial)
             CommonUtil.ExecLog(sModuleInfo,"Matched provided device identifier as %s" % serial, 1)
+        else:
+            serial = 'default'
+            appium_details[serial] = {}
+            appium_details[serial]['serial'] = serial
+            device_serial = serial
+            Shared_Resources.Set_Shared_Variables('device_serial', device_serial)
+            
         
     except Exception:
         errMsg = "Unable to parse data set"
@@ -202,35 +215,43 @@ def start_appium_server():
     sModuleInfo = inspect.stack()[0][3] + " : " + inspect.getmoduleinfo(__file__).name
     CommonUtil.ExecLog(sModuleInfo,"Function Start", 0)
      
-    # Shutdown appium server if it's already running
-    if Shared_Resources.Test_Shared_Variables('appium_server'): # Check if the appium server was previously run (likely not)
-        appium_server = Shared_Resources.Get_Shared_Variables('appium_server') # Get the subprocess object
-        try:
-            appium_server.kill() # Kill the server
-        except:
-            pass
-        
-    # Execute appium server
     try:
-        if sys.platform  == 'win32': # We need to open appium in it's own command dos box on Windows
-            cmd = 'start "Appium Server" /wait /min cmd /c %s' % appium_binary # Use start to execute and minimize, then cmd /c will remove the dos box when appium is killed
-            appium_server = subprocess.Popen(cmd, shell=True) # Needs to run in a shell due to the execution command
+        # Shutdown appium server if it's already running
+        if Shared_Resources.Test_Shared_Variables('appium_server'): # Check if the appium server was previously run (likely not)
+            appium_server = Shared_Resources.Get_Shared_Variables('appium_server') # Get the subprocess object
+            try:
+                appium_server.kill() # Kill the server
+            except:
+                pass
+            
+        # Execute appium server
+        global appium_port, appium_details, device_serial, appium_binary
+        appium_port += 1 # Increment the port number, for the next time we run, so we can have multiple instances
+        appium_binary += " -p " + str(appium_port) # Specify the port in case we use more than one device
+        
+        try:
+            if sys.platform  == 'win32': # We need to open appium in it's own command dos box on Windows
+                cmd = 'start "Appium Server" /wait /min cmd /c %s' % appium_binary # Use start to execute and minimize, then cmd /c will remove the dos box when appium is killed
+                appium_server = subprocess.Popen(cmd, shell=True) # Needs to run in a shell due to the execution command
+            else:
+                appium_server = subprocess.Popen(appium_binary.split(' '), stdout=subprocess.PIPE, stderr=subprocess.STDOUT) # Start the appium server
+            
+            appium_details[device_serial]['server'] = appium_server # Save the server object for teardown
+        except Exception, returncode: # Couldn't run server
+            return CommonUtil.Exception_Handler(sys.exc_info(), None, "Couldn't start Appium server. May not be installed, or not in your PATH: %s" % returncode)
+        
+        # Wait for server to startup and return
+        Shared_Resources.Set_Shared_Variables('appium_server', appium_server) # Save the server object, so we can retrieve it later
+        CommonUtil.ExecLog(sModuleInfo,"Waiting 10 seconds for server to start", 0)
+        time.sleep(10) # Wait for server to get to ready state
+        if appium_server:
+            CommonUtil.ExecLog(sModuleInfo,"Server started", 1)
+            return 'passed'
         else:
-            appium_server = subprocess.Popen([appium_binary], stdout=subprocess.PIPE, stderr=subprocess.STDOUT) # Start the appium server
-    except Exception, returncode: # Couldn't run server
-        CommonUtil.ExecLog(sModuleInfo,"Couldn't start Appium server. May not be installed, or not in your PATH: %s" % returncode, 3)
-        return 'failed'
-    
-    # Wait for server to startup and return
-    Shared_Resources.Set_Shared_Variables('appium_server', appium_server) # Save the server object, so we can retrieve it later
-    CommonUtil.ExecLog(sModuleInfo,"Waiting 10 seconds for server to start", 0)
-    time.sleep(10) # Wait for server to get to ready state
-    if appium_server:
-        CommonUtil.ExecLog(sModuleInfo,"Server started", 1)
-        return 'passed'
-    else:
-        CommonUtil.ExecLog(sModuleInfo,"Server failed to start", 3)
-        return 'failed'
+            CommonUtil.ExecLog(sModuleInfo,"Server failed to start", 3)
+            return 'failed'
+    except Exception:
+        return CommonUtil.Exception_Handler(sys.exc_info(), None, "Error starting Appium server")
 
 def start_appium_driver(package_name = '', activity_name = '', filename = ''):
     ''' Creates appium instance using discovered and provided capabilities '''
@@ -297,9 +318,10 @@ def start_appium_driver(package_name = '', activity_name = '', filename = ''):
             
             # Create Appium instance with capabilities
             try:
-                appium_driver = webdriver.Remote('http://localhost:4723/wd/hub', desired_caps) # Create instance
+                appium_driver = webdriver.Remote('http://localhost:%d/wd/hub' % appium_port, desired_caps) # Create instance
                 if appium_driver: # Make sure we get the instance
                     Shared_Resources.Set_Shared_Variables('appium_driver', appium_driver) # Save driver instance to make available to other modules
+                    appium_details[device_serial]['driver'] = appium_driver
                     CommonUtil.ExecLog(sModuleInfo,"Appium driver created successfully.",1)
                     return "passed"
                 else: # Error during setup, reset
@@ -1408,17 +1430,21 @@ def get_program_names(search_name):
             return '', '' # Failure handling in calling function
 
         cmd = 'adb shell pm list packages'
-        res = subprocess.Popen(cmd.split(' '), stdout=subprocess.PIPE).communicate(0)
-        res = str(res).replace('\\r','')
-        ary = res.split('\\n')
-        p = re.compile('package(.*?' + search_name + '.*?)$')
+        res = subprocess.Popen(cmd.split(' '), stdout=subprocess.PIPE).communicate(0) # Get list of installed packages on device
+        res = str(res).replace('\\r','') # Remove \r if any
+        ary = res.split('\\n') # Split into list
+        p = re.compile('package(.*?' + search_name + '.*?)$') # Regex pattern which will return only the package name
         package_name = ''
-        for line in ary:
-            m = p.search(str(line))
-            if m:
-                package_name = m.group(1)[1:]
+        for line in ary: # For each package
+            m = p.search(str(line)) # Apply regex
+            if m: # If there's a match
+                package_name = m.group(1)[1:] # Save package name
                 break
     
+        if package_name == '':
+            CommonUtil.ExecLog(sModuleInfo, "Did not find installed package: %s" % search_name, 3)
+            return 'failed'
+            
         # Launch program using only package name
         cmd = 'adb shell monkey -p ' + m.group(1)[1:] + ' -c android.intent.category.LAUNCHER 1'
         res = subprocess.Popen(cmd.split(' '))
@@ -1427,7 +1453,7 @@ def get_program_names(search_name):
         # Get the activity name
         cmd = 'adb shell dumpsys window windows'
         res = subprocess.Popen(cmd.split(' '), stdout=subprocess.PIPE).communicate(0)
-        m = re.search('CurrentFocus=.*?FocusedApp.*?ActivityRecord{\w+\s+\w+\s+(.*?)/(.*?)\s+', str(res))
+        m = re.search('CurrentFocus=.*\s+(.*?)/(.*?)[})\s]', str(res))
     
         # Return package and activity names
         if m.group(1) != '' and m.group(2) != '':
@@ -1549,12 +1575,19 @@ def switch_device(data_set):
 
     # Parse data set
     try:
-        serial = data_set[0][2].strip() # Read password from Value field
-        if serial != '':
-            global device_serial
-            device_serial = serial # Save as global variable
-            Shared_Resources.Set_Shared_Variables('device_serial', serial) # Save as shared variable, in case we need to recall it while running multiple test cases
-            CommonUtil.ExecLog(sModuleInfo, "Device serial set as: %s" % serial, 1)
+        ID = data_set[0][2].strip() # Read password from Value field
+        if ID != '':
+            global device_serial, appium_details, appium_driver
+            
+            # Get information from dictionary, and update global variables
+            device_serial = appium_details[ID]['serial']
+            appium_driver = appium_details[ID]['driver']
+
+            # Update shared variables with the same information
+            Shared_Resources.Set_Shared_Variables('device_serial', device_serial)
+            Shared_Resources.Set_Shared_Variables('appium_driver', appium_driver) # Save as shared variable, in case we need to recall it while running multiple test cases
+            
+            CommonUtil.ExecLog(sModuleInfo, "Switched focus to: %s" % id, 1)
             return 'passed'
         else:
             CommonUtil.ExecLog(sModuleInfo, "Serial number cannot be blank. Expected Value field of action row to be a serial number or UUID of the device connected via USB", 3)
