@@ -194,6 +194,8 @@ def upload_zip(server_id,port_id,temp_folder,run_id,file_name,base_path=False):
     :param base_path: base_path for file save
     :return:
     """
+    
+    sModuleInfo = inspect.stack()[0][3] + " : " + inspect.getmoduleinfo(__file__).name
     url_link='http://'+server_id+':'+str(port_id)+"/Home/UploadZip/"
     total_file_path=temp_folder+os.sep+run_id.replace(':','-')+os.sep+file_name
     fileObj=open(total_file_path,'rb')
@@ -201,9 +203,9 @@ def upload_zip(server_id,port_id,temp_folder,run_id,file_name,base_path=False):
     data_list={'run_id':run_id,'file_name':file_name,'base_path':base_path}
     r=requests.post(url_link,files=file_list,data=data_list)
     if r.status_code==200:
-        print "Zip File is uploaded to production successfully"
+        CommonUtil.ExecLog(sModuleInfo, "Zip File is uploaded to production successfully", 0, False)
     else:
-        print "Zip File is not uploaded to production successfully"
+        CommonUtil.ExecLog(sModuleInfo, "Zip File is not uploaded to production successfully", 0, False)
 
 
 #returns dependency list
@@ -464,7 +466,6 @@ def run_all_test_steps_in_a_test_case(Stepscount, test_case, sModuleInfo, run_id
             sTestStepResultList.append(sStepResult.upper())
         else:
             sTestStepResultList.append("FAILED")
-            print "sStepResult : ", sStepResult
             CommonUtil.ExecLog(sModuleInfo, "sStepResult : %s" % sStepResult, 1)
             sStepResult = "Failed"
         after_execution_dict = {
@@ -512,13 +513,11 @@ def run_all_test_steps_in_a_test_case(Stepscount, test_case, sModuleInfo, run_id
             CommonUtil.ExecLog(sModuleInfo, "%s : Test Step Blocked" % current_step_name, 3)
             after_execution_dict.update({'status': BLOCKED_TAG})
         elif sStepResult.upper() == CANCELLED_TAG.upper():
-            print current_step_name + ": Test Step Cancelled"
             CommonUtil.ExecLog(sModuleInfo, "%s : Test Step Cancelled" % current_step_name, 3)
             after_execution_dict.update({'status': CANCELLED_TAG})
             cleanup_runid_from_server(run_id)
             return "pass"
         else:
-            print current_step_name + ": Test Step Cancelled"
             CommonUtil.ExecLog(sModuleInfo, "%s : Test Step Cancelled" % current_step_name, 3)
             after_execution_dict.update({'status': CANCELLED_TAG})
             cleanup_runid_from_server(run_id)
@@ -559,15 +558,12 @@ def calculate_test_case_result(sModuleInfo, TestCaseID, run_id, sTestStepResultL
             sTestCaseStatus = 'Blocked'
         CommonUtil.ExecLog(sModuleInfo, "Test Case " + sTestCaseStatus, 3)
     elif 'WARNING' in sTestStepResultList:
-        print "Test Case Contain Warning(s)"
         CommonUtil.ExecLog(sModuleInfo, "Test Case Contain Warning(s)", 2)
         sTestCaseStatus = "Failed"
     elif 'NOT RUN' in sTestStepResultList:
-        print "Test Case Contain Not Run Steps"
-        CommonUtil.ExecLog(sModuleInfo, "Test Case Contain Warning(s)", 2)
+        CommonUtil.ExecLog(sModuleInfo, "Test Case Contain Not Run Steps", 2)
         sTestCaseStatus = "Failed"
     elif 'SKIPPED' in sTestStepResultList:
-        print "Test Case Contain Skipped Steps"
         CommonUtil.ExecLog(sModuleInfo, "Test Case Contain Skipped Step(s)", 1)
         skipped = True
         for each in sTestStepResultList:
@@ -581,11 +577,9 @@ def calculate_test_case_result(sModuleInfo, TestCaseID, run_id, sTestStepResultL
             sTestCaseStatus = "Passed"
             CommonUtil.ExecLog(sModuleInfo, "Test Case Passed", 1)
     elif 'PASSED' in sTestStepResultList:
-        print "Test Case Passed"
         CommonUtil.ExecLog(sModuleInfo, "Test Case Passed", 1)
         sTestCaseStatus = "Passed"
     else:
-        print "Test Case Status Unknown"
         CommonUtil.ExecLog(sModuleInfo, "Test Case Status Unknown", 2)
         sTestCaseStatus = "Unknown"
 
@@ -643,7 +637,7 @@ def write_log_file_for_test_case(sTestCaseStatus, test_case, run_id, sTestCaseEn
 def run_test_case(TestCaseID, sModuleInfo, run_id, driver_list, final_dependency, final_run_params, temp_ini_file):
     test_case = TestCaseID[0]
     copy_status = False
-    print "Gathering data for test case %s" % (test_case)
+    CommonUtil.ExecLog(sModuleInfo, "Gathering data for test case %s" % (test_case), 0, False)
     while not copy_status:
         copy_status = check_if_test_case_is_copied(run_id, test_case)
         if copy_status:
@@ -691,15 +685,14 @@ def run_test_case(TestCaseID, sModuleInfo, run_id, driver_list, final_dependency
 
     run_cancelled = RequestFormatter.Get('get_status_of_a_run_api', {'run_id': run_id})
     if run_cancelled == 'Cancelled':
-        print "Test Run status is Cancelled. Exiting the current Test Set... ", run_id
         CommonUtil.ExecLog(sModuleInfo, "Test Run status is Cancelled. Exiting the current Test Set...%s" % run_id, 2)
         return
 
 
 #main function
 def main():
-    print "MainDriver is starting"
     sModuleInfo = inspect.stack()[0][3] + " : " + inspect.getmoduleinfo(__file__).name
+    CommonUtil.ExecLog(sModuleInfo, "MainDriver is starting", 0, False)
     temp_ini_file = os.path.join(os.path.join(FL.get_home_folder(), os.path.join('Desktop',os.path.join('AutomationLog',ConfigModule.get_config_value('Temp', '_file')))))
     ConfigModule.add_config_value('sectionOne', 'sTestStepExecLogId', sModuleInfo, temp_ini_file)
     Userid = (CommonUtil.MachineInfo().getLocalUser()).lower()
@@ -712,11 +705,9 @@ def main():
     TestRunLists = get_all_run_ids(Userid)
 
     if len(TestRunLists) > 0:
-        print "Running Test cases from Test Set : ", TestRunLists[0:len(TestRunLists)]
         CommonUtil.ExecLog(sModuleInfo, "Running Test cases from Test Set : %s" % TestRunLists[0:len(TestRunLists)], 1)
 
     else:
-        print "No Test Run Schedule found for the current user :", Userid
         CommonUtil.ExecLog(sModuleInfo, "No Test Run Schedule found for the current user : %s" % Userid, 2)
         return False
 
@@ -733,11 +724,9 @@ def main():
         TestCaseLists=get_all_automated_test_cases_in_run_id(run_id)  #get all automated test cases of a runid
 
         if len(TestCaseLists) > 0:
-            print "Running Test cases from list : ", TestCaseLists[0:len(TestCaseLists)]
             CommonUtil.ExecLog(sModuleInfo, "Running Test cases from list : %s" % TestCaseLists[0:len(TestCaseLists)],1)
-            print "Total number of test cases ", len(TestCaseLists)
+            CommonUtil.ExecLog(sModuleInfo, "Total number of test cases " % len(TestCaseLists), 0, False)
         else:
-            print "No test cases found for the current user :", Userid
             CommonUtil.ExecLog(sModuleInfo, "No test cases found for the current user : %s" % Userid, 2)
             return False
 
@@ -754,12 +743,11 @@ def main():
 
         run_cancelled = get_status_of_runid(run_id) #check if run is cancelled
         if run_cancelled == 'Cancelled':
-            print "Test Set Cancelled by the User"
             CommonUtil.ExecLog(sModuleInfo, "Test Set Cancelled by the User", 1)
         else:
             update_test_case_result_on_server(run_id, sTestSetEndTime, TestSetDuration) #update runid status on server
         ConfigModule.add_config_value('sectionOne', 'sTestStepExecLogId', "MainDriver", temp_ini_file)
-        print "Test Set Completed"
+        CommonUtil.ExecLog(sModuleInfo, "Test Set Completed", 0, False)
     return "pass"
 
 

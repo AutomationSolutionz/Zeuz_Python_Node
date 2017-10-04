@@ -25,7 +25,7 @@ temp_config=os.path.join(os.path.join(FL.get_home_folder(),os.path.join('Desktop
 passed_tag_list = ['Pass', 'pass', 'PASS', 'PASSED', 'Passed', 'passed', 'true', 'TRUE', 'True', '1', 'Success','success', 'SUCCESS', True]
 failed_tag_list = ['Fail', 'fail', 'FAIL', 'Failed', 'failed', 'FAILED', 'false', 'False', 'FALSE', '0', False]
 skipped_tag_list=['skip','SKIP','Skip','skipped','SKIPPED','Skipped']
-
+execlog_data = []  # Used to store log lines for the Zeuz node GUI
 
 
 def to_unicode(obj, encoding='utf-8'):
@@ -128,10 +128,14 @@ def Result_Analyzer(sTestStepReturnStatus,temp_q):
     except Exception, e:
         return Exception_Handler(sys.exc_info())
 
-def ExecLog(sModuleInfo, sDetails, iLogLevel=1, local_run=False, sStatus=""):
+def ExecLog(sModuleInfo, sDetails, iLogLevel=1, _local_run="", sStatus=""):
     try:
+        # Read from settings file
         local_run = ConfigModule.get_config_value('RunDefinition','local_run')
         debug_mode = ConfigModule.get_config_value('RunDefinition', 'debug_mode')
+        
+        # Check if user overrode local_run variable. If so, use that instead
+        if _local_run != '': local_run = _local_run
         
         # ";" is not supported for logging.  So replacing them
         sDetails = sDetails.replace(";", ":")
@@ -155,7 +159,9 @@ def ExecLog(sModuleInfo, sDetails, iLogLevel=1, local_run=False, sStatus=""):
             status = 'Warning'
 
         # Display on console
-        print "%s - %s\n\t%s" % (status.upper(), sModuleInfo, sDetails)
+        global execlog_data
+        execlog_data.append("%s - %s\n\t%s" % (status.upper(), sModuleInfo, sDetails)) # Put in global variable, so Zeuz node GUI can read it
+        print "%s - %s\n\t%s" % (status.upper(), sModuleInfo, sDetails) # Display in console
 
         # Upload logs to server if local run is not set to False
         if (local_run == False or local_run == 'False') and iLogLevel > 0:
@@ -279,7 +285,7 @@ def TakeScreenShot(ImageName,local_run=False):
         image.thumbnail(picture_size, Image.ANTIALIAS) # Resize picture to lower file size
         image.save(ImageName, format = "JPEG", quality = picture_quality) # Change quality to reduce file size
     else:
-        print "Error saving %s screenshot to %s" % (screen_capture_type, ImageName)
+        ExecLog(sModuleInfo, "Error saving %s screenshot to %s" % (screen_capture_type, ImageName), 3)
 
 
 def TimeStamp(format):
