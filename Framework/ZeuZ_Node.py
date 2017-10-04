@@ -39,9 +39,9 @@ def Login():
         if r != False: # Server is up
             try:
                 r = RequestFormatter.Get('login_api',user_info_object)
-                print "Authentication check for user='%s', project='%s', team='%s'"%(username,project,team)
+                CommonUtil.ExecLog('', "Authentication check for user='%s', project='%s', team='%s'"%(username,project,team), 4, False)
                 if r:
-                    print "Authentication Successful"
+                    CommonUtil.ExecLog('', "Authentication Successful", 4, False)
                     machine_object=update_machine(dependency_collection())
                     if machine_object['registered']:
                         tester_id=machine_object['name']
@@ -51,19 +51,19 @@ def Login():
                     else:
                         return False
                 else:
-                    print "Authentication Failed"
+                    CommonUtil.ExecLog('', "Authentication Failed", 4, False)
                     return False
             except Exception, e:
                 exc_type, exc_obj, exc_tb = sys.exc_info()
                 fname = os.path.split(exc_tb.tb_frame.f_code.co_filename)[1]
                 Error_Detail = ((str(exc_type).replace("type ", "Error Type: ")) + ";" +  "Error Message: " + str(exc_obj) +";" + "File Name: " + fname + ";" + "Line: "+ str(exc_tb.tb_lineno))
-                print Error_Detail
-                print "Error logging in, waiting 60 seconds before trying again"
+                CommonUtil.ExecLog('', Error_Detail, 4, False)
+                CommonUtil.ExecLog('', "Error logging in, waiting 60 seconds before trying again", 4, False)
                 time.sleep(60)
         
         # Server down, wait and retry
         else:
-            print "Server down, waiting 60 seconds before trying again"
+            CommonUtil.ExecLog('', "Server down, waiting 60 seconds before trying again", 4, False)
             time.sleep(60)
             
 def RunProcess(sTesterid):
@@ -73,10 +73,10 @@ def RunProcess(sTesterid):
             if r['run_submit']:
                 PreProcess()
                 value = MainDriverApi.main()
-                print "updating db with parameter"
+                CommonUtil.ExecLog('', "updating db with parameter", 4, False)
                 if value == "pass":
                     break
-                print "Successfully updated db with parameter"
+                CommonUtil.ExecLog('', "Successfully updated db with parameter", 4, False)
             else:
                 time.sleep(3)
                 if r['update']:
@@ -85,7 +85,7 @@ def RunProcess(sTesterid):
             exc_type, exc_obj, exc_tb = sys.exc_info()
             fname = os.path.split(exc_tb.tb_frame.f_code.co_filename)[1]
             Error_Detail = ((str(exc_type).replace("type ", "Error Type: ")) + ";" +  "Error Message: " + str(exc_obj) +";" + "File Name: " + fname + ";" + "Line: "+ str(exc_tb.tb_lineno))
-            print Error_Detail
+            CommonUtil.ExecLog('', Error_Detail, 4, False)
             break # Exit back to login() - In some circumstances, this while loop will get into a state when certain errors occur, where nothing runs, but loops forever. This stops that from happening 
     return True
 def PreProcess():
@@ -141,15 +141,15 @@ def update_machine(dependency):
         }
         r=RequestFormatter.Get('update_automation_machine_api',update_object)
         if r['registered']:
-            print "Machine is registered as online with name: %s"%(r['name'])
+            CommonUtil.ExecLog('', "Machine is registered as online with name: %s"%(r['name']), 4, False)
         else:
-            print "Machine is not registered as online"
+            CommonUtil.ExecLog('', "Machine is not registered as online", 4, False)
         return r
     except Exception, e:
         exc_type, exc_obj, exc_tb = sys.exc_info()
         fname = os.path.split(exc_tb.tb_frame.f_code.co_filename)[1]
         Error_Detail = ((str(exc_type).replace("type ", "Error Type: ")) + ";" +  "Error Message: " + str(exc_obj) +";" + "File Name: " + fname + ";" + "Line: "+ str(exc_tb.tb_lineno))
-        print Error_Detail
+        CommonUtil.ExecLog('', Error_Detail, 4, False)
 
 def dependency_collection():
     try:
@@ -163,10 +163,10 @@ def dependency_collection():
         missing_list=list(set(obtained_list)-set(dependency_option))
         #print missing_list
         if missing_list:
-            print ",".join(missing_list)+" missing from the configuration file - settings.conf"
+            CommonUtil.ExecLog('', ",".join(missing_list)+" missing from the configuration file - settings.conf", 4, False)
             return False
         else:
-            print "All the dependency present in the configuration file - settings.conf"
+            CommonUtil.ExecLog('', "All the dependency present in the configuration file - settings.conf", 4, False)
             final_dependency=[]
             for each in r:
                 temp=[]
@@ -188,7 +188,7 @@ def dependency_collection():
         exc_type, exc_obj, exc_tb = sys.exc_info()
         fname = os.path.split(exc_tb.tb_frame.f_code.co_filename)[1]
         Error_Detail = ((str(exc_type).replace("type ", "Error Type: ")) + ";" +  "Error Message: " + str(exc_obj) +";" + "File Name: " + fname + ";" + "Line: "+ str(exc_tb.tb_lineno))
-        print Error_Detail
+        CommonUtil.ExecLog('', Error_Detail, 4, False)
 
 if __name__=='__main__':
     Login()

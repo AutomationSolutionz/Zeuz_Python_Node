@@ -203,9 +203,9 @@ def upload_zip(server_id,port_id,temp_folder,run_id,file_name,base_path=False):
     data_list={'run_id':run_id,'file_name':file_name,'base_path':base_path}
     r=requests.post(url_link,files=file_list,data=data_list)
     if r.status_code==200:
-        CommonUtil.ExecLog(sModuleInfo, "Zip File is uploaded to production successfully", 0, False)
+        CommonUtil.ExecLog(sModuleInfo, "Zip File is uploaded to production successfully", 4, False)
     else:
-        CommonUtil.ExecLog(sModuleInfo, "Zip File is not uploaded to production successfully", 0, False)
+        CommonUtil.ExecLog(sModuleInfo, "Zip File is not uploaded to production successfully", 4, False)
 
 
 #returns dependency list
@@ -363,7 +363,6 @@ def call_driver_function_of_test_step(sModuleInfo, TestStepsList, StepSeq, step_
                                     while stepThread.isAlive():
                                         time.sleep(1)
                                         CommonUtil.ExecLog(sModuleInfo, "Thread is still alive", 3)
-                                        print
                                 except:
                                     CommonUtil.Exception_Handler(sys.exc_info())
                     else:
@@ -637,7 +636,7 @@ def write_log_file_for_test_case(sTestCaseStatus, test_case, run_id, sTestCaseEn
 def run_test_case(TestCaseID, sModuleInfo, run_id, driver_list, final_dependency, final_run_params, temp_ini_file):
     test_case = TestCaseID[0]
     copy_status = False
-    CommonUtil.ExecLog(sModuleInfo, "Gathering data for test case %s" % (test_case), 0, False)
+    CommonUtil.ExecLog(sModuleInfo, "Gathering data for test case %s" % (test_case), 4, False)
     while not copy_status:
         copy_status = check_if_test_case_is_copied(run_id, test_case)
         if copy_status:
@@ -692,7 +691,7 @@ def run_test_case(TestCaseID, sModuleInfo, run_id, driver_list, final_dependency
 #main function
 def main():
     sModuleInfo = inspect.stack()[0][3] + " : " + inspect.getmoduleinfo(__file__).name
-    CommonUtil.ExecLog(sModuleInfo, "MainDriver is starting", 0, False)
+    CommonUtil.ExecLog(sModuleInfo, "MainDriver is starting", 4, False)
     temp_ini_file = os.path.join(os.path.join(FL.get_home_folder(), os.path.join('Desktop',os.path.join('AutomationLog',ConfigModule.get_config_value('Temp', '_file')))))
     ConfigModule.add_config_value('sectionOne', 'sTestStepExecLogId', sModuleInfo, temp_ini_file)
     Userid = (CommonUtil.MachineInfo().getLocalUser()).lower()
@@ -725,7 +724,7 @@ def main():
 
         if len(TestCaseLists) > 0:
             CommonUtil.ExecLog(sModuleInfo, "Running Test cases from list : %s" % TestCaseLists[0:len(TestCaseLists)],1)
-            CommonUtil.ExecLog(sModuleInfo, "Total number of test cases " % len(TestCaseLists), 0, False)
+            CommonUtil.ExecLog(sModuleInfo, "Total number of test cases %s" % len(TestCaseLists), 4, False)
         else:
             CommonUtil.ExecLog(sModuleInfo, "No test cases found for the current user : %s" % Userid, 2)
             return False
@@ -747,7 +746,7 @@ def main():
         else:
             update_test_case_result_on_server(run_id, sTestSetEndTime, TestSetDuration) #update runid status on server
         ConfigModule.add_config_value('sectionOne', 'sTestStepExecLogId', "MainDriver", temp_ini_file)
-        CommonUtil.ExecLog(sModuleInfo, "Test Set Completed", 0, False)
+        CommonUtil.ExecLog(sModuleInfo, "Test Set Completed", 4, False)
     return "pass"
 
 

@@ -154,14 +154,24 @@ def ExecLog(sModuleInfo, sDetails, iLogLevel=1, _local_run="", sStatus=""):
             status = 'Warning'
         elif iLogLevel == 3:
             status = 'Error'
+        elif iLogLevel == 4:
+            status = 'Console'
         else:
             print "*** Unknown log level- Set to Warning ***"
             status = 'Warning'
 
         # Display on console
         global execlog_data
-        execlog_data.append("%s - %s\n\t%s" % (status.upper(), sModuleInfo, sDetails)) # Put in global variable, so Zeuz node GUI can read it
-        print "%s - %s\n\t%s" % (status.upper(), sModuleInfo, sDetails) # Display in console
+        if status == 'Console': # Change the format for console, mainly leave out the status level
+            msg = ''
+            if sModuleInfo != '': msg = sModuleInfo + "\t" # Print sModuleInfo only if provided
+            msg += sDetails # Add details
+            execlog_data.append(msg) # Put in global variable, so Zeuz node GUI can read it
+            print msg # Display in console
+        else:
+            execlog_data.append("%s - %s\n\t%s" % (status.upper(), sModuleInfo, sDetails)) # Put in global variable, so Zeuz node GUI can read it
+            print "%s - %s\n\t%s" % (status.upper(), sModuleInfo, sDetails) # Display in console
+        if len(execlog_data) > 100: del execlog_data[0] # Trim log if it gets too big
 
         # Upload logs to server if local run is not set to False
         if (local_run == False or local_run == 'False') and iLogLevel > 0:
