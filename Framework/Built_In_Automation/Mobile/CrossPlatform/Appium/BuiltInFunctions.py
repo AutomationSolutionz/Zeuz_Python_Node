@@ -17,11 +17,20 @@ PATH = lambda p: os.path.abspath(
 )
    
 # Recall appium driver, if not already set - needed between calls in a Zeuz test case
-appium_port = 4722 # Default appium port - changes if we have multiple devices
+appium_port = 4721 # Default appium port - changes if we have multiple devices
 appium_details = {} # Used to store device serial number, appium driver, if multiple devices are used
-appium_driver = None
-if Shared_Resources.Test_Shared_Variables('appium_driver'): # Check if driver is already set in shared variables
-    appium_driver = Shared_Resources.Get_Shared_Variables('appium_driver') # Retreive appium driver
+appium_driver = None # Holds the currently used appium instance
+device_serial = '' # Holds the identifier for the currently used device (if any are specified)
+device_id = '' # Holds the name of the device the user has specified, if any. Relationship is set elsewhere
+if Shared_Resources.Test_Shared_Variables('appium_details'): # Check if driver is already set in shared variables
+    appium_details = Shared_Resources.Get_Shared_Variables('appium_driver') # Retreive appium driver
+    # Populate the global variables with one of the device information. If more than one device is used, then it'll be the last. The user is responsible for calling either launch_application() or switch_device() to focus on the one they want
+    for name in appium_details:
+        appium_driver = appium_details[name]['driver']
+        appium_server = appium_details[name]['server']
+        device_serial = appium_details[name]['serial']
+        device_id = name
+    
 
 # Recall dependency, if not already set
 dependency = None
@@ -30,11 +39,6 @@ if Shared_Resources.Test_Shared_Variables('dependency'): # Check if driver is al
 else:
     raise ValueError("No dependency set - Cannot run")
 
-# Recall device serial number, if set by the user
-device_serial = ''
-if Shared_Resources.Test_Shared_Variables('device_serial'):
-    device_serial = Shared_Resources.Get_Shared_Variables('device_serial')
-    
     
 def find_appium():
     ''' Do our very best to find the appium executable '''
@@ -132,7 +136,7 @@ def launch_application(data_set):
     sModuleInfo = inspect.stack()[0][3] + " : " + inspect.getmoduleinfo(__file__).name
     CommonUtil.ExecLog(sModuleInfo,"Function Start", 0)
     
-    global device_serial, appium_details, appium_driver
+    global device_serial, appium_details, appium_driver, device_id
     
     # Get the dependency again in case it was missed
     if Shared_Resources.Test_Shared_Variables('dependency'): # Check if driver is already set in shared variables
@@ -155,7 +159,33 @@ def launch_application(data_set):
             elif row[0] in ('app activity', 'activity') and row[1] == 'element parameter':
                 activity_name = row[2]
             elif row[1] == 'action':
-                serial = row[2].upper().strip()
+                serial = row[2].lower().strip()
+
+
+        # Check if serial provided is a real serial number or rubish that should be ignored
+        devices = adbOptions.get_devices() # Get list of connected devices
+        serial_check = False
+        for device in devices: # For each device (SERIAL word)
+            if serial == device.split(' ')[0].lower().strip(): # Android needs lowercase
+                serial_check = True # Flag as found
+                break
+        if serial_check: # If found, save it, if not, do nothing - the functions will use whatever is connected
+            # Update all variables that hold this information
+            appium_details[serial] = {}
+            appium_details[serial]['serial'] = serial
+            device_serial = serial
+            device_id = serial
+            Shared_Resources.Set_Shared_Variables('device_serial', device_serial)
+            CommonUtil.ExecLog(sModuleInfo,"Matched provided device identifier as %s" % serial, 1)
+        else:
+            serial = 'default'
+            appium_details[serial] = {}
+            appium_details[serial]['serial'] = ''
+            device_serial = ''
+            device_id = serial
+            Shared_Resources.Set_Shared_Variables('device_serial', device_serial)
+        if 'driver' not in appium_details[serial]: appium_details[serial]['driver'] = None
+            
                 
         # If android, then we will try to find the activity name, IOS doesn't need this
         if activity_name == '':
@@ -170,27 +200,6 @@ def launch_application(data_set):
             CommonUtil.ExecLog(sModuleInfo,"Could not find activity name", 3)
             return 'failed'
         
-        # Check if serial provided is a real serial number or rubish that should be ignored
-        devices = adbOptions.get_devices() # Get list of connected devices
-        serial_check = False
-        for device in devices: # For each device (SERIAL word)
-            if serial == device.split(' ')[0].upper().strip():
-                serial_check = True # Flag as found
-                break
-        if serial_check: # If found, save it, if not, do nothing - the functions will use whatever is connected
-            # Update all variables that hold this information
-            appium_details[serial] = {}
-            appium_details[serial]['serial'] = serial
-            device_serial = serial
-            Shared_Resources.Set_Shared_Variables('device_serial', device_serial)
-            CommonUtil.ExecLog(sModuleInfo,"Matched provided device identifier as %s" % serial, 1)
-        else:
-            serial = 'default'
-            appium_details[serial] = {}
-            appium_details[serial]['serial'] = serial
-            device_serial = serial
-            Shared_Resources.Set_Shared_Variables('device_serial', device_serial)
-            
         
     except Exception:
         errMsg = "Unable to parse data set"
@@ -198,12 +207,12 @@ def launch_application(data_set):
 
     # Launch application
     try:
-        if appium_driver == None: # Only create a new appium instance if we haven't already (may be done by install_and_start_driver())
+        if appium_details[serial]['driver'] == None: # Only create a new appium instance if we haven't already (may be done by install_and_start_driver())
             result = start_appium_driver(package_name, activity_name)
             if result == 'failed':
                 return 'failed'
         
-        CommonUtil.ExecLog(sModuleInfo,"Launching application",0)
+        CommonUtil.ExecLog(sModuleInfo,"Launching %s" % package_name,0)
         appium_driver.launch_app() # Launch program configured in the Appium capabilities
         CommonUtil.ExecLog(sModuleInfo,"Launched the application successfully.",1)
         return "passed"
@@ -214,19 +223,20 @@ def start_appium_server():
     ''' Starts the external Appium server '''
     sModuleInfo = inspect.stack()[0][3] + " : " + inspect.getmoduleinfo(__file__).name
     CommonUtil.ExecLog(sModuleInfo,"Function Start", 0)
-     
+    
+    global appium_port, appium_details, device_serial, appium_binary, device_id
+    
     try:
         # Shutdown appium server if it's already running
-        if Shared_Resources.Test_Shared_Variables('appium_server'): # Check if the appium server was previously run (likely not)
-            appium_server = Shared_Resources.Get_Shared_Variables('appium_server') # Get the subprocess object
+        if appium_details[device_id]['driver']: # Check if the appium server was previously run (likely not)
+            appium_server = appium_details[device_id]['driver'] # Get the subprocess object
             try:
                 appium_server.kill() # Kill the server
             except:
                 pass
             
         # Execute appium server
-        global appium_port, appium_details, device_serial, appium_binary
-        appium_port += 1 # Increment the port number, for the next time we run, so we can have multiple instances
+        appium_port += 2 # Increment the port number (by 2 because adb seems to grab the next port), for the next time we run, so we can have multiple instances
         appium_binary += " -p " + str(appium_port) # Specify the port in case we use more than one device
         
         try:
@@ -235,14 +245,13 @@ def start_appium_server():
                 appium_server = subprocess.Popen(cmd, shell=True) # Needs to run in a shell due to the execution command
             else:
                 appium_server = subprocess.Popen(appium_binary.split(' '), stdout=subprocess.PIPE, stderr=subprocess.STDOUT) # Start the appium server
-            
-            appium_details[device_serial]['server'] = appium_server # Save the server object for teardown
+
+            appium_details[device_id]['server'] = appium_server # Save the server object for teardown
         except Exception, returncode: # Couldn't run server
             return CommonUtil.Exception_Handler(sys.exc_info(), None, "Couldn't start Appium server. May not be installed, or not in your PATH: %s" % returncode)
         
         # Wait for server to startup and return
-        Shared_Resources.Set_Shared_Variables('appium_server', appium_server) # Save the server object, so we can retrieve it later
-        CommonUtil.ExecLog(sModuleInfo,"Waiting 10 seconds for server to start", 0)
+        CommonUtil.ExecLog(sModuleInfo,"Waiting 10 seconds for server to start on port %d" % appium_port, 0)
         time.sleep(10) # Wait for server to get to ready state
         if appium_server:
             CommonUtil.ExecLog(sModuleInfo,"Server started", 1)
@@ -270,8 +279,8 @@ def start_appium_driver(package_name = '', activity_name = '', filename = ''):
         return 'failed'
     
     try:
-        global appium_driver
-        if appium_driver == None:
+        global appium_driver, appium_details, device_id
+        if appium_details[device_id]['driver'] == None:
             # Start Appium server
             if start_appium_server() in failed_tag_list:
                 return 'failed'
@@ -286,18 +295,18 @@ def start_appium_driver(package_name = '', activity_name = '', filename = ''):
             desired_caps['newCommandTimeout'] = 600 # Command timeout before appium destroys instance
             
             if dependency['Mobile'].lower() == 'android':
-                if adbOptions.is_android_connected() == False:
+                if adbOptions.is_android_connected(device_serial) == False:
                     CommonUtil.ExecLog(sModuleInfo, "Could not detect any connected Android devices", 3)
                     return 'failed'
 
                 # Send wake up command to avoid issues with devices ignoring appium when they are in lower power mode (android 6.0+), and unlock if passworded
-                result = adbOptions.wake_android()
+                result = adbOptions.wake_android(device_serial)
                 if result in failed_tag_list:
                     return 'failed'
                 
                 CommonUtil.ExecLog(sModuleInfo,"Setting up with Android",1)
-                desired_caps['platformVersion'] = adbOptions.get_android_version().strip()
-                desired_caps['deviceName'] = adbOptions.get_device_model().strip()
+                desired_caps['platformVersion'] = adbOptions.get_android_version(device_serial).strip()
+                desired_caps['deviceName'] = adbOptions.get_device_model(device_serial).strip()
                 if package_name:
                     desired_caps['appPackage'] = package_name.strip()
                 if activity_name:
@@ -320,8 +329,7 @@ def start_appium_driver(package_name = '', activity_name = '', filename = ''):
             try:
                 appium_driver = webdriver.Remote('http://localhost:%d/wd/hub' % appium_port, desired_caps) # Create instance
                 if appium_driver: # Make sure we get the instance
-                    Shared_Resources.Set_Shared_Variables('appium_driver', appium_driver) # Save driver instance to make available to other modules
-                    appium_details[device_serial]['driver'] = appium_driver
+                    appium_details[device_id]['driver'] = appium_driver
                     CommonUtil.ExecLog(sModuleInfo,"Appium driver created successfully.",1)
                     return "passed"
                 else: # Error during setup, reset
@@ -343,28 +351,22 @@ def teardown_appium(data_set):
     sModuleInfo = inspect.stack()[0][3] + " : " + inspect.getmoduleinfo(__file__).name
     CommonUtil.ExecLog(sModuleInfo,"Function Start", 0)
     
-    # Appium instance
+    global appium_details, appium_server, device_id, device_serial
+    
     try:
-        global appium_driver
-        appium_driver.quit() # Tell appium to shutdown instance
-        CommonUtil.ExecLog(sModuleInfo,"Appium cleaned up successfully.",1)
-    except:
-        CommonUtil.ExecLog(sModuleInfo,"Error destroying Appium instance - appium may have already disconnected", 2)
-    appium_driver = None # Clear driver variable, so next run will be fresh
-    Shared_Resources.Set_Shared_Variables('appium_driver', '') # Clear the driver from shared variables
-
-    # Appium server
-    try:
-        CommonUtil.ExecLog(sModuleInfo,"Destroying Appium server", 0)
-        appium_server = Shared_Resources.Get_Shared_Variables('appium_server') # Get the subprocess object
-        Shared_Resources.Set_Shared_Variables('appium_server', '') # Remove shared variable
+        for name in appium_details: # For each connected device
+            if sys.platform  == 'win32': # Special kill for appium children on Windows
+                kill_appium_on_windows(appium_server)
+            appium_details[name]['driver'].quit() # Destroy driver
+            appium_details[name]['server'].kill() # Terminate server
         
-        if sys.platform  == 'win32': # Special kill for appium children on Windows
-            kill_appium_on_windows(appium_server)
-        appium_server.kill() # Send kill appium process
+        # Delete variables
+        del appium_details
+        appium_server, device_id, device_serial = '', '', ''
+        Shared_Resources.Set_Shared_Variables('appium_details', '')
     except:
-        CommonUtil.ExecLog(sModuleInfo,"Error destroying Appium server - may already be down", 2)
-        
+        CommonUtil.ExecLog(sModuleInfo,"Error destroying Appium instance/server - may already be killed", 2)
+    
     return 'passed'
 
 def close_application(data_set):
@@ -470,56 +472,6 @@ def uninstall_application(data_set):
         errMsg = "Unable to uninstall"
         return CommonUtil.Exception_Handler(sys.exc_info(),None,errMsg)
 
-def Wait_For_New_Element(data_set):
-    ''' Continuously monitors an element for a specified amount of time and returns whether or not it is available '''
-    
-    sModuleInfo = inspect.stack()[0][3] + " : " + inspect.getmoduleinfo(__file__).name
-    CommonUtil.ExecLog(sModuleInfo,"Function Start", 0)
-    
-    try:
-        # Find the wait time from the data set
-        for row in data_set:
-            if row[1] == "action":
-                timeout_duration = int(row[2])
-
-        # Check for element every second 
-        end_time = time.time() + timeout_duration # Time at which we should stop looking
-        for i in range(timeout_duration): # Keep testing element until this is reached (likely never hit due to timeout below)
-            # Wait and then test if we are over our alloted time limit
-            time.sleep(1)
-            if time.time() >= end_time: # Keep testing element until this is reached (ensures we wait exactly the specified amount of time)
-                break
-            
-            # Test if element exists and exit loop if it does
-            Element = LocateElement.Get_Element(data_set,appium_driver)
-            if Element != "failed":
-                CommonUtil.ExecLog(sModuleInfo, "Found element", 1)
-                return 'passed'
-            else:
-                CommonUtil.ExecLog(sModuleInfo, "Element does not exist. Sleep and try again - %d" % i, 0)
-
-        # Element not found        
-        CommonUtil.ExecLog(sModuleInfo, "Wait for element failed - Does not exist", 3)
-        return 'failed'
-
-    except Exception:
-        return CommonUtil.Exception_Handler(sys.exc_info())
-
-
-def Sleep(data_set):
-    ''' Sleep a specific number of seconds '''
-    
-    sModuleInfo = inspect.stack()[0][3] + " : " + inspect.getmoduleinfo(__file__).name
-    CommonUtil.ExecLog(sModuleInfo,"Function Start", 0)
-
-    try:
-        seconds = int(data_set[0][2])
-        CommonUtil.ExecLog(sModuleInfo, "Sleeping for %s seconds" % seconds, 1)
-        time.sleep(seconds)
-        return "passed"
-    except Exception:
-        return CommonUtil.Exception_Handler(sys.exc_info())
-
 def Swipe(x_start, y_start, x_end, y_end, duration = 1000, adb = False):
     ''' Perform single swipe gesture with provided start and end positions '''
     # duration in mS - how long the gesture should take
@@ -531,7 +483,7 @@ def Swipe(x_start, y_start, x_end, y_end, duration = 1000, adb = False):
         CommonUtil.ExecLog(sModuleInfo, "Starting to swipe the screen...", 0)
         if adb:
             CommonUtil.ExecLog(sModuleInfo, "Using ADB swipe method", 0)
-            adbOptions.swipe_android(x_start, y_start, x_end, y_end) # Use adb if specifically asked for it
+            adbOptions.swipe_android(x_start, y_start, x_end, y_end, device_serial) # Use adb if specifically asked for it
         else:
             appium_driver.swipe(x_start, y_start, x_end, y_end, duration) # Use Appium to swipe by default
         CommonUtil.ExecLog(sModuleInfo, "Swiped the screen successfully", 1)
@@ -710,77 +662,7 @@ def swipe_handler(data_set):
     return 'passed'
 
 
-#Validating text from an element given information regarding the expected text
 
-def Save_Text(data_set):
-    
-    '''
-    @sreejoy, this needs your review and fix. 
-    
-    '''
-    sModuleInfo = inspect.stack()[0][3] + " : " + inspect.getmoduleinfo(__file__).name
-    CommonUtil.ExecLog(sModuleInfo,"Function Start", 0)
-    
-    data_set = [data_set]
-    
-    # Parse data set
-    try:
-        variable_name = ''
-        for each in data_set:
-            for row in each:
-                if row[1] == 'action':
-                    variable_name = row[2]
-        if variable_name == '':
-            CommonUtil.ExecLog(sModuleInfo, "Unable to parse data set", 3)
-            return 'failed'
-    except Exception:
-        errMsg = "Unable to parse data set"
-        return CommonUtil.Exception_Handler(sys.exc_info(),None,errMsg)
-
-    try:
-            for each in data_set:
-
-                try:
-                    Element = LocateElement.Get_Element(data_set,appium_driver)
-                    if Element == "failed":
-                        CommonUtil.ExecLog(sModuleInfo, "Unable to locate your element with given data.", 3)
-                        return "failed" 
-                except Exception:
-                    errMsg = "Could not get element based on the information provided."
-                    return CommonUtil.Exception_Handler(sys.exc_info(),None,errMsg)
-
-            list_of_element_text = Element.text.split('\n')
-            visible_list_of_element_text = ""
-            for each_text_item in list_of_element_text:
-                if each_text_item != "":
-                    visible_list_of_element_text+=each_text_item
-
-            result = Shared_Resources.Set_Shared_Variables(variable_name, visible_list_of_element_text)
-            if result in failed_tag_list:
-                CommonUtil.ExecLog(sModuleInfo, "Value of Variable '%s' could not be saved!!!", 3)
-                return "failed"
-            else:
-                Shared_Resources.Show_All_Shared_Variables()
-                return "passed"
-    except Exception:
-        return CommonUtil.Exception_Handler(sys.exc_info())
-
-
-#Validating text from an element given information regarding the expected text
-def Compare_Variables(data_set):
-    sModuleInfo = inspect.stack()[0][3] + " : " + inspect.getmoduleinfo(__file__).name
-    CommonUtil.ExecLog(sModuleInfo,"Function Start", 0)
-    try:
-        Element = LocateElement.Get_Element(data_set,appium_driver)
-        if Element == "failed":
-            CommonUtil.ExecLog(sModuleInfo, "Unable to locate your element with given data.", 3)
-            return "failed" 
-        else:
-            return Shared_Resources.Compare_Variables([data_set])
-    except Exception:
-        return CommonUtil.Exception_Handler(sys.exc_info())
-
-  
 def read_screen_heirarchy():
     ''' Read the XML string of the device's GUI and return it '''
     
@@ -1108,7 +990,7 @@ def Android_Keystroke_Key_Mapping(keystroke):
             appium_driver.keyevent(224)
         elif keystroke == "power":
             appium_driver.keyevent(26)
-        elif keystroke == "app switch": # Task switcher / overview screen
+        elif keystroke in ("app switch", "task switch", "overview", "recents"): # Task switcher / overview screen
             appium_driver.keyevent(187)
         elif keystroke == "page down":
             appium_driver.keyevent(93)
@@ -1299,137 +1181,25 @@ def Validate_Text_Appium(data_set):
         errMsg = "Could not compare text as requested."
         return CommonUtil.Exception_Handler(sys.exc_info(),None,errMsg)
 
-
-#Inserting a field into a list of shared variables
-def Insert_Into_List(data_set):
-    '''
-
-    @sreejoy, this will need your review 
-
-    This is probably broken as well.. i am not sure why we are using dataset with [dataset]
-    
-    '''
-    
-    sModuleInfo = inspect.stack()[0][3] + " : " + inspect.getmoduleinfo(__file__).name
-    CommonUtil.ExecLog(sModuleInfo,"Function Start", 0)
-    
-    data_set = [data_set]
-    
-    try:
-        if len(data_set[0]) == 1: #will have to test #saving direct input string data
-            list_name = ''
-            key = ''
-            value = ''
-            full_input_key_value_name = ''
-
-            for each_step_data_item in data_set[0]:
-                if each_step_data_item[1]=="action":
-                    full_input_key_value_name = each_step_data_item[2]
-
-            temp_list = full_input_key_value_name.split(',')
-            if len(temp_list) == 1:
-                CommonUtil.ExecLog(sModuleInfo,
-                                   "The information in the data-set(s) are incorrect. Please provide accurate data set(s) information.",
-                                   3)
-                return "failed"
-            else:
-                list_name = temp_list[0].split(':')[1].strip()
-                key = temp_list[1].split(':')[1].strip()
-                value = temp_list[2].split(':')[1].strip()
-
-            result = Shared_Resources.Set_List_Shared_Variables(list_name,key, value)
-            if result in failed_tag_list:
-                CommonUtil.ExecLog(sModuleInfo, "In list '%s' Value of Variable '%s' could not be saved!!!"%(list_name, key), 3)
-                return "failed"
-            else:
-                Shared_Resources.Show_All_Shared_Variables()
-                return "passed"
-    
-            Element = LocateElement.Get_Element(data_set[0],appium_driver)
-            if Element == "failed":
-                CommonUtil.ExecLog(sModuleInfo, "Unable to locate your element with given data.", 3)
-                return "failed" 
-        
-
-            list_name = ''
-            key = ''
-            for each_step_data_item in data_set[0]:
-                if each_step_data_item[1] == "action":
-                    key = each_step_data_item[2]
-
-            # get list name from full input_string
-
-            temp_list = key.split(',')
-            if len(temp_list) == 1:
-                CommonUtil.ExecLog(sModuleInfo,
-                    "The information in the data-set(s) are incorrect. Please provide accurate data set(s) information.",
-                        3)
-                return "failed"
-            else:
-                list_name = str(temp_list[0]).split(':')[1].strip()
-                key = str(temp_list[1]).strip()
-
-            #get text from selenium element
-            list_of_element_text = Element.text.split('\n')
-            visible_list_of_element_text = ""
-            for each_text_item in list_of_element_text:
-                if each_text_item != "":
-                    visible_list_of_element_text+=each_text_item
-
-
-            #save text in the list of shared variables in CommonUtil
-            result = Shared_Resources.Set_List_Shared_Variables(list_name,key, visible_list_of_element_text)
-            if result in failed_tag_list:
-                CommonUtil.ExecLog(sModuleInfo, "In list '%s' Value of Variable '%s' could not be saved!!!"%(list_name, key), 3)
-                return "failed"
-            else:
-                Shared_Resources.Show_All_Shared_Variables()
-                return "passed"
-        else:
-            CommonUtil.ExecLog(sModuleInfo,
-                               "The information in the data-set(s) are incorrect. Please provide accurate data set(s) information.",
-                               3)
-            return "failed"
-
-    except Exception:
-        return CommonUtil.Exception_Handler(sys.exc_info())
-
-
-#Validating text from an element given information regarding the expected text
-def Compare_Lists(data_set):
-    '''
-    @sreejoy, this will need your review 
-    '''
-    sModuleInfo = inspect.stack()[0][3] + " : " + inspect.getmoduleinfo(__file__).name
-    CommonUtil.ExecLog(sModuleInfo,"Function Start", 0)
-    
-    try:
-        Element = LocateElement.Get_Element(data_set,appium_driver)
-        if Element == "failed":
-            CommonUtil.ExecLog(sModuleInfo, "Unable to locate your element with given data.", 3)
-            return "failed" 
-        
-        else:
-            return Shared_Resources.Compare_Lists([data_set])
-    except Exception:
-        return CommonUtil.Exception_Handler(sys.exc_info())
-
-
-
 def get_program_names(search_name):
     ''' Find Package and Activity name based on wildcard match '''
     # Android only
+    # Tested as working on v4.4.4, v5.1, v6.0.1
     
     sModuleInfo = inspect.stack()[0][3] + " : " + inspect.getmoduleinfo(__file__).name
     CommonUtil.ExecLog(sModuleInfo,"Function Start", 0)
     
+    global device_serial
+    serial = ''
+    if device_serial != '': serial = "-s %s" % device_serial
+    
     # Find package name for the program that's already installed
     try:
-        if adbOptions.is_android_connected() == False:
+        if adbOptions.is_android_connected(device_serial) == False:
             CommonUtil.ExecLog(sModuleInfo, "Could not detect any connected Android devices", 3)
             return '', '' # Failure handling in calling function
 
-        cmd = 'adb shell pm list packages'
+        cmd = 'adb %s shell pm list packages' % serial
         res = subprocess.Popen(cmd.split(' '), stdout=subprocess.PIPE).communicate(0) # Get list of installed packages on device
         res = str(res).replace('\\r','') # Remove \r if any
         ary = res.split('\\n') # Split into list
@@ -1446,14 +1216,14 @@ def get_program_names(search_name):
             return 'failed'
             
         # Launch program using only package name
-        cmd = 'adb shell monkey -p ' + m.group(1)[1:] + ' -c android.intent.category.LAUNCHER 1'
+        cmd = 'adb %s shell monkey -p %s -c android.intent.category.LAUNCHER 1' % (serial, str(m.group(1)[1:]))
         res = subprocess.Popen(cmd.split(' '))
         time.sleep(3)
     
         # Get the activity name
-        cmd = 'adb shell dumpsys window windows'
+        cmd = 'adb %s shell dumpsys window windows' % serial
         res = subprocess.Popen(cmd.split(' '), stdout=subprocess.PIPE).communicate(0)
-        m = re.search('CurrentFocus=.*\s+(.*?)/(.*?)[})\s]', str(res))
+        m = re.search('CurrentFocus=.*?\s+([\w\.]+)/([\w\.]+)', str(res))
     
         # Return package and activity names
         if m.group(1) != '' and m.group(2) != '':
@@ -1500,27 +1270,27 @@ def device_information(data_set):
 
     # Ensure device is connected
     if dep == 'android':
-        if adbOptions.is_android_connected() == False:
+        if adbOptions.is_android_connected(device_serial) == False:
             CommonUtil.ExecLog(sModuleInfo, "Could not detect any connected Android devices", 3)
             return 'failed'
 
     # Get device information
     try:
         if cmd == 'imei':
-            if dep == 'android': output = adbOptions.get_device_imei_info()
-            elif dep == 'ios': output = iosOptions.get_ios_imei()
+            if dep == 'android': output = adbOptions.get_device_imei_info(device_serial)
+            elif dep == 'ios': output = iosOptions.get_ios_imei(device_serial)
         elif cmd == 'version':
-            if dep == 'android':output = adbOptions.get_android_version()
-            elif dep == 'ios': output = iosOptions.get_ios_version()
+            if dep == 'android':output = adbOptions.get_android_version(device_serial)
+            elif dep == 'ios': output = iosOptions.get_ios_version(device_serial)
         elif cmd == 'model name':
-            if dep == 'android': output = adbOptions.get_device_model()
-            elif dep == 'ios': output = iosOptions.get_product_name()
+            if dep == 'android': output = adbOptions.get_device_model(device_serial)
+            elif dep == 'ios': output = iosOptions.get_product_name(device_serial)
         elif cmd == 'phone name':
-            if dep == 'ios': output = iosOptions.get_phone_name()
+            if dep == 'ios': output = iosOptions.get_phone_name(device_serial)
         elif cmd == 'serial no':
-            if dep == 'android': output = adbOptions.get_device_serial_no()
+            if dep == 'android': output = adbOptions.get_device_serial_no(device_serial)
         elif cmd == 'storage':
-            if dep == 'android': output = adbOptions.get_device_storage()
+            if dep == 'android': output = adbOptions.get_device_storage(device_serial)
         elif cmd == 'reboot':
             if shared_var == '*': # If asterisk, then assume one or more attached and reset them all
                 shared_var = '' # Unset this, so we don't create a shared variable with it 
@@ -1575,19 +1345,16 @@ def switch_device(data_set):
 
     # Parse data set
     try:
-        ID = data_set[0][2].strip() # Read password from Value field
+        ID = data_set[0][2].lower().strip() # Read password from Value field
         if ID != '':
-            global device_serial, appium_details, appium_driver
+            global device_serial, appium_details, appium_driver, device_id
             
             # Get information from dictionary, and update global variables
             device_serial = appium_details[ID]['serial']
             appium_driver = appium_details[ID]['driver']
+            device_id = ID
 
-            # Update shared variables with the same information
-            Shared_Resources.Set_Shared_Variables('device_serial', device_serial)
-            Shared_Resources.Set_Shared_Variables('appium_driver', appium_driver) # Save as shared variable, in case we need to recall it while running multiple test cases
-            
-            CommonUtil.ExecLog(sModuleInfo, "Switched focus to: %s" % id, 1)
+            CommonUtil.ExecLog(sModuleInfo, "Switched focus to: %s" % ID, 1)
             return 'passed'
         else:
             CommonUtil.ExecLog(sModuleInfo, "Serial number cannot be blank. Expected Value field of action row to be a serial number or UUID of the device connected via USB", 3)

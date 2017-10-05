@@ -351,9 +351,9 @@ def wake_android(serial = ''):
         CommonUtil.ExecLog(sModuleInfo, "Waking device", 0)
         
         # If there is a password, handle it
-        output = detect_foreground_android(serial) # Check if we are on the password screen
+        output = detect_foreground_android(serial.replace('-s ', '')) # Check if we are on the password screen
         if output == 'Bouncer':
-            output = unlock_android(serial)
+            output = unlock_android(serial.replace('-s ', ''))
             if output == 'failed':
                 return 'failed'
         
@@ -383,7 +383,7 @@ def unlock_android(serial = ''):
         time.sleep(3) # Give time for foreground to switch and unlock to complete
 
         # Verify success
-        output = detect_foreground_android(serial) # Check if we are still on the password screen
+        output = detect_foreground_android(serial.replace('-s ', '')) # Check if we are still on the password screen
         if output == 'Bouncer': # Password didn't work
             CommonUtil.ExecLog(sModuleInfo, "Unlocking failed. Password may be invalid - %s" % password, 3)
             return 'failed'
