@@ -125,3 +125,20 @@ def clean_config_file(location=False):
     except Exception, e:
         print e
         return False
+
+def get_all_sections(location=False):
+    try:
+        config=ConfigParser.SafeConfigParser()
+        if not location:
+            _file_name=os.getcwd()+os.sep+file_name
+        else:
+            _file_name=location
+        config.read(_file_name)
+        return config.sections()
+    except ConfigParser.NoSectionError,e:
+        print 'found no sections'
+        return []
+    except ConfigParser.NoOptionError,e:
+        print 'found no options'
+        return []
+

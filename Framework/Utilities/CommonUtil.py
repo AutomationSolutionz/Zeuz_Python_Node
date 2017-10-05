@@ -207,6 +207,17 @@ def ExecLog(sModuleInfo, sDetails, iLogLevel=1, _local_run="", sStatus=""):
     except Exception, e:
         return Exception_Handler(sys.exc_info())
 
+def give_log_to_gui():
+    ''' Sends log lines to the Zeuz Node Gui '''
+    
+    global execlog_data
+    if len(execlog_data) > 0:
+        value = execlog_data[0]
+        del execlog_data[0]
+        return value
+    else:
+        return ''
+
 def FormatSeconds(sec):
         hours, remainder = divmod(sec, 3600)
         minutes, seconds = divmod(remainder, 60)
