@@ -14,6 +14,8 @@ PASSWORD_TAG='password'
 PROJECT_TAG='project'
 TEAM_TAG='team'
 
+exit_script = False # Used by Zeuz Node GUI to exit script
+
 def Login():
     username=ConfigModule.get_config_value(AUTHENTICATION_TAG,USERNAME_TAG)
     password=ConfigModule.get_config_value(AUTHENTICATION_TAG,PASSWORD_TAG)
@@ -46,8 +48,10 @@ def Login():
                     if machine_object['registered']:
                         tester_id=machine_object['name']
                         RunAgain = RunProcess(tester_id)
-                        if RunAgain == True:
-                            Login()
+                        #if RunAgain == True:
+                        #    Login()
+                        if RunAgain == False:
+                            break # Exit login
                     else:
                         return False
                 else:
@@ -65,10 +69,21 @@ def Login():
         else:
             CommonUtil.ExecLog('', "Server down, waiting 60 seconds before trying again", 4, False)
             time.sleep(60)
-            
+
+def disconnect_from_server():
+    ''' Exits script - Used by Zeuz Node GUI '''
+    global exit_script
+    exit_script = True
+    
 def RunProcess(sTesterid):
+    global exit_script
+    
     while (1):
         try:
+            if exit_script:
+                exit_script = False # Reset exit variable
+                return False
+
             r=RequestFormatter.Get('is_run_submitted_api',{'machine_name':sTesterid})
             if r['run_submit']:
                 PreProcess()
@@ -189,6 +204,43 @@ def dependency_collection():
         fname = os.path.split(exc_tb.tb_frame.f_code.co_filename)[1]
         Error_Detail = ((str(exc_type).replace("type ", "Error Type: ")) + ";" +  "Error Message: " + str(exc_obj) +";" + "File Name: " + fname + ";" + "Line: "+ str(exc_tb.tb_lineno))
         CommonUtil.ExecLog('', Error_Detail, 4, False)
+
+def get_team_names():
+    ''' Retrieve all teams user has access to '''
+    
+    try:
+        username=ConfigModule.get_config_value(AUTHENTICATION_TAG,USERNAME_TAG)
+        password=ConfigModule.get_config_value(AUTHENTICATION_TAG,PASSWORD_TAG)
+    
+        user_info_object = {
+            USERNAME_TAG: username,
+            PASSWORD_TAG: password
+        }
+    
+        r = RequestFormatter.Get('get_user_teams_api', user_info_object)
+        teams = [x[0] for x in r] # Convert into a simple list
+        return teams
+    except:
+        CommonUtil.ExecLog('', "Error retrieving team names", 4, False)
+
+def get_project_names(team):
+    ''' Retrieve projects for given team '''
+    
+    try:
+        username=ConfigModule.get_config_value(AUTHENTICATION_TAG,USERNAME_TAG)
+        password=ConfigModule.get_config_value(AUTHENTICATION_TAG,PASSWORD_TAG)
+    
+        user_info_object = {
+            USERNAME_TAG: username,
+            PASSWORD_TAG: password,
+            TEAM_TAG: team
+        }
+    
+        r = RequestFormatter.Get('get_user_projects_api', user_info_object)
+        projects = [x[0] for x in r] # Convert into a simple list
+        return projects
+    except:
+        CommonUtil.ExecLog('', "Error retrieving project names", 4, False)
 
 if __name__=='__main__':
     Login()

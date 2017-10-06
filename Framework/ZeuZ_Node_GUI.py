@@ -2,23 +2,36 @@
 # http://infohost.nmt.edu/tcc/help/pubs/tkinter/tkinter.pdf
 import Tkinter as tk
 import tkMessageBox
-import os, os.path, thread
+import os, os.path, thread, sys
 from Utilities import ConfigModule, CommonUtil
-from ZeuZ_Node import Login
+from ZeuZ_Node import Login, disconnect_from_server, get_team_names, get_project_names
 
+gui_title = 'Zeuz Node'
 node_id_filename = os.path.join(os.getenv('HOME'), 'Desktop', 'node_id.conf')
 log_timer = 200 # TIme in ms to check for log lines
+execlog_data = None #?????
      
 class Application(tk.Frame):
     show_adv_settings = False
     run = False
     widgets = {} # Holds the text entry widget handles under the line name
+    team = None
+    team_choices = []
+    project = None
+    project_choices = []
+
     entry_width = 50
     button_width = 20
+    colour_tag = 0
+    colour_debug = 'blue'
+    colour_passed = 'green'
+    colour_warning = 'orange'
+    colour_failed = 'red'
+    colour_default = 'black'
     
     def __init__(self, master=None):
         tk.Frame.__init__(self, master)
-        self.grid()
+        #self.grid()
         self.createWidgets()
 
     def createWidgets(self):
@@ -67,13 +80,35 @@ class Application(tk.Frame):
             for option in options:
                 value = ConfigModule.get_config_value('Authentication', option)
                 tk.Label(self.basic_settings_frame, text = option).grid(row = row, column = 0, sticky = 'w')
+                
                 if option == 'password':
                     self.widgets['Authentication'][option] = tk.Entry(self.basic_settings_frame, show = '*', width = self.entry_width)
+                    self.widgets['Authentication'][option].insert('end', value)
+                elif option == 'team':
+                    self.team = tk.StringVar(self)
+                    self.team.set('') # Need to initialize this, so OptionMenu will work
+                    self.team_choices.append(value) # Need to initialize this, so OptionMenu will work
+                    self.widgets['Authentication'][option] = tk.OptionMenu(self.basic_settings_frame, self.team, *self.team_choices)
+                    self.get_teams() # Get list of teams from the server, populate the list
+                    self.team.set(value) # Set menu to value in config file
+                    #tk.Label(self.basic_settings_frame, text = '(Optional)', fg="gray").grid(row = row, column = 2)
+                elif option == 'project':
+                    self.project = tk.StringVar(self)
+                    self.project.set('') # Need to initialize this, so OptionMenu will work
+                    self.project_choices.append(value) # Need to initialize this, so OptionMenu will work
+                    self.widgets['Authentication'][option] = tk.OptionMenu(self.basic_settings_frame, self.project, *self.project_choices)
+                    self.project.set(value) # Set menu to value in config file
                 else:
                     self.widgets['Authentication'][option] = tk.Entry(self.basic_settings_frame, width = self.entry_width)
+                    self.widgets['Authentication'][option].insert('end', value)
+                
                 self.widgets['Authentication'][option].grid(row = row, column = 1, sticky = 'w')
-                self.widgets['Authentication'][option].insert('end', value)
                 row += 1
+        
+        # Put a trace on the team field, so we can automatically change the project when the team is changed
+        self.team.trace('w', self.switch_teams)
+        if self.team.get() != '':
+            self.get_projects(self.team.get()) # Get list of projects from the server for the curent team, populate the list
 
         # Read the remaining settings data, and add widgets to window
         self.adv_settings_frame = tk.Frame(self.leftframe)
@@ -107,7 +142,7 @@ class Application(tk.Frame):
         
     def advanced_settings(self):
         ''' Dynamically load the rest of the settings and display, or if already displayed, remove them '''
-        
+
         if self.show_adv_settings:
             self.show_adv_settings = False
             self.settings_button.configure(text='Show Advanced Settings')
@@ -122,16 +157,49 @@ class Application(tk.Frame):
         if self.run:
             self.run = False
             self.startButton.configure(text = 'Online')
+            disconnect_from_server() # Tell Zeuz_Node.py to stop
+            self.log.insert('end', '\nDisconnected from server\n')
+            self.log.see('end')
         else:
             self.run = True
             self.startButton.configure(text = 'Offline')
+            self.log.delete(0.0, 'end') # Clear previous log
             thread.start_new_thread(Login,()) # Execute Zeuz_Node.py
             root.after(log_timer, self.read_log)
 
     def read_log(self):
-        data = CommonUtil.give_log_to_gui()
-        if data: self.log.insert('end', data + "\n")
-        if self.run: root.after(log_timer, self.read_log)
+        #global execlog_data
+        #print execlog_data
+        #data = execlog_data.getvalue()
+        ##data = data[45:]
+        #if data:
+        #    self.log.insert('end', ">>>>["+data+"]")
+        #    self.log.see('end')
+        #    if self.run: root.after(log_timer, self.read_log) # Schedule next log read
+        #return
+    
+        log = CommonUtil.give_log_to_gui()
+        for data in log:
+            # Determine log line type, so we can colour code it
+            if data[:5] == 'DEBUG':
+                colour = self.colour_debug
+            elif data[:6] == 'PASSED':
+                colour = self.colour_passed
+            elif data[:7] == 'WARNING':
+                colour = self.colour_warning
+            elif data[:6] == 'FAILED':
+                colour = self.colour_failed
+            elif data[:5] == 'ERROR':
+                colour = self.colour_failed
+            else:
+                colour = self.colour_default
+
+            # Set colour and print to textbox
+            self.log.tag_config('a%s' % self.colour_tag, foreground = colour) # Colour code line
+            self.log.insert('end', data + "\n", 'a%s' % self.colour_tag) # Insert into textbox
+            self.log.see('end') # Keep end in sight
+            self.colour_tag += 1 # Increment tag counter for next line
+        if self.run: root.after(log_timer, self.read_log) # Schedule next log read
         
         
     def read_node_id(self, w):
@@ -150,14 +218,41 @@ class Application(tk.Frame):
             # Write settings.conf
             for section in self.widgets:
                 for option in self.widgets[section]:
-                    value = str(self.widgets[section][option].get()).strip()
+                    if option == 'team':
+                        value = self.team.get()
+                    elif option == 'project':
+                        value = self.project.get()
+                    else:
+                        value = str(self.widgets[section][option].get()).strip()
                     ConfigModule.add_config_value(section, option, value)
                     
             tkMessageBox.showinfo('Info', 'Settings Updated')
         except:
             tkMessageBox.showerror('Error', 'Settings Not Saved - Try again')
 
+    def switch_teams(self, a, b, c):
+        self.project.set('') # Clear Project menu
+        self.get_projects(self.team.get()) # Update available options in project menu
+        
+    def get_teams(self):
+        self.team_choices = get_team_names()
+        self.widgets['Authentication']['team']['menu'].delete(0, 'end')
+        for team in self.team_choices:
+            self.widgets['Authentication']['team']['menu'].add_command(label = team, command=tk._setit(self.team, team))
+
+    def get_projects(self, team):
+        self.project_choices = get_project_names(team)
+        self.widgets['Authentication']['project']['menu'].delete(0, 'end')
+        for project in self.project_choices:
+            self.widgets['Authentication']['project']['menu'].add_command(label = project, command=tk._setit(self.project, project))
+
+#from cStringIO import StringIO
+#execlog_data = StringIO()
+#sys.stdout = execlog_data
+##print execlog_data
+
+
 root = Application()
-root.master.title('Sample application')
+root.master.title(gui_title)
 #root.bind("<Escape>", quit)
 root.mainloop()

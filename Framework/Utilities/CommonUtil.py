@@ -171,7 +171,7 @@ def ExecLog(sModuleInfo, sDetails, iLogLevel=1, _local_run="", sStatus=""):
         else:
             execlog_data.append("%s - %s\n\t%s" % (status.upper(), sModuleInfo, sDetails)) # Put in global variable, so Zeuz node GUI can read it
             print "%s - %s\n\t%s" % (status.upper(), sModuleInfo, sDetails) # Display in console
-        if len(execlog_data) > 100: del execlog_data[0] # Trim log if it gets too big
+        if len(execlog_data) > 500: del execlog_data[0] # Trim log if it gets too big
 
         # Upload logs to server if local run is not set to False
         if (local_run == False or local_run == 'False') and iLogLevel > 0:
@@ -211,9 +211,10 @@ def give_log_to_gui():
     ''' Sends log lines to the Zeuz Node Gui '''
     
     global execlog_data
-    if len(execlog_data) > 0:
-        value = execlog_data[0]
-        del execlog_data[0]
+    length = len(execlog_data)
+    if length > 0:
+        value = execlog_data[0:length]
+        del execlog_data[0:length]
         return value
     else:
         return ''
