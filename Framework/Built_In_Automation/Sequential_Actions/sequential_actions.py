@@ -116,6 +116,7 @@ actions = { # Numbers are arbitrary, and are not used anywhere
     526: {'module': 'utility', 'name': 'add line', 'function': 'Add_line_ini' },
     527: {'module': 'utility', 'name': 'delete line', 'function': 'Delete_line_ini' },
     528: {'module': 'utility', 'name': 'read name_value', 'function': 'Read_line_name_and_value' },
+    529: {'module': 'utility', 'name': 'text replace', 'function': 'replace_Substring' },
 
     600: {'module': 'xml', 'name': 'update', 'function': 'update_element'},
     601: {'module': 'xml', 'name': 'add', 'function': 'add_element'},

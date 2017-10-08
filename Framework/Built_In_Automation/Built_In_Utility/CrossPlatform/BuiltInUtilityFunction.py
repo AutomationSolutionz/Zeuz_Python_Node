@@ -1766,6 +1766,89 @@ def Download_File_and_Unzip(step_data):
     except Exception:
         return CommonUtil.Exception_Handler(sys.exc_info())
 
+def replace_Substring(data_set):
+    sModuleInfo = inspect.stack()[0][3] + " : " + inspect.getmoduleinfo(__file__).name
+    CommonUtil.ExecLog(sModuleInfo, "Function start", 0)
+
+    # Recall file attachment, if not already set
+    file_attachment = []
+    if Shared_Resources.Test_Shared_Variables('file_attachment'):
+        file_attachment = Shared_Resources.Get_Shared_Variables('file_attachment')
+
+    # Parse data set
+    try:
+        substring = ''
+        new_string = ''
+        file_name = ''
+        replace_all = True
+        case_sensitive = True
+        for row in data_set:
+            if "action" in row[1]:
+                file_name = row[2]
+            if row[1] == 'element parameter':
+                if row[0] == 'replace all':
+                    #The user should be able to replace the first instance found, or all strings found (default is to replace all)
+                    if row[2].lower().strip() == 'true' or row[2].lower().strip() == 'yes': #replace_all
+                        replace_all = True
+                    elif row[2].lower().strip() == 'false' or row[2].lower().strip() == 'no': #replace_first_one_only
+                        replace_all = False
+                    elif row[2]!='':
+                        CommonUtil.ExecLog(sModuleInfo,"Unknown Value for element parameter 'replace_all'. Should be true or false.", 3)
+                        return 'failed'
+
+                elif row[0] == 'case sensitive':
+                    #User should be able to specify case sensitivity (default is to be case sensitive)
+                    if row[2].lower().strip() == 'true' or row[2].lower().strip() == 'yes':  #case_sensitive
+                        case_sensitive = True
+                    elif row[2].lower().strip() == 'false' or row[2].lower().strip() == 'no': #case_insensitive
+                        case_sensitive = False
+                    elif row[2]!='':
+                        CommonUtil.ExecLog(sModuleInfo,"Unknown Value for element parameter 'case_sensitive'. Should be true or false.", 3)
+                        return 'failed'
+                else:
+                    substring = row[0].strip()  #substring to be replaced
+                    new_string = row[2].strip()  #substring should be replaced to this string
+
+         # Try to find the file
+        if file_name not in file_attachment and os.path.exists(file_name) == False:
+            CommonUtil.ExecLog(sModuleInfo, "Could not find file attachment called %s, and could not find it locally" % file_name, 3)
+            return 'failed'
+        if file_name in file_attachment: file_name = file_attachment[file_name] # In file is an attachment, get the full path
+
+        if substring == '':
+            CommonUtil.ExecLog(sModuleInfo, "Could not find substring for this action", 3)
+            return 'failed'
+        if new_string == '':
+            CommonUtil.ExecLog(sModuleInfo, "Could not find new_string for this action", 3)
+            return 'failed'
+    except:
+        return CommonUtil.Exception_Handler(sys.exc_info(), None, "Error parsing data set")
+
+    # Perform action
+    try:
+        #read and change the file
+        f = open(file_name, 'r')
+        newTxt = str(f.read())
+        f.close()
+        if case_sensitive == False: #case insensitive
+            newTxt = newTxt.lower()
+            substring = substring.lower()
+            new_string = new_string.lower()
+        if replace_all == False: #replace only first one
+            newTxt = newTxt.replace(substring, new_string, 1)
+        if replace_all == True: #replace all
+            newTxt =newTxt.replace(substring, new_string)
+
+        #write back
+        f = open(file_name, 'w')
+        f.write(newTxt)
+        f.close()
+        return "passed"
+
+    except Exception:
+        return CommonUtil.Exception_Handler(sys.exc_info())
+
+
 def Change_Value_ini(data_set):
     sModuleInfo = inspect.stack()[0][3] + " : " + inspect.getmoduleinfo(__file__).name
     CommonUtil.ExecLog(sModuleInfo, "Function start", 0)
