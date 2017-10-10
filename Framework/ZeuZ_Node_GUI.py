@@ -13,8 +13,16 @@ else:
     node_id_filename = os.path.join(os.getenv('HOME'), 'Desktop', 'node_id.conf')
 
 gui_title = 'Zeuz Node'
-log_timer = 200 # TIme in ms to check for log lines
-root= None
+help_text = "\
+Zeuz Node Help\n\n\
+Show Advance Settings:\tDisplay more settings including server, port, screenshot, etc\n\
+Save Settings:\tSave all settings (whether displayed or not)\n\
+Quit: Exit immediately - Any running automation will be stopped\n\
+Online: Start the Zeuz_Node.py script, login to the Zeuz server, and wait for a Test Case to be deployed\n\
+Refresh: Gets the list of Teams the current user has access to\n\n\
+Description:\n\
+This is a graphical front-end for the ZeuZ_Node.py script. It provides an interface to the settings.conf, running the Zeuz Node, and displaying the output. Either this, or the ZeuZ_Node.py scripts can be run with the same effect.\
+"
      
 class Application(tk.Frame):
     show_adv_settings = False
@@ -42,7 +50,6 @@ class Application(tk.Frame):
         # Create main frame and sub-frames to contain everything
         self.mainframe = tk.Frame()
         self.mainframe.grid(sticky = 'nw')
-        self.mainframe.bind("<Escape>", quit)
         
         self.leftframe = tk.Frame(self.mainframe)
         self.leftframe.grid(row = 0, column = 0, sticky = 'nw')
@@ -58,6 +65,8 @@ class Application(tk.Frame):
         self.node_id = tk.Entry(self.topframe)
         self.node_id.grid(row = 0, column = 1, columnspan = 2, sticky = 'w')
         self.read_node_id(self.node_id)
+        self.help_button = tk.Button(self.topframe, text = 'Help', width = self.button_width, command = self.show_help)
+        self.help_button.grid(row = 0, column = 3, sticky = 'w')
 
         self.settings_button = tk.Button(self.topframe, text='Show Advanced Settings', width = self.button_width, command=self.advanced_settings)
         self.settings_button.grid(row = 1, column = 0)
@@ -89,14 +98,20 @@ class Application(tk.Frame):
                     self.widgets['Authentication'][option] = tk.Entry(self.basic_settings_frame, show = '*', width = self.entry_width)
                     self.widgets['Authentication'][option].insert('end', value)
                 elif option == 'team':
-                    self.team = tk.StringVar(self)
+                    # Setup refresh link
+                    self.team_refresh = tk.Label(self.basic_settings_frame, text = 'Refresh', fg = 'blue', cursor = 'hand2')
+                    self.team_refresh.grid(row = row, column = 1, sticky = 'e')
+                    self.team_refresh.bind('<Button-1>', lambda e: self.get_teams()) # Bind label to action
+                    
+                    # Configure drop down menu
+                    self.team = tk.StringVar(self) # Initialize drop down variable
                     self.team.set('') # Need to initialize this, so OptionMenu will work
                     self.team_choices.append(value) # Need to initialize this, so OptionMenu will work
                     self.widgets['Authentication'][option] = tk.OptionMenu(self.basic_settings_frame, self.team, *self.team_choices)
                     self.get_teams() # Get list of teams from the server, populate the list
                     self.team.set(value) # Set menu to value in config file
-                    #tk.Label(self.basic_settings_frame, text = '(Optional)', fg="gray").grid(row = row, column = 2)
                 elif option == 'project':
+                    # Configure drop down menu
                     self.project = tk.StringVar(self)
                     self.project.set('') # Need to initialize this, so OptionMenu will work
                     self.project_choices.append(value) # Need to initialize this, so OptionMenu will work
@@ -143,7 +158,12 @@ class Application(tk.Frame):
         
         # Set initial focus on enable button
         self.startButton.focus_set()
-        
+
+    def show_help(self):
+        ''' Display help information in the log window '''
+        self.log.delete(0.0, 'end')
+        self.log.insert('end', help_text)
+
     def advanced_settings(self):
         ''' Dynamically load the rest of the settings and display, or if already displayed, remove them '''
 
@@ -169,6 +189,7 @@ class Application(tk.Frame):
             self.startButton.configure(text = 'Offline')
             self.log.delete(0.0, 'end') # Clear previous log
             thread.start_new_thread(Login,()) # Execute Zeuz_Node.py
+            if self.node_id.get() == '': root.after(5000, lambda: self.read_node_id(self.node_id)) # If no node id was read or specified, wait a few seconds for zeuz_node.py to populate the node id file, and read it 
 
     def read_log(self, data):
         # Determine log line type, so we can colour code it
@@ -182,6 +203,8 @@ class Application(tk.Frame):
             colour = self.colour_failed
         elif data[:5] == 'ERROR':
             colour = self.colour_failed
+        elif 'online with name' in data:
+            colour = self.colour_passed
         else:
             colour = self.colour_default
 
