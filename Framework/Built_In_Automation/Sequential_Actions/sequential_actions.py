@@ -255,6 +255,11 @@ def Sequential_Actions(step_data, _dependency = {}, _run_time_params = '', _file
         result = 'failed' # Initialize result            
         for data_set in step_data: # For each data set within step data
             logic_row=[] # Holds conditional actions
+            
+            if CommonUtil.check_offline() == 'true': # User initiated offline command from GUI
+                CommonUtil.ExecLog(sModuleInfo, "User requested Zeuz Node to go Offline", 2)
+                return 'failed'
+            
             for row in data_set: # For each row of the data set
                 action_name = row[1] # Get Sub-Field
                 

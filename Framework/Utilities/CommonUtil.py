@@ -326,6 +326,19 @@ def TimeStamp(format):
 
     return TimeStamp
 
+def set_exit_mode(emode):
+    ''' Sets a value in the temp config file to tell sequential actions to exit, if set to true '''
+    # Set by the user via the GUI
+    ConfigModule.add_config_value('sectionOne', 'exit_script', emode, temp_config)
+
+def check_offline():
+    ''' Checks the value set in the temp config file to tell sequential actions to exit, if set to true '''
+    # Set by the user via the GUI
+    value = ConfigModule.get_config_value('sectionOne', 'exit_script', temp_config).lower()
+    if value.lower() == 'true':
+        return True
+    else:
+        return False
 
 class MachineInfo():
     def getLocalIP(self):
