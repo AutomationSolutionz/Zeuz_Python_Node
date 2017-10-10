@@ -25,7 +25,6 @@ temp_config=os.path.join(os.path.join(FL.get_home_folder(),os.path.join('Desktop
 passed_tag_list = ['Pass', 'pass', 'PASS', 'PASSED', 'Passed', 'passed', 'true', 'TRUE', 'True', '1', 'Success','success', 'SUCCESS', True]
 failed_tag_list = ['Fail', 'fail', 'FAIL', 'Failed', 'failed', 'FAILED', 'false', 'False', 'FALSE', '0', False]
 skipped_tag_list=['skip','SKIP','Skip','skipped','SKIPPED','Skipped']
-execlog_data = []  # Used to store log lines for the Zeuz node GUI
 
 
 def to_unicode(obj, encoding='utf-8'):
@@ -161,17 +160,13 @@ def ExecLog(sModuleInfo, sDetails, iLogLevel=1, _local_run="", sStatus=""):
             status = 'Warning'
 
         # Display on console
-        global execlog_data
         if status == 'Console': # Change the format for console, mainly leave out the status level
             msg = ''
             if sModuleInfo != '': msg = sModuleInfo + "\t" # Print sModuleInfo only if provided
             msg += sDetails # Add details
-            execlog_data.append(msg) # Put in global variable, so Zeuz node GUI can read it
             print msg # Display in console
         else:
-            execlog_data.append("%s - %s\n\t%s" % (status.upper(), sModuleInfo, sDetails)) # Put in global variable, so Zeuz node GUI can read it
             print "%s - %s\n\t%s" % (status.upper(), sModuleInfo, sDetails) # Display in console
-        if len(execlog_data) > 500: del execlog_data[0] # Trim log if it gets too big
 
         # Upload logs to server if local run is not set to False
         if (local_run == False or local_run == 'False') and iLogLevel > 0:
@@ -180,7 +175,6 @@ def ExecLog(sModuleInfo, sDetails, iLogLevel=1, _local_run="", sStatus=""):
             if FWLogFile=='':
                 FWLogFile=ConfigModule.get_config_value('sectionOne','temp_run_file_path',temp_config)+os.sep+'execlog.log'
             else:
-                if os.path.exists(FWLogFile) == False: FL.CreateFolder(FWLogFile) # Create directory in case it doesn't exist
                 FWLogFile=FWLogFile+os.sep+'temp.log'
             
             logger = logging.getLogger(__name__)
@@ -207,18 +201,6 @@ def ExecLog(sModuleInfo, sDetails, iLogLevel=1, _local_run="", sStatus=""):
 
     except Exception, e:
         return Exception_Handler(sys.exc_info())
-
-def give_log_to_gui():
-    ''' Sends log lines to the Zeuz Node Gui '''
-    
-    global execlog_data
-    length = len(execlog_data)
-    if length > 0:
-        value = execlog_data[0:length]
-        del execlog_data[0:length]
-        return value
-    else:
-        return ''
 
 def FormatSeconds(sec):
         hours, remainder = divmod(sec, 3600)
