@@ -180,6 +180,7 @@ def ExecLog(sModuleInfo, sDetails, iLogLevel=1, _local_run="", sStatus=""):
             if FWLogFile=='':
                 FWLogFile=ConfigModule.get_config_value('sectionOne','temp_run_file_path',temp_config)+os.sep+'execlog.log'
             else:
+                if os.path.exists(FWLogFile) == False: FL.CreateFolder(FWLogFile) # Create directory in case it doesn't exist
                 FWLogFile=FWLogFile+os.sep+'temp.log'
             
             logger = logging.getLogger(__name__)
