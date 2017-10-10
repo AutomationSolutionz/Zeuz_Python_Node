@@ -2,14 +2,19 @@
 # http://infohost.nmt.edu/tcc/help/pubs/tkinter/tkinter.pdf
 import Tkinter as tk
 import tkMessageBox
-import os, os.path, thread, sys
-from Utilities import ConfigModule, CommonUtil
+import os.path, thread, sys
+from Utilities import ConfigModule
 from ZeuZ_Node import Login, disconnect_from_server, get_team_names, get_project_names
 
+# Find node id file
+if sys.platform  == 'win32':
+    node_id_filename = os.path.join(os.getenv('USERPROFILE'), 'Desktop', 'node_id.conf')
+else:
+    node_id_filename = os.path.join(os.getenv('HOME'), 'Desktop', 'node_id.conf')
+
 gui_title = 'Zeuz Node'
-node_id_filename = os.path.join(os.getenv('HOME'), 'Desktop', 'node_id.conf')
 log_timer = 200 # TIme in ms to check for log lines
-execlog_data = None #?????
+root= None
      
 class Application(tk.Frame):
     show_adv_settings = False
@@ -31,7 +36,6 @@ class Application(tk.Frame):
     
     def __init__(self, master=None):
         tk.Frame.__init__(self, master)
-        #self.grid()
         self.createWidgets()
 
     def createWidgets(self):
@@ -61,7 +65,7 @@ class Application(tk.Frame):
         self.save_button = tk.Button(self.topframe, text='Save Settings', width = self.button_width, command=self.save_all)
         self.save_button.grid(row = 1, column = 1)
 
-        self.quitButton = tk.Button(self.topframe, text='Quit', width = self.button_width, command=self.quit)
+        self.quitButton = tk.Button(self.topframe, text='Quit', width = self.button_width, command=self.teardown)
         self.quitButton.grid(row = 1, column = 2)
         
         self.startButton = tk.Button(self.topframe, text='Online', width = self.button_width, command=self.read_mod)
@@ -165,41 +169,27 @@ class Application(tk.Frame):
             self.startButton.configure(text = 'Offline')
             self.log.delete(0.0, 'end') # Clear previous log
             thread.start_new_thread(Login,()) # Execute Zeuz_Node.py
-            root.after(log_timer, self.read_log)
 
-    def read_log(self):
-        #global execlog_data
-        #print execlog_data
-        #data = execlog_data.getvalue()
-        ##data = data[45:]
-        #if data:
-        #    self.log.insert('end', ">>>>["+data+"]")
-        #    self.log.see('end')
-        #    if self.run: root.after(log_timer, self.read_log) # Schedule next log read
-        #return
-    
-        log = CommonUtil.give_log_to_gui()
-        for data in log:
-            # Determine log line type, so we can colour code it
-            if data[:5] == 'DEBUG':
-                colour = self.colour_debug
-            elif data[:6] == 'PASSED':
-                colour = self.colour_passed
-            elif data[:7] == 'WARNING':
-                colour = self.colour_warning
-            elif data[:6] == 'FAILED':
-                colour = self.colour_failed
-            elif data[:5] == 'ERROR':
-                colour = self.colour_failed
-            else:
-                colour = self.colour_default
+    def read_log(self, data):
+        # Determine log line type, so we can colour code it
+        if data[:5] == 'DEBUG':
+            colour = self.colour_debug
+        elif data[:6] == 'PASSED':
+            colour = self.colour_passed
+        elif data[:7] == 'WARNING':
+            colour = self.colour_warning
+        elif data[:6] == 'FAILED':
+            colour = self.colour_failed
+        elif data[:5] == 'ERROR':
+            colour = self.colour_failed
+        else:
+            colour = self.colour_default
 
-            # Set colour and print to textbox
-            self.log.tag_config('a%s' % self.colour_tag, foreground = colour) # Colour code line
-            self.log.insert('end', data + "\n", 'a%s' % self.colour_tag) # Insert into textbox
-            self.log.see('end') # Keep end in sight
-            self.colour_tag += 1 # Increment tag counter for next line
-        if self.run: root.after(log_timer, self.read_log) # Schedule next log read
+        # Set colour and print to textbox
+        self.log.tag_config('a%s' % self.colour_tag, foreground = colour) # Colour code line
+        self.log.insert('end', data, 'a%s' % self.colour_tag) # Insert into textbox
+        self.log.see('end') # Keep end in sight
+        self.colour_tag += 1 # Increment tag counter for next line
         
         
     def read_node_id(self, w):
@@ -246,13 +236,46 @@ class Application(tk.Frame):
         for project in self.project_choices:
             self.widgets['Authentication']['project']['menu'].add_command(label = project, command=tk._setit(self.project, project))
 
-#from cStringIO import StringIO
-#execlog_data = StringIO()
-#sys.stdout = execlog_data
-##print execlog_data
+    def teardown(self):
+        logger_teardown()
+        
+class Logger(object):
+    def __init__(self):
+        self.terminal = sys.stdout
+        #self.log = open("File.log", "w")
+
+    def write(self, message):
+        # self.terminal.write(message) # Print to terminal
+        root.read_log(message) # Print to log window
+
+    def close(self):
+        pass
+        #self.log.close()
+
+def logger_setup():
+    global root
+    global log_window
+    oerr = sys.stderr # Backup handle for STDOUT/ERR
+    oout = sys.stdout
+    Log = Logger() # Create Logging instance
+    sys.stdout = Log # Capture STDOUT output
+    sys.stderr = Log # Capture STDERR output
+    return Log, oout, oerr
+
+def logger_teardown():
+    global Log, oout, oerr
+    Log.close()
+    sys.stderr = oerr
+    sys.stdout = oout
+    quit()
 
 
-root = Application()
-root.master.title(gui_title)
-#root.bind("<Escape>", quit)
-root.mainloop()
+if __name__ == '__main__':
+    Log, oout, oerr = (None, None, None) # Initilize logger variables
+    r = tk.Tk() # Create instance of Tk for bind
+    r.bind("<Escape>", lambda e: logger_teardown()) # Bind escape to exit
+    r.protocol("WM_DELETE_WINDOW", logger_teardown) # Catch any types of exits and teardown properly
+    root = Application() # Create GUI instance
+    root.master.title(gui_title) # Set title
+    Log, oout, oerr = logger_setup() # Redirect STDOUT/ERR to log window
+    root.mainloop() # Execute GUI
