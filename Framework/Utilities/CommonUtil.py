@@ -3,7 +3,7 @@
 
 import sys
 import inspect
-import os, psutil
+import os, psutil, os.path
 import logging
 from Framework.Utilities import ConfigModule
 import datetime
@@ -172,6 +172,7 @@ def ExecLog(sModuleInfo, sDetails, iLogLevel=1, _local_run="", sStatus=""):
         if (local_run == False or local_run == 'False') and iLogLevel > 0:
             log_id=ConfigModule.get_config_value('sectionOne','sTestStepExecLogId',temp_config)
             FWLogFile = ConfigModule.get_config_value('sectionOne','log_folder',temp_config)
+            if os.path.exists(FWLogFile) == False: FL.CreateFolder(FWLogFile) # Create log directory if missing
             if FWLogFile=='':
                 FWLogFile=ConfigModule.get_config_value('sectionOne','temp_run_file_path',temp_config)+os.sep+'execlog.log'
             else:
