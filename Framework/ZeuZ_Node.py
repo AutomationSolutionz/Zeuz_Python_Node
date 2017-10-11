@@ -15,6 +15,7 @@ PROJECT_TAG='project'
 TEAM_TAG='team'
 
 exit_script = False # Used by Zeuz Node GUI to exit script
+temp_ini_file = os.path.join(os.path.join(FileUtilities.get_home_folder(), os.path.join('Desktop',os.path.join('AutomationLog',ConfigModule.get_config_value('Temp', '_file')))))
 
 def Login():
     username=ConfigModule.get_config_value(AUTHENTICATION_TAG,USERNAME_TAG)
@@ -29,6 +30,11 @@ def Login():
         'team':team
     }
     
+    # Iniitalize GUI Offline call
+    CommonUtil.set_exit_mode(False)
+    global exit_script
+    exit_script = False # Reset exit variable
+
     while True:
         # Test to ensure server is up before attempting to login
         try:
@@ -69,20 +75,18 @@ def Login():
         else:
             CommonUtil.ExecLog('', "Server down, waiting 60 seconds before trying again", 4, False)
             time.sleep(60)
+    CommonUtil.ExecLog('', "Zeuz Node Offline", 4, False)
 
 def disconnect_from_server():
     ''' Exits script - Used by Zeuz Node GUI '''
     global exit_script
     exit_script = True
+    CommonUtil.set_exit_mode(True) # Tell Sequential Actions to exit
     
 def RunProcess(sTesterid):
-    global exit_script
-    
     while (1):
         try:
-            if exit_script:
-                exit_script = False # Reset exit variable
-                return False
+            if exit_script: return False
 
             r=RequestFormatter.Get('is_run_submitted_api',{'machine_name':sTesterid})
             if r['run_submit']:
@@ -90,6 +94,7 @@ def RunProcess(sTesterid):
                 value = MainDriverApi.main()
                 CommonUtil.ExecLog('', "updating db with parameter", 4, False)
                 if value == "pass":
+                    if exit_script: return False
                     break
                 CommonUtil.ExecLog('', "Successfully updated db with parameter", 4, False)
             else:

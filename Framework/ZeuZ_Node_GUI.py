@@ -15,13 +15,13 @@ else:
 gui_title = 'Zeuz Node'
 help_text = "\
 Zeuz Node Help\n\n\
+Description:\n\
+This is a graphical front-end for the ZeuZ_Node.py script. It provides an interface to configure the settings, running the Zeuz Node, and displaying the output. Either this, or the ZeuZ_Node.py script can be run with the same effect.\n\n\
 Show Advance Settings:\tDisplay more settings including server, port, screenshot, etc\n\
 Save Settings:\tSave all settings (whether displayed or not)\n\
 Quit: Exit immediately - Any running automation will be stopped\n\
 Online: Start the Zeuz_Node.py script, login to the Zeuz server, and wait for a Test Case to be deployed\n\
 Refresh: Gets the list of Teams the current user has access to\n\n\
-Description:\n\
-This is a graphical front-end for the ZeuZ_Node.py script. It provides an interface to the settings.conf, running the Zeuz Node, and displaying the output. Either this, or the ZeuZ_Node.py scripts can be run with the same effect.\
 "
      
 class Application(tk.Frame):
@@ -182,7 +182,7 @@ class Application(tk.Frame):
             self.run = False
             self.startButton.configure(text = 'Online')
             disconnect_from_server() # Tell Zeuz_Node.py to stop
-            self.log.insert('end', '\nDisconnected from server\n')
+            self.log.insert('end', '\nDisconnecting from server\n')
             self.log.see('end')
         else:
             self.run = True
@@ -294,10 +294,17 @@ def logger_teardown():
 
 
 if __name__ == '__main__':
+    # Root window setup
     Log, oout, oerr = (None, None, None) # Initilize logger variables
     r = tk.Tk() # Create instance of Tk for bind
     r.bind("<Escape>", lambda e: logger_teardown()) # Bind escape to exit
     r.protocol("WM_DELETE_WINDOW", logger_teardown) # Catch any types of exits and teardown properly
+    icon_img = 'zeuz.png'
+    if os.path.exists(icon_img):
+        icon = tk.PhotoImage(file = icon_img) # Import image into format that next line can understand
+        r.call('wm', 'iconphoto', r._w, icon) # Put icon on titlebar
+
+    # Main window setup
     root = Application() # Create GUI instance
     root.master.title(gui_title) # Set title
     Log, oout, oerr = logger_setup() # Redirect STDOUT/ERR to log window

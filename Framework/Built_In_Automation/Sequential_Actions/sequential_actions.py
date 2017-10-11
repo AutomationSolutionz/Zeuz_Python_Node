@@ -256,7 +256,7 @@ def Sequential_Actions(step_data, _dependency = {}, _run_time_params = '', _file
         for data_set in step_data: # For each data set within step data
             logic_row=[] # Holds conditional actions
             
-            if CommonUtil.check_offline() == 'true': # User initiated offline command from GUI
+            if CommonUtil.check_offline(): # Check if user initiated offline command from GUI
                 CommonUtil.ExecLog(sModuleInfo, "User requested Zeuz Node to go Offline", 2)
                 return 'failed'
             
@@ -459,6 +459,10 @@ def Conditional_Action_Handler(step_data, data_set, row, logic_row):
         if logic_decision in conditional_steps: # If we have a result from the element check above (true/false)
             list_of_steps = conditional_steps[2].split(",") # Get the data set numbers for this conditional action and put them in a list
             for each_item in list_of_steps: # For each data set number we need to process before finishing
+                if CommonUtil.check_offline(): # Check if user initiated offline command from GUI
+                    CommonUtil.ExecLog(sModuleInfo, "User requested Zeuz Node to go Offline", 2)
+                    return 'failed'
+
                 CommonUtil.ExecLog(sModuleInfo, "Processing conditional step %s" % str(each_item), 1)
                 data_set_index = int(each_item.strip()) - 1 # data set number, -1 to offset for data set numbering system
                 
