@@ -299,10 +299,15 @@ if __name__ == '__main__':
     r = tk.Tk() # Create instance of Tk for bind
     r.bind("<Escape>", lambda e: logger_teardown()) # Bind escape to exit
     r.protocol("WM_DELETE_WINDOW", logger_teardown) # Catch any types of exits and teardown properly
-    icon_img = 'zeuz.png'
+    if sys.platform == 'win32':
+        icon_img = 'zeuz.gif'
+    else:
+        icon_img = 'zeuz.png'
     if os.path.exists(icon_img):
-        icon = tk.PhotoImage(file = icon_img) # Import image into format that next line can understand
-        r.call('wm', 'iconphoto', r._w, icon) # Put icon on titlebar
+        try:
+            icon = tk.PhotoImage(file = icon_img) # Import image into format that next line can understand
+            r.call('wm', 'iconphoto', r._w, icon) # Put icon on titlebar
+        except: pass # Not a big deal if this fails
 
     # Main window setup
     root = Application() # Create GUI instance
