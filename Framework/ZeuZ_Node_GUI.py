@@ -1,8 +1,13 @@
 #!/usr/bin/env python
 # http://infohost.nmt.edu/tcc/help/pubs/tkinter/tkinter.pdf
+# Written by Lucas Donkers
+# Function: Front-end to Zeuz_Node.py and settings.conf
+
 import Tkinter as tk
+from Crypto.Cipher import ARC4 # Password encryption
+from base64 import b64encode, b64decode # Password encoding
 import tkMessageBox
-import os.path, thread, sys
+import os.path, thread, sys, time
 from Utilities import ConfigModule
 from ZeuZ_Node import Login, disconnect_from_server, get_team_names, get_project_names
 
@@ -28,10 +33,12 @@ class Application(tk.Frame):
     show_adv_settings = False
     run = False
     widgets = {} # Holds the text entry widget handles under the line name
-    team = None
-    team_choices = []
+    team = None # !!! Needs to be added to widgets{}, update save_all() as wel
+    team_choices = [] # !!! Needs to be added to widgets{}, update save_all() as wel
     project = None
     project_choices = []
+    settings_modified = []
+    settings_saved = int(time.time())
 
     entry_width = 50
     button_width = 20
@@ -71,7 +78,7 @@ class Application(tk.Frame):
         self.settings_button = tk.Button(self.topframe, text='Show Advanced Settings', width = self.button_width, command=self.advanced_settings)
         self.settings_button.grid(row = 1, column = 0)
 
-        self.save_button = tk.Button(self.topframe, text='Save Settings', width = self.button_width, command=self.save_all)
+        self.save_button = tk.Button(self.topframe, text='Save Settings', width = self.button_width, command=lambda: self.save_all(True))
         self.save_button.grid(row = 1, column = 1)
 
         self.quitButton = tk.Button(self.topframe, text='Quit', width = self.button_width, command=self.teardown)
@@ -93,10 +100,12 @@ class Application(tk.Frame):
             for option in options:
                 value = ConfigModule.get_config_value('Authentication', option)
                 tk.Label(self.basic_settings_frame, text = option).grid(row = row, column = 0, sticky = 'w')
+                self.widgets['Authentication'][option] = {}
                 
                 if option == 'password':
-                    self.widgets['Authentication'][option] = tk.Entry(self.basic_settings_frame, show = '*', width = self.entry_width)
-                    self.widgets['Authentication'][option].insert('end', value)
+                    if value != '': value = self.password(False, 'zeuz', value) # Decrypt password
+                    self.widgets['Authentication'][option]['widget'] = tk.Entry(self.basic_settings_frame, show = '*', width = self.entry_width)
+                    self.widgets['Authentication'][option]['widget'].insert('end', value)
                 elif option == 'team':
                     # Setup refresh link
                     self.team_refresh = tk.Label(self.basic_settings_frame, text = 'Refresh', fg = 'blue', cursor = 'hand2')
@@ -107,7 +116,7 @@ class Application(tk.Frame):
                     self.team = tk.StringVar(self) # Initialize drop down variable
                     self.team.set('') # Need to initialize this, so OptionMenu will work
                     self.team_choices.append(value) # Need to initialize this, so OptionMenu will work
-                    self.widgets['Authentication'][option] = tk.OptionMenu(self.basic_settings_frame, self.team, *self.team_choices)
+                    self.widgets['Authentication'][option]['widget'] = tk.OptionMenu(self.basic_settings_frame, self.team, *self.team_choices)
                     self.get_teams() # Get list of teams from the server, populate the list
                     self.team.set(value) # Set menu to value in config file
                 elif option == 'project':
@@ -115,13 +124,13 @@ class Application(tk.Frame):
                     self.project = tk.StringVar(self)
                     self.project.set('') # Need to initialize this, so OptionMenu will work
                     self.project_choices.append(value) # Need to initialize this, so OptionMenu will work
-                    self.widgets['Authentication'][option] = tk.OptionMenu(self.basic_settings_frame, self.project, *self.project_choices)
+                    self.widgets['Authentication'][option]['widget'] = tk.OptionMenu(self.basic_settings_frame, self.project, *self.project_choices)
                     self.project.set(value) # Set menu to value in config file
                 else:
-                    self.widgets['Authentication'][option] = tk.Entry(self.basic_settings_frame, width = self.entry_width)
-                    self.widgets['Authentication'][option].insert('end', value)
+                    self.widgets['Authentication'][option]['widget'] = tk.Entry(self.basic_settings_frame, width = self.entry_width)
+                    self.widgets['Authentication'][option]['widget'].insert('end', value)
                 
-                self.widgets['Authentication'][option].grid(row = row, column = 1, sticky = 'w')
+                self.widgets['Authentication'][option]['widget'].grid(row = row, column = 1, sticky = 'w')
                 row += 1
         
         # Put a trace on the team field, so we can automatically change the project when the team is changed
@@ -145,11 +154,18 @@ class Application(tk.Frame):
                     options = ConfigModule.get_all_option(section)
                     if options:
                         for option in options:
+                            self.widgets[section][option] = {}
                             value = ConfigModule.get_config_value(section, option)
                             tk.Label(self.adv_settings_frame, text = option).grid(row = row, column = 0, sticky = 'w')
-                            self.widgets[section][option] = tk.Entry(self.adv_settings_frame, width = self.entry_width)
-                            self.widgets[section][option].grid(row = row, column = 1, sticky = 'w')
-                            self.widgets[section][option].insert('end', value)
+                            if value.lower() in ('true', 'false'):
+                                self.widgets[section][option]['check'] = tk.IntVar()
+                                self.widgets[section][option]['widget'] = tk.Checkbutton(self.adv_settings_frame, variable = self.widgets[section][option]['check'])
+                                if value.lower() == 'true': self.widgets[section][option]['check'].set(1) # Enable checkbox
+                                else: self.widgets[section][option]['check'].set(0) # Disable checkbox
+                            else:
+                                self.widgets[section][option]['widget'] = tk.Entry(self.adv_settings_frame, width = self.entry_width)
+                                self.widgets[section][option]['widget'].insert('end', value)
+                            self.widgets[section][option]['widget'].grid(row = row, column = 1, sticky = 'w')
                             row += 1
         
         # Create text area for log output
@@ -158,7 +174,10 @@ class Application(tk.Frame):
         
         # Set initial focus on enable button
         self.startButton.focus_set()
-
+        
+        # If go online at start is set, go online
+        if self.widgets['RunDefinition']['go_online_at_start']['check'].get(): self.read_mod()
+        
     def show_help(self):
         ''' Display help information in the log window '''
         self.log.delete(0.0, 'end')
@@ -214,19 +233,51 @@ class Application(tk.Frame):
         self.log.see('end') # Keep end in sight
         self.colour_tag += 1 # Increment tag counter for next line
         
+        # Check if node went offline, but we didn't tell it to. If so, flip the Offline button
+        if data == 'Zeuz Node Offline' and self.run == True:
+            self.read_mod()
+        
+    def password(self, encrypt, key, pw):
+        ''' Encrypt, decrypt password and encode in plaintext '''
+        # This is just an obfuscation technique, so the password is not immediately seen by users
+        # Zeuz_Node.py has a similar function that will need to be updated if this is changed
+        
+        try:
+            obj = ARC4.new(key)
+            if encrypt == True:
+                return b64encode(obj.encrypt(pw))
+            else:
+                return obj.decrypt(b64decode(pw))
+        except:
+            tkMessageBox.showerror('Error', 'Error decrypting password. Enter a new password')
+            return ''
         
     def read_node_id(self, w):
         if os.path.exists(node_id_filename):
             node_id = ConfigModule.get_config_value('UniqueID', 'id', node_id_filename)
             w.insert('end', node_id.strip())
                 
-    def save_all(self):
+    def save_all(self, save = False):
+        ''' Check for changes, and if found, save them to disk '''
+        # If save = True, save any modified value to disk, if False, simply check if there were changes
+        
         try:
+            modified = False
+            saved = False
+            cnt = 0
             # Write node_id.conf
             node_id = str(self.node_id.get()).strip()
             node_id = node_id.replace(' ', '_')
             if node_id != '':
-                ConfigModule.add_config_value('UniqueID', 'id', node_id, node_id_filename)
+                if len(self.settings_modified) <= cnt: # First run, populate modifier check
+                    self.settings_modified.append(node_id)
+                elif save and node_id != self.settings_modified[cnt]: # Explicit save, and this value is changed
+                    ConfigModule.add_config_value('UniqueID', 'id', node_id, node_id_filename) # Save to disk
+                    self.settings_modified[cnt] = node_id # Update the modified check
+                    saved = True # Indicate we should tell the user this was saved
+                elif node_id != self.settings_modified[cnt]: # This value is different, signal to save
+                    modified = True
+            cnt += 1
             
             # Write settings.conf
             for section in self.widgets:
@@ -235,13 +286,37 @@ class Application(tk.Frame):
                         value = self.team.get()
                     elif option == 'project':
                         value = self.project.get()
+                    elif 'check' in self.widgets[section][option]: # If checkbox, convert check/uncheck into text
+                        if self.widgets[section][option]['check'].get() == 1: value = 'True'
+                        else: value = 'False'
                     else:
-                        value = str(self.widgets[section][option].get()).strip()
-                    ConfigModule.add_config_value(section, option, value)
-                    
-            tkMessageBox.showinfo('Info', 'Settings Updated')
-        except:
-            tkMessageBox.showerror('Error', 'Settings Not Saved - Try again')
+                        value = str(self.widgets[section][option]['widget'].get()).strip() # Get value
+                        if option == 'password': value = self.password(True, 'zeuz', value) # Encrypt password
+
+                    if len(self.settings_modified) <= cnt: # First run, populate modifier check
+                        self.settings_modified.append(value)
+                    elif save and value != self.settings_modified[cnt]:
+                        ConfigModule.add_config_value(section, option, value)
+                        self.settings_modified[cnt] = value
+                        saved = True
+                    elif value != self.settings_modified[cnt]:
+                        modified = True
+                    cnt += 1
+            
+            # Check if we should save
+            if saved: # Yes, explicit save call, so tell the user
+                if int(time.time()) - self.settings_saved > 5: # But, not too often
+                    self.log.insert('end', 'Settings Updated\n')
+                    self.log.see('end')
+                    self.settings_saved = int(time.time())
+            elif modified: # Change occurred, call this function again, and tell it to save
+                self.save_all(True)
+            if not saved: root.after(500, lambda: thread.start_new_thread(root.save_all, ())) # Reschedule the settings modified check
+        except Exception, e:
+            #tkMessageBox.showerror('Error', 'Settings Not Saved - Trying again in 10 seconds: %s' % e)
+            self.log.insert('end', 'Settings Not Saved - Trying again in 10 seconds: %s\n' % e)
+            self.log.see('end')
+            root.after(10000, lambda: thread.start_new_thread(root.save_all, ()))
 
     def switch_teams(self, a, b, c):
         self.project.set('') # Clear Project menu
@@ -249,15 +324,17 @@ class Application(tk.Frame):
         
     def get_teams(self):
         self.team_choices = get_team_names()
-        self.widgets['Authentication']['team']['menu'].delete(0, 'end')
+        self.widgets['Authentication']['team']['widget']['menu'].delete(0, 'end')
         for team in self.team_choices:
-            self.widgets['Authentication']['team']['menu'].add_command(label = team, command=tk._setit(self.team, team))
+            self.widgets['Authentication']['team']['widget']['menu'].add_command(label = team, command=tk._setit(self.team, team))
+        if self.team_choices == []:
+            tkMessageBox.showerror('Error', 'No teams could be found. Server, port, username, or password may be wrong')
 
     def get_projects(self, team):
         self.project_choices = get_project_names(team)
-        self.widgets['Authentication']['project']['menu'].delete(0, 'end')
+        self.widgets['Authentication']['project']['widget']['menu'].delete(0, 'end')
         for project in self.project_choices:
-            self.widgets['Authentication']['project']['menu'].add_command(label = project, command=tk._setit(self.project, project))
+            self.widgets['Authentication']['project']['widget']['menu'].add_command(label = project, command=tk._setit(self.project, project))
 
     def teardown(self):
         logger_teardown()
@@ -268,7 +345,7 @@ class Logger(object):
         #self.log = open("File.log", "w")
 
     def write(self, message):
-        # self.terminal.write(message) # Print to terminal
+        #self.terminal.write(message) # Print to terminal
         root.read_log(message) # Print to log window
 
     def close(self):
@@ -313,4 +390,7 @@ if __name__ == '__main__':
     root = Application() # Create GUI instance
     root.master.title(gui_title) # Set title
     Log, oout, oerr = logger_setup() # Redirect STDOUT/ERR to log window
-    root.mainloop() # Execute GUI
+    root.after(500, lambda: thread.start_new_thread(root.save_all, ())) # Schedule the settings modified check
+
+    # Execute GUI
+    root.mainloop()

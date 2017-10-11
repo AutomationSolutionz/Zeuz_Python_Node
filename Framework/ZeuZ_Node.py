@@ -2,6 +2,8 @@
 # -*- coding: cp1252 -*-
 
 import os,sys,time
+from Crypto.Cipher import ARC4
+from base64 import b64encode, b64decode
 sys.path.append(os.path.dirname(os.getcwd()))
 from Utilities import ConfigModule,RequestFormatter,CommonUtil,FileUtilities
 import MainDriverApi
@@ -14,12 +16,13 @@ PASSWORD_TAG='password'
 PROJECT_TAG='project'
 TEAM_TAG='team'
 
+
 exit_script = False # Used by Zeuz Node GUI to exit script
 temp_ini_file = os.path.join(os.path.join(FileUtilities.get_home_folder(), os.path.join('Desktop',os.path.join('AutomationLog',ConfigModule.get_config_value('Temp', '_file')))))
 
 def Login():
     username=ConfigModule.get_config_value(AUTHENTICATION_TAG,USERNAME_TAG)
-    password=ConfigModule.get_config_value(AUTHENTICATION_TAG,PASSWORD_TAG)
+    password=pwdec(ConfigModule.get_config_value(AUTHENTICATION_TAG,PASSWORD_TAG))
     project=ConfigModule.get_config_value(AUTHENTICATION_TAG,PROJECT_TAG)
     team=ConfigModule.get_config_value(AUTHENTICATION_TAG,TEAM_TAG)
     #form payload object
@@ -54,15 +57,12 @@ def Login():
                     if machine_object['registered']:
                         tester_id=machine_object['name']
                         RunAgain = RunProcess(tester_id)
-                        #if RunAgain == True:
-                        #    Login()
-                        if RunAgain == False:
-                            break # Exit login
+                        if RunAgain == False: break # Exit login
                     else:
                         return False
                 else:
                     CommonUtil.ExecLog('', "Authentication Failed", 4, False)
-                    return False
+                    break
             except Exception, e:
                 exc_type, exc_obj, exc_tb = sys.exc_info()
                 fname = os.path.split(exc_tb.tb_frame.f_code.co_filename)[1]
@@ -75,7 +75,7 @@ def Login():
         else:
             CommonUtil.ExecLog('', "Server down, waiting 60 seconds before trying again", 4, False)
             time.sleep(60)
-    CommonUtil.ExecLog('', "Zeuz Node Offline", 4, False)
+    CommonUtil.ExecLog('', "Zeuz Node Offline", 4, False) # GUI relies on this exact text. GUI must be updated if this is changed
 
 def disconnect_from_server():
     ''' Exits script - Used by Zeuz Node GUI '''
@@ -215,25 +215,30 @@ def get_team_names():
     
     try:
         username=ConfigModule.get_config_value(AUTHENTICATION_TAG,USERNAME_TAG)
-        password=ConfigModule.get_config_value(AUTHENTICATION_TAG,PASSWORD_TAG)
-    
+        password=pwdec(ConfigModule.get_config_value(AUTHENTICATION_TAG,PASSWORD_TAG))
         user_info_object = {
             USERNAME_TAG: username,
             PASSWORD_TAG: password
         }
     
+        try: # Check if we have a connection, if not, exit. If user has a wrong address or no address, RequestFormatter will go into a failure loop
+            r = RequestFormatter.Head('login_api')
+        except: # Occurs when server is down
+            return [] 
+
         r = RequestFormatter.Get('get_user_teams_api', user_info_object)
         teams = [x[0] for x in r] # Convert into a simple list
         return teams
     except:
         CommonUtil.ExecLog('', "Error retrieving team names", 4, False)
+        return []
 
 def get_project_names(team):
     ''' Retrieve projects for given team '''
     
     try:
         username=ConfigModule.get_config_value(AUTHENTICATION_TAG,USERNAME_TAG)
-        password=ConfigModule.get_config_value(AUTHENTICATION_TAG,PASSWORD_TAG)
+        password=pwdec(ConfigModule.get_config_value(AUTHENTICATION_TAG,PASSWORD_TAG))
     
         user_info_object = {
             USERNAME_TAG: username,
@@ -241,11 +246,22 @@ def get_project_names(team):
             TEAM_TAG: team
         }
     
+        try: # Check if we have a connection, if not, exit. If user has a wrong address or no address, RequestFormatter will go into a failure loop
+            r = RequestFormatter.Head('login_api')
+        except: # Occurs when server is down
+            return [] 
+
         r = RequestFormatter.Get('get_user_projects_api', user_info_object)
         projects = [x[0] for x in r] # Convert into a simple list
         return projects
     except:
         CommonUtil.ExecLog('', "Error retrieving project names", 4, False)
+        return []
+
+def pwdec(pw):
+    key = 'zeuz'
+    obj = ARC4.new(key)
+    return obj.decrypt(b64decode(pw))
 
 if __name__=='__main__':
     Login()

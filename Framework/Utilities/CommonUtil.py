@@ -201,7 +201,7 @@ def ExecLog(sModuleInfo, sDetails, iLogLevel=1, _local_run="", sStatus=""):
             r = RequestFormatter.Get('log_execution',{'logid': log_id, 'modulename': sModuleInfo, 'details': sDetails, 'status': status,'loglevel': iLogLevel})
 
     except Exception, e:
-        return Exception_Handler(sys.exc_info())
+        pass # This can happen when server is not available. In that case, we don't need to do anything
 
 def FormatSeconds(sec):
         hours, remainder = divmod(sec, 3600)
