@@ -30,18 +30,16 @@ Refresh: Gets the list of Teams the current user has access to\n\n\
 "
      
 class Application(tk.Frame):
-    show_adv_settings = False
-    run = False
+    show_adv_settings = False # Toggles settings button
+    run = False # Toggles online button
     widgets = {} # Holds the text entry widget handles under the line name
-    team = None # !!! Needs to be added to widgets{}, update save_all() as wel
-    team_choices = [] # !!! Needs to be added to widgets{}, update save_all() as wel
-    project = None
-    project_choices = []
-    settings_modified = []
-    settings_saved = int(time.time())
+    settings_modified = [] # Holds the last seen settings, so we can check if we need to auto-save
+    settings_saved = int(time.time()) # "Settings updated" timer
 
+    # Widget settings
     entry_width = 50
     button_width = 20
+    node_id_size = 10 # Max length of node ID - must match that specified in CommonUtil.MachineInfo()
     colour_tag = 0
     colour_debug = 'blue'
     colour_passed = 'green'
@@ -69,9 +67,10 @@ class Application(tk.Frame):
         self.topframe.grid(sticky = 'w')
         
         tk.Label(self.topframe, text = 'Node ID', fg="red").grid(row = 0, column = 0, sticky = 'e')
-        self.node_id = tk.Entry(self.topframe)
+        self.node_id = tk.Entry(self.topframe, validate = "key", validatecommand = (self.register(self.onValidate), '%d', '%S')) # See onValidate() for more info
         self.node_id.grid(row = 0, column = 1, columnspan = 2, sticky = 'w')
         self.read_node_id(self.node_id)
+        
         self.help_button = tk.Button(self.topframe, text = 'Help', width = self.button_width, command = self.show_help)
         self.help_button.grid(row = 0, column = 3, sticky = 'w')
 
@@ -102,31 +101,28 @@ class Application(tk.Frame):
                 tk.Label(self.basic_settings_frame, text = option).grid(row = row, column = 0, sticky = 'w')
                 self.widgets['Authentication'][option] = {}
                 
-                if option == 'password':
+                if option == 'password': # Add asterisk to hide password
                     if value != '': value = self.password(False, 'zeuz', value) # Decrypt password
                     self.widgets['Authentication'][option]['widget'] = tk.Entry(self.basic_settings_frame, show = '*', width = self.entry_width)
                     self.widgets['Authentication'][option]['widget'].insert('end', value)
-                elif option == 'team':
-                    # Setup refresh link
-                    self.team_refresh = tk.Label(self.basic_settings_frame, text = 'Refresh', fg = 'blue', cursor = 'hand2')
-                    self.team_refresh.grid(row = row, column = 1, sticky = 'e')
-                    self.team_refresh.bind('<Button-1>', lambda e: self.get_teams()) # Bind label to action
+                
+                elif option in ('team', 'project'): # Set these as drop down menus
+                    if option == 'team': # Put refresh link beside team
+                        # Setup refresh link
+                        self.team_refresh = tk.Label(self.basic_settings_frame, text = 'Refresh', fg = 'blue', cursor = 'hand2')
+                        self.team_refresh.grid(row = row, column = 1, sticky = 'e')
+                        self.team_refresh.bind('<Button-1>', lambda e: self.get_teams()) # Bind label to action
                     
                     # Configure drop down menu
-                    self.team = tk.StringVar(self) # Initialize drop down variable
-                    self.team.set('') # Need to initialize this, so OptionMenu will work
-                    self.team_choices.append(value) # Need to initialize this, so OptionMenu will work
-                    self.widgets['Authentication'][option]['widget'] = tk.OptionMenu(self.basic_settings_frame, self.team, *self.team_choices)
-                    self.get_teams() # Get list of teams from the server, populate the list
-                    self.team.set(value) # Set menu to value in config file
-                elif option == 'project':
-                    # Configure drop down menu
-                    self.project = tk.StringVar(self)
-                    self.project.set('') # Need to initialize this, so OptionMenu will work
-                    self.project_choices.append(value) # Need to initialize this, so OptionMenu will work
-                    self.widgets['Authentication'][option]['widget'] = tk.OptionMenu(self.basic_settings_frame, self.project, *self.project_choices)
-                    self.project.set(value) # Set menu to value in config file
-                else:
+                    self.widgets['Authentication'][option]['dropdown'] = tk.StringVar(self) # Initialize drop down variable
+                    self.widgets['Authentication'][option]['dropdown'].set('') # Need to initialize this, so OptionMenu will work
+                    self.widgets['Authentication'][option]['choices'] = []
+                    self.widgets['Authentication'][option]['choices'].append(value) # Need to initialize this, so OptionMenu will work
+                    self.widgets['Authentication'][option]['widget'] = tk.OptionMenu(self.basic_settings_frame, self.widgets['Authentication'][option]['dropdown'], *self.widgets['Authentication'][option]['choices'])
+                    if option == 'team': self.get_teams() # Get list of teams from the server, populate the list
+                    self.widgets['Authentication'][option]['dropdown'].set(value) # Set menu to value in config file
+                
+                else: # All other settings get a textbox
                     self.widgets['Authentication'][option]['widget'] = tk.Entry(self.basic_settings_frame, width = self.entry_width)
                     self.widgets['Authentication'][option]['widget'].insert('end', value)
                 
@@ -134,9 +130,9 @@ class Application(tk.Frame):
                 row += 1
         
         # Put a trace on the team field, so we can automatically change the project when the team is changed
-        self.team.trace('w', self.switch_teams)
-        if self.team.get() != '':
-            self.get_projects(self.team.get()) # Get list of projects from the server for the curent team, populate the list
+        self.widgets['Authentication']['team']['dropdown'].trace('w', self.switch_teams)
+        if self.widgets['Authentication']['team']['dropdown'].get() != '':
+            self.get_projects(self.widgets['Authentication']['team']['dropdown'].get()) # Get list of projects from the server for the curent team, populate the list
 
         # Read the remaining settings data, and add widgets to window
         self.adv_settings_frame = tk.Frame(self.leftframe)
@@ -177,6 +173,20 @@ class Application(tk.Frame):
         
         # If go online at start is set, go online
         if self.widgets['RunDefinition']['go_online_at_start']['check'].get(): self.read_mod()
+        
+    def onValidate(self, ctype, S):
+        # Limit text to specified length and characters
+        # https://stackoverflow.com/questions/4140437/interactively-validating-entry-widget-content-in-tkinter/4140988#4140988
+        # Caveats: Can't copy/paste/w.insert() more than one character at a time
+        
+        chars = '0123456789abcdefghijklmnopqrstuvwxyz-_'
+
+        if int(ctype) == 0: return True # Allow deletions
+    
+        if len(self.node_id.get()) < self.node_id_size: # Allow this length
+            if S in chars: return True # Allow these characters
+            else: return False
+        else: return False
         
     def show_help(self):
         ''' Display help information in the log window '''
@@ -253,9 +263,10 @@ class Application(tk.Frame):
             return ''
         
     def read_node_id(self, w):
+        # This is a separate file on the desktop
         if os.path.exists(node_id_filename):
-            node_id = ConfigModule.get_config_value('UniqueID', 'id', node_id_filename)
-            w.insert('end', node_id.strip())
+            node_id = ConfigModule.get_config_value('UniqueID', 'id', node_id_filename).strip()
+            for c in node_id: w.insert('end', c) # We have to write characters one at a time due to how onValidate() works
                 
     def save_all(self, save = False):
         ''' Check for changes, and if found, save them to disk '''
@@ -265,6 +276,7 @@ class Application(tk.Frame):
             modified = False
             saved = False
             cnt = 0
+            
             # Write node_id.conf
             node_id = str(self.node_id.get()).strip()
             node_id = node_id.replace(' ', '_')
@@ -282,25 +294,28 @@ class Application(tk.Frame):
             # Write settings.conf
             for section in self.widgets:
                 for option in self.widgets[section]:
-                    if option == 'team':
-                        value = self.team.get()
-                    elif option == 'project':
-                        value = self.project.get()
+                    if 'dropdown' in self.widgets[section][option]: # Has a drop down menu
+                        value = self.widgets[section][option]['dropdown'].get()
+                    
                     elif 'check' in self.widgets[section][option]: # If checkbox, convert check/uncheck into text
                         if self.widgets[section][option]['check'].get() == 1: value = 'True'
                         else: value = 'False'
-                    else:
+                    
+                    else: # Widget is a textbox
                         value = str(self.widgets[section][option]['widget'].get()).strip() # Get value
                         if option == 'password': value = self.password(True, 'zeuz', value) # Encrypt password
 
                     if len(self.settings_modified) <= cnt: # First run, populate modifier check
                         self.settings_modified.append(value)
+                    
                     elif save and value != self.settings_modified[cnt]:
                         ConfigModule.add_config_value(section, option, value)
                         self.settings_modified[cnt] = value
                         saved = True
+                    
                     elif value != self.settings_modified[cnt]:
                         modified = True
+                    
                     cnt += 1
             
             # Check if we should save
@@ -319,38 +334,43 @@ class Application(tk.Frame):
             root.after(10000, lambda: thread.start_new_thread(root.save_all, ()))
 
     def switch_teams(self, a, b, c):
-        self.project.set('') # Clear Project menu
-        self.get_projects(self.team.get()) # Update available options in project menu
+        # When user changes the team, pull the list of projects for that team
+        self.widgets['Authentication']['project']['dropdown'].set('') # Clear Project menu
+        self.get_projects(self.widgets['Authentication']['team']['dropdown'].get()) # Update available options in project menu
         
     def get_teams(self):
-        self.team_choices = get_team_names()
-        self.widgets['Authentication']['team']['widget']['menu'].delete(0, 'end')
-        for team in self.team_choices:
-            self.widgets['Authentication']['team']['widget']['menu'].add_command(label = team, command=tk._setit(self.team, team))
-        if self.team_choices == []:
-            tkMessageBox.showerror('Error', 'No teams could be found. Server, port, username, or password may be wrong')
+        # Populate drop down with teams user has access to
+        self.widgets['Authentication']['team']['choices'] = get_team_names() # Get list of teams from server
+        self.widgets['Authentication']['team']['widget']['menu'].delete(0, 'end') # Clear drop down menu
+        for team in self.widgets['Authentication']['team']['choices']: # For each new team
+            self.widgets['Authentication']['team']['widget']['menu'].add_command(label = team, command=tk._setit(self.widgets['Authentication']['team']['dropdown'], team)) # Add the team to the drop down menu
+        if self.widgets['Authentication']['team']['choices'] == []: # If nothing was returned
+            tkMessageBox.showerror('Error', 'No teams could be found. Server, port, username, or password may be wrong') # Display an error
 
     def get_projects(self, team):
-        self.project_choices = get_project_names(team)
-        self.widgets['Authentication']['project']['widget']['menu'].delete(0, 'end')
-        for project in self.project_choices:
-            self.widgets['Authentication']['project']['widget']['menu'].add_command(label = project, command=tk._setit(self.project, project))
+        # Populate drop down with projects user has access to, for a given team
+        self.widgets['Authentication']['project']['choices'] = get_project_names(team) # Get list of projects for the selected team
+        self.widgets['Authentication']['project']['widget']['menu'].delete(0, 'end') # Clear drop down menu
+        for project in self.widgets['Authentication']['project']['choices']: # For each new project
+            self.widgets['Authentication']['project']['widget']['menu'].add_command(label = project, command=tk._setit(self.widgets['Authentication']['project']['dropdown'], project)) # Add the project to the drop down menu
 
     def teardown(self):
         logger_teardown()
         
 class Logger(object):
+    # Redirects all stdout/err to the GUI log window
+    # This is the simplest method for getting all Framework to log to the window. Due to how different modules are started, we can't get a centralized system to record and feed back to the GUI
     def __init__(self):
         self.terminal = sys.stdout
-        #self.log = open("File.log", "w")
+        #self.log = open("File.log", "w") # Save in case we want to start logging to disk
 
     def write(self, message):
-        #self.terminal.write(message) # Print to terminal
+        #self.terminal.write(message) # Print to terminal (DEBUGGING)
         root.read_log(message) # Print to log window
 
     def close(self):
         pass
-        #self.log.close()
+        #self.log.close() # Save in case we want to start logging to disk
 
 def logger_setup():
     global root
