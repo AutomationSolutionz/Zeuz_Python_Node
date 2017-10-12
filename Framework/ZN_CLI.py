@@ -40,11 +40,7 @@ def Login():
 
     while True:
         # Test to ensure server is up before attempting to login
-        try:
-            r = False
-            r = RequestFormatter.Head('login_api')
-        except: # Occurs when server is down
-            r = False 
+        r = check_server_online()
             
         # Login to server
         if r != False: # Server is up
@@ -210,6 +206,13 @@ def dependency_collection():
         Error_Detail = ((str(exc_type).replace("type ", "Error Type: ")) + ";" +  "Error Message: " + str(exc_obj) +";" + "File Name: " + fname + ";" + "Line: "+ str(exc_tb.tb_lineno))
         CommonUtil.ExecLog('', Error_Detail, 4, False)
 
+def check_server_online():
+    try: # Check if we have a connection, if not, exit. If user has a wrong address or no address, RequestFormatter will go into a failure loop
+        r = RequestFormatter.Head('login_api')
+        return True
+    except: # Occurs when server is down
+        return False 
+    
 def get_team_names():
     ''' Retrieve all teams user has access to '''
     
@@ -220,11 +223,8 @@ def get_team_names():
             USERNAME_TAG: username,
             PASSWORD_TAG: password
         }
-    
-        try: # Check if we have a connection, if not, exit. If user has a wrong address or no address, RequestFormatter will go into a failure loop
-            r = RequestFormatter.Head('login_api')
-        except: # Occurs when server is down
-            return [] 
+
+        if not check_server_online(): return []
 
         r = RequestFormatter.Get('get_user_teams_api', user_info_object)
         teams = [x[0] for x in r] # Convert into a simple list
@@ -246,10 +246,7 @@ def get_project_names(team):
             TEAM_TAG: team
         }
     
-        try: # Check if we have a connection, if not, exit. If user has a wrong address or no address, RequestFormatter will go into a failure loop
-            r = RequestFormatter.Head('login_api')
-        except: # Occurs when server is down
-            return [] 
+        if not check_server_online(): return []
 
         r = RequestFormatter.Get('get_user_projects_api', user_info_object)
         projects = [x[0] for x in r] # Convert into a simple list

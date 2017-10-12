@@ -9,7 +9,7 @@ from base64 import b64encode, b64decode # Password encoding
 import tkMessageBox
 import os.path, thread, sys, time
 from Utilities import ConfigModule
-from Framework.ZN_CLI import Login, disconnect_from_server, get_team_names, get_project_names
+from Framework.ZN_CLI import Login, disconnect_from_server, get_team_names, get_project_names, check_server_online
 
 # Find node id file
 if sys.platform  == 'win32':
@@ -35,6 +35,7 @@ class Application(tk.Frame):
     widgets = {} # Holds the text entry widget handles under the line name
     settings_modified = [] # Holds the last seen settings, so we can check if we need to auto-save
     settings_saved = int(time.time()) # "Settings updated" timer
+    advanced_settings_frames = []
 
     # Widget settings
     entry_width = 50
@@ -86,84 +87,64 @@ class Application(tk.Frame):
         self.startButton = tk.Button(self.topframe, text='Online', width = self.button_width, command=self.read_mod)
         self.startButton.grid(row = 1, column = 3)
         
-        # Basic Settings
-        self.basic_settings_frame = tk.Frame(self.leftframe)
-        self.basic_settings_frame.grid(sticky = 'w')
-        
-        # Dynamically load the Authentication section - this is displayed all the time
-        tk.Label(self.basic_settings_frame, text = 'Authentication', fg="red").grid(row = 0, column = 0, columnspan = 2)
-        row = 1
-        options = ConfigModule.get_all_option('Authentication')
-        if options:
-            self.widgets['Authentication'] = {}
-            for option in options:
-                value = ConfigModule.get_config_value('Authentication', option)
-                tk.Label(self.basic_settings_frame, text = option).grid(row = row, column = 0, sticky = 'w')
-                self.widgets['Authentication'][option] = {}
-                
-                if option == 'password': # Add asterisk to hide password
-                    if value != '': value = self.password(False, 'zeuz', value) # Decrypt password
-                    self.widgets['Authentication'][option]['widget'] = tk.Entry(self.basic_settings_frame, show = '*', width = self.entry_width)
-                    self.widgets['Authentication'][option]['widget'].insert('end', value)
-                
-                elif option in ('team', 'project'): # Set these as drop down menus
-                    if option == 'team': # Put refresh link beside team
-                        # Setup refresh link
-                        self.team_refresh = tk.Label(self.basic_settings_frame, text = 'Refresh', fg = 'blue', cursor = 'hand2')
-                        self.team_refresh.grid(row = row, column = 1, sticky = 'e')
-                        self.team_refresh.bind('<Button-1>', lambda e: self.get_teams()) # Bind label to action
-                    
-                    # Configure drop down menu
-                    self.widgets['Authentication'][option]['dropdown'] = tk.StringVar(self) # Initialize drop down variable
-                    self.widgets['Authentication'][option]['dropdown'].set('') # Need to initialize this, so OptionMenu will work
-                    self.widgets['Authentication'][option]['choices'] = []
-                    self.widgets['Authentication'][option]['choices'].append(value) # Need to initialize this, so OptionMenu will work
-                    self.widgets['Authentication'][option]['widget'] = tk.OptionMenu(self.basic_settings_frame, self.widgets['Authentication'][option]['dropdown'], *self.widgets['Authentication'][option]['choices'])
-                    if option == 'team': self.get_teams() # Get list of teams from the server, populate the list
-                    self.widgets['Authentication'][option]['dropdown'].set(value) # Set menu to value in config file
-                
-                else: # All other settings get a textbox
-                    self.widgets['Authentication'][option]['widget'] = tk.Entry(self.basic_settings_frame, width = self.entry_width)
-                    self.widgets['Authentication'][option]['widget'].insert('end', value)
-                
-                self.widgets['Authentication'][option]['widget'].grid(row = row, column = 1, sticky = 'w')
-                row += 1
-        
-        # Put a trace on the team field, so we can automatically change the project when the team is changed
-        self.widgets['Authentication']['team']['dropdown'].trace('w', self.switch_teams)
-        if self.widgets['Authentication']['team']['dropdown'].get() != '':
-            self.get_projects(self.widgets['Authentication']['team']['dropdown'].get()) # Get list of projects from the server for the curent team, populate the list
-
         # Read the remaining settings data, and add widgets to window
-        self.adv_settings_frame = tk.Frame(self.leftframe)
+        self.settings_frame = tk.Frame(self.leftframe)
+        self.settings_frame.grid(sticky = 'w')
         row = 0
         sections = ConfigModule.get_all_sections()
         if sections:
             for section in sections:
-                if section != 'Authentication':
-                    self.widgets[section] = {}
-                    #tk.Frame(self.adv_settings_frame, height = 1, width = 500, bg = 'black').grid(row = row, columnspan = 2)
-                    #row += 1
-                    tk.Label(self.adv_settings_frame, text = section, fg="red").grid(row = row, column = 0, pady = 10, columnspan = 2)
-                    #tk.Frame(self.adv_settings_frame, height = 1, width = 500, bg = 'black').grid(row = row, column = 1)
-                    row += 1
-                    options = ConfigModule.get_all_option(section)
-                    if options:
-                        for option in options:
-                            self.widgets[section][option] = {}
-                            value = ConfigModule.get_config_value(section, option)
-                            tk.Label(self.adv_settings_frame, text = option).grid(row = row, column = 0, sticky = 'w')
-                            if value.lower() in ('true', 'false'):
-                                self.widgets[section][option]['check'] = tk.IntVar()
-                                self.widgets[section][option]['widget'] = tk.Checkbutton(self.adv_settings_frame, variable = self.widgets[section][option]['check'])
-                                if value.lower() == 'true': self.widgets[section][option]['check'].set(1) # Enable checkbox
-                                else: self.widgets[section][option]['check'].set(0) # Disable checkbox
-                            else:
-                                self.widgets[section][option]['widget'] = tk.Entry(self.adv_settings_frame, width = self.entry_width)
-                                self.widgets[section][option]['widget'].insert('end', value)
-                            self.widgets[section][option]['widget'].grid(row = row, column = 1, sticky = 'w')
-                            row += 1
+                self.widgets[section] = {}
+                self.widgets[section]['widget'] = {}
+                self.widgets[section]['frame'] = tk.Frame(self.settings_frame)
+                self.advanced_settings_frames.append(section) # Store all section names, so we know which to display when we click the show advanced settings button
+                tk.Label(self.widgets[section]['frame'], text = section, fg="red").grid(row = row, column = 0, pady = 10, columnspan = 2)
+                row += 1
+                options = ConfigModule.get_all_option(section)
+                if options:
+                    for option in options:
+                        self.widgets[section]['widget'][option] = {}
+                        value = ConfigModule.get_config_value(section, option)
+                        tk.Label(self.widgets[section]['frame'], text = option).grid(row = row, column = 0, sticky = 'w')
+                        
+                        if option == 'password': # Add asterisk to hide password
+                            if value != '': value = self.password(False, 'zeuz', value) # Decrypt password
+                            self.widgets['Authentication']['widget'][option]['widget'] = tk.Entry(self.widgets[section]['frame'], show = '*', width = self.entry_width)
+                            self.widgets['Authentication']['widget'][option]['widget'].insert('end', value)
+                        
+                        elif option in ('team', 'project'): # Set these as drop down menus
+                            if option == 'team': # Put refresh link beside team
+                                # Setup refresh link
+                                self.team_refresh = tk.Label(self.widgets[section]['frame'], text = 'Refresh', fg = 'blue', cursor = 'hand2')
+                                self.team_refresh.grid(row = row, column = 1, sticky = 'e')
+                                self.team_refresh.bind('<Button-1>', lambda e: self.get_teams()) # Bind label to action
+                            
+                            # Configure drop down menu
+                            self.widgets['Authentication']['widget'][option]['dropdown'] = tk.StringVar(self) # Initialize drop down variable
+                            self.widgets['Authentication']['widget'][option]['dropdown'].set('') # Need to initialize this, so OptionMenu will work
+                            self.widgets['Authentication']['widget'][option]['choices'] = []
+                            self.widgets['Authentication']['widget'][option]['choices'].append(value) # Need to initialize this, so OptionMenu will work
+                            self.widgets['Authentication']['widget'][option]['widget'] = tk.OptionMenu(self.widgets[section]['frame'], self.widgets['Authentication']['widget'][option]['dropdown'], *self.widgets['Authentication']['widget'][option]['choices'])
+                            if option == 'team': self.get_teams(True) # Get list of teams from the server, populate the list
+                            self.widgets['Authentication']['widget'][option]['dropdown'].set(value) # Set menu to value in config file
+                        
+                        elif value.lower() in ('true', 'false'):
+                            self.widgets[section]['widget'][option]['check'] = tk.IntVar()
+                            self.widgets[section]['widget'][option]['widget'] = tk.Checkbutton(self.widgets[section]['frame'], variable = self.widgets[section]['widget'][option]['check'])
+                            if value.lower() == 'true': self.widgets[section]['widget'][option]['check'].set(1) # Enable checkbox
+                            else: self.widgets[section]['widget'][option]['check'].set(0) # Disable checkbox
+                        
+                        else:
+                            self.widgets[section]['widget'][option]['widget'] = tk.Entry(self.widgets[section]['frame'], width = self.entry_width)
+                            self.widgets[section]['widget'][option]['widget'].insert('end', value)
+                        self.widgets[section]['widget'][option]['widget'].grid(row = row, column = 1, sticky = 'w')
+                        row += 1
         
+        # Put a trace on the team field, so we can automatically change the project when the team is changed
+        self.widgets['Authentication']['widget']['team']['dropdown'].trace('w', self.switch_teams)
+        if self.widgets['Authentication']['widget']['team']['dropdown'].get() != '':
+            self.get_projects(self.widgets['Authentication']['widget']['team']['dropdown'].get()) # Get list of projects from the server for the curent team, populate the list
+
         # Create text area for log output
         self.log = tk.Text(self.rightframe, width = 70, height = 30)
         self.log.grid(row = 0, column = 0, sticky = 'w')
@@ -172,7 +153,39 @@ class Application(tk.Frame):
         self.startButton.focus_set()
         
         # If go online at start is set, go online
-        if self.widgets['RunDefinition']['go_online_at_start']['check'].get(): self.read_mod()
+        if self.widgets['RunDefinition']['widget']['go_online_at_start']['check'].get(): self.read_mod()
+        
+    def start_up_display(self):
+        text_check = self.widgets['Authentication']['widget']['team']['dropdown'].get()
+        if text_check == 'YourTeamNameGoesHere':
+            self.widgets['Server']['frame'].grid(row = 0, column = 0, sticky = 'w')
+            self.continuous_server_check() # Tell program to constantly check for server connection until we connect
+        else: # Show default section
+            self.widgets['Authentication']['frame'].grid(row = 0, column = 0, sticky = 'w')
+        
+    def continuous_server_check(self, check = True):
+        # Helps the user provide required login information by showing specific fields polling the server until everyting is set
+        # Check if server address is set
+        if check: result = check_server_online()
+        else: result = True
+        
+        if result == False: # Server likely not configured, or not fully entered
+            root.after(1000, self.continuous_server_check)
+            
+        else: # Server is fully set. Now need to check if we can login with user/pass
+            self.widgets['Authentication']['frame'].grid(row = 1, column = 0, sticky = 'w')
+            user = self.widgets['Authentication']['widget']['username']['widget'].get()
+            pw = self.widgets['Authentication']['widget']['password']['widget'].get()
+            if user != '' and pw != '': # User/pass set, so try to login
+                result = self.get_teams(True) # Check if user/password is set, and populate team
+                if result == False: # Can't login, try again
+                    root.after(1000, lambda: self.continuous_server_check(False))
+                else: # First run completed, everything is properly set. Clear the team/project, so the user knows to set them
+                    self.widgets['Authentication']['widget']['team']['dropdown'].set('')
+                    self.widgets['Authentication']['widget']['project']['dropdown'].set('')
+            else: # No user/pass, try again
+                root.after(1000, lambda: self.continuous_server_check(False))
+            
         
     def onValidate(self, ctype, S):
         # Limit text to specified length and characters
@@ -199,11 +212,17 @@ class Application(tk.Frame):
         if self.show_adv_settings:
             self.show_adv_settings = False
             self.settings_button.configure(text='Show Advanced Settings')
-            self.adv_settings_frame.grid_forget()
+            for section in self.advanced_settings_frames:
+                self.widgets[section]['frame'].grid_forget()
+            self.widgets['Authentication']['frame'].grid(row = 0, column = 0, sticky = 'w')
         else:
             self.show_adv_settings = True
             self.settings_button.configure(text='Hide Advanced Settings')
-            self.adv_settings_frame.grid(sticky = 'w')
+            self.widgets['Authentication']['frame'].grid(row = 0, column = 0, sticky = 'w')
+            row = 1
+            for section in self.advanced_settings_frames:
+                self.widgets[section]['frame'].grid(row = row, column = 0, sticky = 'w')
+                row += 1
             
 
     def read_mod(self):
@@ -293,16 +312,16 @@ class Application(tk.Frame):
             
             # Write settings.conf
             for section in self.widgets:
-                for option in self.widgets[section]:
-                    if 'dropdown' in self.widgets[section][option]: # Has a drop down menu
-                        value = self.widgets[section][option]['dropdown'].get()
+                for option in self.widgets[section]['widget']:
+                    if 'dropdown' in self.widgets[section]['widget'][option]: # Has a drop down menu
+                        value = self.widgets[section]['widget'][option]['dropdown'].get()
                     
-                    elif 'check' in self.widgets[section][option]: # If checkbox, convert check/uncheck into text
-                        if self.widgets[section][option]['check'].get() == 1: value = 'True'
+                    elif 'check' in self.widgets[section]['widget'][option]: # If checkbox, convert check/uncheck into text
+                        if self.widgets[section]['widget'][option]['check'].get() == 1: value = 'True'
                         else: value = 'False'
                     
                     else: # Widget is a textbox
-                        value = str(self.widgets[section][option]['widget'].get()).strip() # Get value
+                        value = str(self.widgets[section]['widget'][option]['widget'].get()).strip() # Get value
                         if option == 'password': value = self.password(True, 'zeuz', value) # Encrypt password
 
                     if len(self.settings_modified) <= cnt: # First run, populate modifier check
@@ -335,24 +354,26 @@ class Application(tk.Frame):
 
     def switch_teams(self, a, b, c):
         # When user changes the team, pull the list of projects for that team
-        self.widgets['Authentication']['project']['dropdown'].set('') # Clear Project menu
-        self.get_projects(self.widgets['Authentication']['team']['dropdown'].get()) # Update available options in project menu
+        self.widgets['Authentication']['widget']['project']['dropdown'].set('') # Clear Project menu
+        self.get_projects(self.widgets['Authentication']['widget']['team']['dropdown'].get()) # Update available options in project menu
         
-    def get_teams(self):
+    def get_teams(self, noerror = False):
         # Populate drop down with teams user has access to
-        self.widgets['Authentication']['team']['choices'] = get_team_names() # Get list of teams from server
-        self.widgets['Authentication']['team']['widget']['menu'].delete(0, 'end') # Clear drop down menu
-        for team in self.widgets['Authentication']['team']['choices']: # For each new team
-            self.widgets['Authentication']['team']['widget']['menu'].add_command(label = team, command=tk._setit(self.widgets['Authentication']['team']['dropdown'], team)) # Add the team to the drop down menu
-        if self.widgets['Authentication']['team']['choices'] == []: # If nothing was returned
-            tkMessageBox.showerror('Error', 'No teams could be found. Server, port, username, or password may be wrong') # Display an error
+        self.widgets['Authentication']['widget']['team']['choices'] = get_team_names() # Get list of teams from server
+        self.widgets['Authentication']['widget']['team']['widget']['menu'].delete(0, 'end') # Clear drop down menu
+        for team in self.widgets['Authentication']['widget']['team']['choices']: # For each new team
+            self.widgets['Authentication']['widget']['team']['widget']['menu'].add_command(label = team, command=tk._setit(self.widgets['Authentication']['widget']['team']['dropdown'], team)) # Add the team to the drop down menu
+        if self.widgets['Authentication']['widget']['team']['choices'] == []: # If nothing was returned
+            if noerror == False: tkMessageBox.showerror('Error', 'No teams could be found. Server, port, username, or password may be wrong') # Display an error
+            return False
+        return True
 
     def get_projects(self, team):
         # Populate drop down with projects user has access to, for a given team
-        self.widgets['Authentication']['project']['choices'] = get_project_names(team) # Get list of projects for the selected team
-        self.widgets['Authentication']['project']['widget']['menu'].delete(0, 'end') # Clear drop down menu
-        for project in self.widgets['Authentication']['project']['choices']: # For each new project
-            self.widgets['Authentication']['project']['widget']['menu'].add_command(label = project, command=tk._setit(self.widgets['Authentication']['project']['dropdown'], project)) # Add the project to the drop down menu
+        self.widgets['Authentication']['widget']['project']['choices'] = get_project_names(team) # Get list of projects for the selected team
+        self.widgets['Authentication']['widget']['project']['widget']['menu'].delete(0, 'end') # Clear drop down menu
+        for project in self.widgets['Authentication']['widget']['project']['choices']: # For each new project
+            self.widgets['Authentication']['widget']['project']['widget']['menu'].add_command(label = project, command=tk._setit(self.widgets['Authentication']['widget']['project']['dropdown'], project)) # Add the project to the drop down menu
 
     def teardown(self):
         logger_teardown()
@@ -411,6 +432,8 @@ if __name__ == '__main__':
     root.master.title(gui_title) # Set title
     Log, oout, oerr = logger_setup() # Redirect STDOUT/ERR to log window
     root.after(500, lambda: thread.start_new_thread(root.save_all, ())) # Schedule the settings modified check
+    root.start_up_display() # Determine if this is the first run, and display widgets accordingly
+        
 
     # Execute GUI
     root.mainloop()
