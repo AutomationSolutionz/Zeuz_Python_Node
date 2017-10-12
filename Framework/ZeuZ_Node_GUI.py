@@ -9,7 +9,7 @@ from base64 import b64encode, b64decode # Password encoding
 import tkMessageBox
 import os.path, thread, sys, time
 from Utilities import ConfigModule
-from ZeuZ_Node import Login, disconnect_from_server, get_team_names, get_project_names
+from Framework.ZN_CLI import Login, disconnect_from_server, get_team_names, get_project_names
 
 # Find node id file
 if sys.platform  == 'win32':
