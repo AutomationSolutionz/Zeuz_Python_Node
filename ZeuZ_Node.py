@@ -4,7 +4,6 @@
 # Function: Front-end to Zeuz_Node.py and settings.conf
 
 import Tkinter as tk
-from Crypto.Cipher import ARC4 # Password encryption
 from base64 import b64encode, b64decode # Password encoding
 import tkMessageBox
 import os.path, thread, sys, time
@@ -239,7 +238,7 @@ class Application(tk.Frame):
             self.startButton.configure(text = 'Offline')
             self.log.delete(0.0, 'end') # Clear previous log
             thread.start_new_thread(Login,()) # Execute Zeuz_Node.py
-            if self.node_id.get() == '': root.after(5000, lambda: self.read_node_id(self.node_id)) # If no node id was read or specified, wait a few seconds for zeuz_node.py to populate the node id file, and read it 
+            #!!! Causing root error: if self.node_id.get() == '': root.after(5000, lambda: self.read_node_id(self.node_id)) # If no node id was read or specified, wait a few seconds for zeuz_node.py to populate the node id file, and read it 
 
     def read_log(self, data):
         # Determine log line type, so we can colour code it
@@ -274,11 +273,15 @@ class Application(tk.Frame):
         # Zeuz_Node.py has a similar function that will need to be updated if this is changed
         
         try:
-            obj = ARC4.new(key)
-            if encrypt == True:
-                return b64encode(obj.encrypt(pw))
-            else:
-                return obj.decrypt(b64decode(pw))
+            if encrypt == False: pw = b64decode(pw)
+            result = ''
+            j = 0
+            for i in pw:
+                result += chr(ord(i) ^ ord(key[j]))
+                j += 1
+                if j == len(key): j = 0
+            if encrypt == True: result = b64encode(result)
+            return result
         except:
             tkMessageBox.showerror('Error', 'Error decrypting password. Enter a new password')
             return ''

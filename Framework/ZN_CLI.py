@@ -2,7 +2,6 @@
 # -*- coding: cp1252 -*-
 
 import os,sys,time
-from Crypto.Cipher import ARC4
 from base64 import b64encode, b64decode
 sys.path.append(os.path.dirname(os.getcwd()))
 from Utilities import ConfigModule,RequestFormatter,CommonUtil,FileUtilities
@@ -258,8 +257,14 @@ def get_project_names(team):
 def pwdec(pw):
     try:
         key = 'zeuz'
-        obj = ARC4.new(key)
-        return obj.decrypt(b64decode(pw))
+        pw = b64decode(pw)
+        result = ''
+        j = 0
+        for i in pw:
+            result += chr(ord(i) ^ ord(key[j]))
+            j += 1
+            if j == len(key): j = 0
+        return result
     except:
         CommonUtil.ExecLog('', "Error decrypting password. Use the graphical interface to set a new password", 4, False)
         return ''
