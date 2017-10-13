@@ -167,6 +167,7 @@ class Application(tk.Frame):
     def continuous_server_check(self, check = True):
         # Helps the user provide required login information by showing specific fields polling the server until everyting is set
         # Check if server address is set
+        print # This prevents freezing up on windows for some reason
         if check: result = check_server_online()
         else: result = True
         
