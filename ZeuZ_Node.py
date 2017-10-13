@@ -154,7 +154,7 @@ class Application(tk.Frame):
         self.startButton.focus_set()
         
         # If go online at start is set, go online
-        if self.widgets['RunDefinition']['widget']['go_online_at_start']['check'].get(): self.read_mod()
+        if 'go_online_at_start' in self.widgets['RunDefinition']['widget'] and self.widgets['RunDefinition']['widget']['go_online_at_start']['check'].get(): self.read_mod()
         
     def start_up_display(self):
         text_check = self.widgets['Authentication']['widget']['team']['dropdown'].get()
