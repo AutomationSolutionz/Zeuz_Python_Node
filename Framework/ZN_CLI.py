@@ -256,12 +256,15 @@ def get_project_names(team):
 
 def pwdec(pw):
     try:
+        chars = [chr(x) for x in range(33, 127)]
         key = 'zeuz'
         pw = b64decode(pw)
         result = ''
         j = 0
         for i in pw:
-            result += chr(ord(i) ^ ord(key[j]))
+            value = chr(ord(i) ^ ord(key[j]))
+            if value in chars: result += value
+            else: raise ValueError('') # Windows only, base64 decoding of an invalid string does not cause an exception, so we have to try to check for a bad password
             j += 1
             if j == len(key): j = 0
         return result
