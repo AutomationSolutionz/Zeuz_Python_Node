@@ -1810,10 +1810,13 @@ def replace_Substring(data_set):
                     new_string = row[2].strip()  #substring should be replaced to this string
 
          # Try to find the file
-        if file_name not in file_attachment and os.path.exists(file_name) == False:
+        if file_name not in file_attachment and os.path.exists(os.path.join(get_home_folder(), file_name)) == False:
             CommonUtil.ExecLog(sModuleInfo, "Could not find file attachment called %s, and could not find it locally" % file_name, 3)
             return 'failed'
         if file_name in file_attachment: file_name = file_attachment[file_name] # In file is an attachment, get the full path
+
+        if file_name not in file_attachment:
+            file_name = os.path.join(get_home_folder(), file_name)
 
         if substring == '':
             CommonUtil.ExecLog(sModuleInfo, "Could not find substring for this action", 3)
