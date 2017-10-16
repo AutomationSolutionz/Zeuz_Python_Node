@@ -1,9 +1,21 @@
 #!/usr/bin/env python
 # http://infohost.nmt.edu/tcc/help/pubs/tkinter/tkinter.pdf
 # Written by Lucas Donkers
-# Function: Front-end to Zeuz_Node.py and settings.conf
+# Function: Front-end to ZN_CLI.py and settings.conf
 
-import Tkinter as tk
+# Have user install Tk if this fails
+try: import Tkinter as tk
+except:
+    print "Tkinter is not installed. This is required to start the graphical interface. Please enter the root password to install if asked."
+    import subprocess as s
+    print s.Popen('sudo apt-get update'.split(' '), stdout = s.PIPE, stderr = s.STDOUT).communicate()[0]
+    print s.Popen('sudo apt-get -y install python-tk'.split(' '), stdout = s.PIPE, stderr = s.STDOUT).communicate()[0]
+    
+    try: import Tkinter as tk
+    except:
+        raw_input('Could not install Tkinter. Please do this manually by running: sudo apt-get install python-tk')
+        quit()
+        
 from base64 import b64encode, b64decode # Password encoding
 import tkMessageBox
 import os.path, thread, sys, time
@@ -51,18 +63,27 @@ class Application(tk.Frame):
     
     def __init__(self, master=None):
         tk.Frame.__init__(self, master)
+        self.pack(fill = 'both', expand = True) # Need to pack top level, to allow widgets to expand when window is resized
+        tk.Grid.columnconfigure(self, 0, weight=1) # Allows mainframe to expand
+        tk.Grid.rowconfigure(self, 0, weight=1) # Allows mainframe to expand
         self.createWidgets()
 
     def createWidgets(self):
         # Create main frame and sub-frames to contain everything
-        self.mainframe = tk.Frame()
-        self.mainframe.grid(sticky = 'nw')
+        self.mainframe = tk.Frame(self)
+        self.mainframe.grid(sticky = 'snew')
+        tk.Grid.columnconfigure(self.mainframe, 1, weight=1) # Allows rightframe to expand
+        tk.Grid.rowconfigure(self.mainframe, 0, weight=1) # Allows rightframe to expand
         
+        # Contains settings and buttons
         self.leftframe = tk.Frame(self.mainframe)
-        self.leftframe.grid(row = 0, column = 0, sticky = 'nw')
+        self.leftframe.grid(row = 0, column = 0, sticky = 'snew')
         
+        # Contains log window
         self.rightframe = tk.Frame(self.mainframe)
-        self.rightframe.grid(row = 0, column = 1, sticky = 'nw')
+        self.rightframe.grid(row = 0, column = 1, sticky = 'snew')
+        tk.Grid.columnconfigure(self.rightframe, 0, weight=1) # Allows log textbox to expand
+        tk.Grid.rowconfigure(self.rightframe, 1, weight=1) # Allows log textbox to expand
         
         # Top Left buttons
         self.topframe = tk.Frame(self.leftframe)
@@ -74,19 +95,19 @@ class Application(tk.Frame):
         self.read_node_id(self.node_id)
         
         self.help_button = tk.Button(self.topframe, text = 'Help', width = self.button_width, command = self.show_help)
-        self.help_button.grid(row = 0, column = 3, sticky = 'w')
+        self.help_button.grid(row = 1, column = 1, sticky = 'w')
 
         self.settings_button = tk.Button(self.topframe, text='Show Advanced Settings', width = self.button_width, command=self.advanced_settings)
-        self.settings_button.grid(row = 1, column = 0)
+        self.settings_button.grid(row = 2, column = 0)
 
         self.save_button = tk.Button(self.topframe, text='Save Settings', width = self.button_width, command=lambda: self.save_all(True))
-        self.save_button.grid(row = 1, column = 1)
+        self.save_button.grid(row = 2, column = 1)
 
         self.quitButton = tk.Button(self.topframe, text='Quit', width = self.button_width, command=self.teardown)
-        self.quitButton.grid(row = 1, column = 2)
+        self.quitButton.grid(row = 1, column = 0)
         
-        self.startButton = tk.Button(self.topframe, text='Online', width = self.button_width, command=self.read_mod)
-        self.startButton.grid(row = 1, column = 3)
+        self.startButton = tk.Button(self.rightframe, text='Online', width = self.button_width, command=self.read_mod)
+        self.startButton.grid(row = 0, column = 0, sticky = 'n')
         
         # Read the remaining settings data, and add widgets to window
         self.settings_frame = tk.Frame(self.leftframe)
@@ -147,8 +168,8 @@ class Application(tk.Frame):
             self.get_projects(self.widgets['Authentication']['widget']['team']['dropdown'].get()) # Get list of projects from the server for the curent team, populate the list
 
         # Create text area for log output
-        self.log = tk.Text(self.rightframe, width = 70, height = 30)
-        self.log.grid(row = 0, column = 0, sticky = 'w')
+        self.log = tk.Text(self.rightframe, wrap = tk.WORD)
+        self.log.grid(row = 1, column = 0, sticky = 'snew')
         
         # Set initial focus on enable button
         self.startButton.focus_set()
@@ -415,7 +436,6 @@ def logger_teardown():
     sys.stderr = oerr
     sys.stdout = oout
     quit()
-
 
 if __name__ == '__main__':
     # Root window setup
