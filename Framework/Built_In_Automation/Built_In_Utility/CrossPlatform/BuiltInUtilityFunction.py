@@ -1814,6 +1814,9 @@ def replace_Substring(data_set):
                         except:
                             CommonUtil.ExecLog(sModuleInfo,"Unknown Value for element parameter 'dictionary'. Should be a string representation of python dictionary.", 3)
                             return 'failed'
+                    else:
+                        CommonUtil.ExecLog(sModuleInfo,"Unknown Value for element parameter 'dictionary'. Should be a string representation of python dictionary.",3)
+                        return 'failed'
                 else:
                     substring = row[0].strip()  #substring to be replaced
                     new_string = row[2].strip()  #substring should be replaced to this string
