@@ -23,7 +23,7 @@ from sys import platform as _platform
 from Framework.Utilities.CommonUtil import passed_tag_list, failed_tag_list, skipped_tag_list
 
 from Framework.Built_In_Automation.Shared_Resources import BuiltInFunctionSharedResources as Shared_Resources
-import os, subprocess, shutil
+import os, subprocess, shutil,ast
 
 add_sanitization = True
 
@@ -1782,6 +1782,7 @@ def replace_Substring(data_set):
         file_name = ''
         replace_all = True
         case_sensitive = True
+        replace_dict = {}
         for row in data_set:
             if "action" in row[1]:
                 file_name = row[2]
@@ -1805,9 +1806,18 @@ def replace_Substring(data_set):
                     elif row[2]!='':
                         CommonUtil.ExecLog(sModuleInfo,"Unknown Value for element parameter 'case_sensitive'. Should be true or false.", 3)
                         return 'failed'
+
+                elif row[0] == 'dictionary':
+                    if row[2] != '':
+                        try:
+                            replace_dict = ast.literal_eval(row[2].strip())
+                        except:
+                            CommonUtil.ExecLog(sModuleInfo,"Unknown Value for element parameter 'dictionary'. Should be a string representation of python dictionary.", 3)
+                            return 'failed'
                 else:
                     substring = row[0].strip()  #substring to be replaced
                     new_string = row[2].strip()  #substring should be replaced to this string
+                    replace_dict = {substring:new_string}
 
          # Try to find the file
         if file_name not in file_attachment and os.path.exists(os.path.join(get_home_folder(), file_name)) == False:
@@ -1817,13 +1827,6 @@ def replace_Substring(data_set):
 
         if file_name not in file_attachment:
             file_name = os.path.join(get_home_folder(), file_name)
-
-        if substring == '':
-            CommonUtil.ExecLog(sModuleInfo, "Could not find substring for this action", 3)
-            return 'failed'
-        if new_string == '':
-            CommonUtil.ExecLog(sModuleInfo, "Could not find new_string for this action", 3)
-            return 'failed'
     except:
         return CommonUtil.Exception_Handler(sys.exc_info(), None, "Error parsing data set")
 
@@ -1834,14 +1837,23 @@ def replace_Substring(data_set):
         f = open(file_name, 'r')
         newTxt = str(f.read())
         f.close()
-        if case_sensitive == False: #case insensitive
-            newTxt = newTxt.lower()
-            substring = substring.lower()
-            new_string = new_string.lower()
-        if replace_all == False: #replace only first one
-            newTxt = newTxt.replace(substring, new_string, 1)
-        if replace_all == True: #replace all
-            newTxt =newTxt.replace(substring, new_string)
+
+        for substring in replace_dict.keys():
+            new_string = replace_dict[substring]
+            if substring == '':
+                CommonUtil.ExecLog(sModuleInfo, "Could not find substring for this action", 3)
+                return 'failed'
+            if new_string == '':
+                CommonUtil.ExecLog(sModuleInfo, "Could not find new_string for this action", 3)
+                return 'failed'
+            if case_sensitive == False: #case insensitive
+                newTxt = newTxt.lower()
+                substring = substring.lower()
+                new_string = new_string.lower()
+            if replace_all == False: #replace only first one
+                newTxt = newTxt.replace(substring, new_string, 1)
+            if replace_all == True: #replace all
+                newTxt =newTxt.replace(substring, new_string)
 
         #write back
         f = open(file_name, 'w')
