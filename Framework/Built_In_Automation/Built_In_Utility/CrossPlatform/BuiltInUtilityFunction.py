@@ -13,7 +13,6 @@ import time
 import inspect
 import zipfile
 import string
-import ConfigParser
 from Framework.Utilities import ConfigModule
 import filecmp
 import random
@@ -1904,35 +1903,20 @@ def Change_Value_ini(data_set):
     # Perform action
     try:
         if os.path.isfile(file_name): # check if the file exists or not
-            '''change the value'''
-            config = ConfigParser.SafeConfigParser()
-            config.read(file_name)
-            list_of_sections = config.sections()
-            if section_name in list_of_sections:
-                options = config.options(section_name)
-                # check if this name exists
-                if line_name in options:
-                    config.set(section_name, line_name, new_expected_value_of_line)  # change value
-                    #writeback file
-                    with open(file_name, 'wb') as configfile:
-                        config.write(configfile)
-
-                    '''check if line is changed properly'''
-                    config.read(file_name)
-                    check_value = config.get(section_name, line_name)
-                    if check_value == new_expected_value_of_line:
-                        CommonUtil.ExecLog(sModuleInfo, "Value is changed successfully", 1)
-                        return "passed"
-
-            CommonUtil.ExecLog(sModuleInfo, "Can't add line", 3)
+            result = ConfigModule.add_config_value(section_name, line_name, new_expected_value_of_line, location = file_name)
+            if result:
+                CommonUtil.ExecLog(sModuleInfo, "INI upated successfully", 1)
+                return 'passed'
+            else:
+                CommonUtil.ExecLog(sModuleInfo, "Error updating %s with %s in section %s" % (line_name, new_expected_value_of_line, section_name), 3)
             return "failed"
         else:
-            CommonUtil.ExecLog(sModuleInfo, "Couldn't find the config file", 1)
+            CommonUtil.ExecLog(sModuleInfo, "Couldn't find the config file. Doesn't exist: %s" % file_name, 1)
             return "failed"
 
 
     except Exception:
-        return CommonUtil.Exception_Handler(sys.exc_info())
+        return CommonUtil.Exception_Handler(sys.exc_info(), None, "Error performing action")
 
 
 def Add_line_ini(data_set):
@@ -1971,27 +1955,7 @@ def Add_line_ini(data_set):
     # Perform action
     try:
         if os.path.isfile(file_name):    # check if the file exists or not
-            '''add line'''
-            config = ConfigParser.SafeConfigParser()
-            config.read(file_name)
-            list_of_sections = config.sections()
-            if section_name in list_of_sections:
-                config.set(section_name, line_name, value_of_line)  #add line
-                # writeback file
-                with open(file_name, 'wb') as configfile:
-                    config.write(configfile)
-
-                '''check if line is added properly'''
-                config.read(file_name)
-                options = config.options(section_name)
-                if line_name in options:
-                    check_value = config.get(section_name, line_name)
-                    if check_value == value_of_line:
-                        CommonUtil.ExecLog(sModuleInfo,"Line is added successfully" ,1)
-                        return "passed"
-
-            CommonUtil.ExecLog(sModuleInfo, "Can't add line", 3)
-            return "failed"
+            return "failed" #NEED TO ADD CONFIUMODULE HERE
         else:
             CommonUtil.ExecLog(sModuleInfo, "Couldn't find the config file", 1)
             return "failed"
@@ -2030,23 +1994,7 @@ def Delete_line_ini(data_set):
     # Perform action
     try:
         if os.path.isfile(file_name):   # check if the file exists or not
-            '''delete the line'''
-            config = ConfigParser.SafeConfigParser()
-            config.read(file_name)
-            config.remove_option(section_name, line_name)   #delete file
-            # writeback file
-            with open(file_name, 'wb') as configfile:
-                config.write(configfile)
-
-            '''check if the line is deleted properly'''
-            config.read(file_name)
-            options = config.options(section_name)
-            if line_name in options:
-                CommonUtil.ExecLog(sModuleInfo, "Can't delete line", 3)
-                return "failed"
-
-            CommonUtil.ExecLog(sModuleInfo, "The line is no more in the config file", 1)
-            return "passed"
+            return "passed" #NEED TO ADD CONFIUMODULE HERE
         else:
             CommonUtil.ExecLog(sModuleInfo, "Couldn't find the config file", 1)
             return "failed"
@@ -2079,16 +2027,6 @@ def Read_line_name_and_value(data_set):
         return CommonUtil.Exception_Handler(sys.exc_info(), None, "Error parsing data set")
     try:
         if os.path.isfile(file_name):    # check if the file exists or not
-            '''read file and save'''
-            config = ConfigParser.SafeConfigParser()
-            config.read(file_name)
-            list_of_sections = config.sections()
-            dir ={}
-            for section in list_of_sections:
-                options = config.options(section)
-                for option in options:
-                    dir[section+"|"+option] = config.get(section,option)
-            #save in shared variable
             Shared_Resources.Set_Shared_Variables(save_line_name_value, dir)
             return "passed"
 

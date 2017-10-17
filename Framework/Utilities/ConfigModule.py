@@ -14,6 +14,7 @@ def get_config_value(section,key,location=False):
     """
     try:
         config=ConfigParser.SafeConfigParser()
+        config.optionxform=str # Retain text case (default is to change to lowercase without this line)
         if not location:
             _file_name=os.getcwd()+os.sep+file_name
         else:
@@ -30,6 +31,7 @@ def get_config_value(section,key,location=False):
 
 def remove_config_value(section,value,location=False):
     config=ConfigParser.SafeConfigParser()
+    config.optionxform=str # Retain text case (default is to change to lowercase without this line)
     if not location:
         _file_name=os.getcwd()+os.sep+file_name
     else:
@@ -44,6 +46,7 @@ def remove_config_value(section,value,location=False):
 def add_config_value(section,key,value,location=False):
     try:
         config=ConfigParser.SafeConfigParser()
+        config.optionxform=str # Retain text case (default is to change to lowercase without this line)
         if not location:
             _file_name=os.getcwd()+os.sep+file_name
         else:
@@ -69,6 +72,7 @@ def get_all_option(section_name,location=False):
     """
     try:
         config=ConfigParser.SafeConfigParser()
+        config.optionxform=str # Retain text case (default is to change to lowercase without this line)
         if not location:
             _file_name=os.getcwd()+os.sep+file_name
         else:
@@ -90,6 +94,7 @@ def add_section(section_name,location=False):
     """
     try:
         config=ConfigParser.SafeConfigParser()
+        config.optionxform=str # Retain text case (default is to change to lowercase without this line)
         if not location:
             _file_name=os.getcwd()+os.sep+file_name
         else:
@@ -111,6 +116,7 @@ def add_section(section_name,location=False):
 def clean_config_file(location=False):
     try:
         config=ConfigParser.SafeConfigParser()
+        config.optionxform=str # Retain text case (default is to change to lowercase without this line)
         if not location:
             _file_name=os.getcwd()+os.sep+file_name
         else:
@@ -129,6 +135,7 @@ def clean_config_file(location=False):
 def get_all_sections(location=False):
     try:
         config=ConfigParser.SafeConfigParser()
+        config.optionxform=str # Retain text case (default is to change to lowercase without this line)
         if not location:
             _file_name=os.getcwd()+os.sep+file_name
         else:
