@@ -383,18 +383,19 @@ class Application(tk.Frame):
             
             # Check if we should save
             if saved: # Yes, explicit save call, so tell the user
-                if int(time.time()) - self.settings_saved > 5: # But, not too often
-                    self.log.insert('end', 'Settings Updated\n')
-                    self.log.see('end')
-                    self.settings_saved = int(time.time())
+                tkMessageBox.showinfo('Info', 'Settings Saved')
+                #if int(time.time()) - self.settings_saved > 5: # But, not too often
+                #    self.log.insert('end', 'Settings Updated\n')
+                #    self.log.see('end')
+                #    self.settings_saved = int(time.time())
             elif modified: # Change occurred, call this function again, and tell it to save
                 self.save_all(True)
-            if not saved: root.after(500, lambda: thread.start_new_thread(root.save_all, ())) # Reschedule the settings modified check
+            #if not saved: root.after(500, lambda: thread.start_new_thread(root.save_all, ())) # Reschedule the settings modified check
         except Exception, e:
-            #tkMessageBox.showerror('Error', 'Settings Not Saved - Trying again in 10 seconds: %s' % e)
-            self.log.insert('end', 'Settings Not Saved - Trying again in 10 seconds: %s\n' % e)
-            self.log.see('end')
-            root.after(10000, lambda: thread.start_new_thread(root.save_all, ()))
+            tkMessageBox.showerror('Error', 'Settings Not Saved - Trying again in 10 seconds: %s' % e)
+            #self.log.insert('end', 'Settings Not Saved - Trying again in 10 seconds: %s\n' % e)
+            #self.log.see('end')
+            #root.after(10000, lambda: thread.start_new_thread(root.save_all, ()))
 
     def switch_teams(self, a, b, c):
         # When user changes the team, pull the list of projects for that team
@@ -482,7 +483,7 @@ if __name__ == '__main__':
     root = Application() # Create GUI instance
     root.master.title(gui_title) # Set title
     Log, oout, oerr = logger_setup() # Redirect STDOUT/ERR to log window
-    root.after(500, lambda: thread.start_new_thread(root.save_all, ())) # Schedule the settings modified check
+    #root.after(500, lambda: thread.start_new_thread(root.save_all, ())) # Schedule the settings modified check
     root.start_up_display() # Determine if this is the first run, and display widgets accordingly
         
 
