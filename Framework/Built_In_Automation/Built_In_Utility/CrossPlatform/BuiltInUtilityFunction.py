@@ -1870,6 +1870,12 @@ def replace_Substring(data_set):
 def Change_Value_ini(data_set):
     sModuleInfo = inspect.stack()[0][3] + " : " + inspect.getmoduleinfo(__file__).name
     CommonUtil.ExecLog(sModuleInfo, "Function start", 0)
+
+    # Recall file attachment, if not already set
+    file_attachment = []
+    if Shared_Resources.Test_Shared_Variables('file_attachment'):
+        file_attachment = Shared_Resources.Get_Shared_Variables('file_attachment')
+
     # Parse data set
     try:
         file_name = ''
@@ -1885,9 +1891,15 @@ def Change_Value_ini(data_set):
                 section_name = row[0]   # name of the section where th change should be made
                 line_name = row[2]    # name of the line where value should be changed
 
-        if file_name == '':
-            CommonUtil.ExecLog(sModuleInfo, "Could not find ini file name for this action", 3)
+        # Try to find the file
+        if file_name not in file_attachment and os.path.exists(os.path.join(get_home_folder(), file_name)) == False:
+            CommonUtil.ExecLog(sModuleInfo, "Could not find file attachment called %s, and could not find it locally" % file_name, 3)
             return 'failed'
+        if file_name in file_attachment: file_name = file_attachment[file_name] # In file is an attachment, get the full path
+
+        if file_name not in file_attachment:
+            file_name = os.path.join(get_home_folder(), file_name)
+
         if section_name == '':
             CommonUtil.ExecLog(sModuleInfo, "Could not find ini file section name for this action", 3)
             return 'failed'
@@ -1902,17 +1914,15 @@ def Change_Value_ini(data_set):
 
     # Perform action
     try:
-        if os.path.isfile(file_name): # check if the file exists or not
-            result = ConfigModule.add_config_value(section_name, line_name, new_expected_value_of_line, location = file_name)
-            if result:
-                CommonUtil.ExecLog(sModuleInfo, "INI upated successfully", 1)
-                return 'passed'
-            else:
-                CommonUtil.ExecLog(sModuleInfo, "Error updating %s with %s in section %s" % (line_name, new_expected_value_of_line, section_name), 3)
-            return "failed"
+
+        result = ConfigModule.add_config_value(section_name, line_name, new_expected_value_of_line, location = file_name)
+        if result:
+            CommonUtil.ExecLog(sModuleInfo, "INI upated successfully", 1)
+            return 'passed'
         else:
-            CommonUtil.ExecLog(sModuleInfo, "Couldn't find the config file. Doesn't exist: %s" % file_name, 1)
-            return "failed"
+            CommonUtil.ExecLog(sModuleInfo, "Error updating %s with %s in section %s" % (line_name, new_expected_value_of_line, section_name), 3)
+        return "failed"
+
 
 
     except Exception:
@@ -1922,6 +1932,12 @@ def Change_Value_ini(data_set):
 def Add_line_ini(data_set):
     sModuleInfo = inspect.stack()[0][3] + " : " + inspect.getmoduleinfo(__file__).name
     CommonUtil.ExecLog(sModuleInfo, "Function start", 0)
+
+    # Recall file attachment, if not already set
+    file_attachment = []
+    if Shared_Resources.Test_Shared_Variables('file_attachment'):
+        file_attachment = Shared_Resources.Get_Shared_Variables('file_attachment')
+
     # Parse data set
     try:
         file_name = ''
@@ -1937,9 +1953,15 @@ def Add_line_ini(data_set):
                 section_name = row[0]       # name of the section where the new line should be added
                 line_name = row[2]       # name of the new line to be added
 
-        if file_name == '':
-            CommonUtil.ExecLog(sModuleInfo, "Could not find ini file name for this action", 3)
+        # Try to find the file
+        if file_name not in file_attachment and os.path.exists(os.path.join(get_home_folder(), file_name)) == False:
+            CommonUtil.ExecLog(sModuleInfo, "Could not find file attachment called %s, and could not find it locally" % file_name, 3)
             return 'failed'
+        if file_name in file_attachment: file_name = file_attachment[file_name] # In file is an attachment, get the full path
+
+        if file_name not in file_attachment:
+            file_name = os.path.join(get_home_folder(), file_name)
+
         if section_name == '':
             CommonUtil.ExecLog(sModuleInfo, "Could not find ini file section name for this action", 3)
             return 'failed'
@@ -1954,11 +1976,15 @@ def Add_line_ini(data_set):
 
     # Perform action
     try:
-        if os.path.isfile(file_name):    # check if the file exists or not
-            return "failed" #NEED TO ADD CONFIUMODULE HERE
+
+        result = ConfigModule.add_config_value(section_name, line_name, value_of_line,location=file_name)
+        if result:
+            CommonUtil.ExecLog(sModuleInfo, "INI upated successfully", 1)
+            return 'passed'
         else:
-            CommonUtil.ExecLog(sModuleInfo, "Couldn't find the config file", 1)
-            return "failed"
+            CommonUtil.ExecLog(sModuleInfo, "Error updating %s with %s in section %s" % (line_name, value_of_line, section_name), 3)
+        return "failed"
+
 
 
     except Exception:
@@ -1967,6 +1993,12 @@ def Add_line_ini(data_set):
 def Delete_line_ini(data_set):
     sModuleInfo = inspect.stack()[0][3] + " : " + inspect.getmoduleinfo(__file__).name
     CommonUtil.ExecLog(sModuleInfo, "Function start", 0)
+
+    # Recall file attachment, if not already set
+    file_attachment = []
+    if Shared_Resources.Test_Shared_Variables('file_attachment'):
+        file_attachment = Shared_Resources.Get_Shared_Variables('file_attachment')
+
     # Parse data set
     try:
         file_name = ''
@@ -1979,9 +2011,15 @@ def Delete_line_ini(data_set):
                 section_name = row[0]    # name of the section from where line should be deleted
                 line_name = row[2]    # name of the line to be deleted
 
-        if file_name == '':
-            CommonUtil.ExecLog(sModuleInfo, "Could not find ini file name for this action", 3)
+        # Try to find the file
+        if file_name not in file_attachment and os.path.exists(os.path.join(get_home_folder(), file_name)) == False:
+            CommonUtil.ExecLog(sModuleInfo, "Could not find file attachment called %s, and could not find it locally" % file_name, 3)
             return 'failed'
+        if file_name in file_attachment: file_name = file_attachment[file_name] # In file is an attachment, get the full path
+
+        if file_name not in file_attachment:
+            file_name = os.path.join(get_home_folder(), file_name)
+
         if section_name == '':
             CommonUtil.ExecLog(sModuleInfo, "Could not find ini file section name for this action", 3)
             return 'failed'
@@ -1993,11 +2031,15 @@ def Delete_line_ini(data_set):
 
     # Perform action
     try:
-        if os.path.isfile(file_name):   # check if the file exists or not
-            return "passed" #NEED TO ADD CONFIUMODULE HERE
+
+        result = ConfigModule.remove_config_value(section_name, line_name,location=file_name)
+        if result:
+            CommonUtil.ExecLog(sModuleInfo, "INI upated successfully", 1)
+            return 'passed'
         else:
-            CommonUtil.ExecLog(sModuleInfo, "Couldn't find the config file", 1)
-            return "failed"
+            CommonUtil.ExecLog(sModuleInfo, "Error updating %s with %s in section %s" % (line_name, section_name), 3)
+        return "failed"
+
 
 
     except Exception:

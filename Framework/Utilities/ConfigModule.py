@@ -30,17 +30,22 @@ def get_config_value(section,key,location=False):
 
 
 def remove_config_value(section,value,location=False):
-    config=ConfigParser.SafeConfigParser()
-    config.optionxform=str # Retain text case (default is to change to lowercase without this line)
-    if not location:
-        _file_name=os.getcwd()+os.sep+file_name
-    else:
-        _file_name=location
-    config.read(_file_name)
-    config.remove_option(section,value)
-    with(open(_file_name,'w')) as open_file:
-        config.write(open_file)
-    open_file.close()
+    try:
+        config=ConfigParser.SafeConfigParser()
+        config.optionxform=str # Retain text case (default is to change to lowercase without this line)
+        if not location:
+            _file_name=os.getcwd()+os.sep+file_name
+        else:
+            _file_name=location
+        config.read(_file_name)
+        config.remove_option(section,value)
+        with(open(_file_name,'w')) as open_file:
+            config.write(open_file)
+        open_file.close()
+        return True
+    except ConfigParser.NoSectionError:
+        #print "No section in that name: %s"%section
+        return ""
 
 
 def add_config_value(section,key,value,location=False):
