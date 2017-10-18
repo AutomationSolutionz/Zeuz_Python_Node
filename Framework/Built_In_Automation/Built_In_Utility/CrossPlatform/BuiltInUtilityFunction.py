@@ -2069,8 +2069,7 @@ def Validate_Path_Step_Data(step_data):
     try:
         path1 = get_home_folder() + str(step_data[0][0]).strip()
         path2 = get_home_folder() + str(step_data[0][2]).strip()
-        validated_data = (path1, path2
-                          )
+        validated_data = (path1, path2)
         return validated_data
     except Exception:
         exc_type, exc_obj, exc_tb = sys.exc_info()
@@ -2078,6 +2077,25 @@ def Validate_Path_Step_Data(step_data):
         Error_Detail = ((str(exc_type).replace("type ", "Error Type: ")) + ";" + "Error Message: " + str(
             exc_obj) + ";" + "File Name: " + fname + ";" + "Line: " + str(exc_tb.tb_lineno))
         CommonUtil.ExecLog(sModuleInfo, "Could not find the new page element requested.  Error: %s" % (Error_Detail), 3)
+        return "failed"
+
+
+# return no of files(sub directory included) in a directory
+def count_no_of_files_in_folder(step_data):
+    sModuleInfo = inspect.stack()[0][3] + " : " + inspect.getmoduleinfo(__file__).name
+    CommonUtil.ExecLog(sModuleInfo, "Function start", 0)
+    try:
+        path = get_home_folder() + "/" + str(step_data[0][2]).strip()
+        count = 0
+        count = sum([len(files) for r, d, files in os.walk(path)])
+        Shared_Resources.Set_Shared_Variables('noOfFiles',str(count))
+        return "passed"
+    except Exception:
+        exc_type, exc_obj, exc_tb = sys.exc_info()
+        fname = os.path.split(exc_tb.tb_frame.f_code.co_filename)[1]
+        Error_Detail = ((str(exc_type).replace("type ", "Error Type: ")) + ";" + "Error Message: " + str(
+            exc_obj) + ";" + "File Name: " + fname + ";" + "Line: " + str(exc_tb.tb_lineno))
+        CommonUtil.ExecLog(sModuleInfo, "Could not count no of files in the directory.  Error: %s" % (Error_Detail), 3)
         return "failed"
 
 
