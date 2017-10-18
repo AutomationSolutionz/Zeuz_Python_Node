@@ -168,8 +168,11 @@ class Application(tk.Frame):
             self.get_projects(self.widgets['Authentication']['widget']['team']['dropdown'].get()) # Get list of projects from the server for the curent team, populate the list
 
         # Create text area for log output
-        self.log = tk.Text(self.rightframe, wrap = tk.WORD)
+        self.log = tk.Text(self.rightframe, wrap = tk.WORD, bg = 'white')
         self.log.grid(row = 1, column = 0, sticky = 'snew')
+        self.logscrollY = tk.Scrollbar(self.rightframe, command = self.log.yview) # Create scrollbar for log window
+        self.logscrollY.grid(row = 1, column = 1, sticky = 'ns')
+        self.log['yscrollcommand'] = self.logscrollY.set 
         
         # Set initial focus on enable button
         self.startButton.focus_set()
