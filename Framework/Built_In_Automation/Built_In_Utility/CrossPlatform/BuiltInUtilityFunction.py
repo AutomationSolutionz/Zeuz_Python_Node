@@ -2142,7 +2142,7 @@ def count_no_of_files_in_folder(step_data):
     sModuleInfo = inspect.stack()[0][3] + " : " + inspect.getmoduleinfo(__file__).name
     CommonUtil.ExecLog(sModuleInfo, "Function start", 0)
     try:
-        path = get_home_folder() + str(step_data[0][2]).strip()
+        path = get_home_folder() + "/" +str(step_data[0][2]).strip()
         count = 0
         count = sum([len(files) for r, d, files in os.walk(path)])
         Shared_Resources.Set_Shared_Variables('noOfFiles',str(count))
