@@ -11,7 +11,6 @@ from Framework.Built_In_Automation.Shared_Resources import BuiltInFunctionShared
 from Framework.Built_In_Automation.Sequential_Actions.sequential_actions import actions, action_support
 from Framework.Utilities.CommonUtil import passed_tag_list, failed_tag_list, skipped_tag_list # Allowed return strings, used to normalize pass/fail
 from Framework.Built_In_Automation.Shared_Resources import LocateElement
-from datetime import datetime,timedelta
 
 def sanitize(step_data, valid_chars = '', clean_whitespace_only = False, column = ''):
     ''' Sanitize step data Field and Sub-Field '''
@@ -544,11 +543,3 @@ def delete_all_shared_variables(data_set):
     except Exception:
         return CommonUtil.Exception_Handler(sys.exc_info())
 
-
-def save_built_in_time_variable(data_set):
-    sr.Set_Shared_Variables('todayDate',datetime.today().strftime('%Y-%m-%d'))
-    sr.Set_Shared_Variables('yesterdayDate', (datetime.today() - timedelta(1)).strftime('%Y-%m-%d'))
-    sr.Set_Shared_Variables('dayBeforeYesterdayDate', (datetime.today() - timedelta(2)).strftime('%Y-%m-%d'))
-    sr.Set_Shared_Variables('tomorrowDate', (datetime.today() + timedelta(1)).strftime('%Y-%m-%d'))
-    sr.Set_Shared_Variables('dayAfterTomorrowDate', (datetime.today() + timedelta(2)).strftime('%Y-%m-%d'))
-    sr.Set_Shared_Variables('currentEpochTime', int(time.time()))

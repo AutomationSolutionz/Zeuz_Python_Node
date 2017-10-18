@@ -3,11 +3,13 @@
 
 # shared_variables
 
-import inspect,sys
+import inspect,sys,time
 import string
 import random
 from Framework.Utilities import CommonUtil
 from Framework.Utilities.CommonUtil import passed_tag_list, failed_tag_list
+from datetime import datetime
+from dateutil.relativedelta import relativedelta
 
 global shared_variables
 shared_variables = {}
@@ -177,6 +179,13 @@ def get_previous_response_variables_in_strings(step_data_string_input):
 
                     output += random_string
                     CommonUtil.ExecLog(sModuleInfo, 'Replacing variable "%s" with its value "%s"' % (parts[0], random_string), 0)
+                elif str(parts[0]).lower().startswith('today') or str(parts[0]).startswith('currentEpochTime'):
+                    replaced_string = save_built_in_time_variable(str(parts[0]))
+                    if replaced_string in failed_tag_list:
+                        CommonUtil.ExecLog(sModuleInfo, "No such date variable named '%s', user formats like %%|today|%% , %%|today + 1d|%% , %%|today - 3m|%% , %%|today + 1w|%%, %%|today + 2y|%% , %%|currentEpochTime|%% etc." % parts[0], 3)
+                        return "failed"
+                    output += str(save_built_in_time_variable(str(parts[0])))
+                    CommonUtil.ExecLog(sModuleInfo, 'Replacing variable "%s" with its value "%s"' % (parts[0], replaced_string), 0)
                 else:
                     var_value = Get_Shared_Variables(parts[0])
                     if var_value == 'failed':
@@ -424,3 +433,48 @@ def Clean_Up_Shared_Variables():
 def Shared_Variable_Export():
     ''' Exports all shared variables if for some reason modules can't use the functions herein '''
     return shared_variables
+
+def save_built_in_time_variable(string):
+    input = str(string).lower().strip()
+    sign = ""
+    number = 0
+    parameter = ""
+    if input == "currentepochtime":
+        return int(time.time())
+    elif input.startswith("today"):
+        if input.lower().strip() == "today":
+            return datetime.today().strftime('%Y-%m-%d')
+        elif "+" in input:
+            l = input.split("+")
+            if len(l) > 2: #problem with input
+                return "failed"
+            else:
+                sign = "plus"
+                st = str(l[1]).strip()
+                parameter = st[-1]
+                number = int(st[:-1])
+        elif "-" in input:
+            l = input.split("-")
+            if len(l) > 2: #problem with input
+                return "failed"
+            else:
+                sign = "minus"
+                st = str(l[1]).strip()
+                parameter = st[-1]
+                number = int(st[:-1])
+        else:
+            return "failed"
+
+        if sign != "" and parameter != "":
+            if sign == "minus":
+                number*=-1
+            if parameter == "d":
+                return (datetime.today() + relativedelta(days=number)).strftime('%Y-%m-%d')
+            elif parameter == "w":
+                return (datetime.today() + relativedelta(days=number*7)).strftime('%Y-%m-%d')
+            elif parameter == "m":
+                return (datetime.today() + relativedelta(months=number)).strftime('%Y-%m-%d')
+            elif parameter == "y":
+                return (datetime.today() + relativedelta(years=number)).strftime('%Y-%m-%d')
+            else:
+                return "failed"
