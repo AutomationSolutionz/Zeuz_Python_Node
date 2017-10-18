@@ -1201,7 +1201,8 @@ def get_program_names(search_name):
 
         cmd = 'adb %s shell pm list packages' % serial
         res = subprocess.Popen(cmd.split(' '), stdout=subprocess.PIPE).communicate()[0] # Get list of installed packages on device
-        res = str(res).replace('\\r','') # Remove \r if any
+        res = str(res).replace('\\r','') # Remove \r text if any
+        res = str(res).replace('\r','') # Remove \r carriage return if any
         ary = res.split('\\n') # Split into list
         
         #p = re.compile('package(.*?' + search_name + '.*?)$') # Regex pattern which will return only the package name
