@@ -1202,8 +1202,9 @@ def get_program_names(search_name):
         cmd = 'adb %s shell pm list packages' % serial
         res = subprocess.check_output(cmd) # Get list of installed packages on device
         res = str(res).replace('\\r','') # Remove \r text if any
+        res = str(res).replace('\\n','\n') # replace \n text with line feed
         res = str(res).replace('\r','') # Remove \r carriage return if any
-        ary = res.split('\\n') # Split into list
+        ary = res.split('\n') # Split into list
         
         package_name = ''
         package_list = []
