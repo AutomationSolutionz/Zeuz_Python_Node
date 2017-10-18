@@ -890,7 +890,7 @@ def Copy_File_or_Folder(step_data):
             to_path =os.path.join( get_home_folder() , str(step_data[1][2]).strip())  # location where to copy the file/folder
         elif _platform == "win32":
             from_path = raw(str(step_data[0][2]).strip())  # location of the file/folder to be copied
-            to_path = raw(str(step_data[1][2]).strip())  # location where to copy the file/folder
+            to_path = os.path.join(get_home_folder(),raw(str(step_data[1][2]).strip()))  # location where to copy the file/folder
         file_or_folder = str(step_data[2][2]).strip()  # get if it is file/folder to copy
         # Try to find the file
         if from_path not in file_attachment and os.path.exists(os.path.join(get_home_folder(), from_path)) == False:
