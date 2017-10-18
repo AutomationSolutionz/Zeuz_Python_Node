@@ -1200,33 +1200,31 @@ def get_program_names(search_name):
             return '', '' # Failure handling in calling function
 
         cmd = 'adb %s shell pm list packages' % serial
-        res = subprocess.Popen(cmd.split(' '), stdout=subprocess.PIPE).communicate()[0] # Get list of installed packages on device
+        res = subprocess.check_output(cmd) # Get list of installed packages on device
         res = str(res).replace('\\r','') # Remove \r text if any
         res = str(res).replace('\r','') # Remove \r carriage return if any
         ary = res.split('\\n') # Split into list
         
-        #p = re.compile('package(.*?' + search_name + '.*?)$') # Regex pattern which will return only the package name
         package_name = ''
+        package_list = []
         for line in ary: # For each package
-            #m = p.search(str(line)) # Apply regex
-            #if m: # If there's a match
             if search_name.lower() in line:
-                package_name = line.replace('package', '').replace(':', '') 
-                #package_name = m.group(1)[1:] # Save package name
-                break
-    
-        if package_name == '':
+                package_list.append(line.replace('package', '').replace(':', ''))
+                
+        if len(package_list) == 0:
             CommonUtil.ExecLog(sModuleInfo, "Did not find installed package: %s" % search_name, 3)
             return '', ''
+        elif package_list > 1: CommonUtil.ExecLog(sModuleInfo, "Found more than one packages. Will use the first found. Please specify a more accurate package name. Found packages: %s" % package_list, 2)
+        package_name = package_list[0] # Save first package found
             
         # Launch program using only package name
         cmd = 'adb %s shell monkey -p %s -c android.intent.category.LAUNCHER 1' % (serial, package_name)
-        res = subprocess.Popen(cmd.split(' '))
+        res = subprocess.check_output(cmd)
         time.sleep(3)
     
         # Get the activity name
         cmd = 'adb %s shell dumpsys window windows' % serial
-        res = subprocess.Popen(cmd.split(' '), stdout=subprocess.PIPE).communicate()[0]
+        res = subprocess.check_output(cmd)
         m = re.search('CurrentFocus=.*?\s+([\w\.]+)/([\w\.]+)', str(res))
     
         # Return package and activity names
