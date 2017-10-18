@@ -887,7 +887,7 @@ def Copy_File_or_Folder(step_data):
     try:
         if _platform == "linux" or _platform == "linux2" or _platform == "darwin":
             from_path = str(step_data[0][2]).strip()  # location of the file/folder to be copied
-            to_path = get_home_folder() + str(step_data[1][2]).strip()  # location where to copy the file/folder
+            to_path =os.path.join( get_home_folder() , str(step_data[1][2]).strip())  # location where to copy the file/folder
         elif _platform == "win32":
             from_path = raw(str(step_data[0][2]).strip())  # location of the file/folder to be copied
             to_path = raw(str(step_data[1][2]).strip())  # location where to copy the file/folder
@@ -900,7 +900,7 @@ def Copy_File_or_Folder(step_data):
         if from_path in file_attachment: from_path = file_attachment[from_path]  # In file is an attachment, get the full path
 
         if from_path not in file_attachment:
-            file_name = os.path.join(get_home_folder(), from_path)
+            from_path = os.path.join(get_home_folder(), from_path)
         if file_or_folder.lower() == 'file':
                 # copy file "from_path" to "to_path"
             result = copy_file(from_path, to_path)
