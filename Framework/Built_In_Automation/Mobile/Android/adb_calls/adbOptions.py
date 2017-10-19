@@ -123,7 +123,7 @@ def get_device_imei_info(serial = ''):
     sModuleInfo = inspect.stack()[0][3] + " : " + inspect.getmoduleinfo(__file__).name
     try:
         if serial != '': serial = '-s %s' % serial # Prepare serial number with command line switch
-        output=subprocess.Popen(str('adb %s shell dumpsys iphonesubinfo' % serial).split(' '), stdout=subprocess.PIPE).communicate()[0]
+        output=subprocess.check_output('adb %s shell dumpsys iphonesubinfo' % serial, shell = True)
         # Use dumpsys (Below Android v6)
         if output != '':
             output = output.split("\n")[2]
@@ -131,7 +131,7 @@ def get_device_imei_info(serial = ''):
             
         # Use service call (Above Android v6)
         else:
-            output=subprocess.Popen(str('adb shell service call iphonesubinfo 1' % serial).split(' '), stdout=subprocess.PIPE).communicate()[0]
+            output=subprocess.check_output('adb shell service call iphonesubinfo 1' % serial, shell = True)
             output=output.split(' ') # Contains hex output, and characters that need to be removed
             tmp = ''
             for val in output:

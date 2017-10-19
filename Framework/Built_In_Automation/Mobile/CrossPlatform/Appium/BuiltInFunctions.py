@@ -74,7 +74,7 @@ def find_appium():
     # Verify if we have the binary location    
     if appium_binary == '': # Didn't find where appium was installed
         CommonUtil.ExecLog(sModuleInfo, "Appium not found. Trying to locate via which", 0)
-        try: appium_binary = subprocess.Popen(['which', 'appium'], stdout = subprocess.PIPE).communicate()[0].strip()
+        try: appium_binary = subprocess.check_output('which appium', shell = True).strip()
         except: pass
         
         if appium_binary == '': # Didn't find where appium was installed
@@ -244,14 +244,14 @@ def start_appium_server():
                 cmd = 'start "Appium Server" /wait /min cmd /c %s' % appium_binary # Use start to execute and minimize, then cmd /c will remove the dos box when appium is killed
                 appium_server = subprocess.Popen(cmd, shell=True) # Needs to run in a shell due to the execution command
             else:
-                appium_server = subprocess.Popen(appium_binary.split(' '), stdout=subprocess.PIPE, stderr=subprocess.STDOUT) # Start the appium server
+                appium_server = subprocess.Popen(appium_binary, shell = True, stdout=subprocess.PIPE, stderr=subprocess.STDOUT) # Start the appium server
 
             appium_details[device_id]['server'] = appium_server # Save the server object for teardown
         except Exception, returncode: # Couldn't run server
             return CommonUtil.Exception_Handler(sys.exc_info(), None, "Couldn't start Appium server. May not be installed, or not in your PATH: %s" % returncode)
         
         # Wait for server to startup and return
-        CommonUtil.ExecLog(sModuleInfo,"Waiting 10 seconds for server to start on port %d" % appium_port, 0)
+        CommonUtil.ExecLog(sModuleInfo,"Waiting 10 seconds for server to start: %s" % appium_binary, 0)
         time.sleep(10) # Wait for server to get to ready state
         if appium_server:
             CommonUtil.ExecLog(sModuleInfo,"Server started", 1)
@@ -1200,7 +1200,7 @@ def get_program_names(search_name):
             return '', '' # Failure handling in calling function
 
         cmd = 'adb %s shell pm list packages' % serial
-        res = subprocess.check_output(cmd) # Get list of installed packages on device
+        res = subprocess.check_output(cmd, shell = True) # Get list of installed packages on device
         res = str(res).replace('\\r','') # Remove \r text if any
         res = str(res).replace('\\n','\n') # replace \n text with line feed
         res = str(res).replace('\r','') # Remove \r carriage return if any
@@ -1220,12 +1220,12 @@ def get_program_names(search_name):
             
         # Launch program using only package name
         cmd = 'adb %s shell monkey -p %s -c android.intent.category.LAUNCHER 1' % (serial, package_name)
-        res = subprocess.check_output(cmd)
+        res = subprocess.check_output(cmd, shell = True)
         time.sleep(3)
     
         # Get the activity name
         cmd = 'adb %s shell dumpsys window windows' % serial
-        res = subprocess.check_output(cmd)
+        res = subprocess.check_output(cmd, shell = True)
         m = re.search('CurrentFocus=.*?\s+([\w\.]+)/([\w\.]+)', str(res))
     
         # Return package and activity names
