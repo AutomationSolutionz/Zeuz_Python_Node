@@ -887,7 +887,10 @@ def Copy_File_or_Folder(step_data):
     try:
         if _platform == "linux" or _platform == "linux2" or _platform == "darwin":
             from_path = str(step_data[0][2]).strip()  # location of the file/folder to be copied
-            to_path =os.path.join( get_home_folder() , str(step_data[1][2]).strip())  # location where to copy the file/folder
+            if from_path[0]=="/": from_path=from_path.lstrip('/')
+            to_path = str(step_data[1][2]).strip()
+            if to_path[0] == "/": to_path=to_path.lstrip('/')
+            to_path =os.path.join( get_home_folder() , to_path)  # location where to copy the file/folder
         elif _platform == "win32":
             from_path = raw(str(step_data[0][2]).strip())  # location of the file/folder to be copied
             to_path = os.path.join(get_home_folder(),raw(str(step_data[1][2]).strip()))  # location where to copy the file/folder
@@ -1780,6 +1783,7 @@ def Download_File_and_Unzip(step_data):
     except Exception:
         return CommonUtil.Exception_Handler(sys.exc_info())
 
+
 def replace_Substring(data_set):
     sModuleInfo = inspect.stack()[0][3] + " : " + inspect.getmoduleinfo(__file__).name
     CommonUtil.ExecLog(sModuleInfo, "Function start", 0)
@@ -1800,6 +1804,7 @@ def replace_Substring(data_set):
         for row in data_set:
             if "action" in row[1]:
                 file_name = row[2]
+                if file_name[0]=="/": file_name=file_name.lstrip("/")
             if row[1] == 'element parameter':
                 if row[0] == 'replace all':
                     #The user should be able to replace the first instance found, or all strings found (default is to replace all)
@@ -1880,6 +1885,7 @@ def replace_Substring(data_set):
 
     except Exception:
         return CommonUtil.Exception_Handler(sys.exc_info())
+
 
 
 def Change_Value_ini(data_set):
