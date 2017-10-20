@@ -6,9 +6,14 @@
 import sys, subprocess
 from Framework.Utilities import CommonUtil 
 
+# These create the device name we give to each device
+device_name = 'Device '
+device_cnt = 0
+
 def get_all_connected_android_info():
     ''' For all connected Android devices, get specified information and return in a dictionary with the serial number as the top level key '''
     
+    global device_cnt
     try:
         android_list = []
         device_list = {}
@@ -63,13 +68,16 @@ def get_all_connected_android_info():
                 if len(imei) not in (14, 15, 18): imei = 'Unknown'
             
             # Compile information into dictionary
-            device_list[serial] = {}
-            device_list[serial]['type'] = 'Android'
-            device_list[serial]['osver'] = os_version
-            device_list[serial]['model'] = model
-            device_list[serial]['devname'] = name
-            device_list[serial]['mfg'] = mfg
-            device_list[serial]['imei'] = imei
+            dname = device_name + str(device_cnt)
+            device_list[dname] = {}
+            device_list[dname]['id'] = serial
+            device_list[dname]['type'] = 'Android'
+            device_list[dname]['osver'] = os_version
+            device_list[dname]['model'] = model
+            device_list[dname]['devname'] = name
+            device_list[dname]['mfg'] = mfg
+            device_list[dname]['imei'] = imei
+            device_cnt += 1
             
         return device_list
     except Exception, e:
@@ -79,6 +87,7 @@ def get_all_connected_android_info():
 def get_all_connected_ios_info():
     ''' For all connected IOS devices, get specified information and return in a dictionary with the UUID as the top level key '''
     
+    global device_cnt
     try:
         info_list = {}
         device_list = {}
@@ -105,16 +114,19 @@ def get_all_connected_ios_info():
             
             # Compile desired information into dictionary
             try:
-                device_list[uuid] = {}
-                device_list[uuid]['type'] = 'IOS'
-                device_list[uuid]['mfg'] = 'Apple'
-                device_list[uuid]['devname'] = info_list['DeviceName']
-                device_list[uuid]['model'] = info_list['ProductType']
-                device_list[uuid]['osver'] = info_list['ProductVersion']
-                try: device_list[uuid]['imei'] = info_list['InternationalMobileEquipmentIdentity']
-                except: device_list[uuid]['imei'] = 'Unknown'
+                dname = device_name + str(device_cnt)
+                device_list[dname] = {}
+                device_list[dname]['id'] = uuid
+                device_list[dname]['type'] = 'IOS'
+                device_list[dname]['mfg'] = 'Apple'
+                device_list[dname]['devname'] = info_list['DeviceName']
+                device_list[dname]['model'] = info_list['ProductType']
+                device_list[dname]['osver'] = info_list['ProductVersion']
+                try: device_list[dname]['imei'] = info_list['InternationalMobileEquipmentIdentity']
+                except: device_list[dname]['imei'] = 'Unknown'
             except: # Likely means we didn't get the info we needed
                 pass
+            device_cnt += 1
         
         return device_list
     except Exception, e:
@@ -136,6 +148,6 @@ def get_all_connected_device_info():
         CommonUtil.ExecLog('', 'Error reading Android or IOS device: %s' % e, 4, False)
         return {}
 
-
-print get_all_connected_device_info()
+if __file__ == '__main__':
+    print get_all_connected_device_info()
 
