@@ -243,21 +243,20 @@ def start_appium_server():
             
         # Execute appium server
         appium_port += 2 # Increment the port number (by 2 because adb seems to grab the next port), for the next time we run, so we can have multiple instances
-        appium_binary += " -p " + str(appium_port) # Specify the port in case we use more than one device
         
         try:
             if sys.platform  == 'win32': # We need to open appium in it's own command dos box on Windows
-                cmd = 'start "Appium Server" /wait /min cmd /c %s' % appium_binary # Use start to execute and minimize, then cmd /c will remove the dos box when appium is killed
+                cmd = 'start "Appium Server" /wait /min cmd /c %s -p %d' % (appium_binary, appium_port) # Use start to execute and minimize, then cmd /c will remove the dos box when appium is killed
                 appium_server = subprocess.Popen(cmd, shell=True) # Needs to run in a shell due to the execution command
             else:
-                appium_server = subprocess.Popen(appium_binary, shell = True, stdout=subprocess.PIPE, stderr=subprocess.STDOUT) # Start the appium server
+                appium_server = subprocess.Popen("%s -p %d" % (appium_binary, appium_port), shell = True, stdout=subprocess.PIPE, stderr=subprocess.STDOUT) # Start the appium server
 
             appium_details[device_id]['server'] = appium_server # Save the server object for teardown
         except Exception, returncode: # Couldn't run server
             return CommonUtil.Exception_Handler(sys.exc_info(), None, "Couldn't start Appium server. May not be installed, or not in your PATH: %s" % returncode)
         
         # Wait for server to startup and return
-        CommonUtil.ExecLog(sModuleInfo,"Waiting 10 seconds for server to start: %s" % appium_binary, 0)
+        CommonUtil.ExecLog(sModuleInfo,"Waiting 10 seconds for server to start on port %d: %s" % (appium_port, appium_binary), 0)
         time.sleep(10) # Wait for server to get to ready state
         if appium_server:
             CommonUtil.ExecLog(sModuleInfo,"Server started", 1)
