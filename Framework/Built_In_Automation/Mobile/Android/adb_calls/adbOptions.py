@@ -401,7 +401,7 @@ def detect_foreground_android(serial = ''):
     try:
         if serial != '': serial = '-s %s' % serial # Prepare serial number with command line switch
         output = subprocess.check_output("adb %s shell dumpsys window windows" % serial, shell=True) # Get list of windows
-        p = re.compile('CurrentFocus=Window{\w+\s+\w+\s+\w+\s+(.*?)}', re.MULTILINE) # Find CurrentFocus line, and return package/activity
+        p = re.compile('CurrentFocus=.*?\s+([\w\.]+)/([\w\.]+)', re.MULTILINE) # Find CurrentFocus line, and return package/activity
         m = p.search(output) # Perform regex
         return str(m.group(1)) # Return package/activity
     except Exception:

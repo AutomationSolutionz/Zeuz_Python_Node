@@ -87,14 +87,20 @@ def find_appium():
 
 def kill_appium_on_windows(appium_server):
     ''' Killing Appium server on windows involves killing off it's children '''
-    
-    import psutil, signal
-        
-    for child in psutil.Process(appium_server.pid).children(recursive=True): # For eah child in process
-        cpid = int(str(child.as_dict(attrs=['pid'])['pid']).replace("'", "")) # Get child PID
-        psutil.Process(cpid).send_signal(signal.SIGTERM) # Send kill to it
-        #print h.terminate()
 
+    sModuleInfo = inspect.stack()[0][3] + " : " + inspect.getmoduleinfo(__file__).name
+    CommonUtil.ExecLog(sModuleInfo,"Function Start", 0)
+
+    try:
+        import psutil, signal
+            
+        for child in psutil.Process(appium_server.pid).children(recursive=True): # For eah child in process
+            cpid = int(str(child.as_dict(attrs=['pid'])['pid']).replace("'", "")) # Get child PID
+            CommonUtil.ExecLog(sModuleInfo,"Killing Appium child: %d" % cpid, 0)
+            psutil.Process(cpid).send_signal(signal.SIGTERM) # Send kill to it
+            #print h.terminate()
+    except Exception:
+        return CommonUtil.Exception_Handler(sys.exc_info(), None, "Error killing Appium and it's children")
 
 def find_exe_in_path(exe):
     ''' Search the path for an executable '''
@@ -356,7 +362,7 @@ def teardown_appium(data_set):
     try:
         for name in appium_details: # For each connected device
             if sys.platform  == 'win32': # Special kill for appium children on Windows
-                kill_appium_on_windows(appium_server)
+                kill_appium_on_windows(appium_details[name]['server'])
             appium_details[name]['driver'].quit() # Destroy driver
             appium_details[name]['server'].kill() # Terminate server
         
@@ -1215,7 +1221,7 @@ def get_program_names(search_name):
         if len(package_list) == 0:
             CommonUtil.ExecLog(sModuleInfo, "Did not find installed package: %s" % search_name, 3)
             return '', ''
-        elif package_list > 1: CommonUtil.ExecLog(sModuleInfo, "Found more than one packages. Will use the first found. Please specify a more accurate package name. Found packages: %s" % package_list, 2)
+        elif len(package_list) > 1: CommonUtil.ExecLog(sModuleInfo, "Found more than one packages. Will use the first found. Please specify a more accurate package name. Found packages: %s" % package_list, 2)
         package_name = package_list[0] # Save first package found
             
         # Launch program using only package name
