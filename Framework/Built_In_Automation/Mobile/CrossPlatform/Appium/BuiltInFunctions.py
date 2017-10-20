@@ -192,7 +192,10 @@ def launch_application(data_set):
             Shared_Resources.Set_Shared_Variables('device_serial', device_serial)
         if 'driver' not in appium_details[serial]: appium_details[serial]['driver'] = None
             
-                
+        # Send wake up command to avoid issues with devices ignoring appium when they are in lower power mode (android 6.0+), and unlock if passworded
+        result = adbOptions.wake_android(device_serial)
+        if result in failed_tag_list: return 'failed'
+
         # If android, then we will try to find the activity name, IOS doesn't need this
         if activity_name == '':
             if dependency['Mobile'].lower() == 'android':
@@ -304,11 +307,6 @@ def start_appium_driver(package_name = '', activity_name = '', filename = ''):
                     CommonUtil.ExecLog(sModuleInfo, "Could not detect any connected Android devices", 3)
                     return 'failed'
 
-                # Send wake up command to avoid issues with devices ignoring appium when they are in lower power mode (android 6.0+), and unlock if passworded
-                result = adbOptions.wake_android(device_serial)
-                if result in failed_tag_list:
-                    return 'failed'
-                
                 CommonUtil.ExecLog(sModuleInfo,"Setting up with Android",1)
                 desired_caps['platformVersion'] = adbOptions.get_android_version(device_serial).strip()
                 desired_caps['deviceName'] = adbOptions.get_device_model(device_serial).strip()
