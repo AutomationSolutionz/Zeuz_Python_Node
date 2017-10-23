@@ -13,15 +13,23 @@ from dateutil.relativedelta import relativedelta
 
 global shared_variables
 shared_variables = {}
+protected_variables = [] # Used to ensure internally used shared variables can't be overwritten by step data
 
 
-def Set_Shared_Variables(key, value):
+def Set_Shared_Variables(key, value, protected = False):
     try:
         sModuleInfo = inspect.stack()[0][3] + " : " + inspect.getmoduleinfo(__file__).name
-        global shared_variables
+        global shared_variables, protected_variables
         if key == '' or key == None or value == '' or value == None:  # if input is invalid
             return "failed"
-        else:
+        else: # Valid input
+            if protected: protected_variables.append(key) # Add to list of protected variables
+            else: # Check if user is trying to overwrite a protected variable
+                if key in protected_variables: # If we find a match, exit with failure
+                    CommonUtil.ExecLog(sModuleInfo, "Error: You tried to overwrite protected variable '%s'. Please choose a different variable name." % key, 3)
+                    return 'failed'
+            
+            # Good to proceed
             shared_variables[key] = value
             CommonUtil.ExecLog(sModuleInfo, "Variable value of '%s' is set as: %s" % (key, value), 0)
             return "passed"
@@ -29,13 +37,20 @@ def Set_Shared_Variables(key, value):
         CommonUtil.Exception_Handler(sys.exc_info())
 
 
-def Set_List_Shared_Variables(list_name, key, value):
+def Set_List_Shared_Variables(list_name, key, value, protected = False):
     try:
         sModuleInfo = inspect.stack()[0][3] + " : " + inspect.getmoduleinfo(__file__).name
-        global shared_variables
+        global shared_variables, protected_variables
         if key == '' or key == None or value == '' or value == None or list_name == '' or list_name == None:  # if input is invalid
             return "failed"
-        else:
+        else: # Valid input
+            if protected: protected_variables.append(key) # Add to list of protected variables
+            else: # Check if user is trying to overwrite a protected variable
+                if key in protected_variables: # If we find a match, exit with failure
+                    CommonUtil.ExecLog(sModuleInfo, "Error: You tried to overwrite protected variable '%s'. Please choose a different variable name." % key, 3)
+                    return 'failed'
+            
+            # Good to proceed
             if list_name in shared_variables:
                 shared_variables[list_name][key] = value
                 CommonUtil.ExecLog(sModuleInfo, "In List '%s' Variable value of '%s' is set as: %s" % (list_name, key, value), 0)

@@ -34,11 +34,15 @@ if Shared_Resources.Test_Shared_Variables('appium_details'): # Check if driver i
 
 # Recall dependency, if not already set
 dependency = None
-if Shared_Resources.Test_Shared_Variables('dependency'): # Check if driver is already set in shared variables
-    dependency = Shared_Resources.Get_Shared_Variables('dependency') # Retreive appium driver
+if Shared_Resources.Test_Shared_Variables('dependency'): # Check if dependency is already set in shared variables
+    dependency = Shared_Resources.Get_Shared_Variables('dependency') # Retreive dependency
 else:
     raise ValueError("No dependency set - Cannot run")
 
+# Recall device_info, if not already set
+device_info = {}
+if Shared_Resources.Test_Shared_Variables('device_info'): # Check if device_info is already set in shared variables
+    dependency = Shared_Resources.Get_Shared_Variables('device_info') # Retreive device_info
     
 def find_appium():
     ''' Do our very best to find the appium executable '''
