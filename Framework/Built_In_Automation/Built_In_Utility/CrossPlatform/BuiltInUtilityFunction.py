@@ -1321,19 +1321,44 @@ def Create_File(step_data):
     except Exception:
         return CommonUtil.Exception_Handler(sys.exc_info())
 
-
 # Method to compare file
 def Compare_File(step_data):
     sModuleInfo = inspect.stack()[0][3] + " : " + inspect.getmoduleinfo(__file__).name
     CommonUtil.ExecLog(sModuleInfo, "Function start", 0)
+
+    # Recall file attachment, if not already set
+    file_attachment = []
+    if Shared_Resources.Test_Shared_Variables('file_attachment'):
+        file_attachment = Shared_Resources.Get_Shared_Variables('file_attachment')
+
     try:
         if _platform == "linux" or _platform == "linux2" or _platform == "darwin":
-            from_path = get_home_folder() + str(step_data[0][2]).strip()  # location of file path to be compared
-            to_path = get_home_folder() + str(step_data[1][2]).strip()  # location of file path to be compared
+            from_path = str(step_data[0][2]).strip()  # location of file path to be compared
+            to_path = str(step_data[1][2]).strip()  # location of file path to be compared
         elif _platform == "win32":
             from_path = raw(str(step_data[0][2]).strip())  # location of file path to be compared
             # print  from_path
             to_path = raw(str(step_data[1][2]).strip())  # location of file path to be compared
+
+        # Try to find the file
+        if from_path not in file_attachment and os.path.exists(os.path.join(get_home_folder(), from_path)) == False:
+            CommonUtil.ExecLog(sModuleInfo,
+                               "Could not find file attachment called %s, and could not find it locally" % from_path, 3)
+            return 'failed'
+        if from_path in file_attachment: from_path = file_attachment[from_path]  # In file is an attachment, get the full path
+
+        if from_path not in file_attachment:
+            from_path = os.path.join(get_home_folder(), from_path)
+
+        # Try to find the file
+        if to_path not in file_attachment and os.path.exists(os.path.join(get_home_folder(), to_path)) == False:
+            CommonUtil.ExecLog(sModuleInfo,
+                               "Could not find file attachment called %s, and could not find it locally" % to_path, 3)
+            return 'failed'
+        if to_path in file_attachment: to_path = file_attachment[to_path]  # In file is an attachment, get the full path
+
+        if to_path not in file_attachment:
+            to_path = os.path.join(get_home_folder(), to_path)
 
         file_or_folder = str(step_data[2][2]).strip()
         if file_or_folder.lower() == 'file':
@@ -1358,14 +1383,40 @@ def Compare_File(step_data):
 def Rename_File_or_Folder(step_data):
     sModuleInfo = inspect.stack()[0][3] + " : " + inspect.getmoduleinfo(__file__).name
     CommonUtil.ExecLog(sModuleInfo, "Function start", 0)
+
+    # Recall file attachment, if not already set
+    file_attachment = []
+    if Shared_Resources.Test_Shared_Variables('file_attachment'):
+        file_attachment = Shared_Resources.Get_Shared_Variables('file_attachment')
+
     try:
         if _platform == "linux" or _platform == "linux2" or _platform == "darwin" :
 
-            from_path = get_home_folder() + str(step_data[0][2]).strip()  # location of the file/folder to be renamed
-            to_path = get_home_folder() + str(step_data[1][2]).strip()  # location where to rename the file/folder
+            from_path = str(step_data[0][2]).strip()  # location of the file/folder to be renamed
+            to_path = str(step_data[1][2]).strip()  # location where to rename the file/folder
         elif _platform == "win32":
             from_path = raw(str(step_data[0][2]).strip())  # location of the file/folder to be renamed
             to_path = raw(str(step_data[1][2]).strip())  # location where to rename the file/folder
+
+         # Try to find the file
+        if from_path not in file_attachment and os.path.exists(os.path.join(get_home_folder(), from_path)) == False:
+            CommonUtil.ExecLog(sModuleInfo,
+                               "Could not find file attachment called %s, and could not find it locally" % from_path, 3)
+            return 'failed'
+        if from_path in file_attachment: from_path = file_attachment[from_path]  # In file is an attachment, get the full path
+
+        if from_path not in file_attachment:
+            from_path = os.path.join(get_home_folder(), from_path)
+
+        # Try to find the file
+        if to_path not in file_attachment and os.path.exists(os.path.join(get_home_folder(), to_path)) == False:
+            CommonUtil.ExecLog(sModuleInfo,
+                               "Could not find file attachment called %s, and could not find it locally" % to_path, 3)
+            return 'failed'
+        if to_path in file_attachment: to_path = file_attachment[to_path]  # In file is an attachment, get the full path
+
+        if to_path not in file_attachment:
+            to_path = os.path.join(get_home_folder(), to_path)
 
         file_or_folder = str(step_data[2][2]).strip()  # get if it is file/folder to rename
         if file_or_folder.lower() == 'file':
