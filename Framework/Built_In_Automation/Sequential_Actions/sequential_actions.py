@@ -224,7 +224,7 @@ def load_sa_modules(module): # Load module "AS" must match module name we get fr
         return CommonUtil.Exception_Handler(sys.exc_info())
     return 'passed'
 
-def Sequential_Actions(step_data, _dependency = {}, _run_time_params = '', _file_attachment = {}, _temp_q = '',screen_capture='Desktop'):
+def Sequential_Actions(step_data, _dependency = {}, _run_time_params = '', _file_attachment = {}, _temp_q = '',screen_capture='Desktop',device_info = {}):
     ''' Main Sequential Actions function - Performs logical decisions based on user input '''
     
     sModuleInfo = inspect.stack()[0][3] + " : " + inspect.getmoduleinfo(__file__).name

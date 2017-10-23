@@ -5,7 +5,7 @@ from Projects.Sample_Amazon_Testing import Amazon
 
 from Framework.Utilities.CommonUtil import passed_tag_list, failed_tag_list
 
-def search_an_item_on_amazon(dependency,run_time_params,step_data,file_attachment,temp_q,screen_capture):
+def search_an_item_on_amazon(dependency,run_time_params,step_data,file_attachment,temp_q,screen_capture,device_info):
     sModuleInfo = inspect.stack()[0][3] + " : " + inspect.getmoduleinfo(__file__).name
     try:
         CommonUtil.ExecLog(sModuleInfo, "Enter: Step - Search an Item on Amazon", 1)
@@ -35,7 +35,7 @@ def search_an_item_on_amazon(dependency,run_time_params,step_data,file_attachmen
         return CommonUtil.Exception_Handler(sys.exc_info())
 
 
-def add_an_item_to_cart_on_amazon(dependency,run_time_params,step_data,file_attachment,temp_q,screen_capture):
+def add_an_item_to_cart_on_amazon(dependency,run_time_params,step_data,file_attachment,temp_q,screen_capture,device_info):
     sModuleInfo = inspect.stack()[0][3] + " : " + inspect.getmoduleinfo(__file__).name
     try:
         CommonUtil.ExecLog(sModuleInfo, "Enter: Step - Add an Item to Cart on Amazon", 1)
@@ -64,7 +64,7 @@ def add_an_item_to_cart_on_amazon(dependency,run_time_params,step_data,file_atta
     except Exception:
         return CommonUtil.Exception_Handler(sys.exc_info())
 
-def add_an_item_to_cart_on_amazon_using_selenium(dependency,run_time_params,step_data,file_attachment,temp_q,screen_capture):
+def add_an_item_to_cart_on_amazon_using_selenium(dependency,run_time_params,step_data,file_attachment,temp_q,screen_capture,device_info):
     sModuleInfo = inspect.stack()[0][3] + " : " + inspect.getmoduleinfo(__file__).name
     try:
         CommonUtil.ExecLog(sModuleInfo, "Enter: Step - Add an Item to Cart on Amazon Using Selenium", 1)

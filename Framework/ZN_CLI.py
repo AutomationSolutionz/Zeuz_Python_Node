@@ -4,7 +4,7 @@
 import os,sys,time
 from base64 import b64encode, b64decode
 sys.path.append(os.path.dirname(os.getcwd()))
-from Utilities import ConfigModule,RequestFormatter,CommonUtil,FileUtilities
+from Utilities import ConfigModule,RequestFormatter,CommonUtil,FileUtilities,All_Device_Info
 import MainDriverApi
 
 
@@ -14,6 +14,7 @@ USERNAME_TAG='username'
 PASSWORD_TAG='password'
 PROJECT_TAG='project'
 TEAM_TAG='team'
+device_dict = {}
 
 
 exit_script = False # Used by Zeuz Node GUI to exit script
@@ -48,6 +49,8 @@ def Login():
                 CommonUtil.ExecLog('', "Authentication check for user='%s', project='%s', team='%s'"%(username,project,team), 4, False)
                 if r:
                     CommonUtil.ExecLog('', "Authentication Successful", 4, False)
+                    global device_dict
+                    device_dict = All_Device_Info.get_all_connected_device_info()
                     machine_object=update_machine(dependency_collection())
                     if machine_object['registered']:
                         tester_id=machine_object['name']
@@ -86,7 +89,7 @@ def RunProcess(sTesterid):
             r=RequestFormatter.Get('is_run_submitted_api',{'machine_name':sTesterid})
             if r['run_submit']:
                 PreProcess()
-                value = MainDriverApi.main()
+                value = MainDriverApi.main(device_dict)
                 CommonUtil.ExecLog('', "updating db with parameter", 4, False)
                 if value == "pass":
                     if exit_script: return False
@@ -152,7 +155,8 @@ def update_machine(dependency):
             'productVersion':productVersion,
             'dependency':dependency,
             'project':project,
-            'team':team
+            'team':team,
+            'device': device_dict
         }
         r=RequestFormatter.Get('update_automation_machine_api',update_object)
         if r['registered']:

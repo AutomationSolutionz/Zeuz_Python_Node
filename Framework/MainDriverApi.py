@@ -3,7 +3,7 @@
 
 import inspect,os,time,sys,urllib2,Queue,importlib,requests,threading
 from datetime import datetime
-from Utilities import ConfigModule,FileUtilities as FL,CommonUtil,RequestFormatter
+from Utilities import ConfigModule,FileUtilities as FL,CommonUtil,RequestFormatter,All_Device_Info
 top_path=os.path.dirname(os.getcwd())
 drivers_path=os.path.join(top_path,'Drivers')
 sys.path.append(drivers_path)
@@ -21,6 +21,7 @@ COMPLETE_TAG='Complete'
 passed_tag_list=['Pass','pass','PASS','PASSED','Passed','passed','true','TRUE','True','1','Success','success','SUCCESS']
 failed_tag_list=['Fail','fail','FAIL','Failed','failed','FAILED','false','False','FALSE','0']
 skipped_tag_list=['skip','SKIP','Skip','skipped','SKIPPED','Skipped']
+device_info = {}
 
 
 #returns all drivers
@@ -31,6 +32,10 @@ def get_all_drivers_list():
 #returns all runids assigned to a machine
 def get_all_run_ids(Userid):
     return RequestFormatter.Get('get_all_submitted_run_of_a_machine_api',{'machine_name':Userid})
+
+#returns all runids assigned to a machine
+def get_device_order(Userid):
+    return RequestFormatter.Get('get_machine_device_order_api',{'machine_name':Userid})
 
 
 #returns all dependencies of test cases of a run id
@@ -334,7 +339,7 @@ def call_driver_function_of_test_step(sModuleInfo, TestStepsList, StepSeq, step_
 
                     if ConfigModule.get_config_value('RunDefinition', 'Threading') in passed_tag_list:
                         stepThread = threading.Thread(target=functionTocall, args=(
-                            final_dependency, final_run_params, test_steps_data, file_specific_steps, simple_queue,screen_capture))
+                            final_dependency, final_run_params, test_steps_data, file_specific_steps, simple_queue,screen_capture,device_info))
                         CommonUtil.ExecLog(sModuleInfo, "Starting Test Step Thread..", 1)
                         stepThread.start()
                         # Wait for the Thread to finish or until timeout
@@ -367,7 +372,7 @@ def call_driver_function_of_test_step(sModuleInfo, TestStepsList, StepSeq, step_
                                     CommonUtil.Exception_Handler(sys.exc_info())
                     else:
                         sStepResult = functionTocall(final_dependency, final_run_params, test_steps_data,
-                                                     file_specific_steps, simple_queue,screen_capture)
+                                                     file_specific_steps, simple_queue,screen_capture,device_info)
                 except:
                     CommonUtil.Exception_Handler(sys.exc_info())
                     sStepResult = "Failed"
@@ -687,9 +692,16 @@ def run_test_case(TestCaseID, sModuleInfo, run_id, driver_list, final_dependency
         CommonUtil.ExecLog(sModuleInfo, "Test Run status is Cancelled. Exiting the current Test Set...%s" % run_id, 2)
         return
 
+def set_device_info_according_to_user_order(device_order,device_dict):
+    for each in device_order:
+        device_order_val = str(each[0])
+        device_no_val = str(each[1])
+        original_dict = device_dict
+        device_info['Device '+device_order_val] = original_dict['Device '+device_no_val]
+
 
 #main function
-def main():
+def main(device_dict):
     sModuleInfo = inspect.stack()[0][3] + " : " + inspect.getmoduleinfo(__file__).name
     CommonUtil.ExecLog(sModuleInfo, "MainDriver is starting", 4, False)
     temp_ini_file = os.path.join(os.path.join(FL.get_home_folder(), os.path.join('Desktop',os.path.join('AutomationLog',ConfigModule.get_config_value('Temp', '_file')))))
@@ -702,6 +714,10 @@ def main():
 
     driver_list = get_all_drivers_list()
     TestRunLists = get_all_run_ids(Userid)
+    device_order = get_device_order(Userid)
+
+    set_device_info_according_to_user_order(device_order,device_dict)
+
 
     if len(TestRunLists) > 0:
         CommonUtil.ExecLog(sModuleInfo, "Running Test cases from Test Set : %s" % TestRunLists[0:len(TestRunLists)], 1)

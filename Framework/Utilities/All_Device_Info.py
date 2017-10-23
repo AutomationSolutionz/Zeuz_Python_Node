@@ -8,7 +8,7 @@ from Framework.Utilities import CommonUtil
 
 # These create the device name we give to each device
 device_name = 'Device '
-device_cnt = 0
+device_cnt = 1
 
 def get_all_connected_android_info():
     ''' For all connected Android devices, get specified information and return in a dictionary with the serial number as the top level key '''
@@ -148,6 +148,6 @@ def get_all_connected_device_info():
         CommonUtil.ExecLog('', 'Error reading Android or IOS device: %s' % e, 4, False)
         return {}
 
-if __file__ == '__main__':
+if __name__ == '__main__':
     print get_all_connected_device_info()
 
