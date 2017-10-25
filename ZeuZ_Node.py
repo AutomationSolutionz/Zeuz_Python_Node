@@ -180,6 +180,9 @@ class Application(tk.Frame):
             # Set initial focus on enable button
             self.startButton.focus_set()
             
+            # Populate modified settings checker
+            self.save_all(save = False)
+            
             # If go online at start is set, go online
             if 'go_online_at_start' in self.widgets['RunDefinition']['widget'] and self.widgets['RunDefinition']['widget']['go_online_at_start']['check'].get(): self.read_mod()
         except Exception, e: tkMessageBox.showerror('Error', 'Exception caught: %s', e)
@@ -212,12 +215,13 @@ class Application(tk.Frame):
                 if user != '' and pw != '': # User/pass set, so try to login
                     result = self.get_teams(True) # Check if user/password is set, and populate team
                     if result == False: # Can't login, try again
-                        root.after(1000, lambda: self.continuous_server_check(False))
+                        pass
+                        #root.after(1000, lambda: self.continuous_server_check(False))
                     else: # First run completed, everything is properly set. Clear the team/project, so the user knows to set them
                         self.widgets['Authentication']['widget']['team']['dropdown'].set('')
                         self.widgets['Authentication']['widget']['project']['dropdown'].set('')
                 else: # No user/pass, try again
-                    root.after(1000, lambda: self.continuous_server_check(False))
+                    root.after(1000, self.continuous_server_check)
         except Exception, e: tkMessageBox.showerror('Error', 'Exception caught: %s', e)
         
     def onValidate(self, ctype, S):
@@ -382,14 +386,14 @@ class Application(tk.Frame):
                     cnt += 1
             
             # Check if we should save
-            if saved: # Yes, explicit save call, so tell the user
+            if save: # Yes, explicit save call, so tell the user
                 tkMessageBox.showinfo('Info', 'Settings Saved')
                 #if int(time.time()) - self.settings_saved > 5: # But, not too often
                 #    self.log.insert('end', 'Settings Updated\n')
                 #    self.log.see('end')
                 #    self.settings_saved = int(time.time())
-            elif modified: # Change occurred, call this function again, and tell it to save
-                self.save_all(True)
+            #elif modified: # Change occurred, call this function again, and tell it to save
+            #    self.save_all(True)
             #if not saved: root.after(500, lambda: thread.start_new_thread(root.save_all, ())) # Reschedule the settings modified check
         except Exception, e:
             tkMessageBox.showerror('Error', 'Settings Not Saved - Trying again in 10 seconds: %s' % e)
@@ -407,7 +411,7 @@ class Application(tk.Frame):
     def get_teams(self, noerror = False):
         # Populate drop down with teams user has access to
         try:
-            self.widgets['Authentication']['widget']['team']['choices'] = get_team_names() # Get list of teams from server
+            self.widgets['Authentication']['widget']['team']['choices'] = get_team_names(noerror) # Get list of teams from server
             self.widgets['Authentication']['widget']['team']['widget']['menu'].delete(0, 'end') # Clear drop down menu
             for team in self.widgets['Authentication']['widget']['team']['choices']: # For each new team
                 self.widgets['Authentication']['widget']['team']['widget']['menu'].add_command(label = team, command=tk._setit(self.widgets['Authentication']['widget']['team']['dropdown'], team)) # Add the team to the drop down menu

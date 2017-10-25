@@ -39,6 +39,7 @@ def Login():
     exit_script = False # Reset exit variable
 
     while True:
+        if exit_script: break
         # Test to ensure server is up before attempting to login
         r = check_server_online()
             
@@ -88,6 +89,7 @@ def RunProcess(sTesterid):
 
             r=RequestFormatter.Get('is_run_submitted_api',{'machine_name':sTesterid})
             if r['run_submit']:
+                CommonUtil.ExecLog('', "**************************\n* STARTING NEW TEST CASE *\n**************************", 4, False)
                 PreProcess()
                 value = MainDriverApi.main(device_dict)
                 CommonUtil.ExecLog('', "updating db with parameter", 4, False)
@@ -216,7 +218,7 @@ def check_server_online():
     except: # Occurs when server is down
         return False 
     
-def get_team_names():
+def get_team_names(noerror = False):
     ''' Retrieve all teams user has access to '''
     
     try:
@@ -233,7 +235,7 @@ def get_team_names():
         teams = [x[0] for x in r] # Convert into a simple list
         return teams
     except:
-        CommonUtil.ExecLog('', "Error retrieving team names", 4, False)
+        if noerror == False: CommonUtil.ExecLog('', "Error retrieving team names", 4, False)
         return []
 
 def get_project_names(team):
@@ -273,7 +275,7 @@ def pwdec(pw):
             if j == len(key): j = 0
         return result
     except:
-        CommonUtil.ExecLog('', "Error decrypting password. Use the graphical interface to set a new password", 4, False)
+        #CommonUtil.ExecLog('', "Error decrypting password. Use the graphical interface to set a new password", 4, False)
         return ''
 
 if __name__=='__main__':

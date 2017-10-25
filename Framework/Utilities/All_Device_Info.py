@@ -81,7 +81,7 @@ def get_all_connected_android_info():
             
         return device_list
     except Exception, e:
-        CommonUtil.ExecLog('', 'Error reading Android device: %s' % e, 4, False)
+        #CommonUtil.ExecLog('', 'Error reading Android device: %s' % e, 4, False)
         return {}
 
 def get_all_connected_ios_info():
@@ -130,7 +130,7 @@ def get_all_connected_ios_info():
         
         return device_list
     except Exception, e:
-        CommonUtil.ExecLog('', 'Error reading IOS device: %s' % e, 4, False)
+        #CommonUtil.ExecLog('', 'Error reading IOS device: %s' % e, 4, False)
         return {}
     
 def get_all_connected_device_info():
@@ -144,8 +144,8 @@ def get_all_connected_device_info():
         # return devices
         return device_list
         
-    except Exception, e:
-        CommonUtil.ExecLog('', 'Error reading Android or IOS device: %s' % e, 4, False)
+    except Exception, e: # Don't show any error because the user may not be running mobile automation
+        #CommonUtil.ExecLog('', 'Error reading Android or IOS device: %s' % e, 4, False)
         return {}
 
 if __name__ == '__main__':
