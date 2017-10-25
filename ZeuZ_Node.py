@@ -51,10 +51,12 @@ class Application(tk.Frame):
     advanced_settings_frames = []
 
     # Widget settings
+    scroll_lock = None
     entry_width = 50
     button_width = 20
     node_id_size = 10 # Max length of node ID - must match that specified in CommonUtil.MachineInfo()
     colour_tag = 0
+    max_log_size = 1000 # Maxium number of lines allowed before we truncate the log
     colour_debug = 'blue'
     colour_passed = 'green'
     colour_warning = 'orange'
@@ -111,6 +113,11 @@ class Application(tk.Frame):
             
             self.startButton = tk.Button(self.rightframe, text='Online', width = self.button_width, command=self.read_mod)
             self.startButton.grid(row = 0, column = 0, sticky = 'n')
+            
+            #tk.Label(self.rightframe, text="Scroll Lock").grid(row = 0, column = 0, sticky = 'e') # Can't display correctly without framing
+            self.scroll_lock = tk.IntVar()
+            tk.Checkbutton(self.rightframe, variable = self.scroll_lock).grid(row = 0, column = 0, sticky = 'e')
+            self.scroll_lock.set(1) # Enable scroll lock
             
             # Read the remaining settings data, and add widgets to window
             self.settings_frame = tk.Frame(self.leftframe)
@@ -263,6 +270,14 @@ class Application(tk.Frame):
                     row += 1
         except Exception, e: tkMessageBox.showerror('Error', 'Exception caught: %s', e)
 
+    def write_log(self, msg, tag = ''):
+        try:
+            #max_log_size = 50
+            #if len(self.log.get(0.0, 'end')) 
+            self.log.insert('end', msg, tag)
+            if self.scroll_lock.get(): self.log.see('end')
+        except: pass
+        
     def read_mod(self):
         try:
             if self.run:
@@ -293,14 +308,16 @@ class Application(tk.Frame):
             elif data[:5] == 'ERROR':
                 colour = self.colour_failed
             elif 'online with name' in data:
+                if int(float(self.log.index('end'))) > self.max_log_size: self.log.delete(0.0, float(self.max_log_size / 2)) # Trim log to half of max allowed lines when a test case has completed
                 colour = self.colour_passed
             else:
                 colour = self.colour_default
     
             # Set colour and print to textbox
             self.log.tag_config('a%s' % self.colour_tag, foreground = colour) # Colour code line
-            self.log.insert('end', data, 'a%s' % self.colour_tag) # Insert into textbox
-            self.log.see('end') # Keep end in sight
+            #self.log.insert('end', data, 'a%s' % self.colour_tag) # Insert into textbox
+            #self.log.see('end') # Keep end in sight
+            self.write_log(data, 'a%s' % self.colour_tag)
             self.colour_tag += 1 # Increment tag counter for next line
             
             # Check if node went offline, but we didn't tell it to. If so, flip the Offline button
