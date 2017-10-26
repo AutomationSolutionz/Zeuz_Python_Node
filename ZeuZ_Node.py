@@ -1,10 +1,10 @@
 #!/usr/bin/env python
-# http://infohost.nmt.edu/tcc/help/pubs/tkinter/tkinter.pdf
 # Written by Lucas Donkers
 # Function: Front-end to ZN_CLI.py and settings.conf
+# Issues: try/except doesn't always work for everything on windows (base64). Python crashes on windows when we use root.after() to poll the widgets
 
-# Have user install Tk if this fails
-try: import Tkinter as tk
+# Have user install Tk if this fails - we try to do it for them first
+try: import Tkinter as tk # http://infohost.nmt.edu/tcc/help/pubs/tkinter/tkinter.pdf
 except:
     print "Tkinter is not installed. This is required to start the graphical interface. Please enter the root password to install if asked."
     import subprocess as s
@@ -21,8 +21,8 @@ import tkMessageBox
 import os.path, thread, sys, time
 
 os.chdir(os.path.join(os.path.dirname(os.path.realpath(__file__)), 'Framework')) # Move to Framework directory, so all modules can be seen
-from Framework.Utilities import ConfigModule
-from Framework.ZN_CLI import Login, disconnect_from_server, get_team_names, get_project_names, check_server_online
+from Framework.Utilities import ConfigModule # Modifing settings files
+from Framework.ZN_CLI import Login, disconnect_from_server, get_team_names, get_project_names, check_server_online # Controlling node status and logging in
 
 # Find node id file
 if sys.platform  == 'win32':
@@ -39,6 +39,7 @@ Show Advance Settings:\tDisplay more settings including server, port, screenshot
 Save Settings:\tSave all settings (whether displayed or not)\n\
 Quit: Exit immediately - Any running automation will be stopped\n\
 Online: Start the Zeuz_Node.py script, login to the Zeuz server, and wait for a Test Case to be deployed\n\
+Scroll Lock Checkbox: Enable this checkbox (above the log window) to always show the last log lines. Uncheck to disable this which allows you to scroll the window while new log lines are coming in\n\
 Refresh: Gets the list of Teams the current user has access to\n\n\
 "
      
@@ -48,7 +49,7 @@ class Application(tk.Frame):
     widgets = {} # Holds the text entry widget handles under the line name
     settings_modified = [] # Holds the last seen settings, so we can check if we need to auto-save
     settings_saved = int(time.time()) # "Settings updated" timer
-    advanced_settings_frames = []
+    advanced_settings_frames = [] # List of settings sections
 
     # Widget settings
     scroll_lock = None
@@ -57,24 +58,40 @@ class Application(tk.Frame):
     node_id_size = 10 # Max length of node ID - must match that specified in CommonUtil.MachineInfo()
     colour_tag = 0
     max_log_size = 1000 # Maxium number of lines allowed before we truncate the log
-    colour_debug = 'blue'
-    colour_passed = 'green'
+    colour_debug = 'blue' # http://www.science.smith.edu/dftwiki/index.php/Color_Charts_for_TKinter
+    colour_passed = 'green4'
     colour_warning = 'orange'
     colour_failed = 'red'
     colour_default = 'black'
     
     def __init__(self, master=None):
         try:
+            # Initialize window
             tk.Frame.__init__(self, master)
             self.pack(fill = 'both', expand = True) # Need to pack top level, to allow widgets to expand when window is resized
             tk.Grid.columnconfigure(self, 0, weight=1) # Allows mainframe to expand
             tk.Grid.rowconfigure(self, 0, weight=1) # Allows mainframe to expand
+            
+            # Populate window
+            self.createFrames()
+            self.createButtons()
+            self.createLog()
             self.createWidgets()
+        
+            # Set initial focus on enable button
+            self.startButton.focus_set()
+            
+            # Populate modified settings checker, so we know if changes were made
+            self.save_all(save = False)
+            
+            # If go online at start is set, go online
+            if 'go_online_at_start' in self.widgets['RunDefinition']['widget'] and self.widgets['RunDefinition']['widget']['go_online_at_start']['check'].get(): self.read_mod()
+
         except Exception, e: tkMessageBox.showerror('Error', 'Exception caught: %s', e)
 
-    def createWidgets(self):
-        # Create main frame and sub-frames to contain everything
+    def createFrames(self):
         try:
+            # Mainframe contains everything
             self.mainframe = tk.Frame(self)
             self.mainframe.grid(sticky = 'snew')
             tk.Grid.columnconfigure(self.mainframe, 1, weight=1) # Allows rightframe to expand
@@ -94,11 +111,21 @@ class Application(tk.Frame):
             self.topframe = tk.Frame(self.leftframe)
             self.topframe.grid(sticky = 'w')
             
+            # Read the settings data, and dynamically add widgets to window
+            self.settings_frame = tk.Frame(self.leftframe)
+            self.settings_frame.grid(sticky = 'w')
+        except Exception, e: tkMessageBox.showerror('Error', 'Exception caught: %s', e)
+
+
+    def createButtons(self):
+        try:
+            # Node ID
             tk.Label(self.topframe, text = 'Node ID', fg="red").grid(row = 0, column = 0, sticky = 'e')
             self.node_id = tk.Entry(self.topframe, validate = "key", validatecommand = (self.register(self.onValidate), '%d', '%S')) # See onValidate() for more info
             self.node_id.grid(row = 0, column = 1, columnspan = 2, sticky = 'w')
             self.read_node_id(self.node_id)
             
+            # All buttons
             self.help_button = tk.Button(self.topframe, text = 'Help', width = self.button_width, command = self.show_help)
             self.help_button.grid(row = 1, column = 1, sticky = 'w')
     
@@ -113,95 +140,100 @@ class Application(tk.Frame):
             
             self.startButton = tk.Button(self.rightframe, text='Online', width = self.button_width, command=self.read_mod)
             self.startButton.grid(row = 0, column = 0, sticky = 'n')
-            
+
+            # Scroll lock checkbox
             #tk.Label(self.rightframe, text="Scroll Lock").grid(row = 0, column = 0, sticky = 'e') # Can't display correctly without framing
             self.scroll_lock = tk.IntVar()
             tk.Checkbutton(self.rightframe, variable = self.scroll_lock).grid(row = 0, column = 0, sticky = 'e')
             self.scroll_lock.set(1) # Enable scroll lock
+        except Exception, e: tkMessageBox.showerror('Error', 'Exception caught: %s', e)
+
+    def createLog(self):
+        try:    
+            # Create text area for log output
+            self.log = tk.Text(self.rightframe, wrap = tk.WORD, bg = 'white') # Text area widget
+            self.log.grid(row = 1, column = 0, sticky = 'snew')
+            self.logscrollY = tk.Scrollbar(self.rightframe, command = self.log.yview) # Create scrollbar for log window
+            self.logscrollY.grid(row = 1, column = 1, sticky = 'ns')
+            self.log['yscrollcommand'] = self.logscrollY.set # Bind scrollbar to log textarea
+        except Exception, e: tkMessageBox.showerror('Error', 'Exception caught: %s', e)
             
-            # Read the remaining settings data, and add widgets to window
-            self.settings_frame = tk.Frame(self.leftframe)
-            self.settings_frame.grid(sticky = 'w')
+    def createWidgets(self):
+        # Sub-frames are created for each section, which allows us to show/hide tem dynamically
+        # Widget types of determined on the fly (Entry, drop down, checkbox, etc)
+        
+        try:
             row = 0
-            sections = ConfigModule.get_all_sections()
+            sections = ConfigModule.get_all_sections() # All sections in the config file
             if sections:
-                for section in sections:
-                    self.widgets[section] = {}
-                    self.widgets[section]['widget'] = {}
-                    self.widgets[section]['frame'] = tk.Frame(self.settings_frame)
+                for section in sections: # For each section
+                    self.widgets[section] = {} # Initilize dictionary
+                    self.widgets[section]['widget'] = {} # Initialize widget dictionary
+                    self.widgets[section]['frame'] = tk.Frame(self.settings_frame) # Create frame
                     self.advanced_settings_frames.append(section) # Store all section names, so we know which to display when we click the show advanced settings button
-                    tk.Label(self.widgets[section]['frame'], text = section, fg="red").grid(row = row, column = 0, pady = 10, columnspan = 2)
+                    tk.Label(self.widgets[section]['frame'], text = section, fg="red").grid(row = row, column = 0, pady = 10, columnspan = 2) # Create Section label
                     row += 1
-                    options = ConfigModule.get_all_option(section)
+                    options = ConfigModule.get_all_option(section) # Read all options (keys) for this section
                     if options:
-                        for option in options:
-                            self.widgets[section]['widget'][option] = {}
-                            value = ConfigModule.get_config_value(section, option)
-                            tk.Label(self.widgets[section]['frame'], text = option).grid(row = row, column = 0, sticky = 'w')
+                        for option in options: # For each option
+                            self.widgets[section]['widget'][option] = {} # Initilize dictionary
+                            value = ConfigModule.get_config_value(section, option) # Read value from file
+                            tk.Label(self.widgets[section]['frame'], text = option).grid(row = row, column = 0, sticky = 'w') # Create Option label
                             
+                            # Create the widget for this Option/Key, depending on the type
                             if option == 'password': # Add asterisk to hide password
-                                if value != '': value = self.password(False, 'zeuz', value) # Decrypt password
-                                self.widgets['Authentication']['widget'][option]['widget'] = tk.Entry(self.widgets[section]['frame'], show = '*', width = self.entry_width)
-                                self.widgets['Authentication']['widget'][option]['widget'].insert('end', value)
+                                if value != '': value = self.password(False, 'zeuz', value) # Decrypt password read from settings file
+                                self.widgets['Authentication']['widget'][option]['widget'] = tk.Entry(self.widgets[section]['frame'], show = '*', width = self.entry_width) # Password textbox which hides the password with asterisks
+                                self.widgets['Authentication']['widget'][option]['widget'].insert('end', value) # Enter decrypted password
                             
-                            elif option in ('team', 'project'): # Set these as drop down menus
+                            # Set these as drop down menus
+                            elif option in ('team', 'project'):
                                 if option == 'team': # Put refresh link beside team
-                                    # Setup refresh link
-                                    self.team_refresh = tk.Label(self.widgets[section]['frame'], text = 'Refresh', fg = 'blue', cursor = 'hand2')
+                                    self.team_refresh = tk.Label(self.widgets[section]['frame'], text = 'Refresh', fg = 'blue', cursor = 'hand2') # Create label to look like hyperlink
                                     self.team_refresh.grid(row = row, column = 1, sticky = 'e')
                                     self.team_refresh.bind('<Button-1>', lambda e: self.get_teams()) # Bind label to action
                                 
                                 # Configure drop down menu
                                 self.widgets['Authentication']['widget'][option]['dropdown'] = tk.StringVar(self) # Initialize drop down variable
                                 self.widgets['Authentication']['widget'][option]['dropdown'].set('') # Need to initialize this, so OptionMenu will work
-                                self.widgets['Authentication']['widget'][option]['choices'] = []
+                                self.widgets['Authentication']['widget'][option]['choices'] = [] # Initizlize list of available menu items
                                 self.widgets['Authentication']['widget'][option]['choices'].append(value) # Need to initialize this, so OptionMenu will work
-                                self.widgets['Authentication']['widget'][option]['widget'] = tk.OptionMenu(self.widgets[section]['frame'], self.widgets['Authentication']['widget'][option]['dropdown'], *self.widgets['Authentication']['widget'][option]['choices'])
+                                self.widgets['Authentication']['widget'][option]['widget'] = tk.OptionMenu(self.widgets[section]['frame'], self.widgets['Authentication']['widget'][option]['dropdown'], *self.widgets['Authentication']['widget'][option]['choices']) # Create drop down
                                 if option == 'team': self.get_teams(True) # Get list of teams from the server, populate the list
                                 self.widgets['Authentication']['widget'][option]['dropdown'].set(value) # Set menu to value in config file
                             
+                            # True/False checkbox
                             elif value.lower() in ('true', 'false'):
-                                self.widgets[section]['widget'][option]['check'] = tk.IntVar()
-                                self.widgets[section]['widget'][option]['widget'] = tk.Checkbutton(self.widgets[section]['frame'], variable = self.widgets[section]['widget'][option]['check'])
-                                if value.lower() == 'true': self.widgets[section]['widget'][option]['check'].set(1) # Enable checkbox
-                                else: self.widgets[section]['widget'][option]['check'].set(0) # Disable checkbox
+                                self.widgets[section]['widget'][option]['check'] = tk.IntVar() # Initilize checkbox variable
+                                self.widgets[section]['widget'][option]['widget'] = tk.Checkbutton(self.widgets[section]['frame'], variable = self.widgets[section]['widget'][option]['check']) # Checkbox widget
+                                if value.lower() == 'true': self.widgets[section]['widget'][option]['check'].set(1) # Enable checkbox if "True"
+                                else: self.widgets[section]['widget'][option]['check'].set(0) # Disable checkbox if "False"
                             
+                            # Anything else is a text Entry widget
                             else:
-                                self.widgets[section]['widget'][option]['widget'] = tk.Entry(self.widgets[section]['frame'], width = self.entry_width)
+                                self.widgets[section]['widget'][option]['widget'] = tk.Entry(self.widgets[section]['frame'], width = self.entry_width) # Create Entry textbox widget
                                 self.widgets[section]['widget'][option]['widget'].insert('end', value)
+                            
+                            # Pack widgets
                             self.widgets[section]['widget'][option]['widget'].grid(row = row, column = 1, sticky = 'w')
                             row += 1
             
             # Put a trace on the team field, so we can automatically change the project when the team is changed
-            self.widgets['Authentication']['widget']['team']['dropdown'].trace('w', self.switch_teams)
+            self.widgets['Authentication']['widget']['team']['dropdown'].trace('w', self.switch_teams) # Bind function to this drop down menu
             if self.widgets['Authentication']['widget']['team']['dropdown'].get() != '':
                 self.get_projects(self.widgets['Authentication']['widget']['team']['dropdown'].get()) # Get list of projects from the server for the curent team, populate the list
-    
-            # Create text area for log output
-            self.log = tk.Text(self.rightframe, wrap = tk.WORD, bg = 'white')
-            self.log.grid(row = 1, column = 0, sticky = 'snew')
-            self.logscrollY = tk.Scrollbar(self.rightframe, command = self.log.yview) # Create scrollbar for log window
-            self.logscrollY.grid(row = 1, column = 1, sticky = 'ns')
-            self.log['yscrollcommand'] = self.logscrollY.set 
-            
-            # Set initial focus on enable button
-            self.startButton.focus_set()
-            
-            # Populate modified settings checker
-            self.save_all(save = False)
-            
-            # If go online at start is set, go online
-            if 'go_online_at_start' in self.widgets['RunDefinition']['widget'] and self.widgets['RunDefinition']['widget']['go_online_at_start']['check'].get(): self.read_mod()
         except Exception, e: tkMessageBox.showerror('Error', 'Exception caught: %s', e)
-            
+        
     def start_up_display(self):
+        # Check if this is the first run (team widget is set to default string), and if so, rearrange, so the server/port is above the user/pass to help user understand what needs to be populated
+        
         try:
-            text_check = self.widgets['Authentication']['widget']['team']['dropdown'].get()
-            if text_check == 'YourTeamNameGoesHere':
-                self.widgets['Server']['frame'].grid(row = 0, column = 0, sticky = 'w')
+            text_check = self.widgets['Authentication']['widget']['team']['dropdown'].get() # Read team selection
+            if text_check == 'YourTeamNameGoesHere': # If it is the default selection
+                self.widgets['Server']['frame'].grid(row = 0, column = 0, sticky = 'w') # Show the server/port section
                 self.continuous_server_check() # Tell program to constantly check for server connection until we connect
             else: # Show default section
-                self.widgets['Authentication']['frame'].grid(row = 0, column = 0, sticky = 'w')
+                self.widgets['Authentication']['frame'].grid(row = 0, column = 0, sticky = 'w') # Show authentication section on subsequent runs
         except Exception, e: tkMessageBox.showerror('Error', 'Exception caught: %s', e)
         
     def continuous_server_check(self, check = True):
@@ -236,14 +268,14 @@ class Application(tk.Frame):
         # https://stackoverflow.com/questions/4140437/interactively-validating-entry-widget-content-in-tkinter/4140988#4140988
         # Caveats: Can't copy/paste/w.insert() more than one character at a time
         
-        chars = '0123456789abcdefghijklmnopqrstuvwxyz-_'
+        chars = '0123456789abcdefghijklmnopqrstuvwxyz-_' # Allowed characters for the Node ID
 
         if int(ctype) == 0: return True # Allow deletions
     
-        if len(self.node_id.get()) < self.node_id_size: # Allow this length
+        if len(self.node_id.get()) < self.node_id_size: # Allow up to this length
             if S in chars: return True # Allow these characters
-            else: return False
-        else: return False
+            else: return False # Invalid character
+        else: return False # Invalid length
         
     def show_help(self):
         ''' Display help information in the log window '''
@@ -271,14 +303,14 @@ class Application(tk.Frame):
         except Exception, e: tkMessageBox.showerror('Error', 'Exception caught: %s', e)
 
     def write_log(self, msg, tag = ''):
+        # Write to log file
         try:
-            #max_log_size = 50
-            #if len(self.log.get(0.0, 'end')) 
-            self.log.insert('end', msg, tag)
-            if self.scroll_lock.get(): self.log.see('end')
+            self.log.insert('end', msg, tag) # Write text to log
+            if self.scroll_lock.get(): self.log.see('end') # Keep end of log visible, if checkbox is enabled
         except: pass
         
     def read_mod(self):
+        # Toggle online/offline button - Puts node online or takes it offline
         try:
             if self.run:
                 self.run = False
@@ -295,6 +327,8 @@ class Application(tk.Frame):
         except Exception, e: tkMessageBox.showerror('Error', 'Exception caught: %s', e) 
 
     def read_log(self, data):
+        # Read log lines from Zeuz Node framework
+        
         try:
             # Determine log line type, so we can colour code it
             if data[:5] == 'DEBUG':
@@ -450,6 +484,7 @@ class Application(tk.Frame):
         except Exception, e: tkMessageBox.showerror('Error', 'Exception caught: %s', e)
 
     def teardown(self):
+        # Release stdout/err
         logger_teardown()
         
 class Logger(object):
