@@ -123,7 +123,7 @@ def find_correct_device_on_first_run(serial_or_name, device_info):
     sModuleInfo = inspect.stack()[0][3] + " : " + inspect.getmoduleinfo(__file__).name
     CommonUtil.ExecLog(sModuleInfo,"Function Start", 0)
     global device_id, device_serial, appium_details
-    CommonUtil.ExecLog(sModuleInfo, "List of devices provided by server: %s", str(device_info), 1)
+    CommonUtil.ExecLog(sModuleInfo, "List of devices provided by server: %s" % str(device_info), 1)
     
     try:
         # Get list of connected devices
