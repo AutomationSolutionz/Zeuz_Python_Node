@@ -123,6 +123,7 @@ def find_correct_device_on_first_run(serial_or_name, device_info):
     sModuleInfo = inspect.stack()[0][3] + " : " + inspect.getmoduleinfo(__file__).name
     CommonUtil.ExecLog(sModuleInfo,"Function Start", 0)
     global device_id, device_serial, appium_details
+    CommonUtil.ExecLog(sModuleInfo, "List of devices provided by server: %s", str(device_info), 1)
     
     try:
         # Get list of connected devices
@@ -440,6 +441,9 @@ def teardown_appium(data_set):
                 appium_details[name]['server'].kill() # Terminate server
             except:
                 CommonUtil.ExecLog(sModuleInfo,"Error destroying Appium instance/server for %s - may already be killed" % name, 2)
+        
+        # Kill adb server to ensure it doesn't hang
+        adbOptions.kill_adb_server()
         
         # Delete variables
         appium_details = {}
