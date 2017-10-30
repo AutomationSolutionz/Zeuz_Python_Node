@@ -18,7 +18,7 @@ except:
         
 from base64 import b64encode, b64decode # Password encoding
 import tkMessageBox
-import os.path, thread, sys, time
+import os.path, thread, sys, time, Queue
 
 os.chdir(os.path.join(os.path.dirname(os.path.realpath(__file__)), 'Framework')) # Move to Framework directory, so all modules can be seen
 from Framework.Utilities import ConfigModule # Modifing settings files
@@ -53,6 +53,7 @@ class Application(tk.Frame):
 
     # Widget settings
     scroll_lock = None
+    log_read_timer = 100 # Time in ms to read the log queue
     entry_width = 50
     button_width = 20
     node_id_size = 10 # Max length of node ID - must match that specified in CommonUtil.MachineInfo()
@@ -87,7 +88,10 @@ class Application(tk.Frame):
             # If go online at start is set, go online
             if 'go_online_at_start' in self.widgets['RunDefinition']['widget'] and self.widgets['RunDefinition']['widget']['go_online_at_start']['check'].get(): self.read_mod()
 
-        except Exception, e: tkMessageBox.showerror('Error', 'Exception caught: %s', e)
+            self.start_up_display() # Determine if this is the first run, and display widgets accordingly
+            self.read_log() # Start the log reader timer
+
+        except Exception, e: tkMessageBox.showerror('Error', 'Exception caught: %s' % e)
 
     def createFrames(self):
         try:
@@ -114,7 +118,7 @@ class Application(tk.Frame):
             # Read the settings data, and dynamically add widgets to window
             self.settings_frame = tk.Frame(self.leftframe)
             self.settings_frame.grid(sticky = 'w')
-        except Exception, e: tkMessageBox.showerror('Error', 'Exception caught: %s', e)
+        except Exception, e: tkMessageBox.showerror('Error', 'Exception caught: %s' % e)
 
 
     def createButtons(self):
@@ -146,7 +150,7 @@ class Application(tk.Frame):
             self.scroll_lock = tk.IntVar()
             tk.Checkbutton(self.rightframe, variable = self.scroll_lock).grid(row = 0, column = 0, sticky = 'e')
             self.scroll_lock.set(1) # Enable scroll lock
-        except Exception, e: tkMessageBox.showerror('Error', 'Exception caught: %s', e)
+        except Exception, e: tkMessageBox.showerror('Error', 'Exception caught: %s' % e)
 
     def createLog(self):
         try:    
@@ -156,7 +160,7 @@ class Application(tk.Frame):
             self.logscrollY = tk.Scrollbar(self.rightframe, command = self.log.yview) # Create scrollbar for log window
             self.logscrollY.grid(row = 1, column = 1, sticky = 'ns')
             self.log['yscrollcommand'] = self.logscrollY.set # Bind scrollbar to log textarea
-        except Exception, e: tkMessageBox.showerror('Error', 'Exception caught: %s', e)
+        except Exception, e: tkMessageBox.showerror('Error', 'Exception caught: %s' % e)
             
     def createWidgets(self):
         # Sub-frames are created for each section, which allows us to show/hide tem dynamically
@@ -222,7 +226,7 @@ class Application(tk.Frame):
             self.widgets['Authentication']['widget']['team']['dropdown'].trace('w', self.switch_teams) # Bind function to this drop down menu
             if self.widgets['Authentication']['widget']['team']['dropdown'].get() != '':
                 self.get_projects(self.widgets['Authentication']['widget']['team']['dropdown'].get()) # Get list of projects from the server for the curent team, populate the list
-        except Exception, e: tkMessageBox.showerror('Error', 'Exception caught: %s', e)
+        except Exception, e: tkMessageBox.showerror('Error', 'Exception caught: %s' % e)
         
     def start_up_display(self):
         # Check if this is the first run (team widget is set to default string), and if so, rearrange, so the server/port is above the user/pass to help user understand what needs to be populated
@@ -234,7 +238,7 @@ class Application(tk.Frame):
                 self.continuous_server_check() # Tell program to constantly check for server connection until we connect
             else: # Show default section
                 self.widgets['Authentication']['frame'].grid(row = 0, column = 0, sticky = 'w') # Show authentication section on subsequent runs
-        except Exception, e: tkMessageBox.showerror('Error', 'Exception caught: %s', e)
+        except Exception, e: tkMessageBox.showerror('Error', 'Exception caught: %s' % e)
         
     def continuous_server_check(self, check = True):
         # Helps the user provide required login information by showing specific fields polling the server until everyting is set
@@ -261,7 +265,7 @@ class Application(tk.Frame):
                         self.widgets['Authentication']['widget']['project']['dropdown'].set('')
                 else: # No user/pass, try again
                     root.after(1000, self.continuous_server_check)
-        except Exception, e: tkMessageBox.showerror('Error', 'Exception caught: %s', e)
+        except Exception, e: tkMessageBox.showerror('Error', 'Exception caught: %s' % e)
         
     def onValidate(self, ctype, S):
         # Limit text to specified length and characters
@@ -300,7 +304,7 @@ class Application(tk.Frame):
                 for section in self.advanced_settings_frames:
                     self.widgets[section]['frame'].grid(row = row, column = 0, sticky = 'w')
                     row += 1
-        except Exception, e: tkMessageBox.showerror('Error', 'Exception caught: %s', e)
+        except Exception, e: tkMessageBox.showerror('Error', 'Exception caught: %s' % e)
 
     def write_log(self, msg, tag = ''):
         # Write to log file
@@ -324,40 +328,46 @@ class Application(tk.Frame):
                 self.log.delete(0.0, 'end') # Clear previous log
                 thread.start_new_thread(Login,()) # Execute Zeuz_Node.py
                 #!!! Causing root error: if self.node_id.get() == '': root.after(5000, lambda: self.read_node_id(self.node_id)) # If no node id was read or specified, wait a few seconds for zeuz_node.py to populate the node id file, and read it
-        except Exception, e: tkMessageBox.showerror('Error', 'Exception caught: %s', e) 
+        except Exception, e: tkMessageBox.showerror('Error', 'Exception caught: %s' % e) 
 
-    def read_log(self, data):
+    def read_log(self):
         # Read log lines from Zeuz Node framework
         
+        global q
         try:
-            # Determine log line type, so we can colour code it
-            if data[:5] == 'DEBUG':
-                colour = self.colour_debug
-            elif data[:6] == 'PASSED':
-                colour = self.colour_passed
-            elif data[:7] == 'WARNING':
-                colour = self.colour_warning
-            elif data[:6] == 'FAILED':
-                colour = self.colour_failed
-            elif data[:5] == 'ERROR':
-                colour = self.colour_failed
-            elif 'online with name' in data:
-                if int(float(self.log.index('end'))) > self.max_log_size: self.log.delete(0.0, float(self.max_log_size / 2)) # Trim log to half of max allowed lines when a test case has completed
-                colour = self.colour_passed
-            else:
-                colour = self.colour_default
-    
-            # Set colour and print to textbox
-            self.log.tag_config('a%s' % self.colour_tag, foreground = colour) # Colour code line
-            #self.log.insert('end', data, 'a%s' % self.colour_tag) # Insert into textbox
-            #self.log.see('end') # Keep end in sight
-            self.write_log(data, 'a%s' % self.colour_tag)
-            self.colour_tag += 1 # Increment tag counter for next line
-            
-            # Check if node went offline, but we didn't tell it to. If so, flip the Offline button
-            if data == 'Zeuz Node Offline' and self.run == True:
-                self.read_mod()
-        except Exception, e: tkMessageBox.showerror('Error', 'Exception caught: %s', e)
+            while not q.empty(): # While we have something to read from the queue
+                data = q.get() # Read log line from queue (we need to use queue because sys.stdout.write() directly to the log window causes crashes due to Tkinter not being thread safe. Happens constantly on Windows, and seldomly on Linux
+                
+                # Determine log line type, so we can colour code it
+                if data[:5] == 'DEBUG':
+                    colour = self.colour_debug
+                elif data[:6] == 'PASSED':
+                    colour = self.colour_passed
+                elif data[:7] == 'WARNING':
+                    colour = self.colour_warning
+                elif data[:6] == 'FAILED':
+                    colour = self.colour_failed
+                elif data[:5] == 'ERROR':
+                    colour = self.colour_failed
+                elif 'online with name' in data:
+                    if int(float(self.log.index('end'))) > self.max_log_size: self.log.delete(0.0, float(self.max_log_size / 2)) # Trim log to half of max allowed lines when a test case has completed
+                    colour = self.colour_passed
+                else:
+                    colour = self.colour_default
+        
+                # Set colour and print to textbox
+                self.log.tag_config('a%s' % self.colour_tag, foreground = colour) # Colour code line
+                #self.log.insert('end', data, 'a%s' % self.colour_tag) # Insert into textbox
+                #self.log.see('end') # Keep end in sight
+                self.write_log(data, 'a%s' % self.colour_tag)
+                self.colour_tag += 1 # Increment tag counter for next line
+                
+                # Check if node went offline, but we didn't tell it to. If so, flip the Offline button
+                if data == 'Zeuz Node Offline' and self.run == True:
+                    self.read_mod()
+                    
+            self.after(self.log_read_timer, self.read_log)
+        except Exception, e: tkMessageBox.showerror('Error', 'Exception caught: %s' % e)
         
     def password(self, encrypt, key, pw):
         ''' Encrypt, decrypt password and encode in plaintext '''
@@ -384,7 +394,7 @@ class Application(tk.Frame):
             if os.path.exists(node_id_filename):
                 node_id = ConfigModule.get_config_value('UniqueID', 'id', node_id_filename).strip()
                 for c in node_id: w.insert('end', c) # We have to write characters one at a time due to how onValidate() works
-        except Exception, e: tkMessageBox.showerror('Error', 'Exception caught: %s', e)
+        except Exception, e: tkMessageBox.showerror('Error', 'Exception caught: %s' % e)
                 
     def save_all(self, save = False):
         ''' Check for changes, and if found, save them to disk '''
@@ -457,7 +467,7 @@ class Application(tk.Frame):
         try:
             self.widgets['Authentication']['widget']['project']['dropdown'].set('') # Clear Project menu
             self.get_projects(self.widgets['Authentication']['widget']['team']['dropdown'].get()) # Update available options in project menu
-        except Exception, e: tkMessageBox.showerror('Error', 'Exception caught: %s', e)
+        except Exception, e: tkMessageBox.showerror('Error', 'Exception caught: %s' % e)
         
     def get_teams(self, noerror = False):
         # Populate drop down with teams user has access to
@@ -471,7 +481,7 @@ class Application(tk.Frame):
                 return False
             return True
         except Exception, e:
-            tkMessageBox.showerror('Error', 'Exception caught: %s', e)
+            tkMessageBox.showerror('Error', 'Exception caught: %s' % e)
             return False
 
     def get_projects(self, team):
@@ -481,7 +491,7 @@ class Application(tk.Frame):
             self.widgets['Authentication']['widget']['project']['widget']['menu'].delete(0, 'end') # Clear drop down menu
             for project in self.widgets['Authentication']['widget']['project']['choices']: # For each new project
                 self.widgets['Authentication']['widget']['project']['widget']['menu'].add_command(label = project, command=tk._setit(self.widgets['Authentication']['widget']['project']['dropdown'], project)) # Add the project to the drop down menu
-        except Exception, e: tkMessageBox.showerror('Error', 'Exception caught: %s', e)
+        except Exception, e: tkMessageBox.showerror('Error', 'Exception caught: %s' % e)
 
     def teardown(self):
         # Release stdout/err
@@ -492,11 +502,15 @@ class Logger(object):
     # This is the simplest method for getting all Framework to log to the window. Due to how different modules are started, we can't get a centralized system to record and feed back to the GUI
     def __init__(self):
         self.terminal = sys.stdout
+        global q
+        q = Queue.Queue() # Initialize queue to store log events
         #self.log = open("File.log", "w") # Save in case we want to start logging to disk
 
     def write(self, message):
-        #self.terminal.write(message) # Print to terminal (DEBUGGING)
-        root.read_log(message) # Print to log window
+        try:
+            #self.terminal.write(message) # Print to terminal (DEBUGGING)
+            q.put(message) # Store message for writing to the log window
+        except: pass
 
     def close(self):
         pass
@@ -514,9 +528,10 @@ def logger_setup():
 
 def logger_teardown():
     global Log, oout, oerr
-    Log.close()
-    sys.stderr = oerr
-    sys.stdout = oout
+    if Log != None:
+        Log.close()
+        sys.stderr = oerr
+        sys.stdout = oout
     quit()
 
 if __name__ == '__main__':
@@ -536,12 +551,10 @@ if __name__ == '__main__':
         except: pass # Not a big deal if this fails
 
     # Main window setup
+    Log, oout, oerr = logger_setup() # Redirect STDOUT/ERR to log window
     root = Application() # Create GUI instance
     root.master.title(gui_title) # Set title
-    Log, oout, oerr = logger_setup() # Redirect STDOUT/ERR to log window
     #root.after(500, lambda: thread.start_new_thread(root.save_all, ())) # Schedule the settings modified check
-    root.start_up_display() # Determine if this is the first run, and display widgets accordingly
-        
 
     # Execute GUI
     root.mainloop()

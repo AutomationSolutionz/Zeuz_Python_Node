@@ -41,8 +41,8 @@ WebDriver_Wait_Short = 10
 global selenium_driver
 selenium_driver = None
 
-if Shared_Resources.Test_Shared_Variables('selenium_driver'): # Check if driver is already set in shared variables
-    selenium_driver = Shared_Resources.Get_Shared_Variables('selenium_driver') # Retreive appium driver
+#if Shared_Resources.Test_Shared_Variables('selenium_driver'): # Check if driver is already set in shared variables
+#    selenium_driver = Shared_Resources.Get_Shared_Variables('selenium_driver') # Retreive appium driver
 
 # Recall dependency, if not already set
 dependency = None
