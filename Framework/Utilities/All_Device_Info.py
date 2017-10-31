@@ -27,7 +27,6 @@ def get_all_connected_android_info():
         android_cmd_alt_imei = "shell service call iphonesubinfo 1" # Usually needed for CDMA phones
         
         # Get list of devices
-        result = subprocess.check_output('adb kill-server', shell=True) # Kill adb server (a stuck server causes future adb commands to hang, and the user has no idea why they can't get online)
         result = subprocess.check_output('adb devices', shell=True)
         result = result.replace('List of devices attached', '')
         result = result.replace('\r', '')
@@ -139,6 +138,8 @@ def get_all_connected_device_info():
     
     try:
         device_list = {}
+        global device_cnt
+        device_cnt = 1
         device_list.update(get_all_connected_android_info())
         if sys.platform == 'darwin': device_list.update(get_all_connected_ios_info()) # Only run this when on Mac
         
