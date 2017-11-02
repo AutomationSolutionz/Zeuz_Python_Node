@@ -415,10 +415,12 @@ def kill_appium_on_windows(appium_server):
         import psutil, signal
             
         for child in psutil.Process(appium_server.pid).children(recursive=True): # For eah child in process
-            cpid = int(str(child.as_dict(attrs=['pid'])['pid']).replace("'", "")) # Get child PID
-            CommonUtil.ExecLog(sModuleInfo,"Killing Appium child: %d" % cpid, 0)
-            psutil.Process(cpid).send_signal(signal.SIGTERM) # Send kill to it
-            #print h.terminate()
+            try:
+                cpid = int(str(child.as_dict(attrs=['pid'])['pid']).replace("'", "")) # Get child PID
+                CommonUtil.ExecLog(sModuleInfo,"Killing Appium child: %d" % cpid, 0)
+                psutil.Process(cpid).send_signal(signal.SIGTERM) # Send kill to it
+                #print h.terminate()
+            except: pass
     except Exception:
         return CommonUtil.Exception_Handler(sys.exc_info(), None, "Error killing Appium and it's children")
 
@@ -434,10 +436,10 @@ def teardown_appium(data_set):
         for name in appium_details: # For each connected device
             try:
                 CommonUtil.ExecLog(sModuleInfo,"Teardown for: %s" % name, 0)
-                if sys.platform  == 'win32': # Special kill for appium children on Windows
-                    kill_appium_on_windows(appium_details[name]['server'])
                 try: appium_details[name]['driver'].quit() # Destroy driver
                 except: pass
+                if sys.platform  == 'win32': # Special kill for appium children on Windows
+                    kill_appium_on_windows(appium_details[name]['server'])
                 appium_details[name]['server'].kill() # Terminate server
             except:
                 CommonUtil.ExecLog(sModuleInfo,"Error destroying Appium instance/server for %s - may already be killed" % name, 2)
