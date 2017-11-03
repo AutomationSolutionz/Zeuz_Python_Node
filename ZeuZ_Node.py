@@ -3,23 +3,52 @@
 # Function: Front-end to ZN_CLI.py and settings.conf
 # Issues: try/except doesn't always work for everything on windows (base64). Python crashes on windows when we use root.after() to poll the widgets
 
+from base64 import b64encode, b64decode # Password encoding
+import os.path, thread, sys, time, Queue
+
+def detect_admin():
+    # Windows only - Return True if program run as admin
+    
+    import subprocess as s
+    if sys.platform == 'win32':
+        command = 'net session >nul 2>&1' # This command can only be run by admin
+        try: output = s.check_output(command, shell=True) # Causes an exception if we can't run
+        except: return False
+    return True
+
 # Have user install Tk if this fails - we try to do it for them first
 try: import Tkinter as tk # http://infohost.nmt.edu/tcc/help/pubs/tkinter/tkinter.pdf
 except:
-    print "Tkinter is not installed. This is required to start the graphical interface. Please enter the root password to install if asked."
     import subprocess as s
-    print s.Popen('sudo apt-get update'.split(' '), stdout = s.PIPE, stderr = s.STDOUT).communicate()[0]
-    print s.Popen('sudo apt-get -y install python-tk'.split(' '), stdout = s.PIPE, stderr = s.STDOUT).communicate()[0]
+    print "Tkinter is not installed. This is required to start the graphical interface. Please enter the root password to install if asked."
+    
+    if sys.platform == 'win32':
+        try:
+            # Elevate permissions
+            if not detect_admin():
+                os.system('powershell -command Start-Process "python \'%s\'" -Verb runAs' % sys.argv[0].split(os.sep)[-1]) # Re-run this program with elevated permissions to admin
+                quit()
+            # Install
+            # Note: Tkinter is not available through pip nor easy_install, we assume it was packaged with Python
+            print s.check_output('pip install setuptools')
+        except:
+            print "Failed to install. Please run: pip download pillow & pip install pillow"
+            raw_input('Press ENTER to exit')
+            quit()
+    elif sys.platform == 'linux2':
+        print s.Popen('sudo apt-get update'.split(' '), stdout = s.PIPE, stderr = s.STDOUT).communicate()[0]
+        print s.Popen('sudo apt-get -y install python-tk'.split(' '), stdout = s.PIPE, stderr = s.STDOUT).communicate()[0]
+    else:
+        print "Could not automatically install required modules"
+        raw_input('Press ENTER to exit')
+        quit()
     
     try: import Tkinter as tk
     except:
         raw_input('Could not install Tkinter. Please do this manually by running: sudo apt-get install python-tk')
         quit()
         
-from base64 import b64encode, b64decode # Password encoding
 import tkMessageBox
-import os.path, thread, sys, time, Queue
-
 os.chdir(os.path.join(os.path.dirname(os.path.realpath(__file__)), 'Framework')) # Move to Framework directory, so all modules can be seen
 from Framework.Utilities import ConfigModule # Modifing settings files
 from Framework.ZN_CLI import Login, disconnect_from_server, get_team_names, get_project_names, check_server_online # Controlling node status and logging in
@@ -136,13 +165,13 @@ class Application(tk.Frame):
             self.settings_button = tk.Button(self.topframe, text='Show Advanced Settings', width = self.button_width, command=self.advanced_settings)
             self.settings_button.grid(row = 2, column = 0)
     
-            self.save_button = tk.Button(self.topframe, text='Save Settings', width = self.button_width, command=lambda: self.save_all(True))
+            self.save_button = tk.Button(self.topframe, text='Save Settings', fg = 'green4', width = self.button_width, command=lambda: self.save_all(True))
             self.save_button.grid(row = 2, column = 1)
     
             self.quitButton = tk.Button(self.topframe, text='Quit', width = self.button_width, command=self.teardown)
             self.quitButton.grid(row = 1, column = 0)
             
-            self.startButton = tk.Button(self.rightframe, text='Online', width = self.button_width, command=self.read_mod)
+            self.startButton = tk.Button(self.rightframe, text='Online', fg = 'red', width = self.button_width, command=self.read_mod)
             self.startButton.grid(row = 0, column = 0, sticky = 'n')
 
             # Scroll lock checkbox
@@ -318,13 +347,13 @@ class Application(tk.Frame):
         try:
             if self.run:
                 self.run = False
-                self.startButton.configure(text = 'Online')
+                self.startButton.configure(text = 'Online', fg = 'red')
                 disconnect_from_server() # Tell Zeuz_Node.py to stop
                 self.log.insert('end', '\nDisconnecting from server\n')
                 self.log.see('end')
             else:
                 self.run = True
-                self.startButton.configure(text = 'Offline')
+                self.startButton.configure(text = 'Offline', fg = 'green4')
                 self.log.delete(0.0, 'end') # Clear previous log
                 thread.start_new_thread(Login,()) # Execute Zeuz_Node.py
                 #!!! Causing root error: if self.node_id.get() == '': root.after(5000, lambda: self.read_node_id(self.node_id)) # If no node id was read or specified, wait a few seconds for zeuz_node.py to populate the node id file, and read it
