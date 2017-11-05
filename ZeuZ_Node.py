@@ -189,6 +189,7 @@ class Application(tk.Frame):
             self.logscrollY = tk.Scrollbar(self.rightframe, command = self.log.yview) # Create scrollbar for log window
             self.logscrollY.grid(row = 1, column = 1, sticky = 'ns')
             self.log['yscrollcommand'] = self.logscrollY.set # Bind scrollbar to log textarea
+            self.log.bind('<Button-3>', self.rClicker) # Bind copy/paste menu to right click
         except Exception, e: tkMessageBox.showerror('Error', 'Exception caught: %s' % e)
             
     def createWidgets(self):
@@ -521,6 +522,29 @@ class Application(tk.Frame):
             for project in self.widgets['Authentication']['widget']['project']['choices']: # For each new project
                 self.widgets['Authentication']['widget']['project']['widget']['menu'].add_command(label = project, command=tk._setit(self.widgets['Authentication']['widget']['project']['dropdown'], project)) # Add the project to the drop down menu
         except Exception, e: tkMessageBox.showerror('Error', 'Exception caught: %s' % e)
+
+    def rClicker(self, e):
+        ''' right click context menu for all Tk Entry and Text widgets '''
+
+        try:
+            # Bind events to menu items
+            def rClick_Copy(e, apnd=0): e.widget.event_generate('<Control-c>')
+            def rClick_Cut(e): e.widget.event_generate('<Control-x>')
+            def rClick_Paste(e): e.widget.event_generate('<Control-v>')
+
+            # Define menu items and commands
+            e.widget.focus()
+            nclst=[
+                (' Cut', lambda e=e: rClick_Cut(e)),
+                (' Copy', lambda e=e: rClick_Copy(e)),
+                (' Paste', lambda e=e: rClick_Paste(e)),
+            ]
+
+            # Create menu, and add menu items
+            rmenu = tk.Menu(None, tearoff=0, takefocus=0)
+            for (txt, cmd) in nclst: rmenu.add_command(label=txt, command=cmd)
+            rmenu.tk_popup(e.x_root+40, e.y_root+10,entry="0")
+        except: pass
 
     def teardown(self):
         # Release stdout/err
