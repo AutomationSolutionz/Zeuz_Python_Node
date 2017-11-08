@@ -4,6 +4,7 @@
 import inspect,os,time,sys,urllib2,Queue,importlib,requests,threading
 from datetime import datetime
 from Utilities import ConfigModule,FileUtilities as FL,CommonUtil,RequestFormatter,All_Device_Info
+from Framework.Built_In_Automation.Shared_Resources import BuiltInFunctionSharedResources as shared
 top_path=os.path.dirname(os.getcwd())
 drivers_path=os.path.join(top_path,'Drivers')
 sys.path.append(drivers_path)
@@ -79,6 +80,12 @@ def cleanup_runid_from_server(run_id):
 def check_if_test_case_is_copied(run_id, test_case):
     return RequestFormatter.Get('is_test_case_copied_api', {'run_id': run_id, 'test_case': test_case})
 
+
+def get_debug_steps(run_id):
+    return RequestFormatter.Get('get_debug_steps_api', {'run_id': run_id})
+
+def send_debug_data(run_id,key,value):
+    return RequestFormatter.Get('send_debug_data_api', {'run_id': run_id,'key': key,'value': value})
 
 #returns test case details needed to run the test case
 def get_test_case_details(run_id, test_case):
@@ -406,11 +413,15 @@ def call_driver_function_of_test_step(sModuleInfo, TestStepsList, StepSeq, step_
 
 
 #runs all test steps of a test case
-def run_all_test_steps_in_a_test_case(Stepscount, test_case, sModuleInfo, run_id, TestStepsList, file_specific_steps, driver_list, final_dependency, final_run_params, test_case_result_index, temp_ini_file):
+def run_all_test_steps_in_a_test_case(Stepscount, test_case, sModuleInfo, run_id, TestStepsList, file_specific_steps, driver_list, final_dependency, final_run_params, test_case_result_index, temp_ini_file,debug=False,debug_steps=[]):
     StepSeq = 1
     sTestStepResultList = []
     already_failed = False
     while StepSeq <= Stepscount:
+        if debug:
+            if str(StepSeq) not in debug_steps:
+                StepSeq+=1
+                continue
         if already_failed == True:
             always_run = TestStepsList[StepSeq - 1][9]
             if always_run != True:
@@ -638,6 +649,50 @@ def write_log_file_for_test_case(sTestCaseStatus, test_case, run_id, sTestCaseEn
 
 
 #run a test case of a runid
+
+def start_sending_log_to_server(run_id,temp_ini_file):
+    local_run_settings = ConfigModule.get_config_value('RunDefinition', 'local_run')
+    if local_run_settings == False or local_run_settings == 'False':
+        current_log_file = os.path.join(ConfigModule.get_config_value('sectionOne', 'log_folder', temp_ini_file),
+                                        'temp.log')
+        lines_seen = set()
+        for line in open(current_log_file, 'r'):
+            if line not in lines_seen:
+                lines_seen.add(line)
+                send_debug_data(run_id, "log", line)
+        FL.DeleteFile(current_log_file)
+        #all_log = list(lines_seen)
+        #all_log = "###".join(all_log)
+        #print all_log
+        #send_debug_data(run_id,"log",all_log)
+
+
+def start_sending_shared_var_to_server(run_id):
+    try:
+        shared_resource = shared.Shared_Variable_Export()
+        for key in shared_resource:
+            if key == 'selenium_driver':
+                value = 'Selenium Driver Instance'
+            elif key == 'appium_driver':
+                value = 'Appium Driver Instance'
+            else:
+                value = shared_resource[key]
+            try:
+                send_debug_data(run_id,"var-"+key,value)
+            except:
+                continue
+    except:
+        return True
+
+
+def start_sending_step_result_to_server(run_id, debug_steps, sTestStepResultList):
+    try:
+        for i in range(0,len(debug_steps)):
+            send_debug_data(run_id, "result-" + debug_steps[i], sTestStepResultList[i])
+    except:
+        return True
+
+
 def run_test_case(TestCaseID, sModuleInfo, run_id, driver_list, final_dependency, final_run_params, temp_ini_file):
     test_case = TestCaseID[0]
     copy_status = False
@@ -661,9 +716,15 @@ def run_test_case(TestCaseID, sModuleInfo, run_id, driver_list, final_dependency
     test_case_result_index = update_test_case_progress_on_server(run_id, test_case, sTestCaseStartTime)
     TestStepsList = get_all_steps_of_a_test_case(run_id, test_case)
     Stepscount = len(TestStepsList)
+    debug_steps = ''
+    debug = False
+    if str(run_id).startswith("debug"):
+        debug_steps = get_debug_steps(run_id)
+        debug_steps = str(debug_steps).split("|")
+        debug = True
 
     #runs all test steps in the test case, all test step result is stored in the list named sTestStepResultList
-    sTestStepResultList = run_all_test_steps_in_a_test_case(Stepscount, test_case, sModuleInfo, run_id, TestStepsList, file_specific_steps, driver_list, final_dependency, final_run_params, test_case_result_index, temp_ini_file)
+    sTestStepResultList = run_all_test_steps_in_a_test_case(Stepscount, test_case, sModuleInfo, run_id, TestStepsList, file_specific_steps, driver_list, final_dependency, final_run_params, test_case_result_index, temp_ini_file,debug,debug_steps)
 
     sTestCaseEndTime = datetime.fromtimestamp(time.time()).strftime('%Y-%m-%d %H:%M:%S')
     TestCaseEndTime = time.time()
@@ -684,7 +745,17 @@ def run_test_case(TestCaseID, sModuleInfo, run_id, driver_list, final_dependency
 
     # Zip the folder
     # removing duplicates line from here.
-    write_log_file_for_test_case(sTestCaseStatus, test_case, run_id, sTestCaseEndTime, TestCaseDuration, FailReason, temp_ini_file)
+
+    if debug:
+        cleanup_runid_from_server(run_id)
+
+    if not debug:
+        write_log_file_for_test_case(sTestCaseStatus, test_case, run_id, sTestCaseEndTime, TestCaseDuration, FailReason, temp_ini_file)
+    else:
+        start_sending_log_to_server(run_id,temp_ini_file)
+        start_sending_shared_var_to_server(run_id)
+        start_sending_step_result_to_server(run_id,debug_steps,sTestStepResultList)
+        send_debug_data(run_id,"finished","yes")
     # Update test case result
 
     run_cancelled = RequestFormatter.Get('get_status_of_a_run_api', {'run_id': run_id})
