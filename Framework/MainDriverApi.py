@@ -4,6 +4,7 @@
 import inspect,os,time,sys,urllib2,Queue,importlib,requests,threading
 from datetime import datetime
 from Utilities import ConfigModule,FileUtilities as FL,CommonUtil,RequestFormatter,All_Device_Info
+from Framework.Built_In_Automation.Shared_Resources import BuiltInFunctionSharedResources as shared
 top_path=os.path.dirname(os.getcwd())
 drivers_path=os.path.join(top_path,'Drivers')
 sys.path.append(drivers_path)
@@ -82,6 +83,9 @@ def check_if_test_case_is_copied(run_id, test_case):
 
 def get_debug_steps(run_id):
     return RequestFormatter.Get('get_debug_steps_api', {'run_id': run_id})
+
+def send_debug_data(run_id,key,value):
+    return RequestFormatter.Get('send_debug_data_api', {'run_id': run_id,'key': key,'value': value})
 
 #returns test case details needed to run the test case
 def get_test_case_details(run_id, test_case):
@@ -646,6 +650,49 @@ def write_log_file_for_test_case(sTestCaseStatus, test_case, run_id, sTestCaseEn
 
 #run a test case of a runid
 
+def start_sending_log_to_server(run_id,temp_ini_file):
+    local_run_settings = ConfigModule.get_config_value('RunDefinition', 'local_run')
+    if local_run_settings == False or local_run_settings == 'False':
+        current_log_file = os.path.join(ConfigModule.get_config_value('sectionOne', 'log_folder', temp_ini_file),
+                                        'temp.log')
+        lines_seen = set()
+        for line in open(current_log_file, 'r'):
+            if line not in lines_seen:
+                lines_seen.add(line)
+                send_debug_data(run_id, "log", line)
+        FL.DeleteFile(current_log_file)
+        #all_log = list(lines_seen)
+        #all_log = "###".join(all_log)
+        #print all_log
+        #send_debug_data(run_id,"log",all_log)
+
+
+def start_sending_shared_var_to_server(run_id):
+    try:
+        shared_resource = shared.Shared_Variable_Export()
+        for key in shared_resource:
+            if key == 'selenium_driver':
+                value = 'Selenium Driver Instance'
+            elif key == 'appium_driver':
+                value = 'Appium Driver Instance'
+            else:
+                value = shared_resource[key]
+            try:
+                send_debug_data(run_id,"var-"+key,value)
+            except:
+                continue
+    except:
+        return True
+
+
+def start_sending_step_result_to_server(run_id, debug_steps, sTestStepResultList):
+    try:
+        for i in range(0,len(debug_steps)):
+            send_debug_data(run_id, "result-" + debug_steps[i], sTestStepResultList[i])
+    except:
+        return True
+
+
 def run_test_case(TestCaseID, sModuleInfo, run_id, driver_list, final_dependency, final_run_params, temp_ini_file):
     test_case = TestCaseID[0]
     copy_status = False
@@ -704,6 +751,11 @@ def run_test_case(TestCaseID, sModuleInfo, run_id, driver_list, final_dependency
 
     if not debug:
         write_log_file_for_test_case(sTestCaseStatus, test_case, run_id, sTestCaseEndTime, TestCaseDuration, FailReason, temp_ini_file)
+    else:
+        start_sending_log_to_server(run_id,temp_ini_file)
+        start_sending_shared_var_to_server(run_id)
+        start_sending_step_result_to_server(run_id,debug_steps,sTestStepResultList)
+        send_debug_data(run_id,"finished","yes")
     # Update test case result
 
     run_cancelled = RequestFormatter.Get('get_status_of_a_run_api', {'run_id': run_id})
