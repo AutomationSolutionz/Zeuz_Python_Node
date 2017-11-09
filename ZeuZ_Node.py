@@ -115,7 +115,7 @@ class Application(tk.Frame):
             self.save_all(save = False)
             
             # If go online at start is set, go online
-            if 'go_online_at_start' in self.widgets['RunDefinition']['widget'] and self.widgets['Zeuz Node']['widget']['go_online_at_start']['check'].get(): self.read_mod()
+            if 'go_online_at_start' in self.widgets['Zeuz Node']['widget'] and self.widgets['Zeuz Node']['widget']['go_online_at_start']['check'].get(): self.read_mod()
 
             self.start_up_display() # Determine if this is the first run, and display widgets accordingly
             self.read_log() # Start the log reader timer
