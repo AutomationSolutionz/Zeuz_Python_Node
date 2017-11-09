@@ -146,6 +146,7 @@ action_support = [
     'action',
     'optional action',
     'conditional action',
+    'loop action',
     'element parameter',
     'child parameter',
     'parent parameter',
@@ -232,6 +233,7 @@ def Sequential_Actions(step_data, _dependency = {}, _run_time_params = '', _file
     sModuleInfo = inspect.stack()[0][3] + " : " + inspect.getmoduleinfo(__file__).name
     CommonUtil.ExecLog(sModuleInfo,"Function Start", 0)
     
+    # Initialize
     try:
         # Set dependency, file_attachemnt as global variables
         global dependency, file_attachment, device_details
@@ -262,10 +264,20 @@ def Sequential_Actions(step_data, _dependency = {}, _run_time_params = '', _file
     except:
         return CommonUtil.Exception_Handler(sys.exc_info(), None, "Error during Sequential Actions startup")
 
+    # Process step data
+    return Run_Sequential_Actions(step_data)
+    
+def Run_Sequential_Actions(step_data):
+    
+    sModuleInfo = inspect.stack()[0][3] + " : " + inspect.getmoduleinfo(__file__).name
     try:
-        result = 'failed' # Initialize result            
-        for data_set in step_data: # For each data set within step data
+        result = 'failed' # Initialize result
+        skip = [] # List of data set numbers that have been processed, and need to be skipped, so they are not processed again
+                    
+        for dataset_cnt in range(len(step_data)): # For each data set within step data
+            data_set = step_data[dataset_cnt]
             logic_row=[] # Holds conditional actions
+            if dataset_cnt in skip: continue # If this data set is in the skip list, do not process it
             
             if CommonUtil.check_offline(): # Check if user initiated offline command from GUI
                 CommonUtil.ExecLog(sModuleInfo, "User requested Zeuz Node to go Offline", 2)
@@ -304,6 +316,64 @@ def Sequential_Actions(step_data, _dependency = {}, _run_time_params = '', _file
                         CommonUtil.ExecLog(sModuleInfo, "Found 2 conditional actions - moving ahead with them", 1)
                         return Conditional_Action_Handler(step_data, data_set, row, logic_row) # Pass step_data, and current iteration of data set to decide which data sets will be processed next
                         # At this point, we don't process any more data sets, which is why we return here. The conditional action function takes care of the rest of the execution
+                
+                # Simulate a while/for loop with the specified data sets
+                elif 'loop action' in action_name:
+                    ### Create sub-set of step data that we will send to SA for processing
+                    try:
+                        sets = map(int, row[2].replace(' ', '').split(',')) # Save data sets to loop
+                        sets = [x - 1 for x in sets] # Convert data set numbers to array friendly
+                        new_step_data = []
+                        for i in sets: new_step_data.append(step_data[i]) # Create new sub-set
+                    except:
+                        CommonUtil.ExecLog(sModuleInfo, "Loop format incorrect. Expected 'true/false number' or 'number'. Eg: true 2 OR 5", 3)
+                        return 'failed'
+                    
+                    ### Determine loop type
+                    # Current types: Loop N times || Loop until Data_set #N = true/false
+                    try: # Format of Field: true/false/pass/fail NUMBER - Eg: true 2 - If second data set results in true/pass, then stop loop
+                        loop_type, action_result = row[0].lower().replace(',', ' ').replace('  ', ' ').split(' ') # True/False that we want to monitor as the result, and data set number to base output on
+                        action_result = int(action_result) - 1 # Bring user specified data set number into array format
+                        action_result = action_result - dataset_cnt - 1 # Calculate data set number of this data set in the new sub-set. -1 Because we are currently on the loop action, and this data set is not included in the sub-set
+                        if loop_type in passed_tag_list: loop_type = 'passed'
+                        elif loop_type in failed_tag_list: loop_type = 'failed'
+                        else:
+                            CommonUtil.ExecLog(sModuleInfo, "Loop format incorrect. Expected Field to contain 'true/false number'. Eg: true 2", 3)
+                            return 'failed'
+                        loop_len = 1000 # Not used. Set to impossibly high number
+                    except:
+                        try: # Format of Field: NUMBER - Number of times to run, regardless of result
+                            loop_len = int(row[0]) # Number of times to loop
+                            loop_type = '' # Must be blank
+                            action_result = '' # Not used
+                        except:
+                            print "ERROR"
+                            quit()
+                    
+                    ### Send sub-set to SA until we get our desired value or number of loops
+                    sub_set_cnt = 0 # Used in counting number of loops
+                    die = False # Used to exit parent while loop
+                    while True: # We control the new sub-set of the step data, so we can examine the output
+                        for ndc in range(len(new_step_data)): # For each data set in the sub-set
+                            new_data_set = new_step_data[ndc] # Get the data set
+                            result = Run_Sequential_Actions([new_data_set]) # Send single data set to SA as step data, so we control the loop
+                            if result in passed_tag_list: result = 'passed' # Make sure the reuslt matches the string we set above
+                            else: result = 'failed'
+                            
+                            # Check if we should exit now or keep going
+                            if ndc == action_result and result == loop_type: # If this data set that just returned is the one that we are watching AND it returned the result we want, then exit the loop 
+                                skip = sets # Tell SA to skip these data sets that were in the loop once it picks up processing normally
+                                die=True # Exit while loop
+                                break # Stop processing sub-sets
+    
+                        # These must be between the two IF statements
+                        sub_set_cnt += 1 # Used for numerical loops only, keep track of how many times we've looped the sub-set
+                        if die: break # Stop processing this while loop, and go back to regular SA
+                    
+                        # Check if we hit our set number of loops
+                        if sub_set_cnt >= loop_len and loop_type == '': # If we hit out desired number of loops for this loop type, then exit
+                            skip = sets # Tell SA to skip these data sets that were in the loop once it picks up processing normally
+                            break # Stop processing sub-sets and exit while loop
                 
                 # If middle column = action, call action handler
                 elif "action" in action_name: # Must be last, since it's a single word that also exists in other action types

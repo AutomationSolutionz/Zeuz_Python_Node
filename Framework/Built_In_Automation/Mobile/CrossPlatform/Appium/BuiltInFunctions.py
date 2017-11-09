@@ -1336,7 +1336,14 @@ def device_information(data_set):
 
     # Parse data set
     try:
-        dep = appium_details[device_id]['type']
+        
+        if device_id:
+            dep = appium_details[device_id]['type']
+        else: # In case this was invoked without setting up appium, try to figure out connected device type. This could be useful if user just wants to reboot the phone
+            if adbOptions.is_android_connected(device_serial):
+                dep = 'android'
+            else:
+                dep = 'ios'
         cmd = ''
         shared_var = ''
         
@@ -1353,7 +1360,7 @@ def device_information(data_set):
             CommonUtil.ExecLog(sModuleInfo,"Action's Value contains incorrect information. Expected Shared Variable, or string", 3)
             return 'failed'
     except Exception:
-        return CommonUtil.Exception_Handler(sys.exc_info(), None, "Error when trying to read Field and Value for action")
+        return CommonUtil.Exception_Handler(sys.exc_info(), None, "Error when trying to read Field and Value for action on device '%s' with appium details: %s" % (device_id, str(appium_details)))
 
     # Ensure device is connected
     if dep == 'android':

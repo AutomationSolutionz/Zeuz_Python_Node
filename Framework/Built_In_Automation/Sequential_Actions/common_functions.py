@@ -103,7 +103,9 @@ def verify_step_data(step_data):
                         return 'failed'
                 
                 # Make sure Field has a valid action call
-                if 'action' in row[1] and 'conditional' not in row[1]: # Only apply to actions rows
+                if 'action' in row[1] and 'loop' in row[1]: # Loop action, do not check because there could be different formats
+                    continue
+                elif 'action' in row[1] and 'conditional' not in row[1]: # Only apply to actions rows
                     for action_index in actions:
                         if actions[action_index]['name'] == row[0]: # If one of the action names in the Field
                             field_text = True # Flag it's good

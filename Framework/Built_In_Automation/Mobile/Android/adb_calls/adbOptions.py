@@ -424,10 +424,8 @@ def reset_android(serial = ''):
     
     sModuleInfo = inspect.stack()[0][3] + " : " + inspect.getmoduleinfo(__file__).name
     try:
-        if serial != '': serial = '-s %s' % serial # Prepare serial number with command line switch
         CommonUtil.ExecLog(sModuleInfo, "Resetting device %s" % serial, 0)
-        if serial != '':
-            serial = '-s %s' % serial # Prepend the command line switch to add the serial number
+        if serial != '': serial = '-s %s' % serial # Prepend the command line switch to add the serial number
         subprocess.check_output("adb %s reboot" % serial, shell=True) # Send reset
     except Exception:
         return CommonUtil.Exception_Handler(sys.exc_info(), None, "Error while performing swipe gesture")
