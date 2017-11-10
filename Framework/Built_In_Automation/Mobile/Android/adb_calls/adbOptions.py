@@ -194,8 +194,8 @@ def get_devices():
         return output
 
     except Exception:
-        errMsg = "Unable to get devices"
-        return CommonUtil.Exception_Handler(sys.exc_info(),None,errMsg)
+        CommonUtil.ExecLog(sModuleInfo, "Unable to get devices", 3)
+        return []
 
 def is_android_connected(serial = ''):
     ''' Return True/False if at least one device is connected '''
