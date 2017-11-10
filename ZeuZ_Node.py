@@ -17,7 +17,9 @@ def detect_admin():
     return True
 
 # Have user install Tk if this fails - we try to do it for them first
-try: import Tkinter as tk # http://infohost.nmt.edu/tcc/help/pubs/tkinter/tkinter.pdf
+try: 
+    import Tkinter as tk # http://infohost.nmt.edu/tcc/help/pubs/tkinter/tkinter.pdf
+    import subprocess
 except:
     import subprocess as s
     print "Tkinter is not installed. This is required to start the graphical interface. Please enter the root password to install if asked."
@@ -43,14 +45,16 @@ except:
         raw_input('Press ENTER to exit')
         quit()
     
-    try: import Tkinter as tk
+    try: 
+        import Tkinter as tk
+        import subprocess
     except:
         raw_input('Could not install Tkinter. Please do this manually by running: sudo apt-get install python-tk')
         quit()
         
 import tkMessageBox
 os.chdir(os.path.join(os.path.dirname(os.path.realpath(__file__)), 'Framework')) # Move to Framework directory, so all modules can be seen
-from Framework.Utilities import ConfigModule, FileUtilities # Modifing settings files
+from Framework.Utilities import ConfigModule, FileUtilities, self_updater # Modifing settings files
 from Framework.ZN_CLI import Login, disconnect_from_server, get_team_names, get_project_names, check_server_online, processing_test_case # Controlling node status and logging in
 
 # Find node id file
@@ -261,54 +265,83 @@ class Application(tk.Frame):
         except Exception, e: tkMessageBox.showerror('Error', 'Exception caught: %s' % e)
         
     def check_for_updates(self, check = False):
-        #!!!!should we only check while not running a test case? Probably
         # Check if there's a new update for zeuz node - this is triggered upon startup or periodically via tk.after()
         # Always check for updates, but depending on user's settings, either update automatically or inform user of update
 
-        if check: # Just check for updates, and schedule testing to see if updates checking is complete
-            # Read from temp config last time we checked for updates. If over maximum time, check again
-            temp_ini_file = os.path.join(os.path.join(FileUtilities.get_home_folder(), os.path.join('Desktop',os.path.join('AutomationLog',ConfigModule.get_config_value('Temp', '_file')))))
-            last_update = ConfigModule.get_config_value('sectionOne', 'last_update', temp_ini_file)
-            update_interval = self.update_interval * 3600 # Convert interval into seconds for easy comparison
+        try:
+            # Just check for updates, and schedule testing to see if updates checking is complete
+            if check:
+                # Read from temp config last time we checked for updates. If over maximum time, check again
+                temp_ini_file = os.path.join(os.path.join(FileUtilities.get_home_folder(), os.path.join('Desktop',os.path.join('AutomationLog',ConfigModule.get_config_value('Temp', '_file')))))
+                last_update = ConfigModule.get_config_value('sectionOne', 'last_update', temp_ini_file)
+                update_interval = self.update_interval * 3600 # Convert interval into seconds for easy comparison
+
+                if last_update == '' or (last_update + update_interval) > time.time(): # If we have reached the allowed time to check for updates or nothing was previously set. Assume this is the first time, check for updates.
+
+                    ConfigModule.add_config_value('sectionOne', 'last_update', str(time.time()), temp_ini_file) # Record current time as update time
+                    
+                    thread.start_new_thread(self_updater.check_for_updates, ()) # Check for updates in a separate thread
+                    self.after(2000, self.check_for_updates) # Tests if check for updates is complete
+                    #!!!Enable when ready: self.after(self.update_interval * 3600 * 1000, lambda: self.check_for_updates(True)) # Reschedule next check for updates (calculates from hours to ms)
             
-            if last_update == '' or (last_update + update_interval) > time.time(): # If we have reached the allowed time to check for updates or nothing was previously set. Assume this is the first time, check for updates. 
-                ConfigModule.add_config_value('sectionOne', 'last_update', str(time.time()), temp_ini_file) # Record current time as update time
-                #thread.start_new_thread() # Check for updates in a separate thread
-                #MODULE.check_complete = False
-                #root.after(10000, self.check_for_updates) # Tests if check for updates is complete
-        else:
-            #if MODULE.check_complete:
-            # Read update settings
-            if 'auto-update' in self.widgets['Zeuz Node']['widget'] and self.widgets['Zeuz Node']['widget']['auto-update']['check'].get(): auto_updates = True
-            else: auto_updates = False
-            if 'auto-start' in self.widgets['Zeuz Node']['widget'] and self.widgets['Zeuz Node']['widget']['auto-start']['check'].get(): auto_start = True
-            else: auto_start = False
-            
-            # If auto-update is true, then perform update
-            if auto-update:
-                pass
-                # MODULE.UPDATE()
-            # If auto-update is false, notify user via dialogue that there's a new update available, and ask if they want to download and install it
+            # root.after() brings us here
             else:
-                if tkMessageBox.askyesno('Update', 'A Zeuz Node update is available. Do you want to download and install it?'):
+                # No update, do nothing, and thus stop checking
+                if self_updater.check_complete == 'noupdate':
                     pass
-                    # MODULE.UPDATE()
+                
+                # Update check complete, we have an update, start install
+                elif self_updater.check_complete == 'update':
+                    # Read update settings
+                    if 'auto-update' in self.widgets['Zeuz Node']['widget'] and self.widgets['Zeuz Node']['widget']['auto-update']['check'].get(): auto_update = True
+                    else: auto_update = False
+    
+                    # If auto-update is true, then perform update
+                    if auto_update:
+                        thread.start_new_thread(self_updater.main, (os.path.join(os.path.dirname(os.path.realpath(__file__)), 'Framework')))
+                        self.after(10000, self.check_for_updates) # Checks if install is complete
+                    # If auto-update is false, notify user via dialogue that there's a new update available, and ask if they want to download and install it
+                    else:
+                        if tkMessageBox.askyesno('Update', 'A Zeuz Node update is available. Do you want to download and install it?'):
+                            thread.start_new_thread(self_updater.main, (os.path.join(os.path.dirname(os.path.realpath(__file__)), 'Framework')))
+                            self.after(10000, self.check_for_updates) # Checks if install is complete
+                        else:
+                            pass # Do nothing if the user doens't want to update. We'll check again tomorrow
+                
+                # Still installing, check again later
+                elif self_updater.check_complete == 'installing':
+                        self.after(10000, self.check_for_updates) # Checks if install is complete
+                        
+                # Update installed. Now we have to restart Zeuz Node for changes to take effect
+                elif self_updater.check_complete == 'done':
+                    # Read update settings
+                    if 'auto-restart' in self.widgets['Zeuz Node']['widget'] and self.widgets['Zeuz Node']['widget']['auto-restart']['check'].get(): auto_restart = True
+                    else: auto_restart = False
+                    
+                    # If auto-reboot is true, then reboot the next time zeuz node is not in the middle of a run
+                    if auto_restart:
+                        self.self_restart()
+                    
+                    # If auto-reboot is false, then notify user via dialogue that the installation is complete and ask to reboot
+                    else:
+                        if tkMessageBox.askyesno('Update', "New Zeuz Node software was successfully installed. Would you like to restart Zeuz Node (when we're not testing) to start using it?"):
+                            self.self_restart()
+                        else:
+                            pass # Do nothing. User will have to restart manually
+                            
+                # Some error occurred during updating
+                elif 'error' in self_updater.check_complete:
+                    tkMessageBox.showerror('Update', "An error occurred during update: %s" % self_updater.check_complete)
+        except Exception, e: tkMessageBox.showerror('Error', 'Exception caught: %s' % e)
             
-            # If auto-reboot is true, then reboot the next time zeuz node is not in the middle of a run
-            if auto-start:
-                self.self_restart()
-            
-            # If auto-reboot is false, then notify user via dialogue that the installation is complete and ask to reboot
-            else:
-                if tkMessageBox.askyesno('Update', 'New Zeuz Node software was successfully installed. Would you like to restart Zeuz Node to start using it?'):
-                    self.self_restart()
         
     def self_restart(self):
-        # How do we restart without disturbing?
-        if processing_test_case:
-            #root.after(
-            subprocess.check_output('python sys.argv[0]') # Restart zeuz node
-
+        try:
+            if processing_test_case: # If we are in the middle of a run, try to restart again later
+                self.after(60000, self.self_restart)
+            else: # Not running a test case, so it should be safe to restart
+                subprocess.check_output('python "%s%' % sys.argv[0]) # Restart zeuz node
+        except Exception, e: tkMessageBox.showerror('Error', 'Exception caught: %s' % e)
         
     def start_up_display(self):
         # Check if this is the first run (team widget is set to default string), and if so, rearrange, so the server/port is above the user/pass to help user understand what needs to be populated

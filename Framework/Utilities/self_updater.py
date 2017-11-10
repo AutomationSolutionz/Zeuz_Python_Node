@@ -23,6 +23,7 @@ version_url = 'https://raw.githubusercontent.com/AutomationSolutionz/Zeuz_Python
 version_path = os.path.join(os.path.dirname(os.path.realpath(__file__)), '..', 'Version.txt') # Version of installed software
 zeuz_node_package = 'https://github.com/AutomationSolutionz/Zeuz_Python_Node/archive/master.zip' # Location of newest software
 skip = [] # Any files or directories we don't want to delete not longer existing files from
+check_complete = 'no' # 'no', 'yes', 'error'. Used by Zeuz Node to check if install is complete
 
 def copytree(src_dir, dst_dir):
     ''' Copy entire directory, overwrite exsting files '''
@@ -125,8 +126,10 @@ def unzip(zipFilePath, destDir):
 
 def check_for_updates():
     ''' Check if the installed version differs from the newest '''
-    
+
+    global check_complete
     try:
+        check_complete = 'check'
         section = 'ZeuZ Python Version' # Must match what's in the version file
         key = 'version' # Must match what's in the version file
         if sys.platform == 'win32': version_tmp = os.path.join(os.getenv('TMP'), 'version.txt')
@@ -136,8 +139,11 @@ def check_for_updates():
         remote_version = ConfigModule.get_config_value(section, key, Download_File(version_url, version_tmp))
         if os.path.exists(version_tmp): os.unlink(version_tmp) # Clean up no longer needed file
         
-        if local_version != remote_version and remote_version != '' and local_version != '': return True
-        else: return False
+        # We have an update available
+        if local_version != remote_version and remote_version != '' and local_version != '': check_complete = 'update'
+        
+        # No update
+        else: check_complete = 'noupdate'
     except:
         print "Error"
         return False
@@ -166,14 +172,17 @@ def main(dst_dir):
     ''' Perform update '''
     # dst_dir: The location that Zeuz Node is installed to
     # Assumes user has already verified there's a new software release
+    # We communicate with Zeuz Node via variable "check_complete"
     
-    global skip
+    global skip, check_complete
     try:
+        check_complete = 'installing'
         src_dir = download_new_version(zeuz_node_package) # Download and unpack the new software
         if src_dir: # If we downloaded successfully
             copytree(src_dir, dst_dir) # Copy it to the install location
             remove_deleted(src_dir, dst_dir, skip) # Remove any extra files that were removed from the new software version
             if os.path.exists(src_dir): shutil.rmtree(src_dir) # Remove downloaded software from temp location
-        else: return False
+            check_complete = 'done'
+        else: check_complete = 'error'
     except:
-        return False
+        check_complete = 'error'
