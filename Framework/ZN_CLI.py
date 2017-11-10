@@ -16,7 +16,7 @@ PROJECT_TAG='project'
 TEAM_TAG='team'
 device_dict = {}
 
-
+processing_test_case = False # Used by Zeuz Node GUI to check if we are in the middle of a run
 exit_script = False # Used by Zeuz Node GUI to exit script
 temp_ini_file = os.path.join(os.path.join(FileUtilities.get_home_folder(), os.path.join('Desktop',os.path.join('AutomationLog',ConfigModule.get_config_value('Temp', '_file')))))
 
@@ -39,6 +39,7 @@ def Login():
     exit_script = False # Reset exit variable
 
     while True:
+        processing_test_case = False
         if exit_script: break
         # Test to ensure server is up before attempting to login
         r = check_server_online()
@@ -75,6 +76,7 @@ def Login():
             CommonUtil.ExecLog('', "Server down, waiting 60 seconds before trying again", 4, False)
             time.sleep(60)
     CommonUtil.ExecLog('', "Zeuz Node Offline", 4, False) # GUI relies on this exact text. GUI must be updated if this is changed
+    processing_test_case = False
 
 def disconnect_from_server():
     ''' Exits script - Used by Zeuz Node GUI '''
@@ -89,6 +91,7 @@ def RunProcess(sTesterid):
 
             r=RequestFormatter.Get('is_run_submitted_api',{'machine_name':sTesterid})
             if r['run_submit']:
+                processing_test_case = True
                 CommonUtil.ExecLog('', "**************************\n* STARTING NEW TEST CASE *\n**************************", 4, False)
                 PreProcess()
                 value = MainDriverApi.main(device_dict)

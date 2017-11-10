@@ -50,8 +50,8 @@ except:
         
 import tkMessageBox
 os.chdir(os.path.join(os.path.dirname(os.path.realpath(__file__)), 'Framework')) # Move to Framework directory, so all modules can be seen
-from Framework.Utilities import ConfigModule # Modifing settings files
-from Framework.ZN_CLI import Login, disconnect_from_server, get_team_names, get_project_names, check_server_online # Controlling node status and logging in
+from Framework.Utilities import ConfigModule, FileUtilities # Modifing settings files
+from Framework.ZN_CLI import Login, disconnect_from_server, get_team_names, get_project_names, check_server_online, processing_test_case # Controlling node status and logging in
 
 # Find node id file
 if sys.platform  == 'win32':
@@ -88,6 +88,7 @@ class Application(tk.Frame):
     node_id_size = 10 # Max length of node ID - must match that specified in CommonUtil.MachineInfo()
     colour_tag = 0
     max_log_size = 1000 # Maxium number of lines allowed before we truncate the log
+    update_interval = 24 # Time in hours to check for updates. We never check less than this time
     colour_debug = 'blue' # http://www.science.smith.edu/dftwiki/index.php/Color_Charts_for_TKinter
     colour_passed = 'green4'
     colour_warning = 'orange'
@@ -119,6 +120,7 @@ class Application(tk.Frame):
 
             self.start_up_display() # Determine if this is the first run, and display widgets accordingly
             self.read_log() # Start the log reader timer
+            self.check_for_updates(check = True) # Check for updates
 
         except Exception, e: tkMessageBox.showerror('Error', 'Exception caught: %s' % e)
 
@@ -258,6 +260,56 @@ class Application(tk.Frame):
                 self.get_projects(self.widgets['Authentication']['widget']['team']['dropdown'].get()) # Get list of projects from the server for the curent team, populate the list
         except Exception, e: tkMessageBox.showerror('Error', 'Exception caught: %s' % e)
         
+    def check_for_updates(self, check = False):
+        #!!!!should we only check while not running a test case? Probably
+        # Check if there's a new update for zeuz node - this is triggered upon startup or periodically via tk.after()
+        # Always check for updates, but depending on user's settings, either update automatically or inform user of update
+
+        if check: # Just check for updates, and schedule testing to see if updates checking is complete
+            # Read from temp config last time we checked for updates. If over maximum time, check again
+            temp_ini_file = os.path.join(os.path.join(FileUtilities.get_home_folder(), os.path.join('Desktop',os.path.join('AutomationLog',ConfigModule.get_config_value('Temp', '_file')))))
+            last_update = ConfigModule.get_config_value('sectionOne', 'last_update', temp_ini_file)
+            update_interval = self.update_interval * 3600 # Convert interval into seconds for easy comparison
+            
+            if last_update == '' or (last_update + update_interval) > time.time(): # If we have reached the allowed time to check for updates or nothing was previously set. Assume this is the first time, check for updates. 
+                ConfigModule.add_config_value('sectionOne', 'last_update', str(time.time()), temp_ini_file) # Record current time as update time
+                #thread.start_new_thread() # Check for updates in a separate thread
+                #MODULE.check_complete = False
+                #root.after(10000, self.check_for_updates) # Tests if check for updates is complete
+        else:
+            #if MODULE.check_complete:
+            # Read update settings
+            if 'auto-update' in self.widgets['Zeuz Node']['widget'] and self.widgets['Zeuz Node']['widget']['auto-update']['check'].get(): auto_updates = True
+            else: auto_updates = False
+            if 'auto-start' in self.widgets['Zeuz Node']['widget'] and self.widgets['Zeuz Node']['widget']['auto-start']['check'].get(): auto_start = True
+            else: auto_start = False
+            
+            # If auto-update is true, then perform update
+            if auto-update:
+                pass
+                # MODULE.UPDATE()
+            # If auto-update is false, notify user via dialogue that there's a new update available, and ask if they want to download and install it
+            else:
+                if tkMessageBox.askyesno('Update', 'A Zeuz Node update is available. Do you want to download and install it?'):
+                    pass
+                    # MODULE.UPDATE()
+            
+            # If auto-reboot is true, then reboot the next time zeuz node is not in the middle of a run
+            if auto-start:
+                self.self_restart()
+            
+            # If auto-reboot is false, then notify user via dialogue that the installation is complete and ask to reboot
+            else:
+                if tkMessageBox.askyesno('Update', 'New Zeuz Node software was successfully installed. Would you like to restart Zeuz Node to start using it?'):
+                    self.self_restart()
+        
+    def self_restart(self):
+        # How do we restart without disturbing?
+        if processing_test_case:
+            #root.after(
+            subprocess.check_output('python sys.argv[0]') # Restart zeuz node
+
+        
     def start_up_display(self):
         # Check if this is the first run (team widget is set to default string), and if so, rearrange, so the server/port is above the user/pass to help user understand what needs to be populated
         
@@ -357,7 +409,7 @@ class Application(tk.Frame):
                 self.startButton.configure(text = 'Offline', fg = 'green4')
                 self.log.delete(0.0, 'end') # Clear previous log
                 thread.start_new_thread(Login,()) # Execute Zeuz_Node.py
-                #!!! Causing root error: if self.node_id.get() == '': root.after(5000, lambda: self.read_node_id(self.node_id)) # If no node id was read or specified, wait a few seconds for zeuz_node.py to populate the node id file, and read it
+                if self.node_id.get() == '': root.after(5000, lambda: self.read_node_id(self.node_id)) # If no node id was read or specified, wait a few seconds for zeuz_node.py to populate the node id file, and read it
         except Exception, e: tkMessageBox.showerror('Error', 'Exception caught: %s' % e) 
 
     def read_log(self):
