@@ -774,9 +774,7 @@ def run_test_case(TestCaseID, sModuleInfo, run_id, driver_list, final_dependency
 
     if not debug: #if normal run, the write log file and cleanup driver instances
         write_log_file_for_test_case(sTestCaseStatus, test_case, run_id, sTestCaseEndTime, TestCaseDuration, FailReason, temp_ini_file)
-        print shared.Shared_Variable_Export()
         cleanup_driver_instances()
-        print shared.Shared_Variable_Export()
     else:
         start_sending_log_to_server(run_id,temp_ini_file)
         start_sending_shared_var_to_server(run_id)
