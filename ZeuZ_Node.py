@@ -276,11 +276,11 @@ class Application(tk.Frame):
                 last_update = ConfigModule.get_config_value('sectionOne', 'last_update', temp_ini_file)
                 update_interval = self.update_interval * 3600 # Convert interval into seconds for easy comparison
 
-                if last_update == '' or (last_update + update_interval) > time.time(): # If we have reached the allowed time to check for updates or nothing was previously set. Assume this is the first time, check for updates.
+                if last_update == '' or (float(last_update) + update_interval) > time.time(): # If we have reached the allowed time to check for updates or nothing was previously set. Assume this is the first time, check for updates.
 
                     ConfigModule.add_config_value('sectionOne', 'last_update', str(time.time()), temp_ini_file) # Record current time as update time
-                    
-                    thread.start_new_thread(self_updater.check_for_updates, ()) # Check for updates in a separate thread
+
+                    #thread.start_new_thread(self_updater.check_for_updates, ()) # Check for updates in a separate thread
                     self.after(2000, self.check_for_updates) # Tests if check for updates is complete
                     #!!!Enable when ready: self.after(self.update_interval * 3600 * 1000, lambda: self.check_for_updates(True)) # Reschedule next check for updates (calculates from hours to ms)
             
@@ -298,12 +298,12 @@ class Application(tk.Frame):
     
                     # If auto-update is true, then perform update
                     if auto_update:
-                        thread.start_new_thread(self_updater.main, (os.path.join(os.path.dirname(os.path.realpath(__file__)), 'Framework')))
+                        #thread.start_new_thread(self_updater.main, (os.path.join(os.path.dirname(os.path.realpath(__file__)), 'Framework')))
                         self.after(10000, self.check_for_updates) # Checks if install is complete
                     # If auto-update is false, notify user via dialogue that there's a new update available, and ask if they want to download and install it
                     else:
                         if tkMessageBox.askyesno('Update', 'A Zeuz Node update is available. Do you want to download and install it?'):
-                            thread.start_new_thread(self_updater.main, (os.path.join(os.path.dirname(os.path.realpath(__file__)), 'Framework')))
+                            #thread.start_new_thread(self_updater.main, (os.path.join(os.path.dirname(os.path.realpath(__file__)), 'Framework')))
                             self.after(10000, self.check_for_updates) # Checks if install is complete
                         else:
                             pass # Do nothing if the user doens't want to update. We'll check again tomorrow
