@@ -698,6 +698,22 @@ def start_sending_step_result_to_server(run_id, debug_steps, sTestStepResultList
         return True
 
 
+def cleanup_driver_instances(): #cleans up driver(selenium,appium) instances
+    try: #if error happens. we dont care, main driver should not stop, pass in exception
+        import Framework.Built_In_Automation.Web.Selenium.BuiltInFunctions as Selenium
+        import Framework.Built_In_Automation.Mobile.CrossPlatform.Appium.BuiltInFunctions as Appium
+        if shared.Test_Shared_Variables('selenium_driver') not in failed_tag_list:
+            driver = shared.Remove_From_Shared_Variables('selenium_driver')
+            if driver not in failed_tag_list:
+                Selenium.Tear_Down_Selenium()
+        if shared.Test_Shared_Variables('appium_driver') not in failed_tag_list:
+            driver = shared.Remove_From_Shared_Variables('appium_driver')
+            if driver not in failed_tag_list:
+                Appium.teardown_appium()
+
+    except:
+        pass
+
 def run_test_case(TestCaseID, sModuleInfo, run_id, driver_list, final_dependency, final_run_params, temp_ini_file):
     test_case = TestCaseID[0]
     copy_status = False
@@ -754,8 +770,13 @@ def run_test_case(TestCaseID, sModuleInfo, run_id, driver_list, final_dependency
     if debug:
         cleanup_runid_from_server(run_id)
 
-    if not debug:
+
+
+    if not debug: #if normal run, the write log file and cleanup driver instances
         write_log_file_for_test_case(sTestCaseStatus, test_case, run_id, sTestCaseEndTime, TestCaseDuration, FailReason, temp_ini_file)
+        print shared.Shared_Variable_Export()
+        cleanup_driver_instances()
+        print shared.Shared_Variable_Export()
     else:
         start_sending_log_to_server(run_id,temp_ini_file)
         start_sending_shared_var_to_server(run_id)

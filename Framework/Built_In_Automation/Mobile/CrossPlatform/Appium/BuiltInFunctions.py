@@ -424,7 +424,7 @@ def kill_appium_on_windows(appium_server):
     except Exception:
         return CommonUtil.Exception_Handler(sys.exc_info(), None, "Error killing Appium and it's children")
 
-def teardown_appium(data_set):
+def teardown_appium(data_set = [[]]):
     ''' Teardown of appium instance '''
     
     sModuleInfo = inspect.stack()[0][3] + " : " + inspect.getmoduleinfo(__file__).name

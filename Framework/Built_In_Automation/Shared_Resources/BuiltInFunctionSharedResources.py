@@ -100,6 +100,21 @@ def Get_List_from_Shared_Variables(list_name):
         CommonUtil.Exception_Handler(sys.exc_info())
 
 
+def Remove_From_Shared_Variables(key):
+    ''' Remove if a variable already exists and return the value or false '''
+
+    try:
+        sModuleInfo = inspect.stack()[0][3] + " : " + inspect.getmoduleinfo(__file__).name
+        global shared_variables
+        if key == '' or key == None:  # if input is invalid
+            return "failed"
+        else:  # Valid input
+            return shared_variables.pop(key,"failed")
+    except:
+        CommonUtil.Exception_Handler(sys.exc_info())
+
+
+
 def Test_Shared_Variables(key):
     ''' Test if a variable already exists and return true or false '''
 
