@@ -30,6 +30,11 @@ def get_all_drivers_list():
     return RequestFormatter.Get('get_all_drivers_api')
 
 
+#returns all latest versions
+def get_latest_zeuz_versions():
+    return RequestFormatter.Get('get_latest_zeuz_versions_api')
+
+
 #returns all runids assigned to a machine
 def get_all_run_ids(Userid):
     return RequestFormatter.Get('get_all_submitted_run_of_a_machine_api',{'machine_name':Userid})
