@@ -313,11 +313,9 @@ def start_appium_server():
         try:
             if sys.platform  == 'win32': # We need to open appium in it's own command dos box on Windows
                 cmd = 'start "Appium Server" /wait /min cmd /c %s -p %d' % (appium_binary, appium_port) # Use start to execute and minimize, then cmd /c will remove the dos box when appium is killed
-                appium_server = subprocess.Popen(cmd, shell=True) # Needs to run in a shell due to the execution command
-            elif sys.platform == 'linux2':
-                appium_server = subprocess.Popen("%s -p %d" % (appium_binary, appium_port), shell = True, stdout=subprocess.PIPE, stderr=subprocess.STDOUT, preexec_fn = set_pdeathsig(signal.SIGTERM)) # Start the appium server
+                appium_server = subprocess.Popen(cmd) # Needs to run in a shell due to the execution command
             else:
-                appium_server = subprocess.Popen("%s -p %d" % (appium_binary, appium_port), shell = True, stdout=subprocess.PIPE) # Start the appium server
+                appium_server = subprocess.Popen([appium_binary, '-p', str(appium_port)], stdout=subprocess.PIPE, stderr=subprocess.STDOUT, preexec_fn = set_pdeathsig(signal.SIGTERM)) # Start the appium server (DO NOT SET shell=True)
 
             appium_details[device_id]['server'] = appium_server # Save the server object for teardown
         except Exception, returncode: # Couldn't run server
@@ -424,7 +422,7 @@ def kill_appium_on_windows(appium_server):
     except Exception:
         return CommonUtil.Exception_Handler(sys.exc_info(), None, "Error killing Appium and it's children")
 
-def teardown_appium(data_set = [[]]):
+def teardown_appium(data_set):
     ''' Teardown of appium instance '''
     
     sModuleInfo = inspect.stack()[0][3] + " : " + inspect.getmoduleinfo(__file__).name
@@ -945,10 +943,9 @@ def Double_Tap_Appium(data_set):
         errMsg = "Unable to tap."
         return CommonUtil.Exception_Handler(sys.exc_info(),None,errMsg)
 
-# Long_Press_Appium_asifurrouf_fixed Long Press time
-
 def Long_Press_Appium(data_set):
-    #!!!!Not yet tested or used
+    ''' Press and hold an element '''
+    
     sModuleInfo = inspect.stack()[0][3] + " : " + inspect.getmoduleinfo(__file__).name
     CommonUtil.ExecLog(sModuleInfo,"Function Start", 0)
     
@@ -1042,7 +1039,7 @@ def Enter_Text_Appium(data_set):
         return CommonUtil.Exception_Handler(sys.exc_info(),None,errMsg)
 
 
-def Android_Keystroke_Key_Mapping(keystroke):
+def Android_Keystroke_Key_Mapping(keystroke, hold_key = False):
     ''' Provides a friendly interface to invoke key events '''
     # Keycodes: https://developer.android.com/reference/android/view/KeyEvent.html
 
@@ -1056,37 +1053,43 @@ def Android_Keystroke_Key_Mapping(keystroke):
     
     try:
         if keystroke == "return" or keystroke == "enter":
-            appium_driver.keyevent(66)
+            key = 66
         elif keystroke == "go back" or keystroke == "back":
-            appium_driver.back()
+            key = 4
         elif keystroke == "spacebar":
-            appium_driver.keyevent(62)
+            key = 62
         elif keystroke == "backspace":
-            appium_driver.keyevent(67)
+            key = 67
         elif keystroke == "call": # Press call connect, or starts phone program if not already started
-            appium_driver.keyevent(5)
+            key = 5
         elif keystroke == "end call":
-            appium_driver.keyevent(6)
+            key = 6
         elif keystroke == "home":
-            appium_driver.keyevent(3)
+            key = 3
         elif keystroke == "mute":
-            appium_driver.keyevent(164)
+            key = 164
         elif keystroke == "volume down":
-            appium_driver.keyevent(25)
+            key = 25
         elif keystroke == "volume up":
-            appium_driver.keyevent(24)
+            key = 24
         elif keystroke == "wake":
-            appium_driver.keyevent(224)
+            key = 224
         elif keystroke == "power":
-            appium_driver.keyevent(26)
+            key = 26
         elif keystroke in ("app switch", "task switch", "overview", "recents"): # Task switcher / overview screen
-            appium_driver.keyevent(187)
+            key = 187
         elif keystroke == "page down":
-            appium_driver.keyevent(93)
+            key = 93
         elif keystroke == "page up":
-            appium_driver.keyevent(92)
+            key = 92
         else:
             CommonUtil.ExecLog(sModuleInfo, "Unsupported key event: %s" % keystroke, 3)
+            return 'failed'
+        
+        if hold_key:
+            appium_driver.long_press_keycode(key) # About 0.5s hold, not configurable
+        else:
+            appium_driver.press_keycode(key) # driver.keyevent() is depreciated
 
         return 'passed'
     except Exception, e:
@@ -1118,17 +1121,23 @@ def iOS_Keystroke_Key_Mapping(keystroke):
         return CommonUtil.Exception_Handler(sys.exc_info(),None,errMsg)
 
 
-#Method to click on element; step data passed on by the user
 def Keystroke_Appium(data_set):
+    ''' Send physical or virtual key press or long key press event '''
+    
     sModuleInfo = inspect.stack()[0][3] + " : " + inspect.getmoduleinfo(__file__).name
     CommonUtil.ExecLog(sModuleInfo,"Function Start", 0)
     
     # Parse data set
     try:
+        keystroke_type = data_set[0][0].replace(' ', '').lower() # "keypress" or "long press"
         keystroke_value = data_set[0][2]
+        
         if keystroke_value == '':
             CommonUtil.ExecLog(sModuleInfo,"Could not find keystroke value", 3)
             return 'failed'
+        
+        if keystroke_type == 'keypress': hold_key = False
+        else: hold_key = True
     except Exception:
         errMsg = "Unable to parse data set"
         return CommonUtil.Exception_Handler(sys.exc_info(),None,errMsg)
@@ -1136,7 +1145,7 @@ def Keystroke_Appium(data_set):
     try:
         # Execute the correct key stroke handler for the dependency
         if appium_details[device_id]['type'] == 'android':
-            result = Android_Keystroke_Key_Mapping(keystroke_value)
+            result = Android_Keystroke_Key_Mapping(keystroke_value, hold_key)
         elif appium_details[device_id]['type'] == 'ios':
             result = iOS_Keystroke_Key_Mapping(keystroke_value)
         else:

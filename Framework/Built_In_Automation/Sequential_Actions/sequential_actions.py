@@ -43,7 +43,7 @@ actions = { # Numbers are arbitrary, and are not used anywhere
     210: {'module': 'appium', 'name': 'uninstall', 'function': 'uninstall_application'},
     211: {'module': 'appium', 'name': 'teardown', 'function': 'teardown_appium'},
     212: {'module': 'appium', 'name': 'keypress', 'function': 'Keystroke_Appium'},
-    213: {'module': 'appium', 'name': 'tap location', 'function': 'tap_location'},
+    213: {'module': 'appium', 'name': 'long keypress', 'function': 'Keystroke_Appium'},
     214: {'module': 'appium', 'name': 'reset', 'function': 'reset_application'},
     215: {'module': 'appium', 'name': 'imei', 'function': 'device_information'},
     216: {'module': 'appium', 'name': 'validate screen text', 'function': 'Validate_Text_Appium'},
@@ -56,6 +56,7 @@ actions = { # Numbers are arbitrary, and are not used anywhere
     223: {'module': 'appium', 'name': 'device password', 'function': 'set_device_password'},
     224: {'module': 'appium', 'name': 'switch device', 'function': 'switch_device'},
     225: {'module': 'appium', 'name': 'long press', 'function': 'Long_Press_Appium'},
+    226: {'module': 'appium', 'name': 'tap location', 'function': 'tap_location'},
 
     300: {'module': 'rest', 'name': 'save response', 'function': 'Get_Response'},
     
