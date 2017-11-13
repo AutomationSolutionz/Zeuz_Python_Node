@@ -1296,26 +1296,32 @@ def get_program_names(search_name):
     sModuleInfo = inspect.stack()[0][3] + " : " + inspect.getmoduleinfo(__file__).name
     CommonUtil.ExecLog(sModuleInfo,"Function Start", 0)
     
-    def find_activity(secs):
-        global activity_list
-        activity_list = []
-        etime = time.time() + secs # End time
-        
-        while True:
-            try:
-                # Get the activity name
-                cmd = 'adb %s shell dumpsys window windows' % serial # Command
-                res = subprocess.check_output(cmd, shell = True) # Execute
-                m = re.search('CurrentFocus=.*?\s+([\w\.]+/[\w\.]+)', str(res)) # Find program which has the foreground focus
-                
-                # Return package and activity names
-                if m.group(1) != '':
-                    activity_list.append(m.group(1)) # Store package/activity for later analysis
-            except: # If we dont' get a regex match, we may get here, not a problem
-                pass
-            if time.time() > etime: # Exit loop if time expires
-                break
-
+#     def find_activity(secs):
+#         global activity_list
+#         activity_list = []
+#         etime = time.time() + secs # End time
+#         
+#         cmd = 'adb %s shell dumpsys window windows' % serial # Command
+#         while True:
+#             try:
+#                 # Get the activity name
+#                 res = subprocess.check_output(cmd, shell = True) # Execute
+#                 activity_list.append(res)
+#             except: # If we dont' get a regex match, we may get here, not a problem
+#                 pass
+#             if time.time() > etime: # Exit loop if time expires
+#                 break
+#             
+#         for i in range(len(activity_list)):
+#             try:
+#                 res = activity_list[i]
+#                 m = re.search('CurrentFocus=.*?\s+([\w\.]+/[\w\.]+)', str(res)) # Find program which has the foreground focus
+#                 if m.group(1) != '':
+#                     activity_list[i] = m.group(1)
+#                 else:
+#                     activity_list[i] = ''
+#             except:
+#                 activity_list[i] = ''
     
     global device_serial
     serial = ''
@@ -1346,31 +1352,46 @@ def get_program_names(search_name):
         elif len(package_list) > 1: CommonUtil.ExecLog(sModuleInfo, "Found more than one packages. Will use the first found. Please specify a more accurate package name. Found packages: %s" % package_list, 2)
         package_name = package_list[0] # Save first package found
 
-        # Close program if running, so we get the first activity name
-        cmd = 'adb %s shell am force-stop %s' % (serial, package_name)
+        # Get activity name
+        cmd='adb shell pm dump %s' % package_name
         res = subprocess.check_output(cmd, shell = True)
-        time.sleep(1) # Wait for program to close
+        res = str(res).replace('\\r','') # Remove \r text if any
+        res = str(res).replace('\\n','\n') # replace \n text with line feed
+        res = str(res).replace('\r','') # Remove \r carriage return if any
+        p = re.compile('MAIN:.*?\s+([\w\.]+)/([\w\.]+)', re.S)
+        m = p.search(str(res))
+        try:
+            if m.group(1) != '' and m.group(2) != '':
+                return m.group(1), m.group(2)
+        except:
+            pass # Error handling by calling function
         
-        # Start reading activity names
-        secs = 1 # Seconds to monitor foreground activity
-        thread.start_new_thread(find_activity, (secs,))
-                    
-        # Launch program using only package name
-        cmd = 'adb %s shell monkey -p %s -c android.intent.category.LAUNCHER 1' % (serial, package_name)
-        res = subprocess.check_output(cmd, shell = True)
-        
-        # Wait for program to launch
-        time.sleep(secs + 1) # Must be enough for the thread above to complete
-
-        # Close program if running, so customer doesn't see it all the time
-        cmd = 'adb %s shell am force-stop %s' % (serial, package_name)
-        res = subprocess.check_output(cmd, shell = True)
-        
-        # Find activity name in the list
-        global activity_list
-        for package_activity in activity_list: # Test each package_activity read, in order
-            if package_name in package_activity: # If package name is in the string, this is the first instance of the program, and thus should contain the very first activity name
-                return package_activity.split('/') # Split package and activity name and return
+        # !!! This does work, but if the above works for everything, then we can delete this, and the find_activity() function above
+#         # Close program if running, so we get the first activity name
+#         cmd = 'adb %s shell am force-stop %s' % (serial, package_name)
+#         res = subprocess.check_output(cmd, shell = True)
+#         time.sleep(1) # Wait for program to close
+#         
+#         # Start reading activity names
+#         secs = 2 # Seconds to monitor foreground activity
+#         thread.start_new_thread(find_activity, (secs,))
+#                     
+#         # Launch program using only package name
+#         cmd = 'adb %s shell monkey -p %s -c android.intent.category.LAUNCHER 1' % (serial, package_name)
+#         res = subprocess.check_output(cmd, shell = True)
+#         
+#         # Wait for program to launch
+#         time.sleep(secs + 1) # Must be enough for the thread above to complete
+# 
+#         # Close program if running, so customer doesn't see it all the time
+#         cmd = 'adb %s shell am force-stop %s' % (serial, package_name)
+#         res = subprocess.check_output(cmd, shell = True)
+#         
+#         # Find activity name in the list
+#         global activity_list
+#         for package_activity in activity_list: # Test each package_activity read, in order
+#             if package_name in package_activity: # If package name is in the string, this is the first instance of the program, and thus should contain the very first activity name
+#                 return package_activity.split('/') # Split package and activity name and return
         
         return '', '' # Nothing found if we get here. Error handling handled by calling function
 
