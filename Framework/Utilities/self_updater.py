@@ -16,7 +16,7 @@ import sys, os, os.path, shutil, requests, urllib3, zipfile, glob
 urllib3.disable_warnings() # Hide warnings from requests module
 
 # Import local modules
-import ConfigModule
+import ConfigModule, RequestFormatter
 
 # Global variables
 version_url = 'https://raw.githubusercontent.com/AutomationSolutionz/Zeuz_Python_Node/master/Framework/Version.txt' # Version of newest software
@@ -188,7 +188,10 @@ def download_new_version(zeuz_node_package):
                     return f # This is the directory containing the new software
     # Bitter failure
     return False
-            
+
+def get_latest_zeuz_versions():
+    # Returns versions of: zeuz release, webserver, DB, node
+    RequestFormatter.Get('get_latest_zeuz_versions_api')            
             
 def main(dst_dir):
     ''' Perform update '''
