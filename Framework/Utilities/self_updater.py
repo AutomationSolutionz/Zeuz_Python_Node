@@ -22,10 +22,13 @@ import ConfigModule
 version_url = 'https://raw.githubusercontent.com/AutomationSolutionz/Zeuz_Python_Node/master/Framework/Version.txt' # Version of newest software
 version_path = os.path.join(os.path.dirname(os.path.realpath(__file__)), '..', 'Version.txt') # Version of installed software
 zeuz_node_package = 'https://github.com/AutomationSolutionz/Zeuz_Python_Node/archive/master.zip' # Location of newest software
-skip = [] # Any files or directories we don't want to delete not longer existing files from
+skip = ['Framework' + os.sep + 'settings.conf',
+        'Projects',
+        'Drivers'
+        ] # Any files or directories we don't want to delete not longer existing files from
 check_complete = 'no' # 'no', 'yes', 'error'. Used by Zeuz Node to check if install is complete
 
-def copytree(src_dir, dst_dir):
+def copytree(src_dir, dst_dir, skip = []):
     ''' Copy entire directory, overwrite exsting files '''
     # shutil.copytree only works if dst directory doesn't exist. Won't work for us, so we do it ourselves
     
@@ -34,13 +37,13 @@ def copytree(src_dir, dst_dir):
             # Copy directories
             for subdir in subdirs:
                 try:
-                    src = os.path.join(root, subdir)
-                    dst = src.replace(src_dir, dst_dir)
+                    src = os.path.join(root, subdir) # Source directory
+                    dst = src.replace(src_dir, dst_dir) # Create destination directory from source
                     if not os.path.exists(dst):
                         os.mkdir(dst)
                         print "NEW DIR:", dst
                 except:
-                    print "ERR", dst
+                    print "ERR1", dst
 
             # Copy files
             for filename in files:
@@ -49,25 +52,38 @@ def copytree(src_dir, dst_dir):
                     dst = src.replace(src_dir, dst_dir)
                     shutil.copy(src, dst)
                     print "NEW File:", dst
-                except:
-                    print "ERR: ", dst
-    except:
-        print "Err"
+                except Exception, e:
+                    print "ERR3: ", e, src, dst
+    except Exception, e:
+        print "Err", e
 
 def remove_deleted(src_dir, dst_dir, skip = []):
     ''' Delete files and directories from dst, that do not exist in src '''
-    
+
     try:
+        # Create full paths for skip items
+        for i in range(len(skip)):
+            skip[i] = os.path.join(dst_dir, skip[i])
+            
         for root, subdirs, files in os.walk(dst_dir):
+            # Do not remove if in skip list
+            if root in skip: continue
+            
             # Delete directories
             for subdir in subdirs:
                 try:
                     dst = os.path.join(root, subdir)
                     src = dst.replace(dst_dir, src_dir)
-                    if not os.path.exists(src):
-                        if not src in skip: # Do not remove if in skip list
-                            shutil.rmtree(dst)
-                            print "DEL DIR:", dst
+                    if not os.path.exists(src) and src not in skip:
+                        die = False
+                        for f in skip:
+                            if f in dst: 
+                                die = True
+                                break
+                        if die: continue
+
+                        shutil.rmtree(dst)
+                        print "DEL DIR:", dst
                 except:
                     print "ERR", dst
 
@@ -76,14 +92,20 @@ def remove_deleted(src_dir, dst_dir, skip = []):
                 try:
                     dst = os.path.join(root, filename)
                     src = dst.replace(dst_dir, src_dir)
-                    if not os.path.exists(src):
-                        if not src in skip: # Do not remove if in skip list
-                            if os.path.exists(dst): os.unlink(dst) # Check in case file was deleted by above
-                            print "DEL File:", dst
+                    if not os.path.exists(src) and src not in skip:
+                        die = False
+                        for f in skip:
+                            if f in dst: 
+                                die = True
+                                break
+                        if die: continue
+                        
+                        if os.path.exists(dst): os.unlink(dst) # Check in case file was deleted by above
+                        print "DEL File:", dst
                 except:
-                    print "ERR: ", dst
-    except:
-        print "Err"
+                    print "ERR2: ", dst
+    except Exception, e:
+        print "Err", e
         
 def Download_File(url, filename = ''):
     ''' Download a file with progress update in percentage '''
@@ -119,8 +141,8 @@ def unzip(zipFilePath, destDir):
                 with open(os.path.join(destDir, name), 'wb') as fd: fd.write(zfile.read(name))
         zfile.close()
         return True
-    except: 
-        print "Err"
+    except Exception, e: 
+        print "Err", e
         return False
 
 
@@ -181,7 +203,7 @@ def main(dst_dir):
         if src_dir: # If we downloaded successfully
             copytree(src_dir, dst_dir) # Copy it to the install location
             remove_deleted(src_dir, dst_dir, skip) # Remove any extra files that were removed from the new software version
-            if os.path.exists(src_dir): shutil.rmtree(src_dir) # Remove downloaded software from temp location
+            #if os.path.exists(src_dir): shutil.rmtree(src_dir) # Remove downloaded software from temp location
             check_complete = 'done'
         else: check_complete = 'error'
     except:

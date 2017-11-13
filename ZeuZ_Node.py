@@ -124,7 +124,7 @@ class Application(tk.Frame):
 
             self.start_up_display() # Determine if this is the first run, and display widgets accordingly
             self.read_log() # Start the log reader timer
-            self.check_for_updates(check = True) # Check for updates
+            #self.check_for_updates(check = True) # Check for updates
 
         except Exception, e: tkMessageBox.showerror('Error', 'Exception caught: %s' % e)
 
@@ -280,7 +280,7 @@ class Application(tk.Frame):
 
                     ConfigModule.add_config_value('sectionOne', 'last_update', str(time.time()), temp_ini_file) # Record current time as update time
 
-                    #thread.start_new_thread(self_updater.check_for_updates, ()) # Check for updates in a separate thread
+                    thread.start_new_thread(self_updater.check_for_updates, ()) # Check for updates in a separate thread
                     self.after(2000, self.check_for_updates) # Tests if check for updates is complete
                     #!!!Enable when ready: self.after(self.update_interval * 3600 * 1000, lambda: self.check_for_updates(True)) # Reschedule next check for updates (calculates from hours to ms)
             
@@ -298,12 +298,12 @@ class Application(tk.Frame):
     
                     # If auto-update is true, then perform update
                     if auto_update:
-                        #thread.start_new_thread(self_updater.main, (os.path.join(os.path.dirname(os.path.realpath(__file__)), 'Framework')))
+                        thread.start_new_thread(self_updater.main, (os.path.dirname(os.path.realpath(__file__)).replace(os.sep + 'Framework', ''),))
                         self.after(10000, self.check_for_updates) # Checks if install is complete
                     # If auto-update is false, notify user via dialogue that there's a new update available, and ask if they want to download and install it
                     else:
                         if tkMessageBox.askyesno('Update', 'A Zeuz Node update is available. Do you want to download and install it?'):
-                            #thread.start_new_thread(self_updater.main, (os.path.join(os.path.dirname(os.path.realpath(__file__)), 'Framework')))
+                            thread.start_new_thread(self_updater.main, (os.path.dirname(os.path.realpath(__file__)).replace(os.sep + 'Framework', ''),))
                             self.after(10000, self.check_for_updates) # Checks if install is complete
                         else:
                             pass # Do nothing if the user doens't want to update. We'll check again tomorrow
@@ -340,7 +340,8 @@ class Application(tk.Frame):
             if processing_test_case: # If we are in the middle of a run, try to restart again later
                 self.after(60000, self.self_restart)
             else: # Not running a test case, so it should be safe to restart
-                subprocess.check_output('python "%s%' % sys.argv[0]) # Restart zeuz node
+                subprocess.check_output(['python', os.path.realpath(sys.argv[0]).replace(os.sep + 'Framework', '')]) # Restart zeuz node
+                quit() # Exit this process
         except Exception, e: tkMessageBox.showerror('Error', 'Exception caught: %s' % e)
         
     def start_up_display(self):
