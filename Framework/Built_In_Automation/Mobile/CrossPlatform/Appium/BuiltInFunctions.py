@@ -2,7 +2,7 @@
 # -*- coding: cp1252 -*-
 
 from appium import webdriver
-import os, sys, time, inspect, subprocess, re, signal
+import os, sys, time, inspect, subprocess, re, signal, thread, requests
 from Framework.Utilities import CommonUtil
 from Framework.Built_In_Automation.Mobile.Android.adb_calls import adbOptions
 from Framework.Built_In_Automation.Mobile.iOS import iosOptions
@@ -322,8 +322,15 @@ def start_appium_server():
             return CommonUtil.Exception_Handler(sys.exc_info(), None, "Couldn't start Appium server. May not be installed, or not in your PATH: %s" % returncode)
         
         # Wait for server to startup and return
-        CommonUtil.ExecLog(sModuleInfo,"Waiting 10 seconds for server to start on port %d: %s" % (appium_port, appium_binary), 0)
-        time.sleep(10) # Wait for server to get to ready state
+        CommonUtil.ExecLog(sModuleInfo,"Waiting for server to start on port %d: %s" % (appium_port, appium_binary), 0)
+        maxtime = time.time() + 10 # Maximum time to wait for appium server
+        while True: # Dynamically wait for appium to start by polling it
+            if time.time() > maxtime: break # Give up if max time was hit
+            try: # If this works, then stop waiting for appium
+                r = requests.get('http://localhost:%d/wd/hub/sessions' % appium_port) # Poll appium server
+                if r.status_code: break
+            except: pass # Keep waiting for appium to start
+
         if appium_server:
             CommonUtil.ExecLog(sModuleInfo,"Server started", 1)
             return 'passed'
@@ -1283,9 +1290,32 @@ def get_program_names(search_name):
     ''' Find Package and Activity name based on wildcard match '''
     # Android only
     # Tested as working on v4.4.4, v5.1, v6.0.1
+    # Note: Some programs require the very first activity name in order to launch the program. This may be a splash screen.
+    # Alternative method to obtain activity name: Android-sdk/build-tools/aapt dumb badging program.apk| grep -i activity. This extracts it from the apk directly
     
     sModuleInfo = inspect.stack()[0][3] + " : " + inspect.getmoduleinfo(__file__).name
     CommonUtil.ExecLog(sModuleInfo,"Function Start", 0)
+    
+    def find_activity(secs):
+        global activity_list
+        activity_list = []
+        etime = time.time() + secs # End time
+        
+        while True:
+            try:
+                # Get the activity name
+                cmd = 'adb %s shell dumpsys window windows' % serial # Command
+                res = subprocess.check_output(cmd, shell = True) # Execute
+                m = re.search('CurrentFocus=.*?\s+([\w\.]+/[\w\.]+)', str(res)) # Find program which has the foreground focus
+                
+                # Return package and activity names
+                if m.group(1) != '':
+                    activity_list.append(m.group(1)) # Store package/activity for later analysis
+            except: # If we dont' get a regex match, we may get here, not a problem
+                pass
+            if time.time() > etime: # Exit loop if time expires
+                break
+
     
     global device_serial
     serial = ''
@@ -1315,22 +1345,35 @@ def get_program_names(search_name):
             return '', ''
         elif len(package_list) > 1: CommonUtil.ExecLog(sModuleInfo, "Found more than one packages. Will use the first found. Please specify a more accurate package name. Found packages: %s" % package_list, 2)
         package_name = package_list[0] # Save first package found
-            
+
+        # Close program if running, so we get the first activity name
+        cmd = 'adb %s shell am force-stop %s' % (serial, package_name)
+        res = subprocess.check_output(cmd, shell = True)
+        time.sleep(1) # Wait for program to close
+        
+        # Start reading activity names
+        secs = 1 # Seconds to monitor foreground activity
+        thread.start_new_thread(find_activity, (secs,))
+                    
         # Launch program using only package name
         cmd = 'adb %s shell monkey -p %s -c android.intent.category.LAUNCHER 1' % (serial, package_name)
         res = subprocess.check_output(cmd, shell = True)
-        time.sleep(3)
-    
-        # Get the activity name
-        cmd = 'adb %s shell dumpsys window windows' % serial
+        
+        # Wait for program to launch
+        time.sleep(secs + 1) # Must be enough for the thread above to complete
+
+        # Close program if running, so customer doesn't see it all the time
+        cmd = 'adb %s shell am force-stop %s' % (serial, package_name)
         res = subprocess.check_output(cmd, shell = True)
-        m = re.search('CurrentFocus=.*?\s+([\w\.]+)/([\w\.]+)', str(res))
-    
-        # Return package and activity names
-        if m.group(1) != '' and m.group(2) != '':
-            return m.group(1), m.group(2)
-        else:
-            return '', ''
+        
+        # Find activity name in the list
+        global activity_list
+        for package_activity in activity_list: # Test each package_activity read, in order
+            if package_name in package_activity: # If package name is in the string, this is the first instance of the program, and thus should contain the very first activity name
+                return package_activity.split('/') # Split package and activity name and return
+        
+        return '', '' # Nothing found if we get here. Error handling handled by calling function
+
     except:
         result = CommonUtil.Exception_Handler(sys.exc_info())
         return result, ''
