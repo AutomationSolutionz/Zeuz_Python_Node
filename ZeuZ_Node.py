@@ -63,7 +63,12 @@ if sys.platform  == 'win32':
 else:
     node_id_filename = os.path.join(os.getenv('HOME'), 'Desktop', 'node_id.conf')
 
-gui_title = 'Zeuz Node'
+# Set title with version
+version_path = os.path.join(os.path.dirname(os.path.realpath(__file__)), 'Version.txt')
+try: local_version = ConfigModule.get_config_value('ZeuZ Python Version', 'version', version_path)
+except: local_version = ''
+gui_title = 'Zeuz Node v%s' % str(local_version)
+
 help_text = "\
 Zeuz Node Help\n\n\
 Description:\n\
@@ -282,7 +287,7 @@ class Application(tk.Frame):
 
                     thread.start_new_thread(self_updater.check_for_updates, ()) # Check for updates in a separate thread
                     self.after(2000, self.check_for_updates) # Tests if check for updates is complete
-                    #!!!Enable when ready: self.after(self.update_interval * 3600 * 1000, lambda: self.check_for_updates(True)) # Reschedule next check for updates (calculates from hours to ms)
+                    self.after(self.update_interval * 3600 * 1000, lambda: self.check_for_updates(True)) # Reschedule next check for updates (calculates from hours to ms)
             
             # root.after() brings us here
             else:

@@ -16,7 +16,7 @@ import sys, os, os.path, shutil, requests, urllib3, zipfile, glob
 urllib3.disable_warnings() # Hide warnings from requests module
 
 # Import local modules
-import ConfigModule, RequestFormatter
+import ConfigModule
 
 # Global variables
 version_url = 'https://raw.githubusercontent.com/AutomationSolutionz/Zeuz_Python_Node/master/Framework/Version.txt' # Version of newest software
@@ -40,8 +40,15 @@ def copytree(src_dir, dst_dir, skip = []):
                     src = os.path.join(root, subdir) # Source directory
                     dst = src.replace(src_dir, dst_dir) # Create destination directory from source
                     if not os.path.exists(dst):
+                        die = False
+                        for f in skip:
+                            if f in dst: 
+                                die = True
+                                break
+                        if die: continue
+
                         os.mkdir(dst)
-                        print "NEW DIR:", dst
+                        #print "NEW DIR:", dst
                 except:
                     print "ERR1", dst
 
@@ -50,8 +57,16 @@ def copytree(src_dir, dst_dir, skip = []):
                 try:
                     src = os.path.join(root, filename)
                     dst = src.replace(src_dir, dst_dir)
+                    
+                    die = False
+                    for f in skip:
+                        if f in dst: 
+                            die = True
+                            break
+                    if die: continue
+
                     shutil.copy(src, dst)
-                    print "NEW File:", dst
+                    #print "NEW File:", dst
                 except Exception, e:
                     print "ERR3: ", e, src, dst
     except Exception, e:
@@ -83,7 +98,7 @@ def remove_deleted(src_dir, dst_dir, skip = []):
                         if die: continue
 
                         shutil.rmtree(dst)
-                        print "DEL DIR:", dst
+                        #print "DEL DIR:", dst
                 except:
                     print "ERR", dst
 
@@ -101,7 +116,7 @@ def remove_deleted(src_dir, dst_dir, skip = []):
                         if die: continue
                         
                         if os.path.exists(dst): os.unlink(dst) # Check in case file was deleted by above
-                        print "DEL File:", dst
+                        #print "DEL File:", dst
                 except:
                     print "ERR2: ", dst
     except Exception, e:
@@ -188,10 +203,7 @@ def download_new_version(zeuz_node_package):
                     return f # This is the directory containing the new software
     # Bitter failure
     return False
-
-def get_latest_zeuz_versions():
-    # Returns versions of: zeuz release, webserver, DB, node
-    RequestFormatter.Get('get_latest_zeuz_versions_api')            
+            
             
 def main(dst_dir):
     ''' Perform update '''
@@ -204,9 +216,9 @@ def main(dst_dir):
         check_complete = 'installing'
         src_dir = download_new_version(zeuz_node_package) # Download and unpack the new software
         if src_dir: # If we downloaded successfully
-            copytree(src_dir, dst_dir) # Copy it to the install location
+            copytree(src_dir, dst_dir, skip) # Copy it to the install location
             remove_deleted(src_dir, dst_dir, skip) # Remove any extra files that were removed from the new software version
-            #if os.path.exists(src_dir): shutil.rmtree(src_dir) # Remove downloaded software from temp location
+            if os.path.exists(src_dir): shutil.rmtree(src_dir) # Remove downloaded software from temp location
             check_complete = 'done'
         else: check_complete = 'error'
     except:
