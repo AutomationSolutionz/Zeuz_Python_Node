@@ -275,6 +275,8 @@ class Application(tk.Frame):
         # Check if there's a new update for zeuz node - this is triggered upon startup or periodically via tk.after()
         # Always check for updates, but depending on user's settings, either update automatically or inform user of update
 
+        global q
+        
         try:
             # Just check for updates, and schedule testing to see if updates checking is complete
             if check:
@@ -307,6 +309,7 @@ class Application(tk.Frame):
     
                     # If auto-update is true, then perform update
                     if auto_update:
+                        q.put('*** A new update is available. Automatically installing.')
                         thread.start_new_thread(self_updater.main, (os.path.dirname(os.path.realpath(__file__)).replace(os.sep + 'Framework', ''),))
                         self.after(10000, self.check_for_updates) # Checks if install is complete
                     # If auto-update is false, notify user via dialogue that there's a new update available, and ask if they want to download and install it
@@ -331,6 +334,8 @@ class Application(tk.Frame):
                     
                     # If auto-reboot is true, then reboot the next time zeuz node is not in the middle of a run
                     if auto_restart:
+                        q.put('*** Update installed. Automatically restarting.')
+                        time.sleep(1) # Wait a bit, so they can see the message
                         self.self_restart()
                     
                     # If auto-reboot is false, then notify user via dialogue that the installation is complete and ask to reboot
