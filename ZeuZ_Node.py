@@ -240,9 +240,10 @@ class Application(tk.Frame):
                             # Set these as drop down menus
                             elif option in ('team', 'project'):
                                 if option == 'team': # Put refresh link beside team
-                                    self.team_refresh = tk.Label(self.widgets[section]['frame'], text = 'Refresh', fg = 'blue', cursor = 'hand2') # Create label to look like hyperlink
-                                    self.team_refresh.grid(row = row, column = 1, sticky = 'e')
-                                    self.team_refresh.bind('<Button-1>', lambda e: self.get_teams()) # Bind label to action
+                                    tk.Label(self.widgets[section]['frame'], text = 'Press Save to Update Teams', fg = 'blue').grid(row = row, column = 1, sticky = 'e')
+                                    #self.team_refresh = tk.Label(self.widgets[section]['frame'], text = 'Refresh', fg = 'blue', cursor = 'hand2') # Create label to look like hyperlink
+                                    #self.team_refresh.grid(row = row, column = 1, sticky = 'e')
+                                    #self.team_refresh.bind('<Button-1>', lambda e: self.get_teams()) # Bind label to action
                                 
                                 # Configure drop down menu
                                 self.widgets['Authentication']['widget'][option]['dropdown'] = tk.StringVar(self) # Initialize drop down variable
@@ -488,6 +489,8 @@ class Application(tk.Frame):
                 elif 'online with name' in data:
                     if int(float(self.log.index('end'))) > self.max_log_size: self.log.delete(0.0, float(self.max_log_size / 2)) # Trim log to half of max allowed lines when a test case has completed
                     colour = self.colour_passed
+                elif 'Authentication Failed' in data:
+                    colour = self.colour_failed
                 else:
                     colour = self.colour_default
         
@@ -584,6 +587,7 @@ class Application(tk.Frame):
             
             # Check if we should save
             if save: # Yes, explicit save call, so tell the user
+                self.get_teams()
                 tkMessageBox.showinfo('Info', 'Settings Saved')
                 #if int(time.time()) - self.settings_saved > 5: # But, not too often
                 #    self.log.insert('end', 'Settings Updated\n')
