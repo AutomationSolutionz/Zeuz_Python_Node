@@ -220,6 +220,7 @@ screen_capture_driver, screen_capture_type = None, 'none' # Initialize global va
 def set_screenshot_vars(shared_variables):
     ''' Save screen capture type and selenium/appium driver objects as global variables, so TakeScreenShot() can access them '''
     # We can't import Shared Variables due to cyclic imports causing local runs to break, so this is the work around
+    # Known issue: This function is called by Sequential_Actions(). Thus, Maindriver can't take screenshots until this is set
 
     global screen_capture_driver, screen_capture_type
     
@@ -250,7 +251,7 @@ def TakeScreenShot(ImageName,local_run=False):
     image_folder=ConfigModule.get_config_value('sectionOne','screen_capture_folder', temp_config) # Get screen capture directory from temporary config file that is dynamically created
 
     # Decide if screenshot should be captured
-    if take_screenshot_settings.lower() == 'false' or local_run.lower() == 'true' or screen_capture_type == 'none':
+    if take_screenshot_settings.lower() == 'false' or local_run.lower() == 'true' or screen_capture_type == 'none'or screen_capture_type == None:
         ExecLog(sModuleInfo, "Skipping screenshot due to screenshot or local_run setting", 0)
         return
 
