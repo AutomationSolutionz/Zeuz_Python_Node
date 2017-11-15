@@ -131,7 +131,11 @@ class Application(tk.Frame):
 
             self.start_up_display() # Determine if this is the first run, and display widgets accordingly
             self.read_log() # Start the log reader timer
-            #self.check_for_updates(check = True) # Check for updates
+            
+            # Check for updates, if enabled
+            try:
+                if 'check_for_updates' in self.widgets['Zeuz Node']['widget'] and self.widgets['Zeuz Node']['widget']['check_for_updates']['check'].get(): self.check_for_updates(check = True) # Check for updates
+            except: pass # Exception Zeuz Node section doesn't exist (old settings format)
 
         except Exception, e: tkMessageBox.showerror('Error 01', 'Exception caught: %s' % e)
 

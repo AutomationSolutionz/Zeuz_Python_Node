@@ -85,9 +85,11 @@ def disconnect_from_server():
     CommonUtil.set_exit_mode(True) # Tell Sequential Actions to exit
     
 def RunProcess(sTesterid):
+    etime = time.time() + (30 * 60) # 30 minutes
     while (1):
         try:
             if exit_script: return False
+            if time.time() > etime: return True # Timeout reached, re-login. We do this because after about 3-4 hours this function will hang, and thus not be available for deployment
 
             r=RequestFormatter.Get('is_run_submitted_api',{'machine_name':sTesterid})
             if r['run_submit']:
