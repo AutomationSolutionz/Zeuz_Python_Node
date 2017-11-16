@@ -464,7 +464,7 @@ class Application(tk.Frame):
                 self.startButton.configure(text = 'Offline', fg = 'green4')
                 self.log.delete(0.0, 'end') # Clear previous log
                 thread.start_new_thread(Login,()) # Execute Zeuz_Node.py
-                if self.node_id.get() == '': root.after(5000, lambda: self.read_node_id(self.node_id)) # If no node id was read or specified, wait a few seconds for zeuz_node.py to populate the node id file, and read it
+                if self.node_id.get() == '': self.after(5000, lambda: self.read_node_id(self.node_id)) # If no node id was read or specified, wait a few seconds for zeuz_node.py to populate the node id file, and read it
         except Exception, e: tkMessageBox.showerror('Error 11', 'Exception caught: %s' % e) 
 
     def read_log(self):

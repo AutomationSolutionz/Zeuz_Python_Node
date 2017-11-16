@@ -56,10 +56,16 @@ def add_config_value(section,key,value,location=False):
             _file_name=os.getcwd()+os.sep+file_name
         else:
             _file_name=location
-        config.read(_file_name)
-        config.set(section,key,value)
+        
+        if os.path.exists(_file_name):
+            config.read(_file_name) # Read current configuration, if the file exists
+        else:
+            config.add_section(section) # New file, so we have to add the section first
+            
+        config.set(section,key,value) # Set new configuration from parameters
+        
         with(open(_file_name,'w')) as open_file:
-            config.write(open_file)
+            config.write(open_file) # Write all configuration to file
         open_file.close()
         return True
     except ConfigParser.NoSectionError:

@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 # -*- coding: cp1252 -*-
 
-import os,sys,time
+import os,sys,time, os.path
 from base64 import b64encode, b64decode
 sys.path.append(os.path.dirname(os.getcwd()))
 from Utilities import ConfigModule,RequestFormatter,CommonUtil,FileUtilities,All_Device_Info
@@ -18,6 +18,7 @@ device_dict = {}
 
 processing_test_case = False # Used by Zeuz Node GUI to check if we are in the middle of a run
 exit_script = False # Used by Zeuz Node GUI to exit script
+if not os.path.exists(os.path.join(FileUtilities.get_home_folder(), 'Desktop',os.path.join('AutomationLog'))): os.mkdir(os.path.join(FileUtilities.get_home_folder(), 'Desktop',os.path.join('AutomationLog')))
 temp_ini_file = os.path.join(os.path.join(FileUtilities.get_home_folder(), os.path.join('Desktop',os.path.join('AutomationLog',ConfigModule.get_config_value('Temp', '_file')))))
 
 def Login():
