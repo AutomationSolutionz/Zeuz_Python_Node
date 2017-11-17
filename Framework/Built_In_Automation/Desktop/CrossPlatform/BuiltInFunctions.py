@@ -324,7 +324,7 @@ def move_mouse(data_set):
         
         elif cmd == 'move':
             try:
-                if ',' not in file_name.replace(' ', '').split(','):
+                if ',' not in file_name:
                     CommonUtil.ExecLog(sModuleInfo, "Expected Value to be 'X,Y' format for coordinates. If you want to use an image, try using the 'hover' action", 3)
                     return 'failed'
                 

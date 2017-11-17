@@ -277,6 +277,7 @@ def launch_application(data_set):
         
         CommonUtil.ExecLog(sModuleInfo,"Launching %s" % package_name,0)
         appium_driver.launch_app() # Launch program configured in the Appium capabilities
+        CommonUtil.TakeScreenShot(sModuleInfo) # Capture screenshot, if settings allow for it
         CommonUtil.ExecLog(sModuleInfo,"Launched the application successfully.",1)
         return "passed"
     except Exception:
@@ -586,6 +587,7 @@ def Swipe(x_start, y_start, x_end, y_end, duration = 1000, adb = False):
         else:
             appium_driver.swipe(x_start, y_start, x_end, y_end, duration) # Use Appium to swipe by default
         CommonUtil.ExecLog(sModuleInfo, "Swiped the screen successfully", 1)
+        CommonUtil.TakeScreenShot(sModuleInfo) # Capture screenshot, if settings allow for it
         return "passed"
     except Exception:
         errMsg = "Unable to swipe."
@@ -757,7 +759,8 @@ def swipe_handler(data_set):
         return 'failed'
 
     # Swipe complete
-    CommonUtil.ExecLog(sModuleInfo, "Swipe completed successfully", 1)    
+    CommonUtil.ExecLog(sModuleInfo, "Swipe completed successfully", 1)
+    CommonUtil.TakeScreenShot(sModuleInfo) # Capture screenshot, if settings allow for it    
     return 'passed'
 
 
@@ -858,10 +861,6 @@ def get_window_size(read_type = False):
         errMsg = "Read window size unsuccessfully"
         return CommonUtil.Exception_Handler(sys.exc_info(),None,errMsg)
     
-
-def Initialize_List(data_set):
-    ''' Temporary wrapper until we can convert everything to use just data_set and not need the extra [] '''
-    return Shared_Resources.Initialize_List([data_set])
 
 def Click_Element_Appium(data_set):
     ''' Click on an element '''
