@@ -221,17 +221,23 @@ def set_screenshot_vars(shared_variables):
     ''' Save screen capture type and selenium/appium driver objects as global variables, so TakeScreenShot() can access them '''
     # We can't import Shared Variables due to cyclic imports causing local runs to break, so this is the work around
     # Known issue: This function is called by Sequential_Actions(). Thus, Maindriver can't take screenshots until this is set
-
+    sModuleInfo = inspect.stack()[0][3] + " : " + inspect.getmoduleinfo(__file__).name
+    
     global screen_capture_driver, screen_capture_type
     
-    if 'screen_capture' in shared_variables: # Type of screenshot (desktop/mobile)
-        screen_capture_type = shared_variables['screen_capture']
-    if screen_capture_type == 'mobile': # Appium driver object
-        if 'appium_driver' in shared_variables:
-            screen_capture_driver = shared_variables['appium_driver']
-    if screen_capture_type == 'web': # Selenium driver object
-        if 'selenium_driver' in shared_variables:
-            screen_capture_driver = shared_variables['selenium_driver']
+    try:    
+        if 'screen_capture' in shared_variables: # Type of screenshot (desktop/mobile)
+            screen_capture_type = shared_variables['screen_capture']
+        if screen_capture_type == 'mobile': # Appium driver object
+            if 'device_id' in shared_variables:
+                device_id = shared_variables['device_id'] # Name of currently selected mobile device
+                appium_details = shared_variables['appium_details'] # All device details
+                screen_capture_driver = appium_details[device_id]['driver'] # Driver for selected device
+        if screen_capture_type == 'web': # Selenium driver object
+            if 'selenium_driver' in shared_variables:
+                screen_capture_driver = shared_variables['selenium_driver']
+    except:
+        ExecLog(sModuleInfo, "Error setting screenshot variables", 3)
 
 
 def TakeScreenShot(ImageName,local_run=False):
@@ -249,6 +255,7 @@ def TakeScreenShot(ImageName,local_run=False):
     take_screenshot_settings = ConfigModule.get_config_value('RunDefinition', 'take_screenshot') # True/False to take screenshot from settings.conf
     local_run = ConfigModule.get_config_value('RunDefinition', 'local_run') # True/False to run only locally, in which case we do not take screenshot from settings.conf
     image_folder=ConfigModule.get_config_value('sectionOne','screen_capture_folder', temp_config) # Get screen capture directory from temporary config file that is dynamically created
+    if not os.path.exists(image_folder): os.mkdir(image_folder)
 
     # Decide if screenshot should be captured
     if take_screenshot_settings.lower() == 'false' or local_run.lower() == 'true' or screen_capture_type == 'none'or screen_capture_type == None:
@@ -256,7 +263,7 @@ def TakeScreenShot(ImageName,local_run=False):
         return
 
     # Adjust filename and create full path (remove invalid characters, convert spaces to underscore, remove leading and trailing spaces)
-    ImageName=os.path.join(image_folder, TimeStamp("utc") + "_" + (ImageName.translate(None,''.join(chars_to_remove))).strip().replace(" ","_") + ".jpg")
+    ImageName=os.path.join(image_folder, TimeStamp("utc") + "_" + (ImageName.translate(None,''.join(chars_to_remove))).strip().replace(" ","_") + ".png")
     ExecLog(sModuleInfo, "Capturing screen on %s, with driver: %s, and saving to %s" % (str(screen_capture_type), str(screen_capture_driver), ImageName), 0)
     
     try:
@@ -264,10 +271,10 @@ def TakeScreenShot(ImageName,local_run=False):
         if screen_capture_type == 'desktop':
             if sys.platform == 'linux2':
                 image = ImageGrab_Linux.grab()
-                image.save(ImageName, format = "JPEG") # Save to disk
+                image.save(ImageName, format = "PNG") # Save to disk
             elif sys.platform  == 'win32' or sys.platform  == 'darwin':
                 image = ImageGrab_Mac_Win.grab()
-                image.save(ImageName, format = "JPEG") # Save to disk
+                image.save(ImageName, format = "PNG") # Save to disk
         
         # Exit if we don't have a driver yet (happens when Test Step is set to mobile/web, but we haven't setup the driver)
         elif screen_capture_driver == None and (screen_capture_type == 'mobile' or screen_capture_type == 'web'):
@@ -276,23 +283,24 @@ def TakeScreenShot(ImageName,local_run=False):
         
         # Capture screenshot of web browser
         elif screen_capture_type == 'web':
-            screen_capture_driver.get_screenshot_as_file(ImageName)
+            screen_capture_driver.get_screenshot_as_file(ImageName) # Must be .png, otherwise an exception occurs
             
         # Capture screenshot of mobile
         elif screen_capture_type == 'mobile':
-            screen_capture_driver.save_screenshot(ImageName)
+            screen_capture_driver.save_screenshot(ImageName) # Must be .png, otherwise an exception occurs
         else:
             ExecLog(sModuleInfo, "Unknown capture type: %s, or invalid driver: %s" % (str(screen_capture_type), str(screen_capture_driver)), 3)
+
+        # Lower the picture quality
+        if os.path.exists(ImageName): # Make sure image was saved
+            image = Image.open(ImageName) # Re-open in standard format
+            image.thumbnail(picture_size, Image.ANTIALIAS) # Resize picture to lower file size
+            image.save(ImageName, format = "PNG", quality = picture_quality) # Change quality to reduce file size
+        else:
+            ExecLog(sModuleInfo, "Error saving %s screenshot to %s" % (screen_capture_type, ImageName), 3)
+
     except Exception, e:
         return Exception_Handler(sys.exc_info())
-
-    # Lower the picture quality
-    if os.path.exists(ImageName): # Make sure image was saved
-        image = Image.open(ImageName) # Re-open in standard format
-        image.thumbnail(picture_size, Image.ANTIALIAS) # Resize picture to lower file size
-        image.save(ImageName, format = "JPEG", quality = picture_quality) # Change quality to reduce file size
-    else:
-        ExecLog(sModuleInfo, "Error saving %s screenshot to %s" % (screen_capture_type, ImageName), 3)
 
 
 def TimeStamp(format):

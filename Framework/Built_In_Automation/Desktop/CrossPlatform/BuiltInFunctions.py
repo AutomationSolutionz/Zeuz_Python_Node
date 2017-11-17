@@ -142,6 +142,8 @@ def Enter_Text(data_set):
         else:
             CommonUtil.ExecLog(sModuleInfo, "No element provided. Assuming textbox has keyboard focus", 0)
 
+        CommonUtil.TakeScreenShot(sModuleInfo) # Capture screenshot, if settings allow for it
+                
         # Enter text
         gui.typewrite(text_value)
         CommonUtil.ExecLog(sModuleInfo, "Successfully set the value of to text to: %s" % text_value, 1)
@@ -188,6 +190,8 @@ def Keystroke_For_Element(data_set):
         
         for i in range(count): gui.hotkey(*keys) # Send keypress (as individual values using the asterisk)
 
+        CommonUtil.TakeScreenShot(sModuleInfo) # Capture screenshot, if settings allow for it
+        
         CommonUtil.ExecLog(sModuleInfo,"Successfully entered keystroke", 1)
         return 'passed'
 
@@ -244,6 +248,8 @@ def close_program(data_set):
             CommonUtil.ExecLog(sModuleInfo, "Uknown dependency %s" % dependency['PC'], 3)
             return 'failed'
 
+        CommonUtil.TakeScreenShot(sModuleInfo) # Capture screenshot, if settings allow for it
+        
         # Check result
         if close_status in failed_tag_list:
             CommonUtil.ExecLog(sModuleInfo, "Could not send signal to close program.", 3)
@@ -332,6 +338,7 @@ def move_mouse(data_set):
         CommonUtil.ExecLog(sModuleInfo, "Image coordinates on screen %d x %d" % (x, y), 0)
         result = gui.moveTo(x, y) # Move to element / Hover over element
 
+        CommonUtil.TakeScreenShot(sModuleInfo) # Capture screenshot, if settings allow for it
 
         if result in failed_tag_list:
             CommonUtil.ExecLog(sModuleInfo, "Couldn't move mouse pointer", 3)
@@ -404,6 +411,8 @@ def Click_Element(data_set):
         elif cmd == 'doubleclick':
             result = gui.doubleClick(x, y) # Double click
 
+        CommonUtil.TakeScreenShot(sModuleInfo) # Capture screenshot, if settings allow for it
+        
         # Check result and return
         if result in failed_tag_list:
             CommonUtil.ExecLog(sModuleInfo, "Couldn't click on element with given images", 3)
@@ -441,6 +450,9 @@ def check_for_element(data_set):
     try:
         CommonUtil.ExecLog(sModuleInfo, "Performing check action on file %s" % (file_name), 0)
         element = LocateElement.Get_Element(data_set, gui) # (x, y, w, h)
+        
+        CommonUtil.TakeScreenShot(sModuleInfo) # Capture screenshot, if settings allow for it
+        
         if element in failed_tag_list:
             CommonUtil.ExecLog(sModuleInfo, "Element not found", 3)
             return 'failed'
@@ -512,6 +524,8 @@ def launch_program(data_set):
             CommonUtil.ExecLog(sModuleInfo, "Unknown dependency %s" % dependency['PC'], 3)
             return 'failed'
 
+        CommonUtil.TakeScreenShot(sModuleInfo) # Capture screenshot, if settings allow for it
+        
         # Check result and return
         if launch_status in failed_tag_list:
             CommonUtil.ExecLog(sModuleInfo, "Could not launch the program", 3)
@@ -602,6 +616,8 @@ def Drag_Element(data_set):
         gui.moveTo(src_x, src_y) # Move to source
         result = gui.dragTo(dst_x, dst_y, 2, button = 'left') # Click and drag to destination, taking two seconds, then release - the 2 seconds is important for some drags because without the time, it happens too fast and the drag command is missed by the window manager
 
+        CommonUtil.TakeScreenShot(sModuleInfo) # Capture screenshot, if settings allow for it
+        
         # Check result and return
         if result in failed_tag_list:
             CommonUtil.ExecLog(sModuleInfo, "Couldn't dragged element with given images", 3)
@@ -662,6 +678,8 @@ def navigate_listbox(data_set):
             else:
                 CommonUtil.ExecLog(sModuleInfo, "Found element", 1)
                 return 'passed'
+        
+        CommonUtil.TakeScreenShot(sModuleInfo) # Capture screenshot, if settings allow for it
         
         CommonUtil.ExecLog(sModuleInfo, "Could not locate element after %d attempts" % max_tries, 3)
         return 'failed'

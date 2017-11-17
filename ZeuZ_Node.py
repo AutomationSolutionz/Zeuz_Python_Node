@@ -674,7 +674,10 @@ class Logger(object):
             #self.terminal.write(message) # Print to terminal (DEBUGGING)
             q.put(message) # Store message for writing to the log window
         except: pass
-
+    
+    def flush(self): # In case anything calls flush, we have to have a function for it
+        pass
+    
     def close(self):
         pass
         #self.log.close() # Save in case we want to start logging to disk

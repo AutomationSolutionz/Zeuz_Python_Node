@@ -23,7 +23,7 @@ appium_driver = None # Holds the currently used appium instance
 device_serial = '' # Holds the identifier for the currently used device (if any are specified)
 device_id = '' # Holds the name of the device the user has specified, if any. Relationship is set elsewhere
 if Shared_Resources.Test_Shared_Variables('appium_details'): # Check if driver is already set in shared variables
-    appium_details = Shared_Resources.Get_Shared_Variables('appium_driver') # Retreive appium driver
+    appium_details = Shared_Resources.Get_Shared_Variables('appium_details') # Retreive appium driver
     # Populate the global variables with one of the device information. If more than one device is used, then it'll be the last. The user is responsible for calling either launch_application() or switch_device() to focus on the one they want
     for name in appium_details:
         appium_driver = appium_details[name]['driver']
@@ -208,6 +208,7 @@ def find_correct_device_on_first_run(serial_or_name, device_info):
             
             # Store in shared variable, so it doens't get forgotten
             Shared_Resources.Set_Shared_Variables('device_serial', device_serial, protected = True)
+            Shared_Resources.Set_Shared_Variables('device_id', device_id, protected = True) # Save device id, because functions outside this file may require it
 
             CommonUtil.ExecLog(sModuleInfo,"Matched provided device identifier as %s (%s)" % (device_id, serial), 1)
             return 'passed'
@@ -393,8 +394,11 @@ def start_appium_driver(package_name = '', activity_name = '', filename = ''):
             # Create Appium instance with capabilities
             try:
                 appium_driver = webdriver.Remote('http://localhost:%d/wd/hub' % appium_port, desired_caps) # Create instance
+                
                 if appium_driver: # Make sure we get the instance
                     appium_details[device_id]['driver'] = appium_driver
+                    Shared_Resources.Set_Shared_Variables('appium_details', appium_details)
+                    CommonUtil.set_screenshot_vars(Shared_Resources.Shared_Variable_Export()) # Get all the shared variables, and pass them to CommonUtil
                     CommonUtil.ExecLog(sModuleInfo,"Appium driver created successfully.",1)
                     return "passed"
                 else: # Error during setup, reset
@@ -458,6 +462,7 @@ def teardown_appium(data_set):
         appium_server, device_id, device_serial = '', '', ''
         Shared_Resources.Set_Shared_Variables('appium_details', '')
         Shared_Resources.Set_Shared_Variables('device_info', '')
+        Shared_Resources.Set_Shared_Variables('device_id', '')
     except:
         CommonUtil.ExecLog(sModuleInfo,"Error destroying Appium instance/server - may already be killed", 2)
     
@@ -1520,6 +1525,10 @@ def switch_device(data_set):
             device_serial = appium_details[ID]['serial']
             appium_driver = appium_details[ID]['driver']
             device_id = ID
+            
+            # Update shared variables, for anything that requires accessing that information
+            Shared_Resources.Set_Shared_Variables('device_id', device_id, protected = True) # Save device id, because functions outside this file may require it
+            CommonUtil.set_screenshot_vars(Shared_Resources.Shared_Variable_Export()) # Get all the shared variables, and pass them to CommonUtil
 
             CommonUtil.ExecLog(sModuleInfo, "Switched focus to: %s" % ID, 1)
             return 'passed'
