@@ -506,7 +506,7 @@ def _pyautogui(step_data_set):
             return element
         
     except:
-        return CommonUtil.Exception_Handler(sys.exc_info())
+        return 'failed'
     
 
 def _scale_image(file_name, size_w, size_h):
