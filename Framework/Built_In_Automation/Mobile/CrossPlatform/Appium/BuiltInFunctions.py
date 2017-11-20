@@ -1469,6 +1469,11 @@ def device_information(data_set):
             else: # Reset device. If shared_var is a serial number (shared variable or string), it will reset that one specifically
                 if dep == 'android': adbOptions.reset_android(shared_var) # Reset this one device
             output = 'passed'
+        elif cmd == 'wake':
+            if dep == 'android': output = adbOptions.wake_android(device_serial)
+            if output in failed_tag_list:
+                CommonUtil.ExecLog(sModuleInfo,"Failed to wake device", 3)
+                return 'failed'
         else:
             CommonUtil.ExecLog(sModuleInfo,"Action's Field contains incorrect information", 3)
             return 'failed'

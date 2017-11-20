@@ -57,6 +57,7 @@ actions = { # Numbers are arbitrary, and are not used anywhere
     224: {'module': 'appium', 'name': 'switch device', 'function': 'switch_device'},
     225: {'module': 'appium', 'name': 'long press', 'function': 'Long_Press_Appium'},
     226: {'module': 'appium', 'name': 'tap location', 'function': 'tap_location'},
+    227: {'module': 'appium', 'name': 'wake', 'function': 'device_information'},
 
     300: {'module': 'rest', 'name': 'save response', 'function': 'Get_Response'},
     

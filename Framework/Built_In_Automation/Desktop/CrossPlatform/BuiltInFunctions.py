@@ -15,6 +15,9 @@ from Framework.Built_In_Automation.Shared_Resources import BuiltInFunctionShared
 from Framework.Utilities.CommonUtil import passed_tag_list, failed_tag_list, skipped_tag_list # Allowed return strings, used to normalize pass/fail
 from Framework.Built_In_Automation.Shared_Resources import LocateElement
 
+# Disable pyautogui failsafe when moving to top left corner
+gui.FAILSAFE = False
+
 # Valid image positions
 positions = ('left', 'right', 'centre', 'center')
 
