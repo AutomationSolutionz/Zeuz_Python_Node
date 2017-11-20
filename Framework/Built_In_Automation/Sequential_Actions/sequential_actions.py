@@ -275,10 +275,11 @@ def Run_Sequential_Actions(step_data):
     try:
         result = 'failed' # Initialize result
         skip = [] # List of data set numbers that have been processed, and need to be skipped, so they are not processed again
-                    
+        logic_row=[] # Holds conditional actions
+        skip_tmp = [] # Temporarily holds skip data sets
+        
         for dataset_cnt in range(len(step_data)): # For each data set within step data
-            data_set = step_data[dataset_cnt]
-            logic_row=[] # Holds conditional actions
+            data_set = step_data[dataset_cnt] # Save data set to variable
             if dataset_cnt in skip: continue # If this data set is in the skip list, do not process it
             
             if CommonUtil.check_offline(): # Check if user initiated offline command from GUI
@@ -311,13 +312,20 @@ def Run_Sequential_Actions(step_data):
                 # If middle column = conditional action, evaluate data set
                 elif "conditional action" in action_name:
                     CommonUtil.ExecLog(sModuleInfo, "Checking the logical conditional action to be performed in the conditional action row: %s" % str(row), 0)
-                    logic_row.append(row)
+                    logic_row.append(row) # Keep track of the conditional action row, so we can access it later
+                    [skip_tmp.append(int(x) - 1) for x in row[2].replace(' ', '').split(',')] # Add the processed data sets, executed by the conditional action to the skip list, so we can process the rest of the data sets (do this for both conditional actions)
                     
                     # Only run this when we have two conditional actions for this data set (a true and a false preferably)
                     if len(logic_row) == 2:
                         CommonUtil.ExecLog(sModuleInfo, "Found 2 conditional actions - moving ahead with them", 1)
-                        return Conditional_Action_Handler(step_data, data_set, row, logic_row) # Pass step_data, and current iteration of data set to decide which data sets will be processed next
-                        # At this point, we don't process any more data sets, which is why we return here. The conditional action function takes care of the rest of the execution
+                        result = Conditional_Action_Handler(step_data, data_set, row, logic_row) # Pass step_data, and current iteration of data set to decide which data sets will be processed next
+                        CommonUtil.ExecLog(sModuleInfo, "Conditional Actions complete", 1)
+                        if result in failed_tag_list:
+                            CommonUtil.ExecLog(sModuleInfo, "Returned result from Conditional Action Failed", 3)
+                            return result
+                        logic_row = [] # Unset this, so if there is another conditional action in the test step, we can process it
+                        skip = skip_tmp # Add to the skip list, now that processing is complete
+                        skip_tmp = []
                 
                 # Simulate a while/for loop with the specified data sets
                 elif 'loop action' in action_name:
@@ -355,7 +363,11 @@ def Run_Sequential_Actions(step_data):
                     ### Send sub-set to SA until we get our desired value or number of loops
                     sub_set_cnt = 0 # Used in counting number of loops
                     die = False # Used to exit parent while loop
+                    log_cnt = 0 # Just so we can write to log how many times we've looped
                     while True: # We control the new sub-set of the step data, so we can examine the output
+                        CommonUtil.ExecLog(sModuleInfo, "Loop action #%d" % log_cnt, 1)
+                        log_cnt += 1
+                        
                         for ndc in range(len(new_step_data)): # For each data set in the sub-set
                             new_data_set = new_step_data[ndc] # Get the data set
                             result = Run_Sequential_Actions([new_data_set]) # Send single data set to SA as step data, so we control the loop
@@ -550,9 +562,9 @@ def Conditional_Action_Handler(step_data, data_set, row, logic_row):
                 data_set_index = int(each_item.strip()) - 1 # data set number, -1 to offset for data set numbering system
                 
                 if step_data[data_set_index] == data_set: # If the data set we are GOING to pass back to sequential_actions() is the same one that called THIS function in the first place, then the step data is calling itself again, and we must pass all of the step data instead, so it doesn't crash later when it tries to refer to data sets that don't exist
-                    result = Sequential_Actions(step_data) # Pass the step data to sequential_actions() - Mainly used when the step data is in a deliberate recursive loop of conditional actions
+                    result = Run_Sequential_Actions(step_data) # Pass the step data to sequential_actions() - Mainly used when the step data is in a deliberate recursive loop of conditional actions
                 else: # Normal process - most conditional actions will come here
-                    result = Sequential_Actions([step_data[data_set_index]]) # Recursively call this function until all called data sets are complete
+                    result = Run_Sequential_Actions([step_data[data_set_index]]) # Recursively call this function until all called data sets are complete
             return result # Return only the last result of the last row of the last data set processed - This should generally be a "step result action" command
 
     # Shouldn't get here, but just in case
