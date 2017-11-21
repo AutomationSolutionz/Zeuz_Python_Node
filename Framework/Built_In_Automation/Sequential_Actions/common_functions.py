@@ -534,6 +534,18 @@ def Insert_Into_List(data_set):
         return CommonUtil.Exception_Handler(sys.exc_info())
     
 def delete_all_shared_variables(data_set):
+    ''' Creates and appends a python list variable '''
+    # Note: List is created if it doesn't already exist
+    
+    sModuleInfo = inspect.stack()[0][3] + " : " + inspect.getmoduleinfo(__file__).name
+    CommonUtil.ExecLog(sModuleInfo,"Function Start", 0)
+
+    try:
+        return sr.Clean_Up_Shared_Variables()
+    except Exception:
+        return CommonUtil.Exception_Handler(sys.exc_info())
+
+def append_list_shared_variable(data_set):
     ''' Delete all shared variables - Wrapper for Clean_Up_Shared_Variables() '''
     # To delete only one, use the action "save variable", and set it to an empty string
     # Takes no inputs
@@ -542,7 +554,12 @@ def delete_all_shared_variables(data_set):
     CommonUtil.ExecLog(sModuleInfo,"Function Start", 0)
 
     try:
-        return sr.Clean_Up_Shared_Variables()
+        # Parse data set
+        tmp = data_set[0][2].replace(' ', '').strip() # Get key and value from Value field and clean them
+        key, value = tmp.split(',') # Split into usable variables
+        
+        # Save variable
+        return sr.Append_List_Shared_Variables(key, value)
     except Exception:
         return CommonUtil.Exception_Handler(sys.exc_info())
 

@@ -63,6 +63,39 @@ def Set_List_Shared_Variables(list_name, key, value, protected = False):
     except:
         CommonUtil.Exception_Handler(sys.exc_info())
 
+def Append_List_Shared_Variables(key, value, protected = False):
+    ''' Creates and appends a python list variable '''
+    
+    try:
+        sModuleInfo = inspect.stack()[0][3] + " : " + inspect.getmoduleinfo(__file__).name
+        global shared_variables, protected_variables
+        
+        # Verify input
+        key = key.strip()
+        value = value.strip()
+        if key == '' or value == '':
+            return 'failed'
+
+        # Check if protected
+        if protected: protected_variables.append(key) # Add to list of protected variables
+        else: # Check if user is trying to overwrite a protected variable
+            if key in protected_variables: # If we find a match, exit with failure
+                CommonUtil.ExecLog(sModuleInfo, "Error: You tried to overwrite protected variable '%s'. Please choose a different variable name." % key, 3)
+                return 'failed'
+            
+        # Create list if non-existent
+        if not key in shared_variables:
+            CommonUtil.ExecLog(sModuleInfo, "Creating new list", 0)
+            shared_variables[key] = []
+        
+        # Append list
+        CommonUtil.ExecLog(sModuleInfo, "Appending list %s with %s" % (str(key), str(value)), 0)
+        shared_variables[key].append(value)
+        return 'passed'
+            
+    except:
+        CommonUtil.Exception_Handler(sys.exc_info())
+
 
 def Get_Shared_Variables(key):
     try:
