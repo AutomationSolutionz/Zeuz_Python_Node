@@ -202,16 +202,15 @@ def is_android_connected(serial = ''):
     
     sModuleInfo = inspect.stack()[0][3] + " : " + inspect.getmoduleinfo(__file__).name
     
-    if serial != '': serial = 'device' # If none specified, this is the generic keyword to look for
-    
     devices = get_devices()
     
     if devices != []:
+        if serial == '': return True # No device specified, and we have at least one
         for device in devices:
-            if serial in device:
+            if serial.lower() == device.lower().split(' ')[0]:
                 CommonUtil.ExecLog(sModuleInfo, "Android connected", 0)
                 return True
-        CommonUtil.ExecLog(sModuleInfo, "Android connected, but not authorized. Ensure USB debugging is enabled in developer options, and that you authorized this computer to connect to it.", 2)
+        CommonUtil.ExecLog(sModuleInfo, "Android connected, but either not authorized or provided serial number not found in list. Ensure USB debugging is enabled in developer options, and that you authorized this computer to connect to it.", 2)
         return False
     else:
         CommonUtil.ExecLog(sModuleInfo, "No Android connected", 0)
@@ -428,7 +427,7 @@ def reset_android(serial = ''):
         if serial != '': serial = '-s %s' % serial # Prepend the command line switch to add the serial number
         subprocess.check_output("adb %s reboot" % serial, shell=True) # Send reset
     except Exception:
-        return CommonUtil.Exception_Handler(sys.exc_info(), None, "Error while performing swipe gesture")
+        return CommonUtil.Exception_Handler(sys.exc_info(), None, "Error while resetting device")
 
 def reset_all_android():
     ''' Resets all connected devices '''

@@ -1463,14 +1463,39 @@ def device_information(data_set):
         elif cmd == 'storage':
             if dep == 'android': output = adbOptions.get_device_storage(device_serial)
         elif cmd == 'reboot':
-            if shared_var == '*': # If asterisk, then assume one or more attached and reset them all
-                shared_var = '' # Unset this, so we don't create a shared variable with it 
-                if dep == 'android': adbOptions.reset_all_android()
-            else: # Reset device. If shared_var is a serial number (shared variable or string), it will reset that one specifically
-                if dep == 'android': adbOptions.reset_android(shared_var) # Reset this one device
-            output = 'passed'
+            # If asterisk, then assume one or more attached and reset them all
+            if shared_var == '*':
+                if dep == 'android': output = adbOptions.reset_all_android()
+            
+            # Anything else, try to figure out what it is
+            else:
+                if shared_var in appium_details: # If user provided device name, get the associated serial number
+                    shared_var = appium_details[shared_var]['serial']
+                elif adbOptions.is_android_connected(shared_var): # Check if the specified device is connected via serial
+                    pass
+                else: # No serial or name provided, and the string provided is not a connected device, just try to connect to the first device and reset it
+                    shared_var = ''
+    
+                # Reset this one device
+                if dep == 'android': output = adbOptions.reset_android(shared_var)
+
+            shared_var = '' # Unset this, so we don't create a shared variable with it
+            if output in failed_tag_list:
+                CommonUtil.ExecLog(sModuleInfo,"Failed to reboot device", 3)
+                return 'failed'
+
         elif cmd == 'wake':
-            if dep == 'android': output = adbOptions.wake_android(device_serial)
+            if dep == 'android':
+                if shared_var in appium_details: # If user provided device name, get the associated serial number
+                    shared_var = appium_details[shared_var]['serial']
+                elif adbOptions.is_android_connected(shared_var): # Check if the specified device is connected via serial
+                    pass
+                else: # No serial or name provided, and the string provided is not a connected device, just try to connect to the first device and reset it
+                    shared_var = ''
+                
+                output = adbOptions.wake_android(shared_var)
+                shared_var = ''
+            
             if output in failed_tag_list:
                 CommonUtil.ExecLog(sModuleInfo,"Failed to wake device", 3)
                 return 'failed'
