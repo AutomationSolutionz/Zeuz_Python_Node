@@ -14,7 +14,9 @@ def form_uri(resource_path):
     return base_server_address+resource_path+'/'
 
 def Get(resource_path,payload={}):
-    return requests.get(form_uri(resource_path),params=json.dumps(payload)).json()
+    try: return requests.get(form_uri(resource_path),params=json.dumps(payload), timeout=3).json()
+    except: return {}
 
 def Head(resource_path):
-    return requests.head(form_uri(resource_path))
+    try: return requests.head(form_uri(resource_path), timeout=3)
+    except: return ''
