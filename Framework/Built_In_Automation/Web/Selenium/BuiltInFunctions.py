@@ -74,7 +74,7 @@ def Open_Browser(dependency):
             options = Options()
             options.add_argument("--no-sandbox")
             options.add_argument("--disable-extensions")
-            if "chrome-headless" in browser: options.add_argument("--headless") # Enable headless operation if dependency set
+            if "chromeheadless" in browser: options.add_argument("--headless") # Enable headless operation if dependency set
             selenium_driver = webdriver.Chrome(chrome_options = options)
             selenium_driver.implicitly_wait(WebDriver_Wait)
             selenium_driver.maximize_window()
