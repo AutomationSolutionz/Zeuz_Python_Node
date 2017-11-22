@@ -68,7 +68,7 @@ def Open_Browser(dependency):
         True
     try:
         browser = browser.lower()
-        if "chrome" in browser or "chrome-headless" in browser:
+        if "chrome" in browser or "chromeheadless" in browser:
 
             from selenium.webdriver.chrome.options import Options
             options = Options()
