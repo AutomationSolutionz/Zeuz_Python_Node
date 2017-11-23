@@ -93,7 +93,7 @@ def RunProcess(sTesterid):
             if time.time() > etime: return True # Timeout reached, re-login. We do this because after about 3-4 hours this function will hang, and thus not be available for deployment
 
             r=RequestFormatter.Get('is_run_submitted_api',{'machine_name':sTesterid})
-            if r['run_submit']:
+            if 'run_submit' in r and r['run_submit']:
                 processing_test_case = True
                 CommonUtil.ExecLog('', "**************************\n* STARTING NEW TEST CASE *\n**************************", 4, False)
                 PreProcess()
@@ -105,7 +105,7 @@ def RunProcess(sTesterid):
                 CommonUtil.ExecLog('', "Successfully updated db with parameter", 4, False)
             else:
                 time.sleep(3)
-                if r['update']:
+                if 'update' in r and r['update']:
                     _r=RequestFormatter.Get('update_machine_with_time_api',{'machine_name':sTesterid})
         except Exception, e:
             exc_type, exc_obj, exc_tb = sys.exc_info()
