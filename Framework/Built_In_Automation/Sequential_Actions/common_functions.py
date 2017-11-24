@@ -329,12 +329,12 @@ def Wait_For_Element(data_set):
         end_time = time.time() + timeout_duration # Time at which we should stop looking
         for i in range(timeout_duration): # Keep testing element until this is reached (likely never hit due to timeout below)
             # Wait and then test if we are over our alloted time limit
-            time.sleep(1)
             if time.time() >= end_time: # Keep testing element until this is reached (ensures we wait exactly the specified amount of time)
                 break
+            time.sleep(1)
 
             # Test if element exists or not
-            Element = LocateElement.Get_Element(data_set, common_driver)
+            Element = LocateElement.Get_Element(data_set, common_driver, wait_enable = False)
             
             # Check if element exists or not, depending on the type of wait the user wanted
             if wait_for_element_to_disappear == False: # Wait for it to appear

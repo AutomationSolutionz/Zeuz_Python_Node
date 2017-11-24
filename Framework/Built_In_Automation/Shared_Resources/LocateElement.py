@@ -4,7 +4,7 @@
 Created on Jun 21, 2017
 @author: Built_In_Automation Solutionz Inc.
 '''
-import sys
+import sys, time
 import inspect
 from Framework.Utilities import CommonUtil
 from Framework.Utilities.CommonUtil import passed_tag_list, failed_tag_list
@@ -21,7 +21,7 @@ generic_driver = None
 global driver_type 
 driver_type = None
 
-def Get_Element(step_data_set,driver,query_debug=False):
+def Get_Element(step_data_set,driver,query_debug=False, wait_enable = True):
     '''
     This funciton will return "Failed" if something went wrong, else it will always return a single element
     if you are trying to produce a query from a step dataset, make sure you provide query_debug =True.  This is
@@ -37,6 +37,7 @@ def Get_Element(step_data_set,driver,query_debug=False):
         if driver_type == None:
             CommonUtil.ExecLog(sModuleInfo, "Incorrect driver.  Please validate driver", 3)
             return "failed"
+        
         # We need to switch to default content just in case previous action switched to something else
         try:
             if driver_type == 'selenium':
@@ -44,31 +45,39 @@ def Get_Element(step_data_set,driver,query_debug=False):
         except:
             pass # Exceptions happen when we have an alert, but is not a problem
 
-        
-        # If driver is pyautogui, perform specific get element function and exit
-        if driver_type == 'pyautogui':
-            result = _pyautogui(step_data_set)
-            return result
+        etime = time.time() + 10 # Default time to 
+        while time.time() < etime: # Our own built in "wait" until True because sometimes elements do not appear fast enough
+            # If driver is pyautogui, perform specific get element function and exit
+            if driver_type == 'pyautogui':
+                result = _pyautogui(step_data_set)
+                if result not in failed_tag_list: return result # Return on pass
+                if not wait_enable: return result # If asked not to loop, return the failure
+                continue # If fail, but instructed to loop, do so
+                
+            #here we switch driver if we need to
+            _switch(step_data_set)
+            index_number = _locate_index_number(step_data_set)
+            element_query, query_type = _construct_query (step_data_set)
+            CommonUtil.ExecLog(sModuleInfo, "Element query used to locate the element: %s. Query method used: %s "%(element_query,query_type), 1)
             
-        #here we switch driver if we need to
-        _switch(step_data_set)
-        index_number = _locate_index_number(step_data_set)
-        element_query, query_type = _construct_query (step_data_set)
-        CommonUtil.ExecLog(sModuleInfo, "Element query used to locate the element: %s. Query method used: %s "%(element_query,query_type), 1)
-        
-        if query_debug == True:
-            print "This query will not be run as query_debu is enabled.  It will only print out in console"
-            print "Your query from the step data provided is:  %s" %element_query
-            print "Your query type is: %s" %query_type
-            return "passed"
-        if element_query == False:
-            return "failed"
-        elif query_type == "xpath" and element_query != False:
-            return _get_xpath_or_css_element(element_query,"xpath",index_number)
-        elif query_type == "css" and element_query != False:
-            return _get_xpath_or_css_element(element_query,"css",index_number)
-        else:
-            return "failed"
+            if query_debug == True:
+                print "This query will not be run as query_debug is enabled.  It will only print out in console"
+                print "Your query from the step data provided is:  %s" %element_query
+                print "Your query type is: %s" %query_type
+                result = "passed"
+            if element_query == False:
+                result = "failed"
+            elif query_type == "xpath" and element_query != False:
+                result = _get_xpath_or_css_element(element_query,"xpath",index_number)
+            elif query_type == "css" and element_query != False:
+                result = _get_xpath_or_css_element(element_query,"css",index_number)
+            else:
+                result = "failed"
+            
+            if result not in failed_tag_list: return result # Return on pass
+            if not wait_enable: return result # If asked not to loop, return the failure
+            # If fail, but instructed to loop, do so
+
     except Exception:
         return CommonUtil.Exception_Handler(sys.exc_info())
 
