@@ -440,5 +440,15 @@ def reset_all_android():
         for serial in devices:
             reset_android(str(serial.split(' ')[0]).strip()) # Send reset
     except Exception:
-        return CommonUtil.Exception_Handler(sys.exc_info(), None, "Error while performing swipe gesture")
+        return CommonUtil.Exception_Handler(sys.exc_info(), None, "Error while resetting devices")
+
+def execute_program(package_name):
+    ''' Executes an Android program '''
+    
+    try:
+        cmd = 'adb shell monkey -p %s -c android.intent.category.LAUNCHER 1' % package_name
+        subprocess.check_output(cmd, shell = True)
+        return 'passed'
+    except Exception:
+        return CommonUtil.Exception_Handler(sys.exc_info(), None, "Error executing Android program")
 

@@ -1568,3 +1568,48 @@ def switch_device(data_set):
     except Exception:
         return CommonUtil.Exception_Handler(sys.exc_info(), None, "Error when trying to read Field and Value for action")
 
+def execute_mobile_program(data_set):
+    ''' Executes a program on a mobile device when there's already an established Appium driver '''
+    # Note: Appium doens't have an API that allows us to execute anything we want, so this is the solution
+    
+    sModuleInfo = inspect.stack()[0][3] + " : " + inspect.getmoduleinfo(__file__).name
+    CommonUtil.ExecLog(sModuleInfo,"Function Start", 0)
+
+    # Parse data set
+    try:
+        package_name = ''
+        for row in data_set:
+            if row[1] == 'element parameter': package_name = row[2]
+            elif package_name == '' and row[1] == 'action': package_name = row[2]
+        
+        if package_name == '':
+             CommonUtil.ExecLog(sModuleInfo, "Full or partial package name missing. Expected Value field to contain it", 3)
+             return 'failed'
+        
+    except Exception:
+        return CommonUtil.Exception_Handler(sys.exc_info(), None, "Error when trying to read Value for action")
+    
+    # Execute
+    try:
+        package_name, activity_name = get_program_names(package_name) # Get package name
+        result = adbOptions.execute_program(package_name)
+        if result in failed_tag_list:
+            CommonUtil.ExecLog(sModuleInfo, " Error trying to execute mobile program", 3)
+            return 'failed'
+        return 'passed'
+    except Exception:
+        return CommonUtil.Exception_Handler(sys.exc_info(), None, "Error trying to execute mobile program")
+
+def minimize_appilcation(data_set):
+    ''' Hides the foreground application by pressing the home key '''
+    
+    sModuleInfo = inspect.stack()[0][3] + " : " + inspect.getmoduleinfo(__file__).name
+    CommonUtil.ExecLog(sModuleInfo,"Function Start", 0)
+
+    try:
+        appium_driver.press_keycode(3)
+        return 'passed'
+    except Exception:
+        return CommonUtil.Exception_Handler(sys.exc_info(), None, "Error trying to execute mobile program")
+
+    
