@@ -575,7 +575,7 @@ def sequential_actions_settings(data_set):
         # Parse data set
         tmp = data_set[0][2].replace(' ', '').strip() # Get key and value from Value field and clean them
         shared_var = tmp.split('=')[0].strip().lower() # Retrieve variable name
-        value = tmp.replace(shared_var + '=', '') # Retrieve value for variable
+        value = tmp.replace(shared_var + '=', '').strip() # Retrieve value for variable
         
         # Verify this is a real variable (should be set somewhere else)
         if not sr.Test_Shared_Variables(shared_var):
