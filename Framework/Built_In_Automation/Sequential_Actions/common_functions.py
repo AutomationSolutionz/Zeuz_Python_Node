@@ -565,3 +565,26 @@ def append_list_shared_variable(data_set):
     except Exception:
         return CommonUtil.Exception_Handler(sys.exc_info())
 
+def sequential_actions_settings(data_set):
+    ''' Test Step front end for modifying certain variables used by Sequential Actions '''
+    
+    sModuleInfo = inspect.stack()[0][3] + " : " + inspect.getmoduleinfo(__file__).name
+    CommonUtil.ExecLog(sModuleInfo,"Function Start", 0)
+
+    try:
+        # Parse data set
+        tmp = data_set[0][2].replace(' ', '').strip() # Get key and value from Value field and clean them
+        shared_var = tmp.split('=')[0].strip().lower() # Retrieve variable name
+        value = tmp.replace(shared_var + '=', '') # Retrieve value for variable
+        
+        # Verify this is a real variable (should be set somewhere else)
+        if not sr.Test_Shared_Variables(shared_var):
+            CommonUtil.ExecLog(sModuleInfo,"The variable name specified (%s) is not a valid Sequential Action variable" % str(shared_var), 3)
+            return 'failed'
+        
+        # Save variable - all functions that use this variable will now use the new value
+        CommonUtil.ExecLog(sModuleInfo,"Changing Sequential Action setting of %s from %s to %s" % (str(shared_var), str(sr.Get_Shared_Variables(shared_var)), str(value)), 1)
+        return sr.Set_Shared_Variables(shared_var, value)
+    except Exception:
+        return CommonUtil.Exception_Handler(sys.exc_info())
+

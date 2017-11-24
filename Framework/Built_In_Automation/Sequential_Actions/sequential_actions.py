@@ -30,6 +30,7 @@ actions = { # Numbers are arbitrary, and are not used anywhere
     109: {'module': 'common', 'name': 'save variable', 'function': 'Save_Variable'},
     110: {'module': 'common', 'name': 'delete shared variables', 'function': 'delete_all_shared_variables'},
     111: {'module': 'common', 'name': 'append list', 'function': 'append_list_shared_variable'},
+    112: {'module': 'common', 'name': 'settings', 'function': 'sequential_actions_settings'},
     
     200: {'module': 'appium', 'name': 'click', 'function': 'Click_Element_Appium'},
     201: {'module': 'appium', 'name': 'text', 'function': 'Enter_Text_Appium'},
@@ -187,6 +188,9 @@ from Framework.Built_In_Automation.Shared_Resources import LocateElement
 dependency = None
 if sr.Test_Shared_Variables('dependency'): # Check if driver is already set in shared variables
     dependency = sr.Get_Shared_Variables('dependency') # Retreive appium driver
+
+# Set default variables
+sr.Set_Shared_Variables('element_wait', 10) # Default time for get_element() to find the element
 
 # Initialize bypass data set (need to be global, so separate test cases can access them)
 bypass_data_set = []

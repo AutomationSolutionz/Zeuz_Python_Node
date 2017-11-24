@@ -45,7 +45,7 @@ def Get_Element(step_data_set,driver,query_debug=False, wait_enable = True):
         except:
             pass # Exceptions happen when we have an alert, but is not a problem
 
-        etime = time.time() + 10 # Default time to 
+        etime = time.time() + int(sr.Get_Shared_Variables('element_wait')) # Default time to wait for an element 
         while time.time() < etime: # Our own built in "wait" until True because sometimes elements do not appear fast enough
             # If driver is pyautogui, perform specific get element function and exit
             if driver_type == 'pyautogui':
