@@ -460,6 +460,10 @@ def Loop_Action_Handler(step_data, row, dataset_cnt):
     
             if loop_method == 'exit_on_dataset':                        
                 for ndc in range(len(new_step_data)): # For each data set in the sub-set
+                    if CommonUtil.check_offline(): # Check if user initiated offline command from GUI
+                        CommonUtil.ExecLog(sModuleInfo, "User requested Zeuz Node to go Offline", 2)
+                        return 'failed'
+
                     # Build the sub-set and execute
                     result = build_subset(new_step_data, ndc)
                     
@@ -621,6 +625,8 @@ def Conditional_Action_Handler(step_data, data_set, row, logic_row):
                     result = Run_Sequential_Actions(step_data) # Pass the step data to sequential_actions() - Mainly used when the step data is in a deliberate recursive loop of conditional actions
                 else: # Normal process - most conditional actions will come here
                     result = Run_Sequential_Actions([step_data[data_set_index]]) # Recursively call this function until all called data sets are complete
+                    
+                if result in failed_tag_list: return result # Return on any failure
             return result # Return only the last result of the last row of the last data set processed - This should generally be a "step result action" command
 
     # Shouldn't get here, but just in case
