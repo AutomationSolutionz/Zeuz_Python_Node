@@ -89,8 +89,8 @@ def Append_List_Shared_Variables(key, value, protected = False):
             shared_variables[key] = []
         
         # Append list
-        CommonUtil.ExecLog(sModuleInfo, "Appending list %s with %s" % (str(key), str(value)), 0)
         shared_variables[key].append(value)
+        CommonUtil.ExecLog(sModuleInfo, "Appending list %s with %s. Now is: %s" % (str(key), str(value), str(shared_variables[key])), 0)
         return 'passed'
             
     except:
