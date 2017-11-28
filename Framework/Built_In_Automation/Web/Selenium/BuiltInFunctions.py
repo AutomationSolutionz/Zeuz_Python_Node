@@ -86,13 +86,7 @@ def Open_Browser(dependency):
 
         elif browser == 'firefox':
             from sys import platform as _platform
-            if _platform == "linux" or _platform == "linux2":
-                # linux
-                print "linux"
-            elif _platform == "darwin":
-                # MAC OS X
-                print "mac"
-            elif _platform == "win32":
+            if _platform == "win32":
                 try:
                     import winreg
                 except ImportError:

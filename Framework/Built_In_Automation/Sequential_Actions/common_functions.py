@@ -564,7 +564,6 @@ def append_list_shared_variable(data_set):
         
         # Append all values
         for value in values:
-            print ">>>>", value
             result = sr.Append_List_Shared_Variables(shared_var, value.strip())
         return result
     except Exception:
