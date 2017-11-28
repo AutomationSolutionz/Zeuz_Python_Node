@@ -60,7 +60,7 @@ actions = { # Numbers are arbitrary, and are not used anywhere
     225: {'module': 'appium', 'name': 'long press', 'function': 'Long_Press_Appium'},
     226: {'module': 'appium', 'name': 'tap location', 'function': 'tap_location'},
     227: {'module': 'appium', 'name': 'wake', 'function': 'device_information'},
-    228: {'module': 'appium', 'name': 'launch app', 'function': 'execute_mobile_program'},
+    228: {'module': 'appium', 'name': 'maximize', 'function': 'execute_mobile_program'},
     229: {'module': 'appium', 'name': 'minimize', 'function': 'minimize_appilcation'},
 
     300: {'module': 'rest', 'name': 'save response', 'function': 'Get_Response'},
