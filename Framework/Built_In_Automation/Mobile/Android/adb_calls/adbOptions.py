@@ -232,12 +232,24 @@ def install_app(apk_path, serial = ''):
     sModuleInfo = inspect.stack()[0][3] + " : " + inspect.getmoduleinfo(__file__).name
     try:
         if serial != '': serial = '-s %s' % serial # Prepare serial number with command line switch
-        output = subprocess.check_output("adb %s install %s" % (serial, apk_path), shell=True)
+        output = subprocess.check_output("adb %s install -r %s" % (serial, apk_path), shell=True) # Install and overwrite (-r) if package is already installed
         CommonUtil.ExecLog(sModuleInfo, "Installed app located %s"%apk_path, 0)
-        return output
+        return 'passed'
 
     except Exception:
         errMsg = "Unable to install app located %s"%apk_path
+        return CommonUtil.Exception_Handler(sys.exc_info(),None,errMsg)
+
+def uninstall_app(package, serial = ''):
+    sModuleInfo = inspect.stack()[0][3] + " : " + inspect.getmoduleinfo(__file__).name
+    try:
+        if serial != '': serial = '-s %s' % serial # Prepare serial number with command line switch
+        output = subprocess.check_output("adb %s uninstall %s" % (serial, package), shell=True) # Install and overwrite (-r) if package is already installed
+        CommonUtil.ExecLog(sModuleInfo, "Uninstalled app located %s"%package, 0)
+        return 'passed'
+
+    except Exception:
+        errMsg = "Unable to install app located %s"%package
         return CommonUtil.Exception_Handler(sys.exc_info(),None,errMsg)
 
 def connect_device_via_wifi(device_ip):

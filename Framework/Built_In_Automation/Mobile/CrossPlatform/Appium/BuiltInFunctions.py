@@ -15,13 +15,28 @@ from Framework.Built_In_Automation.Shared_Resources import LocateElement
 PATH = lambda p: os.path.abspath(
     os.path.join(os.path.dirname(__file__), p)
 )
-   
+
 # Recall appium driver, if not already set - needed between calls in a Zeuz test case
 appium_port = 4721 # Default appium port - changes if we have multiple devices
 appium_details = {} # Used to store device serial number, appium driver, if multiple devices are used
 appium_driver = None # Holds the currently used appium instance
 device_serial = '' # Holds the identifier for the currently used device (if any are specified)
 device_id = '' # Holds the name of the device the user has specified, if any. Relationship is set elsewhere
+
+# Recall dependency, if not already set
+dependency = None
+if Shared_Resources.Test_Shared_Variables('dependency'): # Check if driver is already set in shared variables
+    dependency = Shared_Resources.Get_Shared_Variables('dependency') # Retreive appium driver
+else:
+    pass # May be phasing out dependency for mobile 
+    #raise ValueError("No dependency set - Cannot run")
+
+# Recall file attachments
+file_attachment = {}
+if Shared_Resources.Test_Shared_Variables('file_attachment'): # Check if file_attachement is set
+    file_attachment = Shared_Resources.Get_Shared_Variables('file_attachment') # Retreive file attachments
+
+# Recall appium details
 if Shared_Resources.Test_Shared_Variables('appium_details'): # Check if driver is already set in shared variables
     appium_details = Shared_Resources.Get_Shared_Variables('appium_details') # Retreive appium driver
     # Populate the global variables with one of the device information. If more than one device is used, then it'll be the last. The user is responsible for calling either launch_application() or switch_device() to focus on the one they want
@@ -501,40 +516,55 @@ def reset_application(data_set):
         return CommonUtil.Exception_Handler(sys.exc_info(),None,errMsg)
     
     
-def install_application(data_set): #app_location, activity_name=''
+def install_application(data_set):
     ''' Install application to device '''
-    # Webdriver does the installation and verification
-    # If the user tries to call install again, nothing will happen because we don't want to create another instance. User should teardown(), then install
+    # adb does the work. Does not require appium instance. User needs to call launch action to create instance
+    # Two formats allowed: Filename on action row, or filename on element parameter row, and optional serial number on action row
     
     sModuleInfo = inspect.stack()[0][3] + " : " + inspect.getmoduleinfo(__file__).name
     CommonUtil.ExecLog(sModuleInfo,"Function Start", 0)
     
     # Parse data set
     try:
-        app_location = '' # File location on disk
-        activity_name = '' # Optional value needed for some programs
+        file_name = ''
+        serial = ''
         for row in data_set: # Find required data
-            if row[0] == 'install' and row[1] == 'action':
-                app_location = row[2]
-            elif row[0] == 'app activity' and row[1] == 'element parameter': # Optional parameter
-                activity_name = row[2]
-        if app_location == '':
-            CommonUtil.ExecLog(sModuleInfo,"Could not find file location", 3)
+            if row[1] == 'action': # If using format of package on action line, and no serial number
+                serial = row[2].strip() # May be serial or filename, we'll figure out later
+            elif row[1] == 'element parameter': # If using the format of filename on it's own row, and possibly a serial number on the action line
+                file_name = row[2].strip() # Save filename
+        if file_name == '': # Fix previous filename from action row if no element parameter specified
+            file_name = serial # There was no element parameter row, so take the action row value for the filename
+            serial = ''
+
+        # Try to find the image file
+        if file_name not in file_attachment and os.path.exists(file_name) == False:
+            CommonUtil.ExecLog(sModuleInfo, "Could not find file attachment called %s, and could not find it locally" % file_name, 3)
             return 'failed'
+        if file_name in file_attachment: file_name = file_attachment[file_name] # In file is an attachment, get the full path
+        if file_name == '':
+            CommonUtil.ExecLog(sModuleInfo,"File not specified or there was a problem reading the file attachments", 3)
+            return 'failed'
+
+        # Try to determine device serial
+        if serial != '':
+            find_correct_device_on_first_run(serial, device_info)
+            serial = device_serial # Should be populated with an available device serial or nothing
+            
     except Exception:
         errMsg = "Unable to parse data set"
         return CommonUtil.Exception_Handler(sys.exc_info(),None,errMsg)
 
     try:
-        if appium_driver == None: # Only create a new appium instance if we haven't already (may be done by install_and_start_driver())
-            result = start_appium_driver('', activity_name, app_location) # Install application and create driver instance. First parameter is always empty. We specify the third parameter with the file, and optionally the second parameter with the activity name if it's needed
-            if result == 'failed':
-                return 'failed'
+        result = adbOptions.install_app(file_name, serial)
+        if result in failed_tag_list:
+            CommonUtil.ExecLog(sModuleInfo,"Could not install application (%s)" % file_name, 3)
+            return 'failed'
+        CommonUtil.ExecLog(sModuleInfo, "Installed %s to device %s" % (file_name, serial), 1)
+        return 'passed'
 
-        CommonUtil.ExecLog(sModuleInfo,"Installed and launched the app successfully.",1)
-        return "passed"
     except Exception:
-        errMsg = "Unable to start WebDriver."
+        errMsg = "Error installing application"
         return CommonUtil.Exception_Handler(sys.exc_info(),None,errMsg)
 
 
@@ -546,30 +576,39 @@ def uninstall_application(data_set):
     
     # Parse data set
     try:
-        sample_package = False
-        app_package = ''
-        for row in data_set:
-            if row[0].strip() == 'package':
-                app_package,app_activity = get_program_names(row[2].strip())
-                app_activity=app_package+app_activity
-                sample_package = True
-        if not sample_package:
-            app_package = data_set[0][2]
+        package = ''
+        serial = ''
+        for row in data_set: # Find required data
+            if row[1] == 'action': # If using format of package on action line, and no serial number
+                serial = row[2].strip() # May be serial or filename, we'll figure out later
+            elif row[1] == 'element parameter': # If using the format of filename on it's own row, and possibly a serial number on the action line
+                package = row[2].strip() # Save filename
+        if package == '': # Fix previous filename from action row if no element parameter specified
+            package = serial # There was no element parameter row, so take the action row value for the filename
+            serial = ''
+
+        # Try to find package name
+        package, activity_name = get_program_names(package) # Get package name
+
+        # Try to determine device serial
+        if serial != '':
+            find_correct_device_on_first_run(serial, device_info)
+            serial = device_serial # Should be populated with an available device serial or nothing
+            
     except Exception:
         errMsg = "Unable to parse data set"
         return CommonUtil.Exception_Handler(sys.exc_info(),None,errMsg)
 
     try:
-        CommonUtil.ExecLog(sModuleInfo,"Trying to remove app with package name %s"%app_package, 0)
-        #if appium_driver.is_app_installed(app_package):
-            #CommonUtil.ExecLog(sModuleInfo,"App is installed. Now removing...",1)
-        if appium_driver == None:
-            start_appium_driver(app_package,app_activity)
-        appium_driver.remove_app(app_package)
-        CommonUtil.ExecLog(sModuleInfo,"App is removed successfully.",1)
-        return "passed"
+        result = adbOptions.uninstall_app(package, serial)
+        if result in failed_tag_list:
+            CommonUtil.ExecLog(sModuleInfo,"Could not uninstall application (%s)" % package, 3)
+            return 'failed'
+        CommonUtil.ExecLog(sModuleInfo, "Uninstalled %s from device %s" % (package, serial), 1)
+        return 'passed'
+
     except Exception:
-        errMsg = "Unable to uninstall"
+        errMsg = "Error uninstalling application"
         return CommonUtil.Exception_Handler(sys.exc_info(),None,errMsg)
 
 def Swipe(x_start, y_start, x_end, y_end, duration = 1000, adb = False):
@@ -1583,8 +1622,8 @@ def execute_mobile_program(data_set):
             elif package_name == '' and row[1] == 'action': package_name = row[2]
         
         if package_name == '':
-             CommonUtil.ExecLog(sModuleInfo, "Full or partial package name missing. Expected Value field to contain it", 3)
-             return 'failed'
+            CommonUtil.ExecLog(sModuleInfo, "Full or partial package name missing. Expected Value field to contain it", 3)
+            return 'failed'
         
     except Exception:
         return CommonUtil.Exception_Handler(sys.exc_info(), None, "Error when trying to read Value for action")
@@ -1592,7 +1631,7 @@ def execute_mobile_program(data_set):
     # Execute
     try:
         package_name, activity_name = get_program_names(package_name) # Get package name
-        result = adbOptions.execute_program(package_name)
+        result = adbOptions.execute_program(package_name) # Execute using adb
         if result in failed_tag_list:
             CommonUtil.ExecLog(sModuleInfo, " Error trying to execute mobile program", 3)
             return 'failed'

@@ -558,10 +558,14 @@ def append_list_shared_variable(data_set):
     try:
         # Parse data set
         tmp = data_set[0][2].replace(' ', '').strip() # Get key and value from Value field and clean them
-        key, value = tmp.split(',') # Split into usable variables
+        shared_var = tmp.split('=')[0].strip() # Get variable name
+        tmp = tmp.replace(shared_var, '').strip().replace('=', '', 1)
+        values = tmp.split(',') # Get values (could be several)
         
-        # Save variable
-        return sr.Append_List_Shared_Variables(key, value)
+        # Append all values
+        for value in values:
+            result = sr.Append_List_Shared_Variables(shared_var, value.strip())
+        return result
     except Exception:
         return CommonUtil.Exception_Handler(sys.exc_info())
 
