@@ -92,10 +92,12 @@ def _construct_query (step_data_set):
         # find out if ref exists.  If it exists, it will set the value to True else False
         child_ref_exits = any("child parameter" in s for s in step_data_set)
         parent_ref_exits = any("parent parameter" in s for s in step_data_set)
+        sibling_ref_exits = any("sibling parameter" in s for s in step_data_set)
         #get all child, element, and parent only
         child_parameter_list = filter(lambda x: 'child parameter' in x[1], step_data_set) 
         element_parameter_list = filter(lambda x: 'element parameter' in x[1], step_data_set) 
         parent_parameter_list = filter(lambda x: 'parent parameter' in x[1], step_data_set) 
+        sibling_parameter_list = filter(lambda x: 'sibling parameter' in x[1], step_data_set) 
         
         if "css" in collect_all_attribute and "xpath" not in collect_all_attribute:
             # return the raw css command with css as type.  We do this so that even if user enters other data, we will ignore them.  
@@ -105,12 +107,12 @@ def _construct_query (step_data_set):
             # return the raw xpath command with xpath as type.  We do this so that even if user enters other data, we will ignore them.  
             # here we expect to get raw xpath query
             return ((filter(lambda x: 'xpath' in x[0], step_data_set) [0][2]), "xpath" )       
-        elif child_ref_exits == False and parent_ref_exits == False :
+        elif child_ref_exits == False and parent_ref_exits == False and sibling_ref_exits == False:
             '''  If  there are no child or parent as reference, then we construct the xpath differently'''
             #first we collect all rows with element parameter only 
             xpath_element_list = (_construct_xpath_list(element_parameter_list))
             return (_construct_xpath_string_from_list(xpath_element_list), "xpath")
-        elif child_ref_exits == True and parent_ref_exits == False:
+        elif child_ref_exits == True and parent_ref_exits == False and sibling_ref_exits == False:
             '''  If  There is child but making sure no parent'''
             xpath_child_list =  _construct_xpath_list(child_parameter_list,True)
             child_xpath_string = _construct_xpath_string_from_list(xpath_child_list) 
@@ -118,7 +120,8 @@ def _construct_query (step_data_set):
             #Take the first element, remove ]; add the 'and'; add back the ]; put the modified back into list. 
             xpath_element_list[1] = (xpath_element_list[1]).replace("]","") + ' and ' + child_xpath_string + "]"
             return (_construct_xpath_string_from_list(xpath_element_list), "xpath")
-        elif child_ref_exits == False and parent_ref_exits == True and (driver_type=="appium" or driver_type == "selenium"):
+        
+        elif child_ref_exits == False and parent_ref_exits == True and sibling_ref_exits == False and (driver_type=="appium" or driver_type == "selenium"):
             '''  If  There is parent but making sure no child'''
             xpath_parent_list =  _construct_xpath_list(parent_parameter_list)
             parent_xpath_string = _construct_xpath_string_from_list(xpath_parent_list) 
@@ -126,7 +129,25 @@ def _construct_query (step_data_set):
             #Take the first element, remove ]; add the 'and'; add back the ]; put the modified back into list. 
             xpath_element_list[1] = (xpath_element_list[1]).replace("]","") + ' and ' + parent_xpath_string + "]"
             return (_construct_xpath_string_from_list(xpath_element_list), "xpath")
-        elif child_ref_exits == False and parent_ref_exits == True and (driver_type=="xml"):
+        
+        elif child_ref_exits == False and parent_ref_exits == True and sibling_ref_exits == True and (driver_type=="appium" or driver_type == "selenium"):
+            '''  for siblings, we need parent, siblings and element.  Siblings cannot be used with just element
+            xpath_format = '//<sibling_tag>[<sibling_element>]/ancestor::<immediate_parent_tag>[<immediate_parent_element>]//<target_tag>[<target_element>]'
+            '''
+            xpath_sibling_list =  _construct_xpath_list(sibling_parameter_list)
+            sibling_xpath_string = _construct_xpath_string_from_list(xpath_sibling_list) + "/ancestor::"
+
+            xpath_parent_list =  _construct_xpath_list(parent_parameter_list)
+            parent_xpath_string = _construct_xpath_string_from_list(xpath_parent_list) 
+            parent_xpath_string = parent_xpath_string.replace("//", "")
+            
+            xpath_element_list = _construct_xpath_list(element_parameter_list)
+            element_xpath_string = _construct_xpath_string_from_list(xpath_element_list) 
+
+            full_query = sibling_xpath_string + parent_xpath_string + element_xpath_string
+            
+            return (full_query, "xpath")        
+        elif child_ref_exits == False and parent_ref_exits == True and sibling_ref_exits == False and (driver_type=="xml"):
             '''  If  There is parent but making sure no child'''
             xpath_parent_list =  _construct_xpath_list(parent_parameter_list)
             parent_xpath_string = _construct_xpath_string_from_list(xpath_parent_list) 
@@ -139,7 +160,10 @@ def _construct_query (step_data_set):
             '''Currently we do not support child as reference for xml'''
             CommonUtil.ExecLog(sModuleInfo, "Currently we do not support child as reference for xml.  Please contact info@automationsolutionz.com for help", 3)          
             return False, False
+
         else:
+            CommonUtil.ExecLog(sModuleInfo, "You have entered an unsupported data set.  Please contact info@automationsolutionz.com for help", 3)          
+
             return False, False
     except Exception:
         return CommonUtil.Exception_Handler(sys.exc_info())
@@ -554,9 +578,19 @@ def _scale_image(file_name, size_w, size_h):
 
 
 '''
-Sample Example:
-step_data_set =  [ ( 'id' , 'element parameter' , 'twotabsearchtextbox' , False , False ) , ( 'text' , 'selenium action' , 'Camera' , False , False ) ]
+Sample sibling Example1:
+xpath_format = '//<sibling_tag>[<sibling_element>]/ancestor::<immediate_parent_tag>[<immediate_parent_element>]//<target_tag>[<target_element>]'
+
+#step_data_set =  [( 'tag' , 'parent parameter' , 'tagvale' , False , False ) , ( 'id' , 'element parameter' , 'twotabsearchtextbox' , False , False ) , ( 'text' , 'selenium action' , 'Camera' , False , False ), ( 'class' , 'sibling parameter' , 'twotabsearchtextbox' , False , False ), ( 'class' , 'parent parameter' , 'twotabsearchtextbox' , False , False )]
+
+step_data_set = [ ( 'role' , 'element parameter' , 'checkbox' , False , False , '' ) , ( 'text' , 'sibling parameter' , 'charlie' , False , False , '' ) , ( '*class' , 'parent parameter' , 'md-table-row' , False , False , '' ) , ( 'click' , 'selenium action' , 'click' , False , False , '' ) ] 
 driver = None
 query_debug = True
-Get_Element(step_data_set,driver,query_debug)
+global driver_type 
+driver_type = "selenium"
+global debug 
+debug = True
+_construct_query (step_data_set)
+
+
 '''
