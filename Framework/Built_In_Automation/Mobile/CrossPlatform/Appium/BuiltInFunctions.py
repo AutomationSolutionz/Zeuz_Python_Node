@@ -563,10 +563,8 @@ def install_application(data_set):
         CommonUtil.ExecLog(sModuleInfo, "Installed %s to device %s" % (file_name, serial), 1)
         return 'passed'
 
-        CommonUtil.ExecLog(sModuleInfo,"Installed and launched the app successfully.",1)
-        return "passed"
     except Exception:
-        errMsg = "Unable to start WebDriver."
+        errMsg = "Error installing application"
         return CommonUtil.Exception_Handler(sys.exc_info(),None,errMsg)
 
 
@@ -578,30 +576,39 @@ def uninstall_application(data_set):
     
     # Parse data set
     try:
-        sample_package = False
-        app_package = ''
-        for row in data_set:
-            if row[0].strip() == 'package':
-                app_package,app_activity = get_program_names(row[2].strip())
-                app_activity=app_package+app_activity
-                sample_package = True
-        if not sample_package:
-            app_package = data_set[0][2]
+        package = ''
+        serial = ''
+        for row in data_set: # Find required data
+            if row[1] == 'action': # If using format of package on action line, and no serial number
+                serial = row[2].strip() # May be serial or filename, we'll figure out later
+            elif row[1] == 'element parameter': # If using the format of filename on it's own row, and possibly a serial number on the action line
+                package = row[2].strip() # Save filename
+        if package == '': # Fix previous filename from action row if no element parameter specified
+            package = serial # There was no element parameter row, so take the action row value for the filename
+            serial = ''
+
+        # Try to find package name
+        package, activity_name = get_program_names(package) # Get package name
+
+        # Try to determine device serial
+        if serial != '':
+            find_correct_device_on_first_run(serial, device_info)
+            serial = device_serial # Should be populated with an available device serial or nothing
+            
     except Exception:
         errMsg = "Unable to parse data set"
         return CommonUtil.Exception_Handler(sys.exc_info(),None,errMsg)
 
     try:
-        CommonUtil.ExecLog(sModuleInfo,"Trying to remove app with package name %s"%app_package, 0)
-        #if appium_driver.is_app_installed(app_package):
-            #CommonUtil.ExecLog(sModuleInfo,"App is installed. Now removing...",1)
-        if appium_driver == None:
-            start_appium_driver(app_package,app_activity)
-        appium_driver.remove_app(app_package)
-        CommonUtil.ExecLog(sModuleInfo,"App is removed successfully.",1)
-        return "passed"
+        result = adbOptions.uninstall_app(package, serial)
+        if result in failed_tag_list:
+            CommonUtil.ExecLog(sModuleInfo,"Could not uninstall application (%s)" % package, 3)
+            return 'failed'
+        CommonUtil.ExecLog(sModuleInfo, "Uninstalled %s from device %s" % (package, serial), 1)
+        return 'passed'
+
     except Exception:
-        errMsg = "Unable to uninstall"
+        errMsg = "Error uninstalling application"
         return CommonUtil.Exception_Handler(sys.exc_info(),None,errMsg)
 
 def Swipe(x_start, y_start, x_end, y_end, duration = 1000, adb = False):
