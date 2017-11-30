@@ -3,7 +3,7 @@
 
 import sys
 import inspect
-import os, psutil, os.path
+import os, psutil, os.path, threading
 import logging
 from Framework.Utilities import ConfigModule
 import datetime
@@ -239,8 +239,17 @@ def set_screenshot_vars(shared_variables):
     except:
         ExecLog(sModuleInfo, "Error setting screenshot variables", 3)
 
-
 def TakeScreenShot(ImageName,local_run=False):
+    ''' Puts TakeScreenShot into a thread, so it doesn't block test case execution '''
+    
+    try:
+        t = threading.Thread(target = Thread_ScreenShot, args = (ImageName, local_run)) # Create thread object 
+        t.daemon = True # Run in background
+        t.start() # Start thread
+    except:
+        return Exception_Handler(sys.exc_info())
+    
+def Thread_ScreenShot(ImageName,local_run=False):
     ''' Capture screen of mobile or desktop '''
     # Do not include extension in ImageName, it will be added
     

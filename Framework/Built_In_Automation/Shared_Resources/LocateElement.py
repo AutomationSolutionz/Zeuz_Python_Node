@@ -45,13 +45,16 @@ def Get_Element(step_data_set,driver,query_debug=False, wait_enable = True):
         except:
             pass # Exceptions happen when we have an alert, but is not a problem
 
-        etime = time.time() + int(sr.Get_Shared_Variables('element_wait')) # Default time to wait for an element 
+        wait_time = int(sr.Get_Shared_Variables('element_wait'))
+        etime = time.time() + wait_time # Default time to wait for an element 
         while time.time() < etime: # Our own built in "wait" until True because sometimes elements do not appear fast enough
             # If driver is pyautogui, perform specific get element function and exit
             if driver_type == 'pyautogui':
                 result = _pyautogui(step_data_set)
                 if result not in failed_tag_list: return result # Return on pass
-                if not wait_enable: return result # If asked not to loop, return the failure
+                if not wait_enable:
+                    CommonUtil.ExecLog(sModuleInfo, "Waited %d seconds for element" % wait_time, 3)
+                    return result # If asked not to loop, return the failure
                 continue # If fail, but instructed to loop, do so
                 
             #here we switch driver if we need to
@@ -75,7 +78,9 @@ def Get_Element(step_data_set,driver,query_debug=False, wait_enable = True):
                 result = "failed"
             
             if result not in failed_tag_list: return result # Return on pass
-            if not wait_enable: return result # If asked not to loop, return the failure
+            if not wait_enable:
+                CommonUtil.ExecLog(sModuleInfo, "Waited %d seconds for element" % wait_time, 3) 
+                return result # If asked not to loop, return the failure
             # If fail, but instructed to loop, do so
 
     except Exception:
@@ -296,11 +301,11 @@ def _get_xpath_or_css_element(element_query,css_xpath, index_number=False):
         all_matching_elements = []
         sModuleInfo = inspect.stack()[0][3] + " : " + inspect.getmoduleinfo(__file__).name
         if css_xpath == "xpath" and driver_type != 'xml':
-            all_matching_elements = WebDriverWait(generic_driver, WebDriver_Wait).until(EC.presence_of_all_elements_located((By.XPATH, element_query)))
+            all_matching_elements = generic_driver.find_elements(By.XPATH, element_query)
         elif css_xpath == "xpath" and driver_type == 'xml':
             all_matching_elements = generic_driver.xpath(element_query)
         elif css_xpath == "css":
-            all_matching_elements = WebDriverWait(generic_driver, WebDriver_Wait).until(EC.presence_of_all_elements_located((By.CSS_SELECTOR, element_query)))
+            all_matching_elements = generic_driver.find_elements(By.CSS_SELECTOR, element_query)
         if len(all_matching_elements)== 0:
             return False
         elif len(all_matching_elements)==1 and index_number == False:
