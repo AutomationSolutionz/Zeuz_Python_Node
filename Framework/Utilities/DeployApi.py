@@ -34,5 +34,14 @@ if __name__ == '__main__':
         'project': project,
         'team': team
     }
-    print Get("deploy_from_api",dict)
+    print "1. Deploy and Get Result"
+    print "2. Deploy and Get RunID only"
+    print "ENTER YOUR CHOICE:"
+    choice = raw_input()
+    if str(choice).strip() == '1':
+        print Get("deploy_from_api_and_get_result",dict)
+    elif str(choice).strip() == '2':
+        print Get("deploy_from_api_only",dict)
+    else:
+        print "Invalid Choice"
 
