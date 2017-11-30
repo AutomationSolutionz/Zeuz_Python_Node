@@ -238,7 +238,7 @@ def load_sa_modules(module): # Load module "AS" must match module name we get fr
         return CommonUtil.Exception_Handler(sys.exc_info())
     return 'passed'
 
-def Sequential_Actions(step_data, _dependency = {}, _run_time_params = '', _file_attachment = {}, _temp_q = '',screen_capture='Desktop',_device_info = {}):
+def Sequential_Actions(step_data, _dependency = {}, _run_time_params = {}, _file_attachment = {}, _temp_q = '',screen_capture='Desktop',_device_info = {}):
     ''' Main Sequential Actions function - Performs logical decisions based on user input '''
     
     sModuleInfo = inspect.stack()[0][3] + " : " + inspect.getmoduleinfo(__file__).name
@@ -246,8 +246,8 @@ def Sequential_Actions(step_data, _dependency = {}, _run_time_params = '', _file
     
     # Initialize
     try:
-        # Set dependency, file_attachemnt as global variables
-        global dependency, file_attachment, device_details
+        # Set dependency, file_attachemnt, run_time_parameters as global variables
+        global dependency, file_attachment, device_details, run_time_params
         if _dependency != {}:
             dependency = _dependency # Save to global variable
             sr.Set_Shared_Variables('dependency', _dependency, protected = True) # Save in Shared Variables
@@ -258,6 +258,12 @@ def Sequential_Actions(step_data, _dependency = {}, _run_time_params = '', _file
             for file_attachment_name in _file_attachment: # Add each attachment as it's own Shared Variable, so the user can easily refer to it
                 sr.Set_Shared_Variables(file_attachment_name, _file_attachment[file_attachment_name])
         
+        if _run_time_params != {}:
+            run_time_params = _run_time_params # Save to global variable
+            sr.Set_Shared_Variables('run_time_params', _run_time_params, protected = True) # Save in Shared Variables
+            for run_time_params_name in run_time_params: # Add each parameter as it's own Shared Variable, so the user can easily refer to it
+                sr.Set_Shared_Variables(run_time_params_name, run_time_params[run_time_params_name])
+
         if _device_info != {}: # If any devices and their details were sent by the server, save to shared variable
             device_info = _device_info
             sr.Set_Shared_Variables('device_info', device_info, protected = True)
