@@ -1607,9 +1607,10 @@ def switch_device(data_set):
     except Exception:
         return CommonUtil.Exception_Handler(sys.exc_info(), None, "Error when trying to read Field and Value for action")
 
-def execute_mobile_program(data_set):
-    ''' Executes a program on a mobile device when there's already an established Appium driver '''
+def package_information(data_set):
+    ''' Performs serveral actions on a package '''
     # Note: Appium doens't have an API that allows us to execute anything we want, so this is the solution
+    # Format is package, element parameter, PACKAGE_NAME | COMMAND, action, SHARED_VAR_NAME
     
     sModuleInfo = inspect.stack()[0][3] + " : " + inspect.getmoduleinfo(__file__).name
     CommonUtil.ExecLog(sModuleInfo,"Function Start", 0)
@@ -1617,9 +1618,15 @@ def execute_mobile_program(data_set):
     # Parse data set
     try:
         package_name = ''
+        shared_var = ''
+        cmd = ''
+        value = ''
         for row in data_set:
-            if row[1] == 'element parameter': package_name = row[2]
-            elif package_name == '' and row[1] == 'action': package_name = row[2]
+            if row[1] == 'element parameter': 
+                package_name = row[2].strip()
+            elif row[1] == 'action':
+                cmd = row[0].strip().lower().replace('  ', '')
+                shared_var = row[2].strip() # Not used for all commands
         
         if package_name == '':
             CommonUtil.ExecLog(sModuleInfo, "Full or partial package name missing. Expected Value field to contain it", 3)
@@ -1628,13 +1635,36 @@ def execute_mobile_program(data_set):
     except Exception:
         return CommonUtil.Exception_Handler(sys.exc_info(), None, "Error when trying to read Value for action")
     
-    # Execute
+    # Get package name (if given partially)
     try:
         package_name, activity_name = get_program_names(package_name) # Get package name
-        result = adbOptions.execute_program(package_name) # Execute using adb
-        if result in failed_tag_list:
-            CommonUtil.ExecLog(sModuleInfo, " Error trying to execute mobile program", 3)
+        if package_name in ('', 'failed'):
+            return 'failed' # get_program_names() logs the error
+    except Exception:
+        return CommonUtil.Exception_Handler(sys.exc_info(), None, "Error trying to get package name")
+    
+    # Perform action
+    try:
+        if cmd == 'maximize':
+            result = adbOptions.execute_program(package_name, device_serial)
+        elif cmd == 'package version':
+            if shared_var == '': 
+                CommonUtil.ExecLog(sModuleInfo, "Shared Variable name expected in Value field on action row", 3)
+                return 'failed'
+            value = adbOptions.get_package_version(package_name, device_serial)
+            result = Shared_Resources.Set_Shared_Variables(shared_var, value)
+        elif cmd == 'package installed':
+            value = package_name # Store package name in shared variables, if user wants it
+            if shared_var != '': result = Shared_Resources.Set_Shared_Variables(shared_var, value) # Optional
+            result = 'passed' # Do nothing. If the package is not installed, get_program_names() above will fail and return
+            
+        # Check result
+        if result in failed_tag_list or result == '':
+            CommonUtil.ExecLog(sModuleInfo, "Error trying to execute mobile program", 3)
             return 'failed'
+        
+        CommonUtil.ExecLog(sModuleInfo, "%s was successful" % cmd, 1)
+        if shared_var != '': CommonUtil.ExecLog(sModuleInfo, "Value '%s' saved to Shared Variable '%s'" % (value, shared_var), 1)
         return 'passed'
     except Exception:
         return CommonUtil.Exception_Handler(sys.exc_info(), None, "Error trying to execute mobile program")
@@ -1651,4 +1681,3 @@ def minimize_appilcation(data_set):
     except Exception:
         return CommonUtil.Exception_Handler(sys.exc_info(), None, "Error trying to execute mobile program")
 
-    

@@ -67,7 +67,7 @@ def get_device_name(serial=''):
         return output
 
     except Exception:
-        errMsg = "Unableto get device name"
+        errMsg = "Unable to get device name"
         return CommonUtil.Exception_Handler(sys.exc_info(), None, errMsg)
 
 
@@ -83,54 +83,22 @@ def get_device_serial_no(serial=''):
         errMsg = "Unableto get device serial no"
         return CommonUtil.Exception_Handler(sys.exc_info(), None, errMsg)
 
-
-def get_package_version(serial=''):
+def get_package_version(package, serial=''):
     sModuleInfo = inspect.stack()[0][3] + " : " + inspect.getmoduleinfo(__file__).name
     try:
         if serial != '': serial = '-s %s' % serial  # Prepare serial number with command line switch
-        output = subprocess.check_output(" adb shell pm dump %s" % serial, shell=True)
-        storageList = output.splitlines()
-        storage = storageList[86]  # version name is in the 87th line
-        output1 = storage.split('=')[1]  # splitting to get the latter part only
-        CommonUtil.ExecLog(sModuleInfo, "%s" % output1, 0)
-        return output1.strip()
-
-    except Exception:
-        errMsg = "Unableto get package no"
-        return CommonUtil.Exception_Handler(sys.exc_info(), None, errMsg)
-
-
-def get_package_version1(serial=''):
-    sModuleInfo = inspect.stack()[0][3] + " : " + inspect.getmoduleinfo(__file__).name
-    try:
-        if serial != '': serial = '-s %s' % serial  # Prepare serial number with command line switch
-        output = subprocess.check_output("adb shell pm dump %s|awk '/versionName/{print $0}' |cut -d'=' -f2" % serial,
-                                         shell=True)
-        CommonUtil.ExecLog(sModuleInfo, "%s" % output, 0)
-        return output.strip()
-
-    except Exception:
-        errMsg = "Unableto get package no"
-        return CommonUtil.Exception_Handler(sys.exc_info(), None, errMsg)
-
-
-def get_package_version2(serial=''):
-    sModuleInfo = inspect.stack()[0][3] + " : " + inspect.getmoduleinfo(__file__).name
-    try:
-        if serial != '': serial = '-s %s' % serial  # Prepare serial number with command line switch
-        output = subprocess.check_output(" adb shell pm dump %s" % serial, shell=True)
-        storageList = output.splitlines()
+        output = subprocess.check_output("adb %s shell pm dump %s" % (serial, package), shell=True)
+        storageList = output.splitlines() # 
         for lines in storageList:
-            if 'versionName' in lines:
+            if 'versionName' in lines: # Find first instance of this, should be the version we need
                 line1 = lines
-        output1 = line1.split('=')[1]
-        CommonUtil.ExecLog(sModuleInfo, "%s" % output1, 0)
+        output1 = line1.split('=')[1] # Version is on right side of equals sign
+        CommonUtil.ExecLog(sModuleInfo, "Read %s has version %s" % (package, output1), 0)
         return output1.strip()
 
     except Exception:
-        errMsg = "Unableto get package no"
+        errMsg = "Unable to get package version"
         return CommonUtil.Exception_Handler(sys.exc_info(), None, errMsg)
-
 
 def get_device_storage(serial=''):
     sModuleInfo = inspect.stack()[0][3] + " : " + inspect.getmoduleinfo(__file__).name
@@ -304,6 +272,17 @@ def install_app(apk_path, serial=''):
         errMsg = "Unable to install app located %s" % apk_path
         return CommonUtil.Exception_Handler(sys.exc_info(), None, errMsg)
 
+def uninstall_app(package, serial = ''):
+    sModuleInfo = inspect.stack()[0][3] + " : " + inspect.getmoduleinfo(__file__).name
+    try:
+        if serial != '': serial = '-s %s' % serial # Prepare serial number with command line switch
+        output = subprocess.check_output("adb %s uninstall %s" % (serial, package), shell=True) # Install and overwrite (-r) if package is already installed
+        CommonUtil.ExecLog(sModuleInfo, "Uninstalled app located %s"%package, 0)
+        return 'passed'
+
+    except Exception:
+        errMsg = "Unable to install app located %s"%package
+        return CommonUtil.Exception_Handler(sys.exc_info(),None,errMsg)
 
 def connect_device_via_wifi(device_ip):
     sModuleInfo = inspect.stack()[0][3] + " : " + inspect.getmoduleinfo(__file__).name
@@ -529,11 +508,12 @@ def reset_all_android():
         return CommonUtil.Exception_Handler(sys.exc_info(), None, "Error while resetting devices")
 
 
-def execute_program(package_name):
+def execute_program(package_name, serial = ''):
     ''' Executes an Android program '''
 
     try:
-        cmd = 'adb shell monkey -p %s -c android.intent.category.LAUNCHER 1' % package_name
+        if serial != '': serial = '-s %s' % serial  # Prepare serial number with command line switch
+        cmd = 'adb %s shell monkey -p %s -c android.intent.category.LAUNCHER 1' % (serial, package_name)
         subprocess.check_output(cmd, shell=True)
         return 'passed'
     except Exception:
