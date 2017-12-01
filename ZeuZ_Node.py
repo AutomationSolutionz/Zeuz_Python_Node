@@ -188,7 +188,7 @@ class Application(tk.Frame):
             self.quitButton = tk.Button(self.topframe, text='Quit', width = self.button_width, command=self.teardown)
             self.quitButton.grid(row = 1, column = 0)
             
-            self.startButton = tk.Button(self.rightframe, text='Online', fg = 'red', width = self.button_width, command=self.read_mod)
+            self.startButton = tk.Button(self.rightframe, text='Go Online', fg = 'red', width = self.button_width, command=self.read_mod)
             self.startButton.grid(row = 0, column = 0, sticky = 'n')
 
             # Scroll lock checkbox
@@ -461,7 +461,7 @@ class Application(tk.Frame):
                 self.log.see('end')
             else:
                 self.run = True
-                self.startButton.configure(text = 'Offline', fg = 'green4')
+                self.startButton.configure(text = 'Go Offline', fg = 'green4')
                 self.log.delete(0.0, 'end') # Clear previous log
                 thread.start_new_thread(Login,()) # Execute Zeuz_Node.py
                 if self.node_id.get() == '': self.after(5000, lambda: self.read_node_id(self.node_id)) # If no node id was read or specified, wait a few seconds for zeuz_node.py to populate the node id file, and read it
