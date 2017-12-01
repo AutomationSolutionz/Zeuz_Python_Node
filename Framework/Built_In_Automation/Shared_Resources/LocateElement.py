@@ -72,8 +72,14 @@ def Get_Element(step_data_set,driver,query_debug=False, wait_enable = True):
                 result = "failed"
             elif query_type == "xpath" and element_query != False:
                 result = _get_xpath_or_css_element(element_query,"xpath",index_number)
+                try:
+                    if not result.is_displayed(): result = 'failed'
+                except: pass
             elif query_type == "css" and element_query != False:
                 result = _get_xpath_or_css_element(element_query,"css",index_number)
+                try:
+                    if not result.is_displayed(): result = 'failed'
+                except: pass
             else:
                 result = "failed"
             
