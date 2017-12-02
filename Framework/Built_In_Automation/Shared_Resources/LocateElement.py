@@ -137,7 +137,7 @@ def _construct_query (step_data_set):
             xpath_parent_list =  _construct_xpath_list(parent_parameter_list)
             parent_xpath_string = _construct_xpath_string_from_list(xpath_parent_list) + "/descendant::"      
             
-            xpath_element_list =  _construct_xpath_list(parent_parameter_list)
+            xpath_element_list =  _construct_xpath_list(element_parameter_list)
             element_xpath_string = _construct_xpath_string_from_list(xpath_element_list) 
             element_xpath_string = element_xpath_string.replace("//", "")      
 
