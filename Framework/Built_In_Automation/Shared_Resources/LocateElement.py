@@ -72,14 +72,10 @@ def Get_Element(step_data_set,driver,query_debug=False, wait_enable = True):
                 result = "failed"
             elif query_type == "xpath" and element_query != False:
                 result = _get_xpath_or_css_element(element_query,"xpath",index_number)
-                try:
-                    if not result.is_displayed(): result = 'failed'
-                except: pass
+
             elif query_type == "css" and element_query != False:
                 result = _get_xpath_or_css_element(element_query,"css",index_number)
-                try:
-                    if not result.is_displayed(): result = 'failed'
-                except: pass
+
             else:
                 result = "failed"
             
@@ -134,7 +130,7 @@ def _construct_query (step_data_set):
         
         elif child_ref_exits == False and parent_ref_exits == True and sibling_ref_exits == False and (driver_type=="appium" or driver_type == "selenium"):
             '''  
-            If  There is parent but making sure no child
+            parent as a reference
             '//<parent tag>[<parent attributes>]/descendant::<target element tag>[<target element attribute>]'
             
             '''
@@ -313,13 +309,21 @@ def _get_xpath_or_css_element(element_query,css_xpath, index_number=False):
     '''
     try: 
         all_matching_elements = []
+        all_matching_elements_visible_invisible = []
         sModuleInfo = inspect.stack()[0][3] + " : " + inspect.getmoduleinfo(__file__).name
         if css_xpath == "xpath" and driver_type != 'xml':
-            all_matching_elements = generic_driver.find_elements(By.XPATH, element_query)
+            all_matching_elements_visible_invisible = generic_driver.find_elements(By.XPATH, element_query)
         elif css_xpath == "xpath" and driver_type == 'xml':
-            all_matching_elements = generic_driver.xpath(element_query)
+            all_matching_elements_visible_invisible = generic_driver.xpath(element_query)
         elif css_xpath == "css":
-            all_matching_elements = generic_driver.find_elements(By.CSS_SELECTOR, element_query)
+            all_matching_elements_visible_invisible = generic_driver.find_elements(By.CSS_SELECTOR, element_query)
+        # we will filter out all "not visible elements"
+        for each in all_matching_elements_visible_invisible:
+            try:
+                if each.is_displayed():
+                    all_matching_elements.append(each)
+            except:
+                pass
         if len(all_matching_elements)== 0:
             return False
         elif len(all_matching_elements)==1 and index_number == False:
@@ -596,7 +600,7 @@ def _scale_image(file_name, size_w, size_h):
         return CommonUtil.Exception_Handler(sys.exc_info(), None, "Error scaling image")
 
 
-
+'''
 #Sample sibling Example1:
 #xpath_format = '//<sibling_tag>[<sibling_element>]/ancestor::<immediate_parent_tag>[<immediate_parent_element>]//<target_tag>[<target_element>]'
 
@@ -618,5 +622,5 @@ driver_type = "selenium"
 global debug 
 debug = True
 print _construct_query (step_data_set)
-
+'''
 
