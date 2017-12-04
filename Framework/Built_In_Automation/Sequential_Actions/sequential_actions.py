@@ -294,6 +294,7 @@ def Run_Sequential_Actions(step_data):
         skip_tmp = [] # Temporarily holds skip data sets
         
         for dataset_cnt in range(len(step_data)): # For each data set within step data
+            CommonUtil.ExecLog(sModuleInfo, "********** Starting Data Set #%d **********" % dataset_cnt, 1)
             data_set = step_data[dataset_cnt] # Save data set to variable
             if dataset_cnt in skip: continue # If this data set is in the skip list, do not process it
             
