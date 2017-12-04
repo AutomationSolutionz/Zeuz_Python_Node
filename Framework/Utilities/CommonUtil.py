@@ -308,8 +308,8 @@ def Thread_ScreenShot(ImageName,local_run=False):
         else:
             ExecLog(sModuleInfo, "Error saving %s screenshot to %s" % (screen_capture_type, ImageName), 3)
 
-    except Exception, e:
-        return Exception_Handler(sys.exc_info())
+    except:
+        ExecLog(sModuleInfo, "Error capturing image", 3)
 
 
 def TimeStamp(format):

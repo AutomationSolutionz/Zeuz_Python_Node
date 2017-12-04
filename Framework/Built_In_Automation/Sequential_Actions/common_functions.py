@@ -117,6 +117,15 @@ def verify_step_data(step_data):
                         CommonUtil.ExecLog(sModuleInfo, "Field for data set %d contains invalid data: %s" % (data_set_index, str(row)), 3)
                         return 'failed'
                     
+                # Make sure recall result row contains valid commands and shared variables
+                elif row[1] == 'result':
+                    if row[0].strip().lower() not in ('store', 'recall'):
+                        CommonUtil.ExecLog(sModuleInfo, "Field for data set %d contains invalid data: %s - expected either 'recall' or 'store'" % (data_set_index, str(row)), 3)
+                        return 'failed'
+                    elif row[0].strip().lower() == 'recall' and '%|' not in row[2].strip():
+                        CommonUtil.ExecLog(sModuleInfo, "Field for data set %d contains invalid data: %s - expected Shared Variable in the proper format. Eg: %%|VAR|%%" % (data_set_index, str(row)), 3)
+                        return 'failed'
+                    
             # Make sure each data set has an action row
             if action == False:
                 CommonUtil.ExecLog(sModuleInfo, "Data set %d is missing an action line, or it's misspelled" % data_set_index, 3)
