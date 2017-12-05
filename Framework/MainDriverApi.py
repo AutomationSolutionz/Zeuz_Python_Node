@@ -871,7 +871,6 @@ def main(device_dict):
             update_test_case_result_on_server(run_id, sTestSetEndTime, TestSetDuration) #update runid status on server
         ConfigModule.add_config_value('sectionOne', 'sTestStepExecLogId', "MainDriver", temp_ini_file)
         CommonUtil.ExecLog(sModuleInfo, "Test Set Completed", 4, False)
-        #sample commit
         all_logs =  CommonUtil.get_all_logs()
         write_all_logs_to_server(all_logs)
 
