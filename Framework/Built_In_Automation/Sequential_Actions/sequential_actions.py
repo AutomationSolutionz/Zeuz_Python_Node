@@ -193,9 +193,6 @@ dependency = None
 if sr.Test_Shared_Variables('dependency'): # Check if driver is already set in shared variables
     dependency = sr.Get_Shared_Variables('dependency') # Retreive appium driver
 
-# Set default variables
-sr.Set_Shared_Variables('element_wait', 10) # Default time for get_element() to find the element
-
 # Initialize bypass data set (need to be global, so separate test cases can access them)
 bypass_data_set = []
 bypass_row = []
@@ -273,6 +270,9 @@ def Sequential_Actions(step_data, _dependency = {}, _run_time_params = {}, _file
             sr.Set_Shared_Variables('screen_capture', screen_capture.lower().strip()) # Save the screen capture type
             CommonUtil.set_screenshot_vars(sr.Shared_Variable_Export()) # Get all the shared variables, and pass them to CommonUtil
     
+        # Set default variables (Must be defined here in case anyone destroys all shared variables)
+        sr.Set_Shared_Variables('element_wait', 10) # Default time for get_element() to find the element
+
         # Prepare step data for processing
         step_data = common.sanitize(step_data, column = 1) # Sanitize Sub-Field
         step_data = common.adjust_element_parameters(step_data, supported_platforms) # Parse any mobile platform related fields
