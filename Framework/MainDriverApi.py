@@ -744,6 +744,10 @@ def run_test_case(TestCaseID, sModuleInfo, run_id, driver_list, final_dependency
         debug_steps = str(debug_steps).split("|")
         debug = True
 
+    if not debug: #if normal run, the write log file and cleanup driver instances
+        cleanup_driver_instances()
+        shared.Clean_Up_Shared_Variables()
+
     #runs all test steps in the test case, all test step result is stored in the list named sTestStepResultList
     sTestStepResultList = run_all_test_steps_in_a_test_case(Stepscount, test_case, sModuleInfo, run_id, TestStepsList, file_specific_steps, driver_list, final_dependency, final_run_params, test_case_result_index, temp_ini_file,debug,debug_steps)
 
@@ -775,6 +779,7 @@ def run_test_case(TestCaseID, sModuleInfo, run_id, driver_list, final_dependency
     if not debug: #if normal run, the write log file and cleanup driver instances
         write_log_file_for_test_case(sTestCaseStatus, test_case, run_id, sTestCaseEndTime, TestCaseDuration, FailReason, temp_ini_file)
         cleanup_driver_instances()
+        shared.Clean_Up_Shared_Variables()
     else:
         start_sending_log_to_server(run_id,temp_ini_file)
         start_sending_shared_var_to_server(run_id)
