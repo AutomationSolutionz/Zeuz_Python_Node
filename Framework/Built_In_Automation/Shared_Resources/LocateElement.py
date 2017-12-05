@@ -119,20 +119,25 @@ def _construct_query (step_data_set):
             #first we collect all rows with element parameter only 
             xpath_element_list = (_construct_xpath_list(element_parameter_list))
             return (_construct_xpath_string_from_list(xpath_element_list), "xpath")
+       
         elif child_ref_exits == True and parent_ref_exits == False and sibling_ref_exits == False:
-            '''  If  There is child but making sure no parent'''
-            xpath_child_list =  _construct_xpath_list(child_parameter_list,True)
-            child_xpath_string = _construct_xpath_string_from_list(xpath_child_list) 
-            xpath_element_list = _construct_xpath_list(element_parameter_list)
-            #Take the first element, remove ]; add the 'and'; add back the ]; put the modified back into list. 
-            xpath_element_list[1] = (xpath_element_list[1]).replace("]","") + ' and ' + child_xpath_string + "]"
-            return (_construct_xpath_string_from_list(xpath_element_list), "xpath")
-        
+            '''  If  There is child but making sure no parent or sibling
+            //<child_tag>[child_parameter]/ancestor::<element_tag>[element_parameter]
+            '''
+            xpath_child_list =  _construct_xpath_list(child_parameter_list)
+            child_xpath_string = _construct_xpath_string_from_list(xpath_child_list) + "/ancestor::"      
+            
+            xpath_element_list =  _construct_xpath_list(element_parameter_list)
+            element_xpath_string = _construct_xpath_string_from_list(xpath_element_list) 
+            element_xpath_string = element_xpath_string.replace("//", "")      
+
+            full_query =   child_xpath_string + element_xpath_string
+            return (full_query, "xpath")              
+            
         elif child_ref_exits == False and parent_ref_exits == True and sibling_ref_exits == False and (driver_type=="appium" or driver_type == "selenium"):
             '''  
             parent as a reference
             '//<parent tag>[<parent attributes>]/descendant::<target element tag>[<target element attribute>]'
-            
             '''
             xpath_parent_list =  _construct_xpath_list(parent_parameter_list)
             parent_xpath_string = _construct_xpath_string_from_list(xpath_parent_list) + "/descendant::"      
@@ -144,7 +149,6 @@ def _construct_query (step_data_set):
             full_query =   parent_xpath_string + element_xpath_string
             return (full_query, "xpath")  
 
-        
         elif child_ref_exits == False and parent_ref_exits == True and sibling_ref_exits == True and (driver_type=="appium" or driver_type == "selenium"):
             '''  for siblings, we need parent, siblings and element.  Siblings cannot be used with just element
             xpath_format = '//<sibling_tag>[<sibling_element>]/ancestor::<immediate_parent_tag>[<immediate_parent_element>]//<target_tag>[<target_element>]'
@@ -160,8 +164,8 @@ def _construct_query (step_data_set):
             element_xpath_string = _construct_xpath_string_from_list(xpath_element_list) 
 
             full_query = sibling_xpath_string + parent_xpath_string + element_xpath_string
-            
-            return (full_query, "xpath")        
+            return (full_query, "xpath")  
+              
         elif child_ref_exits == False and parent_ref_exits == True and sibling_ref_exits == False and (driver_type=="xml"):
             '''  If  There is parent but making sure no child'''
             xpath_parent_list =  _construct_xpath_list(parent_parameter_list)
@@ -171,6 +175,7 @@ def _construct_query (step_data_set):
             element_xpath_string = _construct_xpath_string_from_list(xpath_element_list)
             xpath_element_list_combined = parent_xpath_string + element_xpath_string
             return (_construct_xpath_string_from_list(xpath_element_list_combined), "xpath")
+        
         elif child_ref_exits == True  and (driver_type=="xml"):
             '''Currently we do not support child as reference for xml'''
             CommonUtil.ExecLog(sModuleInfo, "Currently we do not support child as reference for xml.  Please contact info@automationsolutionz.com for help", 3)          
@@ -178,7 +183,6 @@ def _construct_query (step_data_set):
 
         else:
             CommonUtil.ExecLog(sModuleInfo, "You have entered an unsupported data set.  Please contact info@automationsolutionz.com for help", 3)          
-
             return False, False
     except Exception:
         return CommonUtil.Exception_Handler(sys.exc_info())
