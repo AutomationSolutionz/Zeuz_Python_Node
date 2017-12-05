@@ -26,6 +26,10 @@ passed_tag_list = ['Pass', 'pass', 'PASS', 'PASSED', 'Passed', 'passed', 'true',
 failed_tag_list = ['Fail', 'fail', 'FAIL', 'Failed', 'failed', 'FAILED', 'false', 'False', 'FALSE', '0', False]
 skipped_tag_list=['skip','SKIP','Skip','skipped','SKIPPED','Skipped']
 
+global all_logs,all_logs_count
+all_logs = {}
+all_logs_count = 0
+
 
 def to_unicode(obj, encoding='utf-8'):
     if isinstance(obj, basestring):
@@ -198,7 +202,10 @@ def ExecLog(sModuleInfo, sDetails, iLogLevel=1, _local_run="", sStatus=""):
             logger.removeHandler(hdlr)
 
             # Write log line to server
-            r = RequestFormatter.Get('log_execution',{'logid': log_id, 'modulename': sModuleInfo, 'details': sDetails, 'status': status,'loglevel': iLogLevel})
+            #r = RequestFormatter.Get('log_execution',{'logid': log_id, 'modulename': sModuleInfo, 'details': sDetails, 'status': status,'loglevel': iLogLevel})
+            global all_logs,all_logs_count
+            all_logs[all_logs_count] = {'logid': log_id, 'modulename': sModuleInfo, 'details': sDetails, 'status': status,'loglevel': iLogLevel}
+            all_logs_count+=1
 
     except Exception, e:
         pass # This can happen when server is not available. In that case, we don't need to do anything
@@ -208,6 +215,17 @@ def FormatSeconds(sec):
         minutes, seconds = divmod(remainder, 60)
         duration_formatted = '%d:%02d:%02d' % (hours, minutes, seconds)
         return duration_formatted
+
+
+def get_all_logs():
+    global all_logs
+    return all_logs
+
+def clear_all_logs():
+    global all_logs,all_logs_count
+    all_logs = {}
+    all_logs_count = 0
+    return True
 
 def PhysicalAvailableMemory():
     try:

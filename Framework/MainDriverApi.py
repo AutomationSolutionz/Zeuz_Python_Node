@@ -24,6 +24,10 @@ failed_tag_list=['Fail','fail','FAIL','Failed','failed','FAILED','false','False'
 skipped_tag_list=['skip','SKIP','Skip','skipped','SKIPPED','Skipped']
 device_info = {}
 
+#writes all logs to server
+def write_all_logs_to_server(all_logs):
+    return RequestFormatter.Get('all_log_execution',{'all_logs': all_logs})
+
 
 #returns all drivers
 def get_all_drivers_list():
@@ -828,6 +832,7 @@ def main(device_dict):
 
     #for each test runid loop continues
     for TestRunID in TestRunLists:
+        CommonUtil.clear_all_logs()
         project_id = TestRunID[3]
         team_id = int(TestRunID[4])
         run_description = (TestRunID[1].replace("run_dependency",'')).replace('dependency_filter','')
@@ -866,6 +871,9 @@ def main(device_dict):
             update_test_case_result_on_server(run_id, sTestSetEndTime, TestSetDuration) #update runid status on server
         ConfigModule.add_config_value('sectionOne', 'sTestStepExecLogId', "MainDriver", temp_ini_file)
         CommonUtil.ExecLog(sModuleInfo, "Test Set Completed", 4, False)
+        all_logs =  CommonUtil.get_all_logs()
+        write_all_logs_to_server(all_logs)
+
     return "pass"
 
 
