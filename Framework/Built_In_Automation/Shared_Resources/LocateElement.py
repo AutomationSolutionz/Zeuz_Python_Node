@@ -233,13 +233,13 @@ def _construct_xpath_list(parameter_list,add_dot=False):
                 text_value = '[@text="%s"]'%attribute_value
                 element_main_body_list.append(text_value)
             elif attribute == "*text" and driver_type == "appium":
-                text_value = '[contains(text,"%s")]'%attribute_value    
+                text_value = "[contains(@text,'%s')]"%attribute_value
                 element_main_body_list.append(text_value)            
             elif attribute not in excluded_attribute and '*' not in attribute:
                 other_value = '[@%s="%s"]'%(attribute,attribute_value)
                 element_main_body_list.append(other_value)
             elif attribute not in excluded_attribute and '*' in attribute:
-                other_value = '[contains(%s,"%s")]'%(attribute.split('*')[1],attribute_value)
+                other_value = "[contains(@%s,'%s')]"%(attribute.split('*')[1],attribute_value)
                 element_main_body_list.append(other_value)
         #we do the tag on its own  
         #tag_was_given = any("tag" in s for s in parameter_list)
@@ -619,7 +619,7 @@ def _scale_image(file_name, size_w, size_h):
 #step_data_set = [ ( 'typ' , 'element parameter' , 'password' , False , False , '' ) , ( 'text' , 'selenium action' , 'your password' , False , False , '' ) , ( 'bblocalname' , 'parent parameter' , 'deviceActivationPasswordTextBox' , False , False , '' ) ] 
 
 
-'''
+
 step_data_set = [ ( '*resource-id' , 'element parameter' , 'com.assetscience.androidprodiagnostics.cellmd:id/next' , False , False ) , ( 'click' , 'appium action' , 'na' , False , False ) ]
 
 
@@ -629,6 +629,6 @@ global driver_type
 driver_type = "selenium"
 global debug 
 debug = True
-print _construct_query (step_data_set)
+print _construct_query (step_data_set)'''
 
 
