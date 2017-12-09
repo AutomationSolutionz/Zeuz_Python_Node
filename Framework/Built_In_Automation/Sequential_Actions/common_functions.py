@@ -295,6 +295,30 @@ def step_result(data_set):
         CommonUtil.ExecLog(sModuleInfo, "Step Result action has invalid VALUE", 3)
         return 'failed'
 
+def step_exit(data_set):
+    ''' Exits a Test Step wtih passed/failed in the standard format, when the user specifies it in the step data '''
+    
+    sModuleInfo = inspect.stack()[0][3] + " : " + inspect.getmoduleinfo(__file__).name
+    CommonUtil.ExecLog(sModuleInfo,"Function Start", 0)
+    
+    try:
+        action_value = ''
+        for row in data_set:
+            if row[0] == 'step exit' and row[1] == 'action':
+                action_value = row[2]
+    except:
+        return CommonUtil.Exception_Handler(sys.exc_info())
+    
+    if action_value in failed_tag_list: # Convert user specified pass/fail into standard result
+        return 'failed'
+    elif action_value in skipped_tag_list:
+        return 'skipped'
+    elif action_value in passed_tag_list:
+        return 'passed'
+    else:
+        CommonUtil.ExecLog(sModuleInfo, "Step Result action has invalid VALUE", 3)
+        return 'failed'
+
 def Sleep(data_set):
     ''' Sleep a specific number of seconds '''
     
@@ -403,7 +427,9 @@ def Save_Text(data_set):
         visible_list_of_element_text = ""
         for each_text_item in list_of_element_text: # For each line of text
             if each_text_item != "":
-                visible_list_of_element_text+=each_text_item # Append each line into one string
+                #visible_list_of_element_text+=each_text_item # Append each line into one string
+                tmp = [c for c in each_text_item if 0 < ord(c) < 127] # Strip any binary characters
+                visible_list_of_element_text += ''.join(tmp) # Append each line into one string
 
         result = sr.Set_Shared_Variables(variable_name, visible_list_of_element_text) # Save element text into shared variable using name given by user
         if result in failed_tag_list:

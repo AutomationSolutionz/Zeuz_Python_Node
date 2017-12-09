@@ -31,6 +31,7 @@ actions = { # Numbers are arbitrary, and are not used anywhere
     110: {'module': 'common', 'name': 'delete shared variables', 'function': 'delete_all_shared_variables'},
     111: {'module': 'common', 'name': 'append list', 'function': 'append_list_shared_variable'},
     112: {'module': 'common', 'name': 'settings', 'function': 'sequential_actions_settings'},
+    113: {'module': 'common', 'name': 'step exit', 'function': 'step_exit'},
     
     200: {'module': 'appium', 'name': 'click', 'function': 'Click_Element_Appium'},
     201: {'module': 'appium', 'name': 'text', 'function': 'Enter_Text_Appium'},
@@ -353,6 +354,9 @@ def Run_Sequential_Actions(step_data):
                 elif "action" in action_name: # Must be last, since it's a single word that also exists in other action types
                     CommonUtil.ExecLog(sModuleInfo, "Checking the action to be performed in the action row: %s" % str(row), 0)
                     result = Action_Handler(data_set, row) # Pass data set, and action_name to action handler
+                    if row[0].lower().strip() == 'step exit':
+                        CommonUtil.ExecLog(sModuleInfo, "Step Exit called. Stopping Test Step.", 1)
+                        return result
 
                     # Check if user wants to store the result for later use
                     stored = False
@@ -633,8 +637,14 @@ def Conditional_Action_Handler(step_data, data_set, row, logic_row):
                 
                 if step_data[data_set_index] == data_set: # If the data set we are GOING to pass back to sequential_actions() is the same one that called THIS function in the first place, then the step data is calling itself again, and we must pass all of the step data instead, so it doesn't crash later when it tries to refer to data sets that don't exist
                     result = Run_Sequential_Actions(step_data) # Pass the step data to sequential_actions() - Mainly used when the step data is in a deliberate recursive loop of conditional actions
+                    if row[0].lower().strip() == 'step exit':
+                        CommonUtil.ExecLog(sModuleInfo, "Step Exit called. Stopping Test Step.", 1)
+                        return result
                 else: # Normal process - most conditional actions will come here
                     result = Run_Sequential_Actions([step_data[data_set_index]]) # Recursively call this function until all called data sets are complete
+                    if row[0].lower().strip() == 'step exit':
+                        CommonUtil.ExecLog(sModuleInfo, "Step Exit called. Stopping Test Step.", 1)
+                        return result
                     
                 if result in failed_tag_list: return result # Return on any failure
             return result # Return only the last result of the last row of the last data set processed - This should generally be a "step result action" command
