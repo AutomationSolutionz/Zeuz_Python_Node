@@ -16,7 +16,7 @@ import string
 from Framework.Utilities import ConfigModule
 import filecmp
 import random
-import requests
+import requests, math, re
 from Framework.Utilities import CommonUtil
 from sys import platform as _platform
 from Framework.Utilities.CommonUtil import passed_tag_list, failed_tag_list, skipped_tag_list
@@ -2212,5 +2212,44 @@ def count_no_of_files_in_folder(step_data):
         CommonUtil.ExecLog(sModuleInfo, "Could not count no of files in the directory.  Error: %s" % (Error_Detail), 3)
         return "failed"
 
+def pattern_matching(dataset):
+    ''' Perform user provided regular expression on a string '''
+    
+    sModuleInfo = inspect.stack()[0][3] + " : " + inspect.getmoduleinfo(__file__).name
+    CommonUtil.ExecLog(sModuleInfo, "Function start", 0)
 
+    # Parse dataset
+    try:
+        pattern = ''
+        shared_var = ''
+        strg = ''
+        
+        for row in dataset:
+            if row[0].lower().strip() == 'pattern': # Regular expression pattern
+                pattern = row[2].strip()
+            elif row[0].lower().strip() == 'variable': # Shared variable to save any matches to
+                shared_var = row[2].strip()
+            elif row[0].lower().strip() == 'string': # String to search
+                strg = row[2].strip()
+    
+        if pattern == '' or shared_var == '' or strg == '':
+            return CommonUtil.Exception_Handler(sys.exc_info(), None, "Missing one of the inputs. Expected 3 element parameters: 'pattern', 'variable', and 'string'")
+            return 'failed'
+        
+    except:
+        CommonUtil.ExecLog(sModuleInfo, "Error parsing dataset", 3)
+        
+    try:
+        p = re.compile(pattern, re.M)
+        m = p.findall(strg)
+        if m == [] or m == None:
+            CommonUtil.ExecLog(sModuleInfo, "Pattern did not produce a match", 3)
+            return 'failed'
+        else:
+            Shared_Resources.Set_Shared_Variables(shared_var, m[0]) # !!! Idealy would save the entire list, but we need a way to access a single element
+            CommonUtil.ExecLog(sModuleInfo, "Pattern matched: %s - Saved to Shared variable: %s" % (str(m[0]), shared_var), 1)
+            return 'passed'
+    except:
+        return CommonUtil.Exception_Handler(sys.exc_info(), None, "Error performing pattern match")
+        
 
