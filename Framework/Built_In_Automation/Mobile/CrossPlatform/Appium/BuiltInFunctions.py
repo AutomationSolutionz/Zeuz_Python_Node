@@ -1386,7 +1386,7 @@ def get_program_names(search_name):
         package_name = ''
         package_list = []
         for line in ary: # For each package
-            if search_name.lower() in line:
+            if search_name.lower() in line.lower():
                 package_list.append(line.replace('package', '').replace(':', ''))
                 
         if len(package_list) == 0:
