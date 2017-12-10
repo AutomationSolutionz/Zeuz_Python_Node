@@ -306,8 +306,9 @@ def Compare_Variables(step_data):
         variable_list1 = []
         variable_list2 = []
         result = []
+        modifier = False
         for each_step_data_item in step_data[0]:
-            if each_step_data_item[1]!="action":
+            if each_step_data_item[1] == "compare":
                 if '%|' in each_step_data_item[0].strip():
                     previous_name = each_step_data_item[0].strip()
                     new_name = get_previous_response_variables_in_strings(each_step_data_item[0].strip())
@@ -323,10 +324,19 @@ def Compare_Variables(step_data):
                 else:
                     tuple2 = ('Text','',each_step_data_item[2].strip())
                 variable_list2.append(tuple2)
-
+            elif each_step_data_item[1] == "action": # Action line
+                if each_step_data_item[2].strip().lower() == 'is in':
+                    CommonUtil.ExecLog(sModuleInfo, "Using 'is in' instead of exact match", 1)
+                    modifier = True# Changes how we compare
 
         for i in range(0,len(variable_list1)):
-            if variable_list1[i][2] == variable_list2[i][2]:
+            if modifier == False and variable_list1[i][2] == variable_list2[i][2]: # Straight up compare
+                result.append(True)
+                pass_count+=1
+            elif modifier and variable_list1[i][2] in variable_list2[i][2]: # Var 1 is IN var 2, if modifier set
+                result.append(True)
+                pass_count+=1
+            elif modifier and variable_list2[i][2] in variable_list1[i][2]: # Var 2 is IN var 1 (Whichever way the user made it), if modifier set
                 result.append(True)
                 pass_count+=1
             else:
