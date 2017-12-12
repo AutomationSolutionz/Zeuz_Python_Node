@@ -743,12 +743,19 @@ def run_test_case(TestCaseID, sModuleInfo, run_id, driver_list, final_dependency
     Stepscount = len(TestStepsList)
     debug_steps = ''
     debug = False
+    cleanup_drivers_during_debug = False
     if str(run_id).startswith("debug"):
         debug_steps = get_debug_steps(run_id)
-        debug_steps = str(debug_steps).split("|")
+        str_list = str(debug_steps).split("-")
+        debug_steps = str_list[0]
+        cleanup = str_list[1]
+        if cleanup == "YES":
+            cleanup_drivers_during_debug = True
+
+        debug_steps = debug_steps.split("|")
         debug = True
 
-    if not debug: #if normal run, the write log file and cleanup driver instances
+    if not debug or cleanup_drivers_during_debug: #if normal run, the write log file and cleanup driver instances
         cleanup_driver_instances()
         shared.Clean_Up_Shared_Variables()
 
@@ -784,7 +791,11 @@ def run_test_case(TestCaseID, sModuleInfo, run_id, driver_list, final_dependency
         write_log_file_for_test_case(sTestCaseStatus, test_case, run_id, sTestCaseEndTime, TestCaseDuration, FailReason, temp_ini_file)
         cleanup_driver_instances()
         shared.Clean_Up_Shared_Variables()
-    else:
+
+    if debug:
+        if cleanup_drivers_during_debug:
+            cleanup_driver_instances()
+            shared.Clean_Up_Shared_Variables()
         start_sending_log_to_server(run_id,temp_ini_file)
         start_sending_shared_var_to_server(run_id)
         start_sending_step_result_to_server(run_id,debug_steps,sTestStepResultList)
