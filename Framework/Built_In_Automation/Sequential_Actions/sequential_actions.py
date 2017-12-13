@@ -159,6 +159,7 @@ action_support = [
     'loop action',
     'element parameter',
     'child parameter',
+    'sibling parameter',
     'parent parameter',
     'target parameter',
     'method',
