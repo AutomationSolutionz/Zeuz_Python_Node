@@ -1509,13 +1509,34 @@ def Unzip_File_or_Folder(step_data):
 def Move_File_or_Folder(step_data):
     sModuleInfo = inspect.stack()[0][3] + " : " + inspect.getmoduleinfo(__file__).name
     CommonUtil.ExecLog(sModuleInfo, "Function start", 0)
+
+    # Recall file attachment, if not already set
+    file_attachment = []
+    if Shared_Resources.Test_Shared_Variables('file_attachment'):
+        file_attachment = Shared_Resources.Get_Shared_Variables('file_attachment')
+
     try:
-        if _platform == "linux" or _platform == "linux2" or _platform == "darwin":
-            from_path = get_home_folder() + str(step_data[0][2]).strip()  # location of the file/folder to be moved
-            to_path = get_home_folder() + str(step_data[1][2]).strip()  # location where to move the file/folder
+        if _platform == "linux" or _platform == "linux2" or _platform == "darwin" :
+
+            from_path = str(step_data[0][2]).strip()  # location of the file/folder to be renamed
+            to_path = str(step_data[1][2]).strip()  # location where to rename the file/folder
         elif _platform == "win32":
-            from_path = raw(str(step_data[0][2]).strip())  # location of the file/folder to be moved
-            to_path = raw(str(step_data[1][2]).strip())  # location where to move the file/folder
+            from_path = raw(str(step_data[0][2]).strip())  # location of the file/folder to be renamed
+            to_path = raw(str(step_data[1][2]).strip())  # location where to rename the file/folder
+
+         # Try to find the file
+        if from_path not in file_attachment and os.path.exists(os.path.join(get_home_folder(), from_path)) == False:
+            CommonUtil.ExecLog(sModuleInfo,
+                               "Could not find file attachment called %s, and could not find it locally" % from_path, 3)
+            return 'failed'
+        if from_path in file_attachment: from_path = file_attachment[from_path]  # In file is an attachment, get the full path
+
+        if from_path not in file_attachment:
+            from_path = os.path.join(get_home_folder(), from_path)
+
+
+        to_path = os.path.join(get_home_folder(), to_path)
+
         file_or_folder = str(step_data[2][2]).strip()  # get if it is file/folder to move
         if file_or_folder.lower() == 'file':
                 # move file "from_path to "to_path"
@@ -2180,12 +2201,7 @@ def count_no_of_files_in_folder(step_data):
         Shared_Resources.Set_Shared_Variables('noOfFiles',str(count))
         return "passed"
     except Exception:
-        exc_type, exc_obj, exc_tb = sys.exc_info()
-        fname = os.path.split(exc_tb.tb_frame.f_code.co_filename)[1]
-        Error_Detail = ((str(exc_type).replace("type ", "Error Type: ")) + ";" + "Error Message: " + str(
-            exc_obj) + ";" + "File Name: " + fname + ";" + "Line: " + str(exc_tb.tb_lineno))
-        CommonUtil.ExecLog(sModuleInfo, "Could not count no of files in the directory.  Error: %s" % (Error_Detail), 3)
-        return "failed"
+        return CommonUtil.Exception_Handler(sys.exc_info())
 
 def pattern_matching(dataset):
     ''' Perform user provided regular expression on a string '''
