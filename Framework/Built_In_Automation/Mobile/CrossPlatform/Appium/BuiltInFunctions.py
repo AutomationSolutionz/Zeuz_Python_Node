@@ -1645,9 +1645,7 @@ def package_information(data_set):
     
     # Perform action
     try:
-        if cmd == 'maximize':
-            result = adbOptions.execute_program(package_name, device_serial)
-        elif cmd == 'package version':
+        if cmd == 'package version':
             if shared_var == '': 
                 CommonUtil.ExecLog(sModuleInfo, "Shared Variable name expected in Value field on action row", 3)
                 return 'failed'
@@ -1679,5 +1677,17 @@ def minimize_appilcation(data_set):
         appium_driver.press_keycode(3)
         return 'passed'
     except Exception:
-        return CommonUtil.Exception_Handler(sys.exc_info(), None, "Error trying to execute mobile program")
+        return CommonUtil.Exception_Handler(sys.exc_info(), None, "Error trying to minimize application by sending home key press")
+
+def maximize_appilcation(data_set):
+    ''' Displays the original program that was launched by appium '''
+    
+    sModuleInfo = inspect.stack()[0][3] + " : " + inspect.getmoduleinfo(__file__).name
+    CommonUtil.ExecLog(sModuleInfo,"Function Start", 0)
+
+    try:
+        appium_driver.launch_app()
+        return 'passed'
+    except Exception:
+        return CommonUtil.Exception_Handler(sys.exc_info(), None, "Error trying to maximize application")
 
