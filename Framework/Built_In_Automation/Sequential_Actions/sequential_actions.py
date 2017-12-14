@@ -172,7 +172,8 @@ action_support = [
     'value',
     'result',
     'table parameter',
-    'source parameter'
+    'source parameter',
+    'input parameter'
 ]
 
 # List of supported mobile platforms - must be lower case

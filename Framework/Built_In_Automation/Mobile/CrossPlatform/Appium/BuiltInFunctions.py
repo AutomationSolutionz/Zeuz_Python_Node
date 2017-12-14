@@ -632,6 +632,70 @@ def Swipe(x_start, y_start, x_end, y_end, duration = 1000, adb = False):
         errMsg = "Unable to swipe."
         return CommonUtil.Exception_Handler(sys.exc_info(),None,errMsg)
 
+# def swipe_handler(data_set):
+#     ''' Swipe screen based on user input '''
+#     # Functions: ????
+#     
+#     sModuleInfo = inspect.stack()[0][3] + " : " + inspect.getmoduleinfo(__file__).name
+#     CommonUtil.ExecLog(sModuleInfo,"Function Start", 0)
+# 
+#     # Parse data set
+#     try:
+#         for row in data_set:
+#             if row[1] == 'input parameter':
+#                 op = row[0].strip().lower()
+#                 if op == 'inset':
+#                     pass 
+#     except Exception:
+#         errMsg = "Unable to parse data set"
+#         return CommonUtil.Exception_Handler(sys.exc_info(),None,errMsg)
+# 
+#     
+#     try:
+#     # Get screen size for calculations
+#     adb_swipe_method = False
+#     window_size1 = get_window_size() # get_size method (standard)
+#     window_size2 = get_window_size(True) # xpath() method
+#     if window_size1 == 'failed':
+#         return 'failed'
+#     height_with_navbar = int(window_size1['height']) # Read standard height (on devices with a nav bar, this is not the actual height of the screen)
+#     height_without_navbar = int(window_size2['height']) # Read full screen height (not at all accurate on devices without a navbar
+#     if height_with_navbar < height_without_navbar: # Detected full screen mode and the height readings were different, indicating a navigation bar needs to be compensated for
+#         w = int(window_size2['width'])
+#         h = int(window_size2['height'])
+#         CommonUtil.ExecLog(sModuleInfo, "Detected navigation bar. Enabling ADB swipe for that area", 0)
+#         adb_swipe_method = True # Flag to use adb to swipe later on
+#     else:
+#         w = int(window_size1['width'])
+#         h = int(window_size1['height'])
+# 
+# 
+#     # Sanitize input
+#     action_value = str(action_value) # Convert to string
+#     action_value = action_value.replace(' ','') # Remove spaces
+#     action_value = action_value.lower() # Convert to lowercase
+#     
+#     # Specific swipe dimensions given - just pass to swipe()
+#     if action_value.count(',') == 3:
+#         CommonUtil.ExecLog(sModuleInfo, "Swipe type: Single", 0)
+#         x1, y1, x2, y2 = action_value.split(',')
+#         Swipe(int(x1), int(y1), int(x2), int(y2))
+#         
+#         #Everything will be calculated off the larger height value
+#         for y in range(ystart, ystop, stepsize): # For each row, assuming stepsize, swipe and move to next row
+#             y2 = y
+#             if appium_details[device_id]['type'] == 'ios': y2 = 0 # In Appium v1.6.4, IOS doesn't swipe properly - always swipes at angles because y2 is added to y, which is different from Android. This gets around that issue
+# 
+#             if adb_swipe_method == True and y >= height_with_navbar: # Swipe in the navigation bar area if the device has one
+#                 result = Swipe(xstart, y, xstop, y2, adb = True) # Using adb to perform gesture, because Appium errors when we try to acces it
+#             else: # Swipe via appium by default
+#                 result = Swipe(xstart, y, xstop, y2) # Swipe screen - y must be the same for horizontal swipes
+# 
+#             if result == 'failed':
+#                 return 'failed'
+#     except:
+#         return CommonUtil.Exception_Handler(sys.exc_info(),None, "Error performing swipe")
+
 def swipe_handler(data_set):
     ''' Swipe screen based on user input '''
     # Functions: General swipe (up/down/left/right), multiple swipes (X coordinate (from-to), Y coordinate (from-to), stepsize)
