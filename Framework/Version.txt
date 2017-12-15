@@ -1,6 +1,6 @@
 [ZeuZ Python Version]
-version = 3.7
+version = 3.8
 [Release Date]
-date= 2017-12-13
+date= 2017-12-15
 [Release Note]
-Note = Bug fixes for xapth query; sibling feature
+Note = Mobile Default no reset app;moving files;maximize current app;change in swipe actions
