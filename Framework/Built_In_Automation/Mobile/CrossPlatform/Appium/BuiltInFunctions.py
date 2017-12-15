@@ -378,6 +378,7 @@ def start_appium_driver(package_name = '', activity_name = '', filename = ''):
             desired_caps['platformName'] = appium_details[device_id]['type'] # Set platform name
             desired_caps['autoLaunch'] = 'false' # Do not launch application
             desired_caps['fullReset'] = 'false' # Do not clear application cache when complete
+            desired_caps['noReset'] = 'true' # Do not clear application cache when complete
             desired_caps['newCommandTimeout'] = 600 # Command timeout before appium destroys instance
             
             if appium_details[device_id]['type'] == 'android':
