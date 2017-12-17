@@ -691,7 +691,7 @@ def swipe_handler(data_set):
 
 
         # Verify we have what we need
-        if inset == '' or direction not in ('left', 'right', 'top', 'bottom') or position == '':
+        if inset == '' or direction not in ('left', 'right', 'up', 'down') or position == '':
             if exact == '': # If this is set, then the others don't matter, so continue with the gesture
                 CommonUtil.ExecLog(sModuleInfo, "Missing critical swipe values. Either 'inset' (optional), 'direction' (required), or 'position' (optional) are missing, wrong or blank", 3)
                 return 'failed'
@@ -752,7 +752,7 @@ def swipe_handler(data_set):
         if full_screen_mode == True and (y1 >= height_with_navbar or y2 >= height_with_navbar): # Swipe in the navigation bar area if the device has one, when in full screen mode
             result = Swipe(x1, y1, x2, y2, adb = True) # Perform swipe using adb
         else: # Swipe via appium by default
-            result = Swipe(x1, y1, x2, y2) # Perform swipe
+            result = Swipe(x1, y1, x2, y2, adb = True) # Perform swipe !!!adb set True for testing
 
         if result in failed_tag_list:
             CommonUtil.ExecLog(sModuleInfo, "Could not swipe the screen", 1)
