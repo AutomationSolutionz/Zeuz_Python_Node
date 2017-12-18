@@ -642,11 +642,76 @@ def swipe_handler(data_set):
             exact: Ignores all other settings, user needs to specify exact coordinates in the format of x1, y1, x2, y2
             inset (optional): Defaults to 10%. Swipe starts at inset
             position (optional): Defaults to 50%. Swipe this far from the top or left. So if I swipe left to right, Y will be 50%, so the middle of the screen with a horizontal swipe
+            element parameter: Ignores  "exact". Direction is required. Use an element as the starting point (top left corner of the element). Calculations are based off that
     '''
      
     sModuleInfo = inspect.stack()[0][3] + " : " + inspect.getmoduleinfo(__file__).name
     CommonUtil.ExecLog(sModuleInfo,"Function Start", 0)
  
+    def Calc_Swipe(w, h, inset, direction, position, exact, Element):
+        try:
+            if Element:
+                location = Element.location # Get element x,y coordinates
+                size = Element.size
+                startX, startY = int(location['x']), int(location['y'])
+                print type(size)
+                print size
+                w, h = int(size['width']), int(size['height'])
+                CommonUtil.ExecLog(sModuleInfo,"Element X, Y, W, H: %d, %d, %d, %d" % (startX, startY, w, h), 0)
+                #!!!Not done. How to swipe within widget? Need to calc based on screen size?  Can call swipe() on element?
+            else:
+                startX, startY = 0, 0
+                
+            # Adjust numbers depending on type provided by user - float or integer expected here - convert into pixels
+            if exact != '': # User specified exact coordinates, so use those and nothing else
+                x1, y1, x2, y2 = map(int, exact.split(','))
+            else:
+                inset = int(str(inset).replace('%', '')) / 100.0 # Convert % to float
+                position = int(str(position).replace('%', '')) / 100.0 # Convert % to float
+                
+                if direction == 'left':
+                    tmp = 1.0 - inset # Calculate from other end (X% from max width)
+                    inset = int(tmp * w)
+                    position = int(position * h)
+                elif direction == 'down':
+                    inset = int(inset * h) # Convert into pixels for that direction
+                    position = int(position * w)
+                elif direction == 'right':
+                    inset = int(inset * w) # Convert into pixels for that direction
+                    position = int(position * h)
+                elif direction == 'up':
+                    tmp = 1.0 - inset # Calculate from other end (X% from max height)
+                    inset = int(tmp * h)
+                    position = int(position * w)
+                
+                # Calculate exact pixel for the swipe
+                if direction == 'left':
+                    x1 = inset
+                    x2 = 1
+                    y1 = position
+                    y2 = position
+                elif direction == 'down':
+                    x1 = position
+                    x2 = position
+                    y1 = inset
+                    y2 = h
+                elif direction == 'right':
+                    x1 = inset
+                    x2 = w
+                    y1 = position
+                    y2 = position
+                elif direction == 'up':
+                    x1 = position
+                    x2 = position
+                    y1 = inset
+                    y2 = 1
+                    
+            return x1, x2, y1, y2
+        except Exception:
+            errMsg = "Error calculating swipe gesture"
+            result = CommonUtil.Exception_Handler(sys.exc_info(),None,errMsg)
+            return result, '', '', ''
+
     # Get screen size for calculations
     try:
         full_screen_mode = False # Use appium swipe instead of adb swipe (which is used when there's a vitual navigation bar that we need to swipe under)
@@ -677,6 +742,7 @@ def swipe_handler(data_set):
         direction = '' # Left/right/up/down
         exact = '' # Coordinates of exact swipe gesture in x1, y1, x2, y2
         position =  50 # Default 50% of screen from edge for general swipes
+        Element = '' # Optional element object
         for row in data_set:
             if row[1] == 'input parameter':
                 op = row[0].strip().lower()
@@ -688,58 +754,21 @@ def swipe_handler(data_set):
                     exact = row[2].lower().strip().replace(' ','')
                 elif op == 'position':
                     position = row[2].lower().strip()
-
+            elif row[1] == 'element parameter':
+                Element = LocateElement.Get_Element(data_set,appium_driver)
+                if Element == "failed":
+                    CommonUtil.ExecLog(sModuleInfo, "Unable to locate your element with given data.", 3)
+                    return "failed" 
 
         # Verify we have what we need
         if inset == '' or direction not in ('left', 'right', 'up', 'down') or position == '':
             if exact == '': # If this is set, then the others don't matter, so continue with the gesture
                 CommonUtil.ExecLog(sModuleInfo, "Missing critical swipe values. Either 'inset' (optional), 'direction' (required), or 'position' (optional) are missing, wrong or blank", 3)
                 return 'failed'
-         
-        # Adjust numbers depending on type provided by user - float or integer expected here - convert into pixels
-        if exact != '': # User specified exact coordinates, so use those and nothing else
-            x1, y1, x2, y2 = map(int, exact.split(','))
-        else:
-            inset = int(str(inset).replace('%', '')) / 100.0 # Convert % to float
-            position = int(str(position).replace('%', '')) / 100.0 # Convert % to float
+        
+        x1, x2, y1, y2 = Calc_Swipe(w, h, inset, direction, position, exact, Element)
+        if x1 in failed_tag_list: return "failed" 
             
-            if direction == 'left':
-                tmp = 1.0 - inset # Calculate from other end (X% from max width)
-                inset = int(tmp * w)
-                position = int(position * h)
-            elif direction == 'down':
-                inset = int(inset * h) # Convert into pixels for that direction
-                position = int(position * w)
-            elif direction == 'right':
-                inset = int(inset * w) # Convert into pixels for that direction
-                position = int(position * h)
-            elif direction == 'up':
-                tmp = 1.0 - inset # Calculate from other end (X% from max height)
-                inset = int(tmp * h)
-                position = int(position * w)
-            
-            # Calculate exact pixel for the swipe
-            if direction == 'left':
-                x1 = inset
-                x2 = 1
-                y1 = position
-                y2 = position
-            elif direction == 'down':
-                x1 = position
-                x2 = position
-                y1 = inset
-                y2 = h
-            elif direction == 'right':
-                x1 = inset
-                x2 = w
-                y1 = position
-                y2 = position
-            elif direction == 'up':
-                x1 = position
-                x2 = position
-                y1 = inset
-                y2 = 1
-
     except Exception:
         errMsg = "Unable to parse data set"
         return CommonUtil.Exception_Handler(sys.exc_info(),None,errMsg)
