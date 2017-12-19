@@ -468,15 +468,15 @@ def detect_foreground_android(serial=''):
         return CommonUtil.Exception_Handler(sys.exc_info(), None, errMsg)
 
 
-def swipe_android(x_start, y_start, x_end, y_end, serial=''):
+def swipe_android(x_start, y_start, x_end, y_end, duration = 1000, serial=''):
     ''' Sends a swipe gesture to a device '''
 
     sModuleInfo = inspect.stack()[0][3] + " : " + inspect.getmoduleinfo(__file__).name
     try:
         if serial != '': serial = '-s %s' % serial  # Prepare serial number with command line switch
-        CommonUtil.ExecLog(sModuleInfo, "Sending swipe gesture to %d %d %d %d" % (x_start, y_start, x_end, y_end), 0)
+        CommonUtil.ExecLog(sModuleInfo, "Sending swipe gesture to %d %d %d %d %d ms" % (x_start, y_start, x_end, y_end, duration), 0)
         subprocess.check_output(
-            "adb %s shell input touchscreen swipe %d %d %d %d 1000" % (serial, x_start, y_start, x_end, y_end),
+            "adb %s shell input touchscreen swipe %d %d %d %d %d" % (serial, x_start, y_start, x_end, y_end, duration),
             shell=True)  # Send swipe gesture
     except Exception:
         return CommonUtil.Exception_Handler(sys.exc_info(), None, "Error while performing swipe gesture")

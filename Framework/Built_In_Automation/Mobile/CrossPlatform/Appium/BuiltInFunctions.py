@@ -623,7 +623,7 @@ def Swipe(x_start, y_start, x_end, y_end, duration = 1000, adb = False):
         CommonUtil.ExecLog(sModuleInfo, "Starting to swipe the screen...", 0)
         if adb:
             CommonUtil.ExecLog(sModuleInfo, "Using ADB swipe method", 0)
-            adbOptions.swipe_android(x_start, y_start, x_end, y_end, device_serial) # Use adb if specifically asked for it
+            adbOptions.swipe_android(x_start, y_start, x_end, y_end, duration, device_serial) # Use adb if specifically asked for it
         else:
             appium_driver.swipe(x_start, y_start, x_end, y_end, duration) # Use Appium to swipe by default
 
@@ -642,26 +642,16 @@ def swipe_handler(data_set):
             exact: Ignores all other settings, user needs to specify exact coordinates in the format of x1, y1, x2, y2
             inset (optional): Defaults to 10%. Swipe starts at inset
             position (optional): Defaults to 50%. Swipe this far from the top or left. So if I swipe left to right, Y will be 50%, so the middle of the screen with a horizontal swipe
+            duration (optional): Defaults to 100ms. Complete the swipe gesture over this time period
             element parameter: Ignores  "exact". Direction is required. Use an element as the starting point (top left corner of the element). Calculations are based off that
     '''
      
     sModuleInfo = inspect.stack()[0][3] + " : " + inspect.getmoduleinfo(__file__).name
     CommonUtil.ExecLog(sModuleInfo,"Function Start", 0)
  
-    def Calc_Swipe(w, h, inset, direction, position, exact, Element):
+    def Calc_Swipe(w, h, inset, direction, position, exact):
+        ''' Calculate swipe based on area of interest (screen or element) '''
         try:
-            if Element:
-                location = Element.location # Get element x,y coordinates
-                size = Element.size
-                startX, startY = int(location['x']), int(location['y'])
-                print type(size)
-                print size
-                w, h = int(size['width']), int(size['height'])
-                CommonUtil.ExecLog(sModuleInfo,"Element X, Y, W, H: %d, %d, %d, %d" % (startX, startY, w, h), 0)
-                #!!!Not done. How to swipe within widget? Need to calc based on screen size?  Can call swipe() on element?
-            else:
-                startX, startY = 0, 0
-                
             # Adjust numbers depending on type provided by user - float or integer expected here - convert into pixels
             if exact != '': # User specified exact coordinates, so use those and nothing else
                 x1, y1, x2, y2 = map(int, exact.split(','))
@@ -706,7 +696,7 @@ def swipe_handler(data_set):
                     y1 = inset
                     y2 = 1
                     
-            return x1, x2, y1, y2
+            return x1, x2, y1, y2, inset, position # Return inset and position just for logging purposes)
         except Exception:
             errMsg = "Error calculating swipe gesture"
             result = CommonUtil.Exception_Handler(sys.exc_info(),None,errMsg)
@@ -743,6 +733,7 @@ def swipe_handler(data_set):
         exact = '' # Coordinates of exact swipe gesture in x1, y1, x2, y2
         position =  50 # Default 50% of screen from edge for general swipes
         Element = '' # Optional element object
+        duration = 100 # Duration of the swipe in ms
         for row in data_set:
             if row[1] == 'input parameter':
                 op = row[0].strip().lower()
@@ -754,6 +745,8 @@ def swipe_handler(data_set):
                     exact = row[2].lower().strip().replace(' ','')
                 elif op == 'position':
                     position = row[2].lower().strip()
+                elif op == 'duration':
+                    duration = int(row[2].lower().strip())
             elif row[1] == 'element parameter':
                 Element = LocateElement.Get_Element(data_set,appium_driver)
                 if Element == "failed":
@@ -766,8 +759,40 @@ def swipe_handler(data_set):
                 CommonUtil.ExecLog(sModuleInfo, "Missing critical swipe values. Either 'inset' (optional), 'direction' (required), or 'position' (optional) are missing, wrong or blank", 3)
                 return 'failed'
         
-        x1, x2, y1, y2 = Calc_Swipe(w, h, inset, direction, position, exact, Element)
-        if x1 in failed_tag_list: return "failed" 
+        # If an element parameter was provided, get it's x, y, w, h
+        if Element:
+            location = Element.location # Get element x,y coordinates
+            size = Element.size
+            elementX, elementY = int(location['x']), int(location['y'])
+            elementW, elementH = int(size['width']), int(size['height'])
+            CommonUtil.ExecLog(sModuleInfo,"Element X, Y, W, H: %d, %d, %d, %d" % (elementX, elementY, elementW, elementH), 0)
+            
+            # Calculate coordinates, based on element position and size
+            x1, x2, y1, y2, inset, position = Calc_Swipe(elementW, elementH, inset, direction, position, '')
+            if x1 in failed_tag_list: return "failed"
+            # Using element calculations, now calculate to make relative to entire screen size
+            if direction == 'left':
+                x1 += elementX
+                y1 += elementY
+                y2 += elementY
+            elif direction == 'down':
+                y1 += elementY
+                y2 = h
+                x1 += elementX
+                x2 += elementX
+            elif direction == 'right':
+                x1 += elementX
+                x2 = w
+                y1 += elementY
+                y2 += elementY
+            elif direction == 'up':
+                y1 += elementY
+                x1 += elementX
+                x2 += elementX
+        else:
+            # No element, calculate swipe coordinates based on screen size
+            x1, x2, y1, y2, inset, position = Calc_Swipe(w, h, inset, direction, position, exact)
+            if x1 in failed_tag_list: return "failed" 
             
     except Exception:
         errMsg = "Unable to parse data set"
@@ -775,13 +800,13 @@ def swipe_handler(data_set):
 
     # Perform swipe gesture 
     try:
-        if exact != '': CommonUtil.ExecLog(sModuleInfo, "Performing an exact swipe using coordinates: %d, %d to %d, %d" % (x1, y1, x2, y2), 1)
-        else: CommonUtil.ExecLog(sModuleInfo, "Performing calculated swipe gesture based on inset: %d, position: %d, direction: %s, calculated as %d, %d to %d, %d" % (inset, position, direction, x1, y1, x2, y2), 1) 
+        if exact != '': CommonUtil.ExecLog(sModuleInfo, "Performing an exact swipe using coordinates: %d, %d to %d, %d %d ms" % (x1, y1, x2, y2, duration), 1)
+        else: CommonUtil.ExecLog(sModuleInfo, "Performing calculated swipe gesture based on inset: %d, position: %d, direction: %s, calculated as %d, %d to %d, %d %d ms" % (inset, position, direction, x1, y1, x2, y2, duration), 1) 
         
         if full_screen_mode == True and (y1 >= height_with_navbar or y2 >= height_with_navbar): # Swipe in the navigation bar area if the device has one, when in full screen mode
-            result = Swipe(x1, y1, x2, y2, adb = True) # Perform swipe using adb
+            result = Swipe(x1, y1, x2, y2, duration, adb = True) # Perform swipe using adb
         else: # Swipe via appium by default
-            result = Swipe(x1, y1, x2, y2, adb = True) # Perform swipe !!!adb set True for testing
+            result = Swipe(x1, y1, x2, y2, duration, adb = True) # Perform swipe !!!adb set True for testing
 
         if result in failed_tag_list:
             CommonUtil.ExecLog(sModuleInfo, "Could not swipe the screen", 1)
@@ -791,178 +816,6 @@ def swipe_handler(data_set):
             return 'passed'
     except Exception:
         return CommonUtil.Exception_Handler(sys.exc_info(),None, "Error performing swipe gesture")     
-
-def swipe_handler_old(data_set):
-    ''' Swipe screen based on user input '''
-    # Functions: General swipe (up/down/left/right), multiple swipes (X coordinate (from-to), Y coordinate (from-to), stepsize)
-    # action_value: comma delimited string containing swipe details
-    
-    sModuleInfo = inspect.stack()[0][3] + " : " + inspect.getmoduleinfo(__file__).name
-    CommonUtil.ExecLog(sModuleInfo,"Function Start", 0)
-
-    # Parse data set
-    try:
-        action_value = data_set[0][2]
-    except Exception:
-        errMsg = "Unable to parse data set"
-        return CommonUtil.Exception_Handler(sys.exc_info(),None,errMsg)
-
-    # Get screen size for calculations
-    adb_swipe_method = False
-    window_size1 = get_window_size() # get_size method (standard)
-    window_size2 = get_window_size(True) # xpath() method
-    if window_size1 == 'failed':
-        return 'failed'
-    height_with_navbar = int(window_size1['height']) # Read standard height (on devices with a nav bar, this is not the actual height of the screen)
-    height_without_navbar = int(window_size2['height']) # Read full screen height (not at all accurate on devices without a navbar
-    if height_with_navbar < height_without_navbar: # Detected full screen mode and the height readings were different, indicating a navigation bar needs to be compensated for
-        w = int(window_size2['width'])
-        h = int(window_size2['height'])
-        CommonUtil.ExecLog(sModuleInfo, "Detected navigation bar. Enabling ADB swipe for that area", 0)
-        adb_swipe_method = True # Flag to use adb to swipe later on
-    else:
-        w = int(window_size1['width'])
-        h = int(window_size1['height'])
-
-
-    # Sanitize input
-    action_value = str(action_value) # Convert to string
-    action_value = action_value.replace(' ','') # Remove spaces
-    action_value = action_value.lower() # Convert to lowercase
-    
-    # Specific swipe dimensions given - just pass to swipe()
-    if action_value.count(',') == 3:
-        CommonUtil.ExecLog(sModuleInfo, "Swipe type: Single", 0)
-        x1, y1, x2, y2 = action_value.split(',')
-        Swipe(int(x1), int(y1), int(x2), int(y2))
-    
-    # Check for and handle simple gestures (swipe up/down/left/right), and may have a set number of swipes to execute
-    elif action_value.count(',') == 0 or action_value.count(',') == 1:
-        # Process number of swipes as well
-        if action_value.count(',') == 1:
-            action_value, count = action_value.split(',')
-            count = int(count)
-        else:
-            count = 1
-        CommonUtil.ExecLog(sModuleInfo, "Swipe type: Basic %s with a count of %d" % (action_value, count), 0)
-            
-        # Check for direction and calculate accordingly
-        if action_value == 'up':
-            x1 = 50 * w / 100 # Middle horizontal
-            x2 = x1 # Middle horizontal
-            y1 = 75 * h / 100 # 75% down 
-            y2 = 1 # To top
-        elif action_value == 'down':
-            x1 = 50 * w / 100 # Middle horizontal
-            x2 = x1 # Middle horizontal
-            y1 = 25 * h / 100 # 25% down 
-            y2 = h - 1 # To bottom
-        elif action_value == 'left':
-            x1 = 90 * w / 100 # Start 90% on right
-            x2 = 10 * w / 100 # End 10% on left
-            y1 = 50 * h / 100 # Middle vertical 
-            y2 = y1 # Middle vertical
-            if appium_details[device_id]['type'] == 'ios': y2 = 0 # In Appium v1.6.4, IOS doesn't swipe properly - always swipes at angles because y2 is added to y, which is different from Android. This gets around that issue
-        elif action_value == 'right':
-            x1 = 10 * w / 100 # Start 10% on left
-            x2 = 90 * w / 100 # End 90% on right
-            y1 = 50 * h / 100 # Middle vertical
-            y2 = y1 # Middle vertical
-            if appium_details[device_id]['type'] == 'ios': y2 = 0 # In Appium v1.6.4, IOS doesn't swipe properly - always swipes at angles because y2 is added to y, which is different from Android. This gets around that issue
-
-        # Perform swipe as many times as specified, or once if not specified
-        for i in range(0, count):
-            appium_driver.swipe(x1, y1, x2, y2)
-            time.sleep(1) # Small sleep, so action animation (if any) can complete
-        
-    # Handle a series of almost identical gestures (swipe horizontally at different locations for example)
-    elif action_value.count(',') == 2:
-        # Split input into separate parameters
-        horizontal, vertical, stepsize = action_value.split(',')
-        CommonUtil.ExecLog(sModuleInfo, "Swipe type: Multiple", 0)
-        
-        # Stepsize - How far to skip
-        if stepsize.isdigit(): # Stepsize given in pixels
-            stepsize = int(stepsize)
-        elif '%' in stepsize: # Stepsize given as a percentage
-            stepsize = int(stepsize.replace('%', '')) # Convert to integer
-            stepsize = stepsize * h / 100 # Convert from percentage to pixels
-        elif stepsize == 'none':
-            stepsize = 1
-        elif stepsize == 'small':
-            stepsize = 50
-        elif stepsize == 'medium':
-            stepsize = 100
-        elif stepsize == 'large' or stepsize == 'big':
-            stepsize = 250
-        
-        # Horizontal - Start and end
-        xstart, xstop = horizontal.split('-')
-        if xstart.isdigit(): # X given in pixels
-            xstart = int(xstart)
-            xstop = int(xstop)
-        elif '%' in horizontal: # X given in percentage
-            xstart = int(xstart.replace('%', '')) # Convert to integer
-            xstart = xstart * w / 100 # Convert from percentage to pixels
-            xstop = int(xstop.replace('%', '')) # Convert to integer
-            xstop = xstop * w / 100 # Convert from percentage to pixels
-            if xstart <= 0: # appium_driver.swipe fails if we are outside the boundary, so correct any values necessary
-                xstart = 1
-            if xstop >= w:
-                xstop = w - 1
-        elif horizontal == 'left-right': # Replace descriptive words with default values for them (FROM-TO)
-            xstart = 1
-            xstop = w - 1
-        elif horizontal == 'right-left': # Replace descriptive words with default values for them (FROM-TO)
-            xstart = w - 1
-            xstop = 1
-        
-        # Vertical - Start and end
-        ystart, ystop = vertical.split('-')
-        if ystart.isdigit(): # X given in pixels
-            ystart = int(ystart)
-            ystop = int(ystop)
-        elif '%' in vertical: # X given in percentage
-            ystart = int(ystart.replace('%', '')) # Convert to integer
-            ystart = ystart * h / 100 # Convert from percentage to pixels
-            ystop = int(ystop.replace('%', '')) # Convert to integer
-            ystop = ystop * h / 100 # Convert from percentage to pixels
-            if ystart <= 0: # appium_driver.swipe fails if we are outside the boundary, so correct any values necessary
-                ystart = 1
-            if ystop >= h:
-                ystop = h - 1
-        elif vertical == 'top-bottom': # Replace descriptive words with default values for them (FROM-TO)
-            ystart = 1
-            ystop = h - 1
-        elif vertical == 'bottom-top': # Replace descriptive words with default values for them (FROM-TO)
-            ystart = h - 1
-            ystop = 1
-            stepsize *= -1 # Convert stepsize to negative, so range() works as expected
-    
-        #Everything will be calculated off the larger height value
-        for y in range(ystart, ystop, stepsize): # For each row, assuming stepsize, swipe and move to next row
-            y2 = y
-            if appium_details[device_id]['type'] == 'ios': y2 = 0 # In Appium v1.6.4, IOS doesn't swipe properly - always swipes at angles because y2 is added to y, which is different from Android. This gets around that issue
-
-            if adb_swipe_method == True and y >= height_with_navbar: # Swipe in the navigation bar area if the device has one
-                result = Swipe(xstart, y, xstop, y2, adb = True) # Using adb to perform gesture, because Appium errors when we try to acces it
-            else: # Swipe via appium by default
-                result = Swipe(xstart, y, xstop, y2) # Swipe screen - y must be the same for horizontal swipes
-
-            if result == 'failed':
-                return 'failed'
-
-    # Invalid value
-    else:
-        CommonUtil.ExecLog(sModuleInfo, "The swipe data you entered is incorrect. Please provide accurate information on the data set(s).", 3) 
-        return 'failed'
-
-    # Swipe complete
-    CommonUtil.ExecLog(sModuleInfo, "Swipe completed successfully", 1)
-    CommonUtil.TakeScreenShot(sModuleInfo) # Capture screenshot, if settings allow for it    
-    return 'passed'
-
-
 
 def read_screen_heirarchy():
     ''' Read the XML string of the device's GUI and return it '''
