@@ -138,13 +138,13 @@ class Application(tk.Frame):
             except: pass # Exception Zeuz Node section doesn't exist (old settings format)
         
             # Maximize or Minimize, depending on settings.conf
-            #if 'Zeuz Node' in self.advanced_settings_frames:
-                #if 'maximize_at_start' in self.widgets['Zeuz Node']['widget'] and self.widgets['Zeuz Node']['widget']['maximize_at_start']['check'].get():
-                    #x = root.winfo_screenwidth() / 2 # Put on right side
-                    #y = root.winfo_screenheight() / 2 # Put on bottom
-                    #root.geometry("%dx%d+%d+%d" % (0, 0, x, y)) # Set window size and position
-                #elif 'minimize_at_start' in self.widgets['Zeuz Node']['widget'] and self.widgets['Zeuz Node']['widget']['minimize_at_start']['check'].get():
-                    #r.iconify()
+            if 'Zeuz Node' in self.advanced_settings_frames: # Make sure this section is in the config file
+                if 'maximize_at_start' in self.widgets['Zeuz Node']['widget'] and self.widgets['Zeuz Node']['widget']['maximize_at_start']['check'].get():
+                    sw = r.winfo_screenwidth()
+                    sh = r.winfo_screenheight()
+                    r.geometry("%dx%d+%d+%d" % (sw, sh, 0, 0)) # Set window to size of screen
+                elif 'minimize_at_start' in self.widgets['Zeuz Node']['widget'] and self.widgets['Zeuz Node']['widget']['minimize_at_start']['check'].get():
+                    r.iconify()
 
         except Exception, e: tkMessageBox.showerror('Error 01', 'Exception caught: %s' % e)
 
