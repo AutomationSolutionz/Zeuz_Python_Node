@@ -136,6 +136,15 @@ class Application(tk.Frame):
             try:
                 if 'check_for_updates' in self.widgets['Zeuz Node']['widget'] and self.widgets['Zeuz Node']['widget']['check_for_updates']['check'].get(): self.check_for_updates(check = True) # Check for updates
             except: pass # Exception Zeuz Node section doesn't exist (old settings format)
+        
+            # Maximize or Minimize, depending on settings.conf
+            #if 'Zeuz Node' in self.advanced_settings_frames:
+                #if 'maximize_at_start' in self.widgets['Zeuz Node']['widget'] and self.widgets['Zeuz Node']['widget']['maximize_at_start']['check'].get():
+                    #x = root.winfo_screenwidth() / 2 # Put on right side
+                    #y = root.winfo_screenheight() / 2 # Put on bottom
+                    #root.geometry("%dx%d+%d+%d" % (0, 0, x, y)) # Set window size and position
+                #elif 'minimize_at_start' in self.widgets['Zeuz Node']['widget'] and self.widgets['Zeuz Node']['widget']['minimize_at_start']['check'].get():
+                    #r.iconify()
 
         except Exception, e: tkMessageBox.showerror('Error 01', 'Exception caught: %s' % e)
 
@@ -179,8 +188,14 @@ class Application(tk.Frame):
             self.help_button = tk.Button(self.topframe, text = 'Help', width = self.button_width, command = self.show_help)
             self.help_button.grid(row = 1, column = 1, sticky = 'w')
     
-            self.settings_button = tk.Button(self.topframe, text='Show Advanced Settings', width = self.button_width, command=self.advanced_settings)
-            self.settings_button.grid(row = 2, column = 0)
+            #self.settings_button = tk.Button(self.topframe, text='Show Advanced Settings', width = self.button_width, command=self.advanced_settings)
+            #self.settings_button.grid(row = 2, column = 0)
+            self.settings_selection = tk.StringVar(self)
+            self.settings_selection.set('Authentication')
+            self.advanced_settings_frames.append('Authentication') # Need a default value, so we can create the menu
+            self.settings_menu = tk.OptionMenu(self.topframe, self.settings_selection, *self.advanced_settings_frames) # Create drop down
+            self.settings_menu.grid(row = 2, column = 0)
+            self.settings_selection.trace('w', self.show_settings) # Bind function to this drop down menu
     
             self.save_button = tk.Button(self.topframe, text='Save Settings', fg = 'green4', width = self.button_width, command=lambda: self.save_all(True))
             self.save_button.grid(row = 2, column = 1)
@@ -214,6 +229,7 @@ class Application(tk.Frame):
         # Widget types of determined on the fly (Entry, drop down, checkbox, etc)
         
         try:
+            self.settings_menu['menu'].delete(0, 'end') # Clear initial settings menu item, so we can populate it properly
             row = 0
             sections = ConfigModule.get_all_sections() # All sections in the config file
             if sections:
@@ -222,7 +238,8 @@ class Application(tk.Frame):
                     self.widgets[section]['widget'] = {} # Initialize widget dictionary
                     self.widgets[section]['frame'] = tk.Frame(self.settings_frame) # Create frame
                     self.advanced_settings_frames.append(section) # Store all section names, so we know which to display when we click the show advanced settings button
-                    tk.Label(self.widgets[section]['frame'], text = section, fg="red").grid(row = row, column = 0, pady = 10, columnspan = 2) # Create Section label
+                    self.settings_menu['menu'].add_command(label = section, command=tk._setit(self.settings_selection, section)) # Add the team to the drop down menu
+                    tk.Label(self.widgets[section]['frame'], text = section, fg="red").grid(row = row, column = 0, pady = 10, sticky = 'w', columnspan = 2) # Create Section label
                     row += 1
                     options = ConfigModule.get_all_option(section) # Read all options (keys) for this section
                     if options:
@@ -442,6 +459,15 @@ class Application(tk.Frame):
                     self.widgets[section]['frame'].grid(row = row, column = 0, sticky = 'w')
                     row += 1
         except Exception, e: tkMessageBox.showerror('Error 10', 'Exception caught: %s' % e)
+
+    def show_settings(self, a, b, c):
+        ''' Display different settings sections depending on drop down menu selection '''
+        
+        try:
+            for section in self.advanced_settings_frames: self.widgets[section]['frame'].grid_forget()
+            section = self.settings_selection.get()
+            self.widgets[section]['frame'].grid(row = 0, column = 0, sticky = 'w')
+        except Exception, e: tkMessageBox.showerror('Error 17', 'Exception caught: %s' % e)
 
     def write_log(self, msg, tag = ''):
         # Write to log file
