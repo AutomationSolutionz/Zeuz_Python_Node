@@ -1,6 +1,6 @@
 [ZeuZ Python Version]
-version = 3.8
+version = 3.9
 [Release Date]
-date= 2017-12-15
+date= 2017-12-20
 [Release Note]
-Note = Mobile Default no reset app;moving files;maximize current app;change in swipe actions
+Note = Changes in Node UI, new Swipe features
