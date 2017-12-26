@@ -465,7 +465,7 @@ def run_all_test_steps_in_a_test_case(Stepscount, test_case, sModuleInfo, run_id
 
         CommonUtil.ExecLog(sModuleInfo, "********** steps data for Step #%d: %s **********" % (StepSeq, str(test_steps_data)), 1)
         step_time = filter(lambda x: x[0] == 'estimated' and x[1] == 'time', step_meta_data)
-        if step_time:
+        if str(step_time)!='' and step_time!=None:
             step_time = int(step_time[0][2])
         else:
             step_time = 0
