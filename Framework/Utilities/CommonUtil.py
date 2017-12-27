@@ -143,6 +143,7 @@ def ExecLog(sModuleInfo, sDetails, iLogLevel=1, _local_run="", sStatus=""):
         # ";" is not supported for logging.  So replacing them
         sDetails = sDetails.replace(";", ":")
         sDetails = sDetails.replace("=", "~")
+        sDetails = sDetails.replace("%22", "'")
         sDetails = encode_to_exclude_symbol(to_unicode(sDetails))
         
         #Convert logLevel from int to string for clarity
@@ -202,10 +203,10 @@ def ExecLog(sModuleInfo, sDetails, iLogLevel=1, _local_run="", sStatus=""):
             logger.removeHandler(hdlr)
 
             # Write log line to server
-            #r = RequestFormatter.Get('log_execution',{'logid': log_id, 'modulename': sModuleInfo, 'details': sDetails, 'status': status,'loglevel': iLogLevel})
-            global all_logs,all_logs_count
-            all_logs[all_logs_count] = {'logid': log_id, 'modulename': sModuleInfo, 'details': sDetails, 'status': status,'loglevel': iLogLevel}
-            all_logs_count+=1
+            r = RequestFormatter.Get('log_execution',{'logid': log_id, 'modulename': sModuleInfo, 'details': sDetails, 'status': status,'loglevel': iLogLevel})
+            #global all_logs,all_logs_count
+            #all_logs[all_logs_count] = {'logid': log_id, 'modulename': sModuleInfo, 'details': sDetails, 'status': status,'loglevel': iLogLevel}
+            #all_logs_count+=1
 
     except Exception, e:
         pass # This can happen when server is not available. In that case, we don't need to do anything
