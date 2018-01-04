@@ -1,6 +1,6 @@
 [ZeuZ Python Version]
-version = 3.9
+version = 3.10
 [Release Date]
-date= 2017-12-20
+date= 2018-01-04
 [Release Note]
-Note = Changes in Node UI, new Swipe features
+Note = New Actions for REST and Mobile, some minor bug fixes
