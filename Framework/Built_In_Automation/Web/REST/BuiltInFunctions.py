@@ -23,6 +23,8 @@ requests.packages.urllib3.disable_warnings()
 from Framework.Utilities import CommonUtil
 from Framework.Utilities.CommonUtil import passed_tag_list, failed_tag_list, skipped_tag_list
 
+count=1
+index=1
 
 '============================= Sequential Action Section Begins=============================='
 
@@ -135,52 +137,73 @@ def get_value_as_list(data):
 
 
 def get_val(x,target):
+    global count,index
     for key,value in x.items():
         if str(key) == target:
-            return value
+            if count == index:
+                return value
+            else:
+                count+=1
+                continue
         else:
             if isinstance(value,dict):
                 result = get_val(value,target)
                 if not result:
                     continue
                 else:
-                    return result
+                    if count == index:
+                        return result
+                    else:
+                        count += 1
+                        continue
             elif isinstance(value,list):
                 for each in value:
                     result = get_val(each,target)
                     if not result:
                         continue
                     else:
-                        return result
+                        if count == index:
+                            return result
+                        else:
+                            count += 1
+                            continue
             else:
                 continue
     return False
 
 
-def search_val(x,target,target_val,equal=True):
+def search_val(x,target,target_val):
     for key,value in x.items():
         if str(key) == target and str(value) == target_val:
             return True
+
         else:
             if isinstance(value,dict):
-                result = search_val(value,target,target_val)
+                result =  search_val(value,target,target_val)
                 if not result:
                     continue
                 else:
                     return result
             elif isinstance(value,list):
                 for each in value:
-                    result = search_val(each,target,target_val)
+                    result =  search_val(each,target,target_val)
                     if not result:
                         continue
                     else:
                         return result
             else:
                 continue
+
+    return False
+
+
+def search_val_wrapper(x,target,target_val,equal=True):
+    result = search_val(x,target,target_val)
     if equal:
-        return False
+        return result
     else:
-        return True
+        return not result
+
 
 
 # Method to save rest call parameters
@@ -188,6 +211,7 @@ def save_fields_from_rest_call(result_dict, fields_to_be_saved):
     sModuleInfo = inspect.stack()[0][3] + " : " + inspect.getmoduleinfo(__file__).name
     CommonUtil.ExecLog(sModuleInfo, "Function: save fields from rest call", 1)
     try:
+        global index,count
         fields_to_be_saved = fields_to_be_saved.split(",")
         if fields_to_be_saved[0].lower().strip() == 'all':
             for each in result_dict:
@@ -201,7 +225,27 @@ def save_fields_from_rest_call(result_dict, fields_to_be_saved):
             which_are_saved = []
             for each in fields_to_be_saved:
                 field = each.strip()
-                value_to_be_saved = get_val(result_dict,field)
+                i = 1
+                temp_field= ''
+                multiple = False
+                if "-" in field:
+                    l = field.split("-")
+                    if len(l) == 2:
+                       try:
+                           i = int(l[1].strip())
+                           temp_field = l[0].strip()
+                           multiple = True
+                       except:
+                           i = 1
+
+                if multiple:
+                    index = i
+                    count = 1
+                    value_to_be_saved = get_val(result_dict, temp_field)
+                else:
+                    index = 1
+                    count = 1
+                    value_to_be_saved = get_val(result_dict,field)
                 if not value_to_be_saved:
                     CommonUtil.ExecLog(sModuleInfo,"Couldn't find  response field, ignoring it %s" %field, 2)
                 else:
@@ -336,6 +380,7 @@ def handle_rest_call(data, fields_to_be_saved, save_into_list = False, list_name
     sModuleInfo = inspect.stack()[0][3] + " : " + inspect.getmoduleinfo(__file__).name
     CommonUtil.ExecLog(sModuleInfo, "Function: handle rest call", 1)
     try:
+        global index,count
         Shared_Resources.Set_Shared_Variables('status_code', 0) # Reset this shared variable, so we do not get confused with any previous run
         url = data[0]
         method = data[1]
@@ -370,7 +415,7 @@ def handle_rest_call(data, fields_to_be_saved, save_into_list = False, list_name
                 CommonUtil.ExecLog(sModuleInfo, 'Post Call Returned Response Successfully', 1)
                 CommonUtil.ExecLog(sModuleInfo,"Received Response: %s"%result.json(),1)
                 if search:
-                    search_result = search_val(result.json(),search_key,search_value,equal)
+                    search_result = search_val_wrapper(result.json(),search_key,search_value,equal)
                     if equal:
                         if search_result:
                             CommonUtil.ExecLog(sModuleInfo, 'Got "%s":"%s" in response'%(search_key,search_value), 1)
