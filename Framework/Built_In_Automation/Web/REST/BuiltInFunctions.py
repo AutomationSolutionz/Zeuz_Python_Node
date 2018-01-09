@@ -186,11 +186,17 @@ def search_val(x,target,target_val):
                     return result
             elif isinstance(value,list):
                 for each in value:
-                    result =  search_val(each,target,target_val)
-                    if not result:
-                        continue
+                    if isinstance(each,unicode) or isinstance(each,str):
+                        if str(key) == target and str(each) == target_val:
+                            return True
+                        else:
+                            continue
                     else:
-                        return result
+                        result =  search_val(each,target,target_val)
+                        if not result:
+                            continue
+                        else:
+                            return result
             else:
                 continue
 
