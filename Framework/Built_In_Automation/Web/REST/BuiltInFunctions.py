@@ -279,6 +279,7 @@ def insert_fields_from_rest_call_into_list(result_dict, fields_to_be_saved, list
     sModuleInfo = inspect.stack()[0][3] + " : " + inspect.getmoduleinfo(__file__).name
     CommonUtil.ExecLog(sModuleInfo, "Function: save fields from rest call", 1)
     try:
+        global index, count
         fields_to_be_saved = fields_to_be_saved.split(",")
         if fields_to_be_saved[0].lower().strip() == 'all':
             for each in result_dict:
@@ -292,9 +293,32 @@ def insert_fields_from_rest_call_into_list(result_dict, fields_to_be_saved, list
             which_are_saved = []
             for each in fields_to_be_saved:
                 field = each.strip()
-                if field in result_dict:
+                i = 1
+                temp_field = ''
+                multiple = False
+                if "-" in field:
+                    l = field.split("-")
+                    if len(l) == 2:
+                        try:
+                            i = int(l[1].strip())
+                            temp_field = l[0].strip()
+                            multiple = True
+                        except:
+                            i = 1
+
+                if multiple:
+                    index = i
+                    count = 1
+                    value_to_be_saved = get_val(result_dict, temp_field)
+                else:
+                    index = 1
+                    count = 1
+                    value_to_be_saved = get_val(result_dict, field)
+                if not value_to_be_saved:
+                    CommonUtil.ExecLog(sModuleInfo, "Couldn't find  response field, ignoring it %s" % field, 2)
+                else:
                     which_are_saved.append(field)
-                    Shared_Resources.Set_List_Shared_Variables(list_name, field, result_dict[field])
+                    Shared_Resources.Set_List_Shared_Variables(list_name, field, value_to_be_saved)
 
             CommonUtil.ExecLog(sModuleInfo, "%s response fields are saved"%(", ".join(str(x) for x in which_are_saved)),1)
 

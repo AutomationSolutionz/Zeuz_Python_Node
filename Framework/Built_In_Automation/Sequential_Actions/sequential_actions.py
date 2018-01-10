@@ -68,6 +68,7 @@ actions = { # Numbers are arbitrary, and are not used anywhere
 
     300: {'module': 'rest', 'name': 'save response', 'function': 'Get_Response'},
     301: {'module': 'rest', 'name': 'search response', 'function': 'Search_Response'},
+    302: {'module': 'rest', 'name': 'save response into list', 'function': 'Insert_Into_List'},
     
     401: {'module': 'selenium', 'name': 'click', 'function': 'Click_Element'},
     402: {'module': 'selenium', 'name': 'click and hold', 'function': 'Click_and_Hold_Element'},
