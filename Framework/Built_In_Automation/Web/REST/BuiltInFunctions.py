@@ -158,15 +158,25 @@ def get_val(x,target):
                         continue
             elif isinstance(value,list):
                 for each in value:
-                    result = get_val(each,target)
-                    if not result:
-                        continue
-                    else:
-                        if count == index:
-                            return result
+                    if isinstance(each,unicode) or isinstance(each,str):
+                        if str(key) == target:
+                            if count == index:
+                                return each
+                            else:
+                                count += 1
+                                continue
                         else:
-                            count += 1
                             continue
+                    else:
+                        result = get_val(each,target)
+                        if not result:
+                            continue
+                        else:
+                            if count == index:
+                                return result
+                            else:
+                                count += 1
+                                continue
             else:
                 continue
     return False
