@@ -214,7 +214,7 @@ def get_devices():
         output = output.replace("\t", ' ')
         output = output.split("\n")
         output.pop(0)  # Remove "list of..." string
-        output = [line for line in output if line != '']
+        output = [line for line in output if line != '' and '*' not in line] # Probably better to look for two word line which only contains 'device', but this works for now
 
         # Return as list
         CommonUtil.ExecLog(sModuleInfo, "Connected devices: %s" % str(output), 0)
