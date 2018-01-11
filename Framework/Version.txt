@@ -1,6 +1,6 @@
 [ZeuZ Python Version]
-version = 3.10
+version = 3.11
 [Release Date]
-date= 2018-01-04
+date= 2018-01-11
 [Release Note]
-Note = New Actions for REST and Mobile, some minor bug fixes
+Note = New Actions for REST(save response to list, search with key pair in a list)
