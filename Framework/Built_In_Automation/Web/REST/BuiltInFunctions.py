@@ -25,6 +25,7 @@ from Framework.Utilities.CommonUtil import passed_tag_list, failed_tag_list, ski
 
 count=1
 index=1
+all_val = set()
 
 '============================= Sequential Action Section Begins=============================='
 
@@ -134,6 +135,25 @@ def get_value_as_list(data):
         return json.loads(data)
     except Exception:
         return CommonUtil.Exception_Handler(sys.exc_info())
+
+
+def get_all_val(x,target):
+    global all_val
+    for key,value in x.items():
+        if str(key) == target:
+            all_val.add(value)
+        else:
+            if isinstance(value,dict):
+                get_all_val(value,target)
+            elif isinstance(value,list):
+                for each in value:
+                    if isinstance(each,unicode) or isinstance(each,str):
+                        if str(key) == target:
+                            all_val.add(each)
+                    else:
+                        get_all_val(each,target)
+            else:
+                continue
 
 
 def get_val(x,target):
@@ -279,7 +299,7 @@ def insert_fields_from_rest_call_into_list(result_dict, fields_to_be_saved, list
     sModuleInfo = inspect.stack()[0][3] + " : " + inspect.getmoduleinfo(__file__).name
     CommonUtil.ExecLog(sModuleInfo, "Function: save fields from rest call", 1)
     try:
-        global index, count
+        global index, count,all_val
         fields_to_be_saved = fields_to_be_saved.split(",")
         if fields_to_be_saved[0].lower().strip() == 'all':
             for each in result_dict:
@@ -300,25 +320,42 @@ def insert_fields_from_rest_call_into_list(result_dict, fields_to_be_saved, list
                     l = field.split("-")
                     if len(l) == 2:
                         try:
-                            i = int(l[1].strip())
+                            i = l[1].strip()
+                            if i=='all':
+                                i = 0 #0 for all
+                            else:
+                                i = int(i)
                             temp_field = l[0].strip()
                             multiple = True
                         except:
                             i = 1
 
                 if multiple:
-                    index = i
-                    count = 1
-                    value_to_be_saved = get_val(result_dict, temp_field)
+                    if i == 0:
+                        index = 0
+                        all_val = set()
+                        get_all_val(result_dict, temp_field)
+                    else:
+                        index = i
+                        count = 1
+                        value_to_be_saved = get_val(result_dict, temp_field)
                 else:
                     index = 1
                     count = 1
                     value_to_be_saved = get_val(result_dict, field)
-                if not value_to_be_saved:
-                    CommonUtil.ExecLog(sModuleInfo, "Couldn't find  response field, ignoring it %s" % field, 2)
+
+                if index == 0: #save all into list
+                    which_are_saved.append(temp_field)
+                    Shared_Resources.Set_Shared_Variables(list_name, []) #initializes the list
+                    for each in all_val:
+                        Shared_Resources.Append_List_Shared_Variables(list_name, each)
                 else:
-                    which_are_saved.append(field)
-                    Shared_Resources.Set_List_Shared_Variables(list_name, field, value_to_be_saved)
+                    if not value_to_be_saved:
+                        CommonUtil.ExecLog(sModuleInfo, "Couldn't find  response field, ignoring it %s" % field, 2)
+                    else:
+                        which_are_saved.append(field)
+                        Shared_Resources.Set_Shared_Variables('list_name')
+                        Shared_Resources.Set_List_Shared_Variables(list_name, field, value_to_be_saved)
 
             CommonUtil.ExecLog(sModuleInfo, "%s response fields are saved"%(", ".join(str(x) for x in which_are_saved)),1)
 

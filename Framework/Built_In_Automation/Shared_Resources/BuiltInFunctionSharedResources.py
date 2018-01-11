@@ -55,11 +55,12 @@ def Set_List_Shared_Variables(list_name, key, value, protected = False):
                 shared_variables[list_name][key] = value
                 CommonUtil.ExecLog(sModuleInfo, "In List '%s' Variable value of '%s' is set as: %s" % (list_name, key, value), 0)
                 return "passed"
-            else:
+            else: #create dict if now available
+                shared_variables[list_name] = {}
+                shared_variables[list_name][key] = value
                 CommonUtil.ExecLog(sModuleInfo,
-                        "List named %s does not exist on shared variables, so cant insert new field to list" % list_name,
-                        3)
-                return "failed"
+                                   "In List '%s' Variable value of '%s' is set as: %s" % (list_name, key, value), 0)
+                return "passed"
     except:
         CommonUtil.Exception_Handler(sys.exc_info())
 
@@ -86,6 +87,9 @@ def Append_List_Shared_Variables(key, value, protected = False):
         # Create list if non-existent
         if not key in shared_variables:
             CommonUtil.ExecLog(sModuleInfo, "Creating new list", 0)
+            shared_variables[key] = []
+
+        if key in shared_variables and shared_variables[key] == {}: #if initialized as a dict through "Initialize List" action, convert it to list
             shared_variables[key] = []
         
         # Append list
@@ -377,6 +381,7 @@ def Compare_Lists(step_data):
         list1_name = ''
         list2_name = ''
         ignore_extra = True
+        both_list = False
         for each_step_data_item in step_data[0]:
             if each_step_data_item[1] == "compare":
                 list1_name = each_step_data_item[0]
@@ -396,65 +401,77 @@ def Compare_Lists(step_data):
             CommonUtil.ExecLog(sModuleInfo,"Error converting Shared Variable in Field or Value fields to strings",3)
             return "failed"
 
-        for key in list1:
-            if key in list2:
-                if key not in taken:
-                    new_tuple = (key,list1[key])
-                    variable_list1.append(new_tuple)
-                    new_tuple = (key,list2[key])
-                    variable_list2.append(new_tuple)
-                    taken.append(key)
-                    if str(list1[key]).lower().strip() == str(list2[key]).lower().strip():
-                        pass_count+=1
-                        result.append('pass')
-                    else:
-                        fail_count+=1
-                        result.append('fail')
-            else:
-                if key not in taken:
-                    new_tuple = (key,list1[key])
-                    variable_list1.append(new_tuple)
-                    new_tuple = (key,'N/A')
-                    variable_list2.append(new_tuple)
-                    extra_count += 1
-                    result.append('extra')
-                    taken.append(key)
+        if isinstance(list1,list) and isinstance(list2,list): #if both are list not dict
+            both_list = True
+            variable_list1 = list1
+            variable_list2 = list2
+            for each in list1:
+                if each in list2:
+                    pass_count+=1
+                else:
+                    fail_count+=1
+        else: #if both are dict
+            for key in list1:
+                if key in list2:
+                    if key not in taken:
+                        new_tuple = (key,list1[key])
+                        variable_list1.append(new_tuple)
+                        new_tuple = (key,list2[key])
+                        variable_list2.append(new_tuple)
+                        taken.append(key)
+                        if str(list1[key]).lower().strip() == str(list2[key]).lower().strip():
+                            pass_count+=1
+                            result.append('pass')
+                        else:
+                            fail_count+=1
+                            result.append('fail')
+                else:
+                    if key not in taken:
+                        new_tuple = (key,list1[key])
+                        variable_list1.append(new_tuple)
+                        new_tuple = (key,'N/A')
+                        variable_list2.append(new_tuple)
+                        extra_count += 1
+                        result.append('extra')
+                        taken.append(key)
 
-        for key in list2:
-            if key in list1:
-                if key not in taken:
-                    new_tuple = (key,list1[key])
-                    variable_list1.append(new_tuple)
-                    new_tuple = (key,list2[key])
-                    variable_list2.append(new_tuple)
-                    taken.append(key)
-                    if str(list1[key]).lower().strip() == str(list2[key]).lower().strip():
-                        pass_count+=1
-                        result.append('pass')
-                    else:
-                        fail_count+=1
-                        result.append('fail')
-            else:
-                if key not in taken:
-                    new_tuple = (key,'N/A')
-                    variable_list1.append(new_tuple)
-                    new_tuple = (key,list2[key])
-                    variable_list2.append(new_tuple)
-                    extra_count += 1
-                    result.append('extra')
-                    taken.append(key)
+            for key in list2:
+                if key in list1:
+                    if key not in taken:
+                        new_tuple = (key,list1[key])
+                        variable_list1.append(new_tuple)
+                        new_tuple = (key,list2[key])
+                        variable_list2.append(new_tuple)
+                        taken.append(key)
+                        if str(list1[key]).lower().strip() == str(list2[key]).lower().strip():
+                            pass_count+=1
+                            result.append('pass')
+                        else:
+                            fail_count+=1
+                            result.append('fail')
+                else:
+                    if key not in taken:
+                        new_tuple = (key,'N/A')
+                        variable_list1.append(new_tuple)
+                        new_tuple = (key,list2[key])
+                        variable_list2.append(new_tuple)
+                        extra_count += 1
+                        result.append('extra')
+                        taken.append(key)
 
-        CommonUtil.ExecLog(sModuleInfo,"###Comaparison Results of List '%s' and List '%s'###"%(list1_name,list2_name),0)
-        CommonUtil.ExecLog(sModuleInfo,"Matched Variables: %d"%pass_count,0)
+        CommonUtil.ExecLog(sModuleInfo,"###Comaparison Results of List '%s' and List '%s'###"%(list1_name,list2_name),1)
+        CommonUtil.ExecLog(sModuleInfo,"Matched Variables: %d"%pass_count,1)
         CommonUtil.ExecLog(sModuleInfo, "Not Matched Variables: %d" % fail_count, 1)
         CommonUtil.ExecLog(sModuleInfo, "Extra Variables: %d" % extra_count, 1)
-        for i in range(0, len(variable_list1)):
-            if result[i] == 'pass':
-                CommonUtil.ExecLog(sModuleInfo,"Item %d. Variable Name : %s :: %s - %s : Matched"%(i+1,variable_list1[i][0],variable_list1[i][1],variable_list2[i][1]),0)
-            elif result[i] == 'fail':
-                CommonUtil.ExecLog(sModuleInfo, "Item %d. Variable Name : %s :: %s - %s : Not Matched" % (i + 1, variable_list1[i][0], variable_list1[i][1], variable_list2[i][1]), 1)
-            else:
-                CommonUtil.ExecLog(sModuleInfo, "Item %d. Variable Name : %s :: %s - %s : Extra" % (i + 1, variable_list1[i][0], variable_list1[i][1], variable_list2[i][1]), 1)
+
+        if not both_list:
+            for i in range(0, len(variable_list1)):
+                if result[i] == 'pass':
+                    CommonUtil.ExecLog(sModuleInfo,"Item %d. Variable Name : %s :: %s - %s : Matched"%(i+1,variable_list1[i][0],variable_list1[i][1],variable_list2[i][1]),1)
+                elif result[i] == 'fail':
+                    CommonUtil.ExecLog(sModuleInfo, "Item %d. Variable Name : %s :: %s - %s : Not Matched" % (i + 1, variable_list1[i][0], variable_list1[i][1], variable_list2[i][1]), 1)
+                else:
+                    CommonUtil.ExecLog(sModuleInfo, "Item %d. Variable Name : %s :: %s - %s : Extra" % (i + 1, variable_list1[i][0], variable_list1[i][1], variable_list2[i][1]), 1)
 
 
         if fail_count > 0:

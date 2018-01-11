@@ -452,6 +452,8 @@ def Loop_Action_Handler(step_data, row, dataset_cnt):
                     if sr.Test_Shared_Variables(tmp): # User provided a shared variable, which should be a list that we can loop through
                         loop_type = sr.Get_Shared_Variables(tmp) # Retrieved shared variable value
                         loop_len = len(loop_type) # Number of list items to cycle through
+                        if loop_len == 0:
+                            return "passed",[]
                         loop_method = 'list'
                         
                         if type(loop_type) != list: # Make sure shared variable is a list
