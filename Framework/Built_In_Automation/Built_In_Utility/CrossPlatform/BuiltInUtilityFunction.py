@@ -30,11 +30,12 @@ from Framework.Built_In_Automation.Shared_Resources import BuiltInFunctionShared
 # funtion to get the path of home folder in linux
 def get_home_folder():
     """
-
     :return: give the path of home folder
     """
+
     sModuleInfo = inspect.stack()[0][3] + " : " + inspect.getmoduleinfo(__file__).name
     CommonUtil.ExecLog(sModuleInfo, "Function start", 0)
+
     try:
         if _platform == "linux" or _platform == "linux2" or _platform == "darwin":
             path = os.getenv('HOME') 
@@ -51,40 +52,44 @@ def get_home_folder():
 # function to create a folder
 def CreateFolder(folderPath, forced=True):
     """
-
-    :param folderPath: folder path to be created
-    :param forced: if true remove the folder first, if false won't remove the folder if there exists one with same name
-    :return: Exception if Exception occurs or True if successful
+        :param folderPath: folder path to be created
+        :param forced: if true remove the folder first, if false won't remove the folder if there exists one with same name
+        :return: Exception if Exception occurs or True if successful
     """
+    
     sModuleInfo = inspect.stack()[0][3] + " : " + inspect.getmoduleinfo(__file__).name
     CommonUtil.ExecLog(sModuleInfo, "Function start", 0)
+    
     try:
-        CommonUtil.ExecLog(sModuleInfo, "Create Folder %s" % folderPath, 1)
+        CommonUtil.ExecLog(sModuleInfo, "Creating Folder %s" % folderPath, 1)
         if os.path.isdir(folderPath):
             if forced == False:
                 # print "folder already exists"
-                CommonUtil.ExecLog(sModuleInfo, "Folder already exists", 1)
+                CommonUtil.ExecLog(sModuleInfo, "Folder already exists. Not doing", 1)
                 return "passed"
             DeleteFolder(folderPath)
-        os.makedirs(folderPath)
+        
+        os.makedirs(folderPath) # Create the directory
+        
         # after performing os.makedirs() we have to check that if the folder with new name exists in correct location.
         # if the folder exists in correct position then return passed
         # if the folder doesn't exist in correct position then return failed
         if os.path.isdir(folderPath):
-            CommonUtil.ExecLog(sModuleInfo, "folder exists... create folder function is done properly", 1)
+            CommonUtil.ExecLog(sModuleInfo, "Folder created successfully", 1)
             return "passed"
         else:
-            CommonUtil.ExecLog(sModuleInfo, "file doesn't exist... create folder function is not done properly", 3)
+            CommonUtil.ExecLog(sModuleInfo, "Could not create folder", 3)
             return "failed"
     except Exception:
-        return CommonUtil.Exception_Handler(sys.exc_info())
+        return CommonUtil.Exception_Handler(sys.exc_info(), None, "Error creating folder")
 
 
 # function to create a file
-def CreateFile(sFilePath):
+def CreateFile(sFilePath, data = '', overwrite = False):
     """
         :param sFilePath: file path to be created
-        :param forced: if true remove the folder first, if false won't remove the folder if there exists one with same name
+        :param data: Write data to the file
+        :param overwrite: if true overwrite the current file
         :return: Exception if Exception occurs or True if successful or False if file already exists
     """
     
@@ -92,49 +97,20 @@ def CreateFile(sFilePath):
     CommonUtil.ExecLog(sModuleInfo, "Function start", 0)
     
     try:
-        CommonUtil.ExecLog(sModuleInfo, "Create File %s" % sFilePath, 1)
+        CommonUtil.ExecLog(sModuleInfo, "Creating file %s" % sFilePath, 1)
         if os.path.isfile(sFilePath):
             CommonUtil.ExecLog(sModuleInfo, "File already exists", 1)
-            # print "File already exists"
-            return False
-        else:
-            # print "Creating new file"
-            CommonUtil.ExecLog(sModuleInfo, "Creating new file", 1)
-            newfile = open(sFilePath, 'w')
-            newfile.close()
-            CommonUtil.ExecLog(sModuleInfo, "Creating file %s is complete" % sFilePath, 1)
-            return newfile
+            if not overwrite:
+                return 'passed' # Passed because the file does exist. User is responsible for ensuring file does not already exist
+
+        # Create file
+        with open(sFilePath, 'w') as newfile:
+            if data != '': newfile.write(data)
+            
+        CommonUtil.ExecLog(sModuleInfo, "File created successfully", 1)
+        return 'passed'
     except Exception:
-        return CommonUtil.Exception_Handler(sys.exc_info())
-
-
-# function to rename file a to b
-def RenameFile(file_to_be_renamed, new_name_of_the_file):
-    """
-        :param file_to_be_renamed: location of source file to be renamed
-        :param new_name_of_the_file: location of destination file
-        :return: Exception if Exception occurs otherwise return result  
-    """
-    
-    sModuleInfo = inspect.stack()[0][3] + " : " + inspect.getmoduleinfo(__file__).name
-    CommonUtil.ExecLog(sModuleInfo, "Function start", 0)
-    
-    try:
-        CommonUtil.ExecLog(sModuleInfo, "Renaming file %s to %s" % (file_to_be_renamed, new_name_of_the_file), 0)
-        shutil.move(file_to_be_renamed, new_name_of_the_file)
-        # after performing shutil.move() we have to check that if the file with new name exists in correct location.
-        # if the file exists in correct position then return passed
-        # if the file doesn't exist in correct position then return failed
-        if os.path.isfile(new_name_of_the_file):
-
-            CommonUtil.ExecLog(sModuleInfo, "file exists... rename function is done properly", 0)
-            return "passed"
-        else:
-            CommonUtil.ExecLog(sModuleInfo, "file doesn't exist... rename function is not done properly", 3)
-            return "failed"
-
-    except Exception:
-        return CommonUtil.Exception_Handler(sys.exc_info())
+        return CommonUtil.Exception_Handler(sys.exc_info(), None, "Error writing to %s:" % sFilePath)
 
 
 # function to move file a to b
@@ -151,46 +127,28 @@ def MoveFile(file_to_be_moved, new_name_of_the_file):
     try:
         CommonUtil.ExecLog(sModuleInfo, "Moving file %s to %s" % (file_to_be_moved, new_name_of_the_file), 0)
         shutil.move(file_to_be_moved, new_name_of_the_file)
+        
         # after performing shutil.move() we have to check that if the file with new name exists in correct location.
         # if the file exists in correct position then return passed
         # if the file doesn't exist in correct position then return failed
         if os.path.isfile(new_name_of_the_file):
-            CommonUtil.ExecLog(sModuleInfo, "file exists... move function is done properly", 0)
+            CommonUtil.ExecLog(sModuleInfo, "File moved successfully", 0)
             return "passed"
         else:
-            CommonUtil.ExecLog(sModuleInfo, "file doesn't exist... move function is not done properly", 3)
+            CommonUtil.ExecLog(sModuleInfo, "File failed to move", 3)
             return "failed"
 
     except Exception:
-        return CommonUtil.Exception_Handler(sys.exc_info())
+        return CommonUtil.Exception_Handler(sys.exc_info(), None, "Error moving file")
 
-
-# function to rename folder a to b
-def RenameFolder(folder_to_be_renamed, new_name_of_the_folder):
+# function to rename file a to b
+def RenameFile(file_to_be_renamed, new_name_of_the_file):
     """
-        :param folder_to_be_renamed: location of source folder to be renamed
-        :param new_name_of_the_folder: full location of destination folder
-        :return: Exception if Exception occurs otherwise return result  
+        Wrapper for MoveFile
     """
     
-    sModuleInfo = inspect.stack()[0][3] + " : " + inspect.getmoduleinfo(__file__).name
-    CommonUtil.ExecLog(sModuleInfo, "Function start", 0)
-    
-    try:
-        CommonUtil.ExecLog(sModuleInfo, "Renaming folder %s to %s" % (folder_to_be_renamed, new_name_of_the_folder), 0)
-        shutil.move(folder_to_be_renamed, new_name_of_the_folder)
-        # after performing shutil.move() we have to check that if the folder with new name exists in correct location.
-        # if the folder exists in correct position then return passed
-        # if the folder doesn't exist in correct position then return failed
-        if os.path.isdir(new_name_of_the_folder):
-            CommonUtil.ExecLog(sModuleInfo, "folder exists... rename function is done properly", 0)
-            return "passed"
-        else:
-            CommonUtil.ExecLog(sModuleInfo, "folder doesn't exist... rename function is not done properly", 3)
-            return "failed"
-
-    except Exception:
-        return CommonUtil.Exception_Handler(sys.exc_info())
+    result = MoveFile(file_to_be_moved, new_name_of_the_file)
+    return result
 
 
 # function to move folder a to b
@@ -205,21 +163,31 @@ def MoveFolder(folder_to_be_moved, new_name_of_the_folder):
     CommonUtil.ExecLog(sModuleInfo, "Function start", 0)
     
     try:
-        CommonUtil.ExecLog(sModuleInfo, "Moving folder %s to %s" % (folder_to_be_moved, new_name_of_the_folder), 0)
+        CommonUtil.ExecLog(sModuleInfo, "Moving folder from %s to %s" % (folder_to_be_moved, new_name_of_the_folder), 1)
         shutil.move(folder_to_be_moved, new_name_of_the_folder)
+        
         # after performing shutil.move() we have to check that if the folder with new name exists in correct location.
         # if the folder exists in correct position then return passed
         # if the folder doesn't exist in correct position then return failed
         if os.path.isdir(new_name_of_the_folder):
-            CommonUtil.ExecLog(sModuleInfo, "folder exists... move function is done properly", 0)
+            CommonUtil.ExecLog(sModuleInfo, "Folder moved successfully", 1)
             return "passed"
         else:
-            CommonUtil.ExecLog(sModuleInfo, "folder doesn't exist... move function is not done properly", 3)
+            CommonUtil.ExecLog(sModuleInfo, "Folder failed to move", 3)
             return "failed"
 
     except Exception:
-        return CommonUtil.Exception_Handler(sys.exc_info())
+        return CommonUtil.Exception_Handler(sys.exc_info(), None, "Error while moving folder")
 
+
+# function to rename folder a to b
+def RenameFolder(folder_to_be_renamed, new_name_of_the_folder):
+    """
+        Wrapper for MoveFolder
+    """
+    
+    result = MoveFolder(folder_to_be_moved, new_name_of_the_folder)
+    return result
 
 # function to unzip in linux
 def UnZip(file_to_be_unzipped, location_where_to_unzip):
@@ -234,16 +202,26 @@ def UnZip(file_to_be_unzipped, location_where_to_unzip):
     
     try:
         CommonUtil.ExecLog(sModuleInfo, "Unzipping file %s to %s" % (file_to_be_unzipped, location_where_to_unzip), 1)
-        if os.path.isfile(file_to_be_unzipped):
+        if os.path.isfile(file_to_be_unzipped): # If zip file exists
+            if not os.path.isdir(location_where_to_unzip): # If destination directory does not exist, create it
+                CommonUtil.ExecLog(sModuleInfo, "Directory doesn't exist, creating", 1)
+                if CreateFolder(location_where_to_unzip) in failed_tag_list: # Create directory, but if it fails, exit
+                    CommonUtil.ExecLog(sModuleInfo, "Couldn't create directory, so can't unzip", 3)
+                    return 'failed'
+            
+            # Unzip file
             zip_ref = zipfile.ZipFile(file_to_be_unzipped, 'r')
             zip_ref.extractall(location_where_to_unzip)
             result = zip_ref.close()
-            return result
+            if result in failed_tag_list:
+                return 'failed'
+            else:
+                return 'passed'
         else:
-            CommonUtil.ExecLog(sModuleInfo, "can't unzip file as it doesn't exist", 3)
+            CommonUtil.ExecLog(sModuleInfo, "Zip file doesn't exist", 3)
             return "failed"
     except Exception:
-        return CommonUtil.Exception_Handler(sys.exc_info())
+        return CommonUtil.Exception_Handler(sys.exc_info(), None, "Error unzipping file")
 
 
 # function to compare two files
@@ -258,11 +236,11 @@ def CompareFile(file_to_be_compared1, file_to_be_compared2):
     CommonUtil.ExecLog(sModuleInfo, "Function start", 0)
     
     try:
-        CommonUtil.ExecLog(sModuleInfo, "Comparing files %s and %s" % (file_to_be_compared1, file_to_be_compared2), 1)
+        CommonUtil.ExecLog(sModuleInfo, "Comparing %s with %s" % (file_to_be_compared1, file_to_be_compared2), 1)
         result = filecmp.cmp(file_to_be_compared1, file_to_be_compared2)
         return result
     except Exception:
-        return CommonUtil.Exception_Handler(sys.exc_info())
+        return CommonUtil.Exception_Handler(sys.exc_info(), None, "Error comparing files")
 
 
 # function to zip a file for linux
@@ -1028,7 +1006,7 @@ def Create_File_or_Folder(step_data):
     sModuleInfo = inspect.stack()[0][3] + " : " + inspect.getmoduleinfo(__file__).name
     CommonUtil.ExecLog(sModuleInfo, "Function start", 0)
     try:
-        if _platform == "linux" or _platform == "linux2":
+        if _platform == "linux" or _platform == "linux2": #!!!merge these if statements, duplicating work
             # linux
             CommonUtil.ExecLog(sModuleInfo, "linux", 1)
             path = get_home_folder() + str(step_data[0][2]).strip()  # path of the file/folder to be created
@@ -1333,7 +1311,7 @@ def Get_Current_Documents(step_data):
 
 
 # Method to create file
-def Create_File(step_data):
+def Create_File(step_data):#!!!why is this here
     sModuleInfo = inspect.stack()[0][3] + " : " + inspect.getmoduleinfo(__file__).name
     CommonUtil.ExecLog(sModuleInfo, "Function start", 0)
     try:
