@@ -1,31 +1,31 @@
 # -*- coding: cp1252 -*-
 '''
-Created on May 15, 2016
+    Created on May 15, 2016
 
-@author: Built_In_Automation Solutionz Inc.
+    @author: Built_In_Automation Solutionz Inc.
+    Name: Built In Functions - Utility
+    Description: OS and file utitlies
 '''
 
-import sys
-import datetime
+#########################
+#                       #
+#        Modules        #
+#                       #
+#########################
 
 sys.path.append("..")
-import time
-import inspect
-import zipfile
-import string
-from Framework.Utilities import ConfigModule
-import filecmp
-import random
-import requests, math, re
-from Framework.Utilities import CommonUtil
+import sys, datetime, time, inspect, zipfile, string, filecmp, random, requests, math, re, os, subprocess, shutil, ast
 from sys import platform as _platform
+from Framework.Utilities import ConfigModule
+from Framework.Utilities import CommonUtil
 from Framework.Utilities.CommonUtil import passed_tag_list, failed_tag_list, skipped_tag_list
-
 from Framework.Built_In_Automation.Shared_Resources import BuiltInFunctionSharedResources as Shared_Resources
-import os, subprocess, shutil,ast
 
-add_sanitization = True
-
+#########################
+#                       #
+#    Helper Functions   #
+#                       #
+#########################
 
 # funtion to get the path of home folder in linux
 def get_home_folder():
@@ -83,13 +83,14 @@ def CreateFolder(folderPath, forced=True):
 # function to create a file
 def CreateFile(sFilePath):
     """
-
         :param sFilePath: file path to be created
         :param forced: if true remove the folder first, if false won't remove the folder if there exists one with same name
         :return: Exception if Exception occurs or True if successful or False if file already exists
-        """
+    """
+    
     sModuleInfo = inspect.stack()[0][3] + " : " + inspect.getmoduleinfo(__file__).name
     CommonUtil.ExecLog(sModuleInfo, "Function start", 0)
+    
     try:
         CommonUtil.ExecLog(sModuleInfo, "Create File %s" % sFilePath, 1)
         if os.path.isfile(sFilePath):
@@ -110,13 +111,14 @@ def CreateFile(sFilePath):
 # function to rename file a to b
 def RenameFile(file_to_be_renamed, new_name_of_the_file):
     """
-
         :param file_to_be_renamed: location of source file to be renamed
         :param new_name_of_the_file: location of destination file
         :return: Exception if Exception occurs otherwise return result  
-        """
+    """
+    
     sModuleInfo = inspect.stack()[0][3] + " : " + inspect.getmoduleinfo(__file__).name
     CommonUtil.ExecLog(sModuleInfo, "Function start", 0)
+    
     try:
         CommonUtil.ExecLog(sModuleInfo, "Renaming file %s to %s" % (file_to_be_renamed, new_name_of_the_file), 0)
         shutil.move(file_to_be_renamed, new_name_of_the_file)
@@ -138,13 +140,14 @@ def RenameFile(file_to_be_renamed, new_name_of_the_file):
 # function to move file a to b
 def MoveFile(file_to_be_moved, new_name_of_the_file):
     """
-
         :param file_to_be_moved: location of source file to be renamed
         :param new_name_of_the_file: location of destination file
         :return: Exception if Exception occurs otherwise return result  
-        """
+    """
+    
     sModuleInfo = inspect.stack()[0][3] + " : " + inspect.getmoduleinfo(__file__).name
     CommonUtil.ExecLog(sModuleInfo, "Function start", 0)
+    
     try:
         CommonUtil.ExecLog(sModuleInfo, "Moving file %s to %s" % (file_to_be_moved, new_name_of_the_file), 0)
         shutil.move(file_to_be_moved, new_name_of_the_file)
@@ -165,13 +168,14 @@ def MoveFile(file_to_be_moved, new_name_of_the_file):
 # function to rename folder a to b
 def RenameFolder(folder_to_be_renamed, new_name_of_the_folder):
     """
-
         :param folder_to_be_renamed: location of source folder to be renamed
         :param new_name_of_the_folder: full location of destination folder
         :return: Exception if Exception occurs otherwise return result  
-        """
+    """
+    
     sModuleInfo = inspect.stack()[0][3] + " : " + inspect.getmoduleinfo(__file__).name
     CommonUtil.ExecLog(sModuleInfo, "Function start", 0)
+    
     try:
         CommonUtil.ExecLog(sModuleInfo, "Renaming folder %s to %s" % (folder_to_be_renamed, new_name_of_the_folder), 0)
         shutil.move(folder_to_be_renamed, new_name_of_the_folder)
@@ -192,13 +196,14 @@ def RenameFolder(folder_to_be_renamed, new_name_of_the_folder):
 # function to move folder a to b
 def MoveFolder(folder_to_be_moved, new_name_of_the_folder):
     """
-
         :param folder_to_be_moved: location of source folder to be renamed
         :param new_name_of_the_folder: full location of destination folder
         :return: Exception if Exception occurs otherwise return result  
-        """
+    """
+    
     sModuleInfo = inspect.stack()[0][3] + " : " + inspect.getmoduleinfo(__file__).name
     CommonUtil.ExecLog(sModuleInfo, "Function start", 0)
+    
     try:
         CommonUtil.ExecLog(sModuleInfo, "Moving folder %s to %s" % (folder_to_be_moved, new_name_of_the_folder), 0)
         shutil.move(folder_to_be_moved, new_name_of_the_folder)
@@ -219,13 +224,14 @@ def MoveFolder(folder_to_be_moved, new_name_of_the_folder):
 # function to unzip in linux
 def UnZip(file_to_be_unzipped, location_where_to_unzip):
     """
-
         :param file_to_be_unzipped: location of source file to be unzipped
         :param location_where_to_unzip: location of destination 
         :return: Exception if Exception occurs or False if file doesn't exist otherwise return result  
-        """
+    """
+    
     sModuleInfo = inspect.stack()[0][3] + " : " + inspect.getmoduleinfo(__file__).name
     CommonUtil.ExecLog(sModuleInfo, "Function start", 0)
+    
     try:
         CommonUtil.ExecLog(sModuleInfo, "Unzipping file %s to %s" % (file_to_be_unzipped, location_where_to_unzip), 1)
         if os.path.isfile(file_to_be_unzipped):
@@ -243,13 +249,14 @@ def UnZip(file_to_be_unzipped, location_where_to_unzip):
 # function to compare two files
 def CompareFile(file_to_be_compared1, file_to_be_compared2):
     """
-
         :param file_to_be_compared1: location of file to be compared
         :param file_to_be_compared2: location of file to be compared
         :return: Exception if Exception occurs otherwise return result  
-        """
+    """
+    
     sModuleInfo = inspect.stack()[0][3] + " : " + inspect.getmoduleinfo(__file__).name
     CommonUtil.ExecLog(sModuleInfo, "Function start", 0)
+    
     try:
         CommonUtil.ExecLog(sModuleInfo, "Comparing files %s and %s" % (file_to_be_compared1, file_to_be_compared2), 1)
         result = filecmp.cmp(file_to_be_compared1, file_to_be_compared2)
@@ -261,13 +268,14 @@ def CompareFile(file_to_be_compared1, file_to_be_compared2):
 # function to zip a file for linux
 def ZipFile(file_to_be_zipped, location_where_to_zip):
     """
-
         :param file_to_be_zipped: location of source file to be zipped
         :param location_where_to_zip: location of destination 
         :return: Exception if Exception occurs or false file doesn't exist otherwise return result  
-        """
+    """
+    
     sModuleInfo = inspect.stack()[0][3] + " : " + inspect.getmoduleinfo(__file__).name
     CommonUtil.ExecLog(sModuleInfo, "Function start", 0)
+    
     try:
         CommonUtil.ExecLog(sModuleInfo, "Zipping file %s to %s" % (file_to_be_zipped, location_where_to_zip), 0)
 
@@ -298,13 +306,14 @@ def ZipFile(file_to_be_zipped, location_where_to_zip):
 # function to zip file for windows
 def ZipFile_for_windows(file_to_be_zipped, location_where_to_zip):
     """
-
         :param file_to_be_zipped: location of source file to be zipped
         :param location_where_to_zip: location of destination 
         :return: Exception if Exception occurs or false if file doesn't exist otherwise return result  
-        """
+    """
+    
     sModuleInfo = inspect.stack()[0][3] + " : " + inspect.getmoduleinfo(__file__).name
     CommonUtil.ExecLog(sModuleInfo, "Function start", 0)
+    
     try:
         CommonUtil.ExecLog(sModuleInfo, "Zipping file %s to %s" % (file_to_be_zipped, location_where_to_zip), 0)
         if os.path.isfile(file_to_be_zipped):
@@ -325,17 +334,18 @@ def ZipFile_for_windows(file_to_be_zipped, location_where_to_zip):
 # funtion zip a folder
 def ZipFolder(dir_to_be_zipped, location_where_to_zip):
     """
-    Zips a given folder, its sub folders and files. Ignores any empty folders
-    dir is the path of the folder to be zipped
-    zip_file is the path of the zip file to be created
-
+        Zips a given folder, its sub folders and files. Ignores any empty folders
+        dir is the path of the folder to be zipped
+        zip_file is the path of the zip file to be created
 
         :param dir_to_be_zipped: location of source folder to be zipped
         :param location_where_to_zip: location of destination 
         :return: Exception if Exception occurs or false if folder doesn't exist otherwise return result  
-            """
+    """
+    
     sModuleInfo = inspect.stack()[0][3] + " : " + inspect.getmoduleinfo(__file__).name
     CommonUtil.ExecLog(sModuleInfo, "Function start", 0)
+    
     try:
 
         CommonUtil.ExecLog(sModuleInfo, "Zipping folder %s to %s" % (dir_to_be_zipped, location_where_to_zip), 1)
@@ -374,12 +384,13 @@ def ZipFolder(dir_to_be_zipped, location_where_to_zip):
 # function to delete a file
 def DeleteFile(sFilePath):
     """
-
         :param sFilePath: full location of the file to be deleted
         :return: Exception if Exception or False if file doesn't exist otherwise return the result
-        """
+    """
+    
     sModuleInfo = inspect.stack()[0][3] + " : " + inspect.getmoduleinfo(__file__).name
     CommonUtil.ExecLog(sModuleInfo, "Function start", 0)
+    
     try:
         CommonUtil.ExecLog(sModuleInfo, "Deleting file %s" % sFilePath, 0)
         if os.path.isfile(sFilePath):
@@ -402,14 +413,15 @@ def DeleteFile(sFilePath):
 
 
 # function to delete a folder
-def DeleteFolder(sFolderPath):
+def DeleteFolder(sFolderPath): #!!! Needs to be updated to handle deleting of directories which contain files and sub-directories
     """
-
-            :param sFolderPath: full location of the folder to be deleted
-            :return: Exception if Exception or False if folder doesn't exist otherwise return the result
-            """
+        :param sFolderPath: full location of the folder to be deleted
+        :return: Exception if Exception or False if folder doesn't exist otherwise return the result
+    """
+    
     sModuleInfo = inspect.stack()[0][3] + " : " + inspect.getmoduleinfo(__file__).name
     CommonUtil.ExecLog(sModuleInfo, "Function start", 0)
+    
     try:
         CommonUtil.ExecLog(sModuleInfo, "Deleting folder %s" % sFolderPath, 0)
         # print os.path.isdir(sFolderPath)
@@ -434,14 +446,15 @@ def DeleteFolder(sFolderPath):
 
 
 # function to check a file exists or not
-def find(sFilePath):
+def find(sFilePath): #!!!Needs to be updated to either return true/false or actually try to find a file in a file system
     """
-
         :param sFilePath: location of source folder to be found
         :return: Exception if Exception occurs otherwise return result  
-            """
+    """
+    
     sModuleInfo = inspect.stack()[0][3] + " : " + inspect.getmoduleinfo(__file__).name
     CommonUtil.ExecLog(sModuleInfo, "Function start", 0)
+    
     try:
         CommonUtil.ExecLog(sModuleInfo, "Finding file %s is complete" % sFilePath, 1)
         return os.path.isfile(sFilePath)
@@ -451,19 +464,20 @@ def find(sFilePath):
 
 
 # function to empty trash for linux
-def empty_trash(trash_path):
+def empty_trash(trash_path): # !!! Change this so that it's a general recursive delete of all files and sub-directories. shouldn't limit to trash can, then have a smaller empty trash function
     """
-
-            :param trash_path: path of the trash
-            :return: Exception if Exception occurs or "falied" if trash is already empty
-                """
+        :param trash_path: path of the trash
+        :return: Exception if Exception occurs or "falied" if trash is already empty
+    """
+    
     sModuleInfo = inspect.stack()[0][3] + " : " + inspect.getmoduleinfo(__file__).name
     CommonUtil.ExecLog(sModuleInfo, "Function start", 0)
+    
     try:
         CommonUtil.ExecLog(sModuleInfo, "Starting to empty trash %s" % trash_path, 1)
         #  os.chdir('/home/tazin/.local/share/Trash')
         os.chdir(trash_path)
-        if len(sys.argv) >= 2:
+        if len(sys.argv) >= 2: # !!!this is all wrong
             if sys.argv[1] == '-t' or sys.argv[1] == '-T':
                 os.system("tree ./")
             elif sys.argv[1] == '-l' or sys.argv[1] == '-L':
@@ -490,13 +504,14 @@ def empty_trash(trash_path):
 # function to copy a folder
 def copy_folder(src, dest):
     """
-
-    :param src: source of the folder to be copied
-    :param dest: destination where to be copied
-    :return:  Exception if Exception occurs otherwise return result
+        :param src: source of the folder to be copied
+        :param dest: destination where to be copied
+        :return:  Exception if Exception occurs otherwise return result
     """
+    
     sModuleInfo = inspect.stack()[0][3] + " : " + inspect.getmoduleinfo(__file__).name
     CommonUtil.ExecLog(sModuleInfo, "Function start", 0)
+    
     try:
         CommonUtil.ExecLog(sModuleInfo, "Coping folder %s to %s" % (src, dest), 0)
         shutil.copytree(src, dest)
@@ -515,15 +530,16 @@ def copy_folder(src, dest):
 
 
 # function to copy a file
-def copy_file(src, dest):
+def copy_file(src, dest): #!!!merge with copy_folder, just check if src is a file or not
     """
-
-    :param src: source of the file to be copied
-    :param dest: destination where to be copied
-    :return:  Exception if Exception occurs otherwise return result  
+        :param src: source of the file to be copied
+        :param dest: destination where to be copied
+        :return:  Exception if Exception occurs otherwise return result  
     """
+    
     sModuleInfo = inspect.stack()[0][3] + " : " + inspect.getmoduleinfo(__file__).name
     CommonUtil.ExecLog(sModuleInfo, "Function start", 0)
+    
     try:
         CommonUtil.ExecLog(sModuleInfo, "Coping file %s to %s" % (src, dest), 0)
         shutil.copyfile(src, dest)
@@ -543,10 +559,12 @@ def copy_file(src, dest):
 # function to empty recycle bin for windows
 def empty_recycle_bin():
     """
-                :return: Exception if Exception occurs or "failed if bin is empty otherwise return the result
-                    """
+        :return: Exception if Exception occurs or "failed if bin is empty otherwise return the result
+    """
+    
     sModuleInfo = inspect.stack()[0][3] + " : " + inspect.getmoduleinfo(__file__).name
     CommonUtil.ExecLog(sModuleInfo, "Function start", 0)
+    
     try:
         import winshell
         CommonUtil.ExecLog(sModuleInfo, "Staring to empty recycle bin", 0)
@@ -568,14 +586,15 @@ def empty_recycle_bin():
         return CommonUtil.Exception_Handler(sys.exc_info())
 
 
-def run_win_cmd(cmd):
+def run_win_cmd(cmd): #!!!!merge with run_cmd
     """
-
-                :param cmd: admin command to run
-                :return: Exception if Exception occurs 
-                    """
+        :param cmd: admin command to run
+        :return: Exception if Exception occurs 
+    """
+    
     sModuleInfo = inspect.stack()[0][3] + " : " + inspect.getmoduleinfo(__file__).name
     CommonUtil.ExecLog(sModuleInfo, "Function start", 0)
+    
     try:
         result = []
         process = subprocess.Popen(cmd, shell=True, stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
@@ -594,14 +613,15 @@ def run_win_cmd(cmd):
 
 def run_cmd(command, return_status=False, is_shell=True, stdout_val=subprocess.PIPE, local_run=False):
     """
-
-                    :param command: sudo command to run
-                    :return: Exception if Exception occurs otherwise return result 
-                        """
+        :param command: sudo command to run
+        :return: Exception if Exception occurs otherwise return result 
+    """
+    
     sModuleInfo = inspect.stack()[0][3] + " : " + inspect.getmoduleinfo(__file__).name
     CommonUtil.ExecLog(sModuleInfo, "Function start", 0)
+    
     '''Begin Constants'''
-    Passed = "Passed"
+    Passed = "Passed" # !!!remove this nad use passed_tag_list,e tc
     Failed = "Failed"
     Running = 'running'
     '''End Constants'''
@@ -639,8 +659,13 @@ def run_cmd(command, return_status=False, is_shell=True, stdout_val=subprocess.P
 
 # function to generate random string
 def random_string_generator(pattern='nluc', size=10):
+    ''' Generates a random string '''
+    # pattern: At least one or more of the following: n l u c (number, lowercase, uppercase, characters)
+    # size: Length of string
+    
     sModuleInfo = inspect.stack()[0][3] + " : " + inspect.getmoduleinfo(__file__).name
     CommonUtil.ExecLog(sModuleInfo, "Function start", 0)
+    
     try:
         pattern = pattern.lower().strip()
         punctuation = '`~!@#$%^&.'
@@ -664,8 +689,13 @@ def random_string_generator(pattern='nluc', size=10):
 
 #Method to download file using url
 def download_file_using_url(file_url, location_of_file):
+    ''' Download a file and save to disk '''
+    # file_url: URL of file
+    # location_of_file: Where to save file on disk
+    
     sModuleInfo = inspect.stack()[0][3] + " : " + inspect.getmoduleinfo(__file__).name
     CommonUtil.ExecLog(sModuleInfo, "Function start", 0)
+    
     try:
         ''' Setting stream parameter to True will cause the download of response headers only and the connection remains open.
           This avoids reading the content all at once into memory for large responses.
@@ -698,9 +728,11 @@ def download_file_using_url(file_url, location_of_file):
         return CommonUtil.Exception_Handler(sys.exc_info())
 
 #Method to download and unzip file
-def download_and_unzip_file(file_url, location_of_file):
+def download_and_unzip_file(file_url, location_of_file): #!!!change this to call download_file_using_url instead of duplicating work, or just remove download part, and whatever is calling this can call the two pieces separately
+    
     sModuleInfo = inspect.stack()[0][3] + " : " + inspect.getmoduleinfo(__file__).name
     CommonUtil.ExecLog(sModuleInfo, "Function start", 0)
+    
     try:
         ''' Setting stream parameter to True will cause the download of response headers only and the connection remains open.
           This avoids reading the content all at once into memory for large responses.
@@ -833,33 +865,33 @@ def sanitize_string(strg, valid_chars = '', clean_whitespace_only = False, maxLe
 
 '============================= Raw String Generation Begins=============================='
 
-escape_dict = {
-    '\b': r'\b',
-    '\c': r'\c',
-    '\f': r'\f',
-    '\n': r'\n',
-    '\r': r'\r',
-    '\t': r'\t',
-    '\v': r'\v',
-    '\'': r'\'',
-    '\"': r'\"',
-    '\0': r'\0',
-    '\1': r'\1',
-    '\2': r'\2',
-    '\3': r'\3',
-    '\4': r'\4',
-    '\5': r'\5',
-    '\6': r'\6',
-    '\7': r'\7',
-    '\8': r'\8',
-    '\9': r'\9',
-    '\a': r'\a',
-}
-
-
 # code to generate raw string
 def raw(text):
     """Returns a raw string representation of text"""
+    
+    escape_dict = {
+        '\b': r'\b',
+        '\c': r'\c',
+        '\f': r'\f',
+        '\n': r'\n',
+        '\r': r'\r',
+        '\t': r'\t',
+        '\v': r'\v',
+        '\'': r'\'',
+        '\"': r'\"',
+        '\0': r'\0',
+        '\1': r'\1',
+        '\2': r'\2',
+        '\3': r'\3',
+        '\4': r'\4',
+        '\5': r'\5',
+        '\6': r'\6',
+        '\7': r'\7',
+        '\8': r'\8',
+        '\9': r'\9',
+        '\a': r'\a',
+    }
+
     new_string = ''
     for char in text:
         try:
@@ -871,8 +903,11 @@ def raw(text):
 
 '============================= Raw String Generation Ends=============================='
 
-'============================= Sequential Action Section Begins=============================='
-
+#########################
+#                       #
+#   Sequential Actions  #
+#                       #
+#########################
 
 # Method to copy file/folder
 def Copy_File_or_Folder(step_data):
