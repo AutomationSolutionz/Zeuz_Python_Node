@@ -1,37 +1,41 @@
 # -*- coding: utf-8 -*-
 # -*- coding: cp1252 -*-
 '''
-Created on May 15, 2016
+    Created on May 15, 2016
 
-@author: Built_In_Automation Solutionz Inc.
+    @author: Built_In_Automation Solutionz Inc.
+    Name: Built In Functions - Selenium
+    Description: Sequential Actions for controlling Web Browsers - All main Web Browsers supported on Linux/Windows/Mac
 '''
 
-import sys
-import os
-
+#########################
+#                       #
+#        Modules        #
+#                       #
+#########################
+sys.path.append("..")
+import sys, os, time, inspect
+from selenium import webdriver
 from selenium.webdriver.remote.webelement import WebElement
 from selenium.webdriver.firefox.firefox_binary import FirefoxBinary
-
-
-sys.path.append("..")
-from selenium import webdriver
 from selenium.webdriver.support.ui import Select
-
-import time
-import inspect
 from selenium.webdriver.support.ui import WebDriverWait
 from selenium.webdriver.common.action_chains import ActionChains
 from selenium.common.exceptions import NoAlertPresentException
 from selenium.webdriver.common.keys import Keys
-#Ver1.0
 from selenium.webdriver.common.by import By
+from selenium.webdriver.support import expected_conditions as EC
 
 from Framework.Utilities import CommonUtil
-
-from selenium.webdriver.support import expected_conditions as EC
 from Framework.Built_In_Automation.Shared_Resources import BuiltInFunctionSharedResources as Shared_Resources
 from Framework.Built_In_Automation.Shared_Resources import LocateElement
 from Framework.Utilities.CommonUtil import passed_tag_list, failed_tag_list, skipped_tag_list
+
+#########################
+#                       #
+#    Global Variables   #
+#                       #
+#########################
 
 global WebDriver_Wait
 WebDriver_Wait = 20
@@ -54,8 +58,11 @@ else:
 
 
 def Open_Browser(dependency):
+    ''' Launch browser and create instance '''
+    
     global selenium_driver
     sModuleInfo = inspect.stack()[0][3] + " : " + inspect.getmoduleinfo(__file__).name
+    CommonUtil.ExecLog(sModuleInfo,"Function Start", 0)
 
     try:
         browser=dependency['Browser']
@@ -138,6 +145,8 @@ def Open_Browser_Wrapper(step_data):
     ''' Temporary wrapper for open_browser() until that function can be updated to use only data_set '''
     
     sModuleInfo = inspect.stack()[0][3] + " : " + inspect.getmoduleinfo(__file__).name
+    CommonUtil.ExecLog(sModuleInfo,"Function Start", 0)
+    
     try:
         global dependency
         # Get the dependency again in case it was missed
@@ -160,6 +169,7 @@ def Go_To_Link(step_data, page_title=False):
     #this function needs work with validating page title.  We need to check if user entered any title.
     #if not then we don't do the validation
     sModuleInfo = inspect.stack()[0][3] + " : " + inspect.getmoduleinfo(__file__).name
+    CommonUtil.ExecLog(sModuleInfo,"Function Start", 0)
     
     # Open browser and create driver if user has not already done so
     try:
@@ -194,6 +204,8 @@ def Go_To_Link(step_data, page_title=False):
 def Handle_Browser_Alert(step_data):
     #accepts browser alert
     sModuleInfo = inspect.stack()[0][3] + " : " + inspect.getmoduleinfo(__file__).name
+    CommonUtil.ExecLog(sModuleInfo,"Function Start", 0)
+    
     try:
         choice = str(step_data[0][2]).lower()
         if choice == 'accept' or choice == 'pass' or choice == 'yes' or choice == 'ok':
@@ -228,8 +240,10 @@ def Initialize_List(data_set):
 
 #Method to enter texts in a text box; step data passed on by the user
 def Enter_Text_In_Text_Box(step_data):
+    sModuleInfo = inspect.stack()[0][3] + " : " + inspect.getmoduleinfo(__file__).name
+    CommonUtil.ExecLog(sModuleInfo,"Function Start", 0)
+
     try:
-        sModuleInfo = inspect.stack()[0][3] + " : " + inspect.getmoduleinfo(__file__).name
         Element = LocateElement.Get_Element(step_data,selenium_driver)
         if Element != "failed":
             for each in step_data:
@@ -390,8 +404,10 @@ def Click_Element(data_set):
 
 #Method to click and hold on element; step data passed on by the user
 def Click_and_Hold_Element(step_data):
+    sModuleInfo = inspect.stack()[0][3] + " : " + inspect.getmoduleinfo(__file__).name
+    CommonUtil.ExecLog(sModuleInfo,"Function Start", 0)
+
     try:
-        sModuleInfo = inspect.stack()[0][3] + " : " + inspect.getmoduleinfo(__file__).name
         Element = LocateElement.Get_Element(step_data,selenium_driver)
         if Element != "failed":
                 try:
@@ -414,8 +430,10 @@ def Click_and_Hold_Element(step_data):
 
 #Method to right click on element; step data passed on by the user
 def Context_Click_Element(step_data):
+    sModuleInfo = inspect.stack()[0][3] + " : " + inspect.getmoduleinfo(__file__).name
+    CommonUtil.ExecLog(sModuleInfo,"Function Start", 0)
+
     try:
-        sModuleInfo = inspect.stack()[0][3] + " : " + inspect.getmoduleinfo(__file__).name
         Element = LocateElement.Get_Element(step_data,selenium_driver)
         if Element != "failed":
                 try:
@@ -437,8 +455,10 @@ def Context_Click_Element(step_data):
 
 #Method to double click on element; step data passed on by the user
 def Double_Click_Element(step_data):
+    sModuleInfo = inspect.stack()[0][3] + " : " + inspect.getmoduleinfo(__file__).name
+    CommonUtil.ExecLog(sModuleInfo,"Function Start", 0)
+
     try:
-        sModuleInfo = inspect.stack()[0][3] + " : " + inspect.getmoduleinfo(__file__).name
         Element = LocateElement.Get_Element(step_data,selenium_driver)
         if Element != "failed":
             try:
@@ -461,8 +481,10 @@ def Double_Click_Element(step_data):
 
 #Method to move to middle of the element; step data passed on by the user
 def Move_To_Element(step_data):
+    sModuleInfo = inspect.stack()[0][3] + " : " + inspect.getmoduleinfo(__file__).name
+    CommonUtil.ExecLog(sModuleInfo,"Function Start", 0)
+
     try:
-        sModuleInfo = inspect.stack()[0][3] + " : " + inspect.getmoduleinfo(__file__).name
         Element = LocateElement.Get_Element(step_data,selenium_driver)
         if Element != "failed":
             try:
@@ -484,8 +506,10 @@ def Move_To_Element(step_data):
 
 #Method to hover over element; step data passed on by the user
 def Hover_Over_Element(step_data):
+    sModuleInfo = inspect.stack()[0][3] + " : " + inspect.getmoduleinfo(__file__).name
+    CommonUtil.ExecLog(sModuleInfo,"Function Start", 0)
+
     try:
-        sModuleInfo = inspect.stack()[0][3] + " : " + inspect.getmoduleinfo(__file__).name
         Element = LocateElement.Get_Element(step_data,selenium_driver)
         if Element != "failed":
             try:
@@ -550,8 +574,10 @@ def get_location_of_element(data_set):
     
 #Search for element on new page after a particular time-out duration entered by the user through step-data
 def Wait_For_New_Element(step_data):
+    sModuleInfo = inspect.stack()[0][3] + " : " + inspect.getmoduleinfo(__file__).name
+    CommonUtil.ExecLog(sModuleInfo,"Function Start", 0)
+
     try:
-        sModuleInfo = inspect.stack()[0][3] + " : " + inspect.getmoduleinfo(__file__).name
         Element = LocateElement.Get_Element(step_data,selenium_driver)
         wait_for_element_to_disappear = False
         for each in step_data:
@@ -676,6 +702,7 @@ def Insert_Into_List(step_data):
 def Save_Text(step_data):
     sModuleInfo = inspect.stack()[0][3] + " : " + inspect.getmoduleinfo(__file__).name
     CommonUtil.ExecLog(sModuleInfo, "Function start", 0)
+
     try:
         Element = LocateElement.Get_Element(step_data,selenium_driver)
         if Element == "failed":
@@ -704,6 +731,7 @@ def Save_Text(step_data):
 def Validate_Text(step_data):
     sModuleInfo = inspect.stack()[0][3] + " : " + inspect.getmoduleinfo(__file__).name
     CommonUtil.ExecLog(sModuleInfo, "Function start", 0)
+
     try:
         Element = LocateElement.Get_Element(step_data,selenium_driver)
         if Element == "failed":
@@ -755,6 +783,7 @@ def Validate_Text(step_data):
 def Sleep(step_data):
     sModuleInfo = inspect.stack()[0][3] + " : " + inspect.getmoduleinfo(__file__).name
     CommonUtil.ExecLog(sModuleInfo, "Function start", 0)
+
     try:
         if ((1 < len(step_data) >= 2)):
             CommonUtil.ExecLog(sModuleInfo,"Please provide single row of data for only sleep. Consider using wait instead",3)
@@ -774,6 +803,7 @@ def Sleep(step_data):
 def Scroll(step_data):
     sModuleInfo = inspect.stack()[0][3] + " : " + inspect.getmoduleinfo(__file__).name
     CommonUtil.ExecLog(sModuleInfo, "Function start", 0)
+
     try:
         if ((1 < len(step_data) >= 2)):
             CommonUtil.ExecLog(sModuleInfo,"Please provide only single row of data",3)
@@ -805,6 +835,7 @@ def Scroll(step_data):
 def Navigate(step_data):
     sModuleInfo = inspect.stack()[0][3] + " : " + inspect.getmoduleinfo(__file__).name
     CommonUtil.ExecLog(sModuleInfo, "Function start", 0)
+
     try:
         if ((1 < len(step_data) >= 2)):
             CommonUtil.ExecLog(sModuleInfo,"Please provide only single row of data",3)
@@ -831,6 +862,7 @@ def Navigate(step_data):
 def Select_Deselect(step_data):
     sModuleInfo = inspect.stack()[0][3] + " : " + inspect.getmoduleinfo(__file__).name
     CommonUtil.ExecLog(sModuleInfo, "Function start", 0)
+
     try:
         Element = LocateElement.Get_Element(step_data,selenium_driver)
         if Element == "failed":
@@ -1106,6 +1138,8 @@ def get_webpage_table_css(data_set, ignore_rows = [], ignore_cols = [], retain_c
 
 def Tear_Down_Selenium(step_data = [[[]]]):
     sModuleInfo = inspect.stack()[0][3] + " : " + inspect.getmoduleinfo(__file__).name
+    CommonUtil.ExecLog(sModuleInfo,"Function Start", 0)
+
     try:
         CommonUtil.ExecLog(sModuleInfo, "Trying to tear down the page and close the browser...", 0)
         selenium_driver.quit()
@@ -1120,6 +1154,7 @@ def Tear_Down_Selenium(step_data = [[[]]]):
 def Get_Plain_Text_Element(element_parameter, element_value, parent=False):
     sModuleInfo = inspect.stack()[0][3] + " : " + inspect.getmoduleinfo(__file__).name
     CommonUtil.ExecLog(sModuleInfo, "Function start", 0)
+
     try:
         if parent==False:
             all_elements_with_text = selenium_driver.find_elements_by_xpath(".//*")

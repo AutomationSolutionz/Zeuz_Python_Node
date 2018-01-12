@@ -1,6 +1,16 @@
 # -*- coding: utf-8 -*-
 # -*- coding: cp1252 -*-
 
+''' Name: Built In Functions - Appium
+    Description: Contains all Sequential Actions related to automating Android and IOS using Appium
+'''
+
+#########################
+#                       #
+#        Modules        #
+#                       #
+#########################
+
 from appium import webdriver
 import os, sys, time, inspect, subprocess, re, signal, thread, requests
 from Framework.Utilities import CommonUtil
@@ -16,6 +26,11 @@ PATH = lambda p: os.path.abspath(
     os.path.join(os.path.dirname(__file__), p)
 )
 
+#########################
+#                       #
+#   Global Variables    #
+#                       #
+#########################
 # Recall appium driver, if not already set - needed between calls in a Zeuz test case
 appium_port = 4721 # Default appium port - changes if we have multiple devices
 appium_details = {} # Used to store device serial number, appium driver, if multiple devices are used

@@ -2,12 +2,19 @@
 # -*- coding: cp1252 -*-
 
 '''
-Created on Mar 30, 2017
-Updated on July 20, 2017 --> use new LocateElement function and common Sequential Actions
+    Created on Mar 30, 2017
+    Updated on July 20, 2017 --> use new LocateElement function and common Sequential Actions
 
-@author: mchowdhury
-Comment: Not published yet
+    @author: mchowdhury
+    Name: Built In Functions - XML
+    Description: Sequential Actions for reading/writing XML files
 '''
+
+#########################
+#                       #
+#        Modules        #
+#                       #
+#########################
 
 import sys, inspect
 from lxml import etree as ET
@@ -15,7 +22,12 @@ from Framework.Utilities import CommonUtil
 from Framework.Built_In_Automation.Shared_Resources import LocateElement as LE
 from Framework.Utilities.CommonUtil import passed_tag_list, failed_tag_list
 
-'''Constants'''
+#########################
+#                       #
+#    Global Variables   #
+#                       #
+#########################
+
 default_tag_list = ['Default', 'default', 'DEFAULT', 'Unchanged', 'unchanged', 'UNCHAGED']
 update_tag_list = ['Update', 'update', 'UPDATE', 'Replace', 'replace', 'REPLACE' ] #Update/replace existing element(s)
 delete_tag_list = ['Delete', 'delete', 'DELETE', 'Remove', 'remove', 'REMOVE' ] #Delete existing line or element(s)

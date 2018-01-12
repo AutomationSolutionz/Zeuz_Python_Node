@@ -1,11 +1,18 @@
 # -*- coding: utf-8 -*-
 # -*- coding: cp1252 -*-
 '''
-Created on May 15, 2016
+    Created on May 15, 2016
 
-@author: Built_In_Automation Solutionz Inc.
+    @author: Built_In_Automation Solutionz Inc.
+    Name: Built In Functions - Desktop (using PyAutoGui)
+    Description: Sequential Actions for controlling the desktop on Linux/Windows/Mac
 '''
 
+#########################
+#                       #
+#        Modules        #
+#                       #
+#########################
 
 import pyautogui as gui # https://pyautogui.readthedocs.io/en/latest/
 import os, os.path, sys, time, inspect, subprocess
@@ -17,6 +24,12 @@ from Framework.Built_In_Automation.Shared_Resources import LocateElement
 
 # Disable pyautogui failsafe when moving to top left corner
 gui.FAILSAFE = False
+
+#########################
+#                       #
+#    Global Variables   #
+#                       #
+#########################
 
 # Valid image positions
 positions = ('left', 'right', 'centre', 'center')
@@ -33,7 +46,11 @@ file_attachment = []
 if Shared_Resources.Test_Shared_Variables('file_attachment'):
     file_attachment = Shared_Resources.Get_Shared_Variables('file_attachment')
 
-''' **************************** Helper functions **************************** '''
+#########################
+#                       #
+#   Helper Functions    #
+#                       #
+#########################
 
 def get_driver():
     ''' Returns pyautogui as the driver for compatibility with other modules '''
@@ -101,7 +118,11 @@ def get_exec_from_icon(file_name):
         return CommonUtil.Exception_Handler(sys.exc_info(),None,errMsg)
 
 
-''' *********************************** Sequential Actions ************************************************ '''
+#########################
+#                       #
+#  Sequential Actions   #
+#                       #
+#########################
 
 def Enter_Text(data_set):
     ''' Insert text '''
