@@ -64,7 +64,7 @@ else:
     node_id_filename = os.path.join(os.getenv('HOME'), 'Desktop', 'node_id.conf')
 
 # Set title with version
-version_path = os.path.join(os.path.dirname(os.path.realpath(__file__)), 'Version.txt')
+version_path = os.path.join(os.getcwd(), 'Version.txt')
 try: local_version = ConfigModule.get_config_value('ZeuZ Python Version', 'version', version_path)
 except: local_version = ''
 gui_title = 'Zeuz Node v%s' % str(local_version)
