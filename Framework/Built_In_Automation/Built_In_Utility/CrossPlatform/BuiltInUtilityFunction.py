@@ -243,120 +243,49 @@ def CompareFile(file_to_be_compared1, file_to_be_compared2):
         return CommonUtil.Exception_Handler(sys.exc_info(), None, "Error comparing files")
 
 
-# function to zip a file for linux
-def ZipFile(file_to_be_zipped, location_where_to_zip):
+# function to zip a file
+def ZipFile(source, destination):
     """
-        :param file_to_be_zipped: location of source file to be zipped
-        :param location_where_to_zip: location of destination 
-        :return: Exception if Exception occurs or false file doesn't exist otherwise return result  
+        :param source: location of source file to be zipped (file or directory - directories are recursively zipped)
+        :param destination: location of destination and filename
+        :return: passed or failed
     """
     
     sModuleInfo = inspect.stack()[0][3] + " : " + inspect.getmoduleinfo(__file__).name
     CommonUtil.ExecLog(sModuleInfo, "Function start", 0)
     
     try:
-        CommonUtil.ExecLog(sModuleInfo, "Zipping file %s to %s" % (file_to_be_zipped, location_where_to_zip), 0)
+        CommonUtil.ExecLog(sModuleInfo, "Zipping file %s to %s" % (source, destination), 0)
+        path = os.path.dirname(destination) # Get path to destination
+        
+        # Create Zip archive
+        if os.path.exists(source): # Verify source exists
+            if os.path.isdir(path): # Verify destination directory exists
+                with zipfile.ZipFile(destination, 'w') as z: # Create new Zip archive
+                    # Write single file to archive
+                    if os.path.isfile(source):
+                        z.write(source)
+                    
+                    # Write directory and all contents recursively to archive
+                    else:
+                        for root, subdirs, files in os.walk(source):
+                            for subdir in subdirs:
+                                z.write(os.path.join(root, subdir)) # Write sub-directories (used when sub-directories are empty
+                            for filename in files:
+                                z.write(os.path.join(root, filename)) # Write all files and sub-directories
 
-        if os.path.isfile(file_to_be_zipped):
-
-            list1 = file_to_be_zipped.split('/')
-            list2 = location_where_to_zip.split('/')
-            value = file_to_be_zipped[:len(file_to_be_zipped) - len(list1[len(list1) - 1])]
-            os.chdir(value)
-            zipfile.ZipFile(list2[len(list2) - 1], mode='w').write(list1[len(list1) - 1])
-            # after performing zipfile() we have to check that if the file with new name exists in correct location.
-            # if the file exists in correct position then return passed
-            # if the file doesn't exist in correct position then return failed
-            if os.path.isfile(location_where_to_zip):
-                CommonUtil.ExecLog(sModuleInfo, "file exists... zip function is done properly", 0)
+            # Verify result
+            if os.path.isfile(destination):
+                CommonUtil.ExecLog(sModuleInfo, "Zip archive successful", 0)
                 return "passed"
             else:
-                CommonUtil.ExecLog(sModuleInfo, "file doesn't exist... zip function is not done properly", 3)
+                CommonUtil.ExecLog(sModuleInfo, "Could not create Zip archive", 0)
                 return "failed"
-
         else:
-            CommonUtil.ExecLog(sModuleInfo, "can't zip file as file doesn't exist", 3)
-            return False
+            CommonUtil.ExecLog(sModuleInfo, "%s does not exist" % source, 3)
+            return "failed"
     except Exception:
-        return CommonUtil.Exception_Handler(sys.exc_info())
-
-
-# function to zip file for windows
-def ZipFile_for_windows(file_to_be_zipped, location_where_to_zip):
-    """
-        :param file_to_be_zipped: location of source file to be zipped
-        :param location_where_to_zip: location of destination 
-        :return: Exception if Exception occurs or false if file doesn't exist otherwise return result  
-    """
-    
-    sModuleInfo = inspect.stack()[0][3] + " : " + inspect.getmoduleinfo(__file__).name
-    CommonUtil.ExecLog(sModuleInfo, "Function start", 0)
-    
-    try:
-        CommonUtil.ExecLog(sModuleInfo, "Zipping file %s to %s" % (file_to_be_zipped, location_where_to_zip), 0)
-        if os.path.isfile(file_to_be_zipped):
-            list1 = file_to_be_zipped.split('\\')
-            list2 = location_where_to_zip.split('\\')
-            value = file_to_be_zipped[:len(file_to_be_zipped) - len(list1[len(list1) - 1])]
-            os.chdir(value)
-            result = zipfile.ZipFile(list2[len(list2) - 1], mode='w').write(list1[len(list1) - 1])
-            CommonUtil.ExecLog(sModuleInfo,"Zipping file %s to %s is complete" % (file_to_be_zipped, location_where_to_zip), 0)
-            return result
-        else:
-            CommonUtil.ExecLog(sModuleInfo, "can't zip file for windows as file doesn't exist", 3)
-            return False
-    except Exception:
-        return CommonUtil.Exception_Handler(sys.exc_info())
-
-
-# funtion zip a folder
-def ZipFolder(dir_to_be_zipped, location_where_to_zip):
-    """
-        Zips a given folder, its sub folders and files. Ignores any empty folders
-        dir is the path of the folder to be zipped
-        zip_file is the path of the zip file to be created
-
-        :param dir_to_be_zipped: location of source folder to be zipped
-        :param location_where_to_zip: location of destination 
-        :return: Exception if Exception occurs or false if folder doesn't exist otherwise return result  
-    """
-    
-    sModuleInfo = inspect.stack()[0][3] + " : " + inspect.getmoduleinfo(__file__).name
-    CommonUtil.ExecLog(sModuleInfo, "Function start", 0)
-    
-    try:
-
-        CommonUtil.ExecLog(sModuleInfo, "Zipping folder %s to %s" % (dir_to_be_zipped, location_where_to_zip), 1)
-        if os.path.exists(dir_to_be_zipped):
-            zip = zipfile.ZipFile(location_where_to_zip, 'w', compression=zipfile.ZIP_DEFLATED)
-            root_len = len(os.path.abspath(dir_to_be_zipped))
-
-            for root, dirs, files in os.walk(dir_to_be_zipped):
-                archive_root = os.path.abspath(root)[root_len:]
-                for f in files:
-                    fullpath = os.path.join(root, f)
-                    archive_name = os.path.join(archive_root, f)
-                    # print f
-                    if f not in location_where_to_zip:
-                        zip.write(fullpath, archive_name, zipfile.ZIP_DEFLATED)
-
-            zip.close()
-            # after performing zip.close() we have to check that if the file with new name exists in correct location.
-            # if the file exists in correct position then return passed
-            # if the file doesn't exist in correct position then return failed
-            if os.path.isfile(location_where_to_zip):
-                CommonUtil.ExecLog(sModuleInfo, "file exists... zip function is done properly", 0)
-                return "passed"
-            else:
-                CommonUtil.ExecLog(sModuleInfo, "file doesn't exist... zip function is not done properly", 3)
-                return "failed"
-
-        else:
-            CommonUtil.ExecLog(sModuleInfo, "can't zip folder as folder doesn't exist", 3)
-            return False
-
-    except Exception:
-        return CommonUtil.Exception_Handler(sys.exc_info())
+        return CommonUtil.Exception_Handler(sys.exc_info(), None, "Error creating Zip archive")
 
 
 # function to delete a file
@@ -1436,61 +1365,41 @@ def Rename_File_or_Folder(step_data):
 
 
 # Method to zip file/folder
-def Zip_File_or_Folder(step_data):
+def Zip_File_or_Folder(data_set):
     sModuleInfo = inspect.stack()[0][3] + " : " + inspect.getmoduleinfo(__file__).name
     CommonUtil.ExecLog(sModuleInfo, "Function start", 0)
+    
+    # Parse data set
     try:
-        if _platform == "linux" or _platform == "linux2" or _platform == "darwin":
-            from_path = get_home_folder() + str(step_data[0][2]).strip()  # location of the file/folder to be zipped
-            to_path = get_home_folder() + str(step_data[1][2]).strip()  # location where to zip the file/folder
-            file_or_folder = str(step_data[2][2]).strip()  # get if it is file/folder to zip
-            if file_or_folder.lower() == 'file':
-                result = ZipFile(from_path, to_path)
-                if result in failed_tag_list:
-                    CommonUtil.ExecLog(sModuleInfo, "Can't not zip file '%s' to '%s'" % (from_path, to_path), 3)
-                    return "failed"
-                else:
-                    CommonUtil.ExecLog(sModuleInfo, "File '%s' zipped to '%s' successfully" % (from_path, to_path), 1)
-                    return "passed"
-            elif file_or_folder.lower() == 'folder':
-                result = ZipFolder(from_path, to_path)
-                if result in failed_tag_list:
-                    CommonUtil.ExecLog(sModuleInfo, "Can't not zip folder '%s' to '%s'" % (from_path, to_path), 3)
-                    return "failed"
-                else:
-                    CommonUtil.ExecLog(sModuleInfo, "Folder '%s' zipped to '%s' successfully" % (from_path, to_path), 1)
-                    return "passed"
-            else:
-                CommonUtil.ExecLog(sModuleInfo, "The information in the data-set(s) are incorrect. Please provide accurate data set(s) information.", 3)
-                return 'failed'
-        elif _platform == "win32":
-            # windows
-            CommonUtil.ExecLog(sModuleInfo, "windows", 1)
-            from_path = raw(str(step_data[0][2]).strip())  # location of the file/folder to be zipped
-            to_path = raw(str(step_data[1][2]).strip())  # location where to zip the file/folder
-            file_or_folder = str(step_data[2][2]).strip()  # get if it is file/folder to zip
-            if file_or_folder.lower() == 'file':
-                result = ZipFile_for_windows(from_path, to_path)
-                if result in failed_tag_list:
-                    CommonUtil.ExecLog(sModuleInfo, "Can't not zip file '%s' to '%s'" % (from_path, to_path), 3)
-                    return "failed"
-                else:
-                    CommonUtil.ExecLog(sModuleInfo, "File '%s' zipped to '%s' successfully" % (from_path, to_path), 1)
-                    return "passed"
-            elif file_or_folder.lower() == 'folder':
-                result = ZipFolder(from_path, to_path)
-                if result in failed_tag_list:
-                    CommonUtil.ExecLog(sModuleInfo, "Could not zip folder '%s' to '%s'" % (from_path, to_path), 3)
-                    return "failed"
-                else:
-                    CommonUtil.ExecLog(sModuleInfo, "Folder '%s' zipped to '%s' successfully" % (from_path, to_path), 1)
-                    return "passed"
-            else:
-                CommonUtil.ExecLog(sModuleInfo, "The information in the data-set(s) are incorrect. Please provide accurate data set(s) information.",3)
-                return 'failed'
+        source = ''
+        destination = ''
+        
+        for row in data_set:
+            if row[0].lower().strip() in ('src', 'source'):
+                source = row[2].strip()
+            elif row[0].lower().strip() in ('dst', 'dest', 'destination'):
+                destination = row[2].strip()
+
+        if source == '' or destination == '':
+            CommonUtil.ExecLog(sModuleInfo, "Either 'source' or 'destination' information missing", 3)
+            return 'failed'
+        
+    except Exception:
+        return CommonUtil.Exception_Handler(sys.exc_info(), None, "Error parsing data set")
+        
+    # Zip file
+    try:
+        result = ZipFile(source, destination) # Perform zip on file or directory
+
+        if result in failed_tag_list:
+            CommonUtil.ExecLog(sModuleInfo, "Cannot zip file '%s' to '%s'" % (source, destination), 3)
+            return "failed"
+        else:
+            CommonUtil.ExecLog(sModuleInfo, "File '%s' zipped to '%s' successfully" % (source, destination), 1)
+            return "passed"
 
     except Exception:
-        return CommonUtil.Exception_Handler(sys.exc_info())
+        return CommonUtil.Exception_Handler(sys.exc_info(), None, "Error zipping")
 
 
 # Method to unzip
