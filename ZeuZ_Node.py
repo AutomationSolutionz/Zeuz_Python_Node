@@ -302,13 +302,18 @@ class Application(tk.Frame):
         try:
             # Just check for updates, and schedule testing to see if updates checking is complete
             if check:
+                print 'Checking last update time'
                 # Read from temp config last time we checked for updates. If over maximum time, check again
                 temp_ini_file = os.path.join(os.path.join(FileUtilities.get_home_folder(), os.path.join('Desktop',os.path.join('AutomationLog',ConfigModule.get_config_value('Temp', '_file')))))
-                last_update = ConfigModule.get_config_value('sectionOne', 'last_update', temp_ini_file)
-                update_interval = self.update_interval * 3600 # Convert interval into seconds for easy comparison
+                try:
+                    last_update = ConfigModule.get_config_value('sectionOne', 'last_update', temp_ini_file)
+                    update_interval = self.update_interval * 3600 # Convert interval into seconds for easy comparison
+                except: # If temp ini doesn't exist, or last_update line is missing or has a blank value, set defaults
+                    last_update = ''
+                    update_interval = 0
 
-                if last_update == '' or (float(last_update) + update_interval) > time.time(): # If we have reached the allowed time to check for updates or nothing was previously set. Assume this is the first time, check for updates.
-
+                if last_update == '' or (float(last_update) + update_interval) < time.time(): # If we have reached the allowed time to check for updates or nothing was previously set. Assume this is the first time, check for updates.
+                    print 'Checking for software updates'
                     ConfigModule.add_config_value('sectionOne', 'last_update', str(time.time()), temp_ini_file) # Record current time as update time
 
                     thread.start_new_thread(self_updater.check_for_updates, ()) # Check for updates in a separate thread
@@ -319,6 +324,7 @@ class Application(tk.Frame):
             else:
                 # No update, do nothing, and thus stop checking
                 if self_updater.check_complete == 'noupdate':
+                    print 'No software updates available'
                     pass
                 
                 # Update check complete, we have an update, start install
