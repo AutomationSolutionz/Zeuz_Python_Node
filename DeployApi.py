@@ -31,6 +31,7 @@ def Get(resource_path,payload={}):
 
 if __name__ == '__main__':
     while True:
+        print "******************** ZEUZ DEPLOY API ********************"
         print "1. Deploy and Get Result"
         print "2. Deploy and Get RunID only"
         print "3. Exit"
@@ -49,10 +50,25 @@ if __name__ == '__main__':
             if set == '':
                 print "Set name can't be empty"
             else:
+                result = {}
                 if str(choice).strip() == '1':
-                    print Get("deploy_from_api_and_get_result",dict)
+                    result = Get("deploy_from_api_and_get_result",dict)
                 elif str(choice).strip() == '2':
-                    print Get("deploy_from_api_only", dict)
+                    result = Get("deploy_from_api_only", dict)
+
+                if result == {}:
+                    print "Please Enter Valid Test Set Name from %s"%web_server_address
+                else:
+                    converted_to_string_dict = {}
+                    for key in result:
+                        k = key
+                        v = result[key]
+                        if isinstance(k,unicode):
+                            k = str(k)
+                        if isinstance(v,unicode):
+                            v = str(v)
+                        converted_to_string_dict[k] = v
+                    print converted_to_string_dict
         elif str(choice).strip() == '3':
             break
         else:
