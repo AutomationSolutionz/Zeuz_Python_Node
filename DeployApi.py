@@ -48,7 +48,11 @@ if __name__ == '__main__':
                 'team': team
             }
             if set == '':
-                print "Set name can't be empty"
+                result = {}
+                result['message'] = 'Test Set Name can not be Empty'
+                result['result'] = 'Cancelled'
+                result['runid'] = ''
+                print result
             else:
                 result = {}
                 if str(choice).strip() == '1':
@@ -57,7 +61,10 @@ if __name__ == '__main__':
                     result = Get("deploy_from_api_only", dict)
 
                 if result == {}:
-                    print "Please Enter Valid Test Set Name from %s"%web_server_address
+                    result['message'] = "Invalid Test Set Name"
+                    result['result'] = 'Cancelled'
+                    result['runid'] = ''
+                    print result
                 else:
                     converted_to_string_dict = {}
                     for key in result:
