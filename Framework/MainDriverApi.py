@@ -26,7 +26,7 @@ device_info = {}
 
 #writes all logs to server
 def write_all_logs_to_server(all_logs):
-    return RequestFormatter.Get('all_log_execution',{'all_logs': all_logs})
+    return RequestFormatter.Post('all_log_execution',{'all_logs': all_logs})
 
 
 #returns all drivers

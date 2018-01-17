@@ -13,6 +13,10 @@ def form_uri(resource_path):
     base_server_address = 'http://%s:%s/' % (str(web_server_address), str(web_server_port))
     return base_server_address+resource_path+'/'
 
+def Post(resource_path,payload={}):
+    try: return requests.post(form_uri(resource_path),data=json.dumps(payload), verify=False).json()
+    except: return {}
+
 def Get(resource_path,payload={}):
     try: return requests.get(form_uri(resource_path),params=json.dumps(payload), timeout=10).json()
     except: return {}
