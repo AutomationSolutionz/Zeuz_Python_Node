@@ -1,6 +1,6 @@
 [ZeuZ Python Version]
-version = 3.11
+version = 3.12
 [Release Date]
-date= 2018-01-11
+date= 2018-01-18
 [Release Note]
-Note = New Actions for REST(save response to list, search with key pair in a list)
+Note = REST log improvement, autoupdate fix,API deploy fixes, Built in Utility improvement,adb handle for invalid serial
