@@ -452,8 +452,108 @@ def Insert_Into_List(step_data):
         return CommonUtil.Exception_Handler(sys.exc_info())
 
 
+def search_condition_wrapper(data,condition_string):
+    sModuleInfo = inspect.stack()[0][3] + " : " + inspect.getmoduleinfo(__file__).name
+    try:
+        parse_list = str(condition_string).split("(")
+        condition_string_list = []
+        conditions = []
+        lists = []
+        search_area = data
+        if len(parse_list) < 2:
+            CommonUtil.ExecLog(sModuleInfo,"The information in the data-set(s) are incorrect. Please provide accurate data set(s) information.",3)
+            return "failed"
+        list_name = parse_list[0].strip()
+        parse_list = parse_list[1].strip().split(")")
+        all_condition = parse_list[0].strip()
+        all_condition = all_condition.split("&&")
+
+        for each in all_condition:
+            condition_string_list.append(each.strip())
+
+        list_name = list_name.split(".")
+
+        for each in list_name:
+            lists.append(each.strip())
+
+        for each in lists:
+            if each in search_area:
+                search_area = search_area[each]
+            else:
+                CommonUtil.ExecLog(sModuleInfo,"%s not found in response"%each,3)
+                return "failed"
+
+        for each in condition_string_list:
+            equal = True
+            key_val_list = []
+            if "==" in each:
+                equal = True
+                key_val_list = each.split("==")
+            elif "!=" in each:
+                equal = False
+                key_val_list = each.split("!=")
+            else:
+                CommonUtil.ExecLog(sModuleInfo,"== or != pattern not found in condition",3)
+                return "failed"
+
+            key = key_val_list[0].strip()
+            value = key_val_list[1].strip()
+            conditions.append((key,value,equal))
+
+        result = True
+        if len(conditions) == 0:
+            CommonUtil.ExecLog(sModuleInfo,"No condition is provived in step data",3)
+            return "failed"
+        else:
+            if isinstance(search_area,dict):
+                for each in conditions:
+                    key = each[0]
+                    value = each[1]
+                    equal = each[2]
+                    if key in search_area.keys():
+                        if equal:
+                            result = result and (str(search_area[key]) == value)
+                        else:
+                            result = result and (str(search_area[key]) != value)
+                    else:
+                        CommonUtil.ExecLog(sModuleInfo,"%s not found in response"%key,3)
+                        return "failed"
+            elif isinstance(search_area,list):
+                for data in search_area:
+                    list_result = True
+                    for each in conditions:
+                        key = each[0]
+                        value = each[1]
+                        equal = each[2]
+                        if isinstance(data,dict):
+                            if key in data.keys():
+                                if equal:
+                                    list_result = list_result and (str(data[key]) == value)
+                                else:
+                                    list_result = list_result and (str(data[key]) != value)
+                            else:
+                                CommonUtil.ExecLog(sModuleInfo, "%s not found in response" % key, 3)
+                                return "failed"
+                        else:
+                            CommonUtil.ExecLog(sModuleInfo,"The information in the data-set(s) are incorrect. Please provide accurate data set(s) information.",3)
+                            return "failed"
+                    result = list_result
+                    if result:
+                        break
+            else:
+                CommonUtil.ExecLog(sModuleInfo,"The information in the data-set(s) are incorrect. Please provide accurate data set(s) information.",3)
+                return "failed"
+
+        return result
+
+
+    except Exception:
+        return CommonUtil.Exception_Handler(sys.exc_info())
+
+
+
 # Method to handle rest calls
-def handle_rest_call(data, fields_to_be_saved, save_into_list = False, list_name = "",search=False,search_key="",search_value="",equal=True):
+def handle_rest_call(data, fields_to_be_saved, save_into_list = False, list_name = "",search=False,search_key="",search_value="",equal=True,condition='',apply_condition=False):
     sModuleInfo = inspect.stack()[0][3] + " : " + inspect.getmoduleinfo(__file__).name
     CommonUtil.ExecLog(sModuleInfo, "Function: handle rest call", 1)
     try:
@@ -492,21 +592,31 @@ def handle_rest_call(data, fields_to_be_saved, save_into_list = False, list_name
                 CommonUtil.ExecLog(sModuleInfo, 'Post Call Returned Response Successfully', 1)
                 CommonUtil.ExecLog(sModuleInfo,"Received Response: %s"%result.json(),1)
                 if search:
-                    search_result = search_val_wrapper(result.json(),search_key,search_value,equal)
-                    if equal:
+                    if apply_condition:
+                        search_result = search_condition_wrapper(result.json(),condition)
                         if search_result:
-                            CommonUtil.ExecLog(sModuleInfo, 'Got "%s":"%s" in response'%(search_key,search_value), 1)
+                            CommonUtil.ExecLog(sModuleInfo, 'Condition "%s" is TRUE in response' % (condition), 1)
                             return "passed"
                         else:
-                            CommonUtil.ExecLog(sModuleInfo, 'Couldnt Get "%s":"%s" in response' % (search_key, search_value), 3)
+                            CommonUtil.ExecLog(sModuleInfo,
+                                               'Condition "%s" is FALSE in response' % (condition), 3)
                             return "failed"
                     else:
-                        if search_result:
-                            CommonUtil.ExecLog(sModuleInfo, 'No "%s":"%s" in response' % (search_key, search_value), 1)
-                            return "passed"
+                        search_result = search_val_wrapper(result.json(),search_key,search_value,equal)
+                        if equal:
+                            if search_result in passed_tag_list:
+                                CommonUtil.ExecLog(sModuleInfo, 'Got "%s":"%s" in response'%(search_key,search_value), 1)
+                                return "passed"
+                            else:
+                                CommonUtil.ExecLog(sModuleInfo, 'Couldnt Get "%s":"%s" in response' % (search_key, search_value), 3)
+                                return "failed"
                         else:
-                            CommonUtil.ExecLog(sModuleInfo,'Got "%s":"%s" in response' % (search_key, search_value), 3)
-                            return "failed"
+                            if search_result:
+                                CommonUtil.ExecLog(sModuleInfo, 'No "%s":"%s" in response' % (search_key, search_value), 1)
+                                return "passed"
+                            else:
+                                CommonUtil.ExecLog(sModuleInfo,'Got "%s":"%s" in response' % (search_key, search_value), 3)
+                                return "failed"
                 else:
                     if not save_into_list:
                         save_fields_from_rest_call(result.json(), fields_to_be_saved)
@@ -561,29 +671,35 @@ def Search_Response(step_data):
         key = ''
         value = ''
         equal = True
+        condition = ''
+        apply_condition = False
         for row in step_data:
             if row[1] == 'action':
                 key_value_pair = row[2]
-                l = str(key_value_pair).split("==")
-                if len(l) == 2:
-                    equal = True
-                    key = l[0].strip()
-                    value = l[1].strip()
-                    if key == '' or value == '':
-                        CommonUtil.ExecLog(sModuleInfo,"Error in key value step data for search response.. Try 'key == value' format...",3)
-                        return "failed"
+                if "(" in key_value_pair and ")" in key_value_pair:
+                    apply_condition = True
+                    condition = key_value_pair
                 else:
-                    l = str(key_value_pair).split("!=")
+                    l = str(key_value_pair).split("==")
                     if len(l) == 2:
-                        equal = False
+                        equal = True
                         key = l[0].strip()
                         value = l[1].strip()
                         if key == '' or value == '':
-                            CommonUtil.ExecLog(sModuleInfo,"Error in key value step data for search response.. Try 'key != value' format...",3)
+                            CommonUtil.ExecLog(sModuleInfo,"Error in key value step data for search response.. Try 'key == value' format...",3)
                             return "failed"
                     else:
-                        CommonUtil.ExecLog(sModuleInfo,"Error in key value step data for search response.. Try 'key == value' format...",3)
-                        return "failed"
+                        l = str(key_value_pair).split("!=")
+                        if len(l) == 2:
+                            equal = False
+                            key = l[0].strip()
+                            value = l[1].strip()
+                            if key == '' or value == '':
+                                CommonUtil.ExecLog(sModuleInfo,"Error in key value step data for search response.. Try 'key != value' format...",3)
+                                return "failed"
+                        else:
+                            CommonUtil.ExecLog(sModuleInfo,"Error in key value step data for search response.. Try 'key == value' format...",3)
+                            return "failed"
 
         element_step_data = Get_Element_Step_Data(step_data)
 
@@ -593,7 +709,7 @@ def Search_Response(step_data):
             return "failed"
         else:
             try:
-                return_result = handle_rest_call(returned_step_data_list, fields_to_be_saved,search=True, search_key=key, search_value=value,equal=equal)
+                return_result = handle_rest_call(returned_step_data_list, fields_to_be_saved,search=True, search_key=key, search_value=value,equal=equal,condition=condition,apply_condition=apply_condition)
                 return return_result
             except Exception:
                 return CommonUtil.Exception_Handler(sys.exc_info())
