@@ -6,7 +6,7 @@ from base64 import b64encode, b64decode
 sys.path.append(os.path.dirname(os.getcwd()))
 from Utilities import ConfigModule,RequestFormatter,CommonUtil,FileUtilities,All_Device_Info
 import MainDriverApi
-
+from tzlocal import get_localzone
 
 '''Constants'''
 AUTHENTICATION_TAG='Authentication'
@@ -57,6 +57,17 @@ def Login():
                     machine_object=update_machine(dependency_collection())
                     if machine_object['registered']:
                         tester_id=machine_object['name']
+                        try:
+                            # send machine's time zone
+                            local_tz = str(get_localzone())
+                            time_zone_object = {
+                                'time_zone': local_tz,
+                                'machine':tester_id
+                            }
+                            RequestFormatter.Get('send_machine_time_zone_api', time_zone_object)
+                            # end
+                        except:
+                            pass
                         RunAgain = RunProcess(tester_id)
                         if RunAgain == False: break # Exit login
                     else:
