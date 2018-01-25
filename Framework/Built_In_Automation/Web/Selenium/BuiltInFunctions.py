@@ -13,8 +13,8 @@
 #        Modules        #
 #                       #
 #########################
-sys.path.append("..")
 import sys, os, time, inspect
+sys.path.append("..")
 from selenium import webdriver
 from selenium.webdriver.remote.webelement import WebElement
 from selenium.webdriver.firefox.firefox_binary import FirefoxBinary
