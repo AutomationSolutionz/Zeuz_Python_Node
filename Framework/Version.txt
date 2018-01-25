@@ -1,6 +1,6 @@
 [ZeuZ Python Version]
-version = 3.12
+version = 3.13
 [Release Date]
-date= 2018-01-18
+date= 2018-01-25
 [Release Note]
-Note = REST log improvement, autoupdate fix,API deploy fixes, Built in Utility improvement,adb handle for invalid serial
+Note = REST search features, Schedule run timezone 
