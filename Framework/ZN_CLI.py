@@ -6,7 +6,56 @@ from base64 import b64encode, b64decode
 sys.path.append(os.path.dirname(os.getcwd()))
 from Utilities import ConfigModule,RequestFormatter,CommonUtil,FileUtilities,All_Device_Info
 import MainDriverApi
-from tzlocal import get_localzone
+
+
+
+def detect_admin():
+    # Windows only - Return True if program run as admin
+
+    import subprocess as s
+    if sys.platform == 'win32':
+        command = 'net session >nul 2>&1'  # This command can only be run by admin
+        try:
+            output = s.check_output(command, shell=True)  # Causes an exception if we can't run
+        except:
+            return False
+    return True
+
+
+# Have user install tzlocal if this fails - we try to do it for them first
+try:
+    from tzlocal import get_localzone
+except:
+    import subprocess as s
+
+    print "Module 'tzlocal' is not installed. This is required to start the graphical interface. Please enter the root password to install."
+
+    if sys.platform == 'win32':
+        try:
+            # Elevate permissions
+            if not detect_admin():
+                os.system('powershell -command Start-Process "python \'%s\'" -Verb runAs' % sys.argv[0].split(os.sep)[
+                    -1])  # Re-run this program with elevated permissions to admin
+                quit()
+            # Install
+            print s.check_output('pip install tzlocal')
+        except:
+            print "Failed to install. Please run: pip install tzlocal"
+            raw_input('Press ENTER to exit')
+            quit()
+    elif sys.platform == 'linux2':
+        print s.Popen('sudo -S pip install tzlocal'.split(' '), stdout=s.PIPE, stderr=s.STDOUT).communicate()[0]
+    else:
+        print "Could not automatically install required modules"
+        raw_input('Press ENTER to exit')
+        quit()
+
+    try:
+        from tzlocal import get_localzone
+    except:
+        raw_input('Could not install tzlocal. Please do this manually by running: sudo apt-get install python-tk')
+        quit()
+
 
 '''Constants'''
 AUTHENTICATION_TAG='Authentication'
