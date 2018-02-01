@@ -553,7 +553,7 @@ def search_condition_wrapper(data,condition_string):
 
 
 # Method to handle rest calls
-def handle_rest_call(data, fields_to_be_saved, save_into_list = False, list_name = "",search=False,search_key="",search_value="",equal=True,condition='',apply_condition=False):
+def handle_rest_call(data, fields_to_be_saved, save_into_list = False, list_name = "",search=False,search_key="",search_value="",equal=True,condition='',apply_condition=False,save_cookie=False):
     sModuleInfo = inspect.stack()[0][3] + " : " + inspect.getmoduleinfo(__file__).name
     CommonUtil.ExecLog(sModuleInfo, "Function: handle rest call", 1)
     try:
@@ -591,6 +591,13 @@ def handle_rest_call(data, fields_to_be_saved, save_into_list = False, list_name
             if result.json():
                 CommonUtil.ExecLog(sModuleInfo, 'Post Call Returned Response Successfully', 1)
                 CommonUtil.ExecLog(sModuleInfo,"Received Response: %s"%result.json(),1)
+
+                #if save cookie option enabled then push cookie into shared variables, if cookie var name is 'id' then you can reference it later with %|id|%
+                if save_cookie:
+                    all_cookies = requests.utils.dict_from_cookiejar(result.cookies)
+                    for each in all_cookies.keys():
+                        Shared_Resources.Set_Shared_Variables(each,all_cookies[each])
+
                 if search:
                     if apply_condition:
                         search_result = search_condition_wrapper(result.json(),condition)
@@ -635,9 +642,29 @@ def handle_rest_call(data, fields_to_be_saved, save_into_list = False, list_name
     except Exception:
         return CommonUtil.Exception_Handler(sys.exc_info())
 
+#Get Response Wrapper Normal
+def Get_Response_Wrapper(step_data):
+    sModuleInfo = inspect.stack()[0][3] + " : " + inspect.getmoduleinfo(__file__).name
+    CommonUtil.ExecLog(sModuleInfo, "Function: Get_Response_Wrapper", 1)
+    try:
+        return Get_Response(step_data)
+    except Exception:
+        return CommonUtil.Exception_Handler(sys.exc_info())
+
+
+#Get Response Wrapper With Cookie
+def Get_Response_Wrapper_With_Cookie(step_data):
+    sModuleInfo = inspect.stack()[0][3] + " : " + inspect.getmoduleinfo(__file__).name
+    CommonUtil.ExecLog(sModuleInfo, "Function: Get_Response_Wrapper_With_Cookie", 1)
+    try:
+        return Get_Response(step_data,True)
+    except Exception:
+        return CommonUtil.Exception_Handler(sys.exc_info())
+
+
 
 # Method to get responses
-def Get_Response(step_data):
+def Get_Response(step_data, save_cookie=False):
     sModuleInfo = inspect.stack()[0][3] + " : " + inspect.getmoduleinfo(__file__).name
     CommonUtil.ExecLog(sModuleInfo, "Function: Get_Response", 1)
     try:
@@ -654,7 +681,7 @@ def Get_Response(step_data):
             return "failed"
         else:
             try:
-                return_result = handle_rest_call(returned_step_data_list, fields_to_be_saved)
+                return_result = handle_rest_call(returned_step_data_list, fields_to_be_saved,save_cookie=save_cookie)
                 return return_result
             except Exception:
                 return CommonUtil.Exception_Handler(sys.exc_info())

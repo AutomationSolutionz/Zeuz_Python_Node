@@ -66,9 +66,10 @@ actions = { # Numbers are arbitrary, and are not used anywhere
     230: {'module': 'appium', 'name': 'package version', 'function': 'package_information'},
     231: {'module': 'appium', 'name': 'package installed', 'function': 'package_information'},
 
-    300: {'module': 'rest', 'name': 'save response', 'function': 'Get_Response'},
+    300: {'module': 'rest', 'name': 'save response', 'function': 'Get_Response_Wrapper'},
     301: {'module': 'rest', 'name': 'search response', 'function': 'Search_Response'},
     302: {'module': 'rest', 'name': 'save response into list', 'function': 'Insert_Into_List'},
+    303: {'module': 'rest', 'name': 'save response and cookie', 'function': 'Get_Response_Wrapper_With_Cookie'},
     
     401: {'module': 'selenium', 'name': 'click', 'function': 'Click_Element'},
     402: {'module': 'selenium', 'name': 'click and hold', 'function': 'Click_and_Hold_Element'},
