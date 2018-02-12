@@ -8,7 +8,6 @@ from Utilities import ConfigModule,RequestFormatter,CommonUtil,FileUtilities,All
 import MainDriverApi
 
 
-
 def detect_admin():
     # Windows only - Return True if program run as admin
 
@@ -34,14 +33,15 @@ except:
         try:
             # Elevate permissions
             if not detect_admin():
-                os.system('powershell -command Start-Process "python \'%s\'" -Verb runAs' % sys.argv[0].split(os.sep)[-1])  # Re-run this program with elevated permissions to admin
-                quit()
+                os.system('powershell -command Start-Process "python \'..\\%s\'" -Verb runAs' % sys.argv[0].split(os.sep)[-1])  # Re-run this program with elevated permissions to admin
+                sys.exit(1) # exit this instance and let the elevated instance take over
+
             # Install
             print s.check_output('pip install tzlocal')
-        except:
-            print "Failed to install. Please run: pip install tzlocal"
+        except Exception, e:
+            print "Failed to install. Please run: pip install tzlocal: ", e
             raw_input('Press ENTER to exit')
-            quit()
+            sys.exit(1)
     elif sys.platform == 'linux2':
         print s.Popen('sudo -S pip install tzlocal'.split(' '), stdout=s.PIPE, stderr=s.STDOUT).communicate()[0]
     else:
@@ -52,7 +52,7 @@ except:
     try:
         from tzlocal import get_localzone
     except:
-        raw_input('Could not install tzlocal. Please do this manually by running: sudo apt-get install python-tk')
+        raw_input('Could not install tzlocal. Please do this manually by running: pip install tzlocal as administrator')
         quit()
 
 

@@ -29,14 +29,14 @@ except:
             # Elevate permissions
             if not detect_admin():
                 os.system('powershell -command Start-Process "python \'%s\'" -Verb runAs' % sys.argv[0].split(os.sep)[-1]) # Re-run this program with elevated permissions to admin
-                quit()
+                sys.exit(1)
             # Install
             # Note: Tkinter is not available through pip nor easy_install, we assume it was packaged with Python
             print s.check_output('pip install setuptools')
         except:
             print "Failed to install. Please run: pip download pillow & pip install pillow"
             raw_input('Press ENTER to exit')
-            quit()
+            sys.exit(1)
     elif sys.platform == 'linux2':
         print s.Popen('sudo apt-get update'.split(' '), stdout = s.PIPE, stderr = s.STDOUT).communicate()[0]
         print s.Popen('sudo apt-get -y install python-tk'.split(' '), stdout = s.PIPE, stderr = s.STDOUT).communicate()[0]
@@ -328,7 +328,14 @@ class Application(tk.Frame):
                     pass
                 
                 # Update check complete, we have an update, start install
-                elif self_updater.check_complete == 'update':
+                elif self_updater.check_complete[0:6] == 'update':
+                    # Print update notes
+                    try:
+                        print "\nUpdate notes:"
+                        for note in str(self_updater.check_complete[7:]).split(';'): print note
+                        print ''
+                    except: pass
+                    
                     # Read update settings
                     try:
                         if 'auto-update' in self.widgets['Zeuz Node']['widget'] and self.widgets['Zeuz Node']['widget']['auto-update']['check'].get(): auto_update = True

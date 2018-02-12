@@ -169,16 +169,23 @@ def check_for_updates():
         check_complete = 'check'
         section = 'ZeuZ Python Version' # Must match what's in the version file
         key = 'version' # Must match what's in the version file
+        section_key = 'Release Note' # Must match the key in the version file
+        note_key = 'Note' # Must match the key in the version file
         if sys.platform == 'win32': version_tmp = os.path.join(os.getenv('TMP'), 'version.txt')
         else: version_tmp = '/tmp/version.txt'
         
         local_version = ConfigModule.get_config_value(section, key, version_path)
         remote_version = ConfigModule.get_config_value(section, key, Download_File(version_url, version_tmp))
-        if os.path.exists(version_tmp): os.unlink(version_tmp) # Clean up no longer needed file
         
         # We have an update available
-        if local_version != remote_version and remote_version != '' and local_version != '': check_complete = 'update'
-        
+        if local_version != remote_version and remote_version != '' and local_version != '':
+            try: note = ConfigModule.get_config_value(section_key, note_key, version_tmp) # Get update notes
+            except: note = ''
+            check_complete = 'update:' + note # Sends command along with note to zeuz node
+
+        # Clean up no longer needed file
+        if os.path.exists(version_tmp): os.unlink(version_tmp)
+                
         # No update
         else: check_complete = 'noupdate'
     except:
@@ -223,3 +230,4 @@ def main(dst_dir):
         else: check_complete = 'error'
     except:
         check_complete = 'error'
+
