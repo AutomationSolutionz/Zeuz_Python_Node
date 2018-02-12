@@ -34,8 +34,7 @@ except:
         try:
             # Elevate permissions
             if not detect_admin():
-                os.system('powershell -command Start-Process "python \'%s\'" -Verb runAs' % sys.argv[0].split(os.sep)[
-                    -1])  # Re-run this program with elevated permissions to admin
+                os.system('powershell -command Start-Process "python \'%s\'" -Verb runAs' % sys.argv[0].split(os.sep)[-1])  # Re-run this program with elevated permissions to admin
                 quit()
             # Install
             print s.check_output('pip install tzlocal')
@@ -121,9 +120,12 @@ def Login():
                         if RunAgain == False: break # Exit login
                     else:
                         return False
-                else:
-                    CommonUtil.ExecLog('', "Authentication Failed", 4, False)
+                elif r == False or r.lower() == 'false': # Server should send "False" when user/pass is wrong
+                    CommonUtil.ExecLog('', "Authentication Failed. Username or password incorrect", 4, False)
                     break
+                else: # Server likely sent nothing back or RequestFormatter.Get() caught an exception
+                    CommonUtil.ExecLog('', "Login attempt incomplete, waiting 60 seconds before trying again ", 4, False)
+                    time.sleep(60)
             except Exception, e:
                 exc_type, exc_obj, exc_tb = sys.exc_info()
                 fname = os.path.split(exc_tb.tb_frame.f_code.co_filename)[1]
