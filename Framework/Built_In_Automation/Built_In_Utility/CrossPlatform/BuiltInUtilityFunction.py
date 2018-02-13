@@ -13,8 +13,9 @@
 #                       #
 #########################
 
-sys.path.append("..")
+
 import sys, datetime, time, inspect, zipfile, string, filecmp, random, requests, math, re, os, subprocess, shutil, ast
+sys.path.append("..")
 from sys import platform as _platform
 from Framework.Utilities import ConfigModule
 from Framework.Utilities import CommonUtil
@@ -2164,5 +2165,63 @@ def pattern_matching(dataset):
             return 'passed'
     except:
         return CommonUtil.Exception_Handler(sys.exc_info(), None, "Error performing pattern match")
+
+
+def save_substring(data_set):
+    sModuleInfo = inspect.stack()[0][3] + " : " + inspect.getmoduleinfo(__file__).name
+    CommonUtil.ExecLog(sModuleInfo, "Function start", 0)
+    # Parse data set
+    try:
+        from_var = '' #the varibale from which string will be copied
+        to_var = '' #the variable wher estring will be saved
+        index_string = '' #index of the substring operation like '5'-> will copy from index 5 to last of string, '5,8' -> will copy from index 5 to index before 8, which is 7, likeany programming language
+        substring = ''
+        from_index = -1
+        to_index = -1
+        for row in data_set:
+            if row[1] == 'element parameter':
+                if row[0] == 'from':
+                    from_var = str(row[2])
+                elif row[0] == 'to':
+                    to_var = str(row[2])
+            elif row[1] == 'action':
+                index_string = str(row[2])
+
+        if Shared_Resources.Test_Shared_Variables(from_var):
+            from_var = Shared_Resources.Get_Shared_Variables(from_var) #save the value of 'from_var' shared varibale to 'from_var'
+        else:
+            CommonUtil.ExecLog(sModuleInfo,"Could not find the variable named '%s'"%from_var, 3)
+            return "failed"
+
+        #process index_string
+        if "," in index_string:
+            splitted = index_string.split(",")
+            from_index = int(splitted[0].strip())
+            to_index = int(splitted[1].strip())
+        else:
+            from_index = int(index_string.strip())
+
+        if from_index == -1:
+            CommonUtil.ExecLog(sModuleInfo, "From Index for getting substing can't be negative", 3)
+            return "failed"
+        else:
+            if to_index == -1:
+                try:
+                    substring = from_var[from_index:]
+                except:
+                    CommonUtil.ExecLog(sModuleInfo, "Can't get substring.Index out of range for string '%s'" % from_var, 3)
+                    return "failed"
+            else:
+                try:
+                    substring = from_var[from_index:to_index]
+                except:
+                    CommonUtil.ExecLog(sModuleInfo, "Can't get substring. Index out of range for string '%s'" % from_var, 3)
+                    return "failed"
+
+        #now save the substing to new variable
+        return Shared_Resources.Set_Shared_Variables(to_var,substring)
+
+    except Exception:
+        return CommonUtil.Exception_Handler(sys.exc_info())
         
 
