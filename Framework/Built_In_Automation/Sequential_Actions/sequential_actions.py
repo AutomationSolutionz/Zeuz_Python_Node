@@ -118,7 +118,6 @@ actions = { # Numbers are arbitrary, and are not used anywhere
     514: {'module': 'utility', 'name': 'current documents', 'function': 'Get_Current_Documents'},
     515: {'module': 'utility', 'name': 'current desktop', 'function': 'Get_Current_Desktop'},
     516: {'module': 'utility', 'name': 'home directory', 'function': 'Get_Home_Directory'},
-    517: {'module': 'utility', 'name': 'run sudo', 'function': 'Run_Command'},
     518: {'module': 'utility', 'name': 'run command', 'function': 'Run_Command'},
     519: {'module': 'utility', 'name': 'download', 'function': 'Download_file'},
     520: {'module': 'utility', 'name': 'log 2', 'function': 'Add_Log'},
@@ -135,7 +134,6 @@ actions = { # Numbers are arbitrary, and are not used anywhere
     531: {'module': 'utility', 'name': 'search string', 'function': 'pattern_matching'},
     532: {'module': 'utility', 'name': 'save substring', 'function': 'save_substring'},
     533: {'module': 'utility', 'name': 'get attachment path', 'function': 'Get_Attachment_Path'},
-    534: {'module': 'utility', 'name': 'run command and save', 'function': 'Run_Command_and_Save'},
 
     600: {'module': 'xml', 'name': 'update', 'function': 'update_element'},
     601: {'module': 'xml', 'name': 'add', 'function': 'add_element'},

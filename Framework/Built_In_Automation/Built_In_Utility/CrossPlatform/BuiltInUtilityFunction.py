@@ -494,141 +494,141 @@ def empty_recycle_bin():
         return CommonUtil.Exception_Handler(sys.exc_info())
 
 
-def run_win_cmd(cmd): #!!!!merge with run_cmd
-    """
-        :param cmd: admin command to run
-        :return: Exception if Exception occurs 
-    """
-    
-    sModuleInfo = inspect.stack()[0][3] + " : " + inspect.getmoduleinfo(__file__).name
-    CommonUtil.ExecLog(sModuleInfo, "Function start", 0)
-    
-    try:
-        result = []
-        process = subprocess.Popen(cmd, shell=True, stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
-        for line in process.stdout:
-            result.append(line)
-        errcode = process.returncode
-        for line in result:
-            # print(line)
-            CommonUtil.ExecLog(sModuleInfo, "%s" % line, 1)
-        if errcode is not None:
-            CommonUtil.ExecLog(sModuleInfo, 'cmd %s failed, see above for details' % cmd, 3)
-            raise Exception('cmd %s failed, see above for details', cmd)
-    except Exception:
-        return CommonUtil.Exception_Handler(sys.exc_info())
+# def run_win_cmd(cmd): #!!!!merge with run_cmd
+#     """
+#         :param cmd: admin command to run
+#         :return: Exception if Exception occurs 
+#     """
+#     
+#     sModuleInfo = inspect.stack()[0][3] + " : " + inspect.getmoduleinfo(__file__).name
+#     CommonUtil.ExecLog(sModuleInfo, "Function start", 0)
+#     
+#     try:
+#         result = []
+#         process = subprocess.Popen(cmd, shell=True, stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
+#         for line in process.stdout:
+#             result.append(line)
+#         errcode = process.returncode
+#         for line in result:
+#             # print(line)
+#             CommonUtil.ExecLog(sModuleInfo, "%s" % line, 1)
+#         if errcode is not None:
+#             CommonUtil.ExecLog(sModuleInfo, 'cmd %s failed, see above for details' % cmd, 3)
+#             raise Exception('cmd %s failed, see above for details', cmd)
+#     except Exception:
+#         return CommonUtil.Exception_Handler(sys.exc_info())
+# 
+# 
+# def run_win_cmd_and_save_in_shared_var(cmd,Save_in_var):  # !!!!merge with run_cmd
+#     """
+#         :param cmd: admin command to run
+#         :return: Exception if Exception occurs 
+#     """
+# 
+#     sModuleInfo = inspect.stack()[0][3] + " : " + inspect.getmoduleinfo(__file__).name
+#     CommonUtil.ExecLog(sModuleInfo, "Function start", 0)
+# 
+#     try:
+#         result = []
+#         process = subprocess.Popen(cmd, shell=True, stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
+#         for line in process.stdout:
+#             result.append(line)
+#         errcode = process.returncode
+#         Shared_Resources.Set_Shared_Variables(Save_in_var, result)
+#         if errcode is not None:
+#             CommonUtil.ExecLog(sModuleInfo, 'cmd %s failed, see above for details' % cmd, 3)
+#             raise Exception('cmd %s failed, see above for details', cmd)
+#     except Exception:
+#         return CommonUtil.Exception_Handler(sys.exc_info())
 
-
-def run_win_cmd_and_save_in_shared_var(cmd,Save_in_var):  # !!!!merge with run_cmd
-    """
-        :param cmd: admin command to run
-        :return: Exception if Exception occurs 
-    """
-
-    sModuleInfo = inspect.stack()[0][3] + " : " + inspect.getmoduleinfo(__file__).name
-    CommonUtil.ExecLog(sModuleInfo, "Function start", 0)
-
-    try:
-        result = []
-        process = subprocess.Popen(cmd, shell=True, stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
-        for line in process.stdout:
-            result.append(line)
-        errcode = process.returncode
-        Shared_Resources.Set_Shared_Variables(Save_in_var, result)
-        if errcode is not None:
-            CommonUtil.ExecLog(sModuleInfo, 'cmd %s failed, see above for details' % cmd, 3)
-            raise Exception('cmd %s failed, see above for details', cmd)
-    except Exception:
-        return CommonUtil.Exception_Handler(sys.exc_info())
-
-def run_cmd(command, return_status=False, is_shell=True, stdout_val=subprocess.PIPE, local_run=False):
-    """
-        :param command: sudo command to run
-        :return: Exception if Exception occurs otherwise return result 
-    """
-    
-    sModuleInfo = inspect.stack()[0][3] + " : " + inspect.getmoduleinfo(__file__).name
-    CommonUtil.ExecLog(sModuleInfo, "Function start", 0)
-    
-    '''Begin Constants'''
-    Passed = "Passed" # !!!remove this nad use passed_tag_list,e tc
-    Failed = "Failed"
-    Running = 'running'
-    '''End Constants'''
-
-    # Run 'command' via command line in a bash shell, and store outputs to stdout_val
-    sModuleInfo = inspect.stack()[0][3] + " : " + inspect.getmoduleinfo(__file__).name
-    subprocess_dict = {}
-    try:
-        # global subprocess_dict
-        result = []
-
-        # open a subprocess with command, and assign a session id to the shell process
-        # this is will make the shell process the group leader for all the child processes spawning from it
-        status = subprocess.Popen(command, shell=is_shell, stdout=stdout_val, preexec_fn=os.setsid)
-        subprocess_dict[status] = Running
-        status.wait() # Wait for process to complete, and populate returncode
-        errcode = status.returncode
-        
-        for line in status.stdout:
-            result.append(line)
-        
-        for line in result:
-            CommonUtil.ExecLog(sModuleInfo, "%s" % line, 1)
-        
-        if return_status:
-            return errcode, result
-        elif errcode == 0:
-            return Passed
-        else:
-            return Failed
-
-    except Exception:
-        return CommonUtil.Exception_Handler(sys.exc_info())
-
-def run_cmd_and_save_in_Shared_var(Save_in_var, command, return_status=False, is_shell=True, stdout_val=subprocess.PIPE, local_run=False):
-    """
-        :param command: sudo command to run
-        :return: Exception if Exception occurs otherwise return result 
-    """
-
-    sModuleInfo = inspect.stack()[0][3] + " : " + inspect.getmoduleinfo(__file__).name
-    CommonUtil.ExecLog(sModuleInfo, "Function start", 0)
-
-    '''Begin Constants'''
-    Passed = "Passed" # !!!remove this nad use passed_tag_list,e tc
-    Failed = "Failed"
-    Running = 'running'
-    '''End Constants'''
-
-    # Run 'command' via command line in a bash shell, and store outputs to stdout_val
-    sModuleInfo = inspect.stack()[0][3] + " : " + inspect.getmoduleinfo(__file__).name
-    subprocess_dict = {}
-    try:
-        # global subprocess_dict
-        result = []
-
-        # open a subprocess with command, and assign a session id to the shell process
-        # this is will make the shell process the group leader for all the child processes spawning from it
-        status = subprocess.Popen(command, shell=is_shell, stdout=stdout_val, preexec_fn=os.setsid)
-        subprocess_dict[status] = Running
-        status.wait() # Wait for process to complete, and populate returncode
-        errcode = status.returncode
-
-        for line in status.stdout:
-            result.append(line)
-
-        Shared_Resources.Set_Shared_Variables(Save_in_var, result)
-
-        if return_status:
-            return errcode, result
-        elif errcode == 0:
-            return Passed
-        else:
-            return Failed
-
-    except Exception:
-        return CommonUtil.Exception_Handler(sys.exc_info())
+# def run_cmd(command, return_status=False, is_shell=True, stdout_val=subprocess.PIPE, local_run=False):
+#     """
+#         :param command: sudo command to run
+#         :return: Exception if Exception occurs otherwise return result 
+#     """
+#     
+#     sModuleInfo = inspect.stack()[0][3] + " : " + inspect.getmoduleinfo(__file__).name
+#     CommonUtil.ExecLog(sModuleInfo, "Function start", 0)
+#     
+#     '''Begin Constants'''
+#     Passed = "Passed" # !!!remove this nad use passed_tag_list,e tc
+#     Failed = "Failed"
+#     Running = 'running'
+#     '''End Constants'''
+# 
+#     # Run 'command' via command line in a bash shell, and store outputs to stdout_val
+#     sModuleInfo = inspect.stack()[0][3] + " : " + inspect.getmoduleinfo(__file__).name
+#     subprocess_dict = {}
+#     try:
+#         # global subprocess_dict
+#         result = []
+# 
+#         # open a subprocess with command, and assign a session id to the shell process
+#         # this is will make the shell process the group leader for all the child processes spawning from it
+#         status = subprocess.Popen(command, shell=is_shell, stdout=stdout_val, preexec_fn=os.setsid)
+#         subprocess_dict[status] = Running
+#         status.wait() # Wait for process to complete, and populate returncode
+#         errcode = status.returncode
+#         
+#         for line in status.stdout:
+#             result.append(line)
+#         
+#         for line in result:
+#             CommonUtil.ExecLog(sModuleInfo, "%s" % line, 1)
+#         
+#         if return_status:
+#             return errcode, result
+#         elif errcode == 0:
+#             return Passed
+#         else:
+#             return Failed
+# 
+#     except Exception:
+#         return CommonUtil.Exception_Handler(sys.exc_info())
+# 
+# def run_cmd_and_save_in_Shared_var(Save_in_var, command, return_status=False, is_shell=True, stdout_val=subprocess.PIPE, local_run=False):
+#     """
+#         :param command: sudo command to run
+#         :return: Exception if Exception occurs otherwise return result 
+#     """
+# 
+#     sModuleInfo = inspect.stack()[0][3] + " : " + inspect.getmoduleinfo(__file__).name
+#     CommonUtil.ExecLog(sModuleInfo, "Function start", 0)
+# 
+#     '''Begin Constants'''
+#     Passed = "Passed" # !!!remove this nad use passed_tag_list,e tc
+#     Failed = "Failed"
+#     Running = 'running'
+#     '''End Constants'''
+# 
+#     # Run 'command' via command line in a bash shell, and store outputs to stdout_val
+#     sModuleInfo = inspect.stack()[0][3] + " : " + inspect.getmoduleinfo(__file__).name
+#     subprocess_dict = {}
+#     try:
+#         # global subprocess_dict
+#         result = []
+# 
+#         # open a subprocess with command, and assign a session id to the shell process
+#         # this is will make the shell process the group leader for all the child processes spawning from it
+#         status = subprocess.Popen(command, shell=is_shell, stdout=stdout_val, preexec_fn=os.setsid)
+#         subprocess_dict[status] = Running
+#         status.wait() # Wait for process to complete, and populate returncode
+#         errcode = status.returncode
+# 
+#         for line in status.stdout:
+#             result.append(line)
+# 
+#         Shared_Resources.Set_Shared_Variables(Save_in_var, result)
+# 
+#         if return_status:
+#             return errcode, result
+#         elif errcode == 0:
+#             return Passed
+#         else:
+#             return Failed
+# 
+#     except Exception:
+#         return CommonUtil.Exception_Handler(sys.exc_info())
 
 
 # function to generate random string
@@ -1293,74 +1293,123 @@ def Calculate(step_data):
 
 
 # Method to Run Command
-def Run_Command(step_data):
+def Run_Command(data_set):
     sModuleInfo = inspect.stack()[0][3] + " : " + inspect.getmoduleinfo(__file__).name
     CommonUtil.ExecLog(sModuleInfo, "Function start", 0)
+
+    # Parse data set
     try:
-        if step_data[0][0] == "run command":
-            if _platform == "win32":
-                # windows
-                command = str(step_data[0][2]).strip()
-                result = run_win_cmd(command)
-                if result in failed_tag_list:
-                    CommonUtil.ExecLog(sModuleInfo, "Could not run sudo command '%s'" % (command), 3)
-                    return "failed"
-                else:
-                    CommonUtil.ExecLog(sModuleInfo, "sudo command is run properly '%s'" % (command), 1)
-                    return "passed"
-            elif _platform == "linux" or _platform == "linux2" or _platform == "darwin":
-
-                CommonUtil.ExecLog(sModuleInfo, "Could not run admin command for linux/mac", 3)
-                return "failed"
-        elif step_data[0][0] == "run sudo":
-            if _platform == "linux" or _platform == "linux2" or _platform == "darwin":
-                command = str(step_data[0][2]).strip()
-                result = run_cmd(command)
-                if result in failed_tag_list:
-                    CommonUtil.ExecLog(sModuleInfo, "Could not run sudo command '%s'" % (command), 3)
-                    return "failed"
-                else:
-                    CommonUtil.ExecLog(sModuleInfo, "sudo command is run properly '%s'" % (command), 1)
-                    return "passed"
-            elif _platform == "win32":
-                # windows
-                CommonUtil.ExecLog(sModuleInfo, "Could not run sudo command as it is windows", 3)
-                return "failed"
+        commands = [] # Need at least one command, multiple commands will be executed in order
+        shared_var = '' # Optional - store output of command in shared variable
+        for row in data_set:
+            op = row[0].lower().strip()
+            cmd = row[2].strip()
+            if op == 'command':
+                commands.append(cmd)
+            elif op in ('shared var', 'shared variable', 'var', 'variable', 'save'):
+                shared_var = cmd.replace('%|', '').replace('|%', '') # Save variable name, remove identifying characters if accidentally provided
+        if len(commands) == 0:
+            CommonUtil.ExecLog(sModuleInfo, "No commands specified. Expected at least one row to contain 'command' in the Field, and the command to execute in the Value field", 3)
+            return 'failed'
     except Exception:
-        return CommonUtil.Exception_Handler(sys.exc_info())
+        return CommonUtil.Exception_Handler(sys.exc_info(), None, "Error parsing data set")
 
-# Method to Run Command
-def Run_Command_and_Save(step_data):
-    sModuleInfo = inspect.stack()[0][3] + " : " + inspect.getmoduleinfo(__file__).name
-    CommonUtil.ExecLog(sModuleInfo, "Function start", 0)
+    # Execute command    
     try:
-
-            if _platform == "win32":
-                # windows
-                command = str(step_data[0][2]).strip()
-                Shared_var= str(step_data[1][2]).strip()
-                result = run_win_cmd_and_save_in_shared_var(command,Shared_var)
-                if result in failed_tag_list:
-                    CommonUtil.ExecLog(sModuleInfo, "Could not run sudo command '%s'" % (command), 3)
-                    return "failed"
-                else:
-                    CommonUtil.ExecLog(sModuleInfo, "sudo command is run properly '%s'" % (command), 1)
-                    return "passed"
-
-
-            elif _platform == "linux" or _platform == "linux2" or _platform == "darwin":
-                command = str(step_data[0][2]).strip()
-                Shared_var = str(step_data[1][2]).strip()
-                result = run_cmd_and_save_in_Shared_var(Shared_var,command)
-                if result in failed_tag_list:
-                    CommonUtil.ExecLog(sModuleInfo, "Could not run sudo command '%s'" % (command), 3)
-                    return "failed"
-                else:
-                    CommonUtil.ExecLog(sModuleInfo, "sudo command is run properly '%s'" % (command), 1)
-                    return "passed"
-
+        # Set command deliminator
+        if _platform == 'win32': delim = '&'
+        else: delim = ';'
+        
+        # Execute commands as a single command line command, separated by the OS's shell deliminator. This allows us to maintain a shell history, so all commands work as expected
+        h = subprocess.Popen(delim.join(commands), shell=True, stdout=subprocess.PIPE, stderr=subprocess.STDOUT) # Execute commands, collect STDERR and redirect it to STDOUT, so it's all together
+        h.wait() # Wait for process to complete
+        result = h.returncode # Get last command result
+        output = ''
+        for line in h.stdout: output += line # Get command output from STDOUT and STDERR
+        
+        CommonUtil.ExecLog(sModuleInfo, "Command output: %s" % output, 1) # Write output to log
+        if shared_var: Shared_Resources.Set_Shared_Variables(shared_var, output) # Save command output to shared variable, if user specified it
+        
+        # Exit
+        if result != 0:
+            CommonUtil.ExecLog(sModuleInfo, "Command failed. See above for command output", 3)
+            return 'failed'
+        else:
+            CommonUtil.ExecLog(sModuleInfo, "Command executed successfully", 1)
+            return 'passed'
+        
     except Exception:
-        return CommonUtil.Exception_Handler(sys.exc_info())
+        return CommonUtil.Exception_Handler(sys.exc_info(), None, "Error executing command")
+
+
+# def Run_Command(step_data):
+#     sModuleInfo = inspect.stack()[0][3] + " : " + inspect.getmoduleinfo(__file__).name
+#     CommonUtil.ExecLog(sModuleInfo, "Function start", 0)
+#     try:
+#         if step_data[0][0] == "run command":
+#             if _platform == "win32":
+#                 # windows
+#                 command = str(step_data[0][2]).strip()
+#                 result = run_win_cmd(command)
+#                 if result in failed_tag_list:
+#                     CommonUtil.ExecLog(sModuleInfo, "Could not run sudo command '%s'" % (command), 3)
+#                     return "failed"
+#                 else:
+#                     CommonUtil.ExecLog(sModuleInfo, "sudo command is run properly '%s'" % (command), 1)
+#                     return "passed"
+#             elif _platform == "linux" or _platform == "linux2" or _platform == "darwin":
+# 
+#                 CommonUtil.ExecLog(sModuleInfo, "Could not run admin command for linux/mac", 3)
+#                 return "failed"
+#         elif step_data[0][0] == "run sudo":
+#             if _platform == "linux" or _platform == "linux2" or _platform == "darwin":
+#                 command = str(step_data[0][2]).strip()
+#                 result = run_cmd(command)
+#                 if result in failed_tag_list:
+#                     CommonUtil.ExecLog(sModuleInfo, "Could not run sudo command '%s'" % (command), 3)
+#                     return "failed"
+#                 else:
+#                     CommonUtil.ExecLog(sModuleInfo, "sudo command is run properly '%s'" % (command), 1)
+#                     return "passed"
+#             elif _platform == "win32":
+#                 # windows
+#                 CommonUtil.ExecLog(sModuleInfo, "Could not run sudo command as it is windows", 3)
+#                 return "failed"
+#     except Exception:
+#         return CommonUtil.Exception_Handler(sys.exc_info())
+# 
+# # Method to Run Command
+# def Run_Command_and_Save(step_data):
+#     sModuleInfo = inspect.stack()[0][3] + " : " + inspect.getmoduleinfo(__file__).name
+#     CommonUtil.ExecLog(sModuleInfo, "Function start", 0)
+#     try:
+# 
+#             if _platform == "win32":
+#                 # windows
+#                 command = str(step_data[0][2]).strip()
+#                 Shared_var= str(step_data[1][2]).strip()
+#                 result = run_win_cmd_and_save_in_shared_var(command,Shared_var)
+#                 if result in failed_tag_list:
+#                     CommonUtil.ExecLog(sModuleInfo, "Could not run sudo command '%s'" % (command), 3)
+#                     return "failed"
+#                 else:
+#                     CommonUtil.ExecLog(sModuleInfo, "sudo command is run properly '%s'" % (command), 1)
+#                     return "passed"
+# 
+# 
+#             elif _platform == "linux" or _platform == "linux2" or _platform == "darwin":
+#                 command = str(step_data[0][2]).strip()
+#                 Shared_var = str(step_data[1][2]).strip()
+#                 result = run_cmd_and_save_in_Shared_var(Shared_var,command)
+#                 if result in failed_tag_list:
+#                     CommonUtil.ExecLog(sModuleInfo, "Could not run sudo command '%s'" % (command), 3)
+#                     return "failed"
+#                 else:
+#                     CommonUtil.ExecLog(sModuleInfo, "sudo command is run properly '%s'" % (command), 1)
+#                     return "passed"
+# 
+#     except Exception:
+#         return CommonUtil.Exception_Handler(sys.exc_info())
 
 # Method to Get Home Directory
 def Get_Home_Directory(data_set):
