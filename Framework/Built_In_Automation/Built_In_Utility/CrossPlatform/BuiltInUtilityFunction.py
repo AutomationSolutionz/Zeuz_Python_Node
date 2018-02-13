@@ -148,7 +148,7 @@ def RenameFile(file_to_be_renamed, new_name_of_the_file):
         Wrapper for MoveFile
     """
     
-    result = MoveFile(file_to_be_moved, new_name_of_the_file)
+    result = MoveFile(file_to_be_renamed, new_name_of_the_file)
     return result
 
 
@@ -187,7 +187,7 @@ def RenameFolder(folder_to_be_renamed, new_name_of_the_folder):
         Wrapper for MoveFolder
     """
     
-    result = MoveFolder(folder_to_be_moved, new_name_of_the_folder)
+    result = MoveFolder(folder_to_be_renamed, new_name_of_the_folder)
     return result
 
 # function to unzip in linux
@@ -519,6 +519,28 @@ def run_win_cmd(cmd): #!!!!merge with run_cmd
         return CommonUtil.Exception_Handler(sys.exc_info())
 
 
+def run_win_cmd_and_save_in_shared_var(cmd,Save_in_var):  # !!!!merge with run_cmd
+    """
+        :param cmd: admin command to run
+        :return: Exception if Exception occurs 
+    """
+
+    sModuleInfo = inspect.stack()[0][3] + " : " + inspect.getmoduleinfo(__file__).name
+    CommonUtil.ExecLog(sModuleInfo, "Function start", 0)
+
+    try:
+        result = []
+        process = subprocess.Popen(cmd, shell=True, stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
+        for line in process.stdout:
+            result.append(line)
+        errcode = process.returncode
+        Shared_Resources.Set_Shared_Variables(Save_in_var, result)
+        if errcode is not None:
+            CommonUtil.ExecLog(sModuleInfo, 'cmd %s failed, see above for details' % cmd, 3)
+            raise Exception('cmd %s failed, see above for details', cmd)
+    except Exception:
+        return CommonUtil.Exception_Handler(sys.exc_info())
+
 def run_cmd(command, return_status=False, is_shell=True, stdout_val=subprocess.PIPE, local_run=False):
     """
         :param command: sudo command to run
@@ -554,6 +576,50 @@ def run_cmd(command, return_status=False, is_shell=True, stdout_val=subprocess.P
         for line in result:
             CommonUtil.ExecLog(sModuleInfo, "%s" % line, 1)
         
+        if return_status:
+            return errcode, result
+        elif errcode == 0:
+            return Passed
+        else:
+            return Failed
+
+    except Exception:
+        return CommonUtil.Exception_Handler(sys.exc_info())
+
+def run_cmd_and_save_in_Shared_var(Save_in_var, command, return_status=False, is_shell=True, stdout_val=subprocess.PIPE, local_run=False):
+    """
+        :param command: sudo command to run
+        :return: Exception if Exception occurs otherwise return result 
+    """
+
+    sModuleInfo = inspect.stack()[0][3] + " : " + inspect.getmoduleinfo(__file__).name
+    CommonUtil.ExecLog(sModuleInfo, "Function start", 0)
+
+    '''Begin Constants'''
+    Passed = "Passed" # !!!remove this nad use passed_tag_list,e tc
+    Failed = "Failed"
+    Running = 'running'
+    '''End Constants'''
+
+    # Run 'command' via command line in a bash shell, and store outputs to stdout_val
+    sModuleInfo = inspect.stack()[0][3] + " : " + inspect.getmoduleinfo(__file__).name
+    subprocess_dict = {}
+    try:
+        # global subprocess_dict
+        result = []
+
+        # open a subprocess with command, and assign a session id to the shell process
+        # this is will make the shell process the group leader for all the child processes spawning from it
+        status = subprocess.Popen(command, shell=is_shell, stdout=stdout_val, preexec_fn=os.setsid)
+        subprocess_dict[status] = Running
+        status.wait() # Wait for process to complete, and populate returncode
+        errcode = status.returncode
+
+        for line in status.stdout:
+            result.append(line)
+
+        Shared_Resources.Set_Shared_Variables(Save_in_var, result)
+        print Shared_Resources.Get_Shared_Variables(Save_in_var)
         if return_status:
             return errcode, result
         elif errcode == 0:
@@ -1212,6 +1278,38 @@ def Run_Command(step_data):
     except Exception:
         return CommonUtil.Exception_Handler(sys.exc_info())
 
+# Method to Run Command
+def Run_Command_and_Save(step_data):
+    sModuleInfo = inspect.stack()[0][3] + " : " + inspect.getmoduleinfo(__file__).name
+    CommonUtil.ExecLog(sModuleInfo, "Function start", 0)
+    try:
+
+            if _platform == "win32":
+                # windows
+                command = str(step_data[0][2]).strip()
+                Shared_var= str(step_data[1][2]).strip()
+                result = run_win_cmd_and_save_in_shared_var(command,Shared_var)
+                if result in failed_tag_list:
+                    CommonUtil.ExecLog(sModuleInfo, "Could not run sudo command '%s'" % (command), 3)
+                    return "failed"
+                else:
+                    CommonUtil.ExecLog(sModuleInfo, "sudo command is run properly '%s'" % (command), 1)
+                    return "passed"
+
+
+            elif _platform == "linux" or _platform == "linux2" or _platform == "darwin":
+                command = str(step_data[0][2]).strip()
+                Shared_var = str(step_data[1][2]).strip()
+                result = run_cmd_and_save_in_Shared_var(Shared_var,command)
+                if result in failed_tag_list:
+                    CommonUtil.ExecLog(sModuleInfo, "Could not run sudo command '%s'" % (command), 3)
+                    return "failed"
+                else:
+                    CommonUtil.ExecLog(sModuleInfo, "sudo command is run properly '%s'" % (command), 1)
+                    return "passed"
+
+    except Exception:
+        return CommonUtil.Exception_Handler(sys.exc_info())
 
 # Method to Get Home Directory
 def Get_Home_Directory(data_set):

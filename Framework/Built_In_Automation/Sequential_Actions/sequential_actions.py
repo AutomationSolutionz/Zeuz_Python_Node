@@ -135,6 +135,7 @@ actions = { # Numbers are arbitrary, and are not used anywhere
     531: {'module': 'utility', 'name': 'search string', 'function': 'pattern_matching'},
     532: {'module': 'utility', 'name': 'save substring', 'function': 'save_substring'},
     533: {'module': 'utility', 'name': 'get attachment path', 'function': 'Get_Attachment_Path'},
+    534: {'module': 'utility', 'name': 'run command and save', 'function': 'Run_Command_and_Save'},
 
     600: {'module': 'xml', 'name': 'update', 'function': 'update_element'},
     601: {'module': 'xml', 'name': 'add', 'function': 'add_element'},
