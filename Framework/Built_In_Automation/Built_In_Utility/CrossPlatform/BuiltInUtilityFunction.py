@@ -938,6 +938,57 @@ def Copy_File_or_Folder(step_data):
     except Exception:
         return CommonUtil.Exception_Handler(sys.exc_info())
 
+# Method to unzip
+def Unzip_File_or_Folder(step_data):
+    sModuleInfo = inspect.stack()[0][3] + " : " + inspect.getmoduleinfo(__file__).name
+    CommonUtil.ExecLog(sModuleInfo, "Function start", 0)
+
+    # Recall file attachment, if not already set
+    file_attachment = []
+    if Shared_Resources.Test_Shared_Variables('file_attachment'):
+        file_attachment = Shared_Resources.Get_Shared_Variables('file_attachment')
+
+    try:
+        if _platform == "linux" or _platform == "linux2" or _platform == "darwin":
+            from_path = str(step_data[0][2]).strip()  # location of the file/folder to be copied
+            if from_path[0]=="/": from_path=from_path.lstrip('/')
+
+        elif _platform == "win32":
+            from_path = raw(str(step_data[0][2]).strip())  # location of the file/folder to be copied
+
+
+        # Try to find the file
+        if from_path not in file_attachment and os.path.exists(os.path.join(get_home_folder(), from_path)) == False:
+            CommonUtil.ExecLog(sModuleInfo,"Could not find file attachment called %s, and could not find it locally" % from_path, 3)
+            return 'failed'
+        if from_path not in file_attachment:
+            from_path = os.path.join(get_home_folder(), from_path)
+            if _platform == "linux" or _platform == "linux2" or _platform == "darwin":
+                to_path = str(step_data[1][2]).strip()
+                if to_path[0] == "/": to_path = to_path.lstrip('/')
+                to_path = os.path.join(get_home_folder(), to_path)  # location where to copy the file/folder
+            elif _platform == "win32":
+                to_path = os.path.join(get_home_folder(),raw(str(step_data[1][2]).strip()))  # location where to copy the file/folder
+        if from_path in file_attachment:
+            file_name = from_path
+            from_path = file_attachment[from_path]  # In file is an attachment, get the full path
+            to_path = from_path[0 : len(from_path)-(len(file_name)+1)]
+            Save_in_variable = step_data[1][2]
+
+
+
+
+        result = UnZip(from_path, to_path)
+        if result in failed_tag_list:
+            CommonUtil.ExecLog(sModuleInfo, "Can't not unzip '%s' to '%s'" % (from_path, to_path), 3)
+            return "failed"
+        else:
+            Shared_Resources.Set_Shared_Variables(Save_in_variable, to_path)
+            CommonUtil.ExecLog(sModuleInfo, "'%s' is unzipped to '%s' successfully" % (from_path, to_path), 1)
+            return "passed"
+    except Exception:
+        return CommonUtil.Exception_Handler(sys.exc_info())
+
 def Get_Attachment_Path(step_data):
     sModuleInfo = inspect.stack()[0][3] + " : " + inspect.getmoduleinfo(__file__).name
     CommonUtil.ExecLog(sModuleInfo, "Function start", 0)
@@ -1534,29 +1585,7 @@ def Zip_File_or_Folder(data_set):
         return CommonUtil.Exception_Handler(sys.exc_info(), None, "Error zipping")
 
 
-# Method to unzip
-def Unzip_File_or_Folder(step_data):
-    sModuleInfo = inspect.stack()[0][3] + " : " + inspect.getmoduleinfo(__file__).name
-    CommonUtil.ExecLog(sModuleInfo, "Function start", 0)
-    try:
-        if _platform == "linux" or _platform == "linux2" or _platform == "darwin":
-            # linux
-            CommonUtil.ExecLog(sModuleInfo, "linux", 1)
-            from_path = get_home_folder() + str(step_data[0][2]).strip()  # location of the file/folder to be unzipped
-            to_path = get_home_folder() + str(step_data[1][2]).strip()  # location where to unzip the file/folder
-        elif _platform == "win32":
-            from_path = raw(str(step_data[0][2]).strip())  # location of the file/folder to be unzipped
-            to_path = raw(str(step_data[1][2]).strip())  # location where to unzip the file/folder
 
-        result = UnZip(from_path, to_path)
-        if result in failed_tag_list:
-            CommonUtil.ExecLog(sModuleInfo, "Can't not unzip '%s' to '%s'" % (from_path, to_path), 3)
-            return "failed"
-        else:
-            CommonUtil.ExecLog(sModuleInfo, "'%s' is unzipped to '%s' successfully" % (from_path, to_path), 1)
-            return "passed"
-    except Exception:
-        return CommonUtil.Exception_Handler(sys.exc_info())
 
 
 # Method to move file/folder
