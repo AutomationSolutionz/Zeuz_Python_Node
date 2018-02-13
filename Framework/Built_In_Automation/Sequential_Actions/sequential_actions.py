@@ -177,7 +177,8 @@ action_support = [
     'result',
     'table parameter',
     'source parameter',
-    'input parameter'
+    'input parameter',
+    'custom action'
 ]
 
 # List of supported mobile platforms - must be lower case
@@ -253,6 +254,7 @@ def Sequential_Actions(step_data, _dependency = {}, _run_time_params = {}, _file
     try:
         # Set dependency, file_attachemnt, run_time_parameters as global variables
         global dependency, file_attachment, device_details, run_time_params
+        dependency, file_attachment, device_details, run_time_params = {}, {}, {}, {}
         if _dependency != {}:
             dependency = _dependency # Save to global variable
             sr.Set_Shared_Variables('dependency', _dependency, protected = True) # Save in Shared Variables
@@ -314,7 +316,7 @@ def Run_Sequential_Actions(step_data):
                 action_name = row[1] # Get Sub-Field
                 
                 # Don't process these suport items right now, but also don't fail
-                if action_name in action_support:
+                if action_name in action_support and 'custom' not in action_name:
                     continue
 
                 # If middle coloumn = bypass action, store the data set for later use if needed
@@ -355,6 +357,52 @@ def Run_Sequential_Actions(step_data):
                 elif 'loop action' in action_name:
                     result, skip = Loop_Action_Handler(step_data, row, dataset_cnt)
                     if result in failed_tag_list: return 'failed'
+                    
+                # Special custom functions can be executed in a specified file
+                elif "custom" in action_name:
+                    CommonUtil.ExecLog(sModuleInfo, "Custom Action Start", 2)
+                    if row[0].lower().strip() == 'file': # User specified file to run from (only needed once)
+                        # Try to find the image file
+                        custom_file_name = row[2].strip()
+                        if custom_file_name not in file_attachment and os.path.exists(custom_file_name) == False:
+                            CommonUtil.ExecLog(sModuleInfo, "Could not find file attachment called %s, and could not find it locally" % custom_file_name, 3)
+                            return 'failed'
+                        if custom_file_name in file_attachment: custom_file_name = file_attachment[custom_file_name] # In file is an attachment, get the full path
+                        CommonUtil.ExecLog(sModuleInfo, "Custom file set to %s" % custom_file_name, 0)
+
+                        # Import the module
+                        from imp import load_source
+                        try:
+                            global custom_module # Need to remember this value between Test Steps
+                            custom_mod_name = os.path.splitext(os.path.basename(custom_file_name))[0] # Get module name by removing path and extension
+                            CommonUtil.ExecLog(sModuleInfo, "Importing %s from %s" % (custom_mod_name, custom_file_name), 0)
+                            custom_module = load_source(custom_mod_name, custom_file_name) # Load module user specified
+                            CommonUtil.ExecLog(sModuleInfo, "Import successful", 1)
+                            result = 'passed'
+                        except:
+                            CommonUtil.ExecLog(sModuleInfo, "Error occurred while importing: %s. It may have a compile error or an import naming issue" % custom_file_name, 3)
+                            return 'failed'
+                        
+                    elif custom_module != '': # If custom module is set, then we are good to use it
+                        # User specified filename already and it's imported, so we can move ahead with executing functions
+                        custom_var = ''
+                        custom_function = row[0].strip().replace('()', '').replace(' ', '') # Function name, can't have brackets
+                        if '=' in custom_function: custom_var, custom_function = custom_function.split('=') # If shared variable name included with function, separate them
+                        custom_params = row[2].strip().replace("'", "\'") # Escape single quotes in the parameters
+                        CommonUtil.ExecLog(sModuleInfo, "Executing function: %s with parameters: %s" % (custom_function, custom_params), 0)
+                        try:
+                            custom_output = ''
+                            exec('custom_output = custom_module.%s(%s)' % (custom_function, custom_params)) # Execute the function from the custom module
+                            if custom_output != '': sr.Set_Shared_Variables(custom_var, custom_output) # Save output to user specified shared variable name
+                            CommonUtil.ExecLog(sModuleInfo, "Function executed successfully: %s" % str(custom_output), 1)
+                            result = 'passed'
+                        except Exception, e:
+                            CommonUtil.ExecLog(sModuleInfo, "Failed to execute function %s from the custom module: %s" % (custom_module, e), 3)
+                            return 'failed'
+                    
+                    else: # Function executed but user didn't specify the file to import
+                        CommonUtil.ExecLog(sModuleInfo, "No Python file specified for custom function execution. Expected a Data Set in the format of: 'file', 'custom', 'directory/filename'", 3)
+                        return "failed"
                     
                 # If middle column = action, call action handler
                 elif "action" in action_name: # Must be last, since it's a single word that also exists in other action types
