@@ -134,6 +134,7 @@ actions = { # Numbers are arbitrary, and are not used anywhere
     530: {'module': 'utility', 'name': 'count files in folder', 'function': 'count_no_of_files_in_folder'},
     531: {'module': 'utility', 'name': 'search string', 'function': 'pattern_matching'},
     532: {'module': 'utility', 'name': 'save substring', 'function': 'save_substring'},
+    533: {'module': 'utility', 'name': 'get attachment path', 'function': 'Get_Attachment_Path'},
 
     600: {'module': 'xml', 'name': 'update', 'function': 'update_element'},
     601: {'module': 'xml', 'name': 'add', 'function': 'add_element'},

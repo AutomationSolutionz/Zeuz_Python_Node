@@ -872,6 +872,39 @@ def Copy_File_or_Folder(step_data):
     except Exception:
         return CommonUtil.Exception_Handler(sys.exc_info())
 
+def Get_Attachment_Path(step_data):
+    sModuleInfo = inspect.stack()[0][3] + " : " + inspect.getmoduleinfo(__file__).name
+    CommonUtil.ExecLog(sModuleInfo, "Function start", 0)
+
+        # Recall file attachment, if not already set
+    file_attachment = []
+    if Shared_Resources.Test_Shared_Variables('file_attachment'):
+        file_attachment = Shared_Resources.Get_Shared_Variables('file_attachment')
+
+    try:
+        for row in step_data:
+
+            if row[1] == 'path':
+                from_path = row[2]
+            if row[1] == 'value':
+                Save_in_variable = row[2]
+
+
+            # Try to find the file
+        if from_path not in file_attachment :
+            CommonUtil.ExecLog(sModuleInfo,
+                                   "Could not find file attachment called %s, " % from_path,
+                                   3)
+            return 'failed'
+        if from_path in file_attachment: from_path = file_attachment[from_path]  # In file is an attachment, get the full path
+
+        Shared_Resources.Set_Shared_Variables(Save_in_variable, from_path)
+
+        return "passed"
+
+    except Exception:
+        return CommonUtil.Exception_Handler(sys.exc_info())
+
 
 # Method to delete file/folder
 def Delete_File_or_Folder(data_set):
