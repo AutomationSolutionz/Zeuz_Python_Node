@@ -619,7 +619,7 @@ def run_cmd_and_save_in_Shared_var(Save_in_var, command, return_status=False, is
             result.append(line)
 
         Shared_Resources.Set_Shared_Variables(Save_in_var, result)
-        print Shared_Resources.Get_Shared_Variables(Save_in_var)
+
         if return_status:
             return errcode, result
         elif errcode == 0:
