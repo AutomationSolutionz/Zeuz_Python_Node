@@ -1328,7 +1328,9 @@ def Run_Command(data_set):
         for line in h.stdout: output += line # Get command output from STDOUT and STDERR
         
         CommonUtil.ExecLog(sModuleInfo, "Command output: %s" % output, 1) # Write output to log
-        if shared_var: Shared_Resources.Set_Shared_Variables(shared_var, output) # Save command output to shared variable, if user specified it
+        if shared_var:
+            output = output.replace('\n', '')  # replace any new line in string that may have came from terminal
+            Shared_Resources.Set_Shared_Variables(shared_var, output) # Save command output to shared variable, if user specified it
         
         # Exit
         if result != 0:
