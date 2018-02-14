@@ -674,84 +674,75 @@ def download_file_using_url(file_url, location_of_file):
         ''' Setting stream parameter to True will cause the download of response headers only and the connection remains open.
           This avoids reading the content all at once into memory for large responses.
          A fixed chunk will be loaded each time while r.iter_content is iterated.'''
-        r = requests.get(file_url, stream=True)
+        r = requests.get(file_url, stream=True) # Open connection
 
-        list_the_parts_of_url = file_url.split("/") #get file name from the url
-
-        file_name = os.path.join(location_of_file , list_the_parts_of_url[len(list_the_parts_of_url) - 1]) #complete file location
-
-        with open(file_name, "wb") as f:
-            for chunk in r.iter_content(chunk_size=1024):
-
-            # writing one chunk at a time to pdf file
-                if chunk:
-                    f.write(chunk)
-        # after performing the download operation we have to check that if the file with new name exists in correct location.
-        # if the file exists in correct position then return passed
-        # if the file doesn't exist in correct position then return failed
+        # Download file and save to disk
+        file_name = os.path.join(location_of_file , str(file_url.split("/")[-1:][0])) #complete file location
+        CommonUtil.ExecLog(sModuleInfo, "Path of file to download: %s" % file_name, 0)
+        with open(file_name, "wb") as f: # Open new binary file
+            for chunk in r.iter_content(chunk_size=1048576): # Grab chunk of received data
+                if chunk: f.write(chunk) # Write chunk of data to disk
+        
+        # Verify file exists
         if os.path.isfile(file_name):
-            CommonUtil.ExecLog(sModuleInfo, "file exists... downloading file using url function is done properly", 1)
-            Shared_Resources.Set_Shared_Variables("downloaded_file", file_name)
-            Shared_Resources.Show_All_Shared_Variables()
-            return "passed"
+            return file_name
         else:
-            CommonUtil.ExecLog(sModuleInfo, "file doesn't exist... downloading file using url function is not done properly", 3)
             return "failed"
 
     except Exception:
-        return CommonUtil.Exception_Handler(sys.exc_info())
+        return CommonUtil.Exception_Handler(sys.exc_info(), None, "Error downloading file")
 
 #Method to download and unzip file
-def download_and_unzip_file(file_url, location_of_file): #!!!change this to call download_file_using_url instead of duplicating work, or just remove download part, and whatever is calling this can call the two pieces separately
-    
-    sModuleInfo = inspect.stack()[0][3] + " : " + inspect.getmoduleinfo(__file__).name
-    CommonUtil.ExecLog(sModuleInfo, "Function start", 0)
-    
-    try:
-        ''' Setting stream parameter to True will cause the download of response headers only and the connection remains open.
-          This avoids reading the content all at once into memory for large responses.
-         A fixed chunk will be loaded each time while r.iter_content is iterated.'''
-        r = requests.get(file_url, stream=True)
-
-        list_the_parts_of_url = file_url.split("/") #get file name from the url
-        file_name = os.path.join(location_of_file, list_the_parts_of_url[len(list_the_parts_of_url) - 1])
-        actual_file_name = list_the_parts_of_url[len(list_the_parts_of_url) - 1]
-        with open(file_name, "wb") as f:
-            for chunk in r.iter_content(chunk_size=1024):
-
-            # writing one chunk at a time to pdf file
-                if chunk:
-                    f.write(chunk)
-        # after performing the download operation we have to check that if the file with new name exists in correct location.
-        # if the file exists in correct position then return passed
-        # if the file doesn't exist in correct position then return failed
-        if os.path.isfile(file_name):
-            CommonUtil.ExecLog(sModuleInfo, "file exists... downloading file using url function is done properly", 0)
-        else:
-            CommonUtil.ExecLog(sModuleInfo, "file doesn't exist... downloading file using url function is not done properly", 3)
-            return "failed"
-        unzip_location = os.path.join(location_of_file,"latest_directory" )
-        CommonUtil.ExecLog(sModuleInfo, "Creating the directory '%s' " % unzip_location, 0)
-        result1 = CreateFolder(unzip_location)
-        if result1 in failed_tag_list:
-            CommonUtil.ExecLog(sModuleInfo, "Can't not create folder '%s' " % unzip_location, 3)
-            return "failed"
-        CommonUtil.ExecLog(sModuleInfo, "Folder '%s' is created " % unzip_location, 1)
-        result = UnZip(file_name,unzip_location)
-        if result in failed_tag_list:
-            CommonUtil.ExecLog(sModuleInfo, "Can't not unzip file '%s' to '%s'" % (file_name, unzip_location), 3)
-            return "failed"
-        CommonUtil.ExecLog(sModuleInfo, "Unzipping file '%s' to '%s' is complete" % (file_name, unzip_location), 0)
-        CommonUtil.ExecLog(sModuleInfo, "Saving directory location to shared resources" , 1)
-        #Shared_Resources.Set_Shared_Variables("latest_directory", unzip_location)
-        downloaded_file = os.path.join(unzip_location,actual_file_name )
-        Shared_Resources.Set_Shared_Variables("downloaded_file", downloaded_file)
-        Shared_Resources.Show_All_Shared_Variables()
-        return "passed"
-
-
-    except Exception:
-        return CommonUtil.Exception_Handler(sys.exc_info())
+# def download_and_unzip_file(file_url, location_of_file): #!!!change this to call download_file_using_url instead of duplicating work, or just remove download part, and whatever is calling this can call the two pieces separately
+#     
+#     sModuleInfo = inspect.stack()[0][3] + " : " + inspect.getmoduleinfo(__file__).name
+#     CommonUtil.ExecLog(sModuleInfo, "Function start", 0)
+#     
+#     try:
+#         ''' Setting stream parameter to True will cause the download of response headers only and the connection remains open.
+#           This avoids reading the content all at once into memory for large responses.
+#          A fixed chunk will be loaded each time while r.iter_content is iterated.'''
+#         r = requests.get(file_url, stream=True)
+# 
+#         list_the_parts_of_url = file_url.split("/") #get file name from the url
+#         file_name = os.path.join(location_of_file, list_the_parts_of_url[len(list_the_parts_of_url) - 1])
+#         actual_file_name = list_the_parts_of_url[len(list_the_parts_of_url) - 1]
+#         with open(file_name, "wb") as f:
+#             for chunk in r.iter_content(chunk_size=1024):
+# 
+#             # writing one chunk at a time to pdf file
+#                 if chunk:
+#                     f.write(chunk)
+#         # after performing the download operation we have to check that if the file with new name exists in correct location.
+#         # if the file exists in correct position then return passed
+#         # if the file doesn't exist in correct position then return failed
+#         if os.path.isfile(file_name):
+#             CommonUtil.ExecLog(sModuleInfo, "file exists... downloading file using url function is done properly", 0)
+#         else:
+#             CommonUtil.ExecLog(sModuleInfo, "file doesn't exist... downloading file using url function is not done properly", 3)
+#             return "failed"
+#         unzip_location = os.path.join(location_of_file,"latest_directory" )
+#         CommonUtil.ExecLog(sModuleInfo, "Creating the directory '%s' " % unzip_location, 0)
+#         result1 = CreateFolder(unzip_location)
+#         if result1 in failed_tag_list:
+#             CommonUtil.ExecLog(sModuleInfo, "Can't not create folder '%s' " % unzip_location, 3)
+#             return "failed"
+#         CommonUtil.ExecLog(sModuleInfo, "Folder '%s' is created " % unzip_location, 1)
+#         result = UnZip(file_name,unzip_location)
+#         if result in failed_tag_list:
+#             CommonUtil.ExecLog(sModuleInfo, "Can't not unzip file '%s' to '%s'" % (file_name, unzip_location), 3)
+#             return "failed"
+#         CommonUtil.ExecLog(sModuleInfo, "Unzipping file '%s' to '%s' is complete" % (file_name, unzip_location), 0)
+#         CommonUtil.ExecLog(sModuleInfo, "Saving directory location to shared resources" , 1)
+#         #Shared_Resources.Set_Shared_Variables("latest_directory", unzip_location)
+#         downloaded_file = os.path.join(unzip_location,actual_file_name )
+#         Shared_Resources.Set_Shared_Variables("downloaded_file", downloaded_file)
+#         Shared_Resources.Show_All_Shared_Variables()
+#         return "passed"
+# 
+# 
+#     except Exception:
+#         return CommonUtil.Exception_Handler(sys.exc_info())
 
 
 # not done properly...need more works
@@ -1904,65 +1895,109 @@ def Save_Text(step_data):
         return CommonUtil.Exception_Handler(sys.exc_info())
 
 # Method to download file
-def Download_file(step_data):
+def Download_file(data_set):
+    ''' Download file from URL '''
+    
     sModuleInfo = inspect.stack()[0][3] + " : " + inspect.getmoduleinfo(__file__).name
     CommonUtil.ExecLog(sModuleInfo, "Function start", 0)
+    
+    # Parse data set
     try:
-        url = str(step_data[0][2]).strip()  # url to be downloaded
-        file_location = str(step_data[1][2]).strip()  # location where to download the file/folder
-        if file_location == "":
-            # if no location is given
-            file_location = os.path.join(get_home_folder(), 'Downloads')  # download to the Downloads folder
-            result = download_file_using_url(url, file_location)
-            if result in failed_tag_list:
-                CommonUtil.ExecLog(sModuleInfo,"Download from url '%s' to location '%s' is not done" % (url, file_location), 3)
-                return "failed"
-            else:
-                CommonUtil.ExecLog(sModuleInfo,"Download from url '%s' to location '%s' is done" % (url, file_location), 1)
-                return "passed"
-        else:
-            # if location to download is given
-            file_location = os.path.join(get_home_folder(), file_location)
-            result = download_file_using_url(url, file_location)
-            if result in failed_tag_list:
-                CommonUtil.ExecLog(sModuleInfo, "Download from url '%s' to location '%s' is not done" % (url, file_location), 3)
-                return "failed"
-            else:
-                CommonUtil.ExecLog(sModuleInfo,"Download from url '%s' to location '%s' is not done" % (url, file_location),1)
-                return "passed"
+        url = '' # Mandatory
+        file_location = '' # Optional - default will be used if omited
+        shared_var = '' # Optional
+        
+        for row in data_set:
+            op = row[0].strip().lower()
+            if op == 'url':
+                url = row[2].strip()
+            elif op in ('folder', 'location', 'directory'):
+                file_location = row[2].strip()
+            elif op in ('shared variable', 'shared var', 'variable', 'var', 'save'):
+                shared_var = row[2].strip()
+        
+        # Verify input
+        if file_location == '': file_location = os.path.join(get_home_folder(), 'Downloads') # if no location is given, set default to Downloads directory
+        if url == '': # Make sure we have a URL
+            CommonUtil.ExecLog(sModuleInfo,"Expected Field to contain 'url' and Value to contain a valid URL to a file", 3)
+            return 'failed'
     except Exception:
-        return CommonUtil.Exception_Handler(sys.exc_info())
+        return CommonUtil.Exception_Handler(sys.exc_info(), None, "Error parsing data set")
+
+    try:
+        # Download file and get path/filename
+        file_name = download_file_using_url(url, file_location)
+        
+        # Verify download
+        if file_name in failed_tag_list:
+            CommonUtil.ExecLog(sModuleInfo,"Failed to save file from (%s) to disk (%s)" % (url, file_location), 3)
+            return "failed"
+        else:
+            CommonUtil.ExecLog(sModuleInfo, "File downloaded successfully to %s" % file_name, 1)
+            if shared_var: Shared_Resources.Set_Shared_Variables(shared_var, file_name) # Store path/file in shared variables if variable name was set by user
+            return "passed"
+    except Exception:
+        return CommonUtil.Exception_Handler(sys.exc_info(), None, "Error downloading file")
 
 # Method to download file and unzip
-def Download_File_and_Unzip(step_data):
+def Download_File_and_Unzip(data_set):
+    ''' Download file and unzip to specified path '''
+
     sModuleInfo = inspect.stack()[0][3] + " : " + inspect.getmoduleinfo(__file__).name
     CommonUtil.ExecLog(sModuleInfo, "Function start", 0)
+    
+    # Parse data set
     try:
-        url = str(step_data[0][2]).strip()  # url to be downloaded
-        file_location = str(step_data[1][2]).strip()  # location where to download the file/folder
-        if file_location == "":
-            # if no location is given
-            file_location = os.path.join(get_home_folder(), 'Downloads')  # download to the Downloads folder
-            result = download_and_unzip_file(url, file_location)
-            if result in failed_tag_list:
-                CommonUtil.ExecLog(sModuleInfo, "Downloading from url '%s' to location '%s' and unzipping is not done" % (url, file_location), 3)
-                return "failed"
-            else:
-                CommonUtil.ExecLog(sModuleInfo,"Download from url '%s' to location '%s' and unzipping is done" % (url, file_location),1)
-                return "passed"
-        else:
-            # if location to download is given
-            file_location = os.path.join(get_home_folder(), file_location)
-            result = download_and_unzip_file(url, file_location)
-            if result in failed_tag_list:
-                CommonUtil.ExecLog(sModuleInfo, "Download from url '%s' to location '%s' and unzipping is not done" % (url, file_location), 3)
-                return "failed"
-            else:
-                CommonUtil.ExecLog(sModuleInfo,"Download from url '%s' to location '%s' and unzipping is done" % (url, file_location),1)
-                return "passed"
-
+        url = '' # Mandatory
+        unzip_location = '' # Optional - default will be used if omited
+        shared_var = '' # Optional
+        file_location = os.path.join(get_home_folder(), 'Downloads') # Set location of download to Downloads directory
+        
+        for row in data_set:
+            op = row[0].strip().lower()
+            if op == 'url':
+                url = row[2].strip()
+            elif op in ('folder', 'location', 'directory'):
+                unzip_location = row[2].strip()
+            elif op in ('shared variable', 'shared var', 'variable', 'var', 'save'):
+                shared_var = row[2].strip()
+        
+        # Verify input
+        
+        if url == '': # Make sure we have a URL
+            CommonUtil.ExecLog(sModuleInfo,"Expected Field to contain 'url' and Value to contain a valid URL to a file", 3)
+            return 'failed'
+        if unzip_location == '': unzip_location = file_location # Set unzip location to Downloads by default if omited 
     except Exception:
-        return CommonUtil.Exception_Handler(sys.exc_info())
+        return CommonUtil.Exception_Handler(sys.exc_info(), None, "Error parsing data set")
+
+    # Download
+    try:
+        # Download file and get path/filename
+        file_name = download_file_using_url(url, file_location)
+        
+        # Verify download
+        if file_name in failed_tag_list:
+            CommonUtil.ExecLog(sModuleInfo,"Failed to save file from (%s) to disk (%s)" % (url, file_location), 3)
+            return "failed"
+        else:
+            CommonUtil.ExecLog(sModuleInfo, "File downloaded successfully to %s" % file_name, 1)
+    except Exception:
+        return CommonUtil.Exception_Handler(sys.exc_info(), None, "Error downloading file")
+    
+    # Unzip
+    try:
+        result = UnZip(file_name, unzip_location)
+        
+        if result in failed_tag_list:
+            CommonUtil.ExecLog(sModuleInfo, "Failed to unzip %s to %s" % (file_name, unzip_location), 3)
+            return "failed"
+        else:
+            CommonUtil.ExecLog(sModuleInfo,"Successfully unzipped to %s" % unzip_location,1)
+            if shared_var: Shared_Resources.Set_Shared_Variables(shared_var, unzip_location) # Store path in shared variables if variable name was set by user
+            return "passed"
+    except Exception:
+        return CommonUtil.Exception_Handler(sys.exc_info(), None, "Error unzipping file")
 
 
 def replace_Substring(data_set):

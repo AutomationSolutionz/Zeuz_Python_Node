@@ -191,7 +191,7 @@ supported_platforms = (
 
 # Import modules
 import inspect, sys, os
-from Framework.Utilities import CommonUtil
+from Framework.Utilities import CommonUtil, ConfigModule
 import common_functions as common # Functions that are common to all modules
 from Framework.Built_In_Automation.Shared_Resources import BuiltInFunctionSharedResources as sr
 from Framework.Utilities.CommonUtil import passed_tag_list, failed_tag_list, skipped_tag_list # Allowed return strings, used to normalize pass/fail
@@ -206,6 +206,11 @@ if sr.Test_Shared_Variables('dependency'): # Check if driver is already set in s
 bypass_data_set = []
 bypass_row = []
 loaded_modules = []
+
+# Get node ID and set as a Shared Variable
+machineInfo = CommonUtil.MachineInfo() # Create instance
+node_id = machineInfo.getLocalUser() # Get Username+Node ID
+sr.Set_Shared_Variables('node_id', node_id, protected = True) # Save as protected shared variable
 
 def load_sa_modules(module): # Load module "AS" must match module name we get from step data (See actions variable above)
     ''' Dynamically loads modules when needed '''
