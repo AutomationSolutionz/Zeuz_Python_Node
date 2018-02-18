@@ -1077,6 +1077,45 @@ def Create_File_or_Folder(step_data):
     sModuleInfo = inspect.stack()[0][3] + " : " + inspect.getmoduleinfo(__file__).name
     CommonUtil.ExecLog(sModuleInfo, "Function start", 0)
     try:
+        if _platform == "linux" or _platform == "linux2" or _platform == "darwin":
+            path = get_home_folder() + str(step_data[0][2]).strip()  # path of the file/folder to be created
+            file_or_folder = str(step_data[1][2]).strip()  # get if it is file/folder to create
+        elif _platform == "win32":
+            path = raw(str(step_data[0][2]).strip())  # path of the file/folder to be created
+            file_or_folder = str(step_data[1][2]).strip()  # get if it is file/folder to create
+
+
+        if file_or_folder.lower() == 'file':
+                # create file "path"
+            result = CreateFile(path)
+            if result in failed_tag_list:
+                CommonUtil.ExecLog(sModuleInfo, "Could not create file '%s'" % (path), 3)
+                return "failed"
+            else:
+                CommonUtil.ExecLog(sModuleInfo, "File '%s' created successfully" % (path), 1)
+                return "passed"
+        elif file_or_folder.lower() == 'folder':
+                # create folder "path"
+            result = CreateFolder(path)
+            if result in failed_tag_list:
+                CommonUtil.ExecLog(sModuleInfo, "Could not create folder '%s'" % (path), 3)
+                return "failed"
+            else:
+                CommonUtil.ExecLog(sModuleInfo, "Folder '%s' created successfully" % (path), 1)
+                return "passed"
+        else:
+            CommonUtil.ExecLog(sModuleInfo, "The information in the data-set(s) are incorrect. Please provide accurate data set(s) information.", 3)
+            return 'failed'
+
+
+    except Exception:
+        return CommonUtil.Exception_Handler(sys.exc_info())
+
+# Method to create file/folder
+def Create_File_or_Folder(step_data):
+    sModuleInfo = inspect.stack()[0][3] + " : " + inspect.getmoduleinfo(__file__).name
+    CommonUtil.ExecLog(sModuleInfo, "Function start", 0)
+    try:
         if _platform == "linux" or _platform == "linux2": #!!!merge these if statements, duplicating work
             # linux
             CommonUtil.ExecLog(sModuleInfo, "linux", 1)
