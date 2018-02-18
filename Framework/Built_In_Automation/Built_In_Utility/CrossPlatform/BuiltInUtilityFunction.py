@@ -1689,13 +1689,6 @@ def Upload(step_data):
             list = from_path.split("/")
             to_path = ConfigModule.get_config_value('sectionOne', 'test_case_folder', temp_ini_file) +"/"+ list[len(list) - 1]  # location where to copy the file/folder
 
-            result = copy_file(from_path, to_path)
-            if result in failed_tag_list:
-                CommonUtil.ExecLog(sModuleInfo,"Could not copy file '%s' to the log uploader '%s'" % (from_path, to_path), 3)
-                return "failed"
-            else:
-                CommonUtil.ExecLog(sModuleInfo,"File '%s' copied to the log uploader '%s' successfully" % (from_path, to_path), 1)
-                return "passed"
         elif _platform == "win32":
             # windows
             CommonUtil.ExecLog(sModuleInfo, "windows", 1)
@@ -1704,13 +1697,13 @@ def Upload(step_data):
             list = from_path.split("\\")
             to_path = ConfigModule.get_config_value('sectionOne', 'test_case_folder', temp_ini_file) + "\\" + list[len(list) - 1]
 
-            result = copy_file(from_path, to_path)
-            if result in failed_tag_list:
-                CommonUtil.ExecLog(sModuleInfo,"Could not copy file '%s' to the log uploader '%s'" % (from_path, to_path), 3)
-                return "failed"
-            else:
-                CommonUtil.ExecLog(sModuleInfo,"File '%s' copied to the log uploader '%s' successfully" % (from_path, to_path), 1)
-                return "passed"
+        result = copy_file(from_path, to_path)
+        if result in failed_tag_list:
+            CommonUtil.ExecLog(sModuleInfo,"Could not copy file '%s' to the log uploader '%s'" % (from_path, to_path), 3)
+            return "failed"
+        else:
+            CommonUtil.ExecLog(sModuleInfo,"File '%s' copied to the log uploader '%s' successfully" % (from_path, to_path), 1)
+            return "passed"
 
 
     except Exception:
