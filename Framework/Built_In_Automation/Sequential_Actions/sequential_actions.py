@@ -299,7 +299,7 @@ def Sequential_Actions(step_data, _dependency = {}, _run_time_params = {}, _file
     # Process step data
     return Run_Sequential_Actions(step_data)
     
-def Run_Sequential_Actions(step_data):
+def Run_Sequential_Actions(step_data, data_set_no=-1): #data_set_no will used in recursive conditional action call
     
     sModuleInfo = inspect.stack()[0][3] + " : " + inspect.getmoduleinfo(__file__).name
     try:
@@ -307,6 +307,10 @@ def Run_Sequential_Actions(step_data):
         skip = [] # List of data set numbers that have been processed, and need to be skipped, so they are not processed again
         logic_row=[] # Holds conditional actions
         skip_tmp = [] # Temporarily holds skip data sets
+
+        if data_set_no!=-1:
+            full_step_data = step_data
+            step_data = [step_data[data_set_no]]
         
         for dataset_cnt in range(len(step_data)): # For each data set within step data
             CommonUtil.ExecLog(sModuleInfo, "********** Starting Data Set #%d **********" % (dataset_cnt + 1), 1) # Offset by one to make it look proper
@@ -349,7 +353,10 @@ def Run_Sequential_Actions(step_data):
                     # Only run this when we have two conditional actions for this data set (a true and a false preferably)
                     if len(logic_row) == 2:
                         CommonUtil.ExecLog(sModuleInfo, "Found 2 conditional actions - moving ahead with them", 1)
-                        result = Conditional_Action_Handler(step_data, data_set, row, logic_row) # Pass step_data, and current iteration of data set to decide which data sets will be processed next
+                        if data_set_no!=-1:
+                            result = Conditional_Action_Handler(full_step_data, data_set, row, logic_row) # send full data for recursive conditional call
+                        else:
+                            result = Conditional_Action_Handler(step_data, data_set, row, logic_row) # Pass step_data, and current iteration of data set to decide which data sets will be processed next
                         CommonUtil.ExecLog(sModuleInfo, "Conditional Actions complete", 1)
                         if result in failed_tag_list:
                             CommonUtil.ExecLog(sModuleInfo, "Returned result from Conditional Action Failed", 3)
@@ -702,7 +709,7 @@ def Conditional_Action_Handler(step_data, data_set, row, logic_row):
                         CommonUtil.ExecLog(sModuleInfo, "Step Exit called. Stopping Test Step.", 1)
                         return result
                 else: # Normal process - most conditional actions will come here
-                    result = Run_Sequential_Actions([step_data[data_set_index]]) # Recursively call this function until all called data sets are complete
+                    result = Run_Sequential_Actions(step_data,data_set_index) #[step_data[data_set_index]]) # Recursively call this function until all called data sets are complete
                     if row[0].lower().strip() == 'step exit':
                         CommonUtil.ExecLog(sModuleInfo, "Step Exit called. Stopping Test Step.", 1)
                         return result
