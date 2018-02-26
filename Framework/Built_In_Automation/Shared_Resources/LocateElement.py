@@ -84,6 +84,7 @@ def Get_Element(step_data_set,driver,query_debug=False, wait_enable = True):
                 CommonUtil.ExecLog(sModuleInfo, "Waited %d seconds for element" % wait_time, 3) 
                 return result # If asked not to loop, return the failure
             # If fail, but instructed to loop, do so
+        return "failed"
 
     except Exception:
         return CommonUtil.Exception_Handler(sys.exc_info())
