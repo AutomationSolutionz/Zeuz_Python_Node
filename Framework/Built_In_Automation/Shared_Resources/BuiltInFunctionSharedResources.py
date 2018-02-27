@@ -312,7 +312,7 @@ def Compare_Variables(step_data):
         result = []
         modifier = False
         for each_step_data_item in step_data[0]:
-            if each_step_data_item[1] == "compare":
+            if each_step_data_item[1] == "compare" or each_step_data_item[1] == "element parameter":
                 if '%|' in each_step_data_item[0].strip():
                     previous_name = each_step_data_item[0].strip()
                     new_name = get_previous_response_variables_in_strings(each_step_data_item[0].strip())
@@ -347,8 +347,8 @@ def Compare_Variables(step_data):
                 result.append(False)
                 fail_count+=1
 
-        CommonUtil.ExecLog(sModuleInfo,"###Variable Comaparison Results###",0)
-        CommonUtil.ExecLog(sModuleInfo,"Matched Variables: %d"%pass_count,0)
+        CommonUtil.ExecLog(sModuleInfo,"###Variable Comaparison Results###",1)
+        CommonUtil.ExecLog(sModuleInfo,"Matched Variables: %d"%pass_count,1)
         CommonUtil.ExecLog(sModuleInfo, "Not Matched Variables: %d" % fail_count, 1)
 
         for i in range(0, len(variable_list1)):
@@ -383,7 +383,7 @@ def Compare_Lists(step_data):
         ignore_extra = True
         both_list = False
         for each_step_data_item in step_data[0]:
-            if each_step_data_item[1] == "compare":
+            if each_step_data_item[1] == "compare" or each_step_data_item[1] == "element parameter":
                 list1_name = each_step_data_item[0]
                 list2_name = each_step_data_item[2]
             if each_step_data_item[1] == "action":
