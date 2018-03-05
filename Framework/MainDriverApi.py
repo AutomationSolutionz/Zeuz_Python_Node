@@ -3,12 +3,12 @@
 
 import inspect,os,time,sys,urllib2,Queue,importlib,requests,threading
 from datetime import datetime
-from Utilities import ConfigModule,FileUtilities as FL,CommonUtil,RequestFormatter,All_Device_Info
+from Utilities import ConfigModule,FileUtilities as FL, CommonUtil, RequestFormatter
 from Framework.Built_In_Automation.Shared_Resources import BuiltInFunctionSharedResources as shared
 top_path=os.path.dirname(os.getcwd())
 drivers_path=os.path.join(top_path,'Drivers')
 sys.path.append(drivers_path)
-import Drivers
+
 '''Constants'''
 PROGRESS_TAG = 'In-Progress'
 PASSED_TAG='Passed'
@@ -76,8 +76,8 @@ def get_all_automated_test_cases_in_run_id(run_id):
 
 
 #checks if a step of a test case is the verification point of that test case
-def check_if_step_is_verification_point(run_id, datasetid):
-    return RequestFormatter.Get('if_failed_at_verification_point_api', {'run_id': run_id, 'data_id': datasetid})
+def check_if_step_is_verification_point(run_id, tc_id, step_sequence):
+    return RequestFormatter.Get('if_failed_at_verification_point_api', {'run_id': run_id, 'tc_id': tc_id, 'step_sequence': step_sequence})
 
 
 #if run is cancelled then it can be called, it cleans up the runid from database
@@ -154,10 +154,10 @@ def update_test_case_result_on_server(run_id, sTestSetEndTime, TestSetDuration):
 
 
 #returns step data of a test step in a test case
-def get_test_step_data(run_id, test_case, current_step_sequence, StepSeq):
+def get_test_step_data(run_id, test_case, current_step_sequence):
     return RequestFormatter.Get('get_test_step_data_based_on_test_case_run_id_api',
                          {'run_id': run_id, 'test_case': test_case,
-                          'step_sequence': current_step_sequence, 'step_iteration': StepSeq})
+                          'step_sequence': current_step_sequence})
 
 
 #updates current test step result(like pass/fail etc.) on server database
@@ -192,7 +192,7 @@ def get_run_params_list(run_params):
 
 #check if a test step has 'continue on fail' feature or not
 def check_continue_on_fail_value_of_a_step(step_meta_data):
-    continue_value = filter(lambda x: x[0] == 'continue' and x[1] == 'point', step_meta_data)
+    continue_value = step_meta_data[8]
     if continue_value:
         if continue_value[0][2] == 'yes':
             test_case_continue = True
@@ -461,7 +461,7 @@ def run_all_test_steps_in_a_test_case(Stepscount, test_case, sModuleInfo, run_id
 
         update_test_step_status(run_id, test_case, current_step_id, current_step_sequence, Dict)
 
-        test_steps_data = get_test_step_data(run_id, test_case, current_step_sequence, StepSeq)
+        test_steps_data = get_test_step_data(run_id, test_case, current_step_sequence)
 
         CommonUtil.ExecLog(sModuleInfo, "********** steps data for Step #%d: %s **********" % (StepSeq, str(test_steps_data)), 1)
         step_time = filter(lambda x: x[0] == 'estimated' and x[1] == 'time', step_meta_data)
@@ -574,8 +574,9 @@ def calculate_test_case_result(sModuleInfo, TestCaseID, run_id, sTestStepResultL
                 break
             else:
                 step_index += 1
-        datasetid = TestCaseID[0] + '_s' + str(step_index)
-        status = check_if_step_is_verification_point(run_id,datasetid)
+                
+        status = check_if_step_is_verification_point(run_id, TestCaseID, step_index)
+        
         if status:
             sTestCaseStatus = 'Failed'
         else:
