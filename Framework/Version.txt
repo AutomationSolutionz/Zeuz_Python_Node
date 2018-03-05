@@ -1,6 +1,6 @@
 [ZeuZ Python Version]
-version = 3.14
+version = 3.15
 [Release Date]
-date= 2018-02-12
+date= 2018-03-05
 [Release Note]
-Note = save cookie, auto install missing module, better handle node authentication, display update detail
+Note = New actions, save command output, run function from attached .py file, recursive actions, log improvement 
