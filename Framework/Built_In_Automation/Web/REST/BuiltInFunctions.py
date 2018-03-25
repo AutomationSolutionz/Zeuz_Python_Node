@@ -579,7 +579,7 @@ def handle_rest_call(data, fields_to_be_saved, save_into_list = False, list_name
         elif method.lower().strip() == 'put':
             result = requests.put(url, json=body, headers=headers, verify=False)
         elif method.lower().strip() == 'get':
-            result = requests.get(url, json=body, headers=headers, verify=False)
+            result = requests.get(url, headers=headers, verify=False)
         elif method.lower().strip() == 'delete':
             result = requests.delete(url, json=body, headers=headers, verify=False)
         else:
