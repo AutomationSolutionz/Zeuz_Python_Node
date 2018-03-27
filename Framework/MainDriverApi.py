@@ -215,7 +215,7 @@ def upload_zip(server_id,port_id,temp_folder,run_id,file_name,base_path=False):
     :param base_path: base_path for file save
     :return:
     """
-    
+
     sModuleInfo = inspect.stack()[0][3] + " : " + inspect.getmoduleinfo(__file__).name
     url_link='http://'+server_id+':'+str(port_id)+"/Home/UploadZip/"
     total_file_path=temp_folder+os.sep+run_id.replace(':','-')+os.sep+file_name
@@ -610,8 +610,19 @@ def calculate_test_case_result(sModuleInfo, TestCaseID, run_id, sTestStepResultL
     return sTestCaseStatus
 
 
-#writes the log file for a test case
-def write_log_file_for_test_case(sTestCaseStatus, test_case, run_id, sTestCaseEndTime, TestCaseDuration, FailReason, temp_ini_file):
+# writes the log file for a test case
+def write_log_file_for_test_case(sTestCaseStatus, test_case, run_id, sTestCaseEndTime, TestCaseDuration, FailReason,
+                                 temp_ini_file):
+    # upload the test case status before uploading log file, because there can be error while uploading log file, so we dont want to lose the important test case status
+    test_case_after_dict = {
+        'status': sTestCaseStatus,
+        'testendtime': sTestCaseEndTime,
+        'duration': TestCaseDuration,
+        'failreason': FailReason,
+    }
+
+    update_test_case_status_after_run_on_server(run_id, test_case, test_case_after_dict)
+
     local_run_settings = ConfigModule.get_config_value('RunDefinition', 'local_run')
     if local_run_settings == False or local_run_settings == 'False':
         current_log_file = os.path.join(ConfigModule.get_config_value('sectionOne', 'log_folder', temp_ini_file),
@@ -646,11 +657,8 @@ def write_log_file_for_test_case(sTestCaseStatus, test_case, run_id, sTestCaseEn
     else:
         TCLogFile = ''
 
+    # upload the log file ID
     test_case_after_dict = {
-        'status': sTestCaseStatus,
-        'testendtime': sTestCaseEndTime,
-        'duration': TestCaseDuration,
-        'failreason': FailReason,
         'logid': TCLogFile
     }
 
