@@ -614,6 +614,7 @@ def calculate_test_case_result(sModuleInfo, TestCaseID, run_id, sTestStepResultL
 def write_log_file_for_test_case(sTestCaseStatus, test_case, run_id, sTestCaseEndTime, TestCaseDuration, FailReason,
                                  temp_ini_file):
     # upload the test case status before uploading log file, because there can be error while uploading log file, so we dont want to lose the important test case status
+    time.sleep(2)
     test_case_after_dict = {
         'status': sTestCaseStatus,
         'testendtime': sTestCaseEndTime,
@@ -644,6 +645,7 @@ def write_log_file_for_test_case(sTestCaseStatus, test_case, run_id, sTestCaseEn
         # Delete the folder
         FL.DeleteFolder(ConfigModule.get_config_value('sectionOne', 'test_case_folder', temp_ini_file))
 
+        time.sleep(2)
         # upload will go here.
         upload_zip(ConfigModule.get_config_value('Server', 'server_address'),
                    ConfigModule.get_config_value('Server', 'server_port'),
@@ -656,7 +658,7 @@ def write_log_file_for_test_case(sTestCaseStatus, test_case, run_id, sTestCaseEn
         FL.DeleteFile(ConfigModule.get_config_value('sectionOne', 'test_case_folder', temp_ini_file) + '.zip')
     else:
         TCLogFile = ''
-
+    time.sleep(2)
     # upload the log file ID
     test_case_after_dict = {
         'logid': TCLogFile
