@@ -28,6 +28,10 @@ device_info = {}
 def write_all_logs_to_server(all_logs):
     return RequestFormatter.Post('all_log_execution',{'all_logs': all_logs})
 
+#send_email_report_after_exectution
+def send_email_report_after_exectution(run_id, project_id, team_id):
+    return RequestFormatter.Get('send_email_report_after_excecution_api',{'run_id':run_id,'project_id':project_id,'team_id':team_id})
+
 
 #returns all drivers
 def get_all_drivers_list():
@@ -891,6 +895,7 @@ def main(device_dict):
         CommonUtil.ExecLog(sModuleInfo, "Test Set Completed", 4, False)
         all_logs =  CommonUtil.get_all_logs()
         write_all_logs_to_server(all_logs)
+        send_email_report_after_exectution(run_id,project_id,team_id)
 
     return "pass"
 
