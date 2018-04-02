@@ -1,6 +1,6 @@
 [ZeuZ Python Version]
-version = 3.15
+version = 3.16
 [Release Date]
-date= 2018-03-05
+date= 2018-04-02
 [Release Note]
-Note = New actions, save command output, run function from attached .py file, recursive actions, log improvement 
+Note = Bug Fixes, sending email report after run complete
