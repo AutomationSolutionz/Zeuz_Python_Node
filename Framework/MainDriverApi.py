@@ -28,6 +28,10 @@ device_info = {}
 def write_all_logs_to_server(all_logs):
     return RequestFormatter.Post('all_log_execution',{'all_logs': all_logs})
 
+#send_email_report_after_exectution
+def send_email_report_after_exectution(run_id, project_id, team_id):
+    return RequestFormatter.Get('send_email_report_after_excecution_api',{'run_id':run_id,'project_id':project_id,'team_id':team_id})
+
 
 #returns all drivers
 def get_all_drivers_list():
@@ -215,7 +219,7 @@ def upload_zip(server_id,port_id,temp_folder,run_id,file_name,base_path=False):
     :param base_path: base_path for file save
     :return:
     """
-    
+
     sModuleInfo = inspect.stack()[0][3] + " : " + inspect.getmoduleinfo(__file__).name
     url_link='http://'+server_id+':'+str(port_id)+"/Home/UploadZip/"
     total_file_path=temp_folder+os.sep+run_id.replace(':','-')+os.sep+file_name
@@ -611,8 +615,19 @@ def calculate_test_case_result(sModuleInfo, TestCaseID, run_id, sTestStepResultL
     return sTestCaseStatus
 
 
-#writes the log file for a test case
-def write_log_file_for_test_case(sTestCaseStatus, test_case, run_id, sTestCaseEndTime, TestCaseDuration, FailReason, temp_ini_file):
+# writes the log file for a test case
+def write_log_file_for_test_case(sTestCaseStatus, test_case, run_id, sTestCaseEndTime, TestCaseDuration, FailReason,
+                                 temp_ini_file):
+    # upload the test case status before uploading log file, because there can be error while uploading log file, so we dont want to lose the important test case status
+    test_case_after_dict = {
+        'status': sTestCaseStatus,
+        'testendtime': sTestCaseEndTime,
+        'duration': TestCaseDuration,
+        'failreason': FailReason,
+    }
+
+    update_test_case_status_after_run_on_server(run_id, test_case, test_case_after_dict)
+
     local_run_settings = ConfigModule.get_config_value('RunDefinition', 'local_run')
     if local_run_settings == False or local_run_settings == 'False':
         current_log_file = os.path.join(ConfigModule.get_config_value('sectionOne', 'log_folder', temp_ini_file),
@@ -646,12 +661,8 @@ def write_log_file_for_test_case(sTestCaseStatus, test_case, run_id, sTestCaseEn
         FL.DeleteFile(ConfigModule.get_config_value('sectionOne', 'test_case_folder', temp_ini_file) + '.zip')
     else:
         TCLogFile = ''
-
+    # upload the log file ID
     test_case_after_dict = {
-        'status': sTestCaseStatus,
-        'testendtime': sTestCaseEndTime,
-        'duration': TestCaseDuration,
-        'failreason': FailReason,
         'logid': TCLogFile
     }
 
@@ -885,6 +896,7 @@ def main(device_dict):
         CommonUtil.ExecLog(sModuleInfo, "Test Set Completed", 4, False)
         all_logs =  CommonUtil.get_all_logs()
         write_all_logs_to_server(all_logs)
+        send_email_report_after_exectution(run_id,project_id,team_id)
 
     return "pass"
 
