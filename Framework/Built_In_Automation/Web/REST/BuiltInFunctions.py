@@ -589,6 +589,7 @@ def handle_rest_call(data, fields_to_be_saved, save_into_list = False, list_name
         CommonUtil.ExecLog(sModuleInfo,'Post Call returned status code: %d'%status_code,1)
         try:
             if result.json():
+                Shared_Resources.Set_Shared_Variables("rest_response",result.json())
                 CommonUtil.ExecLog(sModuleInfo, 'Post Call Returned Response Successfully', 1)
                 CommonUtil.ExecLog(sModuleInfo,"Received Response: %s"%result.json(),1)
 
