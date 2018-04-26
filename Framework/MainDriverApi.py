@@ -754,7 +754,7 @@ def run_test_case(TestCaseID, sModuleInfo, run_id, driver_list, final_dependency
         if cleanup == "YES":
             cleanup_drivers_during_debug = True
 
-        debug_steps = debug_steps.split("|")
+        debug_steps = str(debug_steps[1:-1]).split(",")
         debug = True
 
     if not debug or cleanup_drivers_during_debug: #if normal run, the write log file and cleanup driver instances
