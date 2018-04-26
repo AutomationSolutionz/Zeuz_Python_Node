@@ -194,20 +194,6 @@ def get_run_params_list(run_params):
     return run_para
 
 
-#check if a test step has 'continue on fail' feature or not
-def check_continue_on_fail_value_of_a_step(step_meta_data):
-    continue_value = step_meta_data[8]
-    if continue_value:
-        if continue_value[0][2] == 'yes':
-            test_case_continue = True
-        else:
-            test_case_continue = False
-    else:
-        test_case_continue = False
-
-    return test_case_continue
-
-
 #uploads zip file to server
 def upload_zip(server_id,port_id,temp_folder,run_id,file_name,base_path=False):
     """
@@ -446,7 +432,16 @@ def run_all_test_steps_in_a_test_case(Stepscount, test_case, sModuleInfo, run_id
         CommonUtil.ExecLog(sModuleInfo, "Step : %s" % current_step_name, 1)
         step_meta_data = get_step_meta_data_of_a_step(run_id, test_case, StepSeq)
 
-        test_case_continue = check_continue_on_fail_value_of_a_step(step_meta_data)
+        try:
+            test_case_continue = step_meta_data[0][1]
+            step_time = step_meta_data[0][2]
+            if str(step_time) != '' and step_time != None:
+                step_time = int(step_time)
+            else:
+                step_time = 59
+        except:
+            test_case_continue = False
+            step_time = 59
 
         ConfigModule.add_config_value('sectionOne', 'sTestStepExecLogId',
                                       run_id + "|" + test_case + "|" + str(current_step_id) + "|" + str(StepSeq),
@@ -468,11 +463,6 @@ def run_all_test_steps_in_a_test_case(Stepscount, test_case, sModuleInfo, run_id
         test_steps_data = get_test_step_data(run_id, test_case, current_step_sequence)
 
         CommonUtil.ExecLog(sModuleInfo, "********** steps data for Step #%d: %s **********" % (StepSeq, str(test_steps_data)), 1)
-        step_time = filter(lambda x: x[0] == 'estimated' and x[1] == 'time', step_meta_data)
-        if str(step_time)!='' and step_time!=None:
-            step_time = int(step_time[0][2])
-        else:
-            step_time = 0
         auto_generated_image_name = ('_').join(current_step_name.split(" ")) + '_started.png'
         CommonUtil.TakeScreenShot(str(auto_generated_image_name))
 
