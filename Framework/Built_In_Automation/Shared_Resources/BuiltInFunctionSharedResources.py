@@ -211,6 +211,36 @@ def Handle_Step_Data_Variables(step_data):
         CommonUtil.Exception_Handler(sys.exc_info())
 
 
+def handle_nested_rest_json(result,string):
+    if str(string).startswith("rest_response"):
+        string = string[13:]
+        splitted = string.split("[")
+        indexes = []
+        for each in splitted:
+            if each!="":
+                if "]" in each:
+                    index = each.split("]")[0]
+                    index = index.strip()
+                    try:
+                        int(index)
+                        indexes.append(int(index))
+                    except ValueError:
+                        indexes.append(str(index))
+                else:
+                    return "failed"
+
+        ans = result
+        for each in indexes:
+            try:
+                ans = ans[each]
+            except ValueError,e:
+                return "failed"
+        return ans
+
+    else:
+        return "failed"
+
+
 def get_previous_response_variables_in_strings(step_data_string_input):
     sModuleInfo = inspect.stack()[0][3] + " : " + inspect.getmoduleinfo(__file__).name
     CommonUtil.ExecLog(sModuleInfo, "Function: get previous response variables in strings", 0)
@@ -246,6 +276,18 @@ def get_previous_response_variables_in_strings(step_data_string_input):
 
                     output += random_string
                     CommonUtil.ExecLog(sModuleInfo, 'Replacing variable "%s" with its value "%s"' % (parts[0], random_string), 0)
+                elif str(parts[0]).startswith('rest_response'):
+                    full_string = str(parts[0])
+                    result_json = Get_Shared_Variables('rest_response')
+                    if result_json in failed_tag_list:
+                        CommonUtil.ExecLog(sModuleInfo,"No such variable named 'rest_response' in shared variables list", 3)
+                        return "failed"
+                    rest_json_output = handle_nested_rest_json(result_json,str(parts[0]))
+                    if rest_json_output in failed_tag_list:
+                        CommonUtil.ExecLog(sModuleInfo, "Json indexes are not provided correctly for run_response", 3)
+                        return "failed"
+                    output += str(rest_json_output)
+                    CommonUtil.ExecLog(sModuleInfo, 'Replacing variable "%s" with its value "%s"' % (parts[0], rest_json_output), 0)
                 elif str(parts[0]).lower().startswith('today') or str(parts[0]).startswith('currentEpochTime'):
                     replaced_string = save_built_in_time_variable(str(parts[0]))
                     if replaced_string in failed_tag_list:
