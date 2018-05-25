@@ -1,6 +1,6 @@
 [ZeuZ Python Version]
-version = 4.0
+version = 4.1
 [Release Date]
-date= 2018-04-03
+date= 2018-05-25
 [Release Note]
-Note = Merge for new step data design
+Note = ZeuZ New Server Step Changes
