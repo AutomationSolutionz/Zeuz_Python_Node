@@ -190,12 +190,15 @@ supported_platforms = (
 
 
 # Import modules
-import inspect, sys, os
-from Framework.Utilities import CommonUtil, ConfigModule
-import common_functions as common # Functions that are common to all modules
+import inspect
+import os
+import sys
+
+import Framework.Utilities.common_functions as common # Functions that are common to all modules
 from Framework.Built_In_Automation.Shared_Resources import BuiltInFunctionSharedResources as sr
-from Framework.Utilities.CommonUtil import passed_tag_list, failed_tag_list, skipped_tag_list # Allowed return strings, used to normalize pass/fail
 from Framework.Built_In_Automation.Shared_Resources import LocateElement
+from Framework.Utilities import CommonUtil
+from Framework.Utilities.CommonUtil import passed_tag_list, failed_tag_list  # Allowed return strings, used to normalize pass/fail
 
 # Recall dependency, if not already set
 dependency = None
