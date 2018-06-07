@@ -194,7 +194,7 @@ import inspect
 import os
 import sys
 
-import Framework.Utilities.common_functions as common # Functions that are common to all modules
+import common_functions as common # Functions that are common to all modules
 from Framework.Built_In_Automation.Shared_Resources import BuiltInFunctionSharedResources as sr
 from Framework.Built_In_Automation.Shared_Resources import LocateElement
 from Framework.Utilities import CommonUtil
