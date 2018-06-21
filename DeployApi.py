@@ -16,6 +16,11 @@ project = ConfigModule.get_config_value('Authentication','project')
 team = ConfigModule.get_config_value('Authentication','team')
 #set the set name that you want to run
 set = ''
+dependency = {
+    'Browser': ['Chrome','FireFox','IE','Safari','None'],
+    'Mobile': ['Android','iOS','Windows','None'],
+    'PC': ['Linux','Mac','Windows','None']
+}
 
 def form_uri(resource_path):
     global web_server_address,web_server_port
@@ -29,6 +34,17 @@ def Get(resource_path,payload={}):
     except: return {}
 
 
+def get_dependency():
+    selected_depenency = {}
+    for key in dependency:
+        print "******************** SELECT DEPENDENCY %s ********************"%(key.upper())
+        for i in range(0,len(dependency[key])):
+            print '%d. %s'%(i+1,dependency[key][i].upper())
+        print "ENTER YOUR CHOICE: "
+        choice = int(str(raw_input()).strip())
+        selected_depenency[key] = dependency[key][choice-1]
+    return selected_depenency
+
 if __name__ == '__main__':
     while True:
         print "******************** ZEUZ DEPLOY API ********************"
@@ -41,12 +57,16 @@ if __name__ == '__main__':
             print "ENTER SET NAME: "
             set = raw_input()
             set = str(set).strip()
+            selected_dependency =  get_dependency()
             dict = {
                 'set': set,
                 'username': username,
                 'project': project,
                 'team': team
             }
+            for key in selected_dependency:
+                if selected_dependency[key] != 'None':
+                    dict[key] = selected_dependency[key]
             if set == '':
                 result = {}
                 result['message'] = 'Test Set Name can not be Empty'
