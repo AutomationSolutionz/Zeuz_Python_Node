@@ -522,9 +522,10 @@ def search_condition_wrapper(data,condition_string):
                 for data in search_area:
                     list_result = True
                     for each in conditions:
-                        key = each[0]
-                        value = each[1]
-                        equal = each[2]
+                        key = each[0].replace("[[","(")
+                        key = key.replace("]]", ")")
+                        value = each[1].replace("[[","(")
+                        value = value.replace("]]", ")")
                         if isinstance(data,dict):
                             if key in data.keys():
                                 if equal:
