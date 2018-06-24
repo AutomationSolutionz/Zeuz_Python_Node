@@ -32,7 +32,8 @@ actions = { # Numbers are arbitrary, and are not used anywhere
     111: {'module': 'common', 'name': 'append list', 'function': 'append_list_shared_variable'},
     112: {'module': 'common', 'name': 'settings', 'function': 'sequential_actions_settings'},
     113: {'module': 'common', 'name': 'step exit', 'function': 'step_exit'},
-    
+    114: {'module': 'common', 'name': 'save time', 'function': 'Save_Current_Time'},
+
     200: {'module': 'appium', 'name': 'click', 'function': 'Click_Element_Appium'},
     201: {'module': 'appium', 'name': 'text', 'function': 'Enter_Text_Appium'},
     202: {'module': 'appium', 'name': 'tap', 'function': 'Tap_Appium'},
