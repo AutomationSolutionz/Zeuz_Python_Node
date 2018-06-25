@@ -11,6 +11,20 @@ from Framework.Built_In_Automation.Shared_Resources import BuiltInFunctionShared
 from Framework.Built_In_Automation.Sequential_Actions.sequential_actions import actions, action_support
 from Framework.Utilities.CommonUtil import passed_tag_list, failed_tag_list, skipped_tag_list # Allowed return strings, used to normalize pass/fail
 from Framework.Built_In_Automation.Shared_Resources import LocateElement
+import datetime
+months = ["Unknown",
+          "January",
+          "Febuary",
+          "March",
+          "April",
+          "May",
+          "Jun",
+          "July",
+          "August",
+          "September",
+          "October",
+          "November",
+          "December"]
 
 def sanitize(step_data, valid_chars = '', clean_whitespace_only = False, column = ''):
     ''' Sanitize step data Field and Sub-Field '''
@@ -477,7 +491,34 @@ def Save_Variable(data_set):
         return sr.Set_Shared_Variables(variable_name,variable_value)
     else:
         return 'failed'
+def Save_Current_Time(data_set):
+    ''' Assign a value to a variable stored in shared variables '''
+    sModuleInfo = inspect.stack()[0][3] + " : " + inspect.getmoduleinfo(__file__).name
+    CommonUtil.ExecLog(sModuleInfo,"Function Start", 0)
+    variable_name = ''
+    variable_value = ''
+    time=''
+    now_hour=0.00
+    now = datetime.datetime.now()
+    for each in data_set:
+        if each[1] == 'element parameter':
+            variable_name = each[0]
+            if(now.hour>=12):
+                time="PM"
+            else:
+                time="AM"
 
+            if(now.hour >12):
+                now_hour=now.hour-12
+            else:
+                now_hour=now.hour
+
+            variable_value = str(months[now.month])+" "+str(now.day)+", "+str(now.year)+", "+str(now_hour)+":"+str(now.minute)+" "+time
+            print variable_value
+    if variable_name != '' and variable_value != '':
+        return sr.Set_Shared_Variables(variable_name,variable_value)
+    else:
+        return 'failed'
 
 def Insert_Into_List(data_set):
     ''' Ad text to a list '''

@@ -603,7 +603,7 @@ def handle_rest_call(data, fields_to_be_saved, save_into_list = False, list_name
                 if search:
                     if apply_condition:
                         search_result = search_condition_wrapper(result.json(),condition)
-                        if search_result:
+                        if search_result in passed_tag_list:
                             CommonUtil.ExecLog(sModuleInfo, 'Condition "%s" is TRUE in response' % (condition), 1)
                             return "passed"
                         else:
@@ -620,7 +620,7 @@ def handle_rest_call(data, fields_to_be_saved, save_into_list = False, list_name
                                 CommonUtil.ExecLog(sModuleInfo, 'Couldnt Get "%s":"%s" in response' % (search_key, search_value), 3)
                                 return "failed"
                         else:
-                            if search_result:
+                            if search_result in passed_tag_list:
                                 CommonUtil.ExecLog(sModuleInfo, 'No "%s":"%s" in response' % (search_key, search_value), 1)
                                 return "passed"
                             else:
