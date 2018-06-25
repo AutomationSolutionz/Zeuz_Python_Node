@@ -1,6 +1,6 @@
 [ZeuZ Python Version]
-version = 4.1
+version = 4.2
 [Release Date]
-date= 2018-05-25
+date= 2018-06-25
 [Release Note]
-Note = ZeuZ New Server Step Changes
+Note = Schedule run improvement, REST API bug fixes, New actions around time calculation 
