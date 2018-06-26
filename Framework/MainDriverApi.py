@@ -854,7 +854,7 @@ def main(device_dict):
         final_run_params_from_server = get_all_runtime_parameters(run_id) #get runtime params
         final_run_params = {}
         for dict in final_run_params_from_server:
-            final_run_params[str(dict['field'])] = str(dict['name'])
+            final_run_params[str(dict['field'])] = str(dict['value'])
         update_run_id_info_on_server(run_id) #update runid status
         TestSetStartTime = time.time()
         TestCaseLists=get_all_automated_test_cases_in_run_id(run_id)  #get all automated test cases of a runid
