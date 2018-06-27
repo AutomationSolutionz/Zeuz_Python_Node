@@ -22,6 +22,8 @@ dependency = {
     'PC': ['Linux','Mac','Windows','None']
 }
 
+run_time_params = {}
+
 def form_uri(resource_path):
     global web_server_address,web_server_port
     base_server_address = 'http://%s:%s/' % (str(web_server_address), str(web_server_port))
@@ -45,8 +47,43 @@ def get_dependency():
         selected_depenency[key] = dependency[key][choice-1]
     return selected_depenency
 
+
+def get_all_run_time_params_from_server():
+    dict = {
+        'project': project,
+        'team': team
+    }
+    all_run_params = Get('get_run_params_api',dict)
+    for param in all_run_params['param_list']:
+        run_time_params[param[1]] = []
+        for name in all_run_params['param_name_list']:
+            if name[0] == param[0]:
+                for value in all_run_params['param_value_list']:
+                    if param[0] == value[0] and name[1] == value[1]:
+                        run_time_params[param[1]].append((name[2],value[3]))
+
+    #print run_time_params
+
+def get_run_time_params_from_user():
+    selected_run_param = []
+    for key in run_time_params:
+        print "******************** SELECT RUN TIME PARAMETER %s ********************" % (key.upper())
+        i=0
+        while i<len(run_time_params[key]):
+            print '%d. %s( %s )' % (i + 1, run_time_params[key][i][0],run_time_params[key][i][1])
+            i+=1
+        print '%d. NONE' % (i + 1)
+        print "ENTER YOUR CHOICE: "
+        choice = int(str(raw_input()).strip())
+        if choice == i+1: #NONE
+            continue
+        selected_run_param.append('%s|%s|%s'%(key,run_time_params[key][choice-1][0],run_time_params[key][choice-1][1]))
+    ans=  "|||".join(selected_run_param)
+    return ans
+
 if __name__ == '__main__':
     while True:
+        get_all_run_time_params_from_server()
         print "******************** ZEUZ DEPLOY API ********************"
         print "1. Deploy and Get Result"
         print "2. Deploy and Get RunID only"
@@ -58,11 +95,13 @@ if __name__ == '__main__':
             set = raw_input()
             set = str(set).strip()
             selected_dependency =  get_dependency()
+            selected_run_time_params = get_run_time_params_from_user()
             dict = {
                 'set': set,
                 'username': username,
                 'project': project,
-                'team': team
+                'team': team,
+                'run_time_param':selected_run_time_params
             }
             for key in selected_dependency:
                 if selected_dependency[key] != 'None':
