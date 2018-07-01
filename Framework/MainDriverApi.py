@@ -767,7 +767,7 @@ def run_test_case(TestCaseID, sModuleInfo, run_id, driver_list, final_dependency
     sTestCaseEndTime = datetime.fromtimestamp(time.time()).strftime('%Y-%m-%d %H:%M:%S')
     TestCaseEndTime = time.time()
     # Decide if Test Case Pass/Failed
-    sTestCaseStatus = calculate_test_case_result(sModuleInfo, TestCaseID, run_id, sTestStepResultList)
+    sTestCaseStatus = calculate_test_case_result(sModuleInfo, test_case, run_id, sTestStepResultList)
 
     # Time it took to run the test case
     TimeDiff = TestCaseEndTime - TestCaseStartTime
