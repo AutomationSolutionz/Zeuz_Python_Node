@@ -154,6 +154,18 @@ actions = { # Numbers are arbitrary, and are not used anywhere
     710: {'module': 'desktop', 'name': 'teardown', 'function': 'teardown'},
     711: {'module': 'desktop', 'name': 'drag', 'function': 'Drag_Element'},
     712: {'module': 'desktop', 'name': 'listbox', 'function': 'navigate_listbox'},
+
+    801: {'module': 'windows', 'name': 'click', 'function': 'Click_Element'},
+    802: {'module': 'windows', 'name': 'right click', 'function': 'Right_Click_Element'},
+    803: {'module': 'windows', 'name': 'drag and drop', 'function': 'Drag_and_Drop_Element'},
+    804: {'module': 'windows', 'name': 'double click', 'function': 'Double_Click_Element'},
+    805: {'module': 'windows', 'name': 'hover', 'function': 'Hover_Over_Element'},
+    806: {'module': 'windows', 'name': 'keystroke keys', 'function': 'Keystroke_For_Element'},
+    807: {'module': 'windows', 'name': 'keystroke chars', 'function': 'Keystroke_For_Element'},
+    808: {'module': 'windows', 'name': 'text', 'function': 'Enter_Text_In_Text_Box'},
+    809: {'module': 'windows', 'name': 'validate full text', 'function': 'Validate_Text'},
+    810: {'module': 'windows', 'name': 'validate partial text', 'function': 'Validate_Text'},
+    811: {'module': 'windows', 'name': 'scroll', 'function': 'Scroll'},
 }
 
 # List of Sub-Field keywords, must be all lowercase, and using single spaces - no underscores
@@ -246,6 +258,9 @@ def load_sa_modules(module): # Load module "AS" must match module name we get fr
         elif module == 'desktop':
             global desktop
             from Framework.Built_In_Automation.Desktop.CrossPlatform import BuiltInFunctions as desktop
+        elif module == 'windows':
+            global windows
+            from Framework.Built_In_Automation.Desktop.Windows import BuiltInFunctions as windows
         else:
             CommonUtil.ExecLog(sModuleInfo, "Invalid sequential actions module: %s" % module, 3)
             return 'failed'
