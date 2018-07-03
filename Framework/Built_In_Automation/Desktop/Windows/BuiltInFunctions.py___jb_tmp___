@@ -380,5 +380,5 @@ if __name__ == '__main__':
         ['window name', 'element parameter', '']
     ]
     Click_Element(data)
-    
+
 
