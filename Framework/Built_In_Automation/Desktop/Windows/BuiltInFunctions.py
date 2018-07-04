@@ -9,6 +9,7 @@ import sys, os, time, inspect
 sys.path.append("..")
 
 from Framework.Utilities import CommonUtil
+import pyautogui as gui # https://pyautogui.readthedocs.io/en/latest/
 from Framework.Built_In_Automation.Shared_Resources import BuiltInFunctionSharedResources as Shared_Resources
 from Framework.Built_In_Automation.Shared_Resources import LocateElement
 from Framework.Utilities.CommonUtil import passed_tag_list, failed_tag_list, skipped_tag_list
@@ -50,6 +51,27 @@ if Shared_Resources.Test_Shared_Variables('dependency'): # Check if driver is al
 global recur_count
 recur_count = 0 # To be deleted
 
+def go_to_desktop(data_set):
+    sModuleInfo = inspect.stack()[0][3] + " : " + inspect.getmoduleinfo(__file__).name
+    CommonUtil.ExecLog(sModuleInfo, "Function start", 0)
+    invoke='true'
+    Element = get_element('', 'Show desktop', 'TrayShowDesktopButtonWClass')
+    if Element in failed_tag_list:
+        CommonUtil.ExecLog(sModuleInfo, "Could not find element", 3)
+        return 'failed'
+    try:
+        result = Click_Element_None_Mouse(Element,None,True,None,None)
+        CommonUtil.TakeScreenShot(sModuleInfo)
+        if result in failed_tag_list:
+            CommonUtil.ExecLog(sModuleInfo, "Could not click element", 3)
+            return 'failed'
+        else:
+            CommonUtil.ExecLog(sModuleInfo, "Successfully clicked the element", 1)
+            return "passed"
+    except Exception:
+        errMsg = "Could not select/click your element."
+        CommonUtil.ExecLog(sModuleInfo,errMsg, 3)
+        return CommonUtil.Exception_Handler(sys.exc_info(), None, errMsg)
 
 # Method to click on element; step data passed on by the user
 def Click_Element(data_set):
@@ -60,6 +82,7 @@ def Click_Element(data_set):
 
     element_name = ''
     window_name = ''
+    pane_name=''
     expand = None
     invoke = None
     select = None
@@ -73,6 +96,8 @@ def Click_Element(data_set):
                     element_name=row[2]
                 elif row[0] == 'window name':
                     window_name=row[2]
+                elif row[0] == 'pane name':
+                    pane_name = row[2]
                 elif str(row[0]).strip().lower() == 'expand' or str(row[0]).strip().lower() == 'invoke' or str(row[0]).strip().lower() == 'select' or str(row[0]).strip().lower() == 'toggle':
                     value = None
                     if str(row[2]).strip().lower() == "yes" or str(row[2]).strip().lower() == "true":
@@ -101,7 +126,7 @@ def Click_Element(data_set):
     CommonUtil.ExecLog(sModuleInfo, "Looking for element", 0)
 
     # Get element object
-    Element = get_element(window_name, element_name)
+    Element = get_element(window_name,element_name)
     if Element in failed_tag_list:
         CommonUtil.ExecLog(sModuleInfo, "Could not find element", 3)
         return 'failed'
@@ -358,6 +383,98 @@ def Hover_Over_Element (data_set):
     except Exception:
         return CommonUtil.Exception_Handler(sys.exc_info(), None, "Error parsing data set")
 
+
+def getCoordinates(element, position):
+    ''' Return coordinates of attachment's centre '''
+
+    sModuleInfo = inspect.stack()[0][3] + " : " + inspect.getmoduleinfo(__file__).name
+    CommonUtil.ExecLog(sModuleInfo, "Function Start", 0)
+
+    # Parse input
+    try:
+        x = element[0]
+        y = element[1]
+        w = element[2]
+        h = element[3]
+        position = position.lower().strip()
+
+        if position not in positions:
+            CommonUtil.ExecLog(sModuleInfo, "Position must be one of: %s" % positions, 3)
+            return 'failed'
+    except Exception:
+        return CommonUtil.Exception_Handler(sys.exc_info(), None, "Error parsing coordinates")
+
+    # Perform calculations
+    try:
+        if position in ('center', 'centre'):
+            result_x, result_y = gui.center(element)
+        elif position == 'left':
+            result_x = x + (w * 0.01)
+            result_y = y + (h / 2)
+        elif position == 'right':
+            result_x = x + (w * 0.99)
+            result_y = y + (h / 2)
+
+        if result_x in failed_tag_list or result_x == '' or result_x == None:
+            return 'failed', ''
+        return int(result_x), int(result_y)
+    except Exception:
+        return CommonUtil.Exception_Handler(sys.exc_info(), None, "Error calculating coordinates")
+
+def Enter_Text_In_Text_Box(data_set):
+    ''' Insert text '''
+
+    sModuleInfo = inspect.stack()[0][3] + " : " + inspect.getmoduleinfo(__file__).name
+    CommonUtil.ExecLog(sModuleInfo, "Function Start", 0)
+
+    # Parse data set
+    try:
+        element_parameter = False
+        text_value = ''
+        for row in data_set:
+            if "action" in row[1]:
+                text_value = row[2]
+            if row[1] == 'element parameter':  # Indicates we should find the element instead of assuming we have keyboard focus
+                element_parameter = True
+
+
+        if text_value == '':
+            CommonUtil.ExecLog(sModuleInfo, "Could not find value for this action", 3)
+            return 'failed'
+    except:
+        return CommonUtil.Exception_Handler(sys.exc_info(), None, "Error parsing data set")
+
+    # Perform action
+    try:
+        # Find image coordinates
+        if element_parameter:
+            CommonUtil.ExecLog(sModuleInfo, "Trying to locate element", 0)
+            element = LocateElement.Get_Element(data_set, gui)  # (x, y, w, h)
+            if element in failed_tag_list:  # Error reason logged by Get_Element
+                CommonUtil.ExecLog(sModuleInfo, "Could not locate element", 3)
+                return 'failed'
+
+            # Get coordinates for position user specified
+            x, y = getCoordinates(element, 'centre')  # Find coordinates (x,y)
+            if x in failed_tag_list:  # Error reason logged by Get_Element
+                CommonUtil.ExecLog(sModuleInfo, "Error calculating coordinates", 3)
+                return 'failed'
+            CommonUtil.ExecLog(sModuleInfo, "Image coordinates on screen %d x %d" % (x, y), 0)
+            gui.click(x, y)  # Single click
+        else:
+            CommonUtil.ExecLog(sModuleInfo, "No element provided. Assuming textbox has keyboard focus", 0)
+
+        CommonUtil.TakeScreenShot(sModuleInfo)  # Capture screenshot, if settings allow for it
+
+        # Enter text
+        gui.typewrite(text_value)
+        CommonUtil.ExecLog(sModuleInfo, "Successfully set the value of to text to: %s" % text_value, 1)
+        return "passed"
+
+    except Exception:
+        errMsg = "Could not select/click your element."
+        return CommonUtil.Exception_Handler(sys.exc_info(), None, errMsg)
+
 def Scroll (data_set):
     element_name = ''
     window_name = ''
@@ -399,8 +516,9 @@ def find_element(root, element_name, element_class, automation_id, control_type)
 
 if __name__ == '__main__':
     data=[
-            ['element name','element parameter','Start'],
-            ['window name', 'element parameter', ''],
+            ['element name','element parameter','4101'],
+
+
             ['invoke', 'element parameter', 'true'],
         ]
     data1 = [
@@ -414,6 +532,11 @@ if __name__ == '__main__':
         ['element name', 'element parameter', 'Mail'],
         ['window name', 'element parameter', '']
     ]
-    Drag_and_Drop_Element(data2)
+    data3=[
+        ['text', 'action', 'Microsoft Edge'],
+
+    ]
+
+    go_to_desktop(data)
 
 

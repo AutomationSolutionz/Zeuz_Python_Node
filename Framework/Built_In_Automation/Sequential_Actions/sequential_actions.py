@@ -28,7 +28,7 @@ actions = { # Numbers are arbitrary, and are not used anywhere
     107: {'module': 'common', 'name': 'compare list', 'function': 'Compare_Lists'},
     108: {'module': 'common', 'name': 'insert into list', 'function': 'Insert_Into_List'},
     109: {'module': 'common', 'name': 'save variable', 'function': 'Save_Variable'},
-    110: {'module': 'common', 'name': 'delete shared variables', 'function': 'delete_all_shared_variables'},
+    110: {'module': 'common', 'name': 'delete shared variables',  'function': 'delete_all_shared_variables'},
     111: {'module': 'common', 'name': 'append list', 'function': 'append_list_shared_variable'},
     112: {'module': 'common', 'name': 'settings', 'function': 'sequential_actions_settings'},
     113: {'module': 'common', 'name': 'step exit', 'function': 'step_exit'},
