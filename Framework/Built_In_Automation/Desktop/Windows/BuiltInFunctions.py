@@ -73,7 +73,7 @@ def Click_Element(data_set):
                     element_name=row[2]
                 elif row[0] == 'window name':
                     window_name=row[2]
-                elif str(row[0]).strip().lower() == 'expand' or str(row[0]).strip().lower() == 'invoke' or str(row[0]).strip().lower() == 'select' or str(row[0]).strip().lower() == 'toggle'or str(row[0]).strip().lower() == 'right':
+                elif str(row[0]).strip().lower() == 'expand' or str(row[0]).strip().lower() == 'invoke' or str(row[0]).strip().lower() == 'select' or str(row[0]).strip().lower() == 'toggle':
                     value = None
                     if str(row[2]).strip().lower() == "yes" or str(row[2]).strip().lower() == "true":
                         value=True
@@ -122,6 +122,8 @@ def Click_Element(data_set):
         return CommonUtil.Exception_Handler(sys.exc_info(), None, errMsg)
 
 def Right_Click_Element(data_set):
+    sModuleInfo = inspect.stack()[0][3] + " : " + inspect.getmoduleinfo(__file__).name
+    CommonUtil.ExecLog(sModuleInfo, "Function start", 0)
     element_name = ''
     window_name = ''
     try:
@@ -132,12 +134,16 @@ def Right_Click_Element(data_set):
                 elif row[0] == 'window name':
                     window_name=row[2]
         Element = get_element(window_name, element_name)
+        if Element in failed_tag_list:
+            CommonUtil.ExecLog(sModuleInfo, "Could not find element", 3)
+            return 'failed'
         x = (int)(Element.Current.BoundingRectangle.Right - Element.Current.BoundingRectangle.Width / 2);
         y = (int)(Element.Current.BoundingRectangle.Bottom - Element.Current.BoundingRectangle.Height / 2);
         win32api.SetCursorPos((x, y))
         win32api.mouse_event(win32con.MOUSEEVENTF_RIGHTDOWN, x, y, 0, 0)
         time.sleep(0.1)
         win32api.mouse_event(win32con.MOUSEEVENTF_RIGHTUP, x, y, 0, 0)
+        return "passed"
     except Exception:
         return CommonUtil.Exception_Handler(sys.exc_info(), None, "Error parsing data set")
 
@@ -234,6 +240,8 @@ def Click_Element_None_Mouse(Element, Expand=None, Invoke=None, Select=None, Tog
 
 
 def Drag_and_Drop_Element(data_set):
+    sModuleInfo = inspect.stack()[0][3] + " : " + inspect.getmoduleinfo(__file__).name
+    CommonUtil.ExecLog(sModuleInfo, "Function start", 0)
 
 
     element_name=[]
@@ -249,9 +257,23 @@ def Drag_and_Drop_Element(data_set):
                     window_name.append(row[2])
 
         Element1 = get_element(window_name[0], element_name[0])
+        if Element1 in failed_tag_list:
+            CommonUtil.ExecLog(sModuleInfo, "Could not find element", 3)
+            return 'failed'
         Element2 = get_element(window_name[1], element_name[1])
+        if Element2 in failed_tag_list:
+            CommonUtil.ExecLog(sModuleInfo, "Could not find element", 3)
+            return 'failed'
 
-        Drag_Object(Element1, Element2)
+        result=Drag_Object(Element1, Element2)
+        if result in failed_tag_list:
+            CommonUtil.ExecLog(sModuleInfo, "Could not Drag element", 3)
+            return 'failed'
+        else:
+            CommonUtil.ExecLog(sModuleInfo, "Successfully dragged and dropped the element", 1)
+            return "passed"
+
+
     except Exception:
         return CommonUtil.Exception_Handler(sys.exc_info(), None, "Error parsing data set")
 
@@ -269,8 +291,9 @@ def Drag_Object(Element1_source, Element2_destination):
             Element2_destination.Current.BoundingRectangle.Right - Element2_destination.Current.BoundingRectangle.Width / 2);
         y_destination = (int)(
             Element2_destination.Current.BoundingRectangle.Bottom - Element2_destination.Current.BoundingRectangle.Height / 2);
-
         autoit.mouse_click_drag(x_source, y_source, x_destination, y_destination, button="left", speed=20)
+        return 'passed'
+
 
 
 
@@ -279,8 +302,11 @@ def Drag_Object(Element1_source, Element2_destination):
         fname = os.path.split(exc_tb.tb_frame.f_code.co_filename)[1]
         print ((str(exc_type).replace("type ", "Error Type: ")) + ";" + "Error Message: " + str(
             exc_obj) + ";" + "File Name: " + fname + ";" + "Line: " + str(exc_tb.tb_lineno))
+        return 'failed'
 
 def Double_Click_Element(data_set):
+    sModuleInfo = inspect.stack()[0][3] + " : " + inspect.getmoduleinfo(__file__).name
+    CommonUtil.ExecLog(sModuleInfo, "Function start", 0)
     element_name = ''
     window_name = ''
     try:
@@ -291,6 +317,9 @@ def Double_Click_Element(data_set):
                 elif row[0] == 'window name':
                     window_name = row[2]
         Element = get_element(window_name, element_name)
+        if Element in failed_tag_list:
+            CommonUtil.ExecLog(sModuleInfo, "Could not find element", 3)
+            return 'failed'
         x = (int)(Element.Current.BoundingRectangle.Right - Element.Current.BoundingRectangle.Width / 2);
         y = (int)(Element.Current.BoundingRectangle.Bottom - Element.Current.BoundingRectangle.Height / 2);
         win32api.SetCursorPos((x, y))
@@ -304,6 +333,8 @@ def Double_Click_Element(data_set):
         return CommonUtil.Exception_Handler(sys.exc_info(), None, "Error parsing data set")
 
 def Hover_Over_Element (data_set):
+    sModuleInfo = inspect.stack()[0][3] + " : " + inspect.getmoduleinfo(__file__).name
+    CommonUtil.ExecLog(sModuleInfo, "Function start", 0)
     element_name = ''
     window_name = ''
     try:
@@ -314,12 +345,16 @@ def Hover_Over_Element (data_set):
                 elif row[0] == 'window name':
                     window_name = row[2]
         Element = get_element(window_name, element_name)
+        if Element in failed_tag_list:
+            CommonUtil.ExecLog(sModuleInfo, "Could not find element", 3)
+            return 'failed'
         x = (int)(Element.Current.BoundingRectangle.Right - Element.Current.BoundingRectangle.Width / 2);
         y = (int)(Element.Current.BoundingRectangle.Bottom - Element.Current.BoundingRectangle.Height / 2);
         win32api.SetCursorPos((x, y))
 
         autoit.mouse_move(x,y,speed=20)
         time.sleep(1)
+        return 'passed'
     except Exception:
         return CommonUtil.Exception_Handler(sys.exc_info(), None, "Error parsing data set")
 
@@ -364,12 +399,12 @@ def find_element(root, element_name, element_class, automation_id, control_type)
 
 if __name__ == '__main__':
     data=[
-            ['element name','element parameter','Microsoft Edge'],
+            ['element name','element parameter','Start'],
             ['window name', 'element parameter', ''],
             ['invoke', 'element parameter', 'true'],
         ]
     data1 = [
-        ['element name', 'element parameter', 'Microsoft Edge'],
+        ['element name', 'element parameter', 'Mail'],
         ['window name', 'element parameter', ''],
 
     ]
@@ -379,6 +414,6 @@ if __name__ == '__main__':
         ['element name', 'element parameter', 'Mail'],
         ['window name', 'element parameter', '']
     ]
-    Click_Element(data)
-    
+    Drag_and_Drop_Element(data2)
+
 
