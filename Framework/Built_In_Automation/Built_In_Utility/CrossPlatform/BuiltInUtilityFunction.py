@@ -2341,7 +2341,6 @@ def pattern_matching(dataset):
     
         if pattern == '' or shared_var == '' or strg == '':
             return CommonUtil.Exception_Handler(sys.exc_info(), None, "Missing one of the inputs. Expected 3 element parameters: 'pattern', 'variable', and 'string'")
-            return 'failed'
         
     except:
         CommonUtil.ExecLog(sModuleInfo, "Error parsing dataset", 3)
@@ -2416,5 +2415,130 @@ def save_substring(data_set):
 
     except Exception:
         return CommonUtil.Exception_Handler(sys.exc_info())
-        
+'''
+extracts number from a string, suppose a string is "hi123 4.5 -6hola", It will get all the numbers in a list ['123','4.5','-6'].. then if index is specified for example 2,
+then it will return 2nd element of the list which is '4.5'. If no index is specified default index 1 will be applied. It will return the 1st element which is 123
+This function saves the variable to a defined variable(not the source variable)
+'''
+def extract_number(data_set):
+    sModuleInfo = inspect.stack()[0][3] + " : " + inspect.getmoduleinfo(__file__).name
+    CommonUtil.ExecLog(sModuleInfo, "Function start", 0)
+    # Parse data set
+    try:
+        from_var = '' #the varibale from which string will be copied
+        to_var = '' #the variable wher estring will be saved
+        index = 0 #index of the digit for a string "hello123 2.5 67" if index is 2(starting from 1) we will get 2.5
+        digit=''
+        for row in data_set:
+            if row[1] == 'element parameter':
+                if row[0] == 'from':
+                    from_var = str(row[2])
+                elif row[0] == 'to':
+                    to_var = str(row[2])
+                elif row[0] == 'index':
+                    index = str(row[2])
+
+        if Shared_Resources.Test_Shared_Variables(from_var):
+            from_var = Shared_Resources.Get_Shared_Variables(from_var) #save the value of 'from_var' shared varibale to 'from_var'
+        else:
+            CommonUtil.ExecLog(sModuleInfo,"Could not find the variable named '%s'"%from_var, 3)
+            return "failed"
+
+        if index < 0:
+            CommonUtil.ExecLog(sModuleInfo, "Index for extracting number can't be negative", 3)
+            return "failed"
+        else:
+            try:
+                all_digit = [s for s in re.findall(r'-?\d+\.?\d*', from_var)]
+                digit = all_digit[index]
+            except:
+                CommonUtil.ExecLog(sModuleInfo, "Can't extract digit. Index out of range for string '%s'" % from_var, 3)
+                return "failed"
+
+        #now save the substing to new variable
+        return Shared_Resources.Set_Shared_Variables(to_var,digit)
+
+    except Exception:
+        return CommonUtil.Exception_Handler(sys.exc_info())
+
+
+'''
+Takes a number in a variable and converts that number to be formatted a specified way
+
+Original value of the variable: 246.789
+
+eg. If digit is 1  -  output = 247
+    If digit is 10     -  output = 250
+    If digit is 100    -  output = 200
+
+    If digit is 0.1     -  output = 246.8
+    If digit is 0.01    -  output = 246.79
+    If digit is 0.001   -  output = 246.789
+    If digit is 0.0001  -  output = 246.789
+    If digit is 0.00001  -  output = 246.789
+    This function saves the variable to a defined variable(not the source variable)
+'''
+def round_number(data_set):
+    sModuleInfo = inspect.stack()[0][3] + " : " + inspect.getmoduleinfo(__file__).name
+    CommonUtil.ExecLog(sModuleInfo, "Function start", 0)
+    # Parse data set
+    try:
+        from_var = '' #the varibale from which string will be copied
+        to_var = '' #the variable wher estring will be saved
+        index = 0 #index of the digit for a string "hello123 2.5 67" if index is 2(starting from 1) we will get 2.5
+        rounded_number=''
+        digit = 1
+        for row in data_set:
+            if row[1] == 'element parameter':
+                if row[0] == 'from':
+                    from_var = str(row[2])
+                elif row[0] == 'to':
+                    to_var = str(row[2])
+                elif row[0] == 'digit':
+                    digit = str(row[2])
+
+        if Shared_Resources.Test_Shared_Variables(from_var):
+            from_var = Shared_Resources.Get_Shared_Variables(from_var) #save the value of 'from_var' shared varibale to 'from_var'
+        else:
+            CommonUtil.ExecLog(sModuleInfo,"Could not find the variable named '%s'"%from_var, 3)
+            return "failed"
+
+        if digit < 0:
+            CommonUtil.ExecLog(sModuleInfo, "Digit for rounding number can't be negative", 3)
+            return "failed"
+        else:
+            try:
+                if re.match("-?\d+?\.\d+?$", digit) is None:
+                    digit = int(digit)
+                else:
+                    digit = float(digit)
+
+                if re.match("-?\d+?\.\d+?$", from_var) is None:
+                    from_var = int(from_var)
+                else:
+                    from_var = float(from_var)
+
+                if digit >= 1:
+                    rounded_number = int((round(float(from_var) / digit))) * digit
+                else:
+                    c = 0
+                    for i in range(1, 20):
+                        digit *= 10
+                        c += 1
+                        if int(digit) == 1:
+                            break
+                    if digit!=1:
+                        CommonUtil.ExecLog(sModuleInfo,"Can't round number. Incorrect digit '%s' given"%digit, 3)
+                        return "failed"
+                    rounded_number = round(float(from_var), c)
+            except Exception,e:
+                print e
+                CommonUtil.ExecLog(sModuleInfo, "Can't round number. Incorrect number '%s' given"%from_var, 3)
+                return "failed"
+
+        #now save the substing to new variable
+        return Shared_Resources.Set_Shared_Variables(to_var,rounded_number)
+
+    except Exception:
+        return CommonUtil.Exception_Handler(sys.exc_info())
 
