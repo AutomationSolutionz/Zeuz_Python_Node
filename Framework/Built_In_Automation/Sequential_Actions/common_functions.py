@@ -268,6 +268,10 @@ def shared_variable_to_value(data_set):
     new_data = [] # Rebuild the data_set with the new variable (because it's a list of tuples which we can't update)
 
     try:
+        for row in data_set:
+            if row[1] == 'action':
+                if row[0] == 'compare variable': #for compare variable don't replace.. we will need the variable name
+                    return data_set
         for row in data_set: # For each row of the data set
             data_row = list(row) # Convert row which is a tuple to a list, so we can update it if we need to
             for i in range(0, 3): # For each field (Field, Sub-Field, Value)
