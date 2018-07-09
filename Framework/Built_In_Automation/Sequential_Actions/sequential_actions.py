@@ -136,7 +136,6 @@ actions = { # Numbers are arbitrary, and are not used anywhere
     532: {'module': 'utility', 'name': 'save substring', 'function': 'save_substring'},
     533: {'module': 'utility', 'name': 'get attachment path', 'function': 'Get_Attachment_Path'},
     534: {'module': 'utility', 'name': 'extract number', 'function': 'extract_number'},
-    535: {'module': 'utility', 'name': 'round number', 'function': 'round_number'},
 
     600: {'module': 'xml', 'name': 'update', 'function': 'update_element'},
     601: {'module': 'xml', 'name': 'add', 'function': 'add_element'},
@@ -792,3 +791,4 @@ def Action_Handler(_data_set, action_row):
 
     except Exception:
         return CommonUtil.Exception_Handler(sys.exc_info())
+
