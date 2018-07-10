@@ -6,8 +6,8 @@
 #########################
 
 import sys, os, time, inspect
-sys.path.append("..")
-
+import glob
+sys.path.append(os.path.dirname(__file__))
 from Framework.Utilities import CommonUtil
 import pyautogui as gui # https://pyautogui.readthedocs.io/en/latest/
 from Framework.Built_In_Automation.Shared_Resources import BuiltInFunctionSharedResources as Shared_Resources
@@ -475,6 +475,65 @@ def Enter_Text_In_Text_Box(data_set):
         errMsg = "Could not select/click your element."
         return CommonUtil.Exception_Handler(sys.exc_info(), None, errMsg)
 
+def Validate_Text(data_set):
+    sModuleInfo = inspect.stack()[0][3] + " : " + inspect.getmoduleinfo(__file__).name
+    CommonUtil.ExecLog(sModuleInfo, "Function Start", 0)
+    file_list=[]
+    file_list=(glob.glob("C:/Users/zeuzi/Downloads/*"))
+    for row in data_set:
+        if "action" in row[1]:
+            text_value = row[2]
+    if (text_value in file_list):
+        return "passed"
+    else:
+        errMsg = "Could not find the folder"
+        return CommonUtil.Exception_Handler(sys.exc_info(), None, errMsg)
+
+def Keystroke_For_Element(data_set):
+    ''' Insert characters - mainly key combonations'''
+    # Example: Ctrl+c
+    # Repeats keypress if a number follows, example: tab,3
+
+    sModuleInfo = inspect.stack()[0][3] + " : " + inspect.getmoduleinfo(__file__).name
+    CommonUtil.ExecLog(sModuleInfo, "Function Start", 0)
+
+    # Parse dataset
+    try:
+        time.sleep(5)
+        keystroke_value = ''
+        for row in data_set:
+            if "action" in row[1]:
+                if row[0] == "keystroke keys":
+                    keystroke_value = str(row[2]).lower()  # Store keystrok
+
+        if keystroke_value == '':
+            CommonUtil.ExecLog(sModuleInfo, "Invalid action found", 3)
+            return 'failed'
+
+    except Exception:
+        errMsg = "Error parsing data set"
+        return CommonUtil.Exception_Handler(sys.exc_info(), None, errMsg)
+
+    # Perform action
+    try:
+        count = 1
+        if ',' in keystroke_value:  # Check for delimiter indicating multiple keystrokes
+            keystroke_value, count = keystroke_value.split(',')  # Separate keystroke and count
+            count = int(count.strip())
+        keys = keystroke_value.split('+')  # Split string into array
+        keys = [x.strip() for x in keys]  # Clean it up
+
+        for i in range(count): gui.hotkey(*keys)  # Send keypress (as individual values using the asterisk)
+
+        CommonUtil.TakeScreenShot(sModuleInfo)  # Capture screenshot, if settings allow for it
+
+        CommonUtil.ExecLog(sModuleInfo, "Successfully entered keystroke", 1)
+        return 'passed'
+
+    except Exception:
+        errMsg = "Could not enter keystroke for your element."
+        return CommonUtil.Exception_Handler(sys.exc_info(), None, errMsg)
+
 def Scroll (data_set):
     element_name = ''
     window_name = ''
@@ -512,31 +571,5 @@ def find_element(root, element_name, element_class, automation_id, control_type)
             return element
 
     return None
-
-
-if __name__ == '__main__':
-    data=[
-            ['element name','element parameter','4101'],
-
-
-            ['invoke', 'element parameter', 'true'],
-        ]
-    data1 = [
-        ['element name', 'element parameter', 'Mail'],
-        ['window name', 'element parameter', ''],
-
-    ]
-    data2=[
-        ['element name', 'element parameter', 'Microsoft Edge'],
-        ['window name', 'element parameter', ''],
-        ['element name', 'element parameter', 'Mail'],
-        ['window name', 'element parameter', '']
-    ]
-    data3=[
-        ['text', 'action', 'Microsoft Edge'],
-
-    ]
-
-    go_to_desktop(data)
 
 
