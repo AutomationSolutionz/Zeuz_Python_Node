@@ -499,7 +499,7 @@ def Keystroke_For_Element(data_set):
 
     # Parse dataset
     try:
-        time.sleep(5)
+        time.sleep(2)
         keystroke_value = ''
         for row in data_set:
             if "action" in row[1]:
@@ -571,5 +571,7 @@ def find_element(root, element_name, element_class, automation_id, control_type)
             return element
 
     return None
+
+
 
 

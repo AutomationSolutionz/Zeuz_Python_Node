@@ -164,10 +164,7 @@ actions = { # Numbers are arbitrary, and are not used anywhere
     806: {'module': 'windows', 'name': 'keystroke keys', 'function': 'Keystroke_For_Element'},
     807: {'module': 'windows', 'name': 'keystroke chars', 'function': 'Keystroke_For_Element'},
     808: {'module': 'windows', 'name': 'text', 'function': 'Enter_Text_In_Text_Box'},
-    809: {'module': 'windows', 'name': 'validate full text', 'function': 'Validate_Text'},
-    810: {'module': 'windows', 'name': 'validate partial text', 'function': 'Validate_Text'},
-    811: {'module': 'windows', 'name': 'scroll', 'function': 'Scroll'},
-    812: {'module': 'windows', 'name': 'Desktop', 'function': 'go_to_desktop'},
+    809: {'module': 'windows', 'name': 'Desktop', 'function': 'go_to_desktop'},
 }
 
 # List of Sub-Field keywords, must be all lowercase, and using single spaces - no underscores
@@ -807,8 +804,4 @@ def Action_Handler(_data_set, action_row):
 
     except Exception:
         return CommonUtil.Exception_Handler(sys.exc_info())
-
-
-
-
 
