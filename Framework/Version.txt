@@ -1,6 +1,6 @@
 [ZeuZ Python Version]
-version = 4.5
+version = 4.6
 [Release Date]
-date= 2018-07-09
+date= 2018-07-16
 [Release Note]
-Note = better logging for compare action, improved extract action feature
+Note = Desktop UI Automation Initial action sets added
