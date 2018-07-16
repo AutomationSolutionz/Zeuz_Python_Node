@@ -1,6 +1,6 @@
 [ZeuZ Python Version]
-version = 4.4
+version = 4.6
 [Release Date]
-date= 2018-07-08
+date= 2018-07-16
 [Release Note]
-Note = New actions added, run-time parameter feature improvement, other minor improvements
+Note = Desktop UI Automation Initial action sets added
