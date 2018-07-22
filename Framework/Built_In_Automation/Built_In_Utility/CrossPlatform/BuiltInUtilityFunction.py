@@ -14,7 +14,7 @@
 #########################
 
 
-import sys, datetime, time, inspect, zipfile, string, filecmp, random, requests, math, re, os, subprocess, shutil, ast
+import sys, datetime, time, inspect, zipfile, string, filecmp, random, requests, math, re, os, subprocess, shutil, ast,hashlib
 sys.path.append("..")
 from sys import platform as _platform
 from Framework.Utilities import ConfigModule
@@ -224,6 +224,21 @@ def UnZip(file_to_be_unzipped, location_where_to_unzip):
     except Exception:
         return CommonUtil.Exception_Handler(sys.exc_info(), None, "Error unzipping file")
 
+def md5(fname):
+    """
+    calculates checksum of a file which can be used to compare to different files, If file is big then it will can be difficult to
+    put the whole file on memory so we will read 4096 byte chunks and calculate checksum
+    :param fname: location of the file
+    :return: Exception if any problem occurs in hashing else return the checksum
+    """
+    try:
+        hash_md5 = hashlib.md5()
+        with open(fname, "rb") as f:
+            for chunk in iter(lambda: f.read(4096), b""):
+                hash_md5.update(chunk)
+        return hash_md5.hexdigest()
+    except Exception:
+        return 'failed'
 
 # function to compare two files
 def CompareFile(file_to_be_compared1, file_to_be_compared2):
@@ -238,8 +253,10 @@ def CompareFile(file_to_be_compared1, file_to_be_compared2):
     
     try:
         CommonUtil.ExecLog(sModuleInfo, "Comparing %s with %s" % (file_to_be_compared1, file_to_be_compared2), 1)
-        result = filecmp.cmp(file_to_be_compared1, file_to_be_compared2)
-        return result
+        if md5(file_to_be_compared1) == md5(file_to_be_compared2):
+            return 'passed'
+        else:
+            return 'failed'
     except Exception:
         return CommonUtil.Exception_Handler(sys.exc_info(), None, "Error comparing files")
 
@@ -1486,7 +1503,7 @@ def Compare_File(step_data):
             # compare file "from_path" and "to_path"
             result = CompareFile(from_path, to_path)
             if result in failed_tag_list:
-                CommonUtil.ExecLog(sModuleInfo, "Files %s and %s are not equal '%s'" % (to_path, from_path), 3)
+                CommonUtil.ExecLog(sModuleInfo, "Files %s and %s are not equal" % (to_path, from_path), 3)
                 return "failed"
             else:
                 CommonUtil.ExecLog(sModuleInfo, "File '%s' and %s are equal " % (to_path, from_path), 1)
