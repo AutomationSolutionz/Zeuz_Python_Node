@@ -255,7 +255,10 @@ def Enter_Text_In_Text_Box(step_data):
             Element.click()
             Element.clear()
             Element.send_keys(text_value)
-            Element.click()
+            try:
+                Element.click()
+            except: #sometimes text field can be unclickable after entering text
+                pass
             CommonUtil.TakeScreenShot(sModuleInfo)
             CommonUtil.ExecLog(sModuleInfo, "Successfully set the value of to text to: %s"%text_value, 1)
             return "passed"
