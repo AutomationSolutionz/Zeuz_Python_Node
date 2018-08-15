@@ -1,6 +1,6 @@
 [ZeuZ Python Version]
-version = 4.7
+version = 4.8
 [Release Date]
-date= 2018-07-22
+date= 2018-08-15
 [Release Note]
-Note = Desktop UI Automation Varios actions added
+Note = New Actions and improvement with click action
