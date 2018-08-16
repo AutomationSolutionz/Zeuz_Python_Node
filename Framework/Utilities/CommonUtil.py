@@ -160,6 +160,8 @@ def ExecLog(sModuleInfo, sDetails, iLogLevel=1, _local_run="", sStatus=""):
             status = 'Error'
         elif iLogLevel == 4:
             status = 'Console'
+        elif iLogLevel == 6:
+            status = 'BrowserConsole'
         else:
             print "*** Unknown log level- Set to Warning ***"
             status = 'Warning'
@@ -174,39 +176,58 @@ def ExecLog(sModuleInfo, sDetails, iLogLevel=1, _local_run="", sStatus=""):
             print "%s - %s\n\t%s" % (status.upper(), sModuleInfo, sDetails) # Display in console
 
         # Upload logs to server if local run is not set to False
-        if (local_run == False or local_run == 'False') and iLogLevel > 0:
+        if iLogLevel > 0:
             log_id=ConfigModule.get_config_value('sectionOne','sTestStepExecLogId',temp_config)
-            FWLogFile = ConfigModule.get_config_value('sectionOne','log_folder',temp_config)
-            if os.path.exists(FWLogFile) == False: FL.CreateFolder(FWLogFile) # Create log directory if missing
-            if FWLogFile=='':
+            FWLogFolder = ConfigModule.get_config_value('sectionOne','log_folder',temp_config)
+            if os.path.exists(FWLogFolder) == False: FL.CreateFolder(FWLogFolder) # Create log directory if missing
+            BrowserConsoleLogFile = ''
+            if FWLogFolder=='':
                 FWLogFile=ConfigModule.get_config_value('sectionOne','temp_run_file_path',temp_config)+os.sep+'execlog.log'
+                BrowserConsoleLogFile = ConfigModule.get_config_value('sectionOne', 'temp_run_file_path',
+                                                          temp_config) + os.sep + 'BrowserLog.log'
             else:
-                FWLogFile=FWLogFile+os.sep+'temp.log'
+                FWLogFile=FWLogFolder+os.sep+'temp.log'
+                BrowserConsoleLogFile = FWLogFolder+os.sep+'BrowserLog.log'
             
             logger = logging.getLogger(__name__)
             
             hdlr = None
+            browserLogHdlr = None
             if os.name == 'posix':
                 try:
                     hdlr = logging.FileHandler(FWLogFile)
+                    browserLogHdlr = logging.FileHandler(BrowserConsoleLogFile)
                 except:
                     pass
             elif os.name == 'nt':
                 hdlr = logging.FileHandler(FWLogFile)
+                browserLogHdlr = logging.FileHandler(BrowserConsoleLogFile)
             formatter = logging.Formatter('%(asctime)s - %(levelname)s - %(message)s')
-            if hdlr != None:
-                hdlr.setFormatter(formatter)
-                logger.addHandler(hdlr)
-            
-            logger.setLevel(logging.DEBUG)
-            logger.info(sModuleInfo + ' - ' + sDetails + '' + sStatus)
-            logger.removeHandler(hdlr)
+
+            if iLogLevel != 6:
+                if hdlr != None:
+                    hdlr.setFormatter(formatter)
+                    logger.addHandler(hdlr)
+
+
+                logger.setLevel(logging.DEBUG)
+                logger.info(sModuleInfo + ' - ' + sDetails + '' + sStatus)
+                logger.removeHandler(hdlr)
+            else:
+                if browserLogHdlr != None:
+                    browserLogHdlr.setFormatter(formatter)
+                    logger.addHandler(browserLogHdlr)
+
+                logger.setLevel(logging.DEBUG)
+                logger.info(sModuleInfo + ' - ' + sDetails + '' + sStatus)
+                logger.removeHandler(browserLogHdlr)
 
             # Write log line to server
             #r = RequestFormatter.Get('log_execution',{'logid': log_id, 'modulename': sModuleInfo, 'details': sDetails, 'status': status,'loglevel': iLogLevel})
             global all_logs,all_logs_count
-            all_logs[all_logs_count] = {'logid': log_id, 'modulename': sModuleInfo, 'details': sDetails, 'status': status,'loglevel': iLogLevel}
-            all_logs_count+=1
+            if iLogLevel!=5: #Except the broserLogs
+                all_logs[all_logs_count] = {'logid': log_id, 'modulename': sModuleInfo, 'details': sDetails, 'status': status,'loglevel': iLogLevel}
+                all_logs_count+=1
 
     except Exception, e:
         pass # This can happen when server is not available. In that case, we don't need to do anything
@@ -260,7 +281,7 @@ def set_screenshot_vars(shared_variables):
 
 def TakeScreenShot(ImageName,local_run=False):
     ''' Puts TakeScreenShot into a thread, so it doesn't block test case execution '''
-    
+
     try:
         t = threading.Thread(target = Thread_ScreenShot, args = (ImageName, local_run)) # Create thread object 
         t.daemon = True # Run in background

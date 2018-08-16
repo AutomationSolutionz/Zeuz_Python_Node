@@ -268,12 +268,22 @@ def load_sa_modules(module): # Load module "AS" must match module name we get fr
         return CommonUtil.Exception_Handler(sys.exc_info())
     return 'passed'
 
+
+def write_browser_logs():
+    sModuleInfo = inspect.stack()[0][3] + " : " + inspect.getmoduleinfo(__file__).name
+    try:
+        if sr.Test_Shared_Variables('selenium_driver'):
+            driver = sr.Get_Shared_Variables('selenium_driver')
+            for browser_log in driver.get_log('browser'):
+                CommonUtil.ExecLog(sModuleInfo,browser_log['message'],6)
+    except:
+        return CommonUtil.Exception_Handler(sys.exc_info())
+
 def Sequential_Actions(step_data, _dependency = {}, _run_time_params = {}, _file_attachment = {}, _temp_q = '',screen_capture='Desktop',_device_info = {}):
     ''' Main Sequential Actions function - Performs logical decisions based on user input '''
     
     sModuleInfo = inspect.stack()[0][3] + " : " + inspect.getmoduleinfo(__file__).name
     CommonUtil.ExecLog(sModuleInfo,"Function Start", 0)
-    
     # Initialize
     try:
         # Set dependency, file_attachemnt, run_time_parameters as global variables
@@ -316,8 +326,10 @@ def Sequential_Actions(step_data, _dependency = {}, _run_time_params = {}, _file
         return CommonUtil.Exception_Handler(sys.exc_info(), None, "Error during Sequential Actions startup")
 
     # Process step data
-    return Run_Sequential_Actions(step_data)
-    
+    result =  Run_Sequential_Actions(step_data)
+    write_browser_logs()
+    return result
+
 def Run_Sequential_Actions(step_data, data_set_no=-1): #data_set_no will used in recursive conditional action call
     
     sModuleInfo = inspect.stack()[0][3] + " : " + inspect.getmoduleinfo(__file__).name
