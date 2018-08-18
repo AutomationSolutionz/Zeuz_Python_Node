@@ -17,6 +17,7 @@ import sys, os, time, inspect
 sys.path.append("..")
 from selenium import webdriver
 from selenium.webdriver.remote.webelement import WebElement
+from selenium.webdriver.common.desired_capabilities import DesiredCapabilities
 from selenium.webdriver.firefox.firefox_binary import FirefoxBinary
 from selenium.webdriver.support.ui import Select
 from selenium.webdriver.support.ui import WebDriverWait
@@ -81,8 +82,10 @@ def Open_Browser(dependency):
             options = Options()
             options.add_argument("--no-sandbox")
             options.add_argument("--disable-extensions")
+            d = DesiredCapabilities.CHROME
+            d['loggingPrefs'] = {'browser': 'ALL'}
             if "chromeheadless" in browser: options.add_argument("--headless") # Enable headless operation if dependency set
-            selenium_driver = webdriver.Chrome(chrome_options = options)
+            selenium_driver = webdriver.Chrome(chrome_options = options,desired_capabilities=d)
             selenium_driver.implicitly_wait(WebDriver_Wait)
             selenium_driver.maximize_window()
             CommonUtil.ExecLog(sModuleInfo, "Started Chrome Browser", 1)
