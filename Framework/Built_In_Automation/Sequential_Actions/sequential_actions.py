@@ -277,7 +277,7 @@ def write_browser_logs():
             for browser_log in driver.get_log('browser'):
                 CommonUtil.ExecLog(sModuleInfo,browser_log['message'],6)
     except:
-        return CommonUtil.Exception_Handler(sys.exc_info())
+        pass
 
 def Sequential_Actions(step_data, _dependency = {}, _run_time_params = {}, _file_attachment = {}, _temp_q = '',screen_capture='Desktop',_device_info = {}):
     ''' Main Sequential Actions function - Performs logical decisions based on user input '''
