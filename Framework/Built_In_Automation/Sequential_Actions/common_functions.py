@@ -652,6 +652,35 @@ def append_list_shared_variable(data_set):
     except Exception:
         return CommonUtil.Exception_Handler(sys.exc_info())
 
+
+def insert_list_into_another_list(data_set):
+    ''' Creates and appends a python list variable '''
+    # Note: List is created if it doesn't already exist
+
+    sModuleInfo = inspect.stack()[0][3] + " : " + inspect.getmoduleinfo(__file__).name
+    CommonUtil.ExecLog(sModuleInfo, "Function Start", 0)
+
+    try:
+        # Parse data set
+        tmp = data_set[0][2].replace(' ', '').strip()  # Get key and value from Value field and clean them
+        tmp = tmp.split('=')  # Get variable name
+        parent_list_name = tmp[0].strip()
+        all_child_list_names = tmp[1].strip().split(",")
+
+        for child_list_name in all_child_list_names:
+            if not sr.Test_Shared_Variables(child_list_name):
+                CommonUtil.ExecLog(sModuleInfo, "List named %s not found in shared variables" % child_list_name, 3)
+                return "failed"
+            child_list = sr.Get_Shared_Variables(child_list_name)
+            # Append all values
+            result = sr.Append_List_Shared_Variables(parent_list_name, child_list,value_as_list=True)
+            if result in failed_tag_list:
+                return result
+        return "passed"
+    except Exception:
+        return CommonUtil.Exception_Handler(sys.exc_info())
+
+
 def sequential_actions_settings(data_set):
     ''' Test Step front end for modifying certain variables used by Sequential Actions '''
     

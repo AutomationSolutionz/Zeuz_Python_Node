@@ -33,6 +33,7 @@ actions = { # Numbers are arbitrary, and are not used anywhere
     112: {'module': 'common', 'name': 'settings', 'function': 'sequential_actions_settings'},
     113: {'module': 'common', 'name': 'step exit', 'function': 'step_exit'},
     114: {'module': 'common', 'name': 'save time', 'function': 'Save_Current_Time'},
+    115: {'module': 'common', 'name': 'insert list into list', 'function': 'insert_list_into_another_list'},
 
     200: {'module': 'appium', 'name': 'click', 'function': 'Click_Element_Appium'},
     201: {'module': 'appium', 'name': 'text', 'function': 'Enter_Text_Appium'},

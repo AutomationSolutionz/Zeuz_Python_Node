@@ -64,7 +64,7 @@ def Set_List_Shared_Variables(list_name, key, value, protected = False):
     except:
         CommonUtil.Exception_Handler(sys.exc_info())
 
-def Append_List_Shared_Variables(key, value, protected = False):
+def Append_List_Shared_Variables(key, value, protected = False,value_as_list=False):
     ''' Creates and appends a python list variable '''
     
     try:
@@ -73,7 +73,8 @@ def Append_List_Shared_Variables(key, value, protected = False):
         
         # Verify input
         key = key.strip()
-        value = value.strip()
+        if not value_as_list:
+            value = value.strip()
         if key == '' or value == '':
             return 'failed'
 
