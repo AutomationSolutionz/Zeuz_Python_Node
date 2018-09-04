@@ -24,16 +24,19 @@ actions = { # Numbers are arbitrary, and are not used anywhere
     103: {'module': 'common', 'name': 'wait disable', 'function': 'Wait_For_Element'},
     104: {'module': 'common', 'name': 'save text', 'function': 'Save_Text'},
     105: {'module': 'common', 'name': 'compare variable', 'function': 'Compare_Variables'},
-    106: {'module': 'common', 'name': 'initialize list', 'function': 'Initialize_List'},
-    107: {'module': 'common', 'name': 'compare list', 'function': 'Compare_Lists'},
-    108: {'module': 'common', 'name': 'insert into list', 'function': 'Insert_Into_List'},
-    109: {'module': 'common', 'name': 'save variable', 'function': 'Save_Variable'},
-    110: {'module': 'common', 'name': 'delete shared variables',  'function': 'delete_all_shared_variables'},
-    111: {'module': 'common', 'name': 'append list', 'function': 'append_list_shared_variable'},
-    112: {'module': 'common', 'name': 'settings', 'function': 'sequential_actions_settings'},
-    113: {'module': 'common', 'name': 'step exit', 'function': 'step_exit'},
-    114: {'module': 'common', 'name': 'save time', 'function': 'Save_Current_Time'},
-    115: {'module': 'common', 'name': 'insert list into list', 'function': 'insert_list_into_another_list'},
+    106: {'module': 'common', 'name': 'compare list', 'function': 'Compare_Lists_or_Dicts'},
+    107: {'module': 'common', 'name': 'compare dictionary', 'function': 'Compare_Lists_or_Dicts'},
+    108: {'module': 'common', 'name': 'save variable', 'function': 'Save_Variable'},
+    109: {'module': 'common', 'name': 'delete shared variables',  'function': 'delete_all_shared_variables'},
+    110: {'module': 'common', 'name': 'settings', 'function': 'sequential_actions_settings'},
+    111: {'module': 'common', 'name': 'step exit', 'function': 'step_exit'},
+    112: {'module': 'common', 'name': 'save time', 'function': 'Save_Current_Time'},
+    113: {'module': 'common', 'name': 'create or append list into list', 'function': 'insert_list_into_another_list'},
+    114: {'module': 'common', 'name': 'create or append dictionary into dictionary', 'function': 'insert_dict_into_another_dict'},
+    115: {'module': 'common', 'name': 'create list', 'function': 'Initialize_List'},
+    116: {'module': 'common', 'name': 'create dictionary', 'function': 'Initialize_Dict'},
+    117: {'module': 'common', 'name': 'create or append list', 'function': 'append_list_shared_variable'},
+    118: {'module': 'common', 'name': 'create or append dictionary', 'function': 'append_dict_shared_variable'},
 
     200: {'module': 'appium', 'name': 'click', 'function': 'Click_Element_Appium'},
     201: {'module': 'appium', 'name': 'text', 'function': 'Enter_Text_Appium'},
@@ -818,5 +821,4 @@ def Action_Handler(_data_set, action_row):
 
     except Exception:
         return CommonUtil.Exception_Handler(sys.exc_info())
-
 

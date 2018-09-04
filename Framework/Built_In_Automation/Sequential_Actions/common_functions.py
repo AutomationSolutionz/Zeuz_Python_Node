@@ -475,11 +475,17 @@ def Initialize_List(data_set):
     CommonUtil.ExecLog(sModuleInfo,"Function Start", 0)
     return sr.Initialize_List([data_set])
 
-def Compare_Lists(data_set):
+def Initialize_Dict(data_set):
+    ''' Prepares an empty dict in shared variables '''
+    sModuleInfo = inspect.stack()[0][3] + " : " + inspect.getmoduleinfo(__file__).name
+    CommonUtil.ExecLog(sModuleInfo,"Function Start", 0)
+    return sr.Initialize_Dict([data_set])
+
+def Compare_Lists_or_Dicts(data_set):
     ''' Compare two lists stored in shared variables '''
     sModuleInfo = inspect.stack()[0][3] + " : " + inspect.getmoduleinfo(__file__).name
     CommonUtil.ExecLog(sModuleInfo,"Function Start", 0)
-    return sr.Compare_Lists([data_set])
+    return sr.Compare_Lists_or_Dicts([data_set])
 
 def Save_Variable(data_set):
     ''' Assign a value to a variable stored in shared variables '''
@@ -524,99 +530,6 @@ def Save_Current_Time(data_set):
     else:
         return 'failed'
 
-def Insert_Into_List(data_set):
-    ''' Ad text to a list '''
-    # Function 1: One row containing only the action - Use information in the Value field to add to the list
-    # Function 2: Action row and element parameter row - Get element value, and insert that into the list
-    
-    sModuleInfo = inspect.stack()[0][3] + " : " + inspect.getmoduleinfo(__file__).name
-    CommonUtil.ExecLog(sModuleInfo,"Function Start", 0)
-    
-    try:
-        # User specified only the action line, so we expect all information to be contained in the Value field
-        if len(data_set) == 1:
-            list_name = ''
-            key = ''
-            value = ''
-            full_input_key_value_name = ''
-
-            # Get shared variable names from action line
-            for row in data_set:
-                if row[1]=="action":
-                    full_input_key_value_name = row[2]
-
-            # Get list of shared variables, which should be comma separated
-            temp_list = full_input_key_value_name.split(',')
-            if len(temp_list) == 1:
-                CommonUtil.ExecLog(sModuleInfo,
-                                   "The information in the data-set(s) are incorrect. Please provide accurate data set(s) information.",
-                                   3)
-                return "failed"
-            else:
-                list_name = temp_list[0].split(':')[1].strip() # ??? First variable, split, keep second value
-                key = temp_list[1].split(':')[1].strip() # ??? Second variable, split, keep second value
-                value = temp_list[2].split(':')[1].strip() # ??? Third variable, split, keep second value
-
-            # Give parsed information to function that will perform the comparison
-            result = sr.Set_List_Shared_Variables(list_name,key, value)
-            if result in failed_tag_list:
-                CommonUtil.ExecLog(sModuleInfo, "In list '%s' Value of Variable '%s' could not be saved!!!"%(list_name, key), 3)
-                return "failed"
-            else:
-                CommonUtil.ExecLog(sModuleInfo, "List insertion complete", 1)
-                return "passed"
-    
-        # Multiple rows indicating we should read the element text and store it
-        else:
-            # Get webdriver
-            if sr.Test_Shared_Variables('common_driver'):
-                common_driver = sr.Get_Shared_Variables('common_driver')
-            else:
-                CommonUtil.ExecLog(sModuleInfo, "Could not dynamically locate correct driver. You either did not initiate it with a valid action that populates it, or you called this function with a module name that doesn't support this function", 3)
-                return 'failed' 
-    
-            # Get element object
-            Element = LocateElement.Get_Element(data_set, common_driver)
-            if Element == "failed":
-                CommonUtil.ExecLog(sModuleInfo, "Unable to locate your element with given data.", 3)
-                return "failed" 
-        
-            # Get shared variable name from action line
-            list_name = ''
-            key = ''
-            for each_step_data_item in data_set:
-                if each_step_data_item[1] == "action":
-                    key = each_step_data_item[2] # Save shared variable name from Value field
-
-            temp_list = key.split(',')
-            if len(temp_list) == 1:
-                CommonUtil.ExecLog(sModuleInfo,
-                    "The information in the data-set(s) are incorrect. Please provide accurate data set(s) information.",
-                        3)
-                return "failed"
-            else:
-                list_name = str(temp_list[0]).split(':')[1].strip()
-                key = str(temp_list[1]).strip()
-
-            #get text from selenium element
-            list_of_element_text = Element.text.split('\n')
-            visible_list_of_element_text = ""
-            for each_text_item in list_of_element_text:
-                if each_text_item != "":
-                    visible_list_of_element_text+=each_text_item
-
-
-            #save text in the list of shared variables in CommonUtil
-            result = sr.Set_List_Shared_Variables(list_name,key, visible_list_of_element_text)
-            if result in failed_tag_list:
-                CommonUtil.ExecLog(sModuleInfo, "In list '%s' Value of Variable '%s' could not be saved!!!"%(list_name, key), 3)
-                return "failed"
-            else:
-                CommonUtil.ExecLog(sModuleInfo, "List insertion complete", 1)
-                return "passed"
-
-    except Exception:
-        return CommonUtil.Exception_Handler(sys.exc_info())
     
 def delete_all_shared_variables(data_set):
     ''' Delete all shared variables - Wrapper for Clean_Up_Shared_Variables() '''
@@ -653,6 +566,34 @@ def append_list_shared_variable(data_set):
         return CommonUtil.Exception_Handler(sys.exc_info())
 
 
+def append_dict_shared_variable(data_set):
+    ''' Creates and appends a python dict variable '''
+    # Note: List is created if it doesn't already exist
+
+    sModuleInfo = inspect.stack()[0][3] + " : " + inspect.getmoduleinfo(__file__).name
+    CommonUtil.ExecLog(sModuleInfo, "Function Start", 0)
+
+    try:
+        # Parse data set
+        tmp = data_set[0][2].replace(' ', '').strip()  # Get key and value from Value field and clean them
+        shared_var = tmp.split('=')[0].strip()  # Get variable name
+        tmp = tmp.replace(shared_var, '').strip().replace('=', '', 1)
+        values = tmp.split(',')  # Get values (could be several)
+
+        # Append all values
+        for value in values:
+            k = ''
+            v = ''
+            value = str(value).split(":")
+            k=str(value[0]).strip()
+            v=str(value[1]).strip()
+            value = {k:v}
+            result = sr.Append_Dict_Shared_Variables(shared_var, value)
+        return result
+    except Exception:
+        return CommonUtil.Exception_Handler(sys.exc_info())
+
+
 def insert_list_into_another_list(data_set):
     ''' Creates and appends a python list variable '''
     # Note: List is created if it doesn't already exist
@@ -681,6 +622,39 @@ def insert_list_into_another_list(data_set):
         return CommonUtil.Exception_Handler(sys.exc_info())
 
 
+def insert_dict_into_another_dict(data_set):
+    ''' Creates and appends a python list variable '''
+    # Note: List is created if it doesn't already exist
+
+    sModuleInfo = inspect.stack()[0][3] + " : " + inspect.getmoduleinfo(__file__).name
+    CommonUtil.ExecLog(sModuleInfo, "Function Start", 0)
+
+    try:
+        # Parse data set
+        tmp = data_set[0][2].replace(' ', '').strip()  # Get key and value from Value field and clean them
+        tmp = tmp.split('=')  # Get variable name
+        parent_dict_name = tmp[0].strip()
+        all_child_dict_names = tmp[1].strip().split(",")
+
+        for child_dict_name in all_child_dict_names:
+            splitted_text = str(child_dict_name).split(":")
+            key = str(splitted_text[0]).strip()
+            dict_name = str(splitted_text[1]).strip()
+
+            if not sr.Test_Shared_Variables(dict_name):
+                CommonUtil.ExecLog(sModuleInfo, "Dict named %s not found in shared variables" % dict_name, 3)
+                return "failed"
+            child_dict = sr.Get_Shared_Variables(dict_name)
+            # Append all values
+            result = sr.Append_Dict_Shared_Variables(key, child_dict,parent_dict=parent_dict_name)
+            if result in failed_tag_list:
+                return result
+        return "passed"
+    except Exception:
+        return CommonUtil.Exception_Handler(sys.exc_info())
+
+
+
 def sequential_actions_settings(data_set):
     ''' Test Step front end for modifying certain variables used by Sequential Actions '''
     
@@ -704,3 +678,7 @@ def sequential_actions_settings(data_set):
     except Exception:
         return CommonUtil.Exception_Handler(sys.exc_info())
 
+
+def print_shared_variables():
+    for each in sr.shared_variables:
+        print each + " : " +str(sr.shared_variables[each])
