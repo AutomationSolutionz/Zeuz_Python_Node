@@ -1266,12 +1266,12 @@ def Run_Command(data_set):
         for row in data_set:
             op = row[0].lower().strip()
             cmd = row[2].strip()
-            if op == 'command':
+            if op == 'run command':
                 commands.append(cmd)
             elif op in ('shared var', 'shared variable', 'var', 'variable', 'save'):
                 shared_var = cmd.replace('%|', '').replace('|%', '') # Save variable name, remove identifying characters if accidentally provided
         if len(commands) == 0:
-            CommonUtil.ExecLog(sModuleInfo, "No commands specified. Expected at least one row to contain 'command' in the Field, and the command to execute in the Value field", 3)
+            CommonUtil.ExecLog(sModuleInfo, "No commands specified. Expected at least one row to contain 'run command' in the Field, and the command to execute in the Value field", 3)
             return 'failed'
     except Exception:
         return CommonUtil.Exception_Handler(sys.exc_info(), None, "Error parsing data set")
