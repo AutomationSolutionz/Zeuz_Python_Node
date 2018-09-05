@@ -512,14 +512,18 @@ def Loop_Action_Handler(step_data, row, dataset_cnt):
 
     try:
         skip = []
-        
+        nested_loop = False
         ### Create sub-set of step data that we will send to SA for processing
         try:
+            if str(row[2]).strip().startswith('nested'):
+                nested_loop = True
+                row = (row[0],row[1],str(row[2]).split("-")[1])
             sets = map(int, row[2].replace(' ', '').split(',')) # Save data sets to loop
             sets = [x - 1 for x in sets] # Convert data set numbers to array friendly
             new_step_data = []
             for i in sets: new_step_data.append(step_data[i]) # Create new sub-set
-        except:
+        except Exception,e:
+            print e
             CommonUtil.ExecLog(sModuleInfo, "Loop format incorrect in Value field. Expected list of data sets. Eg: '2,3,4'", 3)
             return 'failed'
         
@@ -560,11 +564,28 @@ def Loop_Action_Handler(step_data, row, dataset_cnt):
                         CommonUtil.ExecLog(sModuleInfo, "Could not find a valid loop format in the Field field. Valid formats: 'true/false number', 'number', 'shared variable name'", 3)
                         return 'failed'
                 except:
-                    CommonUtil.ExecLog(sModuleInfo, "Could not find a valid loop format in the Field field. Valid formats: 'true/false number', 'number', 'shared variable name'", 3)
-        
+                    try:
+                        true_or_false = str(row[0]).lower().strip()  # Number of times to loop
+                        loop_type = ''  # Must be blank
+                        action_result = ''  # Not used
+                        if true_or_false == 'true':
+                            loop_method = 'boolean'
+                            loop_bool = True
+                        elif true_or_false == 'false':
+                            loop_method = 'boolean'
+                            loop_bool = False
+                        else:
+                            CommonUtil.ExecLog(sModuleInfo,"Could not find a valid loop format in the Field field. Valid formats: 'true/false number', 'number', 'shared variable name'",3)
+                            return 'failed'
+                    except:
+                        CommonUtil.ExecLog(sModuleInfo, "Could not find a valid loop format in the Field field. Valid formats: 'true/false number', 'number', 'shared variable name'", 3)
+
         def build_subset(new_step_data, ndc):
-            new_data_set = new_step_data[ndc] # Get the data set
-            result = Run_Sequential_Actions([new_data_set]) # Send single data set to SA as step data, so we control the loop
+            if nested_loop:
+                result = Run_Sequential_Actions(new_step_data)
+            else:
+                new_data_set = new_step_data[ndc]  # Get the data s
+                result = Run_Sequential_Actions([new_data_set]) # Send single data set to SA as step data, so we control the loop
             if result in passed_tag_list: result = 'passed' # Make sure the reuslt matches the string we set above
             else: result = 'failed'
             return result
@@ -572,6 +593,7 @@ def Loop_Action_Handler(step_data, row, dataset_cnt):
         ### Send sub-set to SA until we get our desired value or number of loops
         sub_set_cnt = 1 # Used in counting number of loops
         die = False # Used to exit parent while loop
+        max_retry = 50 #wil search for any elemnt this amount of time in while loop
         while True: # We control the new sub-set of the step data, so we can examine the output
             CommonUtil.ExecLog(sModuleInfo, "Loop action #%d" % sub_set_cnt, 1)
     
@@ -606,12 +628,31 @@ def Loop_Action_Handler(step_data, row, dataset_cnt):
                 for ndc in range(len(new_step_data)): # For each data set in the sub-set
                     # Build the sub-set and execute
                     result = build_subset(new_step_data, ndc)
-        
+                    if nested_loop:break
+
                 # Check if we have processed all the list variables
                 if sub_set_cnt >= loop_len:
                     skip = sets # Tell SA to skip these data sets that were in the loop once it picks up processing normally
                     break # Stop processing sub-sets and exit while loop
-                
+            elif loop_method == 'boolean':
+                die = False
+                for ndc in range(len(new_step_data)):  # For each data set in the sub-set
+                    # Build the sub-set and execute
+                    result = build_subset(new_step_data, ndc)
+
+                    if loop_bool == True and result in failed_tag_list:
+                        die = True
+                        break
+                    elif loop_bool == False and result in passed_tag_list:
+                        die = True
+                        break
+
+                if die: break
+
+                # Check if we hit our max retry limit
+                if sub_set_cnt >= max_retry:  # If we hit out desired number of loops for this loop type, then exit
+                    skip = sets  # Tell SA to skip these data sets that were in the loop once it picks up processing normally
+                    break  # Stop processing sub-sets and exit while loop
             sub_set_cnt += 1 # Used for numerical loops only, keep track of how many times we've looped the sub-set
             
         return result, skip
@@ -821,4 +862,5 @@ def Action_Handler(_data_set, action_row):
 
     except Exception:
         return CommonUtil.Exception_Handler(sys.exc_info())
+
 
