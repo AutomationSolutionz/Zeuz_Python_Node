@@ -555,7 +555,14 @@ def Loop_Action_Handler(step_data, row, dataset_cnt):
                         loop_len = len(loop_type) # Number of list items to cycle through
                         if loop_len == 0:
                             return "passed",[]
-                        loop_method = 'list'
+                        if action_result == 'dictionary':
+                            loop_method = 'dict'
+                            flat_list = [] #CONVERT dict to list of (k,v) tuple so that can be indexed easily
+                            for key in loop_type:
+                                flat_list.append((key,loop_type[key]))
+                            loop_type = flat_list
+                        else:
+                            loop_method = 'list'
                         
                         if type(loop_type) != list: # Make sure shared variable is a list
                             CommonUtil.ExecLog(sModuleInfo, "Shared Variable found for Loop action, but is not in list format, which is required.", 3)
@@ -625,6 +632,19 @@ def Loop_Action_Handler(step_data, row, dataset_cnt):
             
             elif loop_method == 'list':
                 sr.Set_Shared_Variables(action_result, loop_type[sub_set_cnt - 1]) # Store list element into shared variable name user provided. Their step data should do what they want with it
+                for ndc in range(len(new_step_data)): # For each data set in the sub-set
+                    # Build the sub-set and execute
+                    result = build_subset(new_step_data, ndc)
+                    if nested_loop:break
+
+                # Check if we have processed all the list variables
+                if sub_set_cnt >= loop_len:
+                    skip = sets # Tell SA to skip these data sets that were in the loop once it picks up processing normally
+                    break # Stop processing sub-sets and exit while loop
+
+            elif loop_method == 'dict':
+                sr.Set_Shared_Variables('dict_key',loop_type[sub_set_cnt - 1][0])
+                sr.Set_Shared_Variables('dict_value', loop_type[sub_set_cnt - 1][1])# Store list element into shared variable name user provided. Their step data should do what they want with it
                 for ndc in range(len(new_step_data)): # For each data set in the sub-set
                     # Build the sub-set and execute
                     result = build_subset(new_step_data, ndc)
