@@ -64,7 +64,7 @@ def Set_List_Shared_Variables(list_name, key, value, protected = False):
     except:
         CommonUtil.Exception_Handler(sys.exc_info())
 
-def Append_List_Shared_Variables(key, value, protected = False):
+def Append_List_Shared_Variables(key, value, protected = False,value_as_list=False):
     ''' Creates and appends a python list variable '''
     
     try:
@@ -73,8 +73,9 @@ def Append_List_Shared_Variables(key, value, protected = False):
         
         # Verify input
         key = key.strip()
-        value = value.strip()
-        if key == '' or value == '':
+        if not value_as_list:
+            value = value.strip()
+        if key == '': #value can be empty
             return 'failed'
 
         # Check if protected
@@ -97,6 +98,52 @@ def Append_List_Shared_Variables(key, value, protected = False):
         CommonUtil.ExecLog(sModuleInfo, "Appending list %s with %s. Now is: %s" % (str(key), str(value), str(shared_variables[key])), 0)
         return 'passed'
             
+    except:
+        CommonUtil.Exception_Handler(sys.exc_info())
+
+
+
+def Append_Dict_Shared_Variables(key, value, protected=False,parent_dict=""):
+    ''' Creates and appends a python list variable '''
+
+    try:
+        sModuleInfo = inspect.stack()[0][3] + " : " + inspect.getmoduleinfo(__file__).name
+        global shared_variables, protected_variables
+
+        # Verify input
+        key = key.strip()
+        if key == '':
+            return 'failed'
+
+        # Check if protected
+        if protected:
+            protected_variables.append(key)  # Add to list of protected variables
+        else:  # Check if user is trying to overwrite a protected variable
+            if key in protected_variables:  # If we find a match, exit with failure
+                CommonUtil.ExecLog(sModuleInfo,
+                                   "Error: You tried to overwrite protected variable '%s'. Please choose a different variable name." % key,
+                                   3)
+                return 'failed'
+
+
+
+        if parent_dict=="":
+            # Create list if non-existent
+            if not key in shared_variables:
+                CommonUtil.ExecLog(sModuleInfo, "Creating new dict", 0)
+                shared_variables[key] = {}
+            for k in value:
+                # Append list
+                shared_variables[key][k] = value[k]
+        else:
+            # Create list if non-existent
+            if not parent_dict in shared_variables:
+                CommonUtil.ExecLog(sModuleInfo, "Creating new dict", 0)
+                shared_variables[parent_dict] = {}
+            shared_variables[parent_dict][key] = value
+
+        return 'passed'
+
     except:
         CommonUtil.Exception_Handler(sys.exc_info())
 
@@ -409,7 +456,7 @@ def Compare_Variables(step_data):
 
 
 #Validating text from an element given information regarding the expected text
-def Compare_Lists(step_data):
+def Compare_Lists_or_Dicts(step_data):
     sModuleInfo = inspect.stack()[0][3] + " : " + inspect.getmoduleinfo(__file__).name
     CommonUtil.ExecLog(sModuleInfo, "Function: Compare_Lists", 0)
     try:
@@ -443,15 +490,26 @@ def Compare_Lists(step_data):
             CommonUtil.ExecLog(sModuleInfo,"Error converting Shared Variable in Field or Value fields to strings",3)
             return "failed"
 
+        found_list = []
+        not_found_list1=[]
+        not_found_list2 = []
+
         if isinstance(list1,list) and isinstance(list2,list): #if both are list not dict
             both_list = True
             variable_list1 = list1
             variable_list2 = list2
             for each in list1:
                 if each in list2:
+                    found_list.append(each)
                     pass_count+=1
                 else:
+                    not_found_list1.append(each)
                     fail_count+=1
+
+            for each in list2:
+                if each not in list1:
+                    not_found_list2.append(each)
+
         else: #if both are dict
             for key in list1:
                 if key in list2:
@@ -514,8 +572,15 @@ def Compare_Lists(step_data):
                     CommonUtil.ExecLog(sModuleInfo, "Item %d. Variable Name : %s :: %s - %s : Not Matched" % (i + 1, variable_list1[i][0], variable_list1[i][1], variable_list2[i][1]), 3)
                 else:
                     CommonUtil.ExecLog(sModuleInfo, "Item %d. Variable Name : %s :: %s - %s : Extra" % (i + 1, variable_list1[i][0], variable_list1[i][1], variable_list2[i][1]), 2)
-
-
+        else:
+            count = len(found_list)
+            for i in range(0, len(found_list)):
+                CommonUtil.ExecLog(sModuleInfo, "Item %d. Matched Element: '%s' found in both list '%s' and list '%s'" % (i + 1, found_list[i],list1_name,list2_name),1)
+            for i in range(0, len(not_found_list1)):
+                CommonUtil.ExecLog(sModuleInfo, "Item %d. Not Matched Element: '%s' found in list '%s' but not in list '%s'" % (count + i + 1, not_found_list1[i], list1_name, list2_name), 3)
+            count += len(not_found_list1)
+            for i in range(0, len(not_found_list2)):
+                CommonUtil.ExecLog(sModuleInfo,"Item %d. Not Matched Element: '%s' found in list '%s' but not in list '%s'" % (count + i + 1, not_found_list2[i], list2_name, list1_name), 3)
         if fail_count > 0:
             CommonUtil.ExecLog(sModuleInfo,"Error: %d item(s) did not match"%fail_count,3)
             return "failed"
@@ -541,7 +606,7 @@ def Initialize_List(step_data):
             return "failed"
         else:
             list_name = str(step_data[0][0][2]).lower().strip()
-            new_list = {}
+            new_list = []
             result = Set_Shared_Variables(list_name,new_list)
             if result in failed_tag_list:
                 CommonUtil.ExecLog(sModuleInfo,"Could not initialize empty list named %s"%list_name,3)
@@ -551,6 +616,32 @@ def Initialize_List(step_data):
                 return "passed"
     except Exception:
         return CommonUtil.Exception_Handler(sys.exc_info())
+
+
+#Method to initialize an empty dict
+def Initialize_Dict(step_data):
+    sModuleInfo = inspect.stack()[0][3] + " : " + inspect.getmoduleinfo(__file__).name
+    CommonUtil.ExecLog(sModuleInfo, "Function: Initialize_List", 0)
+    try:
+        if ((len(step_data) != 1)):
+            CommonUtil.ExecLog(sModuleInfo,
+                               "Error parsing data set. Too many rows. Expected only the action row.",
+                               3)
+            return "failed"
+        else:
+            list_name = str(step_data[0][0][2]).lower().strip()
+            new_list = {}
+            result = Set_Shared_Variables(list_name,new_list)
+            if result in failed_tag_list:
+                CommonUtil.ExecLog(sModuleInfo,"Could not initialize empty dict named %s"%list_name,3)
+                return "failed"
+            else:
+                CommonUtil.ExecLog(sModuleInfo,"Successfully initialized empty dict named %s"%list_name, 0)
+                return "passed"
+    except Exception:
+        return CommonUtil.Exception_Handler(sys.exc_info())
+
+
 
 def Clean_Up_Shared_Variables():
     sModuleInfo = inspect.stack()[0][3] + " : " + inspect.getmoduleinfo(__file__).name

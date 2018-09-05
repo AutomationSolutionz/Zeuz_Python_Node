@@ -641,14 +641,13 @@ def calculate_test_case_result(sModuleInfo, TestCaseID, run_id, sTestStepResultL
 
 
 # writes the log file for a test case
-def write_log_file_for_test_case(sTestCaseStatus, test_case, run_id, sTestCaseEndTime, TestCaseDuration, FailReason,
+def write_log_file_for_test_case(sTestCaseStatus, test_case, run_id, sTestCaseEndTime, TestCaseDuration,
                                  temp_ini_file):
     # upload the test case status before uploading log file, because there can be error while uploading log file, so we dont want to lose the important test case status
     test_case_after_dict = {
         'status': sTestCaseStatus,
         'testendtime': sTestCaseEndTime,
-        'duration': TestCaseDuration,
-        'failreason': FailReason,
+        'duration': TestCaseDuration
     }
 
     update_test_case_status_after_run_on_server(run_id, test_case, test_case_after_dict)
@@ -815,11 +814,6 @@ def run_test_case(TestCaseID, sModuleInfo, run_id, driver_list, final_dependency
     TestCaseDuration = CommonUtil.FormatSeconds(TimeInSec)
 
     # Find Test case failed reason
-    try:
-        FailReason = get_fail_reason_of_a_test_case(run_id, test_case)
-    except Exception:
-        CommonUtil.Exception_Handler(sys.exc_info())
-        FailReason = ""
 
     # Zip the folder
     # removing duplicates line from here.
@@ -828,7 +822,7 @@ def run_test_case(TestCaseID, sModuleInfo, run_id, driver_list, final_dependency
         cleanup_runid_from_server(run_id)
 
     if not debug:  # if normal run, the write log file and cleanup driver instances
-        write_log_file_for_test_case(sTestCaseStatus, test_case, run_id, sTestCaseEndTime, TestCaseDuration, FailReason,
+        write_log_file_for_test_case(sTestCaseStatus, test_case, run_id, sTestCaseEndTime, TestCaseDuration,
                                      temp_ini_file)
         cleanup_driver_instances()
         shared.Clean_Up_Shared_Variables()
@@ -856,6 +850,20 @@ def set_device_info_according_to_user_order(device_order, device_dict):
         original_dict = device_dict
         device_info['Device ' + device_order_val] = original_dict['Device ' + device_no_val]
 
+def update_fail_reasons_of_test_cases(run_id, TestCaseID):
+    try:
+        for test_case in TestCaseID:
+            try:
+                FailReason = get_fail_reason_of_a_test_case(run_id, test_case[0])
+            except Exception:
+                CommonUtil.Exception_Handler(sys.exc_info())
+                FailReason = ""
+            test_case_after_dict = {
+                'failreason': FailReason
+            }
+            update_test_case_status_after_run_on_server(run_id, test_case[0], test_case_after_dict)
+    except:
+        pass
 
 # main function
 def main(device_dict):
@@ -931,6 +939,7 @@ def main(device_dict):
         all_logs = CommonUtil.get_all_logs()
         write_all_logs_to_server(all_logs)
         send_email_report_after_exectution(run_id, project_id, team_id)
+        update_fail_reasons_of_test_cases(run_id,TestCaseLists)
 
     return "pass"
 
