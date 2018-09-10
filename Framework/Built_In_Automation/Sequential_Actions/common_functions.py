@@ -553,7 +553,7 @@ def append_list_shared_variable(data_set):
 
     try:
         # Parse data set
-        tmp = data_set[0][2].replace(' ', '').strip() # Get key and value from Value field and clean them
+        tmp = data_set[0][2].strip() # Get key and value from Value field and clean them
         shared_var = tmp.split('=')[0].strip() # Get variable name
         tmp = tmp.replace(shared_var, '').strip().replace('=', '', 1)
         values = tmp.split(',') # Get values (could be several)
@@ -575,7 +575,7 @@ def append_dict_shared_variable(data_set):
 
     try:
         # Parse data set
-        tmp = data_set[0][2].replace(' ', '').strip()  # Get key and value from Value field and clean them
+        tmp = data_set[0][2].strip()  # Get key and value from Value field and clean them
         shared_var = tmp.split('=')[0].strip()  # Get variable name
         tmp = tmp.replace(shared_var, '').strip().replace('=', '', 1)
         values = tmp.split(',')  # Get values (could be several)

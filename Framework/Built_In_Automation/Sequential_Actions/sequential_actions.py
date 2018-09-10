@@ -632,6 +632,13 @@ def Loop_Action_Handler(step_data, row, dataset_cnt):
             
             elif loop_method == 'list':
                 sr.Set_Shared_Variables(action_result, loop_type[sub_set_cnt - 1]) # Store list element into shared variable name user provided. Their step data should do what they want with it
+                list_value = loop_type[sub_set_cnt - 1]
+                if nested_loop:
+                    i = 0
+                    for each in list_value:
+                        sr.Set_Shared_Variables(action_result + "_" + str(i), each)
+                        i+=1
+
                 for ndc in range(len(new_step_data)): # For each data set in the sub-set
                     # Build the sub-set and execute
                     result = build_subset(new_step_data, ndc)
@@ -645,6 +652,12 @@ def Loop_Action_Handler(step_data, row, dataset_cnt):
             elif loop_method == 'dict':
                 sr.Set_Shared_Variables('dict_key',loop_type[sub_set_cnt - 1][0])
                 sr.Set_Shared_Variables('dict_value', loop_type[sub_set_cnt - 1][1])# Store list element into shared variable name user provided. Their step data should do what they want with it
+                dict_value = loop_type[sub_set_cnt - 1][1]
+
+                if nested_loop:
+                    for k in dict_value:
+                        sr.Set_Shared_Variables(k,dict_value[k])
+
                 for ndc in range(len(new_step_data)): # For each data set in the sub-set
                     # Build the sub-set and execute
                     result = build_subset(new_step_data, ndc)
@@ -882,5 +895,3 @@ def Action_Handler(_data_set, action_row):
 
     except Exception:
         return CommonUtil.Exception_Handler(sys.exc_info())
-
-
