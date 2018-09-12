@@ -5,7 +5,7 @@
     Caveat: Functions common to multiple Built In Functions must have action names that are unique, because we search the common functions first, regardless of the module name passed by the user 
 '''
 
-import inspect, sys, time
+import inspect, sys, time, collections
 from Framework.Utilities import CommonUtil
 from Framework.Built_In_Automation.Shared_Resources import BuiltInFunctionSharedResources as sr
 from Framework.Built_In_Automation.Sequential_Actions.sequential_actions import actions, action_support
@@ -587,7 +587,8 @@ def append_dict_shared_variable(data_set):
             value = str(value).split(":")
             k=str(value[0]).strip()
             v=str(value[1]).strip()
-            value = {k:v}
+            value = collections.OrderedDict()
+            value[k] = v
             result = sr.Append_Dict_Shared_Variables(shared_var, value)
         return result
     except Exception:
