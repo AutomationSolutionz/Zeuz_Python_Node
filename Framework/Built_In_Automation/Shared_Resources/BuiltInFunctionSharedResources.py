@@ -3,7 +3,7 @@
 
 # shared_variables
 
-import inspect,sys,time
+import inspect,sys,time,collections
 import string
 import random
 from Framework.Utilities import CommonUtil
@@ -56,7 +56,7 @@ def Set_List_Shared_Variables(list_name, key, value, protected = False):
                 CommonUtil.ExecLog(sModuleInfo, "In List '%s' Variable value of '%s' is set as: %s" % (list_name, key, value), 0)
                 return "passed"
             else: #create dict if now available
-                shared_variables[list_name] = {}
+                shared_variables[list_name] = collections.OrderedDict()
                 shared_variables[list_name][key] = value
                 CommonUtil.ExecLog(sModuleInfo,
                                    "In List '%s' Variable value of '%s' is set as: %s" % (list_name, key, value), 0)
@@ -131,7 +131,7 @@ def Append_Dict_Shared_Variables(key, value, protected=False,parent_dict=""):
             # Create list if non-existent
             if not key in shared_variables:
                 CommonUtil.ExecLog(sModuleInfo, "Creating new dict", 0)
-                shared_variables[key] = {}
+                shared_variables[key] = collections.OrderedDict()
             for k in value:
                 # Append list
                 shared_variables[key][k] = value[k]
@@ -139,7 +139,7 @@ def Append_Dict_Shared_Variables(key, value, protected=False,parent_dict=""):
             # Create list if non-existent
             if not parent_dict in shared_variables:
                 CommonUtil.ExecLog(sModuleInfo, "Creating new dict", 0)
-                shared_variables[parent_dict] = {}
+                shared_variables[parent_dict] = collections.OrderedDict()
             shared_variables[parent_dict][key] = value
 
         return 'passed'
@@ -630,7 +630,7 @@ def Initialize_Dict(step_data):
             return "failed"
         else:
             list_name = str(step_data[0][0][2]).lower().strip()
-            new_list = {}
+            new_list = collections.OrderedDict()
             result = Set_Shared_Variables(list_name,new_list)
             if result in failed_tag_list:
                 CommonUtil.ExecLog(sModuleInfo,"Could not initialize empty dict named %s"%list_name,3)
