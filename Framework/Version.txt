@@ -1,6 +1,6 @@
 [ZeuZ Python Version]
-version = 5.0
+version = 5.1
 [Release Date]
-date= 2018-09-10
+date= 2018-09-13
 [Release Note]
-Note = Various new loop actions, and other bug fixes.
+Note = Nested tuple loop
