@@ -604,7 +604,7 @@ def insert_list_into_another_list(data_set):
 
     try:
         # Parse data set
-        tmp = data_set[0][2].replace(' ', '').strip()  # Get key and value from Value field and clean them
+        tmp = data_set[0][2].strip()  # Get key and value from Value field and clean them
         tmp = tmp.split('=')  # Get variable name
         parent_list_name = tmp[0].strip()
         if ";" in str(tmp[1]): #direct initialization parent_list = [[a,b,c],[x,y,z]]
