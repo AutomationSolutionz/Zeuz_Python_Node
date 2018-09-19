@@ -816,7 +816,7 @@ def Scroll(step_data):
             return "failed"
         else:
             tuple = step_data[0]
-            scroll_direction = tuple[2]
+            scroll_direction = str(tuple[2]).strip().lower()
             if scroll_direction == 'down':
                 CommonUtil.ExecLog(sModuleInfo,"Scrolling down", 1)
                 result = selenium_driver.execute_script("window.scrollBy(0,750)", "")
@@ -825,6 +825,16 @@ def Scroll(step_data):
             elif scroll_direction == 'up':
                 CommonUtil.ExecLog(sModuleInfo, "Scrolling up", 1)
                 result = selenium_driver.execute_script("window.scrollBy(0,-750)", "")
+                time.sleep(2)
+                return "passed"
+            elif scroll_direction == 'left':
+                CommonUtil.ExecLog(sModuleInfo, "Scrolling left", 1)
+                result = selenium_driver.execute_script("window.scrollBy(-750,0)", "")
+                time.sleep(2)
+                return "passed"
+            elif scroll_direction == 'right':
+                CommonUtil.ExecLog(sModuleInfo, "Scrolling right", 1)
+                result = selenium_driver.execute_script("window.scrollBy(750,0)", "")
                 time.sleep(2)
                 return "passed"
             else:
