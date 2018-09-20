@@ -330,11 +330,13 @@ def Sequential_Actions(step_data, _dependency = {}, _run_time_params = {}, _file
         return CommonUtil.Exception_Handler(sys.exc_info(), None, "Error during Sequential Actions startup")
 
     # Process step data
-    result =  Run_Sequential_Actions(step_data)
+    #save the full step data in share variables
+    sr.Set_Shared_Variables('step_data',step_data,protected=True)
+    result =  Run_Sequential_Actions([]) #empty list means run all, instead of step data we want to send the dataset no's of the step data to run
     write_browser_logs()
     return result
 
-def Run_Sequential_Actions(step_data, data_set_no=-1): #data_set_no will used in recursive conditional action call
+def Run_Sequential_Actions(data_set_list=[]): #data_set_no will used in recursive conditional action call
     
     sModuleInfo = inspect.stack()[0][3] + " : " + inspect.getmoduleinfo(__file__).name
     try:
@@ -343,11 +345,17 @@ def Run_Sequential_Actions(step_data, data_set_no=-1): #data_set_no will used in
         logic_row=[] # Holds conditional actions
         skip_tmp = [] # Temporarily holds skip data sets
 
-        if data_set_no!=-1:
-            full_step_data = step_data
-            step_data = [step_data[data_set_no]]
+        step_data = sr.Get_Shared_Variables('step_data')
+
+        if step_data in failed_tag_list:
+            CommonUtil.ExecLog(sModuleInfo, "Internal Error: Step Data not set in shared variable", 3)
+            return 'failed'
+        if data_set_list == []: #run the full step data
+            for i in range(len(step_data)):
+                data_set_list.append(i)
+
         
-        for dataset_cnt in range(len(step_data)): # For each data set within step data
+        for dataset_cnt in data_set_list: # For each data set within step data
             CommonUtil.ExecLog(sModuleInfo, "********** Starting Data Set #%d **********" % (dataset_cnt + 1), 1) # Offset by one to make it look proper
             data_set = step_data[dataset_cnt] # Save data set to variable
             if dataset_cnt in skip: continue # If this data set is in the skip list, do not process it
@@ -388,10 +396,8 @@ def Run_Sequential_Actions(step_data, data_set_no=-1): #data_set_no will used in
                     # Only run this when we have two conditional actions for this data set (a true and a false preferably)
                     if len(logic_row) == 2:
                         CommonUtil.ExecLog(sModuleInfo, "Found 2 conditional actions - moving ahead with them", 1)
-                        if data_set_no!=-1:
-                            result = Conditional_Action_Handler(full_step_data, data_set, row, logic_row) # send full data for recursive conditional call
-                        else:
-                            result = Conditional_Action_Handler(step_data, data_set, row, logic_row) # Pass step_data, and current iteration of data set to decide which data sets will be processed next
+                        result = Conditional_Action_Handler(data_set, row, logic_row) # send full data for recursive conditional call
+
                         CommonUtil.ExecLog(sModuleInfo, "Conditional Actions complete", 1)
                         if result in failed_tag_list:
                             CommonUtil.ExecLog(sModuleInfo, "Returned result from Conditional Action Failed", 3)
@@ -402,7 +408,7 @@ def Run_Sequential_Actions(step_data, data_set_no=-1): #data_set_no will used in
                 
                 # Simulate a while/for loop with the specified data sets
                 elif 'loop action' in action_name:
-                    result, skip = Loop_Action_Handler(step_data, row, dataset_cnt)
+                    result, skip = Loop_Action_Handler(row, dataset_cnt)
                     if result in failed_tag_list: return 'failed'
                     
                 # Special custom functions can be executed in a specified file
@@ -504,7 +510,7 @@ def Run_Sequential_Actions(step_data, data_set_no=-1): #data_set_no will used in
     except Exception:
         return CommonUtil.Exception_Handler(sys.exc_info())
 
-def Loop_Action_Handler(step_data, row, dataset_cnt):
+def Loop_Action_Handler(row, dataset_cnt):
     ''' Performs a sub-set of the data set in a loop, similar to a for or while loop '''
     
     sModuleInfo = inspect.stack()[0][3] + " : " + inspect.getmoduleinfo(__file__).name
@@ -521,7 +527,7 @@ def Loop_Action_Handler(step_data, row, dataset_cnt):
             sets = map(int, row[2].replace(' ', '').split(',')) # Save data sets to loop
             sets = [x - 1 for x in sets] # Convert data set numbers to array friendly
             new_step_data = []
-            for i in sets: new_step_data.append(step_data[i]) # Create new sub-set
+            for i in sets: new_step_data.append(i) # Create new sub-set with indexes of data sets
         except Exception,e:
             print e
             CommonUtil.ExecLog(sModuleInfo, "Loop format incorrect in Value field. Expected list of data sets. Eg: '2,3,4'", 3)
@@ -587,13 +593,9 @@ def Loop_Action_Handler(step_data, row, dataset_cnt):
                     except:
                         CommonUtil.ExecLog(sModuleInfo, "Could not find a valid loop format in the Field field. Valid formats: 'true/false number', 'number', 'shared variable name'", 3)
 
-        def build_subset(new_step_data, ndc):
-            if nested_loop:
-                result = Run_Sequential_Actions(new_step_data)
-            else:
-                new_data_set = new_step_data[ndc]  # Get the data s
-                result = Run_Sequential_Actions([new_data_set]) # Send single data set to SA as step data, so we control the loop
-            if result in passed_tag_list: result = 'passed' # Make sure the reuslt matches the string we set above
+        def build_subset(new_step_data):
+            result = Run_Sequential_Actions(new_step_data)
+            if result in passed_tag_list: result = 'passed' # Make sure the result matches the string we set above
             else: result = 'failed'
             return result
     
@@ -611,7 +613,7 @@ def Loop_Action_Handler(step_data, row, dataset_cnt):
                         return 'failed'
 
                     # Build the sub-set and execute
-                    result = build_subset(new_step_data, ndc)
+                    result = build_subset([new_step_data[ndc]])
                     
                     # Check if we should exit now or keep going
                     if ndc == action_result and result == loop_type: # If this data set that just returned is the one that we are watching AND it returned the result we want, then exit the loop 
@@ -623,7 +625,7 @@ def Loop_Action_Handler(step_data, row, dataset_cnt):
             elif loop_method == 'exact':
                 for ndc in range(len(new_step_data)): # For each data set in the sub-set
                     # Build the sub-set and execute
-                    result = build_subset(new_step_data, ndc)
+                    result = build_subset([new_step_data[ndc]])
         
                 # Check if we hit our set number of loops
                 if sub_set_cnt >= loop_len: # If we hit out desired number of loops for this loop type, then exit
@@ -641,7 +643,7 @@ def Loop_Action_Handler(step_data, row, dataset_cnt):
 
                 for ndc in range(len(new_step_data)): # For each data set in the sub-set
                     # Build the sub-set and execute
-                    result = build_subset(new_step_data, ndc)
+                    result = build_subset([new_step_data[ndc]])
                     if nested_loop:break
 
                 # Check if we have processed all the list variables
@@ -660,7 +662,7 @@ def Loop_Action_Handler(step_data, row, dataset_cnt):
 
                 for ndc in range(len(new_step_data)): # For each data set in the sub-set
                     # Build the sub-set and execute
-                    result = build_subset(new_step_data, ndc)
+                    result = build_subset([new_step_data[ndc]])
                     if nested_loop:break
 
                 # Check if we have processed all the list variables
@@ -671,7 +673,7 @@ def Loop_Action_Handler(step_data, row, dataset_cnt):
                 die = False
                 for ndc in range(len(new_step_data)):  # For each data set in the sub-set
                     # Build the sub-set and execute
-                    result = build_subset(new_step_data, ndc)
+                    result = build_subset([new_step_data[ndc]])
 
                     if loop_bool == True and result in failed_tag_list:
                         die = True
@@ -692,7 +694,7 @@ def Loop_Action_Handler(step_data, row, dataset_cnt):
     except Exception:
         return CommonUtil.Exception_Handler(sys.exc_info())
 
-def Conditional_Action_Handler(step_data, data_set, row, logic_row):
+def Conditional_Action_Handler(data_set, row, logic_row):
     ''' Process conditional actions, called only by Sequential_Actions() '''
      
     sModuleInfo = inspect.stack()[0][3] + " : " + inspect.getmoduleinfo(__file__).name
@@ -811,17 +813,10 @@ def Conditional_Action_Handler(step_data, data_set, row, logic_row):
 
                 CommonUtil.ExecLog(sModuleInfo, "Processing conditional step %s" % str(each_item), 1)
                 data_set_index = int(each_item.strip()) - 1 # data set number, -1 to offset for data set numbering system
-                
-                if step_data[data_set_index] == data_set: # If the data set we are GOING to pass back to sequential_actions() is the same one that called THIS function in the first place, then the step data is calling itself again, and we must pass all of the step data instead, so it doesn't crash later when it tries to refer to data sets that don't exist
-                    result = Run_Sequential_Actions(step_data) # Pass the step data to sequential_actions() - Mainly used when the step data is in a deliberate recursive loop of conditional actions
-                    if row[0].lower().strip() == 'step exit':
-                        CommonUtil.ExecLog(sModuleInfo, "Step Exit called. Stopping Test Step.", 1)
-                        return result
-                else: # Normal process - most conditional actions will come here
-                    result = Run_Sequential_Actions(step_data,data_set_index) #[step_data[data_set_index]]) # Recursively call this function until all called data sets are complete
-                    if row[0].lower().strip() == 'step exit':
-                        CommonUtil.ExecLog(sModuleInfo, "Step Exit called. Stopping Test Step.", 1)
-                        return result
+                result = Run_Sequential_Actions([data_set_index]) #new edit: full step data is passed. [step_data[data_set_index]]) # Recursively call this function until all called data sets are complete
+                if row[0].lower().strip() == 'step exit':
+                    CommonUtil.ExecLog(sModuleInfo, "Step Exit called. Stopping Test Step.", 1)
+                    return result
                     
                 if result in failed_tag_list: return result # Return on any failure
             return result # Return only the last result of the last row of the last data set processed - This should generally be a "step result action" command
@@ -895,4 +890,106 @@ def Action_Handler(_data_set, action_row):
 
     except Exception:
         return CommonUtil.Exception_Handler(sys.exc_info())
+
+if __name__ == '__main__':
+
+
+    data_previous = [
+        [
+            ['go to link', 'selenium action', 'https://www.wikipedia.org/'],
+        ],
+        [
+            ['create or append list into list', 'common action',
+             'parent_list=selenium,appium;selenium,rest; desktop , xml ; python , java']
+        ],
+        [
+            ['%|parent_list|%,list', 'selenium loop action', 'nested - 4,5,6,7'],
+        ],
+        [
+            ['id', 'element parameter', 'searchInput'],
+            ['true', 'selenium conditional action', '2,3'],
+            ['false', 'selenium conditional action', '4']
+        ],
+        [
+            ['sleep', 'common action', '1']
+        ],
+        [
+            ['id', 'element parameter', 'searchInput'],
+            ['text', 'selenium action', 'true my name is %|list_0|%']
+        ],
+        [
+            ['id', 'element parameter', 'searchInput'],
+            ['text', 'selenium action', 'false my name is %|list_1|%']
+        ]
+    ]
+
+    data_current = [
+        [
+            ['go to link', 'selenium action', 'https://www.wikipedia.org/'],
+        ],
+        [
+            ['create or append list into list', 'common action',
+             'parent_list=selenium,appium;selenium2,rest; desktop , xml ; python , java']
+        ],
+        [
+            ['%|parent_list|%,list', 'selenium loop action', 'nested - 4,5,6,7,8'],
+        ],
+        [
+            ['id', 'element parameter', 'searchInput'],
+            ['true', 'selenium conditional action', '5,6'],
+            ['false', 'selenium conditional action', '7,8']
+        ],
+        [
+            ['sleep', 'common action', '1']
+        ],
+        [
+            ['id', 'element parameter', 'searchInput'],
+            ['text', 'selenium action', 'true my name is %|list_0|%']
+        ],
+        [
+            ['sleep', 'common action', '1']
+        ],
+        [
+            ['id', 'element parameter', 'searchInput'],
+            ['text', 'selenium action', 'false my name is %|list_1|%']
+        ]
+    ]
+
+    data11 = [
+        [
+            ['go to link', 'selenium action', 'https://www.wikipedia.org/'],
+        ],
+        [
+            ['create or append list', 'common action', 'sample_list1=selenium,appium']
+        ],
+        [
+            ['create or append list', 'common action', 'sample_list2=selenium,rest']
+        ],
+        [
+            ['create or append list into list', 'common action', 'parent_list=sample_list1,sample_list2']
+        ],
+        [
+            ['%|parent_list|%,list', 'selenium loop action', 'nested - 6,7,8,9,10'],
+        ],
+        [
+            ['%|list|%,name', 'selenium loop action', '7,8,9,10'],
+        ],
+        [
+            ['sleep', 'common action', '1']
+        ],
+        [
+            ['id', 'element parameter', 'searchInput'],
+            ['text', 'selenium action', '%|name|%']
+        ],
+        [
+            ['sleep', 'common action', '1']
+        ],
+        [
+            ['id', 'element parameter', 'searchInput'],
+            ['text', 'selenium action', 'my name is %|name|%']
+        ]
+    ]
+
+    Sequential_Actions(data11, _dependency={'Browser': 'Chrome'})
+    common.print_shared_variables()
 
