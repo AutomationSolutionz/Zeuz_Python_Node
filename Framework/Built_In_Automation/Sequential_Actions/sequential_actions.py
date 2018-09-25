@@ -322,6 +322,7 @@ def Sequential_Actions(step_data, _dependency = {}, _run_time_params = {}, _file
         sr.Set_Shared_Variables('element_wait', 10) # Default time for get_element() to find the element
 
         # Prepare step data for processing
+        step_data = common.unmask_step_data(step_data)
         step_data = common.sanitize(step_data, column = 1) # Sanitize Sub-Field
         step_data = common.adjust_element_parameters(step_data, supported_platforms) # Parse any mobile platform related fields
         if step_data in failed_tag_list: return 'failed'
