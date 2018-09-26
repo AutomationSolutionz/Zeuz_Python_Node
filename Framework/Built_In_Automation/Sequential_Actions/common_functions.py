@@ -26,6 +26,44 @@ months = ["Unknown",
           "November",
           "December"]
 
+unmask_characters={
+    '{{1}}':'(',
+    '{{2}}':')',
+    '{{3}}':'[',
+    '{{4}}':']',
+    '{{5}}':',',
+    '{{6}}':'#',
+    '{{7}}':"'",
+    '{{8}}':'%',
+    '{{9}}':'|'
+}
+
+def unmask_string(givenText):
+    for e in unmask_characters.keys():
+        givenText=givenText.replace(e,unmask_characters[e])
+    return givenText
+
+def unmask_step_data(step_data):
+    '''
+    unmasks the special characters sent from servers
+    :param step_data:
+    :return: new step data
+    '''
+    try:
+        new_step_data = []  # Create empty list that will contain the data sets
+        for data_set in step_data:  # For each data set within step data
+            new_data_set = []  # Create empty list that will have new data appended
+            for row in data_set:  # For each row of the data set
+                new_row = []
+                for each in row:
+                    new_row.append(unmask_string(each))
+                new_data_set.append(tuple(new_row))  # Append list as tuple to data set list
+            new_step_data.append(new_data_set)  # Append data set to step data
+        return new_step_data  # Step data is now clean and in the same format as it arrived in
+    except Exception:
+        return CommonUtil.Exception_Handler(sys.exc_info())
+
+
 def sanitize(step_data, valid_chars = '', clean_whitespace_only = False, column = ''):
     ''' Sanitize step data Field and Sub-Field '''
     ''' Usage:
