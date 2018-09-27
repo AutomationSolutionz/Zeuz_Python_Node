@@ -1,6 +1,6 @@
 [ZeuZ Python Version]
-version = 5.2
+version = 5.3
 [Release Date]
-date= 2018-09-16
+date= 2018-09-27
 [Release Note]
-Note = Bug fixes for loop
+Note = Unmasking characters support for older server
