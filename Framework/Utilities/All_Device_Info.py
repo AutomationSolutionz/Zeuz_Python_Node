@@ -5,6 +5,7 @@
 
 import sys, subprocess
 from Framework.Utilities import CommonUtil 
+import json
 
 # These create the device name we give to each device
 device_name = 'Device '
@@ -133,6 +134,48 @@ def get_all_connected_ios_info():
     except Exception, e:
         #CommonUtil.ExecLog('', 'Error reading IOS device: %s' % e, 4, False)
         return {}
+
+
+
+def get_all_booted_ios_simulator_info():
+    ''' For all booted simulator IOS devices, get specified information and return in a dictionary with the UUID as the top level key '''
+    global device_cnt
+    try:
+
+        device_list = {}
+        all_ios_simulators = subprocess.check_output('xcrun simctl list --json', shell=True)
+        data  = json.loads(all_ios_simulators)
+        for each in data['devices'].keys():
+            if "iOS" in each:
+                version = each
+                break
+        all_ios_devices =  data['devices'] ['iOS 12.0']
+        # Compile desired information into dictionary
+        for each in all_ios_devices:
+            if each['state'] == 'Booted':
+                try:
+                    dname = device_name + str(device_cnt)
+                    device_list[dname] = {}
+                    device_list[dname]['id'] = each['udid']
+                    device_list[dname]['type'] = 'IOS'
+                    device_list[dname]['mfg'] = 'Apple'
+                    device_list[dname]['devname'] = each['name']
+                    device_list[dname]['model'] = each['name']
+                    device_list[dname]['osver'] = version
+                    device_list[dname]['imei'] = "Simulated"
+                except: 
+                    pass
+    
+                device_cnt += 1
+       
+        
+        return device_list
+    
+    except Exception, e:
+        #CommonUtil.ExecLog('', 'Error reading IOS device: %s' % e, 4, False)
+        return {}
+ 
+
     
 def get_all_connected_device_info():
     ''' For all connected IOS and Android devices, get specified information and return in a dictionary with the serial number/UUID as the top level key '''
@@ -142,9 +185,14 @@ def get_all_connected_device_info():
         global device_cnt
         device_cnt = 1
         device_list.update(get_all_connected_android_info())
-        if sys.platform == 'darwin': device_list.update(get_all_connected_ios_info()) # Only run this when on Mac
+        if sys.platform == 'darwin': 
+
+            device_list.update(get_all_booted_ios_simulator_info())
+            device_list.update(get_all_connected_ios_info()) # Only run this when on Mac
+
         
         # return devices
+
         return device_list
         
     except Exception, e: # Don't show any error because the user may not be running mobile automation
@@ -153,4 +201,5 @@ def get_all_connected_device_info():
 
 if __name__ == '__main__':
     print get_all_connected_device_info()
+
 
