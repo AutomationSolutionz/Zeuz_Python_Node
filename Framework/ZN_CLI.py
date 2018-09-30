@@ -6,7 +6,8 @@ from base64 import b64encode, b64decode
 sys.path.append(os.path.dirname(os.getcwd()))
 from Utilities import ConfigModule,RequestFormatter,CommonUtil,FileUtilities,All_Device_Info
 import MainDriverApi
-
+from Framework.Built_In_Automation.Shared_Resources import BuiltInFunctionSharedResources as sr
+from Framework.iosSimulatorFile import iosSimulatorRunner
 
 def detect_admin():
     # Windows only - Return True if program run as admin
@@ -58,10 +59,12 @@ except:
 
 '''Constants'''
 AUTHENTICATION_TAG='Authentication'
+RUN_DEFINITION_TAG = 'RunDefinition'
 USERNAME_TAG='username'
 PASSWORD_TAG='password'
 PROJECT_TAG='project'
 TEAM_TAG='team'
+IOS_SIMULATOR_TAG = 'ios_simulator'
 device_dict = {}
 
 processing_test_case = False # Used by Zeuz Node GUI to check if we are in the middle of a run
@@ -74,6 +77,7 @@ def Login():
     password=pwdec(ConfigModule.get_config_value(AUTHENTICATION_TAG,PASSWORD_TAG))
     project=ConfigModule.get_config_value(AUTHENTICATION_TAG,PROJECT_TAG)
     team=ConfigModule.get_config_value(AUTHENTICATION_TAG,TEAM_TAG)
+    run_on_ios_simulator=ConfigModule.get_config_value(RUN_DEFINITION_TAG,IOS_SIMULATOR_TAG)
     #form payload object
     user_info_object={
         'username':username,
@@ -92,7 +96,7 @@ def Login():
         if exit_script: break
         # Test to ensure server is up before attempting to login
         r = check_server_online()
-            
+        ios_init_done= False
         # Login to server
         if r != False: # Server is up
             try:
@@ -101,6 +105,12 @@ def Login():
                 if r:
                     CommonUtil.ExecLog('', "Authentication Successful", 4, False)
                     global device_dict
+
+                    if run_on_ios_simulator == 'True' and sys.platform == 'darwin' and not ios_init_done:
+                        appium_driver = iosSimulatorRunner.setUp()
+                        init_appium_and_devices(appium_driver)
+                        ios_init_done = True
+
                     device_dict = All_Device_Info.get_all_connected_device_info()
                     machine_object=update_machine(dependency_collection())
                     if machine_object['registered']:
@@ -345,6 +355,22 @@ def pwdec(pw):
     except:
         #CommonUtil.ExecLog('', "Error decrypting password. Use the graphical interface to set a new password", 4, False)
         return ''
+
+def init_appium_and_devices(appium_driver):
+    device_info = All_Device_Info.get_all_connected_device_info()
+    appium_details = {}
+    for dname in device_info:
+        did = dname
+        appium_details[did] = {}
+        serial = device_info[did]['id']
+        device_type = device_info[did]['type'].lower()
+        sr.Set_Shared_Variables('device_serial', serial, protected=True)
+        sr.Set_Shared_Variables('device_id', did,protected=True)  # Save device id, because functions outside this file may require it
+        appium_details[did]['serial'] = serial
+        appium_details[did]['type'] = device_type
+        appium_details[did]['driver'] = appium_driver
+        appium_details[did]['server'] = appium_driver
+        sr.Set_Shared_Variables('appium_details', appium_details)
 
 if __name__=='__main__':
     Login()
