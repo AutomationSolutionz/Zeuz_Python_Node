@@ -169,6 +169,8 @@ def find_correct_device_on_first_run(serial_or_name, device_info):
         if len(devices) == 0:
             CommonUtil.ExecLog(sModuleInfo,"Could not detect any connected devices. Ensure at least one is attached via USB, and that it is authorized - Trusted / USB Debugging enabled", 3)
             return 'failed'
+
+        imei=''
         
         # Check if serial provided is a real serial number, name or rubish that should be ignored
         serial_check = False
@@ -188,6 +190,7 @@ def find_correct_device_on_first_run(serial_or_name, device_info):
                     did = dname # Save device name
                     serial = device_info[did]['id'] # Save serial number
                     device_type = device_info[did]['type'].lower() # Save device type android/ios
+                    imei = device_info[did]['imei']
                     serial_check = True
                     CommonUtil.ExecLog(sModuleInfo,"Found device name in data set: %s" % did, 0)
                     break
@@ -201,6 +204,7 @@ def find_correct_device_on_first_run(serial_or_name, device_info):
                 for dname in device_info:
                     did = dname
                     serial = device_info[did]['id']
+                    imei = device_info[did]['imei']
                     device_type = device_info[did]['type'].lower()
                     CommonUtil.ExecLog(sModuleInfo,"Found a device selected at Deploy: %s" % did, 0)
                     break
@@ -235,6 +239,7 @@ def find_correct_device_on_first_run(serial_or_name, device_info):
             if 'driver' not in appium_details[device_id]: appium_details[device_id]['driver'] = None # Initialize appium driver object
             appium_details[device_id]['serial'] = serial
             appium_details[device_id]['type'] = device_type
+            appium_details[device_id]['imei'] = imei
             
             # Store in shared variable, so it doens't get forgotten
             Shared_Resources.Set_Shared_Variables('device_serial', device_serial, protected = True)
@@ -264,9 +269,9 @@ def launch_application(data_set):
         serial = '' # Serial number (may also be random string like "launch", "na", etc)
 
         for row in data_set: # Find required data
-            if row[0] == 'package' and row[1] == 'element parameter':
+            if row[0] in ('package','bundle id') and row[1] == 'element parameter':
                 package_name = row[2]
-            elif row[0] in ('app activity', 'activity') and row[1] == 'element parameter':
+            elif row[0] in ('app activity', 'activity','app id') and row[1] == 'element parameter':
                 activity_name = row[2]
             elif row[1] == 'action':
                 serial = row[2].lower().strip()
@@ -413,11 +418,21 @@ def start_appium_driver(package_name = '', activity_name = '', filename = ''):
                     
             elif appium_details[device_id]['type'] == 'ios':
                 CommonUtil.ExecLog(sModuleInfo,"Setting up with IOS",1)
-                desired_caps['sendKeyStrategy'] = 'setValue' # Use set_value() for writing to element
-                desired_caps['platformVersion'] = '10.3' # Read version #!!! Temporarily hard coded
-                desired_caps['deviceName'] = 'iPhone' # Read model (only needs to be unique if using more than one)
-                desired_caps['bundleId'] = package_name
-                desired_caps['udid'] = appium_details[device_id]['serial'] # Device unique identifier - use auto if using only one phone
+                if appium_details[device_id]['imei'] == 'Simulated':
+                    os.chdir(os.path.join(os.path.dirname(os.path.realpath(__file__)), 'Framework'))
+                    app = os.path.join(os.getcwd(),'iosSimulatorFile')
+                    app = os.path.join(app, activity_name)
+                    desired_caps['app'] = app  # Use set_value() for writing to element
+                    desired_caps['platformName'] = '12.0'  # Read version #!!! Temporarily hard coded
+                    desired_caps['platformVersion'] = 'iPhone'  # Read model (only needs to be unique if using more than one)
+                    desired_caps['deviceName'] = 'iPhone XS Max'
+                    desired_caps['bundleId'] = package_name
+                else:
+                    desired_caps['sendKeyStrategy'] = 'setValue' # Use set_value() for writing to element
+                    desired_caps['platformVersion'] = '10.3' # Read version #!!! Temporarily hard coded
+                    desired_caps['deviceName'] = 'iPhone' # Read model (only needs to be unique if using more than one)
+                    desired_caps['bundleId'] = package_name
+                    desired_caps['udid'] = appium_details[device_id]['serial'] # Device unique identifier - use auto if using only one phone
             else:
                 CommonUtil.ExecLog(sModuleInfo, "Invalid device type: %s" % str(appium_details[device_id]['type']), 3)
                 return 'failed'
