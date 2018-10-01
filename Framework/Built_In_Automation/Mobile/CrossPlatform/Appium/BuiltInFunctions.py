@@ -161,13 +161,9 @@ def find_correct_device_on_first_run(serial_or_name, device_info):
         # Get list of connected devices
         devices = {} # Temporarily store connected device serial numbers
         all_device_info = All_Device_Info.get_all_connected_device_info()
-        for device in all_device_info: # Get connected Android devices (Format: SERIAL_NO word)
-            if device != '':
-                devices[device] =  all_device_info[device]['type']# Save type
-        CommonUtil.ExecLog(sModuleInfo,"Connected devices: %s" % str(devices), 0)
         
         # Ensure we have at least one device connected
-        if len(devices) == 0:
+        if len(all_device_info) == 0:
             CommonUtil.ExecLog(sModuleInfo,"Could not detect any connected devices. Ensure at least one is attached via USB, and that it is authorized - Trusted / USB Debugging enabled", 3)
             return 'failed'
 
@@ -175,10 +171,11 @@ def find_correct_device_on_first_run(serial_or_name, device_info):
         
         # Check if serial provided is a real serial number, name or rubish that should be ignored
         serial_check = False
-        for device in devices: # For each device serial number
+        for device in all_device_info: # For each device serial number
             if serial_or_name.lower() == device.lower():
-                serial = device
-                device_type = devices[device]
+                serial = all_device_info[device]['id']  # Save serial number
+                device_type = all_device_info[device]['type'].lower()  # Save device type android/ios
+                imei = all_device_info[device]['imei']
                 did = 'default'
                 serial_check = True # Flag as found
                 CommonUtil.ExecLog(sModuleInfo,"Found serial number in data set: %s" % serial, 0)
@@ -411,7 +408,7 @@ def start_appium_driver(package_name = '', activity_name = '', filename = '', pl
             desired_caps['noReset'] = 'true' # Do not clear application cache when complete
             desired_caps['newCommandTimeout'] = 600 # Command timeout before appium destroys instance
             
-            if appium_details[device_id]['type'] == 'android':
+            if str(appium_details[device_id]['type']).lower() == 'android':
                 if adbOptions.is_android_connected(device_serial) == False:
                     CommonUtil.ExecLog(sModuleInfo, "Could not detect any connected Android devices", 3)
                     return 'failed',launch_app
@@ -426,7 +423,7 @@ def start_appium_driver(package_name = '', activity_name = '', filename = '', pl
                 if filename and package_name == '': # User must specify package or file, not both. Specifying filename instructs Appium to install
                     desired_caps['app'] = PATH(filename).strip()
                     
-            elif appium_details[device_id]['type'] == 'ios':
+            elif str(appium_details[device_id]['type']).lower() == 'ios':
                 CommonUtil.ExecLog(sModuleInfo,"Setting up with IOS",1)
                 if appium_details[device_id]['imei'] == 'Simulated':
                     launch_app = False #ios simulator so need to launch app again
@@ -1762,7 +1759,7 @@ def serial_in_devices(serial,devices):
 
     try:
         for device in devices:
-            if devices[device]['id'] == serial:
+            if devices[device]['id'] == serial or str(device).lower() == serial.lower():
                 return True
         return False
     except Exception:
