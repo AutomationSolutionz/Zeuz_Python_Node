@@ -38,6 +38,8 @@ appium_driver = None # Holds the currently used appium instance
 device_serial = '' # Holds the identifier for the currently used device (if any are specified)
 device_id = '' # Holds the name of the device the user has specified, if any. Relationship is set elsewhere
 
+from Framework.Utilities import All_Device_Info
+
 # Recall dependency, if not already set
 dependency = None
 if Shared_Resources.Test_Shared_Variables('dependency'): # Check if driver is already set in shared variables
@@ -158,11 +160,10 @@ def find_correct_device_on_first_run(serial_or_name, device_info):
     try:
         # Get list of connected devices
         devices = {} # Temporarily store connected device serial numbers
-        for device in adbOptions.get_devices(): # Get connected Android devices (Format: SERIAL_NO word)
-            if device != '': devices[device.split(' ')[0].strip()] = 'android' # Save type
-        if sys.platform == 'darwin': # Only check for IOS if on Mac
-            for device in iosOptions.get_list_udid(): # Get connected IOS devices
-                if device != '': devices[device] = 'ios' # Save type
+        all_device_info = All_Device_Info.get_all_connected_device_info()
+        for device in all_device_info: # Get connected Android devices (Format: SERIAL_NO word)
+            if device != '':
+                devices[device] =  all_device_info[device]['type']# Save type
         CommonUtil.ExecLog(sModuleInfo,"Connected devices: %s" % str(devices), 0)
         
         # Ensure we have at least one device connected
@@ -216,7 +217,7 @@ def find_correct_device_on_first_run(serial_or_name, device_info):
                     serial = device # Get Serial
                     device_type = devices[device] # Get type
                     CommonUtil.ExecLog(sModuleInfo,"No device information found. Picked one that is connected: %s" % serial, 0)
-                    break # Only take the first device
+                    break # Only take the first device'''
 
         # At the end, we should have at least one device
         if serial != '' and device_type != '' and did != '':
@@ -226,7 +227,7 @@ def find_correct_device_on_first_run(serial_or_name, device_info):
                 return 'failed'
              
             # Verify this device is actually connected
-            if serial not in devices:
+            if not serial_in_devices(serial,all_device_info):
                 CommonUtil.ExecLog(sModuleInfo,"Although we have a selected device, it did not appear in the list of connected devices. Please ensure the device information aligns with what is connected: %s (%s)" % (did, serial), 3)
                 return 'failed'
             
@@ -267,13 +268,19 @@ def launch_application(data_set):
         package_name = '' # Name of application package
         activity_name = '' # Name of application activity
         serial = '' # Serial number (may also be random string like "launch", "na", etc)
+        platform_version = ''
+        device_name = ''
 
         for row in data_set: # Find required data
-            if row[0] in ('package','bundle id') and row[1] == 'element parameter':
+            if str(row[0]).strip().lower() in ('package','bundle id') and row[1] == 'element parameter':
                 package_name = row[2]
-            elif row[0] in ('app activity', 'activity','app id') and row[1] == 'element parameter':
+            elif str(row[0]).strip().lower() in ('app activity', 'activity','app id') and row[1] == 'element parameter':
                 activity_name = row[2]
-            elif row[1] == 'action':
+            elif str(row[0]).strip().lower() in ('platform version') and row[1] == 'element parameter':
+                platform_version = row[2]
+            elif str(row[0]).strip().lower() in ('device name') and row[1] == 'element parameter':
+                device_name = row[2]
+            elif str(row[1]).strip().lower() == 'action':
                 serial = row[2].lower().strip()
 
 
@@ -305,13 +312,15 @@ def launch_application(data_set):
 
     # Launch application
     try:
+        launch_app = True
         if appium_details[device_id]['driver'] == None: # Only create a new appium instance if we haven't already (may be done by install_and_start_driver())
-            result = start_appium_driver(package_name, activity_name)
+            result,launch_app = start_appium_driver(package_name, activity_name,platform_version=platform_version,device_name=device_name)
             if result == 'failed':
                 return 'failed'
         
         CommonUtil.ExecLog(sModuleInfo,"Launching %s" % package_name,0)
-        appium_driver.launch_app() # Launch program configured in the Appium capabilities
+        if launch_app: #if ios simulator then no need to launch app again
+            appium_driver.launch_app() # Launch program configured in the Appium capabilities
         CommonUtil.TakeScreenShot(sModuleInfo) # Capture screenshot, if settings allow for it
         CommonUtil.ExecLog(sModuleInfo,"Launched the application successfully.",1)
         return "passed"
@@ -352,7 +361,7 @@ def start_appium_server():
                 cmd = 'start "Appium Server" /wait /min cmd /c %s -p %d' % (appium_binary, appium_port) # Use start to execute and minimize, then cmd /c will remove the dos box when appium is killed
                 appium_server = subprocess.Popen(cmd, shell = True) # Needs to run in a shell due to the execution command
             else:
-                appium_server = subprocess.Popen([appium_binary, '-p', str(appium_port)], stdout=subprocess.PIPE, stderr=subprocess.STDOUT, preexec_fn = set_pdeathsig(signal.SIGTERM)) # Start the appium server (DO NOT SET shell=True)
+                appium_server = subprocess.Popen([appium_binary, '-p', str(appium_port)])
 
             appium_details[device_id]['server'] = appium_server # Save the server object for teardown
         except Exception, returncode: # Couldn't run server
@@ -377,7 +386,7 @@ def start_appium_server():
     except Exception:
         return CommonUtil.Exception_Handler(sys.exc_info(), None, "Error starting Appium server")
 
-def start_appium_driver(package_name = '', activity_name = '', filename = ''):
+def start_appium_driver(package_name = '', activity_name = '', filename = '', platform_version='', device_name=''):
     ''' Creates appium instance using discovered and provided capabilities '''
     # Does not execute application
     
@@ -386,10 +395,11 @@ def start_appium_driver(package_name = '', activity_name = '', filename = ''):
     
     try:
         global appium_driver, appium_details, device_id
+        launch_app = True
         if appium_details[device_id]['driver'] == None:
             # Start Appium server
             if start_appium_server() in failed_tag_list:
-                return 'failed'
+                return 'failed',launch_app
 
             # Create Appium driver
     
@@ -404,7 +414,7 @@ def start_appium_driver(package_name = '', activity_name = '', filename = ''):
             if appium_details[device_id]['type'] == 'android':
                 if adbOptions.is_android_connected(device_serial) == False:
                     CommonUtil.ExecLog(sModuleInfo, "Could not detect any connected Android devices", 3)
-                    return 'failed'
+                    return 'failed',launch_app
 
                 CommonUtil.ExecLog(sModuleInfo,"Setting up with Android",1)
                 desired_caps['platformVersion'] = adbOptions.get_android_version(appium_details[device_id]['serial']).strip()
@@ -419,13 +429,21 @@ def start_appium_driver(package_name = '', activity_name = '', filename = ''):
             elif appium_details[device_id]['type'] == 'ios':
                 CommonUtil.ExecLog(sModuleInfo,"Setting up with IOS",1)
                 if appium_details[device_id]['imei'] == 'Simulated':
-                    os.chdir(os.path.join(os.path.dirname(os.path.realpath(__file__)), 'Framework'))
+                    launch_app = False #ios simulator so need to launch app again
+                    #os.chdir(os.path.join(os.path.dirname(os.path.realpath(__file__)), 'Framework'))
                     app = os.path.join(os.getcwd(),'iosSimulatorFile')
                     app = os.path.join(app, activity_name)
+                    desired_caps = {}
                     desired_caps['app'] = app  # Use set_value() for writing to element
-                    desired_caps['platformName'] = '12.0'  # Read version #!!! Temporarily hard coded
-                    desired_caps['platformVersion'] = 'iPhone'  # Read model (only needs to be unique if using more than one)
-                    desired_caps['deviceName'] = 'iPhone XS Max'
+                    desired_caps['platformName'] = 'iOS'  # Read version #!!! Temporarily hard coded
+                    if platform_version != '':
+                        desired_caps['platformVersion'] = platform_version
+                    else:
+                        desired_caps['platformVersion'] = '12.0'  # Read model (only needs to be unique if using more than one)
+                    if device_name != '':
+                        desired_caps['deviceName'] = device_name
+                    else:
+                        desired_caps['deviceName'] = 'iPhone 8'
                     desired_caps['bundleId'] = package_name
                 else:
                     desired_caps['sendKeyStrategy'] = 'setValue' # Use set_value() for writing to element
@@ -435,31 +453,32 @@ def start_appium_driver(package_name = '', activity_name = '', filename = ''):
                     desired_caps['udid'] = appium_details[device_id]['serial'] # Device unique identifier - use auto if using only one phone
             else:
                 CommonUtil.ExecLog(sModuleInfo, "Invalid device type: %s" % str(appium_details[device_id]['type']), 3)
-                return 'failed'
+                return 'failed',launch_app
             CommonUtil.ExecLog(sModuleInfo,"Capabilities: %s" % str(desired_caps), 0)
             
             # Create Appium instance with capabilities
             try:
                 appium_driver = webdriver.Remote('http://localhost:%d/wd/hub' % appium_port, desired_caps) # Create instance
-                
+
                 if appium_driver: # Make sure we get the instance
                     appium_details[device_id]['driver'] = appium_driver
                     Shared_Resources.Set_Shared_Variables('appium_details', appium_details)
                     CommonUtil.set_screenshot_vars(Shared_Resources.Shared_Variable_Export()) # Get all the shared variables, and pass them to CommonUtil
                     CommonUtil.ExecLog(sModuleInfo,"Appium driver created successfully.",1)
-                    return "passed"
+                    return "passed",launch_app
                 else: # Error during setup, reset
                     appium_driver = None
                     CommonUtil.ExecLog(sModuleInfo,"Error during Appium setup", 3)
-                    return 'failed'
-            except:
-                return CommonUtil.Exception_Handler(sys.exc_info(), None, "Error connecting to Appium server to create driver instance")
+                    return 'failed',launch_app
+            except Exception,e:
+                print e
+                return CommonUtil.Exception_Handler(sys.exc_info(), None, "Error connecting to Appium server to create driver instance"),launch_app
 
         else: # Driver is already setup, don't do anything
             CommonUtil.ExecLog(sModuleInfo,"Driver already configured, not re-doing", 0)
-            return 'passed'
+            return 'passed',launch_app
     except Exception:
-        return CommonUtil.Exception_Handler(sys.exc_info())
+        return CommonUtil.Exception_Handler(sys.exc_info()),launch_app
 
 def kill_appium_on_windows(appium_server):
     ''' Killing Appium server on windows involves killing off it's children '''
@@ -1734,3 +1753,17 @@ def maximize_appilcation(data_set):
     except Exception:
         return CommonUtil.Exception_Handler(sys.exc_info(), None, "Error trying to maximize application")
 
+
+def serial_in_devices(serial,devices):
+    ''' Displays the original program that was launched by appium '''
+
+    sModuleInfo = inspect.stack()[0][3] + " : " + inspect.getmoduleinfo(__file__).name
+    CommonUtil.ExecLog(sModuleInfo, "Function Start", 0)
+
+    try:
+        for device in devices:
+            if devices[device]['id'] == serial:
+                return True
+        return False
+    except Exception:
+        return CommonUtil.Exception_Handler(sys.exc_info(), None, "Error trying to maximize application")
