@@ -1455,7 +1455,7 @@ def get_program_names(search_name):
         package_name = package_list[0] # Save first package found
 
         # Get activity name
-        cmd='adb shell pm dump %s' % package_name
+        cmd='adb %s shell pm dump %s' % (serial,package_name)
         res = subprocess.check_output(cmd, shell = True)
         res = str(res).replace('\\r','') # Remove \r text if any
         res = str(res).replace('\\n','\n') # replace \n text with line feed
