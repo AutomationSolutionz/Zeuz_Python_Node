@@ -176,7 +176,7 @@ def find_correct_device_on_first_run(serial_or_name, device_info):
                 serial = all_device_info[device]['id']  # Save serial number
                 device_type = all_device_info[device]['type'].lower()  # Save device type android/ios
                 imei = all_device_info[device]['imei']
-                did = 'default'
+                did = device
                 serial_check = True # Flag as found
                 CommonUtil.ExecLog(sModuleInfo,"Found serial number in data set: %s" % serial, 0)
                 break
