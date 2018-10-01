@@ -168,7 +168,9 @@ def find_correct_device_on_first_run(serial_or_name, device_info):
             return 'failed'
 
         imei=''
-        
+        device_name = ''
+        product_version = ''
+
         # Check if serial provided is a real serial number, name or rubish that should be ignored
         serial_check = False
         for device in all_device_info: # For each device serial number
@@ -176,11 +178,13 @@ def find_correct_device_on_first_run(serial_or_name, device_info):
                 serial = all_device_info[device]['id']  # Save serial number
                 device_type = all_device_info[device]['type'].lower()  # Save device type android/ios
                 imei = all_device_info[device]['imei']
+                device_name = all_device_info[device]['model']
+                product_version = all_device_info[device]['osver']
                 did = device
                 serial_check = True # Flag as found
                 CommonUtil.ExecLog(sModuleInfo,"Found serial number in data set: %s" % serial, 0)
                 break
-            
+
         # Check if user provided name - must be accompanied by device_info, sent by server
         if serial_check == False:
             for dname in device_info:
@@ -189,10 +193,12 @@ def find_correct_device_on_first_run(serial_or_name, device_info):
                     serial = device_info[did]['id'] # Save serial number
                     device_type = device_info[did]['type'].lower() # Save device type android/ios
                     imei = device_info[did]['imei']
+                    device_name = all_device_info[device]['model']
+                    product_version = all_device_info[device]['osver']
                     serial_check = True
                     CommonUtil.ExecLog(sModuleInfo,"Found device name in data set: %s" % did, 0)
                     break
-                    
+
         ### If we were given either a serial/uuid or name in the data set, we should now have what we need to run ###
 
         # Not found, so now we have to look at the device_info dictionary from the server to determine the device to use
@@ -204,9 +210,11 @@ def find_correct_device_on_first_run(serial_or_name, device_info):
                     serial = device_info[did]['id']
                     imei = device_info[did]['imei']
                     device_type = device_info[did]['type'].lower()
+                    device_name = all_device_info[device]['model']
+                    product_version = all_device_info[device]['osver']
                     CommonUtil.ExecLog(sModuleInfo,"Found a device selected at Deploy: %s" % did, 0)
                     break
-                
+
             # Lastly, if nothing above is set, the user did not specify anything, and we have no information from the server. Pick a connected device, and fail if there are none
             else: # No devices sent, none specified
                 for device in devices:
@@ -222,22 +230,24 @@ def find_correct_device_on_first_run(serial_or_name, device_info):
             if did in appium_details:
                 CommonUtil.ExecLog(sModuleInfo,"The selected device was previously run. You cannot run it more than once in a session. Either your step data is calling the 'launch' action multiple times without specifying specific devices, or you did not call the 'teardown' action in a previous run.", 3)
                 return 'failed'
-             
+
             # Verify this device is actually connected
             if not serial_in_devices(serial,all_device_info):
                 CommonUtil.ExecLog(sModuleInfo,"Although we have a selected device, it did not appear in the list of connected devices. Please ensure the device information aligns with what is connected: %s (%s)" % (did, serial), 3)
                 return 'failed'
-            
+
             # Global variables for quick access to currently selected device
             device_serial = serial
             device_id = did
-            
+
             # Global variable that holds data required by appium
             appium_details[device_id] = {}
             if 'driver' not in appium_details[device_id]: appium_details[device_id]['driver'] = None # Initialize appium driver object
             appium_details[device_id]['serial'] = serial
             appium_details[device_id]['type'] = device_type
             appium_details[device_id]['imei'] = imei
+            appium_details[device_id]['platform_version'] = product_version
+            appium_details[device_id]['device_name'] = device_name
             
             # Store in shared variable, so it doens't get forgotten
             Shared_Resources.Set_Shared_Variables('device_serial', device_serial, protected = True)
@@ -273,10 +283,6 @@ def launch_application(data_set):
                 package_name = row[2]
             elif str(row[0]).strip().lower() in ('app activity', 'activity','app id') and row[1] == 'element parameter':
                 activity_name = row[2]
-            elif str(row[0]).strip().lower() in ('platform version') and row[1] == 'element parameter':
-                platform_version = row[2]
-            elif str(row[0]).strip().lower() in ('device name') and row[1] == 'element parameter':
-                device_name = row[2]
             elif str(row[1]).strip().lower() == 'action':
                 serial = row[2].lower().strip()
 
@@ -309,6 +315,10 @@ def launch_application(data_set):
 
     # Launch application
     try:
+        if 'platform_version' in appium_details[device_id]:
+            platform_version = appium_details[device_id]['platform_version']
+        if 'device_name' in appium_details[device_id]:
+            device_name = appium_details[device_id]['device_name']
         launch_app = True
         if appium_details[device_id]['driver'] == None: # Only create a new appium instance if we haven't already (may be done by install_and_start_driver())
             result,launch_app = start_appium_driver(package_name, activity_name,platform_version=platform_version,device_name=device_name)
@@ -427,20 +437,13 @@ def start_appium_driver(package_name = '', activity_name = '', filename = '', pl
                 CommonUtil.ExecLog(sModuleInfo,"Setting up with IOS",1)
                 if appium_details[device_id]['imei'] == 'Simulated':
                     launch_app = False #ios simulator so need to launch app again
-                    #os.chdir(os.path.join(os.path.dirname(os.path.realpath(__file__)), 'Framework'))
                     app = os.path.join(os.getcwd(),'iosSimulatorFile')
                     app = os.path.join(app, activity_name)
                     desired_caps = {}
                     desired_caps['app'] = app  # Use set_value() for writing to element
                     desired_caps['platformName'] = 'iOS'  # Read version #!!! Temporarily hard coded
-                    if platform_version != '':
-                        desired_caps['platformVersion'] = platform_version
-                    else:
-                        desired_caps['platformVersion'] = '12.0'  # Read model (only needs to be unique if using more than one)
-                    if device_name != '':
-                        desired_caps['deviceName'] = device_name
-                    else:
-                        desired_caps['deviceName'] = 'iPhone 8'
+                    desired_caps['platformVersion'] = platform_version
+                    desired_caps['deviceName'] = device_name
                     desired_caps['bundleId'] = package_name
                 else:
                     desired_caps['sendKeyStrategy'] = 'setValue' # Use set_value() for writing to element
