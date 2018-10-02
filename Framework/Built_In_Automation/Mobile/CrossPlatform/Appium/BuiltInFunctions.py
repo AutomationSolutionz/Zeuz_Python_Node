@@ -170,6 +170,9 @@ def find_correct_device_on_first_run(serial_or_name, device_info):
         imei=''
         device_name = ''
         product_version = ''
+        serial = ''
+        did = ''
+        device_type = ''
 
         # Check if serial provided is a real serial number, name or rubish that should be ignored
         serial_check = False
@@ -437,7 +440,8 @@ def start_appium_driver(package_name = '', activity_name = '', filename = '', pl
                 CommonUtil.ExecLog(sModuleInfo,"Setting up with IOS",1)
                 if appium_details[device_id]['imei'] == 'Simulated':
                     launch_app = False #ios simulator so need to launch app again
-                    app = os.path.join(os.getcwd(),'iosSimulatorFile')
+                    app = os.path.normpath(os.getcwd()+os.sep + os.pardir)
+                    app = os.path.join(app,"iosSimulator")
                     app = os.path.join(app, activity_name)
                     desired_caps = {}
                     desired_caps['app'] = app  # Use set_value() for writing to element
@@ -1119,7 +1123,7 @@ def Enter_Text_Appium(data_set):
                 Element.click() # Set focus to textbox
                 Element.clear() # Remove any text already existing
 
-                if appium_details[device_id]['type'] == 'ios':
+                if str(appium_details[device_id]['type']).lower() == 'ios':
                     Element.set_value(text_value) # Work around for IOS issue in Appium v1.6.4 where send_keys() doesn't work
             except Exception:
                 errMsg = "Found element, but couldn't write text to it"
@@ -1127,19 +1131,19 @@ def Enter_Text_Appium(data_set):
 
             # This is wrapped in it's own try block because we sometimes get an error from send_keys stating "Parameters were incorrect". However, most devices work only with send_keys
             try:
-                if appium_details[device_id]['type'] != 'ios':
+                if str(appium_details[device_id]['type']).lower() != 'ios':
                     Element.send_keys(text_value) # Enter the user specified text
             except Exception:
                 CommonUtil.ExecLog(sModuleInfo, "Found element, but couldn't write text to it. Trying another method", 2)
-                try:
+                '''try:
                     Element.set_value(text_value) # Enter the user specified text
                 except Exception:
                     errMsg = "Found element, but couldn't write text to it. Giving up"
-                    return CommonUtil.Exception_Handler(sys.exc_info(),None,errMsg)
+                    return CommonUtil.Exception_Handler(sys.exc_info(),None,errMsg)'''
 
             # Complete the action
             try:
-                appium_driver.hide_keyboard() # Remove keyboard
+                #appium_driver.hide_keyboard() # Remove keyboard
                 CommonUtil.TakeScreenShot(sModuleInfo) # Capture screen
                 CommonUtil.ExecLog(sModuleInfo, "Successfully set the value of to text to: %s" % text_value, 1)
                 return "passed"

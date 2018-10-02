@@ -147,7 +147,11 @@ def get_all_booted_ios_simulator_info():
         data  = json.loads(all_ios_simulators)
         for each in data['devices'].keys():
             if "iOS" in each:
-                version = each
+                splitted = str(each).split(' ')
+                if len(splitted)>1:
+                    version = splitted[1]
+                else:
+                    version = each
                 break
 
         for each_type in data['devices']:
