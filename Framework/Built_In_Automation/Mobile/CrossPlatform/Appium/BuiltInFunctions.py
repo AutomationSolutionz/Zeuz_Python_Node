@@ -272,6 +272,9 @@ def launch_application(data_set):
     CommonUtil.ExecLog(sModuleInfo,"Function Start", 0)
     
     global device_serial, appium_details, appium_driver, device_id, device_info
+    # Recall appium details
+    if Shared_Resources.Test_Shared_Variables('device_info'):  # Check if device_info is already set in shared variables
+        device_info = Shared_Resources.Get_Shared_Variables('device_info')  # Retreive device_info
     
     # Parse data set
     try:
