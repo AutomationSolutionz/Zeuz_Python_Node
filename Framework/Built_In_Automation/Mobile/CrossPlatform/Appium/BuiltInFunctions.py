@@ -509,7 +509,7 @@ def teardown_appium(data_set):
     sModuleInfo = inspect.stack()[0][3] + " : " + inspect.getmoduleinfo(__file__).name
     CommonUtil.ExecLog(sModuleInfo,"Function Start", 0)
     
-    global appium_details, appium_server, device_id, device_serial, device_info
+    global appium_details, appium_server, device_id, device_serial, device_info,appium_port
     
     try:
         for name in appium_details: # For each connected device
@@ -529,6 +529,7 @@ def teardown_appium(data_set):
         # Delete variables
         appium_details = {}
         device_info = {}
+        appium_port = 4721
         appium_server, device_id, device_serial = '', '', ''
         Shared_Resources.Set_Shared_Variables('appium_details', '')
         Shared_Resources.Set_Shared_Variables('device_info', '')
