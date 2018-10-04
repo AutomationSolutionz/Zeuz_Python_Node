@@ -449,7 +449,7 @@ def start_appium_driver(package_name = '', activity_name = '', filename = '', pl
                     app = os.path.normpath(os.getcwd()+os.sep + os.pardir)
                     app = os.path.join(app,"iosSimulator")
                     app = os.path.join(app, ios)
-                    bundle_id = subprocess.check_output(['osascript', '-e', 'id of app "%s"'%str(app)])
+                    bundle_id = str(subprocess.check_output(['osascript', '-e', 'id of app "%s"'%str(app)])).strip()
                     desired_caps = {}
                     desired_caps['app'] = app  # Use set_value() for writing to element
                     desired_caps['platformName'] = 'iOS'  # Read version #!!! Temporarily hard coded
