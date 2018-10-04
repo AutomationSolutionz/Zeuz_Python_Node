@@ -285,9 +285,9 @@ def launch_application(data_set):
         device_name = ''
 
         for row in data_set: # Find required data
-            if str(row[0]).strip().lower() in ('package','bundle id') and row[1] == 'element parameter':
+            if str(row[0]).strip().lower() in ('android', 'android package','package','app id','ios simulator','ios') and row[1] == 'element parameter':
                 package_name = row[2]
-            elif str(row[0]).strip().lower() in ('app activity', 'activity','app id') and row[1] == 'element parameter':
+            elif str(row[0]).strip().lower() in ('app activity', 'activity','android activity') and row[1] == 'element parameter':
                 activity_name = row[2]
             elif str(row[1]).strip().lower() == 'action':
                 serial = row[2].lower().strip()
@@ -441,18 +441,19 @@ def start_appium_driver(package_name = '', activity_name = '', filename = '', pl
                     
             elif str(appium_details[device_id]['type']).lower() == 'ios':
                 CommonUtil.ExecLog(sModuleInfo,"Setting up with IOS",1)
-                if appium_details[device_id]['imei'] == 'Simulated':
+                if appium_details[device_id]['imei'] == 'Simulated': #ios simulator
                     launch_app = False #ios simulator so need to launch app again
                     app = os.path.normpath(os.getcwd()+os.sep + os.pardir)
                     app = os.path.join(app,"iosSimulator")
-                    app = os.path.join(app, activity_name)
+                    app = os.path.join(app, package_name)
+                    bundle_id = subprocess.check_output(['osascript', '-e', 'id of app "%s"'%str(app)])
                     desired_caps = {}
                     desired_caps['app'] = app  # Use set_value() for writing to element
                     desired_caps['platformName'] = 'iOS'  # Read version #!!! Temporarily hard coded
                     desired_caps['platformVersion'] = platform_version
                     desired_caps['deviceName'] = device_name
-                    desired_caps['bundleId'] = package_name
-                else:
+                    desired_caps['bundleId'] = bundle_id
+                else: #for real ios device, not developed yet
                     desired_caps['sendKeyStrategy'] = 'setValue' # Use set_value() for writing to element
                     desired_caps['platformVersion'] = '10.3' # Read version #!!! Temporarily hard coded
                     desired_caps['deviceName'] = 'iPhone' # Read model (only needs to be unique if using more than one)
