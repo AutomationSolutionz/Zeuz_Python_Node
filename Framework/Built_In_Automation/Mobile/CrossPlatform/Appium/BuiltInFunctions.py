@@ -283,12 +283,15 @@ def launch_application(data_set):
         serial = '' # Serial number (may also be random string like "launch", "na", etc)
         platform_version = ''
         device_name = ''
+        ios = ''
 
         for row in data_set: # Find required data
-            if str(row[0]).strip().lower() in ('android', 'android package','package','app id','ios simulator','ios') and row[1] == 'element parameter':
+            if str(row[0]).strip().lower() in ('android package','package') and row[1] == 'element parameter':
                 package_name = row[2]
             elif str(row[0]).strip().lower() in ('app activity', 'activity','android activity') and row[1] == 'element parameter':
                 activity_name = row[2]
+            elif str(row[0]).strip().lower() in ('ios','ios simulator') and row[1] == 'element parameter':
+                ios = row[2]
             elif str(row[1]).strip().lower() == 'action':
                 serial = row[2].lower().strip()
 
@@ -327,7 +330,7 @@ def launch_application(data_set):
             device_name = appium_details[device_id]['device_name']
         launch_app = True
         if appium_details[device_id]['driver'] == None: # Only create a new appium instance if we haven't already (may be done by install_and_start_driver())
-            result,launch_app = start_appium_driver(package_name, activity_name,platform_version=platform_version,device_name=device_name)
+            result,launch_app = start_appium_driver(package_name, activity_name,platform_version=platform_version,device_name=device_name,ios=ios)
             if result == 'failed':
                 return 'failed'
         
@@ -399,7 +402,7 @@ def start_appium_server():
     except Exception:
         return CommonUtil.Exception_Handler(sys.exc_info(), None, "Error starting Appium server")
 
-def start_appium_driver(package_name = '', activity_name = '', filename = '', platform_version='', device_name=''):
+def start_appium_driver(package_name = '', activity_name = '', filename = '', platform_version='', device_name='',ios=''):
     ''' Creates appium instance using discovered and provided capabilities '''
     # Does not execute application
     
@@ -445,7 +448,7 @@ def start_appium_driver(package_name = '', activity_name = '', filename = '', pl
                     launch_app = False #ios simulator so need to launch app again
                     app = os.path.normpath(os.getcwd()+os.sep + os.pardir)
                     app = os.path.join(app,"iosSimulator")
-                    app = os.path.join(app, package_name)
+                    app = os.path.join(app, ios)
                     bundle_id = subprocess.check_output(['osascript', '-e', 'id of app "%s"'%str(app)])
                     desired_caps = {}
                     desired_caps['app'] = app  # Use set_value() for writing to element
@@ -457,7 +460,7 @@ def start_appium_driver(package_name = '', activity_name = '', filename = '', pl
                     desired_caps['sendKeyStrategy'] = 'setValue' # Use set_value() for writing to element
                     desired_caps['platformVersion'] = '10.3' # Read version #!!! Temporarily hard coded
                     desired_caps['deviceName'] = 'iPhone' # Read model (only needs to be unique if using more than one)
-                    desired_caps['bundleId'] = package_name
+                    desired_caps['bundleId'] = ios
                     desired_caps['udid'] = appium_details[device_id]['serial'] # Device unique identifier - use auto if using only one phone
             else:
                 CommonUtil.ExecLog(sModuleInfo, "Invalid device type: %s" % str(appium_details[device_id]['type']), 3)
