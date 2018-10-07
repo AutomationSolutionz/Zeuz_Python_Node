@@ -373,12 +373,19 @@ def start_appium_server():
         appium_port += 2 # Increment the port number (by 2 because adb seems to grab the next port), for the next time we run, so we can have multiple instances
         
         try:
+            appium_server = None
             if sys.platform  == 'win32': # We need to open appium in it's own command dos box on Windows
                 cmd = 'start "Appium Server" /wait /min cmd /c %s -p %d' % (appium_binary, appium_port) # Use start to execute and minimize, then cmd /c will remove the dos box when appium is killed
                 appium_server = subprocess.Popen(cmd, shell = True) # Needs to run in a shell due to the execution command
             else:
-                appium_server = subprocess.Popen([appium_binary, '-p', str(appium_port)])
-
+                try:
+                    appium_binary = os.path.normpath(appium_binary)
+                    appium_binary = os.path.abspath(os.path.join(appium_binary, os.pardir))
+                    env = {"PATH": str(appium_binary)}
+                    appium_server = subprocess.Popen(['appium', '-p', str(appium_port)], env=env)
+                except:
+                    CommonUtil.ExecLog(sModuleInfo,"Couldn't launch appium server, please do it manually ny typing 'appium &' in the terminal",2)
+                    pass
             appium_details[device_id]['server'] = appium_server # Save the server object for teardown
         except Exception, returncode: # Couldn't run server
             return CommonUtil.Exception_Handler(sys.exc_info(), None, "Couldn't start Appium server. May not be installed, or not in your PATH: %s" % returncode)
