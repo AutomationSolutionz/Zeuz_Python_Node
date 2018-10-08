@@ -455,8 +455,14 @@ def start_appium_driver(package_name = '', activity_name = '', filename = '', pl
                 CommonUtil.ExecLog(sModuleInfo,"Setting up with IOS",1)
                 if appium_details[device_id]['imei'] == 'Simulated': #ios simulator
                     launch_app = False #ios simulator so need to launch app again
-                    app = os.path.normpath(os.getcwd()+os.sep + os.pardir)
-                    app = os.path.join(app,"iosSimulator")
+                    if Shared_Resources.Test_Shared_Variables('ios_simulator_folder_path'): #if simulator path already exists
+                        app = Shared_Resources.Get_Shared_Variables('ios_simulator_folder_path')
+                        app = os.path.normpath(app)
+                    else:
+                        app = os.path.normpath(os.getcwd()+os.sep + os.pardir)
+                        app = os.path.join(app,"iosSimulator")
+                        #saving simulator path for future use
+                        Shared_Resources.Set_Shared_Variables('ios_simulator_folder_path',str(app))
                     app = os.path.join(app, ios)
                     bundle_id = str(subprocess.check_output(['osascript', '-e', 'id of app "%s"'%str(app)])).strip()
                     desired_caps = {}
