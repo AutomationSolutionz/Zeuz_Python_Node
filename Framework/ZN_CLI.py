@@ -92,7 +92,7 @@ def Login():
         if exit_script: break
         # Test to ensure server is up before attempting to login
         r = check_server_online()
-            
+
         # Login to server
         if r != False: # Server is up
             try:

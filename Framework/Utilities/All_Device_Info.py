@@ -147,27 +147,33 @@ def get_all_booted_ios_simulator_info():
         data  = json.loads(all_ios_simulators)
         for each in data['devices'].keys():
             if "iOS" in each:
-                version = each
+                splitted = str(each).split(' ')
+                if len(splitted)>1:
+                    version = splitted[1]
+                else:
+                    version = each
                 break
-        all_ios_devices =  data['devices'] ['iOS 12.0']
-        # Compile desired information into dictionary
-        for each in all_ios_devices:
-            if each['state'] == 'Booted':
-                try:
-                    dname = device_name + str(device_cnt)
-                    device_list[dname] = {}
-                    device_list[dname]['id'] = each['udid']
-                    device_list[dname]['type'] = 'IOS'
-                    device_list[dname]['mfg'] = 'Apple'
-                    device_list[dname]['devname'] = each['name']
-                    device_list[dname]['model'] = each['name']
-                    device_list[dname]['osver'] = version
-                    device_list[dname]['imei'] = "Simulated"
-                except: 
-                    pass
-    
-                device_cnt += 1
-       
+
+        for each_type in data['devices']:
+            all_ios_devices = data['devices'][each_type]
+            # Compile desired information into dictionary
+            for each in all_ios_devices:
+                if each['state'] == 'Booted':
+                    try:
+                        dname = device_name + str(device_cnt)
+                        device_list[dname] = {}
+                        device_list[dname]['id'] = each['udid']
+                        device_list[dname]['type'] = 'IOS'
+                        device_list[dname]['mfg'] = 'Apple'
+                        device_list[dname]['devname'] = each['name']
+                        device_list[dname]['model'] = each['name']
+                        device_list[dname]['osver'] = version
+                        device_list[dname]['imei'] = "Simulated"
+                    except:
+                        pass
+
+                    device_cnt += 1
+
         
         return device_list
     
@@ -184,7 +190,9 @@ def get_all_connected_device_info():
         device_list = {}
         global device_cnt
         device_cnt = 1
-        device_list.update(get_all_connected_android_info())
+        android_devices = get_all_connected_android_info()
+        if android_devices:
+            device_list.update(get_all_connected_android_info())
         if sys.platform == 'darwin': 
 
             device_list.update(get_all_booted_ios_simulator_info())

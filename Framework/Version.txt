@@ -1,6 +1,6 @@
 [ZeuZ Python Version]
-version = 5.3
+version = 5.4
 [Release Date]
-date= 2018-09-27
+date= 2018-10-09
 [Release Note]
-Note = Unmasking characters support for older server
+Note = iOS simulator features and other improvements 
