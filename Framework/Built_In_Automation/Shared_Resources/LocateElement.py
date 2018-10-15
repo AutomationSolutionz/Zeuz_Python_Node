@@ -241,7 +241,7 @@ def _construct_xpath_list(parameter_list,add_dot=False):
                 element_main_body_list.append(other_value)
             elif attribute not in excluded_attribute and '*' in attribute: #ignore case
                 if driver_type == 'appium':
-                    other_value = "[cmd:matches(@%s,'%s','i']"%(attribute.split('*')[1],attribute_value)
+                    other_value = "[cmd:matches(@%s,'(?i)%s')]"%(attribute.split('*')[1],attribute_value)
                 else:
                     other_value = "[translate(@%s,'ABCDEFGHIJKLMNOPQRSTUVWXYZ','abcdefghijklmnopqrstuvwxyz')='%s']" % (attribute.split('*')[1], str(attribute_value).lower())
                 element_main_body_list.append(other_value)
