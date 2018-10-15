@@ -310,7 +310,7 @@ def launch_application(data_set):
                 package_name, activity_name = get_program_names(package_name) # Android only to match a partial package name if provided by the user
             
         # Verify data
-        if package_name == '' or package_name in failed_tag_list:
+        if appium_details[device_id]['type'] == 'android' and package_name == '' or package_name in failed_tag_list:
             CommonUtil.ExecLog(sModuleInfo,"Could not find package name", 3)
             return 'failed'
         elif appium_details[device_id]['type'] == 'android' and activity_name == '':
