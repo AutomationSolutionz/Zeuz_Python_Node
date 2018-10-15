@@ -227,20 +227,23 @@ def _construct_xpath_list(parameter_list,add_dot=False):
             if attribute == "text" and (driver_type == "selenium" or driver_type == "xml"):
                 text_value = '[text()="%s"]'%attribute_value
                 element_main_body_list.append(text_value)
-            elif attribute == "*text" and (driver_type == "selenium" or driver_type == "xml"):
-                text_value = '[contains(text(),"%s")]'%attribute_value    
+            elif attribute == "*text" and (driver_type == "selenium" or driver_type == "xml"): #ignore case
+                text_value = '[contains(translate(text(),"ABCDEFGHIJKLMNOPQRSTUVWXYZ","abcdefghijklmnopqrstuvwxyz"),"%s")]'%str(attribute_value).lower()
                 element_main_body_list.append(text_value)
             elif attribute == "text" and driver_type == "appium":
                 text_value = '[@text="%s"]'%attribute_value
                 element_main_body_list.append(text_value)
-            elif attribute == "*text" and driver_type == "appium":
-                text_value = "[contains(@text,'%s')]"%attribute_value
+            elif attribute == "*text" and driver_type == "appium": #ignore case
+                text_value = "[cmd:matches(@text,'%s','i']"%attribute_value
                 element_main_body_list.append(text_value)            
             elif attribute not in excluded_attribute and '*' not in attribute:
                 other_value = '[@%s="%s"]'%(attribute,attribute_value)
                 element_main_body_list.append(other_value)
-            elif attribute not in excluded_attribute and '*' in attribute:
-                other_value = "[contains(@%s,'%s')]"%(attribute.split('*')[1],attribute_value)
+            elif attribute not in excluded_attribute and '*' in attribute: #ignore case
+                if driver_type == 'appium':
+                    other_value = "[cmd:matches(@%s,'%s','i']"%(attribute.split('*')[1],attribute_value)
+                else:
+                    other_value = "[translate(@%s,'ABCDEFGHIJKLMNOPQRSTUVWXYZ','abcdefghijklmnopqrstuvwxyz')='%s']" % (attribute.split('*')[1], str(attribute_value).lower())
                 element_main_body_list.append(other_value)
         #we do the tag on its own  
         #tag_was_given = any("tag" in s for s in parameter_list)
