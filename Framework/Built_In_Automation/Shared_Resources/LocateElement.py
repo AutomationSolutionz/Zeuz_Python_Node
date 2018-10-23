@@ -324,7 +324,7 @@ def _get_xpath_or_css_element(element_query,css_xpath, index_number=False):
 
         if css_xpath == 'unique' and driver_type == 'appium': #for unique id
             try:
-                unique_element = generic_driver.findElementByAccessibilityId(element_query)
+                unique_element = generic_driver.find_element_by_accessibility_id(element_query)
                 return unique_element
             except Exception,e:
                 print e
