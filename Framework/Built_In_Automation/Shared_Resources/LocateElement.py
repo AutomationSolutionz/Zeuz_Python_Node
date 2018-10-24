@@ -338,6 +338,8 @@ def _get_xpath_or_css_element(element_query,css_xpath, index_number=False):
                     unique_element = generic_driver.find_element(By.TAG_NAME, unique_value)
                 elif unique_key == 'css':
                     unique_element = generic_driver.find_element(By.CSS_SELECTOR, unique_value)
+                elif unique_key == 'xpath':
+                    unique_element = generic_driver.find_element(By.XPATH, unique_value)
                 elif unique_key in ['text','*text']:
                     if driver_type == 'appium':
                         if unique_key == 'text':
