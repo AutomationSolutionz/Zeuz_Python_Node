@@ -326,9 +326,9 @@ def _get_xpath_or_css_element(element_query,css_xpath, index_number=False):
             try:
                 unique_key =  element_query[0]
                 unique_value = element_query[1]
-                if unique_key == 'accessibility id':
+                if driver_type == 'appium' and (unique_key == 'accessibility id' or unique_key == 'accessibility-id' or unique_key == 'content-desc' or unique_key == 'content desc'): #contemt-desc for android, accessibility id for iOS
                     unique_element = generic_driver.find_element_by_accessibility_id(unique_value)
-                elif unique_key == 'id' or unique_key == 'resource id' or unique_key == 'resource-id':
+                elif unique_key == 'id' or (driver_type == 'appium' and (unique_key == 'resource id' or unique_key == 'resource-id' or unique_key == 'name')): #name for iOS
                     unique_element = generic_driver.find_element(By.ID, unique_value)
                 elif unique_key == 'name':
                     unique_element = generic_driver.find_element(By.NAME, unique_value)
