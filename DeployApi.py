@@ -81,6 +81,39 @@ def get_run_time_params_from_user():
     ans=  "|||".join(selected_run_param)
     return ans
 
+def get_loop_input():
+    print "******************** SELECT LOOP ********************"
+    print "1. DON'T RUN IN LOOP"
+    print "2. RUN IN LOOP: "
+    print "ENTER YOUR CHOICE: "
+    choice = int(str(raw_input()).strip())
+    if choice == 2:
+        print "HOW MANY TIMES?"
+        print "ENTER YOUR CHOICE: "
+        loop = int(str(raw_input()).strip())
+        print "DO YOU WANT TO CLEANUP RUNID AFTER THE RUN?"
+        print "ENTER YOUR CHOICE: "
+        print "1. YES"
+        print "2. NO"
+        cleanup = int(str(raw_input()).strip())
+        if cleanup == 1: return loop,True
+        else: return loop,False
+    else: return 1,False
+
+def delete_runid_from_server(all_runid):
+    if len(all_runid) == 0: return
+    print "DELETING RUNID FROM SERVER"
+    all_runid = "|".join(all_runid)
+    delete_dict = {
+        'run_id_list':all_runid
+    }
+    Get("cleanup_data_from_api", delete_dict)
+    delete_dict = {
+        'log_list': all_runid
+    }
+    Get("delete_log_file_from_api", delete_dict)
+    print "RUNID DELETED FROM SERVER"
+
 if __name__ == '__main__':
     while True:
         get_all_run_time_params_from_server()
@@ -96,45 +129,62 @@ if __name__ == '__main__':
             set = str(set).strip()
             selected_dependency =  get_dependency()
             selected_run_time_params = get_run_time_params_from_user()
-            dict = {
-                'set': set,
-                'username': username,
-                'project': project,
-                'team': team,
-                'run_time_param':selected_run_time_params
-            }
-            for key in selected_dependency:
-                if selected_dependency[key] != 'None':
-                    dict[key] = selected_dependency[key]
-            if set == '':
-                result = {}
-                result['message'] = 'Test Set Name can not be Empty'
-                result['result'] = 'Cancelled'
-                result['runid'] = ''
-                print result
+            if str(choice).strip() == '1':
+                loop,delete_runid = get_loop_input()
             else:
-                result = {}
-                if str(choice).strip() == '1':
-                    result = Get("deploy_from_api_and_get_result",dict)
-                elif str(choice).strip() == '2':
-                    result = Get("deploy_from_api_only", dict)
-
-                if result == {}:
-                    result['message'] = "Invalid Test Set Name"
+                loop=1
+                delete_runid=False
+            all_runid = []
+            for i in xrange(loop):
+                dict = {
+                    'set': set,
+                    'username': username,
+                    'project': project,
+                    'team': team,
+                    'run_time_param':selected_run_time_params
+                }
+                for key in selected_dependency:
+                    if selected_dependency[key] != 'None':
+                        dict[key] = selected_dependency[key]
+                if set == '':
+                    result = {}
+                    result['message'] = 'Test Set Name can not be Empty'
                     result['result'] = 'Cancelled'
                     result['runid'] = ''
                     print result
                 else:
-                    converted_to_string_dict = {}
-                    for key in result:
-                        k = key
-                        v = result[key]
-                        if isinstance(k,unicode):
-                            k = str(k)
-                        if isinstance(v,unicode):
-                            v = str(v)
-                        converted_to_string_dict[k] = v
-                    print converted_to_string_dict
+                    result = {}
+                    if str(choice).strip() == '1':
+                        result = Get("deploy_from_api_and_get_result",dict)
+                    elif str(choice).strip() == '2':
+                        result = Get("deploy_from_api_only", dict)
+
+                    if result == {}:
+                        result['message'] = "Invalid Test Set Name"
+                        result['result'] = 'Cancelled'
+                        result['runid'] = ''
+                        if loop == 1:
+                            print result
+                        else:
+                            print "Result of Loop %d : "%(i+1) + str(result)
+                    else:
+                        converted_to_string_dict = {}
+                        for key in result:
+                            k = key
+                            v = result[key]
+                            if isinstance(k,unicode):
+                                k = str(k)
+                            if isinstance(v,unicode):
+                                v = str(v)
+                            converted_to_string_dict[k] = v
+                        if loop == 1:
+                            print converted_to_string_dict
+                        else:
+                            if delete_runid:
+                                all_runid.append(result['runid'])
+                            print "Result of Loop %d : " % (i+1) + str(converted_to_string_dict)
+            if delete_runid:
+                delete_runid_from_server(all_runid)
         elif str(choice).strip() == '3':
             break
         else:
