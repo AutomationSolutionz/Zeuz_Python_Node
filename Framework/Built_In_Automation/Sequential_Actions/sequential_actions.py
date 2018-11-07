@@ -195,7 +195,8 @@ action_support = [
     'table parameter',
     'source parameter',
     'input parameter',
-    'custom action'
+    'custom action',
+    'unique parameter'
 ]
 
 # List of supported mobile platforms - must be lower case
@@ -891,5 +892,3 @@ def Action_Handler(_data_set, action_row):
 
     except Exception:
         return CommonUtil.Exception_Handler(sys.exc_info())
-
-

@@ -75,7 +75,8 @@ def Get_Element(step_data_set,driver,query_debug=False, wait_enable = True):
 
             elif query_type == "css" and element_query != False:
                 result = _get_xpath_or_css_element(element_query,"css",index_number)
-
+            elif query_type == "unique" and element_query != False:
+                result = _get_xpath_or_css_element(element_query,"unique",index_number)
             else:
                 result = "failed"
             
@@ -101,13 +102,17 @@ def _construct_query (step_data_set):
         child_ref_exits = any("child parameter" in s for s in step_data_set)
         parent_ref_exits = any("parent parameter" in s for s in step_data_set)
         sibling_ref_exits = any("sibling parameter" in s for s in step_data_set)
+        unique_ref_exists =any("unique parameter" in s for s in step_data_set)
         #get all child, element, and parent only
         child_parameter_list = filter(lambda x: 'child parameter' in x[1], step_data_set) 
         element_parameter_list = filter(lambda x: 'element parameter' in x[1], step_data_set) 
         parent_parameter_list = filter(lambda x: 'parent parameter' in x[1], step_data_set) 
-        sibling_parameter_list = filter(lambda x: 'sibling parameter' in x[1], step_data_set) 
-        
-        if "css" in collect_all_attribute and "xpath" not in collect_all_attribute:
+        sibling_parameter_list = filter(lambda x: 'sibling parameter' in x[1], step_data_set)
+        unique_parameter_list = filter(lambda x: 'unique parameter' in x[1], step_data_set)
+
+        if unique_ref_exists and (driver_type == 'appium' or driver_type == 'selenium') and len(unique_parameter_list)>0: #for unique identifier
+            return ([unique_parameter_list[0][0],unique_parameter_list[0][2]], "unique")
+        elif "css" in collect_all_attribute and "xpath" not in collect_all_attribute:
             # return the raw css command with css as type.  We do this so that even if user enters other data, we will ignore them.  
             # here we expect to get raw css query
             return ((filter(lambda x: 'css' in x[0], step_data_set) [0][2]), "css")
@@ -319,7 +324,47 @@ def _get_xpath_or_css_element(element_query,css_xpath, index_number=False):
         all_matching_elements = []
         all_matching_elements_visible_invisible = []
         sModuleInfo = inspect.stack()[0][3] + " : " + inspect.getmoduleinfo(__file__).name
-        if css_xpath == "xpath" and driver_type != 'xml':
+
+        if css_xpath == 'unique' and (driver_type == 'appium' or driver_type == 'selenium'): #for unique id
+            try:
+                unique_key =  element_query[0]
+                unique_value = element_query[1]
+                if driver_type == 'appium' and (unique_key == 'accessibility id' or unique_key == 'accessibility-id' or unique_key == 'content-desc' or unique_key == 'content desc'): #contemt-desc for android, accessibility id for iOS
+                    unique_element = generic_driver.find_element_by_accessibility_id(unique_value)
+                elif unique_key == 'id' or (driver_type == 'appium' and (unique_key == 'resource id' or unique_key == 'resource-id' or unique_key == 'name')): #name for iOS
+                    unique_element = generic_driver.find_element(By.ID, unique_value)
+                elif unique_key == 'name':
+                    unique_element = generic_driver.find_element(By.NAME, unique_value)
+                elif unique_key == 'class':
+                    unique_element = generic_driver.find_element(By.CLASS_NAME, unique_value)
+                elif unique_key == 'tag':
+                    unique_element = generic_driver.find_element(By.TAG_NAME, unique_value)
+                elif unique_key == 'css':
+                    unique_element = generic_driver.find_element(By.CSS_SELECTOR, unique_value)
+                elif unique_key == 'xpath':
+                    unique_element = generic_driver.find_element(By.XPATH, unique_value)
+                elif unique_key in ['text','*text']:
+                    if driver_type == 'appium':
+                        if unique_key == 'text':
+                            unique_element = generic_driver.find_element(By.XPATH, '//*[@text="%s"]'%unique_value)
+                        else:
+                            unique_element = generic_driver.find_element(By.XPATH, '//*[contains(@text,"%s")]' % unique_value)
+                    else:
+                        if unique_key == 'text':
+                            unique_element = generic_driver.find_element(By.XPATH, '//*[text()="%s"]' % unique_value)
+                        else:
+                            unique_element = generic_driver.find_element(By.XPATH, '//*[contains(text(),"%s")]' % unique_value)
+                else:
+                    if '*' in unique_key:
+                        unique_key=unique_key[1:] #drop the asterisk
+                        unique_element = generic_driver.find_element(By.XPATH, "//*[contains(@%s,'%s')]" % (unique_key, unique_value))
+                    else:
+                        unique_element = generic_driver.find_element(By.XPATH, "//*[@%s='%s']"%(unique_key,unique_value))
+                return unique_element
+            except Exception,e:
+                print e
+                return "failed"
+        elif css_xpath == "xpath" and driver_type != 'xml':
             all_matching_elements_visible_invisible = generic_driver.find_elements(By.XPATH, element_query)
         elif css_xpath == "xpath" and driver_type == 'xml':
             all_matching_elements_visible_invisible = generic_driver.xpath(element_query)

@@ -848,7 +848,7 @@ def set_device_info_according_to_user_order(device_order, device_dict):
         device_order_val = str(each[0])
         device_no_val = str(each[1])
         original_dict = device_dict
-        device_info['Device ' + device_order_val] = original_dict['Device ' + device_no_val]
+        device_info['device ' + device_order_val] = original_dict['device ' + device_no_val]
 
 def update_fail_reasons_of_test_cases(run_id, TestCaseID):
     try:

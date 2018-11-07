@@ -1,6 +1,6 @@
 [ZeuZ Python Version]
-version = 5.4
+version = 5.6
 [Release Date]
-date= 2018-10-09
+date= 2018-11-06
 [Release Note]
-Note = iOS simulator features and other improvements 
+Note = Multiple simulator iOS support, Various fixes and improvement for Appium, new API feature to delete logs.

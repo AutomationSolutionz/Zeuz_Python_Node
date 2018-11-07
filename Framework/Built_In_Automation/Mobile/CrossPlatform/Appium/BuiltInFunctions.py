@@ -33,6 +33,7 @@ PATH = lambda p: os.path.abspath(
 #########################
 # Recall appium driver, if not already set - needed between calls in a Zeuz test case
 appium_port = 4721 # Default appium port - changes if we have multiple devices
+wdaLocalPort = 8100
 appium_details = {} # Used to store device serial number, appium driver, if multiple devices are used
 appium_driver = None # Holds the currently used appium instance
 device_serial = '' # Holds the identifier for the currently used device (if any are specified)
@@ -358,7 +359,7 @@ def start_appium_server():
     sModuleInfo = inspect.stack()[0][3] + " : " + inspect.getmoduleinfo(__file__).name
     CommonUtil.ExecLog(sModuleInfo,"Function Start", 0)
     
-    global appium_port, appium_details, device_serial, appium_binary, device_id
+    global appium_port, appium_details, device_serial, appium_binary, device_id, wdaLocalPort
 
     try:
         # Shutdown appium server if it's already running
@@ -371,7 +372,7 @@ def start_appium_server():
             
         # Execute appium server
         appium_port += 2 # Increment the port number (by 2 because adb seems to grab the next port), for the next time we run, so we can have multiple instances
-        
+        wdaLocalPort += 2
         try:
             appium_server = None
             if sys.platform  == 'win32': # We need to open appium in it's own command dos box on Windows
@@ -419,7 +420,7 @@ def start_appium_driver(package_name = '', activity_name = '', filename = '', pl
     CommonUtil.ExecLog(sModuleInfo,"Function Start", 0)
     
     try:
-        global appium_driver, appium_details, device_id
+        global appium_driver, appium_details, device_id, wdaLocalPort
         launch_app = True
         if appium_details[device_id]['driver'] == None:
             # Start Appium server
@@ -471,6 +472,9 @@ def start_appium_driver(package_name = '', activity_name = '', filename = '', pl
                     desired_caps['platformVersion'] = platform_version
                     desired_caps['deviceName'] = device_name
                     desired_caps['bundleId'] = bundle_id
+                    desired_caps['wdaLocalPort'] = wdaLocalPort
+                    desired_caps['udid'] = appium_details[device_id]['serial']
+                    desired_caps['newCommandTimeout'] = 6000
                 else: #for real ios device, not developed yet
                     desired_caps['sendKeyStrategy'] = 'setValue' # Use set_value() for writing to element
                     desired_caps['platformVersion'] = '10.3' # Read version #!!! Temporarily hard coded
@@ -531,7 +535,7 @@ def teardown_appium(data_set):
     sModuleInfo = inspect.stack()[0][3] + " : " + inspect.getmoduleinfo(__file__).name
     CommonUtil.ExecLog(sModuleInfo,"Function Start", 0)
     
-    global appium_details, appium_server, device_id, device_serial, device_info,appium_port
+    global appium_details, appium_server, device_id, device_serial, device_info, appium_port, wdaLocalPort
     
     try:
         for name in appium_details: # For each connected device
@@ -552,6 +556,7 @@ def teardown_appium(data_set):
         appium_details = {}
         device_info = {}
         appium_port = 4721
+        wdaLocalPort = 8100
         appium_server, device_id, device_serial = '', '', ''
         Shared_Resources.Set_Shared_Variables('appium_details', '')
         Shared_Resources.Set_Shared_Variables('device_info', '')
