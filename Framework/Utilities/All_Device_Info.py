@@ -8,7 +8,7 @@ from Framework.Utilities import CommonUtil
 import json
 
 # These create the device name we give to each device
-device_name = 'Device '
+device_name = 'device '
 device_cnt = 1
 
 def get_all_connected_android_info():
