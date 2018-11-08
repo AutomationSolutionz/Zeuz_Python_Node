@@ -272,10 +272,9 @@ def TakeScreenShot(ImageName,local_run=False):
     ''' Puts TakeScreenShot into a thread, so it doesn't block test case execution '''
 
     try:
-        pass
-        #t = threading.Thread(target = Thread_ScreenShot, args = (ImageName, local_run)) # Create thread object
-        #t.daemon = True # Run in background
-        #t.start() # Start thread
+        t = threading.Thread(target = Thread_ScreenShot, args = (ImageName, local_run)) # Create thread object
+        t.daemon = True # Run in background
+        t.start() # Start thread
     except:
         return Exception_Handler(sys.exc_info())
     
