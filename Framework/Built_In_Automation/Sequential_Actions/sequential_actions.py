@@ -746,6 +746,18 @@ def Conditional_Action_Handler(data_set, row, logic_row):
         except: # Element doesn't exist, proceed with the step data following the fail/false path
             CommonUtil.ExecLog(sModuleInfo, "Conditional Actions could not find the element", 3)
             logic_decision = "false"
+
+    elif module == 'common':
+        try:
+            result = common.Compare_Variables(data_set) # Get the element object or 'failed'
+            if result in failed_tag_list:
+                CommonUtil.ExecLog(sModuleInfo, "Conditional Actions Result is False, Variable doesn't match with given value", 1)
+                logic_decision = "false"
+            else:
+                logic_decision = "true"
+        except: # Element doesn't exist, proceed with the step data following the fail/false path
+            CommonUtil.ExecLog(sModuleInfo, "Conditional Actions could not find the variable", 3)
+            logic_decision = "false"
                          
     elif module == 'rest':
         Get_Element_Step_Data = getattr(eval(module), 'Get_Element_Step_Data')
@@ -892,3 +904,4 @@ def Action_Handler(_data_set, action_row):
 
     except Exception:
         return CommonUtil.Exception_Handler(sys.exc_info())
+
