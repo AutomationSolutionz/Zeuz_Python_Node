@@ -227,6 +227,7 @@ if sr.Test_Shared_Variables('dependency'): # Check if driver is already set in s
 bypass_data_set = []
 bypass_row = []
 loaded_modules = []
+last_call_was_conditional = False
 
 # Get node ID and set as a Shared Variable
 machineInfo = CommonUtil.MachineInfo() # Create instance
@@ -338,7 +339,7 @@ def Sequential_Actions(step_data, _dependency = {}, _run_time_params = {}, _file
     write_browser_logs()
     return result
 
-def Run_Sequential_Actions(data_set_list=[]): #data_set_no will used in recursive conditional action call
+def Run_Sequential_Actions(data_set_list=[],conditional=False): #data_set_no will used in recursive conditional action call
     
     sModuleInfo = inspect.stack()[0][3] + " : " + inspect.getmoduleinfo(__file__).name
     try:
@@ -346,6 +347,9 @@ def Run_Sequential_Actions(data_set_list=[]): #data_set_no will used in recursiv
         skip = [] # List of data set numbers that have been processed, and need to be skipped, so they are not processed again
         logic_row=[] # Holds conditional actions
         skip_tmp = [] # Temporarily holds skip data sets
+
+        global last_call_was_conditional
+        last_call_was_conditional = conditional
 
         step_data = sr.Get_Shared_Variables('step_data')
 
@@ -645,8 +649,9 @@ def Loop_Action_Handler(row, dataset_cnt):
 
                 for ndc in range(len(new_step_data)): # For each data set in the sub-set
                     # Build the sub-set and execute
-                    result = build_subset([new_step_data[ndc]])
-                    if nested_loop:break
+                    result = build_subset([new_step_data[ndc]]) #the dataset was conditional then break
+                    global last_call_was_conditional
+                    if nested_loop and last_call_was_conditional:break
 
                 # Check if we have processed all the list variables
                 if sub_set_cnt >= loop_len:
@@ -665,7 +670,8 @@ def Loop_Action_Handler(row, dataset_cnt):
                 for ndc in range(len(new_step_data)): # For each data set in the sub-set
                     # Build the sub-set and execute
                     result = build_subset([new_step_data[ndc]])
-                    if nested_loop:break
+                    global last_call_was_conditional
+                    if nested_loop and last_call_was_conditional:break
 
                 # Check if we have processed all the list variables
                 if sub_set_cnt >= loop_len:
@@ -815,7 +821,7 @@ def Conditional_Action_Handler(data_set, row, logic_row):
 
                 CommonUtil.ExecLog(sModuleInfo, "Processing conditional step %s" % str(each_item), 1)
                 data_set_index = int(each_item.strip()) - 1 # data set number, -1 to offset for data set numbering system
-                result = Run_Sequential_Actions([data_set_index]) #new edit: full step data is passed. [step_data[data_set_index]]) # Recursively call this function until all called data sets are complete
+                result = Run_Sequential_Actions([data_set_index],conditional = True) #new edit: full step data is passed. [step_data[data_set_index]]) # Recursively call this function until all called data sets are complete
                 if row[0].lower().strip() == 'step exit':
                     CommonUtil.ExecLog(sModuleInfo, "Step Exit called. Stopping Test Step.", 1)
                     return result
@@ -892,3 +898,5 @@ def Action_Handler(_data_set, action_row):
 
     except Exception:
         return CommonUtil.Exception_Handler(sys.exc_info())
+
+
