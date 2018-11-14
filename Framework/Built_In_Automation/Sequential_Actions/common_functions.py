@@ -743,10 +743,17 @@ def start_timer(data_set):
 
     try:
         # Parse data set
-        seconds = int(str(data_set[0][2]).strip())  # Get no. of seconds for timer
+        try:
+            seconds = int(str(data_set[0][2]).strip())  # Get no. of seconds for timer
+        except:
+            seconds = 0
 
-        CommonUtil.ExecLog(sModuleInfo, "Starting timer for %d seconds" % (seconds), 1)
-        return sr.Set_Shared_Variables("timer", datetime.datetime.now()+timedelta(seconds=seconds))
+        CommonUtil.ExecLog(sModuleInfo, "Starting timer", 1)
+
+        if seconds>=0:
+            return sr.Set_Shared_Variables("timer", datetime.datetime.now() - timedelta(seconds=seconds))
+        else:
+            return sr.Set_Shared_Variables("timer", datetime.datetime.now() + timedelta(seconds=abs(seconds)))
     except Exception:
         return CommonUtil.Exception_Handler(sys.exc_info())
 
@@ -758,21 +765,23 @@ def wait_for_timer(data_set):
     CommonUtil.ExecLog(sModuleInfo, "Function Start", 0)
 
     try:
+        seconds_to_wait = int(str(data_set[0][2]).strip())
         # Parse data set
-        end_time = sr.Get_Shared_Variables("timer")
-        if end_time in failed_tag_list:
+        start_time = sr.Get_Shared_Variables("timer")
+        if start_time in failed_tag_list:
             CommonUtil.ExecLog(sModuleInfo,"Timer wasn't started, please start timer first",3)
 
-        now = datetime.datetime.now()
+        delta = datetime.datetime.now() - start_time
+        delta = int(delta.total_seconds())
 
-        if now>end_time:
+        if delta>seconds_to_wait:
             CommonUtil.ExecLog(sModuleInfo, "Timer have expired before the execution was completed", 3)
             return "failed"
 
-        delta = ((end_time - now).total_seconds())
-        CommonUtil.ExecLog(sModuleInfo, "%d seconds remaining for timer"%delta, 1)
-        CommonUtil.ExecLog(sModuleInfo, "Will wait for %d seconds"%delta, 1)
-        time.sleep(delta)
+        sleep_time = seconds_to_wait - delta
+        CommonUtil.ExecLog(sModuleInfo, "%d seconds remaining for timer"%sleep_time, 1)
+        CommonUtil.ExecLog(sModuleInfo, "Will wait for %d seconds"%sleep_time, 1)
+        time.sleep(sleep_time)
 
         return "passed"
     except Exception:
