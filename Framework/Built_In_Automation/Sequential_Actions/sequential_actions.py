@@ -37,6 +37,8 @@ actions = { # Numbers are arbitrary, and are not used anywhere
     116: {'module': 'common', 'name': 'create dictionary', 'function': 'Initialize_Dict'},
     117: {'module': 'common', 'name': 'create or append list', 'function': 'append_list_shared_variable'},
     118: {'module': 'common', 'name': 'create or append dictionary', 'function': 'append_dict_shared_variable'},
+    119: {'module': 'common', 'name': 'start timer', 'function': 'start_timer'},
+    120: {'module': 'common', 'name': 'wait for timer', 'function': 'wait_for_timer'},
 
     200: {'module': 'appium', 'name': 'click', 'function': 'Click_Element_Appium'},
     201: {'module': 'appium', 'name': 'text', 'function': 'Enter_Text_Appium'},
@@ -892,3 +894,4 @@ def Action_Handler(_data_set, action_row):
 
     except Exception:
         return CommonUtil.Exception_Handler(sys.exc_info())
+
