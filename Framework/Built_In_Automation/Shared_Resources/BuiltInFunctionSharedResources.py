@@ -436,7 +436,7 @@ def Compare_Variables(step_data):
                 result.append(False)
                 fail_count+=1
 
-        CommonUtil.ExecLog(sModuleInfo,"###Variable Comaparison Results###",1)
+        CommonUtil.ExecLog(sModuleInfo,"###Variable Comparison Results###",1)
         CommonUtil.ExecLog(sModuleInfo,"Matched Variables: %d"%pass_count,1)
         CommonUtil.ExecLog(sModuleInfo, "Not Matched Variables: %d" % fail_count, 1)
 
@@ -559,7 +559,7 @@ def Compare_Lists_or_Dicts(step_data):
                         result.append('extra')
                         taken.append(key)
 
-        CommonUtil.ExecLog(sModuleInfo,"###Comaparison Results of List '%s' and List '%s'###"%(list1_name,list2_name),1)
+        CommonUtil.ExecLog(sModuleInfo,"###Comparison Results of List '%s' and List '%s'###"%(list1_name,list2_name),1)
         CommonUtil.ExecLog(sModuleInfo,"Matched Variables: %d"%pass_count,1)
         CommonUtil.ExecLog(sModuleInfo, "Not Matched Variables: %d" % fail_count, 1)
         CommonUtil.ExecLog(sModuleInfo, "Extra Variables: %d" % extra_count, 1)
