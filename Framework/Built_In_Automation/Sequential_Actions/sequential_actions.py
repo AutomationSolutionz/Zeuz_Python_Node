@@ -37,6 +37,9 @@ actions = { # Numbers are arbitrary, and are not used anywhere
     116: {'module': 'common', 'name': 'create dictionary', 'function': 'Initialize_Dict'},
     117: {'module': 'common', 'name': 'create or append list', 'function': 'append_list_shared_variable'},
     118: {'module': 'common', 'name': 'create or append dictionary', 'function': 'append_dict_shared_variable'},
+    119: {'module': 'common', 'name': 'set server variable', 'function': 'set_server_variable'},
+    120: {'module': 'common', 'name': 'get server variable', 'function': 'get_server_variable'},
+    121: {'module': 'common', 'name': 'get all server variable', 'function': 'get_all_server_variable'},
 
     200: {'module': 'appium', 'name': 'click', 'function': 'Click_Element_Appium'},
     201: {'module': 'appium', 'name': 'text', 'function': 'Enter_Text_Appium'},
