@@ -773,6 +773,7 @@ def cleanup_driver_instances():  # cleans up driver(selenium,appium) instances
 
 
 def run_test_case(TestCaseID, sModuleInfo, run_id, driver_list, final_dependency, final_run_params, temp_ini_file):
+    shared.Set_Shared_Variables('run_id', run_id)
     test_case = TestCaseID[0]
     copy_status = False
     CommonUtil.ExecLog(sModuleInfo, "Gathering data for test case %s" % (test_case), 4, False)
@@ -920,7 +921,6 @@ def main(device_dict):
         run_description = (TestRunID[1].replace("run_dependency", '')).replace('dependency_filter', '')
         run_id = TestRunID[0]
         #save run id in shared variable
-        shared.Set_Shared_Variables('run_id',run_id)
         final_dependency = get_all_dependencies(project_id, team_id, run_description)  # get dependencies
         final_run_params_from_server = get_all_runtime_parameters(run_id)  # get runtime params
         final_run_params = {}
