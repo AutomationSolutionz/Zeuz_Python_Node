@@ -295,7 +295,10 @@ def launch_application(data_set):
             elif str(row[0]).strip().lower() in ('ios','ios simulator') and row[1] == 'element parameter':
                 ios = row[2]
             elif str(row[0]).strip().lower() in ('no reset', 'no_reset','noreset') and row[1] == 'element parameter':
-                no_reset = True
+                if str(row[2]).strip().lower() in ('yes', 'true'):
+                    no_reset = True
+                else:
+                    no_reset = False
             elif str(row[1]).strip().lower() == 'action':
                 serial = row[2].lower().strip()
 
