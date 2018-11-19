@@ -102,8 +102,8 @@ def update_run_id_info_on_server(run_id):
 
 
 # returns all automated test cases of a runid
-def get_all_automated_test_cases_in_run_id(run_id):
-    TestCaseLists = RequestFormatter.Get('get_all_automated_test_cases_based_on_run_id_api', {'run_id': run_id})
+def get_all_automated_test_cases_in_run_id(run_id, tester_id):
+    TestCaseLists = RequestFormatter.Get('get_all_automated_test_cases_based_on_run_id_api', {'run_id': run_id,'tester_id': tester_id})
     return TestCaseLists
 
 
@@ -928,7 +928,7 @@ def main(device_dict):
             final_run_params[str(dict['field'])] = str(dict['value'])
         update_run_id_info_on_server(run_id)  # update runid status
         TestSetStartTime = time.time()
-        TestCaseLists = get_all_automated_test_cases_in_run_id(run_id)  # get all automated test cases of a runid
+        TestCaseLists = get_all_automated_test_cases_in_run_id(run_id,Userid)  # get all automated test cases of a runid
 
         if len(TestCaseLists) > 0:
             CommonUtil.ExecLog(sModuleInfo, "Running Test cases from list : %s" % TestCaseLists[0:len(TestCaseLists)],
