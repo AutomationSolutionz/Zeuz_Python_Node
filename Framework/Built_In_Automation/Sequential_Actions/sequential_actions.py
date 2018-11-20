@@ -37,8 +37,11 @@ actions = { # Numbers are arbitrary, and are not used anywhere
     116: {'module': 'common', 'name': 'create dictionary', 'function': 'Initialize_Dict'},
     117: {'module': 'common', 'name': 'create or append list', 'function': 'append_list_shared_variable'},
     118: {'module': 'common', 'name': 'create or append dictionary', 'function': 'append_dict_shared_variable'},
-    119: {'module': 'common', 'name': 'start timer', 'function': 'start_timer'},
-    120: {'module': 'common', 'name': 'wait for timer', 'function': 'wait_for_timer'},
+    119: {'module': 'common', 'name': 'set server variable', 'function': 'set_server_variable'},
+    120: {'module': 'common', 'name': 'get server variable', 'function': 'get_server_variable'},
+    121: {'module': 'common', 'name': 'get all server variable', 'function': 'get_all_server_variable'},
+    122: {'module': 'common', 'name': 'start timer', 'function': 'start_timer'},
+    123: {'module': 'common', 'name': 'wait for timer', 'function': 'wait_for_timer'},
 
     200: {'module': 'appium', 'name': 'click', 'function': 'Click_Element_Appium'},
     201: {'module': 'appium', 'name': 'text', 'function': 'Enter_Text_Appium'},
@@ -764,7 +767,7 @@ def Conditional_Action_Handler(data_set, row, logic_row):
         except: # Element doesn't exist, proceed with the step data following the fail/false path
             CommonUtil.ExecLog(sModuleInfo, "Conditional Actions could not find the variable", 3)
             logic_decision = "false"
-                         
+
     elif module == 'rest':
         Get_Element_Step_Data = getattr(eval(module), 'Get_Element_Step_Data')
         element_step_data = Get_Element_Step_Data(

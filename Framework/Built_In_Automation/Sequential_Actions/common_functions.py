@@ -11,6 +11,7 @@ from Framework.Built_In_Automation.Shared_Resources import BuiltInFunctionShared
 from Framework.Built_In_Automation.Sequential_Actions.sequential_actions import actions, action_support
 from Framework.Utilities.CommonUtil import passed_tag_list, failed_tag_list, skipped_tag_list # Allowed return strings, used to normalize pass/fail
 from Framework.Built_In_Automation.Shared_Resources import LocateElement
+from Framework import MainDriverApi
 import datetime
 from datetime import timedelta
 months = ["Unknown",
@@ -734,6 +735,57 @@ def print_shared_variables():
     for each in sr.shared_variables:
         print each + " : " +str(sr.shared_variables[each])
 
+
+def set_server_variable(data_set):
+    #can set multiple server variable with one action
+    sModuleInfo = inspect.stack()[0][3] + " : " + inspect.getmoduleinfo(__file__).name
+    try:
+        run_id = sr.Get_Shared_Variables('run_id')
+
+        for row in data_set:
+            if str(row[1]).strip().lower() == 'element parameter':
+                key = str(row[0]).strip()
+                value = str(row[2]).strip()
+                #call main driver to send var to server
+                MainDriverApi.set_server_variable(run_id,key,value)
+
+        return 'passed'
+    except Exception:
+        return CommonUtil.Exception_Handler(sys.exc_info())
+
+
+def get_server_variable(data_set):
+    # can get multiple server variable with one action
+    sModuleInfo = inspect.stack()[0][3] + " : " + inspect.getmoduleinfo(__file__).name
+    try:
+        run_id = sr.Get_Shared_Variables('run_id')
+
+        for row in data_set:
+            if str(row[1]).strip().lower() == 'element parameter':
+                key = str(row[0]).strip()
+
+                dict = MainDriverApi.get_server_variable(run_id,key)
+                for key in dict:
+                    sr.Set_Shared_Variables(key, dict[key])
+                    CommonUtil.ExecLog(sModuleInfo, "Got server variable %s='%s'" % (key, dict[key]), 1)
+
+        return 'passed'
+    except Exception:
+        return CommonUtil.Exception_Handler(sys.exc_info())
+
+
+def get_all_server_variable(data_set):
+    sModuleInfo = inspect.stack()[0][3] + " : " + inspect.getmoduleinfo(__file__).name
+    try:
+        run_id = sr.Get_Shared_Variables('run_id')
+
+        dict = MainDriverApi.get_all_server_variable(run_id)
+        for key in dict:
+            sr.Set_Shared_Variables(key, dict[key])
+            CommonUtil.ExecLog(sModuleInfo, "Got server variable %s='%s'" % (key, dict[key]), 1)
+        return 'passed'
+    except Exception:
+        return CommonUtil.Exception_Handler(sys.exc_info())
 
 def start_timer(data_set):
     ''' Test Step front end for modifying certain variables used by Sequential Actions '''
