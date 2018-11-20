@@ -37,15 +37,6 @@ def to_unicode(obj, encoding='utf-8'):
             obj = unicode(obj, encoding)
         return obj
 
-def encode_to_exclude_symbol(sDetails):
-    replace_dict={
-        '#': '||6||',
-        '=': '||5||'
-    }
-    for e in replace_dict.keys():
-        sDetails = sDetails.replace(e, replace_dict[e])
-    return sDetails
-
 def Add_Folder_To_Current_Test_Case_Log(src):
     try:
         #get the current test case locations
@@ -142,9 +133,7 @@ def ExecLog(sModuleInfo, sDetails, iLogLevel=1, _local_run="", sStatus=""):
         
         # ";" is not supported for logging.  So replacing them
         sDetails = sDetails.replace(";", ":")
-        sDetails = sDetails.replace("=", "~")
         sDetails = sDetails.replace("%22", "'")
-        sDetails = encode_to_exclude_symbol(to_unicode(sDetails))
         
         #Convert logLevel from int to string for clarity
         if iLogLevel == 0:
@@ -283,7 +272,7 @@ def TakeScreenShot(ImageName,local_run=False):
     ''' Puts TakeScreenShot into a thread, so it doesn't block test case execution '''
 
     try:
-        t = threading.Thread(target = Thread_ScreenShot, args = (ImageName, local_run)) # Create thread object 
+        t = threading.Thread(target = Thread_ScreenShot, args = (ImageName, local_run)) # Create thread object
         t.daemon = True # Run in background
         t.start() # Start thread
     except:
