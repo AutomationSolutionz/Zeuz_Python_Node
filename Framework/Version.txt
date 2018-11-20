@@ -1,6 +1,6 @@
 [ZeuZ Python Version]
-version = 5.8
+version = 5.9
 [Release Date]
-date= 2018-11-19
+date= 2018-11-20
 [Release Note]
-Note =  Appium No Reset Option and some other actions
+Note =  Run linked test cases in parallel
