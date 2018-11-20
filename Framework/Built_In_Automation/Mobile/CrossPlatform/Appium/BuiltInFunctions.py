@@ -285,6 +285,7 @@ def launch_application(data_set):
         platform_version = ''
         device_name = ''
         ios = ''
+        no_reset= False
 
         for row in data_set: # Find required data
             if str(row[0]).strip().lower() in ('android package','package') and row[1] == 'element parameter':
@@ -293,6 +294,11 @@ def launch_application(data_set):
                 activity_name = row[2]
             elif str(row[0]).strip().lower() in ('ios','ios simulator') and row[1] == 'element parameter':
                 ios = row[2]
+            elif str(row[0]).strip().lower() in ('no reset', 'no_reset','noreset') and row[1] == 'element parameter':
+                if str(row[2]).strip().lower() in ('yes', 'true'):
+                    no_reset = True
+                else:
+                    no_reset = False
             elif str(row[1]).strip().lower() == 'action':
                 serial = row[2].lower().strip()
 
@@ -331,7 +337,7 @@ def launch_application(data_set):
             device_name = appium_details[device_id]['device_name']
         launch_app = True
         if appium_details[device_id]['driver'] == None: # Only create a new appium instance if we haven't already (may be done by install_and_start_driver())
-            result,launch_app = start_appium_driver(package_name, activity_name,platform_version=platform_version,device_name=device_name,ios=ios)
+            result,launch_app = start_appium_driver(package_name, activity_name,platform_version=platform_version,device_name=device_name,ios=ios,no_reset=no_reset)
             if result == 'failed':
                 return 'failed'
         
@@ -412,7 +418,7 @@ def start_appium_server():
     except Exception:
         return CommonUtil.Exception_Handler(sys.exc_info(), None, "Error starting Appium server")
 
-def start_appium_driver(package_name = '', activity_name = '', filename = '', platform_version='', device_name='',ios=''):
+def start_appium_driver(package_name = '', activity_name = '', filename = '', platform_version='', device_name='',ios='', no_reset=False):
     ''' Creates appium instance using discovered and provided capabilities '''
     # Does not execute application
     
@@ -475,6 +481,8 @@ def start_appium_driver(package_name = '', activity_name = '', filename = '', pl
                     desired_caps['wdaLocalPort'] = wdaLocalPort
                     desired_caps['udid'] = appium_details[device_id]['serial']
                     desired_caps['newCommandTimeout'] = 6000
+                    if no_reset:
+                        desired_caps['noReset'] = 'true'  # Do not clear application cache when complete
                 else: #for real ios device, not developed yet
                     desired_caps['sendKeyStrategy'] = 'setValue' # Use set_value() for writing to element
                     desired_caps['platformVersion'] = '10.3' # Read version #!!! Temporarily hard coded

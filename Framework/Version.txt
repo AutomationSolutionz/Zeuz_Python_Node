@@ -1,6 +1,6 @@
 [ZeuZ Python Version]
-version = 5.7
+version = 5.8
 [Release Date]
-date= 2018-11-14
+date= 2018-11-19
 [Release Note]
-Note =  Log fixes, new loop feature, timer actions, and other fixes
+Note =  Appium No Reset Option and some other actions
