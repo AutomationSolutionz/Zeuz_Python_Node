@@ -762,6 +762,42 @@ def get_server_variable(data_set):
         return CommonUtil.Exception_Handler(sys.exc_info())
 
 
+def get_server_variable_and_wait(data_set):
+    # can get multiple server variable with one action
+    sModuleInfo = inspect.stack()[0][3] + " : " + inspect.getmoduleinfo(__file__).name
+    try:
+        run_id = sr.Get_Shared_Variables('run_id')
+
+        key=''
+        wait_time=5
+        for row in data_set:
+            if str(row[1]).strip().lower() == 'element parameter':
+                key = str(row[0]).strip()
+            if str(row[1]).strip().lower() == 'action':
+                wait_time = int(str(row[2]).strip())
+
+        dict = MainDriverApi.get_server_variable(run_id,key)
+        for key in dict:
+            if dict[key] == 'null':
+                CommonUtil.ExecLog(sModuleInfo,"Couldn't get server variable %s, waiting for %d second"%(key, wait_time),1)
+                time.sleep(wait_time)
+                dict2 = MainDriverApi.get_server_variable(run_id,key)
+                for k in dict2:
+                    if dict2[k] == 'null':
+                        CommonUtil.ExecLog(sModuleInfo,"Couldn't get server variable %s again" % (k),3)
+                        return "failed"
+                    else:
+                        sr.Set_Shared_Variables(k, dict2[k])
+                        CommonUtil.ExecLog(sModuleInfo, "Got server variable %s='%s'" % (k, dict2[k]), 1)
+            else:
+                sr.Set_Shared_Variables(key, dict[key])
+                CommonUtil.ExecLog(sModuleInfo, "Got server variable %s='%s'" % (key, dict[key]), 1)
+
+        return 'passed'
+    except Exception:
+        return CommonUtil.Exception_Handler(sys.exc_info())
+
+
 def get_all_server_variable(data_set):
     sModuleInfo = inspect.stack()[0][3] + " : " + inspect.getmoduleinfo(__file__).name
     try:
