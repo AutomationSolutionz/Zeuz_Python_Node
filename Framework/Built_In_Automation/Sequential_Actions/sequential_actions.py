@@ -75,6 +75,7 @@ actions = { # Numbers are arbitrary, and are not used anywhere
     229: {'module': 'appium', 'name': 'minimize', 'function': 'minimize_appilcation'},
     230: {'module': 'appium', 'name': 'package version', 'function': 'package_information'},
     231: {'module': 'appium', 'name': 'package installed', 'function': 'package_information'},
+    232: {'module': 'appium', 'name': 'clear and enter text', 'function': 'Clear_And_Enter_Text_Appium'},
 
     300: {'module': 'rest', 'name': 'save response', 'function': 'Get_Response_Wrapper'},
     301: {'module': 'rest', 'name': 'search response', 'function': 'Search_Response'},
