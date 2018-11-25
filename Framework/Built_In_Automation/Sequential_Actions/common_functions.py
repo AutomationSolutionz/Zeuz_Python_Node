@@ -776,22 +776,22 @@ def get_server_variable_and_wait(data_set):
             if str(row[1]).strip().lower() == 'action':
                 wait_time = int(str(row[2]).strip())
 
-        dict = MainDriverApi.get_server_variable(run_id,key)
-        for key in dict:
+        i = 1
+        dict = {}
+        while i <= wait_time:
+            dict = MainDriverApi.get_server_variable(run_id,key)
             if dict[key] == 'null':
-                CommonUtil.ExecLog(sModuleInfo,"Couldn't get server variable %s, waiting for %d second"%(key, wait_time),1)
-                time.sleep(wait_time)
-                dict2 = MainDriverApi.get_server_variable(run_id,key)
-                for k in dict2:
-                    if dict2[k] == 'null':
-                        CommonUtil.ExecLog(sModuleInfo,"Couldn't get server variable %s again" % (k),3)
-                        return "failed"
-                    else:
-                        sr.Set_Shared_Variables(k, dict2[k])
-                        CommonUtil.ExecLog(sModuleInfo, "Got server variable %s='%s'" % (k, dict2[k]), 1)
+                time.sleep(1)
             else:
-                sr.Set_Shared_Variables(key, dict[key])
-                CommonUtil.ExecLog(sModuleInfo, "Got server variable %s='%s'" % (key, dict[key]), 1)
+                break
+            i+=1
+
+        if key in dict and dict[key] != 'null':
+            sr.Set_Shared_Variables(key, dict[key])
+            CommonUtil.ExecLog(sModuleInfo, "Got server variable %s='%s'" % (key, dict[key]), 1)
+        else:
+            CommonUtil.ExecLog(sModuleInfo, "Couldn't get server variable %s again" % (key), 3)
+            return "failed"
 
         return 'passed'
     except Exception:
