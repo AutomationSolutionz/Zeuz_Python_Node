@@ -722,7 +722,55 @@ def Swipe(x_start, y_start, x_end, y_end, duration = 1000, adb = False):
         errMsg = "Unable to swipe."
         return CommonUtil.Exception_Handler(sys.exc_info(),None,errMsg)
 
-def swipe_handler(data_set):
+
+def swipe_handler_wrapper(data_set):
+    try:
+        if appium_details[device_id]['type'] == 'ios': #for ios
+            return swipe_handler_ios(data_set)
+        else: #for android
+            return swipe_handler_android(data_set)
+    except:
+        errMsg = "Unable to swipe."
+        return CommonUtil.Exception_Handler(sys.exc_info(), None, errMsg)
+
+
+def swipe_handler_ios(data_set):
+    sModuleInfo = inspect.stack()[0][3] + " : " + inspect.getmoduleinfo(__file__).name
+    try:
+        swipe_direction = ''  # Initialize as empty string in case user wants to pass an empty string
+        try:
+            for each in data_set:
+                if each[1] == "action":
+                    swipe_direction = str(each[2]).lower().strip()
+                else:
+                    continue
+        except:
+            errMsg = "Error while looking for action line"
+            return CommonUtil.Exception_Handler(sys.exc_info(), None, errMsg)
+
+        if swipe_direction not in ('up','down','left','right'):
+            errMsg = "Swipe direction should be up/down/left/right"
+            return CommonUtil.Exception_Handler(sys.exc_info(), None, errMsg)
+
+        # Enter text into element
+        try:
+            Element = LocateElement.Get_Element(data_set, appium_driver)
+            if Element == "failed":
+                CommonUtil.ExecLog(sModuleInfo, "Unable to locate your element with given data.", 3)
+                return "failed"
+            else:
+                appium_driver.execute_script("mobile: scroll", {"element": Element, "direction": swipe_direction})
+        except:
+            errMsg = "Element to swipe couldn't found"
+            return CommonUtil.Exception_Handler(sys.exc_info(), None, errMsg)
+
+        return "passed"
+    except:
+        errMsg = "Unable to swipe."
+        return CommonUtil.Exception_Handler(sys.exc_info(), None, errMsg)
+
+
+def swipe_handler_android(data_set):
     ''' Swipe screen based on user input '''
     '''
         Function: Performs a single swipe gesture in a vertical or horizonal direction
