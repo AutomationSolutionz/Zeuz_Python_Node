@@ -66,7 +66,7 @@ def unmask_step_data(step_data):
         return CommonUtil.Exception_Handler(sys.exc_info())
 
 
-def sanitize(step_data, valid_chars = '', clean_whitespace_only = False, column = ''):
+def sanitize(step_data):
     ''' Sanitize step data Field and Sub-Field '''
     ''' Usage:
             Is to be used to allow users flexibility in their step data input, but allow the program to find key words
@@ -77,19 +77,13 @@ def sanitize(step_data, valid_chars = '', clean_whitespace_only = False, column 
     
     try:
         # Set columns in the step data to sanitize (default is Field and Sub-Field only)
-        if column == '': # By default, sanitize the first and second columns (Field and Sub-Field)
-            column = [0,1]
-        else:
-            column = str(column).replace(' ', '') # Remove spaces
-            column = column.split(',') # Put into list
-            column = map(int, column) # Convert numbers in list into integers, so they can be used to address tuple elements
+        column = [0,1,2]
+
         
         # Invalid character list (space and underscore hare handle separately)
         invalid_chars = '!"#$%&\'()*+,-./:;<=>?@[\]^`{|}~'
     
         # Adjust invalid character list, based on function input
-        for j in range(len(valid_chars)): # For each valid character
-            invalid_chars = invalid_chars.replace(valid_chars[j], '') # Remove valid character from invalid character list
     
         new_step_data = [] # Create empty list that will contain the data sets
         for data_set in step_data: # For each data set within step data
@@ -100,12 +94,6 @@ def sanitize(step_data, valid_chars = '', clean_whitespace_only = False, column 
                     if str(new_row[i])[:1] == '"' and str(new_row[i])[-1:] == '"': # String is within double quotes, indicating it should not be changed
                         new_row[i] = str(new_row[i])[1:len(new_row[i]) - 1] # Remove surrounding quotes
                         continue # Do not change string
-                    
-                    if clean_whitespace_only == False:
-                        for j in range(0,len(invalid_chars)): # For each invalid character (allows us to only remove those the user hasn't deemed valid)
-                            new_row[i] = new_row[i].replace(invalid_chars[j], '') # Remove invalid character
-                            new_row[i] = new_row[i].lower() # Convert to lower case
-                        if '_' not in valid_chars: new_row[i] = new_row[i].replace('_', ' ') # Underscore to space (unless user wants to keep it)
     
                     new_row[i] = new_row[i].replace('  ', ' ') # Double space to single space
                     new_row[i] = new_row[i].strip() # Remove leading and trailing whitespace
@@ -768,6 +756,42 @@ def get_server_variable(data_set):
                 for key in dict:
                     sr.Set_Shared_Variables(key, dict[key])
                     CommonUtil.ExecLog(sModuleInfo, "Got server variable %s='%s'" % (key, dict[key]), 1)
+
+        return 'passed'
+    except Exception:
+        return CommonUtil.Exception_Handler(sys.exc_info())
+
+
+def get_server_variable_and_wait(data_set):
+    # can get multiple server variable with one action
+    sModuleInfo = inspect.stack()[0][3] + " : " + inspect.getmoduleinfo(__file__).name
+    try:
+        run_id = sr.Get_Shared_Variables('run_id')
+
+        key=''
+        wait_time=5
+        for row in data_set:
+            if str(row[1]).strip().lower() == 'element parameter':
+                key = str(row[0]).strip()
+            if str(row[1]).strip().lower() == 'action':
+                wait_time = int(str(row[2]).strip())
+
+        i = 1
+        dict = {}
+        while i <= wait_time:
+            dict = MainDriverApi.get_server_variable(run_id,key)
+            if dict[key] == 'null':
+                time.sleep(1)
+            else:
+                break
+            i+=1
+
+        if key in dict and dict[key] != 'null':
+            sr.Set_Shared_Variables(key, dict[key])
+            CommonUtil.ExecLog(sModuleInfo, "Got server variable %s='%s'" % (key, dict[key]), 1)
+        else:
+            CommonUtil.ExecLog(sModuleInfo, "Couldn't get server variable %s again" % (key), 3)
+            return "failed"
 
         return 'passed'
     except Exception:

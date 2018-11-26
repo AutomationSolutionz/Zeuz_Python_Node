@@ -1156,8 +1156,8 @@ def Enter_Text_Appium(data_set):
         else:
             try:
                 # Enter text into element
-                Element.click() # Set focus to textbox
-                Element.clear() # Remove any text already existing
+                #Element.click() # Set focus to textbox
+                #Element.clear() # Remove any text already existing
 
                 if str(appium_details[device_id]['type']).lower() == 'ios':
                     Element.set_value(text_value) # Work around for IOS issue in Appium v1.6.4 where send_keys() doesn't work
@@ -1189,6 +1189,70 @@ def Enter_Text_Appium(data_set):
     except Exception:
         errMsg = "Could not find element."
         return CommonUtil.Exception_Handler(sys.exc_info(),None,errMsg)
+
+
+def Clear_And_Enter_Text_Appium(data_set):
+    ''' Write text to an element '''
+
+    sModuleInfo = inspect.stack()[0][3] + " : " + inspect.getmoduleinfo(__file__).name
+    CommonUtil.ExecLog(sModuleInfo, "Function Start", 0)
+
+    # Find text from action line
+    text_value = ''  # Initialize as empty string in case user wants to pass an empty string
+    try:
+        for each in data_set:
+            if each[1] == "action":
+                text_value = each[2]
+            else:
+                continue
+    except:
+        errMsg = "Error while looking for action line"
+        return CommonUtil.Exception_Handler(sys.exc_info(), None, errMsg)
+
+    # Enter text into element
+    try:
+        Element = LocateElement.Get_Element(data_set, appium_driver)
+        if Element == "failed":
+            CommonUtil.ExecLog(sModuleInfo, "Unable to locate your element with given data.", 3)
+            return "failed"
+        else:
+            try:
+                # Enter text into element
+                Element.click()  # Set focus to textbox
+                Element.clear()  # Remove any text already existing
+
+                if str(appium_details[device_id]['type']).lower() == 'ios':
+                    Element.set_value(
+                        text_value)  # Work around for IOS issue in Appium v1.6.4 where send_keys() doesn't work
+            except Exception:
+                errMsg = "Found element, but couldn't write text to it"
+                return CommonUtil.Exception_Handler(sys.exc_info(), None, errMsg)
+
+            # This is wrapped in it's own try block because we sometimes get an error from send_keys stating "Parameters were incorrect". However, most devices work only with send_keys
+            try:
+                if str(appium_details[device_id]['type']).lower() != 'ios':
+                    Element.send_keys(text_value)  # Enter the user specified text
+            except Exception:
+                CommonUtil.ExecLog(sModuleInfo, "Found element, but couldn't write text to it. Trying another method",
+                                   2)
+                '''try:
+                    Element.set_value(text_value) # Enter the user specified text
+                except Exception:
+                    errMsg = "Found element, but couldn't write text to it. Giving up"
+                    return CommonUtil.Exception_Handler(sys.exc_info(),None,errMsg)'''
+
+            # Complete the action
+            try:
+                # appium_driver.hide_keyboard() # Remove keyboard
+                CommonUtil.TakeScreenShot(sModuleInfo)  # Capture screen
+                CommonUtil.ExecLog(sModuleInfo, "Successfully set the value of to text to: %s" % text_value, 1)
+                return "passed"
+            except Exception:
+                errMsg = "Found element, but couldn't write text to it"
+                return CommonUtil.Exception_Handler(sys.exc_info(), None, errMsg)
+    except Exception:
+        errMsg = "Could not find element."
+        return CommonUtil.Exception_Handler(sys.exc_info(), None, errMsg)
 
 
 def Android_Keystroke_Key_Mapping(keystroke, hold_key = False):

@@ -42,6 +42,7 @@ actions = { # Numbers are arbitrary, and are not used anywhere
     121: {'module': 'common', 'name': 'get all server variable', 'function': 'get_all_server_variable'},
     122: {'module': 'common', 'name': 'start timer', 'function': 'start_timer'},
     123: {'module': 'common', 'name': 'wait for timer', 'function': 'wait_for_timer'},
+    124: {'module': 'common', 'name': 'get server variable and wait', 'function': 'get_server_variable_and_wait'},
 
     200: {'module': 'appium', 'name': 'click', 'function': 'Click_Element_Appium'},
     201: {'module': 'appium', 'name': 'text', 'function': 'Enter_Text_Appium'},
@@ -75,6 +76,7 @@ actions = { # Numbers are arbitrary, and are not used anywhere
     229: {'module': 'appium', 'name': 'minimize', 'function': 'minimize_appilcation'},
     230: {'module': 'appium', 'name': 'package version', 'function': 'package_information'},
     231: {'module': 'appium', 'name': 'package installed', 'function': 'package_information'},
+    232: {'module': 'appium', 'name': 'clear and enter text', 'function': 'Clear_And_Enter_Text_Appium'},
 
     300: {'module': 'rest', 'name': 'save response', 'function': 'Get_Response_Wrapper'},
     301: {'module': 'rest', 'name': 'search response', 'function': 'Search_Response'},
@@ -329,7 +331,7 @@ def Sequential_Actions(step_data, _dependency = {}, _run_time_params = {}, _file
 
         # Prepare step data for processing
         step_data = common.unmask_step_data(step_data)
-        step_data = common.sanitize(step_data, column = 1) # Sanitize Sub-Field
+        step_data = common.sanitize(step_data) # Sanitize Sub-Field
         step_data = common.adjust_element_parameters(step_data, supported_platforms) # Parse any mobile platform related fields
         if step_data in failed_tag_list: return 'failed'
         if common.verify_step_data(step_data) in failed_tag_list: return 'failed' # Verify step data is in correct format
