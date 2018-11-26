@@ -3,4 +3,4 @@ version = 6.0
 [Release Date]
 date= 2018-11-26
 [Release Note]
-Note =  Multi machine communication improvement, additional actions, other fixes
+Note=Multi machine communication improvement, additional actions, other fixes
