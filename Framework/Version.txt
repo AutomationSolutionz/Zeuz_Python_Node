@@ -1,6 +1,6 @@
 [ZeuZ Python Version]
-version = 5.9
+version = 6.0
 [Release Date]
-date= 2018-11-20
+date= 2018-11-26
 [Release Note]
-Note =  Run linked test cases in parallel
+Note =  Multi machine communication improvement, additional actions, other fixes
