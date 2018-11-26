@@ -779,6 +779,7 @@ def get_server_variable_and_wait(data_set):
         i = 1
         dict = {}
         while i <= wait_time:
+            CommonUtil.ExecLog(sModuleInfo,"Waiting for server variable '%s'"%key,1)
             dict = MainDriverApi.get_server_variable(run_id,key)
             if dict[key] == 'null':
                 time.sleep(1)
