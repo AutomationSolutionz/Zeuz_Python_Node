@@ -52,7 +52,7 @@ actions = { # Numbers are arbitrary, and are not used anywhere
     205: {'module': 'appium', 'name': 'install', 'function': 'install_application'},
     206: {'module': 'appium', 'name': 'launch', 'function': 'launch_application'},
     207: {'module': 'appium', 'name': 'get location', 'function': 'get_element_location_by_id'},
-    208: {'module': 'appium', 'name': 'swipe', 'function': 'swipe_handler'},
+    208: {'module': 'appium', 'name': 'swipe', 'function': 'swipe_handler_wrapper'},
     209: {'module': 'appium', 'name': 'close', 'function': 'close_application'},
     210: {'module': 'appium', 'name': 'uninstall', 'function': 'uninstall_application'},
     211: {'module': 'appium', 'name': 'teardown', 'function': 'teardown_appium'},
@@ -77,6 +77,7 @@ actions = { # Numbers are arbitrary, and are not used anywhere
     230: {'module': 'appium', 'name': 'package version', 'function': 'package_information'},
     231: {'module': 'appium', 'name': 'package installed', 'function': 'package_information'},
     232: {'module': 'appium', 'name': 'clear and enter text', 'function': 'Clear_And_Enter_Text_Appium'},
+    233: {'module': 'appium', 'name': 'pickerwheel', 'function': 'Pickerwheel_Appium'},
 
     300: {'module': 'rest', 'name': 'save response', 'function': 'Get_Response_Wrapper'},
     301: {'module': 'rest', 'name': 'search response', 'function': 'Search_Response'},
