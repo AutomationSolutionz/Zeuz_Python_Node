@@ -52,7 +52,7 @@ actions = { # Numbers are arbitrary, and are not used anywhere
     205: {'module': 'appium', 'name': 'install', 'function': 'install_application'},
     206: {'module': 'appium', 'name': 'launch', 'function': 'launch_application'},
     207: {'module': 'appium', 'name': 'get location', 'function': 'get_element_location_by_id'},
-    208: {'module': 'appium', 'name': 'swipe', 'function': 'swipe_handler'},
+    208: {'module': 'appium', 'name': 'swipe', 'function': 'swipe_handler_wrapper'},
     209: {'module': 'appium', 'name': 'close', 'function': 'close_application'},
     210: {'module': 'appium', 'name': 'uninstall', 'function': 'uninstall_application'},
     211: {'module': 'appium', 'name': 'teardown', 'function': 'teardown_appium'},
