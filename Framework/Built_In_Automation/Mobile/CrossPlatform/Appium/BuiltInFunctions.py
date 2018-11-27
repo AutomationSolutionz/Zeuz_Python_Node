@@ -737,20 +737,24 @@ def swipe_handler_wrapper(data_set):
 def swipe_handler_ios(data_set):
     sModuleInfo = inspect.stack()[0][3] + " : " + inspect.getmoduleinfo(__file__).name
     try:
-        swipe_direction = ''  # Initialize as empty string in case user wants to pass an empty string
+        direction = ''
+        predicateString = ''
+        swipe_direction_and_predicate = ''
         try:
             for each in data_set:
                 if each[1] == "action":
-                    swipe_direction = str(each[2]).lower().strip()
+                    swipe_direction_and_predicate = str(each[2]).strip()
                 else:
                     continue
         except:
             errMsg = "Error while looking for action line"
             return CommonUtil.Exception_Handler(sys.exc_info(), None, errMsg)
 
-        if swipe_direction not in ('up','down','left','right'):
-            errMsg = "Swipe direction should be up/down/left/right"
-            return CommonUtil.Exception_Handler(sys.exc_info(), None, errMsg)
+        if swipe_direction_and_predicate in ('up','down','left','right'):
+            direction = swipe_direction_and_predicate
+        else:
+            predicateString = swipe_direction_and_predicate
+
 
         # Enter text into element
         try:
@@ -759,9 +763,15 @@ def swipe_handler_ios(data_set):
                 CommonUtil.ExecLog(sModuleInfo, "Unable to locate your element with given data.", 3)
                 return "failed"
             else:
-                appium_driver.execute_script("mobile: scroll", {"element": Element, "direction": swipe_direction})
+                swipe_dict={}
+                swipe_dict["element"]=Element
+                if direction != '':
+                    swipe_dict["direction"] = direction
+                else:
+                    swipe_dict["predicateString"] = predicateString
+                appium_driver.execute_script("mobile: scroll", swipe_dict)
         except:
-            errMsg = "Element to swipe couldn't found"
+            errMsg = "Element to swipe couldn't be found, please read help for mobile swipe to learn more"
             return CommonUtil.Exception_Handler(sys.exc_info(), None, errMsg)
 
         return "passed"
