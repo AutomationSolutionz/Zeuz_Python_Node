@@ -227,7 +227,6 @@ if sr.Test_Shared_Variables('dependency'): # Check if driver is already set in s
 bypass_data_set = []
 bypass_row = []
 loaded_modules = []
-last_call_was_conditional = False
 
 # Get node ID and set as a Shared Variable
 machineInfo = CommonUtil.MachineInfo() # Create instance
@@ -339,7 +338,7 @@ def Sequential_Actions(step_data, _dependency = {}, _run_time_params = {}, _file
     write_browser_logs()
     return result
 
-def Run_Sequential_Actions(data_set_list=[], conditional=False): #data_set_no will used in recursive conditional action call
+def Run_Sequential_Actions(data_set_list=[]): #data_set_no will used in recursive conditional action call
     
     sModuleInfo = inspect.stack()[0][3] + " : " + inspect.getmoduleinfo(__file__).name
     try:
@@ -349,8 +348,6 @@ def Run_Sequential_Actions(data_set_list=[], conditional=False): #data_set_no wi
         skip_tmp = [] # Temporarily holds skip data sets
         skip_for_loop = []
 
-        global last_call_was_conditional
-        last_call_was_conditional = conditional
 
         step_data = sr.Get_Shared_Variables('step_data')
 
@@ -527,11 +524,16 @@ def Loop_Action_Handler(row, dataset_cnt):
     try:
         skip = []
         nested_loop = False
+        nested_double = False
         ### Create sub-set of step data that we will send to SA for processing
         try:
             if str(row[2]).strip().startswith('nested'):
                 nested_loop = True
                 row = (row[0],row[1],str(row[2]).split("-")[1])
+            elif str(row[2]).strip().startswith('double nested'):
+                nested_loop = True
+                nested_double = True
+                row = (row[0], row[1], str(row[2]).split("-")[1])
             sets = map(int, row[2].replace(' ', '').split(',')) # Save data sets to loop
             sets = [x - 1 for x in sets] # Convert data set numbers to array friendly
             new_step_data = []
@@ -605,7 +607,7 @@ def Loop_Action_Handler(row, dataset_cnt):
             result,skip_for_loop = Run_Sequential_Actions(new_step_data)
             if result in passed_tag_list: result = 'passed' # Make sure the result matches the string we set above
             else: result = 'failed'
-            return result,skip
+            return result
     
         ### Send sub-set to SA until we get our desired value or number of loops
         sub_set_cnt = 1 # Used in counting number of loops
@@ -622,6 +624,7 @@ def Loop_Action_Handler(row, dataset_cnt):
 
                     # Build the sub-set and execute
                     result = build_subset([new_step_data[ndc]])
+                    if result in failed_tag_list: return result,skip
                     
                     # Check if we should exit now or keep going
                     if ndc == action_result and result == loop_type: # If this data set that just returned is the one that we are watching AND it returned the result we want, then exit the loop 
@@ -634,6 +637,7 @@ def Loop_Action_Handler(row, dataset_cnt):
                 for ndc in range(len(new_step_data)): # For each data set in the sub-set
                     # Build the sub-set and execute
                     result = build_subset([new_step_data[ndc]])
+                    if result in failed_tag_list: return result, skip
         
                 # Check if we hit our set number of loops
                 if sub_set_cnt >= loop_len: # If we hit out desired number of loops for this loop type, then exit
@@ -652,8 +656,8 @@ def Loop_Action_Handler(row, dataset_cnt):
                 for ndc in range(len(new_step_data)): # For each data set in the sub-set
                     # Build the sub-set and execute
                     result = build_subset([new_step_data[ndc]]) #the dataset was conditional then break
-                    global last_call_was_conditional
-                    if nested_loop or last_call_was_conditional:break
+                    if result in failed_tag_list: return result, skip
+                    if nested_double:break
 
                 # Check if we have processed all the list variables
                 if sub_set_cnt >= loop_len:
@@ -672,8 +676,8 @@ def Loop_Action_Handler(row, dataset_cnt):
                 for ndc in range(len(new_step_data)): # For each data set in the sub-set
                     # Build the sub-set and execute
                     result = build_subset([new_step_data[ndc]])
-                    global last_call_was_conditional
-                    if nested_loop or last_call_was_conditional:break
+                    if result in failed_tag_list: return result, skip
+                    if nested_double:break
 
                 # Check if we have processed all the list variables
                 if sub_set_cnt >= loop_len:
@@ -825,7 +829,7 @@ def Conditional_Action_Handler(data_set, row, logic_row):
 
                 CommonUtil.ExecLog(sModuleInfo, "Processing conditional step %s" % str(each_item), 1)
                 data_set_index = int(each_item.strip()) - 1 # data set number, -1 to offset for data set numbering system
-                result,skip_for_loop = Run_Sequential_Actions([data_set_index],conditional = True) #new edit: full step data is passed. [step_data[data_set_index]]) # Recursively call this function until all called data sets are complete
+                result,skip_for_loop = Run_Sequential_Actions([data_set_index]) #new edit: full step data is passed. [step_data[data_set_index]]) # Recursively call this function until all called data sets are complete
                 if row[0].lower().strip() == 'step exit':
                     CommonUtil.ExecLog(sModuleInfo, "Step Exit called. Stopping Test Step.", 1)
                     return result
@@ -902,4 +906,5 @@ def Action_Handler(_data_set, action_row):
 
     except Exception:
         return CommonUtil.Exception_Handler(sys.exc_info())
+
 
