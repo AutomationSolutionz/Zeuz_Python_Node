@@ -37,6 +37,12 @@ actions = { # Numbers are arbitrary, and are not used anywhere
     116: {'module': 'common', 'name': 'create dictionary', 'function': 'Initialize_Dict'},
     117: {'module': 'common', 'name': 'create or append list', 'function': 'append_list_shared_variable'},
     118: {'module': 'common', 'name': 'create or append dictionary', 'function': 'append_dict_shared_variable'},
+    119: {'module': 'common', 'name': 'set server variable', 'function': 'set_server_variable'},
+    120: {'module': 'common', 'name': 'get server variable', 'function': 'get_server_variable'},
+    121: {'module': 'common', 'name': 'get all server variable', 'function': 'get_all_server_variable'},
+    122: {'module': 'common', 'name': 'start timer', 'function': 'start_timer'},
+    123: {'module': 'common', 'name': 'wait for timer', 'function': 'wait_for_timer'},
+    124: {'module': 'common', 'name': 'get server variable and wait', 'function': 'get_server_variable_and_wait'},
 
     200: {'module': 'appium', 'name': 'click', 'function': 'Click_Element_Appium'},
     201: {'module': 'appium', 'name': 'text', 'function': 'Enter_Text_Appium'},
@@ -46,7 +52,7 @@ actions = { # Numbers are arbitrary, and are not used anywhere
     205: {'module': 'appium', 'name': 'install', 'function': 'install_application'},
     206: {'module': 'appium', 'name': 'launch', 'function': 'launch_application'},
     207: {'module': 'appium', 'name': 'get location', 'function': 'get_element_location_by_id'},
-    208: {'module': 'appium', 'name': 'swipe', 'function': 'swipe_handler'},
+    208: {'module': 'appium', 'name': 'swipe', 'function': 'swipe_handler_wrapper'},
     209: {'module': 'appium', 'name': 'close', 'function': 'close_application'},
     210: {'module': 'appium', 'name': 'uninstall', 'function': 'uninstall_application'},
     211: {'module': 'appium', 'name': 'teardown', 'function': 'teardown_appium'},
@@ -70,6 +76,8 @@ actions = { # Numbers are arbitrary, and are not used anywhere
     229: {'module': 'appium', 'name': 'minimize', 'function': 'minimize_appilcation'},
     230: {'module': 'appium', 'name': 'package version', 'function': 'package_information'},
     231: {'module': 'appium', 'name': 'package installed', 'function': 'package_information'},
+    232: {'module': 'appium', 'name': 'clear and enter text', 'function': 'Clear_And_Enter_Text_Appium'},
+    233: {'module': 'appium', 'name': 'pickerwheel', 'function': 'Pickerwheel_Appium'},
 
     300: {'module': 'rest', 'name': 'save response', 'function': 'Get_Response_Wrapper'},
     301: {'module': 'rest', 'name': 'search response', 'function': 'Search_Response'},
@@ -324,7 +332,7 @@ def Sequential_Actions(step_data, _dependency = {}, _run_time_params = {}, _file
 
         # Prepare step data for processing
         step_data = common.unmask_step_data(step_data)
-        step_data = common.sanitize(step_data, column = 1) # Sanitize Sub-Field
+        step_data = common.sanitize(step_data) # Sanitize Sub-Field
         step_data = common.adjust_element_parameters(step_data, supported_platforms) # Parse any mobile platform related fields
         if step_data in failed_tag_list: return 'failed'
         if common.verify_step_data(step_data) in failed_tag_list: return 'failed' # Verify step data is in correct format
@@ -625,7 +633,7 @@ def Loop_Action_Handler(row, dataset_cnt):
                     # Build the sub-set and execute
                     result = build_subset([new_step_data[ndc]])
                     if result in failed_tag_list: return result,skip
-                    
+
                     # Check if we should exit now or keep going
                     if ndc == action_result and result == loop_type: # If this data set that just returned is the one that we are watching AND it returned the result we want, then exit the loop 
                         skip = sets # Tell SA to skip these data sets that were in the loop once it picks up processing normally
@@ -638,7 +646,7 @@ def Loop_Action_Handler(row, dataset_cnt):
                     # Build the sub-set and execute
                     result = build_subset([new_step_data[ndc]])
                     if result in failed_tag_list: return result, skip
-        
+
                 # Check if we hit our set number of loops
                 if sub_set_cnt >= loop_len: # If we hit out desired number of loops for this loop type, then exit
                     skip = sets # Tell SA to skip these data sets that were in the loop once it picks up processing normally
@@ -758,7 +766,23 @@ def Conditional_Action_Handler(data_set, row, logic_row):
         except: # Element doesn't exist, proceed with the step data following the fail/false path
             CommonUtil.ExecLog(sModuleInfo, "Conditional Actions could not find the element", 3)
             logic_decision = "false"
-                         
+
+    elif module == 'common': #compare variable or list, and based on the result conditional actions will work
+        try:
+            result = common.Compare_Variables(data_set) # Get the element object or 'failed'
+            if result in failed_tag_list:
+                result = common.Compare_Lists_or_Dicts(data_set)
+                if result in failed_tag_list:
+                    CommonUtil.ExecLog(sModuleInfo, "Conditional Actions Result is False, Variable doesn't match with given value", 1)
+                    logic_decision = "false"
+                else:
+                    logic_decision = "true"
+            else:
+                logic_decision = "true"
+        except: # Element doesn't exist, proceed with the step data following the fail/false path
+            CommonUtil.ExecLog(sModuleInfo, "Conditional Actions could not find the variable", 3)
+            logic_decision = "false"
+
     elif module == 'rest':
         Get_Element_Step_Data = getattr(eval(module), 'Get_Element_Step_Data')
         element_step_data = Get_Element_Step_Data(
@@ -906,5 +930,6 @@ def Action_Handler(_data_set, action_row):
 
     except Exception:
         return CommonUtil.Exception_Handler(sys.exc_info())
+
 
 

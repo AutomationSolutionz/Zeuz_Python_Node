@@ -11,7 +11,9 @@ from Framework.Built_In_Automation.Shared_Resources import BuiltInFunctionShared
 from Framework.Built_In_Automation.Sequential_Actions.sequential_actions import actions, action_support
 from Framework.Utilities.CommonUtil import passed_tag_list, failed_tag_list, skipped_tag_list # Allowed return strings, used to normalize pass/fail
 from Framework.Built_In_Automation.Shared_Resources import LocateElement
+from Framework import MainDriverApi
 import datetime
+from datetime import timedelta
 months = ["Unknown",
           "January",
           "Febuary",
@@ -64,7 +66,7 @@ def unmask_step_data(step_data):
         return CommonUtil.Exception_Handler(sys.exc_info())
 
 
-def sanitize(step_data, valid_chars = '', clean_whitespace_only = False, column = ''):
+def sanitize(step_data):
     ''' Sanitize step data Field and Sub-Field '''
     ''' Usage:
             Is to be used to allow users flexibility in their step data input, but allow the program to find key words
@@ -75,19 +77,13 @@ def sanitize(step_data, valid_chars = '', clean_whitespace_only = False, column 
     
     try:
         # Set columns in the step data to sanitize (default is Field and Sub-Field only)
-        if column == '': # By default, sanitize the first and second columns (Field and Sub-Field)
-            column = [0,1]
-        else:
-            column = str(column).replace(' ', '') # Remove spaces
-            column = column.split(',') # Put into list
-            column = map(int, column) # Convert numbers in list into integers, so they can be used to address tuple elements
+        column = [0,1,2]
+
         
         # Invalid character list (space and underscore hare handle separately)
         invalid_chars = '!"#$%&\'()*+,-./:;<=>?@[\]^`{|}~'
     
         # Adjust invalid character list, based on function input
-        for j in range(len(valid_chars)): # For each valid character
-            invalid_chars = invalid_chars.replace(valid_chars[j], '') # Remove valid character from invalid character list
     
         new_step_data = [] # Create empty list that will contain the data sets
         for data_set in step_data: # For each data set within step data
@@ -98,12 +94,6 @@ def sanitize(step_data, valid_chars = '', clean_whitespace_only = False, column 
                     if str(new_row[i])[:1] == '"' and str(new_row[i])[-1:] == '"': # String is within double quotes, indicating it should not be changed
                         new_row[i] = str(new_row[i])[1:len(new_row[i]) - 1] # Remove surrounding quotes
                         continue # Do not change string
-                    
-                    if clean_whitespace_only == False:
-                        for j in range(0,len(invalid_chars)): # For each invalid character (allows us to only remove those the user hasn't deemed valid)
-                            new_row[i] = new_row[i].replace(invalid_chars[j], '') # Remove invalid character
-                            new_row[i] = new_row[i].lower() # Convert to lower case
-                        if '_' not in valid_chars: new_row[i] = new_row[i].replace('_', ' ') # Underscore to space (unless user wants to keep it)
     
                     new_row[i] = new_row[i].replace('  ', ' ') # Double space to single space
                     new_row[i] = new_row[i].strip() # Remove leading and trailing whitespace
@@ -732,3 +722,144 @@ def sequential_actions_settings(data_set):
 def print_shared_variables():
     for each in sr.shared_variables:
         print each + " : " +str(sr.shared_variables[each])
+
+
+def set_server_variable(data_set):
+    #can set multiple server variable with one action
+    sModuleInfo = inspect.stack()[0][3] + " : " + inspect.getmoduleinfo(__file__).name
+    try:
+        run_id = sr.Get_Shared_Variables('run_id')
+
+        for row in data_set:
+            if str(row[1]).strip().lower() == 'element parameter':
+                key = str(row[0]).strip()
+                value = str(row[2]).strip()
+                #call main driver to send var to server
+                MainDriverApi.set_server_variable(run_id,key,value)
+
+        return 'passed'
+    except Exception:
+        return CommonUtil.Exception_Handler(sys.exc_info())
+
+
+def get_server_variable(data_set):
+    # can get multiple server variable with one action
+    sModuleInfo = inspect.stack()[0][3] + " : " + inspect.getmoduleinfo(__file__).name
+    try:
+        run_id = sr.Get_Shared_Variables('run_id')
+
+        for row in data_set:
+            if str(row[1]).strip().lower() == 'element parameter':
+                key = str(row[0]).strip()
+
+                dict = MainDriverApi.get_server_variable(run_id,key)
+                for key in dict:
+                    sr.Set_Shared_Variables(key, dict[key])
+                    CommonUtil.ExecLog(sModuleInfo, "Got server variable %s='%s'" % (key, dict[key]), 1)
+
+        return 'passed'
+    except Exception:
+        return CommonUtil.Exception_Handler(sys.exc_info())
+
+
+def get_server_variable_and_wait(data_set):
+    # can get multiple server variable with one action
+    sModuleInfo = inspect.stack()[0][3] + " : " + inspect.getmoduleinfo(__file__).name
+    try:
+        run_id = sr.Get_Shared_Variables('run_id')
+
+        key=''
+        wait_time=5
+        for row in data_set:
+            if str(row[1]).strip().lower() == 'element parameter':
+                key = str(row[0]).strip()
+            if str(row[1]).strip().lower() == 'action':
+                wait_time = int(str(row[2]).strip())
+
+        i = 1
+        dict = {}
+        while i <= wait_time:
+            CommonUtil.ExecLog(sModuleInfo,"Waiting for server variable '%s'"%key,1)
+            dict = MainDriverApi.get_server_variable(run_id,key)
+            if dict[key] == 'null':
+                time.sleep(1)
+            else:
+                break
+            i+=1
+
+        if key in dict and dict[key] != 'null':
+            sr.Set_Shared_Variables(key, dict[key])
+            CommonUtil.ExecLog(sModuleInfo, "Got server variable %s='%s'" % (key, dict[key]), 1)
+        else:
+            CommonUtil.ExecLog(sModuleInfo, "Couldn't get server variable %s again" % (key), 3)
+            return "failed"
+
+        return 'passed'
+    except Exception:
+        return CommonUtil.Exception_Handler(sys.exc_info())
+
+
+def get_all_server_variable(data_set):
+    sModuleInfo = inspect.stack()[0][3] + " : " + inspect.getmoduleinfo(__file__).name
+    try:
+        run_id = sr.Get_Shared_Variables('run_id')
+
+        dict = MainDriverApi.get_all_server_variable(run_id)
+        for key in dict:
+            sr.Set_Shared_Variables(key, dict[key])
+            CommonUtil.ExecLog(sModuleInfo, "Got server variable %s='%s'" % (key, dict[key]), 1)
+        return 'passed'
+    except Exception:
+        return CommonUtil.Exception_Handler(sys.exc_info())
+
+def start_timer(data_set):
+    ''' Test Step front end for modifying certain variables used by Sequential Actions '''
+
+    sModuleInfo = inspect.stack()[0][3] + " : " + inspect.getmoduleinfo(__file__).name
+    CommonUtil.ExecLog(sModuleInfo, "Function Start", 0)
+
+    try:
+        # Parse data set
+        try:
+            seconds = int(str(data_set[0][2]).strip())  # Get no. of seconds for timer
+        except:
+            seconds = 0
+
+        CommonUtil.ExecLog(sModuleInfo, "Starting timer", 1)
+
+        if seconds>=0:
+            return sr.Set_Shared_Variables("timer", datetime.datetime.now() - timedelta(seconds=seconds))
+        else:
+            return sr.Set_Shared_Variables("timer", datetime.datetime.now() + timedelta(seconds=abs(seconds)))
+    except Exception:
+        return CommonUtil.Exception_Handler(sys.exc_info())
+
+
+def wait_for_timer(data_set):
+    ''' Test Step front end for modifying certain variables used by Sequential Actions '''
+
+    sModuleInfo = inspect.stack()[0][3] + " : " + inspect.getmoduleinfo(__file__).name
+    CommonUtil.ExecLog(sModuleInfo, "Function Start", 0)
+
+    try:
+        seconds_to_wait = int(str(data_set[0][2]).strip())
+        # Parse data set
+        start_time = sr.Get_Shared_Variables("timer")
+        if start_time in failed_tag_list:
+            CommonUtil.ExecLog(sModuleInfo,"Timer wasn't started, please start timer first",3)
+
+        delta = datetime.datetime.now() - start_time
+        delta = int(delta.total_seconds())
+
+        if delta>seconds_to_wait:
+            CommonUtil.ExecLog(sModuleInfo, "Timer have expired before the execution was completed", 3)
+            return "failed"
+
+        sleep_time = seconds_to_wait - delta
+        CommonUtil.ExecLog(sModuleInfo, "%d seconds remaining for timer"%sleep_time, 1)
+        CommonUtil.ExecLog(sModuleInfo, "Will wait for %d seconds"%sleep_time, 1)
+        time.sleep(sleep_time)
+
+        return "passed"
+    except Exception:
+        return CommonUtil.Exception_Handler(sys.exc_info())

@@ -59,6 +59,23 @@ def get_device_order(Userid):
     return RequestFormatter.Get('get_machine_device_order_api', {'machine_name': Userid})
 
 
+# sets server variable
+def set_server_variable(run_id,key,value):
+    return RequestFormatter.Get('set_server_variable_api', {'run_id': run_id,'var_name':key,'var_val':value})
+
+# gets server variable
+def get_server_variable(run_id,key):
+    return RequestFormatter.Get('get_server_variable_api', {'run_id': run_id,'var_name':key})
+
+# get all server variable
+def get_all_server_variable(run_id):
+    return RequestFormatter.Get('get_all_server_variable_api', {'run_id': run_id})
+
+# get all server variable
+def delete_all_server_variable(run_id):
+    return RequestFormatter.Get('delete_all_runid_server_variable_api', {'run_id': run_id})
+
+
 # returns all dependencies of test cases of a run id
 def get_all_dependencies(project_id, team_id, run_description):
     dependency_list = RequestFormatter.Get('get_all_dependency_based_on_project_and_team_api',
@@ -85,8 +102,8 @@ def update_run_id_info_on_server(run_id):
 
 
 # returns all automated test cases of a runid
-def get_all_automated_test_cases_in_run_id(run_id):
-    TestCaseLists = RequestFormatter.Get('get_all_automated_test_cases_based_on_run_id_api', {'run_id': run_id})
+def get_all_automated_test_cases_in_run_id(run_id, tester_id):
+    TestCaseLists = RequestFormatter.Get('get_all_automated_test_cases_based_on_run_id_api', {'run_id': run_id,'tester_id': tester_id})
     return TestCaseLists
 
 
@@ -756,6 +773,7 @@ def cleanup_driver_instances():  # cleans up driver(selenium,appium) instances
 
 
 def run_test_case(TestCaseID, sModuleInfo, run_id, driver_list, final_dependency, final_run_params, temp_ini_file):
+    shared.Set_Shared_Variables('run_id', run_id)
     test_case = TestCaseID[0]
     copy_status = False
     CommonUtil.ExecLog(sModuleInfo, "Gathering data for test case %s" % (test_case), 4, False)
@@ -795,6 +813,8 @@ def run_test_case(TestCaseID, sModuleInfo, run_id, driver_list, final_dependency
 
     if not debug or cleanup_drivers_during_debug:  # if normal run, the write log file and cleanup driver instances
         cleanup_driver_instances()
+
+    if cleanup_drivers_during_debug:
         shared.Clean_Up_Shared_Variables()
 
     # runs all test steps in the test case, all test step result is stored in the list named sTestStepResultList
@@ -900,6 +920,7 @@ def main(device_dict):
         team_id = int(TestRunID[4])
         run_description = (TestRunID[1].replace("run_dependency", '')).replace('dependency_filter', '')
         run_id = TestRunID[0]
+        #save run id in shared variable
         final_dependency = get_all_dependencies(project_id, team_id, run_description)  # get dependencies
         final_run_params_from_server = get_all_runtime_parameters(run_id)  # get runtime params
         final_run_params = {}
@@ -907,7 +928,7 @@ def main(device_dict):
             final_run_params[str(dict['field'])] = str(dict['value'])
         update_run_id_info_on_server(run_id)  # update runid status
         TestSetStartTime = time.time()
-        TestCaseLists = get_all_automated_test_cases_in_run_id(run_id)  # get all automated test cases of a runid
+        TestCaseLists = get_all_automated_test_cases_in_run_id(run_id,Userid)  # get all automated test cases of a runid
 
         if len(TestCaseLists) > 0:
             CommonUtil.ExecLog(sModuleInfo, "Running Test cases from list : %s" % TestCaseLists[0:len(TestCaseLists)],
@@ -940,6 +961,8 @@ def main(device_dict):
         write_all_logs_to_server(all_logs)
         send_email_report_after_exectution(run_id, project_id, team_id)
         update_fail_reasons_of_test_cases(run_id,TestCaseLists)
+        #for testing, will be done for only main TC in linked test cases
+        #delete_all_server_variable(run_id)
 
     return "pass"
 

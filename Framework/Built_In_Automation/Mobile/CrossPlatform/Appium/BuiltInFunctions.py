@@ -285,6 +285,7 @@ def launch_application(data_set):
         platform_version = ''
         device_name = ''
         ios = ''
+        no_reset= False
 
         for row in data_set: # Find required data
             if str(row[0]).strip().lower() in ('android package','package') and row[1] == 'element parameter':
@@ -293,6 +294,11 @@ def launch_application(data_set):
                 activity_name = row[2]
             elif str(row[0]).strip().lower() in ('ios','ios simulator') and row[1] == 'element parameter':
                 ios = row[2]
+            elif str(row[0]).strip().lower() in ('no reset', 'no_reset','noreset') and row[1] == 'element parameter':
+                if str(row[2]).strip().lower() in ('yes', 'true'):
+                    no_reset = True
+                else:
+                    no_reset = False
             elif str(row[1]).strip().lower() == 'action':
                 serial = row[2].lower().strip()
 
@@ -331,7 +337,7 @@ def launch_application(data_set):
             device_name = appium_details[device_id]['device_name']
         launch_app = True
         if appium_details[device_id]['driver'] == None: # Only create a new appium instance if we haven't already (may be done by install_and_start_driver())
-            result,launch_app = start_appium_driver(package_name, activity_name,platform_version=platform_version,device_name=device_name,ios=ios)
+            result,launch_app = start_appium_driver(package_name, activity_name,platform_version=platform_version,device_name=device_name,ios=ios,no_reset=no_reset)
             if result == 'failed':
                 return 'failed'
         
@@ -412,7 +418,7 @@ def start_appium_server():
     except Exception:
         return CommonUtil.Exception_Handler(sys.exc_info(), None, "Error starting Appium server")
 
-def start_appium_driver(package_name = '', activity_name = '', filename = '', platform_version='', device_name='',ios=''):
+def start_appium_driver(package_name = '', activity_name = '', filename = '', platform_version='', device_name='',ios='', no_reset=False):
     ''' Creates appium instance using discovered and provided capabilities '''
     # Does not execute application
     
@@ -475,6 +481,8 @@ def start_appium_driver(package_name = '', activity_name = '', filename = '', pl
                     desired_caps['wdaLocalPort'] = wdaLocalPort
                     desired_caps['udid'] = appium_details[device_id]['serial']
                     desired_caps['newCommandTimeout'] = 6000
+                    if no_reset:
+                        desired_caps['noReset'] = 'true'  # Do not clear application cache when complete
                 else: #for real ios device, not developed yet
                     desired_caps['sendKeyStrategy'] = 'setValue' # Use set_value() for writing to element
                     desired_caps['platformVersion'] = '10.3' # Read version #!!! Temporarily hard coded
@@ -714,7 +722,65 @@ def Swipe(x_start, y_start, x_end, y_end, duration = 1000, adb = False):
         errMsg = "Unable to swipe."
         return CommonUtil.Exception_Handler(sys.exc_info(),None,errMsg)
 
-def swipe_handler(data_set):
+
+def swipe_handler_wrapper(data_set):
+    try:
+        if appium_details[device_id]['type'] == 'ios': #for ios
+            return swipe_handler_ios(data_set)
+        else: #for android
+            return swipe_handler_android(data_set)
+    except:
+        errMsg = "Unable to swipe."
+        return CommonUtil.Exception_Handler(sys.exc_info(), None, errMsg)
+
+
+def swipe_handler_ios(data_set):
+    sModuleInfo = inspect.stack()[0][3] + " : " + inspect.getmoduleinfo(__file__).name
+    try:
+        direction = ''
+        predicateString = ''
+        swipe_direction_and_predicate = ''
+        try:
+            for each in data_set:
+                if each[1] == "action":
+                    swipe_direction_and_predicate = str(each[2]).strip()
+                else:
+                    continue
+        except:
+            errMsg = "Error while looking for action line"
+            return CommonUtil.Exception_Handler(sys.exc_info(), None, errMsg)
+
+        if swipe_direction_and_predicate in ('up','down','left','right'):
+            direction = swipe_direction_and_predicate
+        else:
+            predicateString = swipe_direction_and_predicate
+
+
+        # Enter text into element
+        try:
+            Element = LocateElement.Get_Element(data_set, appium_driver)
+            if Element == "failed":
+                CommonUtil.ExecLog(sModuleInfo, "Unable to locate your element with given data.", 3)
+                return "failed"
+            else:
+                swipe_dict={}
+                swipe_dict["element"]=Element
+                if direction != '':
+                    swipe_dict["direction"] = direction
+                else:
+                    swipe_dict["predicateString"] = predicateString
+                appium_driver.execute_script("mobile: scroll", swipe_dict)
+        except:
+            errMsg = "Element to swipe couldn't be found, please read help for mobile swipe to learn more"
+            return CommonUtil.Exception_Handler(sys.exc_info(), None, errMsg)
+
+        return "passed"
+    except:
+        errMsg = "Unable to swipe."
+        return CommonUtil.Exception_Handler(sys.exc_info(), None, errMsg)
+
+
+def swipe_handler_android(data_set):
     ''' Swipe screen based on user input '''
     '''
         Function: Performs a single swipe gesture in a vertical or horizonal direction
@@ -1120,9 +1186,72 @@ def Long_Press_Appium(data_set):
         return CommonUtil.Exception_Handler(sys.exc_info(),None,errMsg)
 
 
-
 def Enter_Text_Appium(data_set):
     ''' Write text to an element '''
+
+    sModuleInfo = inspect.stack()[0][3] + " : " + inspect.getmoduleinfo(__file__).name
+    CommonUtil.ExecLog(sModuleInfo, "Function Start", 0)
+
+    # Find text from action line
+    text_value = ''  # Initialize as empty string in case user wants to pass an empty string
+    try:
+        for each in data_set:
+            if each[1] == "action":
+                text_value = each[2]
+            else:
+                continue
+    except:
+        errMsg = "Error while looking for action line"
+        return CommonUtil.Exception_Handler(sys.exc_info(), None, errMsg)
+
+    # Enter text into element
+    try:
+        Element = LocateElement.Get_Element(data_set, appium_driver)
+        if Element == "failed":
+            CommonUtil.ExecLog(sModuleInfo, "Unable to locate your element with given data.", 3)
+            return "failed"
+        else:
+            try:
+                # Enter text into element
+                # Element.click() # Set focus to textbox
+                # Element.clear() # Remove any text already existing
+
+                if str(appium_details[device_id]['type']).lower() == 'ios':
+                    Element.set_value(
+                        text_value)  # Work around for IOS issue in Appium v1.6.4 where send_keys() doesn't work
+            except Exception:
+                errMsg = "Found element, but couldn't write text to it"
+                return CommonUtil.Exception_Handler(sys.exc_info(), None, errMsg)
+
+            # This is wrapped in it's own try block because we sometimes get an error from send_keys stating "Parameters were incorrect". However, most devices work only with send_keys
+            try:
+                if str(appium_details[device_id]['type']).lower() != 'ios':
+                    Element.send_keys(text_value)  # Enter the user specified text
+            except Exception:
+                CommonUtil.ExecLog(sModuleInfo, "Found element, but couldn't write text to it. Trying another method",
+                                   2)
+                '''try:
+                    Element.set_value(text_value) # Enter the user specified text
+                except Exception:
+                    errMsg = "Found element, but couldn't write text to it. Giving up"
+                    return CommonUtil.Exception_Handler(sys.exc_info(),None,errMsg)'''
+
+            # Complete the action
+            try:
+                # appium_driver.hide_keyboard() # Remove keyboard
+                CommonUtil.TakeScreenShot(sModuleInfo)  # Capture screen
+                CommonUtil.ExecLog(sModuleInfo, "Successfully set the value of to text to: %s" % text_value, 1)
+                return "passed"
+            except Exception:
+                errMsg = "Found element, but couldn't write text to it"
+                return CommonUtil.Exception_Handler(sys.exc_info(), None, errMsg)
+    except Exception:
+        errMsg = "Could not find element."
+        return CommonUtil.Exception_Handler(sys.exc_info(), None, errMsg)
+
+
+def Pickerwheel_Appium(data_set):
+    ''' Write text to a pickerwheel '''
     
     sModuleInfo = inspect.stack()[0][3] + " : " + inspect.getmoduleinfo(__file__).name
     CommonUtil.ExecLog(sModuleInfo,"Function Start", 0)
@@ -1146,28 +1275,12 @@ def Enter_Text_Appium(data_set):
             CommonUtil.ExecLog(sModuleInfo, "Unable to locate your element with given data.", 3)
             return "failed" 
         else:
-            try:
-                # Enter text into element
-                Element.click() # Set focus to textbox
-                Element.clear() # Remove any text already existing
-
-                if str(appium_details[device_id]['type']).lower() == 'ios':
-                    Element.set_value(text_value) # Work around for IOS issue in Appium v1.6.4 where send_keys() doesn't work
-            except Exception:
-                errMsg = "Found element, but couldn't write text to it"
-                return CommonUtil.Exception_Handler(sys.exc_info(),None,errMsg)
 
             # This is wrapped in it's own try block because we sometimes get an error from send_keys stating "Parameters were incorrect". However, most devices work only with send_keys
             try:
-                if str(appium_details[device_id]['type']).lower() != 'ios':
-                    Element.send_keys(text_value) # Enter the user specified text
+                Element.send_keys(text_value) # Enter the user specified text
             except Exception:
                 CommonUtil.ExecLog(sModuleInfo, "Found element, but couldn't write text to it. Trying another method", 2)
-                '''try:
-                    Element.set_value(text_value) # Enter the user specified text
-                except Exception:
-                    errMsg = "Found element, but couldn't write text to it. Giving up"
-                    return CommonUtil.Exception_Handler(sys.exc_info(),None,errMsg)'''
 
             # Complete the action
             try:
@@ -1181,6 +1294,70 @@ def Enter_Text_Appium(data_set):
     except Exception:
         errMsg = "Could not find element."
         return CommonUtil.Exception_Handler(sys.exc_info(),None,errMsg)
+
+
+def Clear_And_Enter_Text_Appium(data_set):
+    ''' Write text to an element '''
+
+    sModuleInfo = inspect.stack()[0][3] + " : " + inspect.getmoduleinfo(__file__).name
+    CommonUtil.ExecLog(sModuleInfo, "Function Start", 0)
+
+    # Find text from action line
+    text_value = ''  # Initialize as empty string in case user wants to pass an empty string
+    try:
+        for each in data_set:
+            if each[1] == "action":
+                text_value = each[2]
+            else:
+                continue
+    except:
+        errMsg = "Error while looking for action line"
+        return CommonUtil.Exception_Handler(sys.exc_info(), None, errMsg)
+
+    # Enter text into element
+    try:
+        Element = LocateElement.Get_Element(data_set, appium_driver)
+        if Element == "failed":
+            CommonUtil.ExecLog(sModuleInfo, "Unable to locate your element with given data.", 3)
+            return "failed"
+        else:
+            try:
+                # Enter text into element
+                Element.click()  # Set focus to textbox
+                Element.clear()  # Remove any text already existing
+
+                if str(appium_details[device_id]['type']).lower() == 'ios':
+                    Element.set_value(
+                        text_value)  # Work around for IOS issue in Appium v1.6.4 where send_keys() doesn't work
+            except Exception:
+                errMsg = "Found element, but couldn't write text to it"
+                return CommonUtil.Exception_Handler(sys.exc_info(), None, errMsg)
+
+            # This is wrapped in it's own try block because we sometimes get an error from send_keys stating "Parameters were incorrect". However, most devices work only with send_keys
+            try:
+                if str(appium_details[device_id]['type']).lower() != 'ios':
+                    Element.send_keys(text_value)  # Enter the user specified text
+            except Exception:
+                CommonUtil.ExecLog(sModuleInfo, "Found element, but couldn't write text to it. Trying another method",
+                                   2)
+                '''try:
+                    Element.set_value(text_value) # Enter the user specified text
+                except Exception:
+                    errMsg = "Found element, but couldn't write text to it. Giving up"
+                    return CommonUtil.Exception_Handler(sys.exc_info(),None,errMsg)'''
+
+            # Complete the action
+            try:
+                # appium_driver.hide_keyboard() # Remove keyboard
+                CommonUtil.TakeScreenShot(sModuleInfo)  # Capture screen
+                CommonUtil.ExecLog(sModuleInfo, "Successfully set the value of to text to: %s" % text_value, 1)
+                return "passed"
+            except Exception:
+                errMsg = "Found element, but couldn't write text to it"
+                return CommonUtil.Exception_Handler(sys.exc_info(), None, errMsg)
+    except Exception:
+        errMsg = "Could not find element."
+        return CommonUtil.Exception_Handler(sys.exc_info(), None, errMsg)
 
 
 def Android_Keystroke_Key_Mapping(keystroke, hold_key = False):
