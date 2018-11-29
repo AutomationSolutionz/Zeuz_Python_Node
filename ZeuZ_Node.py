@@ -97,7 +97,7 @@ class Application(tk.Frame):
     node_id_size = 10 # Max length of node ID - must match that specified in CommonUtil.MachineInfo()
     colour_tag = 0
     max_log_size = 1000 # Maxium number of lines allowed before we truncate the log
-    update_interval = 24 # Time in hours to check for updates. We never check less than this time
+    update_interval = 1 # Time in hours to check for updates. We never check less than this time
     colour_debug = 'blue' # http://www.science.smith.edu/dftwiki/index.php/Color_Charts_for_TKinter
     colour_passed = 'green4'
     colour_warning = 'orange'
@@ -317,7 +317,7 @@ class Application(tk.Frame):
                     ConfigModule.add_config_value('sectionOne', 'last_update', str(time.time()), temp_ini_file) # Record current time as update time
 
                     thread.start_new_thread(self_updater.check_for_updates, ()) # Check for updates in a separate thread
-                    self.after(2000, self.check_for_updates) # Tests if check for updates is complete
+                    self.after(15000, self.check_for_updates) # Tests if check for updates is complete
                     self.after(self.update_interval * 3600 * 1000, lambda: self.check_for_updates(True)) # Reschedule next check for updates (calculates from hours to ms)
             
             # root.after() brings us here

@@ -342,7 +342,7 @@ def Sequential_Actions(step_data, _dependency = {}, _run_time_params = {}, _file
     # Process step data
     #save the full step data in share variables
     sr.Set_Shared_Variables('step_data',step_data,protected=True)
-    result =  Run_Sequential_Actions([]) #empty list means run all, instead of step data we want to send the dataset no's of the step data to run
+    result,skip_for_loop =  Run_Sequential_Actions([]) #empty list means run all, instead of step data we want to send the dataset no's of the step data to run
     write_browser_logs()
     return result
 
@@ -354,12 +354,14 @@ def Run_Sequential_Actions(data_set_list=[]): #data_set_no will used in recursiv
         skip = [] # List of data set numbers that have been processed, and need to be skipped, so they are not processed again
         logic_row=[] # Holds conditional actions
         skip_tmp = [] # Temporarily holds skip data sets
+        skip_for_loop = []
+
 
         step_data = sr.Get_Shared_Variables('step_data')
 
         if step_data in failed_tag_list:
             CommonUtil.ExecLog(sModuleInfo, "Internal Error: Step Data not set in shared variable", 3)
-            return 'failed'
+            return 'failed',skip_for_loop
         if data_set_list == []: #run the full step data
             for i in range(len(step_data)):
                 data_set_list.append(i)
@@ -372,7 +374,7 @@ def Run_Sequential_Actions(data_set_list=[]): #data_set_no will used in recursiv
             
             if CommonUtil.check_offline(): # Check if user initiated offline command from GUI
                 CommonUtil.ExecLog(sModuleInfo, "User requested Zeuz Node to go Offline", 2)
-                return 'failed'
+                return 'failed',skip_for_loop
             
             for row in data_set: # For each row of the data set
                 action_name = row[1] # Get Sub-Field
@@ -411,15 +413,16 @@ def Run_Sequential_Actions(data_set_list=[]): #data_set_no will used in recursiv
                         CommonUtil.ExecLog(sModuleInfo, "Conditional Actions complete", 1)
                         if result in failed_tag_list:
                             CommonUtil.ExecLog(sModuleInfo, "Returned result from Conditional Action Failed", 3)
-                            return result
+                            return result,skip_for_loop
                         logic_row = [] # Unset this, so if there is another conditional action in the test step, we can process it
                         skip = skip_tmp # Add to the skip list, now that processing is complete
                         skip_tmp = []
                 
                 # Simulate a while/for loop with the specified data sets
                 elif 'loop action' in action_name:
-                    result, skip = Loop_Action_Handler(row, dataset_cnt)
-                    if result in failed_tag_list: return 'failed'
+                    result, skip_for_loop = Loop_Action_Handler(row, dataset_cnt)
+                    skip=skip_for_loop
+                    if result in failed_tag_list: return 'failed',skip_for_loop
                     
                 # Special custom functions can be executed in a specified file
                 elif "custom" in action_name:
@@ -429,7 +432,7 @@ def Run_Sequential_Actions(data_set_list=[]): #data_set_no will used in recursiv
                         custom_file_name = row[2].strip()
                         if custom_file_name not in file_attachment and os.path.exists(custom_file_name) == False:
                             CommonUtil.ExecLog(sModuleInfo, "Could not find file attachment called %s, and could not find it locally" % custom_file_name, 3)
-                            return 'failed'
+                            return 'failed',skip_for_loop
                         if custom_file_name in file_attachment: custom_file_name = file_attachment[custom_file_name] # In file is an attachment, get the full path
                         CommonUtil.ExecLog(sModuleInfo, "Custom file set to %s" % custom_file_name, 0)
 
@@ -444,7 +447,7 @@ def Run_Sequential_Actions(data_set_list=[]): #data_set_no will used in recursiv
                             result = 'passed'
                         except:
                             CommonUtil.ExecLog(sModuleInfo, "Error occurred while importing: %s. It may have a compile error or an import naming issue" % custom_file_name, 3)
-                            return 'failed'
+                            return 'failed',skip_for_loop
                         
                     elif custom_module != '': # If custom module is set, then we are good to use it
                         # User specified filename already and it's imported, so we can move ahead with executing functions
@@ -461,11 +464,11 @@ def Run_Sequential_Actions(data_set_list=[]): #data_set_no will used in recursiv
                             result = 'passed'
                         except Exception, e:
                             CommonUtil.ExecLog(sModuleInfo, "Failed to execute function %s from the custom module: %s" % (custom_module, e), 3)
-                            return 'failed'
+                            return 'failed',skip_for_loop
                     
                     else: # Function executed but user didn't specify the file to import
                         CommonUtil.ExecLog(sModuleInfo, "No Python file specified for custom function execution. Expected a Data Set in the format of: 'file', 'custom', 'directory/filename'", 3)
-                        return "failed"
+                        return "failed",skip_for_loop
                     
                 # If middle column = action, call action handler
                 elif "action" in action_name: # Must be last, since it's a single word that also exists in other action types
@@ -473,7 +476,7 @@ def Run_Sequential_Actions(data_set_list=[]): #data_set_no will used in recursiv
                     result = Action_Handler(data_set, row) # Pass data set, and action_name to action handler
                     if row[0].lower().strip() == 'step exit':
                         CommonUtil.ExecLog(sModuleInfo, "Step Exit called. Stopping Test Step.", 1)
-                        return result
+                        return result,skip_for_loop
 
                     # Check if user wants to store the result for later use
                     stored = False
@@ -501,21 +504,21 @@ def Run_Sequential_Actions(data_set_list=[]): #data_set_no will used in recursiv
                                     CommonUtil.ExecLog(sModuleInfo, "Bypass passed. Retrying original action", 1)
                                     result = Action_Handler(data_set, row) # Retry failed original data set
                                     if result in failed_tag_list: # Still a failure, give up
-                                        return 'failed'
+                                        return 'failed',skip_for_loop
                                     break # No need to process more bypasses
                             if result in failed_tag_list: # All bypass actions failed
                                 CommonUtil.ExecLog(sModuleInfo, "All bypass actions failed", 3)
-                                return 'failed'
+                                return 'failed',skip_for_loop
                         else: # Yup, it's a failure, and no bypass specified
-                            return "failed"
+                            return "failed",skip_for_loop
                 
                 # Middle column not listed above, so data set is wrong
                 else:
                     CommonUtil.ExecLog(sModuleInfo, "The sub-field information is incorrect. Please provide accurate information on the data set(s).", 3)
-                    return "failed"                 
+                    return "failed",skip_for_loop
         
         # No failures, return result
-        return result
+        return result,skip_for_loop
 
     except Exception:
         return CommonUtil.Exception_Handler(sys.exc_info())
@@ -529,11 +532,16 @@ def Loop_Action_Handler(row, dataset_cnt):
     try:
         skip = []
         nested_loop = False
+        nested_double = False
         ### Create sub-set of step data that we will send to SA for processing
         try:
             if str(row[2]).strip().startswith('nested'):
                 nested_loop = True
                 row = (row[0],row[1],str(row[2]).split("-")[1])
+            elif str(row[2]).strip().startswith('double nested'):
+                nested_loop = True
+                nested_double = True
+                row = (row[0], row[1], str(row[2]).split("-")[1])
             sets = map(int, row[2].replace(' ', '').split(',')) # Save data sets to loop
             sets = [x - 1 for x in sets] # Convert data set numbers to array friendly
             new_step_data = []
@@ -541,7 +549,7 @@ def Loop_Action_Handler(row, dataset_cnt):
         except Exception,e:
             print e
             CommonUtil.ExecLog(sModuleInfo, "Loop format incorrect in Value field. Expected list of data sets. Eg: '2,3,4'", 3)
-            return 'failed'
+            return 'failed',skip
         
         ### Determine loop type
         # Current types: Loop N times || Loop until Data_set #N = true/false
@@ -553,7 +561,7 @@ def Loop_Action_Handler(row, dataset_cnt):
             elif loop_type in failed_tag_list: loop_type = 'failed'
             else:
                 CommonUtil.ExecLog(sModuleInfo, "Loop format incorrect in Field field. Expected Field to contain 'true/false number'. Eg: true 2", 3)
-                return 'failed'
+                return 'failed',skip
             loop_len = 0 # Not used
             loop_method = 'exit_on_dataset'
         except:
@@ -570,7 +578,7 @@ def Loop_Action_Handler(row, dataset_cnt):
                         loop_type = sr.Get_Shared_Variables(tmp) # Retrieved shared variable value
                         loop_len = len(loop_type) # Number of list items to cycle through
                         if loop_len == 0:
-                            return "passed",[]
+                            return "passed",skip
                         if action_result == 'dictionary':
                             loop_method = 'dict'
                             flat_list = [] #CONVERT dict to list of (k,v) tuple so that can be indexed easily
@@ -599,12 +607,12 @@ def Loop_Action_Handler(row, dataset_cnt):
                             loop_bool = False
                         else:
                             CommonUtil.ExecLog(sModuleInfo,"Could not find a valid loop format in the Field field. Valid formats: 'true/false number', 'number', 'shared variable name'",3)
-                            return 'failed'
+                            return 'failed',skip
                     except:
                         CommonUtil.ExecLog(sModuleInfo, "Could not find a valid loop format in the Field field. Valid formats: 'true/false number', 'number', 'shared variable name'", 3)
 
         def build_subset(new_step_data):
-            result = Run_Sequential_Actions(new_step_data)
+            result,skip_for_loop = Run_Sequential_Actions(new_step_data)
             if result in passed_tag_list: result = 'passed' # Make sure the result matches the string we set above
             else: result = 'failed'
             return result
@@ -620,11 +628,12 @@ def Loop_Action_Handler(row, dataset_cnt):
                 for ndc in range(len(new_step_data)): # For each data set in the sub-set
                     if CommonUtil.check_offline(): # Check if user initiated offline command from GUI
                         CommonUtil.ExecLog(sModuleInfo, "User requested Zeuz Node to go Offline", 2)
-                        return 'failed'
+                        return 'failed',skip
 
                     # Build the sub-set and execute
                     result = build_subset([new_step_data[ndc]])
-                    
+                    if result in failed_tag_list: return result,skip
+
                     # Check if we should exit now or keep going
                     if ndc == action_result and result == loop_type: # If this data set that just returned is the one that we are watching AND it returned the result we want, then exit the loop 
                         skip = sets # Tell SA to skip these data sets that were in the loop once it picks up processing normally
@@ -636,7 +645,8 @@ def Loop_Action_Handler(row, dataset_cnt):
                 for ndc in range(len(new_step_data)): # For each data set in the sub-set
                     # Build the sub-set and execute
                     result = build_subset([new_step_data[ndc]])
-        
+                    if result in failed_tag_list: return result, skip
+
                 # Check if we hit our set number of loops
                 if sub_set_cnt >= loop_len: # If we hit out desired number of loops for this loop type, then exit
                     skip = sets # Tell SA to skip these data sets that were in the loop once it picks up processing normally
@@ -653,8 +663,9 @@ def Loop_Action_Handler(row, dataset_cnt):
 
                 for ndc in range(len(new_step_data)): # For each data set in the sub-set
                     # Build the sub-set and execute
-                    result = build_subset([new_step_data[ndc]])
-                    if nested_loop:break
+                    result = build_subset([new_step_data[ndc]]) #the dataset was conditional then break
+                    if result in failed_tag_list: return result, skip
+                    if nested_double:break
 
                 # Check if we have processed all the list variables
                 if sub_set_cnt >= loop_len:
@@ -673,7 +684,8 @@ def Loop_Action_Handler(row, dataset_cnt):
                 for ndc in range(len(new_step_data)): # For each data set in the sub-set
                     # Build the sub-set and execute
                     result = build_subset([new_step_data[ndc]])
-                    if nested_loop:break
+                    if result in failed_tag_list: return result, skip
+                    if nested_double:break
 
                 # Check if we have processed all the list variables
                 if sub_set_cnt >= loop_len:
@@ -828,18 +840,20 @@ def Conditional_Action_Handler(data_set, row, logic_row):
         return "failed"
 
     # Process the path as defined above (pass/fail)
+    skip_for_loop = []
     for conditional_steps in logic_row: # For each conditional action from the data set
         CommonUtil.ExecLog(sModuleInfo, "Processing conditional action: %s" % str(conditional_steps), 1)
         if logic_decision in conditional_steps: # If we have a result from the element check above (true/false)
             list_of_steps = conditional_steps[2].split(",") # Get the data set numbers for this conditional action and put them in a list
             for each_item in list_of_steps: # For each data set number we need to process before finishing
+                if int(each_item)-1 in skip_for_loop: continue
                 if CommonUtil.check_offline(): # Check if user initiated offline command from GUI
                     CommonUtil.ExecLog(sModuleInfo, "User requested Zeuz Node to go Offline", 2)
                     return 'failed'
 
                 CommonUtil.ExecLog(sModuleInfo, "Processing conditional step %s" % str(each_item), 1)
                 data_set_index = int(each_item.strip()) - 1 # data set number, -1 to offset for data set numbering system
-                result = Run_Sequential_Actions([data_set_index]) #new edit: full step data is passed. [step_data[data_set_index]]) # Recursively call this function until all called data sets are complete
+                result,skip_for_loop = Run_Sequential_Actions([data_set_index]) #new edit: full step data is passed. [step_data[data_set_index]]) # Recursively call this function until all called data sets are complete
                 if row[0].lower().strip() == 'step exit':
                     CommonUtil.ExecLog(sModuleInfo, "Step Exit called. Stopping Test Step.", 1)
                     return result
@@ -916,4 +930,6 @@ def Action_Handler(_data_set, action_row):
 
     except Exception:
         return CommonUtil.Exception_Handler(sys.exc_info())
+
+
 
