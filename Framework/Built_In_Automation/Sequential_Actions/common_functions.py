@@ -155,7 +155,7 @@ def verify_step_data(step_data):
                     continue
                 elif 'action' in row[1] and 'conditional' not in row[1]: # Only apply to actions rows
                     for action_index in actions:
-                        if (actions[action_index]['name'] == row[0] and actions[action_index]['module'] == module_name) or (actions[action_index]['name'] == row[0] and actions[action_index]['module'] == 'common'): # If one of the action names in the Field
+                        if (actions[action_index]['name'] == row[0] and actions[action_index]['module'] == module_name) or (actions[action_index]['name'] == row[0] and actions[action_index]['module'] == 'common') or str(row[0]).startswith('%|'): # If one of the action names in the Field
                             field_text = True # Flag it's good
                             break
                     if field_text == False:
