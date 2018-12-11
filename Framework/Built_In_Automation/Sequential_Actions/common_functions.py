@@ -522,7 +522,7 @@ def Save_Variable(data_set):
     variable_name = ''
     variable_value = ''
     for each in data_set:
-        if each[1] == 'element parameter':
+        if each[1] == 'element parameter' or "parameter" in each[1]:
             variable_name = each[0]
             variable_value = each[2]
     if variable_name != '' and variable_value != '':
@@ -731,7 +731,7 @@ def set_server_variable(data_set):
         run_id = sr.Get_Shared_Variables('run_id')
 
         for row in data_set:
-            if str(row[1]).strip().lower() == 'element parameter':
+            if str(row[1]).strip().lower() == 'element parameter' or "parameter" in str(row[1]).strip().lower():
                 key = str(row[0]).strip()
                 value = str(row[2]).strip()
                 #call main driver to send var to server
@@ -749,7 +749,7 @@ def get_server_variable(data_set):
         run_id = sr.Get_Shared_Variables('run_id')
 
         for row in data_set:
-            if str(row[1]).strip().lower() == 'element parameter':
+            if str(row[1]).strip().lower() == 'element parameter' or "parameter" in str(row[1]).strip().lower():
                 key = str(row[0]).strip()
 
                 dict = MainDriverApi.get_server_variable(run_id,key)
@@ -771,7 +771,7 @@ def get_server_variable_and_wait(data_set):
         key=''
         wait_time=5
         for row in data_set:
-            if str(row[1]).strip().lower() == 'element parameter':
+            if str(row[1]).strip().lower() == 'element parameter' or "parameter" in str(row[1]).strip().lower():
                 key = str(row[0]).strip()
             if str(row[1]).strip().lower() == 'action':
                 wait_time = int(str(row[2]).strip())
