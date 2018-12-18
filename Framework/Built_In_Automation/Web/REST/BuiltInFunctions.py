@@ -234,6 +234,8 @@ def search_val(x,target,target_val):
 
 
 def search_val_wrapper(x,target,target_val,equal=True):
+    target_val = target_val.replace("[[","(")
+    target_val = target_val.replace("]]", ")")
     result = search_val(x,target,target_val)
     if equal:
         return result
