@@ -45,13 +45,36 @@ def Get_Element(step_data_set,driver,query_debug=False, wait_enable = True):
         except:
             pass # Exceptions happen when we have an alert, but is not a problem
 
+        save_parameter = ''
+        get_parameter = ''
+        for row in step_data_set:
+            if row[1] == 'save parameter':
+                if row[2] != 'ignore':
+                    save_parameter=row[0]
+            elif row[1] == 'get parameter':
+                get_parameter = row[0]
+
+
+        if get_parameter != '':
+
+            result = sr.Get_Shared_Variables(get_parameter)
+            if result not in failed_tag_list:
+                CommonUtil.ExecLog(sModuleInfo,"Returning saved element '%s' from shared variables"%get_parameter,1)
+                return result
+            else:
+                CommonUtil.ExecLog(sModuleInfo, "Element named '%s' not found in shared variables" % get_parameter, 3)
+                return "failed"
+
         wait_time = int(sr.Get_Shared_Variables('element_wait'))
         etime = time.time() + wait_time # Default time to wait for an element 
         while time.time() < etime: # Our own built in "wait" until True because sometimes elements do not appear fast enough
             # If driver is pyautogui, perform specific get element function and exit
             if driver_type == 'pyautogui':
                 result = _pyautogui(step_data_set)
-                if result not in failed_tag_list: return result # Return on pass
+                if result not in failed_tag_list:
+                    if save_parameter != '':  # save element to a variable
+                        sr.Set_Shared_Variables(save_parameter, result)
+                    return result # Return on pass
                 if not wait_enable:
                     CommonUtil.ExecLog(sModuleInfo, "Waited %d seconds for element" % wait_time, 3)
                     return result # If asked not to loop, return the failure
@@ -80,7 +103,10 @@ def Get_Element(step_data_set,driver,query_debug=False, wait_enable = True):
             else:
                 result = "failed"
             
-            if result not in failed_tag_list: return result # Return on pass
+            if result not in failed_tag_list:
+                if save_parameter !='': #save element to a variable
+                    sr.Set_Shared_Variables(save_parameter,result)
+                return result # Return on pass
             if not wait_enable:
                 CommonUtil.ExecLog(sModuleInfo, "Waited %d seconds for element" % wait_time, 3) 
                 return result # If asked not to loop, return the failure
