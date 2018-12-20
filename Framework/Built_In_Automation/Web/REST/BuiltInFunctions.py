@@ -25,7 +25,7 @@ from Framework.Utilities.CommonUtil import passed_tag_list, failed_tag_list, ski
 
 count=1
 index=1
-all_val = set()
+all_val = []
 
 '============================= Sequential Action Section Begins=============================='
 
@@ -141,7 +141,7 @@ def get_all_val(x,target):
     global all_val
     for key,value in x.items():
         if str(key) == target:
-            all_val.add(value)
+            all_val.append(value)
         else:
             if isinstance(value,dict):
                 get_all_val(value,target)
@@ -149,7 +149,7 @@ def get_all_val(x,target):
                 for each in value:
                     if isinstance(each,unicode) or isinstance(each,str):
                         if str(key) == target:
-                            all_val.add(each)
+                            all_val.append(each)
                     else:
                         get_all_val(each,target)
             else:
@@ -234,6 +234,8 @@ def search_val(x,target,target_val):
 
 
 def search_val_wrapper(x,target,target_val,equal=True):
+    target_val = target_val.replace("[[","(")
+    target_val = target_val.replace("]]", ")")
     result = search_val(x,target,target_val)
     if equal:
         return result
@@ -333,7 +335,7 @@ def insert_fields_from_rest_call_into_list(result_dict, fields_to_be_saved, list
                 if multiple:
                     if i == 0:
                         index = 0
-                        all_val = set()
+                        all_val = []
                         get_all_val(result_dict, temp_field)
                     else:
                         index = i
@@ -348,7 +350,10 @@ def insert_fields_from_rest_call_into_list(result_dict, fields_to_be_saved, list
                     which_are_saved.append(temp_field)
                     Shared_Resources.Set_Shared_Variables(list_name, []) #initializes the list
                     for each in all_val:
-                        Shared_Resources.Append_List_Shared_Variables(list_name, each)
+                        value_as_list=False
+                        if isinstance(each,list):
+                            value_as_list=True
+                        Shared_Resources.Append_List_Shared_Variables(list_name, each,value_as_list=value_as_list)
                 else:
                     if not value_to_be_saved:
                         CommonUtil.ExecLog(sModuleInfo, "Couldn't find  response field, ignoring it %s" % field, 2)
@@ -360,7 +365,8 @@ def insert_fields_from_rest_call_into_list(result_dict, fields_to_be_saved, list
             CommonUtil.ExecLog(sModuleInfo, "%s response fields are saved"%(", ".join(str(x) for x in which_are_saved)),1)
 
         Shared_Resources.Show_All_Shared_Variables()
-    except Exception:
+    except Exception,e:
+        print e
         return CommonUtil.Exception_Handler(sys.exc_info())
 
 

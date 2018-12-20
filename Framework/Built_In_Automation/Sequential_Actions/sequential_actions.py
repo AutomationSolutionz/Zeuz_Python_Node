@@ -204,7 +204,9 @@ action_support = [
     'source parameter',
     'input parameter',
     'custom action',
-    'unique parameter'
+    'unique parameter',
+    'save parameter',
+    'get parameter'
 ]
 
 # List of supported mobile platforms - must be lower case
@@ -874,6 +876,15 @@ def Action_Handler(_data_set, action_row):
     action_name = action_row[0]
     action_subfield = action_row[1]
 
+    if str(action_name).startswith('%|'): #if shared variable
+        action_name = str(action_name).split('%|')[1][:-2]
+        action_name = sr.Get_Shared_Variables(action_name)
+
+    if str(action_subfield).startswith('%|'):  # if shared variable
+        action_subfield = str(action_subfield).split('%|')[0][:-2]
+        action_subfield = sr.Get_Shared_Variables(action_subfield)
+
+
     # Get module and function for this action
     module = ''
     function = ''
@@ -930,6 +941,4 @@ def Action_Handler(_data_set, action_row):
 
     except Exception:
         return CommonUtil.Exception_Handler(sys.exc_info())
-
-
 
