@@ -401,7 +401,7 @@ def Compare_Variables(step_data):
         result = []
         modifier = False
         for each_step_data_item in step_data[0]:
-            if each_step_data_item[1] == "compare" or each_step_data_item[1] == "element parameter":
+            if each_step_data_item[1] == "compare" or each_step_data_item[1] == "element parameter" or "parameter" in each_step_data_item[1]:
                 if '%|' in each_step_data_item[0].strip():
                     previous_name = each_step_data_item[0].strip()
                     new_name = get_previous_response_variables_in_strings(each_step_data_item[0].strip())
@@ -472,7 +472,7 @@ def Compare_Lists_or_Dicts(step_data):
         ignore_extra = True
         both_list = False
         for each_step_data_item in step_data[0]:
-            if each_step_data_item[1] == "compare" or each_step_data_item[1] == "element parameter":
+            if each_step_data_item[1] == "compare" or each_step_data_item[1] == "element parameter" or "parameter" in each_step_data_item[1]:
                 list1_name = each_step_data_item[0]
                 list2_name = each_step_data_item[2]
             if each_step_data_item[1] == "action":
