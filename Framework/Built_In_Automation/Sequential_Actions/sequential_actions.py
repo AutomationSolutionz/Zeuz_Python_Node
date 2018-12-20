@@ -204,7 +204,9 @@ action_support = [
     'source parameter',
     'input parameter',
     'custom action',
-    'unique parameter'
+    'unique parameter',
+    'save parameter',
+    'get parameter'
 ]
 
 # List of supported mobile platforms - must be lower case
