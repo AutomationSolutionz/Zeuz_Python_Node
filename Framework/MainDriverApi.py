@@ -460,7 +460,7 @@ def call_driver_function_of_test_step(sModuleInfo, TestStepsList, StepSeq, step_
 # runs all test steps of a test case
 def run_all_test_steps_in_a_test_case(Stepscount, test_case, sModuleInfo, run_id, TestStepsList, file_specific_steps,
                                       driver_list, final_dependency, final_run_params, test_case_result_index,
-                                      temp_ini_file, debug=False, debug_steps=[]):
+                                      temp_ini_file, debug=False, debug_steps=[], is_linked=''):
     StepSeq = 1
     sTestStepResultList = []
     already_failed = False
@@ -536,6 +536,11 @@ def run_all_test_steps_in_a_test_case(Stepscount, test_case, sModuleInfo, run_id
             sTestStepResultList.append("FAILED")
             CommonUtil.ExecLog(sModuleInfo, "sStepResult : %s" % sStepResult, 1)
             sStepResult = "Failed"
+
+            #step failed, if linked test case notify other test cases via setting server variable named 'is_failed'
+            if is_linked == 'yes':
+                set_server_variable(run_id,'is_failed','yes')
+
         after_execution_dict = {
             'stependtime': sTestStepEndTime,
             'end_memory': WinMemEnd,
@@ -772,7 +777,7 @@ def cleanup_driver_instances():  # cleans up driver(selenium,appium) instances
         pass
 
 
-def run_test_case(TestCaseID, sModuleInfo, run_id, driver_list, final_dependency, final_run_params, temp_ini_file):
+def run_test_case(TestCaseID, sModuleInfo, run_id, driver_list, final_dependency, final_run_params, temp_ini_file, is_linked):
     shared.Set_Shared_Variables('run_id', run_id)
     test_case = TestCaseID[0]
     copy_status = False
@@ -821,7 +826,7 @@ def run_test_case(TestCaseID, sModuleInfo, run_id, driver_list, final_dependency
     sTestStepResultList = run_all_test_steps_in_a_test_case(Stepscount, test_case, sModuleInfo, run_id, TestStepsList,
                                                             file_specific_steps, driver_list, final_dependency,
                                                             final_run_params, test_case_result_index, temp_ini_file,
-                                                            debug, debug_steps)
+                                                            debug, debug_steps,is_linked)
 
     sTestCaseEndTime = datetime.fromtimestamp(time.time()).strftime('%Y-%m-%d %H:%M:%S')
     TestCaseEndTime = time.time()
@@ -918,6 +923,10 @@ def main(device_dict):
         CommonUtil.clear_all_logs()
         project_id = TestRunID[3]
         team_id = int(TestRunID[4])
+        try:
+            is_linked = TestRunID[5]
+        except:
+            is_linked = ''
         run_description = (TestRunID[1].replace("run_dependency", '')).replace('dependency_filter', '')
         run_id = TestRunID[0]
         #save run id in shared variable
@@ -941,7 +950,7 @@ def main(device_dict):
         # run each test case in the runid
         for TestCaseID in TestCaseLists:
             run_test_case(TestCaseID, sModuleInfo, run_id, driver_list, final_dependency, final_run_params,
-                          temp_ini_file)
+                          temp_ini_file,is_linked)
 
         # calculate elapsed time of runid
         sTestSetEndTime = datetime.fromtimestamp(time.time()).strftime('%Y-%m-%d %H:%M:%S')
