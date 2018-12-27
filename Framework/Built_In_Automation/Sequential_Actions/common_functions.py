@@ -778,12 +778,15 @@ def get_server_variable_and_wait(data_set):
 
         i = 1
         dict = {}
+        CommonUtil.ExecLog(sModuleInfo, "Waiting for server variable '%s'" % key, 1)
         while i <= wait_time:
-            CommonUtil.ExecLog(sModuleInfo,"Waiting for server variable '%s'"%key,1)
-            dict = MainDriverApi.get_server_variable(run_id,key)
+            dict = MainDriverApi.get_all_server_variable(run_id)
             try:
                 if key in dict and dict[key] != 'null':
                     break
+                elif 'is_failed' in dict and dict['is_failed'] != 'null' and dict['is_failed'] == 'yes':
+                    CommonUtil.ExecLog(sModuleInfo, "Linked test case failed in another machine.. Test Case Failed...", 3)
+                    return "failed"
                 else:
                     time.sleep(1)
             except:
