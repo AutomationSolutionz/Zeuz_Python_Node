@@ -784,7 +784,7 @@ def get_server_variable_and_wait(data_set):
             try:
                 if key in dict and dict[key] != 'null':
                     break
-                elif 'is_failed' in dict and dict[key] != 'null' and dict[key] == 'yes':
+                elif 'is_failed' in dict and dict['is_failed'] != 'null' and dict['is_failed'] == 'yes':
                     CommonUtil.ExecLog(sModuleInfo, "Linked test case failed in another machine.. Test Case Failed...", 3)
                     return "failed"
                 else:

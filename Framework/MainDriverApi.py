@@ -537,10 +537,6 @@ def run_all_test_steps_in_a_test_case(Stepscount, test_case, sModuleInfo, run_id
             CommonUtil.ExecLog(sModuleInfo, "sStepResult : %s" % sStepResult, 1)
             sStepResult = "Failed"
 
-            #step failed, if linked test case notify other test cases via setting server variable named 'is_failed'
-            if is_linked == 'yes':
-                set_server_variable(run_id,'is_failed','yes')
-
         after_execution_dict = {
             'stependtime': sTestStepEndTime,
             'end_memory': WinMemEnd,
@@ -568,6 +564,9 @@ def run_all_test_steps_in_a_test_case(Stepscount, test_case, sModuleInfo, run_id
             CommonUtil.ExecLog(sModuleInfo, "%s : Test Step Not Run" % current_step_name, 2)
             after_execution_dict.update({'status': NOT_RUN_TAG})
         elif sStepResult.upper() == FAILED_TAG.upper():
+            #step failed, if linked test case notify other test cases via setting server variable named 'is_failed'
+            if is_linked == 'yes':
+                set_server_variable(run_id,'is_failed','yes')
             # Step has a Critial failure, fail the test step and test case. go to next test case
             CommonUtil.ExecLog(sModuleInfo, "%s : Test Step Failed Failure" % current_step_name, 3)
             after_execution_dict.update({'status': FAILED_TAG})
