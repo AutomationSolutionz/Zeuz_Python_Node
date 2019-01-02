@@ -4,6 +4,7 @@
 import inspect, os, time, sys, urllib2, Queue, importlib, requests, threading
 from sys import platform as _platform
 from datetime import datetime
+from datetime import timedelta
 
 from Framework.Built_In_Automation import Shared_Resources
 from Utilities import ConfigModule, FileUtilities as FL, CommonUtil, RequestFormatter
@@ -199,10 +200,29 @@ def update_test_case_result_on_server(run_id, sTestSetEndTime, TestSetDuration):
 
 
 # returns step data of a test step in a test case
-def get_test_step_data(run_id, test_case, current_step_sequence):
-    return RequestFormatter.Get('get_test_step_data_based_on_test_case_run_id_api',
-                                {'run_id': run_id, 'test_case': test_case,
-                                 'step_sequence': current_step_sequence})
+def get_test_step_data(run_id, test_case, current_step_sequence,sModuleInfo):
+    try:
+        wait_time = 30
+        end_time = datetime.now() + timedelta(seconds=wait_time)
+        while datetime.now() <= end_time:
+            response =  RequestFormatter.Get('get_test_step_data_based_on_test_case_run_id_api',
+                                        {'run_id': run_id, 'test_case': test_case,
+                                         'step_sequence': current_step_sequence})
+
+            if response['status'] in failed_tag_list:
+                CommonUtil.ExecLog(sModuleInfo,"Error while fetching step data: " + response['message'],3)
+                CommonUtil.ExecLog(sModuleInfo, "Trying again to fetch step data", 1)
+                time.sleep(5)
+            else:
+                return response['step_data']
+
+        CommonUtil.ExecLog(sModuleInfo, "Couldn't get step data, returning failed", 3)
+        return "failed"
+    except Exception:
+        CommonUtil.Exception_Handler(sys.exc_info())
+        CommonUtil.ExecLog(sModuleInfo, "Couldn't get step data, returning failed", 3)
+        return "failed"
+
 
 
 # updates current test step result(like pass/fail etc.) on server database
@@ -531,7 +551,7 @@ def run_all_test_steps_in_a_test_case(Stepscount, test_case, sModuleInfo, run_id
 
         update_test_step_status(run_id, test_case, current_step_id, current_step_sequence, Dict)
 
-        test_steps_data = get_test_step_data(run_id, test_case, current_step_sequence)
+        test_steps_data = get_test_step_data(run_id, test_case, current_step_sequence,sModuleInfo)
 
         CommonUtil.ExecLog(sModuleInfo,
                            "********** steps data for Step #%d: %s **********" % (StepSeq, str(test_steps_data)), 1)
@@ -543,7 +563,7 @@ def run_all_test_steps_in_a_test_case(Stepscount, test_case, sModuleInfo, run_id
             is_failed_result = check_if_other_machines_failed_in_linked_run()
 
 
-        if is_failed_result in failed_tag_list:
+        if is_failed_result in failed_tag_list or test_steps_data in failed_tag_list:
             sStepResult = "Failed"
         else:
             sStepResult = call_driver_function_of_test_step(sModuleInfo, TestStepsList, StepSeq, step_time, driver_list,
