@@ -4,6 +4,8 @@
 import inspect, os, time, sys, urllib2, Queue, importlib, requests, threading
 from sys import platform as _platform
 from datetime import datetime
+
+from Framework.Built_In_Automation import Shared_Resources
 from Utilities import ConfigModule, FileUtilities as FL, CommonUtil, RequestFormatter
 from Framework.Built_In_Automation.Shared_Resources import BuiltInFunctionSharedResources as shared
 
@@ -219,6 +221,27 @@ def check_user_permission_to_run_test(sModuleInfo, Userid):
         return "You Don't Have Permission"
     else:
         return "passed"
+
+
+def check_if_other_machines_failed_in_linked_run():
+    # can get multiple server variable with one action
+    sModuleInfo = inspect.stack()[0][3] + " : " + inspect.getmoduleinfo(__file__).name
+    try:
+        run_id = shared.Get_Shared_Variables('run_id')
+
+        dict = get_all_server_variable(run_id)
+        try:
+            if 'is_failed' in dict and dict['is_failed'] != 'null' and dict['is_failed'] == 'yes':
+                CommonUtil.ExecLog(sModuleInfo, "Linked test case failed in another machine.. Test Case Failed...", 3)
+                return "failed"
+            else:
+                time.sleep(1)
+        except:
+            pass
+
+        return 'passed'
+    except Exception:
+        return CommonUtil.Exception_Handler(sys.exc_info())
 
 
 # gets run time parameters
@@ -515,7 +538,15 @@ def run_all_test_steps_in_a_test_case(Stepscount, test_case, sModuleInfo, run_id
         auto_generated_image_name = ('_').join(current_step_name.split(" ")) + '_started.png'
         CommonUtil.TakeScreenShot(str(auto_generated_image_name))
 
-        sStepResult = call_driver_function_of_test_step(sModuleInfo, TestStepsList, StepSeq, step_time, driver_list,
+        is_failed_result = ''
+        if is_linked == 'yes':
+            is_failed_result = check_if_other_machines_failed_in_linked_run()
+
+
+        if is_failed_result in failed_tag_list:
+            sStepResult = "Failed"
+        else:
+            sStepResult = call_driver_function_of_test_step(sModuleInfo, TestStepsList, StepSeq, step_time, driver_list,
                                                         current_step_name, final_dependency, final_run_params,
                                                         test_steps_data,
                                                         file_specific_steps)

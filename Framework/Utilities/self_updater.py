@@ -24,7 +24,8 @@ version_path = os.path.join(os.path.dirname(os.path.realpath(__file__)), '..', '
 zeuz_node_package = 'https://github.com/AutomationSolutionz/Zeuz_Python_Node/archive/master.zip' # Location of newest software
 skip = ['Framework' + os.sep + 'settings.conf',
         'Projects',
-        'Drivers'
+        'Drivers',
+        'iosSimulator'
         ] # Any files or directories we don't want to delete not longer existing files from
 check_complete = 'no' # 'no', 'yes', 'error'. Used by Zeuz Node to check if install is complete
 

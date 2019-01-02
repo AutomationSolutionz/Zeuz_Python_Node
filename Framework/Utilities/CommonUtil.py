@@ -215,7 +215,8 @@ def ExecLog(sModuleInfo, sDetails, iLogLevel=1, _local_run="", sStatus=""):
             #r = RequestFormatter.Get('log_execution',{'logid': log_id, 'modulename': sModuleInfo, 'details': sDetails, 'status': status,'loglevel': iLogLevel})
             global all_logs,all_logs_count
             if iLogLevel!=5: #Except the broserLogs
-                all_logs[all_logs_count] = {'logid': log_id, 'modulename': sModuleInfo, 'details': sDetails, 'status': status,'loglevel': iLogLevel}
+                now = datetime.datetime.now().strftime('%Y-%m-%d %H:%M:%S')
+                all_logs[all_logs_count] = {'logid': log_id, 'modulename': sModuleInfo, 'details': sDetails, 'status': status,'loglevel': iLogLevel,'tstamp':str(now)}
                 all_logs_count+=1
 
     except Exception, e:
