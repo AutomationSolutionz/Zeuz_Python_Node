@@ -56,7 +56,7 @@ def get_latest_zeuz_versions():
 def get_all_run_ids(Userid,sModuleInfo):
     all_run = []
     try:
-        wait_time = 30
+        wait_time = 5
         end_time = datetime.now() + timedelta(seconds=wait_time)
         while datetime.now() <= end_time:
             all_run = RequestFormatter.Get('get_all_submitted_run_of_a_machine_api', {'machine_name': Userid})
@@ -64,7 +64,7 @@ def get_all_run_ids(Userid,sModuleInfo):
             if len(all_run) == 0:
                 CommonUtil.ExecLog(sModuleInfo, "Error while fetching test run", 2)
                 CommonUtil.ExecLog(sModuleInfo, "Trying again to fetch test run", 1)
-                time.sleep(5)
+                time.sleep(1)
             else:
                 return all_run
 
@@ -221,7 +221,7 @@ def update_test_case_result_on_server(run_id, sTestSetEndTime, TestSetDuration):
 # returns step data of a test step in a test case
 def get_test_step_data(run_id, test_case, current_step_sequence,sModuleInfo):
     try:
-        wait_time = 30
+        wait_time = 5
         end_time = datetime.now() + timedelta(seconds=wait_time)
         while datetime.now() <= end_time:
             response =  RequestFormatter.Get('get_test_step_data_based_on_test_case_run_id_api',
@@ -231,7 +231,7 @@ def get_test_step_data(run_id, test_case, current_step_sequence,sModuleInfo):
             if response['status'] in failed_tag_list:
                 CommonUtil.ExecLog(sModuleInfo,"Error while fetching step data: " + response['message'],2)
                 CommonUtil.ExecLog(sModuleInfo, "Trying again to fetch step data", 1)
-                time.sleep(5)
+                time.sleep(1)
             else:
                 return response['step_data']
 
