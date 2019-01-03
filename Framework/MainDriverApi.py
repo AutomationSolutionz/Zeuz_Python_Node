@@ -52,12 +52,31 @@ def get_latest_zeuz_versions():
     return RequestFormatter.Get('get_latest_zeuz_versions_api')
 
 
-# returns all runids assigned to a machine
-def get_all_run_ids(Userid):
-    return RequestFormatter.Get('get_all_submitted_run_of_a_machine_api', {'machine_name': Userid})
+# returns all runids assigned to a machine, NEEDS IMPROVEMENT
+def get_all_run_ids(Userid,sModuleInfo):
+    all_run = []
+    try:
+        wait_time = 30
+        end_time = datetime.now() + timedelta(seconds=wait_time)
+        while datetime.now() <= end_time:
+            all_run = RequestFormatter.Get('get_all_submitted_run_of_a_machine_api', {'machine_name': Userid})
+
+            if len(all_run) == 0:
+                CommonUtil.ExecLog(sModuleInfo, "Error while fetching test run", 2)
+                CommonUtil.ExecLog(sModuleInfo, "Trying again to fetch test run", 1)
+                time.sleep(5)
+            else:
+                return all_run
+
+        CommonUtil.ExecLog(sModuleInfo, "Couldn't get the test run deployed on this machine, please try again", 3)
+        return all_run
+    except Exception:
+        CommonUtil.Exception_Handler(sys.exc_info())
+        CommonUtil.ExecLog(sModuleInfo, "Couldn't get the test run deployed on this machine, please try again", 3)
+        return all_run
 
 
-# returns all runids assigned to a machine
+# returns all runids assigned to a machine, NEEDS IMPROVEMENT
 def get_device_order(Userid):
     return RequestFormatter.Get('get_machine_device_order_api', {'machine_name': Userid})
 
@@ -210,7 +229,7 @@ def get_test_step_data(run_id, test_case, current_step_sequence,sModuleInfo):
                                          'step_sequence': current_step_sequence})
 
             if response['status'] in failed_tag_list:
-                CommonUtil.ExecLog(sModuleInfo,"Error while fetching step data: " + response['message'],3)
+                CommonUtil.ExecLog(sModuleInfo,"Error while fetching step data: " + response['message'],2)
                 CommonUtil.ExecLog(sModuleInfo, "Trying again to fetch step data", 1)
                 time.sleep(5)
             else:
@@ -956,7 +975,7 @@ def main(device_dict):
         return user_permission
 
     driver_list = get_all_drivers_list()
-    TestRunLists = get_all_run_ids(Userid)
+    TestRunLists = get_all_run_ids(Userid,sModuleInfo)
     device_order = get_device_order(Userid)
 
     set_device_info_according_to_user_order(device_order, device_dict)
