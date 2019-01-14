@@ -1220,3 +1220,41 @@ def Get_Plain_Text_Element(element_parameter, element_value, parent=False):
 
 def get_driver():
     return selenium_driver
+
+
+#Method to open a new tab
+def open_new_tab(step_data):
+    sModuleInfo = inspect.stack()[0][3] + " : " + inspect.getmoduleinfo(__file__).name
+    CommonUtil.ExecLog(sModuleInfo, "Function start", 0)
+
+    try:
+        time.sleep(2)
+        CommonUtil.ExecLog(sModuleInfo, "Opening New Tab in Browser", 1)
+        selenium_driver.find_element_by_tag_name('body').send_keys(Keys.CONTROL + 't')
+        selenium_driver.find_element_by_tag_name('body').send_keys(Keys.CONTROL + Keys.TAB)
+        CommonUtil.ExecLog(sModuleInfo, "New Tab Opened Successfully in Browser", 1)
+
+        return "passed"
+    except Exception:
+        return CommonUtil.Exception_Handler(sys.exc_info())
+
+
+# Method to switch to a new tab
+def switch_tab(step_data):
+    sModuleInfo = inspect.stack()[0][3] + " : " + inspect.getmoduleinfo(__file__).name
+    CommonUtil.ExecLog(sModuleInfo, "Function start", 0)
+
+    try:
+        tab = 1
+        for each in step_data:
+            if each[1] == "action":
+                tab = int(str(each[2]))
+
+        CommonUtil.ExecLog(sModuleInfo, "Switching to Tab %d in Browser"%tab, 1)
+        windows = selenium_driver.window_handles
+        selenium_driver.switch_to.window(windows[tab-1])
+        CommonUtil.ExecLog(sModuleInfo, "Switched to Tab %s Successfully in Browser"%tab, 1)
+
+        return "passed"
+    except Exception:
+        return CommonUtil.Exception_Handler(sys.exc_info())
