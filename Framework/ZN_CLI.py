@@ -232,7 +232,14 @@ def update_machine(dependency):
         if r['registered']:
             CommonUtil.ExecLog('', "Machine is registered as online with name: %s"%(r['name']), 4, False)
         else:
-            CommonUtil.ExecLog('', "Machine is not registered as online", 4, False)
+            if r['license']:
+                CommonUtil.ExecLog('', "Machine is not registered as online", 4, False)
+            else:
+                if 'message' in r:
+                    CommonUtil.ExecLog('', r['message'], 4, False)
+                    CommonUtil.ExecLog('', "Machine is not registered as online", 4, False)
+                else:
+                    CommonUtil.ExecLog('', "Machine is not registered as online", 4, False)
         return r
     except Exception, e:
         exc_type, exc_obj, exc_tb = sys.exc_info()
