@@ -525,6 +525,8 @@ class Application(tk.Frame):
                     colour = self.colour_failed
                 elif data[:5] == 'ERROR':
                     colour = self.colour_failed
+                elif 'No valid license found' in data or 'maximum number of permitted machines' in data:
+                    colour = self.colour_failed
                 elif 'online with name' in data:
                     if int(float(self.log.index('end'))) > self.max_log_size: self.log.delete(0.0, float(self.max_log_size / 2)) # Trim log to half of max allowed lines when a test case has completed
                     colour = self.colour_passed
