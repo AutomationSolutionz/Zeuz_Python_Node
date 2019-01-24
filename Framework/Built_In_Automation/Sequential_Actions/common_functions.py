@@ -785,7 +785,15 @@ def get_server_variable_and_wait(data_set):
                 if key in dict and dict[key] != 'null':
                     break
                 elif 'is_failed' in dict and dict['is_failed'] != 'null' and dict['is_failed'] == 'yes':
-                    CommonUtil.ExecLog(sModuleInfo, "Linked test case failed in another machine.. Test Case Failed...", 3)
+                    failed_machine = ''
+                    if 'failed_machine' in dict: failed_machine = dict['failed_machine']
+                    if failed_machine == (CommonUtil.MachineInfo().getLocalUser()).lower(): continue
+
+                    MainDriverApi.failed_due_to_linked_fail = True
+                    failed_test_case = ''
+                    if 'failed_test_case' in dict: failed_test_case = dict['failed_test_case']
+
+                    CommonUtil.ExecLog(sModuleInfo, "Linked test case '%s' failed in machine '%s'.. Test Case Failed..."%(failed_test_case,failed_machine), 3)
                     return "failed"
                 else:
                     time.sleep(1)

@@ -29,7 +29,7 @@ passed_tag_list = ['Pass', 'pass', 'PASS', 'PASSED', 'Passed', 'passed', 'true',
 failed_tag_list = ['Fail', 'fail', 'FAIL', 'Failed', 'failed', 'FAILED', 'false', 'False', 'FALSE', '0']
 skipped_tag_list = ['skip', 'SKIP', 'Skip', 'skipped', 'SKIPPED', 'Skipped']
 device_info = {}
-
+failed_due_to_linked_fail = False# if other linked machine failed in a linked run
 
 # writes all logs to server
 def write_all_logs_to_server(all_logs):
@@ -228,7 +228,7 @@ def get_test_step_data(run_id, test_case, current_step_sequence,sModuleInfo):
                                         {'run_id': run_id, 'test_case': test_case,
                                          'step_sequence': current_step_sequence})
 
-            if response['status'] in failed_tag_list:
+            if 'status' not in response or response['status'] in failed_tag_list:
                 CommonUtil.ExecLog(sModuleInfo,"Error while fetching step data: " + response['message'],2)
                 CommonUtil.ExecLog(sModuleInfo, "Trying again to fetch step data", 1)
                 time.sleep(1)
@@ -271,7 +271,18 @@ def check_if_other_machines_failed_in_linked_run():
         dict = get_all_server_variable(run_id)
         try:
             if 'is_failed' in dict and dict['is_failed'] != 'null' and dict['is_failed'] == 'yes':
-                CommonUtil.ExecLog(sModuleInfo, "Linked test case failed in another machine.. Test Case Failed...", 3)
+                global failed_due_to_linked_fail
+
+                failed_machine = ''
+                if 'failed_machine' in dict: failed_machine = dict['failed_machine']
+                if failed_machine == (CommonUtil.MachineInfo().getLocalUser()).lower(): return 'passed'
+
+                failed_due_to_linked_fail = True
+
+                failed_test_case = ''
+                if 'failed_test_case' in dict: failed_test_case = dict['failed_test_case']
+
+                CommonUtil.ExecLog(sModuleInfo, "Linked test case '%s' failed in machine '%s'.. Test Case Failed..." % (failed_test_case, failed_machine), 3)
                 return "failed"
             else:
                 time.sleep(1)
@@ -635,8 +646,12 @@ def run_all_test_steps_in_a_test_case(Stepscount, test_case, sModuleInfo, run_id
             after_execution_dict.update({'status': NOT_RUN_TAG})
         elif sStepResult.upper() == FAILED_TAG.upper():
             #step failed, if linked test case notify other test cases via setting server variable named 'is_failed'
-            if is_linked == 'yes':
+            global failed_due_to_linked_fail
+            if is_linked == 'yes' and not failed_due_to_linked_fail:
+                CommonUtil.ExecLog(sModuleInfo,str(test_case) + " failed in linked run.. Notifying other linked machines",3)
                 set_server_variable(run_id,'is_failed','yes')
+                set_server_variable(run_id, 'failed_machine', (CommonUtil.MachineInfo().getLocalUser()).lower())
+                set_server_variable(run_id, 'failed_test_case', str(test_case))
             # Step has a Critial failure, fail the test step and test case. go to next test case
             CommonUtil.ExecLog(sModuleInfo, "%s : Test Step Failed Failure" % current_step_name, 3)
             after_execution_dict.update({'status': FAILED_TAG})
