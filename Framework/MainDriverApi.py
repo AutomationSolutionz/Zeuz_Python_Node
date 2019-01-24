@@ -272,9 +272,12 @@ def check_if_other_machines_failed_in_linked_run():
         try:
             if 'is_failed' in dict and dict['is_failed'] != 'null' and dict['is_failed'] == 'yes':
                 global failed_due_to_linked_fail
-                failed_due_to_linked_fail=True
+
                 failed_machine = ''
                 if 'failed_machine' in dict: failed_machine = dict['failed_machine']
+                if failed_machine == (CommonUtil.MachineInfo().getLocalUser()).lower(): return 'passed'
+
+                failed_due_to_linked_fail = True
 
                 failed_test_case = ''
                 if 'failed_test_case' in dict: failed_test_case = dict['failed_test_case']
