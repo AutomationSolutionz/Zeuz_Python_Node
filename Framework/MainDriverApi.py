@@ -643,6 +643,7 @@ def run_all_test_steps_in_a_test_case(Stepscount, test_case, sModuleInfo, run_id
             after_execution_dict.update({'status': NOT_RUN_TAG})
         elif sStepResult.upper() == FAILED_TAG.upper():
             #step failed, if linked test case notify other test cases via setting server variable named 'is_failed'
+            global failed_due_to_linked_fail
             if is_linked == 'yes' and not failed_due_to_linked_fail:
                 CommonUtil.ExecLog(sModuleInfo,str(test_case) + " failed in linked run.. Notifying other linked machines",3)
                 set_server_variable(run_id,'is_failed','yes')
