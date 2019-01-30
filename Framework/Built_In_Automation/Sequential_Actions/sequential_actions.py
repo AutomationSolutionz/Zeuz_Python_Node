@@ -115,6 +115,8 @@ actions = { # Numbers are arbitrary, and are not used anywhere
     429: {'module': 'selenium', 'name': 'teardown', 'function': 'Tear_Down_Selenium'},
     430: {'module': 'selenium', 'name': 'open new tab', 'function': 'open_new_tab'},
     431: {'module': 'selenium', 'name': 'switch tab', 'function': 'switch_tab'},
+    432: {'module': 'selenium', 'name': 'validate table row size', 'function': 'validate_table_row_size'},
+    433: {'module': 'selenium', 'name': 'validate table column size', 'function': 'validate_table_column_size'},
     
     500: {'module': 'utility', 'name': 'math', 'function': 'Calculate'},
     501: {'module': 'utility', 'name': 'upload', 'function': 'Upload'},

@@ -1064,8 +1064,133 @@ def validate_table(data_set):
     
     CommonUtil.ExecLog(sModuleInfo, "Tables match", 1)
     return 'passed'
-    
-    
+
+
+def validate_table_row_size(data_set):
+    ''' Save row size in a share variable of the table provided in step data'''
+
+    sModuleInfo = inspect.stack()[0][3] + " : " + inspect.getmoduleinfo(__file__).name
+    CommonUtil.ExecLog(sModuleInfo, "Function start", 0)
+
+    try:
+        # Initialize variables
+        expected_row = '' #variable where the row size will be saved
+        table_type = ''  # Type of table (css/html)
+
+        # Parse data set
+
+        for row in data_set:
+            field, subfield, value = row[0], row[1], row[2]  # Put data row in understandable variables
+
+            if subfield == 'action':
+                if value.strip().lower() in ('css', 'html'):
+                        table_type,expected_row = value.split(',')
+                else:
+                    CommonUtil.ExecLog(sModuleInfo,
+                                           "Invalid table type in Value on Action line. Should be 'html' or 'css'", 3)
+                    return 'failed'
+
+
+
+
+        if table_type == '' or expected_row == '':
+            CommonUtil.ExecLog(sModuleInfo, "No table type or expected row is given.. table type should be html or css, expected row is a number which is the expected row size", 3)
+            return "failed"
+
+        # Get table from web page
+        table = LocateElement.Get_Element(data_set, selenium_driver)
+
+        if table in failed_tag_list:
+            CommonUtil.ExecLog(sModuleInfo, "Unable to locate your table with given data.", 3)
+            return "failed"
+
+        all_rows = []
+        if table_type == 'html':  # HTML type table
+            all_rows = table.find_elements_by_tag_name('tr')  # Get element list for all rows
+        elif table_type == 'css':  # CSS type table
+            all_rows = WebDriverWait(table, WebDriver_Wait).until(EC.presence_of_all_elements_located((By.XPATH, "*")))
+
+        row_size = len(all_rows)
+
+        CommonUtil.ExecLog(sModuleInfo, "Webpage table row size: %s" %row_size, 1)
+        CommonUtil.ExecLog(sModuleInfo, "Expected table row size: %s" % expected_row, 1)
+
+        if row_size != expected_row:
+            CommonUtil.ExecLog(sModuleInfo, "Row sizes don't match", 3)
+            return "failed"
+
+        CommonUtil.ExecLog(sModuleInfo, "Row sizes match", 1)
+        return 'passed'
+    except Exception:
+        return CommonUtil.Exception_Handler(sys.exc_info(), None)
+
+def validate_table_column_size(data_set):
+    ''' Save row size in a share variable of the table provided in step data'''
+
+    sModuleInfo = inspect.stack()[0][3] + " : " + inspect.getmoduleinfo(__file__).name
+    CommonUtil.ExecLog(sModuleInfo, "Function start", 0)
+    try:
+        # Initialize variables
+        expected_col = ''  # variable where the row size will be saved
+        table_type = ''  # Type of table (css/html)
+
+        # Parse data set
+
+        for row in data_set:
+            field, subfield, value = row[0], row[1], row[2]  # Put data row in understandable variables
+
+            if subfield == 'action':
+                if value.strip().lower() in ('css', 'html'):
+                        table_type, expected_col = value.split(',')
+                else:
+                    CommonUtil.ExecLog(sModuleInfo,
+                                           "Invalid table type in Value on Action line. Should be 'html' or 'css'", 3)
+                    return 'failed'
+
+
+
+
+        if table_type == '' or expected_col == '':
+            CommonUtil.ExecLog(sModuleInfo, "No table type or expected column is given.. table type should be html or css, expected column is a number which is the expected row size", 3)
+            return "failed"
+
+        # Get table from web page
+        table = LocateElement.Get_Element(data_set, selenium_driver)
+
+        if table in failed_tag_list:
+            CommonUtil.ExecLog(sModuleInfo, "Unable to locate your table with given data.", 3)
+            return "failed"
+
+        all_rows = []
+        all_cols = []
+        if table_type == 'html':  # HTML type table
+            all_rows = table.find_elements_by_tag_name('tr')  # Get element list for all rows
+            if len(all_rows)>0:
+                all_cols = all_rows[0].find_elements_by_tag_name('td')  # Get element list for all columns in this row
+                if len(all_cols) == 0:  # No <TD> type columns, so check if there were header type columns, and use those instead
+                    all_cols = all_rows[0].find_elements_by_tag_name('th')  # Get element list for all header columns in this row
+        elif table_type == 'css':  # CSS type table
+            all_rows = WebDriverWait(table, WebDriver_Wait).until(EC.presence_of_all_elements_located((By.XPATH, "*")))
+            for row_obj in all_rows:  # For each row
+                if row_obj.is_displayed() != False:
+                            # Get elements for each column
+                    all_cols = WebDriverWait(row_obj, WebDriver_Wait).until(
+                                EC.presence_of_all_elements_located((By.XPATH, "*")))
+                    break
+
+        col_size = len(all_cols)
+
+        CommonUtil.ExecLog(sModuleInfo, "Webpage table column size: %s" % col_size, 1)
+        CommonUtil.ExecLog(sModuleInfo, "Expected table column size: %s" % expected_col, 1)
+
+        if col_size != expected_col:
+            CommonUtil.ExecLog(sModuleInfo, "Column sizes don't match", 3)
+            return "failed"
+
+        CommonUtil.ExecLog(sModuleInfo, "Column sizes match", 1)
+        return 'passed'
+    except Exception:
+        return CommonUtil.Exception_Handler(sys.exc_info(), None)
 
 def get_webpage_table_html(data_set, ignore_rows = [], ignore_cols = [], retain_case = True):
     ''' Find an HTML table given the elements, extract the text and return as a dictionary containing lists holding the data '''
