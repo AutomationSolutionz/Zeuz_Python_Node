@@ -1083,12 +1083,7 @@ def validate_table_row_size(data_set):
             field, subfield, value = row[0], row[1], row[2]  # Put data row in understandable variables
 
             if subfield == 'action':
-                if value.strip().lower() in ('css', 'html'):
-                        table_type,expected_row = value.split(',')
-                else:
-                    CommonUtil.ExecLog(sModuleInfo,
-                                           "Invalid table type in Value on Action line. Should be 'html' or 'css'", 3)
-                    return 'failed'
+                table_type,expected_row = str(value).split(',')
 
 
 
@@ -1115,7 +1110,7 @@ def validate_table_row_size(data_set):
         CommonUtil.ExecLog(sModuleInfo, "Webpage table row size: %s" %row_size, 1)
         CommonUtil.ExecLog(sModuleInfo, "Expected table row size: %s" % expected_row, 1)
 
-        if row_size != expected_row:
+        if int(row_size) != int(expected_row):
             CommonUtil.ExecLog(sModuleInfo, "Row sizes don't match", 3)
             return "failed"
 
@@ -1140,12 +1135,7 @@ def validate_table_column_size(data_set):
             field, subfield, value = row[0], row[1], row[2]  # Put data row in understandable variables
 
             if subfield == 'action':
-                if value.strip().lower() in ('css', 'html'):
-                        table_type, expected_col = value.split(',')
-                else:
-                    CommonUtil.ExecLog(sModuleInfo,
-                                           "Invalid table type in Value on Action line. Should be 'html' or 'css'", 3)
-                    return 'failed'
+                table_type, expected_col = str(value).split(',')
 
 
 
@@ -1183,7 +1173,7 @@ def validate_table_column_size(data_set):
         CommonUtil.ExecLog(sModuleInfo, "Webpage table column size: %s" % col_size, 1)
         CommonUtil.ExecLog(sModuleInfo, "Expected table column size: %s" % expected_col, 1)
 
-        if col_size != expected_col:
+        if int(col_size) != int(expected_col):
             CommonUtil.ExecLog(sModuleInfo, "Column sizes don't match", 3)
             return "failed"
 
