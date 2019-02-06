@@ -658,46 +658,83 @@ def Shared_Variable_Export():
     return shared_variables
 
 def save_built_in_time_variable(string):
-    input = str(string).lower().strip()
-    sign = ""
-    number = 0
-    parameter = ""
-    if input == "currentepochtime":
-        return int(time.time())
-    elif input.startswith("today"):
-        if input.lower().strip() == "today":
-            return datetime.today().strftime('%Y-%m-%d')
-        elif "+" in input:
-            l = input.split("+")
-            if len(l) > 2: #problem with input
-                return "failed"
-            else:
-                sign = "plus"
-                st = str(l[1]).strip()
-                parameter = st[-1]
-                number = int(st[:-1])
-        elif "-" in input:
-            l = input.split("-")
-            if len(l) > 2: #problem with input
-                return "failed"
-            else:
-                sign = "minus"
-                st = str(l[1]).strip()
-                parameter = st[-1]
-                number = int(st[:-1])
-        else:
-            return "failed"
+    sModuleInfo = inspect.stack()[0][3] + " : " + inspect.getmoduleinfo(__file__).name
+    try:
 
-        if sign != "" and parameter != "":
-            if sign == "minus":
-                number*=-1
-            if parameter == "d":
-                return (datetime.today() + relativedelta(days=number)).strftime('%Y-%m-%d')
-            elif parameter == "w":
-                return (datetime.today() + relativedelta(days=number*7)).strftime('%Y-%m-%d')
-            elif parameter == "m":
-                return (datetime.today() + relativedelta(months=number)).strftime('%Y-%m-%d')
-            elif parameter == "y":
-                return (datetime.today() + relativedelta(years=number)).strftime('%Y-%m-%d')
+        sign = ""
+        number = 0
+        parameter = ""
+
+        datetime_format = '%Y-%m-%d'
+
+        if '(' in string:
+            splitted_list = string.split('(')
+            string=splitted_list[0]
+            datetime_format_user_input = splitted_list[1].split(')')[0]
+            datetime_format = generate_datetime_format(datetime_format_user_input)
+
+        input = str(string).lower().strip()
+
+        if input == "currentepochtime":
+            return int(time.time())
+        elif input.startswith("today"):
+            if input.lower().strip() == "today":
+                return datetime.today().strftime(datetime_format)
+            elif "+" in input:
+                l = input.split("+")
+                if len(l) > 2: #problem with input
+                    return "failed"
+                else:
+                    sign = "plus"
+                    st = str(l[1]).strip()
+                    parameter = st[-1]
+                    number = int(st[:-1])
+            elif "-" in input:
+                l = input.split("-")
+                if len(l) > 2: #problem with input
+                    return "failed"
+                else:
+                    sign = "minus"
+                    st = str(l[1]).strip()
+                    parameter = st[-1]
+                    number = int(st[:-1])
             else:
                 return "failed"
+
+            if sign != "" and parameter != "":
+                if sign == "minus":
+                    number*=-1
+                if parameter == "d":
+                    return (datetime.today() + relativedelta(days=number)).strftime(datetime_format)
+                elif parameter == "w":
+                    return (datetime.today() + relativedelta(days=number*7)).strftime(datetime_format)
+                elif parameter == "m":
+                    return (datetime.today() + relativedelta(months=number)).strftime(datetime_format)
+                elif parameter == "y":
+                    return (datetime.today() + relativedelta(years=number)).strftime(datetime_format)
+                else:
+                    return "failed"
+    except Exception,e:
+        return CommonUtil.Exception_Handler(sys.exc_info(),UserMessage="Invalid Date Format, Error: %s Please Read the Action Help"%e)
+
+
+def generate_datetime_format(string):
+    sModuleInfo = inspect.stack()[0][3] + " : " + inspect.getmoduleinfo(__file__).name
+    try:
+        datetime_format = string
+
+        datetime_format.strip()
+        datetime_format = datetime_format.replace("MMM","%b")
+        datetime_format = datetime_format.replace("DD", "%d")
+        datetime_format = datetime_format.replace("MM", "%m")
+        datetime_format = datetime_format.replace("YYYY", "%Y")
+        datetime_format = datetime_format.replace("YY", "%y")
+        datetime_format = datetime_format.replace("HH", "%H")
+        datetime_format = datetime_format.replace("hh", "%I")
+        datetime_format = datetime_format.replace("mm", "%M")
+        datetime_format = datetime_format.replace("SS", "%S")
+
+        return datetime_format
+    except Exception:
+        CommonUtil.ExecLog(sModuleInfo,"Invalid datetime format, using the deafult '%Y-%m-%d' format",2)
+        return '%Y-%m-%d'
