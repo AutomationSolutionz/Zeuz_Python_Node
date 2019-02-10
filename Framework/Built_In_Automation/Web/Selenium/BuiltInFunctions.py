@@ -26,6 +26,7 @@ from selenium.common.exceptions import NoAlertPresentException
 from selenium.webdriver.common.keys import Keys
 from selenium.webdriver.common.by import By
 from selenium.webdriver.support import expected_conditions as EC
+import pyautogui
 
 from Framework.Utilities import CommonUtil
 from Framework.Built_In_Automation.Shared_Resources import BuiltInFunctionSharedResources as Shared_Resources
@@ -1369,6 +1370,40 @@ def switch_tab(step_data):
         windows = selenium_driver.window_handles
         selenium_driver.switch_to.window(windows[tab-1])
         CommonUtil.ExecLog(sModuleInfo, "Switched to Tab %s Successfully in Browser"%tab, 1)
+
+        return "passed"
+    except Exception:
+        return CommonUtil.Exception_Handler(sys.exc_info())
+
+
+# Method to upload file
+def upload_file(step_data):
+    sModuleInfo = inspect.stack()[0][3] + " : " + inspect.getmoduleinfo(__file__).name
+    CommonUtil.ExecLog(sModuleInfo, "Function start", 0)
+
+    try:
+        file_name = ''
+        for each in step_data:
+            if each[1] == "action":
+                file_name = str(each[2]).strip()
+
+        if file_name == '':
+            CommonUtil.ExecLog(sModuleInfo, "File name can't be empty!")
+            return "failed"
+        elif not os.path.exists(file_name):
+            CommonUtil.ExecLog(sModuleInfo, "File '%s' can't be found.. please give a valid file path"%file_name)
+            return "failed"
+
+        if sys.platform != 'darwin':
+            file_window=LocateElement.Get_Element(step_data, selenium_driver)
+            file_window.click()
+            time.sleep(5) #wait for the window to appear
+
+            pyautogui.typewrite(file_name) #type file name
+            pyautogui.hotkey('ENTER')
+            CommonUtil.ExecLog(sModuleInfo, "File '%s' uploaded successfully" % file_name)
+        else:
+            CommonUtil.ExecLog(sModuleInfo, "Uploading file not supported in Mac Platform right now!")
 
         return "passed"
     except Exception:

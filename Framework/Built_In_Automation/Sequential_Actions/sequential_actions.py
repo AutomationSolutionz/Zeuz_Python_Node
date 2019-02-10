@@ -117,6 +117,7 @@ actions = { # Numbers are arbitrary, and are not used anywhere
     431: {'module': 'selenium', 'name': 'switch tab', 'function': 'switch_tab'},
     432: {'module': 'selenium', 'name': 'validate table row size', 'function': 'validate_table_row_size'},
     433: {'module': 'selenium', 'name': 'validate table column size', 'function': 'validate_table_column_size'},
+    434: {'module': 'selenium', 'name': 'upload file', 'function': 'upload_file'},
     
     500: {'module': 'utility', 'name': 'math', 'function': 'Calculate'},
     501: {'module': 'utility', 'name': 'upload', 'function': 'Upload'},
