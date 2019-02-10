@@ -1,6 +1,6 @@
 [ZeuZ Python Version]
-version = 7.1
+version = 7.2
 [Release Date]
 date= 2019-02-10
 [Release Note]
-Note =  Date action improvements, licensing
+Note =  Licensing integration; Table validation; linked test case improvement; Date Action improvement; File upload
