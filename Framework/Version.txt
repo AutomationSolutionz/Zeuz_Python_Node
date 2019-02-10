@@ -1,10 +1,6 @@
 [ZeuZ Python Version]
-version = 6.9
+version = 6.0
 [Release Date]
-date= 2019-02-10
+date= 2018-11-26
 [Release Note]
-<<<<<<< HEAD
-Note=Multi machine communication improvement, additional actions, other fixes
-=======
 Note =  Date action improvements, licensing 
->>>>>>> refs/remotes/origin/beta
