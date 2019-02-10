@@ -1,10 +1,6 @@
 [ZeuZ Python Version]
-<<<<<<< HEAD
-version = 6.0
-=======
 version = 7.0
->>>>>>> refs/remotes/origin/beta
 [Release Date]
-date= 2018-11-26
+date= 2019-02-10
 [Release Note]
 Note =  Date action improvements, licensing, merging issues
