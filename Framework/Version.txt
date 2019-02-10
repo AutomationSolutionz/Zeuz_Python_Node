@@ -1,6 +1,6 @@
 [ZeuZ Python Version]
-version = 6.9
+version = 7.0
 [Release Date]
 date= 2019-02-10
 [Release Note]
-Note =  Date action improvements, licensing 
+Note =  Date action improvements, licensing, merging issues
