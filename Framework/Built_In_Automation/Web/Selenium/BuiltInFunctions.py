@@ -1419,9 +1419,9 @@ def drag_and_drop(step_data):
         source = ''
         destination = ''
         for each in step_data:
-            if each[1] == "source":
+            if each[0] == "source":
                 source = str(each[2]).strip()
-            elif each[1] == "destination":
+            elif each[0] == "destination":
                 destination = str(each[2]).strip()
 
         if source == '':
