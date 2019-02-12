@@ -1388,10 +1388,10 @@ def upload_file(step_data):
                 file_name = str(each[2]).strip()
 
         if file_name == '':
-            CommonUtil.ExecLog(sModuleInfo, "File name can't be empty!")
+            CommonUtil.ExecLog(sModuleInfo, "File name can't be empty!",3)
             return "failed"
         elif not os.path.exists(file_name):
-            CommonUtil.ExecLog(sModuleInfo, "File '%s' can't be found.. please give a valid file path"%file_name)
+            CommonUtil.ExecLog(sModuleInfo, "File '%s' can't be found.. please give a valid file path"%file_name,3)
             return "failed"
 
         if sys.platform != 'darwin':
@@ -1401,9 +1401,48 @@ def upload_file(step_data):
 
             pyautogui.typewrite(file_name) #type file name
             pyautogui.hotkey('ENTER')
-            CommonUtil.ExecLog(sModuleInfo, "File '%s' uploaded successfully" % file_name)
+            CommonUtil.ExecLog(sModuleInfo, "File '%s' uploaded successfully" % file_name,1)
         else:
-            CommonUtil.ExecLog(sModuleInfo, "Uploading file not supported in Mac Platform right now!")
+            CommonUtil.ExecLog(sModuleInfo, "Uploading file not supported in Mac Platform right now!",2)
+
+        return "passed"
+    except Exception:
+        return CommonUtil.Exception_Handler(sys.exc_info())
+
+
+# Method to upload file
+def drag_and_drop(step_data):
+    sModuleInfo = inspect.stack()[0][3] + " : " + inspect.getmoduleinfo(__file__).name
+    CommonUtil.ExecLog(sModuleInfo, "Function start", 0)
+
+    try:
+        source = ''
+        destination = ''
+        for each in step_data:
+            if each[0] == "source":
+                source = str(each[2]).strip()
+            elif each[0] == "destination":
+                destination = str(each[2]).strip()
+
+        if source == '':
+            CommonUtil.ExecLog(sModuleInfo, "No source element specified for drag and drop",3)
+            return "failed"
+        elif destination == '':
+            CommonUtil.ExecLog(sModuleInfo, "No destination element specified for drag and drop",3)
+            return "failed"
+
+
+        source_element = Shared_Resources.Get_Shared_Variables(source)
+        if source_element in failed_tag_list:
+            CommonUtil.ExecLog(sModuleInfo, "No element found in shared variables named '%s' which is defined as source for drag and drop",source,3)
+
+
+        destination_element = Shared_Resources.Get_Shared_Variables(destination)
+        if destination_element in failed_tag_list:
+            CommonUtil.ExecLog(sModuleInfo,"No element found in shared variables named '%s' which is defined as source for drag and drop",source,3)
+
+        ActionChains(selenium_driver).drag_and_drop(source_element, destination_element).perform()
+        CommonUtil.ExecLog(sModuleInfo,"Drag and drop completed from source '%s' to destination '%s'"%(source, destination))
 
         return "passed"
     except Exception:
