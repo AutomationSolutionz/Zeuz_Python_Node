@@ -415,8 +415,8 @@ def _get_xpath_or_css_element(element_query,css_xpath, index_number=False):
             return all_matching_elements[0]
         elif len(all_matching_elements) >1 and index_number != False:
             if (len(all_matching_elements)-1) < abs(index_number):
-                CommonUtil.ExecLog(sModuleInfo,  "Warning: your index: %s exceed the the number of elements found: %s. Returning the last element instead"%(index_number, len(all_matching_elements)-1), 2)
-                return all_matching_elements[(len(all_matching_elements)-1)]
+                CommonUtil.ExecLog(sModuleInfo,  "Error: your index: %s exceed the the number of elements found: %s"%(index_number, len(all_matching_elements)-1), 3)
+                return "failed"
             else:
                 CommonUtil.ExecLog(sModuleInfo, "Total elements found are: %s but returning element number: %s" %(len(all_matching_elements),index_number), 2)
                 return all_matching_elements[index_number]    
