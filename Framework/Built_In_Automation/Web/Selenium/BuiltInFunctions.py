@@ -826,7 +826,7 @@ def Scroll(step_data):
                     break
 
         if scroll_inside_element:
-            scroll_window = LocateElement.Get_Element(step_data)
+            scroll_window = LocateElement.Get_Element(step_data, selenium_driver)
             if scroll_window in failed_tag_list:
                 CommonUtil.ExecLog(sModuleInfo, "Element through which instructed to scroll not found",3)
                 return "failed"
