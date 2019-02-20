@@ -857,7 +857,7 @@ def Scroll(step_data):
             time.sleep(2)
             return "passed"
         else:
-            CommonUtil.ExecLog(sModuleInfo, "Value invalid. Only 'up', and 'down' allowed", 3)
+            CommonUtil.ExecLog(sModuleInfo, "Value invalid. Only 'up', 'down', 'right' and 'left' allowed", 3)
             result = "failed"
             return result
 
