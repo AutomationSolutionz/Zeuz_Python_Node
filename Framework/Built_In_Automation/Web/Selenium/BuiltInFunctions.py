@@ -812,36 +812,54 @@ def Scroll(step_data):
     CommonUtil.ExecLog(sModuleInfo, "Function start", 0)
 
     try:
-        if ((1 < len(step_data) >= 2)):
-            CommonUtil.ExecLog(sModuleInfo,"Please provide only single row of data",3)
-            return "failed"
+        scroll_inside_element = False
+        scroll_window_name = 'window'
+        scroll_window = ""
+        action_row = None
+
+        if len(step_data)>1: #element given scroll inside element, not on full window
+            scroll_inside_element=True
+            scroll_window_name='arguments[0]'
+            for row in step_data:
+                if str(row[1]) == 'action':
+                    action_row = row
+                    break
+
+        if scroll_inside_element:
+            scroll_window = LocateElement.Get_Element(step_data, selenium_driver)
+            if scroll_window in failed_tag_list:
+                CommonUtil.ExecLog(sModuleInfo, "Element through which instructed to scroll not found",3)
+                return "failed"
+
+            CommonUtil.ExecLog(sModuleInfo,"Element inside which instructed to scroll has been found. Scrolling thorugh it",1)
         else:
-            tuple = step_data[0]
-            scroll_direction = str(tuple[2]).strip().lower()
-            if scroll_direction == 'down':
-                CommonUtil.ExecLog(sModuleInfo,"Scrolling down", 1)
-                result = selenium_driver.execute_script("window.scrollBy(0,750)", "")
-                time.sleep(2)
-                return "passed"
-            elif scroll_direction == 'up':
-                CommonUtil.ExecLog(sModuleInfo, "Scrolling up", 1)
-                result = selenium_driver.execute_script("window.scrollBy(0,-750)", "")
-                time.sleep(2)
-                return "passed"
-            elif scroll_direction == 'left':
-                CommonUtil.ExecLog(sModuleInfo, "Scrolling left", 1)
-                result = selenium_driver.execute_script("window.scrollBy(-750,0)", "")
-                time.sleep(2)
-                return "passed"
-            elif scroll_direction == 'right':
-                CommonUtil.ExecLog(sModuleInfo, "Scrolling right", 1)
-                result = selenium_driver.execute_script("window.scrollBy(750,0)", "")
-                time.sleep(2)
-                return "passed"
-            else:
-                CommonUtil.ExecLog(sModuleInfo, "Value invalid. Only 'up', and 'down' allowed", 3)
-                result = "failed"
-                return result
+            CommonUtil.ExecLog(sModuleInfo, "Scrolling through main window",1)
+
+        scroll_direction = str(action_row[2]).strip().lower()
+        if scroll_direction == 'down':
+            CommonUtil.ExecLog(sModuleInfo,"Scrolling down", 1)
+            result = selenium_driver.execute_script("%s.scrollBy(0,750)"%scroll_window_name, scroll_window)
+            time.sleep(2)
+            return "passed"
+        elif scroll_direction == 'up':
+            CommonUtil.ExecLog(sModuleInfo, "Scrolling up", 1)
+            result = selenium_driver.execute_script("%s.scrollBy(0,-750)"%scroll_window_name, scroll_window)
+            time.sleep(2)
+            return "passed"
+        elif scroll_direction == 'left':
+            CommonUtil.ExecLog(sModuleInfo, "Scrolling left", 1)
+            result = selenium_driver.execute_script("%s.scrollBy(-750,0)"%scroll_window_name, scroll_window)
+            time.sleep(2)
+            return "passed"
+        elif scroll_direction == 'right':
+            CommonUtil.ExecLog(sModuleInfo, "Scrolling right", 1)
+            result = selenium_driver.execute_script("%s.scrollBy(750,0)"%scroll_window_name, scroll_window)
+            time.sleep(2)
+            return "passed"
+        else:
+            CommonUtil.ExecLog(sModuleInfo, "Value invalid. Only 'up', 'down', 'right' and 'left' allowed", 3)
+            result = "failed"
+            return result
 
     except Exception:
         return CommonUtil.Exception_Handler(sys.exc_info())
