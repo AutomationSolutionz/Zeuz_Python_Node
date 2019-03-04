@@ -817,13 +817,18 @@ def Scroll(step_data):
         scroll_window = ""
         action_row = None
 
+        for row in step_data:
+            if str(row[1]) == 'action':
+                action_row = row
+                break
+
+        if not action_row:
+            CommonUtil.ExecLog(sModuleInfo,"No action row defined",3)
+            return "failed"
+
         if len(step_data)>1: #element given scroll inside element, not on full window
             scroll_inside_element=True
             scroll_window_name='arguments[0]'
-            for row in step_data:
-                if str(row[1]) == 'action':
-                    action_row = row
-                    break
 
         if scroll_inside_element:
             scroll_window = LocateElement.Get_Element(step_data, selenium_driver)
