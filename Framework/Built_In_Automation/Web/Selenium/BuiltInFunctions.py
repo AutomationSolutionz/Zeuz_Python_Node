@@ -869,7 +869,27 @@ def Scroll(step_data):
     except Exception:
         return CommonUtil.Exception_Handler(sys.exc_info())
 
+#Method to scroll to view an element
+def scroll_to_element(step_data):
+    sModuleInfo = inspect.stack()[0][3] + " : " + inspect.getmoduleinfo(__file__).name
+    CommonUtil.ExecLog(sModuleInfo, "Function start", 0)
 
+    try:
+        scroll_element = LocateElement.Get_Element(step_data, selenium_driver)
+        if scroll_element in failed_tag_list:
+            CommonUtil.ExecLog(sModuleInfo, "Element to which instructed to scroll not found",3)
+            return "failed"
+
+        CommonUtil.ExecLog(sModuleInfo,"Element to which instructed to scroll has been found. Scrolling to view it",1)
+
+        selenium_driver.execute_script("arguments[0].scrollIntoView(true);",scroll_element)
+
+        time.sleep(2)
+        return "passed"
+
+
+    except Exception:
+        return CommonUtil.Exception_Handler(sys.exc_info())
 
 #Method to return pass or fail for the step outcome
 def Navigate(step_data):
