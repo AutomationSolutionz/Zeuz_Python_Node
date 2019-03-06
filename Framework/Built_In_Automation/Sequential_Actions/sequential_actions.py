@@ -119,6 +119,7 @@ actions = { # Numbers are arbitrary, and are not used anywhere
     433: {'module': 'selenium', 'name': 'validate table column size', 'function': 'validate_table_column_size'},
     434: {'module': 'selenium', 'name': 'upload file', 'function': 'upload_file'},
     435: {'module': 'selenium', 'name': 'drag and drop', 'function': 'drag_and_drop'},
+    436: {'module': 'selenium', 'name': 'scroll to element', 'function': 'scroll_to_element'},
     
     500: {'module': 'utility', 'name': 'math', 'function': 'Calculate'},
     501: {'module': 'utility', 'name': 'upload', 'function': 'Upload'},
