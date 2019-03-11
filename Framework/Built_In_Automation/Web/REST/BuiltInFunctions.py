@@ -643,7 +643,7 @@ def handle_rest_call(data, fields_to_be_saved, save_into_list = False, list_name
                 return "passed"
             else:
                 CommonUtil.ExecLog(sModuleInfo, "REST Call did not respond in json format", 1)
-                response_text = result.text
+                response_text = result.json()
                 CommonUtil.ExecLog(sModuleInfo, "REST Call response is: %s" % str(response_text), 1)
                 try:
                     # try to save as dict
@@ -655,6 +655,7 @@ def handle_rest_call(data, fields_to_be_saved, save_into_list = False, list_name
                                        1)
                 except:
                     # save the text
+                    response_text = result.text
                     CommonUtil.ExecLog(sModuleInfo, "REST Call Response Text couldn't be converted to json", 2)
                     Shared_Resources.Set_Shared_Variables('rest_response', response_text)
                     CommonUtil.ExecLog(sModuleInfo, "REST Call Response Text saved in 'rest_response' shared variable",
