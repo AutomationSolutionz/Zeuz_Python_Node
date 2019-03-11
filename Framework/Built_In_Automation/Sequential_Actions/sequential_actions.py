@@ -198,6 +198,7 @@ action_support = [
     'sibling parameter',
     'parent parameter',
     'target parameter',
+    'optional parameter',
     'method',
     'url',
     'body',

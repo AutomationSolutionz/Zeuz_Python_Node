@@ -27,6 +27,7 @@ from selenium.webdriver.common.keys import Keys
 from selenium.webdriver.common.by import By
 from selenium.webdriver.support import expected_conditions as EC
 import pyautogui
+from pyautogui import press, typewrite
 
 from Framework.Utilities import CommonUtil
 from Framework.Built_In_Automation.Shared_Resources import BuiltInFunctionSharedResources as Shared_Resources
@@ -248,17 +249,26 @@ def Enter_Text_In_Text_Box(step_data):
     CommonUtil.ExecLog(sModuleInfo,"Function Start", 0)
 
     try:
+        delay=0
+        text_value=""
         Element = LocateElement.Get_Element(step_data,selenium_driver)
         if Element != "failed":
             for each in step_data:
                 if each[1]=="action":
                     text_value=each[2]
                     break
+                elif each[0]=="delay":
+                    delay=float(each[2])
                 else:
                     continue
             Element.click()
             Element.clear()
-            Element.send_keys(text_value)
+            if delay == 0:
+                Element.send_keys(text_value)
+            else:
+                for c in text_value:
+                    Element.send_keys(c)
+                    time.sleep(delay)
             try:
                 Element.click()
             except: #sometimes text field can be unclickable after entering text
