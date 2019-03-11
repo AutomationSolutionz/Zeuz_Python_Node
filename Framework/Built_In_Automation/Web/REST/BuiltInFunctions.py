@@ -643,9 +643,19 @@ def handle_rest_call(data, fields_to_be_saved, save_into_list = False, list_name
                 return "passed"
         except Exception:
             CommonUtil.ExecLog(sModuleInfo,"REST Call did not respond in json format",1)
-            CommonUtil.ExecLog(sModuleInfo,"Saving REST Call Response Text", 1)
             response_text = result.text
-            Shared_Resources.Set_Shared_Variables('response_text', response_text)
+            CommonUtil.ExecLog(sModuleInfo, "REST Call response is: %s"%str(response_text), 1)
+            try:
+                #try to save as dict
+                CommonUtil.ExecLog(sModuleInfo, "Trying to convert REST Call Response Text to json", 1)
+                json_of_response=ast.literal_eval(response_text)
+                Shared_Resources.Set_Shared_Variables("rest_response", json_of_response)
+                CommonUtil.ExecLog(sModuleInfo, "REST Call Response Text converted to json and saved in 'rest_response' shared variable", 1)
+            except:
+                #save the text
+                CommonUtil.ExecLog(sModuleInfo,"REST Call Response Text couldn't be converted to json",2)
+                Shared_Resources.Set_Shared_Variables('rest_response', response_text)
+                CommonUtil.ExecLog(sModuleInfo,"REST Call Response Text saved in 'rest_response' shared variable",1)
             return "passed"
     except Exception:
         return CommonUtil.Exception_Handler(sys.exc_info())
