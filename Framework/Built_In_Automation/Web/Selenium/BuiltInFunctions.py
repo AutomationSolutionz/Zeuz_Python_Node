@@ -265,7 +265,9 @@ def Enter_Text_In_Text_Box(step_data):
             if delay == 0:
                 Element.send_keys(text_value)
             else:
-                typewrite(text_value, 0.03)
+                for c in text_value:
+                    Element.send_keys(c)
+                    time.sleep(delay)
             try:
                 Element.click()
             except: #sometimes text field can be unclickable after entering text
