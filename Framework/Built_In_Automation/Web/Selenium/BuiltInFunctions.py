@@ -250,6 +250,7 @@ def Enter_Text_In_Text_Box(step_data):
 
     try:
         delay=0
+        text_value=""
         Element = LocateElement.Get_Element(step_data,selenium_driver)
         if Element != "failed":
             for each in step_data:
