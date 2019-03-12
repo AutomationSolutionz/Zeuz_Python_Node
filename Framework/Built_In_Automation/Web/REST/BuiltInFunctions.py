@@ -729,7 +729,7 @@ def Get_Response(step_data, save_cookie=False):
         for row in step_data:
             if row[1] == 'action':
                 fields_to_be_saved = row[2]
-            elif row[0] == 'wait':
+            elif row[0] == 'wait for status code':
                 wait_for_response_code = int(row[2])
 
         element_step_data = Get_Element_Step_Data(step_data)
