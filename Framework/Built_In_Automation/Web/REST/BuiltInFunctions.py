@@ -560,7 +560,7 @@ def search_condition_wrapper(data,condition_string):
 
 
 # Method to handle rest calls
-def handle_rest_call(data, fields_to_be_saved, save_into_list = False, list_name = "",search=False,search_key="",search_value="",equal=True,condition='',apply_condition=False,save_cookie=False):
+def handle_rest_call(data, fields_to_be_saved, save_into_list = False, list_name = "",search=False,search_key="",search_value="",equal=True,condition='',apply_condition=False,save_cookie=False,wait_for_response_code=0):
     sModuleInfo = inspect.stack()[0][3] + " : " + inspect.getmoduleinfo(__file__).name
     CommonUtil.ExecLog(sModuleInfo, "Function: handle rest call", 1)
     try:
@@ -581,19 +581,37 @@ def handle_rest_call(data, fields_to_be_saved, save_into_list = False, list_name
         CommonUtil.ExecLog(sModuleInfo, "body: %s" % body, 1)
         CommonUtil.ExecLog(sModuleInfo, "headers %s" % headers, 1)
 
-        if method.lower().strip() == 'post':
-            result = requests.post(url,json=body,headers=headers,verify=False)
-        elif method.lower().strip() == 'put':
-            result = requests.put(url, json=body, headers=headers, verify=False)
-        elif method.lower().strip() == 'get':
-            result = requests.get(url, headers=headers, verify=False)
-        elif method.lower().strip() == 'delete':
-            result = requests.delete(url, json=body, headers=headers, verify=False)
-        else:
-            return "failed"
-        status_code = int(result.status_code)
+        request_count = 1
+        if wait_for_response_code != 0:
+            request_count = 60
+
+        count=0
+
+        status_code = 1 #dummy value
+        while count<request_count:
+            if method.lower().strip() == 'post':
+                result = requests.post(url,json=body,headers=headers,verify=False)
+            elif method.lower().strip() == 'put':
+                result = requests.put(url, json=body, headers=headers, verify=False)
+            elif method.lower().strip() == 'get':
+                result = requests.get(url, headers=headers, verify=False)
+            elif method.lower().strip() == 'delete':
+                result = requests.delete(url, json=body, headers=headers, verify=False)
+            else:
+                return "failed"
+            status_code = int(result.status_code)
+            CommonUtil.ExecLog(sModuleInfo, 'Post Call returned status code: %d' % status_code, 1)
+
+            if request_count>1:
+                if status_code != wait_for_response_code:
+                    CommonUtil.ExecLog(sModuleInfo, 'Post Call Status Code %d did not match with Expected Status Code %d, Retrying again' %(status_code,wait_for_response_code), 1)
+                    time.sleep(2)
+                else:
+                    CommonUtil.ExecLog(sModuleInfo,'Post Call Status Code %d matched with Expected Status Code %d' % (status_code, wait_for_response_code), 1)
+                    break
+            count+=1
+
         Shared_Resources.Set_Shared_Variables('status_code',result.status_code)
-        CommonUtil.ExecLog(sModuleInfo,'Post Call returned status code: %d'%status_code,1)
         try:
             if result.json() and type(result.json()) == dict:
                 Shared_Resources.Set_Shared_Variables("rest_response",result.json())
@@ -706,10 +724,13 @@ def Get_Response(step_data, save_cookie=False):
     sModuleInfo = inspect.stack()[0][3] + " : " + inspect.getmoduleinfo(__file__).name
     CommonUtil.ExecLog(sModuleInfo, "Function: Get_Response", 1)
     try:
+        wait_for_response_code = 0
         fields_to_be_saved = ''
         for row in step_data:
             if row[1] == 'action':
                 fields_to_be_saved = row[2]
+            elif row[0] == 'wait for status code':
+                wait_for_response_code = int(row[2])
 
         element_step_data = Get_Element_Step_Data(step_data)
 
@@ -719,7 +740,7 @@ def Get_Response(step_data, save_cookie=False):
             return "failed"
         else:
             try:
-                return_result = handle_rest_call(returned_step_data_list, fields_to_be_saved,save_cookie=save_cookie)
+                return_result = handle_rest_call(returned_step_data_list, fields_to_be_saved,save_cookie=save_cookie, wait_for_response_code=wait_for_response_code)
                 return return_result
             except Exception:
                 return CommonUtil.Exception_Handler(sys.exc_info())
