@@ -570,6 +570,7 @@ def handle_rest_call(data, fields_to_be_saved, save_into_list = False, list_name
         method = data[1]
         body = data[2]
         headers = data[3]
+        payload = data[4]
         temp = get_value_as_list(body)
         if temp not in failed_tag_list:
             body = temp
@@ -580,6 +581,8 @@ def handle_rest_call(data, fields_to_be_saved, save_into_list = False, list_name
         CommonUtil.ExecLog(sModuleInfo, "URL: %s" % url, 1)
         CommonUtil.ExecLog(sModuleInfo, "body: %s" % body, 1)
         CommonUtil.ExecLog(sModuleInfo, "headers %s" % headers, 1)
+        if payload != "":
+            CommonUtil.ExecLog(sModuleInfo, "payload %s" % payload, 1)
 
         request_count = 1
         if wait_for_response_code != 0:
@@ -590,9 +593,9 @@ def handle_rest_call(data, fields_to_be_saved, save_into_list = False, list_name
         status_code = 1 #dummy value
         while count<request_count:
             if method.lower().strip() == 'post':
-                result = requests.post(url,json=body,headers=headers,verify=False)
+                result = requests.post(url,json=body, data=payload, headers=headers,verify=False)
             elif method.lower().strip() == 'put':
-                result = requests.put(url, json=body, headers=headers, verify=False)
+                result = requests.put(url, json=body, data=payload, headers=headers, verify=False)
             elif method.lower().strip() == 'get':
                 result = requests.get(url, headers=headers, verify=False)
             elif method.lower().strip() == 'delete':
@@ -952,6 +955,7 @@ def Validate_Step_Data(step_data):
         body = "{"
         headers = "{"
         plain_body_text = False
+        payload = ""
         for each in step_data:
             if each[1].lower().strip() == "element parameter":
                 element_parameter = each[0]
@@ -959,6 +963,8 @@ def Validate_Step_Data(step_data):
                     method = each[2]
                 elif element_parameter.lower().strip() == 'url':
                     url = each[2]
+                elif element_parameter.lower().strip() == 'payload':
+                    payload = """%s"""%str(each[2])
             elif each[1].lower().strip() == 'body':
                 if each[0].lower().strip() == 'plain text':
                     body = each[2]
@@ -980,7 +986,7 @@ def Validate_Step_Data(step_data):
             body += '}'
 
 
-        validated_data = (url, method, body, headers)
+        validated_data = (url, method, body, headers, payload)
         return validated_data
 
     except Exception:
