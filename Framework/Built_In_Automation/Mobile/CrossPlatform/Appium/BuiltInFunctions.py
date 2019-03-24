@@ -496,7 +496,19 @@ def start_appium_driver(package_name = '', activity_name = '', filename = '', pl
             
             # Create Appium instance with capabilities
             try:
-                appium_driver = webdriver.Remote('http://localhost:%d/wd/hub' % appium_port, desired_caps) # Create instance
+                count=1
+                while count<=5:
+                    try:
+                        appium_driver = webdriver.Remote('http://localhost:%d/wd/hub' % appium_port, desired_caps) # Create instance
+                        if appium_driver:
+                            break
+                        count+=1
+                        time.sleep(2)
+                        CommonUtil.ExecLog(sModuleInfo,"Failed to create appium driver, trying again",2)
+                    except:
+                        count+=1
+                        time.sleep(2)
+                        CommonUtil.ExecLog(sModuleInfo, "Failed to create appium driver, trying again", 2)
 
                 if appium_driver: # Make sure we get the instance
                     appium_details[device_id]['driver'] = appium_driver
