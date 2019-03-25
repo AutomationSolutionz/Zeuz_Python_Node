@@ -39,7 +39,6 @@ def write_all_logs_to_server(all_logs_list):
             try:
                 r =  RequestFormatter.Post('all_log_execution', {'all_logs': all_logs})
                 if r == 1:
-                    CommonUtil.ExecLog("hola","Sending logs %d" % len(all_logs),1)
                     break
                 i+=1
                 time.sleep(1)

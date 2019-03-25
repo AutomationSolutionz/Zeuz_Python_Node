@@ -222,7 +222,7 @@ def ExecLog(sModuleInfo, sDetails, iLogLevel=1, _local_run="", sStatus=""):
                 if all_logs_count>=500:
                     all_logs_list.append(all_logs)
                     all_logs_count=0
-                    all_log={}
+                    all_logs={}
 
 
     except Exception, e:
@@ -244,7 +244,7 @@ def get_all_logs():
     return all_logs_list
 
 def clear_all_logs():
-    global all_logs,all_logs_count
+    global all_logs,all_logs_count,all_logs_list
     all_logs = {}
     all_logs_count = 0
     all_logs_list=[]
