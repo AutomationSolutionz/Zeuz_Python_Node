@@ -503,11 +503,11 @@ def start_appium_driver(package_name = '', activity_name = '', filename = '', pl
                         if appium_driver:
                             break
                         count+=1
-                        time.sleep(2)
+                        time.sleep(10)
                         CommonUtil.ExecLog(sModuleInfo,"Failed to create appium driver, trying again",2)
                     except:
                         count+=1
-                        time.sleep(2)
+                        time.sleep(10)
                         CommonUtil.ExecLog(sModuleInfo, "Failed to create appium driver, trying again", 2)
 
                 if appium_driver: # Make sure we get the instance
