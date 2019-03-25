@@ -32,9 +32,20 @@ device_info = {}
 failed_due_to_linked_fail = False# if other linked machine failed in a linked run
 
 # writes all logs to server
-def write_all_logs_to_server(all_logs):
-    return RequestFormatter.Post('all_log_execution', {'all_logs': all_logs})
-
+def write_all_logs_to_server(all_logs_list):
+    i=0
+    for all_logs in all_logs_list:
+        while i<5:
+            try:
+                r =  RequestFormatter.Post('all_log_execution', {'all_logs': all_logs})
+                if r == 1:
+                    break
+                i+=1
+                time.sleep(1)
+            except:
+                i += 1
+                time.sleep(1)
+    return r
 
 # send_email_report_after_exectution
 def send_email_report_after_exectution(run_id, project_id, team_id):
@@ -321,14 +332,26 @@ def upload_zip(server_id, port_id, temp_folder, run_id, file_name, base_path=Fal
     sModuleInfo = inspect.stack()[0][3] + " : " + inspect.getmoduleinfo(__file__).name
     url_link = 'http://' + server_id + ':' + str(port_id) + "/Home/UploadZip/"
     total_file_path = temp_folder + os.sep + run_id.replace(':', '-') + os.sep + file_name
-    fileObj = open(total_file_path, 'rb')
-    file_list = {'docfile': fileObj}
-    data_list = {'run_id': run_id, 'file_name': file_name, 'base_path': base_path}
-    r = requests.post(url_link, files=file_list, data=data_list)
-    if r.status_code == 200:
-        CommonUtil.ExecLog(sModuleInfo, "Zip File is uploaded to production successfully", 4, False)
-    else:
-        CommonUtil.ExecLog(sModuleInfo, "Zip File is not uploaded to production successfully", 4, False)
+
+    i=0
+    while i<5:
+        try:
+            fileObj = open(total_file_path, 'rb')
+            file_list = {'docfile': fileObj}
+            data_list = {'run_id': run_id, 'file_name': file_name, 'base_path': base_path}
+            r = requests.post(url_link, files=file_list, data=data_list)
+            if r.status_code == 200:
+                CommonUtil.ExecLog(sModuleInfo, "Zip File is uploaded to production successfully", 4, False)
+                break
+            else:
+                CommonUtil.ExecLog(sModuleInfo, "Zip File is not uploaded to production successfully. Trying again", 4, False)
+                time.sleep(2)
+                i += 1
+        except:
+            CommonUtil.ExecLog(sModuleInfo, "Zip File is not uploaded to production successfully. Trying again", 4, False)
+            time.sleep(2)
+            i += 1
+
 
 
 # returns dependency list
@@ -1050,8 +1073,8 @@ def main(device_dict):
             update_test_case_result_on_server(run_id, sTestSetEndTime, TestSetDuration)  # update runid status on server
         ConfigModule.add_config_value('sectionOne', 'sTestStepExecLogId', "MainDriver", temp_ini_file)
         CommonUtil.ExecLog(sModuleInfo, "Test Set Completed", 4, False)
-        all_logs = CommonUtil.get_all_logs()
-        write_all_logs_to_server(all_logs)
+        all_logs_list = CommonUtil.get_all_logs()
+        write_all_logs_to_server(all_logs_list)
         send_email_report_after_exectution(run_id, project_id, team_id)
         update_fail_reasons_of_test_cases(run_id,TestCaseLists)
         #for testing, will be done for only main TC in linked test cases
