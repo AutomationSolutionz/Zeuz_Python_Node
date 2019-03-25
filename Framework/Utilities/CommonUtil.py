@@ -26,9 +26,10 @@ passed_tag_list = ['Pass', 'pass', 'PASS', 'PASSED', 'Passed', 'passed', 'true',
 failed_tag_list = ['Fail', 'fail', 'FAIL', 'Failed', 'failed', 'FAILED', 'false', 'False', 'FALSE', '0', False]
 skipped_tag_list=['skip','SKIP','Skip','skipped','SKIPPED','Skipped']
 
-global all_logs,all_logs_count
+global all_logs,all_logs_count,all_logs_list
 all_logs = {}
 all_logs_count = 0
+all_logs_list=[]
 
 
 def to_unicode(obj, encoding='utf-8'):
@@ -213,11 +214,16 @@ def ExecLog(sModuleInfo, sDetails, iLogLevel=1, _local_run="", sStatus=""):
 
             # Write log line to server
             #r = RequestFormatter.Get('log_execution',{'logid': log_id, 'modulename': sModuleInfo, 'details': sDetails, 'status': status,'loglevel': iLogLevel})
-            global all_logs,all_logs_count
+            global all_logs,all_logs_count,all_logs_list
             if iLogLevel!=5: #Except the broserLogs
                 now = datetime.datetime.now().strftime('%Y-%m-%d %H:%M:%S')
                 all_logs[all_logs_count] = {'logid': log_id, 'modulename': sModuleInfo, 'details': sDetails, 'status': status,'loglevel': iLogLevel,'tstamp':str(now)}
                 all_logs_count+=1
+                if all_logs_count>=500:
+                    all_logs_list.append(all_logs)
+                    all_logs_count=0
+                    all_logs={}
+
 
     except Exception, e:
         pass # This can happen when server is not available. In that case, we don't need to do anything
@@ -230,13 +236,18 @@ def FormatSeconds(sec):
 
 
 def get_all_logs():
-    global all_logs
-    return all_logs
+    global all_logs_list, all_logs, all_logs_count
+
+    if all_logs_count>0:
+        all_logs_list.append(all_logs)
+
+    return all_logs_list
 
 def clear_all_logs():
-    global all_logs,all_logs_count
+    global all_logs,all_logs_count,all_logs_list
     all_logs = {}
     all_logs_count = 0
+    all_logs_list=[]
     return True
 
 def PhysicalAvailableMemory():
