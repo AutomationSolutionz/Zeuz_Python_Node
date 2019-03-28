@@ -442,7 +442,7 @@ def Run_Sequential_Actions(data_set_list=[]): #data_set_no will used in recursiv
                 
                 # Simulate a while/for loop with the specified data sets
                 elif 'loop action' in action_name:
-                    result, skip_for_loop = Loop_Action_Handler(data[dataset_cnt], row, dataset_cnt)
+                    result, skip_for_loop = Loop_Action_Handler(data_set, row, dataset_cnt)
                     skip=skip_for_loop
                     if result in failed_tag_list: return 'failed',skip_for_loop
                     
