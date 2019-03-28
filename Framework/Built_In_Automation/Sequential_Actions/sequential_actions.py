@@ -230,7 +230,7 @@ import inspect
 import os
 import sys
 import time
-import  threading
+from concurrent.futures import ThreadPoolExecutor
 from  datetime import datetime, timedelta
 
 import common_functions as common # Functions that are common to all modules
@@ -248,7 +248,9 @@ if sr.Test_Shared_Variables('dependency'): # Check if driver is already set in s
 bypass_data_set = []
 bypass_row = []
 loaded_modules = []
+load_testing = False
 loop_result_for_load_testing =True
+thread_pool = None
 
 # Get node ID and set as a Shared Variable
 machineInfo = CommonUtil.MachineInfo() # Create instance
@@ -358,6 +360,12 @@ def Sequential_Actions(step_data, _dependency = {}, _run_time_params = {}, _file
     sr.Set_Shared_Variables('step_data',step_data,protected=True)
     result,skip_for_loop =  Run_Sequential_Actions([]) #empty list means run all, instead of step data we want to send the dataset no's of the step data to run
     write_browser_logs()
+
+    global load_testing, thread_pool
+    #finish all thread for load tetsing
+    if load_testing:
+        thread_pool.shutdown(wait=True)
+
     return result
 
 def Run_Sequential_Actions(data_set_list=[]): #data_set_no will used in recursive conditional action call
@@ -630,6 +638,7 @@ def Loop_Action_Handler(data, row, dataset_cnt):
             result = Run_Sequential_Actions(new_step_data)
             if result in passed_tag_list: result = 'passed' # Make sure the result matches the string we set above
             else:
+                global load_testing
                 if load_testing:
                     loop_result_for_load_testing = False
                 result = 'failed'
@@ -640,11 +649,13 @@ def Loop_Action_Handler(data, row, dataset_cnt):
         die = False # Used to exit parent while loop
         max_retry = 50 #wil search for any elemnt this amount of time in while loop
 
+        global load_testing
         load_testing = False
         normal_wait_time=0
         total_time = 0
         distribution=[]
         load_testing_interval = 0
+        total_thread = 10
 
         if len(data)>1 and loop_method == 'exact':
             try:
@@ -654,6 +665,8 @@ def Loop_Action_Handler(data, row, dataset_cnt):
                 for r in data:
                     if str(r[0]) == 'total time':
                         total_time = int(str(r[2]).strip())
+                    elif str(r[0]) == 'total thread':
+                        total_thread = int(str(r[2]).strip())
                     elif str(r[0]) == 'range':
                         l = str(r[2]).split(',')
                         start= int(l[0].split("-")[0].strip())
@@ -676,6 +689,16 @@ def Loop_Action_Handler(data, row, dataset_cnt):
                 if total_percentage>100:
                     CommonUtil.ExecLog(sModuleInfo,"Step data for load testing is incorrect, total percentage of all ranges can't be greater than 100",3)
                     return "failed"
+
+                #initialize thread pool
+                if total_thread>10:
+                    CommonUtil.ExecLog(sModuleInfo,
+                                       "Please use 'total thread' value with less or equal to 10",
+                                       3)
+                    return "failed"
+
+                global thread_pool
+                thread_pool = ThreadPoolExecutor(max_workers=total_thread)
 
                 total_loop = loop_len
 
@@ -740,8 +763,7 @@ def Loop_Action_Handler(data, row, dataset_cnt):
                 for ndc in range(len(new_step_data)): # For each data set in the sub-set
                     # Build the sub-set and execute
                     if load_testing:
-                        thread = threading.Thread(name="Load_Testing", target=build_subset, kwargs=dict(new_step_data = [new_step_data[ndc]]))
-                        thread.start()
+                        thread_pool.submit(build_subset, [new_step_data[ndc]])
                         if not loop_result_for_load_testing:
                             return result, skip
                     else:
@@ -1064,5 +1086,4 @@ def Action_Handler(_data_set, action_row):
 
     except Exception:
         return CommonUtil.Exception_Handler(sys.exc_info())
-
 
