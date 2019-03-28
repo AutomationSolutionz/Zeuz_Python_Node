@@ -30,6 +30,7 @@ global all_logs,all_logs_count,all_logs_list
 all_logs = {}
 all_logs_count = 0
 all_logs_list=[]
+load_testing = False
 
 
 def to_unicode(obj, encoding='utf-8'):
@@ -123,8 +124,10 @@ def Result_Analyzer(sTestStepReturnStatus,temp_q):
     except Exception, e:
         return Exception_Handler(sys.exc_info())
 
-def ExecLog(sModuleInfo, sDetails, iLogLevel=1, _local_run="", sStatus=""):
+def ExecLog(sModuleInfo, sDetails, iLogLevel=1, _local_run="", sStatus="", force_write= False):
     try:
+        #if load testing going on and not forcing to write logs, then don't write logs
+
         # Read from settings file
         local_run = ConfigModule.get_config_value('RunDefinition','local_run')
         debug_mode = ConfigModule.get_config_value('RunDefinition', 'debug_mode')
@@ -166,6 +169,7 @@ def ExecLog(sModuleInfo, sDetails, iLogLevel=1, _local_run="", sStatus=""):
             print "%s - %s\n\t%s" % (status.upper(), sModuleInfo, sDetails) # Display in console
 
         # Upload logs to server if local run is not set to False
+        if load_testing and not force_write: return
         if iLogLevel > 0:
             log_id=ConfigModule.get_config_value('sectionOne','sTestStepExecLogId',temp_config)
             FWLogFolder = ConfigModule.get_config_value('sectionOne','log_folder',temp_config)

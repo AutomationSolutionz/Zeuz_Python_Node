@@ -651,6 +651,7 @@ def Loop_Action_Handler(data, row, dataset_cnt):
 
         global load_testing
         load_testing = False
+        CommonUtil.load_testing = False
         normal_wait_time=0
         total_time = 0
         distribution=[]
@@ -660,6 +661,7 @@ def Loop_Action_Handler(data, row, dataset_cnt):
         if len(data)>1 and loop_method == 'exact':
             try:
                 load_testing = True
+                CommonUtil.load_testing = True
                 total_range=0
                 total_percentage=0
                 for r in data:
@@ -667,6 +669,10 @@ def Loop_Action_Handler(data, row, dataset_cnt):
                         total_time = int(str(r[2]).strip())
                     elif str(r[0]) == 'total thread':
                         total_thread = int(str(r[2]).strip())
+                    elif str(r[0]) == 'show logs':
+                        show_log_setting = str(r[2])
+                        if show_log_setting in passed_tag_list:
+                            CommonUtil.load_testing=False
                     elif str(r[0]) == 'range':
                         l = str(r[2]).split(',')
                         start= int(l[0].split("-")[0].strip())
@@ -674,11 +680,11 @@ def Loop_Action_Handler(data, row, dataset_cnt):
                         percentage=int(l[1].strip())
 
                         if percentage>100:
-                            CommonUtil.ExecLog(sModuleInfo, "Step data for load testing is incorrect, range percentage can't be greater than 100", 3)
+                            CommonUtil.ExecLog(sModuleInfo, "Step data for load testing is incorrect, range percentage can't be greater than 100", 3, force_write=True)
                             return "failed"
 
                         if start > total_time or end > total_time:
-                            CommonUtil.ExecLog(sModuleInfo,"Step data for load testing is incorrect, range start or end time can't be greater than total time",3)
+                            CommonUtil.ExecLog(sModuleInfo,"Step data for load testing is incorrect, range start or end time can't be greater than total time",3, force_write=True)
                             return "failed"
 
                         distribution.append([start, end, percentage])
@@ -687,14 +693,14 @@ def Loop_Action_Handler(data, row, dataset_cnt):
                         total_range+=(end-start)
 
                 if total_percentage>100:
-                    CommonUtil.ExecLog(sModuleInfo,"Step data for load testing is incorrect, total percentage of all ranges can't be greater than 100",3)
+                    CommonUtil.ExecLog(sModuleInfo,"Step data for load testing is incorrect, total percentage of all ranges can't be greater than 100",3, force_write=True)
                     return "failed"
 
                 #initialize thread pool
                 if total_thread>10:
                     CommonUtil.ExecLog(sModuleInfo,
                                        "Please use 'total thread' value with less or equal to 10",
-                                       3)
+                                       3, force_write=True)
                     return "failed"
 
                 global thread_pool
@@ -734,7 +740,7 @@ def Loop_Action_Handler(data, row, dataset_cnt):
             except:
                 CommonUtil.ExecLog(sModuleInfo,"Step data for load testing is incorrect, correct format is START-END,"
                                                "PERCENTAGE.. like 10-15,20.. That means between 10 to 15 second we "
-                                               "will iterate 20% of the loop",3)
+                                               "will iterate 20% of the loop",3, force_write=True)
                 return "failed"
 
         inside_interval = False
@@ -858,6 +864,9 @@ def Loop_Action_Handler(data, row, dataset_cnt):
                     inside_interval=True
                     time.sleep(distribution[load_testing_interval][2])
                     #print "sleeping %f" % distribution[load_testing_interval][2]
+
+        if load_testing:
+            CommonUtil.ExecLog(sModuleInfo,"Loop iterated %d times successfully"%sub_set_cnt, 1, force_write=True)
 
         return result, skip
     except Exception,e:
