@@ -6,7 +6,7 @@ from base64 import b64encode, b64decode
 sys.path.append(os.path.dirname(os.getcwd()))
 from Utilities import ConfigModule,RequestFormatter,CommonUtil,FileUtilities,All_Device_Info
 import MainDriverApi
-
+from concurrent.futures import ThreadPoolExecutor
 
 def detect_admin():
     # Windows only - Return True if program run as admin
@@ -70,6 +70,9 @@ if not os.path.exists(os.path.join(FileUtilities.get_home_folder(), 'Desktop',os
 temp_ini_file = os.path.join(os.path.join(FileUtilities.get_home_folder(), os.path.join('Desktop',os.path.join('AutomationLog',ConfigModule.get_config_value('Temp', '_file')))))
 
 def Login():
+    if CommonUtil.log_thread_pool:
+        CommonUtil.log_thread_pool.shutdown(wait=True)
+    CommonUtil.log_thread_pool = ThreadPoolExecutor(max_workers=10)
     username=ConfigModule.get_config_value(AUTHENTICATION_TAG,USERNAME_TAG)
     password=pwdec(ConfigModule.get_config_value(AUTHENTICATION_TAG,PASSWORD_TAG))
     project=ConfigModule.get_config_value(AUTHENTICATION_TAG,PROJECT_TAG)
