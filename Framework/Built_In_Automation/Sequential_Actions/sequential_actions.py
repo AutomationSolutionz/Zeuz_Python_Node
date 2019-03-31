@@ -229,6 +229,9 @@ supported_platforms = (
 import inspect
 import os
 import sys
+import time
+from concurrent.futures import ThreadPoolExecutor
+from  datetime import datetime, timedelta
 
 import common_functions as common # Functions that are common to all modules
 from Framework.Built_In_Automation.Shared_Resources import BuiltInFunctionSharedResources as sr
@@ -245,6 +248,9 @@ if sr.Test_Shared_Variables('dependency'): # Check if driver is already set in s
 bypass_data_set = []
 bypass_row = []
 loaded_modules = []
+load_testing = False
+loop_result_for_load_testing =True
+thread_pool = None
 
 # Get node ID and set as a Shared Variable
 machineInfo = CommonUtil.MachineInfo() # Create instance
@@ -354,6 +360,12 @@ def Sequential_Actions(step_data, _dependency = {}, _run_time_params = {}, _file
     sr.Set_Shared_Variables('step_data',step_data,protected=True)
     result,skip_for_loop =  Run_Sequential_Actions([]) #empty list means run all, instead of step data we want to send the dataset no's of the step data to run
     write_browser_logs()
+
+    global load_testing, thread_pool
+    #finish all thread for load tetsing
+    if load_testing:
+        thread_pool.shutdown(wait=True)
+
     return result
 
 def Run_Sequential_Actions(data_set_list=[]): #data_set_no will used in recursive conditional action call
@@ -430,7 +442,7 @@ def Run_Sequential_Actions(data_set_list=[]): #data_set_no will used in recursiv
                 
                 # Simulate a while/for loop with the specified data sets
                 elif 'loop action' in action_name:
-                    result, skip_for_loop = Loop_Action_Handler(row, dataset_cnt)
+                    result, skip_for_loop = Loop_Action_Handler(data_set, row, dataset_cnt)
                     skip=skip_for_loop
                     if result in failed_tag_list: return 'failed',skip_for_loop
                     
@@ -533,7 +545,7 @@ def Run_Sequential_Actions(data_set_list=[]): #data_set_no will used in recursiv
     except Exception:
         return CommonUtil.Exception_Handler(sys.exc_info())
 
-def Loop_Action_Handler(row, dataset_cnt):
+def Loop_Action_Handler(data, row, dataset_cnt):
     ''' Performs a sub-set of the data set in a loop, similar to a for or while loop '''
     
     sModuleInfo = inspect.stack()[0][3] + " : " + inspect.getmoduleinfo(__file__).name
@@ -541,6 +553,7 @@ def Loop_Action_Handler(row, dataset_cnt):
 
     try:
         skip = []
+        result = True
         nested_loop = False
         nested_double = False
         ### Create sub-set of step data that we will send to SA for processing
@@ -622,15 +635,116 @@ def Loop_Action_Handler(row, dataset_cnt):
                         CommonUtil.ExecLog(sModuleInfo, "Could not find a valid loop format in the Field field. Valid formats: 'true/false number', 'number', 'shared variable name'", 3)
 
         def build_subset(new_step_data):
-            result,skip_for_loop = Run_Sequential_Actions(new_step_data)
+            result = Run_Sequential_Actions(new_step_data)
             if result in passed_tag_list: result = 'passed' # Make sure the result matches the string we set above
-            else: result = 'failed'
+            else:
+                global load_testing
+                if load_testing:
+                    loop_result_for_load_testing = False
+                result = 'failed'
             return result
     
         ### Send sub-set to SA until we get our desired value or number of loops
         sub_set_cnt = 1 # Used in counting number of loops
         die = False # Used to exit parent while loop
         max_retry = 50 #wil search for any elemnt this amount of time in while loop
+
+        global load_testing
+        load_testing = False
+        CommonUtil.load_testing = False
+        normal_wait_time=0
+        total_time = 0
+        distribution=[]
+        load_testing_interval = 0
+        total_thread = 10
+
+        if len(data)>1 and loop_method == 'exact':
+            try:
+                load_testing = True
+                CommonUtil.load_testing = True
+                total_range=0
+                total_percentage=0
+                for r in data:
+                    if str(r[0]) == 'total time':
+                        total_time = int(str(r[2]).strip())
+                    elif str(r[0]) == 'total thread':
+                        total_thread = int(str(r[2]).strip())
+                    elif str(r[0]) == 'show logs':
+                        show_log_setting = str(r[2])
+                        if show_log_setting in passed_tag_list:
+                            CommonUtil.load_testing=False
+                    elif str(r[0]) == 'range':
+                        l = str(r[2]).split(',')
+                        start= int(l[0].split("-")[0].strip())
+                        end = int(l[0].split("-")[1].strip())
+                        percentage=int(l[1].strip())
+
+                        if percentage>100:
+                            CommonUtil.ExecLog(sModuleInfo, "Step data for load testing is incorrect, range percentage can't be greater than 100", 3, force_write=True)
+                            return "failed"
+
+                        if start > total_time or end > total_time:
+                            CommonUtil.ExecLog(sModuleInfo,"Step data for load testing is incorrect, range start or end time can't be greater than total time",3, force_write=True)
+                            return "failed"
+
+                        distribution.append([start, end, percentage])
+
+                        total_percentage+=percentage
+                        total_range+=(end-start)
+
+                if total_percentage>100:
+                    CommonUtil.ExecLog(sModuleInfo,"Step data for load testing is incorrect, total percentage of all ranges can't be greater than 100",3, force_write=True)
+                    return "failed"
+
+                #initialize thread pool
+                if total_thread>10:
+                    CommonUtil.ExecLog(sModuleInfo,
+                                       "Please use 'total thread' value with less or equal to 10",
+                                       3, force_write=True)
+                    return "failed"
+
+                global thread_pool
+                thread_pool = ThreadPoolExecutor(max_workers=total_thread)
+
+                total_loop = loop_len
+
+                normal_wait_time = ((total_time - total_range)*1.0) / (total_loop * (100-total_percentage)/100.0)
+
+                handled = 0
+                last_time = 0
+
+                i=0
+                while i<len(distribution):
+                    start= distribution[i][0]
+                    end = distribution[i][1]
+                    percentage = distribution[i][2]
+                    wait_time = ((end - start)*1.0) / (total_loop * percentage/100.0)
+
+                    if distribution[i][0] != last_time:
+                        in_this_range = int((start - last_time)/normal_wait_time)
+                        distribution.insert(i,[handled, handled+in_this_range, normal_wait_time])
+                        handled+=in_this_range
+                        i+=1
+
+
+                    distribution[i][2] = wait_time
+                    distribution[i][0] = handled
+                    loop_in_this_range=int(total_loop * percentage/100.0)
+                    distribution[i][1] = handled+loop_in_this_range
+                    last_time = end
+
+                    handled+=loop_in_this_range
+
+                    i+=1
+
+            except:
+                CommonUtil.ExecLog(sModuleInfo,"Step data for load testing is incorrect, correct format is START-END,"
+                                               "PERCENTAGE.. like 10-15,20.. That means between 10 to 15 second we "
+                                               "will iterate 20% of the loop",3, force_write=True)
+                return "failed"
+
+        inside_interval = False
+        load_testing_count = -1
         while True: # We control the new sub-set of the step data, so we can examine the output
             CommonUtil.ExecLog(sModuleInfo, "Loop action #%d" % sub_set_cnt, 1)
     
@@ -654,8 +768,13 @@ def Loop_Action_Handler(row, dataset_cnt):
             elif loop_method == 'exact':
                 for ndc in range(len(new_step_data)): # For each data set in the sub-set
                     # Build the sub-set and execute
-                    result = build_subset([new_step_data[ndc]])
-                    if result in failed_tag_list: return result, skip
+                    if load_testing:
+                        thread_pool.submit(build_subset, [new_step_data[ndc]])
+                        if not loop_result_for_load_testing:
+                            return result, skip
+                    else:
+                        result = build_subset([new_step_data[ndc]])
+                        if result in failed_tag_list: return result, skip
 
                 # Check if we hit our set number of loops
                 if sub_set_cnt >= loop_len: # If we hit out desired number of loops for this loop type, then exit
@@ -721,9 +840,36 @@ def Loop_Action_Handler(row, dataset_cnt):
                     skip = sets  # Tell SA to skip these data sets that were in the loop once it picks up processing normally
                     break  # Stop processing sub-sets and exit while loop
             sub_set_cnt += 1 # Used for numerical loops only, keep track of how many times we've looped the sub-set
-            
+
+            #for load testing put wait here to achieve desired distribution
+            if load_testing:
+                load_testing_count+=1
+                if inside_interval:
+                    if load_testing_count < distribution[load_testing_interval][1]: #current interval running
+                        time.sleep(distribution[load_testing_interval][2])
+                        #print "sleeping %f"%distribution[load_testing_interval][2]
+                        continue
+                    else: #current interval finished
+                        load_testing_interval+=1
+                        inside_interval=False
+
+                # all special ranges finished or elapsed time is less than the next range then use normal wait time
+                if load_testing_interval >= len(distribution):
+                    time.sleep(normal_wait_time)
+                    #print "sleeping %f" % normal_wait_time
+                elif load_testing_count < distribution[load_testing_interval][0]:
+                    time.sleep(normal_wait_time)
+                    #print "sleeping %f" % normal_wait_time
+                else:#new interval needs to be started
+                    inside_interval=True
+                    time.sleep(distribution[load_testing_interval][2])
+                    #print "sleeping %f" % distribution[load_testing_interval][2]
+
+        if load_testing:
+            CommonUtil.ExecLog(sModuleInfo,"Loop iterated %d times successfully"%sub_set_cnt, 1, force_write=True)
+
         return result, skip
-    except Exception:
+    except Exception,e:
         return CommonUtil.Exception_Handler(sys.exc_info())
 
 def Conditional_Action_Handler(data_set, row, logic_row):
@@ -949,5 +1095,4 @@ def Action_Handler(_data_set, action_row):
 
     except Exception:
         return CommonUtil.Exception_Handler(sys.exc_info())
-
 
