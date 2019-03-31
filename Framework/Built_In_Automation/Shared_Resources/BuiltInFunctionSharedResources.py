@@ -363,7 +363,7 @@ def get_previous_response_variables_in_strings(step_data_string_input):
                         params = temp[1].split(')')[0]
                         if ',' in params:
                             list_of_params = params.split(',')
-                        rand_str = list_of_params[random.randint(0, len(list_of_params))]
+                        rand_str = list_of_params[random.randint(0, len(list_of_params)-1)]
                     else:
                         return "failed"
 
