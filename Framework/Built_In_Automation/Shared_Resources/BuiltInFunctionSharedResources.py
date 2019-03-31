@@ -352,13 +352,9 @@ def get_previous_response_variables_in_strings(step_data_string_input):
                             list_of_params = params.split(',')
                         if len(list_of_params) > 2:
                             return "failed"
-                        elif len(list_of_params) == 1:
-                            random_string = str(random.randint(0, int(list_of_params[1])))
                         else:
                             random_string = str(random.randint(int(list_of_params[0]), int(list_of_params[1])))
                     else:
-                        return "failed"
-                    if len(list_of_params) > 2:
                         return "failed"
 
                     output += random_string
