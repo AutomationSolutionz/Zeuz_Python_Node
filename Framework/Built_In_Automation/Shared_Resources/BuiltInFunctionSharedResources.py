@@ -356,17 +356,19 @@ def get_previous_response_variables_in_strings(step_data_string_input):
                     output += random_string
                     CommonUtil.ExecLog(sModuleInfo,'Replacing variable "%s" with its value "%s"' % (parts[0], random_string), 0)
 
-                elif str(parts[0]).startswith('random_gender'):
-                    gender = random.randint(0, 1)
-
-                    change = ""
-                    if gender is 0:
-                        change = 'M'
+                elif str(parts[0]).startswith('random_string'):
+                    full_string = str(parts[0])
+                    if '(' in full_string:
+                        temp = full_string.split('(')
+                        params = temp[1].split(')')[0]
+                        if ',' in params:
+                            list_of_params = params.split(',')
+                        rand_str = list_of_params[random.randint(0, len(list_of_params))]
                     else:
-                        change = 'F'
+                        return "failed"
 
-                    output += change
-                    CommonUtil.ExecLog(sModuleInfo, 'Replacing variable "%s" with its value "%s"' % (parts[0], change), 0)
+                    output += rand_str
+                    CommonUtil.ExecLog(sModuleInfo,'Replacing variable "%s" with its value "%s"' % (parts[0], rand_str), 0)
 
                 else:
                     var_value = Get_Shared_Variables(parts[0])
