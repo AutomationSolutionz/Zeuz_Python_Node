@@ -13,6 +13,7 @@ from Framework.Utilities import RequestFormatter
 import subprocess
 
 # For TakeScreenShot()
+from concurrent.futures import ThreadPoolExecutor
 from PIL import Image # Picture quality
 try: from PIL import ImageGrab as ImageGrab_Mac_Win # Screen capture for Mac and Windows
 except: pass
@@ -26,12 +27,11 @@ passed_tag_list = ['Pass', 'pass', 'PASS', 'PASSED', 'Passed', 'passed', 'true',
 failed_tag_list = ['Fail', 'fail', 'FAIL', 'Failed', 'failed', 'FAILED', 'false', 'False', 'FALSE', '0', False]
 skipped_tag_list=['skip','SKIP','Skip','skipped','SKIPPED','Skipped']
 
-global all_logs,all_logs_count,all_logs_list
 all_logs = {}
 all_logs_count = 0
 all_logs_list=[]
 load_testing = False
-
+log_thread_pool = None
 
 def to_unicode(obj, encoding='utf-8'):
     if isinstance(obj, basestring):
@@ -125,6 +125,10 @@ def Result_Analyzer(sTestStepReturnStatus,temp_q):
         return Exception_Handler(sys.exc_info())
 
 def ExecLog(sModuleInfo, sDetails, iLogLevel=1, _local_run="", sStatus="", force_write= False):
+    global log_thread_pool
+    log_thread_pool.submit(ExecLog_Wrapper, sModuleInfo, sDetails, iLogLevel, _local_run, sStatus, force_write)
+
+def ExecLog_Wrapper(sModuleInfo, sDetails, iLogLevel=1, _local_run="", sStatus="", force_write= False):
     try:
         #if load testing going on and not forcing to write logs, then don't write logs
 
