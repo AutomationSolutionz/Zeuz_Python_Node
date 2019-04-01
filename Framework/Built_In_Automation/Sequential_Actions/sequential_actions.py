@@ -724,7 +724,10 @@ def Loop_Action_Handler(data, row, dataset_cnt):
                     wait_time = ((end - start)*1.0) / (total_loop * percentage/100.0)
 
                     if distribution[i][0] != last_time:
-                        in_this_range = int((start - last_time)/normal_wait_time)
+                        if normal_wait_time == 0:
+                            in_this_range = 0
+                        else:
+                            in_this_range = int((start - last_time)/normal_wait_time)
                         distribution.insert(i,[handled, handled+in_this_range, normal_wait_time])
                         handled+=in_this_range
                         i+=1
