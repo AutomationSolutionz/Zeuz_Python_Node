@@ -708,7 +708,10 @@ def Loop_Action_Handler(data, row, dataset_cnt):
 
                 total_loop = loop_len
 
-                normal_wait_time = ((total_time - total_range)*1.0) / (total_loop * (100-total_percentage)/100.0)
+                if total_percentage!=100:
+                    normal_wait_time = ((total_time - total_range)*1.0) / (total_loop * (100-total_percentage)/100.0)
+                else:
+                    normal_wait_time = 0
 
                 handled = 0
                 last_time = 0
