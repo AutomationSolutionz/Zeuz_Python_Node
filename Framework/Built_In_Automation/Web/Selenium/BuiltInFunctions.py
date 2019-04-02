@@ -891,12 +891,10 @@ def scroll_to_element(step_data):
             return "failed"
 
         CommonUtil.ExecLog(sModuleInfo,"Element to which instructed to scroll has been found. Scrolling to view it",1)
-
-        selenium_driver.execute_script("arguments[0].scrollIntoView(true);",scroll_element)
-
-        time.sleep(2)
+        actions = ActionChains(selenium_driver)
+        actions.move_to_element(scroll_element)
+        actions.perform()
         return "passed"
-
 
     except Exception:
         return CommonUtil.Exception_Handler(sys.exc_info())
