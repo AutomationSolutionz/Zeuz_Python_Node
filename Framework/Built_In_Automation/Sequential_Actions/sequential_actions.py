@@ -43,6 +43,7 @@ actions = { # Numbers are arbitrary, and are not used anywhere
     122: {'module': 'common', 'name': 'start timer', 'function': 'start_timer'},
     123: {'module': 'common', 'name': 'wait for timer', 'function': 'wait_for_timer'},
     124: {'module': 'common', 'name': 'get server variable and wait', 'function': 'get_server_variable_and_wait'},
+    125: {'module': 'common', 'name': 'randomize list', 'function': 'Randomize_List'},
 
     200: {'module': 'appium', 'name': 'click', 'function': 'Click_Element_Appium'},
     201: {'module': 'appium', 'name': 'text', 'function': 'Enter_Text_Appium'},
