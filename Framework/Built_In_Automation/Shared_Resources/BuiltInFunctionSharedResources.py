@@ -666,9 +666,12 @@ def Randomize_List(step_data):
                                3)
             return "failed"
         else:
-            original_list = str(step_data[0][0][2]).lower().strip(' %|')
+            original_list_name = str(step_data[0][0][2]).lower().strip()
+            if not Test_Shared_Variables(original_list_name):
+                CommonUtil.ExecLog(sModuleInfo, "List named '%s' is not found in shared variable"%original_list_name, 3)
+            original_list = Get_Shared_Variables(original_list_name)
             randomized_list = random.sample(original_list,len(original_list))
-            result = Set_Shared_Variables(original_list,randomized_list)
+            result = Set_Shared_Variables(original_list_name,randomized_list)
             if result in failed_tag_list:
                 CommonUtil.ExecLog(sModuleInfo,"Could not randomize list named %s"%original_list,3)
                 return "failed"
