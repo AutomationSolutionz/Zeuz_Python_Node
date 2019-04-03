@@ -771,7 +771,7 @@ def calculate_test_case_result(sModuleInfo, TestCaseID, run_id, sTestStepResultL
 
 # writes the log file for a test case
 def write_log_file_for_test_case(sTestCaseStatus, test_case, run_id, sTestCaseEndTime, TestCaseDuration,
-                                 temp_ini_file):
+                                 temp_ini_file, send_log_file_only_for_fail=True):
     # upload the test case status before uploading log file, because there can be error while uploading log file, so we dont want to lose the important test case status
     test_case_after_dict = {
         'status': sTestCaseStatus,
@@ -781,43 +781,44 @@ def write_log_file_for_test_case(sTestCaseStatus, test_case, run_id, sTestCaseEn
 
     update_test_case_status_after_run_on_server(run_id, test_case, test_case_after_dict)
 
-    local_run_settings = ConfigModule.get_config_value('RunDefinition', 'local_run')
-    if local_run_settings == False or local_run_settings == 'False':
-        current_log_file = os.path.join(ConfigModule.get_config_value('sectionOne', 'log_folder', temp_ini_file),
-                                        'temp.log')
-        temp_log_file = os.path.join(ConfigModule.get_config_value('sectionOne', 'log_folder', temp_ini_file),
-                                     test_case + '.log')
-        lines_seen = set()
-        outfile = open(temp_log_file, 'w')
-        for line in open(current_log_file, 'r'):
-            if line not in lines_seen:
-                outfile.write(line)
-                lines_seen.add(line)
-        outfile.close()
-        FL.DeleteFile(current_log_file)
-        # FL.RenameFile(ConfigModule.get_config_value('sectionOne','log_folder'), 'temp.log',TCID+'.log')
-        TCLogFile = FL.ZipFolder(ConfigModule.get_config_value('sectionOne', 'test_case_folder', temp_ini_file),
-                                 ConfigModule.get_config_value('sectionOne', 'test_case_folder',
-                                                               temp_ini_file) + ".zip")
-        # Delete the folder
-        FL.DeleteFolder(ConfigModule.get_config_value('sectionOne', 'test_case_folder', temp_ini_file))
+    if sTestCaseStatus not in passed_tag_list or (sTestCaseStatus in passed_tag_list and not send_log_file_only_for_fail): #if settings checked, then send log file or screenshots, otherwise don't send
+        local_run_settings = ConfigModule.get_config_value('RunDefinition', 'local_run')
+        if local_run_settings == False or local_run_settings == 'False':
+            current_log_file = os.path.join(ConfigModule.get_config_value('sectionOne', 'log_folder', temp_ini_file),
+                                            'temp.log')
+            temp_log_file = os.path.join(ConfigModule.get_config_value('sectionOne', 'log_folder', temp_ini_file),
+                                         test_case + '.log')
+            lines_seen = set()
+            outfile = open(temp_log_file, 'w')
+            for line in open(current_log_file, 'r'):
+                if line not in lines_seen:
+                    outfile.write(line)
+                    lines_seen.add(line)
+            outfile.close()
+            FL.DeleteFile(current_log_file)
+            # FL.RenameFile(ConfigModule.get_config_value('sectionOne','log_folder'), 'temp.log',TCID+'.log')
+            TCLogFile = FL.ZipFolder(ConfigModule.get_config_value('sectionOne', 'test_case_folder', temp_ini_file),
+                                     ConfigModule.get_config_value('sectionOne', 'test_case_folder',
+                                                                   temp_ini_file) + ".zip")
+            # Delete the folder
+            FL.DeleteFolder(ConfigModule.get_config_value('sectionOne', 'test_case_folder', temp_ini_file))
 
-        # upload will go here.
-        upload_zip(ConfigModule.get_config_value('Server', 'server_address'),
-                   ConfigModule.get_config_value('Server', 'server_port'),
-                   ConfigModule.get_config_value('sectionOne', 'temp_run_file_path', temp_ini_file), run_id,
-                   ConfigModule.get_config_value('sectionOne', 'test_case', temp_ini_file) + ".zip",
-                   ConfigModule.get_config_value('Temp', '_file_upload_path'))
-        TCLogFile = os.sep + ConfigModule.get_config_value('Temp', '_file_upload_path') + os.sep + run_id.replace(":",
-                                                                                                                  '-') + '/' + ConfigModule.get_config_value(
-            'sectionOne', 'test_case', temp_ini_file) + '.zip'
-        FL.DeleteFile(ConfigModule.get_config_value('sectionOne', 'test_case_folder', temp_ini_file) + '.zip')
-    else:
-        TCLogFile = ''
-    # upload the log file ID
-    test_case_after_dict = {
-        'logid': TCLogFile
-    }
+            # upload will go here.
+            upload_zip(ConfigModule.get_config_value('Server', 'server_address'),
+                       ConfigModule.get_config_value('Server', 'server_port'),
+                       ConfigModule.get_config_value('sectionOne', 'temp_run_file_path', temp_ini_file), run_id,
+                       ConfigModule.get_config_value('sectionOne', 'test_case', temp_ini_file) + ".zip",
+                       ConfigModule.get_config_value('Temp', '_file_upload_path'))
+            TCLogFile = os.sep + ConfigModule.get_config_value('Temp', '_file_upload_path') + os.sep + run_id.replace(":",
+                                                                                                                      '-') + '/' + ConfigModule.get_config_value(
+                'sectionOne', 'test_case', temp_ini_file) + '.zip'
+            FL.DeleteFile(ConfigModule.get_config_value('sectionOne', 'test_case_folder', temp_ini_file) + '.zip')
+        else:
+            TCLogFile = ''
+        # upload the log file ID
+        test_case_after_dict = {
+            'logid': TCLogFile
+        }
 
     update_test_case_status_after_run_on_server(run_id, test_case, test_case_after_dict)
 
@@ -884,7 +885,7 @@ def cleanup_driver_instances():  # cleans up driver(selenium,appium) instances
         pass
 
 
-def run_test_case(TestCaseID, sModuleInfo, run_id, driver_list, final_dependency, final_run_params, temp_ini_file, is_linked):
+def run_test_case(TestCaseID, sModuleInfo, run_id, driver_list, final_dependency, final_run_params, temp_ini_file, is_linked, send_log_file_only_for_fail=True):
     shared.Set_Shared_Variables('run_id', run_id)
     test_case = TestCaseID[0]
     copy_status = False
@@ -955,7 +956,7 @@ def run_test_case(TestCaseID, sModuleInfo, run_id, driver_list, final_dependency
 
     if not debug:  # if normal run, the write log file and cleanup driver instances
         write_log_file_for_test_case(sTestCaseStatus, test_case, run_id, sTestCaseEndTime, TestCaseDuration,
-                                     temp_ini_file)
+                                     temp_ini_file, send_log_file_only_for_fail=send_log_file_only_for_fail)
         cleanup_driver_instances()
         shared.Clean_Up_Shared_Variables()
 
@@ -1007,6 +1008,15 @@ def main(device_dict):
                                                                                                   'Temp', '_file')))))
     ConfigModule.add_config_value('sectionOne', 'sTestStepExecLogId', sModuleInfo, temp_ini_file)
     Userid = (CommonUtil.MachineInfo().getLocalUser()).lower()
+    send_log_file_only_for_fail = ConfigModule.get_config_value('RunDefinition', 'upload_log_file_only_for_fail')
+    if send_log_file_only_for_fail == "" or send_log_file_only_for_fail == None:
+        send_log_file_only_for_fail = True
+    elif send_log_file_only_for_fail.lower() == 'true':
+        send_log_file_only_for_fail =True
+    elif send_log_file_only_for_fail.lower() == 'false':
+        send_log_file_only_for_fail = False
+    else:
+        send_log_file_only_for_fail = True
 
     user_permission = check_user_permission_to_run_test(sModuleInfo, Userid)
     if user_permission not in passed_tag_list:
@@ -1057,7 +1067,10 @@ def main(device_dict):
         # run each test case in the runid
         for TestCaseID in TestCaseLists:
             run_test_case(TestCaseID, sModuleInfo, run_id, driver_list, final_dependency, final_run_params,
-                          temp_ini_file,is_linked)
+                          temp_ini_file,is_linked, send_log_file_only_for_fail=send_log_file_only_for_fail)
+            all_logs_list = CommonUtil.get_all_logs()
+            write_all_logs_to_server(all_logs_list)
+            CommonUtil.clear_all_logs()
 
         # calculate elapsed time of runid
         sTestSetEndTime = datetime.fromtimestamp(time.time()).strftime('%Y-%m-%d %H:%M:%S')
@@ -1073,8 +1086,6 @@ def main(device_dict):
             update_test_case_result_on_server(run_id, sTestSetEndTime, TestSetDuration)  # update runid status on server
         ConfigModule.add_config_value('sectionOne', 'sTestStepExecLogId', "MainDriver", temp_ini_file)
         CommonUtil.ExecLog(sModuleInfo, "Test Set Completed", 4, False)
-        all_logs_list = CommonUtil.get_all_logs()
-        write_all_logs_to_server(all_logs_list)
         send_email_report_after_exectution(run_id, project_id, team_id)
         update_fail_reasons_of_test_cases(run_id,TestCaseLists)
         #for testing, will be done for only main TC in linked test cases
