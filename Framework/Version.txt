@@ -1,6 +1,6 @@
 [ZeuZ Python Version]
-version = 7.19
+version = 7.20
 [Release Date]
-date= 2019-04-03
+date= 2019-04-05
 [Release Note]
-Note =  Loop boolean logic upgraded
+Note = Randomize List
