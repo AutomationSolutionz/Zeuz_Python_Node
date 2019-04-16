@@ -829,14 +829,20 @@ def Loop_Action_Handler(data, row, dataset_cnt):
                     break # Stop processing sub-sets and exit while loop
             elif loop_method == 'boolean':
                 die = False
+                combined_result = True
                 for ndc in range(len(new_step_data)):  # For each data set in the sub-set
                     # Build the sub-set and execute
                     result = build_subset([new_step_data[ndc]])
 
-                    if loop_bool == True and result in failed_tag_list:
+                    if result in passed_tag_list:
+                        combined_result = combined_result and True
+                    else:
+                        combined_result = combined_result and False
+
+                    if loop_bool == True and not combined_result:
                         die = True
                         break
-                    elif loop_bool == False and result in passed_tag_list:
+                    elif loop_bool == False and combined_result:
                         die = True
                         break
 
