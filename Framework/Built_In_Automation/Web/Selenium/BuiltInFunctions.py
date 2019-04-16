@@ -262,7 +262,8 @@ def Enter_Text_In_Text_Box(step_data):
                 else:
                     continue
             Element.click()
-            Element.clear()
+            #Element.clear()
+            Element.send_keys(Keys.CONTROL, 'a')
             if delay == 0:
                 Element.send_keys(text_value)
             else:
