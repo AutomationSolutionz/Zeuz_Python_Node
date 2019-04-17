@@ -883,3 +883,61 @@ def wait_for_timer(data_set):
         return "passed"
     except Exception:
         return CommonUtil.Exception_Handler(sys.exc_info())
+
+
+def create_3d_list(data_set):
+    ''' Creates and appends a python list variable '''
+    # Note: List is created if it doesn't already exist
+
+    sModuleInfo = inspect.stack()[0][3] + " : " + inspect.getmoduleinfo(__file__).name
+    CommonUtil.ExecLog(sModuleInfo, "Function Start", 0)
+
+    try:
+        # Parse data set
+        tmp = data_set[0][2].strip()  # Get key and value from Value field and clean them
+        tmp = tmp.split('=')  # Get variable name
+        parent_list_name = tmp[0].strip()
+        if ";;" in str(tmp[1]):
+            a_3d_list_splitted_by_semicolon = str(tmp[1]).strip().split(";;")
+            for each_2d_list in a_3d_list_splitted_by_semicolon:
+                a_2d_list=[]
+                if ";" in str(each_2d_list): #direct initialization parent_list = [[a,b,c],[x,y,z]]
+                    parent_list_splitted_by_semicolon = str(each_2d_list).strip().split(";")
+                    for each_split in parent_list_splitted_by_semicolon:
+                        child_list_raw = each_split.strip().split(",")
+                        child_list = []
+                        for element in child_list_raw:
+                            child_list.append(element.strip())
+                        a_2d_list.append(child_list)
+                else:
+                    child_list_raw = each_split.strip().split(",")
+                    child_list = []
+                    for element in child_list_raw:
+                        child_list.append(element.strip())
+                    a_2d_list.append(child_list)
+                result = sr.Append_List_Shared_Variables(parent_list_name, a_2d_list, value_as_list=True)
+                if result in failed_tag_list:
+                    return result
+        else:
+            a_2d_list = []
+            if ";" in str(tmp[1]):  # direct initialization parent_list = [[a,b,c],[x,y,z]]
+                parent_list_splitted_by_semicolon = str(tmp[1]).strip().split(";")
+                for each_split in parent_list_splitted_by_semicolon:
+                    child_list_raw = each_split.strip().split(",")
+                    child_list = []
+                    for element in child_list_raw:
+                        child_list.append(element.strip())
+                    a_2d_list.append(child_list)
+            else:
+                child_list_raw = str(tmp[1]).strip().split(",")
+                child_list = []
+                for element in child_list_raw:
+                    child_list.append(element.strip())
+                a_2d_list.append(child_list)
+            result = sr.Append_List_Shared_Variables(parent_list_name, a_2d_list, value_as_list=True)
+            if result in failed_tag_list:
+                return result
+
+        return "passed"
+    except Exception:
+        return CommonUtil.Exception_Handler(sys.exc_info())
