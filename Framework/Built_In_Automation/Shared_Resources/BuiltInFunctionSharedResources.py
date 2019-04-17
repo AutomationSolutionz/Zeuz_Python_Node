@@ -655,6 +655,32 @@ def Initialize_List(step_data):
     except Exception:
         return CommonUtil.Exception_Handler(sys.exc_info())
 
+##Method to randomize a given list
+def Randomize_List(step_data):
+    sModuleInfo = inspect.stack()[0][3] + " : " + inspect.getmoduleinfo(__file__).name
+    CommonUtil.ExecLog(sModuleInfo, "Function: Randomize_List", 0)
+    try:
+        if ((len(step_data) != 1)):
+            CommonUtil.ExecLog(sModuleInfo,
+                               "Error parsing data set. Too many rows. Expected only the action row.",
+                               3)
+            return "failed"
+        else:
+            original_list_name = str(step_data[0][0][2]).lower().strip()
+            if not Test_Shared_Variables(original_list_name):
+                CommonUtil.ExecLog(sModuleInfo, "List named '%s' is not found in shared variable"%original_list_name, 3)
+            original_list = Get_Shared_Variables(original_list_name)
+            randomized_list = random.sample(original_list,len(original_list))
+            result = Set_Shared_Variables(original_list_name,randomized_list)
+            if result in failed_tag_list:
+                CommonUtil.ExecLog(sModuleInfo,"Could not randomize list named %s"%original_list,3)
+                return "failed"
+            else:
+                CommonUtil.ExecLog(sModuleInfo,"Successfully randomized list named %s"%original_list, 0)
+                return "passed"
+    except Exception:
+        return CommonUtil.Exception_Handler(sys.exc_info())
+
 
 #Method to initialize an empty dict
 def Initialize_Dict(step_data):
