@@ -503,6 +503,12 @@ def Initialize_List(data_set):
     CommonUtil.ExecLog(sModuleInfo,"Function Start", 0)
     return sr.Initialize_List([data_set])
 
+def Randomize_List(data_set):
+    ''' Prepares an empty list in shared variables '''
+    sModuleInfo = inspect.stack()[0][3] + " : " + inspect.getmoduleinfo(__file__).name
+    CommonUtil.ExecLog(sModuleInfo,"Function Start", 0)
+    return sr.Randomize_List([data_set])
+
 def Initialize_Dict(data_set):
     ''' Prepares an empty dict in shared variables '''
     sModuleInfo = inspect.stack()[0][3] + " : " + inspect.getmoduleinfo(__file__).name
