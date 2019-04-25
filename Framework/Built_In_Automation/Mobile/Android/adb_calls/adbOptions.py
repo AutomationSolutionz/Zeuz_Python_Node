@@ -71,6 +71,26 @@ def get_device_name(serial=''):
         return CommonUtil.Exception_Handler(sys.exc_info(), None, errMsg)
 
 
+def get_work_profile():
+    sModuleInfo = inspect.stack()[0][3] + " : " + inspect.getmoduleinfo(__file__).name
+    try:
+        adb_output = subprocess.check_output("adb shell pm list users", shell=True)
+
+        users = str(adb_output).split("UserInfo")
+        work_profile = "failed"
+
+        for user in users:
+            if "Work profile" in user:
+                s = user.split('{')[1]
+                chunks = s.split(':')
+                work_profile = int(chunks[0])
+        return work_profile
+
+    except Exception:
+        errMsg = "Unable to get work profile"
+        return "failed"
+
+
 def get_device_serial_no(serial=''):
     sModuleInfo = inspect.stack()[0][3] + " : " + inspect.getmoduleinfo(__file__).name
     try:
