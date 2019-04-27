@@ -286,6 +286,7 @@ def launch_application(data_set):
         device_name = ''
         ios = ''
         no_reset= False
+        work_profile=False
 
         for row in data_set: # Find required data
             if str(row[0]).strip().lower() in ('android package','package') and row[1] == 'element parameter':
@@ -294,6 +295,8 @@ def launch_application(data_set):
                 activity_name = row[2]
             elif str(row[0]).strip().lower() in ('ios','ios simulator') and row[1] == 'element parameter':
                 ios = row[2]
+            elif str(row[0]).strip().lower() == 'work profile' and str(row[2]).strip().lower() in ('yes','true'):
+                work_profile = True
             elif str(row[0]).strip().lower() in ('no reset', 'no_reset','noreset') and row[1] == 'element parameter':
                 if str(row[2]).strip().lower() in ('yes', 'true'):
                     no_reset = True
@@ -337,7 +340,7 @@ def launch_application(data_set):
             device_name = appium_details[device_id]['device_name']
         launch_app = True
         if appium_details[device_id]['driver'] == None: # Only create a new appium instance if we haven't already (may be done by install_and_start_driver())
-            result,launch_app = start_appium_driver(package_name, activity_name,platform_version=platform_version,device_name=device_name,ios=ios,no_reset=no_reset)
+            result,launch_app = start_appium_driver(package_name, activity_name,platform_version=platform_version,device_name=device_name,ios=ios,no_reset=no_reset, work_profile=work_profile)
             if result == 'failed':
                 return 'failed'
         
@@ -418,7 +421,7 @@ def start_appium_server():
     except Exception:
         return CommonUtil.Exception_Handler(sys.exc_info(), None, "Error starting Appium server")
 
-def start_appium_driver(package_name = '', activity_name = '', filename = '', platform_version='', device_name='',ios='', no_reset=False):
+def start_appium_driver(package_name = '', activity_name = '', filename = '', platform_version='', device_name='',ios='', no_reset=False, work_profile=False):
     ''' Creates appium instance using discovered and provided capabilities '''
     # Does not execute application
     
@@ -442,11 +445,19 @@ def start_appium_driver(package_name = '', activity_name = '', filename = '', pl
             desired_caps['fullReset'] = 'false' # Do not clear application cache when complete
             desired_caps['noReset'] = 'true' # Do not clear application cache when complete
             desired_caps['newCommandTimeout'] = 600 # Command timeout before appium destroys instance
+
             
             if str(appium_details[device_id]['type']).lower() == 'android':
                 if adbOptions.is_android_connected(device_serial) == False:
                     CommonUtil.ExecLog(sModuleInfo, "Could not detect any connected Android devices", 3)
                     return 'failed',launch_app
+
+                if work_profile:
+                    work_profile_from_adb = adbOptions.get_work_profile()
+                    if work_profile_from_adb in failed_tag_list:
+                        CommonUtil.ExecLog(sModuleInfo, "Couldn't get the work profile",3)
+                        return "failed"
+                    desired_caps['userProfile'] = work_profile_from_adb  # Command timeout before appium destroys instance
 
                 CommonUtil.ExecLog(sModuleInfo,"Setting up with Android",1)
                 desired_caps['platformVersion'] = adbOptions.get_android_version(appium_details[device_id]['serial']).strip()
@@ -1988,3 +1999,4 @@ def serial_in_devices(serial,devices):
         return False
     except Exception:
         return CommonUtil.Exception_Handler(sys.exc_info(), None, "Error trying to maximize application")
+
