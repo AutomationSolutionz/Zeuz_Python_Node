@@ -396,55 +396,60 @@ def _get_main_window (WindowName):
 
 def Click_Element_None_Mouse(Element, Expand=None, Invoke=None, Select=None, Toggle=None):
     try:
-        x = (int)(Element.Current.BoundingRectangle.Right - Element.Current.BoundingRectangle.Width / 2);
-        y = (int)(Element.Current.BoundingRectangle.Bottom - Element.Current.BoundingRectangle.Height / 2);
-        win32api.SetCursorPos((x, y))
-
-        print "clicking your element"
         patter_list = Element.GetSupportedPatterns()
-        for each in patter_list:
-            pattern_name = Automation.PatternName(each)
-            if pattern_name == "ExpandCollapse":
-                if Expand == True:
-                    # check to see if its expanded, if expanded, then do nothing... if not, expand it
-                    status = Element.GetCurrentPattern(ExpandCollapsePattern.Pattern).Current.ExpandCollapseState
-                    if status == 0:
-                        Element.GetCurrentPattern(ExpandCollapsePattern.Pattern).Expand()
-                    elif status == 1:
-                        print "Already Expanded"
-                elif Expand == False:
-                    # check to see if its Collapsed, if Collapsed, then do nothing... if not, Collapse it
-                    status = Element.GetCurrentPattern(ExpandCollapsePattern.Pattern).Current.ExpandCollapseState
-                    if status == 1:
-                        Element.GetCurrentPattern(ExpandCollapsePattern.Pattern).Collapse()
-                    elif status == 0:
-                        print "Already Collapsed"
+        if len(patter_list) == 0:
+            # x = int (Element.Current.BoundingRectangle.X)
+            # y = int (Element.Current.BoundingRectangle.Y)
+            print "no pattern found going with mouse click"
+            x = (int)(Element.Current.BoundingRectangle.Right - Element.Current.BoundingRectangle.Width / 2);
+            y = (int)(Element.Current.BoundingRectangle.Bottom - Element.Current.BoundingRectangle.Height / 2);
+            win32api.SetCursorPos((x, y))
+            win32api.mouse_event(win32con.MOUSEEVENTF_LEFTDOWN, x, y, 0, 0)
+            time.sleep(0.1)
+            win32api.mouse_event(win32con.MOUSEEVENTF_LEFTUP, x, y, 0, 0)
+            return "passed"
+        else:
+            for each in patter_list:
+                pattern_name = Automation.PatternName(each)
+
+                if pattern_name == "ExpandCollapse":
+                    if Expand == True:
+                        # check to see if its expanded, if expanded, then do nothing... if not, expand it
+                        status = Element.GetCurrentPattern(ExpandCollapsePattern.Pattern).Current.ExpandCollapseState
+                        if status == 0:
+                            Element.GetCurrentPattern(ExpandCollapsePattern.Pattern).Expand()
+                        elif status == 1:
+                            print "Already Expanded"
+                    elif Expand == False:
+                        # check to see if its Collapsed, if Collapsed, then do nothing... if not, Collapse it
+                        status = Element.GetCurrentPattern(ExpandCollapsePattern.Pattern).Current.ExpandCollapseState
+                        if status == 1:
+                            Element.GetCurrentPattern(ExpandCollapsePattern.Pattern).Collapse()
+                        elif status == 0:
+                            print "Already Collapsed"
 
 
 
-            elif pattern_name == "Invoke":
-                if Invoke == True:
-                    print "invoking the button: %s" % Element.Current.Name
-                    time.sleep(2)
-                    Element.GetCurrentPattern(InvokePattern.Pattern).Invoke()
+                elif pattern_name == "Invoke":
+                    if Invoke == True:
+                        print "invoking the button: %s" % Element.Current.Name
+                        time.sleep(2)
+                        Element.GetCurrentPattern(InvokePattern.Pattern).Invoke()
 
-
-
-            elif pattern_name == "SelectionItem":
-                Element.GetCurrentPattern(SelectionItemPattern.Pattern).Select()
-            elif pattern_name == "Toggle":
-                Element.GetCurrentPattern(TogglePattern.Pattern).Toggle()
-
-            else:
-                # x = int (Element.Current.BoundingRectangle.X)
-                # y = int (Element.Current.BoundingRectangle.Y)
-
-                x = (int)(Element.Current.BoundingRectangle.Right - Element.Current.BoundingRectangle.Width / 2);
-                y = (int)(Element.Current.BoundingRectangle.Bottom - Element.Current.BoundingRectangle.Height / 2);
-                win32api.SetCursorPos((x, y))
-                win32api.mouse_event(win32con.MOUSEEVENTF_LEFTDOWN, x, y, 0, 0)
-                time.sleep(0.1)
-                win32api.mouse_event(win32con.MOUSEEVENTF_LEFTUP, x, y, 0, 0)
+                elif pattern_name == "SelectionItem":
+                    Element.GetCurrentPattern(SelectionItemPattern.Pattern).Select()
+                elif pattern_name == "Toggle":
+                    Element.GetCurrentPattern(TogglePattern.Pattern).Toggle()
+                else:
+                    # x = int (Element.Current.BoundingRectangle.X)
+                    # y = int (Element.Current.BoundingRectangle.Y)
+                    print "no pattern found going with mouse click"
+                    x = (int)(Element.Current.BoundingRectangle.Right - Element.Current.BoundingRectangle.Width / 2);
+                    y = (int)(Element.Current.BoundingRectangle.Bottom - Element.Current.BoundingRectangle.Height / 2);
+                    win32api.SetCursorPos((x, y))
+                    win32api.mouse_event(win32con.MOUSEEVENTF_LEFTDOWN, x, y, 0, 0)
+                    time.sleep(0.1)
+                    win32api.mouse_event(win32con.MOUSEEVENTF_LEFTUP, x, y, 0, 0)
 
         return "passed"
 
@@ -578,10 +583,10 @@ def Validate_Text (data_set):
         actual_text=str(Element.GetCurrentPattern(ValuePattern.Pattern).Current.Value).strip().lower()
 
         if expected_text == actual_text:
-            CommonUtil.ExecLog(sModuleInfo,"Text '%s' is found in the element",1)
+            CommonUtil.ExecLog(sModuleInfo,"Text '%s' is found in the element"%expected_text,1)
             return "passed"
         else:
-            CommonUtil.ExecLog(sModuleInfo,"Couldn't find text '%s' in any element",3)
+            CommonUtil.ExecLog(sModuleInfo,"Couldn't find text '%s' in any element"%expected_text,3)
             return "failed"
 
     except Exception:
@@ -731,7 +736,7 @@ def Run_Application(data_set):
     try:
         Desktop_app = ''
         for row in data_set:
-            if str(row[0]).strip().lower() == 'action':
+            if str(row[1]).strip().lower() == 'action':
                 Desktop_app = str(row[2]).strip()
 
         autoit.send("^{ESC}")
@@ -753,7 +758,7 @@ def Close_Application(data_set):
     try:
         Desktop_app = ''
         for row in data_set:
-            if str(row[0]).strip().lower() == 'action':
+            if str(row[1]).strip().lower() == 'action':
                 Desktop_app = str(row[2]).strip()
 
         if ".exe" not in Desktop_app:

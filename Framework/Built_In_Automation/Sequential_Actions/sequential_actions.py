@@ -190,6 +190,7 @@ actions = { # Numbers are arbitrary, and are not used anywhere
     809: {'module': 'windows', 'name': 'Desktop', 'function': 'go_to_desktop'},
     810: {'module': 'windows', 'name': 'open app', 'function': 'Run_Application'},
     811: {'module': 'windows', 'name': 'close app', 'function': 'Close_Application'},
+    812: {'module': 'windows', 'name': 'validate text', 'function': 'Validate_Text'},
 }
 
 # List of Sub-Field keywords, must be all lowercase, and using single spaces - no underscores
@@ -1112,4 +1113,5 @@ def Action_Handler(_data_set, action_row):
 
     except Exception:
         return CommonUtil.Exception_Handler(sys.exc_info())
+
 
