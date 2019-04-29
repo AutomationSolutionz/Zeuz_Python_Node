@@ -188,6 +188,8 @@ actions = { # Numbers are arbitrary, and are not used anywhere
     807: {'module': 'windows', 'name': 'keystroke chars', 'function': 'Keystroke_For_Element'},
     808: {'module': 'windows', 'name': 'text', 'function': 'Enter_Text_In_Text_Box'},
     809: {'module': 'windows', 'name': 'Desktop', 'function': 'go_to_desktop'},
+    810: {'module': 'windows', 'name': 'open app', 'function': 'Run_Application'},
+    811: {'module': 'windows', 'name': 'close app', 'function': 'Close_Application'},
 }
 
 # List of Sub-Field keywords, must be all lowercase, and using single spaces - no underscores
