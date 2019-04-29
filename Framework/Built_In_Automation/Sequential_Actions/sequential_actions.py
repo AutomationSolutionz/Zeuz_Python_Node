@@ -80,6 +80,7 @@ actions = { # Numbers are arbitrary, and are not used anywhere
     231: {'module': 'appium', 'name': 'package installed', 'function': 'package_information'},
     232: {'module': 'appium', 'name': 'clear and enter text', 'function': 'Clear_And_Enter_Text_Appium'},
     233: {'module': 'appium', 'name': 'pickerwheel', 'function': 'Pickerwheel_Appium'},
+    234: {'module': 'appium', 'name': 'unlock android device', 'function': 'unlock_android_device'},
 
     300: {'module': 'rest', 'name': 'save response', 'function': 'Get_Response_Wrapper'},
     301: {'module': 'rest', 'name': 'search response', 'function': 'Search_Response'},
@@ -187,6 +188,9 @@ actions = { # Numbers are arbitrary, and are not used anywhere
     807: {'module': 'windows', 'name': 'keystroke chars', 'function': 'Keystroke_For_Element'},
     808: {'module': 'windows', 'name': 'text', 'function': 'Enter_Text_In_Text_Box'},
     809: {'module': 'windows', 'name': 'Desktop', 'function': 'go_to_desktop'},
+    810: {'module': 'windows', 'name': 'open app', 'function': 'Run_Application'},
+    811: {'module': 'windows', 'name': 'close app', 'function': 'Close_Application'},
+    812: {'module': 'windows', 'name': 'validate text', 'function': 'Validate_Text'},
 }
 
 # List of Sub-Field keywords, must be all lowercase, and using single spaces - no underscores
@@ -1109,4 +1113,5 @@ def Action_Handler(_data_set, action_row):
 
     except Exception:
         return CommonUtil.Exception_Handler(sys.exc_info())
+
 

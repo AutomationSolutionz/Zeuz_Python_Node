@@ -265,7 +265,51 @@ def find_correct_device_on_first_run(serial_or_name, device_info):
         
     except:
         return CommonUtil.Exception_Handler(sys.exc_info(), None, "Error trying to read device information")
-     
+
+
+def unlock_android_device(data_set):
+    ''' Unlocks an androi device with adb commands'''
+
+    sModuleInfo = inspect.stack()[0][3] + " : " + inspect.getmoduleinfo(__file__).name
+    CommonUtil.ExecLog(sModuleInfo, "Function Start", 0)
+
+    global device_serial, appium_details, appium_driver, device_id, device_info
+    # Recall appium details
+    if Shared_Resources.Test_Shared_Variables('device_info'):  # Check if device_info is already set in shared variables
+        device_info = Shared_Resources.Get_Shared_Variables('device_info')  # Retreive device_info
+
+    # Parse data set
+    try:
+        serial = ''  # Serial number (may also be random string like "launch", "na", etc)
+        password = ''
+
+        for row in data_set:  # Find required data
+            if str(row[0]).strip().lower() in ('password', 'pass word'):
+                password = str(row[2])
+            elif str(row[1]).strip().lower() == 'action':
+                serial = str(row[2]).lower().strip()
+
+
+        # Set the global variable for the preferred connected device
+        if find_correct_device_on_first_run(serial, device_info) in failed_tag_list: return 'failed'
+
+        if appium_details[device_id]['type'] == 'android':
+            Shared_Resources.Set_Shared_Variables('device_password',password)
+            result = adbOptions.wake_android(device_serial)
+            if result in failed_tag_list:
+                CommonUtil.ExecLog(sModuleInfo, "Couldn't unlock the android device", 3)
+                return 'failed'
+        else:
+            CommonUtil.ExecLog(sModuleInfo, "The device type is not android", 3)
+            return 'failed'
+
+        CommonUtil.ExecLog(sModuleInfo, "Unlocked android device successfully", 1)
+        return "passed"
+    except Exception:
+        return CommonUtil.Exception_Handler(sys.exc_info(), None,
+                                            "Could not create Appium Driver, Either device is not connected, or authorized, or a capability is incorrect.")
+
+
 def launch_application(data_set):
     ''' Launch the application the appium instance was created with, and create the instance if necessary '''
     

@@ -80,9 +80,6 @@ def Click_Element(data_set):
     sModuleInfo = inspect.stack()[0][3] + " : " + inspect.getmoduleinfo(__file__).name
     CommonUtil.ExecLog(sModuleInfo, "Function start", 0)
 
-    element_name = ''
-    window_name = ''
-    pane_name=''
     expand = None
     invoke = None
     select = None
@@ -92,13 +89,7 @@ def Click_Element(data_set):
     try:
         for row in data_set:
             if row[1] == 'element parameter':
-                if row[0] == 'element name':
-                    element_name=row[2]
-                elif row[0] == 'window name':
-                    window_name=row[2]
-                elif row[0] == 'pane name':
-                    pane_name = row[2]
-                elif str(row[0]).strip().lower() == 'expand' or str(row[0]).strip().lower() == 'invoke' or str(row[0]).strip().lower() == 'select' or str(row[0]).strip().lower() == 'toggle':
+                if str(row[0]).strip().lower() == 'expand' or str(row[0]).strip().lower() == 'invoke' or str(row[0]).strip().lower() == 'select' or str(row[0]).strip().lower() == 'toggle':
                     value = None
                     if str(row[2]).strip().lower() == "yes" or str(row[2]).strip().lower() == "true":
                         value=True
@@ -112,13 +103,6 @@ def Click_Element(data_set):
                     if row[0] == "select": select = value
                     if row[0] == "toggle": toggle = value
 
-                else:
-                    CommonUtil.ExecLog(sModuleInfo, "Error in data set, please use 'element name' or 'window name' as element parameter", 3)
-                    return "failed"
-
-        if element_name == '':
-            element_name = None #element name can be empty if user want the full window as an element
-
     except Exception:
         return CommonUtil.Exception_Handler(sys.exc_info(), None, "Error parsing data set")
 
@@ -126,7 +110,7 @@ def Click_Element(data_set):
     CommonUtil.ExecLog(sModuleInfo, "Looking for element", 0)
 
     # Get element object
-    Element = get_element(window_name,element_name)
+    Element = Get_Element(data_set)
     if Element in failed_tag_list:
         CommonUtil.ExecLog(sModuleInfo, "Could not find element", 3)
         return 'failed'
@@ -149,16 +133,8 @@ def Click_Element(data_set):
 def Right_Click_Element(data_set):
     sModuleInfo = inspect.stack()[0][3] + " : " + inspect.getmoduleinfo(__file__).name
     CommonUtil.ExecLog(sModuleInfo, "Function start", 0)
-    element_name = ''
-    window_name = ''
     try:
-        for row in data_set:
-            if row[1] == 'element parameter':
-                if row[0] == 'element name':
-                    element_name=row[2]
-                elif row[0] == 'window name':
-                    window_name=row[2]
-        Element = get_element(window_name, element_name)
+        Element = Get_Element(window_name, element_name)
         if Element in failed_tag_list:
             CommonUtil.ExecLog(sModuleInfo, "Could not find element", 3)
             return 'failed'
@@ -172,13 +148,230 @@ def Right_Click_Element(data_set):
     except Exception:
         return CommonUtil.Exception_Handler(sys.exc_info(), None, "Error parsing data set")
 
-def get_element(window_name, element_name=None, element_class=None, automation_id=None, control_type=None):
-    root = _get_main_window(window_name)
-    if root is None:
-        print "No window found with the name: " + window_name
-        return None
 
-    return find_element(root, element_name, element_class, automation_id, control_type)
+def get_element(MainWindowName_OR_ParentElement, Element_Name, Element_Class, Element_AutomationID,
+                Element_LocalizedControlType, max_time=15):
+    sModuleInfo = inspect.stack()[0][3] + " : " + inspect.getmoduleinfo(__file__).name
+    # max_time is built in wait function.  It will try every seconds 15 times.
+    start_time = 0
+
+    try:
+
+        while start_time != max_time:
+            try:
+                if isinstance(MainWindowName_OR_ParentElement, basestring) == True:
+                    ParentElement = _get_main_window(MainWindowName_OR_ParentElement)
+                    if ParentElement == None:
+                        True
+                    else:
+
+                        # ChildElement = _recursive_child_search(ParentElement, Element_Name, Element_Class,Element_AutomationID)
+                        ChildElement = _child_search(ParentElement, Element_Name, Element_Class, Element_AutomationID,
+                                                     Element_LocalizedControlType)
+                        if ChildElement != None:
+                            return ChildElement
+                        else:
+                            True
+                else:
+                    ChildElement = _child_search(ParentElement, Element_Name, Element_Class, Element_AutomationID,
+                                                 Element_LocalizedControlType)
+                    # ChildElement = _recursive_child_search(MainWindowName_OR_ParentElement, Element_Name, Element_Class,Element_AutomationID)
+
+                    if ChildElement != None:
+                        return ChildElement
+                    else:
+                        True
+                time.sleep(1)
+                start_time = start_time + 1
+
+            except:
+                True
+        if start_time == max_time:
+            print "Unable to find your element"
+            return "failed"
+
+        CommonUtil.ExecLog(sModuleInfo,"Couldn't get element",3)
+        return "failed"
+    except:
+        return CommonUtil.Exception_Handler(sys.exc_info(), None, "Couldn't get element")
+
+
+def _child_search(ParentElement, Element_Name, Element_Class, Element_AutomationID, Element_LocalizedControlType):
+    try:
+        global recur_count
+        recur_count = recur_count + 1
+
+        # Name, Class, AutomationID, LocalizedControlType
+        try:
+            if Element_Name != None and Element_Class != None and Element_AutomationID != None and Element_LocalizedControlType != None:
+                NameE = ParentElement.Current.Name
+                ClassE = ParentElement.Current.ClassName
+                AutomationE = ParentElement.Current.AutomationId
+                LocalizedControlTypeE = ParentElement.Current.LocalizedControlType
+                if NameE == Element_Name and ClassE == Element_Class and AutomationE == Element_AutomationID and LocalizedControlTypeE == Element_LocalizedControlType:
+                    return ParentElement
+        except:
+            None
+
+        # Name, Class
+        try:
+            if Element_Name != None and Element_Class != None and Element_AutomationID == None and Element_LocalizedControlType == None:
+                NameE = ParentElement.Current.Name
+                ClassE = ParentElement.Current.ClassName
+
+                if NameE == Element_Name and ClassE == Element_Class:
+                    return ParentElement
+        except:
+            None
+
+        # Name, AutomationID
+        try:
+            if Element_Name != None and Element_Class == None and Element_AutomationID != None and Element_LocalizedControlType == None:
+                NameE = ParentElement.Current.Name
+                AutomationE = ParentElement.Current.AutomationId
+                if NameE == Element_Name and AutomationE == Element_AutomationID:
+                    return ParentElement
+        except:
+            None
+
+
+            # Name, LocalizedControlType
+
+        try:
+            if Element_Name != None and Element_Class == None and Element_AutomationID == None and Element_LocalizedControlType != None:
+
+                NameE = ParentElement.Current.Name
+                LocalizedControlTypeE = ParentElement.Current.LocalizedControlType
+                if NameE == Element_Name and LocalizedControlTypeE == Element_LocalizedControlType:
+                    return ParentElement
+        except:
+            None
+
+        # Class, AutomationID, LocalizedControlType
+        try:
+            if Element_Name == None and Element_Class != None and Element_AutomationID != None and Element_LocalizedControlType != None:
+                ClassE = ParentElement.Current.ClassName
+                AutomationE = ParentElement.Current.AutomationId
+                LocalizedControlTypeE = ParentElement.Current.LocalizedControlType
+                if ClassE == Element_Class and AutomationE == Element_AutomationID and LocalizedControlTypeE == Element_LocalizedControlType:
+                    return ParentElement
+        except:
+            None
+
+        # Class, AutomationID
+
+        try:
+            if Element_Name == None and Element_Class != None and Element_AutomationID != None and Element_LocalizedControlType == None:
+                ClassE = ParentElement.Current.ClassName
+                AutomationE = ParentElement.Current.AutomationId
+                if ClassE == Element_Class and AutomationE == Element_AutomationID:
+                    return ParentElement
+        except:
+            None
+
+            # Class, LocalizedControlType
+
+        try:
+            if Element_Name == None and Element_Class != None and Element_AutomationID == None and Element_LocalizedControlType != None:
+                ClassE = ParentElement.Current.ClassName
+                LocalizedControlTypeE = ParentElement.Current.LocalizedControlType
+                if ClassE == Element_Class and LocalizedControlTypeE == Element_LocalizedControlType:
+                    return ParentElement
+        except:
+            None
+
+        # Class
+        try:
+            if Element_Name == None and Element_Class != None and Element_AutomationID == None and Element_LocalizedControlType == None:
+                ClassE = ParentElement.Current.ClassName
+                if ClassE == Element_Class:
+                    return ParentElement
+        except:
+            None
+
+        # AutomationID, LocalizedControlType
+        try:
+            if Element_Name == None and Element_Class == None and Element_AutomationID != None and Element_LocalizedControlType != None:
+                AutomationE = ParentElement.Current.AutomationId
+                LocalizedControlTypeE = ParentElement.Current.LocalizedControlType
+                if AutomationE == Element_AutomationID and LocalizedControlTypeE == Element_LocalizedControlType:
+                    return ParentElement
+        except:
+            None
+
+            # AutomationID
+        try:
+            if Element_Name == None and Element_Class == None and Element_AutomationID != None and Element_LocalizedControlType == None:
+                AutomationE = ParentElement.Current.AutomationId
+                if AutomationE == Element_AutomationID:
+                    return ParentElement
+        except:
+            None
+
+        # LocalizedControlType
+
+        try:
+            if Element_Name == None and Element_Class == None and Element_AutomationID == None and Element_LocalizedControlType != None:
+                LocalizedControlTypeE = ParentElement.Current.LocalizedControlType
+                if LocalizedControlTypeE == Element_LocalizedControlType:
+                    return ParentElement
+        except:
+            None
+            # Name, Class, AutomationID
+        try:
+            if Element_Name != None and Element_Class != None and Element_AutomationID != None and Element_LocalizedControlType == None:
+                NameE = ParentElement.Current.Name
+                ClassE = ParentElement.Current.ClassName
+                AutomationE = ParentElement.Current.AutomationId
+                if NameE == Element_Name and ClassE == Element_Class and AutomationE == Element_AutomationID:
+                    return ParentElement
+        except:
+            None
+
+        # Name, Class
+        try:
+            if (Element_Name != None) and (Element_Class != None) and (Element_AutomationID == None) and (
+                Element_LocalizedControlType == None):
+                NameE = ParentElement.Current.Name
+                ClassE = ParentElement.Current.ClassName
+                if NameE == Element_Name and ClassE == Element_Class:
+                    return ParentElement
+        except:
+            None
+        # Name
+        try:
+            if (Element_Name != None) and (Element_Class == None) and (Element_AutomationID == None) and (
+                Element_LocalizedControlType == None):
+
+                NameE = ParentElement.Current.Name
+
+                if NameE == Element_Name:
+                    return ParentElement
+        except:
+            None
+
+        try:
+            child_elements = ParentElement.FindAll(TreeScope.Children, Condition.TrueCondition)
+
+            if child_elements.Count == 0:
+                return None
+
+            for each_child in child_elements:
+                child = _child_search(each_child, Element_Name, Element_Class, Element_AutomationID,
+                                      Element_LocalizedControlType)
+                if child:
+                    return child
+
+            return None
+        except:
+            return None
+
+    except Exception, e:
+        exc_type, exc_obj, exc_tb = sys.exc_info()
+        fname = os.path.split(exc_tb.tb_frame.f_code.co_filename)[1]
+        print ((str(exc_type).replace("type ", "Error Type: ")) + ";" + "Error Message: " + str(
+            exc_obj) + ";" + "File Name: " + fname + ";" + "Line: " + str(exc_tb.tb_lineno))
+        return "failed"
 
 def _get_main_window (WindowName):
     try:
@@ -203,55 +396,60 @@ def _get_main_window (WindowName):
 
 def Click_Element_None_Mouse(Element, Expand=None, Invoke=None, Select=None, Toggle=None):
     try:
-        x = (int)(Element.Current.BoundingRectangle.Right - Element.Current.BoundingRectangle.Width / 2);
-        y = (int)(Element.Current.BoundingRectangle.Bottom - Element.Current.BoundingRectangle.Height / 2);
-        win32api.SetCursorPos((x, y))
-
-        print "clicking your element"
         patter_list = Element.GetSupportedPatterns()
-        for each in patter_list:
-            pattern_name = Automation.PatternName(each)
-            if pattern_name == "ExpandCollapse":
-                if Expand == True:
-                    # check to see if its expanded, if expanded, then do nothing... if not, expand it
-                    status = Element.GetCurrentPattern(ExpandCollapsePattern.Pattern).Current.ExpandCollapseState
-                    if status == 0:
-                        Element.GetCurrentPattern(ExpandCollapsePattern.Pattern).Expand()
-                    elif status == 1:
-                        print "Already Expanded"
-                elif Expand == False:
-                    # check to see if its Collapsed, if Collapsed, then do nothing... if not, Collapse it
-                    status = Element.GetCurrentPattern(ExpandCollapsePattern.Pattern).Current.ExpandCollapseState
-                    if status == 1:
-                        Element.GetCurrentPattern(ExpandCollapsePattern.Pattern).Collapse()
-                    elif status == 0:
-                        print "Already Collapsed"
+        if len(patter_list) == 0:
+            # x = int (Element.Current.BoundingRectangle.X)
+            # y = int (Element.Current.BoundingRectangle.Y)
+            print "no pattern found going with mouse click"
+            x = (int)(Element.Current.BoundingRectangle.Right - Element.Current.BoundingRectangle.Width / 2);
+            y = (int)(Element.Current.BoundingRectangle.Bottom - Element.Current.BoundingRectangle.Height / 2);
+            win32api.SetCursorPos((x, y))
+            win32api.mouse_event(win32con.MOUSEEVENTF_LEFTDOWN, x, y, 0, 0)
+            time.sleep(0.1)
+            win32api.mouse_event(win32con.MOUSEEVENTF_LEFTUP, x, y, 0, 0)
+            return "passed"
+        else:
+            for each in patter_list:
+                pattern_name = Automation.PatternName(each)
+
+                if pattern_name == "ExpandCollapse":
+                    if Expand == True:
+                        # check to see if its expanded, if expanded, then do nothing... if not, expand it
+                        status = Element.GetCurrentPattern(ExpandCollapsePattern.Pattern).Current.ExpandCollapseState
+                        if status == 0:
+                            Element.GetCurrentPattern(ExpandCollapsePattern.Pattern).Expand()
+                        elif status == 1:
+                            print "Already Expanded"
+                    elif Expand == False:
+                        # check to see if its Collapsed, if Collapsed, then do nothing... if not, Collapse it
+                        status = Element.GetCurrentPattern(ExpandCollapsePattern.Pattern).Current.ExpandCollapseState
+                        if status == 1:
+                            Element.GetCurrentPattern(ExpandCollapsePattern.Pattern).Collapse()
+                        elif status == 0:
+                            print "Already Collapsed"
 
 
 
-            elif pattern_name == "Invoke":
-                if Invoke == True:
-                    print "invoking the button: %s" % Element.Current.Name
-                    time.sleep(2)
-                    Element.GetCurrentPattern(InvokePattern.Pattern).Invoke()
+                elif pattern_name == "Invoke":
+                    if Invoke == True:
+                        print "invoking the button: %s" % Element.Current.Name
+                        time.sleep(2)
+                        Element.GetCurrentPattern(InvokePattern.Pattern).Invoke()
 
-
-
-            elif pattern_name == "SelectionItem":
-                Element.GetCurrentPattern(SelectionItemPattern.Pattern).Select()
-            elif pattern_name == "Toggle":
-                Element.GetCurrentPattern(TogglePattern.Pattern).Toggle()
-
-            else:
-                # x = int (Element.Current.BoundingRectangle.X)
-                # y = int (Element.Current.BoundingRectangle.Y)
-
-                x = (int)(Element.Current.BoundingRectangle.Right - Element.Current.BoundingRectangle.Width / 2);
-                y = (int)(Element.Current.BoundingRectangle.Bottom - Element.Current.BoundingRectangle.Height / 2);
-                win32api.SetCursorPos((x, y))
-                win32api.mouse_event(win32con.MOUSEEVENTF_LEFTDOWN, x, y, 0, 0)
-                time.sleep(0.1)
-                win32api.mouse_event(win32con.MOUSEEVENTF_LEFTUP, x, y, 0, 0)
+                elif pattern_name == "SelectionItem":
+                    Element.GetCurrentPattern(SelectionItemPattern.Pattern).Select()
+                elif pattern_name == "Toggle":
+                    Element.GetCurrentPattern(TogglePattern.Pattern).Toggle()
+                else:
+                    # x = int (Element.Current.BoundingRectangle.X)
+                    # y = int (Element.Current.BoundingRectangle.Y)
+                    print "no pattern found going with mouse click"
+                    x = (int)(Element.Current.BoundingRectangle.Right - Element.Current.BoundingRectangle.Width / 2);
+                    y = (int)(Element.Current.BoundingRectangle.Bottom - Element.Current.BoundingRectangle.Height / 2);
+                    win32api.SetCursorPos((x, y))
+                    win32api.mouse_event(win32con.MOUSEEVENTF_LEFTDOWN, x, y, 0, 0)
+                    time.sleep(0.1)
+                    win32api.mouse_event(win32con.MOUSEEVENTF_LEFTUP, x, y, 0, 0)
 
         return "passed"
 
@@ -332,16 +530,8 @@ def Drag_Object(Element1_source, Element2_destination):
 def Double_Click_Element(data_set):
     sModuleInfo = inspect.stack()[0][3] + " : " + inspect.getmoduleinfo(__file__).name
     CommonUtil.ExecLog(sModuleInfo, "Function start", 0)
-    element_name = ''
-    window_name = ''
     try:
-        for row in data_set:
-            if row[1] == 'element parameter':
-                if row[0] == 'element name':
-                    element_name = row[2]
-                elif row[0] == 'window name':
-                    window_name = row[2]
-        Element = get_element(window_name, element_name)
+        Element = Get_Element(data_set)
         if Element in failed_tag_list:
             CommonUtil.ExecLog(sModuleInfo, "Could not find element", 3)
             return 'failed'
@@ -360,16 +550,8 @@ def Double_Click_Element(data_set):
 def Hover_Over_Element (data_set):
     sModuleInfo = inspect.stack()[0][3] + " : " + inspect.getmoduleinfo(__file__).name
     CommonUtil.ExecLog(sModuleInfo, "Function start", 0)
-    element_name = ''
-    window_name = ''
     try:
-        for row in data_set:
-            if row[1] == 'element parameter':
-                if row[0] == 'element name':
-                    element_name = row[2]
-                elif row[0] == 'window name':
-                    window_name = row[2]
-        Element = get_element(window_name, element_name)
+        Element = Get_Element(data_set)
         if Element in failed_tag_list:
             CommonUtil.ExecLog(sModuleInfo, "Could not find element", 3)
             return 'failed'
@@ -380,6 +562,33 @@ def Hover_Over_Element (data_set):
         autoit.mouse_move(x,y,speed=20)
         time.sleep(1)
         return 'passed'
+    except Exception:
+        return CommonUtil.Exception_Handler(sys.exc_info(), None, "Error parsing data set")
+
+
+def Validate_Text (data_set):
+    sModuleInfo = inspect.stack()[0][3] + " : " + inspect.getmoduleinfo(__file__).name
+    CommonUtil.ExecLog(sModuleInfo, "Function start", 0)
+    try:
+        expected_text=''
+        for row in data_set:
+            if str(row[1]).strip().lower() == 'action':
+                expected_text = str(row[2])
+
+        Element = Get_Element(data_set)
+        if Element in failed_tag_list:
+            CommonUtil.ExecLog(sModuleInfo, "Could not find element", 3)
+            return 'failed'
+
+        actual_text=str(Element.GetCurrentPattern(ValuePattern.Pattern).Current.Value).strip().lower()
+
+        if expected_text == actual_text:
+            CommonUtil.ExecLog(sModuleInfo,"Text '%s' is found in the element"%expected_text,1)
+            return "passed"
+        else:
+            CommonUtil.ExecLog(sModuleInfo,"Couldn't find text '%s' in any element"%expected_text,3)
+            return "failed"
+
     except Exception:
         return CommonUtil.Exception_Handler(sys.exc_info(), None, "Error parsing data set")
 
@@ -426,68 +635,144 @@ def Enter_Text_In_Text_Box(data_set):
 
     sModuleInfo = inspect.stack()[0][3] + " : " + inspect.getmoduleinfo(__file__).name
     CommonUtil.ExecLog(sModuleInfo, "Function Start", 0)
-
-    # Parse data set
     try:
-        element_parameter = False
-        text_value = ''
+        text=''
+        keystroke = True
+
         for row in data_set:
-            if "action" in row[1]:
-                text_value = row[2]
-            if row[1] == 'element parameter':  # Indicates we should find the element instead of assuming we have keyboard focus
-                element_parameter = True
+            if str(row[1]).lower().strip() == 'action':
+                text = str(row[2])
+            elif str(row[0]).lower().strip() == 'method' and str(row[0]).lower().strip() == 'set value':
+                keystroke=False
 
 
-        if text_value == '':
-            CommonUtil.ExecLog(sModuleInfo, "Could not find value for this action", 3)
-            return 'failed'
-    except:
+        Element = Get_Element(data_set)
+
+        if keystroke:
+            if Element in failed_tag_list:
+                CommonUtil.ExecLog(sModuleInfo, "Couldn't find element",3)
+                return "failed"
+
+            x = (int)(Element.Current.BoundingRectangle.Right - Element.Current.BoundingRectangle.Width / 2);
+            y = (int)(Element.Current.BoundingRectangle.Bottom - Element.Current.BoundingRectangle.Height / 2);
+            win32api.SetCursorPos((x, y))
+            win32api.mouse_event(win32con.MOUSEEVENTF_LEFTDOWN, x, y, 0, 0)
+            time.sleep(0.1)
+            win32api.mouse_event(win32con.MOUSEEVENTF_LEFTUP, x, y, 0, 0)
+            time.sleep(0.5)
+            autoit.send("^a")  # select all
+            autoit.send(text)
+        else:
+            Element.GetCurrentPattern(ValuePattern.Pattern).SetValue(text)
+
+        return "passed"
+    except Exception:
+        return CommonUtil.Exception_Handler(sys.exc_info(), None, "Couln't enter text")
+
+
+def Scroll (data_set):
+    try:
+        Element = Get_Element(data_set)
+        x = (int)(Element.Current.BoundingRectangle.Right - Element.Current.BoundingRectangle.Width / 2);
+        y = (int)(Element.Current.BoundingRectangle.Bottom - Element.Current.BoundingRectangle.Height / 2);
+        win32api.SetCursorPos((x, y))
+
+        autoit.mouse_wheel("up",10)
+        time.sleep(1)
+    except Exception:
         return CommonUtil.Exception_Handler(sys.exc_info(), None, "Error parsing data set")
 
-    # Perform action
-    try:
-        # Find image coordinates
-        if element_parameter:
-            CommonUtil.ExecLog(sModuleInfo, "Trying to locate element", 0)
-            element = LocateElement.Get_Element(data_set, gui)  # (x, y, w, h)
-            if element in failed_tag_list:  # Error reason logged by Get_Element
-                CommonUtil.ExecLog(sModuleInfo, "Could not locate element", 3)
-                return 'failed'
 
-            # Get coordinates for position user specified
-            x, y = getCoordinates(element, 'centre')  # Find coordinates (x,y)
-            if x in failed_tag_list:  # Error reason logged by Get_Element
-                CommonUtil.ExecLog(sModuleInfo, "Error calculating coordinates", 3)
-                return 'failed'
-            CommonUtil.ExecLog(sModuleInfo, "Image coordinates on screen %d x %d" % (x, y), 0)
-            gui.click(x, y)  # Single click
-        else:
-            CommonUtil.ExecLog(sModuleInfo, "No element provided. Assuming textbox has keyboard focus", 0)
+def Get_Element(data_set):
+    ''' Insert text '''
 
-        CommonUtil.TakeScreenShot(sModuleInfo)  # Capture screenshot, if settings allow for it
-
-        # Enter text
-        gui.typewrite(text_value)
-        CommonUtil.ExecLog(sModuleInfo, "Successfully set the value of to text to: %s" % text_value, 1)
-        return "passed"
-
-    except Exception:
-        errMsg = "Could not select/click your element."
-        return CommonUtil.Exception_Handler(sys.exc_info(), None, errMsg)
-
-def Validate_Text(data_set):
     sModuleInfo = inspect.stack()[0][3] + " : " + inspect.getmoduleinfo(__file__).name
     CommonUtil.ExecLog(sModuleInfo, "Function Start", 0)
-    file_list=[]
-    file_list=(glob.glob("C:/Users/zeuzi/Downloads/*"))
-    for row in data_set:
-        if "action" in row[1]:
-            text_value = row[2]
-    if (text_value in file_list):
-        return "passed"
-    else:
-        errMsg = "Could not find the folder"
+
+    element_name = ''
+    window_name = ''
+    element_class = None
+    automationid = None
+    control_type = None
+    wait_time = 15
+
+    # parse dataset and read data
+    try:
+        for row in data_set:
+            if row[1] == 'element parameter':
+                if str(row[0]).strip().lower() == 'element name':
+                    element_name = row[2]
+                elif str(row[0]).strip().lower() == 'window name':
+                    window_name = row[2]
+                elif str(row[0]).strip().lower() == 'element class':
+                    element_class = row[2]
+                elif str(row[0]).strip().lower() == 'automation id':
+                    automationid = row[2]
+                elif str(row[0]).strip().lower() == 'control type':
+                    control_type = row[2]
+                elif str(row[0]).strip().lower() == 'wait time':
+                    wait_time = int(str(row[2]))
+
+        if element_name == '':
+            element_name = None  # element name can be empty if user want the full window as an element
+
+        # Click using element
+        CommonUtil.ExecLog(sModuleInfo, "Looking for element", 0)
+
+            # Get element object
+        Element = get_element(window_name, element_name, element_class, automationid, control_type, wait_time)
+        if Element == None:
+            return "failed"
+
+        return Element
+    except Exception:
+        errMsg = "Could not get your element."
         return CommonUtil.Exception_Handler(sys.exc_info(), None, errMsg)
+
+
+def Run_Application(data_set):
+    sModuleInfo = inspect.stack()[0][3] + " : " + inspect.getmoduleinfo(__file__).name
+    CommonUtil.ExecLog(sModuleInfo, "Function Start", 0)
+    try:
+        Desktop_app = ''
+        for row in data_set:
+            if str(row[1]).strip().lower() == 'action':
+                Desktop_app = str(row[2]).strip()
+
+        autoit.send("^{ESC}")
+        time.sleep(0.1)
+        autoit.send(Desktop_app)
+        time.sleep(0.1)
+        autoit.send("{ENTER}")
+        CommonUtil.ExecLog(sModuleInfo, "Succesfully launched your app", 1)
+
+        return "passed"
+    except:
+        CommonUtil.ExecLog(sModuleInfo, "Unable to start your app %s" % Desktop_app,3)
+        return "failed"
+
+
+def Close_Application(data_set):
+    sModuleInfo = inspect.stack()[0][3] + " : " + inspect.getmoduleinfo(__file__).name
+    CommonUtil.ExecLog(sModuleInfo, "Function Start", 0)
+    try:
+        Desktop_app = ''
+        for row in data_set:
+            if str(row[1]).strip().lower() == 'action':
+                Desktop_app = str(row[2]).strip()
+
+        if ".exe" not in Desktop_app:
+            Desktop_app = Desktop_app + ".exe"
+            os.system("TASKKILL /F /IM %s" % Desktop_app)
+        else:
+            os.system("TASKKILL /F /IM %s" % Desktop_app)
+        CommonUtil.ExecLog(sModuleInfo, "Succesfully closed your app",1)
+
+        return "passed"
+    except:
+        CommonUtil.ExecLog(sModuleInfo, "Unable to start your app %s" % Desktop_app,3)
+        return "failed"
+
 
 def Keystroke_For_Element(data_set):
     ''' Insert characters - mainly key combonations'''
@@ -533,45 +818,3 @@ def Keystroke_For_Element(data_set):
     except Exception:
         errMsg = "Could not enter keystroke for your element."
         return CommonUtil.Exception_Handler(sys.exc_info(), None, errMsg)
-
-def Scroll (data_set):
-    element_name = ''
-    window_name = ''
-    try:
-        for row in data_set:
-            if row[1] == 'element parameter':
-
-                if row[0] == 'window name':
-                    window_name = row[2]
-        Element = get_element(window_name)
-        x = (int)(Element.Current.BoundingRectangle.Right - Element.Current.BoundingRectangle.Width / 2);
-        y = (int)(Element.Current.BoundingRectangle.Bottom - Element.Current.BoundingRectangle.Height / 2);
-        win32api.SetCursorPos((x, y))
-
-        autoit.mouse_wheel("up",10)
-        time.sleep(1)
-    except Exception:
-        return CommonUtil.Exception_Handler(sys.exc_info(), None, "Error parsing data set")
-
-def find_element(root, element_name, element_class, automation_id, control_type):
-    found = element_name is None or element_name == root.Current.Name
-    found &= element_class is None or element_class == root.Current.ClassName
-    found &= automation_id is None or automation_id == root.Current.AutomationId
-    found &= control_type is None or control_type == root.Current.LocalizedControlType
-
-    if found:
-        print "Element found: '%s' (%s)" % (root.Current.Name, root.Current.LocalizedControlType)
-        return root
-
-    children = root.FindAll(TreeScope.Children, Condition.TrueCondition)
-
-    for child in children:
-        element = find_element(child, element_name, element_class, automation_id, control_type)
-        if element:
-            return element
-
-    return None
-
-
-
-
