@@ -80,6 +80,7 @@ actions = { # Numbers are arbitrary, and are not used anywhere
     231: {'module': 'appium', 'name': 'package installed', 'function': 'package_information'},
     232: {'module': 'appium', 'name': 'clear and enter text', 'function': 'Clear_And_Enter_Text_Appium'},
     233: {'module': 'appium', 'name': 'pickerwheel', 'function': 'Pickerwheel_Appium'},
+    234: {'module': 'appium', 'name': 'unlock android device', 'function': 'unlock_android_device'},
 
     300: {'module': 'rest', 'name': 'save response', 'function': 'Get_Response_Wrapper'},
     301: {'module': 'rest', 'name': 'search response', 'function': 'Search_Response'},
