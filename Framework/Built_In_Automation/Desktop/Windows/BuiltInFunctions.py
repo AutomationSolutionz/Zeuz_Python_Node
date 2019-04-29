@@ -664,16 +664,6 @@ def Enter_Text_In_Text_Box(data_set):
     except Exception:
         return CommonUtil.Exception_Handler(sys.exc_info(), None, "Couln't enter text")
 
-    # Click using element
-    CommonUtil.ExecLog(sModuleInfo, "Looking for element", 0)
-
-    # Get element object
-    Element = get_element(window_name, element_name)
-
-    except Exception:
-        errMsg = "Could not select/click your element."
-        return CommonUtil.Exception_Handler(sys.exc_info(), None, errMsg)
-
 
 def Scroll (data_set):
     try:
@@ -749,7 +739,7 @@ def Run_Application(data_set):
         autoit.send(Desktop_app)
         time.sleep(0.1)
         autoit.send("{ENTER}")
-        CommonUtil.ExecLog(sModuleInfo) "Succesfully launched your app"
+        CommonUtil.ExecLog(sModuleInfo, "Succesfully launched your app", 1)
 
         return "passed"
     except:
