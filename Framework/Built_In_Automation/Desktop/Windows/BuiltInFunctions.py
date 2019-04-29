@@ -149,101 +149,129 @@ def Right_Click_Element(data_set):
         return CommonUtil.Exception_Handler(sys.exc_info(), None, "Error parsing data set")
 
 
-def get_element(MainWindowName_OR_ParentElement, Element_Name, Element_Class, Element_AutomationID,
-                Element_LocalizedControlType, max_time=15):
-    sModuleInfo = inspect.stack()[0][3] + " : " + inspect.getmoduleinfo(__file__).name
-    # max_time is built in wait function.  It will try every seconds 15 times.
-    start_time = 0
+import clr, inspect, System
+import os, sys
+from _elementtree import Element
+clr.AddReference('UIAutomationClient')
+clr.AddReference('UIAutomationTypes')
+clr.AddReference('UIAutomationProvider')
+clr.AddReference('System.Windows.Forms')
 
+import time,datetime
+import win32api,win32con
+import win32gui
+import random
+import string
+import autoit
+
+from System.Windows.Automation import *
+
+'''
+global recur_count
+recur_count = 0 
+#if local_run is True, no logging will be recorded to the web server.  Only local print will be displayed
+#local_run = True
+local_run = False
+'''
+
+
+
+def get_element(MainWindowName_OR_ParentElement, Element_Name, Element_Class,Element_AutomationID,Element_LocalizedControlType,max_try = 1):
+    #max_time is built in wait function.  It will try every seconds 15 times.  
+
+    recur_count = 0 
     try:
+        
 
-        while start_time != max_time:
-            try:
-                if isinstance(MainWindowName_OR_ParentElement, basestring) == True:
-                    ParentElement = _get_main_window(MainWindowName_OR_ParentElement)
-                    if ParentElement == None:
-                        True
-                    else:
-
-                        # ChildElement = _recursive_child_search(ParentElement, Element_Name, Element_Class,Element_AutomationID)
-                        ChildElement = _child_search(ParentElement, Element_Name, Element_Class, Element_AutomationID,
-                                                     Element_LocalizedControlType)
-                        if ChildElement != None:
-                            return ChildElement
-                        else:
-                            True
+        try:
+            if isinstance(MainWindowName_OR_ParentElement, basestring)  == True:
+                ParentElement = _get_main_window (MainWindowName_OR_ParentElement)
+                if ParentElement == None:
+                    return "failed"
                 else:
-                    ChildElement = _child_search(ParentElement, Element_Name, Element_Class, Element_AutomationID,
-                                                 Element_LocalizedControlType)
-                    # ChildElement = _recursive_child_search(MainWindowName_OR_ParentElement, Element_Name, Element_Class,Element_AutomationID)
+
+
+                    ChildElement = _child_search(ParentElement, Element_Name,Element_Class,Element_AutomationID,Element_LocalizedControlType)
 
                     if ChildElement != None:
                         return ChildElement
                     else:
-                        True
-                time.sleep(1)
-                start_time = start_time + 1
+                        return "failed"
+            else:
+                ChildElement = _child_search(ParentElement, Element_Name,Element_Class,Element_AutomationID,Element_LocalizedControlType)
+                
 
-            except:
-                time.sleep(1)
-                start_time = start_time + 1
-                True
-        if start_time == max_time:
-            print "Unable to find your element"
+                if ChildElement != None:
+                    return ChildElement
+                else:
+                    return "failed"
+
+        except:
             return "failed"
 
-        CommonUtil.ExecLog(sModuleInfo,"Couldn't get element",3)
-        return "failed"
-    except:
-        return CommonUtil.Exception_Handler(sys.exc_info(), None, "Couldn't get element")
+            
+     
+    except Exception, e:
+        exc_type, exc_obj, exc_tb = sys.exc_info()
+        fname = os.path.split(exc_tb.tb_frame.f_code.co_filename)[1]
+        print ((str(exc_type).replace("type ", "Error Type: ")) + ";" +  "Error Message: " + str(exc_obj) +";" + "File Name: " + fname + ";" + "Line: "+ str(exc_tb.tb_lineno))
 
 
-def _child_search(ParentElement, Element_Name, Element_Class, Element_AutomationID, Element_LocalizedControlType):
+
+def _child_search(ParentElement, Element_Name,Element_Class,Element_AutomationID,Element_LocalizedControlType):
+    
     try:
+        '''
         global recur_count
-        recur_count = recur_count + 1
-
+        recur_count = recur_count +1
+        print recur_count
+        
+        if recur_count == 100:
+            time.sleep(5)
+            '''
         # Name, Class, AutomationID, LocalizedControlType
         try:
-            if Element_Name != None and Element_Class != None and Element_AutomationID != None and Element_LocalizedControlType != None:
+            if Element_Name!= None and Element_Class != None and Element_AutomationID != None and Element_LocalizedControlType!=None:
                 NameE = ParentElement.Current.Name
-                ClassE = ParentElement.Current.ClassName
+                ClassE= ParentElement.Current.ClassName
                 AutomationE = ParentElement.Current.AutomationId
-                LocalizedControlTypeE = ParentElement.Current.LocalizedControlType
+                LocalizedControlTypeE=ParentElement.Current.LocalizedControlType
                 if NameE == Element_Name and ClassE == Element_Class and AutomationE == Element_AutomationID and LocalizedControlTypeE == Element_LocalizedControlType:
+
                     return ParentElement
         except:
             None
-
+        
         # Name, Class
         try:
-            if Element_Name != None and Element_Class != None and Element_AutomationID == None and Element_LocalizedControlType == None:
+            if Element_Name!= None and Element_Class != None and Element_AutomationID == None and Element_LocalizedControlType==None:
                 NameE = ParentElement.Current.Name
-                ClassE = ParentElement.Current.ClassName
+                ClassE= ParentElement.Current.ClassName
 
-                if NameE == Element_Name and ClassE == Element_Class:
+                if NameE == Element_Name and ClassE == Element_Class :
                     return ParentElement
         except:
             None
+
 
         # Name, AutomationID
         try:
-            if Element_Name != None and Element_Class == None and Element_AutomationID != None and Element_LocalizedControlType == None:
+            if Element_Name!= None and Element_Class == None and Element_AutomationID != None and Element_LocalizedControlType==None:
                 NameE = ParentElement.Current.Name
                 AutomationE = ParentElement.Current.AutomationId
                 if NameE == Element_Name and AutomationE == Element_AutomationID:
                     return ParentElement
         except:
-            None
-
-
-            # Name, LocalizedControlType
+            None        
+        
+        
+        # Name, LocalizedControlType
 
         try:
-            if Element_Name != None and Element_Class == None and Element_AutomationID == None and Element_LocalizedControlType != None:
-
+            if Element_Name!= None and Element_Class == None and Element_AutomationID == None and Element_LocalizedControlType!=None:
+                
                 NameE = ParentElement.Current.Name
-                LocalizedControlTypeE = ParentElement.Current.LocalizedControlType
+                LocalizedControlTypeE=ParentElement.Current.LocalizedControlType
                 if NameE == Element_Name and LocalizedControlTypeE == Element_LocalizedControlType:
                     return ParentElement
         except:
@@ -251,119 +279,125 @@ def _child_search(ParentElement, Element_Name, Element_Class, Element_Automation
 
         # Class, AutomationID, LocalizedControlType
         try:
-            if Element_Name == None and Element_Class != None and Element_AutomationID != None and Element_LocalizedControlType != None:
-                ClassE = ParentElement.Current.ClassName
+            if Element_Name== None and Element_Class != None and Element_AutomationID != None and Element_LocalizedControlType!=None:
+                ClassE= ParentElement.Current.ClassName
                 AutomationE = ParentElement.Current.AutomationId
-                LocalizedControlTypeE = ParentElement.Current.LocalizedControlType
+                LocalizedControlTypeE=ParentElement.Current.LocalizedControlType
                 if ClassE == Element_Class and AutomationE == Element_AutomationID and LocalizedControlTypeE == Element_LocalizedControlType:
                     return ParentElement
         except:
             None
-
+        
         # Class, AutomationID
-
+        
         try:
-            if Element_Name == None and Element_Class != None and Element_AutomationID != None and Element_LocalizedControlType == None:
-                ClassE = ParentElement.Current.ClassName
+            if Element_Name== None and Element_Class != None and Element_AutomationID != None and Element_LocalizedControlType==None:
+                ClassE= ParentElement.Current.ClassName
                 AutomationE = ParentElement.Current.AutomationId
-                if ClassE == Element_Class and AutomationE == Element_AutomationID:
+                if  ClassE == Element_Class and AutomationE == Element_AutomationID :
+
                     return ParentElement
         except:
-            None
-
-            # Class, LocalizedControlType
+            None        
+        
+        # Class, LocalizedControlType
 
         try:
-            if Element_Name == None and Element_Class != None and Element_AutomationID == None and Element_LocalizedControlType != None:
-                ClassE = ParentElement.Current.ClassName
-                LocalizedControlTypeE = ParentElement.Current.LocalizedControlType
+            if Element_Name == None and Element_Class != None and Element_AutomationID == None and Element_LocalizedControlType!=None:
+                ClassE= ParentElement.Current.ClassName
+                LocalizedControlTypeE=ParentElement.Current.LocalizedControlType
                 if ClassE == Element_Class and LocalizedControlTypeE == Element_LocalizedControlType:
                     return ParentElement
         except:
             None
-
+        
         # Class
         try:
-            if Element_Name == None and Element_Class != None and Element_AutomationID == None and Element_LocalizedControlType == None:
+            if Element_Name== None and Element_Class != None and Element_AutomationID == None and Element_LocalizedControlType==None:
                 ClassE = ParentElement.Current.ClassName
                 if ClassE == Element_Class:
+
                     return ParentElement
         except:
             None
-
+        
         # AutomationID, LocalizedControlType
         try:
-            if Element_Name == None and Element_Class == None and Element_AutomationID != None and Element_LocalizedControlType != None:
+            if Element_Name == None and Element_Class == None and Element_AutomationID != None and Element_LocalizedControlType!=None:
                 AutomationE = ParentElement.Current.AutomationId
-                LocalizedControlTypeE = ParentElement.Current.LocalizedControlType
-                if AutomationE == Element_AutomationID and LocalizedControlTypeE == Element_LocalizedControlType:
+                LocalizedControlTypeE=ParentElement.Current.LocalizedControlType
+                if  AutomationE == Element_AutomationID and LocalizedControlTypeE == Element_LocalizedControlType:
+
                     return ParentElement
         except:
-            None
-
-            # AutomationID
+            None        
+        
+        # AutomationID
         try:
-            if Element_Name == None and Element_Class == None and Element_AutomationID != None and Element_LocalizedControlType == None:
+            if Element_Name== None and Element_Class == None and Element_AutomationID != None and Element_LocalizedControlType==None:
                 AutomationE = ParentElement.Current.AutomationId
                 if AutomationE == Element_AutomationID:
+
                     return ParentElement
         except:
             None
-
+        
         # LocalizedControlType
-
+        
         try:
-            if Element_Name == None and Element_Class == None and Element_AutomationID == None and Element_LocalizedControlType != None:
-                LocalizedControlTypeE = ParentElement.Current.LocalizedControlType
+            if Element_Name== None and Element_Class == None and Element_AutomationID == None and Element_LocalizedControlType!=None:
+                LocalizedControlTypeE=ParentElement.Current.LocalizedControlType
                 if LocalizedControlTypeE == Element_LocalizedControlType:
-                    return ParentElement
-        except:
-            None
-            # Name, Class, AutomationID
-        try:
-            if Element_Name != None and Element_Class != None and Element_AutomationID != None and Element_LocalizedControlType == None:
-                NameE = ParentElement.Current.Name
-                ClassE = ParentElement.Current.ClassName
-                AutomationE = ParentElement.Current.AutomationId
-                if NameE == Element_Name and ClassE == Element_Class and AutomationE == Element_AutomationID:
-                    return ParentElement
-        except:
-            None
 
+                    return ParentElement
+        except:
+            None        
+        # Name, Class, AutomationID
+        try:
+            if Element_Name!= None and Element_Class != None and Element_AutomationID != None and Element_LocalizedControlType==None:
+                NameE = ParentElement.Current.Name
+                ClassE= ParentElement.Current.ClassName
+                AutomationE = ParentElement.Current.AutomationId
+                if NameE == Element_Name and ClassE == Element_Class and AutomationE == Element_AutomationID :
+                    return ParentElement
+        except:
+            None
+               
         # Name, Class
         try:
-            if (Element_Name != None) and (Element_Class != None) and (Element_AutomationID == None) and (
-                Element_LocalizedControlType == None):
+            if (Element_Name != None) and (Element_Class != None) and (Element_AutomationID == None) and (Element_LocalizedControlType==None):
                 NameE = ParentElement.Current.Name
-                ClassE = ParentElement.Current.ClassName
+                ClassE= ParentElement.Current.ClassName
                 if NameE == Element_Name and ClassE == Element_Class:
+
                     return ParentElement
         except:
             None
         # Name
         try:
-            if (Element_Name != None) and (Element_Class == None) and (Element_AutomationID == None) and (
-                Element_LocalizedControlType == None):
+            if (Element_Name!= None) and (Element_Class == None) and (Element_AutomationID == None) and (Element_LocalizedControlType==None):
+                
 
                 NameE = ParentElement.Current.Name
-
+                
                 if NameE == Element_Name:
+
                     return ParentElement
         except:
             None
-
+    
         try:
             child_elements = ParentElement.FindAll(TreeScope.Children, Condition.TrueCondition)
-
+            
             if child_elements.Count == 0:
                 return None
-
+            
             for each_child in child_elements:
-                child = _child_search(each_child, Element_Name, Element_Class, Element_AutomationID,
-                                      Element_LocalizedControlType)
+
+                child = _child_search(each_child, Element_Name,Element_Class,Element_AutomationID,Element_LocalizedControlType)
                 if child:
                     return child
-
+            
             return None
         except:
             return None
@@ -371,8 +405,7 @@ def _child_search(ParentElement, Element_Name, Element_Class, Element_Automation
     except Exception, e:
         exc_type, exc_obj, exc_tb = sys.exc_info()
         fname = os.path.split(exc_tb.tb_frame.f_code.co_filename)[1]
-        print ((str(exc_type).replace("type ", "Error Type: ")) + ";" + "Error Message: " + str(
-            exc_obj) + ";" + "File Name: " + fname + ";" + "Line: " + str(exc_tb.tb_lineno))
+        print ((str(exc_type).replace("type ", "Error Type: ")) + ";" +  "Error Message: " + str(exc_obj) +";" + "File Name: " + fname + ";" + "Line: "+ str(exc_tb.tb_lineno))
         return "failed"
 
 def _get_main_window (WindowName):
