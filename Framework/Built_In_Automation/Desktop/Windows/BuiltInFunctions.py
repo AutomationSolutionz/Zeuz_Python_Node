@@ -185,6 +185,8 @@ def get_element(MainWindowName_OR_ParentElement, Element_Name, Element_Class, El
                 start_time = start_time + 1
 
             except:
+                time.sleep(1)
+                start_time = start_time + 1
                 True
         if start_time == max_time:
             print "Unable to find your element"
