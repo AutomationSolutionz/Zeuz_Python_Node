@@ -89,19 +89,12 @@ def Click_Element(data_set):
     try:
         for row in data_set:
             if row[1] == 'element parameter':
-                if str(row[0]).strip().lower() == 'expand' or str(row[0]).strip().lower() == 'invoke' or str(row[0]).strip().lower() == 'select' or str(row[0]).strip().lower() == 'toggle':
-                    value = None
-                    if str(row[2]).strip().lower() == "yes" or str(row[2]).strip().lower() == "true":
-                        value=True
-                    elif str(row[2]).strip().lower() == "no" or str(row[2]).strip().lower() == "false":
-                        value = False
-                    else:
-                        CommonUtil.ExecLog(sModuleInfo,"Element Paramter expand/invoke/select/toggle takes 'true'/'false'/'yes'/'no' as input",3)
-                        return "failed"
-                    if row[0]=="expand": expand=value
-                    if row[0] == "invoke": invoke = value
-                    if row[0] == "select": select = value
-                    if row[0] == "toggle": toggle = value
+                if str(row[2]).strip().lower() == 'expand' or str(row[2]).strip().lower() == 'invoke' or str(row[2]).strip().lower() == 'select' or str(row[2]).strip().lower() == 'toggle':
+                    if str(row[0]).strip().lower() == 'method':
+                        if str(row[2]).strip().lower()=="expand": expand=True
+                        elif str(row[2]).strip().lower() == "invoke": invoke = True
+                        elif str(row[2]).strip().lower() == "select": select = True
+                        elif str(row[2]).strip().lower() == "toggle": toggle = True
 
     except Exception:
         return CommonUtil.Exception_Handler(sys.exc_info(), None, "Error parsing data set")
