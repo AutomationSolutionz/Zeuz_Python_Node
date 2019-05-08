@@ -887,7 +887,7 @@ def cleanup_driver_instances():  # cleans up driver(selenium,appium) instances
 
 def run_test_case(TestCaseID, sModuleInfo, run_id, driver_list, final_dependency, final_run_params, temp_ini_file, is_linked, send_log_file_only_for_fail=True):
     shared.Set_Shared_Variables('run_id', run_id)
-    test_case = TestCaseID[0]
+    test_case = str(TestCaseID[0]).replace('#','no')
     copy_status = False
     CommonUtil.ExecLog(sModuleInfo, "Gathering data for test case %s" % (test_case), 4, False)
     while not copy_status:
