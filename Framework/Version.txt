@@ -1,6 +1,6 @@
 [ZeuZ Python Version]
-version = 7.26
+version = 7.27
 [Release Date]
-date= 2019-05-10
+date= 2019-05-12
 [Release Note]
 Note = Unlock android phone and unlock android app
