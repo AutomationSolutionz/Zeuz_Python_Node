@@ -1,6 +1,6 @@
 [ZeuZ Python Version]
-version = 7.20
+version = 7.26
 [Release Date]
-date= 2019-04-05
+date= 2019-05-10
 [Release Note]
-Note = Randomize List
+Note = Unlock android phone and unlock android app
