@@ -446,6 +446,9 @@ def unlock_android(serial=''):
     sModuleInfo = inspect.stack()[0][3] + " : " + inspect.getmoduleinfo(__file__).name
     try:
         lock_status = ''
+        if serial != '': 
+            serial_with_id = '-s %s' %serial 
+        subprocess.check_output("adb %s shell svc power stayon usb" % (serial_with_id), shell=True)  # Wakeup device
         lock_status = check_if_device_is_unlocked(serial='')
         if lock_status == True:
             CommonUtil.ExecLog(sModuleInfo,"Device is already unlocked. No action is needed",1)
@@ -459,11 +462,10 @@ def unlock_android(serial=''):
         password = sr.Get_Shared_Variables('device_password')  # Read device password from shared variables
         # Unlock phone
         
-        if serial != '': 
-            serial_with_id = '-s %s' %serial 
+
         CommonUtil.ExecLog(sModuleInfo,"Attempting to unlock using adb",1)    
         subprocess.check_output("adb %s shell svc power stayon usb" % (serial_with_id), shell=True)  # Wakeup device
-        
+        time.sleep(0.5)
         subprocess.check_output("adb %s shell input keyevent 82" % (serial_with_id), shell=True)  # Wakeup device
         time.sleep(0.5)
         subprocess.check_output("adb %s shell input keyevent 82" % (serial_with_id), shell=True)  # Wakeup device
@@ -540,52 +542,27 @@ def Enter_Password_UIAutomator(password, serial=''):
         return CommonUtil.Exception_Handler(sys.exc_info(), None, errMsg)
  
     
-def unlock_android_app(string_to_search, serial=''):
+def unlock_android_app(serial=''):
     ''' Attempt to enter password for locked app.  It is up to the user to put proper logic to figure out if the app is password protected.  
     We will assume user have already checked that'''
     
 
     sModuleInfo = inspect.stack()[0][3] + " : " + inspect.getmoduleinfo(__file__).name
     try:
-
-        
         # Get password
         if sr.Test_Shared_Variables('device_password') == False:  # Make sure user stored password in shared variables
             CommonUtil.ExecLog(sModuleInfo,"Can't unlock phone - no password specified.",3)
             return 'failed'
         password = sr.Get_Shared_Variables('device_password')  # Read device password from shared variables
-
+        if serial != '': serial = '-s %s' % serial  # Prepare serial number with command line switch
         # Unlock app
-
-        x = 0 
-        output = False
-        if serial != '': 
-            serial = '-s %s' %serial 
-        while x != 3:
-            try:
-                x = x+1
-                subprocess.check_output("adb %s shell input keyevent 82" % (serial), shell=True) #wakeup device
-                output = subprocess.check_output("adb %s exec-out uiautomator dump /dev/tty " % serial,shell=True)  # output uiautomator screen layout
-                break
-            except:
-                time.sleep(3)#some times the uiautomator is known to fail to dump.  So we will try 3 times and sleep 3 sec in between.
-                True
-        if output != False:
-            if string_to_search in output.lower():
-                # Unlock phone
-                subprocess.check_output("adb %s shell input keyevent 82" % (serial), shell=True)  # Wakeup device
-                time.sleep(1)
-                CommonUtil.ExecLog(sModuleInfo, "Serial number of the device used - %s" % serial, 1)
-                subprocess.check_output("adb %s shell input text %s" % (serial, password), shell=True)  # Enter password
-                time.sleep(0.5)
-                subprocess.check_output("adb %s shell input keyevent KEYCODE_ENTER" % serial, shell=True)  # Press ENTER key
-                time.sleep(2)  # Give time for foreground to switch and unlock to complete
-
-        else:
-            CommonUtil.ExecLog(sModuleInfo,"Can't unlock your Application.  We could not get uiatomator to produce the current device screen layout.  Try to run manually - adb exec-out uiautomator dump /dev/tty ",3)
-            return 'failed'            
-
-
+        subprocess.check_output("adb %s shell input keyevent 82" % (serial), shell=True)  # Wakeup device
+        time.sleep(1)
+        CommonUtil.ExecLog(sModuleInfo, "Serial number of the device used - %s" % serial, 1)
+        subprocess.check_output("adb %s shell input text %s" % (serial, password), shell=True)  # Enter password
+        time.sleep(0.5)
+        subprocess.check_output("adb %s shell input keyevent KEYCODE_ENTER" % serial, shell=True)  # Press ENTER key
+        time.sleep(2)  # Give time for foreground to switch and unlock to complete
     except Exception:
         errMsg = "Unable to unlock app"
         return CommonUtil.Exception_Handler(sys.exc_info(), None, errMsg)
@@ -602,7 +579,7 @@ def check_if_device_is_unlocked(serial=''):
         if len(matched_lines)!= 0:
             # as far as I have tested when device is locked, that is only time when we get StatusBar.  If
             #it fails for some reason, we should switch to the method of unlock_device_app way.
-            if "StatusBar" in matched_lines[0]:
+            if "StatusBar" in matched_lines[0] or "Bouncer" in matched_lines[0] or "AOD" in matched_lines[0] :
                 CommonUtil.ExecLog(sModuleInfo,"Device is currently locked. We will proceed with unlock ",2)
    
                 return False

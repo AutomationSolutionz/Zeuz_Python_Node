@@ -327,27 +327,19 @@ def unlock_android_app(data_set):
     try:
         serial = ''  # Serial number (may also be random string like "launch", "na", etc)
         password = ''
-        string_to_search=False
 
 
         for row in data_set:  # Find required data
             if str(row[1]).strip().lower() == 'action':
                 password = str(row[2]).lower().strip()
-            elif str(row[1]).strip().lower() == 'element parameter':
-                string_to_search = str(row[2]).lower().strip()
         
         
-        #check if strings were provided
-        if string_to_search==False: 
-            CommonUtil.ExecLog(sModuleInfo, "You did not provide any string to search for us to identify the page.  Please see description for this action for additional help", 3)
-            return 'failed'
-             
         # Set the global variable for the preferred connected device
         if find_correct_device_on_first_run(serial, device_info) in failed_tag_list: return 'failed'
 
         if appium_details[device_id]['type'] == 'android':
             Shared_Resources.Set_Shared_Variables('device_password',password)
-            result = adbOptions.unlock_android_app(string_to_search, device_serial)
+            result = adbOptions.unlock_android_app(device_serial)
             if result in failed_tag_list:
                 CommonUtil.ExecLog(sModuleInfo, "Couldn't unlock your app", 3)
                 return 'failed'
