@@ -834,6 +834,59 @@ def Swipe(x_start, y_start, x_end, y_end, duration = 1000, adb = False):
         errMsg = "Unable to swipe."
         return CommonUtil.Exception_Handler(sys.exc_info(),None,errMsg)
 
+def swipe_to_an_element(data_set):
+    sModuleInfo = inspect.stack()[0][3] + " : " + inspect.getmoduleinfo(__file__).name
+    try:
+        text = ''
+        parent_id = ''
+        description = ''
+        index = ''
+        horizontal_scrolling = False
+        try:
+            for each in data_set:
+                if str(each[0]).strip().lower() == "text":
+                    text = str(each[2]).strip()
+                elif str(each[0]).strip().lower() == "parent id":
+                    parent_id = str(each[2]).strip()
+                elif str(each[0]).strip().lower() == "description":
+                    description = str(each[2]).strip()
+                elif str(each[0]).strip().lower() == "index":
+                    index = str(each[2]).strip()
+                elif str(each[0]).strip().lower() == "horizontal scrolling" and str(each[2]).strip().lower() in ('yes','true'):
+                    horizontal_scrolling = True
+        except:
+            errMsg = "Error while looking for action line"
+            return CommonUtil.Exception_Handler(sys.exc_info(), None, errMsg)
+
+        parent_string = 'new UiScrollable(new UiSelector().scrollable(true).instance(0))'
+        horizontal_string = ''
+        child_string = ''
+        index_string = 'instance(0)'
+
+        if parent_id != '':
+            parent_string = 'new UiScrollable(new UiSelector().resourceId(\"%s\"))'%parent_id
+
+        if horizontal_scrolling:
+            horizontal_string = 'setAsHorizontalList().'
+
+        if text != '':
+            child_string = 'scrollIntoView(new UiSelector().textContains(\"%s\")'%text
+        elif description != '':
+            child_string = 'scrollIntoView(new UiSelector().description(\"%s\")' % description
+
+        if index != '':
+            index_string = 'instance(%s)'%index
+
+        final_search_string = '%s.%s%s.%s)'%(parent_string, horizontal_string, child_string, index_string)
+        appium_driver.find_element_by_android_uiautomator(final_search_string)
+
+        CommonUtil.ExecLog(sModuleInfo,"Swiped to the element successfully",1)
+
+        return "passed"
+    except:
+        errMsg = "Unable to swipe."
+        return CommonUtil.Exception_Handler(sys.exc_info(), None, errMsg)
+
 
 def swipe_handler_wrapper(data_set):
     try:
