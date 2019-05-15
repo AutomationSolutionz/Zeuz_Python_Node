@@ -844,7 +844,7 @@ def swipe_in_direction(data_set):
         direction = 'scrollForward()'
         try:
             for each in data_set:
-                if str(each[0]).strip().lower() == "id":
+                if str(each[0]).strip().lower() == "resource-id":
                     id = str(each[2]).strip()
                 elif str(each[0]).strip().lower() == "class":
                     class_name = str(each[2]).strip()
