@@ -878,8 +878,10 @@ def swipe_in_direction(data_set):
             index_string = '.instance(%s))'%index
 
         final_search_string = '%s.%s%s.%s%s)'%(parent_string, child_string, index_string, horizontal_string, direction)
-        appium_driver.find_element_by_android_uiautomator(final_search_string)
-
+        try:
+            appium_driver.find_element_by_android_uiautomator(final_search_string)
+        except:
+            pass
         CommonUtil.ExecLog(sModuleInfo,"Swiped to the element successfully",1)
 
         return "passed"
