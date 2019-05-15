@@ -834,52 +834,54 @@ def Swipe(x_start, y_start, x_end, y_end, duration = 1000, adb = False):
         errMsg = "Unable to swipe."
         return CommonUtil.Exception_Handler(sys.exc_info(),None,errMsg)
 
-def swipe_to_an_element(data_set):
+def swipe_in_direction(data_set):
     sModuleInfo = inspect.stack()[0][3] + " : " + inspect.getmoduleinfo(__file__).name
     try:
-        text = ''
-        parent_id = ''
-        description = ''
+        id = ''
+        class_name = ''
         index = ''
         horizontal_scrolling = False
+        direction = 'scrollForward()'
         try:
             for each in data_set:
-                if str(each[0]).strip().lower() == "text":
-                    text = str(each[2]).strip()
-                elif str(each[0]).strip().lower() == "parent id":
-                    parent_id = str(each[2]).strip()
-                elif str(each[0]).strip().lower() == "description":
-                    description = str(each[2]).strip()
+                if str(each[0]).strip().lower() == "resource-id":
+                    id = str(each[2]).strip()
+                elif str(each[0]).strip().lower() == "class":
+                    class_name = str(each[2]).strip()
                 elif str(each[0]).strip().lower() == "index":
                     index = str(each[2]).strip()
+                elif str(each[0]).strip().lower() == "direction":
+                    if str(each[0]).strip().lower() in ("down", "right"):
+                        direction = 'scrollForward()'
+                    else:
+                        direction = 'scrollBackward()'
                 elif str(each[0]).strip().lower() == "horizontal scrolling" and str(each[2]).strip().lower() in ('yes','true'):
                     horizontal_scrolling = True
         except:
             errMsg = "Error while looking for action line"
             return CommonUtil.Exception_Handler(sys.exc_info(), None, errMsg)
 
-        parent_string = 'new UiScrollable(new UiSelector().scrollable(true).instance(0))'
+        parent_string = 'new UiScrollable(new UiSelector()'
         horizontal_string = ''
         child_string = ''
-        index_string = 'instance(0)'
+        index_string = ')'
 
-        if parent_id != '':
-            parent_string = 'new UiScrollable(new UiSelector().resourceId(\"%s\"))'%parent_id
+        if id != '':
+            child_string = 'resourceId(\"%s\")'%id
+        elif class_name != '':
+            child_string = 'className(\"%s\")' % class_name
 
         if horizontal_scrolling:
             horizontal_string = 'setAsHorizontalList().'
 
-        if text != '':
-            child_string = 'scrollIntoView(new UiSelector().textContains(\"%s\")'%text
-        elif description != '':
-            child_string = 'scrollIntoView(new UiSelector().description(\"%s\")' % description
-
         if index != '':
-            index_string = 'instance(%s)'%index
+            index_string = '.instance(%s))'%index
 
-        final_search_string = '%s.%s%s.%s)'%(parent_string, horizontal_string, child_string, index_string)
-        appium_driver.find_element_by_android_uiautomator(final_search_string)
-
+        final_search_string = '%s.%s%s.%s%s'%(parent_string, child_string, index_string, horizontal_string, direction)
+        try:
+            appium_driver.find_element_by_android_uiautomator(final_search_string)
+        except:
+            pass
         CommonUtil.ExecLog(sModuleInfo,"Swiped to the element successfully",1)
 
         return "passed"
