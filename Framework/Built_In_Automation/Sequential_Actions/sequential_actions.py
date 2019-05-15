@@ -82,7 +82,7 @@ actions = { # Numbers are arbitrary, and are not used anywhere
     233: {'module': 'appium', 'name': 'pickerwheel', 'function': 'Pickerwheel_Appium'},
     234: {'module': 'appium', 'name': 'unlock android device', 'function': 'unlock_android_device'},
     235: {'module': 'appium', 'name': 'unlock android app', 'function': 'unlock_android_app'},
-    236: {'module': 'appium', 'name': 'swipe to element', 'function': 'swipe_to_an_element'},
+    236: {'module': 'appium', 'name': 'swipe in direction', 'function': 'swipe_in_direction'},
     
     300: {'module': 'rest', 'name': 'save response', 'function': 'Get_Response_Wrapper'},
     301: {'module': 'rest', 'name': 'search response', 'function': 'Search_Response'},
@@ -564,6 +564,7 @@ def Loop_Action_Handler(data, row, dataset_cnt):
         result = True
         nested_loop = False
         nested_double = False
+        max_retry = 50  # wil search for any elemnt this amount of time in while loop
         ### Create sub-set of step data that we will send to SA for processing
         try:
             if str(row[2]).strip().startswith('nested'):
@@ -630,12 +631,22 @@ def Loop_Action_Handler(data, row, dataset_cnt):
                         true_or_false = str(row[0]).lower().strip()  # Number of times to loop
                         loop_type = ''  # Must be blank
                         action_result = ''  # Not used
-                        if true_or_false == 'true':
+                        if true_or_false.startswith('true'):
                             loop_method = 'boolean'
                             loop_bool = True
-                        elif true_or_false == 'false':
+                            try:
+                                if '-' in true_or_false:
+                                    max_retry = int(true_or_false.split('-')[1].strip())
+                            except:
+                                pass
+                        elif true_or_false.startswith('false'):
                             loop_method = 'boolean'
                             loop_bool = False
+                            try:
+                                if '-' in true_or_false:
+                                    max_retry = int(true_or_false.split('-')[1].strip())
+                            except:
+                                pass
                         else:
                             CommonUtil.ExecLog(sModuleInfo,"Could not find a valid loop format in the Field field. Valid formats: 'true/false number', 'number', 'shared variable name'",3)
                             return 'failed',skip
@@ -655,7 +666,6 @@ def Loop_Action_Handler(data, row, dataset_cnt):
         ### Send sub-set to SA until we get our desired value or number of loops
         sub_set_cnt = 1 # Used in counting number of loops
         die = False # Used to exit parent while loop
-        max_retry = 50 #wil search for any elemnt this amount of time in while loop
 
         global load_testing
         load_testing = False
@@ -849,7 +859,8 @@ def Loop_Action_Handler(data, row, dataset_cnt):
                     if loop_bool == True and not combined_result:
                         die = True
                         break
-                    elif loop_bool == False and combined_result:
+
+                    if ndc == len(new_step_data)-1 and loop_bool == False and combined_result:
                         die = True
                         break
 
