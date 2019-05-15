@@ -860,8 +860,9 @@ def Loop_Action_Handler(data, row, dataset_cnt):
                         die = True
                         break
 
-                if loop_bool == False and combined_result:
-                    break
+                    if ndc == len(new_step_data)-1 and loop_bool == False and combined_result:
+                        die = True
+                        break
 
                 if die: break
 
