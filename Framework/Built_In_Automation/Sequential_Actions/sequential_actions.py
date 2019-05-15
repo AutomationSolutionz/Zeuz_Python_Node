@@ -859,9 +859,9 @@ def Loop_Action_Handler(data, row, dataset_cnt):
                     if loop_bool == True and not combined_result:
                         die = True
                         break
-                    elif loop_bool == False and combined_result:
-                        die = True
-                        break
+
+                if loop_bool == False and combined_result:
+                    break
 
                 if die: break
 
