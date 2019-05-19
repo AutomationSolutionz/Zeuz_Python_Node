@@ -83,6 +83,7 @@ actions = { # Numbers are arbitrary, and are not used anywhere
     234: {'module': 'appium', 'name': 'unlock android device', 'function': 'unlock_android_device'},
     235: {'module': 'appium', 'name': 'unlock android app', 'function': 'unlock_android_app'},
     236: {'module': 'appium', 'name': 'swipe in direction', 'function': 'swipe_in_direction'},
+    237: {'module': 'appium', 'name': 'if element exists', 'function': 'if_element_exists'},
     
     300: {'module': 'rest', 'name': 'save response', 'function': 'Get_Response_Wrapper'},
     301: {'module': 'rest', 'name': 'search response', 'function': 'Search_Response'},
@@ -125,6 +126,7 @@ actions = { # Numbers are arbitrary, and are not used anywhere
     434: {'module': 'selenium', 'name': 'upload file', 'function': 'upload_file'},
     435: {'module': 'selenium', 'name': 'drag and drop', 'function': 'drag_and_drop'},
     436: {'module': 'selenium', 'name': 'scroll to element', 'function': 'scroll_to_element'},
+    437: {'module': 'selenium', 'name': 'if element exists', 'function': 'if_element_exists'},
     
     500: {'module': 'utility', 'name': 'math', 'function': 'Calculate'},
     501: {'module': 'utility', 'name': 'upload', 'function': 'Upload'},
@@ -1126,4 +1128,5 @@ def Action_Handler(_data_set, action_row):
 
     except Exception:
         return CommonUtil.Exception_Handler(sys.exc_info())
+
 
