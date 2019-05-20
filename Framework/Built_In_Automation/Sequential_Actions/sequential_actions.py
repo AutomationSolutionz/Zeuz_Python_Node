@@ -201,7 +201,6 @@ actions = { # Numbers are arbitrary, and are not used anywhere
 action_support = [
     'action',
     'optional action',
-    'conditional action',
     'loop action',
     'element parameter',
     'child parameter',
@@ -378,8 +377,56 @@ def Sequential_Actions(step_data, _dependency = {}, _run_time_params = {}, _file
 
     return result
 
+
+def get_data_set_nums(action_value):
+    try:
+        data_set_nums=[]
+        splitted = str(action_value).split(",")
+        for each in splitted:
+            data_set_nums.append(int(str(each).split("#")[1].strip()) - 1)
+
+        return data_set_nums
+    except:
+        return []
+
+
+def Handle_Conditional_Action(step_data, data_set_no):
+    sModuleInfo = inspect.stack()[0][3] + " : " + inspect.getmoduleinfo(__file__).name
+    try:
+        data_set = step_data[data_set_no]
+        next_level_step_data=[]
+        skip = []
+        data_set = common.shared_variable_to_value(data_set)
+        if data_set in failed_tag_list:
+            return 'failed'
+
+        for row in data_set:
+            condition = str(row[0]).strip().lower()
+            if condition.count("true") == 2 or condition.count("false") == 2: #Will be positive for the satisfying condition true == true or false == false
+                next_level_step_data = get_data_set_nums(str(row[2]).strip())
+                skip+=next_level_step_data
+            else:
+                skip+=get_data_set_nums(str(row[2]).strip())
+
+        if next_level_step_data == []:
+            CommonUtil.ExecLog(sModuleInfo, "Conditional action step data is invalid, please see action help for more info", 3)
+            return "failed"
+
+        for data_set_index in next_level_step_data:
+            result, skip_for_loop = Run_Sequential_Actions([data_set_index])  # new edit: full step data is passed. [step_data[data_set_index]]) # Recursively call this function until all called data sets are complete
+            if result in failed_tag_list:
+                return result, list(set(skip+skip_for_loop))
+            skip = list(set(skip+skip_for_loop))
+
+        CommonUtil.ExecLog(sModuleInfo, "Conditional action handled successfully", 1)
+        return "passed", skip
+    except:
+        CommonUtil.ExecLog(sModuleInfo, "Error while handling conditional action",3)
+        return "failed",[]
+
+
 def Run_Sequential_Actions(data_set_list=[]): #data_set_no will used in recursive conditional action call
-    
+
     sModuleInfo = inspect.stack()[0][3] + " : " + inspect.getmoduleinfo(__file__).name
     try:
         result = 'failed' # Initialize result
@@ -433,22 +480,12 @@ def Run_Sequential_Actions(data_set_list=[]): #data_set_no will used in recursiv
                     
                 # If middle column = conditional action, evaluate data set
                 elif "conditional action" in action_name:
-                    CommonUtil.ExecLog(sModuleInfo, "Checking the logical conditional action to be performed in the conditional action row: %s" % str(row), 0)
-                    logic_row.append(row) # Keep track of the conditional action row, so we can access it later
-                    [skip_tmp.append(int(x) - 1) for x in row[2].replace(' ', '').split(',')] # Add the processed data sets, executed by the conditional action to the skip list, so we can process the rest of the data sets (do this for both conditional actions)
-                    
-                    # Only run this when we have two conditional actions for this data set (a true and a false preferably)
-                    if len(logic_row) == 2:
-                        CommonUtil.ExecLog(sModuleInfo, "Found 2 conditional actions - moving ahead with them", 1)
-                        result = Conditional_Action_Handler(data_set, row, logic_row) # send full data for recursive conditional call
-
-                        CommonUtil.ExecLog(sModuleInfo, "Conditional Actions complete", 1)
-                        if result in failed_tag_list:
-                            CommonUtil.ExecLog(sModuleInfo, "Returned result from Conditional Action Failed", 3)
-                            return result,skip_for_loop
-                        logic_row = [] # Unset this, so if there is another conditional action in the test step, we can process it
-                        skip = skip_tmp # Add to the skip list, now that processing is complete
-                        skip_tmp = []
+                    result, to_skip = Handle_Conditional_Action(step_data, dataset_cnt)
+                    skip += to_skip
+                    if result in failed_tag_list:
+                        CommonUtil.ExecLog(sModuleInfo, "Returned result from Conditional Action Failed", 3)
+                        return result, skip_for_loop
+                    break
                 
                 # Simulate a while/for loop with the specified data sets
                 elif 'loop action' in action_name:
@@ -1059,6 +1096,8 @@ def Action_Handler(_data_set, action_row):
     sModuleInfo = inspect.stack()[0][3] + " : " + inspect.getmoduleinfo(__file__).name
     CommonUtil.ExecLog(sModuleInfo,"Function Start", 0)
 
+    skip_conversion_of_shared_variable_for_actions = ['if element exists']
+
     # Split data set row into the usable parts
     action_name = action_row[0]
     action_subfield = action_row[1]
@@ -1110,9 +1149,10 @@ def Action_Handler(_data_set, action_row):
         data_set.append(tuple(new_row))
 
     # Convert shared variables to their string equivelent
-    data_set = common.shared_variable_to_value(data_set)
-    if data_set in failed_tag_list:
-        return 'failed'
+    if action_name not in skip_conversion_of_shared_variable_for_actions:
+        data_set = common.shared_variable_to_value(data_set)
+        if data_set in failed_tag_list:
+            return 'failed'
 
     # Execute the action's function
     try:
@@ -1128,5 +1168,4 @@ def Action_Handler(_data_set, action_row):
 
     except Exception:
         return CommonUtil.Exception_Handler(sys.exc_info())
-
 

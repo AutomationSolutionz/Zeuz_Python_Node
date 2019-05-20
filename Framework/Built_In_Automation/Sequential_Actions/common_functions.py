@@ -138,7 +138,7 @@ def verify_step_data(step_data):
                 # Make sure Sub-Field has a module name
                 if 'action' in row[1]: # Only apply to actions rows
                     action = True
-                    if 'custom' in row[1]: continue # Skip custom actions - they do not require a module
+                    if 'custom' in row[1] or 'conditional' in row[1]: continue # Skip custom actions - they do not require a module
                     for action_index in actions:
                         if actions[action_index]['module'] in row[1]: # If one of the modules is in the Sub-Field
                             module_name = actions[action_index]['module'] # Save this for the "Field" check below

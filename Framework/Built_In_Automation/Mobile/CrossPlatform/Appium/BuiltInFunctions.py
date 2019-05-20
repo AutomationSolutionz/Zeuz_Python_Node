@@ -2161,6 +2161,7 @@ def if_element_exists(data_set):
                     CommonUtil.ExecLog(sModuleInfo,"Data should be like variable_name=boolean (for example: abc=True, Here abc is the variable name and True is the boolean value)",3)
                     return "failed"
                 variable_name = str(splitted[0]).strip()
+                variable_name = variable_name.split('%|')[1].split('|%')[0]
                 boolean = str(splitted[1]).strip().lower()
 
         if variable_name == '':
@@ -2169,9 +2170,9 @@ def if_element_exists(data_set):
 
         Element = LocateElement.Get_Element(data_set, appium_driver)
         if Element in failed_tag_list:
-            Shared_Resources.Set_Shared_Variables(variable_name, not boolean)
+            Shared_Resources.Set_Shared_Variables(variable_name, str(not boolean))
         else:
-            Shared_Resources.Set_Shared_Variables(variable_name, boolean)
+            Shared_Resources.Set_Shared_Variables(variable_name, str(boolean))
         return "passed"
     except Exception:
         errMsg = "Could not find your element."
