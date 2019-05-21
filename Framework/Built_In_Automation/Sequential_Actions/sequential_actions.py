@@ -383,11 +383,50 @@ def get_data_set_nums(action_value):
         data_set_nums=[]
         splitted = str(action_value).split(",")
         for each in splitted:
-            data_set_nums.append(int(str(each).split("#")[1].strip()) - 1)
-
+            try:
+                data_set_nums.append(int(str(each).split("#")[1].strip()) - 1)
+            except:
+                pass
         return data_set_nums
     except:
         return []
+
+
+def get_data_set_nums_for_loop(action_value):
+    try:
+        passing_data_sets=[]
+        failing_data_sets=[]
+
+        splitted=action_value.split(":")
+
+        i=1
+        while i<len(splitted):
+            if str(splitted[i]).strip().startswith("pass"):
+                passing_data_sets=get_data_set_nums(splitted[i-1])
+            elif str(splitted[i]).strip().startswith("fail"):
+                failing_data_sets=get_data_set_nums(splitted[i-1])
+            i+=1
+
+        return passing_data_sets, failing_data_sets
+    except:
+        return [],[]
+
+def should_loop_terminate(loop_results, passing_data_sets, failing_data_sets):
+    try:
+        for each in passing_data_sets:
+            if each in loop_results:
+                if loop_results[each] in failed_tag_list:
+                    return False
+
+        for each in failing_data_sets:
+            if each in loop_results:
+                if loop_results[each] in passed_tag_list:
+                    return False
+
+        return True
+    except:
+        return False
+
 
 
 def Handle_Conditional_Action(step_data, data_set_no):
@@ -410,7 +449,7 @@ def Handle_Conditional_Action(step_data, data_set_no):
 
         if next_level_step_data == []:
             CommonUtil.ExecLog(sModuleInfo, "Conditional action step data is invalid, please see action help for more info", 3)
-            return "failed"
+            return "failed",[]
 
         for data_set_index in next_level_step_data:
             result, skip_for_loop = Run_Sequential_Actions([data_set_index])  # new edit: full step data is passed. [step_data[data_set_index]]) # Recursively call this function until all called data sets are complete
@@ -422,6 +461,54 @@ def Handle_Conditional_Action(step_data, data_set_no):
         return "passed", skip
     except:
         CommonUtil.ExecLog(sModuleInfo, "Error while handling conditional action",3)
+        return "failed",[]
+
+
+def Handle_While_Loop_Action(step_data, data_set_no):
+    sModuleInfo = inspect.stack()[0][3] + " : " + inspect.getmoduleinfo(__file__).name
+    try:
+        data_set = step_data[data_set_no]
+        loop_this_data_sets=[]
+        passing_data_sets=[]
+        failing_data_sets = []
+        skip = []
+        max_no_of_loop = 1
+        data_set = common.shared_variable_to_value(data_set)
+        if data_set in failed_tag_list:
+            return 'failed',[]
+
+        for row in data_set:
+            if str(row[0]).strip().lower() == 'loop below actions':
+                loop_this_data_sets = get_data_set_nums(str(row[2]).strip())
+                skip += get_data_set_nums(str(row[2]).strip())
+            elif str(row[0]).strip().lower() == 'maximum number of loop':
+                max_no_of_loop = int(str(row[2]).strip())
+            elif str(row[0]).strip().lower() == 'loop exit when':
+                passing_data_sets, failing_data_sets = get_data_set_nums_for_loop(str(row[2]).lower().strip())
+
+
+        if loop_this_data_sets == []:
+            CommonUtil.ExecLog(sModuleInfo, "Loop action step data is invalid, please see action help for more info", 3)
+            return "failed",[]
+
+        i=0
+        while i<max_no_of_loop:
+            loop_results={}
+            for data_set_index in loop_this_data_sets:
+                result, skip_for_loop = Run_Sequential_Actions([data_set_index])  # new edit: full step data is passed. [step_data[data_set_index]]) # Recursively call this function until all called data sets are complete
+                loop_results[data_set_index]=result
+                skip = list(set(skip+skip_for_loop))
+
+            if should_loop_terminate(loop_results, passing_data_sets, failing_data_sets):
+                CommonUtil.ExecLog(sModuleInfo, "Loop exit condition satisfied. Exiting loop", 1)
+                break
+
+            i+=1
+
+        CommonUtil.ExecLog(sModuleInfo, "Loop action handled successfully", 1)
+        return "passed", skip
+    except:
+        CommonUtil.ExecLog(sModuleInfo, "Error while handling loop action",3)
         return "failed",[]
 
 
@@ -489,9 +576,11 @@ def Run_Sequential_Actions(data_set_list=[]): #data_set_no will used in recursiv
                 
                 # Simulate a while/for loop with the specified data sets
                 elif 'loop action' in action_name:
-                    result, skip_for_loop = Loop_Action_Handler(data_set, row, dataset_cnt)
-                    skip=skip_for_loop
+                    if 'while' in action_name.lower():
+                        result, skip_for_loop = Handle_While_Loop_Action(step_data, dataset_cnt)
+                    skip=list(set(skip+skip_for_loop))
                     if result in failed_tag_list: return 'failed',skip_for_loop
+                    break
                     
                 # Special custom functions can be executed in a specified file
                 elif "custom" in action_name:
@@ -1168,4 +1257,5 @@ def Action_Handler(_data_set, action_row):
 
     except Exception:
         return CommonUtil.Exception_Handler(sys.exc_info())
+
 
