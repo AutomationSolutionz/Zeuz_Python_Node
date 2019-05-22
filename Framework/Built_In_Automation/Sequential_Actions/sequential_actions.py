@@ -567,20 +567,45 @@ def Run_Sequential_Actions(data_set_list=[]): #data_set_no will used in recursiv
                     
                 # If middle column = conditional action, evaluate data set
                 elif "conditional action" in action_name:
-                    result, to_skip = Handle_Conditional_Action(step_data, dataset_cnt)
-                    skip += to_skip
-                    if result in failed_tag_list:
-                        CommonUtil.ExecLog(sModuleInfo, "Returned result from Conditional Action Failed", 3)
-                        return result, skip_for_loop
-                    break
+                    if action_name.lower().strip() != 'conditional action': #old style conditional action
+                        CommonUtil.ExecLog(sModuleInfo,"Old style conditional action found. This will not be supported in 2020, please replace them with new conditional actions", 2)
+                        CommonUtil.ExecLog(sModuleInfo, "Checking the logical conditional action to be performed in the conditional action row: %s" % str(row), 0)
+                        logic_row.append(row) # Keep track of the conditional action row, so we can access it later
+                        [skip_tmp.append(int(x) - 1) for x in row[2].replace(' ', '').split(',')] # Add the processed data sets, executed by the conditional action to the skip list, so we can process the rest of the data sets (do this for both conditional actions)
+
+                        # Only run this when we have two conditional actions for this data set (a true and a false preferably)
+                        if len(logic_row) == 2:
+                            CommonUtil.ExecLog(sModuleInfo, "Found 2 conditional actions - moving ahead with them", 1)
+                            result = Conditional_Action_Handler(data_set, row, logic_row) # send full data for recursive conditional call
+
+                            CommonUtil.ExecLog(sModuleInfo, "Conditional Actions complete", 1)
+                            if result in failed_tag_list:
+                                CommonUtil.ExecLog(sModuleInfo, "Returned result from Conditional Action Failed", 3)
+                                return result,skip_for_loop
+                            logic_row = [] # Unset this, so if there is another conditional action in the test step, we can process it
+                            skip = skip_tmp # Add to the skip list, now that processing is complete
+                            skip_tmp = []
+                    else:
+                        result, to_skip = Handle_Conditional_Action(step_data, dataset_cnt)
+                        skip += to_skip
+                        if result in failed_tag_list:
+                            CommonUtil.ExecLog(sModuleInfo, "Returned result from Conditional Action Failed", 3)
+                            return result, skip_for_loop
+                        break
                 
                 # Simulate a while/for loop with the specified data sets
                 elif 'loop action' in action_name:
-                    if 'while' in action_name.lower():
-                        result, skip_for_loop = Handle_While_Loop_Action(step_data, dataset_cnt)
-                    skip=list(set(skip+skip_for_loop))
-                    if result in failed_tag_list: return 'failed',skip_for_loop
-                    break
+                    if action_name.lower().strip() not in ('while loop action','for loop action'): #old style loop action
+                        CommonUtil.ExecLog(sModuleInfo,"Old style loop action found. This will not be supported in 2020, please replace them with new loop actions",2)
+                        result, skip_for_loop = Loop_Action_Handler(data_set, row, dataset_cnt)
+                        skip = skip_for_loop
+                        if result in failed_tag_list: return 'failed', skip_for_loop
+                    else:
+                        if 'while' in action_name.lower():
+                            result, skip_for_loop = Handle_While_Loop_Action(step_data, dataset_cnt)
+                        skip=list(set(skip+skip_for_loop))
+                        if result in failed_tag_list: return 'failed',skip_for_loop
+                        break
                     
                 # Special custom functions can be executed in a specified file
                 elif "custom" in action_name:
@@ -1257,5 +1282,4 @@ def Action_Handler(_data_set, action_row):
 
     except Exception:
         return CommonUtil.Exception_Handler(sys.exc_info())
-
 
