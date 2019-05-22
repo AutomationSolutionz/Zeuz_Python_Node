@@ -223,7 +223,8 @@ action_support = [
     'custom action',
     'unique parameter',
     'save parameter',
-    'get parameter'
+    'get parameter',
+    'loop settings'
 ]
 
 # List of supported mobile platforms - must be lower case
@@ -397,15 +398,13 @@ def get_data_set_nums_for_loop(action_value):
         passing_data_sets=[]
         failing_data_sets=[]
 
-        splitted=action_value.split(":")
+        splitted=action_value.split(";")
 
-        i=1
-        while i<len(splitted):
-            if str(splitted[i]).strip().startswith("pass"):
-                passing_data_sets=get_data_set_nums(splitted[i-1])
-            elif str(splitted[i]).strip().startswith("fail"):
-                failing_data_sets=get_data_set_nums(splitted[i-1])
-            i+=1
+        for each in splitted:
+            if str(each).strip().startswith("pass"):
+                passing_data_sets=get_data_set_nums(each.split(":")[1])
+            elif str(each).strip().startswith("fail"):
+                failing_data_sets=get_data_set_nums(each.split(":")[1])
 
         return passing_data_sets, failing_data_sets
     except:
@@ -546,7 +545,7 @@ def Run_Sequential_Actions(data_set_list=[]): #data_set_no will used in recursiv
                 action_name = row[1] # Get Sub-Field
                 
                 # Don't process these suport items right now, but also don't fail
-                if action_name in action_support and 'custom' not in action_name:
+                if action_name.lower().strip() in action_support and 'custom' not in action_name:
                     continue
 
                 # If middle coloumn = bypass action, store the data set for later use if needed

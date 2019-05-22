@@ -130,7 +130,7 @@ def verify_step_data(step_data):
                 elif len(row[1]) == 0:
                     CommonUtil.ExecLog(sModuleInfo, "Sub-Field for data set %d cannot empty: %s" % (data_set_index, str(row)), 3)
                     return 'failed'
-                elif row[1] not in action_support: # Check against list of allowed Sub-Fields
+                elif str(row[1]).lower().strip() not in action_support: # Check against list of allowed Sub-Fields
                     if 'action' not in row[1]: #!!! Temporary until module handling is all moved into it's own function
                         CommonUtil.ExecLog(sModuleInfo, "Sub-Field for data set %d contains invalid data: %s" % (data_set_index, str(row)), 3)
                         return 'failed'
