@@ -40,6 +40,10 @@ unmask_characters={
     '{{9}}':'|'
 }
 
+programming_logic_keywords=[
+    "if else", "while loop", "for loop"
+]
+
 def unmask_string(givenText):
     for e in unmask_characters.keys():
         givenText=givenText.replace(e,unmask_characters[e])
@@ -131,7 +135,7 @@ def verify_step_data(step_data):
                     CommonUtil.ExecLog(sModuleInfo, "Sub-Field for data set %d cannot empty: %s" % (data_set_index, str(row)), 3)
                     return 'failed'
                 elif str(row[1]).lower().strip() not in action_support: # Check against list of allowed Sub-Fields
-                    if 'action' not in row[1]: #!!! Temporary until module handling is all moved into it's own function
+                    if 'action' not in row[1] and str(row[1]).strip().lower() not in programming_logic_keywords: #!!! Temporary until module handling is all moved into it's own function
                         CommonUtil.ExecLog(sModuleInfo, "Sub-Field for data set %d contains invalid data: %s" % (data_set_index, str(row)), 3)
                         return 'failed'
                         
@@ -149,7 +153,10 @@ def verify_step_data(step_data):
                         return 'failed'
                 
                 # Make sure Field has a valid action call
-                if 'action' in row[1] and 'loop' in row[1]: # Loop action, do not check because there could be different formats
+                if 'action' in row[1]: # Loop action, do not check because there could be different formats
+                    continue
+                elif str(row[1]).lower().strip() in programming_logic_keywords:
+                    action = True
                     continue
                 elif 'custom' in row[1]:# Skip custom actions - they do not execute like other actions
                     continue
