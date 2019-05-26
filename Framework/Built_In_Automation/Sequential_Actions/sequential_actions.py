@@ -443,6 +443,8 @@ def Handle_While_Loop_Action(step_data, data_set_no):
         failing_data_sets = []
         skip = []
         max_no_of_loop = 1
+        var_name = ''
+        var_value = ''
         data_set = common.shared_variable_to_value(data_set)
         if data_set in failed_tag_list:
             return 'failed',[]
@@ -454,11 +456,16 @@ def Handle_While_Loop_Action(step_data, data_set_no):
             elif str(row[0]).strip().lower() == 'repeat':
                 max_no_of_loop = int(str(row[2]).strip())
             elif str(row[0]).strip().lower() == 'exit loop':
-                value=str(row[2]).lower().strip()
+                value=str(row[2]).strip()
                 if 'pass' in value:
                     passing_data_sets += get_data_set_nums(value)
                 elif 'fail'in value:
                     failing_data_sets += get_data_set_nums(value)
+                elif '==' in value:
+                    boolean_data_list = value.split("==")
+                    var_name = boolean_data_list[0].split('%|')[1].split('|%')[0]
+                    var_value = boolean_data_list[1].strip().lower()
+
 
 
         if loop_this_data_sets == []:
@@ -479,6 +486,12 @@ def Handle_While_Loop_Action(step_data, data_set_no):
                     CommonUtil.ExecLog(sModuleInfo, "Loop exit condition satisfied. Exiting loop", 1)
                     die=True
                     break
+                elif var_name != '' and  sr.Test_Shared_Variables(var_name):
+                    shared_variable_value = sr.Get_Shared_Variables(var_name).lower()
+                    if ('true' in shared_variable_value and 'true' in var_value) or ('false' in shared_variable_value and 'false' in var_value):
+                        CommonUtil.ExecLog(sModuleInfo, "Loop exit condition satisfied. Exiting loop", 1)
+                        die = True
+                        break
 
             if die:break
             i+=1
@@ -1188,7 +1201,7 @@ def Action_Handler(_data_set, action_row):
     sModuleInfo = inspect.stack()[0][3] + " : " + inspect.getmoduleinfo(__file__).name
     CommonUtil.ExecLog(sModuleInfo,"Function Start", 0)
 
-    skip_conversion_of_shared_variable_for_actions = ['if element exists']
+    skip_conversion_of_shared_variable_for_actions = ['if element exists','run actions','loop settings']
 
     # Split data set row into the usable parts
     action_name = action_row[0]
@@ -1260,5 +1273,6 @@ def Action_Handler(_data_set, action_row):
 
     except Exception:
         return CommonUtil.Exception_Handler(sys.exc_info())
+
 
 

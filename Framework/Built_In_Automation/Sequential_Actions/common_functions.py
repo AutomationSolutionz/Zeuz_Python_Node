@@ -42,7 +42,7 @@ unmask_characters={
 }
 
 programming_logic_keywords=[
-    "if else", "while loop", "for loop"
+    "if else", "while loop", "for loop", "loop settings"
 ]
 
 def unmask_string(givenText):
@@ -303,12 +303,17 @@ def shared_variable_to_value(data_set):
     sModuleInfo = inspect.stack()[0][3] + " : " + inspect.getmoduleinfo(__file__).name
     new_data = [] # Rebuild the data_set with the new variable (because it's a list of tuples which we can't update)
 
+    skip_conversion_of_shared_variable_for_actions = ['if element exists', 'run actions', 'loop settings']
+
     try:
         for row in data_set:
             if row[1] == 'action':
                 if row[0] == 'compare variable': #for compare variable don't replace.. we will need the variable name
                     return data_set
         for row in data_set: # For each row of the data set
+            if str(row[0]).strip().lower() in skip_conversion_of_shared_variable_for_actions or str(row[1]).strip().lower() in skip_conversion_of_shared_variable_for_actions:
+                new_data.append(row)
+                continue
             data_row = list(row) # Convert row which is a tuple to a list, so we can update it if we need to
             for i in range(0, 3): # For each field (Field, Sub-Field, Value)
                 if row[i] != False: # !!!! Probbly not needed
