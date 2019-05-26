@@ -5,13 +5,14 @@
     Caveat: Functions common to multiple Built In Functions must have action names that are unique, because we search the common functions first, regardless of the module name passed by the user 
 '''
 
-import inspect, sys, time, collections
+import inspect, sys, time, collections, ftplib, os
 from Framework.Utilities import CommonUtil
 from Framework.Built_In_Automation.Shared_Resources import BuiltInFunctionSharedResources as sr
 from Framework.Built_In_Automation.Sequential_Actions.sequential_actions import actions, action_support
 from Framework.Utilities.CommonUtil import passed_tag_list, failed_tag_list, skipped_tag_list # Allowed return strings, used to normalize pass/fail
 from Framework.Built_In_Automation.Shared_Resources import LocateElement
 from Framework import MainDriverApi
+from Framework.Utilities import FileUtilities
 import datetime
 from datetime import timedelta
 months = ["Unknown",
@@ -944,6 +945,54 @@ def create_3d_list(data_set):
             result = sr.Append_List_Shared_Variables(parent_list_name, a_2d_list, value_as_list=True)
             if result in failed_tag_list:
                 return result
+
+        return "passed"
+    except Exception:
+        return CommonUtil.Exception_Handler(sys.exc_info())
+
+
+def download_ftp_file(data_set):
+    sModuleInfo = inspect.stack()[0][3] + " : " + inspect.getmoduleinfo(__file__).name
+    CommonUtil.ExecLog(sModuleInfo, "Function Start", 0)
+
+    try:
+        ftp_srv = ''
+        ftp_usr = ''
+        ftp_pass = ''
+        file_to_download = ''
+        local_file_path = ''
+
+        for row in data_set:
+            if str(row[0]).strip().lower() == 'ftp server':
+                ftp_srv = str(row[2]).strip()
+            elif str(row[0]).strip().lower() == 'ftp user':
+                ftp_usr = str(row[2]).strip()
+            elif str(row[0]).strip().lower() == 'ftp password':
+                ftp_pass = str(row[2]).strip()
+            elif str(row[0]).strip().lower() == 'file to download':
+                file_to_download = str(row[2]).strip()
+            elif str(row[0]).strip().lower() == 'local file path':
+                local_file_path = str(row[2]).strip()
+
+        if ftp_usr == '' or ftp_srv == '' or ftp_pass == '' or file_to_download == '':
+            CommonUtil.ExecLog(sModuleInfo, "FTP server info not given properly, please see action help", 3)
+            return "failed"
+
+        if local_file_path == '':
+            local_file_path = FileUtilities.get_home_folder()
+            file_name = file_to_download.split('/')[-1:][0]
+            local_file_path= local_file_path + os.sep + file_name
+            CommonUtil.ExecLog(sModuleInfo, "Local file path not given, downloading the ftp file in the root directory path '%s'"%str(local_file_path), 2)
+
+        ftp = ftplib.FTP(ftp_srv)
+        ftp.login(ftp_usr, ftp_pass)
+
+        files = [(file_to_download, local_file_path)]
+
+        for file_ in files:
+            with open(file_[1], "wb") as f:
+                ftp.retrbinary("RETR " + file_[0], f.write)
+        ftp.quit()
 
         return "passed"
     except Exception:
