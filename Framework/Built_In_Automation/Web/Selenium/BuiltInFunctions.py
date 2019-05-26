@@ -1398,8 +1398,8 @@ def open_new_tab(step_data):
     try:
         time.sleep(2)
         CommonUtil.ExecLog(sModuleInfo, "Opening New Tab in Browser", 1)
-        selenium_driver.find_element_by_tag_name('body').send_keys(Keys.CONTROL + 't')
-        selenium_driver.find_element_by_tag_name('body').send_keys(Keys.CONTROL + Keys.TAB)
+        selenium_driver.execute_script('''window.open(" ","_blank");''')
+
         CommonUtil.ExecLog(sModuleInfo, "New Tab Opened Successfully in Browser", 1)
 
         return "passed"
