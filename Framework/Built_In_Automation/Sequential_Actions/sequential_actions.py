@@ -46,6 +46,9 @@ actions = { # Numbers are arbitrary, and are not used anywhere
     125: {'module': 'common', 'name': 'randomize list', 'function': 'Randomize_List'},
     126: {'module': 'common', 'name': 'create 3d list', 'function': 'create_3d_list'},
     127: {'module': 'common', 'name': 'download ftp file', 'function': 'download_ftp_file'},
+    128: {'module': 'common', 'name': 'write into single cell in excel', 'function': 'write_into_single_cell_in_excel'},
+    129: {'module': 'common', 'name': 'run macro in excel', 'function': 'run_macro_in_excel'},
+    130: {'module': 'common', 'name': 'get excel table', 'function': 'get_excel_table'},
 
     200: {'module': 'appium', 'name': 'click', 'function': 'Click_Element_Appium'},
     201: {'module': 'appium', 'name': 'text', 'function': 'Enter_Text_Appium'},
@@ -1273,6 +1276,5 @@ def Action_Handler(_data_set, action_row):
 
     except Exception:
         return CommonUtil.Exception_Handler(sys.exc_info())
-
 
 

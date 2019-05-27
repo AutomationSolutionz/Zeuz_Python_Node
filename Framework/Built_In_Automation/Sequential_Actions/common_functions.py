@@ -6,6 +6,7 @@
 '''
 
 import inspect, sys, time, collections, ftplib, os
+import xlwings as xw
 from Framework.Utilities import CommonUtil
 from Framework.Built_In_Automation.Shared_Resources import BuiltInFunctionSharedResources as sr
 from Framework.Built_In_Automation.Sequential_Actions.sequential_actions import actions, action_support
@@ -998,6 +999,113 @@ def download_ftp_file(data_set):
             with open(file_[1], "wb") as f:
                 ftp.retrbinary("RETR " + file_[0], f.write)
         ftp.quit()
+
+        return "passed"
+    except Exception:
+        return CommonUtil.Exception_Handler(sys.exc_info())
+
+
+def write_into_single_cell_in_excel(data_set):
+    sModuleInfo = inspect.stack()[0][3] + " : " + inspect.getmoduleinfo(__file__).name
+    CommonUtil.ExecLog(sModuleInfo, "Function Start", 0)
+
+    try:
+        sheet_name = ''
+        colmn = ''
+        colmun_number = ''
+        value = ''
+        excel_file_path = ''
+
+        for row in data_set:
+            if str(row[0]).strip().lower() == 'sheet name':
+                sheet_name = str(row[2]).strip()
+            elif str(row[0]).strip().lower() == 'column name':
+                colmn = str(row[2]).strip()
+            elif str(row[0]).strip().lower() == 'column number':
+                colmun_number = str(row[2]).strip()
+            elif str(row[0]).strip().lower() == 'value':
+                value = str(row[2]).strip()
+            elif str(row[0]).strip().lower() == 'excel file path':
+                excel_file_path = str(row[2]).strip()
+
+        if sheet_name == '' or colmn == '' or colmun_number == '' or excel_file_path == '':
+            CommonUtil.ExecLog(sModuleInfo, "Excel file info not given properly, please see action help", 3)
+            return "failed"
+
+        wb = xw.Book(excel_file_path)
+        sheet = wb.sheets[sheet_name]
+        cell_value = '%s%s' % (colmn, colmun_number)
+        sheet.range(cell_value).value = value
+        wb.save(excel_file_path)
+
+        return "passed"
+    except Exception:
+        return CommonUtil.Exception_Handler(sys.exc_info())
+
+
+def run_macro_in_excel(data_set):
+    sModuleInfo = inspect.stack()[0][3] + " : " + inspect.getmoduleinfo(__file__).name
+    CommonUtil.ExecLog(sModuleInfo, "Function Start", 0)
+
+    try:
+        macro_name = ''
+        excel_file_name = ''
+        excel_file_path = ''
+
+        for row in data_set:
+            if str(row[0]).strip().lower() == 'macro name':
+                macro_name = str(row[2]).strip()
+            elif str(row[0]).strip().lower() == 'excel file path':
+                excel_file_path = str(row[2]).strip()
+            elif str(row[0]).strip().lower() == 'excel file name':
+                excel_file_name = str(row[2]).strip()
+
+        if macro_name == '' or excel_file_name == '' or excel_file_path == '':
+            CommonUtil.ExecLog(sModuleInfo, "Excel file info not given properly, please see action help", 3)
+            return "failed"
+
+        wb = xw.Book(excel_file_path)
+        app = wb.app
+        macro_path = excel_file_name + '!' + macro_name
+        macro_vba = app.macro(macro_path)
+        macro_vba()
+        wb.save(excel_file_path)
+
+        return "passed"
+    except Exception:
+        return CommonUtil.Exception_Handler(sys.exc_info())
+
+
+def get_excel_table(data_set):
+    sModuleInfo = inspect.stack()[0][3] + " : " + inspect.getmoduleinfo(__file__).name
+    CommonUtil.ExecLog(sModuleInfo, "Function Start", 0)
+
+    try:
+        sheet_name = ''
+        first_cell_location = ''
+        excel_file_path = ''
+        var_name = ''
+
+        for row in data_set:
+            if str(row[0]).strip().lower() == 'sheet name':
+                sheet_name = str(row[2]).strip()
+            elif str(row[0]).strip().lower() == 'first cell location':
+                first_cell_location = str(row[2]).strip()
+            elif str(row[0]).strip().lower() == 'excel file path':
+                excel_file_path = str(row[2]).strip()
+            elif str(row[0]).strip().lower() == 'variable name where data will be saved':
+                var_name = str(row[2]).strip()
+
+        if sheet_name == '' or first_cell_location == '' or var_name == '' or excel_file_path == '':
+            CommonUtil.ExecLog(sModuleInfo, "Excel file info not given properly, please see action help", 3)
+            return "failed"
+
+        wb = xw.Book(excel_file_path)
+        sheet = wb.sheets[sheet_name]
+        rng2 = sheet.range(first_cell_location).options(expand='table')
+
+        value =  rng2.value
+        sr.Set_Shared_Variables(var_name, value)
 
         return "passed"
     except Exception:
