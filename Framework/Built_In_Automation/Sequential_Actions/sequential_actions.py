@@ -1,4 +1,4 @@
-'''
+﻿'''
     Sequential Actions - Main Functions
     Function: Handles incoming step data and distributes it to the specified functions
     

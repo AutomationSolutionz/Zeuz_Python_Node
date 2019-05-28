@@ -1023,7 +1023,7 @@ def write_into_single_cell_in_excel(data_set):
                 colmn = str(row[2]).strip()
             elif str(row[0]).strip().lower() == 'column number':
                 colmun_number = str(row[2]).strip()
-            elif str(row[0]).strip().lower() == 'value':
+            elif str(row[0]).strip().lower() == 'text to write':
                 value = str(row[2]).strip()
             elif str(row[0]).strip().lower() == 'excel file path':
                 excel_file_path = str(row[2]).strip()
