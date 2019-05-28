@@ -6,7 +6,10 @@
 '''
 
 import inspect, sys, time, collections, ftplib, os
-import xlwings as xw
+try:
+    import xlwings as xw
+except:
+    pass
 from Framework.Utilities import CommonUtil
 from Framework.Built_In_Automation.Shared_Resources import BuiltInFunctionSharedResources as sr
 from Framework.Built_In_Automation.Sequential_Actions.sequential_actions import actions, action_support
