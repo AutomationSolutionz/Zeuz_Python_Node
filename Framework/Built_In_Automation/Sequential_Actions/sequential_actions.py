@@ -1,4 +1,4 @@
-'''
+﻿'''
     Sequential Actions - Main Functions
     Function: Handles incoming step data and distributes it to the specified functions
     
@@ -45,6 +45,10 @@ actions = { # Numbers are arbitrary, and are not used anywhere
     124: {'module': 'common', 'name': 'get server variable and wait', 'function': 'get_server_variable_and_wait'},
     125: {'module': 'common', 'name': 'randomize list', 'function': 'Randomize_List'},
     126: {'module': 'common', 'name': 'create 3d list', 'function': 'create_3d_list'},
+    127: {'module': 'common', 'name': 'download ftp file', 'function': 'download_ftp_file'},
+    128: {'module': 'common', 'name': 'write into single cell in excel', 'function': 'write_into_single_cell_in_excel'},
+    129: {'module': 'common', 'name': 'run macro in excel', 'function': 'run_macro_in_excel'},
+    130: {'module': 'common', 'name': 'get excel table', 'function': 'get_excel_table'},
 
     200: {'module': 'appium', 'name': 'click', 'function': 'Click_Element_Appium'},
     201: {'module': 'appium', 'name': 'text', 'function': 'Enter_Text_Appium'},
@@ -83,6 +87,7 @@ actions = { # Numbers are arbitrary, and are not used anywhere
     234: {'module': 'appium', 'name': 'unlock android device', 'function': 'unlock_android_device'},
     235: {'module': 'appium', 'name': 'unlock android app', 'function': 'unlock_android_app'},
     236: {'module': 'appium', 'name': 'swipe in direction', 'function': 'swipe_in_direction'},
+    237: {'module': 'appium', 'name': 'if element exists', 'function': 'if_element_exists'},
     
     300: {'module': 'rest', 'name': 'save response', 'function': 'Get_Response_Wrapper'},
     301: {'module': 'rest', 'name': 'search response', 'function': 'Search_Response'},
@@ -125,6 +130,7 @@ actions = { # Numbers are arbitrary, and are not used anywhere
     434: {'module': 'selenium', 'name': 'upload file', 'function': 'upload_file'},
     435: {'module': 'selenium', 'name': 'drag and drop', 'function': 'drag_and_drop'},
     436: {'module': 'selenium', 'name': 'scroll to element', 'function': 'scroll_to_element'},
+    437: {'module': 'selenium', 'name': 'if element exists', 'function': 'if_element_exists'},
     
     500: {'module': 'utility', 'name': 'math', 'function': 'Calculate'},
     501: {'module': 'utility', 'name': 'upload', 'function': 'Upload'},
@@ -199,7 +205,6 @@ actions = { # Numbers are arbitrary, and are not used anywhere
 action_support = [
     'action',
     'optional action',
-    'conditional action',
     'loop action',
     'element parameter',
     'child parameter',
@@ -222,7 +227,8 @@ action_support = [
     'custom action',
     'unique parameter',
     'save parameter',
-    'get parameter'
+    'get parameter',
+    'loop settings'
 ]
 
 # List of supported mobile platforms - must be lower case
@@ -376,8 +382,132 @@ def Sequential_Actions(step_data, _dependency = {}, _run_time_params = {}, _file
 
     return result
 
+
+def get_data_set_nums(action_value):
+    try:
+        data_set_nums=[]
+        splitted = str(action_value).split(",")
+        for each in splitted:
+            try:
+                string = str(each).split("#")[1].strip()
+                if string.endswith(')'):
+                    string = string[:-1]
+                elif ' ' in string:
+                    string = string.split(' ')[0]
+                data_set_nums.append(int(string) - 1)
+            except:
+                pass
+        return data_set_nums
+    except:
+        return []
+
+
+def Handle_Conditional_Action(step_data, data_set_no):
+    sModuleInfo = inspect.stack()[0][3] + " : " + inspect.getmoduleinfo(__file__).name
+    try:
+        data_set = step_data[data_set_no]
+        next_level_step_data=[]
+        skip = []
+        data_set = common.shared_variable_to_value(data_set)
+        if data_set in failed_tag_list:
+            return 'failed'
+
+        for row in data_set:
+            condition = str(row[0]).strip().lower()
+            if condition.count("true") == 2 or condition.count("false") == 2: #Will be positive for the satisfying condition true == true or false == false
+                next_level_step_data = get_data_set_nums(str(row[2]).strip())
+                skip+=next_level_step_data
+            else:
+                skip+=get_data_set_nums(str(row[2]).strip())
+
+        if next_level_step_data == []:
+            CommonUtil.ExecLog(sModuleInfo, "Conditional action step data is invalid, please see action help for more info", 3)
+            return "failed",[]
+
+        for data_set_index in next_level_step_data:
+            result, skip_for_loop = Run_Sequential_Actions([data_set_index])  # new edit: full step data is passed. [step_data[data_set_index]]) # Recursively call this function until all called data sets are complete
+            if result in failed_tag_list:
+                return result, list(set(skip+skip_for_loop))
+            skip = list(set(skip+skip_for_loop))
+
+        CommonUtil.ExecLog(sModuleInfo, "Conditional action handled successfully", 1)
+        return "passed", skip
+    except:
+        CommonUtil.ExecLog(sModuleInfo, "Error while handling conditional action",3)
+        return "failed",[]
+
+
+def Handle_While_Loop_Action(step_data, data_set_no):
+    sModuleInfo = inspect.stack()[0][3] + " : " + inspect.getmoduleinfo(__file__).name
+    try:
+        data_set = step_data[data_set_no]
+        loop_this_data_sets=[]
+        passing_data_sets=[]
+        failing_data_sets = []
+        skip = []
+        max_no_of_loop = 1
+        var_name = ''
+        var_value = ''
+        data_set = common.shared_variable_to_value(data_set)
+        if data_set in failed_tag_list:
+            return 'failed',[]
+
+        for row in data_set:
+            if str(row[0]).strip().lower() == 'run actions':
+                loop_this_data_sets = get_data_set_nums(str(row[2]).strip())
+                skip += get_data_set_nums(str(row[2]).strip())
+            elif str(row[0]).strip().lower() == 'repeat':
+                max_no_of_loop = int(str(row[2]).strip())
+            elif str(row[0]).strip().lower() == 'exit loop':
+                value=str(row[2]).strip()
+                if 'pass' in value:
+                    passing_data_sets += get_data_set_nums(value)
+                elif 'fail'in value:
+                    failing_data_sets += get_data_set_nums(value)
+                elif '==' in value:
+                    boolean_data_list = value.split("==")
+                    var_name = boolean_data_list[0].split('%|')[1].split('|%')[0]
+                    var_value = boolean_data_list[1].strip().lower()
+
+
+
+        if loop_this_data_sets == []:
+            CommonUtil.ExecLog(sModuleInfo, "Loop action step data is invalid, please see action help for more info", 3)
+            return "failed",[]
+
+        i=0
+        while i<max_no_of_loop:
+            die=False
+            for data_set_index in loop_this_data_sets:
+                result, skip_for_loop = Run_Sequential_Actions([data_set_index])  # new edit: full step data is passed. [step_data[data_set_index]]) # Recursively call this function until all called data sets are complete
+                skip = list(set(skip+skip_for_loop))
+                if result in passed_tag_list and data_set_index in passing_data_sets:
+                    CommonUtil.ExecLog(sModuleInfo, "Loop exit condition satisfied. Exiting loop", 1)
+                    die=True
+                    break
+                elif result in failed_tag_list and data_set_index in failing_data_sets:
+                    CommonUtil.ExecLog(sModuleInfo, "Loop exit condition satisfied. Exiting loop", 1)
+                    die=True
+                    break
+                elif var_name != '' and  sr.Test_Shared_Variables(var_name):
+                    shared_variable_value = sr.Get_Shared_Variables(var_name).lower()
+                    if ('true' in shared_variable_value and 'true' in var_value) or ('false' in shared_variable_value and 'false' in var_value):
+                        CommonUtil.ExecLog(sModuleInfo, "Loop exit condition satisfied. Exiting loop", 1)
+                        die = True
+                        break
+
+            if die:break
+            i+=1
+
+        CommonUtil.ExecLog(sModuleInfo, "Loop action handled successfully", 1)
+        return "passed", skip
+    except:
+        CommonUtil.ExecLog(sModuleInfo, "Error while handling loop action",3)
+        return "failed",[]
+
+
 def Run_Sequential_Actions(data_set_list=[]): #data_set_no will used in recursive conditional action call
-    
+
     sModuleInfo = inspect.stack()[0][3] + " : " + inspect.getmoduleinfo(__file__).name
     try:
         result = 'failed' # Initialize result
@@ -410,7 +540,7 @@ def Run_Sequential_Actions(data_set_list=[]): #data_set_no will used in recursiv
                 action_name = row[1] # Get Sub-Field
                 
                 # Don't process these suport items right now, but also don't fail
-                if action_name in action_support and 'custom' not in action_name:
+                if action_name.lower().strip() in action_support and 'custom' not in action_name:
                     continue
 
                 # If middle coloumn = bypass action, store the data set for later use if needed
@@ -430,29 +560,46 @@ def Run_Sequential_Actions(data_set_list=[]): #data_set_no will used in recursiv
                     result = 'passed'
                     
                 # If middle column = conditional action, evaluate data set
-                elif "conditional action" in action_name:
-                    CommonUtil.ExecLog(sModuleInfo, "Checking the logical conditional action to be performed in the conditional action row: %s" % str(row), 0)
-                    logic_row.append(row) # Keep track of the conditional action row, so we can access it later
-                    [skip_tmp.append(int(x) - 1) for x in row[2].replace(' ', '').split(',')] # Add the processed data sets, executed by the conditional action to the skip list, so we can process the rest of the data sets (do this for both conditional actions)
-                    
-                    # Only run this when we have two conditional actions for this data set (a true and a false preferably)
-                    if len(logic_row) == 2:
-                        CommonUtil.ExecLog(sModuleInfo, "Found 2 conditional actions - moving ahead with them", 1)
-                        result = Conditional_Action_Handler(data_set, row, logic_row) # send full data for recursive conditional call
+                elif "conditional action" in action_name or "if else" in action_name:
+                    if action_name.lower().strip() != 'conditional action' and action_name.lower().strip() != 'if else': #old style conditional action
+                        CommonUtil.ExecLog(sModuleInfo,"Old style conditional action found. This will not be supported in 2020, please replace them with new conditional actions", 2)
+                        CommonUtil.ExecLog(sModuleInfo, "Checking the logical conditional action to be performed in the conditional action row: %s" % str(row), 0)
+                        logic_row.append(row) # Keep track of the conditional action row, so we can access it later
+                        [skip_tmp.append(int(x) - 1) for x in row[2].replace(' ', '').split(',')] # Add the processed data sets, executed by the conditional action to the skip list, so we can process the rest of the data sets (do this for both conditional actions)
 
-                        CommonUtil.ExecLog(sModuleInfo, "Conditional Actions complete", 1)
+                        # Only run this when we have two conditional actions for this data set (a true and a false preferably)
+                        if len(logic_row) == 2:
+                            CommonUtil.ExecLog(sModuleInfo, "Found 2 conditional actions - moving ahead with them", 1)
+                            result = Conditional_Action_Handler(data_set, row, logic_row) # send full data for recursive conditional call
+
+                            CommonUtil.ExecLog(sModuleInfo, "Conditional Actions complete", 1)
+                            if result in failed_tag_list:
+                                CommonUtil.ExecLog(sModuleInfo, "Returned result from Conditional Action Failed", 3)
+                                return result,skip_for_loop
+                            logic_row = [] # Unset this, so if there is another conditional action in the test step, we can process it
+                            skip = skip_tmp # Add to the skip list, now that processing is complete
+                            skip_tmp = []
+                    else:
+                        result, to_skip = Handle_Conditional_Action(step_data, dataset_cnt)
+                        skip += to_skip
                         if result in failed_tag_list:
                             CommonUtil.ExecLog(sModuleInfo, "Returned result from Conditional Action Failed", 3)
-                            return result,skip_for_loop
-                        logic_row = [] # Unset this, so if there is another conditional action in the test step, we can process it
-                        skip = skip_tmp # Add to the skip list, now that processing is complete
-                        skip_tmp = []
+                            return result, skip_for_loop
+                        break
                 
                 # Simulate a while/for loop with the specified data sets
                 elif 'loop action' in action_name:
-                    result, skip_for_loop = Loop_Action_Handler(data_set, row, dataset_cnt)
-                    skip=skip_for_loop
+                    if action_name.lower().strip() not in ('while loop action','for loop action'): #old style loop action
+                        CommonUtil.ExecLog(sModuleInfo,"Old style loop action found. This will not be supported in 2020, please replace them with new loop actions",2)
+                        result, skip_for_loop = Loop_Action_Handler(data_set, row, dataset_cnt)
+                        skip = skip_for_loop
+                        if result in failed_tag_list: return 'failed', skip_for_loop
+                elif 'loop' in action_name:
+                    if 'while' in action_name.lower():
+                        result, skip_for_loop = Handle_While_Loop_Action(step_data, dataset_cnt)
+                    skip=list(set(skip+skip_for_loop))
                     if result in failed_tag_list: return 'failed',skip_for_loop
+                    break
                     
                 # Special custom functions can be executed in a specified file
                 elif "custom" in action_name:
@@ -1057,6 +1204,8 @@ def Action_Handler(_data_set, action_row):
     sModuleInfo = inspect.stack()[0][3] + " : " + inspect.getmoduleinfo(__file__).name
     CommonUtil.ExecLog(sModuleInfo,"Function Start", 0)
 
+    skip_conversion_of_shared_variable_for_actions = ['if element exists','run actions','loop settings']
+
     # Split data set row into the usable parts
     action_name = action_row[0]
     action_subfield = action_row[1]
@@ -1108,9 +1257,10 @@ def Action_Handler(_data_set, action_row):
         data_set.append(tuple(new_row))
 
     # Convert shared variables to their string equivelent
-    data_set = common.shared_variable_to_value(data_set)
-    if data_set in failed_tag_list:
-        return 'failed'
+    if action_name not in skip_conversion_of_shared_variable_for_actions:
+        data_set = common.shared_variable_to_value(data_set)
+        if data_set in failed_tag_list:
+            return 'failed'
 
     # Execute the action's function
     try:
@@ -1126,4 +1276,5 @@ def Action_Handler(_data_set, action_row):
 
     except Exception:
         return CommonUtil.Exception_Handler(sys.exc_info())
+
 

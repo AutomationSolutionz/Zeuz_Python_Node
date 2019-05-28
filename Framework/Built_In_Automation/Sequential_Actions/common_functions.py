@@ -5,13 +5,15 @@
     Caveat: Functions common to multiple Built In Functions must have action names that are unique, because we search the common functions first, regardless of the module name passed by the user 
 '''
 
-import inspect, sys, time, collections
+import inspect, sys, time, collections, ftplib, os
+import xlwings as xw
 from Framework.Utilities import CommonUtil
 from Framework.Built_In_Automation.Shared_Resources import BuiltInFunctionSharedResources as sr
 from Framework.Built_In_Automation.Sequential_Actions.sequential_actions import actions, action_support
 from Framework.Utilities.CommonUtil import passed_tag_list, failed_tag_list, skipped_tag_list # Allowed return strings, used to normalize pass/fail
 from Framework.Built_In_Automation.Shared_Resources import LocateElement
 from Framework import MainDriverApi
+from Framework.Utilities import FileUtilities
 import datetime
 from datetime import timedelta
 months = ["Unknown",
@@ -39,6 +41,10 @@ unmask_characters={
     '{{8}}':'%',
     '{{9}}':'|'
 }
+
+programming_logic_keywords=[
+    "if else", "while loop", "for loop", "loop settings"
+]
 
 def unmask_string(givenText):
     for e in unmask_characters.keys():
@@ -130,15 +136,15 @@ def verify_step_data(step_data):
                 elif len(row[1]) == 0:
                     CommonUtil.ExecLog(sModuleInfo, "Sub-Field for data set %d cannot empty: %s" % (data_set_index, str(row)), 3)
                     return 'failed'
-                elif row[1] not in action_support: # Check against list of allowed Sub-Fields
-                    if 'action' not in row[1]: #!!! Temporary until module handling is all moved into it's own function
+                elif str(row[1]).lower().strip() not in action_support: # Check against list of allowed Sub-Fields
+                    if 'action' not in row[1] and str(row[1]).strip().lower() not in programming_logic_keywords: #!!! Temporary until module handling is all moved into it's own function
                         CommonUtil.ExecLog(sModuleInfo, "Sub-Field for data set %d contains invalid data: %s" % (data_set_index, str(row)), 3)
                         return 'failed'
                         
                 # Make sure Sub-Field has a module name
                 if 'action' in row[1]: # Only apply to actions rows
                     action = True
-                    if 'custom' in row[1]: continue # Skip custom actions - they do not require a module
+                    if 'custom' in row[1] or 'conditional' in row[1] or 'loop action': continue # Skip custom actions - they do not require a module
                     for action_index in actions:
                         if actions[action_index]['module'] in row[1]: # If one of the modules is in the Sub-Field
                             module_name = actions[action_index]['module'] # Save this for the "Field" check below
@@ -149,7 +155,10 @@ def verify_step_data(step_data):
                         return 'failed'
                 
                 # Make sure Field has a valid action call
-                if 'action' in row[1] and 'loop' in row[1]: # Loop action, do not check because there could be different formats
+                if 'action' in row[1]: # Loop action, do not check because there could be different formats
+                    continue
+                elif str(row[1]).lower().strip() in programming_logic_keywords:
+                    action = True
                     continue
                 elif 'custom' in row[1]:# Skip custom actions - they do not execute like other actions
                     continue
@@ -295,12 +304,17 @@ def shared_variable_to_value(data_set):
     sModuleInfo = inspect.stack()[0][3] + " : " + inspect.getmoduleinfo(__file__).name
     new_data = [] # Rebuild the data_set with the new variable (because it's a list of tuples which we can't update)
 
+    skip_conversion_of_shared_variable_for_actions = ['if element exists', 'run actions', 'loop settings']
+
     try:
         for row in data_set:
             if row[1] == 'action':
                 if row[0] == 'compare variable': #for compare variable don't replace.. we will need the variable name
                     return data_set
         for row in data_set: # For each row of the data set
+            if str(row[0]).strip().lower() in skip_conversion_of_shared_variable_for_actions or str(row[1]).strip().lower() in skip_conversion_of_shared_variable_for_actions:
+                new_data.append(row)
+                continue
             data_row = list(row) # Convert row which is a tuple to a list, so we can update it if we need to
             for i in range(0, 3): # For each field (Field, Sub-Field, Value)
                 if row[i] != False: # !!!! Probbly not needed
@@ -937,6 +951,161 @@ def create_3d_list(data_set):
             result = sr.Append_List_Shared_Variables(parent_list_name, a_2d_list, value_as_list=True)
             if result in failed_tag_list:
                 return result
+
+        return "passed"
+    except Exception:
+        return CommonUtil.Exception_Handler(sys.exc_info())
+
+
+def download_ftp_file(data_set):
+    sModuleInfo = inspect.stack()[0][3] + " : " + inspect.getmoduleinfo(__file__).name
+    CommonUtil.ExecLog(sModuleInfo, "Function Start", 0)
+
+    try:
+        ftp_srv = ''
+        ftp_usr = ''
+        ftp_pass = ''
+        file_to_download = ''
+        local_file_path = ''
+
+        for row in data_set:
+            if str(row[0]).strip().lower() == 'ftp server':
+                ftp_srv = str(row[2]).strip()
+            elif str(row[0]).strip().lower() == 'ftp user':
+                ftp_usr = str(row[2]).strip()
+            elif str(row[0]).strip().lower() == 'ftp password':
+                ftp_pass = str(row[2]).strip()
+            elif str(row[0]).strip().lower() == 'file to download':
+                file_to_download = str(row[2]).strip()
+            elif str(row[0]).strip().lower() == 'local file path':
+                local_file_path = str(row[2]).strip()
+
+        if ftp_usr == '' or ftp_srv == '' or ftp_pass == '' or file_to_download == '':
+            CommonUtil.ExecLog(sModuleInfo, "FTP server info not given properly, please see action help", 3)
+            return "failed"
+
+        if local_file_path == '':
+            local_file_path = FileUtilities.get_home_folder()
+            file_name = file_to_download.split('/')[-1:][0]
+            local_file_path= local_file_path + os.sep + file_name
+            CommonUtil.ExecLog(sModuleInfo, "Local file path not given, downloading the ftp file in the root directory path '%s'"%str(local_file_path), 2)
+
+        ftp = ftplib.FTP(ftp_srv)
+        ftp.login(ftp_usr, ftp_pass)
+
+        files = [(file_to_download, local_file_path)]
+
+        for file_ in files:
+            with open(file_[1], "wb") as f:
+                ftp.retrbinary("RETR " + file_[0], f.write)
+        ftp.quit()
+
+        return "passed"
+    except Exception:
+        return CommonUtil.Exception_Handler(sys.exc_info())
+
+
+def write_into_single_cell_in_excel(data_set):
+    sModuleInfo = inspect.stack()[0][3] + " : " + inspect.getmoduleinfo(__file__).name
+    CommonUtil.ExecLog(sModuleInfo, "Function Start", 0)
+
+    try:
+        sheet_name = ''
+        colmn = ''
+        colmun_number = ''
+        value = ''
+        excel_file_path = ''
+
+        for row in data_set:
+            if str(row[0]).strip().lower() == 'sheet name':
+                sheet_name = str(row[2]).strip()
+            elif str(row[0]).strip().lower() == 'column name':
+                colmn = str(row[2]).strip()
+            elif str(row[0]).strip().lower() == 'column number':
+                colmun_number = str(row[2]).strip()
+            elif str(row[0]).strip().lower() == 'text to write':
+                value = str(row[2]).strip()
+            elif str(row[0]).strip().lower() == 'excel file path':
+                excel_file_path = str(row[2]).strip()
+
+        if sheet_name == '' or colmn == '' or colmun_number == '' or excel_file_path == '':
+            CommonUtil.ExecLog(sModuleInfo, "Excel file info not given properly, please see action help", 3)
+            return "failed"
+
+        wb = xw.Book(excel_file_path)
+        sheet = wb.sheets[sheet_name]
+        cell_value = '%s%s' % (colmn, colmun_number)
+        sheet.range(cell_value).value = value
+        wb.save(excel_file_path)
+
+        return "passed"
+    except Exception:
+        return CommonUtil.Exception_Handler(sys.exc_info())
+
+
+def run_macro_in_excel(data_set):
+    sModuleInfo = inspect.stack()[0][3] + " : " + inspect.getmoduleinfo(__file__).name
+    CommonUtil.ExecLog(sModuleInfo, "Function Start", 0)
+
+    try:
+        macro_name = ''
+        excel_file_name = ''
+        excel_file_path = ''
+
+        for row in data_set:
+            if str(row[0]).strip().lower() == 'macro name':
+                macro_name = str(row[2]).strip()
+            elif str(row[0]).strip().lower() == 'excel file path':
+                excel_file_path = str(row[2]).strip()
+            elif str(row[0]).strip().lower() == 'excel file name':
+                excel_file_name = str(row[2]).strip()
+
+        if macro_name == '' or excel_file_name == '' or excel_file_path == '':
+            CommonUtil.ExecLog(sModuleInfo, "Excel file info not given properly, please see action help", 3)
+            return "failed"
+
+        wb = xw.Book(excel_file_path)
+        app = wb.app
+        macro_path = excel_file_name + '!' + macro_name
+        macro_vba = app.macro(macro_path)
+        macro_vba()
+        wb.save(excel_file_path)
+
+        return "passed"
+    except Exception:
+        return CommonUtil.Exception_Handler(sys.exc_info())
+
+
+def get_excel_table(data_set):
+    sModuleInfo = inspect.stack()[0][3] + " : " + inspect.getmoduleinfo(__file__).name
+    CommonUtil.ExecLog(sModuleInfo, "Function Start", 0)
+
+    try:
+        sheet_name = ''
+        first_cell_location = ''
+        excel_file_path = ''
+        var_name = ''
+
+        for row in data_set:
+            if str(row[0]).strip().lower() == 'sheet name':
+                sheet_name = str(row[2]).strip()
+            elif str(row[0]).strip().lower() == 'first cell location':
+                first_cell_location = str(row[2]).strip()
+            elif str(row[0]).strip().lower() == 'excel file path':
+                excel_file_path = str(row[2]).strip()
+            elif str(row[0]).strip().lower() == 'variable name where data will be saved':
+                var_name = str(row[2]).strip()
+
+        if sheet_name == '' or first_cell_location == '' or var_name == '' or excel_file_path == '':
+            CommonUtil.ExecLog(sModuleInfo, "Excel file info not given properly, please see action help", 3)
+            return "failed"
+
+        wb = xw.Book(excel_file_path)
+        sheet = wb.sheets[sheet_name]
+        rng2 = sheet.range(first_cell_location).options(expand='table')
+
+        value =  rng2.value
+        sr.Set_Shared_Variables(var_name, value)
 
         return "passed"
     except Exception:

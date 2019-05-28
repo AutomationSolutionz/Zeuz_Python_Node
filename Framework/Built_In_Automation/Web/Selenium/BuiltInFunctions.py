@@ -1398,8 +1398,8 @@ def open_new_tab(step_data):
     try:
         time.sleep(2)
         CommonUtil.ExecLog(sModuleInfo, "Opening New Tab in Browser", 1)
-        selenium_driver.find_element_by_tag_name('body').send_keys(Keys.CONTROL + 't')
-        selenium_driver.find_element_by_tag_name('body').send_keys(Keys.CONTROL + Keys.TAB)
+        selenium_driver.execute_script('''window.open(" ","_blank");''')
+
         CommonUtil.ExecLog(sModuleInfo, "New Tab Opened Successfully in Browser", 1)
 
         return "passed"
@@ -1499,3 +1499,41 @@ def drag_and_drop(step_data):
         return "passed"
     except Exception:
         return CommonUtil.Exception_Handler(sys.exc_info())
+
+
+def if_element_exists(data_set):
+    ''' Click on an element '''
+
+    sModuleInfo = inspect.stack()[0][3] + " : " + inspect.getmoduleinfo(__file__).name
+    CommonUtil.ExecLog(sModuleInfo, "Function Start", 0)
+
+    try:
+        variable_name = ''
+        boolean = 'true'
+        for row in data_set:
+            if str(row[1]) == 'action':
+                splitted = str(row[2]).split("=")
+                if len(splitted) < 2:
+                    CommonUtil.ExecLog(sModuleInfo,
+                                       "Data should be like variable_name=boolean (for example: abc=True, Here abc is the variable name and True is the boolean value)",
+                                       3)
+                    return "failed"
+                variable_name = str(splitted[0]).strip()
+                variable_name = variable_name.split('%|')[1].split('|%')[0]
+                boolean = str(splitted[1]).strip().lower()
+
+        if variable_name == '':
+            CommonUtil.ExecLog(sModuleInfo,
+                               "Data should be like variable_name=boolean (for example: abc=True, Here abc is the variable name and True is the boolean value)",
+                               3)
+            return "failed"
+
+        Element = LocateElement.Get_Element(data_set, selenium_driver)
+        if Element in failed_tag_list:
+            Shared_Resources.Set_Shared_Variables(variable_name, str(not boolean))
+        else:
+            Shared_Resources.Set_Shared_Variables(variable_name, str(boolean))
+        return "passed"
+    except Exception:
+        errMsg = "Could not find your element."
+        return CommonUtil.Exception_Handler(sys.exc_info(), None, errMsg)
