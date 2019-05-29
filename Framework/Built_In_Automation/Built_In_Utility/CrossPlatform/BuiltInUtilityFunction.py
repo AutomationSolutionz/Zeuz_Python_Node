@@ -2405,10 +2405,10 @@ def save_substring(data_set):
         #process index_string
         if "," in index_string:
             splitted = index_string.split(",")
-            from_index = int(splitted[0].strip())
-            to_index = int(splitted[1].strip())
+            from_index = int(float(splitted[0].strip()))
+            to_index = int(float(splitted[1].strip()))
         else:
-            from_index = int(index_string.strip())
+            from_index = int(float(index_string.strip()))
 
         if from_index == -1:
             CommonUtil.ExecLog(sModuleInfo, "From Index for getting substing can't be negative", 3)

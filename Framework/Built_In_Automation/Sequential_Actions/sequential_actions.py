@@ -49,6 +49,7 @@ actions = { # Numbers are arbitrary, and are not used anywhere
     128: {'module': 'common', 'name': 'write into single cell in excel', 'function': 'write_into_single_cell_in_excel'},
     129: {'module': 'common', 'name': 'run macro in excel', 'function': 'run_macro_in_excel'},
     130: {'module': 'common', 'name': 'get excel table', 'function': 'get_excel_table'},
+    131: {'module': 'common', 'name': 'save text from file into variable', 'function': 'save_text_from_file_into_variable'},
 
     200: {'module': 'appium', 'name': 'click', 'function': 'Click_Element_Appium'},
     201: {'module': 'appium', 'name': 'text', 'function': 'Enter_Text_Appium'},
@@ -756,6 +757,11 @@ def Loop_Action_Handler(data, row, dataset_cnt):
                     if sr.Test_Shared_Variables(tmp): # User provided a shared variable, which should be a list that we can loop through
                         loop_type = sr.Get_Shared_Variables(tmp) # Retrieved shared variable value
                         loop_len = len(loop_type) # Number of list items to cycle through
+
+                        for r in data:
+                            if r[0] == 'repeat':
+                                loop_len = int(str(r[2]).strip())
+
                         if loop_len == 0:
                             return "passed",skip
                         if action_result == 'dictionary':
@@ -916,6 +922,8 @@ def Loop_Action_Handler(data, row, dataset_cnt):
 
         inside_interval = False
         load_testing_count = -1
+
+
         while True: # We control the new sub-set of the step data, so we can examine the output
             CommonUtil.ExecLog(sModuleInfo, "Loop action #%d" % sub_set_cnt, 1)
     
