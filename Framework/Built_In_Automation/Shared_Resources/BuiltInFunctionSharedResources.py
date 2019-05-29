@@ -461,7 +461,7 @@ def Compare_Variables(step_data):
                     modifier = True# Changes how we compare
 
         for i in range(0,len(variable_list1)):
-            if modifier == False and variable_list1[i][2] == variable_list2[i][2]: # Straight up compare
+            if modifier == False and variable_list1[i][2].strip() == variable_list2[i][2].strip(): # Straight up compare
                 result.append(True)
                 pass_count+=1
             elif modifier and variable_list1[i][2] in variable_list2[i][2]: # Var 1 is IN var 2, if modifier set

@@ -5,7 +5,7 @@
     Caveat: Functions common to multiple Built In Functions must have action names that are unique, because we search the common functions first, regardless of the module name passed by the user 
 '''
 
-import inspect, sys, time, collections, ftplib, os
+import inspect, sys, time, collections, ftplib, os, PyPDF2
 try:
     import xlwings as xw
 except:
@@ -1052,7 +1052,6 @@ def run_macro_in_excel(data_set):
 
     try:
         macro_name = ''
-        excel_file_name = ''
         excel_file_path = ''
 
         for row in data_set:
@@ -1060,16 +1059,14 @@ def run_macro_in_excel(data_set):
                 macro_name = str(row[2]).strip()
             elif str(row[0]).strip().lower() == 'excel file path':
                 excel_file_path = str(row[2]).strip()
-            elif str(row[0]).strip().lower() == 'excel file name':
-                excel_file_name = str(row[2]).strip()
 
-        if macro_name == '' or excel_file_name == '' or excel_file_path == '':
+        if macro_name == '' or excel_file_path == '':
             CommonUtil.ExecLog(sModuleInfo, "Excel file info not given properly, please see action help", 3)
             return "failed"
 
         wb = xw.Book(excel_file_path)
         app = wb.app
-        macro_path = excel_file_name + '!' + macro_name
+        macro_path = macro_name
         macro_vba = app.macro(macro_path)
         macro_vba()
         wb.save(excel_file_path)
@@ -1109,6 +1106,49 @@ def get_excel_table(data_set):
 
         value =  rng2.value
         sr.Set_Shared_Variables(var_name, value)
+
+        return "passed"
+    except Exception:
+        return CommonUtil.Exception_Handler(sys.exc_info())
+
+
+def save_text_from_file_into_variable(data_set):
+    sModuleInfo = inspect.stack()[0][3] + " : " + inspect.getmoduleinfo(__file__).name
+    CommonUtil.ExecLog(sModuleInfo, "Function Start", 0)
+
+    try:
+        text_file_path = ''
+        var_name = ''
+        var_value=''
+
+        for row in data_set:
+            if str(row[0]).strip().lower() == 'text file path':
+                text_file_path = str(row[2]).strip()
+            elif str(row[0]).strip().lower() == 'variable name where data will be saved':
+                var_name = str(row[2]).strip()
+
+        if text_file_path == '' or var_name == '':
+            CommonUtil.ExecLog(sModuleInfo, "Text file info not given properly, please see action help", 3)
+            return "failed"
+
+        if text_file_path.endswith("pdf"):
+            pdfFileObj = open(text_file_path, 'rb')
+            pdfReader = PyPDF2.PdfFileReader(pdfFileObj)
+            no_of_page = pdfReader.numPages
+
+            i=0
+            while i<no_of_page:
+                pageObj = pdfReader.getPage(i)
+                var_value+=pageObj.extractText()
+                i+=1
+        else:
+            with open(text_file_path, 'r') as file:
+                data = file.read()
+                var_value+=data
+
+        sr.Set_Shared_Variables(var_name, var_value)
+        CommonUtil.ExecLog(sModuleInfo,"Text %s is found inside text file %s" %(var_value.strip(), text_file_path), 1)
+        CommonUtil.ExecLog(sModuleInfo,"Saving text %s into variable named %s"%(var_value.strip(), var_name),1)
 
         return "passed"
     except Exception:
