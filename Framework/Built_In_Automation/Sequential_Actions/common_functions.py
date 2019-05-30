@@ -992,6 +992,9 @@ def download_ftp_file(data_set):
             file_name = file_to_download.split('/')[-1:][0]
             local_file_path= local_file_path + os.sep + file_name
             CommonUtil.ExecLog(sModuleInfo, "Local file path not given, downloading the ftp file in the root directory path '%s'"%str(local_file_path), 2)
+        elif '/' not in local_file_path and '\\' not in local_file_path:
+            local_file_path= FileUtilities.get_home_folder() + os.sep + local_file_path
+            CommonUtil.ExecLog(sModuleInfo, "Local file path not given, downloading the ftp file in the root directory path '%s'"%str(local_file_path), 2)
 
         ftp = ftplib.FTP(ftp_srv)
         ftp.login(ftp_usr, ftp_pass)
@@ -1130,6 +1133,9 @@ def save_text_from_file_into_variable(data_set):
         if text_file_path == '' or var_name == '':
             CommonUtil.ExecLog(sModuleInfo, "Text file info not given properly, please see action help", 3)
             return "failed"
+
+        if '/' not in text_file_path and '\\' not in text_file_path:
+            text_file_path = FileUtilities.get_home_folder() + os.sep + text_file_path
 
         if text_file_path.endswith("pdf"):
             pdfFileObj = open(text_file_path, 'rb')
