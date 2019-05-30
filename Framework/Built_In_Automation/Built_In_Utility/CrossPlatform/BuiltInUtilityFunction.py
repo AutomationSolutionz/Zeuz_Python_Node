@@ -2460,7 +2460,7 @@ def extract_number(data_set):
         to_var = '' #the variable wher estring will be saved
         index = 0 #index of the digit for a string "hello123 2.5 67" if index is 2(starting from 1) we will get 2.5
         rounded_number=''
-        digit = '1'
+        digit = '-1'
         extracted_number = ''
         for row in data_set:
             if row[1] == 'element parameter':
@@ -2497,7 +2497,9 @@ def extract_number(data_set):
                 else:
                     extracted_number = float(extracted_number)
 
-                if digit >= 1:
+                if digit<1:
+                    rounded_number = extracted_number
+                elif digit >= 1:
                     rounded_number = int((round(float(extracted_number) / digit))) * digit
                 else:
                     c = 0
