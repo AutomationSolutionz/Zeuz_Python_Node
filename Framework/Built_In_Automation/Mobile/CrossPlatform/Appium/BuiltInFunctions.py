@@ -22,10 +22,8 @@ from Framework.Utilities.CommonUtil import passed_tag_list, failed_tag_list, ski
 from Framework.Built_In_Automation.Shared_Resources import LocateElement
 
 
-PATH = lambda p: os.path.abspath(
-    os.path.join(os.path.dirname(__file__), p)
-)
-
+PATH_ = lambda p: os.path.abspath(os.path.join(os.path.dirname(__file__), p))
+PATH = '%s'%PATH_
 #########################
 #                       #
 #   Global Variables    #
