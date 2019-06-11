@@ -710,6 +710,7 @@ def run_all_test_steps_in_a_test_case(Stepscount, test_case, sModuleInfo, run_id
         if run_cancelled == 'Cancelled':
             CommonUtil.ExecLog(sModuleInfo,
                                "Test Run status is Cancelled. Exiting the current Test Case...%s" % test_case, 2)
+            sTestStepResultList[len(sTestStepResultList)-1]=CANCELLED_TAG
             break
         StepSeq += 1
 
@@ -721,9 +722,9 @@ def calculate_test_case_result(sModuleInfo, TestCaseID, run_id, sTestStepResultL
     if 'BLOCKED' in sTestStepResultList:
         CommonUtil.ExecLog(sModuleInfo, "Test Case Blocked", 3)
         sTestCaseStatus = "Blocked"
-    elif 'CANCELLED' in sTestStepResultList:
+    elif 'CANCELLED' in sTestStepResultList or 'Cancelled' in sTestStepResultList:
         CommonUtil.ExecLog(sModuleInfo, "Test Case Cancelled", 3)
-        sTestCaseStatus = "CANCELLED"
+        sTestCaseStatus = "Cancelled"
     elif 'FAILED' in sTestStepResultList:
         CommonUtil.ExecLog(sModuleInfo, "Test Case Failed", 3)
         step_index = 1
@@ -889,13 +890,14 @@ def run_test_case(TestCaseID, sModuleInfo, run_id, driver_list, final_dependency
     shared.Set_Shared_Variables('run_id', run_id)
     test_case = str(TestCaseID[0]).replace('#','no')
     copy_status = False
+    ConfigModule.add_config_value('sectionOne', 'sTestStepExecLogId', "MainDriver", temp_ini_file)
     CommonUtil.ExecLog(sModuleInfo, "Gathering data for test case %s" % (test_case), 4, False)
     while not copy_status:
         copy_status = check_if_test_case_is_copied(run_id, test_case)
         if copy_status:
             CommonUtil.ExecLog(sModuleInfo, "Gathering data for test case %s is completed" % (test_case), 1)
 
-    ConfigModule.add_config_value('sectionOne', 'sTestStepExecLogId', "MainDriver", temp_ini_file)
+
 
     file_specific_steps = download_attachments_for_test_case(sModuleInfo, run_id, test_case,
                                                              temp_ini_file)  # downloads attachments
