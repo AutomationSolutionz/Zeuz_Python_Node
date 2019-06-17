@@ -241,7 +241,7 @@ supported_platforms = (
 
 
 # Import modules
-import inspect
+import inspect,subprocess
 import os
 import sys
 import time
@@ -323,7 +323,7 @@ def write_browser_logs():
     except:
         pass
 
-def Sequential_Actions(step_data, _dependency = {}, _run_time_params = {}, _file_attachment = {}, _temp_q = '',screen_capture='Desktop',_device_info = {}):
+def Sequential_Actions(step_data, _dependency = {}, _run_time_params = {}, _file_attachment = {}, _temp_q = '',screen_capture='Desktop',_device_info = {}, performance=False):
     ''' Main Sequential Actions function - Performs logical decisions based on user input '''
     
     sModuleInfo = inspect.stack()[0][3] + " : " + inspect.getmoduleinfo(__file__).name
@@ -372,8 +372,13 @@ def Sequential_Actions(step_data, _dependency = {}, _run_time_params = {}, _file
 
     # Process step data
     #save the full step data in share variables
+    data_set=step_data[0]
+    step_data=step_data[1:]
     sr.Set_Shared_Variables('step_data',step_data,protected=True)
-    result,skip_for_loop =  Run_Sequential_Actions([]) #empty list means run all, instead of step data we want to send the dataset no's of the step data to run
+    if performance: #if performance testing
+        result,skip_for_loop = handle_performance_testing(data_set)
+    else:
+        result,skip_for_loop =  Run_Sequential_Actions([]) #empty list means run all, instead of step data we want to send the dataset no's of the step data to run
     write_browser_logs()
 
     global load_testing, thread_pool
@@ -382,6 +387,31 @@ def Sequential_Actions(step_data, _dependency = {}, _run_time_params = {}, _file
         thread_pool.shutdown(wait=True)
 
     return result
+
+
+def handle_performance_testing(data_set):
+    sModuleInfo = inspect.stack()[0][3] + " : " + inspect.getmoduleinfo(__file__).name
+    try:
+        hatch_rate=2
+        no_of_users=10
+        time_period=300
+
+        for row in data_set:
+            if row[0].strip().lower() in ('no of users', 'no of user', 'user'):
+                no_of_users = int(row[2])
+            elif row[0].strip().lower() in ('hatch rate', 'rate'):
+                hatch_rate = int(row[2])
+            elif row[0].strip().lower() in ('time period'):
+                time_period=int(row[2])
+
+        subprocess.Popen("locust -f locustFile.py --csv=csvForZeuz --no-web -t%ds -c %d -r %d"%(time_period, no_of_users, hatch_rate), shell=True)
+        #will add more code soon for result analyzing and upload csv to zeuz for showing table and graph
+
+        CommonUtil.ExecLog(sModuleInfo, "Performance Testing handled successfully", 1)
+        return "passed", []
+    except:
+        CommonUtil.ExecLog(sModuleInfo, "Error while handling conditional action",3)
+        return "failed",[]
 
 
 def get_data_set_nums(action_value):
