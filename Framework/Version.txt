@@ -1,6 +1,6 @@
 [ZeuZ Python Version]
-version = 7.28
+version = 7.35
 [Release Date]
-date= 2019-05-13
+date= 2019-06-18
 [Release Note]
-Note = Unlock android phone and unlock android app, bug fixes
+Note = Kill Node For TearDown; Check ADB before calling to kill adb server
