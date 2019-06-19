@@ -20,7 +20,7 @@ from appium.webdriver.common.touch_action import TouchAction
 from Framework.Built_In_Automation.Shared_Resources import BuiltInFunctionSharedResources as Shared_Resources
 from Framework.Utilities.CommonUtil import passed_tag_list, failed_tag_list, skipped_tag_list
 from Framework.Built_In_Automation.Shared_Resources import LocateElement
-
+import psutil
 
 PATH_ = lambda p: os.path.abspath(os.path.join(os.path.dirname(__file__), p))
 PATH = '%s'%PATH_
@@ -647,6 +647,30 @@ def kill_appium_on_windows(appium_server):
     except Exception:
         return CommonUtil.Exception_Handler(sys.exc_info(), None, "Error killing Appium and it's children")
 
+
+
+
+def kill_node():
+    ''' Kill appium node'''
+
+    sModuleInfo = inspect.stack()[0][3] + " : " + inspect.getmoduleinfo(__file__).name
+    
+    CommonUtil.ExecLog(sModuleInfo, "Killing Node Forcefully", 0)
+    try: 
+
+        
+        for proc in psutil.process_iter():
+            # check whether the process name matches
+            try:
+                if "name='node.exe'" in str(proc.name) or "name='node'" in str(proc.name):
+                    proc.kill()
+            except:
+                pass
+    except Exception:
+        return CommonUtil.Exception_Handler(sys.exc_info(), None,"Unable to kill Node.js")
+
+
+
 def teardown_appium(data_set):
     ''' Teardown of appium instance '''
     
@@ -667,9 +691,21 @@ def teardown_appium(data_set):
             except:
                 CommonUtil.ExecLog(sModuleInfo,"Error destroying Appium instance/server for %s - may already be killed" % name, 2)
         
-        # Kill adb server to ensure it doesn't hang
-        adbOptions.kill_adb_server()
         
+        
+        # Kill adb server to ensure it doesn't hang
+        try: 
+            
+            for proc in psutil.process_iter():
+            # check whether the process name matches
+                try:
+                    if  "name='adb" in str(proc.name):
+                        adbOptions.kill_adb_server()
+                except:
+                    pass
+            kill_node()
+        except:
+            pass
         # Delete variables
         appium_details = {}
         device_info = {}
@@ -2175,3 +2211,5 @@ def if_element_exists(data_set):
     except Exception:
         errMsg = "Could not find your element."
         return CommonUtil.Exception_Handler(sys.exc_info(), None, errMsg)
+
+
