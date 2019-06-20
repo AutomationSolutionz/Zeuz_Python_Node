@@ -84,6 +84,7 @@ def Open_Browser(dependency):
             options = Options()
             options.add_argument("--no-sandbox")
             options.add_argument("--disable-extensions")
+            options.add_experimental_option("useAutomationExtension",False)
             d = DesiredCapabilities.CHROME
             d['loggingPrefs'] = {'browser': 'ALL'}
             if "chromeheadless" in browser: options.add_argument("--headless") # Enable headless operation if dependency set
