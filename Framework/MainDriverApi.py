@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 # -*- coding: cp1252 -*-
 
-import inspect, os, time, sys, urllib2, Queue, importlib, requests, threading
+import inspect, os, time, sys, urllib2, Queue, importlib, requests, threading, subprocess
 from sys import platform as _platform
 from datetime import datetime
 from datetime import timedelta
@@ -887,8 +887,9 @@ def cleanup_driver_instances():  # cleans up driver(selenium,appium) instances
 
 
 def run_test_case(TestCaseID, sModuleInfo, run_id, driver_list, final_dependency, final_run_params, temp_ini_file, is_linked, send_log_file_only_for_fail=True):
+    print "running"
     shared.Set_Shared_Variables('run_id', run_id)
-    test_case = str(TestCaseID[0]).replace('#','no')
+    test_case = str(TestCaseID).replace('#','no')
     copy_status = False
     ConfigModule.add_config_value('sectionOne', 'sTestStepExecLogId', "MainDriver", temp_ini_file)
     CommonUtil.ExecLog(sModuleInfo, "Gathering data for test case %s" % (test_case), 4, False)
@@ -1000,6 +1001,31 @@ def update_fail_reasons_of_test_cases(run_id, TestCaseID):
     except:
         pass
 
+
+def get_performance_testing_data_for_test_case(run_id, TestCaseID):
+    return RequestFormatter.Get('get_performance_testing_data_for_test_case_api',{'run_id': run_id, 'test_case': TestCaseID})
+
+
+def write_locust_input_file(perf_data, TestCaseID, sModuleInfo, run_id, driver_list, final_dependency, final_run_params,
+                              temp_ini_file, is_linked, send_log_file_only_for_fail):
+    try:
+        locust_input_file_path = os.getcwd() + os.sep + 'Built_In_Automation' + os.sep + 'Performance_Testing' + os.sep + 'locustFileInput.txt'
+        file = open(locust_input_file_path,'w')
+        file.write(str(TestCaseID)+'\n')
+        file.write(str(sModuleInfo)+'\n')
+        file.write(str(run_id)+'\n')
+        file.write(str(driver_list)+'\n')
+        file.write(str(final_dependency)+'\n')
+        file.write(str(final_run_params)+'\n')
+        file.write(str(temp_ini_file)+'\n')
+        file.write(str(is_linked)+'\n')
+        file.write(str(send_log_file_only_for_fail)+'\n')
+        file.close()
+    except:
+        pass
+
+
+
 # main function
 def main(device_dict):
     sModuleInfo = inspect.stack()[0][3] + " : " + inspect.getmoduleinfo(__file__).name
@@ -1068,10 +1094,27 @@ def main(device_dict):
 
         # run each test case in the runid
         for TestCaseID in TestCaseLists:
-            run_test_case(TestCaseID, sModuleInfo, run_id, driver_list, final_dependency, final_run_params,
-                          temp_ini_file,is_linked, send_log_file_only_for_fail=send_log_file_only_for_fail)
-            all_logs_list = CommonUtil.get_all_logs()
-            write_all_logs_to_server(all_logs_list)
+            performance_test_case = False
+            if str(TestCaseID[1]).lower() == 'performance':
+                performance_test_case = True
+
+            if performance_test_case:
+                perf_data = get_performance_testing_data_for_test_case(run_id, TestCaseID[0])
+                write_locust_input_file(perf_data, TestCaseID[0], sModuleInfo, run_id, driver_list, final_dependency, final_run_params,
+                              temp_ini_file, is_linked, send_log_file_only_for_fail=send_log_file_only_for_fail)
+                hatch_rate = perf_data['hatch_rate']
+                no_of_users = perf_data['no_of_users']
+                time_period = perf_data['time_period']
+
+                locust_file_path = os.getcwd() + os.sep + 'Built_In_Automation' + os.sep + 'Performance_Testing' + os.sep + 'locustFile.py'
+                subprocess.Popen("locust -f %s --csv=csvForZeuz --host=http://example.com --no-web -t%ds -c %d -r %d" % (locust_file_path, time_period, no_of_users, hatch_rate), shell=True)
+
+                #upload_csv_file_info()
+            else:
+                run_test_case(TestCaseID[0], sModuleInfo, run_id, driver_list, final_dependency, final_run_params,
+                              temp_ini_file,is_linked, send_log_file_only_for_fail=send_log_file_only_for_fail)
+                all_logs_list = CommonUtil.get_all_logs()
+                write_all_logs_to_server(all_logs_list)
             CommonUtil.clear_all_logs()
 
         # calculate elapsed time of runid

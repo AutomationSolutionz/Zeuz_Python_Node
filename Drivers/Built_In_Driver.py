@@ -8,7 +8,7 @@ import sys
 from Framework.Utilities import CommonUtil
 from Framework.Built_In_Automation.Sequential_Actions import sequential_actions as sa
 
-def sequential_actions(dependency, run_time_params, step_data, file_attachment, temp_q,screen_capture,device_info,performance):
+def sequential_actions(dependency, run_time_params, step_data, file_attachment, temp_q,screen_capture,device_info,performance=False):
     try:
         sTestStepReturnStatus = sa.Sequential_Actions(step_data,dependency,run_time_params,file_attachment,temp_q,screen_capture,device_info,performance)
         return CommonUtil.Result_Analyzer(sTestStepReturnStatus, temp_q)

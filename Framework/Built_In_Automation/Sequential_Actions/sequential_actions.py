@@ -372,12 +372,13 @@ def Sequential_Actions(step_data, _dependency = {}, _run_time_params = {}, _file
 
     # Process step data
     #save the full step data in share variables
-    data_set=step_data[0]
-    step_data=step_data[1:]
-    sr.Set_Shared_Variables('step_data',step_data,protected=True)
+
     if performance: #if performance testing
-        result,skip_for_loop = handle_performance_testing(data_set)
+        step_data = step_data[1:]
+        sr.Set_Shared_Variables('step_data', step_data, protected=True)
+        #result,skip_for_loop = handle_performance_testing(data_set)
     else:
+        sr.Set_Shared_Variables('step_data', step_data, protected=True)
         result,skip_for_loop =  Run_Sequential_Actions([]) #empty list means run all, instead of step data we want to send the dataset no's of the step data to run
     write_browser_logs()
 
@@ -404,7 +405,6 @@ def handle_performance_testing(data_set):
             elif row[0].strip().lower() in ('time period'):
                 time_period=int(row[2])
 
-        subprocess.Popen("locust -f locustFile.py --csv=csvForZeuz --no-web -t%ds -c %d -r %d"%(time_period, no_of_users, hatch_rate), shell=True)
         #will add more code soon for result analyzing and upload csv to zeuz for showing table and graph
 
         CommonUtil.ExecLog(sModuleInfo, "Performance Testing handled successfully", 1)
