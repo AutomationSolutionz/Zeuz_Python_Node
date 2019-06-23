@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 # -*- coding: cp1252 -*-
 
-import inspect, os, time, sys, urllib2, Queue, importlib, requests, threading, subprocess
+import inspect, os, time, sys, urllib2, Queue, importlib, requests, threading, subprocess, signal
 from sys import platform as _platform
 from datetime import datetime
 from datetime import timedelta
@@ -556,10 +556,13 @@ def call_driver_function_of_test_step(sModuleInfo, TestStepsList, StepSeq, step_
 # runs all test steps of a test case
 def run_all_test_steps_in_a_test_case(Stepscount, test_case, sModuleInfo, run_id, TestStepsList, file_specific_steps,
                                       driver_list, final_dependency, final_run_params, test_case_result_index,
-                                      temp_ini_file, debug=False, debug_steps=[], is_linked=''):
+                                      temp_ini_file, debug=False, debug_steps=[], is_linked='', performance=False):
     StepSeq = 1
     sTestStepResultList = []
     already_failed = False
+    if performance:
+        StepSeq = 2
+        sTestStepResultList.append("Passed")
     while StepSeq <= Stepscount:
         if debug:
             if str(StepSeq) not in debug_steps:
@@ -886,7 +889,7 @@ def cleanup_driver_instances():  # cleans up driver(selenium,appium) instances
         pass
 
 
-def run_test_case(TestCaseID, sModuleInfo, run_id, driver_list, final_dependency, final_run_params, temp_ini_file, is_linked, send_log_file_only_for_fail=True):
+def run_test_case(TestCaseID, sModuleInfo, run_id, driver_list, final_dependency, final_run_params, temp_ini_file, is_linked, send_log_file_only_for_fail=True, performance=False):
     print "running"
     shared.Set_Shared_Variables('run_id', run_id)
     test_case = str(TestCaseID).replace('#','no')
@@ -937,7 +940,7 @@ def run_test_case(TestCaseID, sModuleInfo, run_id, driver_list, final_dependency
     sTestStepResultList = run_all_test_steps_in_a_test_case(Stepscount, test_case, sModuleInfo, run_id, TestStepsList,
                                                             file_specific_steps, driver_list, final_dependency,
                                                             final_run_params, test_case_result_index, temp_ini_file,
-                                                            debug, debug_steps,is_linked)
+                                                            debug, debug_steps,is_linked, performance)
 
     sTestCaseEndTime = datetime.fromtimestamp(time.time()).strftime('%Y-%m-%d %H:%M:%S')
     TestCaseEndTime = time.time()
@@ -1107,8 +1110,7 @@ def main(device_dict):
                 time_period = perf_data['time_period']
 
                 locust_file_path = os.getcwd() + os.sep + 'Built_In_Automation' + os.sep + 'Performance_Testing' + os.sep + 'locustFile.py'
-                subprocess.Popen("locust -f %s --csv=csvForZeuz --host=http://example.com --no-web -t%ds -c %d -r %d" % (locust_file_path, time_period, no_of_users, hatch_rate), shell=True)
-
+                process=subprocess.Popen("locust -f %s --csv=csvForZeuz --host=http://example.com --no-web -t%ds -c %d -r %d" % (locust_file_path, time_period, no_of_users, hatch_rate), shell=True)
                 #upload_csv_file_info()
             else:
                 run_test_case(TestCaseID[0], sModuleInfo, run_id, driver_list, final_dependency, final_run_params,

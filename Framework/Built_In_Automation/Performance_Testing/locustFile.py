@@ -9,38 +9,38 @@ from Framework import MainDriverApi
 
 class LocustUserBehavior(TaskSet):
 
-    @task
+    @task(1)
     def runLocust(self):
         print "Hello"
         #for testing, will change it
         file = open(r'/home/batman/Desktop/Node_Latest_Sreejoy/ZeuzPythonNode/Framework/Built_In_Automation/Performance_Testing/locustFileInput.txt','r')
-        TestCaseID=file.readline()
+        TestCaseID=str(file.readline()).strip()
         print TestCaseID
-        sModuleInfo=file.readline()
+        sModuleInfo=str(file.readline()).strip()
         print sModuleInfo
-        run_id=file.readline()
+        run_id=str(file.readline()).strip()
         print run_id
-        driver_list=ast.literal_eval(file.readline())
+        driver_list=ast.literal_eval(str(file.readline()).strip())
         print driver_list
-        final_dependency=ast.literal_eval(file.readline())
+        final_dependency=ast.literal_eval(str(file.readline()).strip())
         print final_dependency
-        final_run_params=ast.literal_eval(file.readline())
+        final_run_params=ast.literal_eval(str(file.readline()).strip())
         print final_run_params
-        temp_ini_file=file.readline()
+        temp_ini_file=str(file.readline()).strip()
         print temp_ini_file
-        is_linked=file.readline()
+        is_linked=str(file.readline()).strip()
         print is_linked
-        send_log_file_only_for_fail=ast.literal_eval(file.readline())
+        send_log_file_only_for_fail=ast.literal_eval(str(file.readline()).strip())
         print send_log_file_only_for_fail
         file.close()
-        MainDriverApi.run_test_case(TestCaseID, sModuleInfo, run_id, driver_list, final_dependency, final_run_params, temp_ini_file, is_linked, send_log_file_only_for_fail)
+        MainDriverApi.run_test_case(TestCaseID, sModuleInfo, run_id, driver_list, final_dependency, final_run_params, temp_ini_file, is_linked, send_log_file_only_for_fail, True)
 
 
 #class LocustUser(FirefoxLocust):
 #class LocustUser(ChromeLocust):
 #class LocustUser(PhantomJSLocust):
 class LocustUser(HttpLocust):
-    timeout = 300 #in seconds in waitUntil thingies
+    timeout = 30 #in seconds in waitUntil thingies
     min_wait = 100
     max_wait = 1000
     screen_width = 1200
