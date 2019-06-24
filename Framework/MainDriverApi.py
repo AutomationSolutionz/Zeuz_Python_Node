@@ -889,7 +889,7 @@ def cleanup_driver_instances():  # cleans up driver(selenium,appium) instances
         pass
 
 
-def run_test_case(TestCaseID, sModuleInfo, run_id, driver_list, final_dependency, final_run_params, temp_ini_file, is_linked, send_log_file_only_for_fail=True, performance=False):
+def run_test_case(TestCaseID, sModuleInfo, run_id, driver_list, final_dependency, final_run_params, temp_ini_file, is_linked, send_log_file_only_for_fail=True, performance=False, browserDriver=None):
     print "running"
     shared.Set_Shared_Variables('run_id', run_id)
     test_case = str(TestCaseID).replace('#','no')
@@ -935,6 +935,9 @@ def run_test_case(TestCaseID, sModuleInfo, run_id, driver_list, final_dependency
 
     if cleanup_drivers_during_debug:
         shared.Clean_Up_Shared_Variables()
+
+    if performance and browserDriver:
+        Shared_Resources.Set_Shared_Variables('selenium_driver', browserDriver)
 
     # runs all test steps in the test case, all test step result is stored in the list named sTestStepResultList
     sTestStepResultList = run_all_test_steps_in_a_test_case(Stepscount, test_case, sModuleInfo, run_id, TestStepsList,
@@ -1110,7 +1113,9 @@ def main(device_dict):
                 time_period = perf_data['time_period']
 
                 locust_file_path = os.getcwd() + os.sep + 'Built_In_Automation' + os.sep + 'Performance_Testing' + os.sep + 'locustFile.py'
-                process=subprocess.Popen("locust -f %s --csv=csvForZeuz --host=http://example.com --no-web -t%ds -c %d -r %d" % (locust_file_path, time_period, no_of_users, hatch_rate), shell=True)
+                locustQuery = "locust -f %s --csv=csvForZeuz --host=http://example.com --no-web -t%ds -c %d -r %d" % (locust_file_path, time_period, no_of_users, hatch_rate)
+                print locustQuery
+                process=subprocess.Popen(locustQuery, shell=True)
                 #upload_csv_file_info()
             else:
                 run_test_case(TestCaseID[0], sModuleInfo, run_id, driver_list, final_dependency, final_run_params,

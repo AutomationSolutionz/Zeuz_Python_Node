@@ -1,4 +1,4 @@
-#from realbrowserlocusts import FirefoxLocust, ChromeLocust, PhantomJSLocust
+from realbrowserlocusts import FirefoxLocust, ChromeLocust, PhantomJSLocust
 
 
 from locust import TaskSet, task, HttpLocust
@@ -9,7 +9,7 @@ from Framework import MainDriverApi
 
 class LocustUserBehavior(TaskSet):
 
-    @task(1)
+
     def runLocust(self):
         print "Hello"
         #for testing, will change it
@@ -33,16 +33,19 @@ class LocustUserBehavior(TaskSet):
         send_log_file_only_for_fail=ast.literal_eval(str(file.readline()).strip())
         print send_log_file_only_for_fail
         file.close()
-        MainDriverApi.run_test_case(TestCaseID, sModuleInfo, run_id, driver_list, final_dependency, final_run_params, temp_ini_file, is_linked, send_log_file_only_for_fail, True)
+        MainDriverApi.run_test_case(TestCaseID, sModuleInfo, run_id, driver_list, final_dependency, final_run_params, temp_ini_file, is_linked, send_log_file_only_for_fail, True, self.client)
 
+    @task(1)
+    def runTestCase(self):
+        self.client.timed_event_for_locust("Run", "Result", self.runLocust)
 
 #class LocustUser(FirefoxLocust):
-#class LocustUser(ChromeLocust):
+class LocustUser(ChromeLocust):
 #class LocustUser(PhantomJSLocust):
-class LocustUser(HttpLocust):
-    timeout = 30 #in seconds in waitUntil thingies
-    min_wait = 100
-    max_wait = 1000
+#class LocustUser(HttpLocust):
+    timeout = 100 #in seconds in waitUntil thingies
+    min_wait = 5000
+    max_wait = 9000
     screen_width = 1200
     screen_height = 600
     value=10
