@@ -7,13 +7,21 @@ import time, ast, os, sys
 sys.path.insert(0, r'/home/batman/Desktop/Node_Latest_Sreejoy/ZeuzPythonNode/Framework')
 from Framework import MainDriverApi
 
+def get_stop_timeout():
+    file = open(r'/home/batman/Desktop/Node_Latest_Sreejoy/ZeuzPythonNode/Framework/Built_In_Automation/Performance_Testing/locustFileInput.txt','r')
+    stop_timeout=int(str(file.readline()).strip())
+    return stop_timeout
+
 class LocustUserBehavior(TaskSet):
 
 
     def runLocust(self):
+        client=None
+        client=self.client
         print "Hello"
         #for testing, will change it
         file = open(r'/home/batman/Desktop/Node_Latest_Sreejoy/ZeuzPythonNode/Framework/Built_In_Automation/Performance_Testing/locustFileInput.txt','r')
+        file.readline()
         TestCaseID=str(file.readline()).strip()
         print TestCaseID
         sModuleInfo=str(file.readline()).strip()
@@ -33,21 +41,23 @@ class LocustUserBehavior(TaskSet):
         send_log_file_only_for_fail=ast.literal_eval(str(file.readline()).strip())
         print send_log_file_only_for_fail
         file.close()
-        MainDriverApi.run_test_case(TestCaseID, sModuleInfo, run_id, driver_list, final_dependency, final_run_params, temp_ini_file, is_linked, send_log_file_only_for_fail, True, self.client)
+        MainDriverApi.run_test_case(TestCaseID, sModuleInfo, run_id, driver_list, final_dependency, final_run_params, temp_ini_file, is_linked, send_log_file_only_for_fail, True, client)
 
-    @task(1)
+    @task
     def runTestCase(self):
-        self.client.timed_event_for_locust("Run", "Result", self.runLocust)
+        self.runLocust()
+        #self.client.timed_event_for_locust("Run", "Result", self.runLocust)
 
-#class LocustUser(FirefoxLocust):
-class LocustUser(ChromeLocust):
+class LocustUser(FirefoxLocust):
+#class LocustUser(ChromeLocust):
 #class LocustUser(PhantomJSLocust):
 #class LocustUser(HttpLocust):
-    timeout = 100 #in seconds in waitUntil thingies
+    stop_timeout = get_stop_timeout() #in seconds in waitUntil thingies
     min_wait = 5000
     max_wait = 9000
     screen_width = 1200
     screen_height = 600
-    value=10
-    #LocustUserBehavior.val=value
+    locust_output_file_path = os.getcwd() + os.sep + 'Built_In_Automation' + os.sep + 'Performance_Testing' + os.sep + 'locustFileOutput.txt'
+    if os.path.exists(locust_output_file_path):
+        os.remove(locust_output_file_path)
     task_set = LocustUserBehavior

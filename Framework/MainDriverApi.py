@@ -562,7 +562,7 @@ def run_all_test_steps_in_a_test_case(Stepscount, test_case, sModuleInfo, run_id
     already_failed = False
     if performance:
         StepSeq = 2
-        sTestStepResultList.append("Passed")
+        sTestStepResultList.append("PASSED")
     while StepSeq <= Stepscount:
         if debug:
             if str(StepSeq) not in debug_steps:
@@ -950,6 +950,11 @@ def run_test_case(TestCaseID, sModuleInfo, run_id, driver_list, final_dependency
     # Decide if Test Case Pass/Failed
     sTestCaseStatus = calculate_test_case_result(sModuleInfo, test_case, run_id, sTestStepResultList)
 
+    if performance:
+        locust_output_file_path = os.getcwd() + os.sep + 'Built_In_Automation' + os.sep + 'Performance_Testing' + os.sep + 'locustFileOutput.txt'
+        file = open(locust_output_file_path, 'a+')
+        file.write(sTestCaseStatus + "-" + str(",".join(sTestStepResultList)) + '\n')
+
     # Time it took to run the test case
     TimeDiff = TestCaseEndTime - TestCaseStartTime
     TimeInSec = int(TimeDiff)
@@ -1012,11 +1017,12 @@ def get_performance_testing_data_for_test_case(run_id, TestCaseID):
     return RequestFormatter.Get('get_performance_testing_data_for_test_case_api',{'run_id': run_id, 'test_case': TestCaseID})
 
 
-def write_locust_input_file(perf_data, TestCaseID, sModuleInfo, run_id, driver_list, final_dependency, final_run_params,
+def write_locust_input_file(time_period, perf_data, TestCaseID, sModuleInfo, run_id, driver_list, final_dependency, final_run_params,
                               temp_ini_file, is_linked, send_log_file_only_for_fail):
     try:
         locust_input_file_path = os.getcwd() + os.sep + 'Built_In_Automation' + os.sep + 'Performance_Testing' + os.sep + 'locustFileInput.txt'
         file = open(locust_input_file_path,'w')
+        file.write(str(time_period) + '\n')
         file.write(str(TestCaseID)+'\n')
         file.write(str(sModuleInfo)+'\n')
         file.write(str(run_id)+'\n')
@@ -1106,16 +1112,27 @@ def main(device_dict):
 
             if performance_test_case:
                 perf_data = get_performance_testing_data_for_test_case(run_id, TestCaseID[0])
-                write_locust_input_file(perf_data, TestCaseID[0], sModuleInfo, run_id, driver_list, final_dependency, final_run_params,
-                              temp_ini_file, is_linked, send_log_file_only_for_fail=send_log_file_only_for_fail)
                 hatch_rate = perf_data['hatch_rate']
                 no_of_users = perf_data['no_of_users']
                 time_period = perf_data['time_period']
+                write_locust_input_file(time_period, perf_data, TestCaseID[0], sModuleInfo, run_id, driver_list, final_dependency, final_run_params,
+                              temp_ini_file, is_linked, send_log_file_only_for_fail=send_log_file_only_for_fail)
 
-                locust_file_path = os.getcwd() + os.sep + 'Built_In_Automation' + os.sep + 'Performance_Testing' + os.sep + 'locustFile.py'
-                locustQuery = "locust -f %s --csv=csvForZeuz --host=http://example.com --no-web -t%ds -c %d -r %d" % (locust_file_path, time_period, no_of_users, hatch_rate)
+                locustFile = 'chromeLocustFile.py'
+                if 'Browser' in final_dependency:
+                    if final_dependency['Browser'].lower() == 'chrome':
+                        locustFile = 'chromeLocustFile.py'
+                    else:
+                        locustFile = 'firefoxLocustFile.py'
+                else:
+                    locustFile = 'restLocustFile.py'
+
+                locust_file_path = os.getcwd() + os.sep + 'Built_In_Automation' + os.sep + 'Performance_Testing' + os.sep + locustFile
+                locustQuery = "locust -f %s --no-web --host=http://example.com -c %d -r %d" % (locust_file_path, no_of_users, hatch_rate)
                 print locustQuery
                 process=subprocess.Popen(locustQuery, shell=True)
+                #process.wait()
+                print "Finished"
                 #upload_csv_file_info()
             else:
                 run_test_case(TestCaseID[0], sModuleInfo, run_id, driver_list, final_dependency, final_run_params,
