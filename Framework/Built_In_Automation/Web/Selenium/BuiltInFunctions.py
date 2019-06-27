@@ -178,6 +178,7 @@ def Go_To_Link(step_data, page_title=False):
     
     # Open browser and create driver if user has not already done so
     try:
+        global selenium_driver
         if Shared_Resources.Test_Shared_Variables('selenium_driver') == False:
             CommonUtil.ExecLog(sModuleInfo, "Browser not previously opened, doing so now", 1)
             global dependency
@@ -189,6 +190,8 @@ def Go_To_Link(step_data, page_title=False):
             result = Open_Browser(dependency)
             if result in failed_tag_list:
                 return 'failed'
+        else:
+            selenium_driver = Shared_Resources.Get_Shared_Variables("selenium_driver")
     except Exception:
         ErrorMessage =  "failed to open browser"
         return CommonUtil.Exception_Handler(sys.exc_info(), None, ErrorMessage)
@@ -251,6 +254,7 @@ def Enter_Text_In_Text_Box(step_data):
     try:
         delay=0
         text_value=""
+        global selenium_driver
         Element = LocateElement.Get_Element(step_data,selenium_driver)
         if Element != "failed":
             for each in step_data:
@@ -292,7 +296,7 @@ def Keystroke_For_Element(data_set):
     
     sModuleInfo = inspect.stack()[0][3] + " : " + inspect.getmoduleinfo(__file__).name
     CommonUtil.ExecLog(sModuleInfo, "Function start", 0)
-    
+    global selenium_driver
     # Parse the data set
     try:
         stype = '' # keys/chars
@@ -361,7 +365,7 @@ def Click_Element(data_set):
     
     sModuleInfo = inspect.stack()[0][3] + " : " + inspect.getmoduleinfo(__file__).name
     CommonUtil.ExecLog(sModuleInfo, "Function start", 0)
-        
+    global selenium_driver
     try:
         bodyElement = ''
         for row in data_set:
@@ -424,7 +428,7 @@ def Click_Element(data_set):
 def Click_and_Hold_Element(step_data):
     sModuleInfo = inspect.stack()[0][3] + " : " + inspect.getmoduleinfo(__file__).name
     CommonUtil.ExecLog(sModuleInfo,"Function Start", 0)
-
+    global selenium_driver
     try:
         Element = LocateElement.Get_Element(step_data,selenium_driver)
         if Element != "failed":
@@ -450,7 +454,7 @@ def Click_and_Hold_Element(step_data):
 def Context_Click_Element(step_data):
     sModuleInfo = inspect.stack()[0][3] + " : " + inspect.getmoduleinfo(__file__).name
     CommonUtil.ExecLog(sModuleInfo,"Function Start", 0)
-
+    global selenium_driver
     try:
         Element = LocateElement.Get_Element(step_data,selenium_driver)
         if Element != "failed":
@@ -475,7 +479,7 @@ def Context_Click_Element(step_data):
 def Double_Click_Element(step_data):
     sModuleInfo = inspect.stack()[0][3] + " : " + inspect.getmoduleinfo(__file__).name
     CommonUtil.ExecLog(sModuleInfo,"Function Start", 0)
-
+    global selenium_driver
     try:
         Element = LocateElement.Get_Element(step_data,selenium_driver)
         if Element != "failed":
@@ -501,7 +505,7 @@ def Double_Click_Element(step_data):
 def Move_To_Element(step_data):
     sModuleInfo = inspect.stack()[0][3] + " : " + inspect.getmoduleinfo(__file__).name
     CommonUtil.ExecLog(sModuleInfo,"Function Start", 0)
-
+    global selenium_driver
     try:
         Element = LocateElement.Get_Element(step_data,selenium_driver)
         if Element != "failed":
@@ -526,7 +530,7 @@ def Move_To_Element(step_data):
 def Hover_Over_Element(step_data):
     sModuleInfo = inspect.stack()[0][3] + " : " + inspect.getmoduleinfo(__file__).name
     CommonUtil.ExecLog(sModuleInfo,"Function Start", 0)
-
+    global selenium_driver
     try:
         Element = LocateElement.Get_Element(step_data,selenium_driver)
         if Element != "failed":
@@ -552,7 +556,7 @@ def get_location_of_element(data_set):
     
     sModuleInfo = inspect.stack()[0][3] + " : " + inspect.getmoduleinfo(__file__).name
     CommonUtil.ExecLog(sModuleInfo, "Function start", 0)
-
+    global selenium_driver
     # Parse data set
     try:
         shared_var = ''
@@ -594,7 +598,7 @@ def get_location_of_element(data_set):
 def Wait_For_New_Element(step_data):
     sModuleInfo = inspect.stack()[0][3] + " : " + inspect.getmoduleinfo(__file__).name
     CommonUtil.ExecLog(sModuleInfo,"Function Start", 0)
-
+    global selenium_driver
     try:
         Element = LocateElement.Get_Element(step_data,selenium_driver)
         wait_for_element_to_disappear = False
@@ -720,7 +724,7 @@ def Insert_Into_List(step_data):
 def Save_Text(step_data):
     sModuleInfo = inspect.stack()[0][3] + " : " + inspect.getmoduleinfo(__file__).name
     CommonUtil.ExecLog(sModuleInfo, "Function start", 0)
-
+    global selenium_driver
     try:
         Element = LocateElement.Get_Element(step_data,selenium_driver)
         if Element == "failed":
@@ -749,7 +753,7 @@ def Save_Text(step_data):
 def Validate_Text(step_data):
     sModuleInfo = inspect.stack()[0][3] + " : " + inspect.getmoduleinfo(__file__).name
     CommonUtil.ExecLog(sModuleInfo, "Function start", 0)
-
+    global selenium_driver
     try:
         Element = LocateElement.Get_Element(step_data,selenium_driver)
         if Element == "failed":
@@ -801,7 +805,7 @@ def Validate_Text(step_data):
 def Sleep(step_data):
     sModuleInfo = inspect.stack()[0][3] + " : " + inspect.getmoduleinfo(__file__).name
     CommonUtil.ExecLog(sModuleInfo, "Function start", 0)
-
+    global selenium_driver
     try:
         if ((1 < len(step_data) >= 2)):
             CommonUtil.ExecLog(sModuleInfo,"Please provide single row of data for only sleep. Consider using wait instead",3)
@@ -821,7 +825,7 @@ def Sleep(step_data):
 def Scroll(step_data):
     sModuleInfo = inspect.stack()[0][3] + " : " + inspect.getmoduleinfo(__file__).name
     CommonUtil.ExecLog(sModuleInfo, "Function start", 0)
-
+    global selenium_driver
     try:
         scroll_inside_element = False
         scroll_window_name = 'window'
@@ -884,7 +888,7 @@ def Scroll(step_data):
 def scroll_to_element(step_data):
     sModuleInfo = inspect.stack()[0][3] + " : " + inspect.getmoduleinfo(__file__).name
     CommonUtil.ExecLog(sModuleInfo, "Function start", 0)
-
+    global selenium_driver
     try:
         scroll_element = LocateElement.Get_Element(step_data, selenium_driver)
         if scroll_element in failed_tag_list:
@@ -904,7 +908,7 @@ def scroll_to_element(step_data):
 def Navigate(step_data):
     sModuleInfo = inspect.stack()[0][3] + " : " + inspect.getmoduleinfo(__file__).name
     CommonUtil.ExecLog(sModuleInfo, "Function start", 0)
-
+    global selenium_driver
     try:
         if ((1 < len(step_data) >= 2)):
             CommonUtil.ExecLog(sModuleInfo,"Please provide only single row of data",3)
@@ -931,7 +935,7 @@ def Navigate(step_data):
 def Select_Deselect(step_data):
     sModuleInfo = inspect.stack()[0][3] + " : " + inspect.getmoduleinfo(__file__).name
     CommonUtil.ExecLog(sModuleInfo, "Function start", 0)
-
+    global selenium_driver
     try:
         Element = LocateElement.Get_Element(step_data,selenium_driver)
         if Element == "failed":
@@ -1000,7 +1004,7 @@ def validate_table(data_set):
     # > ignore columns: Ignores the comma delimited columns specified in the Value field
     # > case: Value=Sensitive: This is the default, and values must match exactly. Value=insensitive: Perform case insensitive matching
     # > exact: True (default) do nothing. False= Infer which cells to ignore. This is similar to ignore rows/cols, but can ignore specific cells if the user does not specify them. Mutually exclusive of ignore rows/cols
-
+    global selenium_driver
     sModuleInfo = inspect.stack()[0][3] + " : " + inspect.getmoduleinfo(__file__).name
     CommonUtil.ExecLog(sModuleInfo, "Function start", 0)
     
@@ -1124,7 +1128,7 @@ def validate_table_row_size(data_set):
 
     sModuleInfo = inspect.stack()[0][3] + " : " + inspect.getmoduleinfo(__file__).name
     CommonUtil.ExecLog(sModuleInfo, "Function start", 0)
-
+    global selenium_driver
     try:
         # Initialize variables
         expected_row = '' #variable where the row size will be saved
@@ -1174,7 +1178,7 @@ def validate_table_row_size(data_set):
 
 def validate_table_column_size(data_set):
     ''' Save row size in a share variable of the table provided in step data'''
-
+    global selenium_driver
     sModuleInfo = inspect.stack()[0][3] + " : " + inspect.getmoduleinfo(__file__).name
     CommonUtil.ExecLog(sModuleInfo, "Function start", 0)
     try:
@@ -1244,7 +1248,7 @@ def get_webpage_table_html(data_set, ignore_rows = [], ignore_cols = [], retain_
     
     sModuleInfo = inspect.stack()[0][3] + " : " + inspect.getmoduleinfo(__file__).name
     CommonUtil.ExecLog(sModuleInfo, "Function start", 0)
-    
+    global selenium_driver
     try:
         # Get element representing entire table
         table = LocateElement.Get_Element(data_set, selenium_driver)
@@ -1280,7 +1284,7 @@ def get_webpage_table_css(data_set, ignore_rows = [], ignore_cols = [], retain_c
     
     sModuleInfo = inspect.stack()[0][3] + " : " + inspect.getmoduleinfo(__file__).name
     CommonUtil.ExecLog(sModuleInfo, "Function start", 0)
-    
+    global selenium_driver
     try:
         # Get element representing entire table
         table = LocateElement.Get_Element(data_set, selenium_driver)
@@ -1323,7 +1327,7 @@ def get_webpage_table_css(data_set, ignore_rows = [], ignore_cols = [], retain_c
 def Tear_Down_Selenium(step_data = [[[]]]):
     sModuleInfo = inspect.stack()[0][3] + " : " + inspect.getmoduleinfo(__file__).name
     CommonUtil.ExecLog(sModuleInfo,"Function Start", 0)
-
+    global selenium_driver
     try:
         CommonUtil.ExecLog(sModuleInfo, "Trying to tear down the page and close the browser...", 0)
         selenium_driver.quit()
@@ -1338,7 +1342,7 @@ def Tear_Down_Selenium(step_data = [[[]]]):
 def Get_Plain_Text_Element(element_parameter, element_value, parent=False):
     sModuleInfo = inspect.stack()[0][3] + " : " + inspect.getmoduleinfo(__file__).name
     CommonUtil.ExecLog(sModuleInfo, "Function start", 0)
-
+    global selenium_driver
     try:
         if parent==False:
             all_elements_with_text = selenium_driver.find_elements_by_xpath(".//*")
@@ -1387,6 +1391,7 @@ def Get_Plain_Text_Element(element_parameter, element_value, parent=False):
         return CommonUtil.Exception_Handler(sys.exc_info(),None,errMsg)
 
 def get_driver():
+    global selenium_driver
     return selenium_driver
 
 
@@ -1394,7 +1399,7 @@ def get_driver():
 def open_new_tab(step_data):
     sModuleInfo = inspect.stack()[0][3] + " : " + inspect.getmoduleinfo(__file__).name
     CommonUtil.ExecLog(sModuleInfo, "Function start", 0)
-
+    global selenium_driver
     try:
         time.sleep(2)
         CommonUtil.ExecLog(sModuleInfo, "Opening New Tab in Browser", 1)
@@ -1411,7 +1416,7 @@ def open_new_tab(step_data):
 def switch_tab(step_data):
     sModuleInfo = inspect.stack()[0][3] + " : " + inspect.getmoduleinfo(__file__).name
     CommonUtil.ExecLog(sModuleInfo, "Function start", 0)
-
+    global selenium_driver
     try:
         tab = 1
         for each in step_data:
@@ -1432,7 +1437,7 @@ def switch_tab(step_data):
 def upload_file(step_data):
     sModuleInfo = inspect.stack()[0][3] + " : " + inspect.getmoduleinfo(__file__).name
     CommonUtil.ExecLog(sModuleInfo, "Function start", 0)
-
+    global selenium_driver
     try:
         file_name = ''
         for each in step_data:
@@ -1466,7 +1471,7 @@ def upload_file(step_data):
 def drag_and_drop(step_data):
     sModuleInfo = inspect.stack()[0][3] + " : " + inspect.getmoduleinfo(__file__).name
     CommonUtil.ExecLog(sModuleInfo, "Function start", 0)
-
+    global selenium_driver
     try:
         source = ''
         destination = ''
@@ -1506,7 +1511,7 @@ def if_element_exists(data_set):
 
     sModuleInfo = inspect.stack()[0][3] + " : " + inspect.getmoduleinfo(__file__).name
     CommonUtil.ExecLog(sModuleInfo, "Function Start", 0)
-
+    global selenium_driver
     try:
         variable_name = ''
         boolean = 'true'

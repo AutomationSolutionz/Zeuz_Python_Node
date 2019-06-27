@@ -16,8 +16,6 @@ class LocustUserBehavior(TaskSet):
 
 
     def runLocust(self):
-        client=None
-        client=self.client
         print "Hello"
         #for testing, will change it
         file = open(os.getcwd() + os.sep + 'Built_In_Automation' + os.sep + 'Performance_Testing' + os.sep +'locustFileInput.txt','r')
@@ -41,12 +39,12 @@ class LocustUserBehavior(TaskSet):
         send_log_file_only_for_fail=ast.literal_eval(str(file.readline()).strip())
         print send_log_file_only_for_fail
         file.close()
-        MainDriverApi.run_test_case(TestCaseID, sModuleInfo, run_id, driver_list, final_dependency, final_run_params, temp_ini_file, is_linked, send_log_file_only_for_fail, True, client)
+        MainDriverApi.run_test_case(TestCaseID, sModuleInfo, run_id, driver_list, final_dependency, final_run_params, temp_ini_file, is_linked, send_log_file_only_for_fail, True, self.client)
 
     @task
     def runTestCase(self):
-        self.runLocust()
-        #self.client.timed_event_for_locust("Run", "Result", self.runLocust)
+        #self.runLocust()
+        self.client.timed_event_for_locust("Run", "Result", self.runLocust)
 
 class LocustUser(FirefoxLocust):
 #class LocustUser(ChromeLocust):

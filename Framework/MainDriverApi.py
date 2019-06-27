@@ -937,7 +937,7 @@ def run_test_case(TestCaseID, sModuleInfo, run_id, driver_list, final_dependency
         shared.Clean_Up_Shared_Variables()
 
     if performance and browserDriver:
-        Shared_Resources.Set_Shared_Variables('selenium_driver', browserDriver)
+        shared.Set_Shared_Variables('selenium_driver', browserDriver)
 
     # runs all test steps in the test case, all test step result is stored in the list named sTestStepResultList
     sTestStepResultList = run_all_test_steps_in_a_test_case(Stepscount, test_case, sModuleInfo, run_id, TestStepsList,
@@ -1061,7 +1061,7 @@ def upload_csv_file_info(run_id, test_case):
             data = file.readline()
         file.close()
 
-        csv_result_input_file_path = os.getcwd() + os.sep + 'Built_In_Automation' + os.sep + 'Performance_Testing' + os.sep + 'csvForZeuz_requests.csv'
+        csv_result_input_file_path = os.getcwd() + os.sep + 'csvForZeuz_requests.csv'
         file = open(csv_result_input_file_path, 'r')
         file.readline()
         result_data=file.readline()
@@ -1171,7 +1171,7 @@ def main(device_dict):
                     locustFile = 'restLocustFile.py'
 
                 locust_file_path = os.getcwd() + os.sep + 'Built_In_Automation' + os.sep + 'Performance_Testing' + os.sep + locustFile
-                locustQuery = "locust -f %s --no-web --host=http://example.com -c %d -r %d" % (locust_file_path, no_of_users, hatch_rate)
+                locustQuery = "locust -f %s --csv=csvForZeuz --no-web --host=http://example.com -c %d -r %d" % (locust_file_path, no_of_users, hatch_rate)
 
                 CommonUtil.ExecLog(sModuleInfo, "Running Performance Test Case %s with total %d users, in a rate %s new users/second and each user will run for %s seconds"%(TestCaseID[0], no_of_users, hatch_rate,time_period), 1)
 
