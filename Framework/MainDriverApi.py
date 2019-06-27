@@ -5,7 +5,7 @@ import inspect, os, time, sys, urllib2, Queue, importlib, requests, threading, s
 from sys import platform as _platform
 from datetime import datetime
 from datetime import timedelta
-
+from threading import Timer
 from Framework.Built_In_Automation import Shared_Resources
 from Utilities import ConfigModule, FileUtilities as FL, CommonUtil, RequestFormatter
 from Framework.Built_In_Automation.Shared_Resources import BuiltInFunctionSharedResources as shared
@@ -952,8 +952,22 @@ def run_test_case(TestCaseID, sModuleInfo, run_id, driver_list, final_dependency
 
     if performance:
         locust_output_file_path = os.getcwd() + os.sep + 'Built_In_Automation' + os.sep + 'Performance_Testing' + os.sep + 'locustFileOutput.txt'
+        failreason_output_file_path = os.getcwd() + os.sep + 'Built_In_Automation' + os.sep + 'Performance_Testing' + os.sep + 'locustFailReason.txt'
         file = open(locust_output_file_path, 'a+')
         file.write(sTestCaseStatus + "-" + str(",".join(sTestStepResultList)) + '\n')
+        file.close()
+
+        FailReason = ""
+        if sTestCaseStatus in failed_tag_list:
+            try:
+                FailReason = get_fail_reason_of_a_test_case(run_id, test_case)
+            except Exception:
+                CommonUtil.Exception_Handler(sys.exc_info())
+                FailReason = ""
+        failReasonFile = open(failreason_output_file_path, 'a+')
+        failReasonFile.write(FailReason + '\n')
+        failReasonFile.close()
+
 
     # Time it took to run the test case
     TimeDiff = TestCaseEndTime - TestCaseStartTime
@@ -1033,6 +1047,35 @@ def write_locust_input_file(time_period, perf_data, TestCaseID, sModuleInfo, run
         file.write(str(is_linked)+'\n')
         file.write(str(send_log_file_only_for_fail)+'\n')
         file.close()
+    except:
+        pass
+
+def upload_csv_file_info(run_id, test_case):
+    try:
+        failReason=[]
+        failReason_file_path = os.getcwd() + os.sep + 'Built_In_Automation' + os.sep + 'Performance_Testing' + os.sep + 'locustFailReason.txt'
+        file = open(failReason_file_path, 'r')
+        data = file.readline()
+        while data:
+            failReason.append(data.strip())
+            data = file.readline()
+        file.close()
+
+        csv_result_input_file_path = os.getcwd() + os.sep + 'Built_In_Automation' + os.sep + 'Performance_Testing' + os.sep + 'csvForZeuz_requests.csv'
+        file = open(csv_result_input_file_path, 'r')
+        file.readline()
+        result_data=file.readline()
+        file.close()
+        test_case_result=[]
+        test_case_result_input_file_path = os.getcwd() + os.sep + 'Built_In_Automation' + os.sep + 'Performance_Testing' + os.sep + 'locustFileOutput.txt'
+        file = open(test_case_result_input_file_path, 'r')
+        data=file.readline()
+        while data:
+            test_case_result.append(data.strip())
+            data=file.readline()
+        file.close()
+
+        RequestFormatter.Get('send_performance_data_api', {'run_id': run_id, 'test_case': test_case, 'result_data': result_data, 'test_case_result': test_case_result,'failReason':failReason})
     except:
         pass
 
@@ -1129,11 +1172,25 @@ def main(device_dict):
 
                 locust_file_path = os.getcwd() + os.sep + 'Built_In_Automation' + os.sep + 'Performance_Testing' + os.sep + locustFile
                 locustQuery = "locust -f %s --no-web --host=http://example.com -c %d -r %d" % (locust_file_path, no_of_users, hatch_rate)
-                print locustQuery
-                process=subprocess.Popen(locustQuery, shell=True)
-                #process.wait()
-                print "Finished"
-                #upload_csv_file_info()
+
+                CommonUtil.ExecLog(sModuleInfo, "Running Performance Test Case %s with total %d users, in a rate %s new users/second and each user will run for %s seconds"%(TestCaseID[0], no_of_users, hatch_rate,time_period), 1)
+
+                try:
+                    kill = lambda process: process.kill()
+                    process=subprocess.Popen(locustQuery, shell=True)
+                    my_timer = Timer(no_of_users*time_period, kill, [process])
+
+                    try:
+                        my_timer.start()
+                        stdout, stderr = process.communicate()
+                    finally:
+                        my_timer.cancel()
+                except Exception,e:
+                    print "exception"
+                    pass
+                CommonUtil.ExecLog(sModuleInfo, "Uploading Performance Test Results", 1)
+                upload_csv_file_info(run_id, TestCaseID[0])
+                CommonUtil.ExecLog(sModuleInfo, "Performance Test Results Uploaded Successfully", 1)
             else:
                 run_test_case(TestCaseID[0], sModuleInfo, run_id, driver_list, final_dependency, final_run_params,
                               temp_ini_file,is_linked, send_log_file_only_for_fail=send_log_file_only_for_fail)

@@ -4,11 +4,11 @@ from realbrowserlocusts import FirefoxLocust, ChromeLocust, PhantomJSLocust
 from locust import TaskSet, task, HttpLocust
 import time, ast, os, sys
 #for testing, will change it
-sys.path.insert(0, r'/home/batman/Desktop/Node_Latest_Sreejoy/ZeuzPythonNode/Framework')
+sys.path.insert(0, os.getcwd())
 from Framework import MainDriverApi
 
 def get_stop_timeout():
-    file = open(r'/home/batman/Desktop/Node_Latest_Sreejoy/ZeuzPythonNode/Framework/Built_In_Automation/Performance_Testing/locustFileInput.txt','r')
+    file = open(os.getcwd() + os.sep + 'Built_In_Automation' + os.sep + 'Performance_Testing' + os.sep +'locustFileInput.txt','r')
     stop_timeout=int(str(file.readline()).strip())
     return stop_timeout
 
@@ -20,7 +20,7 @@ class LocustUserBehavior(TaskSet):
         client=self.client
         print "Hello"
         #for testing, will change it
-        file = open(r'/home/batman/Desktop/Node_Latest_Sreejoy/ZeuzPythonNode/Framework/Built_In_Automation/Performance_Testing/locustFileInput.txt','r')
+        file = open(os.getcwd() + os.sep + 'Built_In_Automation' + os.sep + 'Performance_Testing' + os.sep +'locustFileInput.txt','r')
         file.readline()
         TestCaseID=str(file.readline()).strip()
         print TestCaseID
@@ -60,4 +60,7 @@ class LocustUser(ChromeLocust):
     locust_output_file_path = os.getcwd() + os.sep + 'Built_In_Automation' + os.sep + 'Performance_Testing' + os.sep + 'locustFileOutput.txt'
     if os.path.exists(locust_output_file_path):
         os.remove(locust_output_file_path)
+    locust_fail_reason_file_path = os.getcwd() + os.sep + 'Built_In_Automation' + os.sep + 'Performance_Testing' + os.sep + 'locustFailReason.txt'
+    if os.path.exists(locust_fail_reason_file_path):
+        os.remove(locust_fail_reason_file_path)
     task_set = LocustUserBehavior
