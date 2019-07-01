@@ -3,7 +3,6 @@ from realbrowserlocusts import FirefoxLocust, ChromeLocust, PhantomJSLocust
 
 from locust import TaskSet, task, HttpLocust
 import time, ast, os, sys
-#for testing, will change it
 sys.path.insert(0, os.getcwd())
 from Framework import MainDriverApi
 
@@ -16,8 +15,6 @@ class LocustUserBehavior(TaskSet):
 
 
     def runLocust(self):
-        print "Hello"
-        #for testing, will change it
         file = open(os.getcwd() + os.sep + 'Built_In_Automation' + os.sep + 'Performance_Testing' + os.sep +'locustFileInput.txt','r')
         file.readline()
         TestCaseID=str(file.readline()).strip()
@@ -43,8 +40,8 @@ class LocustUserBehavior(TaskSet):
 
     @task
     def runTestCase(self):
-        #self.runLocust()
-        self.client.timed_event_for_locust("Run", "Result", self.runLocust)
+        self.runLocust()
+        #self.client.timed_event_for_locust("Run", "Result", self.runLocust)
 
 class LocustUser(FirefoxLocust):
 #class LocustUser(ChromeLocust):
@@ -58,7 +55,5 @@ class LocustUser(FirefoxLocust):
     locust_output_file_path = os.getcwd() + os.sep + 'Built_In_Automation' + os.sep + 'Performance_Testing' + os.sep + 'locustFileOutput.txt'
     if os.path.exists(locust_output_file_path):
         os.remove(locust_output_file_path)
-    locust_fail_reason_file_path = os.getcwd() + os.sep + 'Built_In_Automation' + os.sep + 'Performance_Testing' + os.sep + 'locustFailReason.txt'
-    if os.path.exists(locust_fail_reason_file_path):
-        os.remove(locust_fail_reason_file_path)
+        print "output file deleted"
     task_set = LocustUserBehavior

@@ -3,9 +3,10 @@ from realbrowserlocusts import FirefoxLocust, ChromeLocust, PhantomJSLocust
 
 from locust import TaskSet, task, HttpLocust
 import time, ast, os, sys
-#for testing, will change it
 sys.path.insert(0, os.getcwd())
 from Framework import MainDriverApi
+from Framework.Utilities import CommonUtil
+from concurrent.futures import ThreadPoolExecutor
 
 def get_stop_timeout():
     file = open(os.getcwd() + os.sep + 'Built_In_Automation' + os.sep + 'Performance_Testing' + os.sep +'locustFileInput.txt','r')
@@ -16,8 +17,6 @@ class LocustUserBehavior(TaskSet):
 
 
     def runLocust(self):
-        print "Hello"
-        #for testing, will change it
         file = open(os.getcwd() + os.sep + 'Built_In_Automation' + os.sep + 'Performance_Testing' + os.sep +'locustFileInput.txt','r')
         file.readline()
         TestCaseID=str(file.readline()).strip()
@@ -41,10 +40,10 @@ class LocustUserBehavior(TaskSet):
         file.close()
         MainDriverApi.run_test_case(TestCaseID, sModuleInfo, run_id, driver_list, final_dependency, final_run_params, temp_ini_file, is_linked, send_log_file_only_for_fail, True, self.client)
 
-    @task(1)
+    @task
     def runTestCase(self):
-        #self.runLocust()
-        self.client.timed_event_for_locust("Run", "Result", self.runLocust)
+        self.runLocust()
+        #self.client.timed_event_for_locust("Run", "Result", self.runLocust)
 
 #class LocustUser(FirefoxLocust):
 class LocustUser(ChromeLocust):
@@ -58,7 +57,6 @@ class LocustUser(ChromeLocust):
     locust_output_file_path = os.getcwd() + os.sep + 'Built_In_Automation' + os.sep + 'Performance_Testing' + os.sep + 'locustFileOutput.txt'
     if os.path.exists(locust_output_file_path):
         os.remove(locust_output_file_path)
-    locust_fail_reason_file_path = os.getcwd() + os.sep + 'Built_In_Automation' + os.sep + 'Performance_Testing' + os.sep + 'locustFailReason.txt'
-    if os.path.exists(locust_fail_reason_file_path):
-        os.remove(locust_fail_reason_file_path)
+        print "output file deleted"
+    CommonUtil.log_thread_pool = ThreadPoolExecutor(max_workers=10)
     task_set = LocustUserBehavior

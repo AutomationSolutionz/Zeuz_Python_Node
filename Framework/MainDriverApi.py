@@ -890,7 +890,6 @@ def cleanup_driver_instances():  # cleans up driver(selenium,appium) instances
 
 
 def run_test_case(TestCaseID, sModuleInfo, run_id, driver_list, final_dependency, final_run_params, temp_ini_file, is_linked, send_log_file_only_for_fail=True, performance=False, browserDriver=None):
-    print "running"
     shared.Set_Shared_Variables('run_id', run_id)
     test_case = str(TestCaseID).replace('#','no')
     copy_status = False
@@ -952,22 +951,9 @@ def run_test_case(TestCaseID, sModuleInfo, run_id, driver_list, final_dependency
 
     if performance:
         locust_output_file_path = os.getcwd() + os.sep + 'Built_In_Automation' + os.sep + 'Performance_Testing' + os.sep + 'locustFileOutput.txt'
-        failreason_output_file_path = os.getcwd() + os.sep + 'Built_In_Automation' + os.sep + 'Performance_Testing' + os.sep + 'locustFailReason.txt'
         file = open(locust_output_file_path, 'a+')
         file.write(sTestCaseStatus + "-" + str(",".join(sTestStepResultList)) + '\n')
         file.close()
-
-        FailReason = ""
-        if sTestCaseStatus in failed_tag_list:
-            try:
-                FailReason = get_fail_reason_of_a_test_case(run_id, test_case)
-            except Exception:
-                CommonUtil.Exception_Handler(sys.exc_info())
-                FailReason = ""
-        failReasonFile = open(failreason_output_file_path, 'a+')
-        failReasonFile.write(FailReason + '\n')
-        failReasonFile.close()
-
 
     # Time it took to run the test case
     TimeDiff = TestCaseEndTime - TestCaseStartTime
@@ -1052,15 +1038,6 @@ def write_locust_input_file(time_period, perf_data, TestCaseID, sModuleInfo, run
 
 def upload_csv_file_info(run_id, test_case):
     try:
-        failReason=[]
-        failReason_file_path = os.getcwd() + os.sep + 'Built_In_Automation' + os.sep + 'Performance_Testing' + os.sep + 'locustFailReason.txt'
-        file = open(failReason_file_path, 'r')
-        data = file.readline()
-        while data:
-            failReason.append(data.strip())
-            data = file.readline()
-        file.close()
-
         csv_result_input_file_path = os.getcwd() + os.sep + 'csvForZeuz_requests.csv'
         file = open(csv_result_input_file_path, 'r')
         file.readline()
@@ -1074,8 +1051,8 @@ def upload_csv_file_info(run_id, test_case):
             test_case_result.append(data.strip())
             data=file.readline()
         file.close()
-
-        RequestFormatter.Get('send_performance_data_api', {'run_id': run_id, 'test_case': test_case, 'result_data': result_data, 'test_case_result': test_case_result,'failReason':failReason})
+        dict={'run_id': run_id, 'test_case': test_case, 'result_data': result_data, 'test_case_result': test_case_result}
+        RequestFormatter.Get('send_performance_data_api', dict)
     except:
         pass
 
@@ -1196,7 +1173,7 @@ def main(device_dict):
                               temp_ini_file,is_linked, send_log_file_only_for_fail=send_log_file_only_for_fail)
                 all_logs_list = CommonUtil.get_all_logs()
                 write_all_logs_to_server(all_logs_list)
-            CommonUtil.clear_all_logs()
+                CommonUtil.clear_all_logs()
 
         # calculate elapsed time of runid
         sTestSetEndTime = datetime.fromtimestamp(time.time()).strftime('%Y-%m-%d %H:%M:%S')
