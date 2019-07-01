@@ -227,9 +227,10 @@ def _driver_type(query_debug):
     #check if its Appium, selenium or XML
     try:
         driver_string = str(generic_driver)
+        print driver_string
         if query_debug == True:
             return "debug"
-        elif "selenium" in driver_string:
+        elif "selenium" in driver_string or 'browser' in driver_string:
             driver_type = "selenium"
         elif "appium" in driver_string:
             driver_type = "appium"
