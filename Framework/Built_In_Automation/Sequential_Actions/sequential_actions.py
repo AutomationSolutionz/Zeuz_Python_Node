@@ -241,7 +241,7 @@ supported_platforms = (
 
 
 # Import modules
-import inspect
+import inspect,subprocess
 import os
 import sys
 import time
@@ -372,7 +372,9 @@ def Sequential_Actions(step_data, _dependency = {}, _run_time_params = {}, _file
 
     # Process step data
     #save the full step data in share variables
-    sr.Set_Shared_Variables('step_data',step_data,protected=True)
+
+
+    sr.Set_Shared_Variables('step_data', step_data, protected=True)
     result,skip_for_loop =  Run_Sequential_Actions([]) #empty list means run all, instead of step data we want to send the dataset no's of the step data to run
     write_browser_logs()
 
@@ -382,6 +384,7 @@ def Sequential_Actions(step_data, _dependency = {}, _run_time_params = {}, _file
         thread_pool.shutdown(wait=True)
 
     return result
+
 
 
 def get_data_set_nums(action_value):

@@ -1,11 +1,11 @@
 # -*- coding: utf-8 -*-
 # -*- coding: cp1252 -*-
 
-import inspect, os, time, sys, urllib2, Queue, importlib, requests, threading
+import inspect, os, time, sys, urllib2, Queue, importlib, requests, threading, subprocess, signal
 from sys import platform as _platform
 from datetime import datetime
 from datetime import timedelta
-
+from threading import Timer
 from Framework.Built_In_Automation import Shared_Resources
 from Utilities import ConfigModule, FileUtilities as FL, CommonUtil, RequestFormatter
 from Framework.Built_In_Automation.Shared_Resources import BuiltInFunctionSharedResources as shared
@@ -556,10 +556,13 @@ def call_driver_function_of_test_step(sModuleInfo, TestStepsList, StepSeq, step_
 # runs all test steps of a test case
 def run_all_test_steps_in_a_test_case(Stepscount, test_case, sModuleInfo, run_id, TestStepsList, file_specific_steps,
                                       driver_list, final_dependency, final_run_params, test_case_result_index,
-                                      temp_ini_file, debug=False, debug_steps=[], is_linked=''):
+                                      temp_ini_file, debug=False, debug_steps=[], is_linked='', performance=False):
     StepSeq = 1
     sTestStepResultList = []
     already_failed = False
+    if performance:
+        StepSeq = 2
+        sTestStepResultList.append("PASSED")
     while StepSeq <= Stepscount:
         if debug:
             if str(StepSeq) not in debug_steps:
@@ -886,9 +889,9 @@ def cleanup_driver_instances():  # cleans up driver(selenium,appium) instances
         pass
 
 
-def run_test_case(TestCaseID, sModuleInfo, run_id, driver_list, final_dependency, final_run_params, temp_ini_file, is_linked, send_log_file_only_for_fail=True):
+def run_test_case(TestCaseID, sModuleInfo, run_id, driver_list, final_dependency, final_run_params, temp_ini_file, is_linked, send_log_file_only_for_fail=True, performance=False, browserDriver=None):
     shared.Set_Shared_Variables('run_id', run_id)
-    test_case = str(TestCaseID[0]).replace('#','no')
+    test_case = str(TestCaseID).replace('#','no')
     copy_status = False
     ConfigModule.add_config_value('sectionOne', 'sTestStepExecLogId', "MainDriver", temp_ini_file)
     CommonUtil.ExecLog(sModuleInfo, "Gathering data for test case %s" % (test_case), 4, False)
@@ -932,16 +935,25 @@ def run_test_case(TestCaseID, sModuleInfo, run_id, driver_list, final_dependency
     if cleanup_drivers_during_debug:
         shared.Clean_Up_Shared_Variables()
 
+    if performance and browserDriver:
+        shared.Set_Shared_Variables('selenium_driver', browserDriver)
+
     # runs all test steps in the test case, all test step result is stored in the list named sTestStepResultList
     sTestStepResultList = run_all_test_steps_in_a_test_case(Stepscount, test_case, sModuleInfo, run_id, TestStepsList,
                                                             file_specific_steps, driver_list, final_dependency,
                                                             final_run_params, test_case_result_index, temp_ini_file,
-                                                            debug, debug_steps,is_linked)
+                                                            debug, debug_steps,is_linked, performance)
 
     sTestCaseEndTime = datetime.fromtimestamp(time.time()).strftime('%Y-%m-%d %H:%M:%S')
     TestCaseEndTime = time.time()
     # Decide if Test Case Pass/Failed
     sTestCaseStatus = calculate_test_case_result(sModuleInfo, test_case, run_id, sTestStepResultList)
+
+    if performance:
+        locust_output_file_path = os.getcwd() + os.sep + 'Built_In_Automation' + os.sep + 'Performance_Testing' + os.sep + 'locustFileOutput.txt'
+        file = open(locust_output_file_path, 'a+')
+        file.write(sTestCaseStatus + "-" + str(",".join(sTestStepResultList)) + '\n')
+        file.close()
 
     # Time it took to run the test case
     TimeDiff = TestCaseEndTime - TestCaseStartTime
@@ -999,6 +1011,52 @@ def update_fail_reasons_of_test_cases(run_id, TestCaseID):
             update_test_case_status_after_run_on_server(run_id, test_case[0], test_case_after_dict)
     except:
         pass
+
+
+def get_performance_testing_data_for_test_case(run_id, TestCaseID):
+    return RequestFormatter.Get('get_performance_testing_data_for_test_case_api',{'run_id': run_id, 'test_case': TestCaseID})
+
+
+def write_locust_input_file(time_period, perf_data, TestCaseID, sModuleInfo, run_id, driver_list, final_dependency, final_run_params,
+                              temp_ini_file, is_linked, send_log_file_only_for_fail):
+    try:
+        locust_input_file_path = os.getcwd() + os.sep + 'Built_In_Automation' + os.sep + 'Performance_Testing' + os.sep + 'locustFileInput.txt'
+        file = open(locust_input_file_path,'w')
+        file.write(str(time_period) + '\n')
+        file.write(str(TestCaseID)+'\n')
+        file.write(str(sModuleInfo)+'\n')
+        file.write(str(run_id)+'\n')
+        file.write(str(driver_list)+'\n')
+        file.write(str(final_dependency)+'\n')
+        file.write(str(final_run_params)+'\n')
+        file.write(str(temp_ini_file)+'\n')
+        file.write(str(is_linked)+'\n')
+        file.write(str(send_log_file_only_for_fail)+'\n')
+        file.close()
+    except:
+        pass
+
+def upload_csv_file_info(run_id, test_case):
+    try:
+        csv_result_input_file_path = os.getcwd() + os.sep + 'csvForZeuz_requests.csv'
+        file = open(csv_result_input_file_path, 'r')
+        file.readline()
+        result_data=file.readline()
+        file.close()
+        test_case_result=[]
+        test_case_result_input_file_path = os.getcwd() + os.sep + 'Built_In_Automation' + os.sep + 'Performance_Testing' + os.sep + 'locustFileOutput.txt'
+        file = open(test_case_result_input_file_path, 'r')
+        data=file.readline()
+        while data:
+            test_case_result.append(data.strip())
+            data=file.readline()
+        file.close()
+        dict={'run_id': run_id, 'test_case': test_case, 'result_data': result_data, 'test_case_result': test_case_result}
+        RequestFormatter.Get('send_performance_data_api', dict)
+    except:
+        pass
+
+
 
 # main function
 def main(device_dict):
@@ -1068,11 +1126,54 @@ def main(device_dict):
 
         # run each test case in the runid
         for TestCaseID in TestCaseLists:
-            run_test_case(TestCaseID, sModuleInfo, run_id, driver_list, final_dependency, final_run_params,
-                          temp_ini_file,is_linked, send_log_file_only_for_fail=send_log_file_only_for_fail)
-            all_logs_list = CommonUtil.get_all_logs()
-            write_all_logs_to_server(all_logs_list)
-            CommonUtil.clear_all_logs()
+            performance_test_case = False
+            if str(TestCaseID[1]).lower() == 'performance':
+                performance_test_case = True
+
+            if performance_test_case:
+                perf_data = get_performance_testing_data_for_test_case(run_id, TestCaseID[0])
+                hatch_rate = perf_data['hatch_rate']
+                no_of_users = perf_data['no_of_users']
+                time_period = perf_data['time_period']
+                write_locust_input_file(time_period, perf_data, TestCaseID[0], sModuleInfo, run_id, driver_list, final_dependency, final_run_params,
+                              temp_ini_file, is_linked, send_log_file_only_for_fail=send_log_file_only_for_fail)
+
+                locustFile = 'chromeLocustFile.py'
+                if 'Browser' in final_dependency:
+                    if final_dependency['Browser'].lower() == 'chrome':
+                        locustFile = 'chromeLocustFile.py'
+                    else:
+                        locustFile = 'firefoxLocustFile.py'
+                else:
+                    locustFile = 'restLocustFile.py'
+
+                locust_file_path = os.getcwd() + os.sep + 'Built_In_Automation' + os.sep + 'Performance_Testing' + os.sep + locustFile
+                locustQuery = "locust -f %s --csv=csvForZeuz --no-web --host=http://example.com -c %d -r %d" % (locust_file_path, no_of_users, hatch_rate)
+
+                CommonUtil.ExecLog(sModuleInfo, "Running Performance Test Case %s with total %d users, in a rate %s new users/second and each user will run for %s seconds"%(TestCaseID[0], no_of_users, hatch_rate,time_period), 1)
+
+                try:
+                    kill = lambda process: process.kill()
+                    process=subprocess.Popen(locustQuery, shell=True)
+                    my_timer = Timer(no_of_users*time_period, kill, [process])
+
+                    try:
+                        my_timer.start()
+                        stdout, stderr = process.communicate()
+                    finally:
+                        my_timer.cancel()
+                except Exception,e:
+                    print "exception"
+                    pass
+                CommonUtil.ExecLog(sModuleInfo, "Uploading Performance Test Results", 1)
+                upload_csv_file_info(run_id, TestCaseID[0])
+                CommonUtil.ExecLog(sModuleInfo, "Performance Test Results Uploaded Successfully", 1)
+            else:
+                run_test_case(TestCaseID[0], sModuleInfo, run_id, driver_list, final_dependency, final_run_params,
+                              temp_ini_file,is_linked, send_log_file_only_for_fail=send_log_file_only_for_fail)
+                all_logs_list = CommonUtil.get_all_logs()
+                write_all_logs_to_server(all_logs_list)
+                CommonUtil.clear_all_logs()
 
         # calculate elapsed time of runid
         sTestSetEndTime = datetime.fromtimestamp(time.time()).strftime('%Y-%m-%d %H:%M:%S')
