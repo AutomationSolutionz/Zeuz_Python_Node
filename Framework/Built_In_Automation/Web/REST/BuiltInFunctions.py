@@ -616,7 +616,7 @@ def handle_rest_call(data, fields_to_be_saved, save_into_list = False, list_name
 
         Shared_Resources.Set_Shared_Variables('status_code',result.status_code)
         try:
-            if result.json() and type(result.json()) == dict:
+            if result.json():
                 Shared_Resources.Set_Shared_Variables("rest_response",result.json())
                 CommonUtil.ExecLog(sModuleInfo, 'Post Call Returned Response Successfully', 1)
                 CommonUtil.ExecLog(sModuleInfo,"Received Response: %s"%result.json(),1)
@@ -993,3 +993,58 @@ def Validate_Step_Data(step_data):
         errMsg = "Could not find the new page element requested. "
         return CommonUtil.Exception_Handler(sys.exc_info(),None,errMsg)
 
+def get_data_from_list(input_list, identifier):
+    try:
+        for id in str(identifier).strip().split('.'):
+            if id.isdigit():
+                index = int(id)
+            else:
+                index = id
+            input_list=input_list[id]
+        return input_list
+    except:
+        return ''
+
+
+#Inserting a field into a list of shared variables
+def Insert_Tuple_Into_List(step_data):
+    sModuleInfo = inspect.stack()[0][3] + " : " + inspect.getmoduleinfo(__file__).name
+    CommonUtil.ExecLog(sModuleInfo, "Function: Insert_Tuple_Into_List", 1)
+    try:
+        list_name = ''
+        iterate_over = ''
+        result_list = []
+        fields=''
+        for row in step_data:
+            if row[0] == 'list name':
+                list_name = str(row[2]).strip()
+            elif row[0] == 'iterate over':
+                iterate_over = str(row[2]).strip()
+            elif row[1] == 'action':
+                fields = str(row[2]).strip()
+
+        data = Validate_Step_Data(step_data)
+        handle_rest_call(data, 'none')
+        if iterate_over.startswith('rest_response'):
+            var=iterate_over.split('.')
+            iterate_over = Shared_Resources.Get_Shared_Variables('rest_response')
+            i=1
+            while i<len(var):
+                if var[i].isdigit():
+                    index=int(var[i])
+                else:
+                    index=var[i]
+                iterate_over=iterate_over[index]
+                i+=1
+
+        for data in iterate_over:
+            each_tuple=[]
+            for field in fields.split(','):
+                each_tuple.append(get_data_from_list(data, field))
+            result_list.append(each_tuple)
+
+        Shared_Resources.Set_Shared_Variables(list_name, result_list)
+
+        return "passed"
+    except Exception:
+        return CommonUtil.Exception_Handler(sys.exc_info())
