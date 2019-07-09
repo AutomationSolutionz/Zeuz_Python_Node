@@ -630,7 +630,7 @@ def Save_Text(data_set):
         for row in data_set:
             if str(row[1]).strip().lower() == 'action':
                 variable_name = str(row[2])
-            elif str(row[1]).strip().lower() == 'element parameter':
+            elif str(row[1]).strip().lower() == 'element parameter' and str(row[0]).strip().lower() == 'field':
                 field = str(row[2]).lower().strip()
 
         Element = Get_Element(data_set)
