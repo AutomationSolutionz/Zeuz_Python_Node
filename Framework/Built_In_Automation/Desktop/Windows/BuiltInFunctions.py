@@ -621,6 +621,29 @@ def Validate_Text (data_set):
         return CommonUtil.Exception_Handler(sys.exc_info(), None, "Error parsing data set")
 
 
+def Save_Text(data_set):
+    sModuleInfo = inspect.stack()[0][3] + " : " + inspect.getmoduleinfo(__file__).name
+    CommonUtil.ExecLog(sModuleInfo, "Function start", 0)
+    try:
+        variable_name=''
+        for row in data_set:
+            if str(row[1]).strip().lower() == 'action':
+                variable_name = str(row[2])
+
+        Element = Get_Element(data_set)
+        if Element in failed_tag_list:
+            CommonUtil.ExecLog(sModuleInfo, "Could not find element", 3)
+            return 'failed'
+
+        actual_text=str(Element.GetCurrentPattern(ValuePattern.Pattern).Current.Value).strip()
+        Shared_Resources.Set_Shared_Variables(variable_name, actual_text)
+
+        CommonUtil.ExecLog(sModuleInfo,"Text '%s' is saved in the variable '%s'"%(actual_text, variable_name),1)
+        return "passed"
+    except Exception:
+        return CommonUtil.Exception_Handler(sys.exc_info(), None, "Error parsing data set")
+
+
 def getCoordinates(element, position):
     ''' Return coordinates of attachment's centre '''
 

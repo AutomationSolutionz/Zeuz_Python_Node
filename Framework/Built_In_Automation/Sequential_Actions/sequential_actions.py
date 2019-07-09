@@ -201,6 +201,7 @@ actions = { # Numbers are arbitrary, and are not used anywhere
     810: {'module': 'windows', 'name': 'open app', 'function': 'Run_Application'},
     811: {'module': 'windows', 'name': 'close app', 'function': 'Close_Application'},
     812: {'module': 'windows', 'name': 'validate text', 'function': 'Validate_Text'},
+    813: {'module': 'windows', 'name': 'save text', 'function': 'Save_Text'}
 }
 
 # List of Sub-Field keywords, must be all lowercase, and using single spaces - no underscores
