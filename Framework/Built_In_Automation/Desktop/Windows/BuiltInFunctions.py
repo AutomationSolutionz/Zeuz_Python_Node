@@ -626,16 +626,30 @@ def Save_Text(data_set):
     CommonUtil.ExecLog(sModuleInfo, "Function start", 0)
     try:
         variable_name=''
+        field = 'value'
         for row in data_set:
             if str(row[1]).strip().lower() == 'action':
                 variable_name = str(row[2])
+            elif str(row[1]).strip().lower() == 'element parameter':
+                field = str(row[2]).lower().strip()
 
         Element = Get_Element(data_set)
         if Element in failed_tag_list:
             CommonUtil.ExecLog(sModuleInfo, "Could not find element", 3)
             return 'failed'
 
-        actual_text=str(Element.GetCurrentPattern(ValuePattern.Pattern).Current.Value).strip()
+        actual_text = ''
+        if field == 'value':
+            actual_text=str(Element.GetCurrentPattern(ValuePattern.Pattern).Current.Value).strip()
+        elif field == 'name':
+            actual_text=str(Element.GetCurrentPattern(ValuePattern.Pattern).Current.Name).strip()
+        elif field == 'class':
+            actual_text = str(Element.GetCurrentPattern(ValuePattern.Pattern).Current.ClassName).strip()
+        elif 'id' in field:
+            actual_text = str(Element.GetCurrentPattern(ValuePattern.Pattern).Current.AutomationId).strip()
+        elif 'type' in field or 'control' in field:
+            actual_text = str(Element.GetCurrentPattern(ValuePattern.Pattern).Current.LocalizedControlType).strip()
+
         Shared_Resources.Set_Shared_Variables(variable_name, actual_text)
 
         CommonUtil.ExecLog(sModuleInfo,"Text '%s' is saved in the variable '%s'"%(actual_text, variable_name),1)
