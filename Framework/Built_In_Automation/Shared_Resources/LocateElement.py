@@ -53,7 +53,7 @@ def Get_Element(step_data_set,driver,query_debug=False, wait_enable = True):
                     else:
                         new_step_data.append(row)
                 step_data_set=new_step_data
-        except:
+        except Exception,e:
             pass # Exceptions happen when we have an alert, but is not a problem
 
         save_parameter = ''
