@@ -405,6 +405,7 @@ def launch_application(data_set):
         if activity_name == '':
             if appium_details[device_id]['type'] == 'android':
                 package_name, activity_name = get_program_names(package_name) # Android only to match a partial package name if provided by the user
+                Shared_Resources.Set_Shared_Variables('package_name',str(package_name))
             
         # Verify data
         if appium_details[device_id]['type'] == 'android' and package_name == '' or package_name in failed_tag_list:

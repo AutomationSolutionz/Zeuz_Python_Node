@@ -47,7 +47,7 @@ def Get_Element(step_data_set,driver,query_debug=False, wait_enable = True):
                 for row in step_data_set:
                     if row[0] == 'resource-id' and str(row[2]).startswith('*'):
                         new_value = row[2]
-                        new_value = str(generic_driver.current_package)+":id/"+new_value[1:]
+                        new_value = sr.Get_Shared_Variables('package_name')+":id/"+new_value[1:]
                         new_row = [row[0], row[1], new_value]
                         new_step_data.append(new_row)
                     else:
