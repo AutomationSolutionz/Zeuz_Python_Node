@@ -52,6 +52,7 @@ def Get_Element(step_data_set,driver,query_debug=False, wait_enable = True):
                         new_step_data.append(new_row)
                     else:
                         new_step_data.append(row)
+                step_data_set=new_step_data
         except:
             pass # Exceptions happen when we have an alert, but is not a problem
 
