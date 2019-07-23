@@ -240,8 +240,15 @@ def adjust_element_parameters(step_data, platforms):
             # Special handling of "id"
             for id_adj_row in data_set: # Find if this is an appium test step
                 if 'appium' in id_adj_row[1]: # Yes, so adjust
-                    if new_row[0] == 'id' and dependency['Mobile'].lower() == 'android': new_row[0] = 'resource-id' # If user specifies id, they likely mean "resource-id"
-                    if new_row[0] == 'id' and dependency['Mobile'].lower() == 'ios': new_row[0] = 'accessibility id' # If user specifies id, they likely mean "resource-id" 
+                    if new_row[0] == 'id' and dependency['Mobile'].lower() == 'android': # If user specifies id, they likely mean "resource-id"
+                        new_row[0] = 'resource-id'
+                        new_row[2] = '*'+new_row[2]
+                    elif new_row[0] == 'id' and dependency['Mobile'].lower() == 'ios':
+                        new_row[0] = 'accessibility id' # If user specifies id, they likely mean "resource-id"
+                    elif new_row[0] == 'text or name' and dependency['Mobile'].lower() == 'android':  # If user specifies id, they likely mean "resource-id"
+                        new_row[0] = 'text'
+                    elif new_row[0] == 'text or name' and dependency['Mobile'].lower() == 'ios':
+                        new_row[0] = 'name'  # If user specifies id, they likely mean "resource-id"
             
             # Remove any element parameter that doesn't match the dependency
             if dependency['Mobile'].lower() in new_row[1]: # If dependency matches this Sub-Field, then save it
@@ -393,6 +400,7 @@ def Sleep(data_set):
 
     try:
         seconds = int(data_set[0][2])
+        print "Sleeping for %d seconds" % seconds
         CommonUtil.ExecLog(sModuleInfo, "Sleeping for %d seconds" % seconds, 1)
         time.sleep(seconds)
         return "passed"
