@@ -1977,6 +1977,9 @@ def replace_Substring(data_set):
     try:
         substring = ''
         new_string = ''
+        find_value=''
+        replace_with = ''
+        var_name=''
         file_name = ''
         replace_all = True
         case_sensitive = True
@@ -2016,10 +2019,32 @@ def replace_Substring(data_set):
                     else:
                         CommonUtil.ExecLog(sModuleInfo,"Unknown Value for element parameter 'dictionary'. Should be a string representation of python dictionary.",3)
                         return 'failed'
+
+                elif row[0] == 'find':
+                    find_value = str(row[2])
+
+                elif row[0] == 'replace with':
+                    replace_with = str(row[2])
+
+                elif row[0] == 'variable':
+                    var_name = str(row[2])
+
                 else:
                     substring = row[0].strip()  #substring to be replaced
                     new_string = row[2].strip()  #substring should be replaced to this string
                     replace_dict = {substring:new_string}
+
+        if find_value != '' and replace_with != '' and var_name != '':
+            try:
+                value = Shared_Resources.Get_Shared_Variables(var_name)
+                value = value.replace(find_value, replace_with)
+                CommonUtil.ExecLog(sModuleInfo, "Replace '%s' with '%s' in variable %s"%(find, replace_with, var_name), 1)
+                Shared_Resources.Set_Shared_Variables(var_name, value)
+                CommonUtil.ExecLog(sModuleInfo, "Value '%s' is save in variable %s"%(value, var_name),1)
+                return "passed"
+            except Exception, e:
+                CommonUtil.ExecLog(sModuleInfo,"Couldn't replace text in variable '%s'"%var_name,3)
+                return "failed"
 
          # Try to find the file
         if file_name not in file_attachment and os.path.exists(os.path.join(get_home_folder(), file_name)) == False:
