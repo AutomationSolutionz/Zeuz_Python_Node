@@ -615,7 +615,10 @@ def append_list_shared_variable(data_set):
         tmp = data_set[0][2].strip() # Get key and value from Value field and clean them
         shared_var = tmp.split('=')[0].strip() # Get variable name
         tmp = tmp.replace(shared_var, '').strip().replace('=', '', 1)
-        values = tmp.split(',') # Get values (could be several)
+
+        separator = ","
+        if "|,|" in tmp: separator = "|,|"
+        values = tmp.split(separator) # Get values (could be several)
         
         # Append all values
         for value in values:
@@ -643,7 +646,9 @@ def append_dict_shared_variable(data_set):
         for value in values:
             k = ''
             v = ''
-            value = str(value).split(":")
+            separator = ":"
+            if "|:|" in value: separator = "|:|"
+            value = str(value).split(separator)
             k=str(value[0]).strip()
             v=str(value[1]).strip()
             value = collections.OrderedDict()
@@ -667,9 +672,13 @@ def insert_list_into_another_list(data_set):
         tmp = tmp.split('=')  # Get variable name
         parent_list_name = tmp[0].strip()
         if ";" in str(tmp[1]): #direct initialization parent_list = [[a,b,c],[x,y,z]]
-            parent_list_splitted_by_semicolon = str(tmp[1]).strip().split(";")
+            parent_separator = ";"
+            if "|;|" in str(tmp[1]): parent_separator="|;|"
+            parent_list_splitted_by_semicolon = str(tmp[1]).strip().split(parent_separator)
             for each_split in parent_list_splitted_by_semicolon:
-                child_list_raw = each_split.strip().split(",")
+                separator=","
+                if "|,|" in each_split:separator="|,|"
+                child_list_raw = each_split.strip().split(separator)
                 child_list = []
                 for element in child_list_raw:
                     child_list.append(element.strip())
@@ -677,7 +686,9 @@ def insert_list_into_another_list(data_set):
                 if result in failed_tag_list:
                     return result
         else: #normal insert parent_list = [list1,list2]
-            all_child_list_names = tmp[1].strip().split(",")
+            separator = ","
+            if "|,|" in str(tmp[1]): separator = "|,|"
+            all_child_list_names = str(tmp[1]).strip().split(separator)
 
             for child_list_name in all_child_list_names:
                 if not sr.Test_Shared_Variables(child_list_name):
@@ -705,10 +716,14 @@ def insert_dict_into_another_dict(data_set):
         tmp = data_set[0][2].replace(' ', '').strip()  # Get key and value from Value field and clean them
         tmp = tmp.split('=')  # Get variable name
         parent_dict_name = tmp[0].strip()
-        all_child_dict_names = tmp[1].strip().split(",")
+        separator = ","
+        if "|,|" in str(tmp[1]): separator = "|,|"
+        all_child_dict_names = tmp[1].strip().split(separator)
 
         for child_dict_name in all_child_dict_names:
-            splitted_text = str(child_dict_name).split(":")
+            separator = ":"
+            if "|:|" in str(child_dict_name): separator = "|:|"
+            splitted_text = str(child_dict_name).split(separator)
             key = str(splitted_text[0]).strip()
             dict_name = str(splitted_text[1]).strip()
 
