@@ -493,6 +493,7 @@ def Compare_Variables(step_data):
         return CommonUtil.Exception_Handler(sys.exc_info())
 
 
+
 #Validating text from an element given information regarding the expected text
 def Compare_Lists_or_Dicts(step_data):
     sModuleInfo = inspect.stack()[0][3] + " : " + inspect.getmoduleinfo(__file__).name
@@ -509,6 +510,7 @@ def Compare_Lists_or_Dicts(step_data):
         list2_name = ''
         ignore_extra = True
         both_list = False
+        match_by_index = False
         for each_step_data_item in step_data[0]:
             if each_step_data_item[1] == "compare" or each_step_data_item[1] == "element parameter" or "parameter" in each_step_data_item[1]:
                 list1_name = each_step_data_item[0]
@@ -516,6 +518,8 @@ def Compare_Lists_or_Dicts(step_data):
             if each_step_data_item[1] == "action":
                 if str(each_step_data_item[2]).lower().strip().startswith('exact match'):
                     ignore_extra = False
+                if str(each_step_data_item[2]).lower().strip().startswith('match by index'):
+                    match_by_index = True
 
         if list1_name == '' or list2_name == '':
             CommonUtil.ExecLog(sModuleInfo,"Error parsing data set. Expected Field and Value fields to be set",3)
@@ -536,17 +540,29 @@ def Compare_Lists_or_Dicts(step_data):
             both_list = True
             variable_list1 = list1
             variable_list2 = list2
-            for each in list1:
-                if each in list2:
-                    found_list.append(each)
-                    pass_count+=1
-                else:
-                    not_found_list1.append(each)
-                    fail_count+=1
 
-            for each in list2:
-                if each not in list1:
-                    not_found_list2.append(each)
+            if not match_by_index:
+                for each in list1:
+                    if each in list2:
+                        found_list.append(each)
+                        pass_count+=1
+                    else:
+                        not_found_list1.append(each)
+                        fail_count+=1
+
+                for each in list2:
+                    if each not in list1:
+                        not_found_list2.append(each)
+            else:
+                for cnt in range(len(list1)):
+                    if list1[cnt] == list2[cnt]:
+                        found_list.append(list1[cnt])
+                        pass_count+=1
+                    else:
+                        not_found_list2.append(list1[cnt])
+                        not_found_list1.append(list2[cnt])
+                        fail_count+=1
+
 
         else: #if both are dict
             for key in list1:
@@ -802,3 +818,6 @@ def generate_datetime_format(string):
     except Exception:
         CommonUtil.ExecLog(sModuleInfo,"Invalid datetime format, using the deafult '%Y-%m-%d' format",2)
         return '%Y-%m-%d'
+
+
+
