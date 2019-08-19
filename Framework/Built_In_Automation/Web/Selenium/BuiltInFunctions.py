@@ -426,6 +426,34 @@ def Click_Element(data_set):
 
 
 #Method to click and hold on element; step data passed on by the user
+def Click_and_Text(data_set):
+
+    ''' Click and enter text specially for dropdown box'''
+
+    sModuleInfo = inspect.stack()[0][3] + " : " + inspect.getmoduleinfo(__file__).name
+    CommonUtil.ExecLog(sModuleInfo, "Function start", 0)
+    global selenium_driver
+    try:
+        data_set_to = []
+        data_set_to2 = []
+
+        for row in data_set:
+            if row[0] == 'click and enter text' and row[1] == 'action':
+                row[2].lower()
+                data_set_to2.append(('keystroke chars','action',row[2]))
+
+            elif row[1] == 'element parameter':
+                data_set_to.append(row)
+        Click_Element(data_set_to)
+
+        Keystroke_For_Element(data_set_to2)
+    except Exception:
+        return CommonUtil.Exception_Handler(sys.exc_info())
+
+
+
+
+
 def Click_and_Hold_Element(step_data):
     sModuleInfo = inspect.stack()[0][3] + " : " + inspect.getmoduleinfo(__file__).name
     CommonUtil.ExecLog(sModuleInfo,"Function Start", 0)
