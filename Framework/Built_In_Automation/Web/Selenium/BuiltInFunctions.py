@@ -438,7 +438,7 @@ def Click_and_Text(data_set):
         data_set_to2 = []
 
         for row in data_set:
-            if row[0] == 'click and text' and row[1] == 'action':
+            if row[0] == 'click and enter text' and row[1] == 'action':
                 row[2].lower()
                 data_set_to2.append(('keystroke chars','action',row[2]))
 
