@@ -445,7 +445,7 @@ def Click_and_Text(data_set):
             elif row[1] == 'element parameter':
                 data_set_to.append(row)
         Click_Element(data_set_to)
-        time.sleep(5)
+
         Keystroke_For_Element(data_set_to2)
     except Exception:
         return CommonUtil.Exception_Handler(sys.exc_info())
