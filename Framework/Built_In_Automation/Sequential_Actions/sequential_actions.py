@@ -134,6 +134,7 @@ actions = { # Numbers are arbitrary, and are not used anywhere
     436: {'module': 'selenium', 'name': 'scroll to element', 'function': 'scroll_to_element'},
     437: {'module': 'selenium', 'name': 'if element exists', 'function': 'if_element_exists'},
     438: {'module': 'selenium', 'name': 'click and enter text', 'function': 'Click_and_Text'},
+    439: {'module': 'selenium', 'name': 'validate url', 'function': 'Validate_Url'},
     
     500: {'module': 'utility', 'name': 'math', 'function': 'Calculate'},
     501: {'module': 'utility', 'name': 'upload', 'function': 'Upload'},
@@ -1290,6 +1291,4 @@ def Action_Handler(_data_set, action_row):
 
     except Exception:
         return CommonUtil.Exception_Handler(sys.exc_info())
-
-
 

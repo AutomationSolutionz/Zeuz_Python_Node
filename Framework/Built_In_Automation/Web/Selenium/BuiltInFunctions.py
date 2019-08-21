@@ -830,6 +830,39 @@ def Validate_Text(step_data):
         return CommonUtil.Exception_Handler(sys.exc_info())
 
 
+def Validate_Url(step_data):
+    sModuleInfo = inspect.stack()[0][3] + " : " + inspect.getmoduleinfo(__file__).name
+    CommonUtil.ExecLog(sModuleInfo, "Function start", 0)
+    global selenium_driver
+    try:
+        url =selenium_driver.current_url
+        expected = ''
+
+        for row in step_data:
+            if str(row[1]).strip() == 'action':
+                expected = str(row[2]).strip()
+
+        if str(expected).startswith('*'):
+            expected=expected[1:]
+            if expected in url:
+                CommonUtil.ExecLog(sModuleInfo, "Expected URL partially matched", 1)
+                return "passed"
+            else:
+                CommonUtil.ExecLog(sModuleInfo, "Expected URL didn't match partially", 3)
+                return "failed"
+        else:
+            if expected == url:
+                CommonUtil.ExecLog(sModuleInfo,"Expected URL matched",1)
+                return "passed"
+            else:
+                CommonUtil.ExecLog(sModuleInfo, "Expected URL didn't match", 3)
+                return "failed"
+
+    except Exception:
+        return CommonUtil.Exception_Handler(sys.exc_info())
+
+
+
 #Method to sleep for a particular duration
 def Sleep(step_data):
     sModuleInfo = inspect.stack()[0][3] + " : " + inspect.getmoduleinfo(__file__).name
