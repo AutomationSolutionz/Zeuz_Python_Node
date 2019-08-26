@@ -956,7 +956,9 @@ def create_3d_list(data_set):
                             child_list.append(element.strip())
                         a_2d_list.append(child_list)
                 else:
-                    child_list_raw = str(each_2d_list).strip().split(",")
+                    separator=","
+                    if "|,|" in each_2d_list:separator="|,|"
+                    child_list_raw = each_2d_list.strip().split(separator)
                     child_list = []
                     for element in child_list_raw:
                         child_list.append(element.strip())
