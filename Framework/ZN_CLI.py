@@ -222,6 +222,10 @@ def update_machine(dependency):
                     t.append(__t)
             _d.update({x[0]:t})
         dependency=_d
+        available_to_all_project = ConfigModule.get_config_value('Zeuz Node', 'available_to_all_project')
+        allProject = 'no'
+        if str(available_to_all_project).lower() == "true":
+            allProject = "yes"
         update_object={
             'machine_name':testerid,
             'local_ip':local_ip,
@@ -229,7 +233,8 @@ def update_machine(dependency):
             'dependency':dependency,
             'project':project,
             'team':team,
-            'device': device_dict
+            'device': device_dict,
+            'allProject':allProject
         }
         r=RequestFormatter.Get('update_automation_machine_api',update_object)
         if r['registered']:
