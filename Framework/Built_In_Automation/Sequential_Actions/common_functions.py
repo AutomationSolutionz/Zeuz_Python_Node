@@ -291,19 +291,21 @@ def get_module_and_function(action_name, action_sub_field):
                         original_module = module
                         module = 'common' # Set module as common
                         function = actions[i]['function'] # Save function
-                        return module, function, original_module # Return module and function name
+                        screenshot = actions[i]['screenshot']  # Save screenshot
+                        return module, function, original_module, screenshot # Return module and function name
 
             for i in actions: # For each dictionary in the dictionary
                 for j in actions[i]: # For each entry in the sub-dictionary
                     if actions[i]['module'] == module and actions[i]['name'] == action_name: # Module and action name match
                         function = actions[i]['function'] # Save function
-                        return module, function, '' # Return module and function name
+                        screenshot = actions[i]['screenshot']  # Save screenshot
+                        return module, function, '', screenshot # Return module and function name
             
             CommonUtil.ExecLog(sModuleInfo, "Could not find module or action_name is invalid", 3)
-            return '','','' # Should never get here if verify_step_data() works properly
+            return '','','','' # Should never get here if verify_step_data() works properly
         # Not enough words in the Sub-Field
         else:
-            return '','','' # Error handled in calling function
+            return '','','','' # Error handled in calling function
     except Exception:
         return CommonUtil.Exception_Handler(sys.exc_info())
 
