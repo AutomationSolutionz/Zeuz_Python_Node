@@ -105,6 +105,10 @@ def get_all_server_variable(run_id):
     return RequestFormatter.Get('get_all_server_variable_api', {'run_id': run_id})
 
 # get all server variable
+def get_all_remote_config(run_id):
+    return RequestFormatter.Get('get_all_remote_config_api', {'run_id': run_id})
+
+# get all server variable
 def delete_all_server_variable(run_id):
     return RequestFormatter.Get('delete_all_runid_server_variable_api', {'run_id': run_id})
 
@@ -484,7 +488,7 @@ def call_driver_function_of_test_step(sModuleInfo, TestStepsList, StepSeq, step_
                     except:
                         screen_capture = 'Desktop'
 
-                    if ConfigModule.get_config_value('RunDefinition', 'Threading') in passed_tag_list:
+                    if ConfigModule.get_config_value('RunDefinition', 'threading') in passed_tag_list:
                         stepThread = threading.Thread(target=functionTocall, args=(
                             final_dependency, final_run_params, test_steps_data, file_specific_steps, simple_queue,
                             screen_capture, device_info))
@@ -1115,6 +1119,9 @@ def main(device_dict):
         update_run_id_info_on_server(run_id)  # update runid status
         TestSetStartTime = time.time()
         TestCaseLists = get_all_automated_test_cases_in_run_id(run_id,Userid)  # get all automated test cases of a runid
+
+        rem_config = get_all_remote_config(run_id)
+        ConfigModule.remote_config = rem_config
 
         if len(TestCaseLists) > 0:
             CommonUtil.ExecLog(sModuleInfo, "Running Test cases from list : %s" % TestCaseLists[0:len(TestCaseLists)],
