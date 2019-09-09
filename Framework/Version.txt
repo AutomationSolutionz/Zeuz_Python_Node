@@ -1,6 +1,6 @@
 [ZeuZ Python Version]
-version = 7.35
+version = 7.49
 [Release Date]
-date= 2019-06-18
+date= 2019-09-09
 [Release Note]
-Note = Kill Node For TearDown; Check ADB before calling to kill adb server
+Note = Android set text update
