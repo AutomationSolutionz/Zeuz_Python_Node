@@ -1419,16 +1419,16 @@ def Enter_Text_Appium(data_set):
                 # Element.clear() # Remove any text already existing
 
                 if str(appium_details[device_id]['type']).lower() == 'ios':
-                    Element.set_value(
-                        text_value)  # Work around for IOS issue in Appium v1.6.4 where send_keys() doesn't work
+                    Element.set_value(text_value)  # Work around for IOS issue in Appium v1.6.4 where send_keys() doesn't work
             except Exception:
                 errMsg = "Found element, but couldn't write text to it"
                 return CommonUtil.Exception_Handler(sys.exc_info(), None, errMsg)
 
-            # This is wrapped in it's own try block because we sometimes get an error from send_keys stating "Parameters were incorrect". However, most devices work only with send_keys
+            # This is wrapped in it's own try block because we sometimes get an error 
+            # from send_keys stating "Parameters were incorrect". However, most devices work only with send_keys
             try:
                 if str(appium_details[device_id]['type']).lower() != 'ios':
-                    Element.send_keys(text_value)  # Enter the user specified text
+                    Element.set_value(text_value)   # Enter the user specified text
             except Exception:
                 CommonUtil.ExecLog(sModuleInfo, "Found element, but couldn't write text to it. Trying another method",
                                    2)
