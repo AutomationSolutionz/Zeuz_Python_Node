@@ -25,7 +25,7 @@ def get_config_value(section, key, location=False):
     try:
         global remote_config
         if key in remote_config:
-            return remote_config[key]
+            return str(remote_config[key])
 
         config = ConfigParser.SafeConfigParser()
         config.optionxform = str  # Retain text case (default is to change to lowercase without this line)
