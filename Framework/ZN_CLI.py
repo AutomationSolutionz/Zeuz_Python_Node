@@ -201,11 +201,6 @@ def update_machine(dependency):
         local_ip = oLocalInfo.getLocalIP()
         testerid = (oLocalInfo.getLocalUser()).lower()
 
-        product_='ProductVersion'
-        branch=ConfigModule.get_config_value(product_,'branch')
-        version=ConfigModule.get_config_value(product_,'version')
-        productVersion= branch+":"+version
-
         project=ConfigModule.get_config_value(AUTHENTICATION_TAG,PROJECT_TAG)
         team=ConfigModule.get_config_value(AUTHENTICATION_TAG,TEAM_TAG)
         if not dependency:
@@ -229,7 +224,6 @@ def update_machine(dependency):
         update_object={
             'machine_name':testerid,
             'local_ip':local_ip,
-            'productVersion':productVersion,
             'dependency':dependency,
             'project':project,
             'team':team,
