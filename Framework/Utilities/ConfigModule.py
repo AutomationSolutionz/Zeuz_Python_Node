@@ -7,6 +7,14 @@ import FileUtilities as FL
 '''constants'''
 file_name = 'settings.conf'
 
+remote_config={
+    'threading' : True,
+    'local_run' : False,
+    'take_screenshot' : True,
+    'debug_mode' : False,
+    'upload_log_file_only_for_fail' : True
+}
+
 
 def get_config_value(section, key, location=False):
     """
@@ -15,6 +23,10 @@ def get_config_value(section, key, location=False):
     :return: value of the key in that section
     """
     try:
+        global remote_config
+        if key in remote_config:
+            return str(remote_config[key])
+
         config = ConfigParser.SafeConfigParser()
         config.optionxform = str  # Retain text case (default is to change to lowercase without this line)
         if not location:
