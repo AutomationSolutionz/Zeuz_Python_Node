@@ -3,4 +3,4 @@ version = 7.50
 [Release Date]
 date= 2019-09-15
 [Release Note]
-Note = Moving Node Settings to Server
+Note = Moving Node Settings to Server, enter text via adb, enter raw keycode
