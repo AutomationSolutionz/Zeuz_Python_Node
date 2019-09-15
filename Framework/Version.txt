@@ -1,6 +1,6 @@
 [ZeuZ Python Version]
-version = 7.49
+version = 7.50
 [Release Date]
-date= 2019-09-09
+date= 2019-09-15
 [Release Note]
-Note = Android set text update
+Note = Moving Node Settings to Server, enter text via adb, enter raw keycode
