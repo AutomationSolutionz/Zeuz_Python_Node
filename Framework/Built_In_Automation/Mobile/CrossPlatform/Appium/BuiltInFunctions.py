@@ -1498,6 +1498,61 @@ def Pickerwheel_Appium(data_set):
         return CommonUtil.Exception_Handler(sys.exc_info(),None,errMsg)
 
 
+def Clear_And_Enter_Text_ADB(data_set, serial=''):
+    ''' Enter string via adb'''
+    
+    sModuleInfo = inspect.stack()[0][3] + " : " + inspect.getmoduleinfo(__file__).name
+    CommonUtil.ExecLog(sModuleInfo,"Function Start", 0)
+    
+    # Parse data set
+    try:
+        text_to_enter = data_set[0][2]
+        
+        if text_to_enter == '':
+            CommonUtil.ExecLog(sModuleInfo,"Could not find string value", 3)
+            return 'failed'
+
+    except Exception:
+        errMsg = "Unable to parse data set"
+        return CommonUtil.Exception_Handler(sys.exc_info(),None,errMsg)
+
+    try:
+        if appium_details[device_id]['type'] == 'android':
+            CommonUtil.ExecLog(sModuleInfo,"Entering your string via adb",1)
+            Delet_Text = ''
+            #number of char to delete.  We can put this as element parameter in future for more flexiblity
+            for x in range (0,50):
+                Delet_Text = 'KEYCODE_DEL ' + Delet_Text    
+            
+            
+            
+            if serial != '': serial = '-s %s' % serial  # Prepare serial number with command line switch
+            #deleting existing text by going to end of line and clicking delete multiple times
+            subprocess.check_output("adb %s shell input keyevent 123" % (serial), shell=True) 
+            subprocess.check_output("adb %s shell input keyevent %s" % (serial,Delet_Text), shell=True)
+            #enters the string
+            subprocess.check_output("adb %s shell input text '%s'" % (serial, text_to_enter), shell=True)  # Enter password
+            time.sleep(0.5)
+            result = 'passed'
+                
+        else:
+            CommonUtil.ExecLog(sModuleInfo,"Did not find any android device connected",3)
+            result = 'failed'
+                
+        if result in passed_tag_list:
+            CommonUtil.TakeScreenShot(sModuleInfo)
+            CommonUtil.ExecLog(sModuleInfo, "Successfully entered text with adb shell", 1)
+            return "passed"
+        else:
+            CommonUtil.TakeScreenShot(sModuleInfo)
+            CommonUtil.ExecLog(sModuleInfo, "Could not text with adb shell", 3)
+            return "failed"
+              
+    except Exception:
+        errMsg = "Could not enter string via adb."
+        return CommonUtil.Exception_Handler(sys.exc_info(),None,errMsg)
+
+
 def Clear_And_Enter_Text_Appium(data_set):
     ''' Write text to an element '''
 
@@ -1605,6 +1660,8 @@ def Android_Keystroke_Key_Mapping(keystroke, hold_key = False):
             key = 93
         elif keystroke == "page up":
             key = 92
+        elif "raw=" in keystroke:
+            key = int(keystroke.split("=")[1])     
         else:
             CommonUtil.ExecLog(sModuleInfo, "Unsupported key event: %s" % keystroke, 3)
             return 'failed'
