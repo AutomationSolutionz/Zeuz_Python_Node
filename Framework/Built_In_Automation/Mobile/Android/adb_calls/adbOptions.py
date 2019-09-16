@@ -478,7 +478,6 @@ def unlock_android(serial=''):
 
         # Unlock phone
 
-
         
         lock_status = check_if_device_is_unlocked(serial)
         if lock_status == True:
@@ -572,20 +571,17 @@ def check_if_device_is_unlocked(serial=''):
     sModuleInfo = inspect.stack()[0][3] + " : " + inspect.getmoduleinfo(__file__).name
     try:
         if serial != '': serial = '-s %s' % serial  # Prepare serial number with command line switch
-        output = subprocess.check_output("adb %s shell dumpsys window windows" % serial,shell=True)  # Get list of windows
         
-        matched_lines = [line for line in output.split('\n') if "CurrentFocus" in line]
+        subprocess.check_output("adb %s shell input keyevent 82" % (serial), shell=True)  # Wakeup device and bring it unlock window
+        time.sleep(1)
+        output = subprocess.check_output("adb %s exec-out uiautomator dump /dev/tty" % serial,shell=True) 
 
-        if len(matched_lines)!= 0:
-            # as far as I have tested when device is locked, that is only time when we get StatusBar.  If
-            #it fails for some reason, we should switch to the method of unlock_device_app way.
-            if "StatusBar" in matched_lines[0] or "Bouncer" in matched_lines[0] or "AOD" in matched_lines[0] :
+        if "EMERGENCY" in  output or 'emergency_call_button' in output:
                 CommonUtil.ExecLog(sModuleInfo,"Device is currently locked. We will proceed with unlock ",2)
-   
                 return False
-            else:
-                CommonUtil.ExecLog(sModuleInfo,"Device is currently unlocked ",1)
-                return True
+        else:
+            CommonUtil.ExecLog(sModuleInfo,"Device is currently unlocked ",1)
+            return True
     except Exception:
         errMsg = "Unable to determine if device is locked or not"
         return CommonUtil.Exception_Handler(sys.exc_info(), None, errMsg)
