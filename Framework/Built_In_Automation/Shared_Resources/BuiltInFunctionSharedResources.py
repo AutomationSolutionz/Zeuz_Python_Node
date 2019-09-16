@@ -491,6 +491,68 @@ def Compare_Variables(step_data):
             return "passed"
     except Exception:
         return CommonUtil.Exception_Handler(sys.exc_info())
+    
+#Validating partial text from an element given information regarding the expected text
+
+def Compare_Partial_Variables(step_data):
+    sModuleInfo = inspect.stack()[0][3] + " : " + inspect.getmoduleinfo(__file__).name
+    CommonUtil.ExecLog(sModuleInfo, "Function: Compare_Partial_Variables", 0)
+    try:
+        pass_count = 0
+        fail_count = 0
+        variable_list1 = []
+        variable_list2 = []
+        result = []
+        #modifier = False
+        for each_step_data_item in step_data[0]:
+            if each_step_data_item[1] == "compare" or each_step_data_item[1] == "element parameter" or "parameter" in each_step_data_item[1]:
+                if '%|' in each_step_data_item[0].strip():
+                    previous_name = each_step_data_item[0].strip()
+                    new_name = get_previous_response_variables_in_strings(each_step_data_item[0].strip())
+                    tuple1 = ('Variable',"'%s'"%previous_name,new_name)
+                else:
+                    tuple1 = ('Text','',each_step_data_item[0].strip())
+                variable_list1.append(tuple1)
+
+                if '%|' in each_step_data_item[2].strip():
+                    previous_name = each_step_data_item[2].strip()
+                    new_name = get_previous_response_variables_in_strings(each_step_data_item[2].strip())
+                    tuple2 = ('Variable',"'%s'"%previous_name,new_name)
+                else:
+                    tuple2 = ('Text','',each_step_data_item[2].strip())
+                variable_list2.append(tuple2)
+
+        for i in range(0,len(variable_list1)):
+            if variable_list1[i][2] in variable_list2[i][2]: # Var 1 is IN var 2, if modifier set
+                result.append(True)
+                pass_count+=1
+            elif variable_list2[i][2] in variable_list1[i][2]: # Var 2 is IN var 1 (Whichever way the user made it), if modifier set
+                result.append(True)
+                pass_count+=1
+            else:
+                result.append(False)
+                fail_count+=1
+
+        CommonUtil.ExecLog(sModuleInfo,"###Variable Comparison Results###",1)
+        CommonUtil.ExecLog(sModuleInfo,"Matched Partial Variables: %d"%pass_count,1)
+        CommonUtil.ExecLog(sModuleInfo, "Not Matched Variables: %d" % fail_count, 1)
+
+        for i in range(0, len(variable_list1)):
+            if result[i] == True:
+                CommonUtil.ExecLog(sModuleInfo,"Item %d. %s %s - %s :: %s %s - %s : Matched"%(i+1,variable_list1[i][0],variable_list1[i][1],variable_list1[i][2],variable_list2[i][0],variable_list2[i][1],variable_list2[i][2]),1)
+            else:
+                CommonUtil.ExecLog(sModuleInfo, "Item %d. %s %s - %s :: %s %s - %s : Not Matched" % (i + 1, variable_list1[i][0], variable_list1[i][1], variable_list1[i][2], variable_list2[i][0],variable_list2[i][1], variable_list2[i][2]),3)
+
+        if fail_count > 0:
+            CommonUtil.ExecLog(sModuleInfo,"Error: %d item(s) did not match"%fail_count,3)
+            return "failed"
+        else:
+            return "passed"
+    except Exception:
+        return CommonUtil.Exception_Handler(sys.exc_info())
+
+
+
 
 
 

@@ -524,6 +524,13 @@ def Compare_Variables(data_set):
     CommonUtil.ExecLog(sModuleInfo,"Function Start", 0)
     return sr.Compare_Variables([data_set])
 
+def Compare_Partial_Variables(data_set):
+    ''' Compare shared variables / strings to eachother '''
+    # Compares two variables partially from Field and Value on any line that is not the action line
+    sModuleInfo = inspect.stack()[0][3] + " : " + inspect.getmoduleinfo(__file__).name
+    CommonUtil.ExecLog(sModuleInfo,"Function Start", 0)
+    return sr.Compare_Partial_Variables([data_set])
+
 def Initialize_List(data_set):
     ''' Prepares an empty list in shared variables '''
     sModuleInfo = inspect.stack()[0][3] + " : " + inspect.getmoduleinfo(__file__).name
