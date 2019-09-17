@@ -1,6 +1,6 @@
 [ZeuZ Python Version]
-version = 7.50
+version = 7.51
 [Release Date]
-date= 2019-09-15
+date= 2019-09-17
 [Release Note]
-Note = Moving Node Settings to Server, enter text via adb, enter raw keycode
+Note = Unlock android 10
