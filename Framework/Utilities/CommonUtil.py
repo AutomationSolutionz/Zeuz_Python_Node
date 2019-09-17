@@ -15,6 +15,9 @@ import subprocess
 # For TakeScreenShot()
 from concurrent.futures import ThreadPoolExecutor
 from PIL import Image # Picture quality
+
+from Framework.Utilities.ConfigModule import get_config_value
+
 try: from PIL import ImageGrab as ImageGrab_Mac_Win # Screen capture for Mac and Windows
 except: pass
 try: import pyscreenshot as ImageGrab_Linux # Screen capture for Linux/Unix
@@ -126,6 +129,7 @@ def Result_Analyzer(sTestStepReturnStatus,temp_q):
 
 def ExecLog(sModuleInfo, sDetails, iLogLevel=1, _local_run="", sStatus="", force_write= False):
     global log_thread_pool
+
     log_thread_pool.submit(ExecLog_Wrapper, sModuleInfo, sDetails, iLogLevel, _local_run, sStatus, force_write)
 
 def ExecLog_Wrapper(sModuleInfo, sDetails, iLogLevel=1, _local_run="", sStatus="", force_write= False):
@@ -135,14 +139,16 @@ def ExecLog_Wrapper(sModuleInfo, sDetails, iLogLevel=1, _local_run="", sStatus="
         # Read from settings file
         local_run = ConfigModule.get_config_value('RunDefinition','local_run')
         debug_mode = ConfigModule.get_config_value('RunDefinition', 'debug_mode')
-        
+        collect_errors_only_file = ConfigModule.get_config_value('RunDefinition','collect_only_error_log_in_file')
+        only_errors = get_config_value('RunDefinition', 'upload_only_error_log')
+
         # Check if user overrode local_run variable. If so, use that instead
         if _local_run != '': local_run = _local_run
-        
+
         # ";" is not supported for logging.  So replacing them
         sDetails = sDetails.replace(";", ":")
         sDetails = sDetails.replace("%22", "'")
-        
+
         #Convert logLevel from int to string for clarity
         if iLogLevel == 0:
             if debug_mode.lower() == 'true':
@@ -162,8 +168,8 @@ def ExecLog_Wrapper(sModuleInfo, sDetails, iLogLevel=1, _local_run="", sStatus="
         else:
             print "*** Unknown log level- Set to Warning ***"
             status = 'Warning'
-
-        # Display on console
+       # if show_errors and iLogLevel>1:   #only errors will be shown in the console
+            # Display on console
         if status == 'Console': # Change the format for console, mainly leave out the status level
             msg = ''
             if sModuleInfo != '': msg = sModuleInfo + "\t" # Print sModuleInfo only if provided
@@ -172,65 +178,132 @@ def ExecLog_Wrapper(sModuleInfo, sDetails, iLogLevel=1, _local_run="", sStatus="
         else:
             print "%s - %s\n\t%s" % (status.upper(), sModuleInfo, sDetails) # Display in console
 
+
         # Upload logs to server if local run is not set to False
         if load_testing and not force_write: return
+
+
+
         if iLogLevel > 0:
-            log_id=ConfigModule.get_config_value('sectionOne','sTestStepExecLogId',temp_config)
-            FWLogFolder = ConfigModule.get_config_value('sectionOne','log_folder',temp_config)
-            if os.path.exists(FWLogFolder) == False: FL.CreateFolder(FWLogFolder) # Create log directory if missing
-            BrowserConsoleLogFile = ''
-            if FWLogFolder=='':
-                FWLogFile=ConfigModule.get_config_value('sectionOne','temp_run_file_path',temp_config)+os.sep+'execlog.log'
-                BrowserConsoleLogFile = ConfigModule.get_config_value('sectionOne', 'temp_run_file_path',
-                                                          temp_config) + os.sep + 'BrowserLog.log'
-            else:
-                FWLogFile=FWLogFolder+os.sep+'temp.log'
-                BrowserConsoleLogFile = FWLogFolder+os.sep+'BrowserLog.log'
-            
-            logger = logging.getLogger(__name__)
-            
-            hdlr = None
-            browserLogHdlr = None
-            if os.name == 'posix':
-                try:
+
+            if collect_errors_only_file==True and iLogLevel >1:    # will write only the errors in file
+                print (collect_errors_only_file + 'writting error file ')
+                log_id=ConfigModule.get_config_value('sectionOne','sTestStepExecLogId',temp_config)
+                FWLogFolder = ConfigModule.get_config_value('sectionOne','log_folder',temp_config)
+                if os.path.exists(FWLogFolder) == False: FL.CreateFolder(FWLogFolder) # Create log directory if missing
+                BrowserConsoleLogFile = ''
+                if FWLogFolder=='':
+                    FWLogFile=ConfigModule.get_config_value('sectionOne','temp_run_file_path',temp_config)+os.sep+'execlog.log'
+                    BrowserConsoleLogFile = ConfigModule.get_config_value('sectionOne', 'temp_run_file_path',
+                                                              temp_config) + os.sep + 'BrowserLog.log'
+                else:
+                    FWLogFile=FWLogFolder+os.sep+'temp.log'
+                    BrowserConsoleLogFile = FWLogFolder+os.sep+'BrowserLog.log'
+
+                logger = logging.getLogger(__name__)
+
+                hdlr = None
+                browserLogHdlr = None
+                if os.name == 'posix':
+                    try:
+                        hdlr = logging.FileHandler(FWLogFile)
+                        browserLogHdlr = logging.FileHandler(BrowserConsoleLogFile)
+                    except:
+                        pass
+                elif os.name == 'nt':
                     hdlr = logging.FileHandler(FWLogFile)
                     browserLogHdlr = logging.FileHandler(BrowserConsoleLogFile)
-                except:
-                    pass
-            elif os.name == 'nt':
-                hdlr = logging.FileHandler(FWLogFile)
-                browserLogHdlr = logging.FileHandler(BrowserConsoleLogFile)
-            formatter = logging.Formatter('%(asctime)s - %(levelname)s - %(message)s')
+                formatter = logging.Formatter('%(asctime)s - %(levelname)s - %(message)s')
 
-            if iLogLevel != 6:
-                if hdlr != None:
-                    hdlr.setFormatter(formatter)
-                    logger.addHandler(hdlr)
+                if iLogLevel != 6:
+                    if hdlr != None:
+                        hdlr.setFormatter(formatter)
+                        logger.addHandler(hdlr)
 
 
-                logger.setLevel(logging.DEBUG)
-                logger.info(sModuleInfo + ' - ' + sDetails + '' + sStatus)
-                logger.removeHandler(hdlr)
-            else:
-                if browserLogHdlr != None:
-                    browserLogHdlr.setFormatter(formatter)
-                    logger.addHandler(browserLogHdlr)
+                    logger.setLevel(logging.DEBUG)
+                    logger.info(sModuleInfo + ' - ' + sDetails + '' + sStatus)
+                    logger.removeHandler(hdlr)
+                else:
+                    if browserLogHdlr != None:
+                        browserLogHdlr.setFormatter(formatter)
+                        logger.addHandler(browserLogHdlr)
 
-                logger.setLevel(logging.DEBUG)
-                logger.info(sModuleInfo + ' - ' + sDetails + '' + sStatus)
-                logger.removeHandler(browserLogHdlr)
+                    logger.setLevel(logging.DEBUG)
+                    logger.info(sModuleInfo + ' - ' + sDetails + '' + sStatus)
+                    logger.removeHandler(browserLogHdlr)
 
+            else :
+                log_id = ConfigModule.get_config_value('sectionOne', 'sTestStepExecLogId', temp_config)
+                FWLogFolder = ConfigModule.get_config_value('sectionOne', 'log_folder', temp_config)
+                if os.path.exists(FWLogFolder) == False: FL.CreateFolder(FWLogFolder)  # Create log directory if missing
+                BrowserConsoleLogFile = ''
+                if FWLogFolder == '':
+                    FWLogFile = ConfigModule.get_config_value('sectionOne', 'temp_run_file_path',
+                                                              temp_config) + os.sep + 'execlog.log'
+                    BrowserConsoleLogFile = ConfigModule.get_config_value('sectionOne', 'temp_run_file_path',
+                                                                          temp_config) + os.sep + 'BrowserLog.log'
+                else:
+                    FWLogFile = FWLogFolder + os.sep + 'temp.log'
+                    BrowserConsoleLogFile = FWLogFolder + os.sep + 'BrowserLog.log'
+
+                logger = logging.getLogger(__name__)
+
+                hdlr = None
+                browserLogHdlr = None
+                if os.name == 'posix':
+                    try:
+                        hdlr = logging.FileHandler(FWLogFile)
+                        browserLogHdlr = logging.FileHandler(BrowserConsoleLogFile)
+                    except:
+                        pass
+                elif os.name == 'nt':
+                    hdlr = logging.FileHandler(FWLogFile)
+                    browserLogHdlr = logging.FileHandler(BrowserConsoleLogFile)
+                formatter = logging.Formatter('%(asctime)s - %(levelname)s - %(message)s')
+
+                if iLogLevel != 6:
+                    if hdlr != None:
+                        hdlr.setFormatter(formatter)
+                        logger.addHandler(hdlr)
+
+                    logger.setLevel(logging.DEBUG)
+                    logger.info(sModuleInfo + ' - ' + sDetails + '' + sStatus)
+                    logger.removeHandler(hdlr)
+                else:
+                    if browserLogHdlr != None:
+                        browserLogHdlr.setFormatter(formatter)
+                        logger.addHandler(browserLogHdlr)
+
+                    logger.setLevel(logging.DEBUG)
+                    logger.info(sModuleInfo + ' - ' + sDetails + '' + sStatus)
+                    logger.removeHandler(browserLogHdlr)
+
+            global all_logs, all_logs_count, all_logs_list
             # Write log line to server
             #r = RequestFormatter.Get('log_execution',{'logid': log_id, 'modulename': sModuleInfo, 'details': sDetails, 'status': status,'loglevel': iLogLevel})
-            global all_logs,all_logs_count,all_logs_list
-            if iLogLevel!=5: #Except the broserLogs
-                now = datetime.datetime.now().strftime('%Y-%m-%d %H:%M:%S')
-                all_logs[all_logs_count] = {'logid': log_id, 'modulename': sModuleInfo, 'details': sDetails, 'status': status,'loglevel': iLogLevel,'tstamp':str(now)}
-                all_logs_count+=1
-                if all_logs_count>=500:
-                    all_logs_list.append(all_logs)
-                    all_logs_count=0
-                    all_logs={}
+            if only_errors == True and iLogLevel>1: # will upload only errors in db
+                print (only_errors + 'db')
+
+                if iLogLevel!=5: #Except the broserLogs
+                    now = datetime.datetime.now().strftime('%Y-%m-%d %H:%M:%S')
+                    all_logs[all_logs_count] = {'logid': log_id, 'modulename': sModuleInfo, 'details': sDetails, 'status': status,'loglevel': iLogLevel,'tstamp':str(now)}
+                    all_logs_count+=1
+                    if all_logs_count>=500:
+                        all_logs_list.append(all_logs)
+                        all_logs_count=0
+                        all_logs={}
+            else:
+                if iLogLevel != 5:  # Except the broserLogs
+                    now = datetime.datetime.now().strftime('%Y-%m-%d %H:%M:%S')
+                    all_logs[all_logs_count] = {'logid': log_id, 'modulename': sModuleInfo, 'details': sDetails,
+                                                'status': status, 'loglevel': iLogLevel, 'tstamp': str(now)}
+                    all_logs_count += 1
+                    if all_logs_count >= 500:
+                        all_logs_list.append(all_logs)
+                        all_logs_count = 0
+                        all_logs = {}
+
 
 
     except Exception, e:
@@ -271,10 +344,10 @@ def set_screenshot_vars(shared_variables):
     # We can't import Shared Variables due to cyclic imports causing local runs to break, so this is the work around
     # Known issue: This function is called by Sequential_Actions(). Thus, Maindriver can't take screenshots until this is set
     sModuleInfo = inspect.stack()[0][3] + " : " + inspect.getmoduleinfo(__file__).name
-    
+
     global screen_capture_driver, screen_capture_type
-    
-    try:    
+
+    try:
         if 'screen_capture' in shared_variables: # Type of screenshot (desktop/mobile)
             screen_capture_type = shared_variables['screen_capture']
         if screen_capture_type == 'mobile': # Appium driver object
@@ -297,18 +370,18 @@ def TakeScreenShot(ImageName,local_run=False):
         t.start() # Start thread
     except:
         return Exception_Handler(sys.exc_info())
-    
+
 def Thread_ScreenShot(ImageName,local_run=False):
     ''' Capture screen of mobile or desktop '''
     # Do not include extension in ImageName, it will be added
-    
+
     # Define variables
     sModuleInfo = inspect.stack()[0][3] + " : " + inspect.getmoduleinfo(__file__).name
     ExecLog(sModuleInfo, "Function start", 0)
     chars_to_remove = ["?","*","\"","<",">","|","\\","\/",":"] # Symbols that can't be used in filename
     picture_quality = 20 # Quality of picture
     picture_size = 800, 600 # Size of image (for reduction in file size)
-    
+
     # Read values from config file
     take_screenshot_settings = ConfigModule.get_config_value('RunDefinition', 'take_screenshot') # True/False to take screenshot from settings.conf
     local_run = ConfigModule.get_config_value('RunDefinition', 'local_run') # True/False to run only locally, in which case we do not take screenshot from settings.conf
@@ -323,7 +396,7 @@ def Thread_ScreenShot(ImageName,local_run=False):
     # Adjust filename and create full path (remove invalid characters, convert spaces to underscore, remove leading and trailing spaces)
     ImageName=os.path.join(image_folder, TimeStamp("utc") + "_" + (ImageName.translate(None,''.join(chars_to_remove))).strip().replace(" ","_") + ".png")
     ExecLog(sModuleInfo, "Capturing screen on %s, with driver: %s, and saving to %s" % (str(screen_capture_type), str(screen_capture_driver), ImageName), 0)
-    
+
     try:
         # Capture screenshot of desktop
         if screen_capture_type == 'desktop':
@@ -333,16 +406,16 @@ def Thread_ScreenShot(ImageName,local_run=False):
             elif sys.platform  == 'win32' or sys.platform  == 'darwin':
                 image = ImageGrab_Mac_Win.grab()
                 image.save(ImageName, format = "PNG") # Save to disk
-        
+
         # Exit if we don't have a driver yet (happens when Test Step is set to mobile/web, but we haven't setup the driver)
         elif screen_capture_driver == None and (screen_capture_type == 'mobile' or screen_capture_type == 'web'):
             ExecLog(sModuleInfo, "Can't capture screen, driver not available for type: %s, or invalid driver: %s" % (str(screen_capture_type), str(screen_capture_driver)), 1)
             return
-        
+
         # Capture screenshot of web browser
         elif screen_capture_type == 'web':
             screen_capture_driver.get_screenshot_as_file(ImageName) # Must be .png, otherwise an exception occurs
-            
+
         # Capture screenshot of mobile
         elif screen_capture_type == 'mobile':
             screen_capture_driver.save_screenshot(ImageName) # Must be .png, otherwise an exception occurs
