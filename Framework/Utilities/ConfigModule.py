@@ -12,7 +12,10 @@ remote_config={
     'local_run' : False,
     'take_screenshot' : True,
     'debug_mode' : False,
-    'upload_log_file_only_for_fail' : True
+    'upload_log_file_only_for_fail' : True,
+    'error_log_only' : True,
+    'collect_all_log_in_file' : True,
+    'collect_only_error_log_in_file' : False
 }
 
 
