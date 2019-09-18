@@ -585,6 +585,7 @@ def check_if_device_is_unlocked(serial=''):
     except Exception:
         errMsg = "Unable to determine if device is locked or not"
         return CommonUtil.Exception_Handler(sys.exc_info(), None, errMsg)
+    
 
 def detect_foreground_android(serial=''):
     ''' Return whatever has the foreground '''
