@@ -1,6 +1,40 @@
 # -*- coding: utf-8 -*-
 # -*- coding: cp1252 -*-
+'''
+All logs are marked with a errorLevel as described below  :
+    iLogLevel == 0:
+        status = 'Debug'  # This is not displayed on the server log, just in the console #
+    iLogLevel == 1:
+        status = 'Passed'
+    iLogLevel == 2:
+        status = 'Warning'
+    iLogLevel == 3:
+        status = 'Error'
+    iLogLevel == 4:
+        status = 'Console'
+    iLogLevel == 6:
+        status = 'BrowserConsole'
+    Any other kind of unknown error will show :
+        "*** Unknown log level- Set to Warning ***"
+        status = 'Warning'
 
+
+All Report style is marked with report_type as described below:
+             collect_errors_only_file
+                report_type=0
+            elif only_errors
+                report_type=1
+            elif debug_mode
+                report_type=2
+            elif local_run
+                report_type=3
+
+local run and debug mode will not update in db or files if checked by collectErrorOnlyFile or onlyErrors.
+Report_type 3 and report_type 2 will be ignored but
+All logs will be visible in console .
+
+
+'''
 import sys
 import inspect
 import os, psutil, os.path, threading
@@ -43,6 +77,13 @@ all_logs_count = 0
 all_logs_list = []
 load_testing = False
 log_thread_pool = None
+
+
+# Read from settings file
+local_run = ConfigModule.get_config_value('RunDefinition', 'local_run')
+debug_mode = ConfigModule.get_config_value('RunDefinition', 'debug_mode')
+collect_errors_only_file = ConfigModule.get_config_value('RunDefinition', 'collect_only_error_log_in_file')
+only_errors = get_config_value('RunDefinition', 'upload_only_error_log')
 
 
 def to_unicode(obj, encoding='utf-8'):
@@ -143,48 +184,64 @@ def Result_Analyzer(sTestStepReturnStatus, temp_q):
 
 
 def ExecLog(sModuleInfo, sDetails, iLogLevel=1, _local_run="", sStatus="", force_write=False):
+    # Check if user overrode local_run variable. If so, use that instead
+    if _local_run != '':
+        if type(_local_run) == bool:
+            if _local_run:
+                local_run='true'
+            else:
+                local_run='false'
+        else:
+            local_run=_local_run
+
+    # Convert logLevel from int to string for clarity
+    if iLogLevel == 0:
+        if debug_mode.lower() == 'true':
+            status = 'Debug'  # This is not displayed on the server log, just in the console #
+    elif iLogLevel == 1:
+        status = 'Passed'
+    elif iLogLevel == 2:
+        status = 'Warning'
+    elif iLogLevel == 3:
+        status = 'Error'
+    elif iLogLevel == 4:
+        status = 'Console'
+    elif iLogLevel == 6:
+        status = 'BrowserConsole'
+    else:
+        print "*** Unknown log level- Set to Warning ***"
+        status = 'Warning'
     global log_thread_pool
+    report_type=-1
 
-    log_thread_pool.submit(ExecLog_Wrapper, sModuleInfo, sDetails, iLogLevel, _local_run, sStatus, force_write)
+    # print (type(collect_errors_only_file))
+    # print (type(only_errors))
+    # print (type(debug_mode))
+    # print (type(local_run))
+
+    if collect_errors_only_file=='true' or only_errors=='true' or debug_mode=='true' or local_run=='true':
+        if iLogLevel==2 or iLogLevel==3:
+            if collect_errors_only_file.lower()=='true':
+                report_type=0
+            elif only_errors.lower()=='true':
+                report_type=1
+            elif debug_mode.lower()=='true':
+                report_type=2
+            elif local_run.lower()=='true':
+                report_type=3
+            log_thread_pool.submit(ExecLog_Wrapper, sModuleInfo, sDetails, iLogLevel, local_run, sStatus, force_write, status,report_type)
+    else:
+        log_thread_pool.submit(ExecLog_Wrapper, sModuleInfo, sDetails, iLogLevel, local_run, sStatus, force_write,status, report_type)
 
 
-def ExecLog_Wrapper(sModuleInfo, sDetails, iLogLevel=1, _local_run="", sStatus="", force_write=False):
+def ExecLog_Wrapper(sModuleInfo, sDetails, iLogLevel=1, _local_run="", sStatus="", force_write=False, status="", report_type=-1):
     try:
-        # if load testing going on and not forcing to write logs, then don't write logs
-
-        # Read from settings file
-        local_run = ConfigModule.get_config_value('RunDefinition', 'local_run')
-        debug_mode = ConfigModule.get_config_value('RunDefinition', 'debug_mode')
-        collect_errors_only_file = ConfigModule.get_config_value('RunDefinition', 'collect_only_error_log_in_file')
-        only_errors = get_config_value('RunDefinition', 'upload_only_error_log')
-
-        # Check if user overrode local_run variable. If so, use that instead
-        if _local_run != '': local_run = _local_run
 
         # ";" is not supported for logging.  So replacing them
         sDetails = sDetails.replace(";", ":")
         sDetails = sDetails.replace("%22", "'")
 
-        # Convert logLevel from int to string for clarity
-        if iLogLevel == 0:
-            if debug_mode.lower() == 'true':
-                status = 'Debug'  # This is not displayed on the server log, just in the console
-            else:  # Do not display this log line anywhere
-                return
-        elif iLogLevel == 1:
-            status = 'Passed'
-        elif iLogLevel == 2:
-            status = 'Warning'
-        elif iLogLevel == 3:
-            status = 'Error'
-        elif iLogLevel == 4:
-            status = 'Console'
-        elif iLogLevel == 6:
-            status = 'BrowserConsole'
-        else:
-            print "*** Unknown log level- Set to Warning ***"
-            status = 'Warning'
-        # if show_errors and iLogLevel>1:   #only errors will be shown in the console
+
         # Display on console
         if status == 'Console':  # Change the format for console, mainly leave out the status level
             msg = ''
@@ -197,11 +254,60 @@ def ExecLog_Wrapper(sModuleInfo, sDetails, iLogLevel=1, _local_run="", sStatus="
         # Upload logs to server if local run is not set to False
         if load_testing and not force_write: return
 
-        if iLogLevel > 0:
-            if collect_errors_only_file == 'False':
+        if iLogLevel > 0 :
+            if report_type == 0 and report_type < 2:
+                # local run and debug mode will not write file .report_type 3 and report_type 2 is ignored
+                #report_type == 0 will write the errors only to file
                 log_id = ConfigModule.get_config_value('sectionOne', 'sTestStepExecLogId', temp_config)
                 FWLogFolder = ConfigModule.get_config_value('sectionOne', 'log_folder', temp_config)
-                if os.path.exists(FWLogFolder) == False: FL.CreateFolder(FWLogFolder)  # Create log directory if missing
+                if os.path.exists(FWLogFolder) == False: FL.CreateFolder(
+                    FWLogFolder)  # Create log directory if missing
+                BrowserConsoleLogFile = ''
+                if FWLogFolder == '':
+                    FWLogFile = ConfigModule.get_config_value('sectionOne', 'temp_run_file_path',
+                                                              temp_config) + os.sep + 'execlog.log'
+                    BrowserConsoleLogFile = ConfigModule.get_config_value('sectionOne', 'temp_run_file_path',
+                                                                          temp_config) + os.sep + 'BrowserLog.log'
+                else:
+                    FWLogFile = FWLogFolder + os.sep + 'temp.log'
+                    BrowserConsoleLogFile = FWLogFolder + os.sep + 'BrowserLog.log'
+
+                logger = logging.getLogger(__name__)
+
+                hdlr = None
+                browserLogHdlr = None
+                if os.name == 'posix':
+                    try:
+                        hdlr = logging.FileHandler(FWLogFile)
+                        browserLogHdlr = logging.FileHandler(BrowserConsoleLogFile)
+                    except:
+                        pass
+                elif os.name == 'nt':
+                    hdlr = logging.FileHandler(FWLogFile)
+                    browserLogHdlr = logging.FileHandler(BrowserConsoleLogFile)
+                formatter = logging.Formatter('%(asctime)s - %(levelname)s - %(message)s')
+
+                if iLogLevel != 6:
+                    if hdlr != None:
+                        hdlr.setFormatter(formatter)
+                        logger.addHandler(hdlr)
+
+                    logger.setLevel(logging.DEBUG)
+                    logger.info(sModuleInfo + ' - ' + sDetails + '' + sStatus)
+                    logger.removeHandler(hdlr)
+                else:
+                    if browserLogHdlr != None:
+                        browserLogHdlr.setFormatter(formatter)
+                        logger.addHandler(browserLogHdlr)
+
+                    logger.setLevel(logging.DEBUG)
+                    logger.info(sModuleInfo + ' - ' + sDetails + '' + sStatus)
+                    logger.removeHandler(browserLogHdlr)
+            elif report_type==-1: #default writing all logs will be written in file
+                log_id = ConfigModule.get_config_value('sectionOne', 'sTestStepExecLogId', temp_config)
+                FWLogFolder = ConfigModule.get_config_value('sectionOne', 'log_folder', temp_config)
+                if os.path.exists(FWLogFolder) == False: FL.CreateFolder(
+                    FWLogFolder)  # Create log directory if missing
                 BrowserConsoleLogFile = ''
                 if FWLogFolder == '':
                     FWLogFile = ConfigModule.get_config_value('sectionOne', 'temp_run_file_path',
@@ -244,73 +350,16 @@ def ExecLog_Wrapper(sModuleInfo, sDetails, iLogLevel=1, _local_run="", sStatus="
                     logger.info(sModuleInfo + ' - ' + sDetails + '' + sStatus)
                     logger.removeHandler(browserLogHdlr)
 
-            else:
-                if iLogLevel == 2 or iLogLevel == 3:
-                    # will write only the errors in file
-                    log_id = ConfigModule.get_config_value('sectionOne', 'sTestStepExecLogId', temp_config)
-                    FWLogFolder = ConfigModule.get_config_value('sectionOne', 'log_folder', temp_config)
-                    if os.path.exists(FWLogFolder) == False: FL.CreateFolder(
-                        FWLogFolder)  # Create log directory if missing
-                    BrowserConsoleLogFile = ''
-                    if FWLogFolder == '':
-                        FWLogFile = ConfigModule.get_config_value('sectionOne', 'temp_run_file_path',
-                                                                  temp_config) + os.sep + 'execlog.log'
-                        BrowserConsoleLogFile = ConfigModule.get_config_value('sectionOne', 'temp_run_file_path',
-                                                                              temp_config) + os.sep + 'BrowserLog.log'
-                    else:
-                        FWLogFile = FWLogFolder + os.sep + 'temp.log'
-                        BrowserConsoleLogFile = FWLogFolder + os.sep + 'BrowserLog.log'
 
-                    logger = logging.getLogger(__name__)
-
-                    hdlr = None
-                    browserLogHdlr = None
-                    if os.name == 'posix':
-                        try:
-                            hdlr = logging.FileHandler(FWLogFile)
-                            browserLogHdlr = logging.FileHandler(BrowserConsoleLogFile)
-                        except:
-                            pass
-                    elif os.name == 'nt':
-                        hdlr = logging.FileHandler(FWLogFile)
-                        browserLogHdlr = logging.FileHandler(BrowserConsoleLogFile)
-                    formatter = logging.Formatter('%(asctime)s - %(levelname)s - %(message)s')
-
-                    if iLogLevel != 6:
-                        if hdlr != None:
-                            hdlr.setFormatter(formatter)
-                            logger.addHandler(hdlr)
-
-                        logger.setLevel(logging.DEBUG)
-                        logger.info(sModuleInfo + ' - ' + sDetails + '' + sStatus)
-                        logger.removeHandler(hdlr)
-                    else:
-                        if browserLogHdlr != None:
-                            browserLogHdlr.setFormatter(formatter)
-                            logger.addHandler(browserLogHdlr)
-
-                        logger.setLevel(logging.DEBUG)
-                        logger.info(sModuleInfo + ' - ' + sDetails + '' + sStatus)
-                        logger.removeHandler(browserLogHdlr)
 
             global all_logs, all_logs_count, all_logs_list
             # Write log line to server
             # r = RequestFormatter.Get('log_execution',{'logid': log_id, 'modulename': sModuleInfo, 'details': sDetails, 'status': status,'loglevel': iLogLevel})
-            if only_errors == "True":
-                if iLogLevel == 2 or iLogLevel == 3:  # will upload only errors in db
 
-                    if iLogLevel != 5:  # Except the broserLogs
-                        now = datetime.datetime.now().strftime('%Y-%m-%d %H:%M:%S')
-                        all_logs[all_logs_count] = {'logid': log_id, 'modulename': sModuleInfo, 'details': sDetails,
-                                                    'status': status, 'loglevel': iLogLevel, 'tstamp': str(now)}
-                        all_logs_count += 1
-                        if all_logs_count >= 500:
-                            all_logs_list.append(all_logs)
-                            all_logs_count = 0
-                            all_logs = {}
-            else:
-
-                if iLogLevel != 5:  # Except the broserLogs
+            if report_type==1 and report_type<2:
+                # local run and debug mode will not update in db .report_type 3 and report_type 2 is ignored
+                #report_type 1 will update the errors only
+                if iLogLevel != 5:  # Except the browserLogs
                     now = datetime.datetime.now().strftime('%Y-%m-%d %H:%M:%S')
                     all_logs[all_logs_count] = {'logid': log_id, 'modulename': sModuleInfo, 'details': sDetails,
                                                 'status': status, 'loglevel': iLogLevel, 'tstamp': str(now)}
@@ -320,7 +369,16 @@ def ExecLog_Wrapper(sModuleInfo, sDetails, iLogLevel=1, _local_run="", sStatus="
                         all_logs_count = 0
                         all_logs = {}
 
-
+            elif report_type == -1:   # default all log update in db
+                if iLogLevel != 5:  # Except the browserLogs
+                    now = datetime.datetime.now().strftime('%Y-%m-%d %H:%M:%S')
+                    all_logs[all_logs_count] = {'logid': log_id, 'modulename': sModuleInfo, 'details': sDetails,
+                                                'status': status, 'loglevel': iLogLevel, 'tstamp': str(now)}
+                    all_logs_count += 1
+                    if all_logs_count >= 500:
+                        all_logs_list.append(all_logs)
+                        all_logs_count = 0
+                        all_logs = {}
 
     except Exception, e:
         pass  # This can happen when server is not available. In that case, we don't need to do anything
