@@ -8,11 +8,11 @@ import FileUtilities as FL
 file_name = 'settings.conf'
 
 remote_config={
-    'threading' : True,
+    'threading' : False,
     'local_run' : False,
-    'take_screenshot' : True,
+    'take_screenshot' : False,
     'debug_mode' : False,
-    'upload_log_file_only_for_fail' : True
+    'upload_log_file_only_for_fail' : False
 }
 
 
