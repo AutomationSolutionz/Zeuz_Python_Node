@@ -22,6 +22,8 @@ from Framework.Utilities import CommonUtil
 from Framework.Utilities.CommonUtil import passed_tag_list, failed_tag_list, skipped_tag_list
 from Framework.Built_In_Automation.Shared_Resources import BuiltInFunctionSharedResources as Shared_Resources
 
+MODULE_NAME = inspect.getmoduleinfo(__file__).name
+
 #########################
 #                       #
 #    Helper Functions   #
@@ -34,7 +36,7 @@ def get_home_folder():
     :return: give the path of home folder
     """
 
-    sModuleInfo = inspect.stack()[0][3] + " : " + inspect.getmoduleinfo(__file__).name
+    sModuleInfo = inspect.currentframe().f_code.co_name + " : " + MODULE_NAME
     CommonUtil.ExecLog(sModuleInfo, "Function start", 0)
 
     try:
@@ -58,7 +60,7 @@ def CreateFolder(folderPath, forced=True):
         :return: Exception if Exception occurs or True if successful
     """
     
-    sModuleInfo = inspect.stack()[0][3] + " : " + inspect.getmoduleinfo(__file__).name
+    sModuleInfo = inspect.currentframe().f_code.co_name + " : " + MODULE_NAME
     CommonUtil.ExecLog(sModuleInfo, "Function start", 0)
     
     try:
@@ -94,7 +96,7 @@ def CreateFile(sFilePath, data = '', overwrite = False):
         :return: Exception if Exception occurs or True if successful or False if file already exists
     """
     
-    sModuleInfo = inspect.stack()[0][3] + " : " + inspect.getmoduleinfo(__file__).name
+    sModuleInfo = inspect.currentframe().f_code.co_name + " : " + MODULE_NAME
     CommonUtil.ExecLog(sModuleInfo, "Function start", 0)
     
     try:
@@ -122,7 +124,7 @@ def MoveFile(file_to_be_moved, new_name_of_the_file):
         :return: Exception if Exception occurs otherwise return result  
     """
     
-    sModuleInfo = inspect.stack()[0][3] + " : " + inspect.getmoduleinfo(__file__).name
+    sModuleInfo = inspect.currentframe().f_code.co_name + " : " + MODULE_NAME
     CommonUtil.ExecLog(sModuleInfo, "Function start", 0)
     
     try:
@@ -160,7 +162,7 @@ def MoveFolder(folder_to_be_moved, new_name_of_the_folder):
         :return: Exception if Exception occurs otherwise return result  
     """
     
-    sModuleInfo = inspect.stack()[0][3] + " : " + inspect.getmoduleinfo(__file__).name
+    sModuleInfo = inspect.currentframe().f_code.co_name + " : " + MODULE_NAME
     CommonUtil.ExecLog(sModuleInfo, "Function start", 0)
     
     try:
@@ -198,7 +200,7 @@ def UnZip(file_to_be_unzipped, location_where_to_unzip):
         :return: Exception if Exception occurs or False if file doesn't exist otherwise return result  
     """
     
-    sModuleInfo = inspect.stack()[0][3] + " : " + inspect.getmoduleinfo(__file__).name
+    sModuleInfo = inspect.currentframe().f_code.co_name + " : " + MODULE_NAME
     CommonUtil.ExecLog(sModuleInfo, "Function start", 0)
     
     try:
@@ -248,7 +250,7 @@ def CompareFile(file_to_be_compared1, file_to_be_compared2):
         :return: Exception if Exception occurs otherwise return result  
     """
     
-    sModuleInfo = inspect.stack()[0][3] + " : " + inspect.getmoduleinfo(__file__).name
+    sModuleInfo = inspect.currentframe().f_code.co_name + " : " + MODULE_NAME
     CommonUtil.ExecLog(sModuleInfo, "Function start", 0)
     
     try:
@@ -269,7 +271,7 @@ def ZipFile(source, destination):
         :return: passed or failed
     """
     
-    sModuleInfo = inspect.stack()[0][3] + " : " + inspect.getmoduleinfo(__file__).name
+    sModuleInfo = inspect.currentframe().f_code.co_name + " : " + MODULE_NAME
     CommonUtil.ExecLog(sModuleInfo, "Function start", 0)
     
     try:
@@ -313,7 +315,7 @@ def DeleteFile(sFilePath):
         :return: Exception if Exception or False if file doesn't exist otherwise return the result
     """
     
-    sModuleInfo = inspect.stack()[0][3] + " : " + inspect.getmoduleinfo(__file__).name
+    sModuleInfo = inspect.currentframe().f_code.co_name + " : " + MODULE_NAME
     CommonUtil.ExecLog(sModuleInfo, "Function start", 0)
     
     try:
@@ -344,7 +346,7 @@ def DeleteFolder(sFolderPath): #!!! Needs to be updated to handle deleting of di
         :return: Exception if Exception or False if folder doesn't exist otherwise return the result
     """
     
-    sModuleInfo = inspect.stack()[0][3] + " : " + inspect.getmoduleinfo(__file__).name
+    sModuleInfo = inspect.currentframe().f_code.co_name + " : " + MODULE_NAME
     CommonUtil.ExecLog(sModuleInfo, "Function start", 0)
     
     try:
@@ -377,7 +379,7 @@ def find(sFilePath): #!!!Needs to be updated to either return true/false or actu
         :return: Exception if Exception occurs otherwise return result  
     """
     
-    sModuleInfo = inspect.stack()[0][3] + " : " + inspect.getmoduleinfo(__file__).name
+    sModuleInfo = inspect.currentframe().f_code.co_name + " : " + MODULE_NAME
     CommonUtil.ExecLog(sModuleInfo, "Function start", 0)
     
     try:
@@ -395,7 +397,7 @@ def empty_trash(trash_path): # !!! Change this so that it's a general recursive 
         :return: Exception if Exception occurs or "falied" if trash is already empty
     """
     
-    sModuleInfo = inspect.stack()[0][3] + " : " + inspect.getmoduleinfo(__file__).name
+    sModuleInfo = inspect.currentframe().f_code.co_name + " : " + MODULE_NAME
     CommonUtil.ExecLog(sModuleInfo, "Function start", 0)
     
     try:
@@ -434,7 +436,7 @@ def copy_folder(src, dest):
         :return:  Exception if Exception occurs otherwise return result
     """
     
-    sModuleInfo = inspect.stack()[0][3] + " : " + inspect.getmoduleinfo(__file__).name
+    sModuleInfo = inspect.currentframe().f_code.co_name + " : " + MODULE_NAME
     CommonUtil.ExecLog(sModuleInfo, "Function start", 0)
     
     try:
@@ -462,7 +464,7 @@ def copy_file(src, dest): #!!!merge with copy_folder, just check if src is a fil
         :return:  Exception if Exception occurs otherwise return result  
     """
     
-    sModuleInfo = inspect.stack()[0][3] + " : " + inspect.getmoduleinfo(__file__).name
+    sModuleInfo = inspect.currentframe().f_code.co_name + " : " + MODULE_NAME
     CommonUtil.ExecLog(sModuleInfo, "Function start", 0)
     
     try:
@@ -487,7 +489,7 @@ def empty_recycle_bin():
         :return: Exception if Exception occurs or "failed if bin is empty otherwise return the result
     """
     
-    sModuleInfo = inspect.stack()[0][3] + " : " + inspect.getmoduleinfo(__file__).name
+    sModuleInfo = inspect.currentframe().f_code.co_name + " : " + MODULE_NAME
     CommonUtil.ExecLog(sModuleInfo, "Function start", 0)
     
     try:
@@ -517,7 +519,7 @@ def empty_recycle_bin():
 #         :return: Exception if Exception occurs 
 #     """
 #     
-#     sModuleInfo = inspect.stack()[0][3] + " : " + inspect.getmoduleinfo(__file__).name
+#     sModuleInfo = inspect.currentframe().f_code.co_name + " : " + MODULE_NAME
 #     CommonUtil.ExecLog(sModuleInfo, "Function start", 0)
 #     
 #     try:
@@ -542,7 +544,7 @@ def empty_recycle_bin():
 #         :return: Exception if Exception occurs 
 #     """
 # 
-#     sModuleInfo = inspect.stack()[0][3] + " : " + inspect.getmoduleinfo(__file__).name
+#     sModuleInfo = inspect.currentframe().f_code.co_name + " : " + MODULE_NAME
 #     CommonUtil.ExecLog(sModuleInfo, "Function start", 0)
 # 
 #     try:
@@ -564,7 +566,7 @@ def empty_recycle_bin():
 #         :return: Exception if Exception occurs otherwise return result 
 #     """
 #     
-#     sModuleInfo = inspect.stack()[0][3] + " : " + inspect.getmoduleinfo(__file__).name
+#     sModuleInfo = inspect.currentframe().f_code.co_name + " : " + MODULE_NAME
 #     CommonUtil.ExecLog(sModuleInfo, "Function start", 0)
 #     
 #     '''Begin Constants'''
@@ -574,7 +576,7 @@ def empty_recycle_bin():
 #     '''End Constants'''
 # 
 #     # Run 'command' via command line in a bash shell, and store outputs to stdout_val
-#     sModuleInfo = inspect.stack()[0][3] + " : " + inspect.getmoduleinfo(__file__).name
+#     sModuleInfo = inspect.currentframe().f_code.co_name + " : " + MODULE_NAME
 #     subprocess_dict = {}
 #     try:
 #         # global subprocess_dict
@@ -609,7 +611,7 @@ def empty_recycle_bin():
 #         :return: Exception if Exception occurs otherwise return result 
 #     """
 # 
-#     sModuleInfo = inspect.stack()[0][3] + " : " + inspect.getmoduleinfo(__file__).name
+#     sModuleInfo = inspect.currentframe().f_code.co_name + " : " + MODULE_NAME
 #     CommonUtil.ExecLog(sModuleInfo, "Function start", 0)
 # 
 #     '''Begin Constants'''
@@ -619,7 +621,7 @@ def empty_recycle_bin():
 #     '''End Constants'''
 # 
 #     # Run 'command' via command line in a bash shell, and store outputs to stdout_val
-#     sModuleInfo = inspect.stack()[0][3] + " : " + inspect.getmoduleinfo(__file__).name
+#     sModuleInfo = inspect.currentframe().f_code.co_name + " : " + MODULE_NAME
 #     subprocess_dict = {}
 #     try:
 #         # global subprocess_dict
@@ -654,7 +656,7 @@ def random_string_generator(pattern='nluc', size=10):
     # pattern: At least one or more of the following: n l u c (number, lowercase, uppercase, characters)
     # size: Length of string
     
-    sModuleInfo = inspect.stack()[0][3] + " : " + inspect.getmoduleinfo(__file__).name
+    sModuleInfo = inspect.currentframe().f_code.co_name + " : " + MODULE_NAME
     CommonUtil.ExecLog(sModuleInfo, "Function start", 0)
     
     try:
@@ -684,7 +686,7 @@ def download_file_using_url(file_url, location_of_file):
     # file_url: URL of file
     # location_of_file: Where to save file on disk
     
-    sModuleInfo = inspect.stack()[0][3] + " : " + inspect.getmoduleinfo(__file__).name
+    sModuleInfo = inspect.currentframe().f_code.co_name + " : " + MODULE_NAME
     CommonUtil.ExecLog(sModuleInfo, "Function start", 0)
     
     try:
@@ -712,7 +714,7 @@ def download_file_using_url(file_url, location_of_file):
 #Method to download and unzip file
 # def download_and_unzip_file(file_url, location_of_file): #!!!change this to call download_file_using_url instead of duplicating work, or just remove download part, and whatever is calling this can call the two pieces separately
 #     
-#     sModuleInfo = inspect.stack()[0][3] + " : " + inspect.getmoduleinfo(__file__).name
+#     sModuleInfo = inspect.currentframe().f_code.co_name + " : " + MODULE_NAME
 #     CommonUtil.ExecLog(sModuleInfo, "Function start", 0)
 #     
 #     try:
@@ -764,7 +766,7 @@ def download_file_using_url(file_url, location_of_file):
 
 # not done properly...need more works
 '''def change_path_for_windows(src):
-    sModuleInfo = inspect.stack()[0][3] + " : " + inspect.getmoduleinfo(__file__).name
+    sModuleInfo = inspect.currentframe().f_code.co_name + " : " + MODULE_NAME
     CommonUtil.ExecLog(sModuleInfo, "Function: Change path for Windows", 1)
     print src
     string_list = str(src).split("\\")
@@ -893,7 +895,7 @@ def raw(text):
 
 # Method to copy file/folder
 def Copy_File_or_Folder(step_data):
-    sModuleInfo = inspect.stack()[0][3] + " : " + inspect.getmoduleinfo(__file__).name
+    sModuleInfo = inspect.currentframe().f_code.co_name + " : " + MODULE_NAME
     CommonUtil.ExecLog(sModuleInfo, "Function start", 0)
 
     # Recall file attachment, if not already set
@@ -948,7 +950,7 @@ def Copy_File_or_Folder(step_data):
 
 # Method to unzip
 def Unzip_File_or_Folder(step_data):
-    sModuleInfo = inspect.stack()[0][3] + " : " + inspect.getmoduleinfo(__file__).name
+    sModuleInfo = inspect.currentframe().f_code.co_name + " : " + MODULE_NAME
     CommonUtil.ExecLog(sModuleInfo, "Function start", 0)
 
     # Recall file attachment, if not already set
@@ -998,7 +1000,7 @@ def Unzip_File_or_Folder(step_data):
         return CommonUtil.Exception_Handler(sys.exc_info())
 
 def Get_Attachment_Path(step_data):
-    sModuleInfo = inspect.stack()[0][3] + " : " + inspect.getmoduleinfo(__file__).name
+    sModuleInfo = inspect.currentframe().f_code.co_name + " : " + MODULE_NAME
     CommonUtil.ExecLog(sModuleInfo, "Function start", 0)
 
         # Recall file attachment, if not already set
@@ -1033,7 +1035,7 @@ def Get_Attachment_Path(step_data):
 
 # Method to delete file/folder
 def Delete_File_or_Folder(data_set):
-    sModuleInfo = inspect.stack()[0][3] + " : " + inspect.getmoduleinfo(__file__).name
+    sModuleInfo = inspect.currentframe().f_code.co_name + " : " + MODULE_NAME
     CommonUtil.ExecLog(sModuleInfo, "Function start", 0)
     
     # Parse data set
@@ -1091,7 +1093,7 @@ def Delete_File_or_Folder(data_set):
 
 # Method to create file/folder
 def Create_File_or_Folder(step_data):
-    sModuleInfo = inspect.stack()[0][3] + " : " + inspect.getmoduleinfo(__file__).name
+    sModuleInfo = inspect.currentframe().f_code.co_name + " : " + MODULE_NAME
     CommonUtil.ExecLog(sModuleInfo, "Function start", 0)
     try:
         if _platform == "linux" or _platform == "linux2" or _platform == "darwin":
@@ -1133,7 +1135,7 @@ def Create_File_or_Folder(step_data):
 
 # Method to find file
 def Find_File(step_data):
-    sModuleInfo = inspect.stack()[0][3] + " : " + inspect.getmoduleinfo(__file__).name
+    sModuleInfo = inspect.currentframe().f_code.co_name + " : " + MODULE_NAME
     CommonUtil.ExecLog(sModuleInfo, "Function start", 0)
     try:
         path = get_home_folder() + str(step_data[0][0]).strip()
@@ -1158,7 +1160,7 @@ def Find_File(step_data):
 
 # Method to empty trash/recycle bin
 def Empty_Trash(step_data):
-    sModuleInfo = inspect.stack()[0][3] + " : " + inspect.getmoduleinfo(__file__).name
+    sModuleInfo = inspect.currentframe().f_code.co_name + " : " + MODULE_NAME
     CommonUtil.ExecLog(sModuleInfo, "Function start", 0)
     try:
         if _platform == "linux" or _platform == "linux2" or _platform == "darwin":
@@ -1191,7 +1193,7 @@ def Empty_Trash(step_data):
 
 # Method to Get User Name
 def Get_User_Name(step_data):
-    sModuleInfo = inspect.stack()[0][3] + " : " + inspect.getmoduleinfo(__file__).name
+    sModuleInfo = inspect.currentframe().f_code.co_name + " : " + MODULE_NAME
     CommonUtil.ExecLog(sModuleInfo, "Function start", 0)
     try:
         if _platform == "linux" or _platform == "linux2" or _platform == "darwin":
@@ -1216,7 +1218,7 @@ def Get_User_Name(step_data):
 
 # Method to add log
 def Add_Log(step_data):
-    sModuleInfo = inspect.stack()[0][3] + " : " + inspect.getmoduleinfo(__file__).name
+    sModuleInfo = inspect.currentframe().f_code.co_name + " : " + MODULE_NAME
     CommonUtil.ExecLog(sModuleInfo, "Function start", 0)
     try:
         log_info = str(step_data[0][0]).strip() #get the log level info from the step data
@@ -1235,7 +1237,7 @@ def Calculate(step_data):
     ''' Perform any mathematical calculation exactly as written by the user '''
     # Format: shared_var_name=1+(2*3)....etc
      
-    sModuleInfo = inspect.stack()[0][3] + " : " + inspect.getmoduleinfo(__file__).name
+    sModuleInfo = inspect.currentframe().f_code.co_name + " : " + MODULE_NAME
     CommonUtil.ExecLog(sModuleInfo, "Function start", 0)
     
     try:
@@ -1256,7 +1258,7 @@ def Calculate(step_data):
 
 # Method to Run Command
 def Run_Command(data_set):
-    sModuleInfo = inspect.stack()[0][3] + " : " + inspect.getmoduleinfo(__file__).name
+    sModuleInfo = inspect.currentframe().f_code.co_name + " : " + MODULE_NAME
     CommonUtil.ExecLog(sModuleInfo, "Function start", 0)
 
     # Parse data set
@@ -1307,7 +1309,7 @@ def Run_Command(data_set):
 
 
 # def Run_Command(step_data):
-#     sModuleInfo = inspect.stack()[0][3] + " : " + inspect.getmoduleinfo(__file__).name
+#     sModuleInfo = inspect.currentframe().f_code.co_name + " : " + MODULE_NAME
 #     CommonUtil.ExecLog(sModuleInfo, "Function start", 0)
 #     try:
 #         if step_data[0][0] == "run command":
@@ -1344,7 +1346,7 @@ def Run_Command(data_set):
 # 
 # # Method to Run Command
 # def Run_Command_and_Save(step_data):
-#     sModuleInfo = inspect.stack()[0][3] + " : " + inspect.getmoduleinfo(__file__).name
+#     sModuleInfo = inspect.currentframe().f_code.co_name + " : " + MODULE_NAME
 #     CommonUtil.ExecLog(sModuleInfo, "Function start", 0)
 #     try:
 # 
@@ -1377,7 +1379,7 @@ def Run_Command(data_set):
 
 # Method to Get Home Directory
 def Get_Home_Directory(data_set):
-    sModuleInfo = inspect.stack()[0][3] + " : " + inspect.getmoduleinfo(__file__).name
+    sModuleInfo = inspect.currentframe().f_code.co_name + " : " + MODULE_NAME
     CommonUtil.ExecLog(sModuleInfo, "Function start", 0)
     
     try:
@@ -1400,7 +1402,7 @@ def Get_Home_Directory(data_set):
 
 # Method to Get Current Desktop
 def Get_Current_Desktop(step_data):
-    sModuleInfo = inspect.stack()[0][3] + " : " + inspect.getmoduleinfo(__file__).name
+    sModuleInfo = inspect.currentframe().f_code.co_name + " : " + MODULE_NAME
     CommonUtil.ExecLog(sModuleInfo, "Function start", 0)
     try:
         path = os.path.join(get_home_folder(), 'Desktop') # concate home folder path with "/Desktop"
@@ -1419,7 +1421,7 @@ def Get_Current_Desktop(step_data):
 
 # Method to Get Current Documents
 def Get_Current_Documents(step_data):
-    sModuleInfo = inspect.stack()[0][3] + " : " + inspect.getmoduleinfo(__file__).name
+    sModuleInfo = inspect.currentframe().f_code.co_name + " : " + MODULE_NAME
     CommonUtil.ExecLog(sModuleInfo, "Function start", 0)
     try:
         path = os.path.join(get_home_folder(), 'Documents') # concate home folder path with "/Desktop"
@@ -1437,7 +1439,7 @@ def Get_Current_Documents(step_data):
 
 # Method to create file
 def Create_File(step_data):#!!!why is this here
-    sModuleInfo = inspect.stack()[0][3] + " : " + inspect.getmoduleinfo(__file__).name
+    sModuleInfo = inspect.currentframe().f_code.co_name + " : " + MODULE_NAME
     CommonUtil.ExecLog(sModuleInfo, "Function start", 0)
     try:
         path = get_home_folder() + str(step_data[0][2]).strip()
@@ -1461,7 +1463,7 @@ def Create_File(step_data):#!!!why is this here
 
 # Method to compare file
 def Compare_File(step_data):
-    sModuleInfo = inspect.stack()[0][3] + " : " + inspect.getmoduleinfo(__file__).name
+    sModuleInfo = inspect.currentframe().f_code.co_name + " : " + MODULE_NAME
     CommonUtil.ExecLog(sModuleInfo, "Function start", 0)
 
     # Recall file attachment, if not already set
@@ -1519,7 +1521,7 @@ def Compare_File(step_data):
 
 # Method to rename file/folder
 def Rename_File_or_Folder(step_data):
-    sModuleInfo = inspect.stack()[0][3] + " : " + inspect.getmoduleinfo(__file__).name
+    sModuleInfo = inspect.currentframe().f_code.co_name + " : " + MODULE_NAME
     CommonUtil.ExecLog(sModuleInfo, "Function start", 0)
     try:
         if _platform == "linux" or _platform == "linux2" or _platform == "darwin" :
@@ -1562,7 +1564,7 @@ def Rename_File_or_Folder(step_data):
 
 # Method to zip file/folder
 def Zip_File_or_Folder(data_set):
-    sModuleInfo = inspect.stack()[0][3] + " : " + inspect.getmoduleinfo(__file__).name
+    sModuleInfo = inspect.currentframe().f_code.co_name + " : " + MODULE_NAME
     CommonUtil.ExecLog(sModuleInfo, "Function start", 0)
     
     # Parse data set
@@ -1603,7 +1605,7 @@ def Zip_File_or_Folder(data_set):
 
 # Method to move file/folder
 def Move_File_or_Folder(step_data):
-    sModuleInfo = inspect.stack()[0][3] + " : " + inspect.getmoduleinfo(__file__).name
+    sModuleInfo = inspect.currentframe().f_code.co_name + " : " + MODULE_NAME
     CommonUtil.ExecLog(sModuleInfo, "Function start", 0)
 
     # Recall file attachment, if not already set
@@ -1695,7 +1697,7 @@ def TimeStamp(format):
 
 # Copy/paste file to zeuz log uploader
 def Upload(step_data):
-    sModuleInfo = inspect.stack()[0][3] + " : " + inspect.getmoduleinfo(__file__).name
+    sModuleInfo = inspect.currentframe().f_code.co_name + " : " + MODULE_NAME
     CommonUtil.ExecLog(sModuleInfo, "Function start", 0)
     try:
         if _platform == "linux" or _platform == "linux2" or _platform == "darwin":
@@ -1739,7 +1741,7 @@ def TakeScreenShot(step_data):
     #TakeScreenShot("TestStepName")
     """
     # file Name don't contain \/?*"<>|
-    sModuleInfo = inspect.stack()[0][3] + " : " + inspect.getmoduleinfo(__file__).name
+    sModuleInfo = inspect.currentframe().f_code.co_name + " : " + MODULE_NAME
     CommonUtil.ExecLog(sModuleInfo, "Function start", 0)
 
     try:
@@ -1822,7 +1824,7 @@ def TakeScreenShot(step_data):
 
 # Method to sleep for a particular duration
 def Sleep(step_data):
-    sModuleInfo = inspect.stack()[0][3] + " : " + inspect.getmoduleinfo(__file__).name
+    sModuleInfo = inspect.currentframe().f_code.co_name + " : " + MODULE_NAME
     CommonUtil.ExecLog(sModuleInfo, "Function start", 0)
     try:
         if ((len(step_data) != 1)):
@@ -1841,7 +1843,7 @@ def Sleep(step_data):
 
 # Method to save text
 def Save_Text(step_data):
-    sModuleInfo = inspect.stack()[0][3] + " : " + inspect.getmoduleinfo(__file__).name
+    sModuleInfo = inspect.currentframe().f_code.co_name + " : " + MODULE_NAME
     CommonUtil.ExecLog(sModuleInfo, "Function start", 0)
     try:
         if( step_data[0][1] == 'value'):
@@ -1862,7 +1864,7 @@ def Save_Text(step_data):
 def Download_file(data_set):
     ''' Download file from URL '''
     
-    sModuleInfo = inspect.stack()[0][3] + " : " + inspect.getmoduleinfo(__file__).name
+    sModuleInfo = inspect.currentframe().f_code.co_name + " : " + MODULE_NAME
     CommonUtil.ExecLog(sModuleInfo, "Function start", 0)
     
     # Parse data set
@@ -1907,7 +1909,7 @@ def Download_file(data_set):
 def Download_File_and_Unzip(data_set):
     ''' Download file and unzip to specified path '''
 
-    sModuleInfo = inspect.stack()[0][3] + " : " + inspect.getmoduleinfo(__file__).name
+    sModuleInfo = inspect.currentframe().f_code.co_name + " : " + MODULE_NAME
     CommonUtil.ExecLog(sModuleInfo, "Function start", 0)
     
     # Parse data set
@@ -1965,7 +1967,7 @@ def Download_File_and_Unzip(data_set):
 
 
 def replace_Substring(data_set):
-    sModuleInfo = inspect.stack()[0][3] + " : " + inspect.getmoduleinfo(__file__).name
+    sModuleInfo = inspect.currentframe().f_code.co_name + " : " + MODULE_NAME
     CommonUtil.ExecLog(sModuleInfo, "Function start", 0)
 
     # Recall file attachment, if not already set
@@ -2094,7 +2096,7 @@ def replace_Substring(data_set):
 
 
 def Change_Value_ini(data_set):
-    sModuleInfo = inspect.stack()[0][3] + " : " + inspect.getmoduleinfo(__file__).name
+    sModuleInfo = inspect.currentframe().f_code.co_name + " : " + MODULE_NAME
     CommonUtil.ExecLog(sModuleInfo, "Function start", 0)
 
     # Recall file attachment, if not already set
@@ -2156,7 +2158,7 @@ def Change_Value_ini(data_set):
 
 
 def Add_line_ini(data_set):
-    sModuleInfo = inspect.stack()[0][3] + " : " + inspect.getmoduleinfo(__file__).name
+    sModuleInfo = inspect.currentframe().f_code.co_name + " : " + MODULE_NAME
     CommonUtil.ExecLog(sModuleInfo, "Function start", 0)
 
     # Recall file attachment, if not already set
@@ -2217,7 +2219,7 @@ def Add_line_ini(data_set):
         return CommonUtil.Exception_Handler(sys.exc_info())
 
 def Delete_line_ini(data_set):
-    sModuleInfo = inspect.stack()[0][3] + " : " + inspect.getmoduleinfo(__file__).name
+    sModuleInfo = inspect.currentframe().f_code.co_name + " : " + MODULE_NAME
     CommonUtil.ExecLog(sModuleInfo, "Function start", 0)
 
     # Recall file attachment, if not already set
@@ -2272,7 +2274,7 @@ def Delete_line_ini(data_set):
         return CommonUtil.Exception_Handler(sys.exc_info())
 
 def Read_line_name_and_value(data_set):
-    sModuleInfo = inspect.stack()[0][3] + " : " + inspect.getmoduleinfo(__file__).name
+    sModuleInfo = inspect.currentframe().f_code.co_name + " : " + MODULE_NAME
     CommonUtil.ExecLog(sModuleInfo, "Function start", 0)
     # Parse data set
     try:
@@ -2307,7 +2309,7 @@ def Read_line_name_and_value(data_set):
 
 # return only the path step data
 def Get_Path_Step_Data(step_data):
-    sModuleInfo = inspect.stack()[0][3] + " : " + inspect.getmoduleinfo(__file__).name
+    sModuleInfo = inspect.currentframe().f_code.co_name + " : " + MODULE_NAME
     CommonUtil.ExecLog(sModuleInfo, "Function start", 0)
     try:
         element_step_data = []
@@ -2332,7 +2334,7 @@ def Get_Path_Step_Data(step_data):
 
 # return validated path data with path1 and path2
 def Validate_Path_Step_Data(step_data):
-    sModuleInfo = inspect.stack()[0][3] + " : " + inspect.getmoduleinfo(__file__).name
+    sModuleInfo = inspect.currentframe().f_code.co_name + " : " + MODULE_NAME
     CommonUtil.ExecLog(sModuleInfo, "Function start", 0)
     try:
         path1 = get_home_folder() + str(step_data[0][0]).strip()
@@ -2350,7 +2352,7 @@ def Validate_Path_Step_Data(step_data):
 
 # return no of files(sub directory included) in a directory
 def count_no_of_files_in_folder(step_data):
-    sModuleInfo = inspect.stack()[0][3] + " : " + inspect.getmoduleinfo(__file__).name
+    sModuleInfo = inspect.currentframe().f_code.co_name + " : " + MODULE_NAME
     CommonUtil.ExecLog(sModuleInfo, "Function start", 0)
     try:
         path = get_home_folder() + "/" +str(step_data[0][2]).strip()
@@ -2364,7 +2366,7 @@ def count_no_of_files_in_folder(step_data):
 def pattern_matching(dataset):
     ''' Perform user provided regular expression on a string '''
     
-    sModuleInfo = inspect.stack()[0][3] + " : " + inspect.getmoduleinfo(__file__).name
+    sModuleInfo = inspect.currentframe().f_code.co_name + " : " + MODULE_NAME
     CommonUtil.ExecLog(sModuleInfo, "Function start", 0)
 
     # Parse dataset
@@ -2402,7 +2404,7 @@ def pattern_matching(dataset):
 
 
 def save_substring(data_set):
-    sModuleInfo = inspect.stack()[0][3] + " : " + inspect.getmoduleinfo(__file__).name
+    sModuleInfo = inspect.currentframe().f_code.co_name + " : " + MODULE_NAME
     CommonUtil.ExecLog(sModuleInfo, "Function start", 0)
     # Parse data set
     try:
@@ -2477,7 +2479,7 @@ This function saves the variable to a defined variable(not the source variable)
 
 '''
 def extract_number(data_set):
-    sModuleInfo = inspect.stack()[0][3] + " : " + inspect.getmoduleinfo(__file__).name
+    sModuleInfo = inspect.currentframe().f_code.co_name + " : " + MODULE_NAME
     CommonUtil.ExecLog(sModuleInfo, "Function start", 0)
     # Parse data set
     try:

@@ -16,10 +16,11 @@ from Framework.Utilities import CommonUtil
 from Framework.Built_In_Automation.Web.Selenium import BuiltInFunctions
 
 
+MODULE_NAME = inspect.getmoduleinfo(__file__).name
 
 
 def Item_Search(search_text):
-    sModuleInfo = inspect.stack()[0][3] + " : " + inspect.getmoduleinfo(__file__).name
+    sModuleInfo = inspect.currentframe().f_code.co_name + " : " + MODULE_NAME
     try:
         #Writing Logs with CommonUtil
         CommonUtil.ExecLog(sModuleInfo, "Trying locate search menu", 1)
@@ -62,7 +63,7 @@ def Item_Search(search_text):
 
 
 def Add_to_Cart(search_text):
-    sModuleInfo = inspect.stack()[0][3] + " : " + inspect.getmoduleinfo(__file__).name
+    sModuleInfo = inspect.currentframe().f_code.co_name + " : " + MODULE_NAME
     try:
         #Writing Logs with CommonUtil
         CommonUtil.ExecLog(sModuleInfo, "Trying locate search menu", 1)
@@ -140,7 +141,7 @@ def Add_to_Cart(search_text):
 
 
 def Add_to_Cart_Using_Selenium(step_data,file_attachment):
-    sModuleInfo = inspect.stack()[0][3] + " : " + inspect.getmoduleinfo(__file__).name
+    sModuleInfo = inspect.currentframe().f_code.co_name + " : " + MODULE_NAME
     try:
         excel_file_name = step_data[0][0][2]
         file_name = file_attachment[excel_file_name]

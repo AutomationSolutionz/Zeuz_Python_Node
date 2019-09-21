@@ -31,6 +31,8 @@ gui.FAILSAFE = False
 #                       #
 #########################
 
+MODULE_NAME = inspect.getmoduleinfo(__file__).name
+
 # Valid image positions
 positions = ('left', 'right', 'centre', 'center')
 
@@ -59,7 +61,7 @@ def get_driver():
 def getCoordinates(element, position):
     ''' Return coordinates of attachment's centre '''
     
-    sModuleInfo = inspect.stack()[0][3] + " : " + inspect.getmoduleinfo(__file__).name
+    sModuleInfo = inspect.currentframe().f_code.co_name + " : " + MODULE_NAME
     CommonUtil.ExecLog(sModuleInfo,"Function Start", 0)
 
     # Parse input
@@ -96,7 +98,7 @@ def getCoordinates(element, position):
 def get_exec_from_icon(file_name):
     ''' Read the Exec line from a Linux icon file '''
     
-    sModuleInfo = inspect.stack()[0][3] + " : " + inspect.getmoduleinfo(__file__).name
+    sModuleInfo = inspect.currentframe().f_code.co_name + " : " + MODULE_NAME
     CommonUtil.ExecLog(sModuleInfo,"Function Start", 0)
 
     try:
@@ -127,7 +129,7 @@ def get_exec_from_icon(file_name):
 def Enter_Text(data_set):
     ''' Insert text '''
     
-    sModuleInfo = inspect.stack()[0][3] + " : " + inspect.getmoduleinfo(__file__).name
+    sModuleInfo = inspect.currentframe().f_code.co_name + " : " + MODULE_NAME
     CommonUtil.ExecLog(sModuleInfo,"Function Start", 0)
     
     # Parse data set
@@ -184,7 +186,7 @@ def Keystroke_For_Element(data_set):
     # Example: Ctrl+c
     # Repeats keypress if a number follows, example: tab,3 
     
-    sModuleInfo = inspect.stack()[0][3] + " : " + inspect.getmoduleinfo(__file__).name
+    sModuleInfo = inspect.currentframe().f_code.co_name + " : " + MODULE_NAME
     CommonUtil.ExecLog(sModuleInfo,"Function Start", 0)
     
     # Parse dataset
@@ -227,7 +229,7 @@ def Keystroke_For_Element(data_set):
 def close_program(data_set):
     ''' Exit a running program via process kill '''
     
-    sModuleInfo = inspect.stack()[0][3] + " : " + inspect.getmoduleinfo(__file__).name
+    sModuleInfo = inspect.currentframe().f_code.co_name + " : " + MODULE_NAME
     CommonUtil.ExecLog(sModuleInfo,"Function Start", 0)
     
     # Parse data set
@@ -290,7 +292,7 @@ def close_program(data_set):
 def move_mouse(data_set):
     ''' Hover over element or move to specified x,y coordinates '''
 
-    sModuleInfo = inspect.stack()[0][3] + " : " + inspect.getmoduleinfo(__file__).name
+    sModuleInfo = inspect.currentframe().f_code.co_name + " : " + MODULE_NAME
     CommonUtil.ExecLog(sModuleInfo,"Function Start", 0)
     
     # Parse data set
@@ -379,7 +381,7 @@ def move_mouse(data_set):
 def Click_Element(data_set):
     ''' Single or double mouse click on element '''
     
-    sModuleInfo = inspect.stack()[0][3] + " : " + inspect.getmoduleinfo(__file__).name
+    sModuleInfo = inspect.currentframe().f_code.co_name + " : " + MODULE_NAME
     CommonUtil.ExecLog(sModuleInfo,"Function Start", 0)
     
     # Parse data set
@@ -452,7 +454,7 @@ def Click_Element(data_set):
 def check_for_element(data_set):
     ''' Tests whether or not an element is visible on screen '''
 
-    sModuleInfo = inspect.stack()[0][3] + " : " + inspect.getmoduleinfo(__file__).name
+    sModuleInfo = inspect.currentframe().f_code.co_name + " : " + MODULE_NAME
     CommonUtil.ExecLog(sModuleInfo,"Function Start", 0)
 
     # Parse data set
@@ -494,7 +496,7 @@ def launch_program(data_set):
     # If a linux desktop icon filename is specified, then it will read the file, and extract the Exec line to execute it directly
     # Anything else is executed, including if it's an attachment
 
-    sModuleInfo = inspect.stack()[0][3] + " : " + inspect.getmoduleinfo(__file__).name
+    sModuleInfo = inspect.currentframe().f_code.co_name + " : " + MODULE_NAME
     CommonUtil.ExecLog(sModuleInfo, "Function Start", 0)
 
     # Parse data set
@@ -573,7 +575,7 @@ def teardown(data_set):
 def Drag_Element(data_set):
     ''' Drag element from source to destination '''
     
-    sModuleInfo = inspect.stack()[0][3] + " : " + inspect.getmoduleinfo(__file__).name
+    sModuleInfo = inspect.currentframe().f_code.co_name + " : " + MODULE_NAME
     CommonUtil.ExecLog(sModuleInfo,"Function Start", 0)
     
     # Parse data set
@@ -661,7 +663,7 @@ def navigate_listbox(data_set):
     # Assumptions: User has image of the list item they want to find
     # Produces: Pass/Fail - User is responsible for performing the action they desire now that the listbox is where their element is visible
     
-    sModuleInfo = inspect.stack()[0][3] + " : " + inspect.getmoduleinfo(__file__).name
+    sModuleInfo = inspect.currentframe().f_code.co_name + " : " + MODULE_NAME
     CommonUtil.ExecLog(sModuleInfo,"Function Start", 0)
     
     # Maximum number of tries to find the element. Have no way of knowing when we hit the last list item, so we have to hard code a value
