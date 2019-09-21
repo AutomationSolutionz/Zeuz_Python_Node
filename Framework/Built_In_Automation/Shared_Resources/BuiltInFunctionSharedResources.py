@@ -16,9 +16,12 @@ shared_variables = {}
 protected_variables = [] # Used to ensure internally used shared variables can't be overwritten by step data
 
 
+MODULE_NAME = inspect.getmoduleinfo(__file__).name
+
+
 def Set_Shared_Variables(key, value, protected = False):
     try:
-        sModuleInfo = inspect.stack()[0][3] + " : " + inspect.getmoduleinfo(__file__).name
+        sModuleInfo = inspect.currentframe().f_code.co_name + " : " + MODULE_NAME
         global shared_variables, protected_variables
         if key == '' or key == None or value == '' or value == None:  # if input is invalid
             return "failed"
@@ -39,7 +42,7 @@ def Set_Shared_Variables(key, value, protected = False):
 
 def Set_List_Shared_Variables(list_name, key, value, protected = False):
     try:
-        sModuleInfo = inspect.stack()[0][3] + " : " + inspect.getmoduleinfo(__file__).name
+        sModuleInfo = inspect.currentframe().f_code.co_name + " : " + MODULE_NAME
         global shared_variables, protected_variables
         if key == '' or key == None or value == '' or value == None or list_name == '' or list_name == None:  # if input is invalid
             return "failed"
@@ -68,7 +71,7 @@ def Append_List_Shared_Variables(key, value, protected = False,value_as_list=Fal
     ''' Creates and appends a python list variable '''
     
     try:
-        sModuleInfo = inspect.stack()[0][3] + " : " + inspect.getmoduleinfo(__file__).name
+        sModuleInfo = inspect.currentframe().f_code.co_name + " : " + MODULE_NAME
         global shared_variables, protected_variables
         
         # Verify input
@@ -107,7 +110,7 @@ def Append_Dict_Shared_Variables(key, value, protected=False,parent_dict=""):
     ''' Creates and appends a python list variable '''
 
     try:
-        sModuleInfo = inspect.stack()[0][3] + " : " + inspect.getmoduleinfo(__file__).name
+        sModuleInfo = inspect.currentframe().f_code.co_name + " : " + MODULE_NAME
         global shared_variables, protected_variables
 
         # Verify input
@@ -150,7 +153,7 @@ def Append_Dict_Shared_Variables(key, value, protected=False,parent_dict=""):
 
 def Get_Shared_Variables(key):
     try:
-        sModuleInfo = inspect.stack()[0][3] + " : " + inspect.getmoduleinfo(__file__).name
+        sModuleInfo = inspect.currentframe().f_code.co_name + " : " + MODULE_NAME
         global shared_variables
         if key == '' or key == None:  # if input is invalid
             return "failed"
@@ -168,7 +171,7 @@ def Get_Shared_Variables(key):
 
 def Get_List_from_Shared_Variables(list_name):
     try:
-        sModuleInfo = inspect.stack()[0][3] + " : " + inspect.getmoduleinfo(__file__).name
+        sModuleInfo = inspect.currentframe().f_code.co_name + " : " + MODULE_NAME
         global shared_variables
         if list_name == '' or list_name == None:  # if input is invalid
             return "failed"
@@ -188,7 +191,7 @@ def Remove_From_Shared_Variables(key):
     ''' Remove if a variable already exists and return the value or false '''
 
     try:
-        sModuleInfo = inspect.stack()[0][3] + " : " + inspect.getmoduleinfo(__file__).name
+        sModuleInfo = inspect.currentframe().f_code.co_name + " : " + MODULE_NAME
         global shared_variables
         if key == '' or key == None:  # if input is invalid
             return "failed"
@@ -203,7 +206,7 @@ def Test_Shared_Variables(key):
     ''' Test if a variable already exists and return true or false '''
 
     try:
-        sModuleInfo = inspect.stack()[0][3] + " : " + inspect.getmoduleinfo(__file__).name
+        sModuleInfo = inspect.currentframe().f_code.co_name + " : " + MODULE_NAME
         global shared_variables
         if key == '' or key == None:  # if input is invalid
             return "failed"
@@ -220,7 +223,7 @@ def Test_Shared_Variables(key):
 
 def Show_All_Shared_Variables():
     try:
-        sModuleInfo = inspect.stack()[0][3] + " : " + inspect.getmoduleinfo(__file__).name
+        sModuleInfo = inspect.currentframe().f_code.co_name + " : " + MODULE_NAME
         global shared_variables
         if len(shared_variables) > 0:
             CommonUtil.ExecLog(sModuleInfo, "##Shared Variable Fields with Value##", 1)
@@ -231,7 +234,7 @@ def Show_All_Shared_Variables():
 
 
 def Handle_Step_Data_Variables(step_data):
-    sModuleInfo = inspect.stack()[0][3] + " : " + inspect.getmoduleinfo(__file__).name
+    sModuleInfo = inspect.currentframe().f_code.co_name + " : " + MODULE_NAME
     try:
         changed_step_data = []
         for dataset in step_data:
@@ -289,7 +292,7 @@ def handle_nested_rest_json(result,string):
 
 
 def get_previous_response_variables_in_strings(step_data_string_input):
-    sModuleInfo = inspect.stack()[0][3] + " : " + inspect.getmoduleinfo(__file__).name
+    sModuleInfo = inspect.currentframe().f_code.co_name + " : " + MODULE_NAME
     CommonUtil.ExecLog(sModuleInfo, "Function: get previous response variables in strings", 0)
     try:
         changed = False
@@ -403,7 +406,7 @@ def get_previous_response_variables_in_strings(step_data_string_input):
 
 
 def random_string_generator(pattern='nluc', size=10):
-    sModuleInfo = inspect.stack()[0][3] + " : " + inspect.getmoduleinfo(__file__).name
+    sModuleInfo = inspect.currentframe().f_code.co_name + " : " + MODULE_NAME
     CommonUtil.ExecLog(sModuleInfo, "Function: random string generator", 0)
     try:
         pattern = pattern.lower().strip()
@@ -429,7 +432,7 @@ def random_string_generator(pattern='nluc', size=10):
 
 #Validating text from an element given information regarding the expected text
 def Compare_Variables(step_data):
-    sModuleInfo = inspect.stack()[0][3] + " : " + inspect.getmoduleinfo(__file__).name
+    sModuleInfo = inspect.currentframe().f_code.co_name + " : " + MODULE_NAME
     CommonUtil.ExecLog(sModuleInfo, "Function: Compare_Variables", 0)
     try:
         pass_count = 0
@@ -558,7 +561,7 @@ def Compare_Partial_Variables(step_data):
 
 #Validating text from an element given information regarding the expected text
 def Compare_Lists_or_Dicts(step_data):
-    sModuleInfo = inspect.stack()[0][3] + " : " + inspect.getmoduleinfo(__file__).name
+    sModuleInfo = inspect.currentframe().f_code.co_name + " : " + MODULE_NAME
     CommonUtil.ExecLog(sModuleInfo, "Function: Compare_Lists", 0)
     try:
         pass_count = 0
@@ -712,7 +715,7 @@ def Compare_Lists_or_Dicts(step_data):
 
 #Method to initialize an empty list
 def Initialize_List(step_data):
-    sModuleInfo = inspect.stack()[0][3] + " : " + inspect.getmoduleinfo(__file__).name
+    sModuleInfo = inspect.currentframe().f_code.co_name + " : " + MODULE_NAME
     CommonUtil.ExecLog(sModuleInfo, "Function: Initialize_List", 0)
     try:
         if ((len(step_data) != 1)):
@@ -735,7 +738,7 @@ def Initialize_List(step_data):
 
 ##Method to randomize a given list
 def Randomize_List(step_data):
-    sModuleInfo = inspect.stack()[0][3] + " : " + inspect.getmoduleinfo(__file__).name
+    sModuleInfo = inspect.currentframe().f_code.co_name + " : " + MODULE_NAME
     CommonUtil.ExecLog(sModuleInfo, "Function: Randomize_List", 0)
     try:
         if ((len(step_data) != 1)):
@@ -762,7 +765,7 @@ def Randomize_List(step_data):
 
 #Method to initialize an empty dict
 def Initialize_Dict(step_data):
-    sModuleInfo = inspect.stack()[0][3] + " : " + inspect.getmoduleinfo(__file__).name
+    sModuleInfo = inspect.currentframe().f_code.co_name + " : " + MODULE_NAME
     CommonUtil.ExecLog(sModuleInfo, "Function: Initialize_List", 0)
     try:
         if ((len(step_data) != 1)):
@@ -786,7 +789,7 @@ def Initialize_Dict(step_data):
 
 
 def Clean_Up_Shared_Variables():
-    sModuleInfo = inspect.stack()[0][3] + " : " + inspect.getmoduleinfo(__file__).name
+    sModuleInfo = inspect.currentframe().f_code.co_name + " : " + MODULE_NAME
     CommonUtil.ExecLog(sModuleInfo, "Function: clean up shared variables", 0)
     try:
         global shared_variables
@@ -800,7 +803,7 @@ def Shared_Variable_Export():
     return shared_variables
 
 def save_built_in_time_variable(string):
-    sModuleInfo = inspect.stack()[0][3] + " : " + inspect.getmoduleinfo(__file__).name
+    sModuleInfo = inspect.currentframe().f_code.co_name + " : " + MODULE_NAME
     try:
 
         sign = ""
@@ -861,7 +864,7 @@ def save_built_in_time_variable(string):
 
 
 def generate_datetime_format(string):
-    sModuleInfo = inspect.stack()[0][3] + " : " + inspect.getmoduleinfo(__file__).name
+    sModuleInfo = inspect.currentframe().f_code.co_name + " : " + MODULE_NAME
     try:
         datetime_format = string
 

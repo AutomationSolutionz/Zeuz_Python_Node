@@ -260,6 +260,9 @@ from Framework.Built_In_Automation.Shared_Resources import LocateElement
 from Framework.Utilities import CommonUtil
 from Framework.Utilities.CommonUtil import passed_tag_list, failed_tag_list  # Allowed return strings, used to normalize pass/fail
 
+
+MODULE_NAME = inspect.getmoduleinfo(__file__).name
+
 # Recall dependency, if not already set
 dependency = None
 if sr.Test_Shared_Variables('dependency'): # Check if driver is already set in shared variables
@@ -281,7 +284,7 @@ sr.Set_Shared_Variables('node_id', node_id, protected = True) # Save as protecte
 def load_sa_modules(module): # Load module "AS" must match module name we get from step data (See actions variable above)
     ''' Dynamically loads modules when needed '''
     
-    sModuleInfo = inspect.stack()[0][3] + " : " + inspect.getmoduleinfo(__file__).name
+    sModuleInfo = inspect.currentframe().f_code.co_name + " : " + MODULE_NAME
     CommonUtil.ExecLog(sModuleInfo,"Function Start", 0)
     
     try:
@@ -320,7 +323,7 @@ def load_sa_modules(module): # Load module "AS" must match module name we get fr
 
 
 def write_browser_logs():
-    sModuleInfo = inspect.stack()[0][3] + " : " + inspect.getmoduleinfo(__file__).name
+    sModuleInfo = inspect.currentframe().f_code.co_name + " : " + MODULE_NAME
     try:
         if sr.Test_Shared_Variables('selenium_driver'):
             driver = sr.Get_Shared_Variables('selenium_driver')
@@ -332,7 +335,7 @@ def write_browser_logs():
 def Sequential_Actions(step_data, _dependency = {}, _run_time_params = {}, _file_attachment = {}, _temp_q = '',screen_capture='Desktop',_device_info = {}):
     ''' Main Sequential Actions function - Performs logical decisions based on user input '''
     
-    sModuleInfo = inspect.stack()[0][3] + " : " + inspect.getmoduleinfo(__file__).name
+    sModuleInfo = inspect.currentframe().f_code.co_name + " : " + MODULE_NAME
     CommonUtil.ExecLog(sModuleInfo,"Function Start", 0)
     # Initialize
     try:
@@ -413,7 +416,7 @@ def get_data_set_nums(action_value):
 
 
 def Handle_Conditional_Action(step_data, data_set_no):
-    sModuleInfo = inspect.stack()[0][3] + " : " + inspect.getmoduleinfo(__file__).name
+    sModuleInfo = inspect.currentframe().f_code.co_name + " : " + MODULE_NAME
     try:
         data_set = step_data[data_set_no]
         next_level_step_data=[]
@@ -448,7 +451,7 @@ def Handle_Conditional_Action(step_data, data_set_no):
 
 
 def Handle_While_Loop_Action(step_data, data_set_no):
-    sModuleInfo = inspect.stack()[0][3] + " : " + inspect.getmoduleinfo(__file__).name
+    sModuleInfo = inspect.currentframe().f_code.co_name + " : " + MODULE_NAME
     try:
         data_set = step_data[data_set_no]
         loop_this_data_sets=[]
@@ -518,7 +521,7 @@ def Handle_While_Loop_Action(step_data, data_set_no):
 
 def Run_Sequential_Actions(data_set_list=[]): #data_set_no will used in recursive conditional action call
 
-    sModuleInfo = inspect.stack()[0][3] + " : " + inspect.getmoduleinfo(__file__).name
+    sModuleInfo = inspect.currentframe().f_code.co_name + " : " + MODULE_NAME
     try:
         result = 'failed' # Initialize result
         skip = [] # List of data set numbers that have been processed, and need to be skipped, so they are not processed again
@@ -713,7 +716,7 @@ def Run_Sequential_Actions(data_set_list=[]): #data_set_no will used in recursiv
 def Loop_Action_Handler(data, row, dataset_cnt):
     ''' Performs a sub-set of the data set in a loop, similar to a for or while loop '''
     
-    sModuleInfo = inspect.stack()[0][3] + " : " + inspect.getmoduleinfo(__file__).name
+    sModuleInfo = inspect.currentframe().f_code.co_name + " : " + MODULE_NAME
     CommonUtil.ExecLog(sModuleInfo,"Function Start", 0)
 
     try:
@@ -1070,7 +1073,7 @@ def Loop_Action_Handler(data, row, dataset_cnt):
 def Conditional_Action_Handler(data_set, row, logic_row):
     ''' Process conditional actions, called only by Sequential_Actions() '''
      
-    sModuleInfo = inspect.stack()[0][3] + " : " + inspect.getmoduleinfo(__file__).name
+    sModuleInfo = inspect.currentframe().f_code.co_name + " : " + MODULE_NAME
     CommonUtil.ExecLog(sModuleInfo,"Function Start", 0)
 
     # Get module and dynamically load it
@@ -1218,7 +1221,7 @@ def Conditional_Action_Handler(data_set, row, logic_row):
 def Action_Handler(_data_set, action_row):
     ''' Finds the appropriate function for the requested action in the step data and executes it '''
     
-    sModuleInfo = inspect.stack()[0][3] + " : " + inspect.getmoduleinfo(__file__).name
+    sModuleInfo = inspect.currentframe().f_code.co_name + " : " + MODULE_NAME
     CommonUtil.ExecLog(sModuleInfo,"Function Start", 0)
 
     skip_conversion_of_shared_variable_for_actions = ['if element exists','run actions','loop settings']

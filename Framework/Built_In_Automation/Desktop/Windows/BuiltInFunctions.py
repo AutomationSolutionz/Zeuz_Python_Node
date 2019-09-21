@@ -18,6 +18,8 @@ import clr,System, inspect, time,datetime, os, sys
 from _elementtree import Element # What is this for?
 from Framework.Utilities import CommonUtil
 
+MODULE_NAME = inspect.getmoduleinfo(__file__).name
+
 #this needs to be here on top, otherwise will return error
 clr.AddReference('UIAutomationClient')
 clr.AddReference('UIAutomationTypes')
@@ -52,7 +54,7 @@ global recur_count
 recur_count = 0 # To be deleted
 
 def go_to_desktop(data_set):
-    sModuleInfo = inspect.stack()[0][3] + " : " + inspect.getmoduleinfo(__file__).name
+    sModuleInfo = inspect.currentframe().f_code.co_name + " : " + MODULE_NAME
     CommonUtil.ExecLog(sModuleInfo, "Function start", 0)
     invoke='true'
     Element = get_element('', 'Show desktop', 'TrayShowDesktopButtonWClass')
@@ -77,7 +79,7 @@ def go_to_desktop(data_set):
 def Click_Element(data_set):
     ''' Click using element, first get the elemnent then click'''
 
-    sModuleInfo = inspect.stack()[0][3] + " : " + inspect.getmoduleinfo(__file__).name
+    sModuleInfo = inspect.currentframe().f_code.co_name + " : " + MODULE_NAME
     CommonUtil.ExecLog(sModuleInfo, "Function start", 0)
 
     expand = None
@@ -124,7 +126,7 @@ def Click_Element(data_set):
         return CommonUtil.Exception_Handler(sys.exc_info(), None, errMsg)
 
 def Right_Click_Element(data_set):
-    sModuleInfo = inspect.stack()[0][3] + " : " + inspect.getmoduleinfo(__file__).name
+    sModuleInfo = inspect.currentframe().f_code.co_name + " : " + MODULE_NAME
     CommonUtil.ExecLog(sModuleInfo, "Function start", 0)
     try:
         Element = Get_Element(window_name, element_name)
@@ -491,7 +493,7 @@ def Click_Element_None_Mouse(Element, Expand=None, Invoke=None, Select=None, Tog
 
 
 def Drag_and_Drop_Element(data_set):
-    sModuleInfo = inspect.stack()[0][3] + " : " + inspect.getmoduleinfo(__file__).name
+    sModuleInfo = inspect.currentframe().f_code.co_name + " : " + MODULE_NAME
     CommonUtil.ExecLog(sModuleInfo, "Function start", 0)
 
 
@@ -556,7 +558,7 @@ def Drag_Object(Element1_source, Element2_destination):
         return 'failed'
 
 def Double_Click_Element(data_set):
-    sModuleInfo = inspect.stack()[0][3] + " : " + inspect.getmoduleinfo(__file__).name
+    sModuleInfo = inspect.currentframe().f_code.co_name + " : " + MODULE_NAME
     CommonUtil.ExecLog(sModuleInfo, "Function start", 0)
     try:
         Element = Get_Element(data_set)
@@ -576,7 +578,7 @@ def Double_Click_Element(data_set):
         return CommonUtil.Exception_Handler(sys.exc_info(), None, "Error parsing data set")
 
 def Hover_Over_Element (data_set):
-    sModuleInfo = inspect.stack()[0][3] + " : " + inspect.getmoduleinfo(__file__).name
+    sModuleInfo = inspect.currentframe().f_code.co_name + " : " + MODULE_NAME
     CommonUtil.ExecLog(sModuleInfo, "Function start", 0)
     try:
         Element = Get_Element(data_set)
@@ -595,7 +597,7 @@ def Hover_Over_Element (data_set):
 
 
 def Validate_Text (data_set):
-    sModuleInfo = inspect.stack()[0][3] + " : " + inspect.getmoduleinfo(__file__).name
+    sModuleInfo = inspect.currentframe().f_code.co_name + " : " + MODULE_NAME
     CommonUtil.ExecLog(sModuleInfo, "Function start", 0)
     try:
         expected_text=''
@@ -622,7 +624,7 @@ def Validate_Text (data_set):
 
 
 def Save_Text(data_set):
-    sModuleInfo = inspect.stack()[0][3] + " : " + inspect.getmoduleinfo(__file__).name
+    sModuleInfo = inspect.currentframe().f_code.co_name + " : " + MODULE_NAME
     CommonUtil.ExecLog(sModuleInfo, "Function start", 0)
     try:
         variable_name=''
@@ -661,7 +663,7 @@ def Save_Text(data_set):
 def getCoordinates(element, position):
     ''' Return coordinates of attachment's centre '''
 
-    sModuleInfo = inspect.stack()[0][3] + " : " + inspect.getmoduleinfo(__file__).name
+    sModuleInfo = inspect.currentframe().f_code.co_name + " : " + MODULE_NAME
     CommonUtil.ExecLog(sModuleInfo, "Function Start", 0)
 
     # Parse input
@@ -698,7 +700,7 @@ def getCoordinates(element, position):
 def Enter_Text_In_Text_Box(data_set):
     ''' Insert text '''
 
-    sModuleInfo = inspect.stack()[0][3] + " : " + inspect.getmoduleinfo(__file__).name
+    sModuleInfo = inspect.currentframe().f_code.co_name + " : " + MODULE_NAME
     CommonUtil.ExecLog(sModuleInfo, "Function Start", 0)
     try:
         text=''
@@ -751,7 +753,7 @@ def Scroll (data_set):
 def Get_Element(data_set):
     ''' Insert text '''
 
-    sModuleInfo = inspect.stack()[0][3] + " : " + inspect.getmoduleinfo(__file__).name
+    sModuleInfo = inspect.currentframe().f_code.co_name + " : " + MODULE_NAME
     CommonUtil.ExecLog(sModuleInfo, "Function Start", 0)
 
     element_name = ''
@@ -796,7 +798,7 @@ def Get_Element(data_set):
 
 
 def Run_Application(data_set):
-    sModuleInfo = inspect.stack()[0][3] + " : " + inspect.getmoduleinfo(__file__).name
+    sModuleInfo = inspect.currentframe().f_code.co_name + " : " + MODULE_NAME
     CommonUtil.ExecLog(sModuleInfo, "Function Start", 0)
     try:
         Desktop_app = ''
@@ -818,7 +820,7 @@ def Run_Application(data_set):
 
 
 def Close_Application(data_set):
-    sModuleInfo = inspect.stack()[0][3] + " : " + inspect.getmoduleinfo(__file__).name
+    sModuleInfo = inspect.currentframe().f_code.co_name + " : " + MODULE_NAME
     CommonUtil.ExecLog(sModuleInfo, "Function Start", 0)
     try:
         Desktop_app = ''
@@ -844,7 +846,7 @@ def Keystroke_For_Element(data_set):
     # Example: Ctrl+c
     # Repeats keypress if a number follows, example: tab,3
 
-    sModuleInfo = inspect.stack()[0][3] + " : " + inspect.getmoduleinfo(__file__).name
+    sModuleInfo = inspect.currentframe().f_code.co_name + " : " + MODULE_NAME
     CommonUtil.ExecLog(sModuleInfo, "Function Start", 0)
 
     # Parse dataset

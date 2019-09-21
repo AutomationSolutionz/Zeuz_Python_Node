@@ -6,6 +6,9 @@ import copy
 from Framework.Utilities import CommonUtil
 
 
+MODULE_NAME = inspect.getmoduleinfo(__file__).name
+
+
 def make_single_data_set_compatible(expected_list):
     _expected_tuple=filter(lambda x:len(x)==4,expected_list)
     _expected_group=filter(lambda x:len(x)>4,expected_list)
@@ -14,7 +17,7 @@ def make_single_data_set_compatible(expected_list):
     return e
 class CompareModule():
     def compare(self, expected_list,actual_list,keywordlist=[],ignorelist=[]):
-        sModuleInfo = inspect.stack()[0][3] + " : " + inspect.getmoduleinfo(__file__).name
+        sModuleInfo = inspect.currentframe().f_code.co_name + " : " + MODULE_NAME
         expected_copy=copy.deepcopy(expected_list)
         actual_copy=copy.deepcopy(actual_list)
         
@@ -217,7 +220,7 @@ def eliminate_duplicate(datasets,keywordlist):
 def single_dataset_compare(expected_copy,actual_copy):
     expected_copy = make_single_data_set_compatible(expected_copy)
     actual_copy = make_single_data_set_compatible(actual_copy)
-    sModuleInfo = inspect.stack()[0][3] + " : " + inspect.getmoduleinfo(__file__).name
+    sModuleInfo = inspect.currentframe().f_code.co_name + " : " + MODULE_NAME
     expected_list=copy.deepcopy(expected_copy)
     actual_list=copy.deepcopy(actual_copy)
     #take out the group data here

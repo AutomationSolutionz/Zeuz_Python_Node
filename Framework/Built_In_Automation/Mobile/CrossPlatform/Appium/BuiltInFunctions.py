@@ -22,6 +22,9 @@ from Framework.Utilities.CommonUtil import passed_tag_list, failed_tag_list, ski
 from Framework.Built_In_Automation.Shared_Resources import LocateElement
 import psutil
 
+
+MODULE_NAME = inspect.getmoduleinfo(__file__).name
+
 PATH_ = lambda p: os.path.abspath(os.path.join(os.path.dirname(__file__), p))
 PATH = '%s'%PATH_
 #########################
@@ -38,6 +41,7 @@ device_serial = '' # Holds the identifier for the currently used device (if any 
 device_id = '' # Holds the name of the device the user has specified, if any. Relationship is set elsewhere
 
 from Framework.Utilities import All_Device_Info
+
 
 # Recall dependency, if not already set
 dependency = None
@@ -71,7 +75,7 @@ if Shared_Resources.Test_Shared_Variables('device_info'): # Check if device_info
 def find_appium():
     ''' Do our very best to find the appium executable '''
     
-    sModuleInfo = inspect.stack()[0][3] + " : " + inspect.getmoduleinfo(__file__).name
+    sModuleInfo = inspect.currentframe().f_code.co_name + " : " + MODULE_NAME
     CommonUtil.ExecLog(sModuleInfo,"Function Start", 0)
 
     # Expected locations
@@ -151,7 +155,7 @@ def find_correct_device_on_first_run(serial_or_name, device_info):
     ''' Considers information from the data set, deployed devices, and connected devices to determine which device to use '''
     # Only used when launching an application, which creates the appium instance. 
     
-    sModuleInfo = inspect.stack()[0][3] + " : " + inspect.getmoduleinfo(__file__).name
+    sModuleInfo = inspect.currentframe().f_code.co_name + " : " + MODULE_NAME
     CommonUtil.ExecLog(sModuleInfo,"Function Start", 0)
     global device_id, device_serial, appium_details
     CommonUtil.ExecLog(sModuleInfo, "List of devices provided by server: %s" % str(device_info), 1)
@@ -269,7 +273,7 @@ def find_correct_device_on_first_run(serial_or_name, device_info):
 def unlock_android_device(data_set):
     ''' Unlocks an androi device with adb commands'''
 
-    sModuleInfo = inspect.stack()[0][3] + " : " + inspect.getmoduleinfo(__file__).name
+    sModuleInfo = inspect.currentframe().f_code.co_name + " : " + MODULE_NAME
     CommonUtil.ExecLog(sModuleInfo, "Function Start", 0)
 
     global device_serial, appium_details, appium_driver, device_id, device_info
@@ -313,7 +317,7 @@ def unlock_android_device(data_set):
 def unlock_android_app(data_set):
     ''' Unlocks an androi device with adb commands'''
 
-    sModuleInfo = inspect.stack()[0][3] + " : " + inspect.getmoduleinfo(__file__).name
+    sModuleInfo = inspect.currentframe().f_code.co_name + " : " + MODULE_NAME
     CommonUtil.ExecLog(sModuleInfo, "Function Start", 0)
 
     global device_serial, appium_details, appium_driver, device_id, device_info
@@ -356,7 +360,7 @@ def unlock_android_app(data_set):
 def launch_application(data_set):
     ''' Launch the application the appium instance was created with, and create the instance if necessary '''
     
-    sModuleInfo = inspect.stack()[0][3] + " : " + inspect.getmoduleinfo(__file__).name
+    sModuleInfo = inspect.currentframe().f_code.co_name + " : " + MODULE_NAME
     CommonUtil.ExecLog(sModuleInfo,"Function Start", 0)
     
     global device_serial, appium_details, appium_driver, device_id, device_info
@@ -453,7 +457,7 @@ def set_pdeathsig(sig = signal.SIGTERM):
 
 def start_appium_server():
     ''' Starts the external Appium server '''
-    sModuleInfo = inspect.stack()[0][3] + " : " + inspect.getmoduleinfo(__file__).name
+    sModuleInfo = inspect.currentframe().f_code.co_name + " : " + MODULE_NAME
     CommonUtil.ExecLog(sModuleInfo,"Function Start", 0)
     
     global appium_port, appium_details, device_serial, appium_binary, device_id, wdaLocalPort
@@ -513,7 +517,7 @@ def start_appium_driver(package_name = '', activity_name = '', filename = '', pl
     ''' Creates appium instance using discovered and provided capabilities '''
     # Does not execute application
     
-    sModuleInfo = inspect.stack()[0][3] + " : " + inspect.getmoduleinfo(__file__).name
+    sModuleInfo = inspect.currentframe().f_code.co_name + " : " + MODULE_NAME
     CommonUtil.ExecLog(sModuleInfo,"Function Start", 0)
     
     try:
@@ -632,7 +636,7 @@ def start_appium_driver(package_name = '', activity_name = '', filename = '', pl
 def kill_appium_on_windows(appium_server):
     ''' Killing Appium server on windows involves killing off it's children '''
 
-    sModuleInfo = inspect.stack()[0][3] + " : " + inspect.getmoduleinfo(__file__).name
+    sModuleInfo = inspect.currentframe().f_code.co_name + " : " + MODULE_NAME
     CommonUtil.ExecLog(sModuleInfo,"Function Start", 0)
 
     try:
@@ -654,7 +658,7 @@ def kill_appium_on_windows(appium_server):
 def kill_node():
     ''' Kill appium node'''
 
-    sModuleInfo = inspect.stack()[0][3] + " : " + inspect.getmoduleinfo(__file__).name
+    sModuleInfo = inspect.currentframe().f_code.co_name + " : " + MODULE_NAME
     
     CommonUtil.ExecLog(sModuleInfo, "Killing Node Forcefully", 0)
     try: 
@@ -675,7 +679,7 @@ def kill_node():
 def teardown_appium(data_set):
     ''' Teardown of appium instance '''
     
-    sModuleInfo = inspect.stack()[0][3] + " : " + inspect.getmoduleinfo(__file__).name
+    sModuleInfo = inspect.currentframe().f_code.co_name + " : " + MODULE_NAME
     CommonUtil.ExecLog(sModuleInfo,"Function Start", 0)
     
     global appium_details, appium_server, device_id, device_serial, device_info, appium_port, wdaLocalPort
@@ -724,7 +728,7 @@ def teardown_appium(data_set):
 def close_application(data_set):
     ''' Exit the application '''
     
-    sModuleInfo = inspect.stack()[0][3] + " : " + inspect.getmoduleinfo(__file__).name
+    sModuleInfo = inspect.currentframe().f_code.co_name + " : " + MODULE_NAME
     CommonUtil.ExecLog(sModuleInfo,"Function Start", 0)
     
     try:
@@ -740,7 +744,7 @@ def close_application(data_set):
 def reset_application(data_set):
     ''' Resets / clears the application cache '''
     
-    sModuleInfo = inspect.stack()[0][3] + " : " + inspect.getmoduleinfo(__file__).name
+    sModuleInfo = inspect.currentframe().f_code.co_name + " : " + MODULE_NAME
     CommonUtil.ExecLog(sModuleInfo,"Function Start", 0)
     
     try:
@@ -758,7 +762,7 @@ def install_application(data_set):
     # adb does the work. Does not require appium instance. User needs to call launch action to create instance
     # Two formats allowed: Filename on action row, or filename on element parameter row, and optional serial number on action row
     
-    sModuleInfo = inspect.stack()[0][3] + " : " + inspect.getmoduleinfo(__file__).name
+    sModuleInfo = inspect.currentframe().f_code.co_name + " : " + MODULE_NAME
     CommonUtil.ExecLog(sModuleInfo,"Function Start", 0)
     
     # Parse data set
@@ -808,7 +812,7 @@ def install_application(data_set):
 def uninstall_application(data_set):
     ''' Uninstalls/removes application from device '''
     
-    sModuleInfo = inspect.stack()[0][3] + " : " + inspect.getmoduleinfo(__file__).name
+    sModuleInfo = inspect.currentframe().f_code.co_name + " : " + MODULE_NAME
     CommonUtil.ExecLog(sModuleInfo,"Function Start", 0)
     
     # Parse data set
@@ -852,7 +856,7 @@ def Swipe(x_start, y_start, x_end, y_end, duration = 1000, adb = False):
     ''' Perform single swipe gesture with provided start and end positions '''
     # duration in mS - how long the gesture should take
     
-    sModuleInfo = inspect.stack()[0][3] + " : " + inspect.getmoduleinfo(__file__).name
+    sModuleInfo = inspect.currentframe().f_code.co_name + " : " + MODULE_NAME
     CommonUtil.ExecLog(sModuleInfo,"Function Start", 0)
     
     try:
@@ -870,7 +874,7 @@ def Swipe(x_start, y_start, x_end, y_end, duration = 1000, adb = False):
         return CommonUtil.Exception_Handler(sys.exc_info(),None,errMsg)
 
 def swipe_in_direction(data_set):
-    sModuleInfo = inspect.stack()[0][3] + " : " + inspect.getmoduleinfo(__file__).name
+    sModuleInfo = inspect.currentframe().f_code.co_name + " : " + MODULE_NAME
     try:
         id = ''
         class_name = ''
@@ -937,7 +941,7 @@ def swipe_handler_wrapper(data_set):
 
 
 def swipe_handler_ios(data_set):
-    sModuleInfo = inspect.stack()[0][3] + " : " + inspect.getmoduleinfo(__file__).name
+    sModuleInfo = inspect.currentframe().f_code.co_name + " : " + MODULE_NAME
     try:
         direction = ''
         predicateString = ''
@@ -995,7 +999,7 @@ def swipe_handler_android(data_set):
             element parameter: Ignores  "exact". Direction is required. Use an element as the starting point (top left corner of the element). Calculations are based off that
     '''
      
-    sModuleInfo = inspect.stack()[0][3] + " : " + inspect.getmoduleinfo(__file__).name
+    sModuleInfo = inspect.currentframe().f_code.co_name + " : " + MODULE_NAME
     CommonUtil.ExecLog(sModuleInfo,"Function Start", 0)
  
     def Calc_Swipe(w, h, inset, direction, position, exact):
@@ -1169,7 +1173,7 @@ def swipe_handler_android(data_set):
 def read_screen_heirarchy():
     ''' Read the XML string of the device's GUI and return it '''
     
-    sModuleInfo = inspect.stack()[0][3] + " : " + inspect.getmoduleinfo(__file__).name
+    sModuleInfo = inspect.currentframe().f_code.co_name + " : " + MODULE_NAME
     CommonUtil.ExecLog(sModuleInfo,"Function Start", 0)
     
     try:
@@ -1187,7 +1191,7 @@ def tap_location(data_set):
     ''' Tap the provided position using x,y cooridnates '''
     # positions: list containing x,y coordinates
     
-    sModuleInfo = inspect.stack()[0][3] + " : " + inspect.getmoduleinfo(__file__).name
+    sModuleInfo = inspect.currentframe().f_code.co_name + " : " + MODULE_NAME
     CommonUtil.ExecLog(sModuleInfo,"Function Start", 0)
 
     # Parse data set
@@ -1210,7 +1214,7 @@ def tap_location(data_set):
 def get_element_location_by_id(data_set):
     ''' Find and return an element's x,y coordinates '''
     
-    sModuleInfo = inspect.stack()[0][3] + " : " + inspect.getmoduleinfo(__file__).name
+    sModuleInfo = inspect.currentframe().f_code.co_name + " : " + MODULE_NAME
     CommonUtil.ExecLog(sModuleInfo,"Function Start", 0)
     
     # Parse data set
@@ -1249,7 +1253,7 @@ def get_window_size(read_type = False):
     ''' Read the device's LCD resolution / screen size '''
     # Returns a dictionary of width and height
     
-    sModuleInfo = inspect.stack()[0][3] + " : " + inspect.getmoduleinfo(__file__).name
+    sModuleInfo = inspect.currentframe().f_code.co_name + " : " + MODULE_NAME
     CommonUtil.ExecLog(sModuleInfo,"Function Start", 0)
     
     try:
@@ -1266,7 +1270,7 @@ def get_window_size(read_type = False):
 def Click_Element_Appium(data_set):
     ''' Click on an element '''
     
-    sModuleInfo = inspect.stack()[0][3] + " : " + inspect.getmoduleinfo(__file__).name
+    sModuleInfo = inspect.currentframe().f_code.co_name + " : " + MODULE_NAME
     CommonUtil.ExecLog(sModuleInfo,"Function Start", 0)
 
     try:
@@ -1298,7 +1302,7 @@ def Click_Element_Appium(data_set):
 def Tap_Appium(data_set):
     ''' Execute "Tap" for an element '''
     
-    sModuleInfo = inspect.stack()[0][3] + " : " + inspect.getmoduleinfo(__file__).name
+    sModuleInfo = inspect.currentframe().f_code.co_name + " : " + MODULE_NAME
     CommonUtil.ExecLog(sModuleInfo,"Function Start", 0)
 
     try:
@@ -1327,7 +1331,7 @@ def Tap_Appium(data_set):
 
 def Double_Tap_Appium(data_set):
     #!!!not yet tested or used
-    sModuleInfo = inspect.stack()[0][3] + " : " + inspect.getmoduleinfo(__file__).name
+    sModuleInfo = inspect.currentframe().f_code.co_name + " : " + MODULE_NAME
     CommonUtil.ExecLog(sModuleInfo,"Function Start", 0)
     try:
         Element = LocateElement.Get_Element(data_set,appium_driver)
@@ -1358,7 +1362,7 @@ def Double_Tap_Appium(data_set):
 def Long_Press_Appium(data_set):
     ''' Press and hold an element '''
     
-    sModuleInfo = inspect.stack()[0][3] + " : " + inspect.getmoduleinfo(__file__).name
+    sModuleInfo = inspect.currentframe().f_code.co_name + " : " + MODULE_NAME
     CommonUtil.ExecLog(sModuleInfo,"Function Start", 0)
     
     try:
@@ -1391,7 +1395,7 @@ def Long_Press_Appium(data_set):
 def Enter_Text_Appium(data_set):
     ''' Write text to an element '''
 
-    sModuleInfo = inspect.stack()[0][3] + " : " + inspect.getmoduleinfo(__file__).name
+    sModuleInfo = inspect.currentframe().f_code.co_name + " : " + MODULE_NAME
     CommonUtil.ExecLog(sModuleInfo, "Function Start", 0)
 
     # Find text from action line
@@ -1455,7 +1459,7 @@ def Enter_Text_Appium(data_set):
 def Pickerwheel_Appium(data_set):
     ''' Write text to a pickerwheel '''
     
-    sModuleInfo = inspect.stack()[0][3] + " : " + inspect.getmoduleinfo(__file__).name
+    sModuleInfo = inspect.currentframe().f_code.co_name + " : " + MODULE_NAME
     CommonUtil.ExecLog(sModuleInfo,"Function Start", 0)
 
     # Find text from action line
@@ -1501,7 +1505,7 @@ def Pickerwheel_Appium(data_set):
 def Clear_And_Enter_Text_ADB(data_set, serial=''):
     ''' Enter string via adb'''
     
-    sModuleInfo = inspect.stack()[0][3] + " : " + inspect.getmoduleinfo(__file__).name
+    sModuleInfo = inspect.currentframe().f_code.co_name + " : " + MODULE_NAME
     CommonUtil.ExecLog(sModuleInfo,"Function Start", 0)
     
     # Parse data set
@@ -1556,7 +1560,7 @@ def Clear_And_Enter_Text_ADB(data_set, serial=''):
 def Clear_And_Enter_Text_Appium(data_set):
     ''' Write text to an element '''
 
-    sModuleInfo = inspect.stack()[0][3] + " : " + inspect.getmoduleinfo(__file__).name
+    sModuleInfo = inspect.currentframe().f_code.co_name + " : " + MODULE_NAME
     CommonUtil.ExecLog(sModuleInfo, "Function Start", 0)
 
     # Find text from action line
@@ -1621,7 +1625,7 @@ def Android_Keystroke_Key_Mapping(keystroke, hold_key = False):
     ''' Provides a friendly interface to invoke key events '''
     # Keycodes: https://developer.android.com/reference/android/view/KeyEvent.html
 
-    sModuleInfo = inspect.stack()[0][3] + " : " + inspect.getmoduleinfo(__file__).name
+    sModuleInfo = inspect.currentframe().f_code.co_name + " : " + MODULE_NAME
     CommonUtil.ExecLog(sModuleInfo,"Function Start", 0)
     
     # Sanitize input
@@ -1676,7 +1680,7 @@ def Android_Keystroke_Key_Mapping(keystroke, hold_key = False):
         return CommonUtil.Exception_Handler(sys.exc_info())
 
 def iOS_Keystroke_Key_Mapping(keystroke):
-    sModuleInfo = inspect.stack()[0][3] + " : " + inspect.getmoduleinfo(__file__).name
+    sModuleInfo = inspect.currentframe().f_code.co_name + " : " + MODULE_NAME
     CommonUtil.ExecLog(sModuleInfo,"Function Start", 0)
     
     CommonUtil.ExecLog(sModuleInfo, "IOS key events not yet supported" % keystroke, 3)
@@ -1704,7 +1708,7 @@ def iOS_Keystroke_Key_Mapping(keystroke):
 def Keystroke_Appium(data_set):
     ''' Send physical or virtual key press or long key press event '''
     
-    sModuleInfo = inspect.stack()[0][3] + " : " + inspect.getmoduleinfo(__file__).name
+    sModuleInfo = inspect.currentframe().f_code.co_name + " : " + MODULE_NAME
     CommonUtil.ExecLog(sModuleInfo,"Function Start", 0)
     
     # Parse data set
@@ -1754,7 +1758,7 @@ def Validate_Text_Appium(data_set):
     This needs more time to fix.
     Should be a lot more simple design
     '''
-    sModuleInfo = inspect.stack()[0][3] + " : " + inspect.getmoduleinfo(__file__).name
+    sModuleInfo = inspect.currentframe().f_code.co_name + " : " + MODULE_NAME
     CommonUtil.ExecLog(sModuleInfo,"Function Start", 0)
     data_set = [data_set]
     try:
@@ -1866,7 +1870,7 @@ def get_program_names(search_name):
     # Note: Some programs require the very first activity name in order to launch the program. This may be a splash screen.
     # Alternative method to obtain activity name: Android-sdk/build-tools/aapt dumb badging program.apk| grep -i activity. This extracts it from the apk directly
     
-    sModuleInfo = inspect.stack()[0][3] + " : " + inspect.getmoduleinfo(__file__).name
+    sModuleInfo = inspect.currentframe().f_code.co_name + " : " + MODULE_NAME
     CommonUtil.ExecLog(sModuleInfo,"Function Start", 0)
     
 #     def find_activity(secs):
@@ -1977,7 +1981,7 @@ def device_information(data_set):
     # This is the sequential action interface for much of the adbOptions.py and iosOptions.py, which provides direct device access via their standard comman line tools
     # Note: This function does not require an Appium instance, so it can be called without calling launch_application() first
     
-    sModuleInfo = inspect.stack()[0][3] + " : " + inspect.getmoduleinfo(__file__).name
+    sModuleInfo = inspect.currentframe().f_code.co_name + " : " + MODULE_NAME
     CommonUtil.ExecLog(sModuleInfo,"Function Start", 0)
 
     # Parse data set
@@ -2088,7 +2092,7 @@ def set_device_password(data_set):
     ''' Saves the device password to shared variables for use in unlocking the phone '''
     # Caveat: Only allows one password stored at a time
     
-    sModuleInfo = inspect.stack()[0][3] + " : " + inspect.getmoduleinfo(__file__).name
+    sModuleInfo = inspect.currentframe().f_code.co_name + " : " + MODULE_NAME
     CommonUtil.ExecLog(sModuleInfo,"Function Start", 0)
 
     # Parse data set
@@ -2110,7 +2114,7 @@ def switch_device(data_set):
     # Device will be set as default until this function is called again
     # Not needed when only one device is connected
     
-    sModuleInfo = inspect.stack()[0][3] + " : " + inspect.getmoduleinfo(__file__).name
+    sModuleInfo = inspect.currentframe().f_code.co_name + " : " + MODULE_NAME
     CommonUtil.ExecLog(sModuleInfo,"Function Start", 0)
 
     # Parse data set
@@ -2142,7 +2146,7 @@ def package_information(data_set):
     # Note: Appium doens't have an API that allows us to execute anything we want, so this is the solution
     # Format is package, element parameter, PACKAGE_NAME | COMMAND, action, SHARED_VAR_NAME
     
-    sModuleInfo = inspect.stack()[0][3] + " : " + inspect.getmoduleinfo(__file__).name
+    sModuleInfo = inspect.currentframe().f_code.co_name + " : " + MODULE_NAME
     CommonUtil.ExecLog(sModuleInfo,"Function Start", 0)
 
     # Parse data set
@@ -2200,7 +2204,7 @@ def package_information(data_set):
 def minimize_appilcation(data_set):
     ''' Hides the foreground application by pressing the home key '''
     
-    sModuleInfo = inspect.stack()[0][3] + " : " + inspect.getmoduleinfo(__file__).name
+    sModuleInfo = inspect.currentframe().f_code.co_name + " : " + MODULE_NAME
     CommonUtil.ExecLog(sModuleInfo,"Function Start", 0)
 
     try:
@@ -2212,7 +2216,7 @@ def minimize_appilcation(data_set):
 def maximize_appilcation(data_set):
     ''' Displays the original program that was launched by appium '''
     
-    sModuleInfo = inspect.stack()[0][3] + " : " + inspect.getmoduleinfo(__file__).name
+    sModuleInfo = inspect.currentframe().f_code.co_name + " : " + MODULE_NAME
     CommonUtil.ExecLog(sModuleInfo,"Function Start", 0)
 
     try:
@@ -2225,7 +2229,7 @@ def maximize_appilcation(data_set):
 def serial_in_devices(serial,devices):
     ''' Displays the original program that was launched by appium '''
 
-    sModuleInfo = inspect.stack()[0][3] + " : " + inspect.getmoduleinfo(__file__).name
+    sModuleInfo = inspect.currentframe().f_code.co_name + " : " + MODULE_NAME
     CommonUtil.ExecLog(sModuleInfo, "Function Start", 0)
 
     try:
@@ -2240,7 +2244,7 @@ def serial_in_devices(serial,devices):
 def if_element_exists(data_set):
     ''' Click on an element '''
 
-    sModuleInfo = inspect.stack()[0][3] + " : " + inspect.getmoduleinfo(__file__).name
+    sModuleInfo = inspect.currentframe().f_code.co_name + " : " + MODULE_NAME
     CommonUtil.ExecLog(sModuleInfo, "Function Start", 0)
 
     try:

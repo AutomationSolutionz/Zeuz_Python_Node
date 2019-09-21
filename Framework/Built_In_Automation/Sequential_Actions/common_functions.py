@@ -49,6 +49,10 @@ programming_logic_keywords=[
     "if else", "while loop", "for loop", "loop settings"
 ]
 
+
+MODULE_NAME = inspect.getmoduleinfo(__file__).name
+
+
 def unmask_string(givenText):
     for e in unmask_characters.keys():
         givenText=givenText.replace(e,unmask_characters[e])
@@ -115,7 +119,7 @@ def sanitize(step_data):
 def verify_step_data(step_data):
     ''' Verify step data is valid '''
     
-    sModuleInfo = inspect.stack()[0][3] + " : " + inspect.getmoduleinfo(__file__).name
+    sModuleInfo = inspect.currentframe().f_code.co_name + " : " + MODULE_NAME
     CommonUtil.ExecLog(sModuleInfo, "Verifying Step Data", 1)
     
     try:
@@ -196,7 +200,7 @@ def check_action_types(module, step_data):
     ''' Check for a specific module in the step data type and return true/false '''
     # To be used when we don't have a dependency, and need to know the type of actions the user have specified
     
-    sModuleInfo = inspect.stack()[0][3] + " : " + inspect.getmoduleinfo(__file__).name
+    sModuleInfo = inspect.currentframe().f_code.co_name + " : " + MODULE_NAME
     CommonUtil.ExecLog(sModuleInfo, "Function Start", 0)
 
     for data_set in step_data:
@@ -210,7 +214,7 @@ def check_action_types(module, step_data):
 def adjust_element_parameters(step_data, platforms):
     ''' Strip out element parameters that do not match the dependency '''
 
-    sModuleInfo = inspect.stack()[0][3] + " : " + inspect.getmoduleinfo(__file__).name
+    sModuleInfo = inspect.currentframe().f_code.co_name + " : " + MODULE_NAME
     CommonUtil.ExecLog(sModuleInfo, "Function Start", 0)
     
     # Get saved dependency and verify if we have the correct dependency
@@ -269,7 +273,7 @@ def adjust_element_parameters(step_data, platforms):
 def get_module_and_function(action_name, action_sub_field):
     ''' Function to split module from the action name, and with the action name tries to find the corrosponding function name '''
     
-    sModuleInfo = inspect.stack()[0][3] + " : " + inspect.getmoduleinfo(__file__).name
+    sModuleInfo = inspect.currentframe().f_code.co_name + " : " + MODULE_NAME
     function = ''
     module = ''
     try:
@@ -313,7 +317,7 @@ def get_module_and_function(action_name, action_sub_field):
 def shared_variable_to_value(data_set):
     ''' Look for any Shared Variable strings in step data, convert them into their values, and return '''
     
-    sModuleInfo = inspect.stack()[0][3] + " : " + inspect.getmoduleinfo(__file__).name
+    sModuleInfo = inspect.currentframe().f_code.co_name + " : " + MODULE_NAME
     new_data = [] # Rebuild the data_set with the new variable (because it's a list of tuples which we can't update)
 
     skip_conversion_of_shared_variable_for_actions = ['if element exists', 'run actions', 'loop settings']
@@ -349,7 +353,7 @@ def shared_variable_to_value(data_set):
 def step_result(data_set):
     ''' Returns passed/failed in the standard format, when the user specifies it in the step data '''
     
-    sModuleInfo = inspect.stack()[0][3] + " : " + inspect.getmoduleinfo(__file__).name
+    sModuleInfo = inspect.currentframe().f_code.co_name + " : " + MODULE_NAME
     CommonUtil.ExecLog(sModuleInfo,"Function Start", 0)
     
     try:
@@ -373,7 +377,7 @@ def step_result(data_set):
 def step_exit(data_set):
     ''' Exits a Test Step wtih passed/failed in the standard format, when the user specifies it in the step data '''
     
-    sModuleInfo = inspect.stack()[0][3] + " : " + inspect.getmoduleinfo(__file__).name
+    sModuleInfo = inspect.currentframe().f_code.co_name + " : " + MODULE_NAME
     CommonUtil.ExecLog(sModuleInfo,"Function Start", 0)
     
     try:
@@ -397,7 +401,7 @@ def step_exit(data_set):
 def Sleep(data_set):
     ''' Sleep a specific number of seconds '''
     
-    sModuleInfo = inspect.stack()[0][3] + " : " + inspect.getmoduleinfo(__file__).name
+    sModuleInfo = inspect.currentframe().f_code.co_name + " : " + MODULE_NAME
     CommonUtil.ExecLog(sModuleInfo,"Function Start", 0)
 
     try:
@@ -415,7 +419,7 @@ def Wait_For_Element(data_set):
     # wait: Wait for element to appear/available
     # wait disable: Wait for element to disappear/hide
     
-    sModuleInfo = inspect.stack()[0][3] + " : " + inspect.getmoduleinfo(__file__).name
+    sModuleInfo = inspect.currentframe().f_code.co_name + " : " + MODULE_NAME
     CommonUtil.ExecLog(sModuleInfo,"Function Start", 0)
     
     # Get webdriver
@@ -469,7 +473,7 @@ def Wait_For_Element(data_set):
 def Save_Text(data_set):
     ''' Save the text from the given element to shared variables under the variable name provided '''
      
-    sModuleInfo = inspect.stack()[0][3] + " : " + inspect.getmoduleinfo(__file__).name
+    sModuleInfo = inspect.currentframe().f_code.co_name + " : " + MODULE_NAME
     CommonUtil.ExecLog(sModuleInfo,"Function Start", 0)
     
     # Get webdriver
@@ -520,7 +524,7 @@ def Save_Text(data_set):
 def Compare_Variables(data_set):
     ''' Compare shared variables / strings to eachother '''
     # Compares two variables from Field and Value on any line that is not the action line
-    sModuleInfo = inspect.stack()[0][3] + " : " + inspect.getmoduleinfo(__file__).name
+    sModuleInfo = inspect.currentframe().f_code.co_name + " : " + MODULE_NAME
     CommonUtil.ExecLog(sModuleInfo,"Function Start", 0)
     return sr.Compare_Variables([data_set])
 
@@ -533,31 +537,31 @@ def Compare_Partial_Variables(data_set):
 
 def Initialize_List(data_set):
     ''' Prepares an empty list in shared variables '''
-    sModuleInfo = inspect.stack()[0][3] + " : " + inspect.getmoduleinfo(__file__).name
+    sModuleInfo = inspect.currentframe().f_code.co_name + " : " + MODULE_NAME
     CommonUtil.ExecLog(sModuleInfo,"Function Start", 0)
     return sr.Initialize_List([data_set])
 
 def Randomize_List(data_set):
     ''' Prepares an empty list in shared variables '''
-    sModuleInfo = inspect.stack()[0][3] + " : " + inspect.getmoduleinfo(__file__).name
+    sModuleInfo = inspect.currentframe().f_code.co_name + " : " + MODULE_NAME
     CommonUtil.ExecLog(sModuleInfo,"Function Start", 0)
     return sr.Randomize_List([data_set])
 
 def Initialize_Dict(data_set):
     ''' Prepares an empty dict in shared variables '''
-    sModuleInfo = inspect.stack()[0][3] + " : " + inspect.getmoduleinfo(__file__).name
+    sModuleInfo = inspect.currentframe().f_code.co_name + " : " + MODULE_NAME
     CommonUtil.ExecLog(sModuleInfo,"Function Start", 0)
     return sr.Initialize_Dict([data_set])
 
 def Compare_Lists_or_Dicts(data_set):
     ''' Compare two lists stored in shared variables '''
-    sModuleInfo = inspect.stack()[0][3] + " : " + inspect.getmoduleinfo(__file__).name
+    sModuleInfo = inspect.currentframe().f_code.co_name + " : " + MODULE_NAME
     CommonUtil.ExecLog(sModuleInfo,"Function Start", 0)
     return sr.Compare_Lists_or_Dicts([data_set])
 
 def Save_Variable(data_set):
     ''' Assign a value to a variable stored in shared variables '''
-    sModuleInfo = inspect.stack()[0][3] + " : " + inspect.getmoduleinfo(__file__).name
+    sModuleInfo = inspect.currentframe().f_code.co_name + " : " + MODULE_NAME
     CommonUtil.ExecLog(sModuleInfo,"Function Start", 0)
     variable_name = ''
     variable_value = ''
@@ -571,7 +575,7 @@ def Save_Variable(data_set):
         return 'failed'
 def Save_Current_Time(data_set):
     ''' Assign a value to a variable stored in shared variables '''
-    sModuleInfo = inspect.stack()[0][3] + " : " + inspect.getmoduleinfo(__file__).name
+    sModuleInfo = inspect.currentframe().f_code.co_name + " : " + MODULE_NAME
     CommonUtil.ExecLog(sModuleInfo,"Function Start", 0)
     variable_name = ''
     variable_value = ''
@@ -604,7 +608,7 @@ def delete_all_shared_variables(data_set):
     # To delete only one, use the action "save variable", and set it to an empty string
     # Takes no inputs
     
-    sModuleInfo = inspect.stack()[0][3] + " : " + inspect.getmoduleinfo(__file__).name
+    sModuleInfo = inspect.currentframe().f_code.co_name + " : " + MODULE_NAME
     CommonUtil.ExecLog(sModuleInfo,"Function Start", 0)
 
     try:
@@ -616,7 +620,7 @@ def append_list_shared_variable(data_set):
     ''' Creates and appends a python list variable '''
     # Note: List is created if it doesn't already exist
     
-    sModuleInfo = inspect.stack()[0][3] + " : " + inspect.getmoduleinfo(__file__).name
+    sModuleInfo = inspect.currentframe().f_code.co_name + " : " + MODULE_NAME
     CommonUtil.ExecLog(sModuleInfo,"Function Start", 0)
 
     try:
@@ -641,7 +645,7 @@ def append_dict_shared_variable(data_set):
     ''' Creates and appends a python dict variable '''
     # Note: List is created if it doesn't already exist
 
-    sModuleInfo = inspect.stack()[0][3] + " : " + inspect.getmoduleinfo(__file__).name
+    sModuleInfo = inspect.currentframe().f_code.co_name + " : " + MODULE_NAME
     CommonUtil.ExecLog(sModuleInfo, "Function Start", 0)
 
     try:
@@ -672,7 +676,7 @@ def insert_list_into_another_list(data_set):
     ''' Creates and appends a python list variable '''
     # Note: List is created if it doesn't already exist
 
-    sModuleInfo = inspect.stack()[0][3] + " : " + inspect.getmoduleinfo(__file__).name
+    sModuleInfo = inspect.currentframe().f_code.co_name + " : " + MODULE_NAME
     CommonUtil.ExecLog(sModuleInfo, "Function Start", 0)
 
     try:
@@ -717,7 +721,7 @@ def insert_dict_into_another_dict(data_set):
     ''' Creates and appends a python list variable '''
     # Note: List is created if it doesn't already exist
 
-    sModuleInfo = inspect.stack()[0][3] + " : " + inspect.getmoduleinfo(__file__).name
+    sModuleInfo = inspect.currentframe().f_code.co_name + " : " + MODULE_NAME
     CommonUtil.ExecLog(sModuleInfo, "Function Start", 0)
 
     try:
@@ -753,7 +757,7 @@ def insert_dict_into_another_dict(data_set):
 def sequential_actions_settings(data_set):
     ''' Test Step front end for modifying certain variables used by Sequential Actions '''
     
-    sModuleInfo = inspect.stack()[0][3] + " : " + inspect.getmoduleinfo(__file__).name
+    sModuleInfo = inspect.currentframe().f_code.co_name + " : " + MODULE_NAME
     CommonUtil.ExecLog(sModuleInfo,"Function Start", 0)
 
     try:
@@ -781,7 +785,7 @@ def print_shared_variables():
 
 def set_server_variable(data_set):
     #can set multiple server variable with one action
-    sModuleInfo = inspect.stack()[0][3] + " : " + inspect.getmoduleinfo(__file__).name
+    sModuleInfo = inspect.currentframe().f_code.co_name + " : " + MODULE_NAME
     try:
         run_id = sr.Get_Shared_Variables('run_id')
 
@@ -799,7 +803,7 @@ def set_server_variable(data_set):
 
 def get_server_variable(data_set):
     # can get multiple server variable with one action
-    sModuleInfo = inspect.stack()[0][3] + " : " + inspect.getmoduleinfo(__file__).name
+    sModuleInfo = inspect.currentframe().f_code.co_name + " : " + MODULE_NAME
     try:
         run_id = sr.Get_Shared_Variables('run_id')
 
@@ -819,7 +823,7 @@ def get_server_variable(data_set):
 
 def get_server_variable_and_wait(data_set):
     # can get multiple server variable with one action
-    sModuleInfo = inspect.stack()[0][3] + " : " + inspect.getmoduleinfo(__file__).name
+    sModuleInfo = inspect.currentframe().f_code.co_name + " : " + MODULE_NAME
     try:
         run_id = sr.Get_Shared_Variables('run_id')
 
@@ -869,7 +873,7 @@ def get_server_variable_and_wait(data_set):
 
 
 def get_all_server_variable(data_set):
-    sModuleInfo = inspect.stack()[0][3] + " : " + inspect.getmoduleinfo(__file__).name
+    sModuleInfo = inspect.currentframe().f_code.co_name + " : " + MODULE_NAME
     try:
         run_id = sr.Get_Shared_Variables('run_id')
 
@@ -884,7 +888,7 @@ def get_all_server_variable(data_set):
 def start_timer(data_set):
     ''' Test Step front end for modifying certain variables used by Sequential Actions '''
 
-    sModuleInfo = inspect.stack()[0][3] + " : " + inspect.getmoduleinfo(__file__).name
+    sModuleInfo = inspect.currentframe().f_code.co_name + " : " + MODULE_NAME
     CommonUtil.ExecLog(sModuleInfo, "Function Start", 0)
 
     try:
@@ -907,7 +911,7 @@ def start_timer(data_set):
 def wait_for_timer(data_set):
     ''' Test Step front end for modifying certain variables used by Sequential Actions '''
 
-    sModuleInfo = inspect.stack()[0][3] + " : " + inspect.getmoduleinfo(__file__).name
+    sModuleInfo = inspect.currentframe().f_code.co_name + " : " + MODULE_NAME
     CommonUtil.ExecLog(sModuleInfo, "Function Start", 0)
 
     try:
@@ -938,7 +942,7 @@ def create_3d_list(data_set):
     ''' Creates and appends a python list variable '''
     # Note: List is created if it doesn't already exist
 
-    sModuleInfo = inspect.stack()[0][3] + " : " + inspect.getmoduleinfo(__file__).name
+    sModuleInfo = inspect.currentframe().f_code.co_name + " : " + MODULE_NAME
     CommonUtil.ExecLog(sModuleInfo, "Function Start", 0)
 
     try:
@@ -1001,7 +1005,7 @@ def create_3d_list(data_set):
 
 
 def download_ftp_file(data_set):
-    sModuleInfo = inspect.stack()[0][3] + " : " + inspect.getmoduleinfo(__file__).name
+    sModuleInfo = inspect.currentframe().f_code.co_name + " : " + MODULE_NAME
     CommonUtil.ExecLog(sModuleInfo, "Function Start", 0)
 
     try:
@@ -1052,7 +1056,7 @@ def download_ftp_file(data_set):
 
 
 def write_into_single_cell_in_excel(data_set):
-    sModuleInfo = inspect.stack()[0][3] + " : " + inspect.getmoduleinfo(__file__).name
+    sModuleInfo = inspect.currentframe().f_code.co_name + " : " + MODULE_NAME
     CommonUtil.ExecLog(sModuleInfo, "Function Start", 0)
 
     try:
@@ -1090,7 +1094,7 @@ def write_into_single_cell_in_excel(data_set):
 
 
 def run_macro_in_excel(data_set):
-    sModuleInfo = inspect.stack()[0][3] + " : " + inspect.getmoduleinfo(__file__).name
+    sModuleInfo = inspect.currentframe().f_code.co_name + " : " + MODULE_NAME
     CommonUtil.ExecLog(sModuleInfo, "Function Start", 0)
 
     try:
@@ -1120,7 +1124,7 @@ def run_macro_in_excel(data_set):
 
 
 def get_excel_table(data_set):
-    sModuleInfo = inspect.stack()[0][3] + " : " + inspect.getmoduleinfo(__file__).name
+    sModuleInfo = inspect.currentframe().f_code.co_name + " : " + MODULE_NAME
     CommonUtil.ExecLog(sModuleInfo, "Function Start", 0)
 
     try:
@@ -1156,7 +1160,7 @@ def get_excel_table(data_set):
 
 
 def save_text_from_file_into_variable(data_set):
-    sModuleInfo = inspect.stack()[0][3] + " : " + inspect.getmoduleinfo(__file__).name
+    sModuleInfo = inspect.currentframe().f_code.co_name + " : " + MODULE_NAME
     CommonUtil.ExecLog(sModuleInfo, "Function Start", 0)
 
     try:
