@@ -19,6 +19,10 @@ sys.path.append("..")
 
 from Framework.Utilities import CommonUtil
 
+
+MODULE_NAME = inspect.getmoduleinfo(__file__).name
+
+
 class AuthorizationData:
 
     def __init__(self,
@@ -124,7 +128,7 @@ class HttpMethods():
 def Data_By_GET_Method(url):
     # this function needs work with validating page title.  We need to check if user entered any title.
     # if not then we don't do the validation
-    sModuleInfo = inspect.stack()[0][3] + " : " + inspect.getmoduleinfo(__file__).name
+    sModuleInfo = inspect.currentframe().f_code.co_name + " : " + MODULE_NAME
     try:
 
         Data = requests.get(url)
@@ -148,7 +152,7 @@ def Data_By_GET_Method(url):
 def Data_By_POST_Method(url,param,statuscode):
     # this function needs work with validating page title.  We need to check if user entered any title.
     # if not then we don't do the validation
-    sModuleInfo = inspect.stack()[0][3] + " : " + inspect.getmoduleinfo(__file__).name
+    sModuleInfo = inspect.currentframe().f_code.co_name + " : " + MODULE_NAME
     try:
 
         Data = requests.post(url, param)

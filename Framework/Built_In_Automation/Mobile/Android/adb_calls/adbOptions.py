@@ -8,9 +8,11 @@ from Framework.Utilities import CommonUtil
 from Framework.Built_In_Automation.Shared_Resources import BuiltInFunctionSharedResources as sr
 
 
+MODULE_NAME = inspect.getmoduleinfo(__file__).name
+
 
 def start_adb_server():
-    sModuleInfo = inspect.stack()[0][3] + " : " + inspect.getmoduleinfo(__file__).name
+    sModuleInfo = inspect.currentframe().f_code.co_name + " : " + MODULE_NAME
     try:
         output = subprocess.check_output("adb start server", shell=True)
         CommonUtil.ExecLog(sModuleInfo, "Starting adb server", 0)
@@ -22,7 +24,7 @@ def start_adb_server():
 
 
 def kill_adb_server():
-    sModuleInfo = inspect.stack()[0][3] + " : " + inspect.getmoduleinfo(__file__).name
+    sModuleInfo = inspect.currentframe().f_code.co_name + " : " + MODULE_NAME
     try:
         output = subprocess.check_output("adb kill-server", shell=True)
         CommonUtil.ExecLog(sModuleInfo, "Killing adb server", 0)
@@ -34,7 +36,7 @@ def kill_adb_server():
 
 
 def get_android_version(serial=''):
-    sModuleInfo = inspect.stack()[0][3] + " : " + inspect.getmoduleinfo(__file__).name
+    sModuleInfo = inspect.currentframe().f_code.co_name + " : " + MODULE_NAME
     try:
         if serial != '': serial = '-s %s' % serial  # Prepare serial number with command line switch
         output = subprocess.check_output("adb %s shell getprop ro.build.version.release" % serial, shell=True)
@@ -47,7 +49,7 @@ def get_android_version(serial=''):
 
 
 def get_device_model(serial=''):
-    sModuleInfo = inspect.stack()[0][3] + " : " + inspect.getmoduleinfo(__file__).name
+    sModuleInfo = inspect.currentframe().f_code.co_name + " : " + MODULE_NAME
     try:
         if serial != '': serial = '-s %s' % serial  # Prepare serial number with command line switch
         output = subprocess.check_output("adb %s shell getprop ro.product.model" % serial, shell=True)
@@ -60,7 +62,7 @@ def get_device_model(serial=''):
 
 
 def get_device_name(serial=''):
-    sModuleInfo = inspect.stack()[0][3] + " : " + inspect.getmoduleinfo(__file__).name
+    sModuleInfo = inspect.currentframe().f_code.co_name + " : " + MODULE_NAME
     try:
         if serial != '': serial = '-s %s' % serial  # Prepare serial number with command line switch
         output = subprocess.check_output("adb %s shell getprop ro.product.name" % serial, shell=True)
@@ -73,7 +75,7 @@ def get_device_name(serial=''):
 
 
 def get_work_profile():
-    sModuleInfo = inspect.stack()[0][3] + " : " + inspect.getmoduleinfo(__file__).name
+    sModuleInfo = inspect.currentframe().f_code.co_name + " : " + MODULE_NAME
     try:
         adb_output = subprocess.check_output("adb shell pm list users", shell=True)
 
@@ -93,7 +95,7 @@ def get_work_profile():
 
 
 def get_device_serial_no(serial=''):
-    sModuleInfo = inspect.stack()[0][3] + " : " + inspect.getmoduleinfo(__file__).name
+    sModuleInfo = inspect.currentframe().f_code.co_name + " : " + MODULE_NAME
     try:
         if serial != '': serial = '-s %s' % serial  # Prepare serial number with command line switch
         output = subprocess.check_output("adb %s get-serialno" % serial, shell=True)
@@ -105,7 +107,7 @@ def get_device_serial_no(serial=''):
         return CommonUtil.Exception_Handler(sys.exc_info(), None, errMsg)
 
 def get_package_version(package, serial=''):
-    sModuleInfo = inspect.stack()[0][3] + " : " + inspect.getmoduleinfo(__file__).name
+    sModuleInfo = inspect.currentframe().f_code.co_name + " : " + MODULE_NAME
     try:
         if serial != '': serial = '-s %s' % serial  # Prepare serial number with command line switch
         output = subprocess.check_output("adb %s shell pm dump %s" % (serial, package), shell=True)
@@ -122,7 +124,7 @@ def get_package_version(package, serial=''):
         return CommonUtil.Exception_Handler(sys.exc_info(), None, errMsg)
 
 def get_device_storage(serial=''):
-    sModuleInfo = inspect.stack()[0][3] + " : " + inspect.getmoduleinfo(__file__).name
+    sModuleInfo = inspect.currentframe().f_code.co_name + " : " + MODULE_NAME
     try:
         if serial != '': serial = '-s %s' % serial  # Prepare serial number with command line switch
         output = subprocess.check_output("adb %s shell df /data" % serial, shell=True)
@@ -149,7 +151,7 @@ def get_device_storage(serial=''):
 
 
 def get_device_manufacturer(serial=''):
-    sModuleInfo = inspect.stack()[0][3] + " : " + inspect.getmoduleinfo(__file__).name
+    sModuleInfo = inspect.currentframe().f_code.co_name + " : " + MODULE_NAME
     try:
         if serial != '': serial = '-s %s' % serial  # Prepare serial number with command line switch
         output = subprocess.check_output("adb %s shell getprop ro.product.manufacturer" % serial, shell=True)
@@ -165,7 +167,7 @@ def get_device_imei_info(serial=''):
     ''' Returns the device's IMEI '''
     # Output: IMEI as a string
 
-    sModuleInfo = inspect.stack()[0][3] + " : " + inspect.getmoduleinfo(__file__).name
+    sModuleInfo = inspect.currentframe().f_code.co_name + " : " + MODULE_NAME
     try:
         if serial != '': serial = '-s %s' % serial  # Prepare serial number with command line switch
         output = subprocess.check_output('adb %s shell dumpsys iphonesubinfo' % serial, shell=True)
@@ -198,7 +200,7 @@ def get_device_imei_info(serial=''):
 
 
 def get_device_summary():
-    sModuleInfo = inspect.stack()[0][3] + " : " + inspect.getmoduleinfo(__file__).name
+    sModuleInfo = inspect.currentframe().f_code.co_name + " : " + MODULE_NAME
     try:
         output = subprocess.check_output("adb devices -l", shell=True)
         CommonUtil.ExecLog(sModuleInfo, "%s" % output, 0)
@@ -210,7 +212,7 @@ def get_device_summary():
 
 
 def get_device_complete_info():
-    sModuleInfo = inspect.stack()[0][3] + " : " + inspect.getmoduleinfo(__file__).name
+    sModuleInfo = inspect.currentframe().f_code.co_name + " : " + MODULE_NAME
     try:
         output = subprocess.check_output("adb devices -l", shell=True)
         CommonUtil.ExecLog(sModuleInfo, "%s" % output, 0)
@@ -225,7 +227,7 @@ def get_devices():
     ''' Retrieves a list of connected devices in the format of "SERIAL_NO STATE" and returns as a list '''
     # State may be "device" if connected and we can talk to it, or "unauthorized" if we can't talk to it
 
-    sModuleInfo = inspect.stack()[0][3] + " : " + inspect.getmoduleinfo(__file__).name
+    sModuleInfo = inspect.currentframe().f_code.co_name + " : " + MODULE_NAME
     try:
         # Get list of connected devices
         output = subprocess.check_output("adb devices", shell=True)
@@ -249,7 +251,7 @@ def get_devices():
 def is_android_connected(serial=''):
     ''' Return True/False if at least one device is connected '''
 
-    sModuleInfo = inspect.stack()[0][3] + " : " + inspect.getmoduleinfo(__file__).name
+    sModuleInfo = inspect.currentframe().f_code.co_name + " : " + MODULE_NAME
 
     devices = get_devices()
 
@@ -269,7 +271,7 @@ def is_android_connected(serial=''):
 
 
 def get_android_sdk(serial=''):
-    sModuleInfo = inspect.stack()[0][3] + " : " + inspect.getmoduleinfo(__file__).name
+    sModuleInfo = inspect.currentframe().f_code.co_name + " : " + MODULE_NAME
     try:
         if serial != '': serial = '-s %s' % serial  # Prepare serial number with command line switch
         output = subprocess.check_output("adb %s shell getprop ro.build.version.sdk" % serial, shell=True)
@@ -282,7 +284,7 @@ def get_android_sdk(serial=''):
 
 
 def install_app(apk_path, serial=''):
-    sModuleInfo = inspect.stack()[0][3] + " : " + inspect.getmoduleinfo(__file__).name
+    sModuleInfo = inspect.currentframe().f_code.co_name + " : " + MODULE_NAME
     try:
         if serial != '': serial = '-s %s' % serial  # Prepare serial number with command line switch
         output = subprocess.check_output("adb %s install %s" % (serial, apk_path), shell=True)
@@ -294,7 +296,7 @@ def install_app(apk_path, serial=''):
         return CommonUtil.Exception_Handler(sys.exc_info(), None, errMsg)
 
 def uninstall_app(package, serial = ''):
-    sModuleInfo = inspect.stack()[0][3] + " : " + inspect.getmoduleinfo(__file__).name
+    sModuleInfo = inspect.currentframe().f_code.co_name + " : " + MODULE_NAME
     try:
         if serial != '': serial = '-s %s' % serial # Prepare serial number with command line switch
         output = subprocess.check_output("adb %s uninstall %s" % (serial, package), shell=True) # Install and overwrite (-r) if package is already installed
@@ -306,7 +308,7 @@ def uninstall_app(package, serial = ''):
         return CommonUtil.Exception_Handler(sys.exc_info(),None,errMsg)
 
 def connect_device_via_wifi(device_ip):
-    sModuleInfo = inspect.stack()[0][3] + " : " + inspect.getmoduleinfo(__file__).name
+    sModuleInfo = inspect.currentframe().f_code.co_name + " : " + MODULE_NAME
     try:
         output = subprocess.check_output("adb tcpip 5555", shell=True)
         CommonUtil.ExecLog(sModuleInfo, "Target device set to listen for a TCP/IP connection on port 5555.", 0)
@@ -322,7 +324,7 @@ def connect_device_via_wifi(device_ip):
 
 
 def take_screenshot(image_name, serial=''):
-    sModuleInfo = inspect.stack()[0][3] + " : " + inspect.getmoduleinfo(__file__).name
+    sModuleInfo = inspect.currentframe().f_code.co_name + " : " + MODULE_NAME
     try:
         if serial != '': serial = '-s %s' % serial  # Prepare serial number with command line switch
         # output = subprocess.check_output("adb shell screencap -p | perl -pe 's/\x0D\x0A/\x0A/g' > %s/%s.png"%(folder_path,image_name), shell=True)
@@ -337,7 +339,7 @@ def take_screenshot(image_name, serial=''):
 
 
 def record_screen(folder_path, video_name, serial=''):
-    sModuleInfo = inspect.stack()[0][3] + " : " + inspect.getmoduleinfo(__file__).name
+    sModuleInfo = inspect.currentframe().f_code.co_name + " : " + MODULE_NAME
     try:
         if serial != '': serial = '-s %s' % serial  # Prepare serial number with command line switch
         os.system("adb %s shell screenrecord /sdcard/%s.mp4" % (serial, video_name), shell=True)
@@ -351,7 +353,7 @@ def record_screen(folder_path, video_name, serial=''):
 
 
 def get_device_battery_info(serial=''):
-    sModuleInfo = inspect.stack()[0][3] + " : " + inspect.getmoduleinfo(__file__).name
+    sModuleInfo = inspect.currentframe().f_code.co_name + " : " + MODULE_NAME
     try:
         if serial != '': serial = '-s %s' % serial  # Prepare serial number with command line switch
         output = subprocess.check_output("adb %s shell dumpsys battery" % serial, shell=True)
@@ -364,7 +366,7 @@ def get_device_battery_info(serial=''):
 
 
 def get_device_wifi_info(serial=''):
-    sModuleInfo = inspect.stack()[0][3] + " : " + inspect.getmoduleinfo(__file__).name
+    sModuleInfo = inspect.currentframe().f_code.co_name + " : " + MODULE_NAME
     try:
         if serial != '': serial = '-s %s' % serial  # Prepare serial number with command line switch
         output = subprocess.check_output("adb %s shell dumpsys wifi" % serial, shell=True)
@@ -377,7 +379,7 @@ def get_device_wifi_info(serial=''):
 
 
 def get_device_cpu_info(serial=''):
-    sModuleInfo = inspect.stack()[0][3] + " : " + inspect.getmoduleinfo(__file__).name
+    sModuleInfo = inspect.currentframe().f_code.co_name + " : " + MODULE_NAME
     try:
         if serial != '': serial = '-s %s' % serial  # Prepare serial number with command line switch
         output = subprocess.check_output("adb %s shell dumpsys cpuinfo" % serial, shell=True)
@@ -390,7 +392,7 @@ def get_device_cpu_info(serial=''):
 
 
 def get_package_name(serial=''):
-    sModuleInfo = inspect.stack()[0][3] + " : " + inspect.getmoduleinfo(__file__).name
+    sModuleInfo = inspect.currentframe().f_code.co_name + " : " + MODULE_NAME
     try:
         if serial != '': serial = '-s %s' % serial  # Prepare serial number with command line switch
         output = subprocess.check_output("adb %s shell pm list packages" % serial, shell=True)
@@ -405,7 +407,7 @@ def get_package_name(serial=''):
 def wake_android(serial=''):
     ''' Sends the wakeup keypress and a swipe up gesture to try to unlock the device and get it to a usable state for automation '''
 
-    sModuleInfo = inspect.stack()[0][3] + " : " + inspect.getmoduleinfo(__file__).name
+    sModuleInfo = inspect.currentframe().f_code.co_name + " : " + MODULE_NAME
     try:
         if serial != '': serial = '-s %s' % serial  # Prepare serial number with command line switch
         # Get screen size, and calculate swipe gesture to get to home screen
@@ -443,7 +445,7 @@ def unlock_android(serial=''):
     # Caveat 1: Only works if device has PIN or PASSWORD, not if they use a pattern, or pattern as a fingerprint backup
     # Caveat 2: Only works if the user connects USB and unlocks the phone. Then, if the phone is locked, we still have an ADB connection, and can work with it.
 
-    sModuleInfo = inspect.stack()[0][3] + " : " + inspect.getmoduleinfo(__file__).name
+    sModuleInfo = inspect.currentframe().f_code.co_name + " : " + MODULE_NAME
     try:
         lock_status = ''
         if serial != '': 
@@ -505,7 +507,7 @@ def unlock_android(serial=''):
 def Enter_Password_UIAutomator(password, serial=''):
     ''' This function can evolve a lot more. For time being we are just looking for button with text and clicking for UNLOCKING only'''
  
-    sModuleInfo = inspect.stack()[0][3] + " : " + inspect.getmoduleinfo(__file__).name
+    sModuleInfo = inspect.currentframe().f_code.co_name + " : " + MODULE_NAME
     try:
 
         # click buttons 
@@ -546,7 +548,7 @@ def unlock_android_app(serial=''):
     We will assume user have already checked that'''
     
 
-    sModuleInfo = inspect.stack()[0][3] + " : " + inspect.getmoduleinfo(__file__).name
+    sModuleInfo = inspect.currentframe().f_code.co_name + " : " + MODULE_NAME
     try:
         # Get password
         if sr.Test_Shared_Variables('device_password') == False:  # Make sure user stored password in shared variables
@@ -568,7 +570,7 @@ def unlock_android_app(serial=''):
 
 def check_if_device_is_unlocked(serial=''):
     #if device is locked, current focused window always shows "StatusBar" only
-    sModuleInfo = inspect.stack()[0][3] + " : " + inspect.getmoduleinfo(__file__).name
+    sModuleInfo = inspect.currentframe().f_code.co_name + " : " + MODULE_NAME
     try:
         if serial != '': serial = '-s %s' % serial  # Prepare serial number with command line switch
         
@@ -590,7 +592,7 @@ def check_if_device_is_unlocked(serial=''):
 def detect_foreground_android(serial=''):
     ''' Return whatever has the foreground '''
 
-    sModuleInfo = inspect.stack()[0][3] + " : " + inspect.getmoduleinfo(__file__).name
+    sModuleInfo = inspect.currentframe().f_code.co_name + " : " + MODULE_NAME
     try:
         if serial != '': serial = '-s %s' % serial  # Prepare serial number with command line switch
         output = subprocess.check_output("adb %s shell dumpsys window windows" % serial,
@@ -607,7 +609,7 @@ def detect_foreground_android(serial=''):
 def swipe_android(x_start, y_start, x_end, y_end, duration = 1000, serial=''):
     ''' Sends a swipe gesture to a device '''
 
-    sModuleInfo = inspect.stack()[0][3] + " : " + inspect.getmoduleinfo(__file__).name
+    sModuleInfo = inspect.currentframe().f_code.co_name + " : " + MODULE_NAME
     try:
         if serial != '': serial = '-s %s' % serial  # Prepare serial number with command line switch
         CommonUtil.ExecLog(sModuleInfo, "Sending swipe gesture to %d %d %d %d %d ms" % (x_start, y_start, x_end, y_end, duration), 0)
@@ -621,7 +623,7 @@ def swipe_android(x_start, y_start, x_end, y_end, duration = 1000, serial=''):
 def reset_android(serial=''):
     ''' Resets the specified device, or the only device connected '''
 
-    sModuleInfo = inspect.stack()[0][3] + " : " + inspect.getmoduleinfo(__file__).name
+    sModuleInfo = inspect.currentframe().f_code.co_name + " : " + MODULE_NAME
     try:
         CommonUtil.ExecLog(sModuleInfo, "Resetting device %s" % serial, 0)
         if serial != '': serial = '-s %s' % serial  # Prepend the command line switch to add the serial number

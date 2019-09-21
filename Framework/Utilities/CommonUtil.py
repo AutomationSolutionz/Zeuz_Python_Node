@@ -20,6 +20,10 @@ except: pass
 try: import pyscreenshot as ImageGrab_Linux # Screen capture for Linux/Unix
 except: pass
 
+
+MODULE_NAME = inspect.getmoduleinfo(__file__).name
+
+
 # Get file path for temporary config file
 temp_config=os.path.join(os.path.join(FL.get_home_folder(),os.path.join('Desktop',os.path.join('AutomationLog',ConfigModule.get_config_value('Temp','_file')))))
 
@@ -73,7 +77,7 @@ def Add_File_To_Current_Test_Case_Log(src):
 def Exception_Handler(exec_info, temp_q=None,UserMessage=None):
 
     try:
-        sModuleInfo_Local = inspect.stack()[0][3] + " : " + inspect.getmoduleinfo(__file__).name
+        sModuleInfo_Local = inspect.currentframe().f_code.co_name + " : " + MODULE_NAME
         exc_type, exc_obj, exc_tb = exec_info
         Error_Type = (str(exc_type).replace("type ", "")).replace("<", "").replace(">", "").replace(";", ":")
         Error_Message = str(exc_obj)
@@ -100,7 +104,7 @@ def Exception_Handler(exec_info, temp_q=None,UserMessage=None):
 
 
 def Result_Analyzer(sTestStepReturnStatus,temp_q):
-    sModuleInfo = inspect.stack()[0][3] + " : " + inspect.getmoduleinfo(__file__).name
+    sModuleInfo = inspect.currentframe().f_code.co_name + " : " + MODULE_NAME
 
     try:
         if sTestStepReturnStatus in passed_tag_list:
@@ -270,7 +274,7 @@ def set_screenshot_vars(shared_variables):
     ''' Save screen capture type and selenium/appium driver objects as global variables, so TakeScreenShot() can access them '''
     # We can't import Shared Variables due to cyclic imports causing local runs to break, so this is the work around
     # Known issue: This function is called by Sequential_Actions(). Thus, Maindriver can't take screenshots until this is set
-    sModuleInfo = inspect.stack()[0][3] + " : " + inspect.getmoduleinfo(__file__).name
+    sModuleInfo = inspect.currentframe().f_code.co_name + " : " + MODULE_NAME
     
     global screen_capture_driver, screen_capture_type
     
@@ -303,7 +307,7 @@ def Thread_ScreenShot(ImageName,local_run=False):
     # Do not include extension in ImageName, it will be added
     
     # Define variables
-    sModuleInfo = inspect.stack()[0][3] + " : " + inspect.getmoduleinfo(__file__).name
+    sModuleInfo = inspect.currentframe().f_code.co_name + " : " + MODULE_NAME
     ExecLog(sModuleInfo, "Function start", 0)
     chars_to_remove = ["?","*","\"","<",">","|","\\","\/",":"] # Symbols that can't be used in filename
     picture_quality = 20 # Quality of picture

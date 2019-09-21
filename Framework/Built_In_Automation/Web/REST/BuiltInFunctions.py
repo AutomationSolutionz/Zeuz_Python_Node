@@ -30,9 +30,12 @@ all_val = []
 '============================= Sequential Action Section Begins=============================='
 
 
+MODULE_NAME = inspect.getmoduleinfo(__file__).name
+
+
 # Method to get the element step data from the original step_data
 def Get_Element_Step_Data(step_data):
-    sModuleInfo = inspect.stack()[0][3] + " : " + inspect.getmoduleinfo(__file__).name
+    sModuleInfo = inspect.currentframe().f_code.co_name + " : " + MODULE_NAME
     CommonUtil.ExecLog(sModuleInfo, "Function: Get Element Step Data", 1)
     try:
         element_step_data = []
@@ -51,7 +54,7 @@ def Get_Element_Step_Data(step_data):
 
 # Handles actions for the sequential logic, based on the input from the mentioned function
 def Action_Handler(action_step_data, action_row):
-    sModuleInfo = inspect.stack()[0][3] + " : " + inspect.getmoduleinfo(__file__).name
+    sModuleInfo = inspect.currentframe().f_code.co_name + " : " + MODULE_NAME
     CommonUtil.ExecLog(sModuleInfo, "Function: Action_Handler", 1)
     try:
         action_name = action_row[0]
@@ -101,7 +104,7 @@ def Initialize_List(data_set):
 
 #Validating text from an element given information regarding the expected text
 def Compare_Lists(step_data):
-    sModuleInfo = inspect.stack()[0][3] + " : " + inspect.getmoduleinfo(__file__).name
+    sModuleInfo = inspect.currentframe().f_code.co_name + " : " + MODULE_NAME
     CommonUtil.ExecLog(sModuleInfo, "Function: Compare_Lists", 1)
     try:
         element_step_data = Get_Element_Step_Data(step_data)
@@ -115,7 +118,7 @@ def Compare_Lists(step_data):
 
 #Validating text from an element given information regarding the expected text
 def Compare_Variables(step_data):
-    sModuleInfo = inspect.stack()[0][3] + " : " + inspect.getmoduleinfo(__file__).name
+    sModuleInfo = inspect.currentframe().f_code.co_name + " : " + MODULE_NAME
     CommonUtil.ExecLog(sModuleInfo, "Function: Compare_Variables", 1)
     try:
         element_step_data = Get_Element_Step_Data(step_data)
@@ -129,7 +132,7 @@ def Compare_Variables(step_data):
 
 # Method to return dictonaries from string
 def get_value_as_list(data):
-    sModuleInfo = inspect.stack()[0][3] + " : " + inspect.getmoduleinfo(__file__).name
+    sModuleInfo = inspect.currentframe().f_code.co_name + " : " + MODULE_NAME
     CommonUtil.ExecLog(sModuleInfo, "Function: get value as list", 1)
     try:
         return json.loads(data)
@@ -246,7 +249,7 @@ def search_val_wrapper(x,target,target_val,equal=True):
 
 # Method to save rest call parameters
 def save_fields_from_rest_call(result_dict, fields_to_be_saved):
-    sModuleInfo = inspect.stack()[0][3] + " : " + inspect.getmoduleinfo(__file__).name
+    sModuleInfo = inspect.currentframe().f_code.co_name + " : " + MODULE_NAME
     CommonUtil.ExecLog(sModuleInfo, "Function: save fields from rest call", 1)
     try:
         global index,count
@@ -298,7 +301,7 @@ def save_fields_from_rest_call(result_dict, fields_to_be_saved):
 
 
 def insert_fields_from_rest_call_into_list(result_dict, fields_to_be_saved, list_name):
-    sModuleInfo = inspect.stack()[0][3] + " : " + inspect.getmoduleinfo(__file__).name
+    sModuleInfo = inspect.currentframe().f_code.co_name + " : " + MODULE_NAME
     CommonUtil.ExecLog(sModuleInfo, "Function: save fields from rest call", 1)
     try:
         global index, count,all_val
@@ -372,7 +375,7 @@ def insert_fields_from_rest_call_into_list(result_dict, fields_to_be_saved, list
 
 #Inserting a field into a list of shared variables
 def Insert_Into_List(step_data):
-    sModuleInfo = inspect.stack()[0][3] + " : " + inspect.getmoduleinfo(__file__).name
+    sModuleInfo = inspect.currentframe().f_code.co_name + " : " + MODULE_NAME
     CommonUtil.ExecLog(sModuleInfo, "Function: Insert_Into_List", 1)
     try:
         fields_to_be_saved = ''
@@ -459,7 +462,7 @@ def Insert_Into_List(step_data):
 
 
 def search_condition_wrapper(data,condition_string):
-    sModuleInfo = inspect.stack()[0][3] + " : " + inspect.getmoduleinfo(__file__).name
+    sModuleInfo = inspect.currentframe().f_code.co_name + " : " + MODULE_NAME
     try:
         parse_list = str(condition_string).split("(")
         condition_string_list = []
@@ -561,7 +564,7 @@ def search_condition_wrapper(data,condition_string):
 
 # Method to handle rest calls
 def handle_rest_call(data, fields_to_be_saved, save_into_list = False, list_name = "",search=False,search_key="",search_value="",equal=True,condition='',apply_condition=False,save_cookie=False,wait_for_response_code=0):
-    sModuleInfo = inspect.stack()[0][3] + " : " + inspect.getmoduleinfo(__file__).name
+    sModuleInfo = inspect.currentframe().f_code.co_name + " : " + MODULE_NAME
     CommonUtil.ExecLog(sModuleInfo, "Function: handle rest call", 1)
     try:
         global index,count
@@ -703,7 +706,7 @@ def handle_rest_call(data, fields_to_be_saved, save_into_list = False, list_name
 
 #Get Response Wrapper Normal
 def Get_Response_Wrapper(step_data):
-    sModuleInfo = inspect.stack()[0][3] + " : " + inspect.getmoduleinfo(__file__).name
+    sModuleInfo = inspect.currentframe().f_code.co_name + " : " + MODULE_NAME
     CommonUtil.ExecLog(sModuleInfo, "Function: Get_Response_Wrapper", 1)
     try:
         return Get_Response(step_data)
@@ -713,7 +716,7 @@ def Get_Response_Wrapper(step_data):
 
 #Get Response Wrapper With Cookie
 def Get_Response_Wrapper_With_Cookie(step_data):
-    sModuleInfo = inspect.stack()[0][3] + " : " + inspect.getmoduleinfo(__file__).name
+    sModuleInfo = inspect.currentframe().f_code.co_name + " : " + MODULE_NAME
     CommonUtil.ExecLog(sModuleInfo, "Function: Get_Response_Wrapper_With_Cookie", 1)
     try:
         return Get_Response(step_data,True)
@@ -724,7 +727,7 @@ def Get_Response_Wrapper_With_Cookie(step_data):
 
 # Method to get responses
 def Get_Response(step_data, save_cookie=False):
-    sModuleInfo = inspect.stack()[0][3] + " : " + inspect.getmoduleinfo(__file__).name
+    sModuleInfo = inspect.currentframe().f_code.co_name + " : " + MODULE_NAME
     CommonUtil.ExecLog(sModuleInfo, "Function: Get_Response", 1)
     try:
         wait_for_response_code = 0
@@ -753,7 +756,7 @@ def Get_Response(step_data, save_cookie=False):
 
 # Method to search responses, if certain key value pair exists in REST response
 def Search_Response(step_data):
-    sModuleInfo = inspect.stack()[0][3] + " : " + inspect.getmoduleinfo(__file__).name
+    sModuleInfo = inspect.currentframe().f_code.co_name + " : " + MODULE_NAME
     CommonUtil.ExecLog(sModuleInfo, "Function: Search_Response", 1)
     try:
         fields_to_be_saved = ''
@@ -806,7 +809,7 @@ def Search_Response(step_data):
         return CommonUtil.Exception_Handler(sys.exc_info())
 
 def Get_Element(returned_step_data_list, fields_to_be_saved):
-        sModuleInfo = inspect.stack()[0][3] + " : " + inspect.getmoduleinfo(__file__).name
+        sModuleInfo = inspect.currentframe().f_code.co_name + " : " + MODULE_NAME
         CommonUtil.ExecLog(sModuleInfo, "Function: Get_Response", 1)
         try:
             return_result = handle_rest_call(returned_step_data_list, fields_to_be_saved)
@@ -816,7 +819,7 @@ def Get_Element(returned_step_data_list, fields_to_be_saved):
 
 # Method to sleep for a particular duration
 def Sleep(step_data):
-    sModuleInfo = inspect.stack()[0][3] + " : " + inspect.getmoduleinfo(__file__).name
+    sModuleInfo = inspect.currentframe().f_code.co_name + " : " + MODULE_NAME
     CommonUtil.ExecLog(sModuleInfo, "Function: Sleep", 1)
     try:
             tuple = step_data[0]
@@ -831,7 +834,7 @@ def Sleep(step_data):
 
 #Method to return pass or fail for the step outcome
 def Step_Result(step_data):
-    sModuleInfo = inspect.stack()[0][3] + " : " + inspect.getmoduleinfo(__file__).name
+    sModuleInfo = inspect.currentframe().f_code.co_name + " : " + MODULE_NAME
     CommonUtil.ExecLog(sModuleInfo, "Function: Step_Result", 1)
     try:
         if ((1 < len(step_data) >= 5)):
@@ -852,7 +855,7 @@ def Step_Result(step_data):
 
 # Performs a series of action or conditional logical action decisions based on user input
 def Sequential_Actions(step_data):
-    sModuleInfo = inspect.stack()[0][3] + " : " + inspect.getmoduleinfo(__file__).name
+    sModuleInfo = inspect.currentframe().f_code.co_name + " : " + MODULE_NAME
     CommonUtil.ExecLog(sModuleInfo, "Function: Sequential_Actions", 1)
     try:
         for each in step_data:
@@ -947,7 +950,7 @@ def Sequential_Actions(step_data):
 
 # Validation of step data passed on by the user
 def Validate_Step_Data(step_data):
-    sModuleInfo = inspect.stack()[0][3] + " : " + inspect.getmoduleinfo(__file__).name
+    sModuleInfo = inspect.currentframe().f_code.co_name + " : " + MODULE_NAME
     CommonUtil.ExecLog(sModuleInfo, "Function: Validate_Step_Data", 1)
     try:
         method = ""
@@ -1008,7 +1011,7 @@ def get_data_from_list(input_list, identifier):
 
 #Inserting a field into a list of shared variables
 def Insert_Tuple_Into_List(step_data):
-    sModuleInfo = inspect.stack()[0][3] + " : " + inspect.getmoduleinfo(__file__).name
+    sModuleInfo = inspect.currentframe().f_code.co_name + " : " + MODULE_NAME
     CommonUtil.ExecLog(sModuleInfo, "Function: Insert_Tuple_Into_List", 1)
     try:
         list_name = ''

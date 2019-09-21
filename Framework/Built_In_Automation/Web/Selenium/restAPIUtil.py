@@ -10,11 +10,13 @@ from Framework.Built_In_Automation.Web.Selenium import BuiltInFunctions
 sys.path.append("..")
 
 
+MODULE_NAME = inspect.getmoduleinfo(__file__).name
+
 
 # Basic API Helper methods. Currently supporting GET and POST calls
 ## Need to add more functionality later
 def rest_API_Helper(rest_call_type,url,headers=False,payload_type=False,body=False, extraction_fields=False):
-    sModuleInfo = inspect.stack()[0][3] + " : " + inspect.getmoduleinfo(__file__).name
+    sModuleInfo = inspect.currentframe().f_code.co_name + " : " + MODULE_NAME
     CommonUtil.ExecLog(sModuleInfo, "Function: rest_API_Helper", 1)
     try:
         if ((rest_call_type == "") or (url == "")):
@@ -79,7 +81,7 @@ def rest_API_Helper(rest_call_type,url,headers=False,payload_type=False,body=Fal
 # Internal method
 ## Will be improved upon in the future 
 def _response_Validation(payload_type, response, extraction_data=False):
-    sModuleInfo = inspect.stack()[0][3] + " : " + inspect.getmoduleinfo(__file__).name
+    sModuleInfo = inspect.currentframe().f_code.co_name + " : " + MODULE_NAME
     CommonUtil.ExecLog(sModuleInfo, "Function: _response_Validation", 1)
     try:
 #         extraction_fields = extraction_data.split(',')

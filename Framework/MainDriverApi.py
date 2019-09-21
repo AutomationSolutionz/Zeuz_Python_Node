@@ -14,6 +14,8 @@ top_path = os.path.dirname(os.getcwd())
 drivers_path = os.path.join(top_path, 'Drivers')
 sys.path.append(drivers_path)
 
+MODULE_NAME = inspect.getmoduleinfo(__file__).name
+
 '''Constants'''
 PROGRESS_TAG = 'In-Progress'
 PASSED_TAG = 'Passed'
@@ -279,7 +281,7 @@ def check_user_permission_to_run_test(sModuleInfo, Userid):
 
 def check_if_other_machines_failed_in_linked_run():
     # can get multiple server variable with one action
-    sModuleInfo = inspect.stack()[0][3] + " : " + inspect.getmoduleinfo(__file__).name
+    sModuleInfo = inspect.currentframe().f_code.co_name + " : " + MODULE_NAME
     try:
         run_id = shared.Get_Shared_Variables('run_id')
 
@@ -333,7 +335,7 @@ def upload_zip(server_id, port_id, temp_folder, run_id, file_name, base_path=Fal
     :return:
     """
 
-    sModuleInfo = inspect.stack()[0][3] + " : " + inspect.getmoduleinfo(__file__).name
+    sModuleInfo = inspect.currentframe().f_code.co_name + " : " + MODULE_NAME
     url_link = 'http://' + server_id + ':' + str(port_id) + "/Home/UploadZip/"
     total_file_path = temp_folder + os.sep + run_id.replace(':', '-') + os.sep + file_name
 
@@ -1064,7 +1066,7 @@ def upload_csv_file_info(run_id, test_case):
 
 # main function
 def main(device_dict):
-    sModuleInfo = inspect.stack()[0][3] + " : " + inspect.getmoduleinfo(__file__).name
+    sModuleInfo = inspect.currentframe().f_code.co_name + " : " + MODULE_NAME
     CommonUtil.ExecLog(sModuleInfo, "MainDriver is starting", 4, False)
     temp_ini_file = os.path.join(os.path.join(FL.get_home_folder(), os.path.join('Desktop',
                                                                                  os.path.join('AutomationLog',

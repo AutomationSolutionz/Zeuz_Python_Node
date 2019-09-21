@@ -12,6 +12,9 @@ from xml.sax import make_parser
 from glob import glob
 
 
+MODULE_NAME = inspect.getmoduleinfo(__file__).name
+
+
 def get_filepaths(directory):
     """
     This function will generate the file names in a directory 
@@ -32,7 +35,7 @@ def get_filepaths(directory):
 
 
 def validate_xml(filepath):
-    sModuleInfo = inspect.stack()[0][3] + " : " + inspect.getmoduleinfo(__file__).name
+    sModuleInfo = inspect.currentframe().f_code.co_name + " : " + MODULE_NAME
     try:
         f = StringIO('''\
          <xsd:schema xmlns:xsd="http://www.w3.org/2001/XMLSchema">
@@ -66,7 +69,7 @@ def validate_xml(filepath):
 
 
 def check_form(filepath):
-    sModuleInfo = inspect.stack()[0][3] + " : " + inspect.getmoduleinfo(__file__).name
+    sModuleInfo = inspect.currentframe().f_code.co_name + " : " + MODULE_NAME
     try:
         x = ET.fromstring(filepath)
         CommonUtil.ExecLog(sModuleInfo, "%s file is well-formed. %s" % filepath, 1)
@@ -76,7 +79,7 @@ def check_form(filepath):
         return CommonUtil.Exception_Handler(sys.exc_info(), None, errMsg)
 
 def check_wellformed(filename):
-    sModuleInfo = inspect.stack()[0][3] + " : " + inspect.getmoduleinfo(__file__).name
+    sModuleInfo = inspect.currentframe().f_code.co_name + " : " + MODULE_NAME
     #filename = "/home/asci/AssetScience/recell_dse-in-test/Launcher/resource/configurations/desktop-fail-codes.xml"
     try:
         parser = make_parser( )
@@ -91,7 +94,7 @@ def check_wellformed(filename):
 
 def check_exist(filepath):
 
-    sModuleInfo = inspect.stack()[0][3] + " : " + inspect.getmoduleinfo(__file__).name
+    sModuleInfo = inspect.currentframe().f_code.co_name + " : " + MODULE_NAME
 
     try:
         if os.path.isfile(filepath):
@@ -109,7 +112,7 @@ def check_exist(filepath):
 
 def check_tags_exist(filepath, tag, subtag):
 
-    sModuleInfo = inspect.stack()[0][3] + " : " + inspect.getmoduleinfo(__file__).name
+    sModuleInfo = inspect.currentframe().f_code.co_name + " : " + MODULE_NAME
 
     try:
         doc = ET.parse(filepath).getroot()
