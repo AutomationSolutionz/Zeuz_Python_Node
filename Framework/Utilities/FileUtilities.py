@@ -1,7 +1,9 @@
 # -*- coding: utf-8 -*-
 # -*- coding: cp1252 -*-
 
-import os,subprocess,shutil
+import os
+import subprocess
+import shutil
 
 
 def get_home_folder():
@@ -39,7 +41,7 @@ def DeleteFolder(sFolderPath):
     """
     try:
         target = sFolderPath
-        if os.path.exists(target) :
+        if os.path.exists(target):
             if os.name == 'nt':
                 shutil.rmtree(target)
             elif os.name == 'posix':

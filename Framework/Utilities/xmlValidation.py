@@ -1,7 +1,10 @@
 # -*- coding: utf-8 -*-
 # -*- coding: cp1252 -*-
 
-import os, sys, subprocess, inspect
+import os
+import sys
+import subprocess
+import inspect
 from Framework.Utilities import CommonUtil
 
 from lxml import etree
@@ -58,7 +61,8 @@ def validate_xml(filepath):
         doc = etree.parse(valid)
         try:
             xmlschema.validate(doc)
-            CommonUtil.ExecLog(sModuleInfo, "%s file is validated." % filepath, 1)
+            CommonUtil.ExecLog(
+                sModuleInfo, "%s file is validated." % filepath, 1)
 
         except Exception:
             errMsg = "%s file is not validated." % filepath
@@ -72,18 +76,20 @@ def check_form(filepath):
     sModuleInfo = inspect.currentframe().f_code.co_name + " : " + MODULE_NAME
     try:
         x = ET.fromstring(filepath)
-        CommonUtil.ExecLog(sModuleInfo, "%s file is well-formed. %s" % filepath, 1)
+        CommonUtil.ExecLog(
+            sModuleInfo, "%s file is well-formed. %s" % filepath, 1)
 
     except Exception:
         errMsg = "%s file is not well-formed." % filepath
         return CommonUtil.Exception_Handler(sys.exc_info(), None, errMsg)
 
+
 def check_wellformed(filename):
     sModuleInfo = inspect.currentframe().f_code.co_name + " : " + MODULE_NAME
     #filename = "/home/asci/AssetScience/recell_dse-in-test/Launcher/resource/configurations/desktop-fail-codes.xml"
     try:
-        parser = make_parser( )
-        parser.setContentHandler(ContentHandler( ))
+        parser = make_parser()
+        parser.setContentHandler(ContentHandler())
         parser.parse(filename)
         CommonUtil.ExecLog(sModuleInfo, "%s is well-formed. %s" % filename, 1)
 
@@ -101,9 +107,9 @@ def check_exist(filepath):
             CommonUtil.ExecLog(sModuleInfo, "%s file is found." % filepath, 1)
             return "Passed"
         else:
-            CommonUtil.ExecLog(sModuleInfo, "%s file is not found." % filepath, 3)
+            CommonUtil.ExecLog(
+                sModuleInfo, "%s file is not found." % filepath, 3)
             return "Failed"
-
 
     except Exception:
         errMsg = "%s file existence is not checked." % filepath
@@ -118,16 +124,18 @@ def check_tags_exist(filepath, tag, subtag):
         doc = ET.parse(filepath).getroot()
         for event in doc.findall(tag):
             if event is None:
-                CommonUtil.ExecLog(sModuleInfo, "%s tag is not found." % tag, 3)
+                CommonUtil.ExecLog(
+                    sModuleInfo, "%s tag is not found." % tag, 3)
             else:
-                CommonUtil.ExecLog(sModuleInfo, "%s tag is found." % tag, 1) 
+                CommonUtil.ExecLog(sModuleInfo, "%s tag is found." % tag, 1)
 
             for host in event.findall(subtag):
                 if host is None:
-                    CommonUtil.ExecLog(sModuleInfo, "%s tag is not found." % subtag, 3)
+                    CommonUtil.ExecLog(
+                        sModuleInfo, "%s tag is not found." % subtag, 3)
                 else:
-                    CommonUtil.ExecLog(sModuleInfo, "%s tag is found in %s." % (subtag, tag), 1) 
-
+                    CommonUtil.ExecLog(
+                        sModuleInfo, "%s tag is found in %s." % (subtag, tag), 1)
 
     except Exception:
         errMsg = "%s - %s tag existence is not checked. " % (filepath, tag)
