@@ -1,31 +1,30 @@
 # -*- coding: utf-8 -*-
 # -*- coding: cp1252 -*-
-from Framework.Utilities.CommonUtil import passed_tag_list, failed_tag_list, skipped_tag_list
-from Framework.Utilities import CommonUtil
-from Framework.Built_In_Automation.Shared_Resources import BuiltInFunctionSharedResources as Shared_Resources
-import inspect
-import time
-import ast
 '''
 Created on April 10, 2017
 
 @author: Built_In_Automation Solutionz Inc.
 '''
 
-import sys
-import json
+import sys,json
 import os
 import requests
 
 
 sys.path.append("..")
 
+import ast
+import time
+import inspect
+from Framework.Built_In_Automation.Shared_Resources import BuiltInFunctionSharedResources as Shared_Resources
 
 requests.packages.urllib3.disable_warnings()
 
+from Framework.Utilities import CommonUtil
+from Framework.Utilities.CommonUtil import passed_tag_list, failed_tag_list, skipped_tag_list
 
-count = 1
-index = 1
+count=1
+index=1
 all_val = []
 
 '============================= Sequential Action Section Begins=============================='
@@ -81,7 +80,7 @@ def Action_Handler(action_step_data, action_row):
                 return "failed"
         elif action_name == "step result":
             result = Step_Result(action_step_data)
-            if result in failed_tag_list:  # Convert user specified pass/fail into standard result
+            if result in failed_tag_list: # Convert user specified pass/fail into standard result
                 return 'failed'
             elif result in passed_tag_list:
                 return 'passed'
@@ -92,8 +91,7 @@ def Action_Handler(action_step_data, action_row):
             if result == "failed":
                 return "failed"
         else:
-            CommonUtil.ExecLog(
-                sModuleInfo, "The action you entered is incorrect. Please provide accurate information on the data set(s).", 3)
+            CommonUtil.ExecLog(sModuleInfo,"The action you entered is incorrect. Please provide accurate information on the data set(s).",3)
             return "failed"
 
     except Exception:
@@ -104,9 +102,7 @@ def Initialize_List(data_set):
     ''' Temporary wrapper until we can convert everything to use just data_set and not need the extra [] '''
     return Shared_Resources.Initialize_List([data_set])
 
-# Validating text from an element given information regarding the expected text
-
-
+#Validating text from an element given information regarding the expected text
 def Compare_Lists(step_data):
     sModuleInfo = inspect.currentframe().f_code.co_name + " : " + MODULE_NAME
     CommonUtil.ExecLog(sModuleInfo, "Function: Compare_Lists", 1)
@@ -120,7 +116,7 @@ def Compare_Lists(step_data):
         return CommonUtil.Exception_Handler(sys.exc_info())
 
 
-# Validating text from an element given information regarding the expected text
+#Validating text from an element given information regarding the expected text
 def Compare_Variables(step_data):
     sModuleInfo = inspect.currentframe().f_code.co_name + " : " + MODULE_NAME
     CommonUtil.ExecLog(sModuleInfo, "Function: Compare_Variables", 1)
@@ -144,37 +140,37 @@ def get_value_as_list(data):
         return CommonUtil.Exception_Handler(sys.exc_info())
 
 
-def get_all_val(x, target):
+def get_all_val(x,target):
     global all_val
-    for key, value in x.items():
+    for key,value in x.items():
         if str(key) == target:
             all_val.append(value)
         else:
-            if isinstance(value, dict):
-                get_all_val(value, target)
-            elif isinstance(value, list):
+            if isinstance(value,dict):
+                get_all_val(value,target)
+            elif isinstance(value,list):
                 for each in value:
-                    if isinstance(each, unicode) or isinstance(each, str):
+                    if isinstance(each,unicode) or isinstance(each,str):
                         if str(key) == target:
                             all_val.append(each)
                     else:
-                        get_all_val(each, target)
+                        get_all_val(each,target)
             else:
                 continue
 
 
-def get_val(x, target):
-    global count, index
-    for key, value in x.items():
+def get_val(x,target):
+    global count,index
+    for key,value in x.items():
         if str(key) == target:
             if count == index:
                 return value
             else:
-                count += 1
+                count+=1
                 continue
         else:
-            if isinstance(value, dict):
-                result = get_val(value, target)
+            if isinstance(value,dict):
+                result = get_val(value,target)
                 if not result:
                     continue
                 else:
@@ -183,9 +179,9 @@ def get_val(x, target):
                     else:
                         count += 1
                         continue
-            elif isinstance(value, list):
+            elif isinstance(value,list):
                 for each in value:
-                    if isinstance(each, unicode) or isinstance(each, str):
+                    if isinstance(each,unicode) or isinstance(each,str):
                         if str(key) == target:
                             if count == index:
                                 return each
@@ -195,7 +191,7 @@ def get_val(x, target):
                         else:
                             continue
                     else:
-                        result = get_val(each, target)
+                        result = get_val(each,target)
                         if not result:
                             continue
                         else:
@@ -209,27 +205,27 @@ def get_val(x, target):
     return False
 
 
-def search_val(x, target, target_val):
-    for key, value in x.items():
+def search_val(x,target,target_val):
+    for key,value in x.items():
         if str(key) == target and str(value) == target_val:
             return True
 
         else:
-            if isinstance(value, dict):
-                result = search_val(value, target, target_val)
+            if isinstance(value,dict):
+                result =  search_val(value,target,target_val)
                 if not result:
                     continue
                 else:
                     return result
-            elif isinstance(value, list):
+            elif isinstance(value,list):
                 for each in value:
-                    if isinstance(each, unicode) or isinstance(each, str):
+                    if isinstance(each,unicode) or isinstance(each,str):
                         if str(key) == target and str(each) == target_val:
                             return True
                         else:
                             continue
                     else:
-                        result = search_val(each, target, target_val)
+                        result =  search_val(each,target,target_val)
                         if not result:
                             continue
                         else:
@@ -240,14 +236,15 @@ def search_val(x, target, target_val):
     return False
 
 
-def search_val_wrapper(x, target, target_val, equal=True):
-    target_val = target_val.replace("[[", "(")
+def search_val_wrapper(x,target,target_val,equal=True):
+    target_val = target_val.replace("[[","(")
     target_val = target_val.replace("]]", ")")
-    result = search_val(x, target, target_val)
+    result = search_val(x,target,target_val)
     if equal:
         return result
     else:
         return not result
+
 
 
 # Method to save rest call parameters
@@ -255,13 +252,12 @@ def save_fields_from_rest_call(result_dict, fields_to_be_saved):
     sModuleInfo = inspect.currentframe().f_code.co_name + " : " + MODULE_NAME
     CommonUtil.ExecLog(sModuleInfo, "Function: save fields from rest call", 1)
     try:
-        global index, count
+        global index,count
         fields_to_be_saved = fields_to_be_saved.split(",")
         if fields_to_be_saved[0].lower().strip() == 'all':
             for each in result_dict:
                 field = each.strip()
-                Shared_Resources.Set_Shared_Variables(
-                    field, result_dict[field])
+                Shared_Resources.Set_Shared_Variables(field,result_dict[field])
             CommonUtil.ExecLog(sModuleInfo, "All response fields are saved", 1)
         elif fields_to_be_saved[0].lower().strip() == 'none':
             CommonUtil.ExecLog(sModuleInfo, "No response fields are saved", 1)
@@ -271,17 +267,17 @@ def save_fields_from_rest_call(result_dict, fields_to_be_saved):
             for each in fields_to_be_saved:
                 field = each.strip()
                 i = 1
-                temp_field = ''
+                temp_field= ''
                 multiple = False
                 if "-" in field:
                     l = field.split("-")
                     if len(l) == 2:
-                        try:
-                            i = int(l[1].strip())
-                            temp_field = l[0].strip()
-                            multiple = True
-                        except:
-                            i = 1
+                       try:
+                           i = int(l[1].strip())
+                           temp_field = l[0].strip()
+                           multiple = True
+                       except:
+                           i = 1
 
                 if multiple:
                     index = i
@@ -290,17 +286,14 @@ def save_fields_from_rest_call(result_dict, fields_to_be_saved):
                 else:
                     index = 1
                     count = 1
-                    value_to_be_saved = get_val(result_dict, field)
+                    value_to_be_saved = get_val(result_dict,field)
                 if not value_to_be_saved:
-                    CommonUtil.ExecLog(
-                        sModuleInfo, "Couldn't find  response field, ignoring it %s" % field, 2)
+                    CommonUtil.ExecLog(sModuleInfo,"Couldn't find  response field, ignoring it %s" %field, 2)
                 else:
                     which_are_saved.append(field)
-                    Shared_Resources.Set_Shared_Variables(
-                        field, value_to_be_saved)
+                    Shared_Resources.Set_Shared_Variables(field, value_to_be_saved)
 
-            CommonUtil.ExecLog(sModuleInfo, "%s response fields are saved" % (
-                ", ".join(str(x) for x in which_are_saved)), 1)
+            CommonUtil.ExecLog(sModuleInfo, "%s response fields are saved"%(", ".join(str(x) for x in which_are_saved)),1)
 
         Shared_Resources.Show_All_Shared_Variables()
     except Exception:
@@ -311,13 +304,12 @@ def insert_fields_from_rest_call_into_list(result_dict, fields_to_be_saved, list
     sModuleInfo = inspect.currentframe().f_code.co_name + " : " + MODULE_NAME
     CommonUtil.ExecLog(sModuleInfo, "Function: save fields from rest call", 1)
     try:
-        global index, count, all_val
+        global index, count,all_val
         fields_to_be_saved = fields_to_be_saved.split(",")
         if fields_to_be_saved[0].lower().strip() == 'all':
             for each in result_dict:
                 field = each.strip()
-                Shared_Resources.Set_List_Shared_Variables(
-                    list_name, field, result_dict[field])
+                Shared_Resources.Set_List_Shared_Variables(list_name, field,result_dict[field])
             CommonUtil.ExecLog(sModuleInfo, "All response fields are saved", 1)
         elif fields_to_be_saved[0].lower().strip() == 'none':
             CommonUtil.ExecLog(sModuleInfo, "No response fields are saved", 1)
@@ -334,8 +326,8 @@ def insert_fields_from_rest_call_into_list(result_dict, fields_to_be_saved, list
                     if len(l) == 2:
                         try:
                             i = l[1].strip()
-                            if i == 'all':
-                                i = 0  # 0 for all
+                            if i=='all':
+                                i = 0 #0 for all
                             else:
                                 i = int(i)
                             temp_field = l[0].strip()
@@ -357,36 +349,31 @@ def insert_fields_from_rest_call_into_list(result_dict, fields_to_be_saved, list
                     count = 1
                     value_to_be_saved = get_val(result_dict, field)
 
-                if index == 0:  # save all into list
+                if index == 0: #save all into list
                     which_are_saved.append(temp_field)
-                    Shared_Resources.Set_Shared_Variables(
-                        list_name, [])  # initializes the list
+                    Shared_Resources.Set_Shared_Variables(list_name, []) #initializes the list
                     for each in all_val:
-                        value_as_list = False
-                        if isinstance(each, list):
-                            value_as_list = True
-                        Shared_Resources.Append_List_Shared_Variables(
-                            list_name, each, value_as_list=value_as_list)
+                        value_as_list=False
+                        if isinstance(each,list):
+                            value_as_list=True
+                        Shared_Resources.Append_List_Shared_Variables(list_name, each,value_as_list=value_as_list)
                 else:
                     if not value_to_be_saved:
-                        CommonUtil.ExecLog(
-                            sModuleInfo, "Couldn't find  response field, ignoring it %s" % field, 2)
+                        CommonUtil.ExecLog(sModuleInfo, "Couldn't find  response field, ignoring it %s" % field, 2)
                     else:
                         which_are_saved.append(field)
                         Shared_Resources.Set_Shared_Variables('list_name')
-                        Shared_Resources.Set_List_Shared_Variables(
-                            list_name, field, value_to_be_saved)
+                        Shared_Resources.Set_List_Shared_Variables(list_name, field, value_to_be_saved)
 
-            CommonUtil.ExecLog(sModuleInfo, "%s response fields are saved" % (
-                ", ".join(str(x) for x in which_are_saved)), 1)
+            CommonUtil.ExecLog(sModuleInfo, "%s response fields are saved"%(", ".join(str(x) for x in which_are_saved)),1)
 
         Shared_Resources.Show_All_Shared_Variables()
-    except Exception, e:
+    except Exception,e:
         print e
         return CommonUtil.Exception_Handler(sys.exc_info())
 
 
-# Inserting a field into a list of shared variables
+#Inserting a field into a list of shared variables
 def Insert_Into_List(step_data):
     sModuleInfo = inspect.currentframe().f_code.co_name + " : " + MODULE_NAME
     CommonUtil.ExecLog(sModuleInfo, "Function: Insert_Into_List", 1)
@@ -396,14 +383,15 @@ def Insert_Into_List(step_data):
             if row[1] == 'action':
                 fields_to_be_saved = row[2]
 
-        if len(step_data) == 1:  # will have to test #saving direct input string data
+
+        if len(step_data) == 1: #will have to test #saving direct input string data
             list_name = ''
             key = ''
             value = ''
             full_input_key_value_name = ''
 
             for each_step_data_item in step_data:
-                if each_step_data_item[1] == "action":
+                if each_step_data_item[1]=="action":
                     full_input_key_value_name = each_step_data_item[2]
 
             temp_list = full_input_key_value_name.split(',')
@@ -417,15 +405,15 @@ def Insert_Into_List(step_data):
                 key = temp_list[1].split(':')[1].strip()
                 value = temp_list[2].split(':')[1].strip()
 
-            result = Shared_Resources.Set_List_Shared_Variables(
-                list_name, key, value)
+            result = Shared_Resources.Set_List_Shared_Variables(list_name,key, value)
             if result in failed_tag_list:
-                CommonUtil.ExecLog(
-                    sModuleInfo, "In list '%s' Value of Variable '%s' could not be saved!!!" % (list_name, key), 3)
+                CommonUtil.ExecLog(sModuleInfo, "In list '%s' Value of Variable '%s' could not be saved!!!"%(list_name, key), 3)
                 return "failed"
             else:
                 Shared_Resources.Show_All_Shared_Variables()
                 return "passed"
+
+
 
         else:
             element_step_data = Get_Element_Step_Data(step_data)
@@ -458,20 +446,22 @@ def Insert_Into_List(step_data):
                     for i in range(1, len(temp_list)):
                         fields_to_be_saved += temp_list[i]
                         if i != len(temp_list)-1:
-                            fields_to_be_saved += ","
+                            fields_to_be_saved+=","
 
-                    return_result = handle_rest_call(
-                        returned_step_data_list, fields_to_be_saved, True, list_name)
+                    return_result = handle_rest_call(returned_step_data_list, fields_to_be_saved, True, list_name)
+
+
 
                     return return_result
                 except Exception:
                     return CommonUtil.Exception_Handler(sys.exc_info())
 
+
     except Exception:
         return CommonUtil.Exception_Handler(sys.exc_info())
 
 
-def search_condition_wrapper(data, condition_string):
+def search_condition_wrapper(data,condition_string):
     sModuleInfo = inspect.currentframe().f_code.co_name + " : " + MODULE_NAME
     try:
         parse_list = str(condition_string).split("(")
@@ -480,8 +470,7 @@ def search_condition_wrapper(data, condition_string):
         lists = []
         search_area = data
         if len(parse_list) < 2:
-            CommonUtil.ExecLog(
-                sModuleInfo, "The information in the data-set(s) are incorrect. Please provide accurate data set(s) information.", 3)
+            CommonUtil.ExecLog(sModuleInfo,"The information in the data-set(s) are incorrect. Please provide accurate data set(s) information.",3)
             return "failed"
         list_name = parse_list[0].strip()
         parse_list = parse_list[1].strip().split(")")
@@ -500,8 +489,7 @@ def search_condition_wrapper(data, condition_string):
             if each in search_area:
                 search_area = search_area[each]
             else:
-                CommonUtil.ExecLog(
-                    sModuleInfo, "%s not found in response" % each, 3)
+                CommonUtil.ExecLog(sModuleInfo,"%s not found in response"%each,3)
                 return "failed"
 
         for each in condition_string_list:
@@ -514,82 +502,73 @@ def search_condition_wrapper(data, condition_string):
                 equal = False
                 key_val_list = each.split("!=")
             else:
-                CommonUtil.ExecLog(
-                    sModuleInfo, "== or != pattern not found in condition", 3)
+                CommonUtil.ExecLog(sModuleInfo,"== or != pattern not found in condition",3)
                 return "failed"
 
             key = key_val_list[0].strip()
             value = key_val_list[1].strip()
-            conditions.append((key, value, equal))
+            conditions.append((key,value,equal))
 
         result = True
         if len(conditions) == 0:
-            CommonUtil.ExecLog(
-                sModuleInfo, "No condition is provived in step data", 3)
+            CommonUtil.ExecLog(sModuleInfo,"No condition is provived in step data",3)
             return "failed"
         else:
-            if isinstance(search_area, dict):
+            if isinstance(search_area,dict):
                 for each in conditions:
                     key = each[0]
                     value = each[1]
                     equal = each[2]
                     if key in search_area.keys():
                         if equal:
-                            result = result and (
-                                str(search_area[key]) == value)
+                            result = result and (str(search_area[key]) == value)
                         else:
-                            result = result and (
-                                str(search_area[key]) != value)
+                            result = result and (str(search_area[key]) != value)
                     else:
-                        CommonUtil.ExecLog(
-                            sModuleInfo, "%s not found in response" % key, 3)
+                        CommonUtil.ExecLog(sModuleInfo,"%s not found in response"%key,3)
                         return "failed"
-            elif isinstance(search_area, list):
+            elif isinstance(search_area,list):
                 for data in search_area:
                     list_result = True
                     for each in conditions:
-                        key = each[0].replace("[[", "(")
+                        key = each[0].replace("[[","(")
                         key = key.replace("]]", ")")
-                        value = each[1].replace("[[", "(")
+                        value = each[1].replace("[[","(")
                         value = value.replace("]]", ")")
-                        if isinstance(data, dict):
+                        if isinstance(data,dict):
                             if key in data.keys():
                                 if equal:
-                                    list_result = list_result and (
-                                        str(data[key]) == value)
+                                    list_result = list_result and (str(data[key]) == value)
                                 else:
-                                    list_result = list_result and (
-                                        str(data[key]) != value)
+                                    list_result = list_result and (str(data[key]) != value)
                             else:
-                                CommonUtil.ExecLog(
-                                    sModuleInfo, "%s not found in response" % key, 3)
+                                CommonUtil.ExecLog(sModuleInfo, "%s not found in response" % key, 3)
                                 return "failed"
                         else:
-                            CommonUtil.ExecLog(
-                                sModuleInfo, "The information in the data-set(s) are incorrect. Please provide accurate data set(s) information.", 3)
+                            CommonUtil.ExecLog(sModuleInfo,"The information in the data-set(s) are incorrect. Please provide accurate data set(s) information.",3)
                             return "failed"
                     result = list_result
                     if result:
                         break
             else:
-                CommonUtil.ExecLog(
-                    sModuleInfo, "The information in the data-set(s) are incorrect. Please provide accurate data set(s) information.", 3)
+                CommonUtil.ExecLog(sModuleInfo,"The information in the data-set(s) are incorrect. Please provide accurate data set(s) information.",3)
                 return "failed"
 
         return result
+
 
     except Exception:
         return CommonUtil.Exception_Handler(sys.exc_info())
 
 
+
 # Method to handle rest calls
-def handle_rest_call(data, fields_to_be_saved, save_into_list=False, list_name="", search=False, search_key="", search_value="", equal=True, condition='', apply_condition=False, save_cookie=False, wait_for_response_code=0):
+def handle_rest_call(data, fields_to_be_saved, save_into_list = False, list_name = "",search=False,search_key="",search_value="",equal=True,condition='',apply_condition=False,save_cookie=False,wait_for_response_code=0):
     sModuleInfo = inspect.currentframe().f_code.co_name + " : " + MODULE_NAME
     CommonUtil.ExecLog(sModuleInfo, "Function: handle rest call", 1)
     try:
-        global index, count
-        # Reset this shared variable, so we do not get confused with any previous run
-        Shared_Resources.Set_Shared_Variables('status_code', 0)
+        global index,count
+        Shared_Resources.Set_Shared_Variables('status_code', 0) # Reset this shared variable, so we do not get confused with any previous run
         url = data[0]
         method = data[1]
         body = data[2]
@@ -601,7 +580,7 @@ def handle_rest_call(data, fields_to_be_saved, save_into_list=False, list_name="
 
         headers = get_value_as_list(headers)
 
-        CommonUtil.ExecLog(sModuleInfo, "Calling %s method" % method, 1)
+        CommonUtil.ExecLog(sModuleInfo,"Calling %s method"%method,1)
         CommonUtil.ExecLog(sModuleInfo, "URL: %s" % url, 1)
         CommonUtil.ExecLog(sModuleInfo, "body: %s" % body, 1)
         CommonUtil.ExecLog(sModuleInfo, "headers %s" % headers, 1)
@@ -612,158 +591,120 @@ def handle_rest_call(data, fields_to_be_saved, save_into_list=False, list_name="
         if wait_for_response_code != 0:
             request_count = 60
 
-        count = 0
+        count=0
 
-        status_code = 1  # dummy value
-        while count < request_count:
+        status_code = 1 #dummy value
+        while count<request_count:
             if method.lower().strip() == 'post':
-                result = requests.post(
-                    url, json=body, data=payload, headers=headers, verify=False)
+                result = requests.post(url,json=body, data=payload, headers=headers,verify=False)
             elif method.lower().strip() == 'put':
-                result = requests.put(
-                    url, json=body, data=payload, headers=headers, verify=False)
+                result = requests.put(url, json=body, data=payload, headers=headers, verify=False)
             elif method.lower().strip() == 'get':
                 result = requests.get(url, headers=headers, verify=False)
             elif method.lower().strip() == 'delete':
-                result = requests.delete(
-                    url, json=body, headers=headers, verify=False)
+                result = requests.delete(url, json=body, headers=headers, verify=False)
             else:
                 return "failed"
             status_code = int(result.status_code)
-            CommonUtil.ExecLog(
-                sModuleInfo, 'Post Call returned status code: %d' % status_code, 1)
+            CommonUtil.ExecLog(sModuleInfo, 'Post Call returned status code: %d' % status_code, 1)
 
-            if request_count > 1:
+            if request_count>1:
                 if status_code != wait_for_response_code:
-                    CommonUtil.ExecLog(sModuleInfo, 'Post Call Status Code %d did not match with Expected Status Code %d, Retrying again' % (
-                        status_code, wait_for_response_code), 1)
+                    CommonUtil.ExecLog(sModuleInfo, 'Post Call Status Code %d did not match with Expected Status Code %d, Retrying again' %(status_code,wait_for_response_code), 1)
                     time.sleep(2)
                 else:
-                    CommonUtil.ExecLog(sModuleInfo, 'Post Call Status Code %d matched with Expected Status Code %d' % (
-                        status_code, wait_for_response_code), 1)
+                    CommonUtil.ExecLog(sModuleInfo,'Post Call Status Code %d matched with Expected Status Code %d' % (status_code, wait_for_response_code), 1)
                     break
-            count += 1
+            count+=1
 
-        Shared_Resources.Set_Shared_Variables(
-            'status_code', result.status_code)
+        Shared_Resources.Set_Shared_Variables('status_code',result.status_code)
         try:
             if result.json():
-                Shared_Resources.Set_Shared_Variables(
-                    "rest_response", result.json())
-                CommonUtil.ExecLog(
-                    sModuleInfo, 'Post Call Returned Response Successfully', 1)
-                CommonUtil.ExecLog(
-                    sModuleInfo, "Received Response: %s" % result.json(), 1)
+                Shared_Resources.Set_Shared_Variables("rest_response",result.json())
+                CommonUtil.ExecLog(sModuleInfo, 'Post Call Returned Response Successfully', 1)
+                CommonUtil.ExecLog(sModuleInfo,"Received Response: %s"%result.json(),1)
 
-                # if save cookie option enabled then push cookie into shared variables, if cookie var name is 'id' then you can reference it later with %|id|%
+                #if save cookie option enabled then push cookie into shared variables, if cookie var name is 'id' then you can reference it later with %|id|%
                 if save_cookie:
-                    all_cookies = requests.utils.dict_from_cookiejar(
-                        result.cookies)
+                    all_cookies = requests.utils.dict_from_cookiejar(result.cookies)
                     for each in all_cookies.keys():
-                        Shared_Resources.Set_Shared_Variables(
-                            each, all_cookies[each])
+                        Shared_Resources.Set_Shared_Variables(each,all_cookies[each])
 
                 if search:
                     if apply_condition:
-                        search_result = search_condition_wrapper(
-                            result.json(), condition)
+                        search_result = search_condition_wrapper(result.json(),condition)
                         if search_result in passed_tag_list:
-                            CommonUtil.ExecLog(
-                                sModuleInfo, 'Condition "%s" is TRUE in response' % (condition), 1)
+                            CommonUtil.ExecLog(sModuleInfo, 'Condition "%s" is TRUE in response' % (condition), 1)
                             return "passed"
                         else:
                             CommonUtil.ExecLog(sModuleInfo,
                                                'Condition "%s" is FALSE in response' % (condition), 3)
                             return "failed"
                     else:
-                        search_result = search_val_wrapper(
-                            result.json(), search_key, search_value, equal)
+                        search_result = search_val_wrapper(result.json(),search_key,search_value,equal)
                         if equal:
                             if search_result in passed_tag_list:
-                                CommonUtil.ExecLog(sModuleInfo, 'Got "%s":"%s" in response' % (
-                                    search_key, search_value), 1)
+                                CommonUtil.ExecLog(sModuleInfo, 'Got "%s":"%s" in response'%(search_key,search_value), 1)
                                 return "passed"
                             else:
-                                CommonUtil.ExecLog(sModuleInfo, 'Couldnt Get "%s":"%s" in response' % (
-                                    search_key, search_value), 3)
+                                CommonUtil.ExecLog(sModuleInfo, 'Couldnt Get "%s":"%s" in response' % (search_key, search_value), 3)
                                 return "failed"
                         else:
                             if search_result in passed_tag_list:
-                                CommonUtil.ExecLog(sModuleInfo, 'No "%s":"%s" in response' % (
-                                    search_key, search_value), 1)
+                                CommonUtil.ExecLog(sModuleInfo, 'No "%s":"%s" in response' % (search_key, search_value), 1)
                                 return "passed"
                             else:
-                                CommonUtil.ExecLog(sModuleInfo, 'Got "%s":"%s" in response' % (
-                                    search_key, search_value), 3)
+                                CommonUtil.ExecLog(sModuleInfo,'Got "%s":"%s" in response' % (search_key, search_value), 3)
                                 return "failed"
                 else:
                     if not save_into_list:
-                        save_fields_from_rest_call(
-                            result.json(), fields_to_be_saved)
+                        save_fields_from_rest_call(result.json(), fields_to_be_saved)
                     else:
                         if list_name == "":
-                            CommonUtil.ExecLog(
-                                sModuleInfo, "List name not defined!", 3)
+                            CommonUtil.ExecLog(sModuleInfo,"List name not defined!",3)
                             return "failed"
-                        insert_fields_from_rest_call_into_list(
-                            result.json(), fields_to_be_saved, list_name)
+                        insert_fields_from_rest_call_into_list(result.json(), fields_to_be_saved, list_name)
                 return "passed"
             else:
-                CommonUtil.ExecLog(
-                    sModuleInfo, "REST Call did not respond in json format", 1)
+                CommonUtil.ExecLog(sModuleInfo, "REST Call did not respond in json format", 1)
                 response_text = result.json()
-                CommonUtil.ExecLog(
-                    sModuleInfo, "REST Call response is: %s" % str(response_text), 1)
+                CommonUtil.ExecLog(sModuleInfo, "REST Call response is: %s" % str(response_text), 1)
                 try:
                     # try to save as dict
-                    CommonUtil.ExecLog(
-                        sModuleInfo, "Trying to convert REST Call Response Text to json", 1)
+                    CommonUtil.ExecLog(sModuleInfo, "Trying to convert REST Call Response Text to json", 1)
                     json_of_response = ast.literal_eval(response_text)
-                    Shared_Resources.Set_Shared_Variables(
-                        "rest_response", json_of_response)
+                    Shared_Resources.Set_Shared_Variables("rest_response", json_of_response)
                     CommonUtil.ExecLog(sModuleInfo,
                                        "REST Call Response Text converted to json and saved in 'rest_response' shared variable",
                                        1)
                 except:
                     # save the text
                     response_text = result.text
-                    CommonUtil.ExecLog(
-                        sModuleInfo, "REST Call Response Text couldn't be converted to json", 2)
-                    Shared_Resources.Set_Shared_Variables(
-                        'rest_response', response_text)
+                    CommonUtil.ExecLog(sModuleInfo, "REST Call Response Text couldn't be converted to json", 2)
+                    Shared_Resources.Set_Shared_Variables('rest_response', response_text)
                     CommonUtil.ExecLog(sModuleInfo, "REST Call Response Text saved in 'rest_response' shared variable",
                                        1)
                 return "passed"
         except Exception:
-            CommonUtil.ExecLog(
-                sModuleInfo, "REST Call did not respond in json format", 1)
+            CommonUtil.ExecLog(sModuleInfo,"REST Call did not respond in json format",1)
             response_text = result.text
-            CommonUtil.ExecLog(
-                sModuleInfo, "REST Call response is: %s" % str(response_text), 1)
+            CommonUtil.ExecLog(sModuleInfo, "REST Call response is: %s"%str(response_text), 1)
             try:
-                # try to save as dict
-                CommonUtil.ExecLog(
-                    sModuleInfo, "Trying to convert REST Call Response Text to json", 1)
-                json_of_response = ast.literal_eval(response_text)
-                Shared_Resources.Set_Shared_Variables(
-                    "rest_response", json_of_response)
-                CommonUtil.ExecLog(
-                    sModuleInfo, "REST Call Response Text converted to json and saved in 'rest_response' shared variable", 1)
+                #try to save as dict
+                CommonUtil.ExecLog(sModuleInfo, "Trying to convert REST Call Response Text to json", 1)
+                json_of_response=ast.literal_eval(response_text)
+                Shared_Resources.Set_Shared_Variables("rest_response", json_of_response)
+                CommonUtil.ExecLog(sModuleInfo, "REST Call Response Text converted to json and saved in 'rest_response' shared variable", 1)
             except:
-                # save the text
-                CommonUtil.ExecLog(
-                    sModuleInfo, "REST Call Response Text couldn't be converted to json", 2)
-                Shared_Resources.Set_Shared_Variables(
-                    'rest_response', response_text)
-                CommonUtil.ExecLog(
-                    sModuleInfo, "REST Call Response Text saved in 'rest_response' shared variable", 1)
+                #save the text
+                CommonUtil.ExecLog(sModuleInfo,"REST Call Response Text couldn't be converted to json",2)
+                Shared_Resources.Set_Shared_Variables('rest_response', response_text)
+                CommonUtil.ExecLog(sModuleInfo,"REST Call Response Text saved in 'rest_response' shared variable",1)
             return "passed"
     except Exception:
         return CommonUtil.Exception_Handler(sys.exc_info())
 
-# Get Response Wrapper Normal
-
-
+#Get Response Wrapper Normal
 def Get_Response_Wrapper(step_data):
     sModuleInfo = inspect.currentframe().f_code.co_name + " : " + MODULE_NAME
     CommonUtil.ExecLog(sModuleInfo, "Function: Get_Response_Wrapper", 1)
@@ -773,15 +714,15 @@ def Get_Response_Wrapper(step_data):
         return CommonUtil.Exception_Handler(sys.exc_info())
 
 
-# Get Response Wrapper With Cookie
+#Get Response Wrapper With Cookie
 def Get_Response_Wrapper_With_Cookie(step_data):
     sModuleInfo = inspect.currentframe().f_code.co_name + " : " + MODULE_NAME
-    CommonUtil.ExecLog(
-        sModuleInfo, "Function: Get_Response_Wrapper_With_Cookie", 1)
+    CommonUtil.ExecLog(sModuleInfo, "Function: Get_Response_Wrapper_With_Cookie", 1)
     try:
-        return Get_Response(step_data, True)
+        return Get_Response(step_data,True)
     except Exception:
         return CommonUtil.Exception_Handler(sys.exc_info())
+
 
 
 # Method to get responses
@@ -805,8 +746,7 @@ def Get_Response(step_data, save_cookie=False):
             return "failed"
         else:
             try:
-                return_result = handle_rest_call(
-                    returned_step_data_list, fields_to_be_saved, save_cookie=save_cookie, wait_for_response_code=wait_for_response_code)
+                return_result = handle_rest_call(returned_step_data_list, fields_to_be_saved,save_cookie=save_cookie, wait_for_response_code=wait_for_response_code)
                 return return_result
             except Exception:
                 return CommonUtil.Exception_Handler(sys.exc_info())
@@ -838,8 +778,7 @@ def Search_Response(step_data):
                         key = l[0].strip()
                         value = l[1].strip()
                         if key == '' or value == '':
-                            CommonUtil.ExecLog(
-                                sModuleInfo, "Error in key value step data for search response.. Try 'key == value' format...", 3)
+                            CommonUtil.ExecLog(sModuleInfo,"Error in key value step data for search response.. Try 'key == value' format...",3)
                             return "failed"
                     else:
                         l = str(key_value_pair).split("!=")
@@ -848,12 +787,10 @@ def Search_Response(step_data):
                             key = l[0].strip()
                             value = l[1].strip()
                             if key == '' or value == '':
-                                CommonUtil.ExecLog(
-                                    sModuleInfo, "Error in key value step data for search response.. Try 'key != value' format...", 3)
+                                CommonUtil.ExecLog(sModuleInfo,"Error in key value step data for search response.. Try 'key != value' format...",3)
                                 return "failed"
                         else:
-                            CommonUtil.ExecLog(
-                                sModuleInfo, "Error in key value step data for search response.. Try 'key == value' format...", 3)
+                            CommonUtil.ExecLog(sModuleInfo,"Error in key value step data for search response.. Try 'key == value' format...",3)
                             return "failed"
 
         element_step_data = Get_Element_Step_Data(step_data)
@@ -864,50 +801,44 @@ def Search_Response(step_data):
             return "failed"
         else:
             try:
-                return_result = handle_rest_call(returned_step_data_list, fields_to_be_saved, search=True, search_key=key,
-                                                 search_value=value, equal=equal, condition=condition, apply_condition=apply_condition)
+                return_result = handle_rest_call(returned_step_data_list, fields_to_be_saved,search=True, search_key=key, search_value=value,equal=equal,condition=condition,apply_condition=apply_condition)
                 return return_result
             except Exception:
                 return CommonUtil.Exception_Handler(sys.exc_info())
     except Exception:
         return CommonUtil.Exception_Handler(sys.exc_info())
 
-
 def Get_Element(returned_step_data_list, fields_to_be_saved):
-    sModuleInfo = inspect.currentframe().f_code.co_name + " : " + MODULE_NAME
-    CommonUtil.ExecLog(sModuleInfo, "Function: Get_Response", 1)
-    try:
-        return_result = handle_rest_call(
-            returned_step_data_list, fields_to_be_saved)
-        return return_result
-    except Exception:
-        return CommonUtil.Exception_Handler(sys.exc_info())
+        sModuleInfo = inspect.currentframe().f_code.co_name + " : " + MODULE_NAME
+        CommonUtil.ExecLog(sModuleInfo, "Function: Get_Response", 1)
+        try:
+            return_result = handle_rest_call(returned_step_data_list, fields_to_be_saved)
+            return return_result
+        except Exception:
+            return CommonUtil.Exception_Handler(sys.exc_info())
 
 # Method to sleep for a particular duration
-
-
 def Sleep(step_data):
     sModuleInfo = inspect.currentframe().f_code.co_name + " : " + MODULE_NAME
     CommonUtil.ExecLog(sModuleInfo, "Function: Sleep", 1)
     try:
-        tuple = step_data[0]
-        seconds = int(tuple[2])
-        CommonUtil.ExecLog(sModuleInfo, "Sleeping for %s seconds" % seconds, 1)
-        time.sleep(seconds)
-        return "passed"
-        # return result
+            tuple = step_data[0]
+            seconds = int(tuple[2])
+            CommonUtil.ExecLog(sModuleInfo, "Sleeping for %s seconds" % seconds, 1)
+            time.sleep(seconds)
+            return "passed"
+            # return result
     except Exception:
         return CommonUtil.Exception_Handler(sys.exc_info())
 
 
-# Method to return pass or fail for the step outcome
+#Method to return pass or fail for the step outcome
 def Step_Result(step_data):
     sModuleInfo = inspect.currentframe().f_code.co_name + " : " + MODULE_NAME
     CommonUtil.ExecLog(sModuleInfo, "Function: Step_Result", 1)
     try:
         if ((1 < len(step_data) >= 5)):
-            CommonUtil.ExecLog(
-                sModuleInfo, "The information in the data-set(s) are incorrect. Please provide accurate data set(s) information.", 3)
+            CommonUtil.ExecLog(sModuleInfo,"The information in the data-set(s) are incorrect. Please provide accurate data set(s) information.",3)
             result = "failed"
         else:
             step_result = step_data[0][2]
@@ -923,8 +854,6 @@ def Step_Result(step_data):
         return CommonUtil.Exception_Handler(sys.exc_info())
 
 # Performs a series of action or conditional logical action decisions based on user input
-
-
 def Sequential_Actions(step_data):
     sModuleInfo = inspect.currentframe().f_code.co_name + " : " + MODULE_NAME
     CommonUtil.ExecLog(sModuleInfo, "Function: Sequential_Actions", 1)
@@ -934,18 +863,15 @@ def Sequential_Actions(step_data):
             for row in each:
                 # finding what to do for each dataset
                 # if len(row)==5 and row[1] != "":     ##modifying the filter for changes to be made in the sub-field of the step data. May remove this part of the if statement
-                # modifying the filter for changes to be made in the sub-field of the step data. May remove this part of the if statement
-                if row[1] == "element parameter" or row[1] == 'compare':
+                if row[1] == "element parameter" or row[1] == 'compare':  ##modifying the filter for changes to be made in the sub-field of the step data. May remove this part of the if statement
                     continue
 
                 elif row[1] == "action":
-                    CommonUtil.ExecLog(
-                        sModuleInfo, "Checking the action to be performed in the action row", 1)
+                    CommonUtil.ExecLog(sModuleInfo, "Checking the action to be performed in the action row", 1)
                     if row[0] == 'compare variable':
                         result = Action_Handler(each, row)
                     else:
-                        new_data_set = Shared_Resources.Handle_Step_Data_Variables([
-                                                                                   each])
+                        new_data_set = Shared_Resources.Handle_Step_Data_Variables([each])
                         if new_data_set in failed_tag_list:
                             return 'failed'
                         result = Action_Handler(new_data_set[0], row)
@@ -956,43 +882,36 @@ def Sequential_Actions(step_data):
 
                 # If middle column = optional action, call action handler, but always return a pass
                 elif row[1] == "optional action":
-                    CommonUtil.ExecLog(sModuleInfo, "Checking the optional action to be performed in the action row: %s" % str(
-                        row), 1)
-                    # Pass data set, and action_name to action handler
-                    result = Action_Handler(each, row[0])
+                    CommonUtil.ExecLog(sModuleInfo,"Checking the optional action to be performed in the action row: %s" % str(
+                                               row), 1)
+                    result = Action_Handler(each, row[0])  # Pass data set, and action_name to action handler
                     if result == 'failed':
-                        CommonUtil.ExecLog(
-                            sModuleInfo, "Optional action failed. Returning pass anyway", 2)
+                        CommonUtil.ExecLog(sModuleInfo, "Optional action failed. Returning pass anyway", 2)
                     result = 'passed'
 
                 elif row[1] == "body" or row[1] == "header" or row[1] == "headers":
                     continue
-                elif row[1] == "conditional action":
-                    CommonUtil.ExecLog(
-                        sModuleInfo, "Checking the logical conditional action to be performed in the conditional action row", 1)
-                    logic_decision = ""
+                elif row[1]=="conditional action":
+                    CommonUtil.ExecLog(sModuleInfo, "Checking the logical conditional action to be performed in the conditional action row", 1)
+                    logic_decision=""
                     logic_row.append(row)
-                    if len(logic_row) == 2:
+                    if len(logic_row)==2:
                         #element_step_data = each[0:len(step_data[0])-2:1]
-                        element_step_data = Shared_Resources.Handle_Step_Data_Variables([
-                                                                                        each])
-                        element_step_data = Get_Element_Step_Data(
-                            element_step_data[0])
-                        returned_step_data_list = Validate_Step_Data(
-                            element_step_data)
+                        element_step_data = Shared_Resources.Handle_Step_Data_Variables([each])
+                        element_step_data = Get_Element_Step_Data(element_step_data[0])
+                        returned_step_data_list = Validate_Step_Data(element_step_data)
                         if ((returned_step_data_list == []) or (returned_step_data_list == "failed")):
                             return "failed"
                         else:
                             try:
-                                Element = Get_Element(
-                                    returned_step_data_list, "all")
+                                Element = Get_Element(returned_step_data_list, "all")
                                 if Element == 'failed':
                                     logic_decision = "false"
                                 else:
                                     logic_decision = "true"
                             except Exception, errMsg:
                                 errMsg = "Could not find element in the by the criteria..."
-                                return CommonUtil.Exception_Handler(sys.exc_info(), None, errMsg)
+                                return CommonUtil.Exception_Handler(sys.exc_info(),None,errMsg)
                     else:
                         continue
 
@@ -1002,8 +921,7 @@ def Sequential_Actions(step_data):
                             list_of_steps = conditional_steps[2].split(",")
                             for each_item in list_of_steps:
                                 data_set_index = int(each_item) - 1
-                                cond_result = Sequential_Actions(
-                                    [step_data[data_set_index]])
+                                cond_result = Sequential_Actions([step_data[data_set_index]])
                                 if cond_result == "failed":
                                     return "failed"
                                 elif cond_result == "skipped":
@@ -1014,6 +932,9 @@ def Sequential_Actions(step_data):
                                        "The sub-field information is incorrect. Please provide accurate information on the data set(s).",
                                        3)
                     return "failed"
+
+
+
 
         return "passed"
 
@@ -1046,20 +967,20 @@ def Validate_Step_Data(step_data):
                 elif element_parameter.lower().strip() == 'url':
                     url = each[2]
                 elif element_parameter.lower().strip() == 'payload':
-                    payload = """%s""" % str(each[2])
+                    payload = """%s"""%str(each[2])
             elif each[1].lower().strip() == 'body':
                 if each[0].lower().strip() == 'plain text':
                     body = each[2]
                     plain_body_text = True
                 else:
                     if body == '{':
-                        body += '"%s" : "%s"' % (each[0], each[2])
+                           body+='"%s" : "%s"'%(each[0], each[2])
                     else:
-                        body += ', "%s" : "%s"' % (each[0], each[2])
+                           body += ', "%s" : "%s"' % (each[0], each[2])
 
             elif each[1].lower().strip() == 'header' or each[1].lower().strip() == 'headers':
                 if headers == '{':
-                    headers += '"%s" : "%s"' % (each[0], each[2])
+                   headers+='"%s" : "%s"'%(each[0], each[2])
                 else:
                     headers += ', "%s" : "%s"' % (each[0], each[2])
 
@@ -1067,13 +988,13 @@ def Validate_Step_Data(step_data):
         if not plain_body_text:
             body += '}'
 
+
         validated_data = (url, method, body, headers, payload)
         return validated_data
 
     except Exception:
         errMsg = "Could not find the new page element requested. "
-        return CommonUtil.Exception_Handler(sys.exc_info(), None, errMsg)
-
+        return CommonUtil.Exception_Handler(sys.exc_info(),None,errMsg)
 
 def get_data_from_list(input_list, identifier):
     try:
@@ -1082,13 +1003,13 @@ def get_data_from_list(input_list, identifier):
                 index = int(id)
             else:
                 index = id
-            input_list = input_list[id]
+            input_list=input_list[id]
         return input_list
     except:
         return ''
 
 
-# Inserting a field into a list of shared variables
+#Inserting a field into a list of shared variables
 def Insert_Tuple_Into_List(step_data):
     sModuleInfo = inspect.currentframe().f_code.co_name + " : " + MODULE_NAME
     CommonUtil.ExecLog(sModuleInfo, "Function: Insert_Tuple_Into_List", 1)
@@ -1096,7 +1017,7 @@ def Insert_Tuple_Into_List(step_data):
         list_name = ''
         iterate_over = ''
         result_list = []
-        fields = ''
+        fields=''
         for row in step_data:
             if row[0] == 'list name':
                 list_name = str(row[2]).strip()
@@ -1108,20 +1029,19 @@ def Insert_Tuple_Into_List(step_data):
         data = Validate_Step_Data(step_data)
         handle_rest_call(data, 'none')
         if iterate_over.startswith('rest_response'):
-            var = iterate_over.split('.')
-            iterate_over = Shared_Resources.Get_Shared_Variables(
-                'rest_response')
-            i = 1
-            while i < len(var):
+            var=iterate_over.split('.')
+            iterate_over = Shared_Resources.Get_Shared_Variables('rest_response')
+            i=1
+            while i<len(var):
                 if var[i].isdigit():
-                    index = int(var[i])
+                    index=int(var[i])
                 else:
-                    index = var[i]
-                iterate_over = iterate_over[index]
-                i += 1
+                    index=var[i]
+                iterate_over=iterate_over[index]
+                i+=1
 
         for data in iterate_over:
-            each_tuple = []
+            each_tuple=[]
             for field in fields.split(','):
                 each_tuple.append(get_data_from_list(data, field))
             result_list.append(each_tuple)

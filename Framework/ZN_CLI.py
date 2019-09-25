@@ -1,16 +1,12 @@
 # -*- coding: utf-8 -*-
 # -*- coding: cp1252 -*-
 
-from Utilities import ConfigModule, RequestFormatter, CommonUtil, FileUtilities, All_Device_Info
-from concurrent.futures import ThreadPoolExecutor
-import MainDriverApi
-import os
-import sys
-import time
-import os.path
+import os,sys,time, os.path
 from base64 import b64encode, b64decode
 sys.path.append(os.path.dirname(os.getcwd()))
-
+from Utilities import ConfigModule,RequestFormatter,CommonUtil,FileUtilities,All_Device_Info
+import MainDriverApi
+from concurrent.futures import ThreadPoolExecutor
 
 def detect_admin():
     # Windows only - Return True if program run as admin
@@ -19,8 +15,7 @@ def detect_admin():
     if sys.platform == 'win32':
         command = 'net session >nul 2>&1'  # This command can only be run by admin
         try:
-            # Causes an exception if we can't run
-            output = s.check_output(command, shell=True)
+            output = s.check_output(command, shell=True)  # Causes an exception if we can't run
         except:
             return False
     return True
@@ -38,10 +33,8 @@ except:
         try:
             # Elevate permissions
             if not detect_admin():
-                os.system('powershell -command Start-Process "python \'..\\%s\'" -Verb runAs' %
-                          sys.argv[0].split(os.sep)[-1])  # Re-run this program with elevated permissions to admin
-                # exit this instance and let the elevated instance take over
-                sys.exit(1)
+                os.system('powershell -command Start-Process "python \'..\\%s\'" -Verb runAs' % sys.argv[0].split(os.sep)[-1])  # Re-run this program with elevated permissions to admin
+                sys.exit(1) # exit this instance and let the elevated instance take over
 
             # Install
             print s.check_output('pip install tzlocal')
@@ -50,8 +43,7 @@ except:
             raw_input('Press ENTER to exit')
             sys.exit(1)
     elif sys.platform == 'linux2':
-        print s.Popen('sudo -S pip install tzlocal'.split(' '),
-                      stdout=s.PIPE, stderr=s.STDOUT).communicate()[0]
+        print s.Popen('sudo -S pip install tzlocal'.split(' '), stdout=s.PIPE, stderr=s.STDOUT).communicate()[0]
     else:
         print "Could not automatically install required modules"
         raw_input('Press ENTER to exit')
@@ -60,166 +52,135 @@ except:
     try:
         from tzlocal import get_localzone
     except:
-        raw_input(
-            'Could not install tzlocal. Please do this manually by running: pip install tzlocal as administrator')
+        raw_input('Could not install tzlocal. Please do this manually by running: pip install tzlocal as administrator')
         quit()
 
 
 '''Constants'''
-AUTHENTICATION_TAG = 'Authentication'
-USERNAME_TAG = 'username'
-PASSWORD_TAG = 'password'
-PROJECT_TAG = 'project'
-TEAM_TAG = 'team'
+AUTHENTICATION_TAG='Authentication'
+USERNAME_TAG='username'
+PASSWORD_TAG='password'
+PROJECT_TAG='project'
+TEAM_TAG='team'
 device_dict = {}
 
-# Used by Zeuz Node GUI to check if we are in the middle of a run
-processing_test_case = False
-exit_script = False  # Used by Zeuz Node GUI to exit script
-if not os.path.exists(os.path.join(FileUtilities.get_home_folder(), 'Desktop', os.path.join('AutomationLog'))):
-    os.mkdir(os.path.join(FileUtilities.get_home_folder(),
-                          'Desktop', os.path.join('AutomationLog')))
-temp_ini_file = os.path.join(os.path.join(FileUtilities.get_home_folder(), os.path.join(
-    'Desktop', os.path.join('AutomationLog', ConfigModule.get_config_value('Temp', '_file')))))
-
+processing_test_case = False # Used by Zeuz Node GUI to check if we are in the middle of a run
+exit_script = False # Used by Zeuz Node GUI to exit script
+if not os.path.exists(os.path.join(FileUtilities.get_home_folder(), 'Desktop',os.path.join('AutomationLog'))): os.mkdir(os.path.join(FileUtilities.get_home_folder(), 'Desktop',os.path.join('AutomationLog')))
+temp_ini_file = os.path.join(os.path.join(FileUtilities.get_home_folder(), os.path.join('Desktop',os.path.join('AutomationLog',ConfigModule.get_config_value('Temp', '_file')))))
 
 def Login():
     if CommonUtil.log_thread_pool:
         CommonUtil.log_thread_pool.shutdown(wait=True)
     CommonUtil.log_thread_pool = ThreadPoolExecutor(max_workers=10)
-    username = ConfigModule.get_config_value(AUTHENTICATION_TAG, USERNAME_TAG)
-    password = pwdec(ConfigModule.get_config_value(
-        AUTHENTICATION_TAG, PASSWORD_TAG))
-    project = ConfigModule.get_config_value(AUTHENTICATION_TAG, PROJECT_TAG)
-    team = ConfigModule.get_config_value(AUTHENTICATION_TAG, TEAM_TAG)
-    # form payload object
-    user_info_object = {
-        'username': username,
-        'password': password,
-        'project': project,
-        'team': team
+    username=ConfigModule.get_config_value(AUTHENTICATION_TAG,USERNAME_TAG)
+    password=pwdec(ConfigModule.get_config_value(AUTHENTICATION_TAG,PASSWORD_TAG))
+    project=ConfigModule.get_config_value(AUTHENTICATION_TAG,PROJECT_TAG)
+    team=ConfigModule.get_config_value(AUTHENTICATION_TAG,TEAM_TAG)
+    #form payload object
+    user_info_object={
+        'username':username,
+        'password':password,
+        'project':project,
+        'team':team
     }
-
+    
     # Iniitalize GUI Offline call
     CommonUtil.set_exit_mode(False)
     global exit_script
-    exit_script = False  # Reset exit variable
+    exit_script = False # Reset exit variable
 
     while True:
         processing_test_case = False
-        if exit_script:
-            break
+        if exit_script: break
         # Test to ensure server is up before attempting to login
         r = check_server_online()
 
         # Login to server
-        if r != False:  # Server is up
+        if r != False: # Server is up
             try:
-                r = RequestFormatter.Get('login_api', user_info_object)
-                CommonUtil.ExecLog('', "Authentication check for user='%s', project='%s', team='%s'" % (
-                    username, project, team), 4, False)
+                r = RequestFormatter.Get('login_api',user_info_object)
+                CommonUtil.ExecLog('', "Authentication check for user='%s', project='%s', team='%s'"%(username,project,team), 4, False)
                 if r:
-                    CommonUtil.ExecLog(
-                        '', "Authentication Successful", 4, False)
+                    CommonUtil.ExecLog('', "Authentication Successful", 4, False)
                     global device_dict
                     device_dict = All_Device_Info.get_all_connected_device_info()
-                    machine_object = update_machine(dependency_collection())
+                    machine_object=update_machine(dependency_collection())
                     if machine_object['registered']:
-                        tester_id = machine_object['name']
+                        tester_id=machine_object['name']
                         try:
                             # send machine's time zone
                             local_tz = str(get_localzone())
                             time_zone_object = {
                                 'time_zone': local_tz,
-                                'machine': tester_id
+                                'machine':tester_id
                             }
-                            RequestFormatter.Get(
-                                'send_machine_time_zone_api', time_zone_object)
+                            RequestFormatter.Get('send_machine_time_zone_api', time_zone_object)
                             # end
                         except:
                             pass
                         RunAgain = RunProcess(tester_id)
-                        if RunAgain == False:
-                            break  # Exit login
+                        if RunAgain == False: break # Exit login
                     else:
                         return False
-                elif r == False or r.lower() == 'false':  # Server should send "False" when user/pass is wrong
-                    CommonUtil.ExecLog(
-                        '', "Authentication Failed. Username or password incorrect", 4, False)
+                elif r == False or r.lower() == 'false': # Server should send "False" when user/pass is wrong
+                    CommonUtil.ExecLog('', "Authentication Failed. Username or password incorrect", 4, False)
                     break
-                else:  # Server likely sent nothing back or RequestFormatter.Get() caught an exception
-                    CommonUtil.ExecLog(
-                        '', "Login attempt incomplete, waiting 60 seconds before trying again ", 4, False)
+                else: # Server likely sent nothing back or RequestFormatter.Get() caught an exception
+                    CommonUtil.ExecLog('', "Login attempt incomplete, waiting 60 seconds before trying again ", 4, False)
                     time.sleep(60)
             except Exception, e:
                 exc_type, exc_obj, exc_tb = sys.exc_info()
                 fname = os.path.split(exc_tb.tb_frame.f_code.co_filename)[1]
-                Error_Detail = ((str(exc_type).replace("type ", "Error Type: ")) + ";" + "Error Message: " + str(
-                    exc_obj) + ";" + "File Name: " + fname + ";" + "Line: " + str(exc_tb.tb_lineno))
+                Error_Detail = ((str(exc_type).replace("type ", "Error Type: ")) + ";" +  "Error Message: " + str(exc_obj) +";" + "File Name: " + fname + ";" + "Line: "+ str(exc_tb.tb_lineno))
                 CommonUtil.ExecLog('', Error_Detail, 4, False)
-                CommonUtil.ExecLog(
-                    '', "Error logging in, waiting 60 seconds before trying again", 4, False)
+                CommonUtil.ExecLog('', "Error logging in, waiting 60 seconds before trying again", 4, False)
                 time.sleep(60)
-
+        
         # Server down, wait and retry
         else:
-            CommonUtil.ExecLog(
-                '', "Server down, waiting 60 seconds before trying again", 4, False)
+            CommonUtil.ExecLog('', "Server down, waiting 60 seconds before trying again", 4, False)
             time.sleep(60)
-    # GUI relies on this exact text. GUI must be updated if this is changed
-    CommonUtil.ExecLog('', "Zeuz Node Offline", 4, False)
+    CommonUtil.ExecLog('', "Zeuz Node Offline", 4, False) # GUI relies on this exact text. GUI must be updated if this is changed
     processing_test_case = False
-
 
 def disconnect_from_server():
     ''' Exits script - Used by Zeuz Node GUI '''
     global exit_script
     exit_script = True
-    CommonUtil.set_exit_mode(True)  # Tell Sequential Actions to exit
-
-
+    CommonUtil.set_exit_mode(True) # Tell Sequential Actions to exit
+    
 def RunProcess(sTesterid):
-    etime = time.time() + (30 * 60)  # 30 minutes
+    etime = time.time() + (30 * 60) # 30 minutes
     while (1):
         try:
-            if exit_script:
-                return False
-            if time.time() > etime:
-                return True  # Timeout reached, re-login. We do this because after about 3-4 hours this function will hang, and thus not be available for deployment
+            if exit_script: return False
+            if time.time() > etime: return True # Timeout reached, re-login. We do this because after about 3-4 hours this function will hang, and thus not be available for deployment
 
-            r = RequestFormatter.Get('is_run_submitted_api', {
-                                     'machine_name': sTesterid})
+            r=RequestFormatter.Get('is_run_submitted_api',{'machine_name':sTesterid})
             if 'run_submit' in r and r['run_submit']:
                 processing_test_case = True
-                CommonUtil.ExecLog(
-                    '', "**************************\n* STARTING NEW TEST CASE *\n**************************", 4, False)
+                CommonUtil.ExecLog('', "**************************\n* STARTING NEW TEST CASE *\n**************************", 4, False)
                 PreProcess()
                 value = MainDriverApi.main(device_dict)
                 CommonUtil.ExecLog('', "updating db with parameter", 4, False)
                 if value == "pass":
-                    if exit_script:
-                        return False
+                    if exit_script: return False
                     break
-                CommonUtil.ExecLog(
-                    '', "Successfully updated db with parameter", 4, False)
+                CommonUtil.ExecLog('', "Successfully updated db with parameter", 4, False)
             else:
                 time.sleep(3)
                 if 'update' in r and r['update']:
-                    _r = RequestFormatter.Get('update_machine_with_time_api', {
-                                              'machine_name': sTesterid})
+                    _r=RequestFormatter.Get('update_machine_with_time_api',{'machine_name':sTesterid})
         except Exception, e:
             exc_type, exc_obj, exc_tb = sys.exc_info()
             fname = os.path.split(exc_tb.tb_frame.f_code.co_filename)[1]
-            Error_Detail = ((str(exc_type).replace("type ", "Error Type: ")) + ";" + "Error Message: " +
-                            str(exc_obj) + ";" + "File Name: " + fname + ";" + "Line: " + str(exc_tb.tb_lineno))
+            Error_Detail = ((str(exc_type).replace("type ", "Error Type: ")) + ";" +  "Error Message: " + str(exc_obj) +";" + "File Name: " + fname + ";" + "Line: "+ str(exc_tb.tb_lineno))
             CommonUtil.ExecLog('', Error_Detail, 4, False)
-            break  # Exit back to login() - In some circumstances, this while loop will get into a state when certain errors occur, where nothing runs, but loops forever. This stops that from happening
+            break # Exit back to login() - In some circumstances, this while loop will get into a state when certain errors occur, where nothing runs, but loops forever. This stops that from happening 
     return True
-
-
 def PreProcess():
-    current_path = os.path.join(
-        FileUtilities.get_home_folder(), os.path.join('Desktop', 'AutomationLog'))
+    current_path = os.path.join(FileUtilities.get_home_folder(), os.path.join('Desktop', 'AutomationLog'))
     retVal = FileUtilities.CreateFolder(current_path, forced=False)
     if retVal:
         # now save it in the global_config.ini
@@ -229,179 +190,152 @@ def PreProcess():
         FileUtilities.CreateFile(current_path_file)
         ConfigModule.clean_config_file(current_path_file)
         ConfigModule.add_section('sectionOne', current_path_file)
-        ConfigModule.add_config_value(
-            'sectionOne', 'temp_run_file_path', current_path, current_path_file)
+        ConfigModule.add_config_value('sectionOne', 'temp_run_file_path', current_path, current_path_file)
 
 
 def update_machine(dependency):
     try:
-        # Get Local Info object
+        #Get Local Info object
         oLocalInfo = CommonUtil.MachineInfo()
 
         local_ip = oLocalInfo.getLocalIP()
         testerid = (oLocalInfo.getLocalUser()).lower()
 
-        project = ConfigModule.get_config_value(
-            AUTHENTICATION_TAG, PROJECT_TAG)
-        team = ConfigModule.get_config_value(AUTHENTICATION_TAG, TEAM_TAG)
+        project=ConfigModule.get_config_value(AUTHENTICATION_TAG,PROJECT_TAG)
+        team=ConfigModule.get_config_value(AUTHENTICATION_TAG,TEAM_TAG)
         if not dependency:
-            dependency = ""
-        _d = {}
+            dependency=""
+        _d={}
         for x in dependency:
             t = []
             for i in x[1]:
-                _t = ['name', 'bit', 'version']
-                __t = {}
-                for index, _i in enumerate(i):
-                    __t.update({_t[index]: _i})
+                _t=['name','bit','version']
+                __t={}
+                for index,_i in enumerate(i):
+                    __t.update({_t[index]:_i})
                 if __t:
                     t.append(__t)
-            _d.update({x[0]: t})
-        dependency = _d
-        available_to_all_project = ConfigModule.get_config_value(
-            'Zeuz Node', 'available_to_all_project')
+            _d.update({x[0]:t})
+        dependency=_d
+        available_to_all_project = ConfigModule.get_config_value('Zeuz Node', 'available_to_all_project')
         allProject = 'no'
         if str(available_to_all_project).lower() == "true":
             allProject = "yes"
-        update_object = {
-            'machine_name': testerid,
-            'local_ip': local_ip,
-            'dependency': dependency,
-            'project': project,
-            'team': team,
+        update_object={
+            'machine_name':testerid,
+            'local_ip':local_ip,
+            'dependency':dependency,
+            'project':project,
+            'team':team,
             'device': device_dict,
-            'allProject': allProject
+            'allProject':allProject
         }
-        r = RequestFormatter.Get(
-            'update_automation_machine_api', update_object)
+        r=RequestFormatter.Get('update_automation_machine_api',update_object)
         if r['registered']:
-            CommonUtil.ExecLog(
-                '', "Machine is registered as online with name: %s" % (r['name']), 4, False)
+            CommonUtil.ExecLog('', "Machine is registered as online with name: %s"%(r['name']), 4, False)
         else:
             if r['license']:
-                CommonUtil.ExecLog(
-                    '', "Machine is not registered as online", 4, False)
+                CommonUtil.ExecLog('', "Machine is not registered as online", 4, False)
             else:
                 if 'message' in r:
                     CommonUtil.ExecLog('', r['message'], 4, False)
-                    CommonUtil.ExecLog(
-                        '', "Machine is not registered as online", 4, False)
+                    CommonUtil.ExecLog('', "Machine is not registered as online", 4, False)
                 else:
-                    CommonUtil.ExecLog(
-                        '', "Machine is not registered as online", 4, False)
+                    CommonUtil.ExecLog('', "Machine is not registered as online", 4, False)
         return r
     except Exception, e:
         exc_type, exc_obj, exc_tb = sys.exc_info()
         fname = os.path.split(exc_tb.tb_frame.f_code.co_filename)[1]
-        Error_Detail = ((str(exc_type).replace("type ", "Error Type: ")) + ";" + "Error Message: " +
-                        str(exc_obj) + ";" + "File Name: " + fname + ";" + "Line: " + str(exc_tb.tb_lineno))
+        Error_Detail = ((str(exc_type).replace("type ", "Error Type: ")) + ";" +  "Error Message: " + str(exc_obj) +";" + "File Name: " + fname + ";" + "Line: "+ str(exc_tb.tb_lineno))
         CommonUtil.ExecLog('', Error_Detail, 4, False)
-
 
 def dependency_collection():
     try:
-        dependency_tag = 'Dependency'
-        dependency_option = ConfigModule.get_all_option(dependency_tag)
-        project = ConfigModule.get_config_value(
-            AUTHENTICATION_TAG, PROJECT_TAG)
-        team = ConfigModule.get_config_value(AUTHENTICATION_TAG, TEAM_TAG)
-        r = RequestFormatter.Get('get_all_dependency_name_api', {
-                                 'project': project, 'team': team})
-        obtained_list = [x.lower() for x in r]
+        dependency_tag='Dependency'
+        dependency_option=ConfigModule.get_all_option(dependency_tag)
+        project=ConfigModule.get_config_value(AUTHENTICATION_TAG,PROJECT_TAG)
+        team=ConfigModule.get_config_value(AUTHENTICATION_TAG,TEAM_TAG)
+        r=RequestFormatter.Get('get_all_dependency_name_api',{'project':project,'team':team})
+        obtained_list=[x.lower() for x in r]
         #print "Dependency: ",dependency_list
-        missing_list = list(set(obtained_list)-set(dependency_option))
+        missing_list=list(set(obtained_list)-set(dependency_option))
         #print missing_list
         if missing_list:
-            CommonUtil.ExecLog('', ",".join(
-                missing_list)+" missing from the configuration file - settings.conf", 4, False)
+            CommonUtil.ExecLog('', ",".join(missing_list)+" missing from the configuration file - settings.conf", 4, False)
             return False
         else:
-            CommonUtil.ExecLog(
-                '', "All the dependency present in the configuration file - settings.conf", 4, False)
-            final_dependency = []
+            CommonUtil.ExecLog('', "All the dependency present in the configuration file - settings.conf", 4, False)
+            final_dependency=[]
             for each in r:
-                temp = []
-                each_dep_list = ConfigModule.get_config_value(
-                    dependency_tag, each).split(",")
+                temp=[]
+                each_dep_list=ConfigModule.get_config_value(dependency_tag,each).split(",")
                 #print each_dep_list
                 for each_item in each_dep_list:
-                    if each_item.count(":") == 2:
-                        name, bit, version = each_item.split(":")
+                    if each_item.count(":")==2:
+                        name,bit,version=each_item.split(":")
 
                     else:
-                        name = each_item.split(":")[0]
-                        bit = 0
-                        version = ''
+                        name=each_item.split(":")[0]
+                        bit=0
+                        version=''
                         #print name,bit,version
-                    temp.append((name, bit, version))
-                final_dependency.append((each, temp))
-            return final_dependency
+                    temp.append((name,bit,version))
+                final_dependency.append((each,temp))
+            return  final_dependency
     except Exception, e:
         exc_type, exc_obj, exc_tb = sys.exc_info()
         fname = os.path.split(exc_tb.tb_frame.f_code.co_filename)[1]
-        Error_Detail = ((str(exc_type).replace("type ", "Error Type: ")) + ";" + "Error Message: " +
-                        str(exc_obj) + ";" + "File Name: " + fname + ";" + "Line: " + str(exc_tb.tb_lineno))
+        Error_Detail = ((str(exc_type).replace("type ", "Error Type: ")) + ";" +  "Error Message: " + str(exc_obj) +";" + "File Name: " + fname + ";" + "Line: "+ str(exc_tb.tb_lineno))
         CommonUtil.ExecLog('', Error_Detail, 4, False)
 
-
 def check_server_online():
-    try:  # Check if we have a connection, if not, exit. If user has a wrong address or no address, RequestFormatter will go into a failure loop
+    try: # Check if we have a connection, if not, exit. If user has a wrong address or no address, RequestFormatter will go into a failure loop
         r = RequestFormatter.Head('login_api')
         return True
-    except:  # Occurs when server is down
-        return False
-
-
-def get_team_names(noerror=False):
+    except: # Occurs when server is down
+        return False 
+    
+def get_team_names(noerror = False):
     ''' Retrieve all teams user has access to '''
-
+    
     try:
-        username = ConfigModule.get_config_value(
-            AUTHENTICATION_TAG, USERNAME_TAG)
-        password = pwdec(ConfigModule.get_config_value(
-            AUTHENTICATION_TAG, PASSWORD_TAG))
+        username=ConfigModule.get_config_value(AUTHENTICATION_TAG,USERNAME_TAG)
+        password=pwdec(ConfigModule.get_config_value(AUTHENTICATION_TAG,PASSWORD_TAG))
         user_info_object = {
             USERNAME_TAG: username,
             PASSWORD_TAG: password
         }
 
-        if not check_server_online():
-            return []
+        if not check_server_online(): return []
 
         r = RequestFormatter.Get('get_user_teams_api', user_info_object)
-        teams = [x[0] for x in r]  # Convert into a simple list
+        teams = [x[0] for x in r] # Convert into a simple list
         return teams
     except:
-        if noerror == False:
-            CommonUtil.ExecLog('', "Error retrieving team names", 4, False)
+        if noerror == False: CommonUtil.ExecLog('', "Error retrieving team names", 4, False)
         return []
-
 
 def get_project_names(team):
     ''' Retrieve projects for given team '''
-
+    
     try:
-        username = ConfigModule.get_config_value(
-            AUTHENTICATION_TAG, USERNAME_TAG)
-        password = pwdec(ConfigModule.get_config_value(
-            AUTHENTICATION_TAG, PASSWORD_TAG))
-
+        username=ConfigModule.get_config_value(AUTHENTICATION_TAG,USERNAME_TAG)
+        password=pwdec(ConfigModule.get_config_value(AUTHENTICATION_TAG,PASSWORD_TAG))
+    
         user_info_object = {
             USERNAME_TAG: username,
             PASSWORD_TAG: password,
             TEAM_TAG: team
         }
-
-        if not check_server_online():
-            return []
+    
+        if not check_server_online(): return []
 
         r = RequestFormatter.Get('get_user_projects_api', user_info_object)
-        projects = [x[0] for x in r]  # Convert into a simple list
+        projects = [x[0] for x in r] # Convert into a simple list
         return projects
     except:
         CommonUtil.ExecLog('', "Error retrieving project names", 4, False)
         return []
-
 
 def pwdec(pw):
     try:
@@ -412,19 +346,15 @@ def pwdec(pw):
         j = 0
         for i in pw:
             value = chr(ord(i) ^ ord(key[j]))
-            if value in chars:
-                result += value
-            else:
-                # Windows only, base64 decoding of an invalid string does not cause an exception, so we have to try to check for a bad password
-                raise ValueError('')
+            if value in chars: result += value
+            else: raise ValueError('') # Windows only, base64 decoding of an invalid string does not cause an exception, so we have to try to check for a bad password
             j += 1
-            if j == len(key):
-                j = 0
+            if j == len(key): j = 0
         return result
     except:
         #CommonUtil.ExecLog('', "Error decrypting password. Use the graphical interface to set a new password", 4, False)
         return ''
 
-
-if __name__ == '__main__':
+if __name__=='__main__':
     Login()
+

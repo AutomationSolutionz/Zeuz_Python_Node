@@ -1,19 +1,18 @@
 # -*- coding: utf-8 -*-
 # -*- coding: cp1252 -*-
 
-import ConfigParser
-import os
+import ConfigParser, os
 import FileUtilities as FL
 
 '''constants'''
 file_name = 'settings.conf'
 
-remote_config = {
-    'threading': True,
-    'local_run': False,
-    'take_screenshot': True,
-    'debug_mode': False,
-    'upload_log_file_only_for_fail': True
+remote_config={
+    'threading' : True,
+    'local_run' : False,
+    'take_screenshot' : True,
+    'debug_mode' : False,
+    'upload_log_file_only_for_fail' : True
 }
 
 
@@ -29,15 +28,13 @@ def get_config_value(section, key, location=False):
             return str(remote_config[key])
 
         config = ConfigParser.SafeConfigParser()
-        # Retain text case (default is to change to lowercase without this line)
-        config.optionxform = str
+        config.optionxform = str  # Retain text case (default is to change to lowercase without this line)
         if not location:
             _file_name = os.getcwd() + os.sep + file_name
         else:
             _file_name = location
         try:
-            # Read current configuration, if the file exists
-            config.read(_file_name)
+            config.read(_file_name)  # Read current configuration, if the file exists
         except:
             FL.DeleteFile(location)
             config.read(_file_name)
@@ -53,15 +50,13 @@ def get_config_value(section, key, location=False):
 def remove_config_value(section, value, location=False):
     try:
         config = ConfigParser.SafeConfigParser()
-        # Retain text case (default is to change to lowercase without this line)
-        config.optionxform = str
+        config.optionxform = str  # Retain text case (default is to change to lowercase without this line)
         if not location:
             _file_name = os.getcwd() + os.sep + file_name
         else:
             _file_name = location
         try:
-            # Read current configuration, if the file exists
-            config.read(_file_name)
+            config.read(_file_name)  # Read current configuration, if the file exists
         except:
             FL.DeleteFile(location)
             config.read(_file_name)
@@ -78,8 +73,7 @@ def remove_config_value(section, value, location=False):
 def add_config_value(section, key, value, location=False):
     try:
         config = ConfigParser.SafeConfigParser()
-        # Retain text case (default is to change to lowercase without this line)
-        config.optionxform = str
+        config.optionxform = str  # Retain text case (default is to change to lowercase without this line)
         if not location:
             _file_name = os.getcwd() + os.sep + file_name
         else:
@@ -87,17 +81,14 @@ def add_config_value(section, key, value, location=False):
 
         if os.path.exists(_file_name):
             try:
-                # Read current configuration, if the file exists
-                config.read(_file_name)
+                config.read(_file_name)  # Read current configuration, if the file exists
             except:
                 FL.DeleteFile(location)
                 config.read(_file_name)
         else:
-            # New file, so we have to add the section first
-            config.add_section(section)
+            config.add_section(section)  # New file, so we have to add the section first
 
-        # Set new configuration from parameters
-        config.set(section, key, value)
+        config.set(section, key, value)  # Set new configuration from parameters
 
         with(open(_file_name, 'w')) as open_file:
             config.write(open_file)  # Write all configuration to file
@@ -118,15 +109,13 @@ def get_all_option(section_name, location=False):
     """
     try:
         config = ConfigParser.SafeConfigParser()
-        # Retain text case (default is to change to lowercase without this line)
-        config.optionxform = str
+        config.optionxform = str  # Retain text case (default is to change to lowercase without this line)
         if not location:
             _file_name = os.getcwd() + os.sep + file_name
         else:
             _file_name = location
         try:
-            # Read current configuration, if the file exists
-            config.read(_file_name)
+            config.read(_file_name)  # Read current configuration, if the file exists
         except:
             FL.DeleteFile(location)
             config.read(_file_name)
@@ -146,15 +135,13 @@ def add_section(section_name, location=False):
     """
     try:
         config = ConfigParser.SafeConfigParser()
-        # Retain text case (default is to change to lowercase without this line)
-        config.optionxform = str
+        config.optionxform = str  # Retain text case (default is to change to lowercase without this line)
         if not location:
             _file_name = os.getcwd() + os.sep + file_name
         else:
             _file_name = location
         try:
-            # Read current configuration, if the file exists
-            config.read(_file_name)
+            config.read(_file_name)  # Read current configuration, if the file exists
         except:
             FL.DeleteFile(location)
             config.read(_file_name)
@@ -174,8 +161,7 @@ def add_section(section_name, location=False):
 def clean_config_file(location=False):
     try:
         config = ConfigParser.SafeConfigParser()
-        # Retain text case (default is to change to lowercase without this line)
-        config.optionxform = str
+        config.optionxform = str  # Retain text case (default is to change to lowercase without this line)
         if not location:
             _file_name = os.getcwd() + os.sep + file_name
         else:
@@ -195,15 +181,13 @@ def clean_config_file(location=False):
 def get_all_sections(location=False):
     try:
         config = ConfigParser.SafeConfigParser()
-        # Retain text case (default is to change to lowercase without this line)
-        config.optionxform = str
+        config.optionxform = str  # Retain text case (default is to change to lowercase without this line)
         if not location:
             _file_name = os.getcwd() + os.sep + file_name
         else:
             _file_name = location
         try:
-            # Read current configuration, if the file exists
-            config.read(_file_name)
+            config.read(_file_name)  # Read current configuration, if the file exists
         except:
             FL.DeleteFile(location)
             config.read(_file_name)
@@ -214,3 +198,4 @@ def get_all_sections(location=False):
     except ConfigParser.NoOptionError, e:
         print 'found no options'
         return []
+

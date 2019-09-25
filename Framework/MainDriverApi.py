@@ -527,8 +527,7 @@ def call_driver_function_of_test_step(sModuleInfo, TestStepsList, StepSeq, step_
 
         if current_driver in driver_list:
             try:
-                module_name = importlib.import_module(
-                    current_driver)  # get module
+                module_name = importlib.import_module(current_driver)  # get module
 
                 # get step name
                 if TestStepsList[StepSeq - 1][8] != None:
@@ -617,8 +616,7 @@ def call_driver_function_of_test_step(sModuleInfo, TestStepsList, StepSeq, step_
                         sStepResult = functionTocall(final_dependency, final_run_params, test_steps_data,
                                                      file_specific_steps, simple_queue, screen_capture, device_info)
                 except:
-                    CommonUtil.Exception_Handler(
-                        sys.exc_info())  # handle exceptions
+                    CommonUtil.Exception_Handler(sys.exc_info())  # handle exceptions
                     sStepResult = "Failed"
 
                 # get step result
@@ -852,8 +850,7 @@ def run_all_test_steps_in_a_test_case(Stepscount, test_case, sModuleInfo, run_id
             CommonUtil.ExecLog(
                 sModuleInfo, "%s : Test Step Failed Failure" % current_step_name, 3)  # add log
 
-            after_execution_dict.update(
-                {'status': FAILED_TAG})  # dictionary update
+            after_execution_dict.update({'status': FAILED_TAG})  # dictionary update
 
             # check if set for continue
             if not test_case_continue:
@@ -1468,12 +1465,9 @@ def main(device_dict):
                                    (TestCaseID[0], no_of_users, hatch_rate, time_period), 1)
 
                 try:
-                    # kill process function
-                    def kill(process): return process.kill()
-                    process = subprocess.Popen(
-                        locustQuery, shell=True)  # locust query process
-                    my_timer = Timer(no_of_users*time_period,
-                                     kill, [process])  # set timer
+                    def kill(process): return process.kill()  # kill process function
+                    process = subprocess.Popen(locustQuery, shell=True)  # locust query process
+                    my_timer = Timer(no_of_users*time_period, kill, [process])  # set timer
 
                     try:
                         my_timer.start()  # start timer
