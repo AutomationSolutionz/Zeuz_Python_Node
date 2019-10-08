@@ -331,6 +331,10 @@ def _switch(step_data_set):
             # we switch each frame in order 
             for each_frame in frame_switch_list:
                 CommonUtil.ExecLog(sModuleInfo, "switching frame; %s"%each_frame, 1)
+                #switch by index.  If index of iframe is provided, then we need to convert to int
+                check_if_index = ['0','1','2','3','4','5']
+                if each_frame in check_if_index:
+                    each_frame = int(each_frame)
                 generic_driver.switch_to_frame(each_frame)
             return  True 
         elif "switch window" in [x[0] for x in step_data_set]: 
