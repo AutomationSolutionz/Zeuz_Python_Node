@@ -890,6 +890,7 @@ def Scroll(step_data):
     sModuleInfo = inspect.currentframe().f_code.co_name + " : " + MODULE_NAME
     CommonUtil.ExecLog(sModuleInfo, "Function start", 0)
     global selenium_driver
+    selenium_driver.switch_to_default_content()
     try:
         scroll_inside_element = False
         scroll_window_name = 'window'
@@ -967,7 +968,22 @@ def scroll_to_element(step_data):
 
     except Exception:
         return CommonUtil.Exception_Handler(sys.exc_info())
+#Method to scroll to view an element
+def scroll_element_to_top(step_data):
+    sModuleInfo = inspect.currentframe().f_code.co_name + " : " + MODULE_NAME
+    CommonUtil.ExecLog(sModuleInfo, "Function start", 0)
+    global selenium_driver
+    try:
+        scroll_element = LocateElement.Get_Element(step_data, selenium_driver)
+        if scroll_element in failed_tag_list:
+            CommonUtil.ExecLog(sModuleInfo, "Element to which instructed to scroll not found",3)
+            return "failed"
+        CommonUtil.ExecLog(sModuleInfo,"Element to which instructed to scroll to top of the page has been found. Scrolling to view it at the top",1)
+        scroll_element.location_once_scrolled_into_view
+        return "passed"
 
+    except Exception:
+        return CommonUtil.Exception_Handler(sys.exc_info())
 #Method to return pass or fail for the step outcome
 def Navigate(step_data):
     sModuleInfo = inspect.currentframe().f_code.co_name + " : " + MODULE_NAME
