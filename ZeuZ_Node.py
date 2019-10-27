@@ -159,6 +159,7 @@ class Application(tk.Frame):
             # Contains settings and buttons
             self.leftframe = tk.Frame(self.mainframe)
             self.leftframe.grid(row = 0, column = 0, sticky = 'snew')
+            tk.Grid.rowconfigure(self.leftframe, 1, weight=1)  # Allows log textbox to expand
             
             # Contains log window
             self.rightframe = tk.Frame(self.mainframe)
@@ -166,27 +167,29 @@ class Application(tk.Frame):
             tk.Grid.columnconfigure(self.rightframe, 0, weight=1) # Allows log textbox to expand
             tk.Grid.rowconfigure(self.rightframe, 1, weight=1) # Allows log textbox to expand
             
-            # Top Left buttons
-            self.topframe = tk.Frame(self.leftframe)
-            self.topframe.grid(sticky = 'w')
+
             
             # Read the settings data, and dynamically add widgets to window
             self.settings_frame = tk.Frame(self.leftframe)
             self.settings_frame.grid(sticky = 'w')
+
+            # Top Left buttons
+            self.topframe = tk.Frame(self.leftframe)
+            self.topframe.grid(sticky='ws')
         except Exception, e: tkMessageBox.showerror('Error 02', 'Exception caught: %s' % e)
 
 
     def createButtons(self):
         try:
             # Node ID
-            tk.Label(self.topframe, text = 'Node ID', fg="red").grid(row = 0, column = 0, sticky = 'e')
+            tk.Label(self.topframe, text = 'Node ID', fg="red").grid(row = 0, column = 0, sticky = 'w')
             self.node_id = tk.Entry(self.topframe, validate = "key", validatecommand = (self.register(self.onValidate), '%d', '%S')) # See onValidate() for more info
             self.node_id.grid(row = 0, column = 1, columnspan = 2, sticky = 'w')
             self.read_node_id(self.node_id)
             
             # All buttons
             self.help_button = tk.Button(self.topframe, text = 'Help', width = self.button_width, command = self.show_help)
-            self.help_button.grid(row = 1, column = 1, sticky = 'w')
+            self.help_button.grid(row = 1, column = 1, sticky = 'w', pady=10)
     
             #self.settings_button = tk.Button(self.topframe, text='Show Advanced Settings', width = self.button_width, command=self.advanced_settings)
             #self.settings_button.grid(row = 2, column = 0)
@@ -194,14 +197,14 @@ class Application(tk.Frame):
             self.settings_selection.set('Authentication')
             self.advanced_settings_frames.append('Authentication') # Need a default value, so we can create the menu
             self.settings_menu = tk.OptionMenu(self.topframe, self.settings_selection, *self.advanced_settings_frames) # Create drop down
-            self.settings_menu.grid(row = 2, column = 0)
+            self.settings_menu.grid(row = 1, column = 0, pady=10)
             self.settings_selection.trace('w', self.show_settings) # Bind function to this drop down menu
     
-            self.save_button = tk.Button(self.topframe, text='Save Settings', fg = 'green4', width = self.button_width, command=lambda: self.save_all(True))
-            self.save_button.grid(row = 2, column = 1)
+            # self.save_button = tk.Button(self.topframe, text='Save Settings', fg = 'green4', width = self.button_width, command=lambda: self.save_all(True))
+            # self.save_button.grid(row = 2, column = 1)
     
-            self.quitButton = tk.Button(self.topframe, text='Quit', width = self.button_width, command=self.teardown)
-            self.quitButton.grid(row = 1, column = 0)
+            self.quitButton = tk.Button(self.topframe, text='Exit', width = self.button_width, command=self.teardown)
+            self.quitButton.grid(row = 1, column = 2, pady=10)
             
             self.startButton = tk.Button(self.rightframe, text='Go Online', fg = 'red', width = self.button_width, command=self.read_mod)
             self.startButton.grid(row = 0, column = 0, sticky = 'n')
@@ -230,6 +233,9 @@ class Application(tk.Frame):
         
         try:
             self.settings_menu['menu'].delete(0, 'end') # Clear initial settings menu item, so we can populate it properly
+
+            self.settings_menu['menu'].add_command(label="Home", command=self.__init__)  # Add the team to the drop down menu
+
             row = 0
             sections = ConfigModule.get_all_sections() # All sections in the config file
             if sections:
@@ -239,13 +245,35 @@ class Application(tk.Frame):
                     self.widgets[section]['frame'] = tk.Frame(self.settings_frame) # Create frame
                     self.advanced_settings_frames.append(section) # Store all section names, so we know which to display when we click the show advanced settings button
                     self.settings_menu['menu'].add_command(label = section, command=tk._setit(self.settings_selection, section)) # Add the team to the drop down menu
-                    tk.Label(self.widgets[section]['frame'], text = section, fg="red").grid(row = row, column = 0, pady = 10, sticky = 'w', columnspan = 2) # Create Section label
+                    if section == "Authentication":
+                        section_header_text = "2. User " + section
+                        save_button_text = "Save Team and Project"
+
+                    elif section == "Server":
+                        section_header_text = "1. " + section + " Configuration"
+                        save_button_text = "Configure"
+                    else:
+                        section_header_text = section
+                        save_button_text = "Save"
+
+                    tk.Label(self.widgets[section]['frame'], text = section_header_text, fg="red").grid(row = row, column = 0, pady = 10, sticky = 'w', columnspan = 2) # Create Section label
                     row += 1
                     options = ConfigModule.get_all_option(section) # Read all options (keys) for this section
                     if options:
                         for option in options: # For each option
                             self.widgets[section]['widget'][option] = {} # Initilize dictionary
                             value = ConfigModule.get_config_value(section, option) # Read value from file
+                            if option == 'team':
+                                save_button = tk.Button(self.widgets[section]['frame'], text="Authenticate",
+                                                        width=self.button_width,
+                                                        command=lambda: self.save_all(True))
+                                save_button.grid(row=row, column=0, pady=20, sticky='s')
+
+                                row += 1
+                                tk.Label(self.widgets[section]['frame'], text= "3. Select Team and Project", fg="red").grid(
+                                    row=row, column=0, pady=10, sticky='w', columnspan=2)
+                                row += 1
+
                             tk.Label(self.widgets[section]['frame'], text = option).grid(row = row, column = 0, sticky = 'w') # Create Option label
                             
                             # Create the widget for this Option/Key, depending on the type
@@ -257,7 +285,10 @@ class Application(tk.Frame):
                             # Set these as drop down menus
                             elif option in ('team', 'project'):
                                 if option == 'team': # Put refresh link beside team
-                                    tk.Label(self.widgets[section]['frame'], text = 'Press Save to Update Teams', fg = 'blue').grid(row = row, column = 1, sticky = 'e')
+                                    pass
+                                    # tk.Label(self.widgets[section]['frame'], text = 'Press Save to Update Teams', fg = 'blue').grid(row = row, column = 1, sticky = 'e')
+
+                                    # tk.Button(self.widgets[section]['frame'], text="Save to get teams", fg="blue", command=lambda: self.save_all(True)).grid(row = row, column = 1, sticky = 'e')
                                     #self.team_refresh = tk.Label(self.widgets[section]['frame'], text = 'Refresh', fg = 'blue', cursor = 'hand2') # Create label to look like hyperlink
                                     #self.team_refresh.grid(row = row, column = 1, sticky = 'e')
                                     #self.team_refresh.bind('<Button-1>', lambda e: self.get_teams()) # Bind label to action
@@ -286,6 +317,10 @@ class Application(tk.Frame):
                             # Pack widgets
                             self.widgets[section]['widget'][option]['widget'].grid(row = row, column = 1, sticky = 'w')
                             row += 1
+
+                    save_button = tk.Button(self.widgets[section]['frame'], text=save_button_text,width=self.button_width,
+                                                 command=lambda: self.save_all(True))
+                    save_button.grid(row=row+1, column=0, pady=20, sticky='s')
             
             # Put a trace on the team field, so we can automatically change the project when the team is changed
             self.widgets['Authentication']['widget']['team']['dropdown'].trace('w', self.switch_teams) # Bind function to this drop down menu
@@ -399,12 +434,14 @@ class Application(tk.Frame):
         # Check if this is the first run (team widget is set to default string), and if so, rearrange, so the server/port is above the user/pass to help user understand what needs to be populated
         
         try:
-            text_check = self.widgets['Authentication']['widget']['team']['dropdown'].get() # Read team selection
-            if text_check == 'YourTeamNameGoesHere': # If it is the default selection
-                self.widgets['Server']['frame'].grid(row = 0, column = 0, sticky = 'w') # Show the server/port section
-                self.continuous_server_check() # Tell program to constantly check for server connection until we connect
-            else: # Show default section
-                self.widgets['Authentication']['frame'].grid(row = 0, column = 0, sticky = 'w') # Show authentication section on subsequent runs
+            self.widgets['Server']['frame'].grid(row=0, column=0, sticky='w')  # Show the server/port section
+            self.continuous_server_check()  # Tell program to constantly check for server connection until we connect
+            # text_check = self.widgets['Authentication']['widget']['team']['dropdown'].get() # Read team selection
+            # if text_check == 'YourTeamNameGoesHere': # If it is the default selection
+            #     self.widgets['Server']['frame'].grid(row = 0, column = 0, sticky = 'w') # Show the server/port section
+            #     self.continuous_server_check() # Tell program to constantly check for server connection until we connect
+            # else: # Show default section
+            #     self.widgets['Authentication']['frame'].grid(row = 0, column = 0, sticky = 'w') # Show authentication section on subsequent runs
         except Exception, e: tkMessageBox.showerror('Error 08', 'Exception caught: %s' % e)
         
     def continuous_server_check(self, check = True):
