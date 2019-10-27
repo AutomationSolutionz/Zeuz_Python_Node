@@ -159,7 +159,7 @@ class Application(tk.Frame):
             # Contains settings and buttons
             self.leftframe = tk.Frame(self.mainframe)
             self.leftframe.grid(row = 0, column = 0, sticky = 'snew')
-            tk.Grid.rowconfigure(self.leftframe, 1, weight=1)  # Allows log textbox to expand
+            tk.Grid.rowconfigure(self.leftframe, 1, weight=1)  # Allows leftframe to expand
             
             # Contains log window
             self.rightframe = tk.Frame(self.mainframe)
