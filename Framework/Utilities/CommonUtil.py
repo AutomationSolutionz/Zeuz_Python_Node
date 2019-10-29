@@ -130,6 +130,11 @@ def Result_Analyzer(sTestStepReturnStatus,temp_q):
 
 def ExecLog(sModuleInfo, sDetails, iLogLevel=1, _local_run="", sStatus="", force_write= False):
     global log_thread_pool
+
+    # initialize thread pool for logging if it's not initialized already
+    if not log_thread_pool:
+        log_thread_pool = ThreadPoolExecutor(max_workers=10)
+
     log_thread_pool.submit(ExecLog_Wrapper, sModuleInfo, sDetails, iLogLevel, _local_run, sStatus, force_write)
 
 def ExecLog_Wrapper(sModuleInfo, sDetails, iLogLevel=1, _local_run="", sStatus="", force_write= False):
