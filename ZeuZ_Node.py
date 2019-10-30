@@ -6,6 +6,14 @@
 from base64 import b64encode, b64decode # Password encoding
 import os.path, thread, sys, time, Queue, traceback
 
+# Import colorama for console color support
+from colorama import init as colorama_init
+from colorama import Fore, Back
+
+# Initialize colorama for the current platform
+colorama_init(autoreset=True)
+
+
 def detect_admin():
     # Windows only - Return True if program run as admin
 
@@ -22,7 +30,7 @@ try:
     import subprocess
 except:
     import subprocess as s
-    print "Tkinter is not installed. This is required to start the graphical interface. Please enter the root password to install if asked."
+    print Fore.RED + "Tkinter is not installed. This is required to start the graphical interface. Please enter the root password to install if asked."
 
     if sys.platform == 'win32':
         try:
@@ -34,14 +42,14 @@ except:
             # Note: Tkinter is not available through pip nor easy_install, we assume it was packaged with Python
             print s.check_output('pip install setuptools')
         except:
-            print "Failed to install. Please run: pip download pillow & pip install pillow"
+            print Fore.RED + "Failed to install. Please run: pip download pillow & pip install pillow"
             raw_input('Press ENTER to exit')
             sys.exit(1)
     elif sys.platform == 'linux2':
         print s.Popen('sudo apt-get update'.split(' '), stdout = s.PIPE, stderr = s.STDOUT).communicate()[0]
         print s.Popen('sudo apt-get -y install python-tk'.split(' '), stdout = s.PIPE, stderr = s.STDOUT).communicate()[0]
     else:
-        print "Could not automatically install required modules"
+        print Fore.RED + "Could not automatically install required modules"
         raw_input('Press ENTER to exit')
         quit()
 
@@ -339,7 +347,7 @@ class Application(tk.Frame):
 
                     # If auto-reboot is true, then reboot the next time zeuz node is not in the middle of a run
                     if auto_restart:
-                        print '*** Update installed. Automatically restarting.'
+                        print '*** Update installed. Automatically restarting. ***'
                         time.sleep(1) # Wait a bit, so they can see the message
                         self.self_restart()
 
@@ -457,40 +465,6 @@ class Application(tk.Frame):
                 if self.node_id.get() == '': self.after(5000, lambda: self.read_node_id(self.node_id)) # If no node id was read or specified, wait a few seconds for zeuz_node.py to populate the node id file, and read it
         except Exception, e: tkMessageBox.showerror('Error 11', 'Exception caught: %s' % e)
 
-    def read_log(self):
-        # Read log lines from Zeuz Node framework
-
-        global q
-        try:
-            while not q.empty(): # While we have something to read from the queue
-                data = q.get() # Read log line from queue (we need to use queue because sys.stdout.write() directly to the log window causes crashes due to Tkinter not being thread safe. Happens constantly on Windows, and seldomly on Linux
-
-                # Determine log line type, so we can colour code it
-                if data[:5] == 'DEBUG':
-                    colour = self.colour_debug
-                elif data[:6] == 'PASSED':
-                    colour = self.colour_passed
-                elif data[:7] == 'WARNING':
-                    colour = self.colour_warning
-                elif data[:6] == 'FAILED':
-                    colour = self.colour_failed
-                elif data[:5] == 'ERROR':
-                    colour = self.colour_failed
-                elif 'No valid license found' in data or 'maximum number of permitted machines' in data:
-                    colour = self.colour_failed
-                elif 'online with name' in data:
-                    if int(float(self.log.index('end'))) > self.max_log_size: self.log.delete(0.0, float(self.max_log_size / 2)) # Trim log to half of max allowed lines when a test case has completed
-                    colour = self.colour_passed
-                elif 'Authentication Failed' in data:
-                    colour = self.colour_failed
-                else:
-                    colour = self.colour_default
-
-                # Check if node went offline, but we didn't tell it to. If so, flip the Offline button
-                if data == 'Zeuz Node Offline' and self.run == True:
-                    self.read_mod()
-
-        except Exception, e: tkMessageBox.showerror('Error 12', 'Exception caught: %s' % e)
 
     def password(self, encrypt, key, pw):
         ''' Encrypt, decrypt password and encode in plaintext '''
@@ -576,7 +550,7 @@ class Application(tk.Frame):
 
         except Exception:
             traceback.print_exc()
-            print "Failed to save settings. Trying again in 10 seconds..."
+            print Fore.RED + "Failed to save settings. Trying again in 10 seconds..."
 
     def switch_teams(self, a, b, c):
         # When user changes the team, pull the list of projects for that team

@@ -20,6 +20,13 @@ except: pass
 try: import pyscreenshot as ImageGrab_Linux # Screen capture for Linux/Unix
 except: pass
 
+# Import colorama for console color support
+from colorama import init as colorama_init
+from colorama import Fore, Back
+
+# Initialize colorama for the current platform
+colorama_init(autoreset=True)
+
 
 MODULE_NAME = inspect.getmoduleinfo(__file__).name
 
@@ -151,8 +158,11 @@ def ExecLog_Wrapper(sModuleInfo, sDetails, iLogLevel=1, _local_run="", sStatus="
         # ";" is not supported for logging.  So replacing them
         sDetails = sDetails.replace(";", ":")
         sDetails = sDetails.replace("%22", "'")
-        
-        #Convert logLevel from int to string for clarity
+
+        # Terminal output color
+        line_color = ''
+
+        # Convert logLevel from int to string for clarity
         if iLogLevel == 0:
             if debug_mode.lower() == 'true':
                 status = 'Debug' # This is not displayed on the server log, just in the console
@@ -160,10 +170,13 @@ def ExecLog_Wrapper(sModuleInfo, sDetails, iLogLevel=1, _local_run="", sStatus="
                 return
         elif iLogLevel == 1:
             status = 'Passed'
+            line_color = Fore.GREEN
         elif iLogLevel == 2:
             status = 'Warning'
+            line_color = Fore.YELLOW
         elif iLogLevel == 3:
             status = 'Error'
+            line_color = Fore.RED
         elif iLogLevel == 4:
             status = 'Console'
         elif iLogLevel == 6:
@@ -177,9 +190,9 @@ def ExecLog_Wrapper(sModuleInfo, sDetails, iLogLevel=1, _local_run="", sStatus="
             msg = ''
             if sModuleInfo != '': msg = sModuleInfo + "\t" # Print sModuleInfo only if provided
             msg += sDetails # Add details
-            print msg # Display in console
+            print line_color + msg # Display in console
         else:
-            print "%s - %s\n\t%s" % (status.upper(), sModuleInfo, sDetails) # Display in console
+            print line_color + "%s - %s\n\t%s" % (status.upper(), sModuleInfo, sDetails) # Display in console
 
         # Upload logs to server if local run is not set to False
         if load_testing and not force_write: return
