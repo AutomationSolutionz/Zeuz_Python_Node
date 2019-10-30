@@ -172,18 +172,17 @@ class Application(tk.Frame):
 
     def createButtons(self):
         try:
-            # Node ID
-            tk.Label(self.topframe, text = 'Node ID', fg="red").grid(row = 0, column = 0, sticky = 'e')
-            self.node_id = tk.Entry(self.topframe, validate = "key", validatecommand = (self.register(self.onValidate), '%d', '%S')) # See onValidate() for more info
-            self.node_id.grid(row = 0, column = 1, columnspan = 2, sticky = 'w')
-            self.read_node_id(self.node_id)
+            # Connect/Disconnect button
+            self.startButton = tk.Button(self.topframe, text='Connect', fg = self.colour_passed, width = self.button_width, command=self.read_mod)
+            self.startButton.grid(row = 0, column = 0, columnspan = 2, pady=(0, self.pady))
 
             # All buttons
             self.help_button = tk.Button(self.topframe, text = 'Help', width = self.button_width, command = self.show_help)
             self.help_button.grid(row = 1, column = 1, sticky = 'w')
 
-            #self.settings_button = tk.Button(self.topframe, text='Show Advanced Settings', width = self.button_width, command=self.advanced_settings)
-            #self.settings_button.grid(row = 2, column = 0)
+            self.quitButton = tk.Button(self.topframe, text='Quit', width = self.button_width, command=teardown)
+            self.quitButton.grid(row = 1, column = 0)
+
             self.settings_selection = tk.StringVar(self)
             self.settings_selection.set('Authentication')
             self.advanced_settings_frames.append('Authentication') # Need a default value, so we can create the menu
@@ -191,27 +190,17 @@ class Application(tk.Frame):
             self.settings_menu.grid(row = 2, column = 0)
             self.settings_selection.trace('w', self.show_settings) # Bind function to this drop down menu
 
-            self.save_button = tk.Button(self.topframe, text='Fetch team/project', width=self.button_width, command=lambda: self.save_all(True))
+            self.save_button = tk.Button(self.topframe, text='Save', width=self.button_width, command=lambda: self.save_all(True))
             self.save_button.grid(row = 2, column = 1)
 
-            self.quitButton = tk.Button(self.topframe, text='Quit', width = self.button_width, command=teardown)
-            self.quitButton.grid(row = 1, column = 0)
+            # Node ID
+            tk.Label(self.topframe, text = 'Node ID', fg="blue")\
+                .grid(row = 3, column = 0, pady=self.pady, sticky = 'w')
+            self.node_id = tk.Entry(self.topframe, validate = "key", validatecommand = (self.register(self.onValidate), '%d', '%S')) # See onValidate() for more info
+            self.node_id.grid(row = 3, column = 1, sticky = 'w')
+            self.read_node_id(self.node_id)
 
-            self.startButton = tk.Button(self.leftframe, text='Connect', fg = self.colour_passed, width = self.button_width, command=self.read_mod)
-            self.startButton.grid(row = 0, column = 0, sticky = 'n')
-
-            # Scroll lock checkbox
-            #tk.Label(self.rightframe, text="Scroll Lock").grid(row = 0, column = 0, sticky = 'e') # Can't display correctly without framing
         except Exception, e: tkMessageBox.showerror('Error 03', 'Exception caught: %s' % e)
-
-    def createLog(self):
-        try:
-            # Create text area for log output
-            self.log = tk.Text(self.rightframe, wrap = tk.WORD, bg = 'white') # Text area widget
-            self.log.grid(row = 1, column = 0, sticky = 'snew')
-            self.log['yscrollcommand'] = self.logscrollY.set # Bind scrollbar to log textarea
-            self.log.bind('<Button-3>', self.rClicker) # Bind copy/paste menu to right click
-        except Exception, e: tkMessageBox.showerror('Error 04', 'Exception caught: %s' % e)
 
     def createWidgets(self):
         # Sub-frames are created for each section, which allows us to show/hide tem dynamically
@@ -228,7 +217,7 @@ class Application(tk.Frame):
                     self.widgets[section]['frame'] = tk.Frame(self.settings_frame) # Create frame
                     self.advanced_settings_frames.append(section)  # Store all section names, so we know which to display when we click the show advanced settings button
                     self.settings_menu['menu'].add_command(label = section, command=tk._setit(self.settings_selection, section))  # Add the team to the drop down menu
-                    tk.Label(self.widgets[section]['frame'], text = section, fg="red").grid(row = row, column = 0, pady = 10, sticky = 'w', columnspan = 2)  # Create Section label
+                    tk.Label(self.widgets[section]['frame'], text = section, fg="blue").grid(row = row, column = 0, pady = 10, sticky = 'w', columnspan = 2)  # Create Section label
                     row += 1
                     options = ConfigModule.get_all_option(section) # Read all options (keys) for this section
                     if options:
@@ -279,8 +268,6 @@ class Application(tk.Frame):
     def check_for_updates(self, check = False):
         # Check if there's a new update for zeuz node - this is triggered upon startup or periodically via tk.after()
         # Always check for updates, but depending on user's settings, either update automatically or inform user of update
-
-        global q
 
         try:
             # Just check for updates, and schedule testing to see if updates checking is complete
@@ -436,26 +423,6 @@ class Application(tk.Frame):
         ''' Display help information in the log window '''
         print help_text
 
-
-    def advanced_settings(self):
-        ''' Dynamically load the rest of the settings and display, or if already displayed, remove them '''
-
-        try:
-            if self.show_adv_settings:
-                self.show_adv_settings = False
-                self.settings_button.configure(text='Show Advanced Settings')
-                for section in self.advanced_settings_frames:
-                    self.widgets[section]['frame'].grid_forget()
-                self.widgets['Authentication']['frame'].grid(row = 0, column = 0, sticky = 'w')
-            else:
-                self.show_adv_settings = True
-                self.settings_button.configure(text='Hide Advanced Settings')
-                self.widgets['Authentication']['frame'].grid(row = 0, column = 0, sticky = 'w')
-                row = 1
-                for section in self.advanced_settings_frames:
-                    self.widgets[section]['frame'].grid(row = row, column = 0, sticky = 'w')
-                    row += 1
-        except Exception, e: tkMessageBox.showerror('Error 10', 'Exception caught: %s' % e)
 
     def show_settings(self, a, b, c):
         ''' Display different settings sections depending on drop down menu selection '''
