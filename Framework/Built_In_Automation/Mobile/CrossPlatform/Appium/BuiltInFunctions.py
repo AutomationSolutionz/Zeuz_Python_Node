@@ -12,7 +12,7 @@
 #########################
 
 from appium import webdriver
-import os, sys, time, inspect, subprocess, re, signal, thread, requests
+import os, sys, time, inspect, subprocess, re, signal, _thread, requests
 from Framework.Utilities import CommonUtil
 from Framework.Built_In_Automation.Mobile.Android.adb_calls import adbOptions
 from Framework.Built_In_Automation.Mobile.iOS import iosOptions
@@ -23,7 +23,7 @@ from Framework.Built_In_Automation.Shared_Resources import LocateElement
 import psutil
 
 
-MODULE_NAME = inspect.getmoduleinfo(__file__).name
+MODULE_NAME = inspect.getmodulename(__file__)
 
 PATH_ = lambda p: os.path.abspath(os.path.join(os.path.dirname(__file__), p))
 PATH = '%s'%PATH_
@@ -491,7 +491,7 @@ def start_appium_server():
                     CommonUtil.ExecLog(sModuleInfo,"Couldn't launch appium server, please do it manually ny typing 'appium &' in the terminal",2)
                     pass
             appium_details[device_id]['server'] = appium_server # Save the server object for teardown
-        except Exception, returncode: # Couldn't run server
+        except Exception as returncode: # Couldn't run server
             return CommonUtil.Exception_Handler(sys.exc_info(), None, "Couldn't start Appium server. May not be installed, or not in your PATH: %s" % returncode)
         
         # Wait for server to startup and return
@@ -623,8 +623,8 @@ def start_appium_driver(package_name = '', activity_name = '', filename = '', pl
                     appium_driver = None
                     CommonUtil.ExecLog(sModuleInfo,"Error during Appium setup", 3)
                     return 'failed',launch_app
-            except Exception,e:
-                print e
+            except Exception as e:
+                print(e)
                 return CommonUtil.Exception_Handler(sys.exc_info(), None, "Error connecting to Appium server to create driver instance"),launch_app
 
         else: # Driver is already setup, don't do anything
@@ -1007,7 +1007,7 @@ def swipe_handler_android(data_set):
         try:
             # Adjust numbers depending on type provided by user - float or integer expected here - convert into pixels
             if exact != '': # User specified exact coordinates, so use those and nothing else
-                x1, y1, x2, y2 = map(int, exact.split(','))
+                x1, y1, x2, y2 = list(map(int, exact.split(',')))
             else:
                 inset = int(str(inset).replace('%', '')) / 100.0 # Convert % to float
                 position = int(str(position).replace('%', '')) / 100.0 # Convert % to float
@@ -1676,7 +1676,7 @@ def Android_Keystroke_Key_Mapping(keystroke, hold_key = False):
             appium_driver.press_keycode(key) # driver.keyevent() is depreciated
 
         return 'passed'
-    except Exception, e:
+    except Exception as e:
         return CommonUtil.Exception_Handler(sys.exc_info())
 
 def iOS_Keystroke_Key_Mapping(keystroke):
@@ -1837,7 +1837,7 @@ def Validate_Text_Appium(data_set):
             CommonUtil.ExecLog(sModuleInfo, ">>>>>>>> Actual Text: %s" %visible_list_of_element_text, 0)
 #             print (">>>>>>>> Actual Text: %s" %visible_list_of_element_text)
             i = 0
-            for x in xrange(0, len(visible_list_of_element_text)): 
+            for x in range(0, len(visible_list_of_element_text)): 
                 if (visible_list_of_element_text[x] == expected_text_data[i]): # Validate the matching string
                     CommonUtil.ExecLog(sModuleInfo, "The text element '%s' has been validated by using complete match." %visible_list_of_element_text[x], 1)
                     i += 1

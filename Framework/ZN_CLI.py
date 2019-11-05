@@ -1,11 +1,11 @@
 # -*- coding: utf-8 -*-
 # -*- coding: cp1252 -*-
 
-import os,sys,time, os.path
+import os,sys,time, os.path, base64
 from base64 import b64encode, b64decode
 sys.path.append(os.path.dirname(os.getcwd()))
-from Utilities import ConfigModule,RequestFormatter,CommonUtil,FileUtilities,All_Device_Info
-import MainDriverApi
+from .Utilities import ConfigModule,RequestFormatter,CommonUtil,FileUtilities,All_Device_Info
+from . import MainDriverApi
 from concurrent.futures import ThreadPoolExecutor
 
 def detect_admin():
@@ -27,7 +27,7 @@ try:
 except:
     import subprocess as s
 
-    print "Module 'tzlocal' is not installed. This is required to start the graphical interface. Please enter the root password to install."
+    print("Module 'tzlocal' is not installed. This is required to start the graphical interface. Please enter the root password to install.")
 
     if sys.platform == 'win32':
         try:
@@ -37,22 +37,22 @@ except:
                 sys.exit(1) # exit this instance and let the elevated instance take over
 
             # Install
-            print s.check_output('pip install tzlocal')
-        except Exception, e:
-            print "Failed to install. Please run: pip install tzlocal: ", e
-            raw_input('Press ENTER to exit')
+            print(s.check_output('pip install tzlocal'))
+        except Exception as e:
+            print("Failed to install. Please run: pip install tzlocal: ", e)
+            input('Press ENTER to exit')
             sys.exit(1)
     elif sys.platform == 'linux2':
-        print s.Popen('sudo -S pip install tzlocal'.split(' '), stdout=s.PIPE, stderr=s.STDOUT).communicate()[0]
+        print(s.Popen('sudo -S pip install tzlocal'.split(' '), stdout=s.PIPE, stderr=s.STDOUT).communicate()[0])
     else:
-        print "Could not automatically install required modules"
-        raw_input('Press ENTER to exit')
+        print("Could not automatically install required modules")
+        input('Press ENTER to exit')
         quit()
 
     try:
         from tzlocal import get_localzone
     except:
-        raw_input('Could not install tzlocal. Please do this manually by running: pip install tzlocal as administrator')
+        input('Could not install tzlocal. Please do this manually by running: pip install tzlocal as administrator')
         quit()
 
 
@@ -74,9 +74,16 @@ def Login():
         CommonUtil.log_thread_pool.shutdown(wait=True)
     CommonUtil.log_thread_pool = ThreadPoolExecutor(max_workers=10)
     username=ConfigModule.get_config_value(AUTHENTICATION_TAG,USERNAME_TAG)
-    password=pwdec(ConfigModule.get_config_value(AUTHENTICATION_TAG,PASSWORD_TAG))
+    password = ConfigModule.get_config_value(AUTHENTICATION_TAG,PASSWORD_TAG)
+
+    print("Type: {}, value: {}".format(type(password),password))
+    if password == "YourUserNameGoesHere":
+        password = password
+    else:
+        password=pass_decode("zeuz", password)
     project=ConfigModule.get_config_value(AUTHENTICATION_TAG,PROJECT_TAG)
     team=ConfigModule.get_config_value(AUTHENTICATION_TAG,TEAM_TAG)
+
     #form payload object
     user_info_object={
         'username':username,
@@ -99,6 +106,7 @@ def Login():
         # Login to server
         if r != False: # Server is up
             try:
+                print("User Info :{}".format(user_info_object))
                 r = RequestFormatter.Get('login_api',user_info_object)
                 CommonUtil.ExecLog('', "Authentication check for user='%s', project='%s', team='%s'"%(username,project,team), 4, False)
                 if r:
@@ -117,19 +125,19 @@ def Login():
                             }
                             RequestFormatter.Get('send_machine_time_zone_api', time_zone_object)
                             # end
-                        except:
-                            pass
+                        except Exception as e:
+                            CommonUtil.ExecLog("", "Time zone settings failed {}".format(e), 4, False)
                         RunAgain = RunProcess(tester_id)
                         if RunAgain == False: break # Exit login
                     else:
                         return False
-                elif r == False or r.lower() == 'false': # Server should send "False" when user/pass is wrong
+                elif r == {}: # Server should send "False" when user/pass is wrong
                     CommonUtil.ExecLog('', "Authentication Failed. Username or password incorrect", 4, False)
                     break
                 else: # Server likely sent nothing back or RequestFormatter.Get() caught an exception
                     CommonUtil.ExecLog('', "Login attempt incomplete, waiting 60 seconds before trying again ", 4, False)
                     time.sleep(60)
-            except Exception, e:
+            except Exception as e:
                 exc_type, exc_obj, exc_tb = sys.exc_info()
                 fname = os.path.split(exc_tb.tb_frame.f_code.co_filename)[1]
                 Error_Detail = ((str(exc_type).replace("type ", "Error Type: ")) + ";" +  "Error Message: " + str(exc_obj) +";" + "File Name: " + fname + ";" + "Line: "+ str(exc_tb.tb_lineno))
@@ -172,7 +180,7 @@ def RunProcess(sTesterid):
                 time.sleep(3)
                 if 'update' in r and r['update']:
                     _r=RequestFormatter.Get('update_machine_with_time_api',{'machine_name':sTesterid})
-        except Exception, e:
+        except Exception as e:
             exc_type, exc_obj, exc_tb = sys.exc_info()
             fname = os.path.split(exc_tb.tb_frame.f_code.co_filename)[1]
             Error_Detail = ((str(exc_type).replace("type ", "Error Type: ")) + ";" +  "Error Message: " + str(exc_obj) +";" + "File Name: " + fname + ";" + "Line: "+ str(exc_tb.tb_lineno))
@@ -243,7 +251,7 @@ def update_machine(dependency):
                 else:
                     CommonUtil.ExecLog('', "Machine is not registered as online", 4, False)
         return r
-    except Exception, e:
+    except Exception as e:
         exc_type, exc_obj, exc_tb = sys.exc_info()
         fname = os.path.split(exc_tb.tb_frame.f_code.co_filename)[1]
         Error_Detail = ((str(exc_type).replace("type ", "Error Type: ")) + ";" +  "Error Message: " + str(exc_obj) +";" + "File Name: " + fname + ";" + "Line: "+ str(exc_tb.tb_lineno))
@@ -282,7 +290,7 @@ def dependency_collection():
                     temp.append((name,bit,version))
                 final_dependency.append((each,temp))
             return  final_dependency
-    except Exception, e:
+    except Exception as e:
         exc_type, exc_obj, exc_tb = sys.exc_info()
         fname = os.path.split(exc_tb.tb_frame.f_code.co_filename)[1]
         Error_Detail = ((str(exc_type).replace("type ", "Error Type: ")) + ";" +  "Error Message: " + str(exc_obj) +";" + "File Name: " + fname + ";" + "Line: "+ str(exc_tb.tb_lineno))
@@ -292,7 +300,8 @@ def check_server_online():
     try: # Check if we have a connection, if not, exit. If user has a wrong address or no address, RequestFormatter will go into a failure loop
         r = RequestFormatter.Head('login_api')
         return True
-    except: # Occurs when server is down
+    except Exception as e: # Occurs when server is down
+        print("Exception in check_server_online {}".format(e))
         return False 
     
 def get_team_names(noerror = False):
@@ -300,14 +309,20 @@ def get_team_names(noerror = False):
     
     try:
         username=ConfigModule.get_config_value(AUTHENTICATION_TAG,USERNAME_TAG)
-        password=pwdec(ConfigModule.get_config_value(AUTHENTICATION_TAG,PASSWORD_TAG))
+        password = ConfigModule.get_config_value(AUTHENTICATION_TAG, PASSWORD_TAG)
+
+        print("Type: {}, value: {}".format(type(password), password))
+        if password == "YourUserNameGoesHere":
+            password = password
+        else:
+            password = pass_decode("zeuz", password)
         user_info_object = {
             USERNAME_TAG: username,
             PASSWORD_TAG: password
         }
 
         if not check_server_online(): return []
-
+        print("team User Info :{}".format(user_info_object))
         r = RequestFormatter.Get('get_user_teams_api', user_info_object)
         teams = [x[0] for x in r] # Convert into a simple list
         return teams
@@ -320,7 +335,13 @@ def get_project_names(team):
     
     try:
         username=ConfigModule.get_config_value(AUTHENTICATION_TAG,USERNAME_TAG)
-        password=pwdec(ConfigModule.get_config_value(AUTHENTICATION_TAG,PASSWORD_TAG))
+        password = ConfigModule.get_config_value(AUTHENTICATION_TAG, PASSWORD_TAG)
+
+        print("Type: {}, value: {}".format(type(password), password))
+        if password == "YourUserNameGoesHere":
+            password = password
+        else:
+            password = pass_decode("zeuz", password)
     
         user_info_object = {
             USERNAME_TAG: username,
@@ -329,7 +350,7 @@ def get_project_names(team):
         }
     
         if not check_server_online(): return []
-
+        print("project User Info :{}".format(user_info_object))
         r = RequestFormatter.Get('get_user_projects_api', user_info_object)
         projects = [x[0] for x in r] # Convert into a simple list
         return projects
@@ -337,23 +358,34 @@ def get_project_names(team):
         CommonUtil.ExecLog('', "Error retrieving project names", 4, False)
         return []
 
-def pwdec(pw):
-    try:
-        chars = [chr(x) for x in range(33, 127)]
-        key = 'zeuz'
-        pw = b64decode(pw)
-        result = ''
-        j = 0
-        for i in pw:
-            value = chr(ord(i) ^ ord(key[j]))
-            if value in chars: result += value
-            else: raise ValueError('') # Windows only, base64 decoding of an invalid string does not cause an exception, so we have to try to check for a bad password
-            j += 1
-            if j == len(key): j = 0
-        return result
-    except:
-        #CommonUtil.ExecLog('', "Error decrypting password. Use the graphical interface to set a new password", 4, False)
-        return ''
+# def pwdec(pw):
+#     try:
+#         chars = [chr(x) for x in range(33, 127)]
+#         key = 'zeuz'
+#         pw = b64decode(pw)
+#         result = ''
+#         j = 0
+#         for i in pw:
+#             value = chr(ord(i) ^ ord(key[j]))
+#             if value in chars: result += value
+#             else: raise ValueError('') # Windows only, base64 decoding of an invalid string does not cause an exception, so we have to try to check for a bad password
+#             j += 1
+#             if j == len(key): j = 0
+#         return result
+#     except Exception as e:
+#         print("Exception in password decrypt: {}".format(e))
+#         #CommonUtil.ExecLog('', "Error decrypting password. Use the graphical interface to set a new password", 4, False)
+#         return ''
+
+
+def pass_decode(key, enc):
+    dec = []
+    enc = base64.urlsafe_b64decode(enc)
+    for i in range(len(enc)):
+        key_c = key[i % len(key)]
+        dec_c = chr((256 + enc[i] - ord(key_c)) % 256)
+        dec.append(dec_c)
+    return "".join(dec)
 
 if __name__=='__main__':
     Login()

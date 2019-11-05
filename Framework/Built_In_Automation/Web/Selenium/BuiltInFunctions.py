@@ -40,7 +40,7 @@ from Framework.Utilities.CommonUtil import passed_tag_list, failed_tag_list, ski
 #                       #
 #########################
 
-MODULE_NAME = inspect.getmoduleinfo(__file__).name
+MODULE_NAME = inspect.getmodulename(__file__)
 
 global WebDriver_Wait
 WebDriver_Wait = 20
@@ -105,7 +105,7 @@ def Open_Browser(dependency):
                 try:
                     import winreg
                 except ImportError:
-                    import _winreg as winreg
+                    import winreg as winreg
                 handle = winreg.OpenKey(winreg.HKEY_LOCAL_MACHINE,
                     r"SOFTWARE\Microsoft\Windows\CurrentVersion\App Paths\firefox.exe")
                 num_values = winreg.QueryInfoKey(handle)[1]
@@ -1114,10 +1114,10 @@ def validate_table(data_set):
                 # Parse table instructions
                 if field == 'ignore row' or field == 'ignore rows': # User specified list of rows to ignore
                     ignore_rows = value.split(',') # Get rows as comma delimited string and store in list
-                    ignore_rows = map(int, ignore_rows) # Convert to integers
+                    ignore_rows = list(map(int, ignore_rows)) # Convert to integers
                 elif field == 'ignore column' or field == 'ignore columns': # User specified list of columns to ignore
                     ignore_cols = value.split(',') # Get columns as comma delimited string and store in list
-                    ignore_cols = map(int, ignore_cols) # Convert to integers
+                    ignore_cols = list(map(int, ignore_cols)) # Convert to integers
                 elif field == 'case': # User specified case sensitivity
                     if value.lower().strip() == 'exact' or value.lower().strip() == 'sensitive': # Sensitive match (default)
                         case_sensitive = True

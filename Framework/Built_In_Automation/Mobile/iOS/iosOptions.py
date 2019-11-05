@@ -9,7 +9,7 @@
 import subprocess, inspect, sys
 from Framework.Utilities import CommonUtil
 
-MODULE_NAME = inspect.getmoduleinfo(__file__).name
+MODULE_NAME = inspect.getmodulename(__file__)
 imobiledevice_path = '/usr/local/bin/' # Install location of iMobileDevice programs
 
 def run_program(cmd):

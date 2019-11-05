@@ -22,7 +22,7 @@ from Framework.Utilities import CommonUtil
 from Framework.Utilities.CommonUtil import passed_tag_list, failed_tag_list, skipped_tag_list
 from Framework.Built_In_Automation.Shared_Resources import BuiltInFunctionSharedResources as Shared_Resources
 
-MODULE_NAME = inspect.getmoduleinfo(__file__).name
+MODULE_NAME = inspect.getmodulename(__file__)
 
 #########################
 #                       #
@@ -669,7 +669,7 @@ def random_string_generator(pattern='nluc', size=10):
             if pattern[index] == 'l':  # Lowercase
                 chars += string.ascii_lowercase
             if pattern[index] == 'u':  # Uppercase
-                chars += string.uppercase
+                chars += string.ascii_uppercase
             if pattern[index] == 'c':  # Characters
                 chars += punctuation
 
@@ -794,7 +794,7 @@ def sanitize_step_data(step_data, valid_chars = '', clean_whitespace_only = Fals
     else:
         column = str(column).replace(' ', '') # Remove spaces
         column = column.split(',') # Put into list
-        column = map(int, column) # Convert numbers in list into integers, so they can be used to address tuple elements
+        column = list(map(int, column)) # Convert numbers in list into integers, so they can be used to address tuple elements
     
     new_step_data = [] # Create empty list that will contain the data sets
     for data_set in step_data: # For each data set within step data
@@ -2044,7 +2044,7 @@ def replace_Substring(data_set):
                 Shared_Resources.Set_Shared_Variables(var_name, value)
                 CommonUtil.ExecLog(sModuleInfo, "Value '%s' is save in variable %s"%(value, var_name),1)
                 return "passed"
-            except Exception, e:
+            except Exception as e:
                 CommonUtil.ExecLog(sModuleInfo,"Couldn't replace text in variable '%s'"%var_name,3)
                 return "failed"
 
@@ -2067,7 +2067,7 @@ def replace_Substring(data_set):
         newTxt = str(f.read())
         f.close()
 
-        for substring in replace_dict.keys():
+        for substring in list(replace_dict.keys()):
             new_string = replace_dict[substring]
             if substring == '':
                 CommonUtil.ExecLog(sModuleInfo, "Could not find substring for this action", 3)

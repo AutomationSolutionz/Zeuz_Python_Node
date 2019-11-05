@@ -3,8 +3,7 @@
 # Function: Front-end to ZN_CLI.py and settings.conf
 # Issues: try/except doesn't always work for everything on windows (base64). Python crashes on windows when we use root.after() to poll the widgets
 
-from base64 import b64encode, b64decode # Password encoding
-import os.path, thread, sys, time, Queue, traceback
+import os.path, _thread, sys, time, queue, traceback, base64
 
 # Import colorama for console color support
 from colorama import init as colorama_init
@@ -24,13 +23,24 @@ def detect_admin():
         except: return False
     return True
 
+
+def pass_encode(key, clear):
+    enc = []
+    for i in range(len(clear)):
+        key_c = key[i % len(key)]
+        enc_c = (ord(clear[i]) + ord(key_c)) % 256
+        enc.append(enc_c)
+    return base64.urlsafe_b64encode(bytes(enc))
+
+
+
 # Have user install Tk if this fails - we try to do it for them first
 try:
-    import Tkinter as tk # http://infohost.nmt.edu/tcc/help/pubs/tkinter/tkinter.pdf
+    import tkinter as tk # http://infohost.nmt.edu/tcc/help/pubs/tkinter/tkinter.pdf
     import subprocess
 except:
     import subprocess as s
-    print Fore.RED + "Tkinter is not installed. This is required to start the graphical interface. Please enter the root password to install if asked."
+    print(Fore.RED + "Tkinter is not installed. This is required to start the graphical interface. Please enter the root password to install if asked.")
 
     if sys.platform == 'win32':
         try:
@@ -40,27 +50,27 @@ except:
                 sys.exit(1)
             # Install
             # Note: Tkinter is not available through pip nor easy_install, we assume it was packaged with Python
-            print s.check_output('pip install setuptools')
+            print(s.check_output('pip install setuptools'))
         except:
-            print Fore.RED + "Failed to install. Please run: pip download pillow & pip install pillow"
-            raw_input('Press ENTER to exit')
+            print(Fore.RED + "Failed to install. Please run: pip download pillow & pip install pillow")
+            input('Press ENTER to exit')
             sys.exit(1)
     elif sys.platform == 'linux2':
-        print s.Popen('sudo apt-get update'.split(' '), stdout = s.PIPE, stderr = s.STDOUT).communicate()[0]
-        print s.Popen('sudo apt-get -y install python-tk'.split(' '), stdout = s.PIPE, stderr = s.STDOUT).communicate()[0]
+        print(s.Popen('sudo apt-get update'.split(' '), stdout = s.PIPE, stderr = s.STDOUT).communicate()[0])
+        print(s.Popen('sudo apt-get -y install python-tk'.split(' '), stdout = s.PIPE, stderr = s.STDOUT).communicate()[0])
     else:
-        print Fore.RED + "Could not automatically install required modules"
-        raw_input('Press ENTER to exit')
+        print(Fore.RED + "Could not automatically install required modules")
+        input('Press ENTER to exit')
         quit()
 
     try:
-        import Tkinter as tk
+        import tkinter as tk
         import subprocess
     except:
-        raw_input('Could not install Tkinter. Please do this manually by running: sudo apt-get install python-tk')
+        input('Could not install Tkinter. Please do this manually by running: sudo apt-get install python-tk')
         quit()
 
-import tkMessageBox
+import tkinter.messagebox
 os.chdir(os.path.join(os.path.dirname(os.path.realpath(__file__)), 'Framework')) # Move to Framework directory, so all modules can be seen
 from Framework.Utilities import ConfigModule, FileUtilities, self_updater # Modifing settings files
 from Framework.ZN_CLI import Login, disconnect_from_server, get_team_names, get_project_names, check_server_online, processing_test_case # Controlling node status and logging in
@@ -154,7 +164,9 @@ class Application(tk.Frame):
                 elif 'minimize_at_start' in self.widgets['Zeuz Node']['widget'] and self.widgets['Zeuz Node']['widget']['minimize_at_start']['check'].get():
                     r.iconify()
 
-        except Exception, e: tkMessageBox.showerror('Error 01', 'Exception caught: %s' % e)
+        except Exception as e:
+            print("Exception in init {}".format(e))
+            tkinter.messagebox.showerror('Error 01', 'Exception caught: %s' % e)
 
     def createFrames(self):
         try:
@@ -175,7 +187,9 @@ class Application(tk.Frame):
             # Read the settings data, and dynamically add widgets to window
             self.settings_frame = tk.Frame(self.leftframe)
             self.settings_frame.grid(sticky = 'w')
-        except Exception, e: tkMessageBox.showerror('Error 02', 'Exception caught: %s' % e)
+        except Exception as e:
+            print("Exception in createframes {}".format(e))
+            tkinter.messagebox.showerror('Error 02', 'Exception caught: %s' % e)
 
 
     def createButtons(self):
@@ -208,7 +222,9 @@ class Application(tk.Frame):
             self.node_id.grid(row = 3, column = 1, sticky = 'w')
             self.read_node_id(self.node_id)
 
-        except Exception, e: tkMessageBox.showerror('Error 03', 'Exception caught: %s' % e)
+        except Exception as e:
+            print("Exception in createbuttons {}".format(e))
+            tkinter.messagebox.showerror('Error 03', 'Exception caught: %s' % e)
 
     def createWidgets(self):
         # Sub-frames are created for each section, which allows us to show/hide tem dynamically
@@ -236,7 +252,9 @@ class Application(tk.Frame):
 
                             # Create the widget for this Option/Key, depending on the type
                             if option == 'password': # Add asterisk to hide password
-                                if value != '': value = self.password(False, 'zeuz', value) # Decrypt password read from settings file
+                                print("password value: {}".format(value))
+                                if value != '':
+                                    value = self.password(False, 'zeuz', value) # Decrypt password read from settings file
                                 self.widgets['Authentication']['widget'][option]['widget'] = tk.Entry(self.widgets[section]['frame'], show = '*', width = self.entry_width) # Password textbox which hides the password with asterisks
                                 self.widgets['Authentication']['widget'][option]['widget'].insert('end', value) # Enter decrypted password
 
@@ -271,7 +289,9 @@ class Application(tk.Frame):
             self.widgets['Authentication']['widget']['team']['dropdown'].trace('w', self.switch_teams) # Bind function to this drop down menu
             if self.widgets['Authentication']['widget']['team']['dropdown'].get() != '':
                 self.get_projects(self.widgets['Authentication']['widget']['team']['dropdown'].get()) # Get list of projects from the server for the curent team, populate the list
-        except Exception, e: tkMessageBox.showerror('Error 05', 'Exception caught: %s' % e)
+        except Exception as e:
+            print("Exception in createwidgets {}".format(e))
+            tkinter.messagebox.showerror('Error 05', 'Exception caught: %s' % e)
 
     def check_for_updates(self, check = False):
         # Check if there's a new update for zeuz node - this is triggered upon startup or periodically via tk.after()
@@ -280,7 +300,7 @@ class Application(tk.Frame):
         try:
             # Just check for updates, and schedule testing to see if updates checking is complete
             if check:
-                print 'Checking last update time'
+                print('Checking last update time')
                 # Read from temp config last time we checked for updates. If over maximum time, check again
                 temp_ini_file = os.path.join(os.path.join(FileUtilities.get_home_folder(), os.path.join('Desktop',os.path.join('AutomationLog',ConfigModule.get_config_value('Temp', '_file')))))
                 try:
@@ -291,10 +311,10 @@ class Application(tk.Frame):
                     update_interval = 0
 
                 if last_update == '' or (float(last_update) + update_interval) < time.time(): # If we have reached the allowed time to check for updates or nothing was previously set. Assume this is the first time, check for updates.
-                    print 'Checking for software updates'
+                    print('Checking for software updates')
                     ConfigModule.add_config_value('sectionOne', 'last_update', str(time.time()), temp_ini_file) # Record current time as update time
 
-                    thread.start_new_thread(self_updater.check_for_updates, ()) # Check for updates in a separate thread
+                    _thread.start_new_thread(self_updater.check_for_updates, ()) # Check for updates in a separate thread
                     self.after(15000, self.check_for_updates) # Tests if check for updates is complete
                     self.after(self.update_interval * 3600 * 1000, lambda: self.check_for_updates(True)) # Reschedule next check for updates (calculates from hours to ms)
 
@@ -302,16 +322,16 @@ class Application(tk.Frame):
             else:
                 # No update, do nothing, and thus stop checking
                 if self_updater.check_complete == 'noupdate':
-                    print 'No software updates available'
+                    print('No software updates available')
                     pass
 
                 # Update check complete, we have an update, start install
                 elif self_updater.check_complete[0:6] == 'update':
                     # Print update notes
                     try:
-                        print "\nUpdate notes:"
-                        for note in str(self_updater.check_complete[7:]).split(';'): print note
-                        print ''
+                        print("\nUpdate notes:")
+                        for note in str(self_updater.check_complete[7:]).split(';'): print(note)
+                        print('')
                     except: pass
 
                     # Read update settings
@@ -322,13 +342,13 @@ class Application(tk.Frame):
 
                     # If auto-update is true, then perform update
                     if auto_update:
-                        print '*** A new update is available. Automatically installing.'
-                        thread.start_new_thread(self_updater.main, (os.path.dirname(os.path.realpath(__file__)).replace(os.sep + 'Framework', ''),))
+                        print('*** A new update is available. Automatically installing.')
+                        _thread.start_new_thread(self_updater.main, (os.path.dirname(os.path.realpath(__file__)).replace(os.sep + 'Framework', ''),))
                         self.after(10000, self.check_for_updates) # Checks if install is complete
                     # If auto-update is false, notify user via dialogue that there's a new update available, and ask if they want to download and install it
                     else:
-                        if tkMessageBox.askyesno('Update', 'A Zeuz Node update is available. Do you want to download and install it?'):
-                            thread.start_new_thread(self_updater.main, (os.path.dirname(os.path.realpath(__file__)).replace(os.sep + 'Framework', ''),))
+                        if tkinter.messagebox.askyesno('Update', 'A Zeuz Node update is available. Do you want to download and install it?'):
+                            _thread.start_new_thread(self_updater.main, (os.path.dirname(os.path.realpath(__file__)).replace(os.sep + 'Framework', ''),))
                             self.after(10000, self.check_for_updates) # Checks if install is complete
                         else:
                             pass # Do nothing if the user doens't want to update. We'll check again tomorrow
@@ -347,21 +367,23 @@ class Application(tk.Frame):
 
                     # If auto-reboot is true, then reboot the next time zeuz node is not in the middle of a run
                     if auto_restart:
-                        print '*** Update installed. Automatically restarting. ***'
+                        print('*** Update installed. Automatically restarting. ***')
                         time.sleep(1) # Wait a bit, so they can see the message
                         self.self_restart()
 
                     # If auto-reboot is false, then notify user via dialogue that the installation is complete and ask to reboot
                     else:
-                        if tkMessageBox.askyesno('Update', "New Zeuz Node software was successfully installed. Would you like to restart Zeuz Node (when we're not testing) to start using it?"):
+                        if tkinter.messagebox.askyesno('Update', "New Zeuz Node software was successfully installed. Would you like to restart Zeuz Node (when we're not testing) to start using it?"):
                             self.self_restart()
                         else:
                             pass # Do nothing. User will have to restart manually
 
                 # Some error occurred during updating
                 elif 'error' in self_updater.check_complete:
-                    tkMessageBox.showerror('Update', "An error occurred during update: %s" % self_updater.check_complete)
-        except Exception, e: tkMessageBox.showerror('Error 06', 'Exception caught: %s' % e)
+                    tkinter.messagebox.showerror('Update', "An error occurred during update: %s" % self_updater.check_complete)
+        except Exception as e:
+            print("Exception in CheckUpdates {}".format(e))
+            tkinter.messagebox.showerror('Error 06', 'Exception caught: %s' % e)
 
 
     def self_restart(self):
@@ -371,7 +393,9 @@ class Application(tk.Frame):
             else: # Not running a test case, so it should be safe to restart
                 subprocess.Popen('python "%s"' % os.path.realpath(sys.argv[0]).replace(os.sep + 'Framework', ''), shell = True) # Restart zeuz node
                 quit() # Exit this process
-        except Exception, e: tkMessageBox.showerror('Error 07', 'Exception caught: %s' % e)
+        except Exception as e:
+            print("Exception in selfRestart {}".format(e))
+            tkinter.messagebox.showerror('Error 07', 'Exception caught: %s' % e)
 
     def start_up_display(self):
         # Check if this is the first run (team widget is set to default string), and if so, rearrange, so the server/port is above the user/pass to help user understand what needs to be populated
@@ -383,14 +407,17 @@ class Application(tk.Frame):
                 self.continuous_server_check() # Tell program to constantly check for server connection until we connect
             else: # Show default section
                 self.widgets['Authentication']['frame'].grid(row = 0, column = 0, sticky = 'w') # Show authentication section on subsequent runs
-        except Exception, e: tkMessageBox.showerror('Error 08', 'Exception caught: %s' % e)
+        except Exception as e:
+            print("Exception in startupdisplay {}".format(e))
+            tkinter.messagebox.showerror('Error 08', 'Exception caught: %s' % e)
 
     def continuous_server_check(self, check = True):
         # Helps the user provide required login information by showing specific fields polling the server until everyting is set
         # Check if server address is set
         try:
-            print # This prevents freezing up on windows for some reason
-            if check: result = check_server_online()
+            print() # This prevents freezing up on windows for some reason
+            if check:
+                result = check_server_online()
             else: result = True
 
             if result == False: # Server likely not configured, or not fully entered
@@ -410,7 +437,9 @@ class Application(tk.Frame):
                         self.widgets['Authentication']['widget']['project']['dropdown'].set('')
                 else: # No user/pass, try again
                     root.after(1000, self.continuous_server_check)
-        except Exception, e: tkMessageBox.showerror('Error 09', 'Exception caught: %s' % e)
+        except Exception as e:
+            print("Exception in continuous_server_check {}".format(e))
+            tkinter.messagebox.showerror('Error 09', 'Exception caught: %s' % e)
 
     def onValidate(self, ctype, S):
         # Limit text to specified length and characters
@@ -429,7 +458,7 @@ class Application(tk.Frame):
 
     def show_help(self):
         ''' Display help information in the log window '''
-        print help_text
+        print(help_text)
 
 
     def show_settings(self, a, b, c):
@@ -439,7 +468,9 @@ class Application(tk.Frame):
             for section in self.advanced_settings_frames: self.widgets[section]['frame'].grid_forget()
             section = self.settings_selection.get()
             self.widgets[section]['frame'].grid(row = 0, column = 0, sticky = 'w')
-        except Exception, e: tkMessageBox.showerror('Error 17', 'Exception caught: %s' % e)
+        except Exception as e:
+            print("Exception in show_settings {}".format(e))
+            tkinter.messagebox.showerror('Error 17', 'Exception caught: %s' % e)
 
 
     def read_mod(self, at_start=False):
@@ -453,7 +484,7 @@ class Application(tk.Frame):
                 self.run = False
                 self.startButton.configure(text='Connect', fg=self.colour_passed)
                 disconnect_from_server() # Tell Zeuz_Node.py to stop
-                print "Disconnecting from server..."
+                print("Disconnecting from server...")
             else:
                 # Save settings and connect
                 if not at_start:
@@ -461,9 +492,11 @@ class Application(tk.Frame):
 
                 self.run = True
                 self.startButton.configure(text='Disconnect', fg=self.colour_failed)
-                thread.start_new_thread(Login,()) # Execute Zeuz_Node.py
+                _thread.start_new_thread(Login,()) # Execute Zeuz_Node.py
                 if self.node_id.get() == '': self.after(5000, lambda: self.read_node_id(self.node_id)) # If no node id was read or specified, wait a few seconds for zeuz_node.py to populate the node id file, and read it
-        except Exception, e: tkMessageBox.showerror('Error 11', 'Exception caught: %s' % e)
+        except Exception as e:
+            print("Exception in read_mod {}".format(e))
+            tkinter.messagebox.showerror('Error 11', 'Exception caught: %s' % e)
 
 
     def password(self, encrypt, key, pw):
@@ -472,17 +505,12 @@ class Application(tk.Frame):
         # Zeuz_Node.py has a similar function that will need to be updated if this is changed
 
         try:
-            if encrypt == False: pw = b64decode(pw)
-            result = ''
-            j = 0
-            for i in pw:
-                result += chr(ord(i) ^ ord(key[j]))
-                j += 1
-                if j == len(key): j = 0
-            if encrypt == True: result = b64encode(result)
+            result = pass_encode(key,pw)
+
             return result
-        except:
-            tkMessageBox.showerror('Error', 'Error decrypting password. Enter a new password')
+        except Exception as e:
+            print("Exception in password {}".format(e))
+            tkinter.messagebox.showerror('Error', 'Error decrypting password. Enter a new password {}'.format(e))
             return ''
 
     def read_node_id(self, w):
@@ -491,7 +519,9 @@ class Application(tk.Frame):
             if os.path.exists(node_id_filename):
                 node_id = ConfigModule.get_config_value('UniqueID', 'id', node_id_filename).strip()
                 for c in node_id: w.insert('end', c) # We have to write characters one at a time due to how onValidate() works
-        except Exception, e: tkMessageBox.showerror('Error 13', 'Exception caught: %s' % e)
+        except Exception as e:
+            print("Exception in read_node_id {}".format(e))
+            tkinter.messagebox.showerror('Error 13', 'Exception caught: %s' % e)
 
     def save_all(self, save = False):
         ''' Check for changes, and if found, save them to disk '''
@@ -528,7 +558,8 @@ class Application(tk.Frame):
 
                     else: # Widget is a textbox
                         value = str(self.widgets[section]['widget'][option]['widget'].get()).strip() # Get value
-                        if option == 'password': value = self.password(True, 'zeuz', value) # Encrypt password
+                        if option == 'password':
+                            value = self.password(True, 'zeuz', value) # Encrypt password
 
                     if len(self.settings_modified) <= cnt: # First run, populate modifier check
                         self.settings_modified.append(value)
@@ -546,18 +577,21 @@ class Application(tk.Frame):
             # Check if we should save
             if save:  # Yes, explicit save call, so tell the user
                 self.get_teams()
-                print "Settings saved."
+                print("Settings saved.")
 
-        except Exception:
+        except Exception as e:
+            print("Exception in save settings {}".format(e))
             traceback.print_exc()
-            print Fore.RED + "Failed to save settings. Trying again in 10 seconds..."
+            print(Fore.RED + "Failed to save settings. Trying again in 10 seconds...")
 
     def switch_teams(self, a, b, c):
         # When user changes the team, pull the list of projects for that team
         try:
             self.widgets['Authentication']['widget']['project']['dropdown'].set('') # Clear Project menu
             self.get_projects(self.widgets['Authentication']['widget']['team']['dropdown'].get()) # Update available options in project menu
-        except Exception, e: tkMessageBox.showerror('Error 14', 'Exception caught: %s' % e)
+        except Exception as e:
+            print("Exception in switch_teams {}".format(e))
+            tkinter.messagebox.showerror('Error 14', 'Exception caught: %s' % e)
 
     def get_teams(self, noerror = False):
         # Populate drop down with teams user has access to
@@ -567,11 +601,12 @@ class Application(tk.Frame):
             for team in self.widgets['Authentication']['widget']['team']['choices']:  # For each new team
                 self.widgets['Authentication']['widget']['team']['widget']['menu'].add_command(label = team, command=tk._setit(self.widgets['Authentication']['widget']['team']['dropdown'], team)) # Add the team to the drop down menu
             if self.widgets['Authentication']['widget']['team']['choices'] == []:  # If nothing was returned
-                if noerror == False: tkMessageBox.showerror('Error', 'No teams could be found. Server, port, username, or password may be wrong') # Display an error
+                if noerror == False: tkinter.messagebox.showerror('Error', 'No teams could be found. Server, port, username, or password may be wrong') # Display an error
                 return False
             return True
-        except Exception, e:
-            tkMessageBox.showerror('Error 15', 'Exception caught: %s' % e)
+        except Exception as e:
+            print("Exception in get_teams {}".format(e))
+            tkinter.messagebox.showerror('Error 15', 'Exception caught: %s' % e)
             return False
 
     def get_projects(self, team):
@@ -581,7 +616,9 @@ class Application(tk.Frame):
             self.widgets['Authentication']['widget']['project']['widget']['menu'].delete(0, 'end') # Clear drop down menu
             for project in self.widgets['Authentication']['widget']['project']['choices']: # For each new project
                 self.widgets['Authentication']['widget']['project']['widget']['menu'].add_command(label = project, command=tk._setit(self.widgets['Authentication']['widget']['project']['dropdown'], project)) # Add the project to the drop down menu
-        except Exception, e: tkMessageBox.showerror('Error 16', 'Exception caught: %s' % e)
+        except Exception as e:
+            print("Exception in get_projects {}".format(e))
+            tkinter.messagebox.showerror('Error 16', 'Exception caught: %s' % e)
 
     def rClicker(self, e):
         ''' right click context menu for all Tk Entry and Text widgets '''
@@ -604,7 +641,9 @@ class Application(tk.Frame):
             rmenu = tk.Menu(None, tearoff=0, takefocus=0)
             for (txt, cmd) in nclst: rmenu.add_command(label=txt, command=cmd)
             rmenu.tk_popup(e.x_root+40, e.y_root+10,entry="0")
-        except: pass
+        except Exception as e:
+            print("Exception in rClicker {}".format(e))
+            pass
 
 
 def teardown():

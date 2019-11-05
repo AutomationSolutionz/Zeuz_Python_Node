@@ -82,7 +82,7 @@ def get_all_connected_android_info():
             device_cnt += 1
             
         return device_list
-    except Exception, e:
+    except Exception as e:
         #CommonUtil.ExecLog('', 'Error reading Android device: %s' % e, 4, False)
         return {}
 
@@ -131,7 +131,7 @@ def get_all_connected_ios_info():
             device_cnt += 1
         
         return device_list
-    except Exception, e:
+    except Exception as e:
         #CommonUtil.ExecLog('', 'Error reading IOS device: %s' % e, 4, False)
         return {}
 
@@ -145,7 +145,7 @@ def get_all_booted_ios_simulator_info():
         device_list = {}
         all_ios_simulators = subprocess.check_output('xcrun simctl list --json', shell=True)
         data  = json.loads(all_ios_simulators)
-        for each in data['devices'].keys():
+        for each in list(data['devices'].keys()):
             if "iOS" in each:
                 splitted = str(each).split(' ')
                 if len(splitted)>1:
@@ -177,7 +177,7 @@ def get_all_booted_ios_simulator_info():
         
         return device_list
     
-    except Exception, e:
+    except Exception as e:
         #CommonUtil.ExecLog('', 'Error reading IOS device: %s' % e, 4, False)
         return {}
  
@@ -203,11 +203,11 @@ def get_all_connected_device_info():
 
         return device_list
         
-    except Exception, e: # Don't show any error because the user may not be running mobile automation
+    except Exception as e: # Don't show any error because the user may not be running mobile automation
         #CommonUtil.ExecLog('', 'Error reading Android or IOS device: %s' % e, 4, False)
         return {}
 
 if __name__ == '__main__':
-    print get_all_connected_device_info()
+    print(get_all_connected_device_info())
 
 

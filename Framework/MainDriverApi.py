@@ -5,8 +5,8 @@ import inspect
 import os
 import time
 import sys
-import urllib2
-import Queue
+import urllib.request, urllib.error, urllib.parse
+import queue
 import importlib
 import requests
 import threading
@@ -17,14 +17,14 @@ from datetime import datetime
 from datetime import timedelta
 from threading import Timer
 from Framework.Built_In_Automation import Shared_Resources
-from Utilities import ConfigModule, FileUtilities as FL, CommonUtil, RequestFormatter
+from .Utilities import ConfigModule, FileUtilities as FL, CommonUtil, RequestFormatter
 from Framework.Built_In_Automation.Shared_Resources import BuiltInFunctionSharedResources as shared
 
 top_path = os.path.dirname(os.getcwd())
 drivers_path = os.path.join(top_path, 'Drivers')
 sys.path.append(drivers_path)
 
-MODULE_NAME = inspect.getmoduleinfo(__file__).name
+MODULE_NAME = inspect.getmodulename(__file__)
 
 '''Constants'''
 PROGRESS_TAG = 'In-Progress'
@@ -483,7 +483,7 @@ def download_attachments_for_test_case(sModuleInfo, run_id, test_case, temp_ini_
             sModuleInfo, "Attachment download for test case %s started" % test_case, 1)
         m = each[1] + '.' + each[2]  # file name
         f = open(download_folder + '/' + m, 'wb')
-        f.write(urllib2.urlopen('http://' + ConfigModule.get_config_value('Server', 'server_address') + ':' + str(
+        f.write(urllib.request.urlopen('http://' + ConfigModule.get_config_value('Server', 'server_address') + ':' + str(
             ConfigModule.get_config_value('Server', 'server_port')) + '/static' + each[0]).read())
         file_specific_steps.update({m: download_folder + '/' + m})
         f.close()
@@ -501,7 +501,7 @@ def download_attachments_for_test_case(sModuleInfo, run_id, test_case, temp_ini_
         if not os.path.exists(download_folder + sep + str(each[3])):
             FL.CreateFolder(download_folder + sep + str(each[3]))
         f = open(download_folder + sep + str(each[3]) + sep + m, 'wb')
-        f.write(urllib2.urlopen('http://' + ConfigModule.get_config_value('Server', 'server_address') + ':' + str(
+        f.write(urllib.request.urlopen('http://' + ConfigModule.get_config_value('Server', 'server_address') + ':' + str(
             ConfigModule.get_config_value('Server', 'server_port')) + '/static' + each[0]).read())
         file_specific_steps.update(
             {m: download_folder + sep + str(each[3]) + sep + m})
@@ -517,7 +517,7 @@ def download_attachments_for_test_case(sModuleInfo, run_id, test_case, temp_ini_
 def call_driver_function_of_test_step(sModuleInfo, TestStepsList, StepSeq, step_time, driver_list, current_step_name,
                                       final_dependency, final_run_params, test_steps_data, file_specific_steps):
     try:
-        q = Queue.Queue()  # define queue
+        q = queue.Queue()  # define queue
 
         # get step driver
         if TestStepsList[StepSeq - 1][8] != None:
@@ -525,10 +525,12 @@ def call_driver_function_of_test_step(sModuleInfo, TestStepsList, StepSeq, step_
         else:
             current_driver = TestStepsList[StepSeq - 1][3]
 
+        print("@@@@@@@@@@ CURRENT DRIVER: {}".format(current_driver))
+
         if current_driver in driver_list:
             try:
                 module_name = importlib.import_module(current_driver)  # get module
-
+                print("FOUND")
                 # get step name
                 if TestStepsList[StepSeq - 1][8] != None:
                     step_name = (TestStepsList[StepSeq - 1][7]).strip()
@@ -544,14 +546,14 @@ def call_driver_function_of_test_step(sModuleInfo, TestStepsList, StepSeq, step_
                 try:
                     # importing functions from driver
                     functionTocall = getattr(module_name, step_name)
-                except:
+                except Exception as e:
                     CommonUtil.Exception_Handler(sys.exc_info(), None,
                                                  "Could not find function name: %s in Driver/%s.py. Perhaps you need to add a custom driver or add an alias step to the Test Step." % (
                                                  step_name, current_driver))
                     sStepResult = "Failed"
 
                 try:
-                    simple_queue = Queue.Queue()  # another queue (?)
+                    simple_queue = queue.Queue()  # another queue (?)
 
                     try:
                         # get screen capture settings
@@ -561,7 +563,7 @@ def call_driver_function_of_test_step(sModuleInfo, TestStepsList, StepSeq, step_
                             screen_capture = screen_capture[0]
                         else:
                             screen_capture = 'Desktop'
-                    except:
+                    except Exception as e:
                         screen_capture = 'Desktop'
 
                     # run in thread
@@ -589,7 +591,7 @@ def call_driver_function_of_test_step(sModuleInfo, TestStepsList, StepSeq, step_
                             q.put(sStepResult)
                             CommonUtil.ExecLog(
                                 sModuleInfo, "Test Step Thread Ended..", 1)
-                        except Queue.Empty:
+                        except queue.Empty:
                             # Global.DefaultTestStepTimeout
                             ErrorMessage = "Test Step didn't return after %d seconds" % step_time
                             CommonUtil.Exception_Handler(
@@ -637,7 +639,8 @@ def call_driver_function_of_test_step(sModuleInfo, TestStepsList, StepSeq, step_
                         sModuleInfo, "Acceptable fail string(s): %s" % failed_tag_list, 3)
                     sStepResult = "FAILED"
                 q.put(sStepResult)
-            except Exception:
+            except Exception as e:
+                print("### Exception : {}".format(e))
                 CommonUtil.Exception_Handler(sys.exc_info())
                 sStepResult = "Failed"
         else:
@@ -1474,8 +1477,8 @@ def main(device_dict):
                         stdout, stderr = process.communicate()  # process communicate
                     finally:
                         my_timer.cancel()  # cancel timer
-                except Exception, e:
-                    print "exception"
+                except Exception as e:
+                    print("exception")
                     pass
 
                 # add log

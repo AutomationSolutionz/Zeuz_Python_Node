@@ -5,7 +5,7 @@ import os, sys, subprocess, inspect
 from Framework.Utilities import CommonUtil
 
 from lxml import etree
-from StringIO import StringIO
+from io import StringIO
 from xml.etree import ElementTree as ET
 from xml.sax.handler import ContentHandler
 from xml.sax import make_parser
