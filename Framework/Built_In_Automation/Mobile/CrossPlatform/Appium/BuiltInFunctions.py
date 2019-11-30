@@ -574,13 +574,14 @@ def start_appium_driver(package_name = '', activity_name = '', filename = '', pl
                         #saving simulator path for future use
                         Shared_Resources.Set_Shared_Variables('ios_simulator_folder_path',str(app))
                     app = os.path.join(app, ios)
-                    bundle_id = str(subprocess.check_output(['osascript', '-e', 'id of app "%s"'%str(app)])).strip()
+                    encoding = 'utf-8'
+                    bundle_id = str(subprocess.check_output(['osascript', '-e', 'id of app "%s"'%str(app)]), encoding=encoding).strip()
                     desired_caps = {}
                     desired_caps['app'] = app  # Use set_value() for writing to element
                     desired_caps['platformName'] = 'iOS'  # Read version #!!! Temporarily hard coded
                     desired_caps['platformVersion'] = platform_version
                     desired_caps['deviceName'] = device_name
-                    desired_caps['bundleId'] = bundle_id
+                    desired_caps['bundleId'] = bundle_id.replace('\\n','')
                     desired_caps['wdaLocalPort'] = wdaLocalPort
                     desired_caps['udid'] = appium_details[device_id]['serial']
                     desired_caps['newCommandTimeout'] = 6000
