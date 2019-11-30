@@ -30,7 +30,7 @@ all_val = []
 '============================= Sequential Action Section Begins=============================='
 
 
-MODULE_NAME = inspect.getmoduleinfo(__file__).name
+MODULE_NAME = inspect.getmodulename(__file__)
 
 
 # Method to get the element step data from the original step_data
