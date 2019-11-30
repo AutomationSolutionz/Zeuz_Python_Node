@@ -29,7 +29,7 @@ from selenium.webdriver.support import expected_conditions as EC
 import pyautogui
 from pyautogui import press, typewrite
 
-from Framework.Utilities import CommonUtil,ConfigModule
+from Framework.Utilities import CommonUtil
 from Framework.Built_In_Automation.Shared_Resources import BuiltInFunctionSharedResources as Shared_Resources
 from Framework.Built_In_Automation.Shared_Resources import LocateElement
 from Framework.Utilities.CommonUtil import passed_tag_list, failed_tag_list, skipped_tag_list
@@ -62,7 +62,7 @@ else:
 
 
 
-def Open_Browser(dependency,window_size_X=700,window_size_Y=800):
+def Open_Browser(dependency):
     ''' Launch browser and create instance '''
     
     global selenium_driver
@@ -92,7 +92,7 @@ def Open_Browser(dependency,window_size_X=700,window_size_Y=800):
             if "chromeheadless" in browser: options.add_argument("--headless") # Enable headless operation if dependency set
             selenium_driver = webdriver.Chrome(chrome_options = options,desired_capabilities=d)
             selenium_driver.implicitly_wait(WebDriver_Wait)
-            selenium_driver.set_window_size(window_size_X, window_size_Y)
+            selenium_driver.maximize_window()
             CommonUtil.ExecLog(sModuleInfo, "Started Chrome Browser", 1)
             Shared_Resources.Set_Shared_Variables('selenium_driver',selenium_driver)
             CommonUtil.set_screenshot_vars(Shared_Resources.Shared_Variable_Export())
@@ -118,7 +118,7 @@ def Open_Browser(dependency,window_size_X=700,window_size_Y=800):
                         break
             selenium_driver = webdriver.Firefox()
             selenium_driver.implicitly_wait(WebDriver_Wait)
-            selenium_driver.set_window_size(window_size_X, window_size_Y)
+            selenium_driver.maximize_window()
             CommonUtil.ExecLog(sModuleInfo, "Started Firefox Browser", 1)
             Shared_Resources.Set_Shared_Variables('selenium_driver', selenium_driver)
             CommonUtil.set_screenshot_vars(Shared_Resources.Shared_Variable_Export())
@@ -126,7 +126,7 @@ def Open_Browser(dependency,window_size_X=700,window_size_Y=800):
         elif "ie" in browser:
             selenium_driver = webdriver.Ie()
             selenium_driver.implicitly_wait(WebDriver_Wait)
-            selenium_driver.set_window_size(window_size_X, window_size_Y)
+            selenium_driver.maximize_window()
             CommonUtil.ExecLog(sModuleInfo, "Started Internet Explorer Browser", 1)
             Shared_Resources.Set_Shared_Variables('selenium_driver', selenium_driver)
             CommonUtil.set_screenshot_vars(Shared_Resources.Shared_Variable_Export())
@@ -136,7 +136,7 @@ def Open_Browser(dependency,window_size_X=700,window_size_Y=800):
             os.environ["SELENIUM_SERVER_JAR"] = os.sys.prefix + os.sep + "Scripts" + os.sep + "selenium-server-standalone-2.45.0.jar"
             selenium_driver = webdriver.Safari()
             selenium_driver.implicitly_wait(WebDriver_Wait)
-            selenium_driver.set_window_size(window_size_X, window_size_Y)
+            selenium_driver.maximize_window()
             CommonUtil.ExecLog(sModuleInfo, "Started Safari Browser", 1)
             Shared_Resources.Set_Shared_Variables('selenium_driver', selenium_driver)
             CommonUtil.set_screenshot_vars(Shared_Resources.Shared_Variable_Export())
@@ -178,8 +178,7 @@ def Go_To_Link(step_data, page_title=False):
     #if not then we don't do the validation
     sModuleInfo = inspect.currentframe().f_code.co_name + " : " + MODULE_NAME
     CommonUtil.ExecLog(sModuleInfo,"Function Start", 0)
-    window_size_X=ConfigModule.get_config_value('','window_size_x')
-    window_size_Y=ConfigModule.get_config_value('','window_size_y')
+    
     # Open browser and create driver if user has not already done so
     try:
         global selenium_driver
@@ -191,7 +190,7 @@ def Go_To_Link(step_data, page_title=False):
                 dependency = Shared_Resources.Get_Shared_Variables('dependency') # Retreive selenium driver
         
     
-            result = Open_Browser(dependency,window_size_X,window_size_Y)
+            result = Open_Browser(dependency)
             if result in failed_tag_list:
                 return 'failed'
         else:
