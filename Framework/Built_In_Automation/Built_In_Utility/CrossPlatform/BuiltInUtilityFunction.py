@@ -40,6 +40,7 @@ def get_home_folder():
     CommonUtil.ExecLog(sModuleInfo, "Function start", 0)
 
     try:
+        path = False
         if _platform == "linux" or _platform == "linux2" or _platform == "darwin":
             path = os.getenv('HOME') 
         elif _platform == "win32":
@@ -807,7 +808,7 @@ def sanitize_step_data(step_data, valid_chars = '', clean_whitespace_only = Fals
                     continue # Do not change string
                 
                 # Sanitize the column for this row
-                new_row[i] = sanitize_string(new_row[i], valid_chars, clean_whitespace_only, maxLength = None)
+                new_row[i] = sanitize_string(new_row[i], valid_chars, clean_whitespace_only)
 
             new_data_set.append(tuple(new_row)) # Append list as tuple to data set list
         new_step_data.append(new_data_set) # Append data set to step data
@@ -904,6 +905,7 @@ def Copy_File_or_Folder(step_data):
         file_attachment = Shared_Resources.Get_Shared_Variables('file_attachment')
 
     try:
+        from_path = None
         if _platform == "linux" or _platform == "linux2" or _platform == "darwin":
             from_path = str(step_data[0][2]).strip()  # location of the file/folder to be copied
             if from_path[0]=="/": from_path=from_path.lstrip('/')
@@ -2265,7 +2267,7 @@ def Delete_line_ini(data_set):
             CommonUtil.ExecLog(sModuleInfo, "INI upated successfully", 1)
             return 'passed'
         else:
-            CommonUtil.ExecLog(sModuleInfo, "Error updating %s with %s in section %s" % (line_name, section_name), 3)
+            CommonUtil.ExecLog(sModuleInfo, "Error updating %s with %s in section %s" % (line_name, section_name,file_name), 3)
         return "failed"
 
 

@@ -418,7 +418,7 @@ def random_string_generator(pattern='nluc', size=10):
             if pattern[index] == 'l':
                 chars += string.ascii_lowercase
             if pattern[index] == 'u':
-                chars += string.uppercase
+                chars += string.ascii_uppercase
             if pattern[index] == 'c':
                 chars += punctuation
 
