@@ -252,7 +252,7 @@ class Application(tk.Frame):
 
                             # Create the widget for this Option/Key, depending on the type
                             if option == 'password': # Add asterisk to hide password
-                                print("password value: {}".format(value))
+
                                 if value != '':
                                     value = self.password(False, 'zeuz', value) # Decrypt password read from settings file
                                 self.widgets['Authentication']['widget'][option]['widget'] = tk.Entry(self.widgets[section]['frame'], show = '*', width = self.entry_width) # Password textbox which hides the password with asterisks

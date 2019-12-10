@@ -76,7 +76,7 @@ def Login():
     username=ConfigModule.get_config_value(AUTHENTICATION_TAG,USERNAME_TAG)
     password = ConfigModule.get_config_value(AUTHENTICATION_TAG,PASSWORD_TAG)
 
-    print("Type: {}, value: {}".format(type(password),password))
+
     if password == "YourUserNameGoesHere":
         password = password
     else:
@@ -106,7 +106,7 @@ def Login():
         # Login to server
         if r != False: # Server is up
             try:
-                print("User Info :{}".format(user_info_object))
+
                 r = RequestFormatter.Get('login_api',user_info_object)
                 CommonUtil.ExecLog('', "Authentication check for user='%s', project='%s', team='%s'"%(username,project,team), 4, False)
                 if r:
@@ -311,7 +311,7 @@ def get_team_names(noerror = False):
         username=ConfigModule.get_config_value(AUTHENTICATION_TAG,USERNAME_TAG)
         password = ConfigModule.get_config_value(AUTHENTICATION_TAG, PASSWORD_TAG)
 
-        print("Type: {}, value: {}".format(type(password), password))
+
         if password == "YourUserNameGoesHere":
             password = password
         else:
@@ -322,7 +322,7 @@ def get_team_names(noerror = False):
         }
 
         if not check_server_online(): return []
-        print("team User Info :{}".format(user_info_object))
+
         r = RequestFormatter.Get('get_user_teams_api', user_info_object)
         teams = [x[0] for x in r] # Convert into a simple list
         return teams
@@ -337,7 +337,7 @@ def get_project_names(team):
         username=ConfigModule.get_config_value(AUTHENTICATION_TAG,USERNAME_TAG)
         password = ConfigModule.get_config_value(AUTHENTICATION_TAG, PASSWORD_TAG)
 
-        print("Type: {}, value: {}".format(type(password), password))
+
         if password == "YourUserNameGoesHere":
             password = password
         else:
@@ -350,7 +350,7 @@ def get_project_names(team):
         }
     
         if not check_server_online(): return []
-        print("project User Info :{}".format(user_info_object))
+
         r = RequestFormatter.Get('get_user_projects_api', user_info_object)
         projects = [x[0] for x in r] # Convert into a simple list
         return projects
