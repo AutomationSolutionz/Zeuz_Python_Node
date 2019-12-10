@@ -29,7 +29,7 @@ def get_all_connected_android_info():
         
         # Get list of devices
         #One report of this blocking the next line, so disabled: result = subprocess.check_output('adb kill-server', shell=True) # Stop adb server, to ensure this works properly
-        result = subprocess.check_output('adb devices', shell=True)
+        result = subprocess.check_output('adb devices', shell=True, encoding='utf-8')
         result = result.replace('List of devices attached', '')
         result = result.replace('\r', '')
         result = result.replace('\t', ' ')
@@ -44,11 +44,11 @@ def get_all_connected_android_info():
         # Get device information
         for serial in android_list:
             # Execute commands
-            os_version = subprocess.check_output('adb -s %s %s' % (serial, android_cmd_os_version), shell=True)
-            model = subprocess.check_output('adb -s %s %s' % (serial, android_cmd_model), shell=True)
-            name = subprocess.check_output('adb -s  %s %s' % (serial, android_cmd_name), shell=True)
-            mfg = subprocess.check_output('adb -s %s %s' % (serial, android_cmd_mfg), shell=True)
-            imei = subprocess.check_output('adb -s %s %s' % (serial, android_cmd_imei), shell=True)
+            os_version = subprocess.check_output('adb -s %s %s' % (serial, android_cmd_os_version), shell=True, encoding='utf-8')
+            model = subprocess.check_output('adb -s %s %s' % (serial, android_cmd_model), shell=True, encoding='utf-8')
+            name = subprocess.check_output('adb -s  %s %s' % (serial, android_cmd_name), shell=True, encoding='utf-8')
+            mfg = subprocess.check_output('adb -s %s %s' % (serial, android_cmd_mfg), shell=True, encoding='utf-8')
+            imei = subprocess.check_output('adb -s %s %s' % (serial, android_cmd_imei), shell=True, encoding='utf-8')
             
             # Cleanup of results
             os_version = os_version.strip()
@@ -60,7 +60,7 @@ def get_all_connected_android_info():
                 imei = str(imei.split('\n')[-1]).strip() # Last line should be IMEI
                 imei = str(imei.split(' ')[-1]).strip() # Last word on this line is IMEI
             else: # Try alternative method to get imei
-                imei = subprocess.check_output('adb -s %s %s' % (serial, android_cmd_alt_imei), shell=True)
+                imei = subprocess.check_output('adb -s %s %s' % (serial, android_cmd_alt_imei), shell=True, encoding='utf-8')
                 imei = imei.split(' ')
                 final = ''
                 for line in imei:
@@ -95,16 +95,16 @@ def get_all_connected_ios_info():
         device_list = {}
         
         # Get list of UUIDs
-        ios_list = subprocess.check_output('idevice_id -l', shell=True)
+        ios_list = subprocess.check_output('idevice_id -l', shell=True, encoding='utf-8')
         ios_list = ios_list.split('\n')
 
         # Parse information for each device
         for uuid in ios_list:
             if uuid == '': continue
             info = ''
-            try: info = subprocess.check_output('ideviceinfo -u %s' % uuid, shell=True)
+            try: info = subprocess.check_output('ideviceinfo -u %s' % uuid, shell=True, encoding='utf-8')
             except: pass
-            if 'ProductType' not in info: info = subprocess.check_output('ideviceinfo -s -u %s' % uuid, shell=True) # Try simple mode which gets everything we need except IMEI
+            if 'ProductType' not in info: info = subprocess.check_output('ideviceinfo -s -u %s' % uuid, shell=True, encoding='utf-8') # Try simple mode which gets everything we need except IMEI
             #info = info.encode('ascii', 'ignore') # !!!!Needed, but not working
             info = info.split('\n')
             
@@ -143,7 +143,7 @@ def get_all_booted_ios_simulator_info():
     try:
 
         device_list = {}
-        all_ios_simulators = subprocess.check_output('xcrun simctl list --json', shell=True)
+        all_ios_simulators = subprocess.check_output('xcrun simctl list --json', shell=True, encoding='utf-8')
         data  = json.loads(all_ios_simulators)
         for each in list(data['devices'].keys()):
             if "iOS" in each:

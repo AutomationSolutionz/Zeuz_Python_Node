@@ -6,7 +6,7 @@ import copy
 from Framework.Utilities import CommonUtil
 
 
-MODULE_NAME = inspect.getmoduleinfo(__file__).name
+MODULE_NAME = inspect.getmodulename(__file__)
 
 
 def make_single_data_set_compatible(expected_list):

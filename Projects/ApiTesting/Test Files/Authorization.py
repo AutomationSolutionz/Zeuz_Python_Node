@@ -20,7 +20,7 @@ sys.path.append("..")
 from Framework.Utilities import CommonUtil
 
 
-MODULE_NAME = inspect.getmoduleinfo(__file__).name
+MODULE_NAME = inspect.getmodulename(__file__)
 
 
 class AuthorizationData:

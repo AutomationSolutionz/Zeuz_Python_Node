@@ -12,7 +12,7 @@ from xml.sax import make_parser
 from glob import glob
 
 
-MODULE_NAME = inspect.getmoduleinfo(__file__).name
+MODULE_NAME = inspect.getmodulename(__file__)
 
 
 def get_filepaths(directory):

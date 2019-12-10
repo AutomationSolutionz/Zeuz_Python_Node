@@ -17,7 +17,7 @@ def run_program(cmd):
     
     sModuleInfo = inspect.currentframe().f_code.co_name + " : " + MODULE_NAME
     try:
-        output = subprocess.check_output(imobiledevice_path + cmd, shell=True) # Execute command line program, and return STDOUT
+        output = subprocess.check_output(imobiledevice_path + cmd, shell=True, encoding='utf-8') # Execute command line program, and return STDOUT
         return output
     except: # If command produced a non-zero return code, return failed
         return CommonUtil.Exception_Handler(sys.exc_info())

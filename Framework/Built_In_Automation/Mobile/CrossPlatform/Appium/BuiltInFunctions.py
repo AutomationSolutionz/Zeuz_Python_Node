@@ -106,7 +106,7 @@ def find_appium():
     # Verify if we have the binary location    
     if appium_binary == '': # Didn't find where appium was installed
         CommonUtil.ExecLog(sModuleInfo, "Appium not found. Trying to locate via which", 0)
-        try: appium_binary = subprocess.check_output('which appium', shell = True).strip()
+        try: appium_binary = subprocess.check_output('which appium', encoding='utf-8', shell = True).strip()
         except: pass
         
         if appium_binary == '': # Didn't find where appium was installed
@@ -1533,10 +1533,10 @@ def Clear_And_Enter_Text_ADB(data_set, serial=''):
             
             if serial != '': serial = '-s %s' % serial  # Prepare serial number with command line switch
             #deleting existing text by going to end of line and clicking delete multiple times
-            subprocess.check_output("adb %s shell input keyevent 123" % (serial), shell=True) 
-            subprocess.check_output("adb %s shell input keyevent %s" % (serial,Delet_Text), shell=True)
+            subprocess.check_output("adb %s shell input keyevent 123" % (serial), shell=True,encoding='utf-8')
+            subprocess.check_output("adb %s shell input keyevent %s" % (serial,Delet_Text), shell=True, encoding='utf-8')
             #enters the string
-            subprocess.check_output("adb %s shell input text '%s'" % (serial, text_to_enter), shell=True)  # Enter password
+            subprocess.check_output("adb %s shell input text '%s'" % (serial, text_to_enter), shell=True, encoding='utf-8')  # Enter password
             time.sleep(0.5)
             result = 'passed'
                 
@@ -1912,7 +1912,7 @@ def get_program_names(search_name):
             return '', '' # Failure handling in calling function
 
         cmd = 'adb %s shell pm list packages' % serial
-        res = subprocess.check_output(cmd, shell = True) # Get list of installed packages on device
+        res = subprocess.check_output(cmd, shell = True, encoding='utf-8') # Get list of installed packages on device
         res = str(res).replace('\\r','') # Remove \r text if any
         res = str(res).replace('\\n','\n') # replace \n text with line feed
         res = str(res).replace('\r','') # Remove \r carriage return if any
@@ -1932,7 +1932,7 @@ def get_program_names(search_name):
 
         # Get activity name
         cmd='adb %s shell pm dump %s' % (serial,package_name)
-        res = subprocess.check_output(cmd, shell = True)
+        res = subprocess.check_output(cmd, shell = True, encoding='utf-8')
         res = str(res).replace('\\r','') # Remove \r text if any
         res = str(res).replace('\\n','\n') # replace \n text with line feed
         res = str(res).replace('\r','') # Remove \r carriage return if any
