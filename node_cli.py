@@ -3,9 +3,14 @@
 
 import os,sys,time, os.path, base64
 from base64 import b64encode, b64decode
-sys.path.append(os.path.dirname(os.getcwd()))
-from .Utilities import ConfigModule,RequestFormatter,CommonUtil,FileUtilities,All_Device_Info
-from . import MainDriverApi
+
+# Append correct paths so that it can find the configuration files and other modules
+sys.path.append(os.path.join(os.path.dirname(os.path.realpath(__file__)), 'Framework'))
+# Move to Framework directory, so all modules can be seen
+os.chdir(os.path.join(os.path.dirname(os.path.realpath(__file__)), 'Framework'))
+
+from Framework.Utilities import ConfigModule, RequestFormatter, CommonUtil, FileUtilities, All_Device_Info
+from Framework import MainDriverApi
 from concurrent.futures import ThreadPoolExecutor
 
 def detect_admin():

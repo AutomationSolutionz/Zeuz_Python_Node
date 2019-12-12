@@ -1,13 +1,13 @@
 #!/usr/bin/env python
 # Written by Lucas Donkers
-# Function: Front-end to ZN_CLI.py and settings.conf
+# Function: Front-end to node_cli.py and settings.conf
 # Issues: try/except doesn't always work for everything on windows (base64). Python crashes on windows when we use root.after() to poll the widgets
 
-import os.path, _thread, sys, time, queue, traceback, base64
+import os.path, _thread, sys, time, traceback, base64
 
 # Import colorama for console color support
 from colorama import init as colorama_init
-from colorama import Fore, Back
+from colorama import Fore
 
 # Initialize colorama for the current platform
 colorama_init(autoreset=True)
@@ -73,7 +73,7 @@ except:
 import tkinter.messagebox
 os.chdir(os.path.join(os.path.dirname(os.path.realpath(__file__)), 'Framework')) # Move to Framework directory, so all modules can be seen
 from Framework.Utilities import ConfigModule, FileUtilities, self_updater # Modifing settings files
-from Framework.ZN_CLI import Login, disconnect_from_server, get_team_names, get_project_names, check_server_online, processing_test_case # Controlling node status and logging in
+from node_cli import Login, disconnect_from_server, get_team_names, get_project_names, check_server_online, processing_test_case # Controlling node status and logging in
 
 # Find node id file
 if sys.platform  == 'win32':
@@ -90,7 +90,7 @@ gui_title = 'ZeuZ Node v%s' % str(local_version)
 help_text = "\
 Zeuz Node Help\n\n\
 Description:\n\
-This is a graphical front-end for the ZeuZ_Node.py script. It provides an interface to configure the settings, running the Zeuz Node, and displaying the output. Either this, or the ZeuZ_Node.py script can be run with the same effect.\n\n\
+This is a graphical front-end for the node_gui.py script. It provides an interface to configure the settings, running the Zeuz Node, and displaying the output. Either this, or the node_gui.py script can be run with the same effect.\n\n\
 Show Advance Settings:\tDisplay more settings including server, port, screenshot, etc\n\
 Save Settings:\tSave all settings (whether displayed or not)\n\
 Quit: Exit immediately - Any running automation will be stopped\n\
