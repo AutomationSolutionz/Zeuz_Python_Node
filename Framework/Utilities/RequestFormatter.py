@@ -13,14 +13,29 @@ def form_uri(resource_path):
     base_server_address = 'http://%s:%s/' % (str(web_server_address), str(web_server_port))
     return base_server_address+resource_path+'/'
 
-def Post(resource_path,payload={}):
-    try: return requests.post(form_uri(resource_path),data=json.dumps(payload), verify=False).json()
-    except: return {}
 
-def Get(resource_path,payload={}):
-    try: return requests.get(form_uri(resource_path),params=json.dumps(payload), timeout=10).json()
-    except: return {}
+def Post(resource_path,payload=None):
+    if payload is None: # Removing default mutable argument
+        payload = {}
+    try:
+        return requests.post(form_uri(resource_path),data=json.dumps(payload), verify=False).json()
+    except Exception as e:
+        print("Post Exception: {}".format(e))
+        return {}
+
+
+def Get(resource_path,payload=None):
+    if payload is None: # Removing default mutable argument
+        payload = {}
+    try:
+        return requests.get(form_uri(resource_path),params=json.dumps(payload), timeout=10).json()
+    except Exception as e:
+        print("Get Exception: {}".format(e))
+        return {}
 
 def Head(resource_path):
-    try: return requests.head(form_uri(resource_path), timeout=10)
-    except: return ''
+    try:
+        return requests.head(form_uri(resource_path), timeout=10)
+    except Exception as e:
+        print("Exception in Head {}".format(e))
+        return ''

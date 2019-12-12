@@ -5,7 +5,7 @@ from Projects.Sample_Amazon_Testing import Amazon
 
 from Framework.Utilities.CommonUtil import passed_tag_list, failed_tag_list
 
-MODULE_NAME = inspect.getmoduleinfo(__file__).name
+MODULE_NAME = inspect.getmodulename(__file__)
 
 def search_an_item_on_amazon(dependency,run_time_params,step_data,file_attachment,temp_q,screen_capture,device_info):
     sModuleInfo = inspect.currentframe().f_code.co_name + " : " + MODULE_NAME

@@ -18,23 +18,23 @@ class LocustUserBehavior(TaskSet):
         file = open(os.getcwd() + os.sep + 'Built_In_Automation' + os.sep + 'Performance_Testing' + os.sep +'locustFileInput.txt','r')
         file.readline()
         TestCaseID=str(file.readline()).strip()
-        print TestCaseID
+        print(TestCaseID)
         sModuleInfo=str(file.readline()).strip()
-        print sModuleInfo
+        print(sModuleInfo)
         run_id=str(file.readline()).strip()
-        print run_id
+        print(run_id)
         driver_list=ast.literal_eval(str(file.readline()).strip())
-        print driver_list
+        print(driver_list)
         final_dependency=ast.literal_eval(str(file.readline()).strip())
-        print final_dependency
+        print(final_dependency)
         final_run_params=ast.literal_eval(str(file.readline()).strip())
-        print final_run_params
+        print(final_run_params)
         temp_ini_file=str(file.readline()).strip()
-        print temp_ini_file
+        print(temp_ini_file)
         is_linked=str(file.readline()).strip()
-        print is_linked
+        print(is_linked)
         send_log_file_only_for_fail=ast.literal_eval(str(file.readline()).strip())
-        print send_log_file_only_for_fail
+        print(send_log_file_only_for_fail)
         file.close()
         MainDriverApi.run_test_case(TestCaseID, sModuleInfo, run_id, driver_list, final_dependency, final_run_params, temp_ini_file, is_linked, send_log_file_only_for_fail, True, self.client)
 
@@ -55,5 +55,5 @@ class LocustUser(FirefoxLocust):
     locust_output_file_path = os.getcwd() + os.sep + 'Built_In_Automation' + os.sep + 'Performance_Testing' + os.sep + 'locustFileOutput.txt'
     if os.path.exists(locust_output_file_path):
         os.remove(locust_output_file_path)
-        print "output file deleted"
+        print("output file deleted")
     task_set = LocustUserBehavior

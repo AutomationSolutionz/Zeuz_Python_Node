@@ -22,7 +22,7 @@ global driver_type
 driver_type = None
 
 
-MODULE_NAME = inspect.getmoduleinfo(__file__).name
+MODULE_NAME = inspect.getmodulename(__file__)
 
 
 def Get_Element(step_data_set,driver,query_debug=False, wait_enable = True):
@@ -33,11 +33,11 @@ def Get_Element(step_data_set,driver,query_debug=False, wait_enable = True):
     '''
     try:
         sModuleInfo = inspect.currentframe().f_code.co_name + " : " + MODULE_NAME
-        generic_driver = driver
         global generic_driver
+        generic_driver = driver
         #Check the driver that is given and set the driver type
-        driver_type =_driver_type(query_debug)
         global driver_type
+        driver_type =_driver_type(query_debug)
         if driver_type == None:
             CommonUtil.ExecLog(sModuleInfo, "Incorrect driver.  Please validate driver", 3)
             return "failed"
@@ -57,7 +57,7 @@ def Get_Element(step_data_set,driver,query_debug=False, wait_enable = True):
                     else:
                         new_step_data.append(row)
                 step_data_set=new_step_data
-        except Exception,e:
+        except Exception as e:
             pass # Exceptions happen when we have an alert, but is not a problem
 
         save_parameter = ''
@@ -102,9 +102,9 @@ def Get_Element(step_data_set,driver,query_debug=False, wait_enable = True):
             CommonUtil.ExecLog(sModuleInfo, "Element query used to locate the element: %s. Query method used: %s "%(element_query,query_type), 1)
             
             if query_debug == True:
-                print "This query will not be run as query_debug is enabled.  It will only print out in console"
-                print "Your query from the step data provided is:  %s" %element_query
-                print "Your query type is: %s" %query_type
+                print("This query will not be run as query_debug is enabled.  It will only print out in console")
+                print("Your query from the step data provided is:  %s" %element_query)
+                print("Your query type is: %s" %query_type)
                 result = "passed"
             if element_query == False:
                 result = "failed"
@@ -145,22 +145,22 @@ def _construct_query (step_data_set):
         sibling_ref_exits = any("sibling parameter" in s for s in step_data_set)
         unique_ref_exists =any("unique parameter" in s for s in step_data_set)
         #get all child, element, and parent only
-        child_parameter_list = filter(lambda x: 'child parameter' in x[1], step_data_set) 
-        element_parameter_list = filter(lambda x: 'element parameter' in x[1], step_data_set) 
-        parent_parameter_list = filter(lambda x: 'parent parameter' in x[1], step_data_set) 
-        sibling_parameter_list = filter(lambda x: 'sibling parameter' in x[1], step_data_set)
-        unique_parameter_list = filter(lambda x: 'unique parameter' in x[1], step_data_set)
+        child_parameter_list = [x for x in step_data_set if 'child parameter' in x[1]] 
+        element_parameter_list = [x for x in step_data_set if 'element parameter' in x[1]] 
+        parent_parameter_list = [x for x in step_data_set if 'parent parameter' in x[1]] 
+        sibling_parameter_list = [x for x in step_data_set if 'sibling parameter' in x[1]]
+        unique_parameter_list = [x for x in step_data_set if 'unique parameter' in x[1]]
 
         if unique_ref_exists and (driver_type == 'appium' or driver_type == 'selenium') and len(unique_parameter_list)>0: #for unique identifier
             return ([unique_parameter_list[0][0],unique_parameter_list[0][2]], "unique")
         elif "css" in collect_all_attribute and "xpath" not in collect_all_attribute:
             # return the raw css command with css as type.  We do this so that even if user enters other data, we will ignore them.  
             # here we expect to get raw css query
-            return ((filter(lambda x: 'css' in x[0], step_data_set) [0][2]), "css")
+            return (([x for x in step_data_set if 'css' in x[0]] [0][2]), "css")
         elif "xpath" in collect_all_attribute and "css" not in collect_all_attribute:
             # return the raw xpath command with xpath as type.  We do this so that even if user enters other data, we will ignore them.  
             # here we expect to get raw xpath query
-            return ((filter(lambda x: 'xpath' in x[0], step_data_set) [0][2]), "xpath" )       
+            return (([x for x in step_data_set if 'xpath' in x[0]] [0][2]), "xpath" )       
         elif child_ref_exits == False and parent_ref_exits == False and sibling_ref_exits == False:
             '''  If  there are no child or parent as reference, then we construct the xpath differently'''
             #first we collect all rows with element parameter only 
@@ -242,7 +242,7 @@ def _driver_type(query_debug):
     #check if its Appium, selenium or XML
     try:
         driver_string = str(generic_driver)
-        print driver_string
+        print(driver_string)
         if query_debug == True:
             return "debug"
         elif "selenium" in driver_string or 'browser' in driver_string:
@@ -295,7 +295,7 @@ def _construct_xpath_list(parameter_list,add_dot=False):
         #we do the tag on its own  
         #tag_was_given = any("tag" in s for s in parameter_list)
         if "tag" in [x[0] for x in parameter_list]:
-            tag_item = "//"+ filter(lambda x: 'tag' in x, parameter_list)[0][2]
+            tag_item = "//"+ [x for x in parameter_list if 'tag' in x][0][2]
         else:
             tag_item = "//*"
         if add_dot != False and driver_type != 'xml':
@@ -325,7 +325,7 @@ def _switch(step_data_set):
         # find if frame switch is there.  If user enters more than one frame, it will ignore
         # user should enter multiple frame in this order parent > child > grand child ... and so on
         if "switch frame" in [x[0] for x in step_data_set]: 
-            frame_switch = filter(lambda x: 'switch frame' == x[0], step_data_set) [0][2]
+            frame_switch = [x for x in step_data_set if 'switch frame' == x[0]] [0][2]
             # first we split by > and then we reconstruct the list by striping trailing spaces 
             frame_switch_list = [(x.strip()) for x in (frame_switch.split(">"))]
             # we switch each frame in order 
@@ -339,7 +339,7 @@ def _switch(step_data_set):
             return  True 
         elif "switch window" in [x[0] for x in step_data_set]: 
             #get the value of switch window
-            window_switch = filter(lambda x: 'switch window' == x[0], step_data_set) [0][2]
+            window_switch = [x for x in step_data_set if 'switch window' == x[0]] [0][2]
             # first we split by > and then we reconstruct the list by striping trailing spaces 
             window_switch_list = [(x.strip()) for x in (window_switch.split(">"))]
             # we switch each window in order 
@@ -407,8 +407,8 @@ def _get_xpath_or_css_element(element_query,css_xpath, index_number=False):
                     else:
                         unique_element = generic_driver.find_element(By.XPATH, "//*[@%s='%s']"%(unique_key,unique_value))
                 return unique_element
-            except Exception,e:
-                print e
+            except Exception as e:
+                print(e)
                 return "failed"
         elif css_xpath == "xpath" and driver_type != 'xml':
             all_matching_elements_visible_invisible = generic_driver.find_elements(By.XPATH, element_query)
@@ -455,7 +455,7 @@ def _locate_index_number(step_data_set):
     '''
     try:
         if "index" in [x[0] for x in step_data_set]:
-            index_number = filter(lambda x: 'index' in x[0], step_data_set) [0][2] 
+            index_number = [x for x in step_data_set if 'index' in x[0]] [0][2] 
             try:
                 index_number = int (index_number)
             except:

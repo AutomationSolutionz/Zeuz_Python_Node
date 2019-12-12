@@ -1,6 +1,6 @@
 import os
 os.chdir(os.path.join(os.path.dirname(os.path.realpath(__file__)), 'Framework')) # Move to Framework directory, so all modules can be seen
-from Framework.Utilities import ConfigModule
+from .Framework.Utilities import ConfigModule
 import requests,json
 
 #GLOBAL VARS
@@ -39,11 +39,11 @@ def Get(resource_path,payload={}):
 def get_dependency():
     selected_depenency = {}
     for key in dependency:
-        print "******************** SELECT DEPENDENCY %s ********************"%(key.upper())
+        print("******************** SELECT DEPENDENCY %s ********************"%(key.upper()))
         for i in range(0,len(dependency[key])):
-            print '%d. %s'%(i+1,dependency[key][i].upper())
-        print "ENTER YOUR CHOICE: "
-        choice = int(str(raw_input()).strip())
+            print('%d. %s'%(i+1,dependency[key][i].upper()))
+        print("ENTER YOUR CHOICE: ")
+        choice = int(str(input()).strip())
         selected_depenency[key] = dependency[key][choice-1]
     return selected_depenency
 
@@ -67,14 +67,14 @@ def get_all_run_time_params_from_server():
 def get_run_time_params_from_user():
     selected_run_param = []
     for key in run_time_params:
-        print "******************** SELECT RUN TIME PARAMETER %s ********************" % (key.upper())
+        print("******************** SELECT RUN TIME PARAMETER %s ********************" % (key.upper()))
         i=0
         while i<len(run_time_params[key]):
-            print '%d. %s( %s )' % (i + 1, run_time_params[key][i][0],run_time_params[key][i][1])
+            print('%d. %s( %s )' % (i + 1, run_time_params[key][i][0],run_time_params[key][i][1]))
             i+=1
-        print '%d. NONE' % (i + 1)
-        print "ENTER YOUR CHOICE: "
-        choice = int(str(raw_input()).strip())
+        print('%d. NONE' % (i + 1))
+        print("ENTER YOUR CHOICE: ")
+        choice = int(str(input()).strip())
         if choice == i+1: #NONE
             continue
         selected_run_param.append('%s|%s|%s'%(key,run_time_params[key][choice-1][0],run_time_params[key][choice-1][1]))
@@ -82,27 +82,27 @@ def get_run_time_params_from_user():
     return ans
 
 def get_loop_input():
-    print "******************** SELECT LOOP ********************"
-    print "1. DON'T RUN IN LOOP"
-    print "2. RUN IN LOOP: "
-    print "ENTER YOUR CHOICE: "
-    choice = int(str(raw_input()).strip())
+    print("******************** SELECT LOOP ********************")
+    print("1. DON'T RUN IN LOOP")
+    print("2. RUN IN LOOP: ")
+    print("ENTER YOUR CHOICE: ")
+    choice = int(str(input()).strip())
     if choice == 2:
-        print "HOW MANY TIMES?"
-        print "ENTER YOUR CHOICE: "
-        loop = int(str(raw_input()).strip())
-        print "DO YOU WANT TO CLEANUP RUNID AFTER THE RUN?"
-        print "ENTER YOUR CHOICE: "
-        print "1. YES"
-        print "2. NO"
-        cleanup = int(str(raw_input()).strip())
+        print("HOW MANY TIMES?")
+        print("ENTER YOUR CHOICE: ")
+        loop = int(str(input()).strip())
+        print("DO YOU WANT TO CLEANUP RUNID AFTER THE RUN?")
+        print("ENTER YOUR CHOICE: ")
+        print("1. YES")
+        print("2. NO")
+        cleanup = int(str(input()).strip())
         if cleanup == 1: return loop,True
         else: return loop,False
     else: return 1,False
 
 def delete_runid_from_server(all_runid):
     if len(all_runid) == 0: return
-    print "DELETING RUNID FROM SERVER"
+    print("DELETING RUNID FROM SERVER")
     all_runid = "|".join(all_runid)
     delete_dict = {
         'run_id_list':all_runid
@@ -112,20 +112,20 @@ def delete_runid_from_server(all_runid):
         'log_list': all_runid
     }
     Get("delete_log_file_from_api", delete_dict)
-    print "RUNID DELETED FROM SERVER"
+    print("RUNID DELETED FROM SERVER")
 
 if __name__ == '__main__':
     while True:
         get_all_run_time_params_from_server()
-        print "******************** ZEUZ DEPLOY API ********************"
-        print "1. Deploy and Get Result"
-        print "2. Deploy and Get RunID only"
-        print "3. Exit"
-        print "ENTER YOUR CHOICE: "
-        choice = raw_input()
+        print("******************** ZEUZ DEPLOY API ********************")
+        print("1. Deploy and Get Result")
+        print("2. Deploy and Get RunID only")
+        print("3. Exit")
+        print("ENTER YOUR CHOICE: ")
+        choice = input()
         if str(choice).strip() == '1' or str(choice).strip() == '2':
-            print "ENTER SET NAME: "
-            set = raw_input()
+            print("ENTER SET NAME: ")
+            set = input()
             set = str(set).strip()
             selected_dependency =  get_dependency()
             selected_run_time_params = get_run_time_params_from_user()
@@ -135,7 +135,7 @@ if __name__ == '__main__':
                 loop=1
                 delete_runid=False
             all_runid = []
-            for i in xrange(loop):
+            for i in range(loop):
                 dict = {
                     'set': set,
                     'username': username,
@@ -151,7 +151,7 @@ if __name__ == '__main__':
                     result['message'] = 'Test Set Name can not be Empty'
                     result['result'] = 'Cancelled'
                     result['runid'] = ''
-                    print result
+                    print(result)
                 else:
                     result = {}
                     if str(choice).strip() == '1':
@@ -164,30 +164,30 @@ if __name__ == '__main__':
                         result['result'] = 'Cancelled'
                         result['runid'] = ''
                         if loop == 1:
-                            print result
+                            print(result)
                         else:
-                            print "Result of Loop %d : "%(i+1) + str(result)
+                            print("Result of Loop %d : "%(i+1) + str(result))
                     else:
                         converted_to_string_dict = {}
                         for key in result:
                             k = key
                             v = result[key]
-                            if isinstance(k,unicode):
+                            if isinstance(k,str):
                                 k = str(k)
-                            if isinstance(v,unicode):
+                            if isinstance(v,str):
                                 v = str(v)
                             converted_to_string_dict[k] = v
                         if loop == 1:
-                            print converted_to_string_dict
+                            print(converted_to_string_dict)
                         else:
                             if delete_runid:
                                 all_runid.append(result['runid'])
-                            print "Result of Loop %d : " % (i+1) + str(converted_to_string_dict)
+                            print("Result of Loop %d : " % (i+1) + str(converted_to_string_dict))
             if delete_runid:
                 delete_runid_from_server(all_runid)
         elif str(choice).strip() == '3':
             break
         else:
-            print "Invalid Choice"
+            print("Invalid Choice")
 
 

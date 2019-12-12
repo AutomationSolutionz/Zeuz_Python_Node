@@ -5,14 +5,14 @@ import os, sys, subprocess, inspect
 from Framework.Utilities import CommonUtil
 
 from lxml import etree
-from StringIO import StringIO
+from io import StringIO
 from xml.etree import ElementTree as ET
 from xml.sax.handler import ContentHandler
 from xml.sax import make_parser
 from glob import glob
 
 
-MODULE_NAME = inspect.getmoduleinfo(__file__).name
+MODULE_NAME = inspect.getmodulename(__file__)
 
 
 def get_filepaths(directory):

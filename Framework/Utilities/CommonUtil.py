@@ -28,7 +28,7 @@ from colorama import Fore, Back
 colorama_init(autoreset=True)
 
 
-MODULE_NAME = inspect.getmoduleinfo(__file__).name
+MODULE_NAME = inspect.getmodulename(__file__)
 
 
 # Get file path for temporary config file
@@ -45,16 +45,16 @@ load_testing = False
 log_thread_pool = None
 
 def to_unicode(obj, encoding='utf-8'):
-    if isinstance(obj, basestring):
-        if not isinstance(obj, unicode):
-            obj = unicode(obj, encoding)
+    if isinstance(obj, str):
+        if not isinstance(obj, str):
+            obj = str(obj, encoding)
         return obj
 
 def Add_Folder_To_Current_Test_Case_Log(src):
     try:
         #get the current test case locations
         dest_folder = ConfigModule.get_config_value('sectionOne', 'test_case_folder',temp_config)
-        folder_name = filter(lambda x:x!='', src.split('/'))[-1]
+        folder_name = [x for x in src.split('/') if x!=''][-1]
         if folder_name:
             des_path = os.path.join(dest_folder, folder_name)
             FL.copy_folder(src, des_path)
@@ -62,7 +62,7 @@ def Add_Folder_To_Current_Test_Case_Log(src):
         else:
             return False
 
-    except Exception, e:
+    except Exception as e:
         return Exception_Handler(sys.exc_info())
 
 
@@ -70,7 +70,7 @@ def Add_File_To_Current_Test_Case_Log(src):
     try:
         #get the current test case locations
         dest_folder = ConfigModule.get_config_value('sectionOne', 'test_case_folder',temp_config)
-        file_name = filter(lambda x:x!='', src.split('/'))[-1]
+        file_name = [x for x in src.split('/') if x!=''][-1]
         if file_name:
             des_path = os.path.join(dest_folder, file_name)
             FL.copy_file(src, des_path)
@@ -78,7 +78,7 @@ def Add_File_To_Current_Test_Case_Log(src):
         else:
             return False
 
-    except Exception, e:
+    except Exception as e:
         return Exception_Handler(sys.exc_info())
 
 def Exception_Handler(exec_info, temp_q=None,UserMessage=None):
@@ -132,7 +132,7 @@ def Result_Analyzer(sTestStepReturnStatus,temp_q):
             return "failed"
 
 
-    except Exception, e:
+    except Exception as e:
         return Exception_Handler(sys.exc_info())
 
 def ExecLog(sModuleInfo, sDetails, iLogLevel=1, _local_run="", sStatus="", force_write= False):
@@ -182,7 +182,7 @@ def ExecLog_Wrapper(sModuleInfo, sDetails, iLogLevel=1, _local_run="", sStatus="
         elif iLogLevel == 6:
             status = 'BrowserConsole'
         else:
-            print "*** Unknown log level- Set to Warning ***"
+            print("*** Unknown log level- Set to Warning ***")
             status = 'Warning'
 
         # Display on console
@@ -190,9 +190,9 @@ def ExecLog_Wrapper(sModuleInfo, sDetails, iLogLevel=1, _local_run="", sStatus="
             msg = ''
             if sModuleInfo != '': msg = sModuleInfo + "\t" # Print sModuleInfo only if provided
             msg += sDetails # Add details
-            print line_color + msg # Display in console
+            print(line_color + msg) # Display in console
         else:
-            print line_color + "%s - %s\n\t%s" % (status.upper(), sModuleInfo, sDetails) # Display in console
+            print(line_color + "%s - %s\n\t%s" % (status.upper(), sModuleInfo, sDetails)) # Display in console
 
         # Upload logs to server if local run is not set to False
         if load_testing and not force_write: return
@@ -255,7 +255,7 @@ def ExecLog_Wrapper(sModuleInfo, sDetails, iLogLevel=1, _local_run="", sStatus="
                     all_logs={}
 
 
-    except Exception, e:
+    except Exception as e:
         pass # This can happen when server is not available. In that case, we don't need to do anything
 
 def FormatSeconds(sec):
@@ -284,7 +284,7 @@ def PhysicalAvailableMemory():
     try:
         return (int(str(psutil.virtual_memory().available))) / (1024 * 1024)
 
-    except Exception, e:
+    except Exception as e:
         return Exception_Handler(sys.exc_info())
 
 screen_capture_driver, screen_capture_type = None, 'none' # Initialize global variables for TakeScreenShot()
@@ -341,9 +341,10 @@ def Thread_ScreenShot(ImageName,local_run=False):
     if take_screenshot_settings.lower() == 'false' or local_run.lower() == 'true' or screen_capture_type == 'none'or screen_capture_type == None:
         ExecLog(sModuleInfo, "Skipping screenshot due to screenshot or local_run setting", 0)
         return
-
+    print("************* ImageName ****************: {}, type: {}".format(ImageName, type(ImageName)))
     # Adjust filename and create full path (remove invalid characters, convert spaces to underscore, remove leading and trailing spaces)
-    ImageName=os.path.join(image_folder, TimeStamp("utc") + "_" + (ImageName.translate(None,''.join(chars_to_remove))).strip().replace(" ","_") + ".png")
+    trans_table = str.maketrans(dict.fromkeys(''.join(chars_to_remove))) # python3 version of translate
+    ImageName=os.path.join(image_folder, TimeStamp("utc") + "_" + (ImageName.translate(trans_table)).strip().replace(" ","_") + ".png")
     ExecLog(sModuleInfo, "Capturing screen on %s, with driver: %s, and saving to %s" % (str(screen_capture_type), str(screen_capture_driver), ImageName), 0)
     
     try:
@@ -443,7 +444,7 @@ class MachineInfo():
             s.close()
             return ip
 
-        except Exception, e:
+        except Exception as e:
             return Exception_Handler(sys.exc_info())
 
     def getLocalUser(self):

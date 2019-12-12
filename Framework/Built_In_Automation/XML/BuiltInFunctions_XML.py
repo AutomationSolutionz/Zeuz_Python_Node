@@ -29,7 +29,7 @@ from Framework.Utilities.CommonUtil import passed_tag_list, failed_tag_list
 #########################
 
 
-MODULE_NAME = inspect.getmoduleinfo(__file__).name
+MODULE_NAME = inspect.getmodulename(__file__)
 
 
 default_tag_list = ['Default', 'default', 'DEFAULT', 'Unchanged', 'unchanged', 'UNCHAGED']
