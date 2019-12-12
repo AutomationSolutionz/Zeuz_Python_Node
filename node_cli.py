@@ -1,12 +1,22 @@
 # -*- coding: utf-8 -*-
 # -*- coding: cp1252 -*-
 
-import os,sys,time, os.path, base64
+import os, sys, time, os.path, base64, signal
 from base64 import b64encode, b64decode
-sys.path.append(os.path.dirname(os.getcwd()))
-from .Utilities import ConfigModule,RequestFormatter,CommonUtil,FileUtilities,All_Device_Info
-from . import MainDriverApi
+
+# Append correct paths so that it can find the configuration files and other modules
+sys.path.append(os.path.join(os.path.dirname(os.path.realpath(__file__)), 'Framework'))
+# Move to Framework directory, so all modules can be seen
+os.chdir(os.path.join(os.path.dirname(os.path.realpath(__file__)), 'Framework'))
+
+from Framework.Utilities import ConfigModule, RequestFormatter, CommonUtil, FileUtilities, All_Device_Info
+from Framework import MainDriverApi
 from concurrent.futures import ThreadPoolExecutor
+
+def signal_handler(sig, frame):
+    print("Disconnecting from server...")
+    disconnect_from_server()
+    sys.exit(0)
 
 def detect_admin():
     # Windows only - Return True if program run as admin
@@ -388,5 +398,8 @@ def pass_decode(key, enc):
     return "".join(dec)
 
 if __name__=='__main__':
+    signal.signal(signal.SIGINT, signal_handler)
+    print("Press Ctrl-C to disconnect and quit.")
+
     Login()
 
