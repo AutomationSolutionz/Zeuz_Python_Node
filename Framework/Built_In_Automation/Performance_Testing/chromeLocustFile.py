@@ -58,5 +58,4 @@ class LocustUser(ChromeLocust):
     if os.path.exists(locust_output_file_path):
         os.remove(locust_output_file_path)
         print("output file deleted")
-    CommonUtil.log_thread_pool = ThreadPoolExecutor(max_workers=10)
     task_set = LocustUserBehavior
