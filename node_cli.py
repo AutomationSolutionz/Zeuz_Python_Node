@@ -80,9 +80,6 @@ if not os.path.exists(os.path.join(FileUtilities.get_home_folder(), 'Desktop',os
 temp_ini_file = os.path.join(os.path.join(FileUtilities.get_home_folder(), os.path.join('Desktop',os.path.join('AutomationLog',ConfigModule.get_config_value('Temp', '_file')))))
 
 def Login():
-    if CommonUtil.log_thread_pool:
-        CommonUtil.log_thread_pool.shutdown(wait=True)
-    CommonUtil.log_thread_pool = ThreadPoolExecutor(max_workers=10)
     username=ConfigModule.get_config_value(AUTHENTICATION_TAG,USERNAME_TAG)
     password = ConfigModule.get_config_value(AUTHENTICATION_TAG,PASSWORD_TAG)
 
