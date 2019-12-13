@@ -208,58 +208,41 @@ def ExecLog(sModuleInfo, sDetails, iLogLevel=1, _local_run="", sStatus="", force
     # Set current log as the next previous log
     previous_log_line = current_log_line
 
-    # Upload logs to server if local run is not set to False
-    if load_testing and not force_write: return
     if iLogLevel > 0:
-        log_id = ConfigModule.get_config_value('sectionOne', 'sTestStepExecLogId', temp_config)
-        FWLogFolder = ConfigModule.get_config_value('sectionOne', 'log_folder', temp_config)
-        if os.path.exists(FWLogFolder) == False: FL.CreateFolder(FWLogFolder)  # Create log directory if missing
-        BrowserConsoleLogFile = ''
-        if FWLogFolder == '':
-            FWLogFile = ConfigModule.get_config_value('sectionOne', 'temp_run_file_path',
-                                                      temp_config) + os.sep + 'execlog.log'
-            BrowserConsoleLogFile = ConfigModule.get_config_value('sectionOne', 'temp_run_file_path',
-                                                                  temp_config) + os.sep + 'BrowserLog.log'
+        if iLogLevel == 6:
+            FWLogFolder = ConfigModule.get_config_value('sectionOne', 'log_folder', temp_config)
+            if os.path.exists(FWLogFolder) == False: FL.CreateFolder(FWLogFolder)  # Create log directory if missing
+
+            if FWLogFolder == '':
+                BrowserConsoleLogFile = ConfigModule.get_config_value('sectionOne', 'temp_run_file_path',
+                                                                      temp_config) + os.sep + 'BrowserLog.log'
+            else:
+                BrowserConsoleLogFile = FWLogFolder + os.sep + 'BrowserLog.log'
+
+            logger = logging.getLogger(__name__)
+
+            browser_log_handler = None
+            if os.name == 'posix':
+                try:
+                    browser_log_handler = logging.FileHandler(BrowserConsoleLogFile)
+                except:
+                    pass
+            elif os.name == 'nt':
+                browser_log_handler = logging.FileHandler(BrowserConsoleLogFile)
+
+            formatter = logging.Formatter('%(asctime)s - %(levelname)s - %(message)s')
+
+            if browser_log_handler:
+                browser_log_handler.setFormatter(formatter)
+                logger.addHandler(browser_log_handler)
+                logger.setLevel(logging.DEBUG)
+                logger.info(sModuleInfo + ' - ' + sDetails + '' + sStatus)
+                logger.removeHandler(browser_log_handler)
         else:
-            FWLogFile = FWLogFolder + os.sep + 'temp.log'
-            BrowserConsoleLogFile = FWLogFolder + os.sep + 'BrowserLog.log'
+            # Except the browser logs
+            global all_logs, all_logs_count, all_logs_list
 
-        logger = logging.getLogger(__name__)
-
-        hdlr = None
-        browserLogHdlr = None
-        if os.name == 'posix':
-            try:
-                hdlr = logging.FileHandler(FWLogFile)
-                browserLogHdlr = logging.FileHandler(BrowserConsoleLogFile)
-            except:
-                pass
-        elif os.name == 'nt':
-            hdlr = logging.FileHandler(FWLogFile)
-            browserLogHdlr = logging.FileHandler(BrowserConsoleLogFile)
-        formatter = logging.Formatter('%(asctime)s - %(levelname)s - %(message)s')
-
-        if iLogLevel != 6:
-            if hdlr != None:
-                hdlr.setFormatter(formatter)
-                logger.addHandler(hdlr)
-
-            logger.setLevel(logging.DEBUG)
-            logger.info(sModuleInfo + ' - ' + sDetails + '' + sStatus)
-            logger.removeHandler(hdlr)
-        else:
-            if browserLogHdlr != None:
-                browserLogHdlr.setFormatter(formatter)
-                logger.addHandler(browserLogHdlr)
-
-            logger.setLevel(logging.DEBUG)
-            logger.info(sModuleInfo + ' - ' + sDetails + '' + sStatus)
-            logger.removeHandler(browserLogHdlr)
-
-        # Write log line to server
-        # r = RequestFormatter.Get('log_execution',{'logid': log_id, 'modulename': sModuleInfo, 'details': sDetails, 'status': status,'loglevel': iLogLevel})
-        global all_logs, all_logs_count, all_logs_list
-        if iLogLevel != 5:  # Except the broserLogs
+            log_id = ConfigModule.get_config_value('sectionOne', 'sTestStepExecLogId', temp_config)
             now = datetime.datetime.now().strftime('%Y-%m-%d %H:%M:%S')
             all_logs[all_logs_count] = {'logid': log_id, 'modulename': sModuleInfo, 'details': sDetails,
                                         'status': status, 'loglevel': iLogLevel, 'tstamp': str(now)}
