@@ -405,9 +405,9 @@ def Sleep(data_set):
     CommonUtil.ExecLog(sModuleInfo,"Function Start", 0)
 
     try:
-        seconds = int(data_set[0][2])
-        print("Sleeping for %d seconds" % seconds)
-        CommonUtil.ExecLog(sModuleInfo, "Sleeping for %d seconds" % seconds, 1)
+        seconds = float(data_set[0][2])
+        print(f"Sleeping for {seconds} seconds")
+        CommonUtil.ExecLog(sModuleInfo, f"Sleeping for {seconds} seconds", 1)
         time.sleep(seconds)
         return "passed"
     except Exception:
