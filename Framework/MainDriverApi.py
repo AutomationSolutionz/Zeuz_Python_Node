@@ -657,12 +657,16 @@ def call_driver_function_of_test_step(sModuleInfo, TestStepsList, StepSeq, step_
 # runs all test steps of a test case
 def run_all_test_steps_in_a_test_case(Stepscount, test_case, sModuleInfo, run_id, TestStepsList, file_specific_steps,
                                       driver_list, final_dependency, final_run_params, test_case_result_index,
-                                      temp_ini_file, debug=False, debug_steps=[], is_linked='', performance=False):
+                                      temp_ini_file, debug=False, debug_steps=None, is_linked='', performance=False):
 
     # define variables
     StepSeq = 1
     sTestStepResultList = []
     already_failed = False
+
+    # Removing mutable default argument problem
+    if debug_steps is None:
+        debug_steps = []
 
     # performance testing
     if performance:
