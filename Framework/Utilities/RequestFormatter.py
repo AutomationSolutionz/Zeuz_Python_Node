@@ -10,7 +10,12 @@ SERVER_PORT='server_port'
 def form_uri(resource_path):
     web_server_address = ConfigModule.get_config_value(SERVER_TAG, SERVER_ADDRESS_TAG)
     web_server_port = ConfigModule.get_config_value(SERVER_TAG, SERVER_PORT)
-    base_server_address = 'http://%s:%s/' % (str(web_server_address), str(web_server_port))
+
+    web_server_address = str(web_server_address).strip().strip("/")
+    web_server_port = str(web_server_port).strip()
+    if web_server_port == "":
+        web_server_port = "80"
+    base_server_address = 'http://%s:%s/' % (web_server_address, web_server_port)
     return base_server_address+resource_path+'/'
 
 
