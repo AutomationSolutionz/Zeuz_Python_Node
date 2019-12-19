@@ -15,7 +15,11 @@ def form_uri(resource_path):
     web_server_port = str(web_server_port).strip()
     if web_server_port == "":
         web_server_port = "80"
-    base_server_address = 'http://%s:%s/' % (web_server_address, web_server_port)
+
+    if web_server_address.startswith("http://") or web_server_address.startswith("https://"):
+        base_server_address = "{}:{}/".format(web_server_address,web_server_port)
+    else:
+        base_server_address = 'http://{}:{}/'.format(web_server_address, web_server_port)
     return base_server_address+resource_path+'/'
 
 
