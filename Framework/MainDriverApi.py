@@ -984,18 +984,6 @@ def write_log_file_for_test_case(sTestCaseStatus, test_case, run_id, sTestCaseEn
         local_run_settings = ConfigModule.get_config_value(
             'RunDefinition', 'local_run')
         if local_run_settings == False or local_run_settings == 'False':
-            current_log_file = os.path.join(ConfigModule.get_config_value('sectionOne', 'log_folder', temp_ini_file),
-                                            'temp.log')
-            temp_log_file = os.path.join(ConfigModule.get_config_value('sectionOne', 'log_folder', temp_ini_file),
-                                         test_case + '.log')
-            lines_seen = set()
-            outfile = open(temp_log_file, 'w')
-            for line in open(current_log_file, 'r'):
-                if line not in lines_seen:
-                    outfile.write(line)
-                    lines_seen.add(line)
-            outfile.close()
-            FL.DeleteFile(current_log_file)
             # FL.RenameFile(ConfigModule.get_config_value('sectionOne','log_folder'), 'temp.log',TCID+'.log')
             TCLogFile = FL.ZipFolder(ConfigModule.get_config_value('sectionOne', 'test_case_folder', temp_ini_file),
                                      ConfigModule.get_config_value('sectionOne', 'test_case_folder',
@@ -1032,15 +1020,15 @@ def write_log_file_for_test_case(sTestCaseStatus, test_case, run_id, sTestCaseEn
 def start_sending_log_to_server(run_id, temp_ini_file):
     local_run_settings = ConfigModule.get_config_value(
         'RunDefinition', 'local_run')
-    if local_run_settings == False or local_run_settings == 'False':
-        current_log_file = os.path.join(ConfigModule.get_config_value('sectionOne', 'log_folder', temp_ini_file),
-                                        'temp.log')
-        lines_seen = set()
-        for line in open(current_log_file, 'r'):
-            if line not in lines_seen:
-                lines_seen.add(line)
-                send_debug_data(run_id, "log", line)
-        FL.DeleteFile(current_log_file)
+    # if local_run_settings == False or local_run_settings == 'False':
+    #     current_log_file = os.path.join(ConfigModule.get_config_value('sectionOne', 'log_folder', temp_ini_file),
+    #                                     'temp.log')
+    #     lines_seen = set()
+    #     for line in open(current_log_file, 'r'):
+    #         if line not in lines_seen:
+    #             lines_seen.add(line)
+    #             send_debug_data(run_id, "log", line)
+    #     FL.DeleteFile(current_log_file)
         # all_log = list(lines_seen)
         # all_log = "###".join(all_log)
         # print all_log
