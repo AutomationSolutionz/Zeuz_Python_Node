@@ -12,7 +12,7 @@
 #########################
 
 from appium import webdriver
-import os, sys, time, inspect, subprocess, re, signal, thread, requests
+import os, sys, time, inspect, subprocess, re, signal, _thread, requests
 from Framework.Utilities import CommonUtil
 from Framework.Built_In_Automation.Mobile.Android.adb_calls import adbOptions
 from Framework.Built_In_Automation.Mobile.iOS import iosOptions
@@ -23,7 +23,7 @@ from Framework.Built_In_Automation.Shared_Resources import LocateElement
 import psutil
 
 
-MODULE_NAME = inspect.getmoduleinfo(__file__).name
+MODULE_NAME = inspect.getmodulename(__file__)
 
 PATH_ = lambda p: os.path.abspath(os.path.join(os.path.dirname(__file__), p))
 PATH = '%s'%PATH_
@@ -106,7 +106,7 @@ def find_appium():
     # Verify if we have the binary location    
     if appium_binary == '': # Didn't find where appium was installed
         CommonUtil.ExecLog(sModuleInfo, "Appium not found. Trying to locate via which", 0)
-        try: appium_binary = subprocess.check_output('which appium', shell = True).strip()
+        try: appium_binary = subprocess.check_output('which appium', encoding='utf-8', shell = True).strip()
         except: pass
         
         if appium_binary == '': # Didn't find where appium was installed
@@ -491,7 +491,7 @@ def start_appium_server():
                     CommonUtil.ExecLog(sModuleInfo,"Couldn't launch appium server, please do it manually ny typing 'appium &' in the terminal",2)
                     pass
             appium_details[device_id]['server'] = appium_server # Save the server object for teardown
-        except Exception, returncode: # Couldn't run server
+        except Exception as returncode: # Couldn't run server
             return CommonUtil.Exception_Handler(sys.exc_info(), None, "Couldn't start Appium server. May not be installed, or not in your PATH: %s" % returncode)
         
         # Wait for server to startup and return
@@ -574,13 +574,14 @@ def start_appium_driver(package_name = '', activity_name = '', filename = '', pl
                         #saving simulator path for future use
                         Shared_Resources.Set_Shared_Variables('ios_simulator_folder_path',str(app))
                     app = os.path.join(app, ios)
-                    bundle_id = str(subprocess.check_output(['osascript', '-e', 'id of app "%s"'%str(app)])).strip()
+                    encoding = 'utf-8'
+                    bundle_id = str(subprocess.check_output(['osascript', '-e', 'id of app "%s"'%str(app)]), encoding=encoding).strip()
                     desired_caps = {}
                     desired_caps['app'] = app  # Use set_value() for writing to element
                     desired_caps['platformName'] = 'iOS'  # Read version #!!! Temporarily hard coded
                     desired_caps['platformVersion'] = platform_version
                     desired_caps['deviceName'] = device_name
-                    desired_caps['bundleId'] = bundle_id
+                    desired_caps['bundleId'] = bundle_id.replace('\\n','')
                     desired_caps['wdaLocalPort'] = wdaLocalPort
                     desired_caps['udid'] = appium_details[device_id]['serial']
                     desired_caps['newCommandTimeout'] = 6000
@@ -623,8 +624,8 @@ def start_appium_driver(package_name = '', activity_name = '', filename = '', pl
                     appium_driver = None
                     CommonUtil.ExecLog(sModuleInfo,"Error during Appium setup", 3)
                     return 'failed',launch_app
-            except Exception,e:
-                print e
+            except Exception as e:
+                print(e)
                 return CommonUtil.Exception_Handler(sys.exc_info(), None, "Error connecting to Appium server to create driver instance"),launch_app
 
         else: # Driver is already setup, don't do anything
@@ -1007,7 +1008,7 @@ def swipe_handler_android(data_set):
         try:
             # Adjust numbers depending on type provided by user - float or integer expected here - convert into pixels
             if exact != '': # User specified exact coordinates, so use those and nothing else
-                x1, y1, x2, y2 = map(int, exact.split(','))
+                x1, y1, x2, y2 = list(map(int, exact.split(',')))
             else:
                 inset = int(str(inset).replace('%', '')) / 100.0 # Convert % to float
                 position = int(str(position).replace('%', '')) / 100.0 # Convert % to float
@@ -1532,10 +1533,10 @@ def Clear_And_Enter_Text_ADB(data_set, serial=''):
             
             if serial != '': serial = '-s %s' % serial  # Prepare serial number with command line switch
             #deleting existing text by going to end of line and clicking delete multiple times
-            subprocess.check_output("adb %s shell input keyevent 123" % (serial), shell=True) 
-            subprocess.check_output("adb %s shell input keyevent %s" % (serial,Delet_Text), shell=True)
+            subprocess.check_output("adb %s shell input keyevent 123" % (serial), shell=True,encoding='utf-8')
+            subprocess.check_output("adb %s shell input keyevent %s" % (serial,Delet_Text), shell=True, encoding='utf-8')
             #enters the string
-            subprocess.check_output("adb %s shell input text '%s'" % (serial, text_to_enter), shell=True)  # Enter password
+            subprocess.check_output("adb %s shell input text '%s'" % (serial, text_to_enter), shell=True, encoding='utf-8')  # Enter password
             time.sleep(0.5)
             result = 'passed'
                 
@@ -1676,7 +1677,7 @@ def Android_Keystroke_Key_Mapping(keystroke, hold_key = False):
             appium_driver.press_keycode(key) # driver.keyevent() is depreciated
 
         return 'passed'
-    except Exception, e:
+    except Exception as e:
         return CommonUtil.Exception_Handler(sys.exc_info())
 
 def iOS_Keystroke_Key_Mapping(keystroke):
@@ -1837,7 +1838,7 @@ def Validate_Text_Appium(data_set):
             CommonUtil.ExecLog(sModuleInfo, ">>>>>>>> Actual Text: %s" %visible_list_of_element_text, 0)
 #             print (">>>>>>>> Actual Text: %s" %visible_list_of_element_text)
             i = 0
-            for x in xrange(0, len(visible_list_of_element_text)): 
+            for x in range(0, len(visible_list_of_element_text)): 
                 if (visible_list_of_element_text[x] == expected_text_data[i]): # Validate the matching string
                     CommonUtil.ExecLog(sModuleInfo, "The text element '%s' has been validated by using complete match." %visible_list_of_element_text[x], 1)
                     i += 1
@@ -1911,7 +1912,7 @@ def get_program_names(search_name):
             return '', '' # Failure handling in calling function
 
         cmd = 'adb %s shell pm list packages' % serial
-        res = subprocess.check_output(cmd, shell = True) # Get list of installed packages on device
+        res = subprocess.check_output(cmd, shell = True, encoding='utf-8') # Get list of installed packages on device
         res = str(res).replace('\\r','') # Remove \r text if any
         res = str(res).replace('\\n','\n') # replace \n text with line feed
         res = str(res).replace('\r','') # Remove \r carriage return if any
@@ -1931,7 +1932,7 @@ def get_program_names(search_name):
 
         # Get activity name
         cmd='adb %s shell pm dump %s' % (serial,package_name)
-        res = subprocess.check_output(cmd, shell = True)
+        res = subprocess.check_output(cmd, shell = True, encoding='utf-8')
         res = str(res).replace('\\r','') # Remove \r text if any
         res = str(res).replace('\\n','\n') # replace \n text with line feed
         res = str(res).replace('\r','') # Remove \r carriage return if any

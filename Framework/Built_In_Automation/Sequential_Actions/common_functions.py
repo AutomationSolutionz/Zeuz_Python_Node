@@ -50,11 +50,11 @@ programming_logic_keywords=[
 ]
 
 
-MODULE_NAME = inspect.getmoduleinfo(__file__).name
+MODULE_NAME = inspect.getmodulename(__file__)
 
 
 def unmask_string(givenText):
-    for e in unmask_characters.keys():
+    for e in list(unmask_characters.keys()):
         givenText=givenText.replace(e,unmask_characters[e])
     return givenText
 
@@ -278,7 +278,7 @@ def get_module_and_function(action_name, action_sub_field):
     module = ''
     try:
         action_list = action_sub_field.split(' ') # Split sub-field, so we can get moudle name from step data
-        if action_list > 1: # Should be at least two words in the sub-field
+        if len(action_list) > 1: # Should be at least two words in the sub-field
             # Find the function matching the module (decide later if we need it or not)
             for item in action_list: # Loop through split string
                 for action_index in actions:
@@ -405,9 +405,9 @@ def Sleep(data_set):
     CommonUtil.ExecLog(sModuleInfo,"Function Start", 0)
 
     try:
-        seconds = int(data_set[0][2])
-        print "Sleeping for %d seconds" % seconds
-        CommonUtil.ExecLog(sModuleInfo, "Sleeping for %d seconds" % seconds, 1)
+        seconds = float(data_set[0][2])
+        print(f"Sleeping for {seconds} seconds")
+        CommonUtil.ExecLog(sModuleInfo, f"Sleeping for {seconds} seconds", 1)
         time.sleep(seconds)
         return "passed"
     except Exception:
@@ -596,7 +596,7 @@ def Save_Current_Time(data_set):
                 now_hour=now.hour
 
             variable_value = str(months[now.month])+" "+str(now.day)+", "+str(now.year)+", "+str(now_hour)+":"+str(now.minute)+" "+time
-            print variable_value
+            print(variable_value)
     if variable_name != '' and variable_value != '':
         return sr.Set_Shared_Variables(variable_name,variable_value)
     else:
@@ -780,7 +780,7 @@ def sequential_actions_settings(data_set):
 
 def print_shared_variables():
     for each in sr.shared_variables:
-        print each + " : " +str(sr.shared_variables[each])
+        print(each + " : " +str(sr.shared_variables[each]))
 
 
 def set_server_variable(data_set):

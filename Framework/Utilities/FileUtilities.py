@@ -22,12 +22,12 @@ def CreateFolder(folderPath, forced=True):
     try:
         if os.path.isdir(folderPath):
             if forced == False:
-                print "folder already exists"
+                print("folder already exists")
                 return True
             DeleteFolder(folderPath)
         os.makedirs(folderPath)
         return True
-    except Exception, e:
+    except Exception as e:
         return "Error: %s" % e
 
 
@@ -49,21 +49,21 @@ def DeleteFolder(sFolderPath):
             return True
         else:
             return False
-    except Exception, e:
+    except Exception as e:
         return "Error: %s" % e
 
 
 def CreateFile(sFilePath):
     try:
         if os.path.isfile(sFilePath):
-            print "File already exists"
+            print("File already exists")
             return False
         else:
-            print "Creating new file"
+            print("Creating new file")
             newfile = open(sFilePath, 'w')
             newfile.close()
             return True
-    except Exception, e:
+    except Exception as e:
         return "Error: %s" % e
 
 
@@ -88,8 +88,8 @@ def ZipFolder(dir, zip_file):
 
         zip.close()
         return zip_file
-    except Exception, e:
-        print "Exception :", e
+    except Exception as e:
+        print("Exception :", e)
         return False
 
 
@@ -98,7 +98,7 @@ def DeleteFile(sFilePath):
         if os.path.isfile(sFilePath):
             os.remove(sFilePath)
             return True
-    except Exception, e:
+    except Exception as e:
         return "Error: %s" % e
 
 
@@ -112,8 +112,8 @@ def copy_folder(src, dest):
     try:
         shutil.copytree(src, dest)
         return True
-    except Exception, e:
-        print "Error: %s" % e
+    except Exception as e:
+        print("Error: %s" % e)
         return False
 
 
@@ -127,6 +127,6 @@ def copy_file(src, dest):
     try:
         shutil.copyfile(src, dest)
         return True
-    except Exception, e:
-        print "Error: %s" % e
+    except Exception as e:
+        print("Error: %s" % e)
         return False

@@ -16,7 +16,7 @@ import sys, os, os.path, shutil, requests, urllib3, zipfile, glob
 urllib3.disable_warnings() # Hide warnings from requests module
 
 # Import local modules
-import ConfigModule
+from . import ConfigModule
 
 # Global variables
 version_url = 'https://raw.githubusercontent.com/AutomationSolutionz/Zeuz_Python_Node/master/Framework/Version.txt' # Version of newest software
@@ -51,7 +51,7 @@ def copytree(src_dir, dst_dir, skip = []):
                         os.mkdir(dst)
                         #print "NEW DIR:", dst
                 except:
-                    print "ERR1", dst
+                    print("ERR1", dst)
 
             # Copy files
             for filename in files:
@@ -68,10 +68,10 @@ def copytree(src_dir, dst_dir, skip = []):
 
                     shutil.copy(src, dst)
                     #print "NEW File:", dst
-                except Exception, e:
-                    print "ERR3: ", e, src, dst
-    except Exception, e:
-        print "Err", e
+                except Exception as e:
+                    print("ERR3: ", e, src, dst)
+    except Exception as e:
+        print("Err", e)
 
 def remove_deleted(src_dir, dst_dir, skip = []):
     ''' Delete files and directories from dst, that do not exist in src '''
@@ -101,7 +101,7 @@ def remove_deleted(src_dir, dst_dir, skip = []):
                         shutil.rmtree(dst)
                         #print "DEL DIR:", dst
                 except:
-                    print "ERR", dst
+                    print("ERR", dst)
 
             # Delete files
             for filename in files:
@@ -119,9 +119,9 @@ def remove_deleted(src_dir, dst_dir, skip = []):
                         if os.path.exists(dst): os.unlink(dst) # Check in case file was deleted by above
                         #print "DEL File:", dst
                 except:
-                    print "ERR2: ", dst
-    except Exception, e:
-        print "Err", e
+                    print("ERR2: ", dst)
+    except Exception as e:
+        print("Err", e)
         
 def Download_File(url, filename = ''):
     ''' Download a file with progress update in percentage '''
@@ -138,8 +138,8 @@ def Download_File(url, filename = ''):
 
         if os.sep not in filename: filename = os.path.join(os.getcwd(), filename)
         return filename
-    except Exception, e:
-        print "Error downloading: %s" % e
+    except Exception as e:
+        print("Error downloading: %s" % e)
         return False
 
 def unzip(zipFilePath, destDir):
@@ -157,8 +157,8 @@ def unzip(zipFilePath, destDir):
                 with open(os.path.join(destDir, name), 'wb') as fd: fd.write(zfile.read(name))
         zfile.close()
         return True
-    except Exception, e: 
-        print "Err", e
+    except Exception as e: 
+        print("Err", e)
         return False
 
 
@@ -190,7 +190,7 @@ def check_for_updates():
         # No update
         else: check_complete = 'noupdate'
     except:
-        print "Error"
+        print("Error")
         return False
 
 def download_new_version(zeuz_node_package):

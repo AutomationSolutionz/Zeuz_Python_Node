@@ -31,7 +31,7 @@ gui.FAILSAFE = False
 #                       #
 #########################
 
-MODULE_NAME = inspect.getmoduleinfo(__file__).name
+MODULE_NAME = inspect.getmodulename(__file__)
 
 # Valid image positions
 positions = ('left', 'right', 'centre', 'center')

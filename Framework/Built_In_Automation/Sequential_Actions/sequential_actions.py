@@ -255,14 +255,14 @@ import time
 from concurrent.futures import ThreadPoolExecutor
 from  datetime import datetime, timedelta
 
-import common_functions as common # Functions that are common to all modules
+from . import common_functions as common # Functions that are common to all modules
 from Framework.Built_In_Automation.Shared_Resources import BuiltInFunctionSharedResources as sr
 from Framework.Built_In_Automation.Shared_Resources import LocateElement
 from Framework.Utilities import CommonUtil
 from Framework.Utilities.CommonUtil import passed_tag_list, failed_tag_list  # Allowed return strings, used to normalize pass/fail
 
 
-MODULE_NAME = inspect.getmoduleinfo(__file__).name
+MODULE_NAME = inspect.getmodulename(__file__)
 
 # Recall dependency, if not already set
 dependency = None
@@ -330,12 +330,23 @@ def write_browser_logs():
             driver = sr.Get_Shared_Variables('selenium_driver')
             for browser_log in driver.get_log('browser'):
                 CommonUtil.ExecLog(sModuleInfo,browser_log['message'],6)
-    except:
+    except Exception as e:
+        print("Browser Log Exception: {}".format(e))
         pass
 
-def Sequential_Actions(step_data, _dependency = {}, _run_time_params = {}, _file_attachment = {}, _temp_q = '',screen_capture='Desktop',_device_info = {}):
+def Sequential_Actions(step_data, _dependency=None, _run_time_params=None, _file_attachment=None, _temp_q ='', screen_capture='Desktop',
+                       _device_info=None):
     ''' Main Sequential Actions function - Performs logical decisions based on user input '''
-    
+
+    if _device_info is None:
+        _device_info = {}
+    if _file_attachment is None:
+        _file_attachment = {}
+    if _run_time_params is None:
+        _run_time_params = {}
+    if _dependency is None:
+        _dependency = {}
+
     sModuleInfo = inspect.currentframe().f_code.co_name + " : " + MODULE_NAME
     CommonUtil.ExecLog(sModuleInfo,"Function Start", 0)
     # Initialize
@@ -520,8 +531,9 @@ def Handle_While_Loop_Action(step_data, data_set_no):
         return "failed",[]
 
 
-def Run_Sequential_Actions(data_set_list=[]): #data_set_no will used in recursive conditional action call
-
+def Run_Sequential_Actions(data_set_list=None): #data_set_no will used in recursive conditional action call
+    if data_set_list is None:
+        data_set_list = []
     sModuleInfo = inspect.currentframe().f_code.co_name + " : " + MODULE_NAME
     try:
         result = 'failed' # Initialize result
@@ -653,7 +665,7 @@ def Run_Sequential_Actions(data_set_list=[]): #data_set_no will used in recursiv
                             if custom_output != '': sr.Set_Shared_Variables(custom_var, custom_output) # Save output to user specified shared variable name
                             CommonUtil.ExecLog(sModuleInfo, "Function executed successfully: %s" % str(custom_output), 1)
                             result = 'passed'
-                        except Exception, e:
+                        except Exception as e:
                             CommonUtil.ExecLog(sModuleInfo, "Failed to execute function %s from the custom module: %s" % (custom_module, e), 3)
                             return 'failed',skip_for_loop
                     
@@ -735,12 +747,12 @@ def Loop_Action_Handler(data, row, dataset_cnt):
                 nested_loop = True
                 nested_double = True
                 row = (row[0], row[1], str(row[2]).split("-")[1])
-            sets = map(int, row[2].replace(' ', '').split(',')) # Save data sets to loop
+            sets = list(map(int, row[2].replace(' ', '').split(','))) # Save data sets to loop
             sets = [x - 1 for x in sets] # Convert data set numbers to array friendly
             new_step_data = []
             for i in sets: new_step_data.append(i) # Create new sub-set with indexes of data sets
-        except Exception,e:
-            print e
+        except Exception as e:
+            print(e)
             CommonUtil.ExecLog(sModuleInfo, "Loop format incorrect in Value field. Expected list of data sets. Eg: '2,3,4'", 3)
             return 'failed',skip
         
@@ -1068,7 +1080,7 @@ def Loop_Action_Handler(data, row, dataset_cnt):
             CommonUtil.ExecLog(sModuleInfo,"Loop iterated %d times successfully"%sub_set_cnt, 1, force_write=True)
 
         return result, skip
-    except Exception,e:
+    except Exception as e:
         return CommonUtil.Exception_Handler(sys.exc_info())
 
 def Conditional_Action_Handler(data_set, row, logic_row):

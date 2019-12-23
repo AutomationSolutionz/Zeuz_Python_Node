@@ -22,7 +22,7 @@ from Framework.Utilities import CommonUtil
 from Framework.Utilities.CommonUtil import passed_tag_list, failed_tag_list, skipped_tag_list
 from Framework.Built_In_Automation.Shared_Resources import BuiltInFunctionSharedResources as Shared_Resources
 
-MODULE_NAME = inspect.getmoduleinfo(__file__).name
+MODULE_NAME = inspect.getmodulename(__file__)
 
 #########################
 #                       #
@@ -40,6 +40,7 @@ def get_home_folder():
     CommonUtil.ExecLog(sModuleInfo, "Function start", 0)
 
     try:
+        path = False
         if _platform == "linux" or _platform == "linux2" or _platform == "darwin":
             path = os.getenv('HOME') 
         elif _platform == "win32":
@@ -669,7 +670,7 @@ def random_string_generator(pattern='nluc', size=10):
             if pattern[index] == 'l':  # Lowercase
                 chars += string.ascii_lowercase
             if pattern[index] == 'u':  # Uppercase
-                chars += string.uppercase
+                chars += string.ascii_uppercase
             if pattern[index] == 'c':  # Characters
                 chars += punctuation
 
@@ -794,7 +795,7 @@ def sanitize_step_data(step_data, valid_chars = '', clean_whitespace_only = Fals
     else:
         column = str(column).replace(' ', '') # Remove spaces
         column = column.split(',') # Put into list
-        column = map(int, column) # Convert numbers in list into integers, so they can be used to address tuple elements
+        column = list(map(int, column)) # Convert numbers in list into integers, so they can be used to address tuple elements
     
     new_step_data = [] # Create empty list that will contain the data sets
     for data_set in step_data: # For each data set within step data
@@ -807,7 +808,7 @@ def sanitize_step_data(step_data, valid_chars = '', clean_whitespace_only = Fals
                     continue # Do not change string
                 
                 # Sanitize the column for this row
-                new_row[i] = sanitize_string(new_row[i], valid_chars, clean_whitespace_only, maxLength = None)
+                new_row[i] = sanitize_string(new_row[i], valid_chars, clean_whitespace_only)
 
             new_data_set.append(tuple(new_row)) # Append list as tuple to data set list
         new_step_data.append(new_data_set) # Append data set to step data
@@ -904,6 +905,7 @@ def Copy_File_or_Folder(step_data):
         file_attachment = Shared_Resources.Get_Shared_Variables('file_attachment')
 
     try:
+        from_path = None
         if _platform == "linux" or _platform == "linux2" or _platform == "darwin":
             from_path = str(step_data[0][2]).strip()  # location of the file/folder to be copied
             if from_path[0]=="/": from_path=from_path.lstrip('/')
@@ -2044,7 +2046,7 @@ def replace_Substring(data_set):
                 Shared_Resources.Set_Shared_Variables(var_name, value)
                 CommonUtil.ExecLog(sModuleInfo, "Value '%s' is save in variable %s"%(value, var_name),1)
                 return "passed"
-            except Exception, e:
+            except Exception as e:
                 CommonUtil.ExecLog(sModuleInfo,"Couldn't replace text in variable '%s'"%var_name,3)
                 return "failed"
 
@@ -2067,7 +2069,7 @@ def replace_Substring(data_set):
         newTxt = str(f.read())
         f.close()
 
-        for substring in replace_dict.keys():
+        for substring in list(replace_dict.keys()):
             new_string = replace_dict[substring]
             if substring == '':
                 CommonUtil.ExecLog(sModuleInfo, "Could not find substring for this action", 3)
@@ -2265,7 +2267,7 @@ def Delete_line_ini(data_set):
             CommonUtil.ExecLog(sModuleInfo, "INI upated successfully", 1)
             return 'passed'
         else:
-            CommonUtil.ExecLog(sModuleInfo, "Error updating %s with %s in section %s" % (line_name, section_name), 3)
+            CommonUtil.ExecLog(sModuleInfo, "Error updating %s with %s in section %s" % (line_name, section_name,file_name), 3)
         return "failed"
 
 

@@ -16,7 +16,7 @@ shared_variables = {}
 protected_variables = [] # Used to ensure internally used shared variables can't be overwritten by step data
 
 
-MODULE_NAME = inspect.getmoduleinfo(__file__).name
+MODULE_NAME = inspect.getmodulename(__file__)
 
 
 def Set_Shared_Variables(key, value, protected = False):
@@ -283,7 +283,7 @@ def handle_nested_rest_json(result,string):
         for each in indexes:
             try:
                 ans = ans[each]
-            except ValueError,e:
+            except ValueError as e:
                 return "failed"
         return ans
 
@@ -418,7 +418,7 @@ def random_string_generator(pattern='nluc', size=10):
             if pattern[index] == 'l':
                 chars += string.ascii_lowercase
             if pattern[index] == 'u':
-                chars += string.uppercase
+                chars += string.ascii_uppercase
             if pattern[index] == 'c':
                 chars += punctuation
 
@@ -859,7 +859,7 @@ def save_built_in_time_variable(string):
                     return (datetime.today() + relativedelta(years=number)).strftime(datetime_format)
                 else:
                     return "failed"
-    except Exception,e:
+    except Exception as e:
         return CommonUtil.Exception_Handler(sys.exc_info(),UserMessage="Invalid Date Format, Error: %s Please Read the Action Help"%e)
 
 

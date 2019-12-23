@@ -30,7 +30,7 @@ all_val = []
 '============================= Sequential Action Section Begins=============================='
 
 
-MODULE_NAME = inspect.getmoduleinfo(__file__).name
+MODULE_NAME = inspect.getmodulename(__file__)
 
 
 # Method to get the element step data from the original step_data
@@ -142,7 +142,7 @@ def get_value_as_list(data):
 
 def get_all_val(x,target):
     global all_val
-    for key,value in x.items():
+    for key,value in list(x.items()):
         if str(key) == target:
             all_val.append(value)
         else:
@@ -150,7 +150,7 @@ def get_all_val(x,target):
                 get_all_val(value,target)
             elif isinstance(value,list):
                 for each in value:
-                    if isinstance(each,unicode) or isinstance(each,str):
+                    if isinstance(each,str) or isinstance(each,str):
                         if str(key) == target:
                             all_val.append(each)
                     else:
@@ -161,7 +161,7 @@ def get_all_val(x,target):
 
 def get_val(x,target):
     global count,index
-    for key,value in x.items():
+    for key,value in list(x.items()):
         if str(key) == target:
             if count == index:
                 return value
@@ -181,7 +181,7 @@ def get_val(x,target):
                         continue
             elif isinstance(value,list):
                 for each in value:
-                    if isinstance(each,unicode) or isinstance(each,str):
+                    if isinstance(each,str) or isinstance(each,str):
                         if str(key) == target:
                             if count == index:
                                 return each
@@ -206,7 +206,7 @@ def get_val(x,target):
 
 
 def search_val(x,target,target_val):
-    for key,value in x.items():
+    for key,value in list(x.items()):
         if str(key) == target and str(value) == target_val:
             return True
 
@@ -219,7 +219,7 @@ def search_val(x,target,target_val):
                     return result
             elif isinstance(value,list):
                 for each in value:
-                    if isinstance(each,unicode) or isinstance(each,str):
+                    if isinstance(each,str) or isinstance(each,str):
                         if str(key) == target and str(each) == target_val:
                             return True
                         else:
@@ -368,8 +368,8 @@ def insert_fields_from_rest_call_into_list(result_dict, fields_to_be_saved, list
             CommonUtil.ExecLog(sModuleInfo, "%s response fields are saved"%(", ".join(str(x) for x in which_are_saved)),1)
 
         Shared_Resources.Show_All_Shared_Variables()
-    except Exception,e:
-        print e
+    except Exception as e:
+        print(e)
         return CommonUtil.Exception_Handler(sys.exc_info())
 
 
@@ -519,7 +519,7 @@ def search_condition_wrapper(data,condition_string):
                     key = each[0]
                     value = each[1]
                     equal = each[2]
-                    if key in search_area.keys():
+                    if key in list(search_area.keys()):
                         if equal:
                             result = result and (str(search_area[key]) == value)
                         else:
@@ -536,7 +536,7 @@ def search_condition_wrapper(data,condition_string):
                         value = each[1].replace("[[","(")
                         value = value.replace("]]", ")")
                         if isinstance(data,dict):
-                            if key in data.keys():
+                            if key in list(data.keys()):
                                 if equal:
                                     list_result = list_result and (str(data[key]) == value)
                                 else:
@@ -627,7 +627,7 @@ def handle_rest_call(data, fields_to_be_saved, save_into_list = False, list_name
                 #if save cookie option enabled then push cookie into shared variables, if cookie var name is 'id' then you can reference it later with %|id|%
                 if save_cookie:
                     all_cookies = requests.utils.dict_from_cookiejar(result.cookies)
-                    for each in all_cookies.keys():
+                    for each in list(all_cookies.keys()):
                         Shared_Resources.Set_Shared_Variables(each,all_cookies[each])
 
                 if search:
@@ -909,7 +909,7 @@ def Sequential_Actions(step_data):
                                     logic_decision = "false"
                                 else:
                                     logic_decision = "true"
-                            except Exception, errMsg:
+                            except Exception as errMsg:
                                 errMsg = "Could not find element in the by the criteria..."
                                 return CommonUtil.Exception_Handler(sys.exc_info(),None,errMsg)
                     else:
@@ -917,7 +917,7 @@ def Sequential_Actions(step_data):
 
                     for conditional_steps in logic_row:
                         if logic_decision in conditional_steps:
-                            print conditional_steps[2]
+                            print(conditional_steps[2])
                             list_of_steps = conditional_steps[2].split(",")
                             for each_item in list_of_steps:
                                 data_set_index = int(each_item) - 1

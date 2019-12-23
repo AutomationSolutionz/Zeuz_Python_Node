@@ -6,12 +6,12 @@ import copy
 from Framework.Utilities import CommonUtil
 
 
-MODULE_NAME = inspect.getmoduleinfo(__file__).name
+MODULE_NAME = inspect.getmodulename(__file__)
 
 
 def make_single_data_set_compatible(expected_list):
-    _expected_tuple=filter(lambda x:len(x)==4,expected_list)
-    _expected_group=filter(lambda x:len(x)>4,expected_list)
+    _expected_tuple=[x for x in expected_list if len(x)==4]
+    _expected_group=[x for x in expected_list if len(x)>4]
     _expected_tuple=[(x[0],'',x[1],x[2],x[3]) for x in _expected_tuple]
     e=list(_expected_tuple+_expected_group)
     return e
@@ -141,7 +141,7 @@ def log_to_db(sModuleInfo,datasets,tag,status):
         CommonUtil.ExecLog(sModuleInfo,"%s Dataset: #%d"%(tag,(i+1)),status)
         tuple_data=[]
         for eachitem in eachdataset:
-            if isinstance(eachitem[1],basestring):
+            if isinstance(eachitem[1],str):
                 tuple_data.append(eachitem)
         CommonUtil.ExecLog(sModuleInfo,"%s Tuple Data Entry Count: %d"%(tag,len(tuple_data)),status)
         for j,eachitem in enumerate(tuple_data):
@@ -303,8 +303,8 @@ def single_dataset_compare(expected_copy,actual_copy):
                 _key_list = [x[0] for x in element[1]]
 
                 for e in _key_list:
-                    _e = filter(lambda x:x[0]==e,element[1])
-                    _a = filter(lambda x:x[0]==e,data_to_compare[1])
+                    _e = [x for x in element[1] if x[0]==e]
+                    _a = [x for x in data_to_compare[1] if x[0]==e]
                     if _e and _a:
                         temp_expected.append(_e[0])
                         temp_actual.append(_a[0])
@@ -327,24 +327,24 @@ def single_dataset_compare(expected_copy,actual_copy):
     _final_extra = []
     for e in group_data_not_matching:
         #missing data remove
-        _e = filter(lambda x:x[0]==e[0][0],final_missing_group_data)
-        _a = filter(lambda x:x[0]==e[0][0],final_extra_group_data)
+        _e = [x for x in final_missing_group_data if x[0]==e[0][0]]
+        _a = [x for x in final_extra_group_data if x[0]==e[0][0]]
 
         if _e:
             for i in e[0][1]:
                 for each in final_missing_group_data:
-                    f= filter(lambda x:x[0]==i[0], each[1])
+                    f= [x for x in each[1] if x[0]==i[0]]
                     if f:
                         each[1].remove(f[0])
         if _a:
             for i in e[1][1]:
                 for each in final_extra_group_data:
-                    f = filter(lambda x: x[0] == i[0], each[1])
+                    f = [x for x in each[1] if x[0] == i[0]]
                     if f:
                         each[1].remove(f[0])
 
-    final_missing_group_data = filter(lambda x:len(x[1])>0,final_missing_group_data)
-    final_extra_group_data = filter(lambda x:len(x[1])>0,final_extra_group_data)
+    final_missing_group_data = [x for x in final_missing_group_data if len(x[1])>0]
+    final_extra_group_data = [x for x in final_extra_group_data if len(x[1])>0]
     if len(missing_tuple_data)>0 or len(extra_tuple_data)>0 or len(final_missing_group_data)>0 or len(final_extra_group_data) or len(group_data_not_matching)>0:
         status=3
     else:
@@ -498,15 +498,15 @@ def main():
  ('Destination Charge', 'car2', '995', False, False),
  ('Destination Charge', 'car3', '1,250', False, False),
  ('Destination Charge', 'car4', '995', False, False)]]
-    actual_list = [[(u'Starting from*', 'car1', u'$101,770', False, False),
- (u'Starting from*', 'car2', u'$20,995', False, False),
- (u'Starting from*', 'car3', u'$20,995', False, False),
- (u'Starting from*', 'car4', u'$20,995', False, False),
- (u'Destination Charge', 'car1', u'$1,595', False, False),
- (u'Destination Charge', 'car2', u'$810', False, False),
- (u'Destination Charge', 'car3', u'$810', False, False),
- (u'Destination Charge', 'car4', u'$810', False, False)]]
+    actual_list = [[('Starting from*', 'car1', '$101,770', False, False),
+ ('Starting from*', 'car2', '$20,995', False, False),
+ ('Starting from*', 'car3', '$20,995', False, False),
+ ('Starting from*', 'car4', '$20,995', False, False),
+ ('Destination Charge', 'car1', '$1,595', False, False),
+ ('Destination Charge', 'car2', '$810', False, False),
+ ('Destination Charge', 'car3', '$810', False, False),
+ ('Destination Charge', 'car4', '$810', False, False)]]
     status=oCompare.compare(expected_list,actual_list)
-    print status
+    print(status)
 if __name__=='__main__':
     main()

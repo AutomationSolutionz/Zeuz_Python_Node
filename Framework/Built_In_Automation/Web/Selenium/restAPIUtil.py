@@ -10,7 +10,7 @@ from Framework.Built_In_Automation.Web.Selenium import BuiltInFunctions
 sys.path.append("..")
 
 
-MODULE_NAME = inspect.getmoduleinfo(__file__).name
+MODULE_NAME = inspect.getmodulename(__file__)
 
 
 # Basic API Helper methods. Currently supporting GET and POST calls
@@ -99,7 +99,7 @@ def _response_Validation(payload_type, response, extraction_data=False):
                             item = each.get(each_data)
                             container.append(str(item))
                 master_container.append(container)
-            print master_container
+            print(master_container)
             return master_container    
         
         #For payload body type: json
