@@ -1,6 +1,6 @@
 [ZeuZ Python Version]
-version = 7.53
+version = 10.1
 [Release Date]
-date= 2019-10-08
+date= 2019-12-29
 [Release Note]
-Note = Scroll bug fix, New action to scroll at the top of the page, iframe switch with index
+Note = Python 3 Migration

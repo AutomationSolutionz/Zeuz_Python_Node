@@ -14,13 +14,16 @@ from Framework.Built_In_Automation.Shared_Resources import BuiltInFunctionShared
 from Framework.Built_In_Automation.Shared_Resources import LocateElement
 from Framework.Utilities.CommonUtil import passed_tag_list, failed_tag_list, skipped_tag_list
 
-import clr,System, inspect, time,datetime, os, sys
+import inspect, time,datetime, os, sys
+from os import system
 from _elementtree import Element # What is this for?
 from Framework.Utilities import CommonUtil
 
 MODULE_NAME = inspect.getmodulename(__file__)
 
 #this needs to be here on top, otherwise will return error
+import clr, System
+
 clr.AddReference('UIAutomationClient')
 clr.AddReference('UIAutomationTypes')
 clr.AddReference('UIAutomationProvider')
@@ -406,7 +409,7 @@ def _child_search(ParentElement, Element_Name,Element_Class,Element_AutomationID
 def _get_main_window (WindowName):
     try:
         MainWindowsList = AutomationElement.RootElement.FindAll(TreeScope.Children,Condition.TrueCondition)
-        UnicodeWinName=WindowName.decode('utf-8')
+        UnicodeWinName=WindowName
         for MainWindowElement in MainWindowsList:
             try:
                 NameS =  MainWindowElement.Current.Name
