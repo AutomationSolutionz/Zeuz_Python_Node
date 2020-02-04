@@ -29,7 +29,7 @@ from selenium.webdriver.support import expected_conditions as EC
 import pyautogui
 from pyautogui import press, typewrite
 
-from Framework.Utilities import CommonUtil
+from Framework.Utilities import CommonUtil,ConfigModule
 from Framework.Built_In_Automation.Shared_Resources import BuiltInFunctionSharedResources as Shared_Resources
 from Framework.Built_In_Automation.Shared_Resources import LocateElement
 from Framework.Utilities.CommonUtil import passed_tag_list, failed_tag_list, skipped_tag_list
@@ -61,18 +61,17 @@ else:
     raise ValueError("No dependency set - Cannot run")
 
 
-
-def Open_Browser(dependency):
+def Open_Browser(dependency, window_size_X=700, window_size_Y=800):
     ''' Launch browser and create instance '''
-    
+
     global selenium_driver
     sModuleInfo = inspect.currentframe().f_code.co_name + " : " + MODULE_NAME
-    CommonUtil.ExecLog(sModuleInfo,"Function Start", 0)
+    CommonUtil.ExecLog(sModuleInfo, "Function Start", 0)
 
     try:
-        browser=dependency['Browser']
+        browser = dependency['Browser']
     except Exception:
-        ErrorMessage =  "Dependency not set for browser. Please set the Apply Filter value to YES."
+        ErrorMessage = "Dependency not set for browser. Please set the Apply Filter value to YES."
         return CommonUtil.Exception_Handler(sys.exc_info(), None, ErrorMessage)
     try:
         selenium_driver.close()
@@ -86,15 +85,16 @@ def Open_Browser(dependency):
             options = Options()
             options.add_argument("--no-sandbox")
             options.add_argument("--disable-extensions")
-            options.add_experimental_option("useAutomationExtension",False)
+            options.add_experimental_option("useAutomationExtension", False)
             d = DesiredCapabilities.CHROME
             d['loggingPrefs'] = {'browser': 'ALL'}
-            if "chromeheadless" in browser: options.add_argument("--headless") # Enable headless operation if dependency set
-            selenium_driver = webdriver.Chrome(chrome_options = options,desired_capabilities=d)
+            if "chromeheadless" in browser: options.add_argument(
+                "--headless")  # Enable headless operation if dependency set
+            selenium_driver = webdriver.Chrome(chrome_options=options, desired_capabilities=d)
             selenium_driver.implicitly_wait(WebDriver_Wait)
-            selenium_driver.maximize_window()
+            selenium_driver.set_window_size(window_size_X, window_size_Y)
             CommonUtil.ExecLog(sModuleInfo, "Started Chrome Browser", 1)
-            Shared_Resources.Set_Shared_Variables('selenium_driver',selenium_driver)
+            Shared_Resources.Set_Shared_Variables('selenium_driver', selenium_driver)
             CommonUtil.set_screenshot_vars(Shared_Resources.Shared_Variable_Export())
             return "passed"
 
@@ -105,20 +105,20 @@ def Open_Browser(dependency):
                 try:
                     import winreg
                 except ImportError:
-                    import winreg as winreg
+                    import _winreg as winreg
                 handle = winreg.OpenKey(winreg.HKEY_LOCAL_MACHINE,
-                    r"SOFTWARE\Microsoft\Windows\CurrentVersion\App Paths\firefox.exe")
+                                        r"SOFTWARE\Microsoft\Windows\CurrentVersion\App Paths\firefox.exe")
                 num_values = winreg.QueryInfoKey(handle)[1]
                 path = False
                 for i in range(num_values):
                     path = (winreg.EnumValue(handle, i))
                     if path != False:
-                        firefox_path =  path[1]
+                        firefox_path = path[1]
                         binary = FirefoxBinary(firefox_path)
                         break
             selenium_driver = webdriver.Firefox()
             selenium_driver.implicitly_wait(WebDriver_Wait)
-            selenium_driver.maximize_window()
+            selenium_driver.set_window_size(window_size_X, window_size_Y)
             CommonUtil.ExecLog(sModuleInfo, "Started Firefox Browser", 1)
             Shared_Resources.Set_Shared_Variables('selenium_driver', selenium_driver)
             CommonUtil.set_screenshot_vars(Shared_Resources.Shared_Variable_Export())
@@ -126,17 +126,18 @@ def Open_Browser(dependency):
         elif "ie" in browser:
             selenium_driver = webdriver.Ie()
             selenium_driver.implicitly_wait(WebDriver_Wait)
-            selenium_driver.maximize_window()
+            selenium_driver.set_window_size(window_size_X, window_size_Y)
             CommonUtil.ExecLog(sModuleInfo, "Started Internet Explorer Browser", 1)
             Shared_Resources.Set_Shared_Variables('selenium_driver', selenium_driver)
             CommonUtil.set_screenshot_vars(Shared_Resources.Shared_Variable_Export())
             return "passed"
 
         elif "safari" in browser:
-            os.environ["SELENIUM_SERVER_JAR"] = os.sys.prefix + os.sep + "Scripts" + os.sep + "selenium-server-standalone-2.45.0.jar"
+            os.environ[
+                "SELENIUM_SERVER_JAR"] = os.sys.prefix + os.sep + "Scripts" + os.sep + "selenium-server-standalone-2.45.0.jar"
             selenium_driver = webdriver.Safari()
             selenium_driver.implicitly_wait(WebDriver_Wait)
-            selenium_driver.maximize_window()
+            selenium_driver.set_window_size(window_size_X, window_size_Y)
             CommonUtil.ExecLog(sModuleInfo, "Started Safari Browser", 1)
             Shared_Resources.Set_Shared_Variables('selenium_driver', selenium_driver)
             CommonUtil.set_screenshot_vars(Shared_Resources.Shared_Variable_Export())
@@ -145,9 +146,10 @@ def Open_Browser(dependency):
         else:
             CommonUtil.ExecLog(sModuleInfo, "You did not select a valid browser: %s" % browser, 3)
             return "failed"
-        #time.sleep(3)
+        # time.sleep(3)
     except Exception:
         return CommonUtil.Exception_Handler(sys.exc_info())
+
 
 def Open_Browser_Wrapper(step_data):
     ''' Temporary wrapper for open_browser() until that function can be updated to use only data_set '''
@@ -174,41 +176,51 @@ def Open_Browser_Wrapper(step_data):
 
 
 def Go_To_Link(step_data, page_title=False):
-    #this function needs work with validating page title.  We need to check if user entered any title.
-    #if not then we don't do the validation
+    # this function needs work with validating page title.  We need to check if user entered any title.
+    # if not then we don't do the validation
     sModuleInfo = inspect.currentframe().f_code.co_name + " : " + MODULE_NAME
-    CommonUtil.ExecLog(sModuleInfo,"Function Start", 0)
-    
+    CommonUtil.ExecLog(sModuleInfo, "Function Start", 0)
+    window_size_X = ConfigModule.get_config_value('', 'window_size_x')
+    window_size_Y = ConfigModule.get_config_value('', 'window_size_y')
     # Open browser and create driver if user has not already done so
+
     try:
         global selenium_driver
         if Shared_Resources.Test_Shared_Variables('selenium_driver') == False:
             CommonUtil.ExecLog(sModuleInfo, "Browser not previously opened, doing so now", 1)
             global dependency
             # Get the dependency again in case it was missed
-            if Shared_Resources.Test_Shared_Variables('dependency'): # Check if driver is already set in shared variables
-                dependency = Shared_Resources.Get_Shared_Variables('dependency') # Retreive selenium driver
-        
-    
-            result = Open_Browser(dependency)
+            if Shared_Resources.Test_Shared_Variables(
+                    'dependency'):  # Check if driver is already set in shared variables
+                dependency = Shared_Resources.Get_Shared_Variables('dependency')  # Retreive selenium driver
+            if window_size_X=='None' and window_size_Y=='None':
+                result = Open_Browser(dependency)
+            elif window_size_X=='None':
+                result = Open_Browser(dependency, window_size_Y)
+            elif window_size_Y == 'None':
+                result = Open_Browser(dependency, window_size_X)
+            else:
+                result = Open_Browser(dependency, window_size_X,window_size_Y)
+
+
             if result in failed_tag_list:
                 return 'failed'
         else:
             selenium_driver = Shared_Resources.Get_Shared_Variables("selenium_driver")
     except Exception:
-        ErrorMessage =  "failed to open browser"
+        ErrorMessage = "failed to open browser"
         return CommonUtil.Exception_Handler(sys.exc_info(), None, ErrorMessage)
 
     # Open URL in browser
     try:
-        web_link=step_data[0][2] # Save Value field (URL)
-        selenium_driver.get(web_link) # Open in browser
-        selenium_driver.implicitly_wait(WebDriver_Wait) # Wait for page to load
+        web_link = step_data[0][2]  # Save Value field (URL)
+        selenium_driver.get(web_link)  # Open in browser
+        selenium_driver.implicitly_wait(WebDriver_Wait)  # Wait for page to load
         CommonUtil.ExecLog(sModuleInfo, "Successfully opened your link: %s" % web_link, 1)
         CommonUtil.TakeScreenShot(sModuleInfo)
         return "passed"
     except Exception:
-        ErrorMessage =  "failed to open your link: %s" %(web_link)
+        ErrorMessage = "failed to open your link: %s" % (web_link)
         return CommonUtil.Exception_Handler(sys.exc_info(), None, ErrorMessage)
 
 
