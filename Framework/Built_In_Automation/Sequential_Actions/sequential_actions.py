@@ -138,6 +138,8 @@ actions = { # Numbers are arbitrary, and are not used anywhere
     438: {'module': 'selenium', 'screenshot':'web', 'name': 'click and enter text', 'function': 'Click_and_Text'},
     439: {'module': 'selenium', 'screenshot':'web', 'name': 'validate url', 'function': 'Validate_Url'},
     440: {'module': 'selenium', 'screenshot':'web', 'name': 'scroll element to top', 'function': 'scroll_element_to_top'},
+    441: {'module': 'selenium', 'screenshot':'web', 'name': 'switch window', 'function': 'switch_window'},
+
     
     500: {'module': 'utility', 'screenshot':'none', 'name': 'math', 'function': 'Calculate'},
     501: {'module': 'utility', 'screenshot':'none', 'name': 'upload', 'function': 'Upload'},

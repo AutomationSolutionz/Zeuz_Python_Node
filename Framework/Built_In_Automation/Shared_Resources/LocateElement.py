@@ -45,7 +45,17 @@ def Get_Element(step_data_set,driver,query_debug=False, wait_enable = True):
         # We need to switch to default content just in case previous action switched to something else
         try:
             if driver_type == 'selenium':
-                generic_driver.switch_to_default_content()
+                generic_driver.switch_to.default_content()
+                #we need to see if there are more than one handles.  Since we cannot know if we had switch
+                #windows before, we are going to assume that we can always safely switch to default handle 0
+                '''
+                try:
+                    all_windows = generic_driver.window_handles
+                    generic_driver.switch_to.window(all_windows[0])
+                    True
+                except:
+                    True
+                '''
             elif driver_type == 'appium':
                 new_step_data=[]
                 for row in step_data_set:
@@ -336,17 +346,29 @@ def _switch(step_data_set):
                 if each_frame in check_if_index:
                     each_frame = int(each_frame)
                 generic_driver.switch_to_frame(each_frame)
+                
             return  True 
-        elif "switch window" in [x[0] for x in step_data_set]: 
-            #get the value of switch window
-            window_switch = [x for x in step_data_set if 'switch window' == x[0]] [0][2]
-            # first we split by > and then we reconstruct the list by striping trailing spaces 
-            window_switch_list = [(x.strip()) for x in (window_switch.split(">"))]
-            # we switch each window in order 
-            for each_window in window_switch_list:
-                CommonUtil.ExecLog(sModuleInfo, "switching window; %s"%each_window, 1)
-                generic_driver.switch_to_window(each_window) 
-            return  True  
+            '''
+            # We are moving this as a dedicated action so that we do not need to keep switching windows for every action.
+            # however, users will now need to perform switch to the main window when they are done with their actions for pop up window 
+            elif "switch window" in [x[0] for x in step_data_set]: 
+                #get the value of switch window
+                window_switch = [x for x in step_data_set if 'switch window' == x[0]] [0][2]
+                all_windows = generic_driver.window_handles
+                window_handles_found = False
+                for each in all_windows:
+                    generic_driver.switch_to.window(each)
+                    if  window_switch in (generic_driver.title):
+                        window_handles_found = True
+                        CommonUtil.ExecLog(sModuleInfo, "switched your window", 1)
+                        break
+                if window_handles_found == False:
+                    CommonUtil.ExecLog(sModuleInfo, "unable to switch your window", 3)
+                    return False
+                else:
+                    return True
+            '''
+
         elif "switch alert" in [x[0] for x in step_data_set]:  
             generic_driver.switch_to_alert()
             CommonUtil.ExecLog(sModuleInfo, "switching to alert", 1)

@@ -1525,6 +1525,29 @@ def switch_tab(step_data):
         return CommonUtil.Exception_Handler(sys.exc_info())
 
 
+# Method to switch to a new tab
+def switch_window(step_data):
+    sModuleInfo = inspect.currentframe().f_code.co_name + " : " + MODULE_NAME
+    CommonUtil.ExecLog(sModuleInfo, "Function start", 0)
+    global selenium_driver
+    try:
+        window_switch = [x for x in step_data if 'window title' == x[0]] [0][2]
+        all_windows = selenium_driver.window_handles
+        window_handles_found = False
+        for each in all_windows:
+            selenium_driver.switch_to.window(each)
+            if  window_switch in (selenium_driver.title):
+                window_handles_found = True
+                CommonUtil.ExecLog(sModuleInfo, "switched your window", 1)
+                break
+        if window_handles_found == False:
+            CommonUtil.ExecLog(sModuleInfo, "unable to switch your window", 3)
+            return False
+        else:
+            return True
+    except Exception:
+        return CommonUtil.Exception_Handler(sys.exc_info())
+
 # Method to upload file
 def upload_file(step_data):
     sModuleInfo = inspect.currentframe().f_code.co_name + " : " + MODULE_NAME
