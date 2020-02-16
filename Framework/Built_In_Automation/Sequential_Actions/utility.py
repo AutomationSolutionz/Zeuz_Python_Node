@@ -1,8 +1,87 @@
-import smtplib, ssl, email
+import smtplib, ssl, email, imaplib
 from email.mime.text import MIMEText
 from email.mime.multipart import MIMEMultipart
 from email import encoders
 from email.mime.base import MIMEBase
+from pprint import pprint
+from quopri import decodestring
+from datetime import datetime
+
+
+# using IMAP protocol
+def check_latest_received_email(imap_host,imap_user,imap_pass,select_mailbox):
+    # Gmail requires to generate One-Time App Password
+    # https://security.google.com/settings/security/apppasswords
+    IMAP4_HOST = imap_host
+    IMAP4_USER = imap_user
+    IMAP4_PASS = imap_pass
+    IMAP4_MAILBOX = select_mailbox
+
+    imap = imaplib.IMAP4_SSL(
+        host=IMAP4_HOST)
+
+    imap.login(
+        user=IMAP4_USER,
+        password=IMAP4_PASS)
+
+    imap.select(
+        mailbox=IMAP4_MAILBOX,
+        readonly=False)
+
+    def get_str(text):
+        return decodestring(text).decode()
+
+    def get_date(text):
+        try:
+            return datetime.strptime(headers['Date'], '%a, %d %b %Y %H:%M:%S %z')
+        except ValueError:
+            return text
+
+    def get_body(msg):
+        type = msg.get_content_maintype()
+
+        if type == 'multipart':
+            for part in msg.get_payload():
+                if part.get_content_maintype() == 'text':
+                    return part.get_payload()
+
+        elif type == 'text':
+            return msg.get_payload()
+
+    status, result = imap.search(None, 'ALL')
+
+    print(status)
+    # print(result)
+    # status: OK
+    # result: [b'1 2 3 4 ...']
+    messages = result[0].split()
+    latest_email_id = messages[-7]
+
+    status, data = imap.fetch(latest_email_id, '(RFC822)')
+    msg = email.message_from_bytes(data[0][1])
+    print(msg['Content'])
+    # mail = data[0][1].decode()
+    # mail = email.message_from_string(mail)
+    #
+    # headers = dict(mail._headers)
+    # mail = {
+    #     'to': get_str(headers['To']),
+    #     'sender': get_str(headers['From']),
+    #     'subject': get_str(headers['Subject']),
+    #     'date': get_date(headers['Date']),
+    #     # 'body': get_body(mail)
+    # }
+    mail = {
+        'to': msg['To'],
+        'sender': msg['From'],
+        'subject': msg['Subject'],
+        'date': msg['Date'],
+        'body': get_body(msg)
+    }
+    pprint(mail)
+
+    imap.close()
+    imap.logout()
 
 
 def send_email(smtp_server, smtp_port, sender_email, sender_password , receiver_email, subject, body_html):
@@ -58,22 +137,31 @@ def send_email(smtp_server, smtp_port, sender_email, sender_password , receiver_
 
 if __name__ == "__main__":
 
-    smtp_port = 587  # For starttls
-    smtp_server = "smtp.gmail.com"
-    sender_email = "testingemailforsendmail@gmail.com"
-    receiver_email = "mahmood.habib.cuet@gmail.com"
-    sender_password = '123test234test'
-    subject = "multipart email test"
+    # smtp_port = 587  # For starttls
+    # smtp_server = "smtp.gmail.com"
+    # sender_email = "testingemailforsendmail@gmail.com"
+    # receiver_email = "mahmood.habib.cuet@gmail.com"
+    # sender_password = '123test234test'
+    # subject = "multipart email test"
+    #
+    # email_body_html = """\
+    #     <html>
+    #       <body>
+    #         <p>Hi,<br>
+    #            How are you?<br>
+    #            <a href="http://www.realpython.com">Real Python</a>
+    #            has many great tutorials.
+    #         </p>
+    #       </body>
+    #     </html>
+    #     """
+    # send_email(smtp_server, smtp_port, sender_email, sender_password, receiver_email, subject, email_body_html)
+    #
 
-    email_body_html = """\
-        <html>
-          <body>
-            <p>Hi,<br>
-               How are you?<br>
-               <a href="http://www.realpython.com">Real Python</a> 
-               has many great tutorials.
-            </p>
-          </body>
-        </html>
-        """
-    send_email(smtp_server, smtp_port, sender_email, sender_password, receiver_email, subject, email_body_html)
+    # check received email
+    imap_host = 'imap.gmail.com'
+    imap_user = 'mahmood.habib.cuet@gmail.com'
+    imap_pass = 'zmxafgpchukkkkjh'
+    select_mailbox = 'INBOX'
+
+    check_latest_received_email(imap_host,imap_user,imap_pass,select_mailbox)
