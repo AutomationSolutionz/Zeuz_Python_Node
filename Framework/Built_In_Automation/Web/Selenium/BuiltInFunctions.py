@@ -1531,22 +1531,55 @@ def switch_window(step_data):
     CommonUtil.ExecLog(sModuleInfo, "Function start", 0)
     global selenium_driver
     try:
-        window_switch = [x for x in step_data if 'window title' == x[0]] [0][2]
-        all_windows = selenium_driver.window_handles
-        window_handles_found = False
-        for each in all_windows:
-            selenium_driver.switch_to.window(each)
-            if  window_switch in (selenium_driver.title):
-                window_handles_found = True
-                CommonUtil.ExecLog(sModuleInfo, "switched your window", 1)
-                break
-        if window_handles_found == False:
+        
+        
+        
+        
+        
+        try:
+            switch_by_title = [x for x in step_data if 'window title' == x[0]] [0][2]
+        except:
+            switch_by_title = False
+        
+        try:
+            switch_by_index = [x for x in step_data if 'window index' == x[0]] [0][2]
+        except: 
+            switch_by_index = False
+            
+        if switch_by_title != False:
+            all_windows = selenium_driver.window_handles
+            window_handles_found = False
+            for each in all_windows:
+                selenium_driver.switch_to.window(each)
+                if  switch_by_title in (selenium_driver.title):
+                    window_handles_found = True
+                    CommonUtil.ExecLog(sModuleInfo, "switched your window", 1)
+                    break
+            if window_handles_found == False:
+                CommonUtil.ExecLog(sModuleInfo, "unable to switch your window", 3)
+                return False
+            else:
+                return True
+            
+        elif switch_by_index != False:
+            check_if_index = ['0','1','2','3','4','5']
+            if switch_by_index in check_if_index:
+                window_index = int(switch_by_index)
+                window_to_switch = selenium_driver.window_handles[window_index]
+                selenium_driver.switch_to.window(window_to_switch)
+                return True
+            else:
+                CommonUtil.ExecLog(sModuleInfo, "Invalid index provided.  Please provide number between 0 to 5", 3)
+                return False
+        else: 
             CommonUtil.ExecLog(sModuleInfo, "unable to switch your window", 3)
             return False
-        else:
-            return True
+            
+                        
     except Exception:
+        CommonUtil.ExecLog(sModuleInfo, "unable to switch your window", 3)
         return CommonUtil.Exception_Handler(sys.exc_info())
+    
 
 # Method to upload file
 def upload_file(step_data):
