@@ -4,7 +4,8 @@ from email.mime.multipart import MIMEMultipart
 from email import encoders
 from email.mime.base import MIMEBase
 
-
+smtp_port = 587  # For starttls
+smtp_server = "smtp.gmail.com"
 sender_email = "testingemailforsendmail@gmail.com"
 receiver_email = "mahmood.habib.cuet@gmail.com"
 sender_password = '123test234test'
@@ -23,10 +24,10 @@ email_body_html = """\
     """
 
 
-def send_email(sender_email, sender_password , receiver_email, subject, body_html):
-    port = 587  # For starttls
-    smtp_server = "smtp.gmail.com"
-    message = MIMEMultipart("alternative")
+def send_email(smtp_server, smtp_port, sender_email, sender_password , receiver_email, subject, body_html):
+    smtp_server = smtp_server
+    port = smtp_port  # For starttls
+    message = MIMEMultipart()
     message["Subject"] = subject
     message["From"] = sender_email
     message["To"] = receiver_email
@@ -75,4 +76,4 @@ def send_email(sender_email, sender_password , receiver_email, subject, body_htm
 
 
 if __name__ == "__main__":
-    send_email(sender_email, sender_password, receiver_email,subject,email_body_html)
+    send_email(smtp_server, smtp_port, sender_email, sender_password, receiver_email, subject, email_body_html)

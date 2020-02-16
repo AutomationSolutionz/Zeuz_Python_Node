@@ -19,6 +19,7 @@ from Framework import MainDriverApi
 from Framework.Utilities import FileUtilities
 import datetime
 from datetime import timedelta
+from .utility import send_email
 months = ["Unknown",
           "January",
           "Febuary",
@@ -1049,6 +1050,47 @@ def download_ftp_file(data_set):
             with open(file_[1], "wb") as f:
                 ftp.retrbinary("RETR " + file_[0], f.write)
         ftp.quit()
+
+        return "passed"
+    except Exception:
+        return CommonUtil.Exception_Handler(sys.exc_info())
+
+
+def send_mail(data_set):
+    sModuleInfo = inspect.currentframe().f_code.co_name + " : " + MODULE_NAME
+    CommonUtil.ExecLog(sModuleInfo, "Function Start", 0)
+
+    try:
+        smtp_server = ''
+        smtp_port = ''
+        sender_email = ''
+        sender_password = ''
+        receiver_email = ''
+        subject = ''
+        body = ''
+
+        for row in data_set:
+            if str(row[0]).strip().lower() == 'smtp server':
+                smtp_server = str(row[2]).strip()
+            elif str(row[0]).strip().lower() == 'smtp port':
+                smtp_port = str(row[2]).strip()
+            elif str(row[0]).strip().lower() == 'sender email':
+                sender_email = str(row[2]).strip()
+            elif str(row[0]).strip().lower() == 'sender password':
+                sender_password = str(row[2]).strip()
+            elif str(row[0]).strip().lower() == 'receiver email':
+                receiver_email = str(row[2]).strip()
+            elif str(row[0]).strip().lower() == 'subject':
+                subject = str(row[2]).strip()
+            elif str(row[0]).strip().lower() == 'body':
+                body = str(row[2]).strip()
+
+        if smtp_server == '' or smtp_port == '' or sender_email == '' or sender_password == '':
+            CommonUtil.ExecLog(sModuleInfo, "SMTP server info not given properly, please see action help", 3)
+            return "failed"
+
+        # Function to send email
+        send_email(smtp_server,smtp_port,sender_email,sender_password,receiver_email,subject,body)
 
         return "passed"
     except Exception:
