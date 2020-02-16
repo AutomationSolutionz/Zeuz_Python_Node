@@ -4,25 +4,6 @@ from email.mime.multipart import MIMEMultipart
 from email import encoders
 from email.mime.base import MIMEBase
 
-smtp_port = 587  # For starttls
-smtp_server = "smtp.gmail.com"
-sender_email = "testingemailforsendmail@gmail.com"
-receiver_email = "mahmood.habib.cuet@gmail.com"
-sender_password = '123test234test'
-subject = "multipart email test"
-
-email_body_html = """\
-    <html>
-      <body>
-        <p>Hi,<br>
-           How are you?<br>
-           <a href="http://www.realpython.com">Real Python</a> 
-           has many great tutorials.
-        </p>
-      </body>
-    </html>
-    """
-
 
 def send_email(smtp_server, smtp_port, sender_email, sender_password , receiver_email, subject, body_html):
     smtp_server = smtp_server
@@ -76,4 +57,23 @@ def send_email(smtp_server, smtp_port, sender_email, sender_password , receiver_
 
 
 if __name__ == "__main__":
+
+    smtp_port = 587  # For starttls
+    smtp_server = "smtp.gmail.com"
+    sender_email = "testingemailforsendmail@gmail.com"
+    receiver_email = "mahmood.habib.cuet@gmail.com"
+    sender_password = '123test234test'
+    subject = "multipart email test"
+
+    email_body_html = """\
+        <html>
+          <body>
+            <p>Hi,<br>
+               How are you?<br>
+               <a href="http://www.realpython.com">Real Python</a> 
+               has many great tutorials.
+            </p>
+          </body>
+        </html>
+        """
     send_email(smtp_server, smtp_port, sender_email, sender_password, receiver_email, subject, email_body_html)
