@@ -19,6 +19,7 @@ from Framework import MainDriverApi
 from Framework.Utilities import FileUtilities
 import datetime
 from datetime import timedelta
+from .utility import send_email, check_latest_received_email
 months = ["Unknown",
           "January",
           "Febuary",
@@ -1051,6 +1052,93 @@ def download_ftp_file(data_set):
         ftp.quit()
 
         return "passed"
+    except Exception:
+        return CommonUtil.Exception_Handler(sys.exc_info())
+
+
+def send_mail(data_set):
+    sModuleInfo = inspect.currentframe().f_code.co_name + " : " + MODULE_NAME
+    CommonUtil.ExecLog(sModuleInfo, "Function Start", 0)
+
+    try:
+        smtp_server = ''
+        smtp_port = ''
+        sender_email = ''
+        sender_password = ''
+        receiver_email = ''
+        subject = ''
+        body = ''
+
+        for row in data_set:
+            if str(row[0]).strip().lower() == 'smtp server':
+                smtp_server = str(row[2]).strip()
+            elif str(row[0]).strip().lower() == 'smtp port':
+                smtp_port = str(row[2]).strip()
+            elif str(row[0]).strip().lower() == 'sender email':
+                sender_email = str(row[2]).strip()
+            elif str(row[0]).strip().lower() == 'sender password':
+                sender_password = str(row[2]).strip()
+            elif str(row[0]).strip().lower() == 'receiver email':
+                receiver_email = str(row[2]).strip()
+            elif str(row[0]).strip().lower() == 'subject':
+                subject = str(row[2]).strip()
+            elif str(row[0]).strip().lower() == 'body':
+                body = str(row[2]).strip()
+
+        if smtp_server == '' or smtp_port == '' or sender_email == '' or sender_password == '':
+            CommonUtil.ExecLog(sModuleInfo, "SMTP server info not given properly, please see action help", 3)
+            return "failed"
+
+        # Function to send email
+        send_email(smtp_server,smtp_port,sender_email,sender_password,receiver_email,subject,body)
+
+        return "passed"
+    except Exception:
+        return CommonUtil.Exception_Handler(sys.exc_info())
+
+
+def check_latest_mail(data_set):
+    sModuleInfo = inspect.currentframe().f_code.co_name + " : " + MODULE_NAME
+    CommonUtil.ExecLog(sModuleInfo, "Function Start", 0)
+
+    try:
+        imap_host = ''
+        imap_port = ''
+        imap_user = ''
+        imap_pass = ''
+        select_mailbox = ''
+        subject_to_check = ''
+        sender_to_check = ''
+
+        for row in data_set:
+            if str(row[0]).strip().lower() == 'imap host':
+                imap_host = str(row[2]).strip()
+            elif str(row[0]).strip().lower() == 'imap port':
+                imap_port = str(row[2]).strip()
+            elif str(row[0]).strip().lower() == 'imap user':
+                imap_user = str(row[2]).strip()
+            elif str(row[0]).strip().lower() == 'imap password':
+                imap_pass = str(row[2]).strip()
+            elif str(row[0]).strip().lower() == 'select mailbox':
+                select_mailbox = str(row[2]).strip()
+            elif str(row[0]).strip().lower() == 'subject to check':
+                subject_to_check = str(row[2]).strip()
+            elif str(row[0]).strip().lower() == 'sender to check':
+                sender_to_check = str(row[2]).strip()
+
+        if imap_host == '' or imap_port == '' or imap_user == '' or imap_pass == '':
+            CommonUtil.ExecLog(sModuleInfo, "please provide the imap credentials for your mail server, see action help", 3)
+            return "failed"
+
+        # Function to send email
+        result = check_latest_received_email(imap_host,imap_port,imap_user,imap_pass,select_mailbox,subject_to_check,sender_to_check)
+
+        if result:
+            return "passed"
+        else:
+            CommonUtil.ExecLog(sModuleInfo, "Subject and sender didn't match", 3)
+            return "failed"
+
     except Exception:
         return CommonUtil.Exception_Handler(sys.exc_info())
 
