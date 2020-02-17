@@ -664,7 +664,32 @@ def get_location_of_element(data_set):
     Shared_Resources.Set_Shared_Variables(shared_var, "%s,%s" % (x, y))
     return 'passed'
 
-    
+def Save_Attribute(step_data):
+    sModuleInfo = inspect.currentframe().f_code.co_name + " : " + MODULE_NAME
+    CommonUtil.ExecLog(sModuleInfo, "Function start", 0)
+    global selenium_driver
+    try:
+        Element = LocateElement.Get_Element(step_data,selenium_driver)
+        if Element == "failed":
+            CommonUtil.ExecLog(sModuleInfo, "Unable to locate your element with given data.", 3)
+            return "failed" 
+        for each_step_data_item in step_data:
+            if 'parameter' in each_step_data_item[1]:
+                variable_name = each_step_data_item[2]
+                attribute_name = each_step_data_item[0]  
+        attribute_value = Element.get_attribute(attribute_name)
+        result = Shared_Resources.Set_Shared_Variables(variable_name, attribute_value)
+        if result in failed_tag_list:
+            CommonUtil.ExecLog(sModuleInfo, "Value of Variable '%s' could not be saved!!!"%variable_name, 3)
+            return "failed"
+        else:
+            Shared_Resources.Show_All_Shared_Variables()
+            return "passed"
+    except Exception:
+        return CommonUtil.Exception_Handler(sys.exc_info())
+
+
+        
 #Search for element on new page after a particular time-out duration entered by the user through step-data
 def Wait_For_New_Element(step_data):
     sModuleInfo = inspect.currentframe().f_code.co_name + " : " + MODULE_NAME
