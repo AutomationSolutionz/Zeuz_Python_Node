@@ -52,6 +52,7 @@ actions = { # Numbers are arbitrary, and are not used anywhere
     131: {'module': 'common', 'screenshot':'none', 'name': 'save text from file into variable', 'function': 'save_text_from_file_into_variable'},
     132: {'module': 'common', 'screenshot':'none', 'name': 'compare partial variable', 'function': 'Compare_Partial_Variables'},
     133: {'module': 'common', 'screenshot':'none', 'name': 'send mail', 'function': 'send_mail'},
+    134: {'module': 'common', 'screenshot':'none', 'name': 'check latest mail', 'function': 'check_latest_mail'},
 
     200: {'module': 'appium', 'screenshot':'mobile', 'name': 'click', 'function': 'Click_Element_Appium'},
     201: {'module': 'appium', 'screenshot':'mobile', 'name': 'text', 'function': 'Enter_Text_Appium'},
