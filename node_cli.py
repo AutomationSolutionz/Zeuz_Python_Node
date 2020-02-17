@@ -387,7 +387,7 @@ def get_project_names(team):
 
 def pass_decode(key, enc):
     dec = []
-    enc = base64.urlsafe_b64decode(enc)
+    enc = base64.urlsafe_b64decode(enc + "========")
     for i in range(len(enc)):
         key_c = key[i % len(key)]
         dec_c = chr((256 + enc[i] - ord(key_c)) % 256)
