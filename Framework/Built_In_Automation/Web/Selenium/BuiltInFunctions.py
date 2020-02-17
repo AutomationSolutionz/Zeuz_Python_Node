@@ -61,7 +61,7 @@ else:
     raise ValueError("No dependency set - Cannot run")
 
 
-def Open_Browser(dependency, window_size_X=700, window_size_Y=800):
+def Open_Browser(dependency, window_size_X=None, window_size_Y=None):
     ''' Launch browser and create instance '''
 
     global selenium_driver
@@ -92,7 +92,14 @@ def Open_Browser(dependency, window_size_X=700, window_size_Y=800):
                 "--headless")  # Enable headless operation if dependency set
             selenium_driver = webdriver.Chrome(chrome_options=options, desired_capabilities=d)
             selenium_driver.implicitly_wait(WebDriver_Wait)
-            selenium_driver.set_window_size(window_size_X, window_size_Y)
+            if window_size_X is None and window_size_Y is None:
+                selenium_driver.maximize_window()
+            else:
+                if window_size_X is None:
+                    window_size_X = 1000
+                if window_size_Y is None:
+                    window_size_Y = 1000
+                selenium_driver.set_window_size(window_size_X, window_size_Y)
             CommonUtil.ExecLog(sModuleInfo, "Started Chrome Browser", 1)
             Shared_Resources.Set_Shared_Variables('selenium_driver', selenium_driver)
             CommonUtil.set_screenshot_vars(Shared_Resources.Shared_Variable_Export())
@@ -118,7 +125,14 @@ def Open_Browser(dependency, window_size_X=700, window_size_Y=800):
                         break
             selenium_driver = webdriver.Firefox()
             selenium_driver.implicitly_wait(WebDriver_Wait)
-            selenium_driver.set_window_size(window_size_X, window_size_Y)
+            if window_size_X is None and window_size_Y is None:
+                selenium_driver.maximize_window()
+            else:
+                if window_size_X is None:
+                    window_size_X = 1000
+                if window_size_Y is None:
+                    window_size_Y = 1000
+                selenium_driver.set_window_size(window_size_X, window_size_Y)
             CommonUtil.ExecLog(sModuleInfo, "Started Firefox Browser", 1)
             Shared_Resources.Set_Shared_Variables('selenium_driver', selenium_driver)
             CommonUtil.set_screenshot_vars(Shared_Resources.Shared_Variable_Export())
@@ -126,7 +140,14 @@ def Open_Browser(dependency, window_size_X=700, window_size_Y=800):
         elif "ie" in browser:
             selenium_driver = webdriver.Ie()
             selenium_driver.implicitly_wait(WebDriver_Wait)
-            selenium_driver.set_window_size(window_size_X, window_size_Y)
+            if window_size_X is None and window_size_Y is None:
+                selenium_driver.maximize_window()
+            else:
+                if window_size_X is None:
+                    window_size_X = 1000
+                if window_size_Y is None:
+                    window_size_Y = 1000
+                selenium_driver.set_window_size(window_size_X, window_size_Y)
             CommonUtil.ExecLog(sModuleInfo, "Started Internet Explorer Browser", 1)
             Shared_Resources.Set_Shared_Variables('selenium_driver', selenium_driver)
             CommonUtil.set_screenshot_vars(Shared_Resources.Shared_Variable_Export())
@@ -137,7 +158,14 @@ def Open_Browser(dependency, window_size_X=700, window_size_Y=800):
                 "SELENIUM_SERVER_JAR"] = os.sys.prefix + os.sep + "Scripts" + os.sep + "selenium-server-standalone-2.45.0.jar"
             selenium_driver = webdriver.Safari()
             selenium_driver.implicitly_wait(WebDriver_Wait)
-            selenium_driver.set_window_size(window_size_X, window_size_Y)
+            if window_size_X is None and window_size_Y is None:
+                selenium_driver.maximize_window()
+            else:
+                if window_size_X is None:
+                    window_size_X = 1000
+                if window_size_Y is None:
+                    window_size_Y = 1000
+                selenium_driver.set_window_size(window_size_X, window_size_Y)
             CommonUtil.ExecLog(sModuleInfo, "Started Safari Browser", 1)
             Shared_Resources.Set_Shared_Variables('selenium_driver', selenium_driver)
             CommonUtil.set_screenshot_vars(Shared_Resources.Shared_Variable_Export())
