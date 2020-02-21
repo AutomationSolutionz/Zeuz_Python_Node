@@ -298,9 +298,10 @@ def _construct_xpath_list(parameter_list,add_dot=False):
                 element_main_body_list.append(other_value)
             elif attribute not in excluded_attribute and '*' in attribute: #ignore case
                 if driver_type == 'appium':
-                    other_value = "[contains(translate(@%s,'ABCDEFGHIJKLMNOPQRSTUVWXYZ','abcdefghijklmnopqrstuvwxyz'),'%s')]"%(attribute.split('*')[1],str(attribute_value).lower())
+                    other_value = "[contains(translate(@%s,'ABCDEFGHIJKLMNOPQRSTUVWXYZ','abcdefghijklmnopqrstuvwxyz'),'%s')]"%(attribute.split('*')[1],str(attribute_value))
                 else:
-                    other_value = "[translate(@%s,'ABCDEFGHIJKLMNOPQRSTUVWXYZ','abcdefghijklmnopqrstuvwxyz')='%s']" % (attribute.split('*')[1], str(attribute_value).lower())
+                    #other_value = "[translate(@%s,'ABCDEFGHIJKLMNOPQRSTUVWXYZ','abcdefghijklmnopqrstuvwxyz')='%s']" % (attribute.split('*')[1], str(attribute_value).lower())
+                    other_value = '[contains(@%s,"%s")]' % (attribute.split('*')[1], str(attribute_value))
                 element_main_body_list.append(other_value)
         #we do the tag on its own  
         #tag_was_given = any("tag" in s for s in parameter_list)
