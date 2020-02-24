@@ -706,7 +706,7 @@ def save_dict_value_by_key(data_set):
         return CommonUtil.Exception_Handler(sys.exc_info())
 
 
-def save_dict_value_by_key_using_key_pair(data_set):
+def save_key_value_from_dict_list(data_set):
     """
     From a list of dictionaries, return the value of another key in the dictionary
     that matches the given key value pair
