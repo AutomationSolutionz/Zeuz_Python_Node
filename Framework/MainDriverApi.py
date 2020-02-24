@@ -515,7 +515,7 @@ def download_attachments_for_test_case(sModuleInfo, run_id, test_case, temp_ini_
 
 # call the function of a test step that is in its driver file
 def call_driver_function_of_test_step(sModuleInfo, TestStepsList, StepSeq, step_time, driver_list, current_step_name,
-                                      final_dependency, final_run_params, test_steps_data, file_specific_steps):
+                                      final_dependency, final_run_params, test_steps_data, file_specific_steps, debug_actions=None):
     try:
         q = queue.Queue()  # define queue
 
@@ -616,7 +616,7 @@ def call_driver_function_of_test_step(sModuleInfo, TestStepsList, StepSeq, step_
                     else:
                         # run sequentially
                         sStepResult = functionTocall(final_dependency, final_run_params, test_steps_data,
-                                                     file_specific_steps, simple_queue, screen_capture, device_info)
+                                                     file_specific_steps, simple_queue, screen_capture, device_info, debug_actions)
                 except:
                     CommonUtil.Exception_Handler(sys.exc_info())  # handle exceptions
                     sStepResult = "Failed"
@@ -657,7 +657,7 @@ def call_driver_function_of_test_step(sModuleInfo, TestStepsList, StepSeq, step_
 # runs all test steps of a test case
 def run_all_test_steps_in_a_test_case(Stepscount, test_case, sModuleInfo, run_id, TestStepsList, file_specific_steps,
                                       driver_list, final_dependency, final_run_params, test_case_result_index,
-                                      temp_ini_file, debug=False, debug_steps=None, is_linked='', performance=False):
+                                      temp_ini_file, debug=False, debug_steps='', is_linked='', performance=False, debug_actions=''):
 
     # define variables
     StepSeq = 1
@@ -665,8 +665,11 @@ def run_all_test_steps_in_a_test_case(Stepscount, test_case, sModuleInfo, run_id
     already_failed = False
 
     # Removing mutable default argument problem
-    if debug_steps is None:
+    if not debug_steps:
         debug_steps = []
+
+    if not debug_actions:
+        debug_actions = []
 
     # performance testing
     if performance:
@@ -677,7 +680,7 @@ def run_all_test_steps_in_a_test_case(Stepscount, test_case, sModuleInfo, run_id
     while StepSeq <= Stepscount:
 
         # check if debug step
-        if debug:
+        if debug and debug_steps:
             if str(StepSeq) not in debug_steps:
                 StepSeq += 1
                 continue
@@ -768,7 +771,7 @@ def run_all_test_steps_in_a_test_case(Stepscount, test_case, sModuleInfo, run_id
             sStepResult = call_driver_function_of_test_step(sModuleInfo, TestStepsList, StepSeq, step_time, driver_list,
                                                             current_step_name, final_dependency, final_run_params,
                                                             test_steps_data,
-                                                            file_specific_steps)
+                                                            file_specific_steps, debug_actions)
 
         # get step end time
         sTestStepEndTime = datetime.fromtimestamp(
@@ -1137,6 +1140,7 @@ def run_test_case(TestCaseID, sModuleInfo, run_id, driver_list, final_dependency
     debug_steps = ''
     debug = False
     cleanup_drivers_during_debug = False
+    debug_actions = ''
 
     # debug steps
     if str(run_id).startswith("debug"):
@@ -1144,10 +1148,18 @@ def run_test_case(TestCaseID, sModuleInfo, run_id, driver_list, final_dependency
         str_list = str(debug_steps).split("-")
         debug_steps = str_list[0]
         cleanup = str_list[1]
+
+        try:
+            debug_actions = str_list[2]
+        except Exception as e:
+            pass
+
         if cleanup == "YES":
             cleanup_drivers_during_debug = True
 
         debug_steps = str(debug_steps[1:-1]).split(",")
+        if debug_actions:
+            debug_actions = str(debug_actions[1:-1]).split(",")
         debug = True
 
     # if normal run, then write log file and cleanup driver instances
@@ -1166,7 +1178,7 @@ def run_test_case(TestCaseID, sModuleInfo, run_id, driver_list, final_dependency
     sTestStepResultList = run_all_test_steps_in_a_test_case(Stepscount, test_case, sModuleInfo, run_id, TestStepsList,
                                                             file_specific_steps, driver_list, final_dependency,
                                                             final_run_params, test_case_result_index, temp_ini_file,
-                                                            debug, debug_steps, is_linked, performance)
+                                                            debug, debug_steps, is_linked, performance, debug_actions)
 
     # get test case end time
     sTestCaseEndTime = datetime.fromtimestamp(
