@@ -1,6 +1,6 @@
 [ZeuZ Python Version]
-version = 10.3
+version = 10.5
 [Release Date]
-date= 2020-02-17
+date= 2020-02-24
 [Release Note]
 Note = Various new actions, windows browser size, and other improvements
