@@ -5,7 +5,7 @@
     Caveat: Functions common to multiple Built In Functions must have action names that are unique, because we search the common functions first, regardless of the module name passed by the user 
 '''
 
-import inspect, sys, time, collections, ftplib, os, PyPDF2
+import inspect, sys, time, collections, ftplib, os, PyPDF2, ast
 try:
     import xlwings as xw
 except:
@@ -669,6 +669,40 @@ def append_dict_shared_variable(data_set):
             value[k] = v
             result = sr.Append_Dict_Shared_Variables(shared_var, value)
         return result
+    except Exception:
+        return CommonUtil.Exception_Handler(sys.exc_info())
+
+
+def save_dict_value_by_key(data_set):
+    ''' Gets the value of a key in a dictionary and saves it in a shared variable '''
+
+    sModuleInfo = inspect.currentframe().f_code.co_name + " : " + MODULE_NAME
+    CommonUtil.ExecLog(sModuleInfo, "Function Start", 0)
+
+    try:
+        # Split the data into left and right side (just like variable assignment x = y)
+        left_side, right_side = data_set[0][2].split('=')
+
+        # Name of the shared variable where the value will be stored
+        variable_name = left_side
+
+        # Split the dictionary and the key
+        _dict, _key = right_side.split('|', 1)
+
+        # Strip any unnecessary white spaces
+        _dict = _dict.strip()
+        _key = _key.strip()
+
+        # Convert _dict string into an actual dictionary
+        # https://stackoverflow.com/a/21154138/1941132
+        _dict = ast.literal_eval(_dict)
+
+        # Find the value of the key present in the dictionary
+        variable_value = _dict[_key]
+
+        # Store it into shared variables
+        sr.Set_Shared_Variables(variable_name, variable_value)
+        return 'passed'
     except Exception:
         return CommonUtil.Exception_Handler(sys.exc_info())
 

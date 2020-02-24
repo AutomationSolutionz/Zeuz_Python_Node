@@ -53,6 +53,7 @@ actions = { # Numbers are arbitrary, and are not used anywhere
     132: {'module': 'common', 'screenshot':'none', 'name': 'compare partial variable', 'function': 'Compare_Partial_Variables'},
     133: {'module': 'common', 'screenshot':'none', 'name': 'send mail', 'function': 'send_mail'},
     134: {'module': 'common', 'screenshot':'none', 'name': 'check latest mail', 'function': 'check_latest_mail'},
+    135: {'module': 'common', 'screenshot':'none', 'name': 'save value from dictionary by key', 'function': 'save_dict_value_by_key'},
 
     200: {'module': 'appium', 'screenshot':'mobile', 'name': 'click', 'function': 'Click_Element_Appium'},
     201: {'module': 'appium', 'screenshot':'mobile', 'name': 'text', 'function': 'Enter_Text_Appium'},
