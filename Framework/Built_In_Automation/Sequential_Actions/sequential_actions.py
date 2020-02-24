@@ -54,6 +54,7 @@ actions = { # Numbers are arbitrary, and are not used anywhere
     133: {'module': 'common', 'screenshot':'none', 'name': 'send mail', 'function': 'send_mail'},
     134: {'module': 'common', 'screenshot':'none', 'name': 'check latest mail', 'function': 'check_latest_mail'},
 
+    
     200: {'module': 'appium', 'screenshot':'mobile', 'name': 'click', 'function': 'Click_Element_Appium'},
     201: {'module': 'appium', 'screenshot':'mobile', 'name': 'text', 'function': 'Enter_Text_Appium'},
     202: {'module': 'appium', 'screenshot':'mobile', 'name': 'tap', 'function': 'Tap_Appium'},
@@ -142,6 +143,8 @@ actions = { # Numbers are arbitrary, and are not used anywhere
     440: {'module': 'selenium', 'screenshot':'web', 'name': 'scroll element to top', 'function': 'scroll_element_to_top'},
     441: {'module': 'selenium', 'screenshot':'web', 'name': 'switch window', 'function': 'switch_window'},
     442: {'module': 'selenium', 'screenshot':'web', 'name': 'save attribute', 'function': 'Save_Attribute'},
+    443: {'module': 'selenium', 'screenshot':'web', 'name': 'save attribute values in list', 'function': 'save_attribute_values_in_list'},
+    
     
     500: {'module': 'utility', 'screenshot':'none', 'name': 'math', 'function': 'Calculate'},
     501: {'module': 'utility', 'screenshot':'none', 'name': 'upload', 'function': 'Upload'},
@@ -177,7 +180,8 @@ actions = { # Numbers are arbitrary, and are not used anywhere
     532: {'module': 'utility', 'screenshot':'none', 'name': 'save substring', 'function': 'save_substring'},
     533: {'module': 'utility', 'screenshot':'none', 'name': 'get attachment path', 'function': 'Get_Attachment_Path'},
     534: {'module': 'utility', 'screenshot':'none', 'name': 'extract number', 'function': 'extract_number'},
-
+    535: {'module': 'utility', 'screenshot':'none', 'name': 'convert date format', 'function': 'convert_date_format'},
+    
     600: {'module': 'xml', 'screenshot':'none', 'name': 'update', 'function': 'update_element'},
     601: {'module': 'xml', 'screenshot':'none', 'name': 'add', 'function': 'add_element'},
     602: {'module': 'xml', 'screenshot':'none', 'name': 'read', 'function': 'read_element'},
@@ -240,7 +244,8 @@ action_support = [
     'unique parameter',
     'save parameter',
     'get parameter',
-    'loop settings'
+    'loop settings',
+    'attribute constrain'
 ]
 
 # List of supported mobile platforms - must be lower case

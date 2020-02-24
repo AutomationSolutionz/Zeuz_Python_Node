@@ -844,6 +844,96 @@ def Save_Text(step_data):
     except Exception:
         return CommonUtil.Exception_Handler(sys.exc_info())
 
+def save_attribute_values_in_list(step_data):
+    '''
+    This action will expect users to provide a parent element under which they are expecting
+    to collect multiple objects.  Users can provide certain constrain to search their elements
+    Sample data:
+    
+    aria-label                       element parameter       Calendar
+    aria-label                       target parameter        "Not available"
+    search by                        source parameter        class 
+    search contains                  attribute constrain     blocked_calendar  
+    search does not contain          attribute constrain     out_of_range
+    search does not contain          attribute constrain     CalendarDay__today
+    save attribute values in list    selenium action         list_name
+        
+    '''
+    sModuleInfo = inspect.currentframe().f_code.co_name + " : " + MODULE_NAME
+    CommonUtil.ExecLog(sModuleInfo, "Function start", 0)
+    global selenium_driver
+    try:
+        #this is the parent object.  If the user wants to search the entire page, they can
+        #provide tag = html
+        Element = LocateElement.Get_Element(step_data,selenium_driver)
+        if Element == "failed":
+            CommonUtil.ExecLog(sModuleInfo, "Unable to locate your element with given data.", 3)
+            return "failed" 
+        
+        attribute_partial_value = ''
+        value = ''
+        search_contains = []
+        search_does_not_contain = []
+        lists_of_values = []
+        
+        for each_step_data_item in step_data:
+
+                
+            if each_step_data_item[1].strip() =="target parameter":
+                attribute_name_to_save = each_step_data_item[0].strip()   
+                attribute_partial_value  = each_step_data_item[2].strip()  
+            
+            
+            if each_step_data_item[0].strip() =="search by":
+                search_by_attribute = each_step_data_item[2].strip()  
+                            
+            if each_step_data_item[0].strip() =="search contains":
+                search_contains.append(each_step_data_item[2].strip())              
+            if each_step_data_item[0].strip()=="search does not contain":
+                search_does_not_contain.append(each_step_data_item[2].strip())    
+                
+            if each_step_data_item[0].strip() =="save attribute values in list":
+                list_name =   each_step_data_item[2].strip()                        
+
+
+        xpathquery = '//*[contains(@%s, "%s")]'%(attribute_name_to_save,attribute_partial_value)
+
+        all_elements = selenium_driver.find_elements_by_xpath(xpathquery)
+
+        for each in all_elements:
+            try:
+                get_class_attr = each.get_attribute(search_by_attribute)
+                get_area_label_attr = each.get_attribute(attribute_name_to_save)
+            except:
+                True
+            
+            try:
+                for each_contains in search_contains: 
+                    if each_contains in get_class_attr:
+                        lists_of_values.append(get_area_label_attr)
+            except:
+                True
+            try:
+                for each_does_not_contains in search_does_not_contain: 
+                    if each_does_not_contains in get_class_attr:
+                        lists_of_values.remove(get_area_label_attr)        
+            except:
+                True
+
+        for value in lists_of_values:
+            result = Shared_Resources.Append_List_Shared_Variables(list_name, value.strip())
+            if result in failed_tag_list:
+                CommonUtil.ExecLog(sModuleInfo, "Value of Variable '%s' could not be saved!!!"%list_name, 3)
+                return "failed"
+        else:
+            Shared_Resources.Show_All_Shared_Variables()
+            return "passed"
+    except Exception:
+        return CommonUtil.Exception_Handler(sys.exc_info())
+
+
+
+
 
 #Validating text from an element given information regarding the expected text
 def Validate_Text(step_data):
