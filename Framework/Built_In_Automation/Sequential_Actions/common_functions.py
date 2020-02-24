@@ -759,7 +759,7 @@ def save_key_value_from_dict_list(data_set):
         return CommonUtil.Exception_Handler(sys.exc_info())
 
 
-def parse_date(data_set):
+def extract_date(data_set):
     """
     Parse date from a given string and save it into a variable
 
@@ -771,14 +771,28 @@ def parse_date(data_set):
     CommonUtil.ExecLog(sModuleInfo, "Function Start", 0)
 
     try:
-        # Split the data into left and right side (just like variable assignment x = y)
-        variable_name, str_containing_date = data_set[0][2].split('=', 1)
+        variable_name = None
+        variable_value = None
+        date_format = None
 
-        # Strip any unnecessary white spaces
-        variable_name = variable_name.strip()
-        str_containing_date = str_containing_date.strip()
+        for row in data_set:
+            if 'action' in row[1]:
+                # Split the data into left and right side (just like variable assignment x = y)
+                variable_name, str_containing_date = data_set[0][2].split('=', 1)
 
-        variable_value = str(datefinder.find_dates(str_containing_date).__next__())
+                # Strip any unnecessary white spaces
+                variable_name = variable_name.strip()
+                str_containing_date = str_containing_date.strip()
+
+                # Extract the date and convert it into datetime object
+                extracted_date = datefinder.find_dates(str_containing_date).__next__()
+            elif 'parameter' in row[1]:
+                date_format = row[2]
+
+        if not date_format:
+            variable_value = str(extracted_date)
+        else:
+            variable_value = extracted_date.strftime(date_format)
 
         # Store it into shared variables
         return sr.Set_Shared_Variables(variable_name, variable_value)

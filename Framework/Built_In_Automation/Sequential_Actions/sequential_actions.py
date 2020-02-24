@@ -55,7 +55,7 @@ actions = { # Numbers are arbitrary, and are not used anywhere
     134: {'module': 'common', 'screenshot':'none', 'name': 'check latest mail', 'function': 'check_latest_mail'},
     135: {'module': 'common', 'screenshot':'none', 'name': 'save value from dictionary by key', 'function': 'save_dict_value_by_key'},
     136: {'module': 'common', 'screenshot':'none', 'name': 'save key value from dict list', 'function': 'save_key_value_from_dict_list'},
-    137: {'module': 'common', 'screenshot':'none', 'name': 'parse date', 'function': 'parse_date'},
+    137: {'module': 'common', 'screenshot':'none', 'name': 'extract date', 'function': 'extract_date'},
 
     
     200: {'module': 'appium', 'screenshot':'mobile', 'name': 'click', 'function': 'Click_Element_Appium'},
