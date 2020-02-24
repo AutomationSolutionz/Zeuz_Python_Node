@@ -341,7 +341,7 @@ def write_browser_logs():
         pass
 
 def Sequential_Actions(step_data, _dependency=None, _run_time_params=None, _file_attachment=None, _temp_q ='', screen_capture='Desktop',
-                       _device_info=None):
+                       _device_info=None, debug_actions=None):
     ''' Main Sequential Actions function - Performs logical decisions based on user input '''
 
     if _device_info is None:
@@ -402,7 +402,7 @@ def Sequential_Actions(step_data, _dependency=None, _run_time_params=None, _file
 
 
     sr.Set_Shared_Variables('step_data', step_data, protected=True)
-    result,skip_for_loop =  Run_Sequential_Actions([]) #empty list means run all, instead of step data we want to send the dataset no's of the step data to run
+    result,skip_for_loop =  Run_Sequential_Actions([], debug_actions) #empty list means run all, instead of step data we want to send the dataset no's of the step data to run
     write_browser_logs()
 
     global load_testing, thread_pool
@@ -537,7 +537,7 @@ def Handle_While_Loop_Action(step_data, data_set_no):
         return "failed",[]
 
 
-def Run_Sequential_Actions(data_set_list=None): #data_set_no will used in recursive conditional action call
+def Run_Sequential_Actions(data_set_list=None, debug_actions=None): #data_set_no will used in recursive conditional action call
     if data_set_list is None:
         data_set_list = []
     sModuleInfo = inspect.currentframe().f_code.co_name + " : " + MODULE_NAME
@@ -556,7 +556,11 @@ def Run_Sequential_Actions(data_set_list=None): #data_set_no will used in recurs
             return 'failed',skip_for_loop
         if data_set_list == []: #run the full step data
             for i in range(len(step_data)):
-                data_set_list.append(i)
+                if debug_actions:
+                    if str(i+1) in debug_actions:
+                        data_set_list.append(i)
+                else:
+                    data_set_list.append(i)
 
         
         for dataset_cnt in data_set_list: # For each data set within step data
