@@ -681,13 +681,13 @@ def save_dict_value_by_key(data_set):
 
     try:
         # Split the data into left and right side (just like variable assignment x = y)
-        left_side, right_side = data_set[0][2].split('=')
+        left_side, right_side = data_set[0][2].split('=', 1)
 
         # Name of the shared variable where the value will be stored
-        variable_name = left_side
+        variable_name = left_side.strip()
 
         # Split the dictionary and the key
-        _dict, _key = right_side.split('|', 1)
+        _dict, _key = right_side.strip().rsplit('|', 1)
 
         # Strip any unnecessary white spaces
         _dict = _dict.strip()
@@ -701,8 +701,58 @@ def save_dict_value_by_key(data_set):
         variable_value = _dict[_key]
 
         # Store it into shared variables
-        sr.Set_Shared_Variables(variable_name, variable_value)
-        return 'passed'
+        return sr.Set_Shared_Variables(variable_name, variable_value)
+    except Exception:
+        return CommonUtil.Exception_Handler(sys.exc_info())
+
+
+def save_dict_value_by_key_using_key_pair(data_set):
+    """
+    From a list of dictionaries, return the value of another key in the dictionary
+    that matches the given key value pair
+
+    my_val = %|my_dict|% | %|key_to_match|% |equals| %|value_to_match|% | %|key_to_return|%
+    my_val = my_dict | key_to_match == value_to_match | key_to_return
+    """
+
+    sModuleInfo = inspect.currentframe().f_code.co_name + " : " + MODULE_NAME
+    CommonUtil.ExecLog(sModuleInfo, "Function Start", 0)
+
+    try:
+        # Split the data into left and right side (just like variable assignment x = y)
+        left_side, right_side = data_set[0][2].split('=', 1)
+
+        # Name of the shared variable where the value will be stored
+        variable_name = left_side.strip()
+
+        # Split the list of dictionary and the key-value pair
+        list_of_dict, key_and_val, key_to_return = right_side.strip().split('|', 2)
+
+        # Split the key value pair
+        key_to_match, val_to_match = key_and_val.split('==', 1)
+
+        # Strip any unnecessary white spaces
+        list_of_dict = list_of_dict.strip()
+        key_to_match = key_to_match.strip()
+        val_to_match = val_to_match.strip()
+        key_to_return = key_to_return.strip()
+
+        # Convert list_of_dict string into an actual list
+        # https://stackoverflow.com/a/21154138/1941132
+        list_of_dict = ast.literal_eval(list_of_dict)
+
+        variable_value = None
+
+        for each in list_of_dict:
+            if key_to_match in each and each[key_to_match] == val_to_match and key_to_return in each:
+                variable_value = each[key_to_return]
+                break
+
+        if variable_value:
+            # Store it into shared variables
+            return sr.Set_Shared_Variables(variable_name, variable_value)
+        else:
+            return 'failed'
     except Exception:
         return CommonUtil.Exception_Handler(sys.exc_info())
 

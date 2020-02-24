@@ -54,6 +54,7 @@ actions = { # Numbers are arbitrary, and are not used anywhere
     133: {'module': 'common', 'screenshot':'none', 'name': 'send mail', 'function': 'send_mail'},
     134: {'module': 'common', 'screenshot':'none', 'name': 'check latest mail', 'function': 'check_latest_mail'},
     135: {'module': 'common', 'screenshot':'none', 'name': 'save value from dictionary by key', 'function': 'save_dict_value_by_key'},
+    136: {'module': 'common', 'screenshot':'none', 'name': 'save value of a key by matching key value in list of dictionary', 'function': 'save_dict_value_by_key_using_key_pair'},
 
     200: {'module': 'appium', 'screenshot':'mobile', 'name': 'click', 'function': 'Click_Element_Appium'},
     201: {'module': 'appium', 'screenshot':'mobile', 'name': 'text', 'function': 'Enter_Text_Appium'},
