@@ -576,15 +576,20 @@ def Compare_Lists_or_Dicts(step_data):
         ignore_extra = True
         both_list = False
         match_by_index = False
+        check_exclusion = False
+
         for each_step_data_item in step_data[0]:
             if each_step_data_item[1] == "compare" or each_step_data_item[1] == "element parameter" or "parameter" in each_step_data_item[1]:
                 list1_name = each_step_data_item[0]
                 list2_name = each_step_data_item[2]
             if each_step_data_item[1] == "action":
-                if str(each_step_data_item[2]).lower().strip().startswith('exact match'):
+                action_type = str(each_step_data_item[2]).lower().strip()
+                if action_type.startswith('exact match'):
                     ignore_extra = False
-                if str(each_step_data_item[2]).lower().strip().startswith('match by index'):
+                if action_type.startswith('match by index'):
                     match_by_index = True
+                if action_type.startswith('excludes'):
+                    check_exclusion = True
 
         if list1_name == '' or list2_name == '':
             CommonUtil.ExecLog(sModuleInfo,"Error parsing data set. Expected Field and Value fields to be set",3)
@@ -606,7 +611,11 @@ def Compare_Lists_or_Dicts(step_data):
             variable_list1 = list1
             variable_list2 = list2
 
-            if not match_by_index:
+            if check_exclusion:
+                for each in list2:
+                    if each in list1:
+                        found_list.append(each)
+            elif not match_by_index:
                 for each in list1:
                     if each in list2:
                         found_list.append(each)
@@ -677,6 +686,14 @@ def Compare_Lists_or_Dicts(step_data):
                         extra_count += 1
                         result.append('extra')
                         taken.append(key)
+
+        if check_exclusion:
+            if len(found_list) > 0:
+                CommonUtil.ExecLog(sModuleInfo, "Match found for items: %s" % found_list, 3)
+                return 'failed'
+            else:
+                CommonUtil.ExecLog(sModuleInfo, "No match found", 1)
+                return 'passed'
 
         CommonUtil.ExecLog(sModuleInfo,"###Comparison Results of List '%s' and List '%s'###"%(list1_name,list2_name),1)
         CommonUtil.ExecLog(sModuleInfo,"Matched Variables: %d"%pass_count,1)

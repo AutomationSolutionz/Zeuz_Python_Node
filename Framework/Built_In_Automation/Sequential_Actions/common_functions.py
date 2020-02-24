@@ -10,6 +10,7 @@ try:
     import xlwings as xw
 except:
     pass
+
 from Framework.Utilities import CommonUtil
 from Framework.Built_In_Automation.Shared_Resources import BuiltInFunctionSharedResources as sr
 from Framework.Built_In_Automation.Sequential_Actions.sequential_actions import actions, action_support
@@ -18,6 +19,7 @@ from Framework.Built_In_Automation.Shared_Resources import LocateElement
 from Framework import MainDriverApi
 from Framework.Utilities import FileUtilities
 import datetime
+import datefinder
 from datetime import timedelta
 from .utility import send_email, check_latest_received_email
 months = ["Unknown",
@@ -753,6 +755,47 @@ def save_key_value_from_dict_list(data_set):
             return sr.Set_Shared_Variables(variable_name, variable_value)
         else:
             return 'failed'
+    except Exception:
+        return CommonUtil.Exception_Handler(sys.exc_info())
+
+
+def extract_date(data_set):
+    """
+    Parse date from a given string and save it into a variable
+
+    Action format:
+    parse date          common action           variable_name = %|string_containing_date|%
+    """
+
+    sModuleInfo = inspect.currentframe().f_code.co_name + " : " + MODULE_NAME
+    CommonUtil.ExecLog(sModuleInfo, "Function Start", 0)
+
+    try:
+        variable_name = None
+        variable_value = None
+        date_format = None
+
+        for row in data_set:
+            if 'action' in row[1]:
+                # Split the data into left and right side (just like variable assignment x = y)
+                variable_name, str_containing_date = data_set[0][2].split('=', 1)
+
+                # Strip any unnecessary white spaces
+                variable_name = variable_name.strip()
+                str_containing_date = str_containing_date.strip()
+
+                # Extract the date and convert it into datetime object
+                extracted_date = datefinder.find_dates(str_containing_date).__next__()
+            elif 'parameter' in row[1]:
+                date_format = row[2]
+
+        if not date_format:
+            variable_value = str(extracted_date)
+        else:
+            variable_value = extracted_date.strftime(date_format)
+
+        # Store it into shared variables
+        return sr.Set_Shared_Variables(variable_name, variable_value)
     except Exception:
         return CommonUtil.Exception_Handler(sys.exc_info())
 
