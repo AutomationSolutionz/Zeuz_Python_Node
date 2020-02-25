@@ -635,6 +635,13 @@ def Run_Sequential_Actions(data_set_list=None, debug_actions=None): #data_set_no
                         CommonUtil.ExecLog(sModuleInfo,"Old style loop action found. This will not be supported in 2020, please replace them with new loop actions",2)
                         result, skip_for_loop = Loop_Action_Handler(data_set, row, dataset_cnt)
                         skip = skip_for_loop
+                        nested_action_skip = []  # skipping the steps that are nested  , we do not want to run them sequencially later
+                        for row in data_set:
+                            if row[0].lower() == 'nested action':
+                                a = map(int, row[2].split(","))
+                                for i in a:
+                                    nested_action_skip.append(int(i) - 1)  # converting to index format by decreasing by 1 and converting string to number
+                        skip = skip + nested_action_skip  #appending the nested actions to skip list  after the loop finish
                         if result in failed_tag_list: return 'failed', skip_for_loop
                 elif 'loop' in action_name:
                     if 'while' in action_name.lower():
