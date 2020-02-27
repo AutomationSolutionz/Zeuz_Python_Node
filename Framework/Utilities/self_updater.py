@@ -12,7 +12,7 @@
 '''
 
 # Import modules
-import sys, os, os.path, shutil, requests, urllib3, zipfile, glob
+import sys, os, os.path, shutil, requests, urllib3, zipfile, glob, subprocess
 urllib3.disable_warnings() # Hide warnings from requests module
 
 # Import local modules
@@ -227,6 +227,8 @@ def main(dst_dir):
             copytree(src_dir, dst_dir, skip) # Copy it to the install location
             remove_deleted(src_dir, dst_dir, skip) # Remove any extra files that were removed from the new software version
             if os.path.exists(src_dir): shutil.rmtree(src_dir) # Remove downloaded software from temp location
+            path_of_requirements_file =os.path.join( dst_dir, 'requirements.txt')
+            subprocess.run('pip install -r {}'.format(path_of_requirements_file),shell=True)
             check_complete = 'done'
         else: check_complete = 'error'
     except:
