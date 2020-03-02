@@ -1110,15 +1110,21 @@ def create_3d_list(data_set):
         else:
             a_2d_list = []
             if ";" in str(tmp[1]):  # direct initialization parent_list = [[a,b,c],[x,y,z]]
-                parent_list_splitted_by_semicolon = str(tmp[1]).strip().split(";")
+                parent_separator = ";"
+                if "|;|" in str(tmp[1]): parent_separator="|;|"
+                parent_list_splitted_by_semicolon = str(tmp[1]).strip().split(parent_separator)
                 for each_split in parent_list_splitted_by_semicolon:
-                    child_list_raw = each_split.strip().split(",")
+                    separator=","
+                    if "|,|" in each_split:separator="|,|"
+                    child_list_raw = each_split.strip().split(separator)
                     child_list = []
                     for element in child_list_raw:
                         child_list.append(element.strip())
                     a_2d_list.append(child_list)
             else:
-                child_list_raw = str(tmp[1]).strip().split(",")
+                separator=","
+                if "|,|" in str(tmp[1]):separator="|,|"
+                child_list_raw = str(tmp[1]).strip().split(separator)
                 child_list = []
                 for element in child_list_raw:
                     child_list.append(element.strip())
