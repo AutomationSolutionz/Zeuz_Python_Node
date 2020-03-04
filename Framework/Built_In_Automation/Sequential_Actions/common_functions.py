@@ -10,7 +10,7 @@ try:
     import xlwings as xw
 except:
     pass
-
+global sr
 from Framework.Utilities import CommonUtil
 from Framework.Built_In_Automation.Shared_Resources import BuiltInFunctionSharedResources as sr
 from Framework.Built_In_Automation.Sequential_Actions.sequential_actions import actions, action_support
@@ -534,7 +534,7 @@ def Compare_Variables(data_set):
 def Compare_Partial_Variables(data_set):
     ''' Compare shared variables / strings to eachother '''
     # Compares two variables partially from Field and Value on any line that is not the action line
-    sModuleInfo = inspect.stack()[0][3] + " : " + inspect.getmoduleinfo(__file__).name
+    sModuleInfo = inspect.currentframe().f_code.co_name + " : " + MODULE_NAME
     CommonUtil.ExecLog(sModuleInfo,"Function Start", 0)
     return sr.Compare_Partial_Variables([data_set])
 
@@ -1424,3 +1424,112 @@ def save_text_from_file_into_variable(data_set):
         return "passed"
     except Exception:
         return CommonUtil.Exception_Handler(sys.exc_info())
+
+
+
+
+def voice_command_response(step_data ):
+    '''
+    this action is used to communicate with voice activated device such as Alex.  the computer will speak out the wakeup word(s) such as 
+    (example: Alexa) followed by some commands (example: what is today's date).  
+    
+    It will then listen for Alexa device to say something, and convert the sound to text
+    
+    voice command response        common action         <variable of  output text>
+    wakeup command                input parameter        Alexa
+    voice command                 input parameter        What is today's date
+    voice name                    optional parameter     default 
+    voice speed                   optional parameter     140
+    voice language                optional parameter     EN
+    microphone number             optional parameter     1
+    
+    
+    voice_command, voice_wakeup_command, voice_speed = '140', voice_name = 'default', microphone_number = '1'
+    ****** This action needs more work to set voice name and language  
+    '''
+
+    sModuleInfo = inspect.currentframe().f_code.co_name + " : " + MODULE_NAME
+    CommonUtil.ExecLog(sModuleInfo, "Function start", 0)
+    try:
+        import pyttsx3
+        import speech_recognition
+        recognizer = speech_recognition.Recognizer()
+        engine = pyttsx3.init()
+        
+        # collecting data 
+        var_name = False
+        voice_wakeup_command = False
+        voice_command = False
+        microphone_number = '1'
+        voice_speed = '140'
+        voice_name = 'default'
+
+        for each_step_data_item in step_data:
+            if each_step_data_item[0].strip()  == "voice command response":  
+                var_name  = each_step_data_item[2].strip()  
+            if each_step_data_item[0].strip() =="wakeup command":
+                voice_wakeup_command = each_step_data_item[2].strip()  
+            if each_step_data_item[0].strip() =="voice command":
+                voice_command = each_step_data_item[2].strip()
+            if each_step_data_item[0].strip() =="voice name":
+                voice_name = each_step_data_item[2].strip()  
+            if each_step_data_item[0].strip() =="voice speed":
+                voice_speed = each_step_data_item[2].strip()
+            if each_step_data_item[0].strip() =="voice language":
+                voice_language = each_step_data_item[2].strip()                                
+            if each_step_data_item[0].strip() =="microphone number":
+                microphone_number = each_step_data_item[2].strip()
+        
+        #data validation for mendatory fields 
+        if var_name == False:
+            CommonUtil.ExecLog(sModuleInfo, "variable name cannot be missing", 3)
+            return "failed"            
+        if var_name == "":
+            CommonUtil.ExecLog(sModuleInfo, "variable name cannot be missing", 3)
+            return "failed"            
+        if voice_wakeup_command == False:
+            CommonUtil.ExecLog(sModuleInfo, "Voice wakeup command cannot be empty", 3)
+            return "failed"                   
+        if voice_command == False:
+            voice_command.ExecLog(sModuleInfo, "Voice command cannot be empty", 3)
+            return "failed"          
+        
+        engine.setProperty('rate', int(voice_speed)) 
+        microphone = speech_recognition.Microphone(device_index=int(microphone_number)) #Adjust microphone index if you have more than 1 
+        # check that recognizer and microphone arguments are appropriate type
+        if not isinstance(recognizer, speech_recognition.Recognizer):
+            CommonUtil.ExecLog(sModuleInfo, "Unable to initialize voice recorder", 3)
+            return "failed"
+        if not isinstance(microphone, speech_recognition.Microphone):
+            CommonUtil.ExecLog(sModuleInfo, "Unable to initialize microphone for voice recorder", 3)
+            return "failed"
+        with microphone as source:
+            CommonUtil.ExecLog(sModuleInfo, "Waking up and speaking to voice commands", 1)
+            recognizer.adjust_for_ambient_noise(source) # analyze the audio source for 1 second and adjust the recognizer sensitivity to ambient noise
+            engine.say(voice_wakeup_command)
+            engine.runAndWait()
+            engine.say(voice_command)
+            engine.runAndWait()        
+            audio = recognizer.listen(source) #record audio
+        CommonUtil.ExecLog(sModuleInfo, "Communicating with google speech to text converter...", 1)
+        voice_to_text_result = 'Not able to translate voice to text'
+        try:
+            voice_to_text_result = recognizer.recognize_google(audio)
+        except speech_recognition.RequestError:
+            CommonUtil.ExecLog(sModuleInfo, "Google speech to text converter API was unreachable or unresponsive", 3)
+            return "failed"
+        except speech_recognition.UnknownValueError:
+            CommonUtil.ExecLog(sModuleInfo, "Google speech to text could not translate", 3)
+            return "failed"
+        CommonUtil.ExecLog(sModuleInfo, "Your speech to text from %s was translated to be: %s"%(voice_wakeup_command,voice_to_text_result), 1)
+        
+        sr.Set_Shared_Variables(var_name, voice_to_text_result)
+        return "passed"
+    except Exception:
+        exc_type, exc_obj, exc_tb = sys.exc_info()
+        fname = os.path.split(exc_tb.tb_frame.f_code.co_filename)[1]
+        Error_Detail = ((str(exc_type).replace("type ", "Error Type: ")) + ";" + "Error Message: " + str(
+            exc_obj) + ";" + "File Name: " + fname + ";" + "Line: " + str(exc_tb.tb_lineno))
+        CommonUtil.ExecLog(sModuleInfo, "Unable to communicate or record the response from voice activated device.  Error: %s" % (Error_Detail), 3)
+        return "failed"
+

@@ -498,7 +498,7 @@ def Compare_Variables(step_data):
 #Validating partial text from an element given information regarding the expected text
 
 def Compare_Partial_Variables(step_data):
-    sModuleInfo = inspect.stack()[0][3] + " : " + inspect.getmoduleinfo(__file__).name
+    sModuleInfo = inspect.currentframe().f_code.co_name + " : " + MODULE_NAME
     CommonUtil.ExecLog(sModuleInfo, "Function: Compare_Partial_Variables", 0)
     try:
         pass_count = 0

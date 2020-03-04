@@ -56,6 +56,9 @@ actions = { # Numbers are arbitrary, and are not used anywhere
     135: {'module': 'common', 'screenshot':'none', 'name': 'save value from dictionary by key', 'function': 'save_dict_value_by_key'},
     136: {'module': 'common', 'screenshot':'none', 'name': 'save key value from dict list', 'function': 'save_key_value_from_dict_list'},
     137: {'module': 'common', 'screenshot':'none', 'name': 'extract date', 'function': 'extract_date'},
+    138: {'module': 'common', 'screenshot':'none', 'name': 'voice command response', 'function': 'voice_command_response'},
+    139: {'module': 'common', 'screenshot':'none', 'name': 'compare partial variables', 'function': 'Compare_Partial_Variables'},
+
 
     
     200: {'module': 'appium', 'screenshot':'mobile', 'name': 'click', 'function': 'Click_Element_Appium'},
@@ -184,7 +187,9 @@ actions = { # Numbers are arbitrary, and are not used anywhere
     533: {'module': 'utility', 'screenshot':'none', 'name': 'get attachment path', 'function': 'Get_Attachment_Path'},
     534: {'module': 'utility', 'screenshot':'none', 'name': 'extract number', 'function': 'extract_number'},
     535: {'module': 'utility', 'screenshot':'none', 'name': 'convert date format', 'function': 'convert_date_format'},
+
     
+        
     600: {'module': 'xml', 'screenshot':'none', 'name': 'update', 'function': 'update_element'},
     601: {'module': 'xml', 'screenshot':'none', 'name': 'add', 'function': 'add_element'},
     602: {'module': 'xml', 'screenshot':'none', 'name': 'read', 'function': 'read_element'},
