@@ -1,6 +1,6 @@
 [ZeuZ Python Version]
-version = 10.5
+version = 10.6
 [Release Date]
-date= 2020-02-24
+date= 2020-03-04
 [Release Note]
-Note = Various new actions, windows browser size, and other improvements
+Note = speech to text, compare partial variables
