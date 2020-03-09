@@ -374,7 +374,10 @@ def upload_zip(server_id, port_id, temp_folder, run_id, file_name, base_path=Fal
     """
 
     sModuleInfo = inspect.currentframe().f_code.co_name + " : " + MODULE_NAME
-    url_link = 'http://' + server_id + ':' + str(port_id) + "/Home/UploadZip/"
+    url_link = server_id + ':' + str(port_id) + "/Home/UploadZip/"
+    if not url_link.startswith("http") or not url_link.startswith("https"):
+        url_link = "http://" + url_link
+
     total_file_path = temp_folder + os.sep + \
         run_id.replace(':', '-') + os.sep + file_name
 
