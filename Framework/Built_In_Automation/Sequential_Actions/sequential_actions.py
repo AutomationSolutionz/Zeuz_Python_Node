@@ -640,6 +640,22 @@ def Run_Sequential_Actions(data_set_list=None, debug_actions=None): #data_set_no
                         CommonUtil.ExecLog(sModuleInfo,"Old style loop action found. This will not be supported in 2020, please replace them with new loop actions",2)
                         result, skip_for_loop = Loop_Action_Handler(data_set, row, dataset_cnt)
                         skip = skip_for_loop
+                        
+                        position_of_loop_action = dataset_cnt
+                        set_of_actions_after_loop = range(position_of_loop_action+1,len(step_data))
+                        for follow_cnt in set_of_actions_after_loop:
+                            for follow_row in step_data[follow_cnt]:
+                                if 'loop action' in follow_row[1]:
+                                    if str(follow_cnt+1) in row[2]:
+                                        for a in follow_row[2].strip(" nested ").strip(" - ").split(","):
+                                            skip.append(int(a) - 1)
+                                elif 'conditional action' in follow_row[1]:
+                                    if str(follow_cnt+1) in row[2]:
+                                        for a in follow_row[2].strip(" nested ").strip(" - ").split(","):
+                                            skip.append(int(a) - 1)
+                        
+                        
+                        '''
                         nested_action_skip = []  # skipping the steps that are nested  , we do not want to run them sequencially later
                         for row in data_set:
                             if row[0].lower() == 'nested action':
@@ -647,6 +663,8 @@ def Run_Sequential_Actions(data_set_list=None, debug_actions=None): #data_set_no
                                 for i in a:
                                     nested_action_skip.append(int(i) - 1)  # converting to index format by decreasing by 1 and converting string to number
                         skip = skip + nested_action_skip  #appending the nested actions to skip list  after the loop finish
+                        '''
+                        
                         if result in failed_tag_list: return 'failed', skip_for_loop
                 elif 'loop' in action_name:
                     if 'while' in action_name.lower():
