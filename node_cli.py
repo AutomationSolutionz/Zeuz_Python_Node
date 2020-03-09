@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 # -*- coding: cp1252 -*-
 
-import os, sys, time, os.path, base64, signal
+import os, sys, time, os.path, base64, signal, subprocess
 from base64 import b64encode, b64decode
 
 # Append correct paths so that it can find the configuration files and other modules
@@ -12,6 +12,44 @@ os.chdir(os.path.join(os.path.dirname(os.path.realpath(__file__)), 'Framework'))
 from Framework.Utilities import ConfigModule, RequestFormatter, CommonUtil, FileUtilities, All_Device_Info
 from Framework import MainDriverApi
 from concurrent.futures import ThreadPoolExecutor
+sys.path.append("..")
+
+
+def install_missing_modules(req_file_path=True):
+    '''
+    Purpose: This function will check all the installed modules, compare with what is in requirements.txt file 
+    If anything is missing from requirements.txt file, it will install them only
+    '''
+    try:
+        #get all the pip modules that are installed
+        cmd = ("pip freeze")
+        proc = subprocess.Popen(cmd,
+            stdout = subprocess.PIPE,
+            stderr = subprocess.STDOUT)
+        stdout, stderr = proc.communicate()
+        currently_installed_list = []
+        for each in (stdout.splitlines()):
+            each1 = each.decode('utf8').strip() #removing bites char
+            if "=" in (each1):
+                currently_installed_list.append((each1))
+        #getting all pip from requirements.txt file
+        if req_file_path == True:
+            req_file_path = os.path.dirname(os.path.abspath(__file__))+os.sep + 'requirements.txt'
+
+        with open(req_file_path) as fd:
+            req_list = fd.read().splitlines()
+        missing_modules =  [x for x in req_list if x not in currently_installed_list]
+        for each in missing_modules:
+            subprocess.check_call([sys.executable, "-m", "pip", "install", each]) 
+        return True
+            
+    except Exception as e:
+        exc_type, exc_obj, exc_tb = sys.exc_info()
+        fname = os.path.split(exc_tb.tb_frame.f_code.co_filename)[1]
+        Error_Detail = ((str(exc_type).replace("type ", "Error Type: ")) + ";" +  "Error Message: " + str(exc_obj) +";" + "File Name: " + fname + ";" + "Line: "+ str(exc_tb.tb_lineno))
+        CommonUtil.ExecLog('', Error_Detail, 4, False)
+        return True
+
 
 def signal_handler(sig, frame):
     print("Disconnecting from server...")
@@ -80,6 +118,7 @@ if not os.path.exists(os.path.join(FileUtilities.get_home_folder(), 'Desktop',os
 temp_ini_file = os.path.join(os.path.join(FileUtilities.get_home_folder(), os.path.join('Desktop',os.path.join('AutomationLog',ConfigModule.get_config_value('Temp', '_file')))))
 
 def Login():
+    install_missing_modules(req_file_path=True)
     username=ConfigModule.get_config_value(AUTHENTICATION_TAG,USERNAME_TAG)
     password = ConfigModule.get_config_value(AUTHENTICATION_TAG,PASSWORD_TAG)
 
