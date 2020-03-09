@@ -642,15 +642,15 @@ def Run_Sequential_Actions(data_set_list=None, debug_actions=None): #data_set_no
                         skip = skip_for_loop
                         
                         position_of_loop_action = dataset_cnt
-                        set_of_actions_after_loop = range(position_of_loop_action+1,len(step_data))
-                        for follow_cnt in set_of_actions_after_loop:
+                        set_of_actions_after_loop = range(position_of_loop_action+1,len(step_data)) #Collecting actions following the first loop action
+                        for follow_cnt in set_of_actions_after_loop: 
                             for follow_row in step_data[follow_cnt]:
-                                if 'loop action' in follow_row[1]:
-                                    if str(follow_cnt+1) in row[2]:
+                                if 'loop action' in follow_row[1]:   #Check if the action following the first loop in the set is a loop action
+                                    if str(follow_cnt+1) in row[2]: #Check if this loop is being called by the first loop. Done to avoid skipping actions of loops in the step that are located after and outside of the first loop.
                                         for a in follow_row[2].strip(" nested ").strip(" - ").split(","):
                                             skip.append(int(a) - 1)
-                                elif 'conditional action' in follow_row[1]:
-                                    if str(follow_cnt+1) in row[2]:
+                                elif 'conditional action' in follow_row[1]: #Check if the action following the first loop in the set is a conditional action
+                                    if str(follow_cnt+1) in row[2]: #Check if this conditional is being called by the first loop. Done to avoid skipping actions of conditional actions in the step that are located after and outside of the first loop.
                                         for a in follow_row[2].strip(" nested ").strip(" - ").split(","):
                                             skip.append(int(a) - 1)
                         
