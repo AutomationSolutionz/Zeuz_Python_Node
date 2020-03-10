@@ -1,6 +1,6 @@
 [ZeuZ Python Version]
-version = 10.7
+version = 10.8
 [Release Date]
-date= 2020-03-09
+date= 2020-03-10
 [Release Note]
-Note = SSL support, autoupdate fix, and action logic improvements
+Note = SSL support, autoupdate fix, and action logic improvements, bug fixes
