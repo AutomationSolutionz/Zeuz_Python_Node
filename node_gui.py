@@ -40,34 +40,24 @@ def install_missing_modules(req_file_path=True):
     '''
     try:
         #get all the pip modules that are installed
-        cmd = ("pip freeze")
-        proc = subprocess.Popen(cmd,
-            stdout = subprocess.PIPE,
-            stderr = subprocess.STDOUT)
-        stdout, stderr = proc.communicate()
-        currently_installed_list = []
-        for each in (stdout.splitlines()):
-            each1 = each.decode('utf8').strip() #removing bites char
-            if "=" in (each1):
-                currently_installed_list.append((each1))
         #getting all pip from requirements.txt file
         if req_file_path == True:
             req_file_path = os.path.dirname(os.path.abspath(__file__))+os.sep + 'requirements.txt'
-
         with open(req_file_path) as fd:
             req_list = fd.read().splitlines()
-
-        currently_non_version = []
-        for each in currently_installed_list:
-            currently_non_version.append(each.split("==")[0])
-            
-        missing_modules = []
+        #get all the modules installed from freeze
+        try:
+            from pip._internal.operations import freeze
+        except ImportError:  # pip < 10.0
+            from pip.operations import freeze
+        freeze_list = freeze.freeze()
+        alredy_installed_list = []
+        for p in freeze_list:
+            alredy_installed_list.append(str (p.split("==")[0]))
+        #installing any missing modules
         for each in req_list:
-            if each not in currently_non_version:
-                missing_modules.append(each)
-                
-        for each in missing_modules:
-            subprocess.check_call([sys.executable, "-m", "pip", "install", each]) 
+            if each not in alredy_installed_list:
+                subprocess.check_call([sys.executable, "-m", "pip", "install", each])        
         return True
     except Exception as e:
         exc_type, exc_obj, exc_tb = sys.exc_info()
@@ -75,7 +65,7 @@ def install_missing_modules(req_file_path=True):
         Error_Detail = ((str(exc_type).replace("type ", "Error Type: ")) + ";" +  "Error Message: " + str(exc_obj) +";" + "File Name: " + fname + ";" + "Line: "+ str(exc_tb.tb_lineno))
         print (Error_Detail)
         return True
-    
+        
 # Have user install Tk if this fails - we try to do it for them first
 try:
     import tkinter as tk # http://infohost.nmt.edu/tcc/help/pubs/tkinter/tkinter.pdf
