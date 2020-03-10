@@ -33,7 +33,6 @@ def pass_encode(key, clear):
         enc.append(enc_c)
     return base64.urlsafe_b64encode(bytes(enc))
 
-
 def install_missing_modules(req_file_path=True):
     '''
     Purpose: This function will check all the installed modules, compare with what is in requirements.txt file 
@@ -57,19 +56,26 @@ def install_missing_modules(req_file_path=True):
 
         with open(req_file_path) as fd:
             req_list = fd.read().splitlines()
-        missing_modules =  [x for x in req_list if x not in currently_installed_list]
+
+        currently_non_version = []
+        for each in currently_installed_list:
+            currently_non_version.append(each.split("==")[0])
+            
+        missing_modules = []
+        for each in req_list:
+            if each not in currently_non_version:
+                missing_modules.append(each)
+                
         for each in missing_modules:
             subprocess.check_call([sys.executable, "-m", "pip", "install", each]) 
         return True
-            
     except Exception as e:
         exc_type, exc_obj, exc_tb = sys.exc_info()
         fname = os.path.split(exc_tb.tb_frame.f_code.co_filename)[1]
         Error_Detail = ((str(exc_type).replace("type ", "Error Type: ")) + ";" +  "Error Message: " + str(exc_obj) +";" + "File Name: " + fname + ";" + "Line: "+ str(exc_tb.tb_lineno))
-        CommonUtil.ExecLog('', Error_Detail, 4, False)
+        print (Error_Detail)
         return True
-
-
+    
 # Have user install Tk if this fails - we try to do it for them first
 try:
     import tkinter as tk # http://infohost.nmt.edu/tcc/help/pubs/tkinter/tkinter.pdf
