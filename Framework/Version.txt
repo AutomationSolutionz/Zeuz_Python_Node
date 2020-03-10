@@ -1,5 +1,5 @@
 [ZeuZ Python Version]
-version = 10.8
+version = 10.9
 [Release Date]
 date= 2020-03-10
 [Release Note]
