@@ -24,4 +24,3 @@ speech
 SpeechRecognition
 tzlocal
 urllib3
-xlwings
