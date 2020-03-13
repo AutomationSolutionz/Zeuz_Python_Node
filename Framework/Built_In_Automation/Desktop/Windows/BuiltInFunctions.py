@@ -810,9 +810,9 @@ def Run_Application(data_set):
                 Desktop_app = str(row[2]).strip()
 
         autoit.send("^{ESC}")
-        time.sleep(0.1)
+        time.sleep(0.5)
         autoit.send(Desktop_app)
-        time.sleep(0.1)
+        time.sleep(0.5)
         autoit.send("{ENTER}")
         CommonUtil.ExecLog(sModuleInfo, "Succesfully launched your app", 1)
 
