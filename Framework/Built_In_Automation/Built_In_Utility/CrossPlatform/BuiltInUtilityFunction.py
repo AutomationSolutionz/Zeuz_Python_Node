@@ -1650,8 +1650,16 @@ def Move_File_or_Folder(step_data):
         from_path = from_path.lstrip('/')
         to_path = to_path.lstrip('/')
 
-        # Resolve the absolute paths
-        from_path = Path(get_home_folder()) / Path(from_path)
+        # Resolve the absolute path of from_path
+        # Check to see if from_path is in file attachments
+        if Shared_Resources.Test_Shared_Variables('file_attachment'):
+            file_attachment = Shared_Resources.Get_Shared_Variables('file_attachment')
+            if from_path in file_attachment:
+                from_path = Path(file_attachment[from_path])
+        else:
+            from_path = Path(get_home_folder()) / Path(from_path)
+
+        # Resolve absolute path of to_path
         to_path = Path(get_home_folder()) / Path(to_path)
 
         # Try to find the file
