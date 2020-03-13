@@ -696,8 +696,15 @@ def download_file_using_url(file_url, location_of_file):
          A fixed chunk will be loaded each time while r.iter_content is iterated.'''
         r = requests.get(file_url, stream=True) # Open connection
 
-        # Download file and save to disk
-        file_name = os.path.join(location_of_file , str(file_url.split("/")[-1:][0])) #complete file location
+        # set the folder that file will be saved under
+        if location_of_file == False:
+            file_location = os.path.join(get_home_folder(), 'Downloads')
+        else: 
+            location_of_file = str(location_of_file.split("/")[-1:][0])
+            file_location = os.path.join(get_home_folder(), location_of_file)
+        #get the file name from url and then join that with the folder we got above
+        file_name = os.path.join(file_location , str(file_url.split("/")[-1:][0])) #complete file location
+        #download the file
         CommonUtil.ExecLog(sModuleInfo, "Path of file to download: %s" % file_name, 0)
         with open(file_name, "wb") as f: # Open new binary file
             for chunk in r.iter_content(chunk_size=1048576): # Grab chunk of received data
@@ -1607,20 +1614,44 @@ def Zip_File_or_Folder(data_set):
 
 # Method to move file/folder
 def Move_File_or_Folder(step_data):
+    
+    '''
+    This function will allow users to move either a file or folder.  The source can be either:
+    file attached in a test case, steps, or variable 
+    
+
+    destination      path              /Downloads/ch1-2.pdf
+    source           path               %|my_file|%
+    move             utility action    file
+    
+    
+    '''
+    
+
     sModuleInfo = inspect.currentframe().f_code.co_name + " : " + MODULE_NAME
     CommonUtil.ExecLog(sModuleInfo, "Function start", 0)
 
     # Recall file attachment, if not already set
     file_attachment = []
+    
+    '''
+     @sazid there is no option here to recall a custom varible.  We need that... 
+    
+    '''
     if Shared_Resources.Test_Shared_Variables('file_attachment'):
         file_attachment = Shared_Resources.Get_Shared_Variables('file_attachment')
-
+    
     try:
         if _platform == "linux" or _platform == "linux2" or _platform == "darwin" :
-
+            '''**** @sazid this is hard coded sequence.. we should look for "source" and "destination" '''
+            
             from_path = str(step_data[0][2]).strip()  # location of the file/folder to be renamed
             to_path = str(step_data[1][2]).strip()  # location where to rename the file/folder
+        
+        
         elif _platform == "win32":
+            '''**** @sazid this is hard coded sequence.. we should look for "source" and "destination" '''
+            
             from_path = raw(str(step_data[0][2]).strip())  # location of the file/folder to be renamed
             to_path = raw(str(step_data[1][2]).strip())  # location where to rename the file/folder
 
@@ -1636,7 +1667,7 @@ def Move_File_or_Folder(step_data):
 
 
         to_path = os.path.join(get_home_folder(), to_path)
-
+        '''**** @sazid this is hard coded sequence.. we should loop through the data" '''
         file_or_folder = str(step_data[2][2]).strip()  # get if it is file/folder to move
         if file_or_folder.lower() == 'file':
                 # move file "from_path to "to_path"
@@ -1864,7 +1895,17 @@ def Save_Text(step_data):
 
 # Method to download file
 def Download_file(data_set):
-    ''' Download file from URL '''
+    ''' Download file from URL 
+    by default if location is not provided, it will save to download folder
+    Location needs to be provided by assuming current user's folder such as Documents, Downloads, Pictures and so on
+    Example:
+    url         source parameter        http://codex.cs.yale.edu/avi/db-book/db4/slide-dir/ch1-2.pdf
+    
+    location   optional parameter        /Downloads
+    
+    download      utility action          *** your variable.  You can put any variable.*** 
+    
+    '''
     
     sModuleInfo = inspect.currentframe().f_code.co_name + " : " + MODULE_NAME
     CommonUtil.ExecLog(sModuleInfo, "Function start", 0)
@@ -1872,20 +1913,22 @@ def Download_file(data_set):
     # Parse data set
     try:
         url = '' # Mandatory
-        file_location = '' # Optional - default will be used if omited
-        shared_var = '' # Optional
+        file_location = False# Optional - default will be used if omited
+        shared_var = '' # 
         
         for row in data_set:
             op = row[0].strip().lower()
             if op == 'url':
                 url = row[2].strip()
-            elif op in ('folder', 'location', 'directory'):
+                
+            elif op in ('location'): #option action 
                 file_location = row[2].strip()
-            elif op in ('shared variable', 'shared var', 'variable', 'var', 'save'):
+            
+            elif op in ('download'):
                 shared_var = row[2].strip()
         
         # Verify input
-        if file_location == '': file_location = os.path.join(get_home_folder(), 'Downloads') # if no location is given, set default to Downloads directory
+        if file_location == False: file_location = os.path.join(get_home_folder(), 'Downloads') # if no location is given, set default to Downloads directory
         if url == '': # Make sure we have a URL
             CommonUtil.ExecLog(sModuleInfo,"Expected Field to contain 'url' and Value to contain a valid URL to a file", 3)
             return 'failed'
@@ -1894,15 +1937,15 @@ def Download_file(data_set):
 
     try:
         # Download file and get path/filename
-        file_name = download_file_using_url(url, file_location)
+        full_file_path  = download_file_using_url(url, file_location)
         
         # Verify download
-        if file_name in failed_tag_list:
+        if full_file_path in failed_tag_list:
             CommonUtil.ExecLog(sModuleInfo,"Failed to save file from (%s) to disk (%s)" % (url, file_location), 3)
             return "failed"
         else:
-            CommonUtil.ExecLog(sModuleInfo, "File downloaded successfully to %s" % file_name, 1)
-            if shared_var: Shared_Resources.Set_Shared_Variables(shared_var, file_name) # Store path/file in shared variables if variable name was set by user
+            CommonUtil.ExecLog(sModuleInfo, "File downloaded successfully to %s" % full_file_path, 1)
+            Shared_Resources.Set_Shared_Variables(shared_var, full_file_path) # Store path/file in shared variables if variable name was set by user
             return "passed"
     except Exception:
         return CommonUtil.Exception_Handler(sys.exc_info(), None, "Error downloading file")
