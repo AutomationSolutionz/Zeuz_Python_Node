@@ -21,6 +21,8 @@ from Framework.Utilities import ConfigModule
 from Framework.Utilities import CommonUtil
 from Framework.Utilities.CommonUtil import passed_tag_list, failed_tag_list, skipped_tag_list
 from Framework.Built_In_Automation.Shared_Resources import BuiltInFunctionSharedResources as Shared_Resources
+import traceback
+from pathlib import Path
 
 MODULE_NAME = inspect.getmodulename(__file__)
 
@@ -1631,46 +1633,43 @@ def Move_File_or_Folder(step_data):
     sModuleInfo = inspect.currentframe().f_code.co_name + " : " + MODULE_NAME
     CommonUtil.ExecLog(sModuleInfo, "Function start", 0)
 
-    # Recall file attachment, if not already set
-    file_attachment = []
-    
-    '''
-     @sazid there is no option here to recall a custom varible.  We need that... 
-    
-    '''
-    if Shared_Resources.Test_Shared_Variables('file_attachment'):
-        file_attachment = Shared_Resources.Get_Shared_Variables('file_attachment')
-    
     try:
-        if _platform == "linux" or _platform == "linux2" or _platform == "darwin" :
-            '''**** @sazid this is hard coded sequence.. we should look for "source" and "destination" '''
-            
-            from_path = str(step_data[0][2]).strip()  # location of the file/folder to be renamed
-            to_path = str(step_data[1][2]).strip()  # location where to rename the file/folder
-        
-        
-        elif _platform == "win32":
-            '''**** @sazid this is hard coded sequence.. we should look for "source" and "destination" '''
-            
-            from_path = raw(str(step_data[0][2]).strip())  # location of the file/folder to be renamed
-            to_path = raw(str(step_data[1][2]).strip())  # location where to rename the file/folder
+        from_path = None
+        to_path = None
+        file_or_folder = 'file'
 
-         # Try to find the file
-        if from_path not in file_attachment and os.path.exists(os.path.join(get_home_folder(), from_path)) == False:
+        for row in step_data:
+            if 'source' in row[0]:
+                from_path = raw(str(row[2]).strip())
+            if 'destination' in row[0]:
+                to_path = raw(str(row[2]).strip())
+            if 'move' in row[0]:
+                file_or_folder = str(row[2]).strip()
+
+        # Remove / before any of the paths
+        from_path = from_path.lstrip('/')
+        to_path = to_path.lstrip('/')
+
+        # Resolve the absolute path of from_path
+        # Check to see if from_path is in file attachments
+        if Shared_Resources.Test_Shared_Variables('file_attachment'):
+            file_attachment = Shared_Resources.Get_Shared_Variables('file_attachment')
+            if from_path in file_attachment:
+                from_path = Path(file_attachment[from_path])
+        else:
+            from_path = Path(get_home_folder()) / Path(from_path)
+
+        # Resolve absolute path of to_path
+        to_path = Path(get_home_folder()) / Path(to_path)
+
+        # Try to find the file
+        if not from_path.exists():
             CommonUtil.ExecLog(sModuleInfo,
                                "Could not find file attachment called %s, and could not find it locally" % from_path, 3)
             return 'failed'
-        if from_path in file_attachment: from_path = file_attachment[from_path]  # In file is an attachment, get the full path
 
-        if from_path not in file_attachment:
-            from_path = os.path.join(get_home_folder(), from_path)
-
-
-        to_path = os.path.join(get_home_folder(), to_path)
-        '''**** @sazid this is hard coded sequence.. we should loop through the data" '''
-        file_or_folder = str(step_data[2][2]).strip()  # get if it is file/folder to move
         if file_or_folder.lower() == 'file':
-                # move file "from_path to "to_path"
+            # move file "from_path to "to_path"
             result = MoveFile(from_path, to_path)
             if result in failed_tag_list:
                 CommonUtil.ExecLog(sModuleInfo, "Could not move file '%s' to '%s'" % (from_path, to_path), 3)
@@ -1679,7 +1678,7 @@ def Move_File_or_Folder(step_data):
                 CommonUtil.ExecLog(sModuleInfo, "File '%s' moved to '%s' successfully" % (from_path, to_path), 1)
                 return "passed"
         elif file_or_folder.lower() == 'folder':
-                # move folder "from_path" to "to_path"
+            # move folder "from_path" to "to_path"
             result = MoveFolder(from_path, to_path)
             if result in failed_tag_list:
                 CommonUtil.ExecLog(sModuleInfo, "Could not move folder '%s' to '%s'" % (from_path, to_path), 3)
@@ -1692,6 +1691,7 @@ def Move_File_or_Folder(step_data):
             return 'failed'
 
     except Exception:
+        traceback.print_exc()
         return CommonUtil.Exception_Handler(sys.exc_info())
 
 

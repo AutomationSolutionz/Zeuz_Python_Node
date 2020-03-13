@@ -7,6 +7,7 @@ import time
 import sys
 import urllib.request, urllib.error, urllib.parse
 import queue
+import shutil
 import importlib
 import requests
 import threading
@@ -486,8 +487,20 @@ def download_attachments_for_test_case(sModuleInfo, run_id, test_case, temp_ini_
             sModuleInfo, "Attachment download for test case %s started" % test_case, 1)
         m = each[1] + '.' + each[2]  # file name
         f = open(download_folder + '/' + m, 'wb')
-        f.write(urllib.request.urlopen('http://' + ConfigModule.get_config_value('Server', 'server_address') + ':' + str(
-            ConfigModule.get_config_value('Server', 'server_port')) + '/static' + each[0]).read())
+
+        download_url = ConfigModule.get_config_value('Server', 'server_address') + ':' + str(
+            ConfigModule.get_config_value('Server', 'server_port'))
+
+        if not download_url.startswith('http') or not download_url.startswith('https'):
+            download_url = 'https://' + download_url
+
+        download_url += '/static' + each[0]
+
+        # Use request streaming to efficiently download files
+        with requests.get(download_url, stream=True) as r:
+            shutil.copyfileobj(r.raw, f)
+
+        # f.write(urllib.request.urlopen(download_url).read())
         file_specific_steps.update({m: download_folder + '/' + m})
         f.close()
     if test_case_attachments:
