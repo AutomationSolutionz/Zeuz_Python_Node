@@ -4,7 +4,6 @@ clint
 colorama
 datefinder
 image
-locustio
 lxml
 numpy
 Pillow
@@ -16,7 +15,6 @@ pyserial
 pyshortcuts
 python-dateutil
 pyttsx3
-realbrowserlocusts
 regex
 requests
 simplejson
