@@ -1116,13 +1116,22 @@ def run_test_case(TestCaseID, sModuleInfo, run_id, driver_list, final_dependency
     CommonUtil.ExecLog(
         sModuleInfo, "Gathering data for test case %s" % (test_case), 4, False)
 
+    retry = 1
     while not copy_status:
+        if retry > 100:
+            CommonUtil.ExecLog(
+                sModuleInfo, "Failed to gather data for test case %s" % test_case, 3)
+            return
 
         # check if test case is copied
         copy_status = check_if_test_case_is_copied(run_id, test_case)
         if copy_status:
             CommonUtil.ExecLog(
                 sModuleInfo, "Gathering data for test case %s is completed" % test_case, 1)
+            break
+
+        time.sleep(3)
+        retry += 1
 
     # download attachments for test case
     file_specific_steps = download_attachments_for_test_case(sModuleInfo, run_id, test_case,
