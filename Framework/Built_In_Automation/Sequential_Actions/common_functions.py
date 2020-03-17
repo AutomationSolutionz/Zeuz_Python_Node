@@ -20,6 +20,8 @@ from Framework import MainDriverApi
 from Framework.Utilities import FileUtilities
 import datetime
 import datefinder
+import pyodbc
+import traceback
 from datetime import timedelta
 from .utility import send_email, check_latest_received_email
 months = ["Unknown",
@@ -1533,3 +1535,97 @@ def voice_command_response(step_data ):
         CommonUtil.ExecLog(sModuleInfo, "Unable to communicate or record the response from voice activated device.  Error: %s" % (Error_Detail), 3)
         return "failed"
 
+
+#################### Database Actions ####################
+# [NON ACTION]
+def find_driver(db_type='postgres'):
+    sModuleInfo = inspect.currentframe().f_code.co_name + " : " + MODULE_NAME
+    CommonUtil.ExecLog(sModuleInfo, "Function start", 0)
+
+    for driver in pyodbc.drivers():
+        if db_type == 'postgres':
+            if 'postgre' in driver.lower() and 'unicode' in driver.lower():
+                print("[Database ODBC DRIVER]: %s" % driver)
+                return driver
+            elif 'postgre' in driver.lower() and 'ansi' in driver.lower():
+                print("[Database ODBC DRIVER]: %s" % driver)
+                return driver
+
+    return None
+
+def connect_to_db(data_set):
+    sModuleInfo = inspect.currentframe().f_code.co_name + " : " + MODULE_NAME
+    CommonUtil.ExecLog(sModuleInfo, "Function start", 0)
+
+    try:
+        for row in data_set:
+            if row[0] == 'db_type':
+                sr.Set_Shared_Variables("db_type", row[2])
+            if row[0] == 'db_name':
+                sr.Set_Shared_Variables("db_name", row[2])
+            if row[0] == 'user_id':
+                sr.Set_Shared_Variables("user_id", row[2])
+            if row[0] == 'password':
+                sr.Set_Shared_Variables("password", row[2])
+            if row[0] == 'host':
+                sr.Set_Shared_Variables("host", row[2])
+            if row[0] == 'port':
+                sr.Set_Shared_Variables("port", row[2])
+
+        return "passed"
+    except Exception:
+        traceback.print_exc()
+        return CommonUtil.Exception_Handler(sys.exc_info())
+
+
+def db_select_query(data_set):
+    sModuleInfo = inspect.currentframe().f_code.co_name + " : " + MODULE_NAME
+    CommonUtil.ExecLog(sModuleInfo, "Function start", 0)
+
+    try:
+        variable_name = None
+        query = None
+
+        for row in data_set:
+            if row[0] == 'query':
+                var_and_query = row[2]
+
+                # Get the variable name and query, and remove any whitespaces
+                variable_name, query = var_and_query.strip().lsplit('=')
+                variable_name = variable_name.strip()
+                query = query.strip()
+
+        # Alias for Shared_Resources.Get_Shared_Variables
+        g = sr.Get_Shared_Variables
+
+        # Get the values
+        db_type = g("db_type")
+        db_name = g("db_name")
+        user_id = g("user_id")
+        password = g("password")
+        host = g("host")
+        port = g("port")
+
+        # Get the driver for the ODBC connection
+        driver = find_driver(db_type)
+
+        # Construct the connection string
+        connection_str = f"DRIVER={{{driver}}};uid={user_id};pwd={password};database={db_name};SERVER={host};Port={port}"
+
+        # Connect to db
+        con = pyodbc.connect(connection_str)
+
+        # Get cursor and execute
+        cursor = con.cursor()
+        cursor.execute(query)
+
+        # Fetch all rows
+        rows = cursor.fetchall()
+
+        # Set the rows as a shared variable
+        sr.Set_Shared_Variables(variable_name, rows)
+
+        return "passed"
+    except Exception:
+        traceback.print_exc()
+        return CommonUtil.Exception_Handler(sys.exc_info())
