@@ -8,7 +8,6 @@ locustio
 lxml
 numpy
 Pillow
-playsound
 pyautocad
 PyAutoGUI
 PyPDF2
