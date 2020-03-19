@@ -13,7 +13,6 @@ PyPDF2
 pyserial
 pyshortcuts
 python-dateutil
-pyttsx3
 regex
 requests
 simplejson
