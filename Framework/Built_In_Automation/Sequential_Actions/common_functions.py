@@ -1579,6 +1579,76 @@ def find_odbc_driver(db_type='postgres'):
     return selected_driver
 
 
+# [NON ACTION]
+def db_get_cursor():
+    """
+    Convenience function for getting the cursor for db access
+    :return: pyodbc.Cursor
+    """
+
+    import pyodbc
+
+    sModuleInfo = inspect.currentframe().f_code.co_name + " : " + MODULE_NAME
+    CommonUtil.ExecLog(sModuleInfo, "Function start", 0)
+
+    try:
+        # Alias for Shared_Resources.Get_Shared_Variables
+        g = sr.Get_Shared_Variables
+
+        # Get the values
+        db_type = g(DB_TYPE)
+        db_name = g(DB_NAME)
+        db_user_id = g(DB_USER_ID)
+        db_password = g(DB_PASSWORD)
+        db_host = g(DB_HOST)
+        db_port = g(DB_PORT)
+
+        # Get the driver for the ODBC connection
+        odbc_driver = find_odbc_driver(db_type)
+
+        # Construct the connection string
+        connection_str = f"DRIVER={{{odbc_driver}}};UID={db_user_id};PWD={db_password};DATABASE={db_name};SERVER={db_host};PORT={db_port}"
+
+        # Connect to db
+        db_con = pyodbc.connect(connection_str)
+
+        # Get db_cursor
+        return db_con.cursor()
+    except pyodbc.DataError as e:
+        traceback.print_exc()
+        CommonUtil.ExecLog(sModuleInfo, "pyodbc.DataError", 3)
+        return CommonUtil.Exception_Handler(e)
+
+    except pyodbc.InternalError as e:
+        traceback.print_exc()
+        CommonUtil.ExecLog(sModuleInfo, "pyodbc.InternalError", 3)
+        return CommonUtil.Exception_Handler(e)
+
+    except pyodbc.IntegrityError as e:
+        traceback.print_exc()
+        CommonUtil.ExecLog(sModuleInfo, "pyodbc.IntegrityError", 3)
+        return CommonUtil.Exception_Handler(e)
+
+    except pyodbc.OperationalError as e:
+        traceback.print_exc()
+        CommonUtil.ExecLog(sModuleInfo, "pyodbc.OperationalError", 3)
+        return CommonUtil.Exception_Handler(e)
+
+    except pyodbc.NotSupportedError as e:
+        traceback.print_exc()
+        CommonUtil.ExecLog(sModuleInfo, "pyodbc.NotSupportedError", 3)
+        return CommonUtil.Exception_Handler(e)
+
+    except pyodbc.ProgrammingError as e:
+        traceback.print_exc()
+        CommonUtil.ExecLog(sModuleInfo, "pyodbc.ProgrammingError", 3)
+        return CommonUtil.Exception_Handler(e)
+
+    except Exception:
+        traceback.print_exc()
+        return CommonUtil.Exception_Handler(sys.exc_info())
+
+
 def connect_to_db(data_set):
     """
     This action just stores the different database specific configs into shared variables for use by other actions.
@@ -1620,14 +1690,14 @@ def connect_to_db(data_set):
         return CommonUtil.Exception_Handler(sys.exc_info())
 
 
-def db_select_query(data_set):
+def db_select(data_set):
     """
     This action performs a select query and stores the result of the query in the variable <var_name>
     The result will be stored in the format: list of lists
-    [ [row1...], [row2...], ... ]
+        [ [row1...], [row2...], ... ]
 
     query               input parameter         <query: SELECT * FROM test_cases ORDER BY tc_id ASC LIMIT 10>
-    db select query     input parameter         <var_name: name of the variable to store the result of the query>
+    db: select     input parameter         <var_name: name of the variable to store the result of the query>
 
     :param data_set: Action data set
     :return: string: "passed" or "failed" depending on the outcome
@@ -1644,36 +1714,14 @@ def db_select_query(data_set):
 
         for row in data_set:
             if row[0] == 'query':
-                var_and_query = row[2]
+                # Get the and query, and remove any whitespaces
+                query = row[2].strip()
 
-                # Get the variable name and query, and remove any whitespaces
-                query = var_and_query.strip().strip()
-
-            if row[0] == 'db select query':
+            if row[0] == 'db: select':
                 variable_name = row[2].strip()
 
-        # Alias for Shared_Resources.Get_Shared_Variables
-        g = sr.Get_Shared_Variables
-
-        # Get the values
-        db_type = g(DB_TYPE)
-        db_name = g(DB_NAME)
-        db_user_id = g(DB_USER_ID)
-        db_password = g(DB_PASSWORD)
-        db_host = g(DB_HOST)
-        db_port = g(DB_PORT)
-
-        # Get the driver for the ODBC connection
-        driver = find_odbc_driver(db_type)
-
-        # Construct the connection string
-        connection_str = f"DRIVER={{{driver}}};UID={db_user_id};PWD={db_password};DATABASE={db_name};SERVER={db_host};PORT={db_port}"
-
-        # Connect to db
-        db_con = pyodbc.connect(connection_str)
-
         # Get db_cursor and execute
-        db_cursor = db_con.cursor()
+        db_cursor = db_get_cursor()
         db_cursor.execute(query)
 
         # Fetch all rows and convert into list
@@ -1691,32 +1739,110 @@ def db_select_query(data_set):
         return "passed"
     except pyodbc.DataError as e:
         traceback.print_exc()
-        CommonUtil.ExecLog("pyodbc.DataError")
+        CommonUtil.ExecLog(sModuleInfo, "pyodbc.DataError", 3)
         return CommonUtil.Exception_Handler(e)
 
     except pyodbc.InternalError as e:
         traceback.print_exc()
-        CommonUtil.ExecLog("pyodbc.InternalError")
+        CommonUtil.ExecLog(sModuleInfo, "pyodbc.InternalError", 3)
         return CommonUtil.Exception_Handler(e)
 
     except pyodbc.IntegrityError as e:
         traceback.print_exc()
-        CommonUtil.ExecLog("pyodbc.IntegrityError")
+        CommonUtil.ExecLog(sModuleInfo, "pyodbc.IntegrityError", 3)
         return CommonUtil.Exception_Handler(e)
 
     except pyodbc.OperationalError as e:
         traceback.print_exc()
-        CommonUtil.ExecLog("pyodbc.OperationalError")
+        CommonUtil.ExecLog(sModuleInfo, "pyodbc.OperationalError", 3)
         return CommonUtil.Exception_Handler(e)
 
     except pyodbc.NotSupportedError as e:
         traceback.print_exc()
-        CommonUtil.ExecLog("pyodbc.NotSupportedError")
+        CommonUtil.ExecLog(sModuleInfo, "pyodbc.NotSupportedError", 3)
         return CommonUtil.Exception_Handler(e)
 
     except pyodbc.ProgrammingError as e:
         traceback.print_exc()
-        CommonUtil.ExecLog("pyodbc.ProgrammingError")
+        CommonUtil.ExecLog(sModuleInfo, "pyodbc.ProgrammingError", 3)
+        return CommonUtil.Exception_Handler(e)
+
+    except Exception:
+        traceback.print_exc()
+        return CommonUtil.Exception_Handler(sys.exc_info())
+
+
+def db_select_single_value(data_set):
+    """
+    This action performs a select query and stores the ONLY value (a single value) of the query in the variable <var_name>
+    NOTE: This is NOT equivalent to a row, it just stores the result of a single value, say the count(...) function
+    The result will be stored in the format: string
+        value
+
+    query                       input parameter    <query: SELECT count(*) FROM user_info>
+    db: select single value  input parameter    <var_name: name of the variable to store the result of the query>
+
+    :param data_set: Action data set
+    :return: string: "passed" or "failed" depending on the outcome
+    """
+
+    import pyodbc
+
+    sModuleInfo = inspect.currentframe().f_code.co_name + " : " + MODULE_NAME
+    CommonUtil.ExecLog(sModuleInfo, "Function start", 0)
+
+    try:
+        variable_name = None
+        query = None
+
+        for row in data_set:
+            if row[0] == 'query':
+                # Get the query, and remove any whitespaces
+                query = row[2].strip()
+
+            if row[0] == 'db: select single value':
+                variable_name = row[2].strip()
+
+        # Get db_cursor and execute
+        db_cursor = db_get_cursor()
+        db_cursor.execute(query)
+
+        # Fetch a single value
+        db_val = db_cursor.fetchval()
+
+        # Set the rows as a shared variable
+        sr.Set_Shared_Variables(variable_name, db_val)
+
+        CommonUtil.ExecLog(sModuleInfo, "Fetched single val and stored into - %s = %s" % (variable_name, db_val), 0)
+        return "passed"
+    except pyodbc.DataError as e:
+        traceback.print_exc()
+        CommonUtil.ExecLog(sModuleInfo, "pyodbc.DataError", 3)
+        return CommonUtil.Exception_Handler(e)
+
+    except pyodbc.InternalError as e:
+        traceback.print_exc()
+        CommonUtil.ExecLog(sModuleInfo, "pyodbc.InternalError", 3)
+        return CommonUtil.Exception_Handler(e)
+
+    except pyodbc.IntegrityError as e:
+        traceback.print_exc()
+        CommonUtil.ExecLog(sModuleInfo, "pyodbc.IntegrityError", 3)
+        return CommonUtil.Exception_Handler(e)
+
+    except pyodbc.OperationalError as e:
+        traceback.print_exc()
+        CommonUtil.ExecLog(sModuleInfo, "pyodbc.OperationalError", 3)
+        return CommonUtil.Exception_Handler(e)
+
+    except pyodbc.NotSupportedError as e:
+        traceback.print_exc()
+        CommonUtil.ExecLog(sModuleInfo, "pyodbc.NotSupportedError", 3)
+        return CommonUtil.Exception_Handler(e)
+
+    except pyodbc.ProgrammingError as e:
+        traceback.print_exc()
+        CommonUtil.ExecLog(sModuleInfo, "pyodbc.ProgrammingError", 3)
         return CommonUtil.Exception_Handler(e)
 
     except Exception:
