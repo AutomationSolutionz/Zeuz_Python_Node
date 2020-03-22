@@ -59,6 +59,10 @@ actions = { # Numbers are arbitrary, and are not used anywhere
     138: {'module': 'common', 'screenshot':'none', 'name': 'voice command response', 'function': 'voice_command_response'},
     139: {'module': 'common', 'screenshot':'none', 'name': 'compare partial variables', 'function': 'Compare_Partial_Variables'},
 
+    # Database actions
+    140: {'module': 'common', 'screenshot': 'none', 'name': 'connect to db', 'function': 'connect_to_db'},
+    141: {'module': 'common', 'screenshot': 'none', 'name': 'db select query', 'function': 'db_select_query'},
+
 
     
     200: {'module': 'appium', 'screenshot':'mobile', 'name': 'click', 'function': 'Click_Element_Appium'},
@@ -223,11 +227,6 @@ actions = { # Numbers are arbitrary, and are not used anywhere
     811: {'module': 'windows', 'screenshot':'desktop', 'name': 'close app', 'function': 'Close_Application'},
     812: {'module': 'windows', 'screenshot':'desktop', 'name': 'validate text', 'function': 'Validate_Text'},
     813: {'module': 'windows', 'screenshot':'desktop', 'name': 'save text', 'function': 'Save_Text'},
-
-
-    # Database actions
-    900: {'module': 'common', 'screenshot': 'none', 'name': 'connect to db', 'function': 'connect_to_db'},
-    901: {'module': 'common', 'screenshot': 'none', 'name': 'db select query', 'function': 'db_select_query'},
 }
 
 # List of Sub-Field keywords, must be all lowercase, and using single spaces - no underscores

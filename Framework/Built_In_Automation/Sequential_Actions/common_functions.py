@@ -20,7 +20,6 @@ from Framework import MainDriverApi
 from Framework.Utilities import FileUtilities
 import datetime
 import datefinder
-import pyodbc
 import traceback
 from datetime import timedelta
 from .utility import send_email, check_latest_received_email
@@ -1431,7 +1430,7 @@ def save_text_from_file_into_variable(data_set):
 
 
 def voice_command_response(step_data ):
-    '''
+    """
     this action is used to communicate with voice activated device such as Alex.  the computer will speak out the wakeup word(s) such as 
     (example: Alexa) followed by some commands (example: what is today's date).  
     
@@ -1448,7 +1447,7 @@ def voice_command_response(step_data ):
     
     voice_command, voice_wakeup_command, voice_speed = '140', voice_name = 'default', microphone_number = '1'
     ****** This action needs more work to set voice name and language  
-    '''
+    """
 
     sModuleInfo = inspect.currentframe().f_code.co_name + " : " + MODULE_NAME
     CommonUtil.ExecLog(sModuleInfo, "Function start", 0)
@@ -1537,40 +1536,83 @@ def voice_command_response(step_data ):
 
 
 #################### Database Actions ####################
+# Constant names for database related activities
+DB_TYPE = "db_type"
+DB_NAME = "db_name"
+DB_USER_ID = "db_user_id"
+DB_PASSWORD = "db_password"
+DB_HOST = "db_host"
+DB_PORT = "db_port"
+
+
 # [NON ACTION]
-def find_driver(db_type='postgres'):
+def find_odbc_driver(db_type='postgres'):
+    """
+    Finds the ODBC driver to work with based on the given database type
+    :param db_type: type of database (e.g postgres, mysql, etc.)
+    :return: name of the driver (string)
+    """
+
+    import pyodbc
+
     sModuleInfo = inspect.currentframe().f_code.co_name + " : " + MODULE_NAME
     CommonUtil.ExecLog(sModuleInfo, "Function start", 0)
 
-    for driver in pyodbc.drivers():
-        if db_type == 'postgres':
-            if 'postgre' in driver.lower() and 'unicode' in driver.lower():
-                print("[Database ODBC DRIVER]: %s" % driver)
-                return driver
-            elif 'postgre' in driver.lower() and 'ansi' in driver.lower():
-                print("[Database ODBC DRIVER]: %s" % driver)
-                return driver
+    # Driver list for pyodbc to connect through the ODBC standard
+    pyodbc_drivers = pyodbc.drivers()
 
-    return None
+    # Sort to get unicode items first
+    pyodbc_drivers.sort(reverse=True, key=lambda x: 'unicode' in x.lower())
+
+    selected_driver = db_type
+
+    for odbc_driver in pyodbc_drivers:
+        if db_type == 'postgresql':
+            if 'postgre' in odbc_driver.lower() and 'unicode' in odbc_driver.lower():
+                selected_driver = odbc_driver
+                # We usually want the unicode drivers, so break once we've found it
+                break
+            elif 'postgre' in odbc_driver.lower() and 'ansi' in odbc_driver.lower():
+                selected_driver = odbc_driver
+
+    CommonUtil.ExecLog(sModuleInfo, "[Database ODBC DRIVER]: %s" % selected_driver, 0)
+    return selected_driver
+
 
 def connect_to_db(data_set):
+    """
+    This action just stores the different database specific configs into shared variables for use by other actions.
+    NOTE: The actual db connection does not happen here, connection to db is made inside the actions which require it.
+
+    db_type         input parameter         <type of db, ex: postgres, mysql>
+    db_name         input parameter         <name of db, ex: zeuz_db>
+    db_user_id      input parameter         <user id of the os who have access to the db, ex: postgres>
+    db_password     input parameter         <password of db, ex: mydbpass-mY1-t23z>
+    db_host         input parameter         <host of db, ex: localhost, 127.0.0.1>
+    db_port         input parameter         <port of db, ex: 5432 for postgres by default>
+    connect to db   common action           Connect to a database
+
+    :param data_set: Action data set
+    :return: string: "passed" or "failed" depending on the outcome
+    """
+
     sModuleInfo = inspect.currentframe().f_code.co_name + " : " + MODULE_NAME
     CommonUtil.ExecLog(sModuleInfo, "Function start", 0)
 
     try:
         for row in data_set:
-            if row[0] == 'db_type':
-                sr.Set_Shared_Variables("db_type", row[2])
-            if row[0] == 'db_name':
-                sr.Set_Shared_Variables("db_name", row[2])
-            if row[0] == 'user_id':
-                sr.Set_Shared_Variables("user_id", row[2])
-            if row[0] == 'password':
-                sr.Set_Shared_Variables("password", row[2])
-            if row[0] == 'host':
-                sr.Set_Shared_Variables("host", row[2])
-            if row[0] == 'port':
-                sr.Set_Shared_Variables("port", row[2])
+            if row[0] == DB_TYPE:
+                sr.Set_Shared_Variables(DB_TYPE, row[2])
+            if row[0] == DB_NAME:
+                sr.Set_Shared_Variables(DB_NAME, row[2])
+            if row[0] == DB_USER_ID:
+                sr.Set_Shared_Variables(DB_USER_ID, row[2])
+            if row[0] == DB_PASSWORD:
+                sr.Set_Shared_Variables(DB_PASSWORD, row[2])
+            if row[0] == DB_HOST:
+                sr.Set_Shared_Variables(DB_HOST, row[2])
+            if row[0] == DB_PORT:
+                sr.Set_Shared_Variables(DB_PORT, row[2])
 
         return "passed"
     except Exception:
@@ -1579,6 +1621,20 @@ def connect_to_db(data_set):
 
 
 def db_select_query(data_set):
+    """
+    This action performs a select query and stores the result of the query in the variable <var_name>
+    The result will be stored in the format: list of lists
+    [ [row1...], [row2...], ... ]
+
+    query               input parameter         <query: SELECT * FROM test_cases ORDER BY tc_id ASC LIMIT 10>
+    db select query     input parameter         <var_name: name of the variable to store the result of the query>
+
+    :param data_set: Action data set
+    :return: string: "passed" or "failed" depending on the outcome
+    """
+
+    import pyodbc
+
     sModuleInfo = inspect.currentframe().f_code.co_name + " : " + MODULE_NAME
     CommonUtil.ExecLog(sModuleInfo, "Function start", 0)
 
@@ -1591,41 +1647,78 @@ def db_select_query(data_set):
                 var_and_query = row[2]
 
                 # Get the variable name and query, and remove any whitespaces
-                variable_name, query = var_and_query.strip().lsplit('=')
-                variable_name = variable_name.strip()
-                query = query.strip()
+                query = var_and_query.strip().strip()
+
+            if row[0] == 'db select query':
+                variable_name = row[2].strip()
 
         # Alias for Shared_Resources.Get_Shared_Variables
         g = sr.Get_Shared_Variables
 
         # Get the values
-        db_type = g("db_type")
-        db_name = g("db_name")
-        user_id = g("user_id")
-        password = g("password")
-        host = g("host")
-        port = g("port")
+        db_type = g(DB_TYPE)
+        db_name = g(DB_NAME)
+        db_user_id = g(DB_USER_ID)
+        db_password = g(DB_PASSWORD)
+        db_host = g(DB_HOST)
+        db_port = g(DB_PORT)
 
         # Get the driver for the ODBC connection
-        driver = find_driver(db_type)
+        driver = find_odbc_driver(db_type)
 
         # Construct the connection string
-        connection_str = f"DRIVER={{{driver}}};uid={user_id};pwd={password};database={db_name};SERVER={host};Port={port}"
+        connection_str = f"DRIVER={{{driver}}};UID={db_user_id};PWD={db_password};DATABASE={db_name};SERVER={db_host};PORT={db_port}"
 
         # Connect to db
-        con = pyodbc.connect(connection_str)
+        db_con = pyodbc.connect(connection_str)
 
-        # Get cursor and execute
-        cursor = con.cursor()
-        cursor.execute(query)
+        # Get db_cursor and execute
+        db_cursor = db_con.cursor()
+        db_cursor.execute(query)
 
-        # Fetch all rows
-        rows = cursor.fetchall()
+        # Fetch all rows and convert into list
+        db_rows = []
+        while True:
+            db_row = db_cursor.fetchone()
+            if not db_row:
+                break
+            db_rows.append(list(db_row))
 
         # Set the rows as a shared variable
-        sr.Set_Shared_Variables(variable_name, rows)
+        sr.Set_Shared_Variables(variable_name, db_rows)
 
+        CommonUtil.ExecLog(sModuleInfo, "Fetched %d rows and stored into variable: %s" % (len(db_rows), variable_name), 0)
         return "passed"
+    except pyodbc.DataError as e:
+        traceback.print_exc()
+        CommonUtil.ExecLog("pyodbc.DataError")
+        return CommonUtil.Exception_Handler(e)
+
+    except pyodbc.InternalError as e:
+        traceback.print_exc()
+        CommonUtil.ExecLog("pyodbc.InternalError")
+        return CommonUtil.Exception_Handler(e)
+
+    except pyodbc.IntegrityError as e:
+        traceback.print_exc()
+        CommonUtil.ExecLog("pyodbc.IntegrityError")
+        return CommonUtil.Exception_Handler(e)
+
+    except pyodbc.OperationalError as e:
+        traceback.print_exc()
+        CommonUtil.ExecLog("pyodbc.OperationalError")
+        return CommonUtil.Exception_Handler(e)
+
+    except pyodbc.NotSupportedError as e:
+        traceback.print_exc()
+        CommonUtil.ExecLog("pyodbc.NotSupportedError")
+        return CommonUtil.Exception_Handler(e)
+
+    except pyodbc.ProgrammingError as e:
+        traceback.print_exc()
+        CommonUtil.ExecLog("pyodbc.ProgrammingError")
+        return CommonUtil.Exception_Handler(e)
+
     except Exception:
         traceback.print_exc()
         return CommonUtil.Exception_Handler(sys.exc_info())
