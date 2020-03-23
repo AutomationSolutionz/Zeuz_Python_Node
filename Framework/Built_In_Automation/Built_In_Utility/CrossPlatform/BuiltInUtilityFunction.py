@@ -1149,16 +1149,23 @@ def Find_File(step_data):
     sModuleInfo = inspect.currentframe().f_code.co_name + " : " + MODULE_NAME
     CommonUtil.ExecLog(sModuleInfo, "Function start", 0)
     try:
-        path = get_home_folder() + str(step_data[0][0]).strip()
+        # take a look at the use of inline commented variable
+        file_path_splited_for_os_support = str(step_data[0][2]).strip().split('/')
+        file_path = get_home_folder()
+
+        for path_part in file_path_splited_for_os_support:
+            file_path = os.path.join(file_path,path_part)
+
         file_or_folder = str(step_data[1][2]).strip()
+
         if file_or_folder.lower() == 'file':
             # find file "path"
-            result = find(path)
+            result = find(file_path)
             if result in failed_tag_list:
-                CommonUtil.ExecLog(sModuleInfo, "Could not find file '%s'" % (path), 3)
+                CommonUtil.ExecLog(sModuleInfo, "Could not find file '%s'" % (file_path), 3)
                 return "failed"
             else:
-                CommonUtil.ExecLog(sModuleInfo, "File '%s' is found" % (path), 1)
+                CommonUtil.ExecLog(sModuleInfo, "File '%s' is found" % (file_path), 1)
                 return "passed"
 
         else:
