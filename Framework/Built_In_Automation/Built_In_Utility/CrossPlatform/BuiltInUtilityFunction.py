@@ -376,9 +376,9 @@ def DeleteFolder(sFolderPath): #!!! Needs to be updated to handle deleting of di
 
 
 # function to check a file exists or not
-def find(sFilePath): #!!!Needs to be updated to either return true/false or actually try to find a file in a file system
+def find_file(sFilePath): #!!!Needs to be updated to either return true/false or actually try to find a file in a file system
     """
-        :param sFilePath: location of source folder to be found
+        :param sFilePath: location of source file to be found
         :return: Exception if Exception occurs otherwise return result  
     """
     
@@ -386,8 +386,26 @@ def find(sFilePath): #!!!Needs to be updated to either return true/false or actu
     CommonUtil.ExecLog(sModuleInfo, "Function start", 0)
     
     try:
-        CommonUtil.ExecLog(sModuleInfo, "Finding file %s is complete" % sFilePath, 1)
+        CommonUtil.ExecLog(sModuleInfo, "Finding file or folder %s is complete" % sFilePath, 1)
         return os.path.isfile(sFilePath)
+
+    except Exception:
+        return CommonUtil.Exception_Handler(sys.exc_info())
+
+
+# function to check a folder exists or not
+def find_folder(sFolderPath):  # !!!Needs to be updated to either return true/false or actually try to find a file in a file system
+    """
+        :param sFolderPath: location of source folder to be found
+        :return: Exception if Exception occurs otherwise return result
+    """
+
+    sModuleInfo = inspect.currentframe().f_code.co_name + " : " + MODULE_NAME
+    CommonUtil.ExecLog(sModuleInfo, "Function start", 0)
+
+    try:
+        CommonUtil.ExecLog(sModuleInfo, "Finding folder %s is complete" % sFolderPath, 1)
+        return os.path.isdir(sFolderPath)
 
     except Exception:
         return CommonUtil.Exception_Handler(sys.exc_info())
@@ -1145,27 +1163,37 @@ def Create_File_or_Folder(step_data):
 
 
 # Method to find file
-def Find_File(step_data):
+def Find_File_Or_Folder(step_data):
     sModuleInfo = inspect.currentframe().f_code.co_name + " : " + MODULE_NAME
     CommonUtil.ExecLog(sModuleInfo, "Function start", 0)
     try:
         # take a look at the use of inline commented variable
-        file_path_splited_for_os_support = str(step_data[0][2]).strip().split('/')
-        file_path = get_home_folder()
+        file_or_folder_path_splited_for_os_support = str(step_data[0][2]).strip().split('/')
+        file_or_folder_path = get_home_folder()
 
-        for path_part in file_path_splited_for_os_support:
-            file_path = os.path.join(file_path,path_part)
+        for path_part in file_or_folder_path_splited_for_os_support:
+            file_or_folder_path = os.path.join(file_or_folder_path,path_part)
 
         file_or_folder = str(step_data[1][2]).strip()
 
         if file_or_folder.lower() == 'file':
             # find file "path"
-            result = find(file_path)
+            result = find_file(file_or_folder_path)
             if result in failed_tag_list:
-                CommonUtil.ExecLog(sModuleInfo, "Could not find file '%s'" % (file_path), 3)
+                CommonUtil.ExecLog(sModuleInfo, "Could not find file '%s'" % (file_or_folder_path), 3)
                 return "failed"
             else:
-                CommonUtil.ExecLog(sModuleInfo, "File '%s' is found" % (file_path), 1)
+                CommonUtil.ExecLog(sModuleInfo, "File '%s' is found" % (file_or_folder_path), 1)
+                return "passed"
+
+        elif file_or_folder.lower() == "folder":
+            # find folder path
+            result = find_folder(file_or_folder_path)
+            if result in failed_tag_list:
+                CommonUtil.ExecLog(sModuleInfo, "Could not find folder '%s'" % (file_or_folder_path), 3)
+                return "failed"
+            else:
+                CommonUtil.ExecLog(sModuleInfo, "Folder '%s' is found" % (file_or_folder_path), 1)
                 return "passed"
 
         else:
