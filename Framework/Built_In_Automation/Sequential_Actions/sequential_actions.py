@@ -163,7 +163,7 @@ actions = { # Numbers are arbitrary, and are not used anywhere
     503: {'module': 'utility', 'screenshot':'none', 'name': 'copy', 'function': 'Copy_File_or_Folder'},
     504: {'module': 'utility', 'screenshot':'none', 'name': 'delete', 'function': 'Delete_File_or_Folder'},
     505: {'module': 'utility', 'screenshot':'none', 'name': 'create', 'function': 'Create_File_or_Folder'},
-    506: {'module': 'utility', 'screenshot':'none', 'name': 'find', 'function': 'Find_File'},
+    506: {'module': 'utility', 'screenshot':'none', 'name': 'find', 'function': 'Find_File_Or_Folder'},
     507: {'module': 'utility', 'screenshot':'none', 'name': 'rename', 'function': 'Rename_File_or_Folder'},
     508: {'module': 'utility', 'screenshot':'none', 'name': 'move', 'function': 'Move_File_or_Folder'},
     509: {'module': 'utility', 'screenshot':'none', 'name': 'zip', 'function': 'Zip_File_or_Folder'},
