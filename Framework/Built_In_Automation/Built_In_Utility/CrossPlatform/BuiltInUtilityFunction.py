@@ -1640,6 +1640,14 @@ def Zip_File_or_Folder(data_set):
         
     # Zip file
     try:
+        # Remove / before any of the paths
+        source = source.lstrip('/')
+        destination = destination.lstrip('/')
+
+        # resolve absolute path
+        source = os.path.abspath(os.path.expanduser(os.path.join('~',source)))
+        destination = os.path.abspath(os.path.expanduser(os.path.join('~',destination)))
+
         result = ZipFile(source, destination) # Perform zip on file or directory
 
         if result in failed_tag_list:
