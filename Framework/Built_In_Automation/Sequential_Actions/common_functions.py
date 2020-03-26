@@ -1580,7 +1580,7 @@ def find_odbc_driver(db_type='postgres'):
 
 
 # [NON ACTION]
-def db_get_cursor():
+def db_get_connection():
     """
     Convenience function for getting the cursor for db access
     :return: pyodbc.Cursor
@@ -1612,8 +1612,13 @@ def db_get_cursor():
         # Connect to db
         db_con = pyodbc.connect(connection_str)
 
+        # This is just an example that works for PostgreSQL and MySQL, with Python 2.7.
+        db_con.setdecoding(pyodbc.SQL_CHAR, encoding='utf-8')
+        db_con.setdecoding(pyodbc.SQL_WCHAR, encoding='utf-8')
+        db_con.setencoding(encoding='utf-8')
+
         # Get db_cursor
-        return db_con.cursor()
+        return db_con
     except pyodbc.DataError as e:
         traceback.print_exc()
         CommonUtil.ExecLog(sModuleInfo, "pyodbc.DataError", 3)
@@ -1721,7 +1726,8 @@ def db_select(data_set):
                 variable_name = row[2].strip()
 
         # Get db_cursor and execute
-        db_cursor = db_get_cursor()
+        db_con = db_get_connection()
+        db_cursor = db_con.cursor()
         db_cursor.execute(query)
 
         # Fetch all rows and convert into list
@@ -1804,7 +1810,8 @@ def db_select_single_value(data_set):
                 variable_name = row[2].strip()
 
         # Get db_cursor and execute
-        db_cursor = db_get_cursor()
+        db_con = db_get_connection()
+        db_cursor = db_con.cursor()
         db_cursor.execute(query)
 
         # Fetch a single value
@@ -1814,6 +1821,89 @@ def db_select_single_value(data_set):
         sr.Set_Shared_Variables(variable_name, db_val)
 
         CommonUtil.ExecLog(sModuleInfo, "Fetched single val and stored into - %s = %s" % (variable_name, db_val), 0)
+        return "passed"
+    except pyodbc.DataError as e:
+        traceback.print_exc()
+        CommonUtil.ExecLog(sModuleInfo, "pyodbc.DataError", 3)
+        return CommonUtil.Exception_Handler(e)
+
+    except pyodbc.InternalError as e:
+        traceback.print_exc()
+        CommonUtil.ExecLog(sModuleInfo, "pyodbc.InternalError", 3)
+        return CommonUtil.Exception_Handler(e)
+
+    except pyodbc.IntegrityError as e:
+        traceback.print_exc()
+        CommonUtil.ExecLog(sModuleInfo, "pyodbc.IntegrityError", 3)
+        return CommonUtil.Exception_Handler(e)
+
+    except pyodbc.OperationalError as e:
+        traceback.print_exc()
+        CommonUtil.ExecLog(sModuleInfo, "pyodbc.OperationalError", 3)
+        return CommonUtil.Exception_Handler(e)
+
+    except pyodbc.NotSupportedError as e:
+        traceback.print_exc()
+        CommonUtil.ExecLog(sModuleInfo, "pyodbc.NotSupportedError", 3)
+        return CommonUtil.Exception_Handler(e)
+
+    except pyodbc.ProgrammingError as e:
+        traceback.print_exc()
+        CommonUtil.ExecLog(sModuleInfo, "pyodbc.ProgrammingError", 3)
+        return CommonUtil.Exception_Handler(e)
+
+    except Exception:
+        traceback.print_exc()
+        return CommonUtil.Exception_Handler(sys.exc_info())
+
+
+def db_non_query(data_set):
+    """
+    This action performs a non-query (insert/update/delete) query and stores the "number of rows affected"
+    in the variable <var_name>
+
+    The result will be stored in the format: int
+        value
+
+    non query                            input parameter    <query: INSERT INTO table_name(col1, col2, ...) VALUES (val1, val2, ...)>
+    db: non query: insert/update/delete  input parameter    <var_name: name of the variable to store the no of rows affected>
+
+    :param data_set: Action data set
+    :return: string: "passed" or "failed" depending on the outcome
+    """
+
+    import pyodbc
+
+    sModuleInfo = inspect.currentframe().f_code.co_name + " : " + MODULE_NAME
+    CommonUtil.ExecLog(sModuleInfo, "Function start", 0)
+
+    try:
+        variable_name = None
+        query = None
+
+        for row in data_set:
+            if row[0] == 'non query':
+                # Get the query, and remove any whitespaces
+                query = row[2].strip()
+
+            if row[0] == 'db: non query: insert/update/delete':
+                variable_name = row[2].strip()
+
+        # Get db_cursor and execute
+        db_con = db_get_connection()
+        db_cursor = db_con.cursor()
+        db_cursor.execute(query)
+
+        # Commit the changes
+        db_con.commit()
+
+        # Fetch the number of rows affected
+        db_rows_affected = db_cursor.rowcount
+
+        # Set the rows as a shared variable
+        sr.Set_Shared_Variables(variable_name, db_rows_affected)
+
+        CommonUtil.ExecLog(sModuleInfo, "Number of rows affected: %d" % db_rows_affected, 0)
         return "passed"
     except pyodbc.DataError as e:
         traceback.print_exc()
