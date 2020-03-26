@@ -63,7 +63,7 @@ actions = { # Numbers are arbitrary, and are not used anywhere
     140: {'module': 'common', 'screenshot': 'none', 'name': 'connect to db', 'function': 'connect_to_db'},
     141: {'module': 'common', 'screenshot': 'none', 'name': 'db: select', 'function': 'db_select'},
     142: {'module': 'common', 'screenshot': 'none', 'name': 'db: select single value', 'function': 'db_select_single_value'},
-    143: {'module': 'common', 'screenshot': 'none', 'name': 'db: non query: insert/update/delete', 'function': 'db_non_query'},
+    143: {'module': 'common', 'screenshot': 'none', 'name': 'db: insert/update/delete', 'function': 'db_non_query'},
 
 
 
