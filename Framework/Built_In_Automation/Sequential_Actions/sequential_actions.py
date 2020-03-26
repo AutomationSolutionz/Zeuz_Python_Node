@@ -59,8 +59,14 @@ actions = { # Numbers are arbitrary, and are not used anywhere
     138: {'module': 'common', 'screenshot':'none', 'name': 'voice command response', 'function': 'voice_command_response'},
     139: {'module': 'common', 'screenshot':'none', 'name': 'compare partial variables', 'function': 'Compare_Partial_Variables'},
 
+    # Database actions
+    140: {'module': 'common', 'screenshot': 'none', 'name': 'connect to db', 'function': 'connect_to_db'},
+    141: {'module': 'common', 'screenshot': 'none', 'name': 'db: select', 'function': 'db_select'},
+    142: {'module': 'common', 'screenshot': 'none', 'name': 'db: select single value', 'function': 'db_select_single_value'},
+    143: {'module': 'common', 'screenshot': 'none', 'name': 'db: insert/update/delete', 'function': 'db_non_query'},
 
-    
+
+
     200: {'module': 'appium', 'screenshot':'mobile', 'name': 'click', 'function': 'Click_Element_Appium'},
     201: {'module': 'appium', 'screenshot':'mobile', 'name': 'text', 'function': 'Enter_Text_Appium'},
     202: {'module': 'appium', 'screenshot':'mobile', 'name': 'tap', 'function': 'Tap_Appium'},
@@ -100,7 +106,7 @@ actions = { # Numbers are arbitrary, and are not used anywhere
     236: {'module': 'appium', 'screenshot':'mobile', 'name': 'swipe in direction', 'function': 'swipe_in_direction'},
     237: {'module': 'appium', 'screenshot':'mobile', 'name': 'if element exists', 'function': 'if_element_exists'},
     238: {'module': 'appium', 'screenshot':'mobile', 'name': 'clear and enter text adb', 'function': 'Clear_And_Enter_Text_ADB'},
-    
+
     300: {'module': 'rest', 'screenshot':'none', 'name': 'save response', 'function': 'Get_Response_Wrapper'},
     301: {'module': 'rest', 'screenshot':'none', 'name': 'search response', 'function': 'Search_Response'},
     302: {'module': 'rest', 'screenshot':'none', 'name': 'save response into list', 'function': 'Insert_Into_List'},
@@ -150,8 +156,8 @@ actions = { # Numbers are arbitrary, and are not used anywhere
     441: {'module': 'selenium', 'screenshot':'web', 'name': 'switch window', 'function': 'switch_window'},
     442: {'module': 'selenium', 'screenshot':'web', 'name': 'save attribute', 'function': 'Save_Attribute'},
     443: {'module': 'selenium', 'screenshot':'web', 'name': 'save attribute values in list', 'function': 'save_attribute_values_in_list'},
-    
-    
+
+
     500: {'module': 'utility', 'screenshot':'none', 'name': 'math', 'function': 'Calculate'},
     501: {'module': 'utility', 'screenshot':'none', 'name': 'upload', 'function': 'Upload'},
     502: {'module': 'utility', 'screenshot':'none', 'name': 'save string', 'function': 'Save_Text'},
@@ -188,8 +194,8 @@ actions = { # Numbers are arbitrary, and are not used anywhere
     534: {'module': 'utility', 'screenshot':'none', 'name': 'extract number', 'function': 'extract_number'},
     535: {'module': 'utility', 'screenshot':'none', 'name': 'convert date format', 'function': 'convert_date_format'},
 
-    
-        
+
+
     600: {'module': 'xml', 'screenshot':'none', 'name': 'update', 'function': 'update_element'},
     601: {'module': 'xml', 'screenshot':'none', 'name': 'add', 'function': 'add_element'},
     602: {'module': 'xml', 'screenshot':'none', 'name': 'read', 'function': 'read_element'},
@@ -222,7 +228,7 @@ actions = { # Numbers are arbitrary, and are not used anywhere
     810: {'module': 'windows', 'screenshot':'desktop', 'name': 'open app', 'function': 'Run_Application'},
     811: {'module': 'windows', 'screenshot':'desktop', 'name': 'close app', 'function': 'Close_Application'},
     812: {'module': 'windows', 'screenshot':'desktop', 'name': 'validate text', 'function': 'Validate_Text'},
-    813: {'module': 'windows', 'screenshot':'desktop', 'name': 'save text', 'function': 'Save_Text'}
+    813: {'module': 'windows', 'screenshot':'desktop', 'name': 'save text', 'function': 'Save_Text'},
 }
 
 # List of Sub-Field keywords, must be all lowercase, and using single spaces - no underscores
