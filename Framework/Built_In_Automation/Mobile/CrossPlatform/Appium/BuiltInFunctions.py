@@ -1434,9 +1434,9 @@ def Enter_Text_Appium(data_set):
             try:
                 if str(appium_details[device_id]['type']).lower() != 'ios':
                     Element.set_value(text_value)   # Enter the user specified text
+                    
             except Exception:
-                CommonUtil.ExecLog(sModuleInfo, "Found element, but couldn't write text to it. Trying another method",
-                                   2)
+                CommonUtil.ExecLog(sModuleInfo, "Found element, but couldn't write text to it. Trying another method",2)
                 '''try:
                     Element.set_value(text_value) # Enter the user specified text
                 except Exception:
@@ -1444,8 +1444,14 @@ def Enter_Text_Appium(data_set):
                     return CommonUtil.Exception_Handler(sys.exc_info(),None,errMsg)'''
 
             # Complete the action
+            # Do not disable this as a lot of time keyboard blocks out other fields.
             try:
-                # appium_driver.hide_keyboard() # Remove keyboard
+                appium_driver.hide_keyboard() # Remove keyboard
+            
+            except Exception:
+                CommonUtil.ExecLog(sModuleInfo, "Unable to hide the keyboard",2)            
+            
+            try:
                 CommonUtil.TakeScreenShot(sModuleInfo)  # Capture screen
                 CommonUtil.ExecLog(sModuleInfo, "Successfully set the value of to text to: %s" % text_value, 1)
                 return "passed"
