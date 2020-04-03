@@ -42,14 +42,14 @@ def get_home_folder():
     CommonUtil.ExecLog(sModuleInfo, "Function start", 0)
 
     try:
-        path = False
-        if _platform == "linux" or _platform == "linux2" or _platform == "darwin":
-            path = os.getenv('HOME') 
-        elif _platform == "win32":
-            path = os.getenv('USERPROFILE')
-            
-        if path in failed_tag_list:
-            return 'failed'
+        path = str(Path.home())
+        # if _platform == "linux" or _platform == "linux2" or _platform == "darwin":
+        #     path = os.getenv('HOME')
+        # elif _platform == "win32":
+        #     path = os.getenv('USERPROFILE')
+        #
+        # if path in failed_tag_list:
+        #     return 'failed'
         return path
     except Exception:
         return CommonUtil.Exception_Handler(sys.exc_info())
@@ -120,9 +120,9 @@ def CreateFile(sFilePath, data = '', overwrite = False):
 
 
 # function to move file a to b
-def MoveFile(file_to_be_moved, new_name_of_the_file):
+def MoveFile(file_to_be_moved, new_directory_of_the_file):
     """
-        :param file_to_be_moved: location of source file to be renamed
+        :param file_to_be_moved: location of source file to be moved(not renamed)
         :param new_name_of_the_file: location of destination file
         :return: Exception if Exception occurs otherwise return result  
     """
@@ -131,13 +131,17 @@ def MoveFile(file_to_be_moved, new_name_of_the_file):
     CommonUtil.ExecLog(sModuleInfo, "Function start", 0)
     
     try:
-        CommonUtil.ExecLog(sModuleInfo, "Moving file %s to %s" % (file_to_be_moved, new_name_of_the_file), 0)
-        shutil.move(file_to_be_moved, new_name_of_the_file)
+        file_name = Path(file_to_be_moved).name
+        if not os.path.isdir(new_directory_of_the_file):
+            Path(new_directory_of_the_file).mkdir(parents=True, exist_ok=True)
+        CommonUtil.ExecLog(sModuleInfo, "Moving file %s to %s" % (file_to_be_moved, new_directory_of_the_file), 0)
+        shutil.move(file_to_be_moved, new_directory_of_the_file)
         
         # after performing shutil.move() we have to check that if the file with new name exists in correct location.
         # if the file exists in correct position then return passed
         # if the file doesn't exist in correct position then return failed
-        if os.path.isfile(new_name_of_the_file):
+        file_path_for_check_after_move = os.path.join(new_directory_of_the_file, file_name)
+        if os.path.isfile(file_path_for_check_after_move):
             CommonUtil.ExecLog(sModuleInfo, "File moved successfully", 0)
             return "passed"
         else:
@@ -158,9 +162,9 @@ def RenameFile(file_to_be_renamed, new_name_of_the_file):
 
 
 # function to move folder a to b
-def MoveFolder(folder_to_be_moved, new_name_of_the_folder):
+def MoveFolder(folder_to_be_moved, new_directory_of_the_folder):
     """
-        :param folder_to_be_moved: location of source folder to be renamed
+        :param folder_to_be_moved: location of source folder to be moved(not renamed)
         :param new_name_of_the_folder: full location of destination folder
         :return: Exception if Exception occurs otherwise return result  
     """
@@ -169,13 +173,16 @@ def MoveFolder(folder_to_be_moved, new_name_of_the_folder):
     CommonUtil.ExecLog(sModuleInfo, "Function start", 0)
     
     try:
-        CommonUtil.ExecLog(sModuleInfo, "Moving folder from %s to %s" % (folder_to_be_moved, new_name_of_the_folder), 1)
-        shutil.move(folder_to_be_moved, new_name_of_the_folder)
+        folder_name = os.path.basename(folder_to_be_moved)
+        if not os.path.isdir(new_directory_of_the_folder):
+            Path(new_directory_of_the_folder).mkdir(parents=True, exist_ok=True)
+        CommonUtil.ExecLog(sModuleInfo, "Moving folder from %s to %s" % (folder_to_be_moved, new_directory_of_the_folder), 1)
+        shutil.move(folder_to_be_moved, new_directory_of_the_folder)
         
         # after performing shutil.move() we have to check that if the folder with new name exists in correct location.
         # if the folder exists in correct position then return passed
         # if the folder doesn't exist in correct position then return failed
-        if os.path.isdir(new_name_of_the_folder):
+        if os.path.isdir(os.path.join(new_directory_of_the_folder, folder_name)):
             CommonUtil.ExecLog(sModuleInfo, "Folder moved successfully", 1)
             return "passed"
         else:
@@ -1633,6 +1640,14 @@ def Zip_File_or_Folder(data_set):
         
     # Zip file
     try:
+        # Remove / before any of the paths
+        source = source.lstrip('/')
+        destination = destination.lstrip('/')
+
+        # resolve absolute path
+        source = os.path.abspath(os.path.expanduser(os.path.join('~',source)))
+        destination = os.path.abspath(os.path.expanduser(os.path.join('~',destination)))
+
         result = ZipFile(source, destination) # Perform zip on file or directory
 
         if result in failed_tag_list:
@@ -1653,8 +1668,9 @@ def Zip_File_or_Folder(data_set):
 def Move_File_or_Folder(step_data):
     
     '''
-    This function will allow users to move either a file or folder.  The source can be either:
-    file attached in a test case, steps, or variable 
+    This function will allow users to move(not rename) either a file or folder to another directory. The source can be either:
+    file attached in a test case, steps, or variable. The destination is always a folder path here. if the destination folder is not present,
+    will try to create it first.
     
 
     destination      path              /Downloads/ch1-2.pdf
@@ -1690,15 +1706,15 @@ def Move_File_or_Folder(step_data):
         if Shared_Resources.Test_Shared_Variables('file_attachment'):
             file_attachment = Shared_Resources.Get_Shared_Variables('file_attachment')
             if from_path in file_attachment:
-                from_path = Path(file_attachment[from_path])
+                from_path = file_attachment[from_path]
         else:
-            from_path = Path(get_home_folder()) / Path(from_path)
+            from_path = os.path.abspath(os.path.expanduser(os.path.join('~',from_path)))
 
         # Resolve absolute path of to_path
-        to_path = Path(get_home_folder()) / Path(to_path)
+        to_path = os.path.abspath(os.path.expanduser(os.path.join('~',to_path)))
 
         # Try to find the file
-        if not from_path.exists():
+        if not os.path.exists(from_path):
             CommonUtil.ExecLog(sModuleInfo,
                                "Could not find file attachment called %s, and could not find it locally" % from_path, 3)
             return 'failed'
