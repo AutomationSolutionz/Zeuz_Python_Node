@@ -1285,7 +1285,7 @@ def Click_Element_Appium(data_set):
                 if Element.is_enabled():
                     Element.click()
                     CommonUtil.TakeScreenShot(sModuleInfo)
-                    CommonUtil.ExecLog(sModuleInfo, "Successfully clicked the element with given parameters and values", 1)
+                    CommonUtil.ExecLog(sModuleInfo, "Successfully clicked the element with given parameters and values", 1)                        
                     return "passed"
                 else:
                     CommonUtil.TakeScreenShot(sModuleInfo)
@@ -1316,7 +1316,7 @@ def Tap_Appium(data_set):
                 if Element.is_enabled():
                     action = TouchAction(appium_driver)
                     action.tap(Element).perform()
-                    CommonUtil.ExecLog(sModuleInfo, "Tapped on element successfully", 1)
+                    CommonUtil.ExecLog(sModuleInfo, "Tapped on element successfully", 1)                   
                     return "passed"
                 else:
                     CommonUtil.TakeScreenShot(sModuleInfo)
@@ -1434,9 +1434,9 @@ def Enter_Text_Appium(data_set):
             try:
                 if str(appium_details[device_id]['type']).lower() != 'ios':
                     Element.set_value(text_value)   # Enter the user specified text
+                    
             except Exception:
-                CommonUtil.ExecLog(sModuleInfo, "Found element, but couldn't write text to it. Trying another method",
-                                   2)
+                CommonUtil.ExecLog(sModuleInfo, "Found element, but couldn't write text to it. Trying another method",2)
                 '''try:
                     Element.set_value(text_value) # Enter the user specified text
                 except Exception:
@@ -1444,8 +1444,14 @@ def Enter_Text_Appium(data_set):
                     return CommonUtil.Exception_Handler(sys.exc_info(),None,errMsg)'''
 
             # Complete the action
+            # Do not disable this as a lot of time keyboard blocks out other fields.
             try:
-                # appium_driver.hide_keyboard() # Remove keyboard
+                appium_driver.hide_keyboard() # Remove keyboard
+            
+            except Exception:
+                CommonUtil.ExecLog(sModuleInfo, "Unable to hide the keyboard",2)            
+            
+            try:
                 CommonUtil.TakeScreenShot(sModuleInfo)  # Capture screen
                 CommonUtil.ExecLog(sModuleInfo, "Successfully set the value of to text to: %s" % text_value, 1)
                 return "passed"
@@ -1547,6 +1553,10 @@ def Clear_And_Enter_Text_ADB(data_set, serial=''):
         if result in passed_tag_list:
             CommonUtil.TakeScreenShot(sModuleInfo)
             CommonUtil.ExecLog(sModuleInfo, "Successfully entered text with adb shell", 1)
+            appium_driver.hide_keyboard() # Remove keyboard
+            CommonUtil.TakeScreenShot(sModuleInfo)  # Capture screen
+            CommonUtil.ExecLog(sModuleInfo, "Successfully hid keyboard", 1)   
+            
             return "passed"
         else:
             CommonUtil.TakeScreenShot(sModuleInfo)
@@ -1620,6 +1630,28 @@ def Clear_And_Enter_Text_Appium(data_set):
     except Exception:
         errMsg = "Could not find element."
         return CommonUtil.Exception_Handler(sys.exc_info(), None, errMsg)
+
+
+def Hide_Keyboard(data_set):
+    ''' 
+    This action is used to hide keyboard:
+    hide keyboard             appium action           hide
+
+
+     '''
+
+    sModuleInfo = inspect.currentframe().f_code.co_name + " : " + MODULE_NAME
+    CommonUtil.ExecLog(sModuleInfo, "Function Start", 0)
+
+    try:
+        if appium_driver.is_keyboard_shown():
+            appium_driver.hide_keyboard() # Remove keyboard
+            CommonUtil.TakeScreenShot(sModuleInfo)  # Capture screen  
+    except Exception:
+        errMsg = "Unable to hide your keyboard"
+        return CommonUtil.Exception_Handler(sys.exc_info(), None, errMsg)
+    
+
 
 
 def Android_Keystroke_Key_Mapping(keystroke, hold_key = False):

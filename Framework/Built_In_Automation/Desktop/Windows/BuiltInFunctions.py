@@ -96,13 +96,23 @@ def Click_Element(data_set):
             if row[1] == 'element parameter':
                 if str(row[2]).strip().lower() == 'expand' or str(row[2]).strip().lower() == 'invoke' or str(row[2]).strip().lower() == 'select' or str(row[2]).strip().lower() == 'toggle':
                     if str(row[0]).strip().lower() == 'method':
-                        if str(row[2]).strip().lower()=="expand": expand=True
-                        elif str(row[2]).strip().lower() == "invoke": invoke = True
-                        elif str(row[2]).strip().lower() == "select": select = True
-                        elif str(row[2]).strip().lower() == "toggle": toggle = True
+                        if str(row[2]).strip().lower()=="expand": 
+                            expand=True
+                            break
+                        elif str(row[2]).strip().lower() == "invoke": 
+                            invoke = True
+                            break
+                        elif str(row[2]).strip().lower() == "select": 
+                            select = True
+                            break
+                        elif str(row[2]).strip().lower() == "toggle": 
+                            toggle = True
+                            break
 
     except Exception:
-        return CommonUtil.Exception_Handler(sys.exc_info(), None, "Error parsing data set")
+        CommonUtil.ExecLog(sModuleInfo, "You have provided an invalid Click data.  Please refer to help", 3)
+        CommonUtil.Exception_Handler(sys.exc_info(), None, "You have provided an invalid Click data.  Please refer to help")
+        return "failed"
 
     # Click using element
     CommonUtil.ExecLog(sModuleInfo, "Looking for element", 0)
@@ -429,11 +439,12 @@ def _get_main_window (WindowName):
 
 def Click_Element_None_Mouse(Element, Expand=None, Invoke=None, Select=None, Toggle=None):
     try:
+        sModuleInfo = inspect.currentframe().f_code.co_name + " : " + MODULE_NAME
         patter_list = Element.GetSupportedPatterns()
         if len(patter_list) == 0:
             # x = int (Element.Current.BoundingRectangle.X)
             # y = int (Element.Current.BoundingRectangle.Y)
-            print("no pattern found going with mouse click")
+            CommonUtil.ExecLog(sModuleInfo, "We did not find any pattern for this object, so we will click by mouse with location", 1)
             x = (int)(Element.Current.BoundingRectangle.Right - Element.Current.BoundingRectangle.Width / 2);
             y = (int)(Element.Current.BoundingRectangle.Bottom - Element.Current.BoundingRectangle.Height / 2);
             win32api.SetCursorPos((x, y))
@@ -444,48 +455,64 @@ def Click_Element_None_Mouse(Element, Expand=None, Invoke=None, Select=None, Tog
         else:
             for each in patter_list:
                 pattern_name = Automation.PatternName(each)
-
+                #Expand and collapse actions
                 if pattern_name == "ExpandCollapse":
                     if Expand == True:
                         # check to see if its expanded, if expanded, then do nothing... if not, expand it
                         status = Element.GetCurrentPattern(ExpandCollapsePattern.Pattern).Current.ExpandCollapseState
                         if status == 0:
+                            CommonUtil.ExecLog(sModuleInfo, "Expanding the item", 1)
                             Element.GetCurrentPattern(ExpandCollapsePattern.Pattern).Expand()
+                            return "passed"
                         elif status == 1:
-                            print("Already Expanded")
+                            CommonUtil.ExecLog(sModuleInfo, "Already expanded", 1)
+                            return "passed"
                     elif Expand == False:
                         # check to see if its Collapsed, if Collapsed, then do nothing... if not, Collapse it
                         status = Element.GetCurrentPattern(ExpandCollapsePattern.Pattern).Current.ExpandCollapseState
                         if status == 1:
+                            CommonUtil.ExecLog(sModuleInfo, "Collapsing the item", 1)
                             Element.GetCurrentPattern(ExpandCollapsePattern.Pattern).Collapse()
+                            return "passed"
                         elif status == 0:
-                            print("Already Collapsed")
-
-
-
+                            CommonUtil.ExecLog(sModuleInfo, "Already collapsed", 1)
+                            return "passed"
+                #Invoking actions
                 elif pattern_name == "Invoke":
                     if Invoke == True:
-                        print("invoking the button: %s" % Element.Current.Name)
-                        time.sleep(2)
+                        CommonUtil.ExecLog(sModuleInfo, "Invoking the object", 1)
+                        time.sleep(1)
                         Element.GetCurrentPattern(InvokePattern.Pattern).Invoke()
-
+                        return "passed"
+                #Selection of an item
                 elif pattern_name == "SelectionItem":
+                    CommonUtil.ExecLog(sModuleInfo, "Selecting an item", 1)
                     Element.GetCurrentPattern(SelectionItemPattern.Pattern).Select()
+                    time.sleep(1)
+                    return "passed"
+                #Toggling action 
+                
                 elif pattern_name == "Toggle":
+                    CommonUtil.ExecLog(sModuleInfo, "Toggling an item", 1)
                     Element.GetCurrentPattern(TogglePattern.Pattern).Toggle()
+                    time.sleep(1)
+                    return "passed"
+                #if no patterns are found, then we do an actual mouse click
                 else:
                     # x = int (Element.Current.BoundingRectangle.X)
                     # y = int (Element.Current.BoundingRectangle.Y)
-                    print("no pattern found going with mouse click")
+                    CommonUtil.ExecLog(sModuleInfo, "We did not find any pattern for this object, so we will click by mouse with location", 1)
                     x = (int)(Element.Current.BoundingRectangle.Right - Element.Current.BoundingRectangle.Width / 2);
                     y = (int)(Element.Current.BoundingRectangle.Bottom - Element.Current.BoundingRectangle.Height / 2);
                     win32api.SetCursorPos((x, y))
                     win32api.mouse_event(win32con.MOUSEEVENTF_LEFTDOWN, x, y, 0, 0)
                     time.sleep(0.1)
                     win32api.mouse_event(win32con.MOUSEEVENTF_LEFTUP, x, y, 0, 0)
+                    time.sleep(1)
+                    return "passed"
 
-        return "passed"
-
+        CommonUtil.ExecLog(sModuleInfo, "Unable to perform the action on the object", 3)
+        return "failed"
     except Exception as e:
         exc_type, exc_obj, exc_tb = sys.exc_info()
         fname = os.path.split(exc_tb.tb_frame.f_code.co_filename)[1]
@@ -810,9 +837,9 @@ def Run_Application(data_set):
                 Desktop_app = str(row[2]).strip()
 
         autoit.send("^{ESC}")
-        time.sleep(0.1)
+        time.sleep(0.5)
         autoit.send(Desktop_app)
-        time.sleep(0.1)
+        time.sleep(0.5)
         autoit.send("{ENTER}")
         CommonUtil.ExecLog(sModuleInfo, "Succesfully launched your app", 1)
 

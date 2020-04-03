@@ -1,10 +1,10 @@
+pyodbc
 Appium-Python-Client
 uiautomator
 clint
 colorama
 datefinder
 image
-locustio
 lxml
 numpy
 Pillow
@@ -14,8 +14,6 @@ PyPDF2
 pyserial
 pyshortcuts
 python-dateutil
-pyttsx3
-realbrowserlocusts
 regex
 requests
 simplejson
@@ -23,4 +21,3 @@ speech
 SpeechRecognition
 tzlocal
 urllib3
-xlwings

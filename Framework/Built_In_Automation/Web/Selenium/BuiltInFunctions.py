@@ -1246,6 +1246,7 @@ def validate_table(data_set):
     # Initialize variables
     have_table = False # Tells us if we read a table from the step data
     case_sensitive = True # Case sensitive search
+    coordinates_exact = True #Table coordinates should match by default
     ignore_rows = [] # List of rows to ignore/skip
     ignore_cols = [] # List of columns to ignore/skip
     user_table = {} # Constructed user-defined table
@@ -1273,6 +1274,11 @@ def validate_table(data_set):
                 elif field == 'ignore column' or field == 'ignore columns': # User specified list of columns to ignore
                     ignore_cols = value.split(',') # Get columns as comma delimited string and store in list
                     ignore_cols = list(map(int, ignore_cols)) # Convert to integers
+                elif field == 'coordinates': #Check if user specifies if table coordinates should match
+                    if value.lower().strip() == 'identical': #Table coordinates should match
+                        coordinates_exact = True
+                    elif value.lower().strip() == 'nonidentical': #Table coordinates don't have to match
+                        coordinates_exact = False
                 elif field == 'case': # User specified case sensitivity
                     if value.lower().strip() == 'exact' or value.lower().strip() == 'sensitive': # Sensitive match (default)
                         case_sensitive = True
@@ -1335,6 +1341,20 @@ def validate_table(data_set):
             if ids in webpage_table: # Check if the ID exists in case the user specified something that's not actually in the webpage table
                 del(webpage_table[ids])
 
+    
+    if coordinates_exact == False: # If user specifies that cells locations do not have to match
+        unmatched_cells = []
+        for ids in user_table:
+            if user_table[ids] not in webpage_table.values():
+                unmatched_cells.append(user_table[ids])
+                
+        if len(unmatched_cells) > 0:
+            CommonUtil.ExecLog(sModuleInfo, "Not all elements exist in webpage table - %s" % str(unmatched_cells), 3)
+            return 'failed'
+        else:
+            CommonUtil.ExecLog(sModuleInfo, "Elements exist in webpage table", 1)
+            return 'passed'
+    
     
     # Check if arrays match
     failed_matches = []

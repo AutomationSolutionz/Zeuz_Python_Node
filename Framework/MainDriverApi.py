@@ -7,6 +7,7 @@ import time
 import sys
 import urllib.request, urllib.error, urllib.parse
 import queue
+import shutil
 import importlib
 import requests
 import threading
@@ -279,9 +280,11 @@ def get_test_step_data(run_id, test_case, current_step_sequence, sModuleInfo):
                     sModuleInfo, "Error while fetching step data: " + response['message'], 2)
                 CommonUtil.ExecLog(
                     sModuleInfo, "Trying again to fetch step data", 1)
-                time.sleep(1)
+                
             else:
                 return response['step_data']
+            
+            time.sleep(1)
 
         CommonUtil.ExecLog(
             sModuleInfo, "Couldn't get step data, returning failed", 3)
@@ -486,8 +489,20 @@ def download_attachments_for_test_case(sModuleInfo, run_id, test_case, temp_ini_
             sModuleInfo, "Attachment download for test case %s started" % test_case, 1)
         m = each[1] + '.' + each[2]  # file name
         f = open(download_folder + '/' + m, 'wb')
-        f.write(urllib.request.urlopen('http://' + ConfigModule.get_config_value('Server', 'server_address') + ':' + str(
-            ConfigModule.get_config_value('Server', 'server_port')) + '/static' + each[0]).read())
+
+        download_url = ConfigModule.get_config_value('Server', 'server_address') + ':' + str(
+            ConfigModule.get_config_value('Server', 'server_port'))
+
+        if not download_url.startswith('http') or not download_url.startswith('https'):
+            download_url = 'https://' + download_url
+
+        download_url += '/static' + each[0]
+
+        # Use request streaming to efficiently download files
+        with requests.get(download_url, stream=True) as r:
+            shutil.copyfileobj(r.raw, f)
+
+        # f.write(urllib.request.urlopen(download_url).read())
         file_specific_steps.update({m: download_folder + '/' + m})
         f.close()
     if test_case_attachments:
@@ -1103,13 +1118,22 @@ def run_test_case(TestCaseID, sModuleInfo, run_id, driver_list, final_dependency
     CommonUtil.ExecLog(
         sModuleInfo, "Gathering data for test case %s" % (test_case), 4, False)
 
+    retry = 1
     while not copy_status:
+        if retry > 100:
+            CommonUtil.ExecLog(
+                sModuleInfo, "Failed to gather data for test case %s" % test_case, 3)
+            return
 
         # check if test case is copied
         copy_status = check_if_test_case_is_copied(run_id, test_case)
         if copy_status:
             CommonUtil.ExecLog(
                 sModuleInfo, "Gathering data for test case %s is completed" % test_case, 1)
+            break
+
+        time.sleep(3)
+        retry += 1
 
     # download attachments for test case
     file_specific_steps = download_attachments_for_test_case(sModuleInfo, run_id, test_case,

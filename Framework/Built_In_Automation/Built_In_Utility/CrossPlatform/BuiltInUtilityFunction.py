@@ -21,6 +21,8 @@ from Framework.Utilities import ConfigModule
 from Framework.Utilities import CommonUtil
 from Framework.Utilities.CommonUtil import passed_tag_list, failed_tag_list, skipped_tag_list
 from Framework.Built_In_Automation.Shared_Resources import BuiltInFunctionSharedResources as Shared_Resources
+import traceback
+from pathlib import Path
 
 MODULE_NAME = inspect.getmodulename(__file__)
 
@@ -40,14 +42,14 @@ def get_home_folder():
     CommonUtil.ExecLog(sModuleInfo, "Function start", 0)
 
     try:
-        path = False
-        if _platform == "linux" or _platform == "linux2" or _platform == "darwin":
-            path = os.getenv('HOME') 
-        elif _platform == "win32":
-            path = os.getenv('USERPROFILE')
-            
-        if path in failed_tag_list:
-            return 'failed'
+        path = str(Path.home())
+        # if _platform == "linux" or _platform == "linux2" or _platform == "darwin":
+        #     path = os.getenv('HOME')
+        # elif _platform == "win32":
+        #     path = os.getenv('USERPROFILE')
+        #
+        # if path in failed_tag_list:
+        #     return 'failed'
         return path
     except Exception:
         return CommonUtil.Exception_Handler(sys.exc_info())
@@ -118,9 +120,9 @@ def CreateFile(sFilePath, data = '', overwrite = False):
 
 
 # function to move file a to b
-def MoveFile(file_to_be_moved, new_name_of_the_file):
+def MoveFile(file_to_be_moved, new_directory_of_the_file):
     """
-        :param file_to_be_moved: location of source file to be renamed
+        :param file_to_be_moved: location of source file to be moved(not renamed)
         :param new_name_of_the_file: location of destination file
         :return: Exception if Exception occurs otherwise return result  
     """
@@ -129,13 +131,17 @@ def MoveFile(file_to_be_moved, new_name_of_the_file):
     CommonUtil.ExecLog(sModuleInfo, "Function start", 0)
     
     try:
-        CommonUtil.ExecLog(sModuleInfo, "Moving file %s to %s" % (file_to_be_moved, new_name_of_the_file), 0)
-        shutil.move(file_to_be_moved, new_name_of_the_file)
+        file_name = Path(file_to_be_moved).name
+        if not os.path.isdir(new_directory_of_the_file):
+            Path(new_directory_of_the_file).mkdir(parents=True, exist_ok=True)
+        CommonUtil.ExecLog(sModuleInfo, "Moving file %s to %s" % (file_to_be_moved, new_directory_of_the_file), 0)
+        shutil.move(file_to_be_moved, new_directory_of_the_file)
         
         # after performing shutil.move() we have to check that if the file with new name exists in correct location.
         # if the file exists in correct position then return passed
         # if the file doesn't exist in correct position then return failed
-        if os.path.isfile(new_name_of_the_file):
+        file_path_for_check_after_move = os.path.join(new_directory_of_the_file, file_name)
+        if os.path.isfile(file_path_for_check_after_move):
             CommonUtil.ExecLog(sModuleInfo, "File moved successfully", 0)
             return "passed"
         else:
@@ -156,9 +162,9 @@ def RenameFile(file_to_be_renamed, new_name_of_the_file):
 
 
 # function to move folder a to b
-def MoveFolder(folder_to_be_moved, new_name_of_the_folder):
+def MoveFolder(folder_to_be_moved, new_directory_of_the_folder):
     """
-        :param folder_to_be_moved: location of source folder to be renamed
+        :param folder_to_be_moved: location of source folder to be moved(not renamed)
         :param new_name_of_the_folder: full location of destination folder
         :return: Exception if Exception occurs otherwise return result  
     """
@@ -167,13 +173,16 @@ def MoveFolder(folder_to_be_moved, new_name_of_the_folder):
     CommonUtil.ExecLog(sModuleInfo, "Function start", 0)
     
     try:
-        CommonUtil.ExecLog(sModuleInfo, "Moving folder from %s to %s" % (folder_to_be_moved, new_name_of_the_folder), 1)
-        shutil.move(folder_to_be_moved, new_name_of_the_folder)
+        folder_name = os.path.basename(folder_to_be_moved)
+        if not os.path.isdir(new_directory_of_the_folder):
+            Path(new_directory_of_the_folder).mkdir(parents=True, exist_ok=True)
+        CommonUtil.ExecLog(sModuleInfo, "Moving folder from %s to %s" % (folder_to_be_moved, new_directory_of_the_folder), 1)
+        shutil.move(folder_to_be_moved, new_directory_of_the_folder)
         
         # after performing shutil.move() we have to check that if the folder with new name exists in correct location.
         # if the folder exists in correct position then return passed
         # if the folder doesn't exist in correct position then return failed
-        if os.path.isdir(new_name_of_the_folder):
+        if os.path.isdir(os.path.join(new_directory_of_the_folder, folder_name)):
             CommonUtil.ExecLog(sModuleInfo, "Folder moved successfully", 1)
             return "passed"
         else:
@@ -374,9 +383,9 @@ def DeleteFolder(sFolderPath): #!!! Needs to be updated to handle deleting of di
 
 
 # function to check a file exists or not
-def find(sFilePath): #!!!Needs to be updated to either return true/false or actually try to find a file in a file system
+def find_file(sFilePath): #!!!Needs to be updated to either return true/false or actually try to find a file in a file system
     """
-        :param sFilePath: location of source folder to be found
+        :param sFilePath: location of source file to be found
         :return: Exception if Exception occurs otherwise return result  
     """
     
@@ -384,8 +393,26 @@ def find(sFilePath): #!!!Needs to be updated to either return true/false or actu
     CommonUtil.ExecLog(sModuleInfo, "Function start", 0)
     
     try:
-        CommonUtil.ExecLog(sModuleInfo, "Finding file %s is complete" % sFilePath, 1)
+        CommonUtil.ExecLog(sModuleInfo, "Finding file or folder %s is complete" % sFilePath, 1)
         return os.path.isfile(sFilePath)
+
+    except Exception:
+        return CommonUtil.Exception_Handler(sys.exc_info())
+
+
+# function to check a folder exists or not
+def find_folder(sFolderPath):  # !!!Needs to be updated to either return true/false or actually try to find a file in a file system
+    """
+        :param sFolderPath: location of source folder to be found
+        :return: Exception if Exception occurs otherwise return result
+    """
+
+    sModuleInfo = inspect.currentframe().f_code.co_name + " : " + MODULE_NAME
+    CommonUtil.ExecLog(sModuleInfo, "Function start", 0)
+
+    try:
+        CommonUtil.ExecLog(sModuleInfo, "Finding folder %s is complete" % sFolderPath, 1)
+        return os.path.isdir(sFolderPath)
 
     except Exception:
         return CommonUtil.Exception_Handler(sys.exc_info())
@@ -1143,20 +1170,37 @@ def Create_File_or_Folder(step_data):
 
 
 # Method to find file
-def Find_File(step_data):
+def Find_File_Or_Folder(step_data):
     sModuleInfo = inspect.currentframe().f_code.co_name + " : " + MODULE_NAME
     CommonUtil.ExecLog(sModuleInfo, "Function start", 0)
     try:
-        path = get_home_folder() + str(step_data[0][0]).strip()
+        # take a look at the use of inline commented variable
+        file_or_folder_path_splited_for_os_support = str(step_data[0][2]).strip().split('/')
+        file_or_folder_path = get_home_folder()
+
+        for path_part in file_or_folder_path_splited_for_os_support:
+            file_or_folder_path = os.path.join(file_or_folder_path,path_part)
+
         file_or_folder = str(step_data[1][2]).strip()
+
         if file_or_folder.lower() == 'file':
             # find file "path"
-            result = find(path)
+            result = find_file(file_or_folder_path)
             if result in failed_tag_list:
-                CommonUtil.ExecLog(sModuleInfo, "Could not find file '%s'" % (path), 3)
+                CommonUtil.ExecLog(sModuleInfo, "Could not find file '%s'" % (file_or_folder_path), 3)
                 return "failed"
             else:
-                CommonUtil.ExecLog(sModuleInfo, "File '%s' is found" % (path), 1)
+                CommonUtil.ExecLog(sModuleInfo, "File '%s' is found" % (file_or_folder_path), 1)
+                return "passed"
+
+        elif file_or_folder.lower() == "folder":
+            # find folder path
+            result = find_folder(file_or_folder_path)
+            if result in failed_tag_list:
+                CommonUtil.ExecLog(sModuleInfo, "Could not find folder '%s'" % (file_or_folder_path), 3)
+                return "failed"
+            else:
+                CommonUtil.ExecLog(sModuleInfo, "Folder '%s' is found" % (file_or_folder_path), 1)
                 return "passed"
 
         else:
@@ -1596,6 +1640,14 @@ def Zip_File_or_Folder(data_set):
         
     # Zip file
     try:
+        # Remove / before any of the paths
+        source = source.lstrip('/')
+        destination = destination.lstrip('/')
+
+        # resolve absolute path
+        source = os.path.abspath(os.path.expanduser(os.path.join('~',source)))
+        destination = os.path.abspath(os.path.expanduser(os.path.join('~',destination)))
+
         result = ZipFile(source, destination) # Perform zip on file or directory
 
         if result in failed_tag_list:
@@ -1616,8 +1668,9 @@ def Zip_File_or_Folder(data_set):
 def Move_File_or_Folder(step_data):
     
     '''
-    This function will allow users to move either a file or folder.  The source can be either:
-    file attached in a test case, steps, or variable 
+    This function will allow users to move(not rename) either a file or folder to another directory. The source can be either:
+    file attached in a test case, steps, or variable. The destination is always a folder path here. if the destination folder is not present,
+    will try to create it first.
     
 
     destination      path              /Downloads/ch1-2.pdf
@@ -1631,46 +1684,43 @@ def Move_File_or_Folder(step_data):
     sModuleInfo = inspect.currentframe().f_code.co_name + " : " + MODULE_NAME
     CommonUtil.ExecLog(sModuleInfo, "Function start", 0)
 
-    # Recall file attachment, if not already set
-    file_attachment = []
-    
-    '''
-     @sazid there is no option here to recall a custom varible.  We need that... 
-    
-    '''
-    if Shared_Resources.Test_Shared_Variables('file_attachment'):
-        file_attachment = Shared_Resources.Get_Shared_Variables('file_attachment')
-    
     try:
-        if _platform == "linux" or _platform == "linux2" or _platform == "darwin" :
-            '''**** @sazid this is hard coded sequence.. we should look for "source" and "destination" '''
-            
-            from_path = str(step_data[0][2]).strip()  # location of the file/folder to be renamed
-            to_path = str(step_data[1][2]).strip()  # location where to rename the file/folder
-        
-        
-        elif _platform == "win32":
-            '''**** @sazid this is hard coded sequence.. we should look for "source" and "destination" '''
-            
-            from_path = raw(str(step_data[0][2]).strip())  # location of the file/folder to be renamed
-            to_path = raw(str(step_data[1][2]).strip())  # location where to rename the file/folder
+        from_path = None
+        to_path = None
+        file_or_folder = 'file'
 
-         # Try to find the file
-        if from_path not in file_attachment and os.path.exists(os.path.join(get_home_folder(), from_path)) == False:
+        for row in step_data:
+            if 'source' in row[0]:
+                from_path = raw(str(row[2]).strip())
+            if 'destination' in row[0]:
+                to_path = raw(str(row[2]).strip())
+            if 'move' in row[0]:
+                file_or_folder = str(row[2]).strip()
+
+        # Remove / before any of the paths
+        from_path = from_path.lstrip('/')
+        to_path = to_path.lstrip('/')
+
+        # Resolve the absolute path of from_path
+        # Check to see if from_path is in file attachments
+        if Shared_Resources.Test_Shared_Variables('file_attachment'):
+            file_attachment = Shared_Resources.Get_Shared_Variables('file_attachment')
+            if from_path in file_attachment:
+                from_path = file_attachment[from_path]
+        else:
+            from_path = os.path.abspath(os.path.expanduser(os.path.join('~',from_path)))
+
+        # Resolve absolute path of to_path
+        to_path = os.path.abspath(os.path.expanduser(os.path.join('~',to_path)))
+
+        # Try to find the file
+        if not os.path.exists(from_path):
             CommonUtil.ExecLog(sModuleInfo,
                                "Could not find file attachment called %s, and could not find it locally" % from_path, 3)
             return 'failed'
-        if from_path in file_attachment: from_path = file_attachment[from_path]  # In file is an attachment, get the full path
 
-        if from_path not in file_attachment:
-            from_path = os.path.join(get_home_folder(), from_path)
-
-
-        to_path = os.path.join(get_home_folder(), to_path)
-        '''**** @sazid this is hard coded sequence.. we should loop through the data" '''
-        file_or_folder = str(step_data[2][2]).strip()  # get if it is file/folder to move
         if file_or_folder.lower() == 'file':
-                # move file "from_path to "to_path"
+            # move file "from_path to "to_path"
             result = MoveFile(from_path, to_path)
             if result in failed_tag_list:
                 CommonUtil.ExecLog(sModuleInfo, "Could not move file '%s' to '%s'" % (from_path, to_path), 3)
@@ -1679,7 +1729,7 @@ def Move_File_or_Folder(step_data):
                 CommonUtil.ExecLog(sModuleInfo, "File '%s' moved to '%s' successfully" % (from_path, to_path), 1)
                 return "passed"
         elif file_or_folder.lower() == 'folder':
-                # move folder "from_path" to "to_path"
+            # move folder "from_path" to "to_path"
             result = MoveFolder(from_path, to_path)
             if result in failed_tag_list:
                 CommonUtil.ExecLog(sModuleInfo, "Could not move folder '%s' to '%s'" % (from_path, to_path), 3)
@@ -1692,6 +1742,7 @@ def Move_File_or_Folder(step_data):
             return 'failed'
 
     except Exception:
+        traceback.print_exc()
         return CommonUtil.Exception_Handler(sys.exc_info())
 
 
