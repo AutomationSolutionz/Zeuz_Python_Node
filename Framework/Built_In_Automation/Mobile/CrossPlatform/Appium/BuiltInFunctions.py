@@ -1285,7 +1285,7 @@ def Click_Element_Appium(data_set):
                 if Element.is_enabled():
                     Element.click()
                     CommonUtil.TakeScreenShot(sModuleInfo)
-                    CommonUtil.ExecLog(sModuleInfo, "Successfully clicked the element with given parameters and values", 1)
+                    CommonUtil.ExecLog(sModuleInfo, "Successfully clicked the element with given parameters and values", 1)                        
                     return "passed"
                 else:
                     CommonUtil.TakeScreenShot(sModuleInfo)
@@ -1316,7 +1316,7 @@ def Tap_Appium(data_set):
                 if Element.is_enabled():
                     action = TouchAction(appium_driver)
                     action.tap(Element).perform()
-                    CommonUtil.ExecLog(sModuleInfo, "Tapped on element successfully", 1)
+                    CommonUtil.ExecLog(sModuleInfo, "Tapped on element successfully", 1)                   
                     return "passed"
                 else:
                     CommonUtil.TakeScreenShot(sModuleInfo)
@@ -1553,6 +1553,10 @@ def Clear_And_Enter_Text_ADB(data_set, serial=''):
         if result in passed_tag_list:
             CommonUtil.TakeScreenShot(sModuleInfo)
             CommonUtil.ExecLog(sModuleInfo, "Successfully entered text with adb shell", 1)
+            appium_driver.hide_keyboard() # Remove keyboard
+            CommonUtil.TakeScreenShot(sModuleInfo)  # Capture screen
+            CommonUtil.ExecLog(sModuleInfo, "Successfully hid keyboard", 1)   
+            
             return "passed"
         else:
             CommonUtil.TakeScreenShot(sModuleInfo)
@@ -1626,6 +1630,28 @@ def Clear_And_Enter_Text_Appium(data_set):
     except Exception:
         errMsg = "Could not find element."
         return CommonUtil.Exception_Handler(sys.exc_info(), None, errMsg)
+
+
+def Hide_Keyboard(data_set):
+    ''' 
+    This action is used to hide keyboard:
+    hide keyboard             appium action           hide
+
+
+     '''
+
+    sModuleInfo = inspect.currentframe().f_code.co_name + " : " + MODULE_NAME
+    CommonUtil.ExecLog(sModuleInfo, "Function Start", 0)
+
+    try:
+        if appium_driver.is_keyboard_shown():
+            appium_driver.hide_keyboard() # Remove keyboard
+            CommonUtil.TakeScreenShot(sModuleInfo)  # Capture screen  
+    except Exception:
+        errMsg = "Unable to hide your keyboard"
+        return CommonUtil.Exception_Handler(sys.exc_info(), None, errMsg)
+    
+
 
 
 def Android_Keystroke_Key_Mapping(keystroke, hold_key = False):

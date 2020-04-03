@@ -280,9 +280,11 @@ def get_test_step_data(run_id, test_case, current_step_sequence, sModuleInfo):
                     sModuleInfo, "Error while fetching step data: " + response['message'], 2)
                 CommonUtil.ExecLog(
                     sModuleInfo, "Trying again to fetch step data", 1)
-                time.sleep(1)
+                
             else:
                 return response['step_data']
+            
+            time.sleep(1)
 
         CommonUtil.ExecLog(
             sModuleInfo, "Couldn't get step data, returning failed", 3)
