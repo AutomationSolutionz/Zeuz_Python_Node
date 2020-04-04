@@ -133,7 +133,7 @@ def Get_Element(step_data_set,driver,query_debug=False, wait_enable = True):
                     sr.Set_Shared_Variables(save_parameter,result)
                 return result # Return on pass
             if not wait_enable:
-                CommonUtil.ExecLog(sModuleInfo, "Element not found. Waiting is disabled, so returning", 3)
+                CommonUtil.ExecLog(sModuleInfo, "Element not found. Waiting is disabled, so returning", 2)
                 return result # If asked not to loop, return the failure
             # If fail, but instructed to loop, do so
         return "failed"
