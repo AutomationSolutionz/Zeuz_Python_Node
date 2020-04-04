@@ -616,7 +616,7 @@ def Run_Sequential_Actions(data_set_list=None, debug_actions=None): #data_set_no
                 # If middle column = conditional action, evaluate data set
                 elif "conditional action" in action_name or "if else" in action_name:
                     if action_name.lower().strip() != 'conditional action' and action_name.lower().strip() != 'if else': #old style conditional action
-                        CommonUtil.ExecLog(sModuleInfo,"Old style conditional action found. This will not be supported in 2020, please replace them with new conditional actions", 2)
+                        CommonUtil.ExecLog(sModuleInfo,"Old style conditional action found", 1)
                         CommonUtil.ExecLog(sModuleInfo, "Checking the logical conditional action to be performed in the conditional action row: %s" % str(row), 0)
                         logic_row.append(row) # Keep track of the conditional action row, so we can access it later
                         [skip_tmp.append(int(x) - 1) for x in row[2].replace(' ', '').split(',')] # Add the processed data sets, executed by the conditional action to the skip list, so we can process the rest of the data sets (do this for both conditional actions)
@@ -1164,7 +1164,7 @@ def Conditional_Action_Handler(data_set, row, logic_row):
         return CommonUtil.Exception_Handler(sys.exc_info(),None,errMsg)
 
     if stored == False: # Just to be clear, we can't to log that we are using the old method
-        CommonUtil.ExecLog(sModuleInfo, "Could not find the recall result row. It's either missing or mispelled. Trying old method of Conditional Action, but suggest you update to the currently accepted method", 2)
+        CommonUtil.ExecLog(sModuleInfo, "Could not find the recall result row. It's either missing or mispelled. Trying in different method", 2)
         
     if stored == True: # Use saved result from previous data set
         if result in failed_tag_list: # Check result from previous action 
