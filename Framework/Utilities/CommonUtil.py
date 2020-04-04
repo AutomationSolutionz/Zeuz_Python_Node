@@ -391,7 +391,7 @@ def Thread_ScreenShot(ImageName, local_run=False):
             ExecLog(sModuleInfo, "Error saving %s screenshot to %s" % (screen_capture_type, ImageName), 3)
 
     except:
-        ExecLog(sModuleInfo, "Error capturing image", 3)
+        ExecLog(sModuleInfo, "Unable To Capture image.  Device Maybe Blocking Screen Capture.", 1)
 
 
 def TimeStamp(format):
