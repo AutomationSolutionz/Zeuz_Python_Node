@@ -1944,7 +1944,7 @@ def db_non_query(data_set):
 
 
 def get_global_list_variable(data_set):
-    # can get multiple server variable with one action
+    # get the global list variable content
     sModuleInfo = inspect.currentframe().f_code.co_name + " : " + MODULE_NAME
     try:
         run_id = sr.Get_Shared_Variables('run_id')
@@ -1966,7 +1966,7 @@ def get_global_list_variable(data_set):
 
 
 def append_to_global_list_variable(data_set):
-    #can set multiple server variable with one action
+    #append an item to global list variable
     sModuleInfo = inspect.currentframe().f_code.co_name + " : " + MODULE_NAME
     try:
         run_id = sr.Get_Shared_Variables('run_id')
@@ -1985,7 +1985,7 @@ def append_to_global_list_variable(data_set):
 
 
 def remove_item_from_global_list_variable(data_set):
-    #can set multiple server variable with one action
+    #remove an item from a global list variable
     sModuleInfo = inspect.currentframe().f_code.co_name + " : " + MODULE_NAME
     try:
         run_id = sr.Get_Shared_Variables('run_id')
@@ -2006,7 +2006,7 @@ def remove_item_from_global_list_variable(data_set):
 def save_runtime_variable_by_list_compare(data_set):
     import json,ast
 
-    ''' Assign a value to a variable stored in shared variables '''
+    ''' save a variable by comparing two lists, here compare means set difference '''
     sModuleInfo = inspect.currentframe().f_code.co_name + " : " + MODULE_NAME
     CommonUtil.ExecLog(sModuleInfo,"Function Start", 0)
     variable_name = ''
