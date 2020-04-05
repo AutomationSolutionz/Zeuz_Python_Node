@@ -1938,3 +1938,88 @@ def db_non_query(data_set):
     except Exception:
         traceback.print_exc()
         return CommonUtil.Exception_Handler(sys.exc_info())
+
+
+# Gloabal variable actions
+
+
+def get_global_list_variable(data_set):
+    # can get multiple server variable with one action
+    sModuleInfo = inspect.currentframe().f_code.co_name + " : " + MODULE_NAME
+    try:
+        run_id = sr.Get_Shared_Variables('run_id')
+
+        for row in data_set:
+            if str(row[1]).strip().lower() == 'element parameter' or "parameter" in str(row[1]).strip().lower():
+                key = str(row[0]).strip()
+
+                value = MainDriverApi.get_global_list_variable(key)
+                sr.Set_Shared_Variables(key, value)
+                CommonUtil.ExecLog(sModuleInfo, "Got global variable %s='%s'" % (key, value), 1)
+                # for key in dict:
+                #     sr.Set_Shared_Variables(key, dict[key])
+                #     CommonUtil.ExecLog(sModuleInfo, "Got server variable %s='%s'" % (key, dict[key]), 1)
+
+        return 'passed'
+    except Exception:
+        return CommonUtil.Exception_Handler(sys.exc_info())
+
+
+def append_to_global_list_variable(data_set):
+    #can set multiple server variable with one action
+    sModuleInfo = inspect.currentframe().f_code.co_name + " : " + MODULE_NAME
+    try:
+        run_id = sr.Get_Shared_Variables('run_id')
+
+        for row in data_set:
+            if str(row[1]).strip().lower() == 'element parameter' or "parameter" in str(row[1]).strip().lower():
+                key = str(row[0]).strip()
+                value = str(row[2]).strip()
+                #call main driver to send var to server
+                MainDriverApi.append_to_global_list_variable(key,value)
+                CommonUtil.ExecLog(sModuleInfo, f"append value : {value} to global variable {key} complete", 1)
+
+        return 'passed'
+    except Exception:
+        return CommonUtil.Exception_Handler(sys.exc_info())
+
+
+def remove_item_from_global_list_variable(data_set):
+    #can set multiple server variable with one action
+    sModuleInfo = inspect.currentframe().f_code.co_name + " : " + MODULE_NAME
+    try:
+        run_id = sr.Get_Shared_Variables('run_id')
+
+        for row in data_set:
+            if str(row[1]).strip().lower() == 'element parameter' or "parameter" in str(row[1]).strip().lower():
+                key = str(row[0]).strip()
+                value = str(row[2]).strip()
+                #call main driver to send var to server
+                MainDriverApi.remove_item_from_global_list_variable(key, value)
+                CommonUtil.ExecLog(sModuleInfo, f"remove value : {value} from global variable {key} complete", 1)
+
+        return 'passed'
+    except Exception:
+        return CommonUtil.Exception_Handler(sys.exc_info())
+
+
+def save_runtime_variable_by_list_compare(data_set):
+    import json,ast
+
+    ''' Assign a value to a variable stored in shared variables '''
+    sModuleInfo = inspect.currentframe().f_code.co_name + " : " + MODULE_NAME
+    CommonUtil.ExecLog(sModuleInfo,"Function Start", 0)
+    variable_name = ''
+    variable_value = ''
+    for each in data_set:
+        if each[1] == 'element parameter' or "parameter" in each[1]:
+            variable_name = each[0]
+            variable_value = each[2]
+    if variable_name != '' and variable_value != '':
+        variable_value_list = [value.strip() for value in variable_value.split("-")]
+        run_time_parameter_list = set(json.loads(variable_value_list[0]))
+        global_list = set(ast.literal_eval(variable_value_list[1]))
+        variable_value = list(run_time_parameter_list - global_list)[0]
+        return sr.Set_Shared_Variables(variable_name,variable_value)
+    else:
+        return 'failed'
