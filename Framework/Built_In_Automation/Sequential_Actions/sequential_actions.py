@@ -72,8 +72,8 @@ actions = { # Numbers are arbitrary, and are not used anywhere
           'function': 'append_to_global_list_variable'},
     146: {'module': 'common', 'screenshot': 'none', 'name': 'remove item from global list variable',
           'function': 'remove_item_from_global_list_variable'},
-    147: {'module': 'common', 'screenshot': 'none', 'name': 'save runtime variable by list compare',
-          'function': 'save_runtime_variable_by_list_compare'},
+    147: {'module': 'common', 'screenshot': 'none', 'name': 'save variable by list difference',
+          'function': 'save_variable_by_list_difference'},
 
 
 
