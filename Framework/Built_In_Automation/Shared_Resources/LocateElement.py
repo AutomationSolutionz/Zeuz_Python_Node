@@ -285,7 +285,8 @@ def _construct_xpath_list(parameter_list,add_dot=False):
                 text_value = '[text()="%s"]'%attribute_value
                 element_main_body_list.append(text_value)
             elif attribute == "*text" and (driver_type == "selenium" or driver_type == "xml"): #ignore case
-                text_value = '[contains(translate(text(),"ABCDEFGHIJKLMNOPQRSTUVWXYZ","abcdefghijklmnopqrstuvwxyz"),"%s")]'%str(attribute_value).lower()
+                #text_value = '[contains(translate(text(),"ABCDEFGHIJKLMNOPQRSTUVWXYZ","abcdefghijklmnopqrstuvwxyz"),"%s")]'%str(attribute_value).lower()
+                text_value = '[contains(text(),"%s")]' % (str(attribute_value))
                 element_main_body_list.append(text_value)
             elif attribute == "text" and driver_type == "appium":
                 text_value = '[@text="%s"]'%attribute_value
