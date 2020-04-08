@@ -2004,28 +2004,28 @@ def remove_item_from_global_list_variable(data_set):
 
 
 def save_variable_by_list_difference(data_set):
-    import json,ast
+    import ast
 
     ''' save a variable by comparing two lists, here compare means set difference '''
     sModuleInfo = inspect.currentframe().f_code.co_name + " : " + MODULE_NAME
     CommonUtil.ExecLog(sModuleInfo,"Function Start", 0)
-    variable_name = ''
-    runtime_variable = ''
-    global_variable = ''
+    saved_variable_name = ''
+    variable1 = ''
+    variable2 = ''
     variable_value = ''
     for each in data_set:
         if each[1] == 'element parameter':
-            if each[0] == 'Runtime Variable':
-                runtime_variable = each[2]
-            elif each[0] == 'Global Variable':
-                global_variable = each[2]
+            if each[0] == 'Variable1':
+                variable1 = each[2]
+            elif each[0] == 'Variable2':
+                variable2 = each[2]
             else:
-                variable_name = each[2]
+                saved_variable_name = each[2]
 
-    if runtime_variable and global_variable:
-        run_time_parameter_list = set(json.loads(runtime_variable))
-        global_list = set(ast.literal_eval(global_variable))
-        variable_value = list(run_time_parameter_list - global_list)[0]
-        return sr.Set_Shared_Variables(variable_name,variable_value)
+    if variable1 and variable2:
+        variable1_list = set(ast.literal_eval(variable1))
+        variable2_list = set(ast.literal_eval(variable2))
+        variable_value = list(variable1_list - variable2_list)[0]
+        return sr.Set_Shared_Variables(saved_variable_name,variable_value)
     else:
         return 'failed'
