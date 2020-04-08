@@ -132,7 +132,7 @@ def MoveFile(file_to_be_moved, new_directory_of_the_file):
     
     try:
         file_name = Path(file_to_be_moved).name
-        if not os.path.isdir(new_directory_of_the_file):
+        if not os.path.exists(new_directory_of_the_file):
             Path(new_directory_of_the_file).mkdir(parents=True, exist_ok=True)
         CommonUtil.ExecLog(sModuleInfo, "Moving file %s to %s" % (file_to_be_moved, new_directory_of_the_file), 0)
         shutil.move(file_to_be_moved, new_directory_of_the_file)
@@ -174,7 +174,7 @@ def MoveFolder(folder_to_be_moved, new_directory_of_the_folder):
     
     try:
         folder_name = os.path.basename(folder_to_be_moved)
-        if not os.path.isdir(new_directory_of_the_folder):
+        if not os.path.exists(new_directory_of_the_folder):
             Path(new_directory_of_the_folder).mkdir(parents=True, exist_ok=True)
         CommonUtil.ExecLog(sModuleInfo, "Moving folder from %s to %s" % (folder_to_be_moved, new_directory_of_the_folder), 1)
         shutil.move(folder_to_be_moved, new_directory_of_the_folder)
