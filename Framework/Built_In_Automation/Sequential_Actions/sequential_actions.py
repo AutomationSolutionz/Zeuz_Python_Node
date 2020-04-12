@@ -65,6 +65,16 @@ actions = { # Numbers are arbitrary, and are not used anywhere
     142: {'module': 'common', 'screenshot': 'none', 'name': 'db: select single value', 'function': 'db_select_single_value'},
     143: {'module': 'common', 'screenshot': 'none', 'name': 'db: insert/update/delete', 'function': 'db_non_query'},
 
+    # Global Variable Actions
+    144: {'module': 'common', 'screenshot': 'none', 'name': 'get global list variable',
+          'function': 'get_global_list_variable'},
+    145: {'module': 'common', 'screenshot': 'none', 'name': 'append to global list variable',
+          'function': 'append_to_global_list_variable'},
+    146: {'module': 'common', 'screenshot': 'none', 'name': 'remove item from global list variable',
+          'function': 'remove_item_from_global_list_variable'},
+    147: {'module': 'common', 'screenshot': 'none', 'name': 'save variable by list difference',
+          'function': 'save_variable_by_list_difference'},
+
 
 
     200: {'module': 'appium', 'screenshot':'mobile', 'name': 'click', 'function': 'Click_Element_Appium'},
