@@ -129,8 +129,8 @@ def Login():
     user_info_object={
         'username':username,
         'password':password,
-        'project':project,
-        'team':team
+        'project':'',
+        'team':''
     }
     
     # Iniitalize GUI Offline call
@@ -147,14 +147,20 @@ def Login():
         # Login to server
         if r != False: # Server is up
             try:
+                default_team_and_project = RequestFormatter.UpdatedGet('get_default_team_and_project_api',{'username': username})
 
+                if not default_team_and_project:
+                    CommonUtil.ExecLog('', "Default team and project catching Failed. Username incorrect", 4, False)
+                    break
+                user_info_object['project'] = default_team_and_project['project_name']
+                user_info_object['team'] = default_team_and_project['team_name']
                 r = RequestFormatter.Get('login_api',user_info_object)
-                CommonUtil.ExecLog('', "Authentication check for user='%s', project='%s', team='%s'"%(username,project,team), 4, False)
+                CommonUtil.ExecLog('', "Authentication check for user='%s', project='%s', team='%s'"%(username,user_info_object['project'],user_info_object['team']), 4, False)
                 if r:
                     CommonUtil.ExecLog('', "Authentication Successful", 4, False)
                     global device_dict
                     device_dict = All_Device_Info.get_all_connected_device_info()
-                    machine_object=update_machine(dependency_collection())
+                    machine_object=update_machine(dependency_collection(), default_team_and_project)
                     if machine_object['registered']:
                         tester_id=machine_object['name']
                         try:
@@ -172,7 +178,7 @@ def Login():
                         if RunAgain == False: break # Exit login
                     else:
                         return False
-                elif r == {}: # Server should send "False" when user/pass is wrong
+                elif r == {} or r == False: # Server should send "False" when user/pass is wrong
                     CommonUtil.ExecLog('', "Authentication Failed. Username or password incorrect", 4, False)
                     break
                 else: # Server likely sent nothing back or RequestFormatter.Get() caught an exception
@@ -242,7 +248,7 @@ def PreProcess():
         ConfigModule.add_config_value('sectionOne', 'temp_run_file_path', current_path, current_path_file)
 
 
-def update_machine(dependency):
+def update_machine(dependency, default_team_and_project_dict):
     try:
         #Get Local Info object
         oLocalInfo = CommonUtil.MachineInfo()
@@ -250,8 +256,8 @@ def update_machine(dependency):
         local_ip = oLocalInfo.getLocalIP()
         testerid = (oLocalInfo.getLocalUser()).lower()
 
-        project=ConfigModule.get_config_value(AUTHENTICATION_TAG,PROJECT_TAG)
-        team=ConfigModule.get_config_value(AUTHENTICATION_TAG,TEAM_TAG)
+        project=default_team_and_project_dict['project_name']
+        team=default_team_and_project_dict['team_name']
         if not dependency:
             dependency=""
         _d={}
@@ -266,7 +272,7 @@ def update_machine(dependency):
                     t.append(__t)
             _d.update({x[0]:t})
         dependency=_d
-        available_to_all_project = ConfigModule.get_config_value('Zeuz Node', 'available_to_all_project')
+        available_to_all_project = ConfigModule.get_config_value('Advanced Options', 'available_to_all_project')
         allProject = 'no'
         if str(available_to_all_project).lower() == "true":
             allProject = "yes"
