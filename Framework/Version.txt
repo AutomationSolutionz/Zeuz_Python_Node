@@ -1,6 +1,6 @@
 [ZeuZ Python Version]
-version = 10.11
+version = 10.12
 [Release Date]
-date= 2020-04-12
+date= 2020-04-20
 [Release Note]
-Note = Hide Keyboard, few other actions
+Note = Increase request timeout
