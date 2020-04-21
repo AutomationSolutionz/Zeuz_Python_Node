@@ -37,7 +37,7 @@ MODULE_NAME = inspect.getmodulename(__file__)
 # Get file path for temporary config file
 temp_config = os.path.join(os.path.join(FL.get_home_folder(), os.path.join('Desktop', os.path.join('AutomationLog',
                                                                                                    ConfigModule.get_config_value(
-                                                                                                       'Temp',
+                                                                                                       'Advanced Options',
                                                                                                        '_file')))))
 
 passed_tag_list = ['Pass', 'pass', 'PASS', 'PASSED', 'Passed', 'passed', 'true', 'TRUE', 'True', '1', 'Success',

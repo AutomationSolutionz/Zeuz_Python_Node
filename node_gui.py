@@ -343,7 +343,7 @@ class Application(tk.Frame):
             if check:
                 print('Checking last update time')
                 # Read from temp config last time we checked for updates. If over maximum time, check again
-                temp_ini_file = os.path.join(os.path.join(FileUtilities.get_home_folder(), os.path.join('Desktop',os.path.join('AutomationLog',ConfigModule.get_config_value('Temp', '_file')))))
+                temp_ini_file = os.path.join(os.path.join(FileUtilities.get_home_folder(), os.path.join('Desktop',os.path.join('AutomationLog',ConfigModule.get_config_value('Advanced Options', '_file')))))
                 try:
                     last_update = ConfigModule.get_config_value('sectionOne', 'last_update', temp_ini_file)
                     update_interval = self.update_interval * 3600 # Convert interval into seconds for easy comparison

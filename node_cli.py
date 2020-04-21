@@ -110,7 +110,7 @@ device_dict = {}
 processing_test_case = False # Used by Zeuz Node GUI to check if we are in the middle of a run
 exit_script = False # Used by Zeuz Node GUI to exit script
 if not os.path.exists(os.path.join(FileUtilities.get_home_folder(), 'Desktop',os.path.join('AutomationLog'))): os.mkdir(os.path.join(FileUtilities.get_home_folder(), 'Desktop',os.path.join('AutomationLog')))
-temp_ini_file = os.path.join(os.path.join(FileUtilities.get_home_folder(), os.path.join('Desktop',os.path.join('AutomationLog',ConfigModule.get_config_value('Temp', '_file')))))
+temp_ini_file = os.path.join(os.path.join(FileUtilities.get_home_folder(), os.path.join('Desktop',os.path.join('AutomationLog',ConfigModule.get_config_value('Advanced Options', '_file')))))
 
 def Login():
     install_missing_modules(req_file_path=True)
@@ -239,7 +239,7 @@ def PreProcess():
     retVal = FileUtilities.CreateFolder(current_path, forced=False)
     if retVal:
         # now save it in the global_config.ini
-        TEMP_TAG = 'Temp'
+        TEMP_TAG = 'Advanced Options'
         file_name = ConfigModule.get_config_value(TEMP_TAG, '_file')
         current_path_file = os.path.join(current_path, file_name)
         FileUtilities.CreateFile(current_path_file)
