@@ -4,7 +4,7 @@
 # Issues: try/except doesn't always work for everything on windows (base64). Python crashes on windows when we use root.after() to poll the widgets
 
 import os.path, _thread, sys, time, traceback, base64
-
+import webbrowser
 # Import colorama for console color support
 from colorama import init as colorama_init
 from colorama import Fore
@@ -279,6 +279,8 @@ class Application(tk.Frame):
                     options = ConfigModule.get_all_option(section) # Read all options (keys) for this section
                     if options:
                         for option in options: # For each option
+                            if option == 'server_port':
+                                continue
                             self.widgets[section]['widget'][option] = {} # Initilize dictionary
                             value = ConfigModule.get_config_value(section, option) # Read value from file
                             tk.Label(self.widgets[section]['frame'], text = option.replace('_', ' ').capitalize()).grid(row = row, column = 0, sticky = 'w') # Create Option label
@@ -497,7 +499,9 @@ class Application(tk.Frame):
 
     def show_help(self):
         ''' Display help information in the log window '''
-        print(help_text)
+        help_url = "https://www.zeuz.ai/forums/"
+        webbrowser.open(help_url,new=1)
+        # print(help_text)
 
 
     def show_settings(self, a, b, c):
