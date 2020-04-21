@@ -29,7 +29,7 @@ def form_uri(resource_path):
                 web_server_port = "8000"
             else:
                 web_server_port = "80"
-
+    ConfigModule.add_config_value("Authentication", "server_port", web_server_port)
     if web_server_address.startswith("http://") or web_server_address.startswith("https://"):
         base_server_address = "{}:{}/".format(web_server_address, web_server_port)
     else:

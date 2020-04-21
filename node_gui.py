@@ -279,6 +279,8 @@ class Application(tk.Frame):
                     options = ConfigModule.get_all_option(section) # Read all options (keys) for this section
                     if options:
                         for option in options: # For each option
+                            if option == 'server_port':
+                                continue
                             self.widgets[section]['widget'][option] = {} # Initilize dictionary
                             value = ConfigModule.get_config_value(section, option) # Read value from file
                             tk.Label(self.widgets[section]['frame'], text = option.replace('_', ' ').capitalize()).grid(row = row, column = 0, sticky = 'w') # Create Option label

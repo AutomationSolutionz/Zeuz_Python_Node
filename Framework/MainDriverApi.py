@@ -505,8 +505,8 @@ def download_attachments_for_test_case(sModuleInfo, run_id, test_case, temp_ini_
         m = each[1] + '.' + each[2]  # file name
         f = open(download_folder + '/' + m, 'wb')
 
-        download_url = ConfigModule.get_config_value('Server', 'server_address') + ':' + str(
-            ConfigModule.get_config_value('Server', 'server_port'))
+        download_url = ConfigModule.get_config_value('Authentication', 'server_address') + ':' + str(
+            ConfigModule.get_config_value('Authentication', 'server_port'))
 
         if not download_url.startswith('http') or not download_url.startswith('https'):
             download_url = 'https://' + download_url
@@ -534,8 +534,8 @@ def download_attachments_for_test_case(sModuleInfo, run_id, test_case, temp_ini_
         if not os.path.exists(download_folder + sep + str(each[3])):
             FL.CreateFolder(download_folder + sep + str(each[3]))
         f = open(download_folder + sep + str(each[3]) + sep + m, 'wb')
-        f.write(urllib.request.urlopen('http://' + ConfigModule.get_config_value('Server', 'server_address') + ':' + str(
-            ConfigModule.get_config_value('Server', 'server_port')) + '/static' + each[0]).read())
+        f.write(urllib.request.urlopen('http://' + ConfigModule.get_config_value('Authentication', 'server_address') + ':' + str(
+            ConfigModule.get_config_value('Authentication', 'server_port')) + '/static' + each[0]).read())
         file_specific_steps.update(
             {m: download_folder + sep + str(each[3]) + sep + m})
         f.close()
@@ -1029,8 +1029,8 @@ def write_log_file_for_test_case(sTestCaseStatus, test_case, run_id, sTestCaseEn
                 'sectionOne', 'test_case_folder', temp_ini_file))
 
             # upload will go here.
-            upload_zip(ConfigModule.get_config_value('Server', 'server_address'),
-                       ConfigModule.get_config_value('Server', 'server_port'),
+            upload_zip(ConfigModule.get_config_value('Authentication', 'server_address'),
+                       ConfigModule.get_config_value('Authentication', 'server_port'),
                        ConfigModule.get_config_value(
                            'sectionOne', 'temp_run_file_path', temp_ini_file), run_id,
                        ConfigModule.get_config_value(
