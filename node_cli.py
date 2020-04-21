@@ -160,7 +160,7 @@ def Login():
                     CommonUtil.ExecLog('', "Authentication Successful", 4, False)
                     global device_dict
                     device_dict = All_Device_Info.get_all_connected_device_info()
-                    machine_object=update_machine(dependency_collection(), default_team_and_project)
+                    machine_object=update_machine(dependency_collection(default_team_and_project), default_team_and_project)
                     if machine_object['registered']:
                         tester_id=machine_object['name']
                         try:
@@ -304,12 +304,12 @@ def update_machine(dependency, default_team_and_project_dict):
         Error_Detail = ((str(exc_type).replace("type ", "Error Type: ")) + ";" +  "Error Message: " + str(exc_obj) +";" + "File Name: " + fname + ";" + "Line: "+ str(exc_tb.tb_lineno))
         CommonUtil.ExecLog('', Error_Detail, 4, False)
 
-def dependency_collection():
+def dependency_collection(default_team_and_project):
     try:
         dependency_tag='Dependency'
         dependency_option=ConfigModule.get_all_option(dependency_tag)
-        project=ConfigModule.get_config_value(AUTHENTICATION_TAG,PROJECT_TAG)
-        team=ConfigModule.get_config_value(AUTHENTICATION_TAG,TEAM_TAG)
+        project=default_team_and_project["project_name"]
+        team=default_team_and_project["team_name"]
         r=RequestFormatter.Get('get_all_dependency_name_api',{'project':project,'team':team})
         obtained_list=[x.lower() for x in r]
         #print "Dependency: ",dependency_list
