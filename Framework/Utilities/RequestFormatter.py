@@ -84,9 +84,9 @@ def Head(resource_path):
         return requests.head(form_uri(resource_path), timeout=REQUEST_TIMEOUT)
 
     except requests.exceptions.RequestException as e:
-        print("Exception in Head: Authentication Failed. Please check your server, username and password. "
+        print("Exception in Head: Please check your server address "
               "Please include full server name. Example: https://zeuz.zeuz.ai")
-        return ''
+        return False
     except Exception as e:
         print("Exception in Head {}".format(e))
-        return ''
+        return False

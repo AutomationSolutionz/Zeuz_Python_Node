@@ -194,7 +194,7 @@ def Login():
         
         # Server down, wait and retry
         else:
-            CommonUtil.ExecLog('', "Server down, waiting 60 seconds before trying again", 4, False)
+            CommonUtil.ExecLog('', "Server down or verify the server address, waiting 60 seconds before trying again", 4, False)
             time.sleep(60)
     CommonUtil.ExecLog('', "Zeuz Node Offline", 4, False) # GUI relies on this exact text. GUI must be updated if this is changed
     processing_test_case = False
@@ -346,7 +346,7 @@ def dependency_collection(default_team_and_project):
 def check_server_online():
     try: # Check if we have a connection, if not, exit. If user has a wrong address or no address, RequestFormatter will go into a failure loop
         r = RequestFormatter.Head('login_api')
-        return True
+        return r
     except Exception as e: # Occurs when server is down
         print("Exception in check_server_online {}".format(e))
         return False 
