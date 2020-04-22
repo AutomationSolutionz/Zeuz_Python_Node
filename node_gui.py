@@ -10,6 +10,8 @@ from colorama import init as colorama_init
 from colorama import Fore
 
 # Initialize colorama for the current platform
+from Framework.Utilities.CommonUtil import MyDialogBox
+
 colorama_init(autoreset=True)
 
 
@@ -343,7 +345,7 @@ class Application(tk.Frame):
             if check:
                 print('Checking last update time')
                 # Read from temp config last time we checked for updates. If over maximum time, check again
-                temp_ini_file = os.path.join(os.path.join(FileUtilities.get_home_folder(), os.path.join('Desktop',os.path.join('AutomationLog',ConfigModule.get_config_value('Temp', '_file')))))
+                temp_ini_file = os.path.join(os.path.join(FileUtilities.get_home_folder(), os.path.join('Desktop',os.path.join('AutomationLog',ConfigModule.get_config_value('Advanced Options', '_file')))))
                 try:
                     last_update = ConfigModule.get_config_value('sectionOne', 'last_update', temp_ini_file)
                     update_interval = self.update_interval * 3600 # Convert interval into seconds for easy comparison
@@ -388,11 +390,12 @@ class Application(tk.Frame):
                         self.after(10000, self.check_for_updates) # Checks if install is complete
                     # If auto-update is false, notify user via dialogue that there's a new update available, and ask if they want to download and install it
                     else:
-                        if tkinter.messagebox.askyesno('Update', 'A Zeuz Node update is available. Do you want to download and install it?'):
-                            _thread.start_new_thread(self_updater.main, (os.path.dirname(os.path.realpath(__file__)).replace(os.sep + 'Framework', ''),))
-                            self.after(10000, self.check_for_updates) # Checks if install is complete
-                        else:
-                            pass # Do nothing if the user doens't want to update. We'll check again tomorrow
+                        # if tkinter.messagebox.askyesno('Update', 'A Zeuz Node update is available. Do you want to download and install it?'):
+                        #     _thread.start_new_thread(self_updater.main, (os.path.dirname(os.path.realpath(__file__)).replace(os.sep + 'Framework', ''),))
+                        #     self.after(10000, self.check_for_updates) # Checks if install is complete
+                        # else:
+                        #     pass # Do nothing if the user doens't want to update. We'll check again tomorrow
+                        self.updateDialog()
 
                 # Still installing, check again later
                 elif self_updater.check_complete == 'installing':
@@ -426,6 +429,9 @@ class Application(tk.Frame):
             print("Exception in CheckUpdates {}".format(e))
             tkinter.messagebox.showerror('Error 06', 'Exception caught: %s' % e)
 
+
+    def updateDialog(self):
+        dialog = MyDialogBox(self)
 
     def self_restart(self):
         try:

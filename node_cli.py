@@ -110,12 +110,13 @@ device_dict = {}
 processing_test_case = False # Used by Zeuz Node GUI to check if we are in the middle of a run
 exit_script = False # Used by Zeuz Node GUI to exit script
 if not os.path.exists(os.path.join(FileUtilities.get_home_folder(), 'Desktop',os.path.join('AutomationLog'))): os.mkdir(os.path.join(FileUtilities.get_home_folder(), 'Desktop',os.path.join('AutomationLog')))
-temp_ini_file = os.path.join(os.path.join(FileUtilities.get_home_folder(), os.path.join('Desktop',os.path.join('AutomationLog',ConfigModule.get_config_value('Temp', '_file')))))
+temp_ini_file = os.path.join(os.path.join(FileUtilities.get_home_folder(), os.path.join('Desktop',os.path.join('AutomationLog',ConfigModule.get_config_value('Advanced Options', '_file')))))
 
 def Login():
     install_missing_modules(req_file_path=True)
     username=ConfigModule.get_config_value(AUTHENTICATION_TAG,USERNAME_TAG)
     password = ConfigModule.get_config_value(AUTHENTICATION_TAG,PASSWORD_TAG)
+    server_name = ConfigModule.get_config_value(AUTHENTICATION_TAG,"server_address")
 
 
     if password == "YourUserNameGoesHere":
@@ -155,7 +156,8 @@ def Login():
                 user_info_object['project'] = default_team_and_project['project_name']
                 user_info_object['team'] = default_team_and_project['team_name']
                 r = RequestFormatter.Get('login_api',user_info_object)
-                CommonUtil.ExecLog('', "Authentication check for user='%s', project='%s', team='%s'"%(username,user_info_object['project'],user_info_object['team']), 4, False)
+                CommonUtil.ExecLog('', f"Authentication check for user='{username}', "
+                                       f"project='{user_info_object['project']}', team='{user_info_object['team']}', server='{server_name}'", 4, False)
                 if r:
                     CommonUtil.ExecLog('', "Authentication Successful", 4, False)
                     global device_dict
@@ -194,7 +196,7 @@ def Login():
         
         # Server down, wait and retry
         else:
-            CommonUtil.ExecLog('', "Server down, waiting 60 seconds before trying again", 4, False)
+            CommonUtil.ExecLog('', "Server down or verify the server address, waiting 60 seconds before trying again", 4, False)
             time.sleep(60)
     CommonUtil.ExecLog('', "Zeuz Node Offline", 4, False) # GUI relies on this exact text. GUI must be updated if this is changed
     processing_test_case = False
@@ -239,7 +241,7 @@ def PreProcess():
     retVal = FileUtilities.CreateFolder(current_path, forced=False)
     if retVal:
         # now save it in the global_config.ini
-        TEMP_TAG = 'Temp'
+        TEMP_TAG = 'Advanced Options'
         file_name = ConfigModule.get_config_value(TEMP_TAG, '_file')
         current_path_file = os.path.join(current_path, file_name)
         FileUtilities.CreateFile(current_path_file)
@@ -346,7 +348,7 @@ def dependency_collection(default_team_and_project):
 def check_server_online():
     try: # Check if we have a connection, if not, exit. If user has a wrong address or no address, RequestFormatter will go into a failure loop
         r = RequestFormatter.Head('login_api')
-        return True
+        return r
     except Exception as e: # Occurs when server is down
         print("Exception in check_server_online {}".format(e))
         return False 

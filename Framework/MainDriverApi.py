@@ -1035,8 +1035,8 @@ def write_log_file_for_test_case(sTestCaseStatus, test_case, run_id, sTestCaseEn
                            'sectionOne', 'temp_run_file_path', temp_ini_file), run_id,
                        ConfigModule.get_config_value(
                            'sectionOne', 'test_case', temp_ini_file) + ".zip",
-                       ConfigModule.get_config_value('Temp', '_file_upload_path'))
-            TCLogFile = os.sep + ConfigModule.get_config_value('Temp', '_file_upload_path') + os.sep + run_id.replace(":",
+                       ConfigModule.get_config_value('Advanced Options', '_file_upload_path'))
+            TCLogFile = os.sep + ConfigModule.get_config_value('Advanced Options', '_file_upload_path') + os.sep + run_id.replace(":",
                                                                                                                       '-') + '/' + ConfigModule.get_config_value(
                 'sectionOne', 'test_case', temp_ini_file) + '.zip'
             FL.DeleteFile(ConfigModule.get_config_value(
@@ -1368,7 +1368,7 @@ def main(device_dict):
     temp_ini_file = os.path.join(os.path.join(FL.get_home_folder(), os.path.join('Desktop',
                                                                                  os.path.join('AutomationLog',
                                                                                               ConfigModule.get_config_value(
-                                                                                                  'Temp', '_file')))))
+                                                                                                  'Advanced Options', '_file')))))
 
     # add temp file to config values
     ConfigModule.add_config_value(
