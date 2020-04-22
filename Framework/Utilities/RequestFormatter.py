@@ -52,6 +52,12 @@ def Get(resource_path, payload=None):
         payload = {}
     try:
         return requests.get(form_uri(resource_path), params=json.dumps(payload), timeout=REQUEST_TIMEOUT).json()
+
+    except requests.exceptions.RequestException as e:
+        print("Exception in UpdateGet: Authentication Failed. Please check your server, username and password. "
+              "Please include full server name. Example: https://zeuz.zeuz.ai")
+        return ''
+
     except Exception as e:
         print("Get Exception: {}".format(e))
         return {}
@@ -62,6 +68,12 @@ def UpdatedGet(resource_path, payload=None):
         payload = {}
     try:
         return requests.get(form_uri(resource_path), params=payload, timeout=REQUEST_TIMEOUT).json()
+
+    except requests.exceptions.RequestException as e:
+        print("Exception in UpdateGet: Authentication Failed. Please check your server, username and password. "
+              "Please include full server name. Example: https://zeuz.zeuz.ai")
+        return ''
+
     except Exception as e:
         print("Get Exception: {}".format(e))
         return {}
@@ -70,6 +82,11 @@ def UpdatedGet(resource_path, payload=None):
 def Head(resource_path):
     try:
         return requests.head(form_uri(resource_path), timeout=REQUEST_TIMEOUT)
+
+    except requests.exceptions.RequestException as e:
+        print("Exception in Head: Authentication Failed. Please check your server, username and password. "
+              "Please include full server name. Example: https://zeuz.zeuz.ai")
+        return ''
     except Exception as e:
         print("Exception in Head {}".format(e))
         return ''
