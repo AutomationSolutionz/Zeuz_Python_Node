@@ -116,6 +116,7 @@ def Login():
     install_missing_modules(req_file_path=True)
     username=ConfigModule.get_config_value(AUTHENTICATION_TAG,USERNAME_TAG)
     password = ConfigModule.get_config_value(AUTHENTICATION_TAG,PASSWORD_TAG)
+    server_name = ConfigModule.get_config_value(AUTHENTICATION_TAG,"server_address")
 
 
     if password == "YourUserNameGoesHere":
@@ -155,7 +156,8 @@ def Login():
                 user_info_object['project'] = default_team_and_project['project_name']
                 user_info_object['team'] = default_team_and_project['team_name']
                 r = RequestFormatter.Get('login_api',user_info_object)
-                CommonUtil.ExecLog('', "Authentication check for user='%s', project='%s', team='%s'"%(username,user_info_object['project'],user_info_object['team']), 4, False)
+                CommonUtil.ExecLog('', f"Authentication check for user='{username}', "
+                                       f"project='{user_info_object['project']}', team='{user_info_object['team']}', server='{server_name}'", 4, False)
                 if r:
                     CommonUtil.ExecLog('', "Authentication Successful", 4, False)
                     global device_dict
