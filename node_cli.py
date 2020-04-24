@@ -23,7 +23,7 @@ def install_missing_modules(req_file_path=True):
         #get all the pip modules that are installed
         #getting all pip from requirements.txt file
         if req_file_path == True:
-            req_file_path = os.path.dirname(os.path.abspath(__file__))+os.sep + 'requirements.txt'
+            req_file_path = os.path.dirname(os.path.realpath(__file__)).replace(os.sep + 'Framework', '')+os.sep + 'requirements.txt'
         with open(req_file_path) as fd:
             req_list = fd.read().splitlines()
         #get all the modules installed from freeze
