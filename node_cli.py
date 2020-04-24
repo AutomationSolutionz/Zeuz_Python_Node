@@ -481,5 +481,10 @@ if __name__=='__main__':
     signal.signal(signal.SIGINT, signal_handler)
     print("Press Ctrl-C to disconnect and quit.")
 
+    arg_options = [arg for arg in sys.argv[1:] if arg.startswith('--')]
+
+    if "--logout" in arg_options:
+        ConfigModule.remove_config_value(AUTHENTICATION_TAG, "server_address")
+
     Login(cli=True)
 
