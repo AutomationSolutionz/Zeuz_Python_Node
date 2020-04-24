@@ -2,6 +2,7 @@
 # -*- coding: cp1252 -*-
 
 import os, sys, time, os.path, base64, signal, subprocess
+from getpass import getpass
 from base64 import b64encode, b64decode
 
 # Append correct paths so that it can find the configuration files and other modules
@@ -50,6 +51,21 @@ def signal_handler(sig, frame):
     print("Disconnecting from server...")
     disconnect_from_server()
     sys.exit(0)
+
+def password_hash(encrypt, key, pw):
+    ''' Encrypt, decrypt password and encode in plaintext '''
+    # This is just an obfuscation technique, so the password is not immediately seen by users
+    # Zeuz_Node.py has a similar function that will need to be updated if this is changed
+
+    try:
+        from node_gui import pass_encode
+        result = pass_encode(key,pw)
+
+        return result
+    except Exception as e:
+        print("Exception in password {}".format(e))
+        print('Error decrypting password. Enter a new password {}'.format(e))
+        return ''
 
 def detect_admin():
     # Windows only - Return True if program run as admin
@@ -112,7 +128,7 @@ exit_script = False # Used by Zeuz Node GUI to exit script
 if not os.path.exists(os.path.join(FileUtilities.get_home_folder(), 'Desktop',os.path.join('AutomationLog'))): os.mkdir(os.path.join(FileUtilities.get_home_folder(), 'Desktop',os.path.join('AutomationLog')))
 temp_ini_file = os.path.join(os.path.join(FileUtilities.get_home_folder(), os.path.join('Desktop',os.path.join('AutomationLog',ConfigModule.get_config_value('Advanced Options', '_file')))))
 
-def Login():
+def Login(cli=False):
     install_missing_modules(req_file_path=True)
     username=ConfigModule.get_config_value(AUTHENTICATION_TAG,USERNAME_TAG)
     password = ConfigModule.get_config_value(AUTHENTICATION_TAG,PASSWORD_TAG)
@@ -182,9 +198,36 @@ def Login():
                         return False
                 elif r == {} or r == False: # Server should send "False" when user/pass is wrong
                     CommonUtil.ExecLog('', "Authentication Failed. Username or password incorrect", 4, False)
+
+                    if cli:
+                        prompts = ["server_address", "username", "password"]
+                        input_values = []
+                        for prompt in prompts:
+                            if prompt == "password":
+                                value = getpass()
+                                ConfigModule.add_config_value(AUTHENTICATION_TAG, prompt, password_hash(False,'zeuz',value))
+                            else:
+                                value = input(f"{prompt.capitalize()} : ")
+                                ConfigModule.add_config_value(AUTHENTICATION_TAG, prompt, value)
+
+                        Login(cli=True)
+
                     break
                 else: # Server likely sent nothing back or RequestFormatter.Get() caught an exception
                     CommonUtil.ExecLog('', "Login attempt incomplete, waiting 60 seconds before trying again ", 4, False)
+                    if cli:
+                        prompts = ["server_address", "username", "password"]
+                        input_values = []
+                        for prompt in prompts:
+                            if prompt == "password":
+                                value = getpass()
+                                ConfigModule.add_config_value(AUTHENTICATION_TAG, prompt,
+                                                              password_hash(False, 'zeuz', value))
+                            else:
+                                value = input(f"{prompt.capitalize()} : ")
+                                ConfigModule.add_config_value(AUTHENTICATION_TAG, prompt, value)
+
+                        Login(cli=True)
                     time.sleep(60)
             except Exception as e:
                 exc_type, exc_obj, exc_tb = sys.exc_info()
@@ -197,6 +240,19 @@ def Login():
         # Server down, wait and retry
         else:
             CommonUtil.ExecLog('', "Server down or verify the server address, waiting 60 seconds before trying again", 4, False)
+            if cli:
+                prompts = ["server_address", "username", "password"]
+                input_values = []
+                for prompt in prompts:
+                    if prompt == "password":
+                        value = getpass()
+                        ConfigModule.add_config_value(AUTHENTICATION_TAG, prompt, password_hash(False, 'zeuz', value))
+                    else:
+                        value = input(f"{prompt.capitalize()} : ")
+                        ConfigModule.add_config_value(AUTHENTICATION_TAG, prompt, value)
+
+                Login(cli=True)
+
             time.sleep(60)
     CommonUtil.ExecLog('', "Zeuz Node Offline", 4, False) # GUI relies on this exact text. GUI must be updated if this is changed
     processing_test_case = False
@@ -440,5 +496,5 @@ if __name__=='__main__':
     signal.signal(signal.SIGINT, signal_handler)
     print("Press Ctrl-C to disconnect and quit.")
 
-    Login()
+    Login(cli=True)
 
