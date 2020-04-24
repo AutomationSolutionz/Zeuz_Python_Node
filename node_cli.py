@@ -128,6 +128,19 @@ exit_script = False # Used by Zeuz Node GUI to exit script
 if not os.path.exists(os.path.join(FileUtilities.get_home_folder(), 'Desktop',os.path.join('AutomationLog'))): os.mkdir(os.path.join(FileUtilities.get_home_folder(), 'Desktop',os.path.join('AutomationLog')))
 temp_ini_file = os.path.join(os.path.join(FileUtilities.get_home_folder(), os.path.join('Desktop',os.path.join('AutomationLog',ConfigModule.get_config_value('Advanced Options', '_file')))))
 
+
+def zeuz_authentication_prompts_for_cli():
+    prompts = ["server_address", "username", "password"]
+    input_values = []
+    for prompt in prompts:
+        if prompt == "password":
+            value = getpass()
+            ConfigModule.add_config_value(AUTHENTICATION_TAG, prompt, password_hash(False, 'zeuz', value))
+        else:
+            value = input(f"{prompt.capitalize()} : ")
+            ConfigModule.add_config_value(AUTHENTICATION_TAG, prompt, value)
+
+
 def Login(cli=False):
     install_missing_modules(req_file_path=True)
     username=ConfigModule.get_config_value(AUTHENTICATION_TAG,USERNAME_TAG)
@@ -200,33 +213,14 @@ def Login(cli=False):
                     CommonUtil.ExecLog('', "Authentication Failed. Username or password incorrect", 4, False)
 
                     if cli:
-                        prompts = ["server_address", "username", "password"]
-                        input_values = []
-                        for prompt in prompts:
-                            if prompt == "password":
-                                value = getpass()
-                                ConfigModule.add_config_value(AUTHENTICATION_TAG, prompt, password_hash(False,'zeuz',value))
-                            else:
-                                value = input(f"{prompt.capitalize()} : ")
-                                ConfigModule.add_config_value(AUTHENTICATION_TAG, prompt, value)
-
+                        zeuz_authentication_prompts_for_cli()
                         Login(cli=True)
 
                     break
                 else: # Server likely sent nothing back or RequestFormatter.Get() caught an exception
                     CommonUtil.ExecLog('', "Login attempt incomplete, waiting 60 seconds before trying again ", 4, False)
                     if cli:
-                        prompts = ["server_address", "username", "password"]
-                        input_values = []
-                        for prompt in prompts:
-                            if prompt == "password":
-                                value = getpass()
-                                ConfigModule.add_config_value(AUTHENTICATION_TAG, prompt,
-                                                              password_hash(False, 'zeuz', value))
-                            else:
-                                value = input(f"{prompt.capitalize()} : ")
-                                ConfigModule.add_config_value(AUTHENTICATION_TAG, prompt, value)
-
+                        zeuz_authentication_prompts_for_cli()
                         Login(cli=True)
                     time.sleep(60)
             except Exception as e:
@@ -241,16 +235,7 @@ def Login(cli=False):
         else:
             CommonUtil.ExecLog('', "Server down or verify the server address, waiting 60 seconds before trying again", 4, False)
             if cli:
-                prompts = ["server_address", "username", "password"]
-                input_values = []
-                for prompt in prompts:
-                    if prompt == "password":
-                        value = getpass()
-                        ConfigModule.add_config_value(AUTHENTICATION_TAG, prompt, password_hash(False, 'zeuz', value))
-                    else:
-                        value = input(f"{prompt.capitalize()} : ")
-                        ConfigModule.add_config_value(AUTHENTICATION_TAG, prompt, value)
-
+                zeuz_authentication_prompts_for_cli()
                 Login(cli=True)
 
             time.sleep(60)
