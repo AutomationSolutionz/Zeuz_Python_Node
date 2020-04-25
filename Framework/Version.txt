@@ -1,6 +1,6 @@
 [ZeuZ Python Version]
-version = 10.12
+version = 10.15
 [Release Date]
-date= 2020-04-20
+date= 2020-04-25
 [Release Note]
-Note = Increase request timeout
+Note = Node GUI upgrade, action updates
