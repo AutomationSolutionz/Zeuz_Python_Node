@@ -4,12 +4,14 @@
 # Issues: try/except doesn't always work for everything on windows (base64). Python crashes on windows when we use root.after() to poll the widgets
 
 import os.path, _thread, sys, time, traceback, base64
-
+import webbrowser
 # Import colorama for console color support
 from colorama import init as colorama_init
 from colorama import Fore
 
 # Initialize colorama for the current platform
+from Framework.Utilities.CommonUtil import MyDialogBox
+
 colorama_init(autoreset=True)
 
 
@@ -177,24 +179,24 @@ class Application(tk.Frame):
 
             # If go online at start is set, go online
             try:
-                if 'go_online_at_start' in self.widgets['Zeuz Node']['widget'] and self.widgets['Zeuz Node']['widget']['go_online_at_start']['check'].get(): self.read_mod(at_start=True)
-            except: pass # Exception Zeuz Node section doesn't exist (old settings format)
+                if 'go_online_at_start' in self.widgets['Advanced Options']['widget'] and self.widgets['Advanced Options']['widget']['go_online_at_start']['check'].get(): self.read_mod(at_start=True)
+            except: pass # Exception Advanced Options section doesn't exist (old settings format)
 
             self.start_up_display() # Determine if this is the first run, and display widgets accordingly
             # self.read_log() # Start the log reader timer
 
             # Check for updates, if enabled
             try:
-                if 'check_for_updates' in self.widgets['Zeuz Node']['widget'] and self.widgets['Zeuz Node']['widget']['check_for_updates']['check'].get(): self.check_for_updates(check = True) # Check for updates
-            except: pass # Exception Zeuz Node section doesn't exist (old settings format)
+                if 'check_for_updates' in self.widgets['Advanced Options']['widget'] and self.widgets['Advanced Options']['widget']['check_for_updates']['check'].get(): self.check_for_updates(check = True) # Check for updates
+            except: pass # Exception Advanced Options section doesn't exist (old settings format)
 
             # Maximize or Minimize, depending on settings.conf
-            if 'Zeuz Node' in self.advanced_settings_frames: # Make sure this section is in the config file
-                if 'maximize_at_start' in self.widgets['Zeuz Node']['widget'] and self.widgets['Zeuz Node']['widget']['maximize_at_start']['check'].get():
+            if 'Advanced Options' in self.advanced_settings_frames: # Make sure this section is in the config file
+                if 'maximize_at_start' in self.widgets['Advanced Options']['widget'] and self.widgets['Advanced Options']['widget']['maximize_at_start']['check'].get():
                     sw = r.winfo_screenwidth()
                     sh = r.winfo_screenheight()
                     r.geometry("%dx%d+%d+%d" % (sw, sh, 0, 0)) # Set window to size of screen
-                elif 'minimize_at_start' in self.widgets['Zeuz Node']['widget'] and self.widgets['Zeuz Node']['widget']['minimize_at_start']['check'].get():
+                elif 'minimize_at_start' in self.widgets['Advanced Options']['widget'] and self.widgets['Advanced Options']['widget']['minimize_at_start']['check'].get():
                     r.iconify()
 
         except Exception as e:
@@ -228,8 +230,8 @@ class Application(tk.Frame):
     def createButtons(self):
         try:
             # Connect/Disconnect button
-            self.startButton = tk.Button(self.topframe, text='Connect', fg = self.colour_passed, width = self.button_width, command=self.read_mod)
-            self.startButton.grid(row = 0, column = 0, columnspan = 2, pady=(0, self.pady))
+            # self.startButton = tk.Button(self.topframe, text='Connect', fg = self.colour_passed, width = self.button_width, command=self.read_mod)
+            # self.startButton.grid(row = 0, column = 0, columnspan = 2, pady=(0, self.pady))
 
             # All buttons
             self.help_button = tk.Button(self.topframe, text = 'Help', width = self.button_width, command = self.show_help)
@@ -245,8 +247,8 @@ class Application(tk.Frame):
             self.settings_menu.grid(row = 2, column = 0)
             self.settings_selection.trace('w', self.show_settings) # Bind function to this drop down menu
 
-            self.save_button = tk.Button(self.topframe, text='Save', width=self.button_width, command=lambda: self.save_all(True))
-            self.save_button.grid(row = 2, column = 1)
+            # self.save_button = tk.Button(self.topframe, text='Save', width=self.button_width, command=lambda: self.save_all(True))
+            # self.save_button.grid(row = 2, column = 1)
 
             # Node ID
             tk.Label(self.topframe, text = 'Node ID', fg="blue")\
@@ -279,6 +281,8 @@ class Application(tk.Frame):
                     options = ConfigModule.get_all_option(section) # Read all options (keys) for this section
                     if options:
                         for option in options: # For each option
+                            if option == 'server_port':
+                                continue
                             self.widgets[section]['widget'][option] = {} # Initilize dictionary
                             value = ConfigModule.get_config_value(section, option) # Read value from file
                             tk.Label(self.widgets[section]['frame'], text = option.replace('_', ' ').capitalize()).grid(row = row, column = 0, sticky = 'w') # Create Option label
@@ -291,16 +295,16 @@ class Application(tk.Frame):
                                 self.widgets['Authentication']['widget'][option]['widget'] = tk.Entry(self.widgets[section]['frame'], show = '*', width = self.entry_width) # Password textbox which hides the password with asterisks
                                 self.widgets['Authentication']['widget'][option]['widget'].insert('end', value) # Enter decrypted password
 
-                            # Set these as drop down menus
-                            elif option in ('team', 'project'):
-                                # Configure drop down menu
-                                self.widgets['Authentication']['widget'][option]['dropdown'] = tk.StringVar(self) # Initialize drop down variable
-                                self.widgets['Authentication']['widget'][option]['dropdown'].set('') # Need to initialize this, so OptionMenu will work
-                                self.widgets['Authentication']['widget'][option]['choices'] = [] # Initizlize list of available menu items
-                                self.widgets['Authentication']['widget'][option]['choices'].append(value) # Need to initialize this, so OptionMenu will work
-                                self.widgets['Authentication']['widget'][option]['widget'] = tk.OptionMenu(self.widgets[section]['frame'], self.widgets['Authentication']['widget'][option]['dropdown'], *self.widgets['Authentication']['widget'][option]['choices']) # Create drop down
-                                if option == 'team': self.get_teams(True) # Get list of teams from the server, populate the list
-                                self.widgets['Authentication']['widget'][option]['dropdown'].set(value) # Set menu to value in config file
+                            # # Set these as drop down menus
+                            # elif option in ('team', 'project'):
+                            #     # Configure drop down menu
+                            #     self.widgets['Authentication']['widget'][option]['dropdown'] = tk.StringVar(self) # Initialize drop down variable
+                            #     self.widgets['Authentication']['widget'][option]['dropdown'].set('') # Need to initialize this, so OptionMenu will work
+                            #     self.widgets['Authentication']['widget'][option]['choices'] = [] # Initizlize list of available menu items
+                            #     self.widgets['Authentication']['widget'][option]['choices'].append(value) # Need to initialize this, so OptionMenu will work
+                            #     self.widgets['Authentication']['widget'][option]['widget'] = tk.OptionMenu(self.widgets[section]['frame'], self.widgets['Authentication']['widget'][option]['dropdown'], *self.widgets['Authentication']['widget'][option]['choices']) # Create drop down
+                            #     if option == 'team': self.get_teams(True) # Get list of teams from the server, populate the list
+                            #     self.widgets['Authentication']['widget'][option]['dropdown'].set(value) # Set menu to value in config file
 
                             # True/False checkbox
                             elif value.lower() in ('true', 'false'):
@@ -318,10 +322,16 @@ class Application(tk.Frame):
                             self.widgets[section]['widget'][option]['widget'].grid(row = row, column=1, sticky = 'w')
                             row += 1
 
-            # Put a trace on the team field, so we can automatically change the project when the team is changed
-            self.widgets['Authentication']['widget']['team']['dropdown'].trace('w', self.switch_teams) # Bind function to this drop down menu
-            if self.widgets['Authentication']['widget']['team']['dropdown'].get() != '':
-                self.get_projects(self.widgets['Authentication']['widget']['team']['dropdown'].get()) # Get list of projects from the server for the curent team, populate the list
+                    if section == "Authentication":
+                        # Connect/Disconnect button
+                        self.startButton = tk.Button(self.widgets[section]['frame'], text='Connect', fg=self.colour_passed,
+                                                     width=self.button_width, command=self.read_mod)
+                        self.startButton.grid(row=row+1, column=0, columnspan=2, padx=50, pady=10)
+
+            # # Put a trace on the team field, so we can automatically change the project when the team is changed
+            # self.widgets['Authentication']['widget']['team']['dropdown'].trace('w', self.switch_teams) # Bind function to this drop down menu
+            # if self.widgets['Authentication']['widget']['team']['dropdown'].get() != '':
+            #     self.get_projects(self.widgets['Authentication']['widget']['team']['dropdown'].get()) # Get list of projects from the server for the curent team, populate the list
         except Exception as e:
             print("Exception in createwidgets {}".format(e))
             tkinter.messagebox.showerror('Error 05', 'Exception caught: %s' % e)
@@ -335,7 +345,7 @@ class Application(tk.Frame):
             if check:
                 print('Checking last update time')
                 # Read from temp config last time we checked for updates. If over maximum time, check again
-                temp_ini_file = os.path.join(os.path.join(FileUtilities.get_home_folder(), os.path.join('Desktop',os.path.join('AutomationLog',ConfigModule.get_config_value('Temp', '_file')))))
+                temp_ini_file = os.path.join(os.path.join(FileUtilities.get_home_folder(), os.path.join('Desktop',os.path.join('AutomationLog',ConfigModule.get_config_value('Advanced Options', '_file')))))
                 try:
                     last_update = ConfigModule.get_config_value('sectionOne', 'last_update', temp_ini_file)
                     update_interval = self.update_interval * 3600 # Convert interval into seconds for easy comparison
@@ -369,7 +379,7 @@ class Application(tk.Frame):
 
                     # Read update settings
                     try:
-                        if 'auto-update' in self.widgets['Zeuz Node']['widget'] and self.widgets['Zeuz Node']['widget']['auto-update']['check'].get(): auto_update = True
+                        if 'auto-update' in self.widgets['Advanced Options']['widget'] and self.widgets['Advanced Options']['widget']['auto-update']['check'].get(): auto_update = True
                         else: auto_update = False
                     except: auto_update = False
 
@@ -380,11 +390,12 @@ class Application(tk.Frame):
                         self.after(10000, self.check_for_updates) # Checks if install is complete
                     # If auto-update is false, notify user via dialogue that there's a new update available, and ask if they want to download and install it
                     else:
-                        if tkinter.messagebox.askyesno('Update', 'A Zeuz Node update is available. Do you want to download and install it?'):
-                            _thread.start_new_thread(self_updater.main, (os.path.dirname(os.path.realpath(__file__)).replace(os.sep + 'Framework', ''),))
-                            self.after(10000, self.check_for_updates) # Checks if install is complete
-                        else:
-                            pass # Do nothing if the user doens't want to update. We'll check again tomorrow
+                        # if tkinter.messagebox.askyesno('Update', 'A Zeuz Node update is available. Do you want to download and install it?'):
+                        #     _thread.start_new_thread(self_updater.main, (os.path.dirname(os.path.realpath(__file__)).replace(os.sep + 'Framework', ''),))
+                        #     self.after(10000, self.check_for_updates) # Checks if install is complete
+                        # else:
+                        #     pass # Do nothing if the user doens't want to update. We'll check again tomorrow
+                        self.updateDialog()
 
                 # Still installing, check again later
                 elif self_updater.check_complete == 'installing':
@@ -394,7 +405,7 @@ class Application(tk.Frame):
                 elif self_updater.check_complete == 'done':
                     # Read update settings
                     try:
-                        if 'auto-restart' in self.widgets['Zeuz Node']['widget'] and self.widgets['Zeuz Node']['widget']['auto-restart']['check'].get(): auto_restart = True
+                        if 'auto-restart' in self.widgets['Advanced Options']['widget'] and self.widgets['Advanced Options']['widget']['auto-restart']['check'].get(): auto_restart = True
                         else: auto_restart = False
                     except: auto_update = False
 
@@ -419,6 +430,9 @@ class Application(tk.Frame):
             tkinter.messagebox.showerror('Error 06', 'Exception caught: %s' % e)
 
 
+    def updateDialog(self):
+        dialog = MyDialogBox(self)
+
     def self_restart(self):
         try:
             if processing_test_case: # If we are in the middle of a run, try to restart again later
@@ -434,12 +448,12 @@ class Application(tk.Frame):
         # Check if this is the first run (team widget is set to default string), and if so, rearrange, so the server/port is above the user/pass to help user understand what needs to be populated
 
         try:
-            text_check = self.widgets['Authentication']['widget']['team']['dropdown'].get() # Read team selection
-            if text_check == 'YourTeamNameGoesHere': # If it is the default selection
-                self.widgets['Server']['frame'].grid(row = 0, column = 0, sticky = 'w') # Show the server/port section
-                self.continuous_server_check() # Tell program to constantly check for server connection until we connect
-            else: # Show default section
-                self.widgets['Authentication']['frame'].grid(row = 0, column = 0, sticky = 'w') # Show authentication section on subsequent runs
+            # text_check = self.widgets['Authentication']['widget']['team']['dropdown'].get() # Read team selection
+            # if text_check == 'YourTeamNameGoesHere': # If it is the default selection
+            #     self.widgets['Server']['frame'].grid(row = 0, column = 0, sticky = 'w') # Show the server/port section
+            #     self.continuous_server_check() # Tell program to constantly check for server connection until we connect
+            # else: # Show default section
+            self.widgets['Authentication']['frame'].grid(row = 0, column = 0, sticky = 'w') # Show authentication section on subsequent runs
         except Exception as e:
             print("Exception in startupdisplay {}".format(e))
             tkinter.messagebox.showerror('Error 08', 'Exception caught: %s' % e)
@@ -491,7 +505,9 @@ class Application(tk.Frame):
 
     def show_help(self):
         ''' Display help information in the log window '''
-        print(help_text)
+        help_url = "https://www.zeuz.ai/forums/"
+        webbrowser.open(help_url,new=1)
+        # print(help_text)
 
 
     def show_settings(self, a, b, c):
@@ -609,7 +625,7 @@ class Application(tk.Frame):
 
             # Check if we should save
             if save:  # Yes, explicit save call, so tell the user
-                self.get_teams()
+                # self.get_teams()
                 print("Settings saved.")
 
         except Exception as e:

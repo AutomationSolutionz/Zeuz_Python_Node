@@ -1938,3 +1938,94 @@ def db_non_query(data_set):
     except Exception:
         traceback.print_exc()
         return CommonUtil.Exception_Handler(sys.exc_info())
+
+
+# Gloabal variable actions
+
+
+def get_global_list_variable(data_set):
+    # get the global list variable content
+    sModuleInfo = inspect.currentframe().f_code.co_name + " : " + MODULE_NAME
+    try:
+        run_id = sr.Get_Shared_Variables('run_id')
+
+        for row in data_set:
+            if str(row[1]).strip().lower() == 'element parameter' or "parameter" in str(row[1]).strip().lower():
+                key = str(row[0]).strip()
+
+                value = MainDriverApi.get_global_list_variable(key)
+                sr.Set_Shared_Variables(key, value)
+                CommonUtil.ExecLog(sModuleInfo, "Got global variable %s='%s'" % (key, value), 1)
+                # for key in dict:
+                #     sr.Set_Shared_Variables(key, dict[key])
+                #     CommonUtil.ExecLog(sModuleInfo, "Got server variable %s='%s'" % (key, dict[key]), 1)
+
+        return 'passed'
+    except Exception:
+        return CommonUtil.Exception_Handler(sys.exc_info())
+
+
+def append_to_global_list_variable(data_set):
+    #append an item to global list variable
+    sModuleInfo = inspect.currentframe().f_code.co_name + " : " + MODULE_NAME
+    try:
+        run_id = sr.Get_Shared_Variables('run_id')
+
+        for row in data_set:
+            if str(row[1]).strip().lower() == 'element parameter' or "parameter" in str(row[1]).strip().lower():
+                key = str(row[0]).strip()
+                value = str(row[2]).strip()
+                #call main driver to send var to server
+                MainDriverApi.append_to_global_list_variable(key,value)
+                CommonUtil.ExecLog(sModuleInfo, f"append value : {value} to global variable {key} complete", 1)
+
+        return 'passed'
+    except Exception:
+        return CommonUtil.Exception_Handler(sys.exc_info())
+
+
+def remove_item_from_global_list_variable(data_set):
+    #remove an item from a global list variable
+    sModuleInfo = inspect.currentframe().f_code.co_name + " : " + MODULE_NAME
+    try:
+        run_id = sr.Get_Shared_Variables('run_id')
+
+        for row in data_set:
+            if str(row[1]).strip().lower() == 'element parameter' or "parameter" in str(row[1]).strip().lower():
+                key = str(row[0]).strip()
+                value = str(row[2]).strip()
+                #call main driver to send var to server
+                MainDriverApi.remove_item_from_global_list_variable(key, value)
+                CommonUtil.ExecLog(sModuleInfo, f"remove value : {value} from global variable {key} complete", 1)
+
+        return 'passed'
+    except Exception:
+        return CommonUtil.Exception_Handler(sys.exc_info())
+
+
+def save_variable_by_list_difference(data_set):
+    import ast
+
+    ''' save a variable by comparing two lists, here compare means set difference '''
+    sModuleInfo = inspect.currentframe().f_code.co_name + " : " + MODULE_NAME
+    CommonUtil.ExecLog(sModuleInfo,"Function Start", 0)
+    saved_variable_name = ''
+    variable1 = ''
+    variable2 = ''
+    variable_value = ''
+    for each in data_set:
+        if each[1] == 'element parameter':
+            if each[0] == 'Variable1':
+                variable1 = each[2]
+            elif each[0] == 'Variable2':
+                variable2 = each[2]
+            else:
+                saved_variable_name = each[2]
+
+    if variable1 and variable2:
+        variable1_list = set(ast.literal_eval(variable1))
+        variable2_list = set(ast.literal_eval(variable2))
+        variable_value = list(variable1_list - variable2_list)[0]
+        return sr.Set_Shared_Variables(saved_variable_name,variable_value)
+    else:
+        return 'failed'

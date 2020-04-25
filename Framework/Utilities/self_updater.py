@@ -131,7 +131,7 @@ def Download_File(url, filename = ''):
     try:
         if filename == '': filename = url.split('/')[-1] # No filename given. Try to get the filename automatically
         
-        r = requests.get(url, stream = True) # Create object to get file
+        r = requests.get(url, stream=True, timeout=2*60) # Create object to get file
         with open(filename, 'wb') as f: # Open file on disk
             for data in r.iter_content(chunk_size): # Download and write contents to disk
                 if data: f.write(data) # Write data to disk

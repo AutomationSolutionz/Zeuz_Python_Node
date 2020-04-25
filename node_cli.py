@@ -2,6 +2,7 @@
 # -*- coding: cp1252 -*-
 
 import os, sys, time, os.path, base64, signal, subprocess
+from getpass import getpass
 from base64 import b64encode, b64decode
 
 # Append correct paths so that it can find the configuration files and other modules
@@ -22,7 +23,7 @@ def install_missing_modules(req_file_path=True):
         #get all the pip modules that are installed
         #getting all pip from requirements.txt file
         if req_file_path == True:
-            req_file_path = os.path.dirname(os.path.abspath(__file__))+os.sep + 'requirements.txt'
+            req_file_path = os.path.dirname(os.path.realpath(__file__)).replace(os.sep + 'Framework', '')+os.sep + 'requirements.txt'
         with open(req_file_path) as fd:
             req_list = fd.read().splitlines()
         #get all the modules installed from freeze
@@ -50,6 +51,21 @@ def signal_handler(sig, frame):
     print("Disconnecting from server...")
     disconnect_from_server()
     sys.exit(0)
+
+def password_hash(encrypt, key, pw):
+    ''' Encrypt, decrypt password and encode in plaintext '''
+    # This is just an obfuscation technique, so the password is not immediately seen by users
+    # Zeuz_Node.py has a similar function that will need to be updated if this is changed
+
+    try:
+        from node_gui import pass_encode
+        result = pass_encode(key,pw)
+
+        return result
+    except Exception as e:
+        print("Exception in password {}".format(e))
+        print('Error decrypting password. Enter a new password {}'.format(e))
+        return ''
 
 def detect_admin():
     # Windows only - Return True if program run as admin
@@ -110,12 +126,26 @@ device_dict = {}
 processing_test_case = False # Used by Zeuz Node GUI to check if we are in the middle of a run
 exit_script = False # Used by Zeuz Node GUI to exit script
 if not os.path.exists(os.path.join(FileUtilities.get_home_folder(), 'Desktop',os.path.join('AutomationLog'))): os.mkdir(os.path.join(FileUtilities.get_home_folder(), 'Desktop',os.path.join('AutomationLog')))
-temp_ini_file = os.path.join(os.path.join(FileUtilities.get_home_folder(), os.path.join('Desktop',os.path.join('AutomationLog',ConfigModule.get_config_value('Temp', '_file')))))
+temp_ini_file = os.path.join(os.path.join(FileUtilities.get_home_folder(), os.path.join('Desktop',os.path.join('AutomationLog',ConfigModule.get_config_value('Advanced Options', '_file')))))
 
-def Login():
+
+def zeuz_authentication_prompts_for_cli():
+    prompts = ["server_address", "username", "password"]
+    input_values = []
+    for prompt in prompts:
+        if prompt == "password":
+            value = getpass()
+            ConfigModule.add_config_value(AUTHENTICATION_TAG, prompt, password_hash(False, 'zeuz', value))
+        else:
+            value = input(f"{prompt.capitalize()} : ")
+            ConfigModule.add_config_value(AUTHENTICATION_TAG, prompt, value)
+
+
+def Login(cli=False):
     install_missing_modules(req_file_path=True)
     username=ConfigModule.get_config_value(AUTHENTICATION_TAG,USERNAME_TAG)
     password = ConfigModule.get_config_value(AUTHENTICATION_TAG,PASSWORD_TAG)
+    server_name = ConfigModule.get_config_value(AUTHENTICATION_TAG,"server_address")
 
 
     if password == "YourUserNameGoesHere":
@@ -129,8 +159,8 @@ def Login():
     user_info_object={
         'username':username,
         'password':password,
-        'project':project,
-        'team':team
+        'project':'',
+        'team':''
     }
     
     # Iniitalize GUI Offline call
@@ -147,14 +177,21 @@ def Login():
         # Login to server
         if r != False: # Server is up
             try:
+                default_team_and_project = RequestFormatter.UpdatedGet('get_default_team_and_project_api',{'username': username})
 
+                if not default_team_and_project:
+                    CommonUtil.ExecLog('', "Default team and project catching Failed. Username incorrect", 4, False)
+                    break
+                user_info_object['project'] = default_team_and_project['project_name']
+                user_info_object['team'] = default_team_and_project['team_name']
                 r = RequestFormatter.Get('login_api',user_info_object)
-                CommonUtil.ExecLog('', "Authentication check for user='%s', project='%s', team='%s'"%(username,project,team), 4, False)
+                CommonUtil.ExecLog('', f"Authentication check for user='{username}', "
+                                       f"project='{user_info_object['project']}', team='{user_info_object['team']}', server='{server_name}'", 4, False)
                 if r:
                     CommonUtil.ExecLog('', "Authentication Successful", 4, False)
                     global device_dict
                     device_dict = All_Device_Info.get_all_connected_device_info()
-                    machine_object=update_machine(dependency_collection())
+                    machine_object=update_machine(dependency_collection(default_team_and_project), default_team_and_project)
                     if machine_object['registered']:
                         tester_id=machine_object['name']
                         try:
@@ -172,11 +209,19 @@ def Login():
                         if RunAgain == False: break # Exit login
                     else:
                         return False
-                elif r == {}: # Server should send "False" when user/pass is wrong
+                elif r == {} or r == False: # Server should send "False" when user/pass is wrong
                     CommonUtil.ExecLog('', "Authentication Failed. Username or password incorrect", 4, False)
+
+                    if cli:
+                        zeuz_authentication_prompts_for_cli()
+                        Login(cli=True)
+
                     break
                 else: # Server likely sent nothing back or RequestFormatter.Get() caught an exception
                     CommonUtil.ExecLog('', "Login attempt incomplete, waiting 60 seconds before trying again ", 4, False)
+                    if cli:
+                        zeuz_authentication_prompts_for_cli()
+                        Login(cli=True)
                     time.sleep(60)
             except Exception as e:
                 exc_type, exc_obj, exc_tb = sys.exc_info()
@@ -188,7 +233,11 @@ def Login():
         
         # Server down, wait and retry
         else:
-            CommonUtil.ExecLog('', "Server down, waiting 60 seconds before trying again", 4, False)
+            CommonUtil.ExecLog('', "Server down or verify the server address, waiting 60 seconds before trying again", 4, False)
+            if cli:
+                zeuz_authentication_prompts_for_cli()
+                Login(cli=True)
+
             time.sleep(60)
     CommonUtil.ExecLog('', "Zeuz Node Offline", 4, False) # GUI relies on this exact text. GUI must be updated if this is changed
     processing_test_case = False
@@ -233,7 +282,7 @@ def PreProcess():
     retVal = FileUtilities.CreateFolder(current_path, forced=False)
     if retVal:
         # now save it in the global_config.ini
-        TEMP_TAG = 'Temp'
+        TEMP_TAG = 'Advanced Options'
         file_name = ConfigModule.get_config_value(TEMP_TAG, '_file')
         current_path_file = os.path.join(current_path, file_name)
         FileUtilities.CreateFile(current_path_file)
@@ -242,7 +291,7 @@ def PreProcess():
         ConfigModule.add_config_value('sectionOne', 'temp_run_file_path', current_path, current_path_file)
 
 
-def update_machine(dependency):
+def update_machine(dependency, default_team_and_project_dict):
     try:
         #Get Local Info object
         oLocalInfo = CommonUtil.MachineInfo()
@@ -250,8 +299,8 @@ def update_machine(dependency):
         local_ip = oLocalInfo.getLocalIP()
         testerid = (oLocalInfo.getLocalUser()).lower()
 
-        project=ConfigModule.get_config_value(AUTHENTICATION_TAG,PROJECT_TAG)
-        team=ConfigModule.get_config_value(AUTHENTICATION_TAG,TEAM_TAG)
+        project=default_team_and_project_dict['project_name']
+        team=default_team_and_project_dict['team_name']
         if not dependency:
             dependency=""
         _d={}
@@ -266,7 +315,7 @@ def update_machine(dependency):
                     t.append(__t)
             _d.update({x[0]:t})
         dependency=_d
-        available_to_all_project = ConfigModule.get_config_value('Zeuz Node', 'available_to_all_project')
+        available_to_all_project = ConfigModule.get_config_value('Advanced Options', 'available_to_all_project')
         allProject = 'no'
         if str(available_to_all_project).lower() == "true":
             allProject = "yes"
@@ -298,12 +347,12 @@ def update_machine(dependency):
         Error_Detail = ((str(exc_type).replace("type ", "Error Type: ")) + ";" +  "Error Message: " + str(exc_obj) +";" + "File Name: " + fname + ";" + "Line: "+ str(exc_tb.tb_lineno))
         CommonUtil.ExecLog('', Error_Detail, 4, False)
 
-def dependency_collection():
+def dependency_collection(default_team_and_project):
     try:
         dependency_tag='Dependency'
         dependency_option=ConfigModule.get_all_option(dependency_tag)
-        project=ConfigModule.get_config_value(AUTHENTICATION_TAG,PROJECT_TAG)
-        team=ConfigModule.get_config_value(AUTHENTICATION_TAG,TEAM_TAG)
+        project=default_team_and_project["project_name"]
+        team=default_team_and_project["team_name"]
         r=RequestFormatter.Get('get_all_dependency_name_api',{'project':project,'team':team})
         obtained_list=[x.lower() for x in r]
         #print "Dependency: ",dependency_list
@@ -340,7 +389,7 @@ def dependency_collection():
 def check_server_online():
     try: # Check if we have a connection, if not, exit. If user has a wrong address or no address, RequestFormatter will go into a failure loop
         r = RequestFormatter.Head('login_api')
-        return True
+        return r
     except Exception as e: # Occurs when server is down
         print("Exception in check_server_online {}".format(e))
         return False 
@@ -432,5 +481,10 @@ if __name__=='__main__':
     signal.signal(signal.SIGINT, signal_handler)
     print("Press Ctrl-C to disconnect and quit.")
 
-    Login()
+    arg_options = [arg for arg in sys.argv[1:] if arg.startswith('--')]
+
+    if "--logout" in arg_options:
+        ConfigModule.remove_config_value(AUTHENTICATION_TAG, "server_address")
+
+    Login(cli=True)
 

@@ -1,4 +1,3 @@
-pyodbc
 Appium-Python-Client
 uiautomator
 clint

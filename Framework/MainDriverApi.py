@@ -126,6 +126,21 @@ def get_server_variable(run_id, key):
     return RequestFormatter.Get('get_server_variable_api', {'run_id': run_id, 'var_name': key})
 
 
+# get global list variable
+def get_global_list_variable(name):
+    return RequestFormatter.Get('set_or_get_global_server_list_variable_api',{'name': name})
+
+
+# append to global list variable
+def append_to_global_list_variable(name, value):
+    return RequestFormatter.Get('append_value_to_global_server_list_variable_api',{'name': name, 'value':value})
+
+
+# remove item from global list variable
+def remove_item_from_global_list_variable(name, value):
+    return RequestFormatter.Get('delete_global_server_list_variable_by_value_api',{'name': name, 'value':value})
+
+
 # get all server variable
 def get_all_server_variable(run_id):
     return RequestFormatter.Get('get_all_server_variable_api', {'run_id': run_id})
@@ -490,8 +505,8 @@ def download_attachments_for_test_case(sModuleInfo, run_id, test_case, temp_ini_
         m = each[1] + '.' + each[2]  # file name
         f = open(download_folder + '/' + m, 'wb')
 
-        download_url = ConfigModule.get_config_value('Server', 'server_address') + ':' + str(
-            ConfigModule.get_config_value('Server', 'server_port'))
+        download_url = ConfigModule.get_config_value('Authentication', 'server_address') + ':' + str(
+            ConfigModule.get_config_value('Authentication', 'server_port'))
 
         if not download_url.startswith('http') or not download_url.startswith('https'):
             download_url = 'https://' + download_url
@@ -519,8 +534,8 @@ def download_attachments_for_test_case(sModuleInfo, run_id, test_case, temp_ini_
         if not os.path.exists(download_folder + sep + str(each[3])):
             FL.CreateFolder(download_folder + sep + str(each[3]))
         f = open(download_folder + sep + str(each[3]) + sep + m, 'wb')
-        f.write(urllib.request.urlopen('http://' + ConfigModule.get_config_value('Server', 'server_address') + ':' + str(
-            ConfigModule.get_config_value('Server', 'server_port')) + '/static' + each[0]).read())
+        f.write(urllib.request.urlopen('http://' + ConfigModule.get_config_value('Authentication', 'server_address') + ':' + str(
+            ConfigModule.get_config_value('Authentication', 'server_port')) + '/static' + each[0]).read())
         file_specific_steps.update(
             {m: download_folder + sep + str(each[3]) + sep + m})
         f.close()
@@ -1014,14 +1029,14 @@ def write_log_file_for_test_case(sTestCaseStatus, test_case, run_id, sTestCaseEn
                 'sectionOne', 'test_case_folder', temp_ini_file))
 
             # upload will go here.
-            upload_zip(ConfigModule.get_config_value('Server', 'server_address'),
-                       ConfigModule.get_config_value('Server', 'server_port'),
+            upload_zip(ConfigModule.get_config_value('Authentication', 'server_address'),
+                       ConfigModule.get_config_value('Authentication', 'server_port'),
                        ConfigModule.get_config_value(
                            'sectionOne', 'temp_run_file_path', temp_ini_file), run_id,
                        ConfigModule.get_config_value(
                            'sectionOne', 'test_case', temp_ini_file) + ".zip",
-                       ConfigModule.get_config_value('Temp', '_file_upload_path'))
-            TCLogFile = os.sep + ConfigModule.get_config_value('Temp', '_file_upload_path') + os.sep + run_id.replace(":",
+                       ConfigModule.get_config_value('Advanced Options', '_file_upload_path'))
+            TCLogFile = os.sep + ConfigModule.get_config_value('Advanced Options', '_file_upload_path') + os.sep + run_id.replace(":",
                                                                                                                       '-') + '/' + ConfigModule.get_config_value(
                 'sectionOne', 'test_case', temp_ini_file) + '.zip'
             FL.DeleteFile(ConfigModule.get_config_value(
@@ -1353,7 +1368,7 @@ def main(device_dict):
     temp_ini_file = os.path.join(os.path.join(FL.get_home_folder(), os.path.join('Desktop',
                                                                                  os.path.join('AutomationLog',
                                                                                               ConfigModule.get_config_value(
-                                                                                                  'Temp', '_file')))))
+                                                                                                  'Advanced Options', '_file')))))
 
     # add temp file to config values
     ConfigModule.add_config_value(
