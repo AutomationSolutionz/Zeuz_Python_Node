@@ -10,7 +10,7 @@ from colorama import init as colorama_init
 from colorama import Fore
 
 # Initialize colorama for the current platform
-from Framework.Utilities.CommonUtil import MyDialogBox
+from utils import MyDialogBox
 
 colorama_init(autoreset=True)
 
