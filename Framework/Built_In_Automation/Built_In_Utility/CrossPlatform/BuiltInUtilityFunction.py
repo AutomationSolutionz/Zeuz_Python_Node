@@ -2597,7 +2597,8 @@ def extract_number(data_set):
                     digit = str(row[2])
 
         if Shared_Resources.Test_Shared_Variables(from_var):
-            from_var = Shared_Resources.Get_Shared_Variables(from_var) #save the value of 'from_var' shared varibale to 'from_var'
+            from_var = str(Shared_Resources.Get_Shared_Variables(from_var)) #save the value of 'from_var' shared varibale to 'from_var'
+        
         else:
             CommonUtil.ExecLog(sModuleInfo,"Could not find the variable named '%s'"%from_var, 3)
             return "failed"
@@ -2621,7 +2622,10 @@ def extract_number(data_set):
                     extracted_number = float(extracted_number)
 
                 if digit<1:
-                    rounded_number = extracted_number
+                    
+                    rounded_number =round(extracted_number, abs(digit))
+                    
+                    
                 elif digit >= 1:
                     rounded_number = int((round(float(extracted_number) / digit))) * digit
                 else:
@@ -2635,11 +2639,14 @@ def extract_number(data_set):
                         CommonUtil.ExecLog(sModuleInfo, "Can't round number. Incorrect digit '%s' given" % digit, 3)
                         return "failed"
                     rounded_number = round(float(extracted_number), c)
+                    
+            
             except:
                 CommonUtil.ExecLog(sModuleInfo, "Can't extract digit. Index out of range for string '%s'" % from_var, 3)
                 return "failed"
 
         #now save the substing to new variable
+        CommonUtil.ExecLog(sModuleInfo, "The extracted and rounded value is %s"%rounded_number, 1)
         return Shared_Resources.Set_Shared_Variables(to_var,rounded_number)
 
     except Exception:
