@@ -5,7 +5,7 @@ import sys
 import inspect
 import os, psutil, os.path, threading
 import logging
-from Framework.Utilities import ConfigModule, self_updater
+from Framework.Utilities import ConfigModule
 import datetime
 from Framework.Utilities import FileUtilities as FL
 import uuid
