@@ -5,6 +5,8 @@ import os, sys, time, os.path, base64, signal, subprocess
 from getpass import getpass
 from base64 import b64encode, b64decode
 
+from utils import input_with_timeout, TimeoutExpired
+
 # Append correct paths so that it can find the configuration files and other modules
 sys.path.append(os.path.join(os.path.dirname(os.path.realpath(__file__)), 'Framework'))
 # Move to Framework directory, so all modules can be seen
@@ -131,14 +133,18 @@ temp_ini_file = os.path.join(os.path.join(FileUtilities.get_home_folder(), os.pa
 
 def zeuz_authentication_prompts_for_cli():
     prompts = ["server_address", "username", "password"]
-    input_values = []
     for prompt in prompts:
         if prompt == "password":
             value = getpass()
             ConfigModule.add_config_value(AUTHENTICATION_TAG, prompt, password_hash(False, 'zeuz', value))
         else:
-            value = input(f"{prompt.capitalize()} : ")
-            ConfigModule.add_config_value(AUTHENTICATION_TAG, prompt, value)
+            try:
+                value = input_with_timeout(f"{prompt.capitalize()} : ", 60)
+            except TimeoutExpired:
+                print("Sorry, times up. Login again with the previous inputs")
+                break
+            else:
+                ConfigModule.add_config_value(AUTHENTICATION_TAG, prompt, str(value))
 
 
 def Login(cli=False):
