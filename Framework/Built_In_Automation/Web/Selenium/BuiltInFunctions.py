@@ -280,6 +280,7 @@ def Handle_Browser_Alert(step_data):
         elif  'get text' in choice:
             try:
                 alert_text = selenium_driver.switch_to_alert().text
+                selenium_driver.switch_to_alert().accept()
                 variable_name = (choice.split("="))[1]
                 result = Shared_Resources.Set_Shared_Variables(variable_name, alert_text)
                 if result in failed_tag_list:
