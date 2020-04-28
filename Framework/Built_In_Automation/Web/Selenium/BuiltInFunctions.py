@@ -258,8 +258,9 @@ def Handle_Browser_Alert(step_data):
     CommonUtil.ExecLog(sModuleInfo,"Function Start", 0)
     
     try:
-        choice = str(step_data[0][2]).lower()
-        if choice == 'accept' or choice == 'pass' or choice == 'yes' or choice == 'ok':
+        choice = str(step_data[0][2])
+        choice_lower = choice.lower()
+        if choice_lower == 'accept' or choice == 'pass' or choice == 'yes' or choice == 'ok':
             try:
                 selenium_driver.switch_to_alert().accept()
                 CommonUtil.ExecLog(sModuleInfo, "Browser alert accepted", 1)
@@ -267,7 +268,7 @@ def Handle_Browser_Alert(step_data):
             except NoAlertPresentException as e:
                 CommonUtil.ExecLog(sModuleInfo, "Browser alert not found", 2)
                 return "passed"
-        elif choice == 'reject' or choice == 'fail' or choice == 'no' or choice == 'cancel':
+        elif choice_lower == 'reject' or choice == 'fail' or choice == 'no' or choice == 'cancel':
             try:
                 selenium_driver.switch_to_alert().dismiss()
                 CommonUtil.ExecLog(sModuleInfo, "Browser alert rejected", 1)
@@ -296,6 +297,8 @@ def Handle_Browser_Alert(step_data):
             try:
                 text_to_send = (choice.split("="))[1]
                 selenium_driver.switch_to_alert().send_keys(text_to_send)
+                selenium_driver.switch_to_alert().accept()
+                return "passed"
 
             except NoAlertPresentException as e:
                 CommonUtil.ExecLog(sModuleInfo, "Unable to send text to alert pop up", 3)
