@@ -2277,13 +2277,23 @@ def serial_in_devices(serial,devices):
 
 def Handle_Mobile_Alert(step_data):
     #accepts browser alert
+    '''
+    handle alert   appium action     get text = my_variable 
+    handle alert   appium action     send text = my text to send to alert   
+    handle alert   appium action     accept, pass, yes, ok (any of these would work)
+    handle alert   appium action     reject, fail, no, cancel (any of these would work)
+     
+      
+    '''
+    
+    
     sModuleInfo = inspect.currentframe().f_code.co_name + " : " + MODULE_NAME
     CommonUtil.ExecLog(sModuleInfo,"Function Start", 0)
     
     try:
         choice = str(step_data[0][2])
         choice_lower = choice.lower()
-        if choice_lower == 'accept' or choice == 'pass' or choice == 'yes' or choice == 'ok':
+        if choice_lower == 'accept' or choice == 'pass' or choice == 'yes' or choice == 'ok' or  choice == 'allow':
             try:
                 appium_driver.switch_to_alert().accept()
                 CommonUtil.ExecLog(sModuleInfo, "Mobile alert accepted", 1)
@@ -2291,7 +2301,8 @@ def Handle_Mobile_Alert(step_data):
             except Exception:
                 CommonUtil.ExecLog(sModuleInfo, "Mobile alert not found", 2)
                 return "passed"
-        elif choice_lower == 'reject' or choice == 'fail' or choice == 'no' or choice == 'cancel':
+        
+        elif choice_lower == 'reject' or choice == 'fail' or choice == 'no' or choice == 'cancel'or  choice == 'dont allow':
             try:
                 appium_driver.switch_to_alert().dismiss()
                 CommonUtil.ExecLog(sModuleInfo, "Mobile alert rejected", 1)
