@@ -254,6 +254,12 @@ def Go_To_Link(step_data, page_title=False):
 
 def Handle_Browser_Alert(step_data):
     #accepts browser alert
+    '''
+    handle alert   selenium action     get text = my_variable 
+    handle alert   selenium action     send text = my text to send to alert   
+    handle alert   selenium action     accept, pass, yes, ok (any of these would work)
+    handle alert   selenium action     reject, fail, no, cancel (any of these would work)
+    '''
     sModuleInfo = inspect.currentframe().f_code.co_name + " : " + MODULE_NAME
     CommonUtil.ExecLog(sModuleInfo,"Function Start", 0)
     
