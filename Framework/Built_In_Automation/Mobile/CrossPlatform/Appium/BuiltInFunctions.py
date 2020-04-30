@@ -2274,6 +2274,71 @@ def serial_in_devices(serial,devices):
         return CommonUtil.Exception_Handler(sys.exc_info(), None, "Error trying to maximize application")
 
 
+
+def Handle_Mobile_Alert(step_data):
+    #accepts browser alert
+    sModuleInfo = inspect.currentframe().f_code.co_name + " : " + MODULE_NAME
+    CommonUtil.ExecLog(sModuleInfo,"Function Start", 0)
+    
+    try:
+        choice = str(step_data[0][2])
+        choice_lower = choice.lower()
+        if choice_lower == 'accept' or choice == 'pass' or choice == 'yes' or choice == 'ok':
+            try:
+                appium_driver.switch_to_alert().accept()
+                CommonUtil.ExecLog(sModuleInfo, "Mobile alert accepted", 1)
+                return "passed"
+            except Exception:
+                CommonUtil.ExecLog(sModuleInfo, "Mobile alert not found", 2)
+                return "passed"
+        elif choice_lower == 'reject' or choice == 'fail' or choice == 'no' or choice == 'cancel':
+            try:
+                appium_driver.switch_to_alert().dismiss()
+                CommonUtil.ExecLog(sModuleInfo, "Mobile alert rejected", 1)
+                return "passed"
+            except Exception:
+                CommonUtil.ExecLog(sModuleInfo, "Mobile alert not found", 2)
+                return "passed"
+        
+        elif  'get text' in choice:
+            try:
+                alert_text = appium_driver.switch_to_alert().text
+                appium_driver.switch_to_alert().accept()
+                variable_name = (choice.split("="))[1]
+                result = Shared_Resources.Set_Shared_Variables(variable_name, alert_text)
+                if result in failed_tag_list:
+                    CommonUtil.ExecLog(sModuleInfo, "Value of Variable '%s' could not be saved!!!"%variable_name, 3)
+                    return "failed"
+                else:
+                    Shared_Resources.Show_All_Shared_Variables()
+                    return "passed"
+
+            except Exception:
+                CommonUtil.ExecLog(sModuleInfo, "Mobile alert not found.  Unable to collect text", 3)
+                return "failed"
+        
+        elif  'send text' in choice:
+            try:
+                text_to_send = (choice.split("="))[1]
+                appium_driver.switch_to_alert().send_keys(text_to_send)
+                appium_driver.switch_to_alert().accept()
+                return "passed"
+
+            except Exception:
+                CommonUtil.ExecLog(sModuleInfo, "Unable to send text to alert pop up", 3)
+                return "failed"           
+
+        else:
+            CommonUtil.ExecLog(sModuleInfo, "Wrong Step Data.  Please review the action help document", 3)
+            return "failed"
+
+    except Exception:
+        ErrorMessage =  "Failed to handle alert"
+        return CommonUtil.Exception_Handler(sys.exc_info(), None, ErrorMessage)
+
+
+
+
 def if_element_exists(data_set):
     ''' Click on an element '''
 
