@@ -271,43 +271,6 @@ def find_correct_device_on_first_run(serial_or_name, device_info):
 
 
 
-def filter_optional_action_and_step_data(data_set, sModuleInfo):
-    # This will be passed to the original function
-    cleaned_data_set = []
-
-    device_platform = appium_driver.capabilities['platformName'].strip().lower()
-
-    for row in data_set:
-        left, middle, right = row
-
-        # Skip execution of action if the intended platform does not match with that of the device
-        if "optional parameter" in middle and "platform" in left:
-            if device_platform.strip().lower() == right.strip().lower():
-                # Skip this row, as its not intended to be a part of the actual step data
-                new_row = None
-            else:
-                CommonUtil.ExecLog(sModuleInfo,
-                    "[SKIP] This action has been marked as optional and only intended for the platform '%s'" % right.strip(),
-                    1)
-
-                # return no data set, indicating that the action should be skipped
-                return None
-
-        # If we find a '|' character in the left column, then try to check the platform
-        # and filter the appropriate data for the left column by removing '|'
-        if "element parameter" in middle and left.find("|") != -1:
-            if device_platform == "android":
-                left = left.split("|")[0].strip()
-            elif device_platform == "ios":
-                left = left.split("|")[1].strip()
-
-        new_row = (left, middle, right,)
-
-        if new_row:
-            cleaned_data_set.append(new_row)
-
-    return cleaned_data_set
-
 def unlock_android_device(data_set):
     ''' Unlocks an androi device with adb commands'''
 
@@ -2587,3 +2550,40 @@ def if_element_exists(data_set):
     except Exception:
         errMsg = "Could not find your element."
         return CommonUtil.Exception_Handler(sys.exc_info(), None, errMsg)
+
+def filter_optional_action_and_step_data(data_set, sModuleInfo):
+    # This will be passed to the original function
+    cleaned_data_set = []
+
+    device_platform = appium_driver.capabilities['platformName'].strip().lower()
+
+    for row in data_set:
+        left, middle, right = row
+
+        # Skip execution of action if the intended platform does not match with that of the device
+        if "optional parameter" in middle and "platform" in left:
+            if device_platform.strip().lower() == right.strip().lower():
+                # Skip this row, as its not intended to be a part of the actual step data
+                new_row = None
+            else:
+                CommonUtil.ExecLog(sModuleInfo,
+                    "[SKIP] This action has been marked as optional and only intended for the platform '%s'" % right.strip(),
+                    1)
+
+                # return no data set, indicating that the action should be skipped
+                return None
+
+        # If we find a '|' character in the left column, then try to check the platform
+        # and filter the appropriate data for the left column by removing '|'
+        if "element parameter" in middle and left.find("|") != -1:
+            if device_platform == "android":
+                left = left.split("|")[0].strip()
+            elif device_platform == "ios":
+                left = left.split("|")[1].strip()
+
+        new_row = (left, middle, right,)
+
+        if new_row:
+            cleaned_data_set.append(new_row)
+
+    return cleaned_data_set
