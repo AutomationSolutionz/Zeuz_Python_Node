@@ -119,6 +119,9 @@ actions = { # Numbers are arbitrary, and are not used anywhere
     239: {'module': 'appium', 'screenshot':'mobile', 'name': 'hide keyboard', 'function': 'Hide_Keyboard'},
     240: {'module': 'appium', 'screenshot':'mobile', 'name': 'handle alert', 'function': 'Handle_Mobile_Alert'},
 
+    241: {'module': 'appium', 'screenshot':'mobile', 'name': 'filter_optional_action_and_step_data', 'function': 'filter_optional_action_and_step_data'},
+
+
 
     300: {'module': 'rest', 'screenshot':'none', 'name': 'save response', 'function': 'Get_Response_Wrapper'},
     301: {'module': 'rest', 'screenshot':'none', 'name': 'search response', 'function': 'Search_Response'},
