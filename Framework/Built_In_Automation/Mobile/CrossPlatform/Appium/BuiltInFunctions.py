@@ -767,8 +767,8 @@ def install_application(data_set):
     sModuleInfo = inspect.currentframe().f_code.co_name + " : " + MODULE_NAME
     CommonUtil.ExecLog(sModuleInfo,"Function Start", 0)
 
-    data_set = filter_optional_action_and_step_data(data_set, sModuleInfo)
-    if not data_set:
+    skip_or_not = filter_optional_action_and_step_data(data_set, sModuleInfo)
+    if skip_or_not == False:
         return
     
     # Parse data set
@@ -820,8 +820,8 @@ def uninstall_application(data_set):
     
     sModuleInfo = inspect.currentframe().f_code.co_name + " : " + MODULE_NAME
 
-    data_set = filter_optional_action_and_step_data(data_set, sModuleInfo)
-    if not data_set:
+    skip_or_not = filter_optional_action_and_step_data(data_set, sModuleInfo)
+    if skip_or_not == False:
         return 'passed'
 
     CommonUtil.ExecLog(sModuleInfo,"Function Start", 0)
@@ -891,8 +891,8 @@ def Swipe(x_start, y_start, x_end, y_end, duration = 1000, adb = False):
 def swipe_in_direction(data_set):
     sModuleInfo = inspect.currentframe().f_code.co_name + " : " + MODULE_NAME
 
-    data_set = filter_optional_action_and_step_data(data_set, sModuleInfo)
-    if not data_set:
+    skip_or_not = filter_optional_action_and_step_data(data_set, sModuleInfo)
+    if skip_or_not == False:
         return 'passed'
 
     try:
@@ -963,8 +963,8 @@ def swipe_handler_wrapper(data_set):
 def swipe_handler_ios(data_set):
     sModuleInfo = inspect.currentframe().f_code.co_name + " : " + MODULE_NAME
 
-    data_set = filter_optional_action_and_step_data(data_set, sModuleInfo)
-    if not data_set:
+    skip_or_not = filter_optional_action_and_step_data(data_set, sModuleInfo)
+    if skip_or_not == False:
         return 'passed'
 
     try:
@@ -1026,8 +1026,8 @@ def swipe_handler_android(data_set):
      
     sModuleInfo = inspect.currentframe().f_code.co_name + " : " + MODULE_NAME
 
-    data_set = filter_optional_action_and_step_data(data_set, sModuleInfo)
-    if not data_set:
+    skip_or_not = filter_optional_action_and_step_data(data_set, sModuleInfo)
+    if skip_or_not == False:
         return 'passed'
 
     CommonUtil.ExecLog(sModuleInfo,"Function Start", 0)
@@ -1226,8 +1226,8 @@ def tap_location(data_set):
     
     sModuleInfo = inspect.currentframe().f_code.co_name + " : " + MODULE_NAME
 
-    data_set = filter_optional_action_and_step_data(data_set, sModuleInfo)
-    if not data_set:
+    skip_or_not = filter_optional_action_and_step_data(data_set, sModuleInfo)
+    if skip_or_not == False:
         return 'passed'
 
     CommonUtil.ExecLog(sModuleInfo,"Function Start", 0)
@@ -1254,8 +1254,8 @@ def get_element_location_by_id(data_set):
     
     sModuleInfo = inspect.currentframe().f_code.co_name + " : " + MODULE_NAME
 
-    data_set = filter_optional_action_and_step_data(data_set, sModuleInfo)
-    if not data_set:
+    skip_or_not = filter_optional_action_and_step_data(data_set, sModuleInfo)
+    if skip_or_not == False:
         return 'passed'
 
     CommonUtil.ExecLog(sModuleInfo,"Function Start", 0)
@@ -1318,8 +1318,8 @@ def Click_Element_Appium(data_set):
     
     sModuleInfo = inspect.currentframe().f_code.co_name + " : " + MODULE_NAME
 
-    data_set = filter_optional_action_and_step_data(data_set, sModuleInfo)
-    if not data_set:
+    skip_or_not = filter_optional_action_and_step_data(data_set, sModuleInfo)
+    if skip_or_not == False:
         return 'passed'
 
     CommonUtil.ExecLog(sModuleInfo,"Function Start", 0)
@@ -1355,8 +1355,8 @@ def Tap_Appium(data_set):
     
     sModuleInfo = inspect.currentframe().f_code.co_name + " : " + MODULE_NAME
 
-    data_set = filter_optional_action_and_step_data(data_set, sModuleInfo)
-    if not data_set:
+    skip_or_not = filter_optional_action_and_step_data(data_set, sModuleInfo)
+    if skip_or_not == False:
         return 'passed'
 
     CommonUtil.ExecLog(sModuleInfo,"Function Start", 0)
@@ -1389,8 +1389,8 @@ def Double_Tap_Appium(data_set):
     #!!!not yet tested or used
     sModuleInfo = inspect.currentframe().f_code.co_name + " : " + MODULE_NAME
 
-    data_set = filter_optional_action_and_step_data(data_set, sModuleInfo)
-    if not data_set:
+    skip_or_not = filter_optional_action_and_step_data(data_set, sModuleInfo)
+    if skip_or_not == False:
         return 'passed'
 
     CommonUtil.ExecLog(sModuleInfo,"Function Start", 0)
@@ -1425,8 +1425,8 @@ def Long_Press_Appium(data_set):
     
     sModuleInfo = inspect.currentframe().f_code.co_name + " : " + MODULE_NAME
 
-    data_set = filter_optional_action_and_step_data(data_set, sModuleInfo)
-    if not data_set:
+    skip_or_not = filter_optional_action_and_step_data(data_set, sModuleInfo)
+    if skip_or_not == False:
         return 'passed'
 
     CommonUtil.ExecLog(sModuleInfo,"Function Start", 0)
@@ -1463,8 +1463,8 @@ def Enter_Text_Appium(data_set):
 
     sModuleInfo = inspect.currentframe().f_code.co_name + " : " + MODULE_NAME
 
-    data_set = filter_optional_action_and_step_data(data_set, sModuleInfo)
-    if not data_set:
+    skip_or_not = filter_optional_action_and_step_data(data_set, sModuleInfo)
+    if skip_or_not == False:
         return 'passed'
 
     CommonUtil.ExecLog(sModuleInfo, "Function Start", 0)
@@ -1538,8 +1538,8 @@ def Pickerwheel_Appium(data_set):
     
     sModuleInfo = inspect.currentframe().f_code.co_name + " : " + MODULE_NAME
 
-    data_set = filter_optional_action_and_step_data(data_set, sModuleInfo)
-    if not data_set:
+    skip_or_not = filter_optional_action_and_step_data(data_set, sModuleInfo)
+    if skip_or_not == False:
         return 'passed'
 
     CommonUtil.ExecLog(sModuleInfo,"Function Start", 0)
@@ -1589,8 +1589,8 @@ def Clear_And_Enter_Text_ADB(data_set, serial=''):
     
     sModuleInfo = inspect.currentframe().f_code.co_name + " : " + MODULE_NAME
 
-    data_set = filter_optional_action_and_step_data(data_set, sModuleInfo)
-    if not data_set:
+    skip_or_not = filter_optional_action_and_step_data(data_set, sModuleInfo)
+    if skip_or_not == False:
         return 'passed'
 
     CommonUtil.ExecLog(sModuleInfo,"Function Start", 0)
@@ -1653,8 +1653,8 @@ def Clear_And_Enter_Text_Appium(data_set):
 
     sModuleInfo = inspect.currentframe().f_code.co_name + " : " + MODULE_NAME
 
-    data_set = filter_optional_action_and_step_data(data_set, sModuleInfo)
-    if not data_set:
+    skip_or_not = filter_optional_action_and_step_data(data_set, sModuleInfo)
+    if skip_or_not == False:
         return 'passed'
 
     CommonUtil.ExecLog(sModuleInfo, "Function Start", 0)
@@ -1727,8 +1727,8 @@ def Hide_Keyboard(data_set):
 
     sModuleInfo = inspect.currentframe().f_code.co_name + " : " + MODULE_NAME
 
-    data_set = filter_optional_action_and_step_data(data_set, sModuleInfo)
-    if not data_set:
+    skip_or_not = filter_optional_action_and_step_data(data_set, sModuleInfo)
+    if skip_or_not == False:
         return 'passed'
 
     CommonUtil.ExecLog(sModuleInfo, "Function Start", 0)
@@ -1837,8 +1837,8 @@ def Keystroke_Appium(data_set):
     
     sModuleInfo = inspect.currentframe().f_code.co_name + " : " + MODULE_NAME
 
-    data_set = filter_optional_action_and_step_data(data_set, sModuleInfo)
-    if not data_set:
+    skip_or_not = filter_optional_action_and_step_data(data_set, sModuleInfo)
+    if skip_or_not == False:
         return 'passed'
 
     CommonUtil.ExecLog(sModuleInfo,"Function Start", 0)
@@ -1892,8 +1892,8 @@ def Validate_Text_Appium(data_set):
     '''
     sModuleInfo = inspect.currentframe().f_code.co_name + " : " + MODULE_NAME
 
-    data_set = filter_optional_action_and_step_data(data_set, sModuleInfo)
-    if not data_set:
+    skip_or_not = filter_optional_action_and_step_data(data_set, sModuleInfo)
+    if skip_or_not == False:
         return 'passed'
 
     CommonUtil.ExecLog(sModuleInfo,"Function Start", 0)
@@ -2125,8 +2125,8 @@ def device_information(data_set):
     
     sModuleInfo = inspect.currentframe().f_code.co_name + " : " + MODULE_NAME
 
-    data_set = filter_optional_action_and_step_data(data_set, sModuleInfo)
-    if not data_set:
+    skip_or_not = filter_optional_action_and_step_data(data_set, sModuleInfo)
+    if skip_or_not == False:
         return 'passed'
 
     CommonUtil.ExecLog(sModuleInfo,"Function Start", 0)
@@ -2242,8 +2242,8 @@ def set_device_password(data_set):
     
     sModuleInfo = inspect.currentframe().f_code.co_name + " : " + MODULE_NAME
 
-    data_set = filter_optional_action_and_step_data(data_set, sModuleInfo)
-    if not data_set:
+    skip_or_not = filter_optional_action_and_step_data(data_set, sModuleInfo)
+    if skip_or_not == False:
         return 'passed'
 
     CommonUtil.ExecLog(sModuleInfo,"Function Start", 0)
@@ -2270,8 +2270,8 @@ def switch_device(data_set):
     
     sModuleInfo = inspect.currentframe().f_code.co_name + " : " + MODULE_NAME
 
-    data_set = filter_optional_action_and_step_data(data_set, sModuleInfo)
-    if not data_set:
+    skip_or_not = filter_optional_action_and_step_data(data_set, sModuleInfo)
+    if skip_or_not == False:
         return 'passed'
 
     CommonUtil.ExecLog(sModuleInfo,"Function Start", 0)
@@ -2308,8 +2308,8 @@ def package_information(data_set):
     
     sModuleInfo = inspect.currentframe().f_code.co_name + " : " + MODULE_NAME
 
-    data_set = filter_optional_action_and_step_data(data_set, sModuleInfo)
-    if not data_set:
+    skip_or_not = filter_optional_action_and_step_data(data_set, sModuleInfo)
+    if skip_or_not == False:
         return 'passed'
 
     CommonUtil.ExecLog(sModuleInfo,"Function Start", 0)
@@ -2372,8 +2372,8 @@ def minimize_appilcation(data_set):
     
     sModuleInfo = inspect.currentframe().f_code.co_name + " : " + MODULE_NAME
 
-    data_set = filter_optional_action_and_step_data(data_set, sModuleInfo)
-    if not data_set:
+    skip_or_not = filter_optional_action_and_step_data(data_set, sModuleInfo)
+    if skip_or_not == False:
         return 'passed'
 
     CommonUtil.ExecLog(sModuleInfo,"Function Start", 0)
@@ -2390,8 +2390,8 @@ def maximize_appilcation(data_set):
     
     sModuleInfo = inspect.currentframe().f_code.co_name + " : " + MODULE_NAME
 
-    data_set = filter_optional_action_and_step_data(data_set, sModuleInfo)
-    if not data_set:
+    skip_or_not = filter_optional_action_and_step_data(data_set, sModuleInfo)
+    if skip_or_not == False:
         return 'passed'
 
     CommonUtil.ExecLog(sModuleInfo,"Function Start", 0)
@@ -2435,8 +2435,8 @@ def Handle_Mobile_Alert(data_set):
     
     sModuleInfo = inspect.currentframe().f_code.co_name + " : " + MODULE_NAME
 
-    data_set = filter_optional_action_and_step_data(data_set, sModuleInfo)
-    if not data_set:
+    skip_or_not = filter_optional_action_and_step_data(data_set, sModuleInfo)
+    if skip_or_not == False:
         return 'passed'
 
     CommonUtil.ExecLog(sModuleInfo,"Function Start", 0)
@@ -2504,8 +2504,8 @@ def if_element_exists(data_set):
 
     sModuleInfo = inspect.currentframe().f_code.co_name + " : " + MODULE_NAME
 
-    data_set = filter_optional_action_and_step_data(data_set, sModuleInfo)
-    if not data_set:
+    skip_or_not = filter_optional_action_and_step_data(data_set, sModuleInfo)
+    if skip_or_not == False:
         return 'passed'
 
     CommonUtil.ExecLog(sModuleInfo, "Function Start", 0)
@@ -2538,20 +2538,26 @@ def if_element_exists(data_set):
         return CommonUtil.Exception_Handler(sys.exc_info(), None, errMsg)
 
 def filter_optional_action_and_step_data(data_set, sModuleInfo):
+    sModuleInfo = inspect.currentframe().f_code.co_name + " : " + MODULE_NAME
+    try:
+        CommonUtil.ExecLog(sModuleInfo, "Checking to see if we need to skip this action based on OS", 1)
+        device_platform = appium_driver.capabilities['platformName'].strip().lower()
+    
+        for row in data_set:
+            left, middle, right = row
+    
+            # Skip execution of action if the intended platform does not match with that of the device
+            if "optional parameter" in middle and "platform" in left:
+                if device_platform.strip().lower() != right.strip().lower():
+                    CommonUtil.ExecLog(sModuleInfo,
+                        "[SKIP] This action has been marked as optional and only intended for the platform '%s'" % right.strip(),
+                        1)
+    
+                    # return no data set, indicating that the action should be skipped
+                    return False
+    
+        return True
+    except Exception:
+        CommonUtil.ExecLog(sModuleInfo, "Unable to skip optional action based on OS", 2)
 
-    device_platform = appium_driver.capabilities['platformName'].strip().lower()
-
-    for row in data_set:
-        left, middle, right = row
-
-        # Skip execution of action if the intended platform does not match with that of the device
-        if "optional parameter" in middle and "platform" in left:
-            if device_platform.strip().lower() != right.strip().lower():
-                CommonUtil.ExecLog(sModuleInfo,
-                    "[SKIP] This action has been marked as optional and only intended for the platform '%s'" % right.strip(),
-                    1)
-
-                # return no data set, indicating that the action should be skipped
-                return None
-
-    return data_set
+        return True
