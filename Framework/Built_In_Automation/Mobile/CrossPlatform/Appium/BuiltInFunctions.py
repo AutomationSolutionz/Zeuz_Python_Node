@@ -2538,11 +2538,6 @@ def if_element_exists(data_set):
         return CommonUtil.Exception_Handler(sys.exc_info(), None, errMsg)
 
 def filter_optional_action_and_step_data(data_set, sModuleInfo):
-    
-    sModuleInfo = inspect.currentframe().f_code.co_name + " : " + MODULE_NAME
-    # This will be passed to the original function
-    cleaned_data_set = []
-    CommonUtil.ExecLog(sModuleInfo, "Original data: %s"%data_set, 1)
 
     device_platform = appium_driver.capabilities['platformName'].strip().lower()
 
@@ -2551,10 +2546,7 @@ def filter_optional_action_and_step_data(data_set, sModuleInfo):
 
         # Skip execution of action if the intended platform does not match with that of the device
         if "optional parameter" in middle and "platform" in left:
-            if device_platform.strip().lower() == right.strip().lower():
-                # Skip this row, as its not intended to be a part of the actual step data
-                new_row = None
-            else:
+            if device_platform.strip().lower() != right.strip().lower():
                 CommonUtil.ExecLog(sModuleInfo,
                     "[SKIP] This action has been marked as optional and only intended for the platform '%s'" % right.strip(),
                     1)
@@ -2562,19 +2554,4 @@ def filter_optional_action_and_step_data(data_set, sModuleInfo):
                 # return no data set, indicating that the action should be skipped
                 return None
 
-        # If we find a '|' character in the left column, then try to check the platform
-        # and filter the appropriate data for the left column by removing '|'
-        if "element parameter" in middle and left.find("|") != -1:
-            if device_platform == "android":
-                left = left.split("|")[0].strip()
-            elif device_platform == "ios":
-                left = left.split("|")[1].strip()
-
-        new_row = (left, middle, right,)
-
-        if new_row:
-            cleaned_data_set.append(new_row)
-            
-    CommonUtil.ExecLog(sModuleInfo, "Clean data: %s"%cleaned_data_set, 1)
-
-    return cleaned_data_set
+    return data_set

@@ -57,6 +57,25 @@ def Get_Element(step_data_set,driver,query_debug=False, wait_enable = True):
                     True
                 '''
             elif driver_type == 'appium':
+
+                # If we find a '|' character in the left column, then try to check the platform
+                # and filter the appropriate data for the left column by removing '|'
+                device_platform = generic_driver.capabilities['platformName'].strip().lower()
+                cleaned_data_set = []
+                for row in step_data_set:
+                    left, middle, right = row
+
+                    if "element parameter" in middle and left.find("|") != -1:
+                        if device_platform == "android":
+                            left = left.split("|")[0].strip()
+                        elif device_platform == "ios":
+                            left = left.split("|")[1].strip()
+                            
+                    new_row = (left, middle, right,)
+                    cleaned_data_set.append(new_row)
+                
+                step_data_set = cleaned_data_set
+                        
                 new_step_data=[]
                 for row in step_data_set:
                     if row[0] == 'resource-id' and str(row[2]).startswith('*'):
