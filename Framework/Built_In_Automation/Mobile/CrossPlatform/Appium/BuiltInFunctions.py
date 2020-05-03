@@ -756,8 +756,9 @@ def reset_application(data_set):
     except Exception:
         errMsg = "Unable to Reset the application."
         return CommonUtil.Exception_Handler(sys.exc_info(),None,errMsg)
-    
-    
+
+
+@filter_optional_action_and_step_data
 def install_application(data_set):
     ''' Install application to device '''
     # adb does the work. Does not require appium instance. User needs to call launch action to create instance
@@ -810,6 +811,7 @@ def install_application(data_set):
         return CommonUtil.Exception_Handler(sys.exc_info(),None,errMsg)
 
 
+@filter_optional_action_and_step_data
 def uninstall_application(data_set):
     ''' Uninstalls/removes application from device '''
     
@@ -853,6 +855,7 @@ def uninstall_application(data_set):
         errMsg = "Error uninstalling application"
         return CommonUtil.Exception_Handler(sys.exc_info(),None,errMsg)
 
+@filter_optional_action_and_step_data
 def Swipe(x_start, y_start, x_end, y_end, duration = 1000, adb = False):
     ''' Perform single swipe gesture with provided start and end positions '''
     # duration in mS - how long the gesture should take
@@ -874,6 +877,7 @@ def Swipe(x_start, y_start, x_end, y_end, duration = 1000, adb = False):
         errMsg = "Unable to swipe."
         return CommonUtil.Exception_Handler(sys.exc_info(),None,errMsg)
 
+@filter_optional_action_and_step_data
 def swipe_in_direction(data_set):
     sModuleInfo = inspect.currentframe().f_code.co_name + " : " + MODULE_NAME
     try:
@@ -930,6 +934,7 @@ def swipe_in_direction(data_set):
         return CommonUtil.Exception_Handler(sys.exc_info(), None, errMsg)
 
 
+@filter_optional_action_and_step_data
 def swipe_handler_wrapper(data_set):
     try:
         if appium_details[device_id]['type'] == 'ios': #for ios
@@ -941,6 +946,7 @@ def swipe_handler_wrapper(data_set):
         return CommonUtil.Exception_Handler(sys.exc_info(), None, errMsg)
 
 
+@filter_optional_action_and_step_data
 def swipe_handler_ios(data_set):
     sModuleInfo = inspect.currentframe().f_code.co_name + " : " + MODULE_NAME
     try:
@@ -987,6 +993,7 @@ def swipe_handler_ios(data_set):
         return CommonUtil.Exception_Handler(sys.exc_info(), None, errMsg)
 
 
+@filter_optional_action_and_step_data
 def swipe_handler_android(data_set):
     ''' Swipe screen based on user input '''
     '''
@@ -1171,6 +1178,7 @@ def swipe_handler_android(data_set):
     except Exception:
         return CommonUtil.Exception_Handler(sys.exc_info(),None, "Error performing swipe gesture")     
 
+@filter_optional_action_and_step_data
 def read_screen_heirarchy():
     ''' Read the XML string of the device's GUI and return it '''
     
@@ -1188,6 +1196,7 @@ def read_screen_heirarchy():
         CommonUtil.ExecLog(sModuleInfo,"Read screen heirarchy unsuccessfully",3)
         return False
 
+@filter_optional_action_and_step_data
 def tap_location(data_set):
     ''' Tap the provided position using x,y cooridnates '''
     # positions: list containing x,y coordinates
@@ -1212,6 +1221,7 @@ def tap_location(data_set):
         errMsg = "Tapped on location unsuccessfully"
         return CommonUtil.Exception_Handler(sys.exc_info(),None,errMsg)
     
+@filter_optional_action_and_step_data
 def get_element_location_by_id(data_set):
     ''' Find and return an element's x,y coordinates '''
     
@@ -1250,6 +1260,7 @@ def get_element_location_by_id(data_set):
         return CommonUtil.Exception_Handler(sys.exc_info(),None,errMsg)
         
 
+@filter_optional_action_and_step_data
 def get_window_size(read_type = False):
     ''' Read the device's LCD resolution / screen size '''
     # Returns a dictionary of width and height
@@ -1268,6 +1279,7 @@ def get_window_size(read_type = False):
         return CommonUtil.Exception_Handler(sys.exc_info(),None,errMsg)
     
 
+@filter_optional_action_and_step_data
 def Click_Element_Appium(data_set):
     ''' Click on an element '''
     
@@ -1300,6 +1312,7 @@ def Click_Element_Appium(data_set):
         return CommonUtil.Exception_Handler(sys.exc_info(),None,errMsg)
     
     
+@filter_optional_action_and_step_data
 def Tap_Appium(data_set):
     ''' Execute "Tap" for an element '''
     
@@ -1330,6 +1343,7 @@ def Tap_Appium(data_set):
         errMsg = "Unable to tap."
         return CommonUtil.Exception_Handler(sys.exc_info(),None,errMsg)
 
+@filter_optional_action_and_step_data
 def Double_Tap_Appium(data_set):
     #!!!not yet tested or used
     sModuleInfo = inspect.currentframe().f_code.co_name + " : " + MODULE_NAME
@@ -1360,6 +1374,7 @@ def Double_Tap_Appium(data_set):
         errMsg = "Unable to tap."
         return CommonUtil.Exception_Handler(sys.exc_info(),None,errMsg)
 
+@filter_optional_action_and_step_data
 def Long_Press_Appium(data_set):
     ''' Press and hold an element '''
     
@@ -1393,6 +1408,7 @@ def Long_Press_Appium(data_set):
         return CommonUtil.Exception_Handler(sys.exc_info(),None,errMsg)
 
 
+@filter_optional_action_and_step_data
 def Enter_Text_Appium(data_set):
     ''' Write text to an element '''
 
@@ -1463,6 +1479,7 @@ def Enter_Text_Appium(data_set):
         return CommonUtil.Exception_Handler(sys.exc_info(), None, errMsg)
 
 
+@filter_optional_action_and_step_data
 def Pickerwheel_Appium(data_set):
     ''' Write text to a pickerwheel '''
     
@@ -1509,6 +1526,7 @@ def Pickerwheel_Appium(data_set):
         return CommonUtil.Exception_Handler(sys.exc_info(),None,errMsg)
 
 
+@filter_optional_action_and_step_data
 def Clear_And_Enter_Text_ADB(data_set, serial=''):
     ''' Enter string via adb'''
     
@@ -1568,6 +1586,7 @@ def Clear_And_Enter_Text_ADB(data_set, serial=''):
         return CommonUtil.Exception_Handler(sys.exc_info(),None,errMsg)
 
 
+@filter_optional_action_and_step_data
 def Clear_And_Enter_Text_Appium(data_set):
     ''' Write text to an element '''
 
@@ -1632,6 +1651,7 @@ def Clear_And_Enter_Text_Appium(data_set):
         return CommonUtil.Exception_Handler(sys.exc_info(), None, errMsg)
 
 
+@filter_optional_action_and_step_data
 def Hide_Keyboard(data_set):
     ''' 
     This action is used to hide keyboard:
@@ -1650,10 +1670,9 @@ def Hide_Keyboard(data_set):
     except Exception:
         errMsg = "Unable to hide your keyboard"
         return CommonUtil.Exception_Handler(sys.exc_info(), None, errMsg)
-    
 
 
-
+@filter_optional_action_and_step_data
 def Android_Keystroke_Key_Mapping(keystroke, hold_key = False):
     ''' Provides a friendly interface to invoke key events '''
     # Keycodes: https://developer.android.com/reference/android/view/KeyEvent.html
@@ -1712,6 +1731,8 @@ def Android_Keystroke_Key_Mapping(keystroke, hold_key = False):
     except Exception as e:
         return CommonUtil.Exception_Handler(sys.exc_info())
 
+
+@filter_optional_action_and_step_data
 def iOS_Keystroke_Key_Mapping(keystroke):
     sModuleInfo = inspect.currentframe().f_code.co_name + " : " + MODULE_NAME
     CommonUtil.ExecLog(sModuleInfo,"Function Start", 0)
@@ -1738,6 +1759,7 @@ def iOS_Keystroke_Key_Mapping(keystroke):
         return CommonUtil.Exception_Handler(sys.exc_info(),None,errMsg)
 
 
+@filter_optional_action_and_step_data
 def Keystroke_Appium(data_set):
     ''' Send physical or virtual key press or long key press event '''
     
@@ -1783,6 +1805,7 @@ def Keystroke_Appium(data_set):
 
 
 #Validating text from an element given information regarding the expected text
+@filter_optional_action_and_step_data
 def Validate_Text_Appium(data_set):
     '''
 
@@ -1896,6 +1919,8 @@ def Validate_Text_Appium(data_set):
         errMsg = "Could not compare text as requested."
         return CommonUtil.Exception_Handler(sys.exc_info(),None,errMsg)
 
+
+@filter_optional_action_and_step_data
 def get_program_names(search_name):
     ''' Find Package and Activity name based on wildcard match '''
     # Android only
@@ -2009,6 +2034,8 @@ def get_program_names(search_name):
         result = CommonUtil.Exception_Handler(sys.exc_info())
         return result, ''
 
+
+@filter_optional_action_and_step_data
 def device_information(data_set):
     ''' Returns the requested device information '''
     # This is the sequential action interface for much of the adbOptions.py and iosOptions.py, which provides direct device access via their standard comman line tools
@@ -2121,6 +2148,8 @@ def device_information(data_set):
     except Exception:
         return CommonUtil.Exception_Handler(sys.exc_info())
 
+
+@filter_optional_action_and_step_data
 def set_device_password(data_set):
     ''' Saves the device password to shared variables for use in unlocking the phone '''
     # Caveat: Only allows one password stored at a time
@@ -2142,6 +2171,8 @@ def set_device_password(data_set):
     except Exception:
         return CommonUtil.Exception_Handler(sys.exc_info(), None, "Error when trying to read Field and Value for action")
 
+
+@filter_optional_action_and_step_data
 def switch_device(data_set):
     ''' When multiple devices are connected, switches focus to one in particular given the serial number '''
     # Device will be set as default until this function is called again
@@ -2174,6 +2205,8 @@ def switch_device(data_set):
     except Exception:
         return CommonUtil.Exception_Handler(sys.exc_info(), None, "Error when trying to read Field and Value for action")
 
+
+@filter_optional_action_and_step_data
 def package_information(data_set):
     ''' Performs serveral actions on a package '''
     # Note: Appium doens't have an API that allows us to execute anything we want, so this is the solution
@@ -2234,6 +2267,8 @@ def package_information(data_set):
     except Exception:
         return CommonUtil.Exception_Handler(sys.exc_info(), None, "Error trying to execute mobile program")
 
+
+@filter_optional_action_and_step_data
 def minimize_appilcation(data_set):
     ''' Hides the foreground application by pressing the home key '''
     
@@ -2246,6 +2281,8 @@ def minimize_appilcation(data_set):
     except Exception:
         return CommonUtil.Exception_Handler(sys.exc_info(), None, "Error trying to minimize application by sending home key press")
 
+
+@filter_optional_action_and_step_data
 def maximize_appilcation(data_set):
     ''' Displays the original program that was launched by appium '''
     
@@ -2259,6 +2296,7 @@ def maximize_appilcation(data_set):
         return CommonUtil.Exception_Handler(sys.exc_info(), None, "Error trying to maximize application")
 
 
+@filter_optional_action_and_step_data
 def serial_in_devices(serial,devices):
     ''' Displays the original program that was launched by appium '''
 
@@ -2274,7 +2312,7 @@ def serial_in_devices(serial,devices):
         return CommonUtil.Exception_Handler(sys.exc_info(), None, "Error trying to maximize application")
 
 
-
+@filter_optional_action_and_step_data
 def Handle_Mobile_Alert(step_data):
     #accepts browser alert
     '''
@@ -2348,8 +2386,7 @@ def Handle_Mobile_Alert(step_data):
         return CommonUtil.Exception_Handler(sys.exc_info(), None, ErrorMessage)
 
 
-
-
+@filter_optional_action_and_step_data
 def if_element_exists(data_set):
     ''' Click on an element '''
 
@@ -2384,3 +2421,61 @@ def if_element_exists(data_set):
         return CommonUtil.Exception_Handler(sys.exc_info(), None, errMsg)
 
 
+# ----------------- Add actions above this line ----------------- #
+
+# -----------------         Decorators          ----------------- #
+def filter_optional_action_and_step_data(action):
+    """
+    Decorator for filtering actions for the following POINTS based on type of row
+    1. ["platform", "optional parameter", "platform name - ios/android"]
+        skips the action if the device platform and selected platform don't match
+    2. ["propertyA | propertyB", "element parameter", "xyz"]
+        returns the following modified data row
+        ["propertyA", "element parameter", "xyz"] if android
+        ["propertyB", "element parameter", "xyz"] if ios
+
+    Tutorial for decorators: https://timber.io/blog/decorators-in-python/
+    """
+
+    import functools
+    @functools.wraps(action)
+
+    def decorated_action(data_set, *args, **kwargs):
+        # This will be passed to the original function
+        cleaned_data_set = []
+
+        device_platform = appium_driver.capabilities['platformName'].strip().lower()
+
+        for row in data_set:
+            left, middle, right = row
+
+            # POINT 1
+            # Skip execution of action if the intended platform does not match with that of the device
+            if "optional parameter" in middle and "platform" in left:
+                if device_platform.strip().lower() == right.strip().lower():
+                    # Skip this row, as its not intended to be a part of the actual step data
+                    new_row = None
+                else:
+                    # Skip executing this action altogether if the intended platform does not match
+                    sModuleInfo = inspect.currentframe().f_code.co_name + " : " + action.__name__
+                    CommonUtil.ExecLog(sModuleInfo,
+                        "[SKIP] This action has been marked as optional and only intended for the platform '%s'" % right.strip(),
+                        1)
+                    return "passed"
+
+            # POINT 2
+            # If we find a '|' character in the left column, then try to check the platform
+            # and filter the appropriate data for the left column by removing '|'
+            if "element parameter" in middle and left.find("|") != -1:
+                if device_platform == "android":
+                    left = left.split("|")[0].strip()
+                elif device_platform == "ios":
+                    left = left.split("|")[1].strip()
+
+            new_row = (left, middle, right,)
+
+            if new_row:
+                cleaned_data_set.append(new_row)
+
+        return action(cleaned_data_set, *args, **kwargs)
+    return decorated_action
