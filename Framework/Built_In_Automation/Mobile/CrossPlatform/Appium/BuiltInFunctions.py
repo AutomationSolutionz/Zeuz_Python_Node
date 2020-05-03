@@ -869,9 +869,8 @@ def Swipe(x_start, y_start, x_end, y_end, duration = 1000, adb = False):
     
     sModuleInfo = inspect.currentframe().f_code.co_name + " : " + MODULE_NAME
 
-    data_set = filter_optional_action_and_step_data(data_set, sModuleInfo)
-    if not data_set:
-        return 'passed'
+
+
 
     CommonUtil.ExecLog(sModuleInfo,"Function Start", 0)
     
@@ -1206,9 +1205,7 @@ def read_screen_heirarchy():
     
     sModuleInfo = inspect.currentframe().f_code.co_name + " : " + MODULE_NAME
 
-    data_set = filter_optional_action_and_step_data(data_set, sModuleInfo)
-    if not data_set:
-        return 'passed'
+
 
     CommonUtil.ExecLog(sModuleInfo,"Function Start", 0)
     
@@ -1301,9 +1298,7 @@ def get_window_size(read_type = False):
     
     sModuleInfo = inspect.currentframe().f_code.co_name + " : " + MODULE_NAME
 
-    data_set = filter_optional_action_and_step_data(data_set, sModuleInfo)
-    if not data_set:
-        return 'passed'
+
 
     CommonUtil.ExecLog(sModuleInfo,"Function Start", 0)
     
@@ -1753,9 +1748,7 @@ def Android_Keystroke_Key_Mapping(keystroke, hold_key = False):
 
     sModuleInfo = inspect.currentframe().f_code.co_name + " : " + MODULE_NAME
 
-    data_set = filter_optional_action_and_step_data(data_set, sModuleInfo)
-    if not data_set:
-        return 'passed'
+
 
     CommonUtil.ExecLog(sModuleInfo,"Function Start", 0)
     
@@ -1814,9 +1807,6 @@ def Android_Keystroke_Key_Mapping(keystroke, hold_key = False):
 def iOS_Keystroke_Key_Mapping(keystroke):
     sModuleInfo = inspect.currentframe().f_code.co_name + " : " + MODULE_NAME
 
-    data_set = filter_optional_action_and_step_data(data_set, sModuleInfo)
-    if not data_set:
-        return 'passed'
 
     CommonUtil.ExecLog(sModuleInfo,"Function Start", 0)
     
@@ -2020,9 +2010,7 @@ def get_program_names(search_name):
     
     sModuleInfo = inspect.currentframe().f_code.co_name + " : " + MODULE_NAME
 
-    data_set = filter_optional_action_and_step_data(data_set, sModuleInfo)
-    if not data_set:
-        return 'passed'
+
 
     CommonUtil.ExecLog(sModuleInfo,"Function Start", 0)
     
@@ -2420,9 +2408,7 @@ def serial_in_devices(serial,devices):
 
     sModuleInfo = inspect.currentframe().f_code.co_name + " : " + MODULE_NAME
 
-    data_set = filter_optional_action_and_step_data(data_set, sModuleInfo)
-    if not data_set:
-        return 'passed'
+
 
     CommonUtil.ExecLog(sModuleInfo, "Function Start", 0)
 
@@ -2435,7 +2421,7 @@ def serial_in_devices(serial,devices):
         return CommonUtil.Exception_Handler(sys.exc_info(), None, "Error trying to maximize application")
 
 
-def Handle_Mobile_Alert(step_data):
+def Handle_Mobile_Alert(data_set):
     #accepts browser alert
     '''
     handle alert   appium action     get text = my_variable 
@@ -2456,7 +2442,7 @@ def Handle_Mobile_Alert(step_data):
     CommonUtil.ExecLog(sModuleInfo,"Function Start", 0)
     
     try:
-        choice = str(step_data[0][2])
+        choice = str(data_set[0][2])
         choice_lower = choice.lower()
         if choice_lower == 'accept' or choice == 'pass' or choice == 'yes' or choice == 'ok' or  choice == 'allow':
             try:
