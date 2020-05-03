@@ -2538,8 +2538,11 @@ def if_element_exists(data_set):
         return CommonUtil.Exception_Handler(sys.exc_info(), None, errMsg)
 
 def filter_optional_action_and_step_data(data_set, sModuleInfo):
+    
+    sModuleInfo = inspect.currentframe().f_code.co_name + " : " + MODULE_NAME
     # This will be passed to the original function
     cleaned_data_set = []
+    CommonUtil.ExecLog(sModuleInfo, "Original data: %s"%data_set, 1)
 
     device_platform = appium_driver.capabilities['platformName'].strip().lower()
 
@@ -2571,5 +2574,7 @@ def filter_optional_action_and_step_data(data_set, sModuleInfo):
 
         if new_row:
             cleaned_data_set.append(new_row)
+            
+    CommonUtil.ExecLog(sModuleInfo, "Clean data: %s"%cleaned_data_set, 1)
 
     return cleaned_data_set
