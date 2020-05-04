@@ -1494,33 +1494,48 @@ def Enter_Text_Appium(data_set):
                 # Element.clear() # Remove any text already existing
 
                 if str(appium_details[device_id]['type']).lower() == 'ios':
-                    Element.set_value(text_value)  # Work around for IOS issue in Appium v1.6.4 where send_keys() doesn't work
+                    Element.send_keys(text_value)  # Work around for IOS issue in Appium v1.6.4 where send_keys() doesn't work
+            
             except Exception:
-                errMsg = "Found element, but couldn't write text to it"
-                return CommonUtil.Exception_Handler(sys.exc_info(), None, errMsg)
+                CommonUtil.ExecLog(sModuleInfo, "Found element, but couldn't write text to it using SendKeys method. Trying SetValue method",2)
+                #return CommonUtil.Exception_Handler(sys.exc_info(), None, errMsg)
 
             # This is wrapped in it's own try block because we sometimes get an error 
             # from send_keys stating "Parameters were incorrect". However, most devices work only with send_keys
             try:
                 if str(appium_details[device_id]['type']).lower() != 'ios':
                     Element.set_value(text_value)   # Enter the user specified text
-                    
+                
             except Exception:
-                CommonUtil.ExecLog(sModuleInfo, "Found element, but couldn't write text to it. Trying another method",2)
-                '''try:
-                    Element.set_value(text_value) # Enter the user specified text
-                except Exception:
-                    errMsg = "Found element, but couldn't write text to it. Giving up"
-                    return CommonUtil.Exception_Handler(sys.exc_info(),None,errMsg)'''
+                CommonUtil.ExecLog(sModuleInfo, "Still could not write text to it. Both SendKeys and Set_value method did not work",3)
+                return "failed"
+            '''try:
+                Element.set_value(text_value) # Enter the user specified text
+            except Exception:
+                errMsg = "Found element, but couldn't write text to it. Giving up"
+                return CommonUtil.Exception_Handler(sys.exc_info(),None,errMsg)'''
 
-            # Complete the action
-            # Do not disable this as a lot of time keyboard blocks out other fields.
+
+            #Enter android text
             try:
-                appium_driver.hide_keyboard() # Remove keyboard
+                if str(appium_details[device_id]['type']).lower() != 'android':
+                    Element.set_value(text_value)   # Enter the user specified text
             
+            except Exception:
+                CommonUtil.ExecLog(sModuleInfo, "Unable to SetValue to text field",3)
+                return CommonUtil.Exception_Handler(sys.exc_info(), None, errMsg)                         
+            
+            #try to hide keyboard for android
+            # Do not disable this as a lot of time keyboard blocks out other fields.
+            try:      
+                if str(appium_details[device_id]['type']).lower() != 'android':        
+                        appium_driver.hide_keyboard() # Remove keyboard
+                
             except Exception:
                 CommonUtil.ExecLog(sModuleInfo, "Unable to hide the keyboard",2)            
             
+            
+            #ios and android if passes
             try:
                 CommonUtil.TakeScreenShot(sModuleInfo)  # Capture screen
                 CommonUtil.ExecLog(sModuleInfo, "Successfully set the value of to text to: %s" % text_value, 1)
