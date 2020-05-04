@@ -148,7 +148,7 @@ def zeuz_authentication_prompts_for_cli():
 
 
 def Login(cli=False):
-    install_missing_modules(req_file_path=True)
+    # install_missing_modules(req_file_path=True)
     username=ConfigModule.get_config_value(AUTHENTICATION_TAG,USERNAME_TAG)
     password = ConfigModule.get_config_value(AUTHENTICATION_TAG,PASSWORD_TAG)
     server_name = ConfigModule.get_config_value(AUTHENTICATION_TAG,"server_address")

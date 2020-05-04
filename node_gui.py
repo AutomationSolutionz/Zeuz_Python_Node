@@ -106,7 +106,7 @@ except:
 
 import tkinter.messagebox
 os.chdir(os.path.join(os.path.dirname(os.path.realpath(__file__)), 'Framework')) # Move to Framework directory, so all modules can be seen
-install_missing_modules(req_file_path=True)
+# install_missing_modules(req_file_path=True)
 from Framework.Utilities import ConfigModule, FileUtilities, self_updater # Modifing settings files
 from node_cli import Login, disconnect_from_server, get_team_names, get_project_names, check_server_online, processing_test_case # Controlling node status and logging in
 
