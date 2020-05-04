@@ -1845,8 +1845,11 @@ def Keystroke_Appium(data_set):
     
     # Parse data set
     try:
-        keystroke_type = data_set[0][0].replace(' ', '').lower() # "keypress" or "long press"
-        keystroke_value = data_set[0][2]
+        keystroke_value = ''
+        for row in data_set:
+            if  row[0].strip().lower() == "keypress"  or row[0].strip().lower() == "long press": 
+                keystroke_type = row[0].strip().lower() # "keypress" or "long press"
+                keystroke_value = row[2]
         
         if keystroke_value == '':
             CommonUtil.ExecLog(sModuleInfo,"Could not find keystroke value", 3)
@@ -2424,6 +2427,7 @@ def serial_in_devices(serial,devices):
 def Handle_Mobile_Alert(data_set):
     #accepts browser alert
     '''
+    this works for both ios and Android
     handle alert   appium action     get text = my_variable 
     handle alert   appium action     send text = my text to send to alert   
     handle alert   appium action     accept, pass, yes, ok (any of these would work)
@@ -2442,6 +2446,9 @@ def Handle_Mobile_Alert(data_set):
     CommonUtil.ExecLog(sModuleInfo,"Function Start", 0)
     
     try:
+        
+        
+        
         choice = str(data_set[0][2])
         choice_lower = choice.lower()
         if choice_lower == 'accept' or choice == 'pass' or choice == 'yes' or choice == 'ok' or  choice == 'allow':
@@ -2545,7 +2552,7 @@ def filter_optional_action_and_step_data(data_set, sModuleInfo):
         CommonUtil.ExecLog(sModuleInfo, "Currently running with %s"%device_platform, 1)
         
         for row in data_set:
-            if row[1].strip().lower() == 'optional parameter' and row[0].strip().lower() == "platform": 
+            if  row[0].strip().lower() == "platform": 
                 os_to_run_on = row[2].strip().lower()
                 if device_platform != os_to_run_on:
                     CommonUtil.ExecLog(sModuleInfo,"[SKIP] This action has been marked as optional and only intended for the platform '%s'" % os_to_run_on,1)
