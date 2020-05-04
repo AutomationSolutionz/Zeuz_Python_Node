@@ -1589,9 +1589,12 @@ def Clear_And_Enter_Text_ADB(data_set, serial=''):
     
     sModuleInfo = inspect.currentframe().f_code.co_name + " : " + MODULE_NAME
 
-    skip_or_not = filter_optional_action_and_step_data(data_set, sModuleInfo)
-    if skip_or_not == False:
-        return 'passed'
+        
+    device_platform = str(appium_driver.capabilities['platformName'].strip().lower())
+    
+    if device_platform != 'android':
+        CommonUtil.ExecLog(sModuleInfo, "Connected device is not Android.  Skipping this as pass.  This action is only for Android ", 2)
+        return "passed"
 
     CommonUtil.ExecLog(sModuleInfo,"Function Start", 0)
     
@@ -1727,9 +1730,12 @@ def Hide_Keyboard(data_set):
 
     sModuleInfo = inspect.currentframe().f_code.co_name + " : " + MODULE_NAME
 
-    skip_or_not = filter_optional_action_and_step_data(data_set, sModuleInfo)
-    if skip_or_not == False:
-        return 'passed'
+        
+    device_platform = str(appium_driver.capabilities['platformName'].strip().lower())
+    
+    if device_platform != 'android':
+        CommonUtil.ExecLog(sModuleInfo, "Connected device is not Android.  Skipping this as pass.  This action is only for Android ", 2)
+        return "passed"
 
     CommonUtil.ExecLog(sModuleInfo, "Function Start", 0)
 
@@ -2447,8 +2453,7 @@ def Handle_Mobile_Alert(data_set):
     
     try:
         
-        
-        
+
         choice = str(data_set[0][2])
         choice_lower = choice.lower()
         if choice_lower == 'accept' or choice == 'pass' or choice == 'yes' or choice == 'ok' or  choice == 'allow':
