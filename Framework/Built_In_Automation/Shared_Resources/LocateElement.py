@@ -62,15 +62,23 @@ def Get_Element(step_data_set,driver,query_debug=False, wait_enable = True):
                 # and filter the appropriate data for the left column by removing '|'
                 device_platform = generic_driver.capabilities['platformName'].strip().lower()
                 cleaned_data_set = []
-                for row in step_data_set:
-                    left, middle, right = row
+                str_to_strip = "|*|"
+                for left, middle, right in step_data_set:
+                    if "element parameter" in middle:
+                        # Split the attribute field if str_to_strip is present
+                        if left.find(str_to_strip) != -1:
+                            if device_platform == "android":
+                                left = left.split(str_to_strip)[0].strip()
+                            elif device_platform == "ios":
+                                left = left.split(str_to_strip)[1].strip()
 
-                    if "element parameter" in middle and left.find("|") != -1:
-                        if device_platform == "android":
-                            left = left.split("|")[0].strip()
-                        elif device_platform == "ios":
-                            left = left.split("|")[1].strip()
-                            
+                        # Split the value field if str_to_strip is present
+                        if right.find(str_to_strip) != -1:
+                            if device_platform == "android":
+                                right = right.split(str_to_strip)[0].strip()
+                            elif device_platform == "ios":
+                                right = right.split(str_to_strip)[1].strip()
+
                     new_row = (left, middle, right,)
                     cleaned_data_set.append(new_row)
                 
