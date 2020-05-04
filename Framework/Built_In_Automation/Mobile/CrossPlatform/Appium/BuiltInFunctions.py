@@ -2452,9 +2452,11 @@ def Handle_Mobile_Alert(data_set):
     CommonUtil.ExecLog(sModuleInfo,"Function Start", 0)
     
     try:
-        
+        choice = None
+        for row in data_set:
+            if  row[0].strip().lower() == "handle alert": 
+                choice = row[2]        
 
-        choice = str(data_set[0][2])
         choice_lower = choice.lower()
         if choice_lower == 'accept' or choice == 'pass' or choice == 'yes' or choice == 'ok' or  choice == 'allow':
             try:
