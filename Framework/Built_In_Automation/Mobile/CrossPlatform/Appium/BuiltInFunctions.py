@@ -2541,23 +2541,19 @@ def filter_optional_action_and_step_data(data_set, sModuleInfo):
     sModuleInfo = inspect.currentframe().f_code.co_name + " : " + MODULE_NAME
     try:
         CommonUtil.ExecLog(sModuleInfo, "Checking to see if we need to skip this action based on OS", 1)
-        device_platform = appium_driver.capabilities['platformName'].strip().lower()
-    
+        device_platform = str(appium_driver.capabilities['platformName'].strip().lower())
+        CommonUtil.ExecLog(sModuleInfo, "Currently running with %s"%device_platform, 1)
+        
         for row in data_set:
-            left, middle, right = row
-    
-            # Skip execution of action if the intended platform does not match with that of the device
-            if "optional parameter" in middle and "platform" in left:
-                if device_platform.strip().lower() != right.strip().lower():
-                    CommonUtil.ExecLog(sModuleInfo,
-                        "[SKIP] This action has been marked as optional and only intended for the platform '%s'" % right.strip(),
-                        1)
-    
-                    # return no data set, indicating that the action should be skipped
+            if row[1].strip().lower() == 'optional parameter' and row[0].strip().lower() == "platform": 
+                os_to_run_on = row[2].strip().lower()
+                if device_platform != os_to_run_on:
+                    CommonUtil.ExecLog(sModuleInfo,"[SKIP] This action has been marked as optional and only intended for the platform '%s'" % os_to_run_on,1)
                     return False
+                else:
+                    return True
     
         return True
     except Exception:
         CommonUtil.ExecLog(sModuleInfo, "Unable to skip optional action based on OS", 2)
-
         return True
