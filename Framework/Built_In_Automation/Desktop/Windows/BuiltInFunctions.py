@@ -883,12 +883,18 @@ def Keystroke_For_Element(data_set):
     try:
         time.sleep(2)
         keystroke_value = ''
+        keystroke_char = False
         for row in data_set:
             if "action" in row[1]:
                 if row[0] == "keystroke keys":
                     keystroke_value = str(row[2]).lower()  # Store keystrok
-
-        if keystroke_value == '':
+                elif row[0] == "keystroke chars":
+                    keystroke_char = str(row[2])
+                    
+                        
+        
+        
+        if keystroke_value == '' and keystroke_char == '':
             CommonUtil.ExecLog(sModuleInfo, "Invalid action found", 3)
             return 'failed'
 
@@ -898,6 +904,20 @@ def Keystroke_For_Element(data_set):
 
     # Perform action
     try:
+        
+        try:
+            if keystroke_char != False:
+                pyautogui.write(keystroke_char)  
+                CommonUtil.TakeScreenShot(sModuleInfo)  # Capture screenshot, if settings allow for it
+
+                CommonUtil.ExecLog(sModuleInfo, "Successfully entered characters %s"%keystroke_char, 1)
+                return 'passed'
+                
+        except: 
+            errMsg = "Could not enter characters for your element."
+            return CommonUtil.Exception_Handler(sys.exc_info(), None, errMsg)            
+            
+        
         count = 1
         if ',' in keystroke_value:  # Check for delimiter indicating multiple keystrokes
             keystroke_value, count = keystroke_value.split(',')  # Separate keystroke and count
@@ -915,3 +935,9 @@ def Keystroke_For_Element(data_set):
     except Exception:
         errMsg = "Could not enter keystroke for your element."
         return CommonUtil.Exception_Handler(sys.exc_info(), None, errMsg)
+    
+    
+    
+    
+    
+    
