@@ -163,7 +163,7 @@ def find_correct_device_on_first_run(serial_or_name, device_info):
     
     try:
         # Get list of connected devices
-        devices = {} # Temporarily store connected device serial numbers
+        devices = {} # Temporarily store connected device serial numberspick
         all_device_info = All_Device_Info.get_all_connected_device_info()
         
         # Ensure we have at least one device connected
@@ -1341,7 +1341,7 @@ def Click_Element_Appium(data_set):
         offset = False
         
         for row in data_set:
-            if 'optional' in  str(row[1]).lower().strip() and 'x_offset:y_offset' in str(row[0]).lower().strip() :
+            if 'option' in  str(row[1]).lower().strip() and 'x_offset:y_offset' in str(row[0]).lower().strip() :
                 offset = True
                 x_offset = ((str(row[2]).lower().strip()).split(':')[0]).strip()
                 y_offset = ((str(row[2]).lower().strip()).split(':')[1]).strip()
@@ -1357,6 +1357,7 @@ def Click_Element_Appium(data_set):
             if Element.is_enabled():
                 if offset == True:
                     try:
+                        CommonUtil.ExecLog(sModuleInfo, "Clicking the element based on offset with appium TouchAction.", 1)
                         start_loc = Element.location
                         height_width = Element.size                        
                         start_x = int ((start_loc)['x'])
@@ -1368,8 +1369,8 @@ def Click_Element_Appium(data_set):
                         center_x  =  (start_x + (ele_width/2))
                         center_y  =  (start_y + (ele_height/2))
                         # we need to divide the width and height by 2 as we are offseting from the center not the full 
-                        total_x_offset = (x_offset/100) * (ele_width/2)
-                        total_y_offset = (y_offset/100) * (ele_height/2)
+                        total_x_offset = (int(x_offset)/100) * (ele_width/2)
+                        total_y_offset = (int(y_offset)/100) * (ele_height/2)
                         
                         x_cord_to_tap = center_x + total_x_offset
                         y_cord_to_tap = center_y + total_y_offset                            
@@ -1430,7 +1431,7 @@ def Tap_Appium(data_set):
         offset = False
         
         for row in data_set:
-            if 'optional' in  str(row[1]).lower().strip() and 'x_offset:y_offset' in str(row[0]).lower().strip() :
+            if 'option' in  str(row[1]).lower().strip() and 'x_offset:y_offset' in str(row[0]).lower().strip() :
                 offset = True
                 x_offset = ((str(row[2]).lower().strip()).split(':')[0]).strip()
                 y_offset = ((str(row[2]).lower().strip()).split(':')[1]).strip()
@@ -1445,6 +1446,7 @@ def Tap_Appium(data_set):
 
                     if offset == True:
                         try:
+                            CommonUtil.ExecLog(sModuleInfo, "Tapping the element based on offset using TouchAction", 1) 
                             start_loc = Element.location
                             height_width = Element.size
                                                     
@@ -1459,9 +1461,9 @@ def Tap_Appium(data_set):
                             center_x  =  (start_x + (ele_width/2))
                             center_y  =  (start_y + (ele_height/2))
                             # we need to divide the width and height by 2 as we are offseting from the center not the full 
-                            total_x_offset = (x_offset/100) * (ele_width/2)
-                            total_y_offset = (y_offset/100) * (ele_height/2)
-                            
+                            total_x_offset = (int(x_offset)/100) * (ele_width/2)
+                            total_y_offset = (int(y_offset)/100) * (ele_height/2)
+                                
                             x_cord_to_tap = center_x + total_x_offset
                             y_cord_to_tap = center_y + total_y_offset                            
                             TouchAction(appium_driver).tap(None, x_cord_to_tap, y_cord_to_tap, 1).perform()
