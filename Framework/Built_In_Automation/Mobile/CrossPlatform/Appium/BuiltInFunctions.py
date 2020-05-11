@@ -23,6 +23,7 @@ from Framework.Built_In_Automation.Shared_Resources import LocateElement
 import psutil
 
 
+
 MODULE_NAME = inspect.getmodulename(__file__)
 
 PATH_ = lambda p: os.path.abspath(os.path.join(os.path.dirname(__file__), p))
@@ -1314,7 +1315,10 @@ def get_window_size(read_type = False):
     
 
 def Click_Element_Appium(data_set):
-    ''' Click on an element '''
+    ''' Click on an element 
+    
+    
+    '''
     
     sModuleInfo = inspect.currentframe().f_code.co_name + " : " + MODULE_NAME
 
@@ -1325,6 +1329,9 @@ def Click_Element_Appium(data_set):
     CommonUtil.ExecLog(sModuleInfo,"Function Start", 0)
 
     try:
+
+        
+        
         Element = LocateElement.Get_Element(data_set,appium_driver)
         if Element == "failed":
             CommonUtil.ExecLog(sModuleInfo, "Unable to locate your element with given data.", 3)
@@ -1351,7 +1358,15 @@ def Click_Element_Appium(data_set):
     
     
 def Tap_Appium(data_set):
-    ''' Execute "Tap" for an element '''
+    ''' Execute "Tap" for an element 
+      if optional parameter is provided for offset, we will take it from the center of the object and % of the actual bounds
+      
+      Example:
+      below example, will offset by 25 of the bound to the right from the center of the object
+      
+      x_offset:y_offset             optional parameter           25:0
+    
+    '''
     
     sModuleInfo = inspect.currentframe().f_code.co_name + " : " + MODULE_NAME
 
@@ -1362,6 +1377,18 @@ def Tap_Appium(data_set):
     CommonUtil.ExecLog(sModuleInfo,"Function Start", 0)
 
     try:
+
+        
+        x_offset = False
+        y_offset = False
+        offset = False
+        
+        for row in data_set:
+            if 'optional' in  str(row[1]).lower().strip() and 'x_offset:y_offset' in str(row[0]).lower().strip() :
+                offset = True
+                x_offset = ((str(row[2]).lower().strip()).split(':')[0]).strip()
+                y_offset = ((str(row[2]).lower().strip()).split(':')[1]).strip()
+
         Element = LocateElement.Get_Element(data_set,appium_driver)
         if Element == "failed":
             CommonUtil.ExecLog(sModuleInfo, "Unable to locate your element with given data.", 3)
@@ -1369,10 +1396,46 @@ def Tap_Appium(data_set):
         else:
             try:
                 if Element.is_enabled():
-                    action = TouchAction(appium_driver)
-                    action.tap(Element).perform()
-                    CommonUtil.ExecLog(sModuleInfo, "Tapped on element successfully", 1)                   
-                    return "passed"
+
+                    if offset == True:
+                        try:
+                            start_loc = Element.location
+                            height_width = Element.size
+                                                    
+                            start_x = int ((start_loc)['x'])
+                            start_y = int ((start_loc)['y'])
+                            
+                            ele_width = int ((height_width)['width'])
+                            ele_height = int ((height_width)['height'])
+                            
+                            
+                            # calculate center of the elem 
+                            center_x  =  (start_x + (ele_width/2))
+                            center_y  =  (start_y + (ele_height/2))
+                            # we need to divide the width and height by 2 as we are offseting from the center not the full 
+                            total_x_offset = (x_offset/100) * (ele_width/2)
+                            total_y_offset = (y_offset/100) * (ele_height/2)
+                            
+                            x_cord_to_tap = center_x + total_x_offset
+                            y_cord_to_tap = center_y + total_y_offset                            
+                            TouchAction(appium_driver).tap(None, x_cord_to_tap, y_cord_to_tap, 1).perform()
+                            CommonUtil.ExecLog(sModuleInfo, "Tapped on element by offset successfully", 1)                   
+                            return "passed"                        
+                                
+                            
+                            
+                            
+                            
+                        except:
+                            CommonUtil.TakeScreenShot(sModuleInfo)
+                            CommonUtil.ExecLog(sModuleInfo, "Element is enabled. Unable to tap based on offset.", 3)
+                            return "failed"
+                    else:
+                
+                        action = TouchAction(appium_driver)
+                        action.tap(Element).perform()
+                        CommonUtil.ExecLog(sModuleInfo, "Tapped on element successfully", 1)                   
+                        return "passed"
                 else:
                     CommonUtil.TakeScreenShot(sModuleInfo)
                     CommonUtil.ExecLog(sModuleInfo, "Element not enabled. Unable to click.", 3)
