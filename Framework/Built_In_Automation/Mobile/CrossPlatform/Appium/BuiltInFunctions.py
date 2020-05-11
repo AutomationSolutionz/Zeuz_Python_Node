@@ -1315,8 +1315,14 @@ def get_window_size(read_type = False):
     
 
 def Click_Element_Appium(data_set):
-    ''' Click on an element 
+    ''' Execute "click" for an element 
     
+      if optional parameter is provided for offset, we will take it from the center of the object and % center of the bound
+      
+      Example:
+      below example will offset by 25% to the right off the center of the element.  If we select 100% it will go to the right edge of the bound.  If you want to go left prove -25.
+            
+      x_offset:y_offset             optional parameter           25:0
     
     '''
     
@@ -1330,27 +1336,67 @@ def Click_Element_Appium(data_set):
 
     try:
 
+        x_offset = False
+        y_offset = False
+        offset = False
         
-        
+        for row in data_set:
+            if 'optional' in  str(row[1]).lower().strip() and 'x_offset:y_offset' in str(row[0]).lower().strip() :
+                offset = True
+                x_offset = ((str(row[2]).lower().strip()).split(':')[0]).strip()
+                y_offset = ((str(row[2]).lower().strip()).split(':')[1]).strip()
+
         Element = LocateElement.Get_Element(data_set,appium_driver)
+        
         if Element == "failed":
             CommonUtil.ExecLog(sModuleInfo, "Unable to locate your element with given data.", 3)
             return "failed" 
+        
+        
         else:
-            try:
-               
-                if Element.is_enabled():
-                    Element.click()
-                    CommonUtil.TakeScreenShot(sModuleInfo)
-                    CommonUtil.ExecLog(sModuleInfo, "Successfully clicked the element with given parameters and values", 1)                        
-                    return "passed"
+            if Element.is_enabled():
+                if offset == True:
+                    try:
+                        start_loc = Element.location
+                        height_width = Element.size                        
+                        start_x = int ((start_loc)['x'])
+                        start_y = int ((start_loc)['y'])
+                        ele_width = int ((height_width)['width'])
+                        ele_height = int ((height_width)['height'])
+
+                        # calculate center of the elem 
+                        center_x  =  (start_x + (ele_width/2))
+                        center_y  =  (start_y + (ele_height/2))
+                        # we need to divide the width and height by 2 as we are offseting from the center not the full 
+                        total_x_offset = (x_offset/100) * (ele_width/2)
+                        total_y_offset = (y_offset/100) * (ele_height/2)
+                        
+                        x_cord_to_tap = center_x + total_x_offset
+                        y_cord_to_tap = center_y + total_y_offset                            
+                        TouchAction(appium_driver).tap(None, x_cord_to_tap, y_cord_to_tap, 1).perform()
+                        CommonUtil.ExecLog(sModuleInfo, "Tapped on element by offset successfully", 1)                   
+                        return "passed"                        
+
+                    except:
+                        CommonUtil.TakeScreenShot(sModuleInfo)
+                        CommonUtil.ExecLog(sModuleInfo, "Element is enabled. Unable to tap based on offset.", 3)
+                        return "failed"        
+
                 else:
-                    CommonUtil.TakeScreenShot(sModuleInfo)
-                    CommonUtil.ExecLog(sModuleInfo, "Element not enabled. Unable to click.", 3)
-                    return "failed"
-            except Exception:
-                errMsg = "Could not select/click your element."
-                return CommonUtil.Exception_Handler(sys.exc_info(),None,errMsg)
+                    try:
+                        Element.click()
+                        CommonUtil.TakeScreenShot(sModuleInfo)
+                        CommonUtil.ExecLog(sModuleInfo, "Successfully clicked the element with given parameters and values", 1)                        
+                        return "passed"
+            
+                    except Exception:
+                        errMsg = "Could not select/click your element."
+                        return CommonUtil.Exception_Handler(sys.exc_info(),None,errMsg)
+
+            else:
+                CommonUtil.TakeScreenShot(sModuleInfo)
+                CommonUtil.ExecLog(sModuleInfo, "Element not enabled. Unable to click.", 3)
+                return "failed"
 
     except Exception:
         errMsg = "Could not find/click your element."
@@ -1359,10 +1405,10 @@ def Click_Element_Appium(data_set):
     
 def Tap_Appium(data_set):
     ''' Execute "Tap" for an element 
-      if optional parameter is provided for offset, we will take it from the center of the object and % of the actual bounds
+      if optional parameter is provided for offset, we will take it from the center of the object and % center of the bound
       
       Example:
-      below example will offset by 25% to the right off center of the element.  If we select 100% it will go to the right edge of the bound.  If you want to go left prove -25.
+      below example will offset by 25% to the right off the center of the element.  If we select 100% it will go to the right edge of the bound.  If you want to go left prove -25.
             
       x_offset:y_offset             optional parameter           25:0
     
