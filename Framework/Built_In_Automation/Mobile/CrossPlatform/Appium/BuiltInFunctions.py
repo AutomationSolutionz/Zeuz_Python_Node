@@ -1362,7 +1362,7 @@ def Tap_Appium(data_set):
       if optional parameter is provided for offset, we will take it from the center of the object and % of the actual bounds
       
       Example:
-      below example, will offset by 25 of the bound to the right from the center of the object
+      below example, will offset by 25% from the center to the right of the bound of the object.  -25% will mean to the left of the object.
       
       x_offset:y_offset             optional parameter           25:0
     
