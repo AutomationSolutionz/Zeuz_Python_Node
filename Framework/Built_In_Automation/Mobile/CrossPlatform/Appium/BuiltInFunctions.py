@@ -398,6 +398,21 @@ def launch_application(data_set):
             elif str(row[1]).strip().lower() == 'action':
                 serial = row[2].lower().strip()
 
+        # desired capabilities for specific platforms
+        desiredcaps = dict()
+
+        # device_type = appium_details[device_id]['type'].lower().strip()
+        device_type = 'android'
+        
+        for left, mid, right in data_set:
+            left, mid = left.strip().lower(), mid.strip().lower()
+
+            if 'option' in mid:
+                # key, value
+                k, v = map(lambda x: x.strip(), right.split('='))
+
+                if left in (device_type, 'multi'):
+                    desiredcaps[k] = v
 
         # Set the global variable for the preferred connected device
         if find_correct_device_on_first_run(serial, device_info) in failed_tag_list: return 'failed'
@@ -434,7 +449,7 @@ def launch_application(data_set):
             device_name = appium_details[device_id]['device_name']
         launch_app = True
         if appium_details[device_id]['driver'] == None: # Only create a new appium instance if we haven't already (may be done by install_and_start_driver())
-            result,launch_app = start_appium_driver(package_name, activity_name,platform_version=platform_version,device_name=device_name,ios=ios,no_reset=no_reset, work_profile=work_profile)
+            result,launch_app = start_appium_driver(package_name, activity_name,platform_version=platform_version,device_name=device_name,ios=ios,no_reset=no_reset, work_profile=work_profile, desiredcaps=desiredcaps)
             if result == 'failed':
                 return 'failed'
         
@@ -515,7 +530,7 @@ def start_appium_server():
     except Exception:
         return CommonUtil.Exception_Handler(sys.exc_info(), None, "Error starting Appium server")
 
-def start_appium_driver(package_name = '', activity_name = '', filename = '', platform_version='', device_name='',ios='', no_reset=False, work_profile=False):
+def start_appium_driver(package_name = '', activity_name = '', filename = '', platform_version='', device_name='',ios='', no_reset=False, work_profile=False, desiredcaps=None):
     ''' Creates appium instance using discovered and provided capabilities '''
     # Does not execute application
     
@@ -530,8 +545,10 @@ def start_appium_driver(package_name = '', activity_name = '', filename = '', pl
             if start_appium_server() in failed_tag_list:
                 return 'failed',launch_app
 
-            # Create Appium driver
+            # Include the user provided desired capabilities
+            desired_caps.update(desiredcaps)
     
+            # Create Appium driver
             # Setup capabilities
             desired_caps = {}
             desired_caps['platformName'] = appium_details[device_id]['type'] # Set platform name
@@ -540,7 +557,6 @@ def start_appium_driver(package_name = '', activity_name = '', filename = '', pl
             desired_caps['noReset'] = 'true' # Do not clear application cache when complete
             desired_caps['newCommandTimeout'] = 600 # Command timeout before appium destroys instance
 
-            
             if str(appium_details[device_id]['type']).lower() == 'android':
                 if adbOptions.is_android_connected(device_serial) == False:
                     CommonUtil.ExecLog(sModuleInfo, "Could not detect any connected Android devices", 3)
