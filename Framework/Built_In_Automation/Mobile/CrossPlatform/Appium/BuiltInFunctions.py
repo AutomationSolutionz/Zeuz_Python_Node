@@ -544,12 +544,13 @@ def start_appium_driver(package_name = '', activity_name = '', filename = '', pl
             if start_appium_server() in failed_tag_list:
                 return 'failed',launch_app
 
-            # Include the user provided desired capabilities
-            desired_caps.update(desiredcaps)
-    
             # Create Appium driver
             # Setup capabilities
             desired_caps = {}
+
+            # Include the user provided desired capabilities
+            desired_caps.update(desiredcaps)
+    
             desired_caps['platformName'] = appium_details[device_id]['type'] # Set platform name
             desired_caps['autoLaunch'] = 'false' # Do not launch application
             desired_caps['fullReset'] = 'false' # Do not clear application cache when complete
