@@ -401,8 +401,7 @@ def launch_application(data_set):
         # desired capabilities for specific platforms
         desiredcaps = dict()
 
-        # device_type = appium_details[device_id]['type'].lower().strip()
-        device_type = 'android'
+        device_type = appium_details[device_id]['type'].lower().strip()
         
         for left, mid, right in data_set:
             left, mid = left.strip().lower(), mid.strip().lower()
