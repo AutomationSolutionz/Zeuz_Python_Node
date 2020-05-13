@@ -34,10 +34,8 @@ emulator_location_raw = (subprocess.Popen("where emulator",
 
 emulator_location_list = emulator_location_raw.splitlines()
 
-for each in emulator_location_list:
-    if "emulator.exe"  in each:
-        full_emulator_path = (each.split('tools\emulator.exe')[0]) + os.sep + 'emulator' + os.sep + 'emulator.exe'
-        break
+
+full_emulator_path = emulator_location_list[0]
 
 from pick import pick
 title = 'Please select an emulator '
