@@ -41,7 +41,8 @@ def get_android_version(serial=''):
         if serial != '': serial = '-s %s' % serial  # Prepare serial number with command line switch
         output = subprocess.check_output("adb %s shell getprop ro.build.version.release" % serial, shell=True, encoding='utf-8')
         CommonUtil.ExecLog(sModuleInfo, "%s" % output, 0)
-        return output.strip()
+        output_clean = str(output.strip())
+        return output_clean
 
     except Exception:
         errMsg = "Unable to get android version"
