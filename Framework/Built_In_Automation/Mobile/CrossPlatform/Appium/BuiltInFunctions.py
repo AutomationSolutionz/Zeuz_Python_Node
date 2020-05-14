@@ -1701,7 +1701,7 @@ def Pickerwheel_Appium(data_set):
 
             # This is wrapped in it's own try block because we sometimes get an error from send_keys stating "Parameters were incorrect". However, most devices work only with send_keys
             try:
-                Element.send_keys(text_value) # Enter the user specified text
+                Element.set_value(text_value) # Enter the user specified text
             except Exception:
                 CommonUtil.ExecLog(sModuleInfo, "Found element, but couldn't write text to it. Trying another method", 2)
 
