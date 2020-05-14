@@ -273,7 +273,7 @@ action_support = [
     'get parameter',
     'loop settings',
     'attribute constrain',
-    'optional option'
+    'optional option',
 ]
 
 # List of supported mobile platforms - must be lower case

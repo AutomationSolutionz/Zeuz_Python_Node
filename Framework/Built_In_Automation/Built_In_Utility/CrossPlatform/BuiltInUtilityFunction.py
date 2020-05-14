@@ -2136,7 +2136,7 @@ def replace_Substring(data_set):
             try:
                 value = Shared_Resources.Get_Shared_Variables(var_name)
                 value = value.replace(find_value, replace_with)
-                CommonUtil.ExecLog(sModuleInfo, "Replace '%s' with '%s' in variable %s"%(find, replace_with, var_name), 1)
+                CommonUtil.ExecLog(sModuleInfo, "Replace '%s' with '%s' in variable %s"%(find_value, replace_with, var_name), 1)
                 Shared_Resources.Set_Shared_Variables(var_name, value)
                 CommonUtil.ExecLog(sModuleInfo, "Value '%s' is save in variable %s"%(value, var_name),1)
                 return "passed"
