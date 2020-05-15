@@ -400,6 +400,8 @@ def launch_application(data_set):
 
         # desired capabilities for specific platforms
         desiredcaps = dict()
+        # Set the global variable for the preferred connected device
+        if find_correct_device_on_first_run(serial, device_info) in failed_tag_list: return 'failed'
 
         device_type = appium_details[device_id]['type'].lower().strip()
         
@@ -413,8 +415,6 @@ def launch_application(data_set):
                 if left in (device_type, 'multi'):
                     desiredcaps[k] = v
 
-        # Set the global variable for the preferred connected device
-        if find_correct_device_on_first_run(serial, device_info) in failed_tag_list: return 'failed'
             
         # Send wake up command to avoid issues with devices ignoring appium when they are in lower power mode (android 6.0+), and unlock if passworded
         if appium_details[device_id]['type'] == 'android':
