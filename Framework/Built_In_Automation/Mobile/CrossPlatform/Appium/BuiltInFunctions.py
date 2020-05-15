@@ -502,7 +502,7 @@ def start_appium_server():
                     appium_binary_path = os.path.normpath(appium_binary)
                     appium_binary_path = os.path.abspath(os.path.join(appium_binary_path, os.pardir))
                     env = {"PATH": str(appium_binary_path)}
-                    appium_server = subprocess.Popen(['appium', '-p', str(appium_port)], env=env)
+                    appium_server = subprocess.Popen(['appium --allow-insecure chromedriver_autodownload', '-p', str(appium_port)], env=env)
                 except:
                     CommonUtil.ExecLog(sModuleInfo,"Couldn't launch appium server, please do it manually ny typing 'appium &' in the terminal",2)
                     pass
