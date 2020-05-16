@@ -118,7 +118,7 @@ actions = { # Numbers are arbitrary, and are not used anywhere
     238: {'module': 'appium', 'screenshot':'mobile', 'name': 'clear and enter text adb', 'function': 'Clear_And_Enter_Text_ADB'},
     239: {'module': 'appium', 'screenshot':'mobile', 'name': 'hide keyboard', 'function': 'Hide_Keyboard'},
     240: {'module': 'appium', 'screenshot':'mobile', 'name': 'handle alert', 'function': 'Handle_Mobile_Alert'},
-
+    241: {'module': 'appium', 'screenshot':'mobile', 'name': 'switch context', 'function': 'Switch_Context'},
 
     300: {'module': 'rest', 'screenshot':'none', 'name': 'save response', 'function': 'Get_Response_Wrapper'},
     301: {'module': 'rest', 'screenshot':'none', 'name': 'search response', 'function': 'Search_Response'},

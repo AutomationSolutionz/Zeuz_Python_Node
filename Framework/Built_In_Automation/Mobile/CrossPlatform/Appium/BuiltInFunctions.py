@@ -1365,10 +1365,27 @@ def Click_Element_Appium(data_set):
         Element = LocateElement.Get_Element(data_set,appium_driver)
         
         if Element == "failed":
+            context_switched = False
             CommonUtil.ExecLog(sModuleInfo, "Unable to locate your element with given data.", 3)
-            return "failed" 
-        
-        
+            CommonUtil.ExecLog(sModuleInfo, "Trying to see if there are contexts", 1)
+            
+            context_result = auto_switch_context_and_try('webview')
+            if context_result =='failed':
+                CommonUtil.ExecLog(sModuleInfo, "Unable to locate your element with different contexts.", 3)
+                return "failed" 
+            else: 
+                context_switched = True
+            Element = LocateElement.Get_Element(data_set,appium_driver)
+            if Element == "failed":
+                CommonUtil.ExecLog(sModuleInfo, "Unable to locate your element with different contexts.", 3)
+                if context_switched == True:
+                    CommonUtil.ExecLog(sModuleInfo, "Context was switched during this action.  Switching back to default Native Context", 1) 
+                    context_result = auto_switch_context_and_try('native')
+                
+                return "failed" 
+            else:
+                CommonUtil.ExecLog(sModuleInfo, "Found your element with different context", 1)
+
         else:
             if Element.is_enabled():
                 if offset == True:
@@ -1392,11 +1409,19 @@ def Click_Element_Appium(data_set):
                         y_cord_to_tap = center_y + total_y_offset                            
                         TouchAction(appium_driver).tap(None, x_cord_to_tap, y_cord_to_tap, 1).perform()
                         CommonUtil.ExecLog(sModuleInfo, "Tapped on element by offset successfully", 1)                   
+                        if context_switched == True:
+                            CommonUtil.ExecLog(sModuleInfo, "Context was switched during this action.  Switching back to default Native Context", 1) 
+                            context_result = auto_switch_context_and_try('native')
+
                         return "passed"                        
 
                     except:
                         CommonUtil.TakeScreenShot(sModuleInfo)
                         CommonUtil.ExecLog(sModuleInfo, "Element is enabled. Unable to tap based on offset.", 3)
+                        if context_switched == True:
+                            CommonUtil.ExecLog(sModuleInfo, "Context was switched during this action.  Switching back to default Native Context", 1) 
+                            context_result = auto_switch_context_and_try('native')
+                        
                         return "failed"        
 
                 else:
@@ -1404,18 +1429,31 @@ def Click_Element_Appium(data_set):
                         Element.click()
                         CommonUtil.TakeScreenShot(sModuleInfo)
                         CommonUtil.ExecLog(sModuleInfo, "Successfully clicked the element with given parameters and values", 1)                        
+                        if context_switched == True:
+                            CommonUtil.ExecLog(sModuleInfo, "Context was switched during this action.  Switching back to default Native Context", 1) 
+                            context_result = auto_switch_context_and_try('native')
                         return "passed"
             
                     except Exception:
                         errMsg = "Could not select/click your element."
+
+                        if context_switched == True:
+                            CommonUtil.ExecLog(sModuleInfo, "Context was switched during this action.  Switching back to default Native Context", 1) 
+                            context_result = auto_switch_context_and_try('native')                        
                         return CommonUtil.Exception_Handler(sys.exc_info(),None,errMsg)
 
             else:
                 CommonUtil.TakeScreenShot(sModuleInfo)
                 CommonUtil.ExecLog(sModuleInfo, "Element not enabled. Unable to click.", 3)
+                if context_switched == True:
+                    CommonUtil.ExecLog(sModuleInfo, "Context was switched during this action.  Switching back to default Native Context", 1) 
+                    context_result = auto_switch_context_and_try('native')
                 return "failed"
 
     except Exception:
+        if context_switched == True:
+            CommonUtil.ExecLog(sModuleInfo, "Context was switched during this action.  Switching back to default Native Context", 1) 
+            context_result = auto_switch_context_and_try('native')
         errMsg = "Could not find/click your element."
         return CommonUtil.Exception_Handler(sys.exc_info(),None,errMsg)
     
@@ -1613,6 +1651,8 @@ def Enter_Text_Appium(data_set):
         Element = LocateElement.Get_Element(data_set, appium_driver)
         if Element == "failed":
             CommonUtil.ExecLog(sModuleInfo, "Unable to locate your element with given data.", 3)
+            
+            
             return "failed"
         else:
             try:
@@ -2648,6 +2688,69 @@ def Handle_Mobile_Alert(data_set):
         return CommonUtil.Exception_Handler(sys.exc_info(), None, ErrorMessage)
 
 
+
+def Switch_Context(data_set):
+    #switches context between native and webview
+    '''
+    this works for both ios and Android
+    switch context   appium action     native
+    or 
+    switch context   appium action     webview  (it will get the first webview)
+    or 
+    switch context    appium action    name_of_context
+
+     
+    '''
+    sModuleInfo = inspect.currentframe().f_code.co_name + " : " + MODULE_NAME
+    skip_or_not = filter_optional_action_and_step_data(data_set, sModuleInfo)
+    if skip_or_not == False:
+        return 'passed'
+
+    CommonUtil.ExecLog(sModuleInfo,"Function Start", 0)
+    
+    try:
+        choice = None
+        for row in data_set:
+            if  row[0].strip().lower() == "switch context": 
+                choice = row[2]        
+
+        choice = choice.strip() #dont lower this
+        
+        try:
+            all_contexts = appium_driver.contexts
+            CommonUtil.ExecLog(sModuleInfo, "All available contexts are: %s"%all_contexts, 1)
+            for each in all_contexts:
+                
+                if 'NATIVE_APP' in each and choice =='native':
+                    appium_driver.switch_to.context(each)
+                    current_context = appium_driver.context
+                    CommonUtil.ExecLog(sModuleInfo, "Successfully switched context to: %s"%current_context, 1)
+                    return "passed"
+
+                elif choice =='webview' and 'WEBVIEW' in each:
+                    appium_driver.switch_to.context(each)
+                    current_context = appium_driver.context
+                    CommonUtil.ExecLog(sModuleInfo, "Successfully switched context to: %s"%current_context, 1)
+                    return "passed"
+                    
+                else:
+                    appium_driver.switch_to.context(choice)
+                    current_context = appium_driver.context
+                    CommonUtil.ExecLog(sModuleInfo, "Successfully switched context to: %s"%current_context, 1)
+                    return "passed"
+
+        except Exception:
+            CommonUtil.ExecLog(sModuleInfo, "Unable to switch context requested: %s.  Please view log to see what are all the available contexts"%choice, 3)
+            return "failed"
+  
+
+    except Exception:
+        ErrorMessage =  "Failed to handle alert"
+        return CommonUtil.Exception_Handler(sys.exc_info(), None, ErrorMessage)
+
+
+
+
 def if_element_exists(data_set):
     ''' Click on an element '''
 
@@ -2706,3 +2809,36 @@ def filter_optional_action_and_step_data(data_set, sModuleInfo):
     except Exception:
         CommonUtil.ExecLog(sModuleInfo, "Unable to skip optional action based on OS", 2)
         return True
+
+def auto_switch_context_and_try(native_web):
+    
+    sModuleInfo = inspect.currentframe().f_code.co_name + " : " + MODULE_NAME    
+    try:
+        choice = native_web
+        all_contexts = appium_driver.contexts
+        CommonUtil.ExecLog(sModuleInfo, "All available contexts are: %s"%all_contexts, 1)
+        if len(all_contexts) == 1:
+            CommonUtil.ExecLog(sModuleInfo, "There is only one context", 2)
+            return 'failed'
+            
+        for each in all_contexts:
+            
+            if 'NATIVE_APP' in each and choice =='native':
+                appium_driver.switch_to.context(each)
+                current_context = appium_driver.context
+                CommonUtil.ExecLog(sModuleInfo, "Successfully switched context to: %s"%current_context, 1)
+                return "passed"
+
+            elif choice =='webview' and 'WEBVIEW' in each:
+                appium_driver.switch_to.context(each)
+                current_context = appium_driver.context
+                CommonUtil.ExecLog(sModuleInfo, "Successfully switched context to: %s"%current_context, 1)
+                return "passed"
+            else:
+                CommonUtil.ExecLog(sModuleInfo, "Could not swich to any other context", 2)
+                return "failed"              
+
+
+    except Exception:
+        CommonUtil.ExecLog(sModuleInfo, "Unable to switch context requested: %s.  Please view log to see what are all the available contexts"%choice, 3)
+        return "failed"
