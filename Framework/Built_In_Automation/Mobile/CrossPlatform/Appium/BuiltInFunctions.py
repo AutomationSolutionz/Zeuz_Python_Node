@@ -1343,7 +1343,7 @@ def Click_Element_Appium(data_set):
     '''
     
     sModuleInfo = inspect.currentframe().f_code.co_name + " : " + MODULE_NAME
-
+    context_switched = False
     skip_or_not = filter_optional_action_and_step_data(data_set, sModuleInfo)
     if skip_or_not == False:
         return 'passed'
@@ -1365,7 +1365,7 @@ def Click_Element_Appium(data_set):
         Element = LocateElement.Get_Element(data_set,appium_driver)
         
         if Element == "failed":
-            context_switched = False
+
             CommonUtil.ExecLog(sModuleInfo, "Unable to locate your element with given data.", 3)
             CommonUtil.ExecLog(sModuleInfo, "Trying to see if there are contexts", 1)
             
@@ -1381,74 +1381,73 @@ def Click_Element_Appium(data_set):
                 if context_switched == True:
                     CommonUtil.ExecLog(sModuleInfo, "Context was switched during this action.  Switching back to default Native Context", 1) 
                     context_result = auto_switch_context_and_try('native')
-                
                 return "failed" 
             else:
                 CommonUtil.ExecLog(sModuleInfo, "Found your element with different context", 1)
 
-        else:
-            if Element.is_enabled():
-                if offset == True:
-                    try:
-                        CommonUtil.ExecLog(sModuleInfo, "Clicking the element based on offset with appium TouchAction.", 1)
-                        start_loc = Element.location
-                        height_width = Element.size                        
-                        start_x = int ((start_loc)['x'])
-                        start_y = int ((start_loc)['y'])
-                        ele_width = int ((height_width)['width'])
-                        ele_height = int ((height_width)['height'])
 
-                        # calculate center of the elem 
-                        center_x  =  (start_x + (ele_width/2))
-                        center_y  =  (start_y + (ele_height/2))
-                        # we need to divide the width and height by 2 as we are offseting from the center not the full 
-                        total_x_offset = (int(x_offset)/100) * (ele_width/2)
-                        total_y_offset = (int(y_offset)/100) * (ele_height/2)
-                        
-                        x_cord_to_tap = center_x + total_x_offset
-                        y_cord_to_tap = center_y + total_y_offset                            
-                        TouchAction(appium_driver).tap(None, x_cord_to_tap, y_cord_to_tap, 1).perform()
-                        CommonUtil.ExecLog(sModuleInfo, "Tapped on element by offset successfully", 1)                   
-                        if context_switched == True:
-                            CommonUtil.ExecLog(sModuleInfo, "Context was switched during this action.  Switching back to default Native Context", 1) 
-                            context_result = auto_switch_context_and_try('native')
+        if Element.is_enabled():
+            if offset == True:
+                try:
+                    CommonUtil.ExecLog(sModuleInfo, "Clicking the element based on offset with appium TouchAction.", 1)
+                    start_loc = Element.location
+                    height_width = Element.size                        
+                    start_x = int ((start_loc)['x'])
+                    start_y = int ((start_loc)['y'])
+                    ele_width = int ((height_width)['width'])
+                    ele_height = int ((height_width)['height'])
 
-                        return "passed"                        
+                    # calculate center of the elem 
+                    center_x  =  (start_x + (ele_width/2))
+                    center_y  =  (start_y + (ele_height/2))
+                    # we need to divide the width and height by 2 as we are offseting from the center not the full 
+                    total_x_offset = (int(x_offset)/100) * (ele_width/2)
+                    total_y_offset = (int(y_offset)/100) * (ele_height/2)
+                    
+                    x_cord_to_tap = center_x + total_x_offset
+                    y_cord_to_tap = center_y + total_y_offset                            
+                    TouchAction(appium_driver).tap(None, x_cord_to_tap, y_cord_to_tap, 1).perform()
+                    CommonUtil.ExecLog(sModuleInfo, "Tapped on element by offset successfully", 1)                   
+                    if context_switched == True:
+                        CommonUtil.ExecLog(sModuleInfo, "Context was switched during this action.  Switching back to default Native Context", 1) 
+                        context_result = auto_switch_context_and_try('native')
 
-                    except:
-                        CommonUtil.TakeScreenShot(sModuleInfo)
-                        CommonUtil.ExecLog(sModuleInfo, "Element is enabled. Unable to tap based on offset.", 3)
-                        if context_switched == True:
-                            CommonUtil.ExecLog(sModuleInfo, "Context was switched during this action.  Switching back to default Native Context", 1) 
-                            context_result = auto_switch_context_and_try('native')
-                        
-                        return "failed"        
+                    return "passed"                        
 
-                else:
-                    try:
-                        Element.click()
-                        CommonUtil.TakeScreenShot(sModuleInfo)
-                        CommonUtil.ExecLog(sModuleInfo, "Successfully clicked the element with given parameters and values", 1)                        
-                        if context_switched == True:
-                            CommonUtil.ExecLog(sModuleInfo, "Context was switched during this action.  Switching back to default Native Context", 1) 
-                            context_result = auto_switch_context_and_try('native')
-                        return "passed"
-            
-                    except Exception:
-                        errMsg = "Could not select/click your element."
-
-                        if context_switched == True:
-                            CommonUtil.ExecLog(sModuleInfo, "Context was switched during this action.  Switching back to default Native Context", 1) 
-                            context_result = auto_switch_context_and_try('native')                        
-                        return CommonUtil.Exception_Handler(sys.exc_info(),None,errMsg)
+                except:
+                    CommonUtil.TakeScreenShot(sModuleInfo)
+                    CommonUtil.ExecLog(sModuleInfo, "Element is enabled. Unable to tap based on offset.", 3)
+                    if context_switched == True:
+                        CommonUtil.ExecLog(sModuleInfo, "Context was switched during this action.  Switching back to default Native Context", 1) 
+                        context_result = auto_switch_context_and_try('native')
+                    
+                    return "failed"        
 
             else:
-                CommonUtil.TakeScreenShot(sModuleInfo)
-                CommonUtil.ExecLog(sModuleInfo, "Element not enabled. Unable to click.", 3)
-                if context_switched == True:
-                    CommonUtil.ExecLog(sModuleInfo, "Context was switched during this action.  Switching back to default Native Context", 1) 
-                    context_result = auto_switch_context_and_try('native')
-                return "failed"
+                try:
+                    Element.click()
+                    CommonUtil.TakeScreenShot(sModuleInfo)
+                    CommonUtil.ExecLog(sModuleInfo, "Successfully clicked the element with given parameters and values", 1)                        
+                    if context_switched == True:
+                        CommonUtil.ExecLog(sModuleInfo, "Context was switched during this action.  Switching back to default Native Context", 1) 
+                        context_result = auto_switch_context_and_try('native')
+                    return "passed"
+        
+                except Exception:
+                    errMsg = "Could not select/click your element."
+
+                    if context_switched == True:
+                        CommonUtil.ExecLog(sModuleInfo, "Context was switched during this action.  Switching back to default Native Context", 1) 
+                        context_result = auto_switch_context_and_try('native')                        
+                    return CommonUtil.Exception_Handler(sys.exc_info(),None,errMsg)
+
+        else:
+            CommonUtil.TakeScreenShot(sModuleInfo)
+            CommonUtil.ExecLog(sModuleInfo, "Element not enabled. Unable to click.", 3)
+            if context_switched == True:
+                CommonUtil.ExecLog(sModuleInfo, "Context was switched during this action.  Switching back to default Native Context", 1) 
+                context_result = auto_switch_context_and_try('native')
+            return "failed"
 
     except Exception:
         if context_switched == True:
@@ -1627,6 +1626,7 @@ def Enter_Text_Appium(data_set):
     ''' Write text to an element '''
 
     sModuleInfo = inspect.currentframe().f_code.co_name + " : " + MODULE_NAME
+    context_switched = False
 
     skip_or_not = filter_optional_action_and_step_data(data_set, sModuleInfo)
     if skip_or_not == False:
@@ -1650,61 +1650,109 @@ def Enter_Text_Appium(data_set):
     try:
         Element = LocateElement.Get_Element(data_set, appium_driver)
         if Element == "failed":
-            CommonUtil.ExecLog(sModuleInfo, "Unable to locate your element with given data.", 3)
             
+            CommonUtil.ExecLog(sModuleInfo, "Unable to locate your element with given data.", 3)
+            CommonUtil.ExecLog(sModuleInfo, "Trying to see if there are contexts", 1)
+            
+            context_result = auto_switch_context_and_try('webview')
+            if context_result =='failed':
+                CommonUtil.ExecLog(sModuleInfo, "Unable to locate your element with different contexts.", 3)
+                return "failed" 
+            else: 
+                context_switched = True
+            Element = LocateElement.Get_Element(data_set,appium_driver)
+            if Element == "failed":
+                CommonUtil.ExecLog(sModuleInfo, "Unable to locate your element with different contexts.", 3)
+                if context_switched == True:
+                    CommonUtil.ExecLog(sModuleInfo, "Context was switched during this action.  Switching back to default Native Context", 1) 
+                    context_result = auto_switch_context_and_try('native')
+                return "failed" 
+            else:
+                CommonUtil.ExecLog(sModuleInfo, "Found your element with different context", 1)
+
+
+
+        try:
+            # Enter text into element
+            # Element.click() # Set focus to textbox
+            # Element.clear() # Remove any text already existing
+
+            if str(appium_details[device_id]['type']).lower() == 'ios':
+                Element.send_keys(text_value)  # Work around for IOS issue in Appium v1.6.4 where send_keys() doesn't work
+                CommonUtil.ExecLog(sModuleInfo, "Successfully set the value of to text to: %s" % text_value, 1)
+                
+                if context_switched == True:
+                    CommonUtil.ExecLog(sModuleInfo, "Context was switched during this action.  Switching back to default Native Context", 1) 
+                    context_result = auto_switch_context_and_try('native')
+                
+                return 'passed'
+        
+        except Exception:
+            CommonUtil.ExecLog(sModuleInfo, "Found element, but couldn't write text to it using SendKeys method. Trying SetValue method",2)
+            #return CommonUtil.Exception_Handler(sys.exc_info(), None, errMsg)
+
+        # This is wrapped in it's own try block because we sometimes get an error 
+        # from send_keys stating "Parameters were incorrect". However, most devices work only with send_keys
+        try:
+            if str(appium_details[device_id]['type']).lower() != 'ios':
+                Element.set_value(text_value)   # Enter the user specified text
+                CommonUtil.ExecLog(sModuleInfo, "Successfully set the value of to text to: %s" % text_value, 1)
+                if context_switched == True:
+                    CommonUtil.ExecLog(sModuleInfo, "Context was switched during this action.  Switching back to default Native Context", 1) 
+                    context_result = auto_switch_context_and_try('native')
+                
+                return 'passed'
+            
+        except Exception:
+            CommonUtil.ExecLog(sModuleInfo, "Still could not write text to it. Both SendKeys and Set_value method did not work",3)
+            if context_switched == True:
+                CommonUtil.ExecLog(sModuleInfo, "Context was switched during this action.  Switching back to default Native Context", 1) 
+                context_result = auto_switch_context_and_try('native')
             
             return "failed"
-        else:
-            try:
-                # Enter text into element
-                # Element.click() # Set focus to textbox
-                # Element.clear() # Remove any text already existing
 
-                if str(appium_details[device_id]['type']).lower() == 'ios':
-                    Element.send_keys(text_value)  # Work around for IOS issue in Appium v1.6.4 where send_keys() doesn't work
-                    CommonUtil.ExecLog(sModuleInfo, "Successfully set the value of to text to: %s" % text_value, 1)
-                    return 'passed'
+
+
+        #Enter android text
+        try:
+            if str(appium_details[device_id]['type']).lower() != 'android':
+                Element.set_value(text_value)   # Enter the user specified text
+                CommonUtil.ExecLog(sModuleInfo, "Successfully set the value of to text to: %s" % text_value, 1) # dont return until hiding keyboard
+        except Exception:
+            CommonUtil.ExecLog(sModuleInfo, "Unable to SetValue to text field",3)
+            if context_switched == True:
+                CommonUtil.ExecLog(sModuleInfo, "Context was switched during this action.  Switching back to default Native Context", 1) 
+                context_result = auto_switch_context_and_try('native')
             
-            except Exception:
-                CommonUtil.ExecLog(sModuleInfo, "Found element, but couldn't write text to it using SendKeys method. Trying SetValue method",2)
-                #return CommonUtil.Exception_Handler(sys.exc_info(), None, errMsg)
-
-            # This is wrapped in it's own try block because we sometimes get an error 
-            # from send_keys stating "Parameters were incorrect". However, most devices work only with send_keys
-            try:
-                if str(appium_details[device_id]['type']).lower() != 'ios':
-                    Element.set_value(text_value)   # Enter the user specified text
-                    CommonUtil.ExecLog(sModuleInfo, "Successfully set the value of to text to: %s" % text_value, 1)
-                    return 'passed'
-                
-            except Exception:
-                CommonUtil.ExecLog(sModuleInfo, "Still could not write text to it. Both SendKeys and Set_value method did not work",3)
-                return "failed"
-
-
-
-            #Enter android text
-            try:
-                if str(appium_details[device_id]['type']).lower() != 'android':
-                    Element.set_value(text_value)   # Enter the user specified text
-                    CommonUtil.ExecLog(sModuleInfo, "Successfully set the value of to text to: %s" % text_value, 1) # dont return until hiding keyboard
-            except Exception:
-                CommonUtil.ExecLog(sModuleInfo, "Unable to SetValue to text field",3)
-                return CommonUtil.Exception_Handler(sys.exc_info(), None, errMsg)                         
+            return CommonUtil.Exception_Handler(sys.exc_info(), None, errMsg)                         
+        
+        #try to hide keyboard for android
+        # Do not disable this as a lot of time keyboard blocks out other fields.
+        try:      
+            if str(appium_details[device_id]['type']).lower() != 'android':        
+                    appium_driver.hide_keyboard() # Remove keyboard
+                    CommonUtil.ExecLog(sModuleInfo, "Hiding keyboard", 1)
+                    CommonUtil.TakeScreenShot(sModuleInfo)  # Capture screen
+                    if context_switched == True:
+                        CommonUtil.ExecLog(sModuleInfo, "Context was switched during this action.  Switching back to default Native Context", 1) 
+                        context_result = auto_switch_context_and_try('native')
+                            
+                    return "passed"                
+        except Exception:
+            CommonUtil.ExecLog(sModuleInfo, "Unable to hide the keyboard",2)   
+            if context_switched == True:
+                CommonUtil.ExecLog(sModuleInfo, "Context was switched during this action.  Switching back to default Native Context", 1) 
+                context_result = auto_switch_context_and_try('native')
             
-            #try to hide keyboard for android
-            # Do not disable this as a lot of time keyboard blocks out other fields.
-            try:      
-                if str(appium_details[device_id]['type']).lower() != 'android':        
-                        appium_driver.hide_keyboard() # Remove keyboard
-                        CommonUtil.ExecLog(sModuleInfo, "Hiding keyboard", 1)
-                        CommonUtil.TakeScreenShot(sModuleInfo)  # Capture screen
-                        return "passed"                
-            except Exception:
-                CommonUtil.ExecLog(sModuleInfo, "Unable to hide the keyboard",2)   
-                return "passed"         
+            
+            return "passed"         
     except Exception:
         errMsg = "Could not find element."
+        if context_switched == True:
+            CommonUtil.ExecLog(sModuleInfo, "Context was switched during this action.  Switching back to default Native Context", 1) 
+            context_result = auto_switch_context_and_try('native')
+        
+        
         return CommonUtil.Exception_Handler(sys.exc_info(), None, errMsg)
 
 
@@ -2738,7 +2786,9 @@ def Switch_Context(data_set):
                     current_context = appium_driver.context
                     CommonUtil.ExecLog(sModuleInfo, "Successfully switched context to: %s"%current_context, 1)
                     return "passed"
-
+            CommonUtil.ExecLog(sModuleInfo, "Could not switch to any other context", 3)
+            return "failed" 
+    
         except Exception:
             CommonUtil.ExecLog(sModuleInfo, "Unable to switch context requested: %s.  Please view log to see what are all the available contexts"%choice, 3)
             return "failed"
@@ -2834,9 +2884,9 @@ def auto_switch_context_and_try(native_web):
                 current_context = appium_driver.context
                 CommonUtil.ExecLog(sModuleInfo, "Successfully switched context to: %s"%current_context, 1)
                 return "passed"
-            else:
-                CommonUtil.ExecLog(sModuleInfo, "Could not swich to any other context", 2)
-                return "failed"              
+
+        CommonUtil.ExecLog(sModuleInfo, "Could not switch to any other context", 2)
+        return "failed"              
 
 
     except Exception:

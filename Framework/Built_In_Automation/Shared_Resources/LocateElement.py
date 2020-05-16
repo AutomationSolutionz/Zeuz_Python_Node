@@ -316,11 +316,19 @@ def _construct_xpath_list(parameter_list,add_dot=False):
                 text_value = '[contains(text(),"%s")]' % (str(attribute_value))
                 element_main_body_list.append(text_value)
             elif attribute == "text" and driver_type == "appium":
-                text_value = '[@text="%s"]'%attribute_value
+                current_context = generic_driver.context
+                if "WEB" in current_context:
+                    text_value = '[text()="%s"]'%attribute_value
+                else:
+                    text_value = '[@text="%s"]'%attribute_value
                 element_main_body_list.append(text_value)
             elif attribute == "*text" and driver_type == "appium": #ignore case
                 #text_value = "[contains(translate(@text,'ABCDEFGHIJKLMNOPQRSTUVWXYZ','abcdefghijklmnopqrstuvwxyz'),'%s')]"%str(attribute_value).lower()
-                text_value = '[contains(@%s,"%s")]' % (attribute.split('*')[1], str(attribute_value))
+                current_context = generic_driver.context
+                if "WEB" in current_context:
+                    text_value = '[contains(%s(),"%s")]' % (attribute.split('*')[1], str(attribute_value))
+                else: 
+                    text_value = '[contains(@%s,"%s")]' % (attribute.split('*')[1], str(attribute_value))
                 element_main_body_list.append(text_value)            
             elif attribute not in excluded_attribute and '*' not in attribute:
                 other_value = '[@%s="%s"]'%(attribute,attribute_value)
