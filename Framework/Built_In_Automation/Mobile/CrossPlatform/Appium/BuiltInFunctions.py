@@ -493,10 +493,10 @@ def start_appium_server():
         try:
             appium_server = None
             if sys.platform  == 'win32': # We need to open appium in it's own command dos box on Windows
-                cmd = 'start "Appium Server" /wait /min cmd /c %s -p %d' % (appium_binary, appium_port) # Use start to execute and minimize, then cmd /c will remove the dos box when appium is killed
+                cmd = 'start "Appium Server" /wait /min cmd /c %s --allow-insecure chromedriver_autodownload -p %d' % (appium_binary, appium_port) # Use start to execute and minimize, then cmd /c will remove the dos box when appium is killed
                 appium_server = subprocess.Popen(cmd, shell = True) # Needs to run in a shell due to the execution command
             elif sys.platform == 'darwin':
-                appium_server = subprocess.Popen([appium_binary, '-p', str(appium_port)])
+                appium_server = subprocess.Popen([appium_binary, '--allow-insecure chromedriver_autodownload -p', str(appium_port)])
             else:
                 try:
                     appium_binary_path = os.path.normpath(appium_binary)
