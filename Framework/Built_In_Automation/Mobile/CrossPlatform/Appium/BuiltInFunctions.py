@@ -17,6 +17,7 @@ from Framework.Utilities import CommonUtil
 from Framework.Built_In_Automation.Mobile.Android.adb_calls import adbOptions
 from Framework.Built_In_Automation.Mobile.iOS import iosOptions
 from appium.webdriver.common.touch_action import TouchAction
+import appium.webdriver.common
 from Framework.Built_In_Automation.Shared_Resources import BuiltInFunctionSharedResources as Shared_Resources
 from Framework.Utilities.CommonUtil import passed_tag_list, failed_tag_list, skipped_tag_list
 from Framework.Built_In_Automation.Shared_Resources import LocateElement
@@ -408,7 +409,7 @@ def launch_application(data_set):
         for left, mid, right in data_set:
             left, mid = left.strip().lower(), mid.strip().lower()
 
-            if 'option' in mid:
+            if 'parameter' in mid:
                 # key, value
                 k, v = map(lambda x: x.strip(), right.split('='))
 
