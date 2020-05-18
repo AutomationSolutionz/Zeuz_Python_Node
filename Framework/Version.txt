@@ -1,6 +1,7 @@
 [ZeuZ Python Version]
-version = 10.15
+version = 10.16
 [Release Date]
-date= 2020-04-25
+date= May 18, 2020
 [Release Note]
-Note = Node GUI upgrade, action updates
+Note = Hybrid (ios/android), custom desire cap, database actions, auto context switch for hybrid, context switch
+
