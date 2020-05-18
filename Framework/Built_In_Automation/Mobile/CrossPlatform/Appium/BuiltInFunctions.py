@@ -408,7 +408,7 @@ def launch_application(data_set):
         for left, mid, right in data_set:
             left, mid = left.strip().lower(), mid.strip().lower()
 
-            if 'parameter' in mid:
+            if 'parameter' in mid and "=" in right:
                 # key, value
                 k, v = map(lambda x: x.strip(), right.split('='))
 
