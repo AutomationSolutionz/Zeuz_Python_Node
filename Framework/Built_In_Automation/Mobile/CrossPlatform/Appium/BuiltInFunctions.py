@@ -554,13 +554,15 @@ def start_appium_driver(package_name = '', activity_name = '', filename = '', pl
             # Include the user provided desired capabilities
             desired_caps.update(desiredcaps)
     
-            desired_caps['platformName'] = appium_details[device_id]['type'] # Set platform name
-            desired_caps['autoLaunch'] = 'false' # Do not launch application
-            desired_caps['fullReset'] = 'false' # Do not clear application cache when complete
-            desired_caps['noReset'] = 'true' # Do not clear application cache when complete
-            desired_caps['newCommandTimeout'] = 600 # Command timeout before appium destroys instance
+
 
             if str(appium_details[device_id]['type']).lower() == 'android':
+
+                desired_caps['platformName'] = appium_details[device_id]['type'] # Set platform name
+                desired_caps['autoLaunch'] = 'false' # Do not launch application
+                desired_caps['fullReset'] = 'false' # Do not clear application cache when complete
+                desired_caps['noReset'] = 'true' # Do not clear application cache when complete
+                desired_caps['newCommandTimeout'] = 6000 # Command timeout before appium destroys instance
                 if adbOptions.is_android_connected(device_serial) == False:
                     CommonUtil.ExecLog(sModuleInfo, "Could not detect any connected Android devices", 3)
                     return 'failed',launch_app
@@ -597,6 +599,7 @@ def start_appium_driver(package_name = '', activity_name = '', filename = '', pl
                     app = os.path.join(app, ios)
                     encoding = 'utf-8'
                     bundle_id = str(subprocess.check_output(['osascript', '-e', 'id of app "%s"'%str(app)]), encoding=encoding).strip()
+                    #desired_caps = {}
                     desired_caps['app'] = app  # Use set_value() for writing to element
                     desired_caps['platformName'] = 'iOS'  # Read version #!!! Temporarily hard coded
                     desired_caps['platformVersion'] = platform_version
@@ -616,7 +619,7 @@ def start_appium_driver(package_name = '', activity_name = '', filename = '', pl
             else:
                 CommonUtil.ExecLog(sModuleInfo, "Invalid device type: %s" % str(appium_details[device_id]['type']), 3)
                 return 'failed',launch_app
-            CommonUtil.ExecLog(sModuleInfo,"Capabilities: %s" % str(desired_caps), 0)
+            CommonUtil.ExecLog(sModuleInfo,"Capabilities: %s" % str(desired_caps), 1)
             
             # Create Appium instance with capabilities
             try:
