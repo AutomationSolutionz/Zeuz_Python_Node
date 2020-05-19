@@ -55,7 +55,8 @@ def Get(resource_path, payload=None):
 
     except requests.exceptions.RequestException as e:
         print("Exception in UpdateGet: Authentication Failed. Please check your server, username and password. "
-              "Please include full server name. Example: https://zeuz.zeuz.ai")
+              "Please include full server name. Example: https://zeuz.zeuz.ai. " 
+              "If you are using IP Address: Type in just the IP without http.  Example: 12.15.10.6")
         return ''
 
     except Exception as e:
@@ -71,7 +72,8 @@ def UpdatedGet(resource_path, payload=None):
 
     except requests.exceptions.RequestException as e:
         print("Exception in UpdateGet: Authentication Failed. Please check your server, username and password. "
-              "Please include full server name. Example: https://zeuz.zeuz.ai")
+              "Please include full server name. Example: https://zeuz.zeuz.ai"
+            "If you are using IP Address: Type in just the IP without http.  Example: 12.15.10.6")
         return ''
 
     except Exception as e:
@@ -85,7 +87,8 @@ def Head(resource_path):
 
     except requests.exceptions.RequestException as e:
         print("Exception in Head: Please check your server address "
-              "Please include full server name. Example: https://zeuz.zeuz.ai")
+              "Please include full server name. Example: https://zeuz.zeuz.ai"
+                "If you are using IP Address: Type in just the IP without http.  Example: 12.15.10.6")
         return False
     except Exception as e:
         print("Exception in Head {}".format(e))
