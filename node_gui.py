@@ -112,9 +112,11 @@ from node_cli import Login, disconnect_from_server, get_team_names, get_project_
 
 # Find node id file
 if sys.platform  == 'win32':
-    node_id_filename = os.path.join(os.getenv('USERPROFILE'), 'Desktop', 'node_id.conf')
+    #node_id_filename = os.path.join(os.getenv('USERPROFILE'), 'Desktop', 'node_id.conf')
+    node_id_file_path = os.path.join (os.path.realpath(__file__).split("Framework")[0] , os.path.join ('node_id.conf'))
 else:
-    node_id_filename = os.path.join(os.getenv('HOME'), 'Desktop', 'node_id.conf')
+    node_id_file_path = os.path.join (os.path.realpath(__file__).split("Framework")[0] , os.path.join ('node_id.conf'))
+    #node_id_filename = os.path.join(os.getenv('HOME'), 'Desktop', 'node_id.conf')
 
 # Set title with version
 version_path = os.path.join(os.getcwd(), 'Version.txt')
