@@ -1671,26 +1671,53 @@ def Enter_Text_Appium(data_set):
                 if context_switched == True:
                     CommonUtil.ExecLog(sModuleInfo, "Context was switched during this action.  Switching back to default Native Context", 1) 
                     context_result = auto_switch_context_and_try('native')
+                CommonUtil.ExecLog(sModuleInfo, "Unable to locate your element with different contexts.", 3)
                 return "failed" 
             else:
                 CommonUtil.ExecLog(sModuleInfo, "Found your element with different context", 1)
 
-
+        # Click and clear the text box for both iOS and Android
+        # We found found the element 
+        # sometimes when we click on the element, the element properties may stay same but the 
+        #actual reference may change. So in this case, we will need to search for element again once w
+        # click on the element.
+        try:
+            CommonUtil.ExecLog(sModuleInfo, "Clicking and clearing the text field",1)
+            Element.click() # Set focus to textbox
+            Element = LocateElement.Get_Element(data_set, appium_driver)
+            if Element == "failed":
+                CommonUtil.ExecLog(sModuleInfo, "Unable to locate your element with given data.", 3)
+                CommonUtil.ExecLog(sModuleInfo, "Trying to see if there are contexts", 1)
+                context_result = auto_switch_context_and_try('webview')
+                if context_result =='failed':
+                    CommonUtil.ExecLog(sModuleInfo, "Unable to locate your element with different contexts.", 3)
+                    return "failed" 
+                else: 
+                    context_switched = True
+                Element = LocateElement.Get_Element(data_set,appium_driver)
+                if Element == "failed":
+                    CommonUtil.ExecLog(sModuleInfo, "Unable to locate your element with different contexts.", 3)
+                    if context_switched == True:
+                        CommonUtil.ExecLog(sModuleInfo, "Context was switched during this action.  Switching back to default Native Context", 1) 
+                        context_result = auto_switch_context_and_try('native')
+                    CommonUtil.ExecLog(sModuleInfo, "Unable to locate your element with different contexts.", 3)
+                    return "failed" 
+                else:
+                    CommonUtil.ExecLog(sModuleInfo, "Found your element with different context", 1)
+            Element.clear() # Remove any text already existing
+        except:
+            #just in case we run into any error, we will still try to proceed
+            CommonUtil.ExecLog(sModuleInfo, "Unable to click and clear the text field",2)
+            True
 
         try:
-            # Enter text into element
-            # Element.click() # Set focus to textbox
-            # Element.clear() # Remove any text already existing
-
-            if str(appium_details[device_id]['type']).lower() == 'ios':
-                Element.send_keys(text_value)  # Work around for IOS issue in Appium v1.6.4 where send_keys() doesn't work
-                CommonUtil.ExecLog(sModuleInfo, "Successfully set the value of to text to: %s" % text_value, 1)
-                
-                if context_switched == True:
-                    CommonUtil.ExecLog(sModuleInfo, "Context was switched during this action.  Switching back to default Native Context", 1) 
-                    context_result = auto_switch_context_and_try('native')
-                
-                return 'passed'
+            #Trying to send text using send keys method
+            Element.send_keys(text_value)  # Work around for IOS issue in Appium v1.6.4 where send_keys() doesn't work
+            CommonUtil.ExecLog(sModuleInfo, "Successfully set the value of to text to: %s" % text_value, 1)
+            if context_switched == True:
+                CommonUtil.ExecLog(sModuleInfo, "Context was switched during this action.  Switching back to default Native Context", 1) 
+                context_result = auto_switch_context_and_try('native')
+            return 'passed'
         
         except Exception:
             CommonUtil.ExecLog(sModuleInfo, "Found element, but couldn't write text to it using SendKeys method. Trying SetValue method",2)
@@ -1699,65 +1726,25 @@ def Enter_Text_Appium(data_set):
         # This is wrapped in it's own try block because we sometimes get an error 
         # from send_keys stating "Parameters were incorrect". However, most devices work only with send_keys
         try:
-            if str(appium_details[device_id]['type']).lower() != 'ios':
-                Element.set_value(text_value)   # Enter the user specified text
-                CommonUtil.ExecLog(sModuleInfo, "Successfully set the value of to text to: %s" % text_value, 1)
-                if context_switched == True:
-                    CommonUtil.ExecLog(sModuleInfo, "Context was switched during this action.  Switching back to default Native Context", 1) 
-                    context_result = auto_switch_context_and_try('native')
-                
-                return 'passed'
+            Element.set_value(text_value)   # Enter the user specified text
+            CommonUtil.ExecLog(sModuleInfo, "Successfully set the value of to text to: %s" % text_value, 1)
+            if context_switched == True:
+                CommonUtil.ExecLog(sModuleInfo, "Context was switched during this action.  Switching back to default Native Context", 1) 
+                context_result = auto_switch_context_and_try('native')
+            return 'passed'
             
         except Exception:
             CommonUtil.ExecLog(sModuleInfo, "Still could not write text to it. Both SendKeys and Set_value method did not work",3)
             if context_switched == True:
                 CommonUtil.ExecLog(sModuleInfo, "Context was switched during this action.  Switching back to default Native Context", 1) 
                 context_result = auto_switch_context_and_try('native')
-            
-            return "failed"
-
-
-
-        #Enter android text
-        try:
-            if str(appium_details[device_id]['type']).lower() != 'android':
-                Element.set_value(text_value)   # Enter the user specified text
-                CommonUtil.ExecLog(sModuleInfo, "Successfully set the value of to text to: %s" % text_value, 1) # dont return until hiding keyboard
-        except Exception:
-            CommonUtil.ExecLog(sModuleInfo, "Unable to SetValue to text field",3)
-            if context_switched == True:
-                CommonUtil.ExecLog(sModuleInfo, "Context was switched during this action.  Switching back to default Native Context", 1) 
-                context_result = auto_switch_context_and_try('native')
-            
-            return CommonUtil.Exception_Handler(sys.exc_info(), None, errMsg)                         
-        
-        #try to hide keyboard for android
-        # Do not disable this as a lot of time keyboard blocks out other fields.
-        try:      
-            if str(appium_details[device_id]['type']).lower() != 'android':        
-                    appium_driver.hide_keyboard() # Remove keyboard
-                    CommonUtil.ExecLog(sModuleInfo, "Hiding keyboard", 1)
-                    CommonUtil.TakeScreenShot(sModuleInfo)  # Capture screen
-                    if context_switched == True:
-                        CommonUtil.ExecLog(sModuleInfo, "Context was switched during this action.  Switching back to default Native Context", 1) 
-                        context_result = auto_switch_context_and_try('native')
-                            
-                    return "passed"                
-        except Exception:
-            CommonUtil.ExecLog(sModuleInfo, "Unable to hide the keyboard",2)   
-            if context_switched == True:
-                CommonUtil.ExecLog(sModuleInfo, "Context was switched during this action.  Switching back to default Native Context", 1) 
-                context_result = auto_switch_context_and_try('native')
-            
-            
-            return "passed"         
+            return CommonUtil.Exception_Handler(sys.exc_info(), None, errMsg)   
+     
     except Exception:
         errMsg = "Could not find element."
         if context_switched == True:
             CommonUtil.ExecLog(sModuleInfo, "Context was switched during this action.  Switching back to default Native Context", 1) 
             context_result = auto_switch_context_and_try('native')
-        
-        
         return CommonUtil.Exception_Handler(sys.exc_info(), None, errMsg)
 
 
