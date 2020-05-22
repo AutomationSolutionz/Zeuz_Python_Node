@@ -1365,10 +1365,12 @@ def main(device_dict):
     CommonUtil.ExecLog(sModuleInfo, "MainDriver is starting", 4, False)
 
     # get temp file
-    temp_ini_file = os.path.join(os.path.join(FL.get_home_folder(), os.path.join('Desktop',
-                                                                                 os.path.join('AutomationLog',
-                                                                                              ConfigModule.get_config_value(
-                                                                                                  'Advanced Options', '_file')))))
+    #temp_ini_file = os.path.join(os.path.join(FL.get_home_folder(), os.path.join('Desktop',os.path.join('AutomationLog',ConfigModule.get_config_value('Advanced Options', '_file')))))
+    
+
+    temp_ini_file = os.path.join(os.path.join (os.path.realpath(__file__).split("Framework")[0] , os.path.join ('AutomationLog',ConfigModule.get_config_value('Advanced Options', '_file'))))
+
+
 
     # add temp file to config values
     ConfigModule.add_config_value(

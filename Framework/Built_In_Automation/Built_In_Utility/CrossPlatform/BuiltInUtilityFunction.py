@@ -1788,7 +1788,14 @@ def Upload(step_data):
             # linux
             CommonUtil.ExecLog(sModuleInfo, "linux", 1)
             from_path = get_home_folder() + str(step_data[0][2]).strip()  # location of the file/folder to be copied\
-            temp_ini_file = get_home_folder() + "/Desktop/AutomationLog/temp_config.ini"
+            
+            #temp_ini_file = get_home_folder() + "/Desktop/AutomationLog/temp_config.ini"
+
+            temp_ini_file = os.path.join(os.path.join (os.path.realpath(__file__).split("Framework")[0] , os.path.join ('AutomationLog',ConfigModule.get_config_value('Advanced Options', '_file'))))
+        
+            
+            
+            
             list = from_path.split("/")
             to_path = ConfigModule.get_config_value('sectionOne', 'test_case_folder', temp_ini_file) +"/"+ list[len(list) - 1]  # location where to copy the file/folder
 
@@ -1796,7 +1803,11 @@ def Upload(step_data):
             # windows
             CommonUtil.ExecLog(sModuleInfo, "windows", 1)
             from_path = raw(str(step_data[0][0]).strip())  # location of the file/folder to be copied
-            temp_ini_file = get_home_folder() + raw("\Desktop\AutomationLog\temp_config.ini")
+            
+            #temp_ini_file = get_home_folder() + raw("\Desktop\AutomationLog\temp_config.ini")
+            temp_ini_file = os.path.join(os.path.join (os.path.realpath(__file__).split("Framework")[0] , os.path.join ('AutomationLog',ConfigModule.get_config_value('Advanced Options', '_file'))))
+            
+            
             list = from_path.split("\\")
             to_path = ConfigModule.get_config_value('sectionOne', 'test_case_folder', temp_ini_file) + "\\" + list[len(list) - 1]
 
@@ -1815,7 +1826,11 @@ def Upload(step_data):
 
 
 
-temp_config = os.path.join(os.path.join(get_home_folder(), os.path.join('Desktop', os.path.join('AutomationLog',ConfigModule.get_config_value('Temp', '_file')))))
+#temp_config = os.path.join(os.path.join(get_home_folder(), os.path.join('Desktop', os.path.join('AutomationLog',ConfigModule.get_config_value('Temp', '_file')))))
+
+
+
+temp_config = os.path.join(os.path.join (os.path.realpath(__file__).split("Framework")[0] , os.path.join ('AutomationLog',ConfigModule.get_config_value('Temp', '_file'))))
 
 
 def TakeScreenShot(step_data):
