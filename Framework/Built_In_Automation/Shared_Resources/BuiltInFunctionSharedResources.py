@@ -19,11 +19,11 @@ protected_variables = [] # Used to ensure internally used shared variables can't
 MODULE_NAME = inspect.getmodulename(__file__)
 
 
-def Set_Shared_Variables(key, value, protected = False):
+def Set_Shared_Variables(key, value, protected = False, allowEmpty=False):
     try:
         sModuleInfo = inspect.currentframe().f_code.co_name + " : " + MODULE_NAME
         global shared_variables, protected_variables
-        if key == '' or key == None or value == '' or value == None:  # if input is invalid
+        if not allowEmpty and (key == '' or key == None or value == '' or value == None):  # if input is invalid
             return "failed"
         else: # Valid input
             if protected: protected_variables.append(key) # Add to list of protected variables
