@@ -1543,7 +1543,7 @@ DB_USER_ID = "db_user_id"
 DB_PASSWORD = "db_password"
 DB_HOST = "db_host"
 DB_PORT = "db_port"
-DB_ODBC_DRIVER = "db_odbc_driver"
+DB_ODBC_DRIVER = "odbc_driver"
 
 
 # [NON ACTION]
@@ -1704,7 +1704,7 @@ def connect_to_db(data_set):
             if row[0] == DB_USER_ID:
                 sr.Set_Shared_Variables(DB_USER_ID, row[2])
             if row[0] == DB_PASSWORD:
-                sr.Set_Shared_Variables(DB_PASSWORD, row[2])
+                sr.Set_Shared_Variables(DB_PASSWORD, row[2], allowEmpty=True)
             if row[0] == DB_HOST:
                 sr.Set_Shared_Variables(DB_HOST, row[2])
             if row[0] == DB_PORT:
