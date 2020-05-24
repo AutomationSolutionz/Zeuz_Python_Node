@@ -151,7 +151,7 @@ def Append_Dict_Shared_Variables(key, value, protected=False,parent_dict=""):
         CommonUtil.Exception_Handler(sys.exc_info())
 
 
-def Get_Shared_Variables(key):
+def Get_Shared_Variables(key, log=True):
     try:
         sModuleInfo = inspect.currentframe().f_code.co_name + " : " + MODULE_NAME
         global shared_variables
@@ -160,10 +160,12 @@ def Get_Shared_Variables(key):
         else:
             if key in shared_variables:
                 value = shared_variables[key]
-                CommonUtil.ExecLog(sModuleInfo, "Variable value of '%s' is: %s" % (str(key), value), 0)
+                if log:
+                    CommonUtil.ExecLog(sModuleInfo, "Variable value of '%s' is: %s" % (str(key), value), 0)
                 return value
             else:
-                CommonUtil.ExecLog(sModuleInfo, "No Such variable named '%s' found in shared variables" % key, 3)
+                if log:
+                    CommonUtil.ExecLog(sModuleInfo, "No Such variable named '%s' found in shared variables" % key, 3)
                 return "failed"
     except:
         CommonUtil.Exception_Handler(sys.exc_info())
