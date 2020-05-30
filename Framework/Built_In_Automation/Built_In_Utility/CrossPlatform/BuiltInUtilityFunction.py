@@ -16,6 +16,8 @@
 
 import sys, datetime, time, inspect, zipfile, string, filecmp, random, requests, math, re, os, subprocess, shutil, ast,hashlib
 sys.path.append("..")
+import skimage, cv2, imutils
+from skimage.metrics import structural_similarity as ssim
 from sys import platform as _platform
 from Framework.Utilities import ConfigModule
 from Framework.Utilities import CommonUtil
@@ -1919,6 +1921,80 @@ def TakeScreenShot(step_data):
 
     except Exception:
         return CommonUtil.Exception_Handler(sys.exc_info())
+
+
+def compare_images(data_set):
+    sModuleInfo = inspect.currentframe().f_code.co_name + " : " + MODULE_NAME
+    CommonUtil.ExecLog(sModuleInfo, "Function: compare images", 0)
+
+    try:
+        default_ssim = float(1)
+        
+        for eachrow in data_set:
+            if eachrow[1] == "compare":
+                imageA_path = Shared_Resources.get_previous_response_variables_in_strings(eachrow[0].strip())
+                imageB_path = Shared_Resources.get_previous_response_variables_in_strings(eachrow[2].strip())
+            elif eachrow[1] == "element parameter":
+                if eachrow[0] == "min match score":
+                    user_ssim = float(eachrow[2]) #User defined minimum match score (i.e. SSIM)
+
+        imageA = cv2.imread(imageA_path) #Read first image
+        imageB = cv2.imread(imageB_path) #Read second image
+        
+        imageA = cv2.cvtColor(imageA, cv2.COLOR_BGR2GRAY) #Convert first image to grayscale
+        imageB = cv2.cvtColor(imageB, cv2.COLOR_BGR2GRAY) #Convert second image to grayscale
+        
+        #compute the structural similarity index (SSIM), and return difference image
+        #Perfect match SSIM = 1
+        #diff image contains the actual image differences between the two images
+        (ssim_match, diff) = ssim(imageA,imageB, full=True)
+        diff = (diff * 255).astype("uint8") #convert diff image from floating point data 8-bit unsigned integers in range [0, 255] to process using OpenCV
+        
+        # threshold the difference image, followed by finding contours to
+        #obtain the regions of the two input images that differ
+        thresh = cv2.threshold(diff, 0, 255, cv2.THRESH_BINARY_INV | cv2.THRESH_OTSU)[1]
+        cnts = cv2.findContours(thresh.copy(), cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
+        cnts = imutils.grab_contours(cnts)
+        #loop over the contours
+        for c in cnts:
+            #compute the bounding box of the contour and then draw the
+            #bounding box on both input images to represent where the two
+            #images differ
+            (x, y, w, h) = cv2.boundingRect(c)
+            cv2.rectangle(imageA, (x, y), (x + w, y + h), (0, 0, 255), 2)
+            cv2.rectangle(imageB, (x, y), (x + w, y + h), (0, 0, 255), 2)
+            
+        #show an output concatenated result comparing the two images and their difference
+        
+        result_folder = get_home_folder()
+        result_name = 'final_image'
+        timestamp = datetime.datetime.now().strftime('%Y-%m-%dT%H-%M-%S-%f')
+        finalresult_location = result_folder + os.sep + timestamp + "_" + result_name + '.png'
+        
+        final_frame = cv2.hconcat((imageA,imageB,diff,thresh))
+        cv2.imwrite(finalresult_location, final_frame)
+        
+        #Check if a match score is set by the user, if not set to default of 1
+        
+        if (user_ssim <= float(1)) and (user_ssim >= float(0)):
+            req_ssim = user_ssim
+        else:
+            CommonUtil.ExecLog(sModuleInfo,"Invalid required match score, setting score to default value 1 instead", 2)
+            req_ssim = default_ssim
+            
+        #Perform the image comparison based on the structural similarity index
+        if ssim_match >= req_ssim:
+            CommonUtil.ExecLog(sModuleInfo, "Images match", 1)
+            return "passed"
+        else:
+            CommonUtil.ExecLog(sModuleInfo,"Images do not match", 3)
+            return "failed"
+        
+    except:
+        CommonUtil.ExecLog(sModuleInfo,"Couldn't compare images", 3)
+        return "failed"
+
+
 
 
 # Method to sleep for a particular duration

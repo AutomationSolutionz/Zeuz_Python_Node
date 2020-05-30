@@ -12,8 +12,9 @@
 #########################
 
 from appium import webdriver
-import os, sys, time, inspect, subprocess, re, signal, _thread, requests
+import os, sys, datetime, time, inspect, subprocess, re, signal, _thread, requests
 from Framework.Utilities import CommonUtil
+from Framework.Built_In_Automation.Built_In_Utility.CrossPlatform import BuiltInUtilityFunction as Utility_Functions
 from Framework.Built_In_Automation.Mobile.Android.adb_calls import adbOptions
 from Framework.Built_In_Automation.Mobile.iOS import iosOptions
 from appium.webdriver.common.touch_action import TouchAction
@@ -1241,6 +1242,78 @@ def read_screen_heirarchy():
     except Exception:
         CommonUtil.ExecLog(sModuleInfo,"Read screen heirarchy unsuccessfully",3)
         return False
+
+def clear_existing_media_ios(data_set):
+    sModuleInfo = inspect.currentframe().f_code.co_name + " : " + MODULE_NAME
+    CommonUtil.ExecLog(sModuleInfo,"Function Start", 0)
+    
+    #Clears all media (photos and videos) from a booted device
+    
+    try:
+        CommonUtil.ExecLog(sModuleInfo,"Trying to clear media.", 0)
+
+        #get booted device id if not already available
+        deviceid = subprocess.getoutput("xcrun simctl list | grep 'Booted' | awk 'match($0, /\(([-0-9A-F]+)\)/) { print substr( $0, RSTART + 1, RLENGTH - 2 )}'")
+    
+        #clear all media from the selected simulator
+        os.system('rm -rf ~/Library/Developer/CoreSimulator/Devices/%s/data/Media/DCIM/'%deviceid)
+        os.system('rm -rf ~/Library/Developer/CoreSimulator/Devices/%s/data/Media/PhotoData/'%deviceid)
+        
+        #Reboot simulator - Required if any new media is to be added afterwards
+        os.system("xcrun simctl shutdown %s" % deviceid)
+        os.system("xcrun simctl boot %s" % deviceid)
+        
+        CommonUtil.ExecLog(sModuleInfo,"Closed the media successfully from simulator.",1)
+        return "passed"
+        
+    except:
+        errMsg = "No device, please ensure a device is booted to clear its media."
+        return CommonUtil.Exception_Handler(sys.exc_info(), None, errMsg)
+
+def add_media_ios(data_set):
+    sModuleInfo = inspect.currentframe().f_code.co_name + " : " + MODULE_NAME
+    CommonUtil.ExecLog(sModuleInfo,"Function Start", 0)
+
+
+    try:
+        media_name = str(data_set[0][2]).strip()
+        #Add image or video to a booted ios simulator
+        os.system("xcrun simctl addmedia booted ~/Desktop/Attachments/%s" %media_name)
+        CommonUtil.ExecLog(sModuleInfo,"Successfully added media to device.", 0)
+        return 'passed'
+    except:
+        errMsg = "Unable to add media to device. Either no device is booted or media name is wrong."
+        return CommonUtil.Exception_Handler(sys.exc_info(), None, errMsg)
+            
+def simulator_screenshot(data_set):
+    '''Take a screenshot of the current simulator screen'''
+    sModuleInfo = inspect.currentframe().f_code.co_name + " : " + MODULE_NAME
+
+    CommonUtil.ExecLog(sModuleInfo,"Function Start", 0)
+
+    try:
+        simscreen_path = data_set[0][2] # Get shared variable name from Value on action row
+    except:
+        return CommonUtil.Exception_Handler(sys.exc_info())
+
+    try:
+        simscreen_folder = Utility_Functions.get_home_folder()
+        simscreen_name = 'image'
+        simscreen_timestamp = datetime.datetime.now().strftime('%Y-%m-%dT%H-%M-%S-%f')
+        simscreen_location = simscreen_folder + os.sep + simscreen_timestamp + "_" + simscreen_name + '.png'
+        
+        appium_driver.save_screenshot(simscreen_location)
+        
+        Shared_Resources.Set_Shared_Variables(simscreen_path,simscreen_location) #Saving screenshot path to a variable of the user's choice
+        
+        CommonUtil.ExecLog(sModuleInfo,"Took simulator screenshot successfully", 0)
+        return 'passed'
+
+
+    except Exception:
+        errMsg = "Unable to take simulator screenshot"
+        return CommonUtil.Exception_Handler(sys.exc_info(),None,errMsg)
+
 
 def tap_location(data_set):
     ''' Tap the provided position using x,y cooridnates '''
