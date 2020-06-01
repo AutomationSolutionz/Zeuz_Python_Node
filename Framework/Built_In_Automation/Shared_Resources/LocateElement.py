@@ -147,13 +147,24 @@ def Get_Element(step_data_set,driver,query_debug=False, wait_enable = True):
                 result = "failed"
             elif query_type == "xpath" and element_query != False:
                 result = _get_xpath_or_css_element(element_query,"xpath",index_number)
-
             elif query_type == "css" and element_query != False:
                 result = _get_xpath_or_css_element(element_query,"css",index_number)
             elif query_type == "unique" and element_query != False:
                 result = _get_xpath_or_css_element(element_query,"unique",index_number)
             else:
                 result = "failed"
+            
+            #check if element is displayed or not.  Not adding selenium yet.  More testing is needed for web.  We may need to add more
+            # items here such as enabled, visible and such.
+    
+            if driver_type == 'appium':
+                try:
+                    display_status = result.is_displayed()
+                    if display_status == False:
+                        CommonUtil.ExecLog(sModuleInfo, "Element was found, however, it was not displayed or enabled. Returning failed", 2)
+                        result = "failed"  
+                except:
+                    True
             
             if result not in failed_tag_list:
                 if save_parameter !='': #save element to a variable
