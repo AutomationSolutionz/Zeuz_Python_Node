@@ -112,9 +112,11 @@ from node_cli import Login, disconnect_from_server, get_team_names, get_project_
 
 # Find node id file
 if sys.platform  == 'win32':
-    node_id_filename = os.path.join(os.getenv('USERPROFILE'), 'Desktop', 'node_id.conf')
+    #node_id_filename = os.path.join(os.getenv('USERPROFILE'), 'Desktop', 'node_id.conf')
+    node_id_filename = os.path.join (os.path.realpath(__file__).split("Framework")[0] , os.path.join ('node_id.conf'))
 else:
-    node_id_filename = os.path.join(os.getenv('HOME'), 'Desktop', 'node_id.conf')
+    node_id_filename = os.path.join (os.path.realpath(__file__).split("Framework")[0] , os.path.join ('node_id.conf'))
+    #node_id_filename = os.path.join(os.getenv('HOME'), 'Desktop', 'node_id.conf')
 
 # Set title with version
 version_path = os.path.join(os.getcwd(), 'Version.txt')
@@ -345,7 +347,7 @@ class Application(tk.Frame):
             if check:
                 print('Checking last update time')
                 # Read from temp config last time we checked for updates. If over maximum time, check again
-                temp_ini_file = os.path.join(os.path.join(FileUtilities.get_home_folder(), os.path.join('Desktop',os.path.join('AutomationLog',ConfigModule.get_config_value('Advanced Options', '_file')))))
+                temp_ini_file = os.path.join(os.path.join (os.path.realpath(__file__).split("node_gui.py")[0] , os.path.join ('AutomationLog',ConfigModule.get_config_value('Advanced Options', '_file'))))
                 try:
                     last_update = ConfigModule.get_config_value('sectionOne', 'last_update', temp_ini_file)
                     update_interval = self.update_interval * 3600 # Convert interval into seconds for easy comparison

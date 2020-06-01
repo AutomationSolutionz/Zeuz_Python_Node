@@ -117,8 +117,24 @@ def Click_Element(data_set):
     # Click using element
     CommonUtil.ExecLog(sModuleInfo, "Looking for element", 0)
 
+
+    
     # Get element object
-    Element = Get_Element(data_set)
+    #try for 10 seconds with 2 seconds delay
+    max_try = 5
+    sleep_in_sec = 2
+    i = 0
+    while i != max_try:
+        try:
+            Element = Get_Element(data_set)
+        except:
+            True
+        if Element == None or  Element in failed_tag_list:
+            CommonUtil.ExecLog(sModuleInfo, "Could not find element.  Waiting and Trying again .... ", 2)
+        else:
+            break
+        time.sleep(sleep_in_sec)
+        i = i+1
     if Element in failed_tag_list:
         CommonUtil.ExecLog(sModuleInfo, "Could not find element", 3)
         return 'failed'
@@ -142,10 +158,26 @@ def Right_Click_Element(data_set):
     sModuleInfo = inspect.currentframe().f_code.co_name + " : " + MODULE_NAME
     CommonUtil.ExecLog(sModuleInfo, "Function start", 0)
     try:
-        Element = Get_Element(window_name, element_name)
+                # Get element object
+        #try for 10 seconds with 2 seconds delay
+        max_try = 5
+        sleep_in_sec = 2
+        i = 0
+        while i != max_try:
+            try:
+                Element = Get_Element(data_set)
+            except:
+                True
+            if Element == None or  Element in failed_tag_list:
+                CommonUtil.ExecLog(sModuleInfo, "Could not find element.  Waiting and Trying again .... ", 2)
+            else:
+                break
+            time.sleep(sleep_in_sec)
+            i = i+1
         if Element in failed_tag_list:
             CommonUtil.ExecLog(sModuleInfo, "Could not find element", 3)
             return 'failed'
+
         x = (int)(Element.Current.BoundingRectangle.Right - Element.Current.BoundingRectangle.Width / 2);
         y = (int)(Element.Current.BoundingRectangle.Bottom - Element.Current.BoundingRectangle.Height / 2);
         win32api.SetCursorPos((x, y))
@@ -539,14 +571,48 @@ def Drag_and_Drop_Element(data_set):
                 elif row[0] == 'window name':
                     window_name.append(row[2])
 
-        Element1 = get_element(window_name[0], element_name[0])
+        # Get element object
+        #try for 10 seconds with 2 seconds delay
+        max_try = 5
+        sleep_in_sec = 2
+        i = 0
+        while i != max_try:
+            try:
+                Element1 = Get_Element(data_set)
+            except:
+                True
+            if Element1 == None or  Element in failed_tag_list:
+                CommonUtil.ExecLog(sModuleInfo, "Could not find element.  Waiting and Trying again .... ", 2)
+            else:
+                break
+            time.sleep(sleep_in_sec)
+            i = i+1
         if Element1 in failed_tag_list:
             CommonUtil.ExecLog(sModuleInfo, "Could not find element", 3)
             return 'failed'
-        Element2 = get_element(window_name[1], element_name[1])
+        
+        
+        # Get element object
+        #try for 10 seconds with 2 seconds delay
+        max_try = 5
+        sleep_in_sec = 2
+        i = 0
+        while i != max_try:
+            try:
+                Element2 = Get_Element(data_set)
+            except:
+                True
+            if Element2 == None or  Element in failed_tag_list:
+                CommonUtil.ExecLog(sModuleInfo, "Could not find element.  Waiting and Trying again .... ", 2)
+            else:
+                break
+            time.sleep(sleep_in_sec)
+            i = i+1
         if Element2 in failed_tag_list:
             CommonUtil.ExecLog(sModuleInfo, "Could not find element", 3)
             return 'failed'
+        
+        
 
         result=Drag_Object(Element1, Element2)
         if result in failed_tag_list:
@@ -591,7 +657,22 @@ def Double_Click_Element(data_set):
     sModuleInfo = inspect.currentframe().f_code.co_name + " : " + MODULE_NAME
     CommonUtil.ExecLog(sModuleInfo, "Function start", 0)
     try:
-        Element = Get_Element(data_set)
+        # Get element object
+        #try for 10 seconds with 2 seconds delay
+        max_try = 5
+        sleep_in_sec = 2
+        i = 0
+        while i != max_try:
+            try:
+                Element = Get_Element(data_set)
+            except:
+                True
+            if Element == None or  Element in failed_tag_list:
+                CommonUtil.ExecLog(sModuleInfo, "Could not find element.  Waiting and Trying again .... ", 2)
+            else:
+                break
+            time.sleep(sleep_in_sec)
+            i = i+1
         if Element in failed_tag_list:
             CommonUtil.ExecLog(sModuleInfo, "Could not find element", 3)
             return 'failed'
@@ -611,7 +692,22 @@ def Hover_Over_Element (data_set):
     sModuleInfo = inspect.currentframe().f_code.co_name + " : " + MODULE_NAME
     CommonUtil.ExecLog(sModuleInfo, "Function start", 0)
     try:
-        Element = Get_Element(data_set)
+        # Get element object
+        #try for 10 seconds with 2 seconds delay
+        max_try = 5
+        sleep_in_sec = 2
+        i = 0
+        while i != max_try:
+            try:
+                Element = Get_Element(data_set)
+            except:
+                True
+            if Element == None or  Element in failed_tag_list:
+                CommonUtil.ExecLog(sModuleInfo, "Could not find element.  Waiting and Trying again .... ", 2)
+            else:
+                break
+            time.sleep(sleep_in_sec)
+            i = i+1
         if Element in failed_tag_list:
             CommonUtil.ExecLog(sModuleInfo, "Could not find element", 3)
             return 'failed'
@@ -635,7 +731,22 @@ def Validate_Text (data_set):
             if str(row[1]).strip().lower() == 'action':
                 expected_text = str(row[2])
 
-        Element = Get_Element(data_set)
+        # Get element object
+        #try for 10 seconds with 2 seconds delay
+        max_try = 5
+        sleep_in_sec = 2
+        i = 0
+        while i != max_try:
+            try:
+                Element = Get_Element(data_set)
+            except:
+                True
+            if Element == None or  Element in failed_tag_list:
+                CommonUtil.ExecLog(sModuleInfo, "Could not find element.  Waiting and Trying again .... ", 2)
+            else:
+                break
+            time.sleep(sleep_in_sec)
+            i = i+1
         if Element in failed_tag_list:
             CommonUtil.ExecLog(sModuleInfo, "Could not find element", 3)
             return 'failed'
@@ -665,10 +776,26 @@ def Save_Text(data_set):
             elif str(row[1]).strip().lower() == 'element parameter' and str(row[0]).strip().lower() == 'field':
                 field = str(row[2]).lower().strip()
 
-        Element = Get_Element(data_set)
+        # Get element object
+        #try for 10 seconds with 2 seconds delay
+        max_try = 5
+        sleep_in_sec = 2
+        i = 0
+        while i != max_try:
+            try:
+                Element = Get_Element(data_set)
+            except:
+                True
+            if Element == None or  Element in failed_tag_list:
+                CommonUtil.ExecLog(sModuleInfo, "Could not find element.  Waiting and Trying again .... ", 2)
+            else:
+                break
+            time.sleep(sleep_in_sec)
+            i = i+1
         if Element in failed_tag_list:
             CommonUtil.ExecLog(sModuleInfo, "Could not find element", 3)
             return 'failed'
+        
 
         actual_text = ''
         if field == 'value':
@@ -743,12 +870,29 @@ def Enter_Text_In_Text_Box(data_set):
                 keystroke=False
 
 
-        Element = Get_Element(data_set)
+        # Get element object
+        #try for 10 seconds with 2 seconds delay
+        max_try = 5
+        sleep_in_sec = 2
+        i = 0
+        while i != max_try:
+            try:
+                Element = Get_Element(data_set)
+            except:
+                True
+            if Element == None or  Element in failed_tag_list:
+                CommonUtil.ExecLog(sModuleInfo, "Could not find element.  Waiting and Trying again .... ", 2)
+            else:
+                break
+            time.sleep(sleep_in_sec)
+            i = i+1
+        
+        if Element in failed_tag_list:
+            CommonUtil.ExecLog(sModuleInfo, "Could not find element to enter text", 3)
+            return 'failed'
 
         if keystroke:
-            if Element in failed_tag_list:
-                CommonUtil.ExecLog(sModuleInfo, "Couldn't find element",3)
-                return "failed"
+
 
             x = (int)(Element.Current.BoundingRectangle.Right - Element.Current.BoundingRectangle.Width / 2);
             y = (int)(Element.Current.BoundingRectangle.Bottom - Element.Current.BoundingRectangle.Height / 2);
@@ -769,7 +913,27 @@ def Enter_Text_In_Text_Box(data_set):
 
 def Scroll (data_set):
     try:
-        Element = Get_Element(data_set)
+        sModuleInfo = inspect.currentframe().f_code.co_name + " : " + MODULE_NAME
+        CommonUtil.ExecLog(sModuleInfo, "Function Start", 0)
+        # Get element object
+        #try for 10 seconds with 2 seconds delay
+        max_try = 5
+        sleep_in_sec = 2
+        i = 0
+        while i != max_try:
+            try:
+                Element = Get_Element(data_set)
+            except:
+                True
+            if Element == None or  Element in failed_tag_list:
+                CommonUtil.ExecLog(sModuleInfo, "Could not find element.  Waiting and Trying again .... ", 2)
+            else:
+                break
+            time.sleep(sleep_in_sec)
+            i = i+1
+        if Element in failed_tag_list:
+            CommonUtil.ExecLog(sModuleInfo, "Could not find element", 3)
+            return 'failed'
         x = (int)(Element.Current.BoundingRectangle.Right - Element.Current.BoundingRectangle.Width / 2);
         y = (int)(Element.Current.BoundingRectangle.Bottom - Element.Current.BoundingRectangle.Height / 2);
         win32api.SetCursorPos((x, y))
@@ -841,8 +1005,8 @@ def Run_Application(data_set):
         autoit.send(Desktop_app)
         time.sleep(0.5)
         autoit.send("{ENTER}")
-        CommonUtil.ExecLog(sModuleInfo, "Succesfully launched your app", 1)
-
+        CommonUtil.ExecLog(sModuleInfo, "Successfully launched your app", 1)
+        time.sleep(2)
         return "passed"
     except:
         CommonUtil.ExecLog(sModuleInfo, "Unable to start your app %s" % Desktop_app,3)

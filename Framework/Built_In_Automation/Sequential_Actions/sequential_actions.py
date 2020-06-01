@@ -119,6 +119,9 @@ actions = { # Numbers are arbitrary, and are not used anywhere
     239: {'module': 'appium', 'screenshot':'mobile', 'name': 'hide keyboard', 'function': 'Hide_Keyboard'},
     240: {'module': 'appium', 'screenshot':'mobile', 'name': 'handle alert', 'function': 'Handle_Mobile_Alert'},
     241: {'module': 'appium', 'screenshot':'mobile', 'name': 'switch context', 'function': 'Switch_Context'},
+    242: {'module': 'appium', 'screenshot':'mobile', 'name': 'clear media', 'function': 'clear_existing_media_ios'},
+    243: {'module': 'appium', 'screenshot':'mobile', 'name': 'add media', 'function': 'add_media_ios'},
+    244: {'module': 'appium', 'screenshot':'mobile', 'name': 'simulator screenshot', 'function': 'simulator_screenshot'},
 
     300: {'module': 'rest', 'screenshot':'none', 'name': 'save response', 'function': 'Get_Response_Wrapper'},
     301: {'module': 'rest', 'screenshot':'none', 'name': 'search response', 'function': 'Search_Response'},
@@ -206,6 +209,7 @@ actions = { # Numbers are arbitrary, and are not used anywhere
     533: {'module': 'utility', 'screenshot':'none', 'name': 'get attachment path', 'function': 'Get_Attachment_Path'},
     534: {'module': 'utility', 'screenshot':'none', 'name': 'extract number', 'function': 'extract_number'},
     535: {'module': 'utility', 'screenshot':'none', 'name': 'convert date format', 'function': 'convert_date_format'},
+    536: {'module': 'utility', 'screenshot':'none', 'name': 'compare images', 'function': 'compare_images'},
 
 
 

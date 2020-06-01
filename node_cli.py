@@ -127,8 +127,15 @@ device_dict = {}
 
 processing_test_case = False # Used by Zeuz Node GUI to check if we are in the middle of a run
 exit_script = False # Used by Zeuz Node GUI to exit script
-if not os.path.exists(os.path.join(FileUtilities.get_home_folder(), 'Desktop',os.path.join('AutomationLog'))): os.mkdir(os.path.join(FileUtilities.get_home_folder(), 'Desktop',os.path.join('AutomationLog')))
-temp_ini_file = os.path.join(os.path.join(FileUtilities.get_home_folder(), os.path.join('Desktop',os.path.join('AutomationLog',ConfigModule.get_config_value('Advanced Options', '_file')))))
+
+if not os.path.exists(os.path.join (os.path.realpath(__file__).split("node_cli.py")[0] , os.path.join ('AutomationLog'))): os.mkdir(os.path.join (os.path.realpath(__file__).split("node_cli.py")[0] , os.path.join ('AutomationLog')))
+
+
+
+#temp_ini_file = os.path.join(os.path.join(FileUtilities.get_home_folder(), os.path.join('Desktop',os.path.join('AutomationLog',ConfigModule.get_config_value('Advanced Options', '_file')))))
+
+temp_ini_file =os.path.join(os.path.join (os.path.realpath(__file__).split("node_cli.py")[0] , os.path.join ('AutomationLog',ConfigModule.get_config_value('Advanced Options', '_file'))))
+
 
 
 def zeuz_authentication_prompts_for_cli():
@@ -284,7 +291,9 @@ def RunProcess(sTesterid):
             break # Exit back to login() - In some circumstances, this while loop will get into a state when certain errors occur, where nothing runs, but loops forever. This stops that from happening 
     return True
 def PreProcess():
-    current_path = os.path.join(FileUtilities.get_home_folder(), os.path.join('Desktop', 'AutomationLog'))
+    #current_path = os.path.join(FileUtilities.get_home_folder(), os.path.join('Desktop', 'AutomationLog'))
+    current_path = os.path.join (os.path.realpath(__file__).split("node_cli.py")[0] , os.path.join ('AutomationLog'))
+    
     retVal = FileUtilities.CreateFolder(current_path, forced=False)
     if retVal:
         # now save it in the global_config.ini

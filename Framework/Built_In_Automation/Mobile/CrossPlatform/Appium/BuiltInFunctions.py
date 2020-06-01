@@ -12,8 +12,9 @@
 #########################
 
 from appium import webdriver
-import os, sys, time, inspect, subprocess, re, signal, _thread, requests
+import os, sys, datetime, time, inspect, subprocess, re, signal, _thread, requests
 from Framework.Utilities import CommonUtil
+from Framework.Built_In_Automation.Built_In_Utility.CrossPlatform import BuiltInUtilityFunction as Utility_Functions
 from Framework.Built_In_Automation.Mobile.Android.adb_calls import adbOptions
 from Framework.Built_In_Automation.Mobile.iOS import iosOptions
 from appium.webdriver.common.touch_action import TouchAction
@@ -554,13 +555,15 @@ def start_appium_driver(package_name = '', activity_name = '', filename = '', pl
             # Include the user provided desired capabilities
             desired_caps.update(desiredcaps)
     
-            desired_caps['platformName'] = appium_details[device_id]['type'] # Set platform name
-            desired_caps['autoLaunch'] = 'false' # Do not launch application
-            desired_caps['fullReset'] = 'false' # Do not clear application cache when complete
-            desired_caps['noReset'] = 'true' # Do not clear application cache when complete
-            desired_caps['newCommandTimeout'] = 600 # Command timeout before appium destroys instance
+
 
             if str(appium_details[device_id]['type']).lower() == 'android':
+
+                desired_caps['platformName'] = appium_details[device_id]['type'] # Set platform name
+                desired_caps['autoLaunch'] = 'false' # Do not launch application
+                desired_caps['fullReset'] = 'false' # Do not clear application cache when complete
+                desired_caps['noReset'] = 'true' # Do not clear application cache when complete
+                desired_caps['newCommandTimeout'] = 6000 # Command timeout before appium destroys instance
                 if adbOptions.is_android_connected(device_serial) == False:
                     CommonUtil.ExecLog(sModuleInfo, "Could not detect any connected Android devices", 3)
                     return 'failed',launch_app
@@ -597,6 +600,7 @@ def start_appium_driver(package_name = '', activity_name = '', filename = '', pl
                     app = os.path.join(app, ios)
                     encoding = 'utf-8'
                     bundle_id = str(subprocess.check_output(['osascript', '-e', 'id of app "%s"'%str(app)]), encoding=encoding).strip()
+                    #desired_caps = {}
                     desired_caps['app'] = app  # Use set_value() for writing to element
                     desired_caps['platformName'] = 'iOS'  # Read version #!!! Temporarily hard coded
                     desired_caps['platformVersion'] = platform_version
@@ -616,7 +620,7 @@ def start_appium_driver(package_name = '', activity_name = '', filename = '', pl
             else:
                 CommonUtil.ExecLog(sModuleInfo, "Invalid device type: %s" % str(appium_details[device_id]['type']), 3)
                 return 'failed',launch_app
-            CommonUtil.ExecLog(sModuleInfo,"Capabilities: %s" % str(desired_caps), 0)
+            CommonUtil.ExecLog(sModuleInfo,"Capabilities: %s" % str(desired_caps), 1)
             
             # Create Appium instance with capabilities
             try:
@@ -1239,6 +1243,78 @@ def read_screen_heirarchy():
         CommonUtil.ExecLog(sModuleInfo,"Read screen heirarchy unsuccessfully",3)
         return False
 
+def clear_existing_media_ios(data_set):
+    sModuleInfo = inspect.currentframe().f_code.co_name + " : " + MODULE_NAME
+    CommonUtil.ExecLog(sModuleInfo,"Function Start", 0)
+    
+    #Clears all media (photos and videos) from a booted device
+    
+    try:
+        CommonUtil.ExecLog(sModuleInfo,"Trying to clear media.", 0)
+
+        #get booted device id if not already available
+        deviceid = subprocess.getoutput("xcrun simctl list | grep 'Booted' | awk 'match($0, /\(([-0-9A-F]+)\)/) { print substr( $0, RSTART + 1, RLENGTH - 2 )}'")
+    
+        #clear all media from the selected simulator
+        os.system('rm -rf ~/Library/Developer/CoreSimulator/Devices/%s/data/Media/DCIM/'%deviceid)
+        os.system('rm -rf ~/Library/Developer/CoreSimulator/Devices/%s/data/Media/PhotoData/'%deviceid)
+        
+        #Reboot simulator - Required if any new media is to be added afterwards
+        os.system("xcrun simctl shutdown %s" % deviceid)
+        os.system("xcrun simctl boot %s" % deviceid)
+        
+        CommonUtil.ExecLog(sModuleInfo,"Closed the media successfully from simulator.",1)
+        return "passed"
+        
+    except:
+        errMsg = "No device, please ensure a device is booted to clear its media."
+        return CommonUtil.Exception_Handler(sys.exc_info(), None, errMsg)
+
+def add_media_ios(data_set):
+    sModuleInfo = inspect.currentframe().f_code.co_name + " : " + MODULE_NAME
+    CommonUtil.ExecLog(sModuleInfo,"Function Start", 0)
+
+
+    try:
+        media_name = str(data_set[0][2]).strip()
+        #Add image or video to a booted ios simulator
+        os.system("xcrun simctl addmedia booted ~/Desktop/Attachments/%s" %media_name)
+        CommonUtil.ExecLog(sModuleInfo,"Successfully added media to device.", 0)
+        return 'passed'
+    except:
+        errMsg = "Unable to add media to device. Either no device is booted or media name is wrong."
+        return CommonUtil.Exception_Handler(sys.exc_info(), None, errMsg)
+            
+def simulator_screenshot(data_set):
+    '''Take a screenshot of the current simulator screen'''
+    sModuleInfo = inspect.currentframe().f_code.co_name + " : " + MODULE_NAME
+
+    CommonUtil.ExecLog(sModuleInfo,"Function Start", 0)
+
+    try:
+        simscreen_path = data_set[0][2] # Get shared variable name from Value on action row
+    except:
+        return CommonUtil.Exception_Handler(sys.exc_info())
+
+    try:
+        simscreen_folder = Utility_Functions.get_home_folder()
+        simscreen_name = 'image'
+        simscreen_timestamp = datetime.datetime.now().strftime('%Y-%m-%dT%H-%M-%S-%f')
+        simscreen_location = simscreen_folder + os.sep + simscreen_timestamp + "_" + simscreen_name + '.png'
+        
+        appium_driver.save_screenshot(simscreen_location)
+        
+        Shared_Resources.Set_Shared_Variables(simscreen_path,simscreen_location) #Saving screenshot path to a variable of the user's choice
+        
+        CommonUtil.ExecLog(sModuleInfo,"Took simulator screenshot successfully", 0)
+        return 'passed'
+
+
+    except Exception:
+        errMsg = "Unable to take simulator screenshot"
+        return CommonUtil.Exception_Handler(sys.exc_info(),None,errMsg)
+
+
 def tap_location(data_set):
     ''' Tap the provided position using x,y cooridnates '''
     # positions: list containing x,y coordinates
@@ -1668,26 +1744,53 @@ def Enter_Text_Appium(data_set):
                 if context_switched == True:
                     CommonUtil.ExecLog(sModuleInfo, "Context was switched during this action.  Switching back to default Native Context", 1) 
                     context_result = auto_switch_context_and_try('native')
+                CommonUtil.ExecLog(sModuleInfo, "Unable to locate your element with different contexts.", 3)
                 return "failed" 
             else:
                 CommonUtil.ExecLog(sModuleInfo, "Found your element with different context", 1)
 
-
+        # Click and clear the text box for both iOS and Android
+        # We found found the element 
+        # sometimes when we click on the element, the element properties may stay same but the 
+        #actual reference may change. So in this case, we will need to search for element again once w
+        # click on the element.
+        try:
+            CommonUtil.ExecLog(sModuleInfo, "Clicking and clearing the text field",1)
+            Element.click() # Set focus to textbox
+            Element = LocateElement.Get_Element(data_set, appium_driver)
+            if Element == "failed":
+                CommonUtil.ExecLog(sModuleInfo, "Unable to locate your element with given data.", 3)
+                CommonUtil.ExecLog(sModuleInfo, "Trying to see if there are contexts", 1)
+                context_result = auto_switch_context_and_try('webview')
+                if context_result =='failed':
+                    CommonUtil.ExecLog(sModuleInfo, "Unable to locate your element with different contexts.", 3)
+                    return "failed" 
+                else: 
+                    context_switched = True
+                Element = LocateElement.Get_Element(data_set,appium_driver)
+                if Element == "failed":
+                    CommonUtil.ExecLog(sModuleInfo, "Unable to locate your element with different contexts.", 3)
+                    if context_switched == True:
+                        CommonUtil.ExecLog(sModuleInfo, "Context was switched during this action.  Switching back to default Native Context", 1) 
+                        context_result = auto_switch_context_and_try('native')
+                    CommonUtil.ExecLog(sModuleInfo, "Unable to locate your element with different contexts.", 3)
+                    return "failed" 
+                else:
+                    CommonUtil.ExecLog(sModuleInfo, "Found your element with different context", 1)
+            Element.clear() # Remove any text already existing
+        except:
+            #just in case we run into any error, we will still try to proceed
+            CommonUtil.ExecLog(sModuleInfo, "Unable to click and clear the text field",2)
+            True
 
         try:
-            # Enter text into element
-            # Element.click() # Set focus to textbox
-            # Element.clear() # Remove any text already existing
-
-            if str(appium_details[device_id]['type']).lower() == 'ios':
-                Element.send_keys(text_value)  # Work around for IOS issue in Appium v1.6.4 where send_keys() doesn't work
-                CommonUtil.ExecLog(sModuleInfo, "Successfully set the value of to text to: %s" % text_value, 1)
-                
-                if context_switched == True:
-                    CommonUtil.ExecLog(sModuleInfo, "Context was switched during this action.  Switching back to default Native Context", 1) 
-                    context_result = auto_switch_context_and_try('native')
-                
-                return 'passed'
+            #Trying to send text using send keys method
+            Element.send_keys(text_value)  # Work around for IOS issue in Appium v1.6.4 where send_keys() doesn't work
+            CommonUtil.ExecLog(sModuleInfo, "Successfully set the value of to text to: %s" % text_value, 1)
+            if context_switched == True:
+                CommonUtil.ExecLog(sModuleInfo, "Context was switched during this action.  Switching back to default Native Context", 1) 
+                context_result = auto_switch_context_and_try('native')
+            return 'passed'
         
         except Exception:
             CommonUtil.ExecLog(sModuleInfo, "Found element, but couldn't write text to it using SendKeys method. Trying SetValue method",2)
@@ -1696,65 +1799,25 @@ def Enter_Text_Appium(data_set):
         # This is wrapped in it's own try block because we sometimes get an error 
         # from send_keys stating "Parameters were incorrect". However, most devices work only with send_keys
         try:
-            if str(appium_details[device_id]['type']).lower() != 'ios':
-                Element.set_value(text_value)   # Enter the user specified text
-                CommonUtil.ExecLog(sModuleInfo, "Successfully set the value of to text to: %s" % text_value, 1)
-                if context_switched == True:
-                    CommonUtil.ExecLog(sModuleInfo, "Context was switched during this action.  Switching back to default Native Context", 1) 
-                    context_result = auto_switch_context_and_try('native')
-                
-                return 'passed'
+            Element.set_value(text_value)   # Enter the user specified text
+            CommonUtil.ExecLog(sModuleInfo, "Successfully set the value of to text to: %s" % text_value, 1)
+            if context_switched == True:
+                CommonUtil.ExecLog(sModuleInfo, "Context was switched during this action.  Switching back to default Native Context", 1) 
+                context_result = auto_switch_context_and_try('native')
+            return 'passed'
             
         except Exception:
             CommonUtil.ExecLog(sModuleInfo, "Still could not write text to it. Both SendKeys and Set_value method did not work",3)
             if context_switched == True:
                 CommonUtil.ExecLog(sModuleInfo, "Context was switched during this action.  Switching back to default Native Context", 1) 
                 context_result = auto_switch_context_and_try('native')
-            
-            return "failed"
-
-
-
-        #Enter android text
-        try:
-            if str(appium_details[device_id]['type']).lower() != 'android':
-                Element.set_value(text_value)   # Enter the user specified text
-                CommonUtil.ExecLog(sModuleInfo, "Successfully set the value of to text to: %s" % text_value, 1) # dont return until hiding keyboard
-        except Exception:
-            CommonUtil.ExecLog(sModuleInfo, "Unable to SetValue to text field",3)
-            if context_switched == True:
-                CommonUtil.ExecLog(sModuleInfo, "Context was switched during this action.  Switching back to default Native Context", 1) 
-                context_result = auto_switch_context_and_try('native')
-            
-            return CommonUtil.Exception_Handler(sys.exc_info(), None, errMsg)                         
-        
-        #try to hide keyboard for android
-        # Do not disable this as a lot of time keyboard blocks out other fields.
-        try:      
-            if str(appium_details[device_id]['type']).lower() != 'android':        
-                    appium_driver.hide_keyboard() # Remove keyboard
-                    CommonUtil.ExecLog(sModuleInfo, "Hiding keyboard", 1)
-                    CommonUtil.TakeScreenShot(sModuleInfo)  # Capture screen
-                    if context_switched == True:
-                        CommonUtil.ExecLog(sModuleInfo, "Context was switched during this action.  Switching back to default Native Context", 1) 
-                        context_result = auto_switch_context_and_try('native')
-                            
-                    return "passed"                
-        except Exception:
-            CommonUtil.ExecLog(sModuleInfo, "Unable to hide the keyboard",2)   
-            if context_switched == True:
-                CommonUtil.ExecLog(sModuleInfo, "Context was switched during this action.  Switching back to default Native Context", 1) 
-                context_result = auto_switch_context_and_try('native')
-            
-            
-            return "passed"         
+            return CommonUtil.Exception_Handler(sys.exc_info(), None, errMsg)   
+     
     except Exception:
         errMsg = "Could not find element."
         if context_switched == True:
             CommonUtil.ExecLog(sModuleInfo, "Context was switched during this action.  Switching back to default Native Context", 1) 
             context_result = auto_switch_context_and_try('native')
-        
-        
         return CommonUtil.Exception_Handler(sys.exc_info(), None, errMsg)
 
 

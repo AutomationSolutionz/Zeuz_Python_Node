@@ -1,6 +1,6 @@
 [ZeuZ Python Version]
-version = 10.15.1
+version = 11.01
 [Release Date]
-date= 2020-05-24
+date= May 18, 2020
 [Release Note]
-Note = Add custom odbc driver for databases support + mysql and mariadb
+Note = Hybrid (ios/android), custom desire cap, database actions, auto context switch for hybrid, context switch, and others

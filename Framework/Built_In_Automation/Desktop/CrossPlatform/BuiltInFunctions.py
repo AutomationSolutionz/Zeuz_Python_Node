@@ -153,13 +153,32 @@ def Enter_Text(data_set):
         # Find image coordinates
         if element_parameter:
             CommonUtil.ExecLog(sModuleInfo, "Trying to locate element", 0)
-            element = LocateElement.Get_Element(data_set, gui) # (x, y, w, h)
-            if element in failed_tag_list: # Error reason logged by Get_Element
-                CommonUtil.ExecLog(sModuleInfo, "Could not locate element", 3)
+            
+             # (x, y, w, h)
+                
+            # Get element object
+            #try for 10 seconds with 2 seconds delay
+            max_try = 5
+            sleep_in_sec = 2
+            i = 0
+            while i != max_try:
+                try:
+                    Element = LocateElement.Get_Element(data_set, gui)
+                except:
+                    True
+                if Element == None:
+                    CommonUtil.ExecLog(sModuleInfo, "Could not find element.  Waiting and Trying again .... ", 2)
+                else:
+                    break
+                time.sleep(sleep_in_sec)
+                i = i+1
+            if Element in failed_tag_list:
+                CommonUtil.ExecLog(sModuleInfo, "Could not find element", 3)
                 return 'failed'
             
+            
             # Get coordinates for position user specified
-            x, y = getCoordinates(element, 'centre') # Find coordinates (x,y)
+            x, y = getCoordinates(Element, 'centre') # Find coordinates (x,y)
             if x in failed_tag_list: # Error reason logged by Get_Element
                 CommonUtil.ExecLog(sModuleInfo, "Error calculating coordinates", 3)
                 return 'failed'

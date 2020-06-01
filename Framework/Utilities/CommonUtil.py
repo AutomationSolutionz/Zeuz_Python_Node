@@ -36,10 +36,12 @@ colorama_init(autoreset=True)
 MODULE_NAME = inspect.getmodulename(__file__)
 
 # Get file path for temporary config file
-temp_config = os.path.join(os.path.join(FL.get_home_folder(), os.path.join('Desktop', os.path.join('AutomationLog',
-                                                                                                   ConfigModule.get_config_value(
-                                                                                                       'Advanced Options',
-                                                                                                       '_file')))))
+#temp_config = os.path.join(os.path.join(FL.get_home_folder(), os.path.join('Desktop', os.path.join('AutomationLog',ConfigModule.get_config_value('Advanced Options','_file')))))
+
+
+temp_config = os.path.join(os.path.join (os.path.realpath(__file__).split("Framework")[0] , os.path.join ('AutomationLog',ConfigModule.get_config_value('Advanced Options', '_file'))))
+
+
 
 passed_tag_list = ['Pass', 'pass', 'PASS', 'PASSED', 'Passed', 'passed', 'true', 'TRUE', 'True', '1', 'Success',
                    'success', 'SUCCESS', True]
@@ -466,7 +468,11 @@ class MachineInfo():
         :return: returns the local pc name
         """
         try:
-            node_id_file_path = os.path.join(FL.get_home_folder(), os.path.join('Desktop', 'node_id.conf'))
+            #node_id_file_path = os.path.join(FL.get_home_folder(), os.path.join('Desktop', 'node_id.conf'))
+            
+            node_id_file_path = os.path.join (os.path.realpath(__file__).split("Framework")[0] , os.path.join ('node_id.conf'))
+
+            
             if os.path.isfile(node_id_file_path):
                 unique_id = ConfigModule.get_config_value('UniqueID', 'id', node_id_file_path)
                 if unique_id == '':
@@ -499,7 +505,8 @@ class MachineInfo():
         :return: returns the local pc unique ID
         """
         try:
-            node_id_file_path = os.path.join(FL.get_home_folder(), os.path.join('Desktop', 'node_id.conf'))
+            #node_id_file_path = os.path.join(FL.get_home_folder(), os.path.join('Desktop', 'node_id.conf'))
+            node_id_file_path = os.path.join (os.path.realpath(__file__).split("Framework")[0] , os.path.join ('node_id.conf'))
             if os.path.isfile(node_id_file_path):
                 unique_id = ConfigModule.get_config_value('UniqueID', 'id', node_id_file_path)
                 if unique_id == '':
