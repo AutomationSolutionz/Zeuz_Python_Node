@@ -22,6 +22,7 @@ tzlocal
 urllib3
 psutil
 selenium
+pyodbc
 scikit-image
 imutils
 opencv-contrib-python

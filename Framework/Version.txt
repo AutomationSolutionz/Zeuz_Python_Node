@@ -4,4 +4,3 @@ version = 11.01
 date= May 18, 2020
 [Release Note]
 Note = Hybrid (ios/android), custom desire cap, database actions, auto context switch for hybrid, context switch, and others
-

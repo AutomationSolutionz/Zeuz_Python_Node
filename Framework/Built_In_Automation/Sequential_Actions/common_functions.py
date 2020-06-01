@@ -1543,10 +1543,11 @@ DB_USER_ID = "db_user_id"
 DB_PASSWORD = "db_password"
 DB_HOST = "db_host"
 DB_PORT = "db_port"
+DB_ODBC_DRIVER = "odbc_driver"
 
 
 # [NON ACTION]
-def find_odbc_driver(db_type='postgres'):
+def find_odbc_driver(db_type='postgresql'):
     """
     Finds the ODBC driver to work with based on the given database type
     :param db_type: type of database (e.g postgres, mysql, etc.)
@@ -1558,22 +1559,41 @@ def find_odbc_driver(db_type='postgres'):
     sModuleInfo = inspect.currentframe().f_code.co_name + " : " + MODULE_NAME
     CommonUtil.ExecLog(sModuleInfo, "Function start", 0)
 
-    # Driver list for pyodbc to connect through the ODBC standard
-    pyodbc_drivers = pyodbc.drivers()
+    db_type = db_type.lower()
 
-    # Sort to get unicode items first
-    pyodbc_drivers.sort(reverse=True, key=lambda x: 'unicode' in x.lower())
+    # Check to see if any ODBC driver is specified
+    selected_driver = sr.Get_Shared_Variables(DB_ODBC_DRIVER, log=False)
 
-    selected_driver = db_type
+    # If no ODBC driver is specified
+    if selected_driver == "failed":
+        # Driver list for pyodbc to connect through the ODBC standard
+        pyodbc_drivers = pyodbc.drivers()
 
-    for odbc_driver in pyodbc_drivers:
-        if db_type == 'postgresql':
-            if 'postgre' in odbc_driver.lower() and 'unicode' in odbc_driver.lower():
-                selected_driver = odbc_driver
-                # We usually want the unicode drivers, so break once we've found it
-                break
-            elif 'postgre' in odbc_driver.lower() and 'ansi' in odbc_driver.lower():
-                selected_driver = odbc_driver
+        # Sort to get unicode items first
+        pyodbc_drivers.sort(reverse=True, key=lambda x: 'unicode' in x.lower())
+
+        for odbc_driver in pyodbc_drivers:
+            odbc_driver_lowercase = odbc_driver.lower()
+
+            if db_type == 'postgresql':
+                if 'postgre' in odbc_driver_lowercase and 'unicode' in odbc_driver_lowercase:
+                    selected_driver = odbc_driver
+                    # We usually want the unicode drivers, so break once we've found it
+                    break
+                elif 'postgre' in odbc_driver_lowercase and 'ansi' in odbc_driver_lowercase:
+                    selected_driver = odbc_driver
+            elif db_type == 'mariadb':
+                # mariadb has only one type of odbc driver
+                if 'mariadb' in odbc_driver_lowercase:
+                    selected_driver = odbc_driver
+                    break
+            elif db_type == 'mysql':
+                if 'mysql' in odbc_driver_lowercase and 'unicode' in odbc_driver_lowercase:
+                    selected_driver = odbc_driver
+                    # We usually want the unicode drivers, so break once we've found it
+                    break
+                elif 'mysql' in odbc_driver_lowercase and 'ansi' in odbc_driver_lowercase:
+                    selected_driver = odbc_driver
 
     CommonUtil.ExecLog(sModuleInfo, "[Database ODBC DRIVER]: %s" % selected_driver, 0)
     return selected_driver
@@ -1665,6 +1685,7 @@ def connect_to_db(data_set):
     db_password     input parameter         <password of db, ex: mydbpass-mY1-t23z>
     db_host         input parameter         <host of db, ex: localhost, 127.0.0.1>
     db_port         input parameter         <port of db, ex: 5432 for postgres by default>
+    odbc_driver     optional parameter      <specify the odbc driver, optional, can be found from pyodbc.drivers()>
     connect to db   common action           Connect to a database
 
     :param data_set: Action data set
@@ -1683,11 +1704,13 @@ def connect_to_db(data_set):
             if row[0] == DB_USER_ID:
                 sr.Set_Shared_Variables(DB_USER_ID, row[2])
             if row[0] == DB_PASSWORD:
-                sr.Set_Shared_Variables(DB_PASSWORD, row[2])
+                sr.Set_Shared_Variables(DB_PASSWORD, row[2], allowEmpty=True)
             if row[0] == DB_HOST:
                 sr.Set_Shared_Variables(DB_HOST, row[2])
             if row[0] == DB_PORT:
                 sr.Set_Shared_Variables(DB_PORT, row[2])
+            if row[0] == DB_ODBC_DRIVER:
+                sr.Set_Shared_Variables(DB_ODBC_DRIVER, row[2])
 
         return "passed"
     except Exception:
