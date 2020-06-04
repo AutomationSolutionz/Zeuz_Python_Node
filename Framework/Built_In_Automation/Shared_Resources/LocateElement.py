@@ -154,17 +154,25 @@ def Get_Element(step_data_set,driver,query_debug=False, wait_enable = True):
             else:
                 result = "failed"
             
-            #check if element is displayed or not.  Not adding selenium yet.  More testing is needed for web.  We may need to add more
+            # if user sends optional option check if element is displayed or not.    We may need to add more
             # items here such as enabled, visible and such.
-    
-            if driver_type == 'appium':
-                try:
-                    display_status = result.is_displayed()
-                    if display_status == False:
-                        CommonUtil.ExecLog(sModuleInfo, "Element was found, however, it was not displayed or enabled. Returning failed", 2)
-                        result = "failed"  
-                except:
-                    True
+
+            try:
+                if driver_type == 'appium' or driver_type == 'selenium':
+                    is_displayed_value = ''
+                    for row in step_data_set:
+                        if 'option' in  str(row[1]).lower().strip() and 'is_displayed' in str(row[0]).lower().strip() :
+                            is_displayed_value=row[2].strip().lower()
+                            if is_displayed_value == 'true':
+                                display_status = result.is_displayed()
+                                if display_status == False:
+                                    CommonUtil.ExecLog(sModuleInfo, "Element was found, however, it was not displayed or enabled. Returning failed", 2)
+                                    result = "failed"  
+                                    break
+                                else:
+                                    break 
+            except:
+                True
             
             if result not in failed_tag_list:
                 if save_parameter !='': #save element to a variable

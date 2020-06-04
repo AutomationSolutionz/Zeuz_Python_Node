@@ -1416,7 +1416,7 @@ def Click_Element_Appium(data_set):
       Example:
       below example will offset by 25% to the right off the center of the element.  If we select 100% it will go to the right edge of the bound.  If you want to go left prove -25.
             
-      x_offset:y_offset             optional parameter           25:0
+      x_offset:y_offset             optional option           25:0
     
     '''
     
