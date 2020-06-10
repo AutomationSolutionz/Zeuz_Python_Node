@@ -1379,20 +1379,6 @@ def main(device_dict):
     # get local machine user id
     Userid = (CommonUtil.MachineInfo().getLocalUser()).lower()
 
-    # get run definition config value
-    send_log_file_only_for_fail = ConfigModule.get_config_value(
-        'RunDefinition', 'upload_log_file_only_for_fail')
-
-    # check whether to send log file only for fail
-    if send_log_file_only_for_fail == "" or send_log_file_only_for_fail == None:
-        send_log_file_only_for_fail = True
-    elif send_log_file_only_for_fail.lower() == 'true':
-        send_log_file_only_for_fail = True
-    elif send_log_file_only_for_fail.lower() == 'false':
-        send_log_file_only_for_fail = False
-    else:
-        send_log_file_only_for_fail = True
-
     # check user permission to run test
     user_permission = check_user_permission_to_run_test(sModuleInfo, Userid)
     if user_permission not in passed_tag_list:
@@ -1458,6 +1444,20 @@ def main(device_dict):
         # get all remote config
         rem_config = get_all_remote_config(run_id)
         ConfigModule.remote_config = rem_config
+
+        # get run definition config value
+        send_log_file_only_for_fail = ConfigModule.get_config_value(
+            'RunDefinition', 'upload_log_file_only_for_fail')
+
+        # check whether to send log file only for fail
+        if send_log_file_only_for_fail == "" or send_log_file_only_for_fail == None:
+            send_log_file_only_for_fail = True
+        elif send_log_file_only_for_fail.lower() == 'true':
+            send_log_file_only_for_fail = True
+        elif send_log_file_only_for_fail.lower() == 'false':
+            send_log_file_only_for_fail = False
+        else:
+            send_log_file_only_for_fail = True
 
         # add log
         if len(TestCaseLists) > 0:
