@@ -140,7 +140,9 @@ def Click_Element(data_set):
         return 'failed'
 
     #If found Click element
+
     try:
+        CommonUtil.ExecLog(sModuleInfo, "Element was located.  Performing action provided ", 1)
         result = Click_Element_None_Mouse(Element,expand,invoke,select,toggle)
         CommonUtil.TakeScreenShot(sModuleInfo)
         if result in failed_tag_list:
@@ -487,6 +489,8 @@ def Click_Element_None_Mouse(Element, Expand=None, Invoke=None, Select=None, Tog
         else:
             for each in patter_list:
                 pattern_name = Automation.PatternName(each)
+                CommonUtil.ExecLog(sModuleInfo, "Pattern name attached to the current element is: %s "%pattern_name, 1)
+                
                 #Expand and collapse actions
                 if pattern_name == "ExpandCollapse":
                     if Expand == True:
@@ -866,7 +870,7 @@ def Enter_Text_In_Text_Box(data_set):
         for row in data_set:
             if str(row[1]).lower().strip() == 'action':
                 text = str(row[2])
-            elif str(row[0]).lower().strip() == 'method' and str(row[0]).lower().strip() == 'set value':
+            elif str(row[0]).lower().strip() == 'method' and str(row[2]).lower().strip() == 'set value':
                 keystroke=False
 
 
@@ -904,7 +908,16 @@ def Enter_Text_In_Text_Box(data_set):
             autoit.send("^a")  # select all
             autoit.send(text)
         else:
-            Element.GetCurrentPattern(ValuePattern.Pattern).SetValue(text)
+            try:
+                
+                CommonUtil.ExecLog(sModuleInfo, "Trying to set the value by ValuePattern", 1)
+                time.sleep(3)
+                Element.GetCurrentPattern(ValuePattern.Pattern).SetValue(text)
+            except:
+                CommonUtil.ExecLog(sModuleInfo, "Please try 'keystroke' as method instead", 3)
+                return "failed"
+                
+
 
         return "passed"
     except Exception:
@@ -985,6 +998,26 @@ def Get_Element(data_set):
         if Element == None:
             return "failed"
 
+        patter_list = 0
+        try:
+            patter_list = Element.GetSupportedPatterns()
+            if len(patter_list) == 0:
+                CommonUtil.ExecLog(sModuleInfo, "No Pattern was detected for this element.  However we did find the element", 2)
+    
+            else:
+                pattern_found = []
+                for each in patter_list:
+                    try:
+                        pattern_name = Automation.PatternName(each)
+                        pattern_found.append(pattern_name)
+                    except:
+                        True
+        
+                CommonUtil.ExecLog(sModuleInfo, "Following patterns were found: %s"%pattern_found , 1)
+        except: 
+            True
+        
+        
         return Element
     except Exception:
         errMsg = "Could not get your element."
