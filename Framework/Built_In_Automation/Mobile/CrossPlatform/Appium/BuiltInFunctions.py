@@ -2865,6 +2865,59 @@ def Switch_Context(data_set):
 
 
 
+def Save_Attribute(step_data):
+    #switches context between native and webview
+    '''
+    this works for both ios and Android
+    *** Enter attribute of element that you are trying to locate.  Example, class, ID ****    element parameter     *** Enter the value of the attribute that you are trying to locate. ***
+     *** Attribute name that you are trying to save.  Example "value"***                      save parameter    *** Your variable.  please do not use spaces.  To recall your variable in other action use   %|your_variable|%   ****
+    save attribute                                                                            appium action    save attribute   
+    '''
+    sModuleInfo = inspect.currentframe().f_code.co_name + " : " + MODULE_NAME
+    skip_or_not = filter_optional_action_and_step_data(step_data, sModuleInfo)
+    if skip_or_not == False:
+        return 'passed'
+
+    CommonUtil.ExecLog(sModuleInfo,"Function Start", 0)
+    
+
+    try:
+        Element = LocateElement.Get_Element(step_data,appium_driver)
+        if Element == "failed":
+            CommonUtil.ExecLog(sModuleInfo, "Unable to locate your element with given data.", 3)
+            return "failed" 
+        else: 
+            CommonUtil.ExecLog(sModuleInfo, "Target element was found. We will attempt to extract the attribute value that you provided", 1)
+            
+        for each_step_data_item in step_data:
+            if 'save parameter' in each_step_data_item[1]:
+                variable_name = each_step_data_item[2]
+                attribute_name = each_step_data_item[0]  
+                break
+        try:
+            attribute_value = Element.get_attribute(attribute_name)
+        except Exception as supported_attribute:
+            CommonUtil.ExecLog(sModuleInfo, str(supported_attribute) , 3)
+            return CommonUtil.Exception_Handler(sys.exc_info())     
+              
+        CommonUtil.ExecLog(sModuleInfo,"Your attribute %s was found and value is %s"%(attribute_name, attribute_value) , 1)
+        if attribute_value == '':
+            CommonUtil.ExecLog(sModuleInfo, "Unable to save attribute value as it is empty", 3)
+            return "failed"   
+        
+        result = Shared_Resources.Set_Shared_Variables(variable_name, attribute_value)
+        
+        if result in failed_tag_list:
+            CommonUtil.ExecLog(sModuleInfo, "Value of Variable '%s' could not be saved!!!"%variable_name, 3)
+            return "failed"
+        else:
+            Shared_Resources.Show_All_Shared_Variables()
+            CommonUtil.ExecLog(sModuleInfo, "Value of Variable '%s' was saved"%variable_name, 1)
+            return "passed"
+    except Exception:
+        return CommonUtil.Exception_Handler(sys.exc_info())
+
+
 
 def if_element_exists(data_set):
     ''' Click on an element '''

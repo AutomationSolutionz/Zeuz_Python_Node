@@ -122,6 +122,7 @@ actions = { # Numbers are arbitrary, and are not used anywhere
     242: {'module': 'appium', 'screenshot':'mobile', 'name': 'clear media', 'function': 'clear_existing_media_ios'},
     243: {'module': 'appium', 'screenshot':'mobile', 'name': 'add media', 'function': 'add_media_ios'},
     244: {'module': 'appium', 'screenshot':'mobile', 'name': 'simulator screenshot', 'function': 'simulator_screenshot'},
+    245: {'module': 'appium', 'screenshot':'mobile', 'name': 'save attribute', 'function': 'Save_Attribute'},
 
     300: {'module': 'rest', 'screenshot':'none', 'name': 'save response', 'function': 'Get_Response_Wrapper'},
     301: {'module': 'rest', 'screenshot':'none', 'name': 'search response', 'function': 'Search_Response'},
