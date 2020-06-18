@@ -634,7 +634,7 @@ def Run_Sequential_Actions(data_set_list=None, debug_actions=None): #data_set_no
                 # If middle column = conditional action, evaluate data set
                 elif "conditional action" in action_name or "if else" in action_name:
                     if action_name.lower().strip() != 'conditional action' and action_name.lower().strip() != 'if else': #old style conditional action
-                        CommonUtil.ExecLog(sModuleInfo,"Old style conditional action found", 1)
+                        # CommonUtil.ExecLog(sModuleInfo,"Old style conditional action found", 1)
                         CommonUtil.ExecLog(sModuleInfo, "Checking the logical conditional action to be performed in the conditional action row: %s" % str(row), 0)
                         logic_row.append(row) # Keep track of the conditional action row, so we can access it later
                         [skip_tmp.append(int(x) - 1) for x in row[2].replace(' ', '').split(',')] # Add the processed data sets, executed by the conditional action to the skip list, so we can process the rest of the data sets (do this for both conditional actions)
@@ -662,7 +662,7 @@ def Run_Sequential_Actions(data_set_list=None, debug_actions=None): #data_set_no
                 # Simulate a while/for loop with the specified data sets
                 elif 'loop action' in action_name:
                     if action_name.lower().strip() not in ('while loop action','for loop action'): #old style loop action
-                        CommonUtil.ExecLog(sModuleInfo,"Old style loop action found. This will not be supported in 2020, please replace them with new loop actions",2)
+                        # CommonUtil.ExecLog(sModuleInfo,"Old style loop action found. This will not be supported in 2020, please replace them with new loop actions",2)
                         result, skip_for_loop = Loop_Action_Handler(data_set, row, dataset_cnt)
                         skip = skip_for_loop
                         
