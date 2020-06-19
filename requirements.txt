@@ -2,3 +2,4 @@ pyodbc
 scikit-image
 imutils
 opencv-contrib-python
+datefinder
