@@ -274,16 +274,16 @@ def Handle_Browser_Alert(step_data):
                 CommonUtil.ExecLog(sModuleInfo, "Browser alert accepted", 1)
                 return "passed"
             except NoAlertPresentException as e:
-                CommonUtil.ExecLog(sModuleInfo, "Browser alert not found", 2)
-                return "passed"
+                CommonUtil.ExecLog(sModuleInfo, "Browser alert not found", 3)
+                return "failed"
         elif choice_lower == 'reject' or choice == 'fail' or choice == 'no' or choice == 'cancel':
             try:
                 selenium_driver.switch_to_alert().dismiss()
                 CommonUtil.ExecLog(sModuleInfo, "Browser alert rejected", 1)
                 return "passed"
             except NoAlertPresentException as e:
-                CommonUtil.ExecLog(sModuleInfo, "Browser alert not found", 2)
-                return "passed"
+                CommonUtil.ExecLog(sModuleInfo, "Browser alert not found", 3)
+                return "failed"
         
         elif  'get text' in choice:
             try:
