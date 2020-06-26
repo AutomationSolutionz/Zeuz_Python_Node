@@ -482,9 +482,9 @@ def Handle_Conditional_Action(step_data, data_set_no):
 
         for left, _, right in data_set:
             # Verify that the row we're executing contains the 'if' and '==' tokens.
-            if 'if' in left and '==' in left:
+            if 'if' in left.lower() and '==' in left:
                 # if left_value == right_value
-                condition = left.lower().strip().split("==")
+                condition = left.strip().split("==")
                 # lvalue = left_value
                 lvalue = condition[0].strip().split()[1]
                 # rvalue = right_value
