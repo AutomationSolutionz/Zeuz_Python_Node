@@ -16,8 +16,7 @@
 
 import sys, datetime, time, inspect, zipfile, string, filecmp, random, requests, math, re, os, subprocess, shutil, ast,hashlib
 sys.path.append("..")
-import skimage, cv2, imutils
-from skimage.metrics import structural_similarity as ssim
+
 from sys import platform as _platform
 from Framework.Utilities import ConfigModule
 from Framework.Utilities import CommonUtil
@@ -1928,6 +1927,9 @@ def compare_images(data_set):
     CommonUtil.ExecLog(sModuleInfo, "Function: compare images", 0)
 
     try:
+        import skimage, cv2, imutils
+        from skimage.metrics import structural_similarity as ssim
+
         default_ssim = float(1)
         
         for eachrow in data_set:
