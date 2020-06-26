@@ -1291,9 +1291,9 @@ def add_media_ios(data_set):
 def take_screenshot_appium(data_set):
     """
     Data set:
-    take screenshot     appium action           variable_name
+    take screenshot     appium action           filename_format
 
-    The path of the saved screenshot will be stored in the "variable_name"
+    The filename of the saved screenshot will be stored in the "zeuz_screenshot"
     """
     sModuleInfo = inspect.currentframe().f_code.co_name + " : " + MODULE_NAME
 
@@ -1306,15 +1306,17 @@ def take_screenshot_appium(data_set):
         # There's only one row
         left, mid, right = data_set[0]
 
-        variable_name = right
+        filename_format = right
+        if "default" in filename_format:
+            filename_format = "%Y_%m_%d_%H-%M-%S"
 
         screenshot_folder = ConfigModule.get_config_value('sectionOne', 'screen_capture_folder', temp_config)
-        filename = time.strftime("%Y_%m_%d_%H-%M-%S") + ".png"
+        filename = time.strftime(filename_format) + ".png"
         screenshot_path = str(Path(screenshot_folder) / Path(filename))
         appium_driver.save_screenshot(screenshot_path)
 
-        # Save the screenshot's path into user provided variable
-        Shared_Resources.Set_Shared_Variables(variable_name, screenshot_path)
+        # Save the screenshot's name into a variable
+        Shared_Resources.Set_Shared_Variables("zeuz_screenshot", filename)
 
         return "passed"
     except:
