@@ -42,6 +42,8 @@ from Framework.Utilities.CommonUtil import passed_tag_list, failed_tag_list, ski
 
 MODULE_NAME = inspect.getmodulename(__file__)
 
+temp_config = os.path.join(os.path.join (os.path.realpath(__file__).split("Framework")[0] , os.path.join ('AutomationLog',ConfigModule.get_config_value('Advanced Options', '_file'))))
+
 global WebDriver_Wait
 WebDriver_Wait = 20
 global WebDriver_Wait_Short
@@ -324,6 +326,61 @@ def Handle_Browser_Alert(step_data):
 def Initialize_List(data_set):
     ''' Temporary wrapper until we can convert everything to use just data_set and not need the extra [] '''
     return Shared_Resources.Initialize_List([data_set])
+
+
+def save_screenshot(driver, path):
+    """
+    Take the screenshot of the whole web page
+    :param driver: selenium driver
+    :param path: where to save the screenshot
+    :return: None
+    """
+    # Ref: https://stackoverflow.com/a/52572919
+    import time
+    original_size = driver.get_window_size()
+    required_width = driver.execute_script('return document.body.parentNode.scrollWidth')
+    required_height = driver.execute_script('return document.body.parentNode.scrollHeight')
+    driver.set_window_size(required_width, required_height)
+    time.sleep(2)
+    # driver.save_screenshot(path)  # has scrollbar
+    driver.find_element_by_tag_name('body').screenshot(path)  # avoids scrollbar
+    time.sleep(2)
+    driver.set_window_size(original_size['width'], original_size['height'])
+
+
+def take_screenshot_selenium(data_set):
+    sModuleInfo = inspect.currentframe().f_code.co_name + " : " + MODULE_NAME
+    CommonUtil.ExecLog(sModuleInfo, "Function Start", 0)
+
+    from pathlib import Path
+    import time
+
+    try:
+        filename_format = "%Y_%m_%d_%H-%M-%S"
+        fullscreen = False
+
+        for left, mid, right in data_set:
+            if 'take screenshot web' in left:
+                if "default" not in right:
+                    filename_format = right.strip()
+            if 'fullscreen' in left:
+                fullscreen = right.lower().strip() == 'true'
+
+        screenshot_folder = ConfigModule.get_config_value('sectionOne', 'screen_capture_folder', temp_config)
+        filename = time.strftime(filename_format) + ".png"
+        screenshot_path = str(Path(screenshot_folder) / Path(filename))
+
+        if fullscreen:
+            save_screenshot(selenium_driver, screenshot_path)
+        else:
+            selenium_driver.save_screenshot(screenshot_path)
+
+        # Save the screenshot's name into a variable
+        Shared_Resources.Set_Shared_Variables("zeuz_screenshot", filename)
+    except Exception:
+        errMsg = "Failed to take screenshot"
+        return CommonUtil.Exception_Handler(sys.exc_info(), None, errMsg)
+
 
 #Method to enter texts in a text box; step data passed on by the user
 def Enter_Text_In_Text_Box(step_data):

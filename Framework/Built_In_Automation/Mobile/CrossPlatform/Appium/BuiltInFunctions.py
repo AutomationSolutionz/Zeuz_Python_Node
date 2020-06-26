@@ -12,18 +12,20 @@
 #########################
 
 from appium import webdriver
+import traceback
 import os, sys, datetime, time, inspect, subprocess, re, signal, _thread, requests
 from Framework.Utilities import CommonUtil
 from Framework.Built_In_Automation.Built_In_Utility.CrossPlatform import BuiltInUtilityFunction as Utility_Functions
 from Framework.Built_In_Automation.Mobile.Android.adb_calls import adbOptions
 from Framework.Built_In_Automation.Mobile.iOS import iosOptions
 from appium.webdriver.common.touch_action import TouchAction
+from Framework.Utilities import ConfigModule
 from Framework.Built_In_Automation.Shared_Resources import BuiltInFunctionSharedResources as Shared_Resources
 from Framework.Utilities.CommonUtil import passed_tag_list, failed_tag_list, skipped_tag_list
 from Framework.Built_In_Automation.Shared_Resources import LocateElement
 import psutil
 
-
+temp_config = os.path.join(os.path.join (os.path.realpath(__file__).split("Framework")[0] , os.path.join ('AutomationLog',ConfigModule.get_config_value('Advanced Options', '_file'))))
 
 MODULE_NAME = inspect.getmodulename(__file__)
 
@@ -1284,35 +1286,43 @@ def add_media_ios(data_set):
     except:
         errMsg = "Unable to add media to device. Either no device is booted or media name is wrong."
         return CommonUtil.Exception_Handler(sys.exc_info(), None, errMsg)
-            
-def simulator_screenshot(data_set):
-    '''Take a screenshot of the current simulator screen'''
+
+
+def take_screenshot_appium(data_set):
+    """
+    Data set:
+    take screenshot     appium action           filename_format
+
+    The filename of the saved screenshot will be stored in the "zeuz_screenshot"
+    """
     sModuleInfo = inspect.currentframe().f_code.co_name + " : " + MODULE_NAME
 
-    CommonUtil.ExecLog(sModuleInfo,"Function Start", 0)
+    CommonUtil.ExecLog(sModuleInfo, "Function Start", 0)
+    from pathlib import Path
+    import time
 
+    # Parse data set
     try:
-        simscreen_path = data_set[0][2] # Get shared variable name from Value on action row
+        # There's only one row
+        left, mid, right = data_set[0]
+
+        filename_format = right
+        if "default" in filename_format:
+            filename_format = "%Y_%m_%d_%H-%M-%S"
+
+        screenshot_folder = ConfigModule.get_config_value('sectionOne', 'screen_capture_folder', temp_config)
+        filename = time.strftime(filename_format) + ".png"
+        screenshot_path = str(Path(screenshot_folder) / Path(filename))
+        appium_driver.save_screenshot(screenshot_path)
+
+        # Save the screenshot's name into a variable
+        Shared_Resources.Set_Shared_Variables("zeuz_screenshot", filename)
+
+        return "passed"
     except:
-        return CommonUtil.Exception_Handler(sys.exc_info())
-
-    try:
-        simscreen_folder = Utility_Functions.get_home_folder()
-        simscreen_name = 'image'
-        simscreen_timestamp = datetime.datetime.now().strftime('%Y-%m-%dT%H-%M-%S-%f')
-        simscreen_location = simscreen_folder + os.sep + simscreen_timestamp + "_" + simscreen_name + '.png'
-        
-        appium_driver.save_screenshot(simscreen_location)
-        
-        Shared_Resources.Set_Shared_Variables(simscreen_path,simscreen_location) #Saving screenshot path to a variable of the user's choice
-        
-        CommonUtil.ExecLog(sModuleInfo,"Took simulator screenshot successfully", 0)
-        return 'passed'
-
-
-    except Exception:
-        errMsg = "Unable to take simulator screenshot"
-        return CommonUtil.Exception_Handler(sys.exc_info(),None,errMsg)
+        traceback.print_exc()
+        errMsg = "Unable to parse data set"
+        return CommonUtil.Exception_Handler(sys.exc_info(), None, errMsg)
 
 
 def tap_location(data_set):
