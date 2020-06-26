@@ -480,13 +480,22 @@ def Handle_Conditional_Action(step_data, data_set_no):
         if data_set in failed_tag_list:
             return 'failed'
 
-        for row in data_set:
-            condition = str(row[0]).strip().lower()
-            if condition.count("true") == 2 or condition.count("false") == 2: #Will be positive for the satisfying condition true == true or false == false
-                next_level_step_data = get_data_set_nums(str(row[2]).strip())
-                skip+=next_level_step_data
-            else:
-                skip+=get_data_set_nums(str(row[2]).strip())
+        for left, _, right in data_set:
+            # Verify that the row we're executing contains the 'if' and '==' tokens.
+            if 'if' in left.lower() and '==' in left:
+                # if left_value == right_value
+                condition = left.strip().split("==")
+                # lvalue = left_value
+                lvalue = condition[0].strip().split()[1]
+                # rvalue = right_value
+                rvalue = condition[1].strip()
+
+                # If both side matches
+                if lvalue == rvalue:
+                    next_level_step_data = get_data_set_nums(str(right).strip())
+                    skip += next_level_step_data
+                else:
+                    skip += get_data_set_nums(str(right).strip())
 
         if next_level_step_data == []:
             CommonUtil.ExecLog(sModuleInfo, "Conditional action step data is invalid, please see action help for more info", 3)
