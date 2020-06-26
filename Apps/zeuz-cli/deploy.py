@@ -7,6 +7,12 @@ import time
 import datetime
 
 
+#############################################################
+# Zeuz API Documentation                                    #
+# https://documenter.getpostman.com/view/10815312/SzfAzSWj  #
+#############################################################
+
+
 def req(req_type, host, url, payload=dict(), headers=dict(), params=dict()):
     headers['Content-Type'] = 'application/json'
 
