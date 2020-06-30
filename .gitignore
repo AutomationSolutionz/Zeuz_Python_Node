@@ -5,6 +5,7 @@
 .idea/
 .venv/
 
+.DS_Store
 .settings/
 .project
 .pydevproject
