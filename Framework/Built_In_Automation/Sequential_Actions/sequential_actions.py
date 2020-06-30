@@ -123,6 +123,7 @@ actions = { # Numbers are arbitrary, and are not used anywhere
     243: {'module': 'appium', 'screenshot':'mobile', 'name': 'add media', 'function': 'add_media_ios'},
     244: {'module': 'appium', 'screenshot':'mobile', 'name': 'take screenshot mobile', 'function': 'take_screenshot_appium'},
     245: {'module': 'appium', 'screenshot':'mobile', 'name': 'save attribute', 'function': 'Save_Attribute'},
+    246: {'module': 'appium', 'screenshot':'mobile', 'name': 'go to webpage', 'function': 'go_to_webpage'},
 
     300: {'module': 'rest', 'screenshot':'none', 'name': 'save response', 'function': 'Get_Response_Wrapper'},
     301: {'module': 'rest', 'screenshot':'none', 'name': 'search response', 'function': 'Search_Response'},
