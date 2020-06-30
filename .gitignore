@@ -1,0 +1,11 @@
+*.pyc
+*.conf
+*.ini
+
+.idea/
+.venv/
+
+.settings/
+.project
+.pydevproject
+Framework/settings.conf
