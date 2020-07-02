@@ -1,8 +1,12 @@
 *.pyc
+*.conf
+*.ini
+
 .idea/
 .venv/
 
+.DS_Store
 .settings/
 .project
 .pydevproject
-/settings.conf
+Framework/settings.conf

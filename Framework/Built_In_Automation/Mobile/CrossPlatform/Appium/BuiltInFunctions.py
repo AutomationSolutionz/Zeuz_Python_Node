@@ -510,7 +510,7 @@ def start_appium_server():
                     env = {"PATH": str(appium_binary_path)}
                     appium_server = subprocess.Popen(subprocess.Popen('%s --allow-insecure chromedriver_autodownload -p %s'%(appium_binary, str(appium_port)), shell=True), env=env)
                 except:
-                    CommonUtil.ExecLog(sModuleInfo,"Couldn't launch appium server, please do it manually ny typing 'appium &' in the terminal",2)
+                    CommonUtil.ExecLog(sModuleInfo,"Couldn't launch appium server, please do it manually by typing 'appium &' in the terminal",2)
                     pass
             appium_details[device_id]['server'] = appium_server # Save the server object for teardown
         except Exception as returncode: # Couldn't run server
@@ -566,6 +566,7 @@ def start_appium_driver(package_name = '', activity_name = '', filename = '', pl
                 desired_caps['fullReset'] = 'false' # Do not clear application cache when complete
                 desired_caps['noReset'] = 'true' # Do not clear application cache when complete
                 desired_caps['newCommandTimeout'] = 6000 # Command timeout before appium destroys instance
+                desired_caps['automationName'] = 'UiAutomator2'
                 if adbOptions.is_android_connected(device_serial) == False:
                     CommonUtil.ExecLog(sModuleInfo, "Could not detect any connected Android devices", 3)
                     return 'failed',launch_app
@@ -591,23 +592,35 @@ def start_appium_driver(package_name = '', activity_name = '', filename = '', pl
                 CommonUtil.ExecLog(sModuleInfo,"Setting up with IOS",1)
                 if appium_details[device_id]['imei'] == 'Simulated': #ios simulator
                     launch_app = False #ios simulator so need to launch app again
-                    if Shared_Resources.Test_Shared_Variables('ios_simulator_folder_path'): #if simulator path already exists
-                        app = Shared_Resources.Get_Shared_Variables('ios_simulator_folder_path')
-                        app = os.path.normpath(app)
+                    
+                    if 'browserName' in desired_caps:
+                        # We're trying to launch the Safari browser
+                        # NOTE: Other browsers are not supported by appium on iOS
+                        if 'safariAllowPopups' not in desired_caps:
+                            # Allow popups by default, unless specified by the user
+                            desired_caps['safariAllowPopups'] = True
                     else:
-                        app = os.path.normpath(os.getcwd()+os.sep + os.pardir)
-                        app = os.path.join(app,"iosSimulator")
-                        #saving simulator path for future use
-                        Shared_Resources.Set_Shared_Variables('ios_simulator_folder_path',str(app))
-                    app = os.path.join(app, ios)
-                    encoding = 'utf-8'
-                    bundle_id = str(subprocess.check_output(['osascript', '-e', 'id of app "%s"'%str(app)]), encoding=encoding).strip()
-                    #desired_caps = {}
-                    desired_caps['app'] = app  # Use set_value() for writing to element
+                        # We're trying to launch an application using .app file
+                        if Shared_Resources.Test_Shared_Variables('ios_simulator_folder_path'): #if simulator path already exists
+                            app = Shared_Resources.Get_Shared_Variables('ios_simulator_folder_path')
+                            app = os.path.normpath(app)
+                        else:
+                            app = os.path.normpath(os.getcwd()+os.sep + os.pardir)
+                            app = os.path.join(app,"iosSimulator")
+                            #saving simulator path for future use
+                            Shared_Resources.Set_Shared_Variables('ios_simulator_folder_path',str(app))
+                        
+                        app = os.path.join(app, ios)
+                        encoding = 'utf-8'
+                        bundle_id = str(subprocess.check_output(['osascript', '-e', 'id of app "%s"'%str(app)]), encoding=encoding).strip()
+
+                        desired_caps['app'] = app  # Use set_value() for writing to element
+                        desired_caps['bundleId'] = bundle_id.replace('\\n','')
+
                     desired_caps['platformName'] = 'iOS'  # Read version #!!! Temporarily hard coded
                     desired_caps['platformVersion'] = platform_version
                     desired_caps['deviceName'] = device_name
-                    desired_caps['bundleId'] = bundle_id.replace('\\n','')
+                    desired_caps['automationName'] = 'XCUITest'
                     desired_caps['wdaLocalPort'] = wdaLocalPort
                     desired_caps['udid'] = appium_details[device_id]['serial']
                     desired_caps['newCommandTimeout'] = 6000
@@ -615,7 +628,7 @@ def start_appium_driver(package_name = '', activity_name = '', filename = '', pl
                         desired_caps['noReset'] = 'true'  # Do not clear application cache when complete
                 else: #for real ios device, not developed yet
                     desired_caps['sendKeyStrategy'] = 'setValue' # Use set_value() for writing to element
-                    desired_caps['platformVersion'] = '10.3' # Read version #!!! Temporarily hard coded
+                    desired_caps['platformVersion'] = '13.5' # Read version #!!! Temporarily hard coded
                     desired_caps['deviceName'] = 'iPhone' # Read model (only needs to be unique if using more than one)
                     desired_caps['bundleId'] = ios
                     desired_caps['udid'] = appium_details[device_id]['serial'] # Device unique identifier - use auto if using only one phone
@@ -1325,6 +1338,30 @@ def take_screenshot_appium(data_set):
         return CommonUtil.Exception_Handler(sys.exc_info(), None, errMsg)
 
 
+def go_to_webpage(data_set):
+    sModuleInfo = inspect.currentframe().f_code.co_name + " : " + MODULE_NAME
+
+    skip_or_not = filter_optional_action_and_step_data(data_set, sModuleInfo)
+    if skip_or_not == False:
+        return 'passed'
+
+    CommonUtil.ExecLog(sModuleInfo, "Function Start", 0)
+
+    # Parse data set
+    try:
+        url = data_set[0][2]
+
+        for _ in range(3):
+            try:
+                appium_driver.get(url)
+                return 'passed'
+            except:
+                CommonUtil.ExecLog(sModuleInfo, "Failed executing go_to_webpage. Retrying...", 2)
+    except Exception:
+        errMsg = "Unable to parse data set"
+        return CommonUtil.Exception_Handler(sys.exc_info(), None, errMsg)
+
+
 def tap_location(data_set):
     ''' Tap the provided position using x,y cooridnates '''
     # positions: list containing x,y coordinates
@@ -1353,7 +1390,7 @@ def tap_location(data_set):
     except Exception:
         errMsg = "Tapped on location unsuccessfully"
         return CommonUtil.Exception_Handler(sys.exc_info(),None,errMsg)
-    
+
 def get_element_location_by_id(data_set):
     ''' Find and return an element's x,y coordinates '''
     
