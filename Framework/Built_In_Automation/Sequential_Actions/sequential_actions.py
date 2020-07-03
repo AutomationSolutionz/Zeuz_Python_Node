@@ -175,7 +175,7 @@ actions = { # Numbers are arbitrary, and are not used anywhere
     442: {'module': 'selenium', 'screenshot':'web', 'name': 'save attribute', 'function': 'Save_Attribute'},
     443: {'module': 'selenium', 'screenshot':'web', 'name': 'save attribute values in list', 'function': 'save_attribute_values_in_list'},
     444: {'module': 'selenium', 'screenshot':'web', 'name': 'take screenshot web', 'function': 'take_screenshot_selenium'},
-
+    445: {'module': 'selenium', 'screenshot':'web', 'name': 'mouse click', 'function': 'Mouse_Click_Element'},
 
     500: {'module': 'utility', 'screenshot':'none', 'name': 'math', 'function': 'Calculate'},
     501: {'module': 'utility', 'screenshot':'none', 'name': 'upload', 'function': 'Upload'},

@@ -557,6 +557,55 @@ def Click_Element(data_set):
             return 'passed'
         except Exception:
             return CommonUtil.Exception_Handler(sys.exc_info(), None, "Error clicking location")
+
+
+
+def Mouse_Click_Element(data_set):
+    ''' 
+    This funciton will move the mouse to the element and then perform a physical mouse click 
+    
+    element_prop        element parameter          element_value
+    mouse click        selenium action            click
+    
+    
+    
+    '''
+    sModuleInfo = inspect.currentframe().f_code.co_name + " : " + MODULE_NAME
+    CommonUtil.ExecLog(sModuleInfo, "Function start", 0)
+    global selenium_driver
+    # Click using elemen
+    CommonUtil.ExecLog(sModuleInfo, "Looking for element", 0)
+    # Get element object
+    Element = LocateElement.Get_Element(data_set,selenium_driver)
+    if Element in failed_tag_list:
+        CommonUtil.ExecLog(sModuleInfo, "Could not find element", 3)
+        return 'failed'
+    # Get element location
+
+    # Get element size
+    try:
+        size_ele = Element.size # Retreive the dictionary containing the x,y location coordinates
+        if size_ele in failed_tag_list:
+            CommonUtil.ExecLog(sModuleInfo, "Could not get element location", 3)
+            return 'failed'
+        #Find center of the element. We will use offset 
+        width = (size_ele['width'])/2
+        height = (size_ele['height'])/2
+    except Exception:
+        return CommonUtil.Exception_Handler(sys.exc_info(), None, "Error retrieving element location")
+    try:
+        actions = ActionChains(selenium_driver)
+        actions.move_to_element_with_offset(Element, width, height).click().perform() 
+        CommonUtil.TakeScreenShot(sModuleInfo) # Capture screenshot, if settings allow for it\        
+        CommonUtil.ExecLog(sModuleInfo, "Successfully clicked the element", 1)
+        return "passed"
+    except Exception:
+
+        errMsg = "Could not select/click your element."
+        return CommonUtil.Exception_Handler(sys.exc_info(),None,errMsg)
+    
+      
+
         
 
 
