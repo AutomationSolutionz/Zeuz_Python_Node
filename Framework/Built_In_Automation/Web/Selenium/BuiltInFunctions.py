@@ -1920,7 +1920,7 @@ def if_element_exists(data_set):
         variable_name = ''
         value = ''
 
-	for left, mid, right in data_set:
+    for left, mid, right in data_set:
             if 'action' in mid:
                 value, variable_name = right.split('=')
                 value = value.strip()
