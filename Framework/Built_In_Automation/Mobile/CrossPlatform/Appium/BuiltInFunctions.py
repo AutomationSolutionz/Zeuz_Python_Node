@@ -2980,19 +2980,12 @@ def if_element_exists(data_set):
     try:
         variable_name = ''
         boolean = 'true'
-        for row in data_set:
-            if str(row[1]) == 'action':
-                splitted = str(row[2]).split("=")
-                if len(splitted)<2:
-                    CommonUtil.ExecLog(sModuleInfo,"Data should be like variable_name=boolean (for example: abc=True, Here abc is the variable name and True is the boolean value)",3)
-                    return "failed"
-                variable_name = str(splitted[0]).strip()
-                variable_name = variable_name.split('%|')[1].split('|%')[0]
-                boolean = str(splitted[1]).strip().lower()
 
-        if variable_name == '':
-            CommonUtil.ExecLog(sModuleInfo, "Data should be like variable_name=boolean (for example: abc=True, Here abc is the variable name and True is the boolean value)", 3)
-            return "failed"
+        for left, mid, right in data_set:
+            if 'action' in mid:
+                boolean, variable_name = right.split('=')
+                boolean = boolean.strip().lower() in ['true', '1']
+                variable_name = variable_name.strip()
 
         Element = LocateElement.Get_Element(data_set, appium_driver)
         if Element in failed_tag_list:
@@ -3001,7 +2994,7 @@ def if_element_exists(data_set):
             Shared_Resources.Set_Shared_Variables(variable_name, str(boolean))
         return "passed"
     except Exception:
-        errMsg = "Could not find your element."
+        errMsg = "Failed to parse data/locate element. Data format: propertyName = true/false"
         return CommonUtil.Exception_Handler(sys.exc_info(), None, errMsg)
 
 def filter_optional_action_and_step_data(data_set, sModuleInfo):

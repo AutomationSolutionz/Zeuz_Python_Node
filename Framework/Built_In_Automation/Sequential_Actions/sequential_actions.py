@@ -1319,7 +1319,7 @@ def Action_Handler(_data_set, action_row):
     sModuleInfo = inspect.currentframe().f_code.co_name + " : " + MODULE_NAME
     CommonUtil.ExecLog(sModuleInfo,"Function Start", 0)
 
-    skip_conversion_of_shared_variable_for_actions = ['if element exists','run actions','loop settings']
+    skip_conversion_of_shared_variable_for_actions = ['run actions','loop settings']
 
     # Split data set row into the usable parts
     action_name = action_row[0]
