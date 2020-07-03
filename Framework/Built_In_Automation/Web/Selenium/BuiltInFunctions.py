@@ -1918,21 +1918,21 @@ def if_element_exists(data_set):
     global selenium_driver
     try:
         variable_name = ''
-        boolean = 'true'
+        value = ''
 
 	for left, mid, right in data_set:
             if 'action' in mid:
-                boolean, variable_name = right.split('=')
-                boolean = boolean.strip().lower() in ['true', '1']
+                value, variable_name = right.split('=')
+                value = value.strip()
                 variable_name = variable_name.strip()
 
         Element = LocateElement.Get_Element(data_set, selenium_driver)
         if Element in failed_tag_list:
-            Shared_Resources.Set_Shared_Variables(variable_name, str(not boolean))
+            Shared_Resources.Set_Shared_Variables(variable_name, "false")
         else:
-            Shared_Resources.Set_Shared_Variables(variable_name, str(boolean))
+            Shared_Resources.Set_Shared_Variables(variable_name, value)
         return "passed"
     except Exception:
-        errMsg = "Failed to parse property/locate element. Data format: propertyName = true/false"
+        errMsg = "Failed to parse data/locate element. Data format: variableName = value"
         return CommonUtil.Exception_Handler(sys.exc_info(), None, errMsg)
 
