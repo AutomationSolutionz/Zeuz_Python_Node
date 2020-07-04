@@ -250,7 +250,7 @@ def ExecLog(sModuleInfo, sDetails, iLogLevel=1, _local_run="", sStatus="", force
             all_logs[all_logs_count] = {'logid': log_id, 'modulename': sModuleInfo, 'details': sDetails,
                                         'status': status, 'loglevel': iLogLevel, 'tstamp': str(now)}
             all_logs_count += 1
-            if all_logs_count >= 500:
+            if all_logs_count > 5000:
                 all_logs_list.append(all_logs)
                 all_logs_count = 0
                 all_logs = {}
