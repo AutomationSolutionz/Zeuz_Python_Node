@@ -256,10 +256,12 @@ def ExecLog(sModuleInfo, sDetails, iLogLevel=1, _local_run="", sStatus="", force
                     # filepath = Path(ConfigModule.get_config_value('sectionOne', 'log_folder', temp_config)) / 'execution.log'
                     filepath = Path(ConfigModule.get_config_value('sectionOne', 'temp_run_file_path', temp_config)) / 'execution.log'
                     with open(filepath, 'a+') as f:
-                        print(current_log_line, file=f)
+                        print("[%s] %s" % (now, current_log_line), file=f)
                 except FileNotFoundError:
                     pass
-            else:
+
+            # log warnings and errors
+            if iLogLevel in (2, 3) or len(all_logs_list) < 1:
                 # log to server in case of logs less than 2k
                 all_logs_count += 1
                 if all_logs_count > 2000:
