@@ -428,11 +428,11 @@ def wake_android(serial=''):
         CommonUtil.ExecLog(sModuleInfo, "Waking device", 0)
 
         # If there is a password, handle it
-        output = detect_foreground_android(serial.replace('-s ', ''))  # Check if we are on the password screen
-        if output == 'Bouncer':
-            output = unlock_android(serial.replace('-s ', ''))
-            if output == 'failed':
-                return 'failed'
+        # output = detect_foreground_android(serial.replace('-s ', ''))  # Check if we are on the password screen
+        # if output == 'Bouncer':
+        #     output = unlock_android(serial.replace('-s ', ''))
+        #     if output == 'failed':
+        #         return 'failed'
 
         return 'passed'
 
@@ -590,21 +590,21 @@ def check_if_device_is_unlocked(serial=''):
         return CommonUtil.Exception_Handler(sys.exc_info(), None, errMsg)
     
 
-def detect_foreground_android(serial=''):
-    ''' Return whatever has the foreground '''
-
-    sModuleInfo = inspect.currentframe().f_code.co_name + " : " + MODULE_NAME
-    try:
-        if serial != '': serial = '-s %s' % serial  # Prepare serial number with command line switch
-        output = subprocess.check_output("adb %s shell dumpsys window windows" % serial,
-                                         shell=True, encoding='utf-8')  # Get list of windows
-        p = re.compile('CurrentFocus=.*?\s+([\w\.]+)/([\w\.]+)',
-                       re.MULTILINE)  # Find CurrentFocus line, and return package/activity
-        m = p.search(output)  # Perform regex
-        return str(m.group(1))  # Return package/activity
-    except Exception:
-        errMsg = "Error detecting foreground application"
-        return CommonUtil.Exception_Handler(sys.exc_info(), None, errMsg)
+# def detect_foreground_android(serial=''):
+#     ''' Return whatever has the foreground '''
+#
+#     sModuleInfo = inspect.currentframe().f_code.co_name + " : " + MODULE_NAME
+#     try:
+#         if serial != '': serial = '-s %s' % serial  # Prepare serial number with command line switch
+#         output = subprocess.check_output("adb %s shell dumpsys window windows" % serial,
+#                                          shell=True, encoding='utf-8')  # Get list of windows
+#         p = re.compile('CurrentFocus=.*?\s+([\w\.]+)/([\w\.]+)',
+#                        re.MULTILINE)  # Find CurrentFocus line, and return package/activity
+#         m = p.search(output)  # Perform regex
+#         return str(m.group(1))  # Return package/activity
+#     except Exception:
+#         errMsg = "Error detecting foreground application"
+#         return CommonUtil.Exception_Handler(sys.exc_info(), None, errMsg)
 
 
 def swipe_android(x_start, y_start, x_end, y_end, duration = 1000, serial=''):
