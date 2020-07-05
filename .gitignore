@@ -1,6 +1,7 @@
 *.pyc
 *.conf
 *.ini
+*.log
 
 .idea/
 .venv/
@@ -10,3 +11,4 @@
 .project
 .pydevproject
 Framework/settings.conf
+
