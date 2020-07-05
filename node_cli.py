@@ -268,8 +268,8 @@ def RunProcess(sTesterid):
             if exit_script: return False
             if time.time() > etime: return True # Timeout reached, re-login. We do this because after about 3-4 hours this function will hang, and thus not be available for deployment
 
-            r=RequestFormatter.Get('is_run_submitted_api',{'machine_name':sTesterid})
-            if 'run_submit' in r and r['run_submit']:
+            r = RequestFormatter.Get('is_run_submitted_api',{'machine_name':sTesterid})
+            if r and 'run_submit' in r and r['run_submit']:
                 processing_test_case = True
                 CommonUtil.ExecLog('', "**************************\n* STARTING NEW TEST CASE *\n**************************", 4, False)
                 PreProcess()
@@ -281,7 +281,7 @@ def RunProcess(sTesterid):
                 CommonUtil.ExecLog('', "Successfully updated db with parameter", 4, False)
             else:
                 time.sleep(3)
-                if 'update' in r and r['update']:
+                if r and 'update' in r and r['update']:
                     _r=RequestFormatter.Get('update_machine_with_time_api',{'machine_name':sTesterid})
         except Exception as e:
             exc_type, exc_obj, exc_tb = sys.exc_info()
@@ -290,6 +290,8 @@ def RunProcess(sTesterid):
             CommonUtil.ExecLog('', Error_Detail, 4, False)
             break # Exit back to login() - In some circumstances, this while loop will get into a state when certain errors occur, where nothing runs, but loops forever. This stops that from happening 
     return True
+
+
 def PreProcess():
     #current_path = os.path.join(FileUtilities.get_home_folder(), os.path.join('Desktop', 'AutomationLog'))
     current_path = os.path.join (os.path.realpath(__file__).split("node_cli.py")[0] , os.path.join ('AutomationLog'))
