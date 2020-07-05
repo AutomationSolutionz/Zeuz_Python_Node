@@ -261,7 +261,7 @@ def ExecLog(sModuleInfo, sDetails, iLogLevel=1, _local_run="", sStatus="", force
                     pass
 
             # log warnings and errors
-            if iLogLevel in (2, 3) or len(all_logs_count) < 1:
+            if iLogLevel in (2, 3) or len(all_logs_list) < 1:
                 # log to server in case of logs less than 2k
                 all_logs_count += 1
                 if all_logs_count > 2000:
