@@ -2987,7 +2987,7 @@ def if_element_exists(data_set):
                 value = value.strip()
                 variable_name = variable_name.strip()
 
-        Element = LocateElement.Get_Element(data_set, selenium_driver)
+        Element = LocateElement.Get_Element(data_set, appium_driver)
         if Element in failed_tag_list:
             Shared_Resources.Set_Shared_Variables(variable_name, "false")
         else:
