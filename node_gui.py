@@ -81,9 +81,7 @@ from Framework.Utilities import ConfigModule, FileUtilities, self_updater # Modi
 from node_cli import Login, disconnect_from_server, get_team_names, get_project_names, check_server_online, processing_test_case # Controlling node status and logging in
 
 # Find node id file
-if sys.platform  == 'win32':
-    # node_id_filename = os.path.join (os.path.realpath(__file__).split("Framework")[0] , os.path.join ('node_id.conf'))
-    node_id_filename = Path(os.getcwd()).parent / Path('node_id.conf')
+node_id_filename = Path(os.getcwd()).parent / Path('node_id.conf')
 
 # Set title with version
 version_path = os.path.join(os.getcwd(), 'Version.txt')
