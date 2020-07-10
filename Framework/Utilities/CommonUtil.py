@@ -40,7 +40,8 @@ MODULE_NAME = inspect.getmodulename(__file__)
 #temp_config = os.path.join(os.path.join(FL.get_home_folder(), os.path.join('Desktop', os.path.join('AutomationLog',ConfigModule.get_config_value('Advanced Options','_file')))))
 
 
-temp_config = os.path.join(os.path.join (os.path.realpath(__file__).split("Framework")[0] , os.path.join ('AutomationLog',ConfigModule.get_config_value('Advanced Options', '_file'))))
+# temp_config = os.path.join(os.path.join (os.path.realpath(__file__).split("Framework")[0] , os.path.join ('AutomationLog',ConfigModule.get_config_value('Advanced Options', '_file'))))
+temp_config = Path(os.path.join (os.path.realpath(__file__).split("Framework")[0]) / Path('AutomationLog') / Path(ConfigModule.get_config_value('Advanced Options', '_file', Path(os.path.realpath(__file__)).parent.parent / Path('settings.conf'))))
 
 
 
