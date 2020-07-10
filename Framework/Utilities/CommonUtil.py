@@ -485,7 +485,8 @@ class MachineInfo():
         try:
             #node_id_file_path = os.path.join(FL.get_home_folder(), os.path.join('Desktop', 'node_id.conf'))
             
-            node_id_file_path = os.path.join (os.path.realpath(__file__).split("Framework")[0] , os.path.join ('node_id.conf'))
+            # node_id_file_path = os.path.join (os.path.realpath(__file__).split("Framework")[0] , os.path.join ('node_id.conf'))
+            node_id_file_path = Path(os.path.realpath(__file__).split("Framework")[0]) / Path('node_id.conf')
 
             
             if os.path.isfile(node_id_file_path):
@@ -521,7 +522,9 @@ class MachineInfo():
         """
         try:
             #node_id_file_path = os.path.join(FL.get_home_folder(), os.path.join('Desktop', 'node_id.conf'))
-            node_id_file_path = os.path.join (os.path.realpath(__file__).split("Framework")[0] , os.path.join ('node_id.conf'))
+            # node_id_file_path = os.path.join (os.path.realpath(__file__).split("Framework")[0] , os.path.join ('node_id.conf'))
+            node_id_file_path = Path(os.path.realpath(__file__).split("Framework")[0]) / Path('node_id.conf')
+
             if os.path.isfile(node_id_file_path):
                 unique_id = ConfigModule.get_config_value('UniqueID', 'id', node_id_file_path)
                 if unique_id == '':
