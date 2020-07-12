@@ -2057,41 +2057,54 @@ def Download_file(data_set):
     # Parse data set
     try:
         url = '' # Mandatory
-        file_location = False# Optional - default will be used if omited
-        shared_var = '' # 
-        
-        for row in data_set:
-            op = row[0].strip().lower()
-            if op == 'url':
-                url = row[2].strip()
-                
-            elif op in ('location'): #option action 
-                file_location = row[2].strip()
-            
-            elif op in ('download'):
-                shared_var = row[2].strip()
+        # if no location is given, set default to Downloads directory
+        file_location = False
+        # name of the variable where the file location will be stored
+        shared_var = ''
+
+        for left, _, right in data_set:
+            left = left.strip().lower()
+            right = right.strip()
+
+            if 'url' in left:
+                url = right
+
+            if 'download' in left:
+                shared_var = right
+
+            if 'location' in left:
+                file_location = str(Path(right))
+
+                # If we see the '~', expand it to the user's home folder
+                if '~' in file_location:
+                    file_location = os.path.expanduser(file_location)
         
         # Verify input
-        if file_location == False: file_location = os.path.join(get_home_folder(), 'Downloads') # if no location is given, set default to Downloads directory
-        if url == '': # Make sure we have a URL
-            CommonUtil.ExecLog(sModuleInfo,"Expected Field to contain 'url' and Value to contain a valid URL to a file", 3)
+        if not file_location:
+            # if no location is given, set default to Downloads directory
+            file_location = os.path.join(get_home_folder(), 'Downloads')
+
+        if url == '':
+            # Make sure we have a URL
+            CommonUtil.ExecLog(sModuleInfo, "Expected Field to contain 'url' and Value to contain a valid URL to a file", 3)
             return 'failed'
-    except Exception:
+    except:
         return CommonUtil.Exception_Handler(sys.exc_info(), None, "Error parsing data set")
 
     try:
         # Download file and get path/filename
-        full_file_path  = download_file_using_url(url, file_location)
+        full_file_path = download_file_using_url(url, file_location)
         
         # Verify download
         if full_file_path in failed_tag_list:
-            CommonUtil.ExecLog(sModuleInfo,"Failed to save file from (%s) to disk (%s)" % (url, file_location), 3)
+            CommonUtil.ExecLog(sModuleInfo, "Failed to save file from (%s) to disk (%s)" % (url, file_location), 3)
             return "failed"
         else:
             CommonUtil.ExecLog(sModuleInfo, "File downloaded successfully to %s" % full_file_path, 1)
-            Shared_Resources.Set_Shared_Variables(shared_var, full_file_path) # Store path/file in shared variables if variable name was set by user
+            # Store path/file in shared variables if variable name was set by user
+            Shared_Resources.Set_Shared_Variables(shared_var, full_file_path)
             return "passed"
-    except Exception:
+    except:
         return CommonUtil.Exception_Handler(sys.exc_info(), None, "Error downloading file")
 
 # Method to download file and unzip
