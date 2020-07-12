@@ -288,7 +288,7 @@ def install_app(apk_path, serial=''):
     sModuleInfo = inspect.currentframe().f_code.co_name + " : " + MODULE_NAME
     try:
         if serial != '': serial = '-s %s' % serial  # Prepare serial number with command line switch
-        output = subprocess.check_output("adb %s install %s" % (serial, apk_path), shell=True, encoding='utf-8')
+        output = subprocess.check_output("adb %s install -r %s" % (serial, apk_path), shell=True, encoding='utf-8')
         CommonUtil.ExecLog(sModuleInfo, "Installed app located %s" % apk_path, 0)
         return output
 
