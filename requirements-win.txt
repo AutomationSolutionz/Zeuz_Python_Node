@@ -39,3 +39,4 @@ https://github.com/AutomationSolutionz/InstallerHelperFiles/raw/master/Windows/p
 wmi
 pyautoit
 winshell
+webdrivermanager

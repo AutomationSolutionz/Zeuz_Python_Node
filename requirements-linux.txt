@@ -28,3 +28,4 @@ pyshortcuts
 datefinder
 regex
 pyttsx3
+webdrivermanager
