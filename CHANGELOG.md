@@ -1,6 +1,6 @@
 # Changelog
 
-## 14.07.2020
+## 14th July, 2020
 
 - [NEW] Webdriver auto updater script (double click to run the script and it'll
   automatically download all the available drivers and place them in PATH properly)
