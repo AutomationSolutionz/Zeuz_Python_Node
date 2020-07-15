@@ -25,6 +25,8 @@ zeuz_node_package = 'https://github.com/AutomationSolutionz/Zeuz_Python_Node/arc
 skip = ['Framework' + os.sep + 'settings.conf',
         'Projects',
         'Drivers',
+        'Projects',
+        'AutomationLog',
         'iosSimulator'
         ] # Any files or directories we don't want to delete not longer existing files from
 check_complete = 'no' # 'no', 'yes', 'error'. Used by Zeuz Node to check if install is complete
