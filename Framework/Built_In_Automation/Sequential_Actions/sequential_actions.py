@@ -75,7 +75,7 @@ actions = { # Numbers are arbitrary, and are not used anywhere
     147: {'module': 'common', 'screenshot': 'none', 'name': 'save variable by list difference',
           'function': 'save_variable_by_list_difference'},
 
-
+    148: {'module': 'common', 'screenshot': 'desktop', 'name': 'read from excel', 'function': 'excel_read'},
 
     200: {'module': 'appium', 'screenshot':'mobile', 'name': 'click', 'function': 'Click_Element_Appium'},
     201: {'module': 'appium', 'screenshot':'mobile', 'name': 'text', 'function': 'Enter_Text_Appium'},

@@ -1345,6 +1345,47 @@ def run_macro_in_excel(data_set):
         return CommonUtil.Exception_Handler(sys.exc_info())
 
 
+def excel_read(data_set):
+    sModuleInfo = inspect.currentframe().f_code.co_name + " : " + MODULE_NAME
+    CommonUtil.ExecLog(sModuleInfo, "Function Start", 0)
+
+    try:
+        filepath = None
+        sheet_name = None
+        var_name = None
+        cell_range = None
+        expand = None
+
+        for left, mid, right in data_set:
+            left = left.lower()
+            if 'file path' in left:
+                filepath = right.strip()
+            if 'sheet name' in left:
+                sheet_name = right.strip()
+            if 'expand' in left:
+                expand = right.strip()
+            if 'cell range' in left:
+                cell_range = right.strip()
+            if 'read from excel' in left:
+                var_name = right.strip()
+
+        wb = xw.Book(filepath)
+        sheet = wb.sheets[sheet_name]
+
+        if expand:
+            # expand can be 'table', 'down' and 'right'
+            cell_data = sheet.range(cell_range).expand(expand).value
+        else:
+            cell_data = sheet.range(cell_range).value
+
+        # Save into shared variables
+        sr.Set_Shared_Variables(var_name, cell_data)
+
+        return "passed"
+    except:
+        return CommonUtil.Exception_Handler(sys.exc_info())
+
+
 def get_excel_table(data_set):
     sModuleInfo = inspect.currentframe().f_code.co_name + " : " + MODULE_NAME
     CommonUtil.ExecLog(sModuleInfo, "Function Start", 0)
@@ -1373,7 +1414,7 @@ def get_excel_table(data_set):
         sheet = wb.sheets[sheet_name]
         rng2 = sheet.range(first_cell_location).options(expand='table')
 
-        value =  rng2.value
+        value = rng2.value
         sr.Set_Shared_Variables(var_name, value)
 
         return "passed"
