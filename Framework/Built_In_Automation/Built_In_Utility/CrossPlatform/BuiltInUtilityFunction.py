@@ -710,24 +710,25 @@ def random_string_generator(pattern='nluc', size=10):
         return CommonUtil.Exception_Handler(sys.exc_info())
 
 #Method to download file using url
-def download_file_using_url(file_url, location_of_file):
+def download_file_using_url(file_url, location_of_file, headers=dict()):
     ''' Download a file and save to disk '''
     # file_url: URL of file
     # location_of_file: Where to save file on disk
-    
+
     sModuleInfo = inspect.currentframe().f_code.co_name + " : " + MODULE_NAME
     CommonUtil.ExecLog(sModuleInfo, "Function start", 0)
-    
+
     try:
         ''' Setting stream parameter to True will cause the download of response headers only and the connection remains open.
           This avoids reading the content all at once into memory for large responses.
          A fixed chunk will be loaded each time while r.iter_content is iterated.'''
-        r = requests.get(file_url, stream=True) # Open connection
+        # Open connection
+        r = requests.get(file_url, stream=True)
 
         # set the folder that file will be saved under
         if location_of_file == False:
             file_location = os.path.join(get_home_folder(), 'Downloads')
-        else: 
+        else:
             location_of_file = str(location_of_file.split("/")[-1:][0])
             file_location = os.path.join(get_home_folder(), location_of_file)
         #get the file name from url and then join that with the folder we got above
@@ -735,9 +736,11 @@ def download_file_using_url(file_url, location_of_file):
         #download the file
         CommonUtil.ExecLog(sModuleInfo, "Path of file to download: %s" % file_name, 0)
         with open(file_name, "wb") as f: # Open new binary file
-            for chunk in r.iter_content(chunk_size=1048576): # Grab chunk of received data
-                if chunk: f.write(chunk) # Write chunk of data to disk
-        
+            # Grab chunk of received data
+            for chunk in r.iter_content(chunk_size=1048):
+                # Write chunk of data to disk
+                if chunk: f.write(chunk)
+
         # Verify file exists
         if os.path.isfile(file_name):
             return file_name
@@ -749,22 +752,22 @@ def download_file_using_url(file_url, location_of_file):
 
 #Method to download and unzip file
 # def download_and_unzip_file(file_url, location_of_file): #!!!change this to call download_file_using_url instead of duplicating work, or just remove download part, and whatever is calling this can call the two pieces separately
-#     
+#
 #     sModuleInfo = inspect.currentframe().f_code.co_name + " : " + MODULE_NAME
 #     CommonUtil.ExecLog(sModuleInfo, "Function start", 0)
-#     
+#
 #     try:
 #         ''' Setting stream parameter to True will cause the download of response headers only and the connection remains open.
 #           This avoids reading the content all at once into memory for large responses.
 #          A fixed chunk will be loaded each time while r.iter_content is iterated.'''
 #         r = requests.get(file_url, stream=True)
-# 
+#
 #         list_the_parts_of_url = file_url.split("/") #get file name from the url
 #         file_name = os.path.join(location_of_file, list_the_parts_of_url[len(list_the_parts_of_url) - 1])
 #         actual_file_name = list_the_parts_of_url[len(list_the_parts_of_url) - 1]
 #         with open(file_name, "wb") as f:
 #             for chunk in r.iter_content(chunk_size=1024):
-# 
+#
 #             # writing one chunk at a time to pdf file
 #                 if chunk:
 #                     f.write(chunk)
@@ -794,8 +797,8 @@ def download_file_using_url(file_url, location_of_file):
 #         Shared_Resources.Set_Shared_Variables("downloaded_file", downloaded_file)
 #         Shared_Resources.Show_All_Shared_Variables()
 #         return "passed"
-# 
-# 
+#
+#
 #     except Exception:
 #         return CommonUtil.Exception_Handler(sys.exc_info())
 
@@ -823,7 +826,7 @@ def sanitize_step_data(step_data, valid_chars = '', clean_whitespace_only = Fals
             :column: Leave blank for default Field and Sub-Field (1,2). Set as a comma separated string to indicate columns to be cleaned (eg: 2,3 or just 3)
             If the user surrounds their input with double quotes, all sanitizing will be skipped, and the surrounding quotes will be removed
     '''
-    
+
     # Set columns in the step data to sanitize (default is Field and Sub-Field only)
     if column == '': # By default, sanitize the first and second columns (Field and Sub-Field)
         column = [0,1]
@@ -831,7 +834,7 @@ def sanitize_step_data(step_data, valid_chars = '', clean_whitespace_only = Fals
         column = str(column).replace(' ', '') # Remove spaces
         column = column.split(',') # Put into list
         column = list(map(int, column)) # Convert numbers in list into integers, so they can be used to address tuple elements
-    
+
     new_step_data = [] # Create empty list that will contain the data sets
     for data_set in step_data: # For each data set within step data
         new_data_set = [] # Create empty list that will have new data appended
@@ -841,7 +844,7 @@ def sanitize_step_data(step_data, valid_chars = '', clean_whitespace_only = Fals
                 if str(new_row[i])[:1] == '"' and str(new_row[i])[-1:] == '"': # String is within double quotes, indicating it should not be changed
                     new_row[i] = str(new_row[i])[1:len(new_row[i]) - 1] # Remove surrounding quotes
                     continue # Do not change string
-                
+
                 # Sanitize the column for this row
                 new_row[i] = sanitize_string(new_row[i], valid_chars, clean_whitespace_only)
 
@@ -856,14 +859,14 @@ def sanitize_string(strg, valid_chars = '', clean_whitespace_only = False, maxLe
             :valid_chars: By default this function removes all characters. Specifying a string of characters here will skip removing them
             :clean_whitespace_only: If your function uses several characters, you can set this to True, to only clean up white space
     '''
-    
+
     # Invalid character list (space and underscore are handle separately)
     invalid_chars = '!"#$%&\'()*+,-./:;<=>?@[\]^`{|}~'
 
     # Adjust invalid character list, based on function input
     for j in range(len(valid_chars)): # For each valid character
         invalid_chars = invalid_chars.replace(valid_chars[j], '') # Remove valid character from invalid character list
-    
+
     if clean_whitespace_only == False:
         for j in range(0,len(invalid_chars)): # For each invalid character (allows us to only remove those the user hasn't deemed valid)
             strg = strg.replace(invalid_chars[j], '') # Remove invalid character
@@ -876,7 +879,7 @@ def sanitize_string(strg, valid_chars = '', clean_whitespace_only = False, maxLe
     # Truncate if maximum length specified
     if maxLength != None:
         strg = strg[:maxLength]
-        
+
     return strg
 
 
@@ -888,7 +891,7 @@ def sanitize_string(strg, valid_chars = '', clean_whitespace_only = False, maxLe
 # code to generate raw string
 def raw(text):
     """Returns a raw string representation of text"""
-    
+
     escape_dict = {
         '\b': r'\b',
         '\c': r'\c',
@@ -1074,7 +1077,7 @@ def Get_Attachment_Path(step_data):
 def Delete_File_or_Folder(data_set):
     sModuleInfo = inspect.currentframe().f_code.co_name + " : " + MODULE_NAME
     CommonUtil.ExecLog(sModuleInfo, "Function start", 0)
-    
+
     # Parse data set
     try:
         filename = ''
@@ -1085,14 +1088,14 @@ def Delete_File_or_Folder(data_set):
                 filename = row[2].strip()
             elif row[1] in ('path', 'element paraneter') and filename == '': # Just in case someone used a second row to specify the filename, we'll use that
                 filename = row[2].strip()
-        
+
         if filename == '':
             CommonUtil.ExecLog(sModuleInfo,"Could not find filename or path to file in Value field of action line", 3)
             return 'failed'
-        
+
     except Exception:
         return CommonUtil.Exception_Handler(sys.exc_info(), None, "Error parsing data set")
-    
+
     # Perform action
     try:
         if os.path.exists(filename) == False: # Check if file exists as it is (local directory or fully specified), if not...
@@ -1105,7 +1108,7 @@ def Delete_File_or_Folder(data_set):
             else:
                 filename = tmp # Save the constructed path
         # Should now have a full path to the filename
-            
+
 
         # Delete file/directory
         if os.path.isfile(filename):
@@ -1115,7 +1118,7 @@ def Delete_File_or_Folder(data_set):
         else:
             CommonUtil.ExecLog(sModuleInfo, "File/directory specified does exist, but is neither a file nor a directory. It could not be deleted", 3)
             return 'failed'
-        
+
         # Verify result
         if result in failed_tag_list:
             CommonUtil.ExecLog(sModuleInfo, "Could not delete file '%s'" % (filename), 3)
@@ -1290,17 +1293,17 @@ def Add_Log(step_data):
 def Calculate(step_data):
     ''' Perform any mathematical calculation exactly as written by the user '''
     # Format: shared_var_name=1+(2*3)....etc
-     
+
     sModuleInfo = inspect.currentframe().f_code.co_name + " : " + MODULE_NAME
     CommonUtil.ExecLog(sModuleInfo, "Function start", 0)
-    
+
     try:
         # Prepare data
         statement = str(step_data[0][2]).strip().replace(' ', '')  # get the statement for math function
         params_list = statement.split("=") # list the parts of statement by splitting it by "="
         var_name = params_list[0] # Save name of shared variable
         math_string = params_list[1] # Save mathematical calculation
-        
+
         # Calculate and save result
         result = eval(math_string) # eval()  does the auto calculation from a string.
         CommonUtil.ExecLog(sModuleInfo, "Calculation: %s = %s" % (math_string, result), 1)
@@ -1332,24 +1335,24 @@ def Run_Command(data_set):
     except Exception:
         return CommonUtil.Exception_Handler(sys.exc_info(), None, "Error parsing data set")
 
-    # Execute command    
+    # Execute command
     try:
         # Set command deliminator
         if _platform == 'win32': delim = '&'
         else: delim = ';'
-        
+
         # Execute commands as a single command line command, separated by the OS's shell deliminator. This allows us to maintain a shell history, so all commands work as expected
         h = subprocess.Popen(delim.join(commands), shell=True, stdout=subprocess.PIPE, stderr=subprocess.STDOUT) # Execute commands, collect STDERR and redirect it to STDOUT, so it's all together
         h.wait() # Wait for process to complete
         result = h.returncode # Get last command result
         output = ''
         for line in h.stdout: output += line # Get command output from STDOUT and STDERR
-        
+
         CommonUtil.ExecLog(sModuleInfo, "Command output: %s" % output, 1) # Write output to log
         if shared_var:
             output = output.replace('\n', '')  # replace any new line in string that may have came from terminal
             Shared_Resources.Set_Shared_Variables(shared_var, output) # Save command output to shared variable, if user specified it
-        
+
         # Exit
         if result != 0:
             CommonUtil.ExecLog(sModuleInfo, "Command failed. See above for command output", 3)
@@ -1357,7 +1360,7 @@ def Run_Command(data_set):
         else:
             CommonUtil.ExecLog(sModuleInfo, "Command executed successfully", 1)
             return 'passed'
-        
+
     except Exception:
         return CommonUtil.Exception_Handler(sys.exc_info(), None, "Error executing command")
 
@@ -1378,7 +1381,7 @@ def Run_Command(data_set):
 #                     CommonUtil.ExecLog(sModuleInfo, "sudo command is run properly '%s'" % (command), 1)
 #                     return "passed"
 #             elif _platform == "linux" or _platform == "linux2" or _platform == "darwin":
-# 
+#
 #                 CommonUtil.ExecLog(sModuleInfo, "Could not run admin command for linux/mac", 3)
 #                 return "failed"
 #         elif step_data[0][0] == "run sudo":
@@ -1397,13 +1400,13 @@ def Run_Command(data_set):
 #                 return "failed"
 #     except Exception:
 #         return CommonUtil.Exception_Handler(sys.exc_info())
-# 
+#
 # # Method to Run Command
 # def Run_Command_and_Save(step_data):
 #     sModuleInfo = inspect.currentframe().f_code.co_name + " : " + MODULE_NAME
 #     CommonUtil.ExecLog(sModuleInfo, "Function start", 0)
 #     try:
-# 
+#
 #             if _platform == "win32":
 #                 # windows
 #                 command = str(step_data[0][2]).strip()
@@ -1415,8 +1418,8 @@ def Run_Command(data_set):
 #                 else:
 #                     CommonUtil.ExecLog(sModuleInfo, "sudo command is run properly '%s'" % (command), 1)
 #                     return "passed"
-# 
-# 
+#
+#
 #             elif _platform == "linux" or _platform == "linux2" or _platform == "darwin":
 #                 command = str(step_data[0][2]).strip()
 #                 Shared_var = str(step_data[1][2]).strip()
@@ -1427,7 +1430,7 @@ def Run_Command(data_set):
 #                 else:
 #                     CommonUtil.ExecLog(sModuleInfo, "sudo command is run properly '%s'" % (command), 1)
 #                     return "passed"
-# 
+#
 #     except Exception:
 #         return CommonUtil.Exception_Handler(sys.exc_info())
 
@@ -1435,19 +1438,19 @@ def Run_Command(data_set):
 def Get_Home_Directory(data_set):
     sModuleInfo = inspect.currentframe().f_code.co_name + " : " + MODULE_NAME
     CommonUtil.ExecLog(sModuleInfo, "Function start", 0)
-    
+
     try:
         home_dir = data_set[0][2] # Get shared variable name from Value on action row
     except:
         return CommonUtil.Exception_Handler(sys.exc_info())
-    
+
     try:
         path = get_home_folder() # Get home directory path
         if path in failed_tag_list:
             CommonUtil.ExecLog(sModuleInfo, "Could not find home directory: '%s'" % str(path), 3)
             return 'failed'
         CommonUtil.ExecLog(sModuleInfo, "Home Directory Path is '%s'" % (path), 1)
-        
+
         Shared_Resources.Set_Shared_Variables(home_dir, path) # Store home directory in shared variable
         return 'passed'
     except Exception:
@@ -1620,12 +1623,12 @@ def Rename_File_or_Folder(step_data):
 def Zip_File_or_Folder(data_set):
     sModuleInfo = inspect.currentframe().f_code.co_name + " : " + MODULE_NAME
     CommonUtil.ExecLog(sModuleInfo, "Function start", 0)
-    
+
     # Parse data set
     try:
         source = ''
         destination = ''
-        
+
         for row in data_set:
             if row[0].lower().strip() in ('src', 'source'):
                 source = row[2].strip()
@@ -1635,10 +1638,10 @@ def Zip_File_or_Folder(data_set):
         if source == '' or destination == '':
             CommonUtil.ExecLog(sModuleInfo, "Either 'source' or 'destination' information missing", 3)
             return 'failed'
-        
+
     except Exception:
         return CommonUtil.Exception_Handler(sys.exc_info(), None, "Error parsing data set")
-        
+
     # Zip file
     try:
         # Remove / before any of the paths
@@ -1667,20 +1670,20 @@ def Zip_File_or_Folder(data_set):
 
 # Method to move file/folder
 def Move_File_or_Folder(step_data):
-    
+
     '''
     This function will allow users to move(not rename) either a file or folder to another directory. The source can be either:
     file attached in a test case, steps, or variable. The destination is always a folder path here. if the destination folder is not present,
     will try to create it first.
-    
+
 
     destination      path              /Downloads/ch1-2.pdf
     source           path               %|my_file|%
     move             utility action    file
-    
-    
+
+
     '''
-    
+
 
     sModuleInfo = inspect.currentframe().f_code.co_name + " : " + MODULE_NAME
     CommonUtil.ExecLog(sModuleInfo, "Function start", 0)
@@ -1789,14 +1792,14 @@ def Upload(step_data):
             # linux
             CommonUtil.ExecLog(sModuleInfo, "linux", 1)
             from_path = get_home_folder() + str(step_data[0][2]).strip()  # location of the file/folder to be copied\
-            
+
             #temp_ini_file = get_home_folder() + "/Desktop/AutomationLog/temp_config.ini"
 
             temp_ini_file = os.path.join(os.path.join (os.path.realpath(__file__).split("Framework")[0] , os.path.join ('AutomationLog',ConfigModule.get_config_value('Advanced Options', '_file'))))
-        
-            
-            
-            
+
+
+
+
             list = from_path.split("/")
             to_path = ConfigModule.get_config_value('sectionOne', 'test_case_folder', temp_ini_file) +"/"+ list[len(list) - 1]  # location where to copy the file/folder
 
@@ -1804,11 +1807,11 @@ def Upload(step_data):
             # windows
             CommonUtil.ExecLog(sModuleInfo, "windows", 1)
             from_path = raw(str(step_data[0][0]).strip())  # location of the file/folder to be copied
-            
+
             #temp_ini_file = get_home_folder() + raw("\Desktop\AutomationLog\temp_config.ini")
             temp_ini_file = os.path.join(os.path.join (os.path.realpath(__file__).split("Framework")[0] , os.path.join ('AutomationLog',ConfigModule.get_config_value('Advanced Options', '_file'))))
-            
-            
+
+
             list = from_path.split("\\")
             to_path = ConfigModule.get_config_value('sectionOne', 'test_case_folder', temp_ini_file) + "\\" + list[len(list) - 1]
 
@@ -1931,7 +1934,7 @@ def compare_images(data_set):
         from skimage.metrics import structural_similarity as ssim
 
         default_ssim = float(1)
-        
+
         for eachrow in data_set:
             if eachrow[1] == "compare":
                 imageA_path = Shared_Resources.get_previous_response_variables_in_strings(eachrow[0].strip())
@@ -1942,16 +1945,16 @@ def compare_images(data_set):
 
         imageA = cv2.imread(imageA_path) #Read first image
         imageB = cv2.imread(imageB_path) #Read second image
-        
+
         imageA = cv2.cvtColor(imageA, cv2.COLOR_BGR2GRAY) #Convert first image to grayscale
         imageB = cv2.cvtColor(imageB, cv2.COLOR_BGR2GRAY) #Convert second image to grayscale
-        
+
         #compute the structural similarity index (SSIM), and return difference image
         #Perfect match SSIM = 1
         #diff image contains the actual image differences between the two images
         (ssim_match, diff) = ssim(imageA,imageB, full=True)
         diff = (diff * 255).astype("uint8") #convert diff image from floating point data 8-bit unsigned integers in range [0, 255] to process using OpenCV
-        
+
         # threshold the difference image, followed by finding contours to
         #obtain the regions of the two input images that differ
         thresh = cv2.threshold(diff, 0, 255, cv2.THRESH_BINARY_INV | cv2.THRESH_OTSU)[1]
@@ -1965,25 +1968,25 @@ def compare_images(data_set):
             (x, y, w, h) = cv2.boundingRect(c)
             cv2.rectangle(imageA, (x, y), (x + w, y + h), (0, 0, 255), 2)
             cv2.rectangle(imageB, (x, y), (x + w, y + h), (0, 0, 255), 2)
-            
+
         #show an output concatenated result comparing the two images and their difference
-        
+
         result_folder = get_home_folder()
         result_name = 'final_image'
         timestamp = datetime.datetime.now().strftime('%Y-%m-%dT%H-%M-%S-%f')
         finalresult_location = result_folder + os.sep + timestamp + "_" + result_name + '.png'
-        
+
         final_frame = cv2.hconcat((imageA,imageB,diff,thresh))
         cv2.imwrite(finalresult_location, final_frame)
-        
+
         #Check if a match score is set by the user, if not set to default of 1
-        
+
         if (user_ssim <= float(1)) and (user_ssim >= float(0)):
             req_ssim = user_ssim
         else:
             CommonUtil.ExecLog(sModuleInfo,"Invalid required match score, setting score to default value 1 instead", 2)
             req_ssim = default_ssim
-            
+
         #Perform the image comparison based on the structural similarity index
         if ssim_match >= req_ssim:
             CommonUtil.ExecLog(sModuleInfo, "Images match", 1)
@@ -1991,7 +1994,7 @@ def compare_images(data_set):
         else:
             CommonUtil.ExecLog(sModuleInfo,"Images do not match", 3)
             return "failed"
-        
+
     except:
         CommonUtil.ExecLog(sModuleInfo,"Couldn't compare images", 3)
         return "failed"
@@ -2039,21 +2042,21 @@ def Save_Text(step_data):
 
 # Method to download file
 def Download_file(data_set):
-    ''' Download file from URL 
+    ''' Download file from URL
     by default if location is not provided, it will save to download folder
     Location needs to be provided by assuming current user's folder such as Documents, Downloads, Pictures and so on
     Example:
     url         source parameter        http://codex.cs.yale.edu/avi/db-book/db4/slide-dir/ch1-2.pdf
-    
+
     location   optional parameter        /Downloads
-    
-    download      utility action          *** your variable.  You can put any variable.*** 
-    
+
+    download      utility action          *** your variable.  You can put any variable.***
+
     '''
-    
+
     sModuleInfo = inspect.currentframe().f_code.co_name + " : " + MODULE_NAME
     CommonUtil.ExecLog(sModuleInfo, "Function start", 0)
-    
+
     # Parse data set
     try:
         url = '' # Mandatory
@@ -2061,8 +2064,10 @@ def Download_file(data_set):
         file_location = False
         # name of the variable where the file location will be stored
         shared_var = ''
+        # headers for the download
+        headers = dict()
 
-        for left, _, right in data_set:
+        for left, mid, right in data_set:
             left = left.strip().lower()
             right = right.strip()
 
@@ -2078,7 +2083,10 @@ def Download_file(data_set):
                 # If we see the '~', expand it to the user's home folder
                 if '~' in file_location:
                     file_location = os.path.expanduser(file_location)
-        
+
+            if 'header' in mid:
+                headers[left] = right
+
         # Verify input
         if not file_location:
             # if no location is given, set default to Downloads directory
@@ -2093,8 +2101,8 @@ def Download_file(data_set):
 
     try:
         # Download file and get path/filename
-        full_file_path = download_file_using_url(url, file_location)
-        
+        full_file_path = download_file_using_url(url, file_location, headers)
+
         # Verify download
         if full_file_path in failed_tag_list:
             CommonUtil.ExecLog(sModuleInfo, "Failed to save file from (%s) to disk (%s)" % (url, file_location), 3)
@@ -2113,14 +2121,15 @@ def Download_File_and_Unzip(data_set):
 
     sModuleInfo = inspect.currentframe().f_code.co_name + " : " + MODULE_NAME
     CommonUtil.ExecLog(sModuleInfo, "Function start", 0)
-    
-    # Parse data set
+
     try:
         url = '' # Mandatory
         unzip_location = '' # Optional - default will be used if omited
         shared_var = '' # Optional
         file_location = os.path.join(get_home_folder(), 'Downloads') # Set location of download to Downloads directory
-        
+        # Parse data set
+        headers = dict()
+
         for row in data_set:
             op = row[0].strip().lower()
             if op == 'url':
@@ -2129,20 +2138,22 @@ def Download_File_and_Unzip(data_set):
                 unzip_location = row[2].strip()
             elif op in ('shared variable', 'shared var', 'variable', 'var', 'save'):
                 shared_var = row[2].strip()
-        
+            elif 'header' in row[1]:
+                headers[row[0]] = row[2]
+
         # Verify input
-        
+
         if url == '': # Make sure we have a URL
             CommonUtil.ExecLog(sModuleInfo,"Expected Field to contain 'url' and Value to contain a valid URL to a file", 3)
             return 'failed'
-        if unzip_location == '': unzip_location = file_location # Set unzip location to Downloads by default if omited 
+        if unzip_location == '': unzip_location = file_location # Set unzip location to Downloads by default if omited
     except Exception:
         return CommonUtil.Exception_Handler(sys.exc_info(), None, "Error parsing data set")
 
     # Download
     try:
         # Download file and get path/filename
-        file_name = download_file_using_url(url, file_location)
+        file_name = download_file_using_url(url, file_location, headers)
         
         # Verify download
         if file_name in failed_tag_list:
