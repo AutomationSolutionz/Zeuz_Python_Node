@@ -1,6 +1,6 @@
 [ZeuZ Python Version]
-version = 11.01
+version = 12.00
 [Release Date]
-date= May 18, 2020
+date= July 16, 2020
 [Release Note]
-Note = Hybrid (ios/android), custom desire cap, database actions, auto context switch for hybrid, context switch, and others
+Note = Please refer to CHANGELOG.md for changelog
