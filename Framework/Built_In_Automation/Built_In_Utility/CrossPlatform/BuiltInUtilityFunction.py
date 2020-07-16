@@ -2068,16 +2068,16 @@ def Download_file(data_set):
         headers = dict()
 
         for left, mid, right in data_set:
-            left = left.strip().lower()
+            left = left.strip()
             right = right.strip()
 
-            if 'url' in left:
+            if 'url' in left.lower():
                 url = right
 
-            if 'download' in left:
+            if 'download' in left.lower():
                 shared_var = right
 
-            if 'location' in left:
+            if 'location' in left.lower():
                 file_location = str(Path(right))
 
                 # If we see the '~', expand it to the user's home folder
