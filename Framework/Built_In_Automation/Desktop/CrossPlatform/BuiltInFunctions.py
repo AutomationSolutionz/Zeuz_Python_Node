@@ -198,6 +198,27 @@ def Enter_Text(data_set):
         errMsg = "Could not select/click your element."
         return CommonUtil.Exception_Handler(sys.exc_info(), None, errMsg)
 
+def execute_hotkey(data_set):
+    """
+    Executes the provided hotkey. The hotkey sequence should be a plus (+) separated string:
+    Alt + Tab
+    Ctrl + F
+    Ctrl + Shift + S
+    :param data_set: The data set is only one row:
+        hotkey      element parameter       Ctrl + Shift + S
+    :return:
+    """
+    sModuleInfo = inspect.currentframe().f_code.co_name + " : " + MODULE_NAME
+    CommonUtil.ExecLog(sModuleInfo, "Function Start", 0)
+
+    try:
+        hotkey_combination = [i.strip() for i in data_set[0][2].split('+')]
+        gui.hotkey(*hotkey_combination)
+        return "passed"
+    except:
+        errMsg = "Failed to execute hotkey"
+        return CommonUtil.Exception_Handler(sys.exc_info(), None, errMsg)
+
 
 
 def Keystroke_For_Element(data_set):
