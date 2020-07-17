@@ -222,7 +222,7 @@ actions = { # Numbers are arbitrary, and are not used anywhere
     603: {'module': 'xml', 'screenshot':'none', 'name': 'delete', 'function': 'delete_element'},
 
     700: {'module': 'desktop', 'screenshot':'desktop', 'name': 'click', 'function': 'Click_Element'},
-    701: {'module': 'desktop', 'screenshot':'desktop', 'name': 'double click', 'function': 'Double_Click_Element'},
+    701: {'module': 'desktop', 'screenshot':'desktop', 'name': 'double click', 'function': 'Click_Element'},
     702: {'module': 'desktop', 'screenshot':'desktop', 'name': 'hover', 'function': 'move_mouse'},
     703: {'module': 'desktop', 'screenshot':'desktop', 'name': 'keystroke keys', 'function': 'Keystroke_For_Element'},
     704: {'module': 'desktop', 'screenshot':'desktop', 'name': 'keystroke chars', 'function': 'Keystroke_For_Element'},
@@ -234,6 +234,7 @@ actions = { # Numbers are arbitrary, and are not used anywhere
     710: {'module': 'desktop', 'screenshot':'desktop', 'name': 'teardown', 'function': 'teardown'},
     711: {'module': 'desktop', 'screenshot':'desktop', 'name': 'drag', 'function': 'Drag_Element'},
     712: {'module': 'desktop', 'screenshot':'desktop', 'name': 'listbox', 'function': 'navigate_listbox'},
+    713: {'module': 'desktop', 'screenshot':'desktop', 'name': 'hotkey', 'function': 'execute_hotkey'},
 
 
     801: {'module': 'windows', 'screenshot':'desktop', 'name': 'click', 'function': 'Click_Element'},

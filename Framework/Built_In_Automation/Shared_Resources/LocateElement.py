@@ -6,6 +6,8 @@ Created on Jun 21, 2017
 '''
 import sys, time
 import inspect
+import traceback
+from pathlib import Path
 from Framework.Utilities import CommonUtil
 from Framework.Utilities.CommonUtil import passed_tag_list, failed_tag_list
 from Framework.Built_In_Automation.Shared_Resources import BuiltInFunctionSharedResources as sr
@@ -594,7 +596,7 @@ def _pyautogui(step_data_set):
                 file_name_parent = row[2] # Save Value as the filename
                 direction = row[0].lower().strip() # Save Field as a possible distance or index
             elif row[1] == 'action' and file_name == '': # Alternative method, there is no element parameter, so filename is expected on the action line
-                file_name = row[2] # Save Value as the filename
+                file_name = Path(row[2]) # Save Value as the filename
 
         # Check that we have some value                
         if file_name == '':
@@ -616,7 +618,7 @@ def _pyautogui(step_data_set):
         # Now file_name should have a directory/file pointing to the correct image
         
         # There's a problem when running from Zeuz with encoding. pyautogui seems sensitive to it. This fixes that
-        file_name = file_name.encode('ascii')
+        # file_name = file_name.encode('ascii')
         if file_name_parent != '': file_name_parent = file_name_parent.encode('ascii')
 
     except:
@@ -643,7 +645,7 @@ def _pyautogui(step_data_set):
     # Find element information
     try:
         # Scale image if required
-        regex = re.compile('(\d+)\s*x\s*(\d+)', re.IGNORECASE) # Create regex object with expression
+        regex = re.compile(r'(\d+)\s*x\s*(\d+)', re.IGNORECASE) # Create regex object with expression
         match = regex.search(file_name) # Search for resolution within filename (this is the resolution of the screen the image was captured on)
         if match == None and resolution != '': # If resolution not in filename, try to find it in the step data
             match = regex.search(resolution) # Search for resolution within the Field of the element paramter row (this is the resolution of the screen the image was captured on)
@@ -669,7 +671,9 @@ def _pyautogui(step_data_set):
         
         # If no reference image, just return the first match
         if file_name_parent == '':
-            element = tuple(element)[0] # First match reassigned as the only element
+            element_list = tuple(element)
+            # First match reassigned as the only element
+            element = element_list[0] if len(element_list) > 0 else None
         
         # Reference image specified, so find the closest image element to it
         else:
@@ -741,6 +745,7 @@ def _pyautogui(step_data_set):
             return element
         
     except:
+        traceback.print_exc()
         return 'failed'
     
 
