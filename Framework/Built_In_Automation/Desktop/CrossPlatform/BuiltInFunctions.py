@@ -558,12 +558,19 @@ def launch_program(data_set):
 
         # Now file_name should have a directory/file pointing to the correct image
 
+        launch_status = 'success'
+
         # Execute program
-        if dependency['PC'].lower() == 'linux' or dependency['PC'].lower() == 'mac':
+        if dependency['OS'].lower() == 'linux' or dependency['OS'].lower() == 'mac':
             launch_status = subprocess.Popen(Command.split(' ')) # FU.run_cmd() blocks further execution, so we'll just use subprocess here
 
-        elif dependency['PC'].lower() == 'windows':
-            launch_status = FU.run_win_cmd(Command)
+        elif dependency['OS'].lower() == 'windows':
+            # launch_status = subprocess.Popen('%s' % Command) # FU.run_cmd() blocks further execution, so we'll just use subprocess here
+            # launch_status = FU.run_win_cmd(Command)
+            # This is the same as double clicking on Windows
+            # https://stackoverflow.com/a/34738279
+            os.startfile(Command)
+
 
         else:
             CommonUtil.ExecLog(sModuleInfo, "Unknown dependency %s" % dependency['PC'], 3)
@@ -583,7 +590,7 @@ def launch_program(data_set):
     except Exception:
         errMsg = "Can't execute the program"
         return CommonUtil.Exception_Handler(sys.exc_info(), None, errMsg)
-    
+
 def teardown(data_set):
     ''' Cleanup automation '''
     
