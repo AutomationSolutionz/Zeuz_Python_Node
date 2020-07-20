@@ -220,6 +220,20 @@ def execute_hotkey(data_set):
         return CommonUtil.Exception_Handler(sys.exc_info(), None, errMsg)
 
 
+def click_on_coordinates(data_set):
+
+    sModuleInfo = inspect.currentframe().f_code.co_name + " : " + MODULE_NAME
+    CommonUtil.ExecLog(sModuleInfo, "Function Start", 0)
+    try:
+        x,y=data_set[0][2].replace(' ','').split(',')
+        x = int(x)
+        y = int(y)
+        gui.click(x,y)
+        return "passed"
+    except:
+        errMsg = "Failed to click on coordinates"
+        return CommonUtil.Exception_Handler(sys.exc_info(), None, errMsg)
+
 
 def Keystroke_For_Element(data_set):
     ''' Insert characters - mainly key combonations'''

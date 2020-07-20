@@ -235,6 +235,7 @@ actions = { # Numbers are arbitrary, and are not used anywhere
     711: {'module': 'desktop', 'screenshot':'desktop', 'name': 'drag', 'function': 'Drag_Element'},
     712: {'module': 'desktop', 'screenshot':'desktop', 'name': 'listbox', 'function': 'navigate_listbox'},
     713: {'module': 'desktop', 'screenshot':'desktop', 'name': 'hotkey', 'function': 'execute_hotkey'},
+    714: {'module': 'desktop', 'screenshot':'desktop', 'name': 'click on coordinates', 'function': 'click_on_coordinates'},
 
 
     801: {'module': 'windows', 'screenshot':'desktop', 'name': 'click', 'function': 'Click_Element'},
