@@ -14,11 +14,13 @@ import datetime
 
 
 def req(req_type, host, url, payload=dict(), headers=dict(), params=dict()):
-    headers['Content-Type'] = 'application/json'
+    headers["Content-Type"] = "application/json"
 
     url = host + url
 
-    response = requests.request(req_type, url, headers=headers, params=params, data=payload)
+    response = requests.request(
+        req_type, url, headers=headers, params=params, data=payload
+    )
     return response
 
 
@@ -28,14 +30,8 @@ def get_available_machines(token, host, project, team):
         host,
         "/api/machines/list",
         dict(),
-        {
-            "Authorization": "Bearer %s" % token
-        },
-        params={
-            "project": project,
-            "team": team,
-            "user_level": "Automation"
-        }
+        {"Authorization": "Bearer %s" % token},
+        params={"project": project, "team": team, "user_level": "Automation"},
     ).json()
 
 
@@ -45,12 +41,8 @@ def get_run_status(token, host, run_id):
         host,
         "/api/run/status",
         dict(),
-        {
-            "Authorization": "Bearer %s" % token
-        },
-        params={
-            "run_id": run_id
-        }
+        {"Authorization": "Bearer %s" % token},
+        params={"run_id": run_id},
     ).json()
 
 
@@ -60,14 +52,8 @@ def get_test_set(token, host, project, team, test_set_name):
         host,
         "/api/set/list",
         dict(),
-        {
-            "Authorization": "Bearer %s" % token
-        },
-        params={
-            "project": project,
-            "team": team,
-            "search_term": test_set_name
-        }
+        {"Authorization": "Bearer %s" % token},
+        params={"project": project, "team": team, "search_term": test_set_name},
     ).json()
 
 
@@ -77,14 +63,8 @@ def get_milestone(token, host, project, team):
         host,
         "/api/milestones/list",
         dict(),
-        {
-            "Authorization": "Bearer %s" % token
-        },
-        params={
-            "project": project,
-            "team": team,
-            "status": "started"
-        }
+        {"Authorization": "Bearer %s" % token},
+        params={"project": project, "team": team, "status": "started"},
     ).json()
 
 
@@ -94,20 +74,13 @@ def deploy(token, host, payload_data):
         host,
         "/api/run/submit",
         payload_data,
-        {
-            "Authorization": "Bearer %s" % token
-        }
+        {"Authorization": "Bearer %s" % token},
     ).json()
 
 
 def get_token_from_api(api_key, host):
     return req(
-        "GET",
-        host,
-        "/api/auth/token/verify",
-        params={
-            "api_key": api_key
-        }
+        "GET", host, "/api/auth/token/verify", params={"api_key": api_key}
     ).json()
 
 
@@ -128,14 +101,24 @@ def main():
         parser.add_argument("--host", help="Hostname of the server")
         parser.add_argument("--api_key", help="Your API key from Profile > API Key tab")
         parser.add_argument("--test_set_name", help="Name of the test set")
-        parser.add_argument("--email", help="Email address where the report will be delivered")
+        parser.add_argument(
+            "--email", help="Email address where the report will be delivered"
+        )
         parser.add_argument("--objective", help="Objective of the deployment")
         parser.add_argument("--project", help="Project Id, example: PROJ-10")
         parser.add_argument("--team", help="Team Id, example: 10")
         parser.add_argument("--machine", help="Machine Id (default: any)")
         parser.add_argument("--milestone", help="Milestone Id")
-        parser.add_argument("--machine_timeout", default=60, help="Minutes to wait for any automated machine to be available (default: 60)")
-        parser.add_argument("--report_timeout", default=60, help="Minutes to wait before reporting the deployment progress [will be reported instantly upon completion] (default: 60)")
+        parser.add_argument(
+            "--machine_timeout",
+            default=60,
+            help="Minutes to wait for any automated machine to be available (default: 60)",
+        )
+        parser.add_argument(
+            "--report_timeout",
+            default=60,
+            help="Minutes to wait before reporting the deployment progress [will be reported instantly upon completion] (default: 60)",
+        )
 
         args = parser.parse_args()
 
@@ -154,20 +137,17 @@ def main():
         print("Provide all the arguments. Execute 'python deploy.py -h' to learn more")
         return EXIT_CODE_ERR_INVALID_ARGS
 
-
     # Get token for the given API key
     token = get_token_from_api(api_key, host)
     if "status" in token and token["status"] == 404:
         print("Invalid API key")
         return EXIT_CODE_INVALID_API
-        
-	
-	# Verify test set
+
+    # Verify test set
     r = get_test_set(token, host, project, team, test_set_name)
     if len(r) == 0:
         print("Invalid test set name")
         return EXIT_CODE_TEST_SET_NAME
-
 
     # Verify milestone
     milestone_started = False
@@ -181,8 +161,7 @@ def main():
         print("Invalid milestone (either not 'started' or invalid name)")
         return EXIT_CODE_INVALID_MILESTONE
 
-
-    # If 'any' is specified as the parameter for machine, 
+    # If 'any' is specified as the parameter for machine,
     machine_list = list()
     if machine == "any":
         for _ in range(machine_timeout):
@@ -198,33 +177,30 @@ def main():
         print("Could not find any available automated machine... exiting")
         return EXIT_CODE_ERR_NO_MACHINES
 
-    payload_data = json.dumps({
-        "test_set_name": test_set_name,
-        "dependency": {
-            "Brower": "Chrome",
-            "OS": "Windows"
-        },
-        "email_receiver":[
-            email,
-        ],
-        "objective": objective,
-        "milestone": milestone,
-        "project_id": project,
-        "team_id": team,
-        "run_time_params": {},
-        "machine": machine,
-        "loop": "1",
-        "run_time_settings": {
-            "threading": False,
-            "take_screenshot": True,
-            "debug_mode": False,
-            "upload_log_file_only_for_fail": True
-        },
-        "branch_version":[],
-        "start_date": str(datetime.datetime.now().date()),
-        "end_date": str(datetime.datetime.now().date()),
-        "domain": host
-    })
+    payload_data = json.dumps(
+        {
+            "test_set_name": test_set_name,
+            "dependency": {"Brower": "Chrome", "OS": "Windows"},
+            "email_receiver": [email,],
+            "objective": objective,
+            "milestone": milestone,
+            "project_id": project,
+            "team_id": team,
+            "run_time_params": {},
+            "machine": machine,
+            "loop": "1",
+            "run_time_settings": {
+                "threading": False,
+                "take_screenshot": True,
+                "debug_mode": False,
+                "upload_log_file_only_for_fail": True,
+            },
+            "branch_version": [],
+            "start_date": str(datetime.datetime.now().date()),
+            "end_date": str(datetime.datetime.now().date()),
+            "domain": host,
+        }
+    )
 
     deploy_info = None
     for _ in range(2 * machine_timeout):
@@ -245,7 +221,7 @@ def main():
 
     # Status for complete runs
     RUN_COMPLETE = ["complete", "cancelled"]
-    
+
     for _ in range(2 * report_timeout):
         run_status = get_run_status(token, host, deploy_info["run_id"])
 
@@ -264,5 +240,5 @@ def main():
     return EXIT_CODE_SUCCESS
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     sys.exit(main())

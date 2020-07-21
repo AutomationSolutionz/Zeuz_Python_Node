@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 # -*- coding: cp1252 -*-
 
-import os,subprocess,shutil
+import os, subprocess, shutil
 
 
 def get_home_folder():
@@ -39,10 +39,10 @@ def DeleteFolder(sFolderPath):
     """
     try:
         target = sFolderPath
-        if os.path.exists(target) :
-            if os.name == 'nt':
+        if os.path.exists(target):
+            if os.name == "nt":
                 shutil.rmtree(target)
-            elif os.name == 'posix':
+            elif os.name == "posix":
                 cmd = "rm -rf %s/" % target
                 p = subprocess.Popen(cmd, stdout=subprocess.PIPE, shell=True)
                 cmdValue = p.communicate()
@@ -60,7 +60,7 @@ def CreateFile(sFilePath):
             return False
         else:
             print("Creating new file")
-            newfile = open(sFilePath, 'w')
+            newfile = open(sFilePath, "w")
             newfile.close()
             return True
     except Exception as e:
@@ -75,14 +75,15 @@ def ZipFolder(dir, zip_file):
     """
     try:
         import zipfile
-        zip = zipfile.ZipFile(zip_file, 'w', compression=zipfile.ZIP_DEFLATED)
+
+        zip = zipfile.ZipFile(zip_file, "w", compression=zipfile.ZIP_DEFLATED)
         root_len = len(os.path.abspath(dir))
         for root, dirs, files in os.walk(dir):
             archive_root = os.path.abspath(root)[root_len:]
             for f in files:
                 fullpath = os.path.join(root, f)
                 archive_name = os.path.join(archive_root, f)
-                #print f
+                # print f
                 if f not in zip_file:
                     zip.write(fullpath, archive_name, zipfile.ZIP_DEFLATED)
 
