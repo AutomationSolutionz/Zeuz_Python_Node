@@ -2410,6 +2410,18 @@ def TakeScreenShot(step_data):
 
 
 def compare_images(data_set):
+    """
+    This action compares two given images. At first, both the images are resized into same width
+    and height (min width and height from either image) and then both of them are converted into
+    grayscale images. Next, structural similarity is computed and compared with the given score.
+
+    :param data_set:
+        [['/path/to/a.png',  'compare',              '/path/to/b.png'],
+        ['min match score', 'element parameter',    '0.75'],
+        ['compare images',  'utility action',       'none']]
+    :return: "passed" if both images match within the given matching score percentage
+    """
+
     sModuleInfo = inspect.currentframe().f_code.co_name + " : " + MODULE_NAME
     CommonUtil.ExecLog(sModuleInfo, "Function: compare images", 0)
 
@@ -2421,12 +2433,14 @@ def compare_images(data_set):
 
         for eachrow in data_set:
             if eachrow[1] == "compare":
-                imageA_path = Shared_Resources.get_previous_response_variables_in_strings(
-                    eachrow[0].strip()
-                )
-                imageB_path = Shared_Resources.get_previous_response_variables_in_strings(
-                    eachrow[2].strip()
-                )
+                imageA_path = eachrow[0].strip()
+                imageB_path = eachrow[2].strip()
+                # imageA_path = Shared_Resources.get_previous_response_variables_in_strings(
+                #     eachrow[0].strip()
+                # )
+                # imageB_path = Shared_Resources.get_previous_response_variables_in_strings(
+                #     eachrow[2].strip()
+                # )
             elif eachrow[1] == "element parameter":
                 if eachrow[0] == "min match score":
                     user_ssim = float(
@@ -2435,6 +2449,14 @@ def compare_images(data_set):
 
         imageA = cv2.imread(imageA_path)  # Read first image
         imageB = cv2.imread(imageB_path)  # Read second image
+
+        # get the minimum height and width to resize
+        minHeight = min(imageA.shape[0], imageB.shape[0])
+        minWidth = min(imageA.shape[1], imageB.shape[1])
+
+        # resize both the images
+        imageA = cv2.resize(imageA, (minWidth, minHeight))
+        imageB = cv2.resize(imageB, (minWidth, minHeight))
 
         imageA = cv2.cvtColor(
             imageA, cv2.COLOR_BGR2GRAY
