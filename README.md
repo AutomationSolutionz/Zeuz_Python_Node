@@ -5,6 +5,9 @@
 
 We follow and use the [black](https://github.com/psf/black) (PEP8 compliant, from Python Software Foudndation) code formatter. Please format your code before submitting them to the repository.
 
+> pip install black
+> black /path/to/ZeuzPythonNode
+
 ## Description
 
 Client side application for running automated testing.
