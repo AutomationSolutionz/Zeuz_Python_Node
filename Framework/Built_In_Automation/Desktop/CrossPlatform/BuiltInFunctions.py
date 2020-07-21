@@ -1,9 +1,7 @@
 # -*- coding: utf-8 -*-
 # -*- coding: cp1252 -*-
 """
-    Created on May 15, 2016
-
-    @author: Built_In_Automation Solutionz Inc.
+    Automation Solutionz Inc.
     Name: Built In Functions - Desktop (using PyAutoGui)
     Description: Sequential Actions for controlling the desktop on Linux/Windows/Mac
 """
