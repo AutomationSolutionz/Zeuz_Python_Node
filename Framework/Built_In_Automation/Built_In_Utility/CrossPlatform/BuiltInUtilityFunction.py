@@ -2305,7 +2305,9 @@ def Upload(step_data):
 temp_config = os.path.join(
     os.path.join(
         os.path.realpath(__file__).split("Framework")[0],
-        os.path.join("AutomationLog", ConfigModule.get_config_value("Temp", "_file")),
+        os.path.join(
+            "AutomationLog", ConfigModule.get_config_value("Advanced Options", "_file")
+        ),
     )
 )
 
@@ -2491,15 +2493,17 @@ def compare_images(data_set):
 
         # show an output concatenated result comparing the two images and their difference
 
-        result_folder = get_home_folder()
+        result_folder = ConfigModule.get_config_value(
+            "sectionOne", "screen_capture_folder", temp_config
+        )
         result_name = "final_image"
         timestamp = datetime.datetime.now().strftime("%Y-%m-%dT%H-%M-%S-%f")
-        finalresult_location = (
+        final_result_location = (
             result_folder + os.sep + timestamp + "_" + result_name + ".png"
         )
 
         final_frame = cv2.hconcat((imageA, imageB, diff, thresh))
-        cv2.imwrite(finalresult_location, final_frame)
+        cv2.imwrite(final_result_location, final_frame)
 
         # Check if a match score is set by the user, if not set to default of 1
 
