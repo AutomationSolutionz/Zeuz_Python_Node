@@ -10,7 +10,15 @@ from datetime import datetime
 
 
 # using IMAP protocol
-def check_latest_received_email(imap_host,imap_port,imap_user,imap_pass,select_mailbox, subject_to_check, sender_to_check):
+def check_latest_received_email(
+    imap_host,
+    imap_port,
+    imap_user,
+    imap_pass,
+    select_mailbox,
+    subject_to_check,
+    sender_to_check,
+):
     # Gmail requires to generate One-Time App Password
     # https://security.google.com/settings/security/apppasswords
     IMAP4_HOST = imap_host
@@ -19,16 +27,11 @@ def check_latest_received_email(imap_host,imap_port,imap_user,imap_pass,select_m
     IMAP4_PASS = imap_pass
     IMAP4_MAILBOX = select_mailbox
 
-    imap = imaplib.IMAP4_SSL(
-        host=IMAP4_HOST, port=IMAP4_PORT)
+    imap = imaplib.IMAP4_SSL(host=IMAP4_HOST, port=IMAP4_PORT)
 
-    imap.login(
-        user=IMAP4_USER,
-        password=IMAP4_PASS)
+    imap.login(user=IMAP4_USER, password=IMAP4_PASS)
 
-    imap.select(
-        mailbox=IMAP4_MAILBOX,
-        readonly=False)
+    imap.select(mailbox=IMAP4_MAILBOX, readonly=False)
 
     # def get_str(text):
     #     return decodestring(text).decode()
@@ -50,7 +53,7 @@ def check_latest_received_email(imap_host,imap_port,imap_user,imap_pass,select_m
     #     elif type == 'text':
     #         return msg.get_payload()
 
-    status, result = imap.search(None, 'ALL')
+    status, result = imap.search(None, "ALL")
 
     print(status)
     # print(result)
@@ -59,7 +62,7 @@ def check_latest_received_email(imap_host,imap_port,imap_user,imap_pass,select_m
     messages = result[0].split()
     latest_email_id = messages[-1]
 
-    status, data = imap.fetch(latest_email_id, '(RFC822)')
+    status, data = imap.fetch(latest_email_id, "(RFC822)")
     msg = email.message_from_bytes(data[0][1])
     # mail = data[0][1].decode()
     # mail = email.message_from_string(mail)
@@ -74,10 +77,10 @@ def check_latest_received_email(imap_host,imap_port,imap_user,imap_pass,select_m
     #     # 'body': get_body(mail)
     # }
     mail = {
-        'to': msg['To'],
-        'sender': msg['From'],
-        'subject': msg['Subject'],
-        'date': msg['Date'],
+        "to": msg["To"],
+        "sender": msg["From"],
+        "subject": msg["Subject"],
+        "date": msg["Date"],
         # 'body': get_body(msg)
     }
     pprint(mail)
@@ -85,13 +88,23 @@ def check_latest_received_email(imap_host,imap_port,imap_user,imap_pass,select_m
     imap.close()
     imap.logout()
 
-    if (subject_to_check == mail['subject'].strip()) and (sender_to_check == mail['sender'].strip()):
+    if (subject_to_check == mail["subject"].strip()) and (
+        sender_to_check == mail["sender"].strip()
+    ):
         return True
     else:
         return False
 
 
-def send_email(smtp_server, smtp_port, sender_email, sender_password , receiver_email, subject, body_html):
+def send_email(
+    smtp_server,
+    smtp_port,
+    sender_email,
+    sender_password,
+    receiver_email,
+    subject,
+    body_html,
+):
     smtp_server = smtp_server
     port = smtp_port  # For starttls
     message = MIMEMultipart()
@@ -148,7 +161,7 @@ if __name__ == "__main__":
     smtp_server = "smtp.gmail.com"
     sender_email = "testingemailforsendmail@gmail.com"
     receiver_email = "mahmood.habib.cuet@gmail.com"
-    sender_password = '123test234test'
+    sender_password = "123test234test"
     subject = "multipart email test"
 
     email_body_html = """\
@@ -162,19 +175,35 @@ if __name__ == "__main__":
           </body>
         </html>
         """
-    send_email(smtp_server, smtp_port, sender_email, sender_password, receiver_email, subject, email_body_html)
+    send_email(
+        smtp_server,
+        smtp_port,
+        sender_email,
+        sender_password,
+        receiver_email,
+        subject,
+        email_body_html,
+    )
     #
     time.sleep(3)
     # check received email
-    imap_host = 'imap.gmail.com'
+    imap_host = "imap.gmail.com"
     imap_port = 993
-    imap_user = 'mahmood.habib.cuet@gmail.com'
-    imap_pass = 'zmxafgpchukkkkjh'
-    select_mailbox = 'INBOX'
-    subject_to_check = 'multipart email test'
-    sender_to_check = 'testingemailforsendmail@gmail.com'
+    imap_user = "mahmood.habib.cuet@gmail.com"
+    imap_pass = "zmxafgpchukkkkjh"
+    select_mailbox = "INBOX"
+    subject_to_check = "multipart email test"
+    sender_to_check = "testingemailforsendmail@gmail.com"
 
-    result = check_latest_received_email(imap_host,imap_port,imap_user,imap_pass,select_mailbox, subject_to_check, sender_to_check)
+    result = check_latest_received_email(
+        imap_host,
+        imap_port,
+        imap_user,
+        imap_pass,
+        select_mailbox,
+        subject_to_check,
+        sender_to_check,
+    )
 
     if result:
         print("Test Successful")

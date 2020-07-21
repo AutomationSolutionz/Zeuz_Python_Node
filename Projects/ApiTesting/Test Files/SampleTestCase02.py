@@ -5,7 +5,7 @@ import requests
 
 url = "https://httpbin.org/post"
 
-querystring = {"foo":["bar","baz"]}
+querystring = {"foo": ["bar", "baz"]}
 
 payload = "foo=bar&bar=bazfoo=bar&bar=bazfoo=bar&bar=bazfoo=bar&bar=bazfoo=bar&bar=bazfoo=bar&bar=bazfoo=bar&bar=bazfoo=bar&bar=baz"
 

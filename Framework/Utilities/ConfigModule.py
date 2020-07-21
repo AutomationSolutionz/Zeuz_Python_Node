@@ -4,15 +4,15 @@
 import configparser, os
 from . import FileUtilities as FL
 
-'''constants'''
-file_name = 'settings.conf'
+"""constants"""
+file_name = "settings.conf"
 
-remote_config={
-    'threading' : True,
-    'local_run' : False,
-    'take_screenshot' : True,
-    'debug_mode' : False,
-    'upload_log_file_only_for_fail' : True
+remote_config = {
+    "threading": True,
+    "local_run": False,
+    "take_screenshot": True,
+    "debug_mode": False,
+    "upload_log_file_only_for_fail": True,
 }
 
 
@@ -61,7 +61,7 @@ def remove_config_value(section, value, location=False):
             FL.DeleteFile(location)
             config.read(_file_name)
         config.remove_option(section, value)
-        with(open(_file_name, 'w')) as open_file:
+        with (open(_file_name, "w")) as open_file:
             config.write(open_file)
         open_file.close()
         return True
@@ -81,7 +81,9 @@ def add_config_value(section, key, value, location=False):
 
         if os.path.exists(_file_name):
             try:
-                config.read(_file_name)  # Read current configuration, if the file exists
+                config.read(
+                    _file_name
+                )  # Read current configuration, if the file exists
             except:
                 FL.DeleteFile(location)
                 config.read(_file_name)
@@ -89,12 +91,14 @@ def add_config_value(section, key, value, location=False):
             config.add_section(section)  # New file, so we have to add the section first
         if type(value) is bytes:
             print("In Bytes")
-            config.set(section, key, value.decode())  # Set new configuration from parameters
+            config.set(
+                section, key, value.decode()
+            )  # Set new configuration from parameters
 
         else:
             config.set(section, key, value)
 
-        with(open(_file_name, 'w')) as open_file:
+        with (open(_file_name, "w")) as open_file:
             config.write(open_file)  # Write all configuration to file
         open_file.close()
         return True
@@ -125,10 +129,10 @@ def get_all_option(section_name, location=False):
             config.read(_file_name)
         return config.options(section_name)
     except configparser.NoSectionError as e:
-        print('Found no section with name %s' % section_name)
+        print("Found no section with name %s" % section_name)
         return []
     except configparser.NoOptionError as e:
-        print('Found no options on the section %s' % section_name)
+        print("Found no options on the section %s" % section_name)
         return []
 
 
@@ -150,15 +154,15 @@ def add_section(section_name, location=False):
             FL.DeleteFile(location)
             config.read(_file_name)
         config.add_section(section_name)
-        with(open(_file_name, 'w')) as open_file:
+        with (open(_file_name, "w")) as open_file:
             config.write(open_file)
         open_file.close()
         return True
     except configparser.NoSectionError as e:
-        print('Found no section with name %s' % section_name)
+        print("Found no section with name %s" % section_name)
         return []
     except configparser.NoOptionError as e:
-        print('Found no options on the section %s' % section_name)
+        print("Found no options on the section %s" % section_name)
         return []
 
 
@@ -173,7 +177,7 @@ def clean_config_file(location=False):
         get_all_section = config.sections()
         for each in get_all_section:
             config.remove_section(each)
-        with(open(_file_name, 'w')) as open_file:
+        with (open(_file_name, "w")) as open_file:
             config.write(open_file)
         open_file.close()
         return True
@@ -197,9 +201,8 @@ def get_all_sections(location=False):
             config.read(_file_name)
         return config.sections()
     except configparser.NoSectionError as e:
-        print('found no sections')
+        print("found no sections")
         return []
     except configparser.NoOptionError as e:
-        print('found no options')
+        print("found no options")
         return []
-
