@@ -1777,6 +1777,7 @@ def take_screenshot_appium(data_set):
 
         # Save the screenshot's name into a variable
         Shared_Resources.Set_Shared_Variables("zeuz_screenshot", filename)
+        Shared_Resources.Set_Shared_Variables("zeuz_screenshot_path", screenshot_path)
 
         return "passed"
     except:
