@@ -238,16 +238,23 @@ def Enter_Text(data_set):
         return CommonUtil.Exception_Handler(sys.exc_info(), None, errMsg)
 
 
-def execute_hotkey(data_set):
+def execute_hotkey(data_set) -> str:
+    """Executes the provided hotkey.
+    The hotkey sequence should be a plus (+) separated string:
+
+      Alt + Tab,
+      Ctrl + F,
+      Ctrl + Shift + S,
+
+    Args:
+        data_set: The data set is only one row,
+          hotkey      element parameter       Ctrl + Shift + S
+    
+    Returns:
+        "passed" if successful.
+        "failed" otherwise.
     """
-    Executes the provided hotkey. The hotkey sequence should be a plus (+) separated string:
-    Alt + Tab
-    Ctrl + F
-    Ctrl + Shift + S
-    :param data_set: The data set is only one row:
-        hotkey      element parameter       Ctrl + Shift + S
-    :return:
-    """
+
     sModuleInfo = inspect.currentframe().f_code.co_name + " : " + MODULE_NAME
     CommonUtil.ExecLog(sModuleInfo, "Function Start", 0)
 
@@ -257,6 +264,58 @@ def execute_hotkey(data_set):
         return "passed"
     except:
         errMsg = "Failed to execute hotkey"
+        return CommonUtil.Exception_Handler(sys.exc_info(), None, errMsg)
+
+
+def move_mouse_cursor(data_set) -> str:
+    """Moves the mouse cursor to the given coordinate from the current position.
+
+    The movement can be either absolute or relative from current mouse position,
+    as specified by the "relative" optional parameter. An optional "duration" can
+    also be set which will simulate mouse movement from one place to another as if
+    someone was using it.
+
+    Args:
+        data_set:
+          
+          move mouse cursor     desktop action          100, 100 (x, y - int, int)
+          relative              optional parameter      true (bool)
+          duration              optional parameter      2.5 (float)
+    
+    Returns:
+        "passed" if successful.
+        "failed" otherwise.
+    """
+
+    sModuleInfo = inspect.currentframe().f_code.co_name + " : " + MODULE_NAME
+    CommonUtil.ExecLog(sModuleInfo, "Function Start", 0)
+
+    try:
+        relative = False
+        duration = 0.0
+        x = 0
+        y = 0
+
+        for left, _, right in data_set:
+            left = left.lower()
+            right = right.lower()
+
+            if "move mouse cursor" in left:
+                x, y = right.split(",")
+                x = int(x.strip())
+                y = int(y.strip())
+            if "relative" in left:
+                relative = right in ["true", "1"]
+            if "duration" in left:
+                duration = float(right)
+
+        if relative:
+            gui.moveRel(x, y, duration)
+        else:
+            gui.moveTo(x, y, duration)
+        return "passed"
+    except:
+        errMsg = "Failed to move cursor to given position"
         return CommonUtil.Exception_Handler(sys.exc_info(), None, errMsg)
 
 

@@ -1226,6 +1226,12 @@ actions = {  # Numbers are arbitrary, and are not used anywhere
         "name": "click on coordinates",
         "function": "click_on_coordinates",
     },
+    715: {
+        "module": "desktop",
+        "screenshot": "desktop",
+        "name": "move mouse cursor",
+        "function": "move_mouse_cursor",
+    },
     801: {
         "module": "windows",
         "screenshot": "desktop",
