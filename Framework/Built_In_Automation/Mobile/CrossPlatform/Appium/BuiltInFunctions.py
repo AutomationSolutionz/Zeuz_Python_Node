@@ -2858,7 +2858,38 @@ def iOS_Keystroke_Key_Mapping(keystroke):
 
 
 def Keystroke_Appium(data_set):
-    """ Send physical or virtual key press or long key press event """
+    """ Send physical or virtual key press or long key press event
+
+    You can find all the available keyevent from Android Development page:
+    https://developer.android.com/reference/android/view/KeyEvent.html
+
+    Example: To perform a TAB key stroke, you can search  for TAB on the website mentioned above and locate KEYCODE_TAB.
+    You will notice that it has a Constant Value: 61. To perform TAB key press:
+
+    Field	    Sub Field	     Value
+    keypress	appium action	 raw=61
+
+    Field	    Sub Field	     Value
+    keypress	appium action	 power
+
+    Below are some of the commonly used actions which we have converted to make it easier to read.
+
+    Example:
+    "return", "enter", "go back", "back", "spacebar", "backspace", "call", "end call", "home", "mute", "volume down",
+    "volume up", "wake", "power", "app switch", "task switch", "overview", "recents", "page down", "page up"
+
+    To perform a long press on the specified key code you have to add "long press " at starting of value. The action
+    will hold the key for about 0.5 seconds which is not configurable.
+
+    Example:
+
+    Field	    Sub Field	     Value
+    keypress	appium action	 long press raw=61
+
+    Field	    Sub Field	     Value
+    keypress	appium action	 long press power
+
+    """
 
     sModuleInfo = inspect.currentframe().f_code.co_name + " : " + MODULE_NAME
 
@@ -2871,22 +2902,22 @@ def Keystroke_Appium(data_set):
     # Parse data set
     try:
         keystroke_value = ""
-        for row in data_set:
-            if (
-                row[0].strip().lower() == "keypress"
-                or row[0].strip().lower() == "long press"
-            ):
-                keystroke_type = row[0].strip().lower()  # "keypress" or "long press"
-                keystroke_value = row[2]
+        for left, _, right in data_set:
+            if "keypress" in left.lower():
+                if "long press" in right.lower():
+                    hold_key = True
+                    keystroke_value = right.replace("long press", "")
+                elif "longpress" in right.lower():
+                    hold_key = True
+                    keystroke_value = right.replace("longpress", "")
+                else:
+                    hold_key = False
+                    keystroke_value = right
 
         if keystroke_value == "":
             CommonUtil.ExecLog(sModuleInfo, "Could not find keystroke value", 3)
             return "failed"
 
-        if keystroke_type == "keypress":
-            hold_key = False
-        else:
-            hold_key = True
     except Exception:
         errMsg = "Unable to parse data set"
         return CommonUtil.Exception_Handler(sys.exc_info(), None, errMsg)

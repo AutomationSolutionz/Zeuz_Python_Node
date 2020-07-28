@@ -320,15 +320,34 @@ def move_mouse_cursor(data_set) -> str:
 
 
 def click_on_coordinates(data_set):
+    """
+    This action executes a Left Click on the location of a given X,Y coordinates. Example:
+
+    Field	                Sub Field	     Value
+    click on coordinates	desktop action	 271,1051
+
+    """
 
     sModuleInfo = inspect.currentframe().f_code.co_name + " : " + MODULE_NAME
     CommonUtil.ExecLog(sModuleInfo, "Function Start", 0)
     try:
-        x, y = data_set[0][2].replace(" ", "").split(",")
-        x = int(x)
-        y = int(y)
+        data = ""
+        for left, _, right in data_set:
+            if "click on coordinates" in left.lower():
+                data = right
+
+        try:
+            x, y = data.replace(" ", "").split(",")
+            x = int(x)
+            y = int(y)
+
+        except:
+            errMsg = "Coordinate values were not set according to the correct format"
+            return CommonUtil.Exception_Handler(sys.exc_info(), None, errMsg)
+
         gui.click(x, y)
         return "passed"
+
     except:
         errMsg = "Failed to click on coordinates"
         return CommonUtil.Exception_Handler(sys.exc_info(), None, errMsg)
