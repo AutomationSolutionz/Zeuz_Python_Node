@@ -17,6 +17,8 @@ from utils import MyDialogBox
 
 colorama_init(autoreset=True)
 
+PROJECT_ROOT = os.path.abspath(os.curdir)
+
 
 def detect_admin():
     # Windows only - Return True if program run as admin
@@ -469,11 +471,9 @@ class Application(tk.Frame):
             if check:
                 # print("Checking last update time")
                 # Read from temp config last time we checked for updates. If over maximum time, check again
-                temp_ini_file = Path(os.path.realpath(__file__).split("Framework")[0]) / \
+                temp_ini_file = Path(PROJECT_ROOT) / \
                     "AutomationLog" / \
                     ConfigModule.get_config_value("Advanced Options", "_file")
-
-                print(temp_ini_file)
                 try:
                     last_update = ConfigModule.get_config_value(
                         "sectionOne", "last_update", temp_ini_file
