@@ -12,12 +12,7 @@ def install_missing_modules():
     If anything is missing from requirements-win.txt file, it will install them only
     """
     try:
-        CommonUtil.ExecLog(
-            "module_installer : install_missing_modules",
-            "Checking for missing modules...",
-            1,
-            False,
-        )
+        print("\nmodule_installer: Checking for missing modules...")
 
         import platform
 
@@ -69,27 +64,14 @@ def install_missing_modules():
         for each in req_list:
             if each.lower() not in alredy_installed_list:
                 subprocess.check_call([sys.executable, "-m", "pip", "install", each])
-                CommonUtil.ExecLog(
-                    "module_installer : install_missing_modules",
-                    "Installed missing module: %s" % each,
-                    1,
-                    False,
-                )
+                print("module_installer: Installed missing module: %s" % each)
                 installed = True
 
         if installed:
-            CommonUtil.ExecLog(
-                "module_installer : install_missing_modules",
-                "NEW CORE MODULES INSTALLED. YOU'LL NEED TO RESTART ZEUZ NODE...",
-                3,
-                False,
-            )
+            print("module_installer: New modules installed.")
         else:
-            CommonUtil.ExecLog(
-                "module_installer : install_missing_modules",
-                "All required modules are already installed. Continuing...",
-                1,
-                False,
+            print(
+                "module_installer: All required modules are already installed. Continuing..."
             )
     except:
         print("Failed to install missing modules...")

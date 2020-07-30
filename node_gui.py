@@ -11,8 +11,6 @@ from colorama import init as colorama_init
 from colorama import Fore
 from pathlib import Path
 
-from Framework.module_installer import install_missing_modules
-
 # Initialize colorama for the current platform
 from utils import MyDialogBox
 
@@ -107,7 +105,7 @@ import tkinter.messagebox
 os.chdir(
     os.path.join(os.path.dirname(os.path.realpath(__file__)), "Framework")
 )  # Move to Framework directory, so all modules can be seen
-install_missing_modules()
+# install_missing_modules()
 from Framework.Utilities import (
     ConfigModule,
     FileUtilities,

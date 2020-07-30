@@ -129,10 +129,10 @@ def get_all_option(section_name, location=False):
             config.read(_file_name)
         return config.options(section_name)
     except configparser.NoSectionError as e:
-        print("Found no section with name %s" % section_name)
+        # print("Found no section with name %s" % section_name)
         return []
     except configparser.NoOptionError as e:
-        print("Found no options on the section %s" % section_name)
+        # print("Found no options on the section %s" % section_name)
         return []
 
 

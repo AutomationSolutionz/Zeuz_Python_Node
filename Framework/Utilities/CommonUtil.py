@@ -329,6 +329,10 @@ def ExecLog(
             log_id = ConfigModule.get_config_value(
                 "sectionOne", "sTestStepExecLogId", temp_config
             )
+
+            if not log_id:
+                return
+
             now = datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
             all_logs[all_logs_count] = {
                 "logid": log_id,

@@ -178,8 +178,6 @@ def Login(cli=False):
         password = password
     else:
         password = pass_decode("zeuz", password)
-    project = ConfigModule.get_config_value(AUTHENTICATION_TAG, PROJECT_TAG)
-    team = ConfigModule.get_config_value(AUTHENTICATION_TAG, TEAM_TAG)
 
     # form payload object
     user_info_object = {
@@ -195,14 +193,13 @@ def Login(cli=False):
     exit_script = False  # Reset exit variable
 
     while True:
-        processing_test_case = False
         if exit_script:
             break
         # Test to ensure server is up before attempting to login
         r = check_server_online()
 
         # Login to server
-        if r != False:  # Server is up
+        if r:  # Server is up
             try:
                 default_team_and_project = RequestFormatter.UpdatedGet(
                     "get_default_team_and_project_api", {"username": username}
@@ -221,13 +218,13 @@ def Login(cli=False):
                 r = RequestFormatter.Get("login_api", user_info_object)
                 CommonUtil.ExecLog(
                     "",
-                    f"Authentication check for user='{username}', "
-                    f"project='{user_info_object['project']}', team='{user_info_object['team']}', server='{server_name}'",
+                    f"Authenticating user: USER='{username}', "
+                    f"PROJECT='{user_info_object['project']}', TEAM='{user_info_object['team']}', SERVER='{server_name}'",
                     4,
                     False,
                 )
                 if r:
-                    CommonUtil.ExecLog("", "Authentication Successful", 4, False)
+                    CommonUtil.ExecLog("", "Authentication Successful.", 4, False)
                     global device_dict
                     device_dict = All_Device_Info.get_all_connected_device_info()
                     machine_object = update_machine(
@@ -261,7 +258,7 @@ def Login(cli=False):
                 ):  # Server should send "False" when user/pass is wrong
                     CommonUtil.ExecLog(
                         "",
-                        "Authentication Failed. Username or password incorrect",
+                        "Authentication Failed. Username or password incorrect.",
                         4,
                         False,
                     )
@@ -320,7 +317,7 @@ def Login(cli=False):
 
             time.sleep(60)
     CommonUtil.ExecLog(
-        "", "Zeuz Node Offline", 4, False
+        "AUTH FAILED", "Zeuz Node Offline", 3
     )  # GUI relies on this exact text. GUI must be updated if this is changed
     processing_test_case = False
 
@@ -354,7 +351,6 @@ def RunProcess(sTesterid):
                 )
                 PreProcess()
                 value = MainDriverApi.main(device_dict)
-                CommonUtil.ExecLog("", "updating db with parameter", 4, False)
                 if value == "pass":
                     if exit_script:
                         return False
@@ -452,7 +448,7 @@ def update_machine(dependency, default_team_and_project_dict):
         if r["registered"]:
             CommonUtil.ExecLog(
                 "",
-                "Machine is registered as online with name: %s" % (r["name"]),
+                "Zeuz Node is online: %s" % (r["name"]),
                 4,
                 False,
             )
@@ -502,13 +498,13 @@ def dependency_collection(default_team_and_project):
         missing_list = list(set(obtained_list) - set(dependency_option))
         # print missing_list
         if missing_list:
-            CommonUtil.ExecLog(
-                "",
-                ",".join(missing_list)
-                + " missing from the configuration file - settings.conf",
-                4,
-                False,
-            )
+            # CommonUtil.ExecLog(
+            #     "",
+            #     ",".join(missing_list)
+            #     + " missing from the configuration file - settings.conf",
+            #     4,
+            #     False,
+            # )
             return False
         else:
             CommonUtil.ExecLog(
@@ -556,7 +552,7 @@ def dependency_collection(default_team_and_project):
 
 def check_server_online():
     try:  # Check if we have a connection, if not, exit. If user has a wrong address or no address, RequestFormatter will go into a failure loop
-        r = RequestFormatter.Head("login_api")
+        r = RequestFormatter.Head('')
         return r
     except Exception as e:  # Occurs when server is down
         print("Exception in check_server_online {}".format(e))

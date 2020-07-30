@@ -38,7 +38,7 @@ def form_uri(resource_path):
         base_server_address = "http://{}:{}/".format(
             web_server_address, web_server_port
         )
-    return base_server_address + resource_path + "/"
+    return base_server_address + resource_path
 
 
 def Post(resource_path, payload=None):
@@ -101,9 +101,10 @@ def UpdatedGet(resource_path, payload=None):
 
 def Head(resource_path):
     try:
-        return requests.head(form_uri(resource_path), timeout=REQUEST_TIMEOUT)
+        uri = form_uri(resource_path)
+        return requests.head(uri, timeout=REQUEST_TIMEOUT)
 
-    except requests.exceptions.RequestException as e:
+    except requests.exceptions.RequestException:
         print(
             "Exception in Head: Please check your server address "
             "Please include full server name. Example: https://zeuz.zeuz.ai"
