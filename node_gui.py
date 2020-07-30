@@ -3,8 +3,9 @@
 # Function: Front-end to node_cli.py and settings.conf
 # Issues: try/except doesn't always work for everything on windows (base64). Python crashes on windows when we use root.after() to poll the widgets
 
-import os.path, _thread, sys, time, traceback, base64
+import os.path, sys, time, traceback, base64
 import webbrowser
+from threading import Thread
 
 # Import colorama for console color support
 from colorama import init as colorama_init
@@ -185,10 +186,10 @@ class Application(tk.Frame):
             # If go online at start is set, go online
             try:
                 if (
-                        "go_online_at_start" in self.widgets["Advanced Options"]["widget"]
-                        and self.widgets["Advanced Options"]["widget"][
-                    "go_online_at_start"
-                ]["check"].get()
+                    "go_online_at_start" in self.widgets["Advanced Options"]["widget"]
+                    and self.widgets["Advanced Options"]["widget"][
+                        "go_online_at_start"
+                    ]["check"].get()
                 ):
                     self.read_mod(at_start=True)
             except:
@@ -200,10 +201,10 @@ class Application(tk.Frame):
             # Check for updates, if enabled
             try:
                 if (
-                        "check_for_updates" in self.widgets["Advanced Options"]["widget"]
-                        and self.widgets["Advanced Options"]["widget"]["check_for_updates"][
-                    "check"
-                ].get()
+                    "check_for_updates" in self.widgets["Advanced Options"]["widget"]
+                    and self.widgets["Advanced Options"]["widget"]["check_for_updates"][
+                        "check"
+                    ].get()
                 ):
                     self.check_for_updates(check=True)  # Check for updates
             except:
@@ -211,13 +212,13 @@ class Application(tk.Frame):
 
             # Maximize or Minimize, depending on settings.conf
             if (
-                    "Advanced Options" in self.advanced_settings_frames
+                "Advanced Options" in self.advanced_settings_frames
             ):  # Make sure this section is in the config file
                 if (
-                        "maximize_at_start" in self.widgets["Advanced Options"]["widget"]
-                        and self.widgets["Advanced Options"]["widget"]["maximize_at_start"][
-                    "check"
-                ].get()
+                    "maximize_at_start" in self.widgets["Advanced Options"]["widget"]
+                    and self.widgets["Advanced Options"]["widget"]["maximize_at_start"][
+                        "check"
+                    ].get()
                 ):
                     sw = r.winfo_screenwidth()
                     sh = r.winfo_screenheight()
@@ -225,10 +226,10 @@ class Application(tk.Frame):
                         "%dx%d+%d+%d" % (sw, sh, 0, 0)
                     )  # Set window to size of screen
                 elif (
-                        "minimize_at_start" in self.widgets["Advanced Options"]["widget"]
-                        and self.widgets["Advanced Options"]["widget"]["minimize_at_start"][
-                            "check"
-                        ].get()
+                    "minimize_at_start" in self.widgets["Advanced Options"]["widget"]
+                    and self.widgets["Advanced Options"]["widget"]["minimize_at_start"][
+                        "check"
+                    ].get()
                 ):
                     r.iconify()
 
@@ -482,24 +483,23 @@ class Application(tk.Frame):
                         "sectionOne", "last_update", temp_ini_file
                     )
                     update_interval = (
-                            self.update_interval * 3600
+                        self.update_interval * 3600
                     )  # Convert interval into seconds for easy comparison
                 except:  # If temp ini doesn't exist, or last_update line is missing or has a blank value, set defaults
                     last_update = ""
                     update_interval = 0
 
                 if (
-                        last_update == ""
-                        or (float(last_update) + update_interval) < time.time()
+                    last_update == ""
+                    or (float(last_update) + update_interval) < time.time()
                 ):  # If we have reached the allowed time to check for updates or nothing was previously set. Assume this is the first time, check for updates.
                     print("Checking for software updates")
                     ConfigModule.add_config_value(
                         "sectionOne", "last_update", str(time.time()), temp_ini_file
                     )  # Record current time as update time
 
-                    _thread.start_new_thread(
-                        self_updater.check_for_updates, ()
-                    )  # Check for updates in a separate thread
+                    # Check for updates in a separate thread
+                    Thread(target=self_updater.check_for_updates, args=()).start()
                     self.after(
                         15000, self.check_for_updates
                     )  # Tests if check for updates is complete
@@ -529,10 +529,10 @@ class Application(tk.Frame):
                     # Read update settings
                     try:
                         if (
-                                "auto-update" in self.widgets["Advanced Options"]["widget"]
-                                and self.widgets["Advanced Options"]["widget"][
-                            "auto-update"
-                        ]["check"].get()
+                            "auto-update" in self.widgets["Advanced Options"]["widget"]
+                            and self.widgets["Advanced Options"]["widget"][
+                                "auto-update"
+                            ]["check"].get()
                         ):
                             auto_update = True
                         else:
@@ -545,24 +545,15 @@ class Application(tk.Frame):
                         print(
                             "*** A new update is available. Automatically installing."
                         )
-                        _thread.start_new_thread(
-                            self_updater.main,
-                            (
-                                os.path.dirname(os.path.realpath(__file__)).replace(
-                                    os.sep + "Framework", ""
-                                ),
-                            ),
-                        )
+
+                        update_path = os.path.dirname(
+                            os.path.realpath(__file__)
+                        ).replace(os.sep + "Framework", "")
+                        Thread(target=self_updater.main, args=(update_path,)).start()
                         self.after(
                             10000, self.check_for_updates
                         )  # Checks if install is complete
-                    # If auto-update is false, notify user via dialogue that there's a new update available, and ask if they want to download and install it
                     else:
-                        # if tkinter.messagebox.askyesno('Update', 'A Zeuz Node update is available. Do you want to download and install it?'):
-                        #     _thread.start_new_thread(self_updater.main, (os.path.dirname(os.path.realpath(__file__)).replace(os.sep + 'Framework', ''),))
-                        #     self.after(10000, self.check_for_updates) # Checks if install is complete
-                        # else:
-                        #     pass # Do nothing if the user doens't want to update. We'll check again tomorrow
                         self.updateDialog()
 
                 # Still installing, check again later
@@ -576,10 +567,10 @@ class Application(tk.Frame):
                     # Read update settings
                     try:
                         if (
-                                "auto-restart" in self.widgets["Advanced Options"]["widget"]
-                                and self.widgets["Advanced Options"]["widget"][
-                            "auto-restart"
-                        ]["check"].get()
+                            "auto-restart" in self.widgets["Advanced Options"]["widget"]
+                            and self.widgets["Advanced Options"]["widget"][
+                                "auto-restart"
+                            ]["check"].get()
                         ):
                             auto_restart = True
                         else:
@@ -596,8 +587,8 @@ class Application(tk.Frame):
                     # If auto-reboot is false, then notify user via dialogue that the installation is complete and ask to reboot
                     else:
                         if tkinter.messagebox.askyesno(
-                                "Update",
-                                "New Zeuz Node software was successfully installed. Would you like to restart Zeuz Node (when we're not testing) to start using it?",
+                            "Update",
+                            "New Zeuz Node software was successfully installed. Would you like to restart Zeuz Node (when we're not testing) to start using it?",
                         ):
                             self.self_restart()
                         else:
@@ -620,7 +611,7 @@ class Application(tk.Frame):
     def self_restart(self):
         try:
             if (
-                    processing_test_case
+                processing_test_case
             ):  # If we are in the middle of a run, try to restart again later
                 self.after(60000, self.self_restart)
             else:  # Not running a test case, so it should be safe to restart
@@ -747,7 +738,10 @@ class Application(tk.Frame):
 
                 self.run = True
                 self.startButton.configure(text="Disconnect", fg=self.colour_failed)
-                _thread.start_new_thread(Login, ())  # Execute Zeuz_Node.py
+
+                # Launch the Login() process in a background thread
+                Thread(target=Login).start()
+
                 if self.node_id.get() == "":
                     self.after(
                         5000, lambda: self.read_node_id(self.node_id)
@@ -801,11 +795,11 @@ class Application(tk.Frame):
             node_id = node_id.replace(" ", "_")
             if node_id != "":
                 if (
-                        len(self.settings_modified) <= cnt
+                    len(self.settings_modified) <= cnt
                 ):  # First run, populate modifier check
                     self.settings_modified.append(node_id)
                 elif (
-                        save and node_id != self.settings_modified[cnt]
+                    save and node_id != self.settings_modified[cnt]
                 ):  # Explicit save, and this value is changed
                     ConfigModule.add_config_value(
                         "UniqueID", "id", node_id, node_id_filename
@@ -813,7 +807,7 @@ class Application(tk.Frame):
                     self.settings_modified[cnt] = node_id  # Update the modified check
                     saved = True  # Indicate we should tell the user this was saved
                 elif (
-                        node_id != self.settings_modified[cnt]
+                    node_id != self.settings_modified[cnt]
                 ):  # This value is different, signal to save
                     modified = True
             cnt += 1
@@ -822,14 +816,14 @@ class Application(tk.Frame):
             for section in self.widgets:
                 for option in self.widgets[section]["widget"]:
                     if (
-                            "dropdown" in self.widgets[section]["widget"][option]
+                        "dropdown" in self.widgets[section]["widget"][option]
                     ):  # Has a drop down menu
                         value = self.widgets[section]["widget"][option][
                             "dropdown"
                         ].get()
 
                     elif (
-                            "check" in self.widgets[section]["widget"][option]
+                        "check" in self.widgets[section]["widget"][option]
                     ):  # If checkbox, convert check/uncheck into text
                         if self.widgets[section]["widget"][option]["check"].get() == 1:
                             value = "True"
@@ -846,7 +840,7 @@ class Application(tk.Frame):
                             )  # Encrypt password
 
                     if (
-                            len(self.settings_modified) <= cnt
+                        len(self.settings_modified) <= cnt
                     ):  # First run, populate modifier check
                         self.settings_modified.append(value)
 
@@ -907,7 +901,7 @@ class Application(tk.Frame):
                     ),
                 )  # Add the team to the drop down menu
             if (
-                    self.widgets["Authentication"]["widget"]["team"]["choices"] == []
+                self.widgets["Authentication"]["widget"]["team"]["choices"] == []
             ):  # If nothing was returned
                 if noerror == False:
                     tkinter.messagebox.showerror(
