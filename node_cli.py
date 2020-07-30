@@ -394,7 +394,6 @@ def RunProcess(sTesterid):
 def PreProcess():
     TEMP_TAG = "Advanced Options"
     file_name = ConfigModule.get_config_value(TEMP_TAG, "_file")
-    print(temp_ini_file)
     current_path_file = temp_ini_file
     ConfigModule.clean_config_file(current_path_file)
     ConfigModule.add_section("sectionOne", current_path_file)
