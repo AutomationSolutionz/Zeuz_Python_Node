@@ -218,13 +218,18 @@ def Login(cli=False):
                 r = RequestFormatter.Get("login_api", user_info_object)
                 CommonUtil.ExecLog(
                     "",
-                    f"Authenticating user: USER='{username}', "
-                    f"PROJECT='{user_info_object['project']}', TEAM='{user_info_object['team']}', SERVER='{server_name}'",
+                    f"Authenticating user: USER='{username}'",
                     4,
                     False,
                 )
                 if r:
-                    CommonUtil.ExecLog("", "Authentication Successful.", 4, False)
+                    CommonUtil.ExecLog(
+                        "",
+                        f"Authentication successful: USER='{username}', "
+                        f"PROJECT='{user_info_object['project']}', TEAM='{user_info_object['team']}', SERVER='{server_name}'",
+                        4,
+                        False,
+                    )
                     global device_dict
                     device_dict = All_Device_Info.get_all_connected_device_info()
                     machine_object = update_machine(
@@ -258,7 +263,7 @@ def Login(cli=False):
                 ):  # Server should send "False" when user/pass is wrong
                     CommonUtil.ExecLog(
                         "",
-                        "Authentication Failed. Username or password incorrect.",
+                        f"Authentication Failed. Username or password incorrect. SERVER='{server_name}'",
                         4,
                         False,
                     )
