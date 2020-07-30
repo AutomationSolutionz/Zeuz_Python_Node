@@ -103,10 +103,6 @@ except:
         )
         quit()
 
-os.chdir(
-    os.path.join(os.path.dirname(os.path.realpath(__file__)), "Framework")
-)  # Move to Framework directory, so all modules can be seen
-
 from Framework.Utilities import (
     ConfigModule,
     self_updater,
@@ -119,6 +115,10 @@ from node_cli import (
     check_server_online,
     processing_test_case,
 )  # Controlling node status and logging in
+
+# os.chdir(
+#     os.path.join(os.path.dirname(os.path.realpath(__file__)), "Framework")
+# )  # Move to Framework directory, so all modules can be seen
 
 # Find node id file
 node_id_filename = Path(os.getcwd()).parent / Path("node_id.conf")
@@ -467,17 +467,13 @@ class Application(tk.Frame):
         try:
             # Just check for updates, and schedule testing to see if updates checking is complete
             if check:
-                print("Checking last update time")
+                # print("Checking last update time")
                 # Read from temp config last time we checked for updates. If over maximum time, check again
-                temp_ini_file = os.path.join(
-                    os.path.join(
-                        os.path.realpath(__file__).split("node_gui.py")[0],
-                        os.path.join(
-                            "AutomationLog",
-                            ConfigModule.get_config_value("Advanced Options", "_file"),
-                        ),
-                    )
-                )
+                temp_ini_file = Path(os.path.realpath(__file__).split("Framework")[0]) / \
+                    "AutomationLog" / \
+                    ConfigModule.get_config_value("Advanced Options", "_file")
+
+                print(temp_ini_file)
                 try:
                     last_update = ConfigModule.get_config_value(
                         "sectionOne", "last_update", temp_ini_file

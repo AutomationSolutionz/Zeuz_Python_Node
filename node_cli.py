@@ -2,18 +2,38 @@
 # -*- coding: cp1252 -*-
 
 import os, sys, time, os.path, base64, signal
+from pathlib import Path
 from getpass import getpass
 
 from Framework.module_installer import install_missing_modules
+from Framework.Utilities import ConfigModule
 from utils import input_with_timeout, TimeoutExpired
+
+PROJECT_ROOT = os.path.abspath(os.curdir)
 
 # Append correct paths so that it can find the configuration files and other modules
 sys.path.append(os.path.join(os.path.dirname(os.path.realpath(__file__)), "Framework"))
+
+
+if not os.path.exists(
+    os.path.join(
+        os.path.realpath(__file__).split("node_cli.py")[0],
+        os.path.join("AutomationLog"),
+    )
+):
+    os.mkdir(
+        os.path.join(
+            os.path.realpath(__file__).split("node_cli.py")[0],
+            os.path.join("AutomationLog"),
+        )
+    )
+
+
 # Move to Framework directory, so all modules can be seen
 os.chdir(os.path.join(os.path.dirname(os.path.realpath(__file__)), "Framework"))
+sys.path.append("..")
 
 from Framework.Utilities import (
-    ConfigModule,
     RequestFormatter,
     CommonUtil,
     FileUtilities,
@@ -21,7 +41,10 @@ from Framework.Utilities import (
 )
 from Framework import MainDriverApi
 
-sys.path.append("..")
+
+temp_ini_file = Path(PROJECT_ROOT) / \
+    "AutomationLog" / \
+    ConfigModule.get_config_value("Advanced Options", "_file")
 
 
 def signal_handler(sig, frame):
@@ -124,31 +147,6 @@ processing_test_case = (
 )
 exit_script = False  # Used by Zeuz Node GUI to exit script
 
-if not os.path.exists(
-    os.path.join(
-        os.path.realpath(__file__).split("node_cli.py")[0],
-        os.path.join("AutomationLog"),
-    )
-):
-    os.mkdir(
-        os.path.join(
-            os.path.realpath(__file__).split("node_cli.py")[0],
-            os.path.join("AutomationLog"),
-        )
-    )
-
-
-# temp_ini_file = os.path.join(os.path.join(FileUtilities.get_home_folder(), os.path.join('Desktop',os.path.join('AutomationLog',ConfigModule.get_config_value('Advanced Options', '_file')))))
-
-temp_ini_file = os.path.join(
-    os.path.join(
-        os.path.realpath(__file__).split("node_cli.py")[0],
-        os.path.join(
-            "AutomationLog", ConfigModule.get_config_value("Advanced Options", "_file")
-        ),
-    )
-)
-
 
 def zeuz_authentication_prompts_for_cli():
     prompts = ["server_address", "username", "password"]
@@ -198,8 +196,8 @@ def Login(cli=False):
         if exit_script:
             break
 
-        if not user_info_object["username"] or not user_info_object["password"]:
-            break
+        # if not user_info_object["username"] or not user_info_object["password"]:
+        #    break
 
         # Test to ensure server is up before attempting to login
         r = check_server_online()
@@ -394,24 +392,18 @@ def RunProcess(sTesterid):
 
 
 def PreProcess():
-    # current_path = os.path.join(FileUtilities.get_home_folder(), os.path.join('Desktop', 'AutomationLog'))
-    current_path = os.path.join(
-        os.path.realpath(__file__).split("node_cli.py")[0],
-        os.path.join("AutomationLog"),
+    TEMP_TAG = "Advanced Options"
+    file_name = ConfigModule.get_config_value(TEMP_TAG, "_file")
+    print(temp_ini_file)
+    current_path_file = temp_ini_file
+    ConfigModule.clean_config_file(current_path_file)
+    ConfigModule.add_section("sectionOne", current_path_file)
+    ConfigModule.add_config_value(
+        "sectionOne",
+        "temp_run_file_path",
+        str(temp_ini_file.parent),
+        current_path_file,
     )
-
-    retVal = FileUtilities.CreateFolder(current_path, forced=False)
-    if retVal:
-        # now save it in the global_config.ini
-        TEMP_TAG = "Advanced Options"
-        file_name = ConfigModule.get_config_value(TEMP_TAG, "_file")
-        current_path_file = os.path.join(current_path, file_name)
-        FileUtilities.CreateFile(current_path_file)
-        ConfigModule.clean_config_file(current_path_file)
-        ConfigModule.add_section("sectionOne", current_path_file)
-        ConfigModule.add_config_value(
-            "sectionOne", "temp_run_file_path", current_path, current_path_file
-        )
 
 
 def update_machine(dependency, default_team_and_project_dict):
