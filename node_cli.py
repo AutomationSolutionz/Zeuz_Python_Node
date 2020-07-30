@@ -42,9 +42,11 @@ from Framework.Utilities import (
 from Framework import MainDriverApi
 
 
-temp_ini_file = Path(PROJECT_ROOT) / \
-    "AutomationLog" / \
-    ConfigModule.get_config_value("Advanced Options", "_file")
+temp_ini_file = (
+    Path(PROJECT_ROOT)
+    / "AutomationLog"
+    / ConfigModule.get_config_value("Advanced Options", "_file")
+)
 
 
 def signal_handler(sig, frame):
