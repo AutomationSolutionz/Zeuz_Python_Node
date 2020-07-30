@@ -64,7 +64,7 @@ def Get(resource_path, payload=None):
             form_uri(resource_path), params=json.dumps(payload), timeout=REQUEST_TIMEOUT
         ).json()
 
-    except requests.exceptions.RequestException as e:
+    except requests.exceptions.RequestException:
         print(
             "Exception in UpdateGet: Authentication Failed. Please check your server, username and password. "
             "Please include full server name. Example: https://zeuz.zeuz.ai. "

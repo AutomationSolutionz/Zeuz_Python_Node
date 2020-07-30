@@ -190,11 +190,17 @@ def Login(cli=False):
     # Iniitalize GUI Offline call
     CommonUtil.set_exit_mode(False)
     global exit_script
+    global processing_test_case
+
     exit_script = False  # Reset exit variable
 
     while True:
         if exit_script:
             break
+
+        if not user_info_object["username"] or not user_info_object["password"]:
+            break
+
         # Test to ensure server is up before attempting to login
         r = check_server_online()
 
@@ -207,9 +213,9 @@ def Login(cli=False):
 
                 if not default_team_and_project:
                     CommonUtil.ExecLog(
-                        "",
-                        "Default team and project catching Failed. Username incorrect",
-                        4,
+                        "AUTH FAILED",
+                        "Failed to get TEAM and PROJECT information. Incorrect username or password.",
+                        3,
                         False,
                     )
                     break
@@ -217,7 +223,7 @@ def Login(cli=False):
                 user_info_object["team"] = default_team_and_project["team_name"]
 
                 CommonUtil.ExecLog(
-                    "", f"Authenticating user: USER='{username}'", 4, False,
+                    "", f"Authenticating user: {username}", 4, False,
                 )
 
                 r = RequestFormatter.Get("login_api", user_info_object)
@@ -252,14 +258,14 @@ def Login(cli=False):
                             CommonUtil.ExecLog(
                                 "", "Time zone settings failed {}".format(e), 4, False
                             )
-                        RunAgain = RunProcess(tester_id)
-                        if RunAgain == False:
+
+                        run_again = RunProcess(tester_id)
+
+                        if not run_again:
                             break  # Exit login
                     else:
                         return False
-                elif (
-                    r == {} or r == False
-                ):  # Server should send "False" when user/pass is wrong
+                elif not r:  # Server should send "False" when user/pass is wrong
                     CommonUtil.ExecLog(
                         "",
                         f"Authentication Failed. Username or password incorrect. SERVER='{server_name}'",
@@ -274,10 +280,7 @@ def Login(cli=False):
                     break
                 else:  # Server likely sent nothing back or RequestFormatter.Get() caught an exception
                     CommonUtil.ExecLog(
-                        "",
-                        "Login attempt incomplete, waiting 60 seconds before trying again ",
-                        4,
-                        False,
+                        "", "Login attempt failed, retrying in 60 seconds...", 4, False,
                     )
                     if cli:
                         zeuz_authentication_prompts_for_cli()
@@ -320,9 +323,11 @@ def Login(cli=False):
                 Login(cli=True)
 
             time.sleep(60)
+
     CommonUtil.ExecLog(
         "AUTH FAILED", "Zeuz Node Offline", 3
     )  # GUI relies on this exact text. GUI must be updated if this is changed
+
     processing_test_case = False
 
 
