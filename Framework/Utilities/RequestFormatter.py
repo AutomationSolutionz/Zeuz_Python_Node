@@ -46,7 +46,7 @@ def Post(resource_path, payload=None):
         payload = {}
     try:
         return requests.post(
-            form_uri(resource_path),
+            form_uri(resource_path + "/"),
             data=json.dumps(payload),
             verify=False,
             timeout=REQUEST_TIMEOUT,
