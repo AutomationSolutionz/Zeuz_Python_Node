@@ -325,7 +325,7 @@ def Login(cli=False):
             time.sleep(60)
 
     CommonUtil.ExecLog(
-        "AUTH FAILED", "Zeuz Node Offline", 3
+        "OFFLINE", "Zeuz Node Offline", 3
     )  # GUI relies on this exact text. GUI must be updated if this is changed
 
     processing_test_case = False

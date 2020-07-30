@@ -45,6 +45,7 @@ def pass_encode(key, clear):
 # Have user install Tk if this fails - we try to do it for them first
 try:
     import tkinter as tk  # http://infohost.nmt.edu/tcc/help/pubs/tkinter/tkinter.pdf
+    import tkinter.messagebox
     import subprocess
 except:
     import subprocess as s
@@ -93,6 +94,7 @@ except:
 
     try:
         import tkinter as tk
+        import tkinter.messagebox
         import subprocess
     except:
         input(
@@ -100,17 +102,14 @@ except:
         )
         quit()
 
-import tkinter.messagebox
-
 os.chdir(
     os.path.join(os.path.dirname(os.path.realpath(__file__)), "Framework")
 )  # Move to Framework directory, so all modules can be seen
-# install_missing_modules()
+
 from Framework.Utilities import (
     ConfigModule,
-    FileUtilities,
     self_updater,
-)  # Modifing settings files
+)  # Modifying settings files
 from node_cli import (
     Login,
     disconnect_from_server,
@@ -132,18 +131,6 @@ try:
 except:
     local_version = ""
 gui_title = "ZeuZ Node v%s" % str(local_version)
-
-help_text = "\
-Zeuz Node Help\n\n\
-Description:\n\
-This is a graphical front-end for the node_gui.py script. It provides an interface to configure the settings, running the Zeuz Node, and displaying the output. Either this, or the node_gui.py script can be run with the same effect.\n\n\
-Show Advance Settings:\tDisplay more settings including server, port, screenshot, etc\n\
-Save Settings:\tSave all settings (whether displayed or not)\n\
-Quit: Exit immediately - Any running automation will be stopped\n\
-Online: Start the Zeuz_Node.py script, login to the Zeuz server, and wait for a Test Case to be deployed\n\
-Scroll Lock Checkbox: Enable this checkbox (above the log window) to always show the last log lines. Uncheck to disable this which allows you to scroll the window while new log lines are coming in\n\
-Refresh: Gets the list of Teams the current user has access to\n\n\
-"
 
 
 class Application(tk.Frame):
@@ -198,10 +185,10 @@ class Application(tk.Frame):
             # If go online at start is set, go online
             try:
                 if (
-                    "go_online_at_start" in self.widgets["Advanced Options"]["widget"]
-                    and self.widgets["Advanced Options"]["widget"][
-                        "go_online_at_start"
-                    ]["check"].get()
+                        "go_online_at_start" in self.widgets["Advanced Options"]["widget"]
+                        and self.widgets["Advanced Options"]["widget"][
+                    "go_online_at_start"
+                ]["check"].get()
                 ):
                     self.read_mod(at_start=True)
             except:
@@ -213,10 +200,10 @@ class Application(tk.Frame):
             # Check for updates, if enabled
             try:
                 if (
-                    "check_for_updates" in self.widgets["Advanced Options"]["widget"]
-                    and self.widgets["Advanced Options"]["widget"]["check_for_updates"][
-                        "check"
-                    ].get()
+                        "check_for_updates" in self.widgets["Advanced Options"]["widget"]
+                        and self.widgets["Advanced Options"]["widget"]["check_for_updates"][
+                    "check"
+                ].get()
                 ):
                     self.check_for_updates(check=True)  # Check for updates
             except:
@@ -224,13 +211,13 @@ class Application(tk.Frame):
 
             # Maximize or Minimize, depending on settings.conf
             if (
-                "Advanced Options" in self.advanced_settings_frames
+                    "Advanced Options" in self.advanced_settings_frames
             ):  # Make sure this section is in the config file
                 if (
-                    "maximize_at_start" in self.widgets["Advanced Options"]["widget"]
-                    and self.widgets["Advanced Options"]["widget"]["maximize_at_start"][
-                        "check"
-                    ].get()
+                        "maximize_at_start" in self.widgets["Advanced Options"]["widget"]
+                        and self.widgets["Advanced Options"]["widget"]["maximize_at_start"][
+                    "check"
+                ].get()
                 ):
                     sw = r.winfo_screenwidth()
                     sh = r.winfo_screenheight()
@@ -238,10 +225,10 @@ class Application(tk.Frame):
                         "%dx%d+%d+%d" % (sw, sh, 0, 0)
                     )  # Set window to size of screen
                 elif (
-                    "minimize_at_start" in self.widgets["Advanced Options"]["widget"]
-                    and self.widgets["Advanced Options"]["widget"]["minimize_at_start"][
-                        "check"
-                    ].get()
+                        "minimize_at_start" in self.widgets["Advanced Options"]["widget"]
+                        and self.widgets["Advanced Options"]["widget"]["minimize_at_start"][
+                            "check"
+                        ].get()
                 ):
                     r.iconify()
 
@@ -495,15 +482,15 @@ class Application(tk.Frame):
                         "sectionOne", "last_update", temp_ini_file
                     )
                     update_interval = (
-                        self.update_interval * 3600
+                            self.update_interval * 3600
                     )  # Convert interval into seconds for easy comparison
                 except:  # If temp ini doesn't exist, or last_update line is missing or has a blank value, set defaults
                     last_update = ""
                     update_interval = 0
 
                 if (
-                    last_update == ""
-                    or (float(last_update) + update_interval) < time.time()
+                        last_update == ""
+                        or (float(last_update) + update_interval) < time.time()
                 ):  # If we have reached the allowed time to check for updates or nothing was previously set. Assume this is the first time, check for updates.
                     print("Checking for software updates")
                     ConfigModule.add_config_value(
@@ -542,10 +529,10 @@ class Application(tk.Frame):
                     # Read update settings
                     try:
                         if (
-                            "auto-update" in self.widgets["Advanced Options"]["widget"]
-                            and self.widgets["Advanced Options"]["widget"][
-                                "auto-update"
-                            ]["check"].get()
+                                "auto-update" in self.widgets["Advanced Options"]["widget"]
+                                and self.widgets["Advanced Options"]["widget"][
+                            "auto-update"
+                        ]["check"].get()
                         ):
                             auto_update = True
                         else:
@@ -589,10 +576,10 @@ class Application(tk.Frame):
                     # Read update settings
                     try:
                         if (
-                            "auto-restart" in self.widgets["Advanced Options"]["widget"]
-                            and self.widgets["Advanced Options"]["widget"][
-                                "auto-restart"
-                            ]["check"].get()
+                                "auto-restart" in self.widgets["Advanced Options"]["widget"]
+                                and self.widgets["Advanced Options"]["widget"][
+                            "auto-restart"
+                        ]["check"].get()
                         ):
                             auto_restart = True
                         else:
@@ -609,8 +596,8 @@ class Application(tk.Frame):
                     # If auto-reboot is false, then notify user via dialogue that the installation is complete and ask to reboot
                     else:
                         if tkinter.messagebox.askyesno(
-                            "Update",
-                            "New Zeuz Node software was successfully installed. Would you like to restart Zeuz Node (when we're not testing) to start using it?",
+                                "Update",
+                                "New Zeuz Node software was successfully installed. Would you like to restart Zeuz Node (when we're not testing) to start using it?",
                         ):
                             self.self_restart()
                         else:
@@ -633,7 +620,7 @@ class Application(tk.Frame):
     def self_restart(self):
         try:
             if (
-                processing_test_case
+                    processing_test_case
             ):  # If we are in the middle of a run, try to restart again later
                 self.after(60000, self.self_restart)
             else:  # Not running a test case, so it should be safe to restart
@@ -728,7 +715,6 @@ class Application(tk.Frame):
         """ Display help information in the log window """
         help_url = "https://www.zeuz.ai/forums/"
         webbrowser.open(help_url, new=1)
-        # print(help_text)
 
     def show_settings(self, a, b, c):
         """ Display different settings sections depending on drop down menu selection """
@@ -815,11 +801,11 @@ class Application(tk.Frame):
             node_id = node_id.replace(" ", "_")
             if node_id != "":
                 if (
-                    len(self.settings_modified) <= cnt
+                        len(self.settings_modified) <= cnt
                 ):  # First run, populate modifier check
                     self.settings_modified.append(node_id)
                 elif (
-                    save and node_id != self.settings_modified[cnt]
+                        save and node_id != self.settings_modified[cnt]
                 ):  # Explicit save, and this value is changed
                     ConfigModule.add_config_value(
                         "UniqueID", "id", node_id, node_id_filename
@@ -827,7 +813,7 @@ class Application(tk.Frame):
                     self.settings_modified[cnt] = node_id  # Update the modified check
                     saved = True  # Indicate we should tell the user this was saved
                 elif (
-                    node_id != self.settings_modified[cnt]
+                        node_id != self.settings_modified[cnt]
                 ):  # This value is different, signal to save
                     modified = True
             cnt += 1
@@ -836,14 +822,14 @@ class Application(tk.Frame):
             for section in self.widgets:
                 for option in self.widgets[section]["widget"]:
                     if (
-                        "dropdown" in self.widgets[section]["widget"][option]
+                            "dropdown" in self.widgets[section]["widget"][option]
                     ):  # Has a drop down menu
                         value = self.widgets[section]["widget"][option][
                             "dropdown"
                         ].get()
 
                     elif (
-                        "check" in self.widgets[section]["widget"][option]
+                            "check" in self.widgets[section]["widget"][option]
                     ):  # If checkbox, convert check/uncheck into text
                         if self.widgets[section]["widget"][option]["check"].get() == 1:
                             value = "True"
@@ -860,7 +846,7 @@ class Application(tk.Frame):
                             )  # Encrypt password
 
                     if (
-                        len(self.settings_modified) <= cnt
+                            len(self.settings_modified) <= cnt
                     ):  # First run, populate modifier check
                         self.settings_modified.append(value)
 
@@ -921,7 +907,7 @@ class Application(tk.Frame):
                     ),
                 )  # Add the team to the drop down menu
             if (
-                self.widgets["Authentication"]["widget"]["team"]["choices"] == []
+                    self.widgets["Authentication"]["widget"]["team"]["choices"] == []
             ):  # If nothing was returned
                 if noerror == False:
                     tkinter.messagebox.showerror(
@@ -997,8 +983,15 @@ class Application(tk.Frame):
 
 
 def teardown():
+    """Disconnect from server"""
     disconnect_from_server()
     quit()
+
+
+def prevent_error_dialog(self, *args):
+    """Prevent errors from popping up as message boxes to the user in GUI, print to stderr instead"""
+    err = traceback.format_exception(*args)
+    print(err, file=sys.stderr)
 
 
 if __name__ == "__main__":
@@ -1022,6 +1015,9 @@ if __name__ == "__main__":
             r.call("wm", "iconphoto", r._w, icon)  # Put icon on titlebar
         except:
             pass  # Not a big deal if this fails
+
+    # prevent error dialogs, route any errors to this function instead
+    tk.Tk.report_callback_exception = prevent_error_dialog
 
     # Main window setup
     root = Application()  # Create GUI instance
