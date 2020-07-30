@@ -215,13 +215,12 @@ def Login(cli=False):
                     break
                 user_info_object["project"] = default_team_and_project["project_name"]
                 user_info_object["team"] = default_team_and_project["team_name"]
-                r = RequestFormatter.Get("login_api", user_info_object)
+
                 CommonUtil.ExecLog(
-                    "",
-                    f"Authenticating user: USER='{username}'",
-                    4,
-                    False,
+                    "", f"Authenticating user: USER='{username}'", 4, False,
                 )
+
+                r = RequestFormatter.Get("login_api", user_info_object)
                 if r:
                     CommonUtil.ExecLog(
                         "",
@@ -452,10 +451,7 @@ def update_machine(dependency, default_team_and_project_dict):
         r = RequestFormatter.Get("update_automation_machine_api", update_object)
         if r["registered"]:
             CommonUtil.ExecLog(
-                "",
-                "Zeuz Node is online: %s" % (r["name"]),
-                4,
-                False,
+                "", "Zeuz Node is online: %s" % (r["name"]), 4, False,
             )
         else:
             if r["license"]:
@@ -557,7 +553,7 @@ def dependency_collection(default_team_and_project):
 
 def check_server_online():
     try:  # Check if we have a connection, if not, exit. If user has a wrong address or no address, RequestFormatter will go into a failure loop
-        r = RequestFormatter.Head('')
+        r = RequestFormatter.Head("")
         return r
     except Exception as e:  # Occurs when server is down
         print("Exception in check_server_online {}".format(e))
