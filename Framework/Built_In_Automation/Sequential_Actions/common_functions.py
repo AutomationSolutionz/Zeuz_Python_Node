@@ -6,6 +6,7 @@
 """
 
 import inspect, sys, time, collections, ftplib, os, PyPDF2, ast
+from pathlib import Path
 
 try:
     import xlwings as xw
@@ -1792,6 +1793,12 @@ def excel_read(data_set):
             left = left.lower()
             if "file path" in left:
                 filepath = right.strip()
+
+                # Expand ~ (home directory of user) to absolute path.
+                if "~" in filepath:
+                    filepath = Path(os.path.expanduser(filepath))
+                
+                filepath = Path(filepath)
             if "sheet name" in left:
                 sheet_name = right.strip()
             if "expand" in left:
@@ -1812,6 +1819,95 @@ def excel_read(data_set):
 
         # Save into shared variables
         sr.Set_Shared_Variables(var_name, cell_data)
+
+        return "passed"
+    except:
+        return CommonUtil.Exception_Handler(sys.exc_info())
+
+
+def excel_comparison(data_set):
+    """Compares the given range of data from an excel sheet with another
+      data source.
+    
+    Args:
+        data_set: List[List[str]]
+
+    Returns:
+        "passed" if successful.
+        "failed" otherwise.
+    """
+    
+    sModuleInfo = inspect.currentframe().f_code.co_name + " : " + MODULE_NAME
+    CommonUtil.ExecLog(sModuleInfo, "Function Start", 0)
+
+    try:
+        filepath = None
+        sheet_name = None
+        var_name = None
+        cell_range = None
+        expand = None
+        compare_variable = None
+        write_to = None
+
+        for left, mid, right in data_set:
+            left = left.lower()
+            if "file path" in left:
+                filepath = right.strip()
+
+                # Expand ~ (home directory of user) to absolute path.
+                if "~" in filepath:
+                    filepath = Path(os.path.expanduser(filepath))
+                
+                filepath = Path(filepath)
+            if "sheet name" in left:
+                sheet_name = right.strip()
+            if "expand" in left:
+                expand = right.strip()
+            if "cell range" in left:
+                cell_range = right.strip()
+            if "compare variable" in left:
+                compare_variable = right.strip()
+            if "write to" in left:
+                write_to = right.strip()
+            if "excel comparison" in left:
+                var_name = right.strip()
+
+        wb = xw.Book(str(filepath))
+        sheet = wb.sheets[sheet_name]
+
+        if expand:
+            # expand can be 'table', 'down' and 'right'
+            cell_data = sheet.range(cell_range).expand(expand).value
+        else:
+            cell_data = sheet.range(cell_range).value
+
+        result = list()
+
+        # Get value from shared variables.
+        value = sr.Get_Shared_Variables(compare_variable)
+
+        if type(value) == type(cell_data) == list:
+            for (src, dst) in zip(cell_data, value):
+                # try converting to the type of excel value
+                try:
+                    type_name = type(src)
+                    dst = type_name(dst)
+                except:
+                    pass
+                result.append([src == dst])
+        elif type(value) != list:
+            dst = value
+            for src in cell_data:
+                result.append([src == dst])
+
+        # Write the resulting difference to excel.
+        sheet.range(write_to).value = result
+
+        # Save into shared variables.
+        sr.Set_Shared_Variables(var_name, result)
+
+        # Save workbook.
+        wb.save()
 
         return "passed"
     except:
@@ -1883,7 +1979,7 @@ def split_string(data_set):
         "passed" if successful.
         "failed" otherwise.
     """
-    
+
     sModuleInfo = inspect.currentframe().f_code.co_name + " : " + MODULE_NAME
     CommonUtil.ExecLog(sModuleInfo, "Function Start", 0)
 

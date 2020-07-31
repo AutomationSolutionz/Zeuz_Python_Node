@@ -320,6 +320,12 @@ actions = {  # Numbers are arbitrary, and are not used anywhere
         "name": "split string",
         "function": "split_string",
     },
+    150: {
+        "module": "common",
+        "screenshot": "desktop",
+        "name": "excel comparison",
+        "function": "excel_comparison",
+    },
     200: {
         "module": "appium",
         "screenshot": "mobile",
