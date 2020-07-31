@@ -1819,6 +1819,7 @@ def excel_read(data_set):
 
 
 def get_excel_table(data_set):
+    """DEPRECATED. Will be removed in a future release"""
     sModuleInfo = inspect.currentframe().f_code.co_name + " : " + MODULE_NAME
     CommonUtil.ExecLog(sModuleInfo, "Function Start", 0)
 
@@ -1862,6 +1863,63 @@ def get_excel_table(data_set):
 
         return "passed"
     except Exception:
+        return CommonUtil.Exception_Handler(sys.exc_info())
+
+
+def split_string(data_set):
+    """Splits a given string based on the given expression.
+
+    Store the result (index 0 or 1) of the split in "variableName".
+
+    Args:
+        data_set: List[List[str]]
+        
+          index                     input parameter         0 or 1
+          split expression          input parameter         abc
+          source string             input parameter         hello abc world
+          split string              common action           variableName
+
+    Returns:
+        "passed" if successful.
+        "failed" otherwise.
+    """
+    
+    sModuleInfo = inspect.currentframe().f_code.co_name + " : " + MODULE_NAME
+    CommonUtil.ExecLog(sModuleInfo, "Function Start", 0)
+
+    try:
+        var_name = None
+        idx = None
+        split_expression = None
+        source_string = None
+
+        for left, _, right in data_set:
+            left = left.lower()
+            if "split string" in left:
+                var_name = right.strip()
+            if "source string" in left:
+                # Do not strip(), we do not know if it is desirable by user.
+                source_string = right
+            if "split expression" in left:
+                split_expression = right
+            if "index" in left:
+                idx = int(right.strip())
+
+        # Validate data format.
+        if None in (var_name, idx, split_expression, source_string):
+            CommonUtil.ExecLog(sModuleInfo, "Invalid data format.", 3)
+            return "failed"
+        if idx < 0 or idx > 1:
+            CommonUtil.ExecLog(sModuleInfo, "Index must be between [0, 1]", 3)
+            return "failed"
+
+        result = source_string.split(split_expression)[idx]
+
+        # Save into shared variables.
+        sr.Set_Shared_Variables(var_name, result)
+
+        return "passed"
+    except:
         return CommonUtil.Exception_Handler(sys.exc_info())
 
 

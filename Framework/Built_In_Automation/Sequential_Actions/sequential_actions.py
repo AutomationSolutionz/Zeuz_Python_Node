@@ -314,6 +314,12 @@ actions = {  # Numbers are arbitrary, and are not used anywhere
         "name": "read from excel",
         "function": "excel_read",
     },
+    149: {
+        "module": "common",
+        "screenshot": "desktop",
+        "name": "split string",
+        "function": "split_string",
+    },
     200: {
         "module": "appium",
         "screenshot": "mobile",
