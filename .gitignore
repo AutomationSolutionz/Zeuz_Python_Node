@@ -10,5 +10,7 @@
 .settings/
 .project
 .pydevproject
-Framework/settings.conf
 
+# Zeuz Node specific ignores
+Framework/settings.conf
+AutomationLog/

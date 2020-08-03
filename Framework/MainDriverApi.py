@@ -13,6 +13,7 @@ import requests
 import threading
 import subprocess
 import signal
+from pathlib import Path
 from sys import platform as _platform
 from datetime import datetime
 from datetime import timedelta
@@ -613,7 +614,9 @@ def download_attachments_for_test_case(sModuleInfo, run_id, test_case, temp_ini_
         "sectionOne", "screen_capture_folder", screenshot_folder, temp_ini_file
     )
 
-    home = os.path.join(FL.get_home_folder(), os.path.join("Desktop", "Attachments"))
+    # Store the attachments for each test case separately inside
+    # AutomationLog/attachments/TEST-XYZ
+    home = str(Path(log_file_path) / "attachments" / test_case.replace(":", "-"))
     ConfigModule.add_config_value("sectionOne", "download_folder", home, temp_ini_file)
 
     # create_test_case_folder
