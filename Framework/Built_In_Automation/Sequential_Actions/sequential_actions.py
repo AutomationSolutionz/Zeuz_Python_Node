@@ -1244,6 +1244,18 @@ actions = {  # Numbers are arbitrary, and are not used anywhere
         "name": "move mouse cursor",
         "function": "move_mouse_cursor",
     },
+    716: {
+        "module": "desktop",
+        "screenshot": "desktop",
+        "name": "wait gui",
+        "function": "Wait_For_Element_Pyautogui",
+    },
+    717: {
+        "module": "desktop",
+        "screenshot": "desktop",
+        "name": "wait disable gui",
+        "function": "Wait_For_Element_Pyautogui",
+    },
     801: {
         "module": "windows",
         "screenshot": "desktop",

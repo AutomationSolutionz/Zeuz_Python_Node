@@ -353,6 +353,84 @@ def click_on_coordinates(data_set):
         return CommonUtil.Exception_Handler(sys.exc_info(), None, errMsg)
 
 
+def Wait_For_Element_Pyautogui(data_set):
+    """
+    You need to add an image in the attachment section and mention the filename as below. This action will then search
+    for the image attached in the test session and wait for the image to appear or disappear. You can set the time to
+    wait in second. By default it is 10 seconds.
+    Example:
+
+    Action: Wait for an item to appear
+    Field	    Sub Field	        Value
+    image       element parameter	attachment.png
+    wait gui    desktop action      10
+
+    Action: Wait for an item to disappear
+    Field	            Sub Field	        Value
+    image               element parameter	attachment.png
+    wait disable gui    desktop action      10
+
+    """
+    sModuleInfo = inspect.currentframe().f_code.co_name + " : " + MODULE_NAME
+    CommonUtil.ExecLog(sModuleInfo, "Function Start", 0)
+
+    try:
+        wait_for_element_to_disappear = False
+
+        # Find the wait time from the data set
+        for left, _, right in data_set:
+            if "wait disable gui" in left.lower():
+                wait_for_element_to_disappear = True
+                timeout_duration = int(right.strip())
+            elif "wait gui" in left.lower():
+                wait_for_element_to_disappear = False
+                timeout_duration = int(right.strip())
+
+        # Check for element every second
+        end_time = time.time() + timeout_duration  # Time at which we should stop looking
+        for i in range(
+                timeout_duration
+        ):  # Keep testing element until this is reached (likely never hit due to timeout below)
+            # Wait and then test if we are over our alloted time limit
+            if (
+                    time.time() >= end_time
+            ):  # Keep testing element until this is reached (ensures we wait exactly the specified amount of time)
+                break
+            time.sleep(1)
+
+            # Test if element exists or not
+            Element = LocateElement.Get_Element(data_set, gui)
+
+            # Check if element exists or not, depending on the type of wait the user wanted
+            if wait_for_element_to_disappear == False:  # Wait for it to appear
+                if Element not in failed_tag_list:  # Element has appeared !
+                    CommonUtil.ExecLog(sModuleInfo, "Found element", 1)
+                    return "passed"
+                else:  # Element not found, keep waiting
+                    CommonUtil.ExecLog(
+                        sModuleInfo,
+                        "Element does not exist. Sleep and try again - %d" % i,
+                        0,
+                    )
+            else:  # Wait for it to be removed/hidden/disabled
+                if Element in failed_tag_list:  # Element has disappeared !
+                    CommonUtil.ExecLog(sModuleInfo, "Element disappeared", 1)
+                    return "passed"
+                else:  # Element found, keep waiting
+                    CommonUtil.ExecLog(
+                        sModuleInfo,
+                        "Element still exists. Sleep and try again - %d" % i,
+                        0,
+                    )
+
+        # Element status not changed after time elapsed, to exit with failure
+        CommonUtil.ExecLog(sModuleInfo, "Wait for element failed", 3)
+        return "failed"
+
+    except Exception:
+        return CommonUtil.Exception_Handler(sys.exc_info())
+
+
 def Keystroke_For_Element(data_set):
     """ Insert characters - mainly key combonations"""
     # Example: Ctrl+c
