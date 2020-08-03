@@ -61,7 +61,9 @@ def Get(resource_path, payload=None):
         payload = {}
     try:
         return requests.get(
-            form_uri(resource_path + "/"), params=json.dumps(payload), timeout=REQUEST_TIMEOUT
+            form_uri(resource_path + "/"),
+            params=json.dumps(payload),
+            timeout=REQUEST_TIMEOUT,
         ).json()
 
     except requests.exceptions.RequestException:

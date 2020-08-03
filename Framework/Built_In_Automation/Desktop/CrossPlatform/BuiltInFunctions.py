@@ -387,13 +387,15 @@ def Wait_For_Element_Pyautogui(data_set):
                 timeout_duration = int(right.strip())
 
         # Check for element every second
-        end_time = time.time() + timeout_duration  # Time at which we should stop looking
+        end_time = (
+            time.time() + timeout_duration
+        )  # Time at which we should stop looking
         for i in range(
-                timeout_duration
+            timeout_duration
         ):  # Keep testing element until this is reached (likely never hit due to timeout below)
             # Wait and then test if we are over our alloted time limit
             if (
-                    time.time() >= end_time
+                time.time() >= end_time
             ):  # Keep testing element until this is reached (ensures we wait exactly the specified amount of time)
                 break
             time.sleep(1)

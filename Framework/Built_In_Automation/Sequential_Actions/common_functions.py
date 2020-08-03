@@ -1797,7 +1797,7 @@ def excel_read(data_set):
                 # Expand ~ (home directory of user) to absolute path.
                 if "~" in filepath:
                     filepath = Path(os.path.expanduser(filepath))
-                
+
                 filepath = Path(filepath)
             if "sheet name" in left:
                 sheet_name = right.strip()
@@ -1836,7 +1836,7 @@ def excel_comparison(data_set):
         "passed" if successful.
         "failed" otherwise.
     """
-    
+
     sModuleInfo = inspect.currentframe().f_code.co_name + " : " + MODULE_NAME
     CommonUtil.ExecLog(sModuleInfo, "Function Start", 0)
 
@@ -1857,7 +1857,7 @@ def excel_comparison(data_set):
                 # Expand ~ (home directory of user) to absolute path.
                 if "~" in filepath:
                     filepath = Path(os.path.expanduser(filepath))
-                
+
                 filepath = Path(filepath)
             if "sheet name" in left:
                 sheet_name = right.strip()
