@@ -159,13 +159,9 @@ def zeuz_authentication_prompts_for_cli():
                 AUTHENTICATION_TAG, prompt, password_hash(False, "zeuz", value)
             )
         else:
-            try:
-                value = input_with_timeout(f"{prompt.capitalize()} : ", 60)
-            except TimeoutExpired:
-                print("Sorry, times up. Login again with the previous inputs")
-                break
-            else:
-                ConfigModule.add_config_value(AUTHENTICATION_TAG, prompt, str(value))
+            display_text = prompt.replace('_', ' ').capitalize()
+            value = input(f"{display_text} : ")
+            ConfigModule.add_config_value(AUTHENTICATION_TAG, prompt, str(value))
 
 
 def Login(cli=False):
