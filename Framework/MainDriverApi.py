@@ -1856,8 +1856,8 @@ def main(device_dict):
         )  # get runtime params
 
         final_run_params = {}
-        for dict in final_run_params_from_server:
-            final_run_params[str(dict["field"])] = str(dict["value"])
+        for param in final_run_params_from_server:
+            final_run_params[str(param["field"])] = str(param["value"])
 
         update_run_id_info_on_server(run_id)  # update runid status
 

@@ -84,6 +84,54 @@ def get_token_from_api(api_key, host):
     ).json()
 
 
+def extract_runtime_parameters(param_str: str) -> str:
+    """Extracts the JSON from the given string or file path and converts it
+      into suitable a data object.
+
+    Args:
+        param_str: Either a file path containing a JSON string
+          or a plain JSON string.
+
+    Returns:
+        A dictionary of the following format:
+        
+          {
+              "key1": {
+                  "field": "key1",
+                  "subfield": "value1"
+              },
+              "key2": {
+                  "field": "key2",
+                  "subfield": "value2"
+              },
+              ...
+          }
+    """
+
+    try:
+        json_str = param_str
+
+        # Try to see if the given argument is a file, open it
+        try:
+            with open(param_str, "r") as f:
+                json_str = f.read()
+        except:
+            pass
+
+        data = json.loads(json_str)
+        result = {}
+
+        for key in data:
+            result[key] = {
+                "field": key,
+                "subfield": data[key]
+            }
+
+        return result
+    except Exception as e:
+        return None
+
+
 def main():
     # Error codes to return upon completion of main() function
     EXIT_CODE_SUCCESS = 0
@@ -92,6 +140,7 @@ def main():
     EXIT_CODE_INVALID_API = 3
     EXIT_CODE_TEST_SET_NAME = 4
     EXIT_CODE_INVALID_MILESTONE = 5
+    EXIT_CODE_INVALID_RUNTIME_PARAMETERS = 6
 
     SLEEP_TIMEOUT = 30
 
@@ -119,6 +168,7 @@ def main():
             default=60,
             help="Minutes to wait before reporting the deployment progress [will be reported instantly upon completion] (default: 60)",
         )
+        parser.add_argument("--runtime_parameters", help="Runtime parameters (must be in JSON format or a file containing JSON).")
 
         args = parser.parse_args()
 
@@ -131,11 +181,19 @@ def main():
         team = args.team
         machine = args.machine
         milestone = args.milestone
+        runtime_parameters = args.runtime_parameters
         machine_timeout = int(args.machine_timeout)
         report_timeout = int(args.report_timeout)
     except:
         print("Provide all the arguments. Execute 'python deploy.py -h' to learn more")
         return EXIT_CODE_ERR_INVALID_ARGS
+
+    # Extract the runtime parameters from file or string into a python object
+    runtime_parameters = extract_runtime_parameters(runtime_parameters)
+
+    if not runtime_parameters:
+        print("Invalid runtime parameters format/file.")
+        return EXIT_CODE_INVALID_RUNTIME_PARAMETERS
 
     # Get token for the given API key
     token = get_token_from_api(api_key, host)
@@ -186,7 +244,7 @@ def main():
             "milestone": milestone,
             "project_id": project,
             "team_id": team,
-            "run_time_params": {},
+            "run_time_params": runtime_parameters,
             "machine": machine,
             "loop": "1",
             "run_time_settings": {
