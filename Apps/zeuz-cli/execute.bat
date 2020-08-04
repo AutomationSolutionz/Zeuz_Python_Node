@@ -8,7 +8,7 @@ python deploy.py ^
     --team "2" ^
     --machine "any" ^
     --milestone "7146" ^
-    --runtime_parameters "runtime_params.json" ^
+    --runtime_parameters "" ^
     --machine_timeout "60" ^
     --report_timeout "60"
 

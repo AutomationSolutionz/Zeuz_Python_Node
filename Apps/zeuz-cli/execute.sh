@@ -10,7 +10,7 @@ python3 deploy.py \
     --team "2" \
     --machine "any" \
     --milestone "7242" \
-    --runtime_parameters "runtime_params.json" \
+    --runtime_parameters "" \
     --machine_timeout "60" \
     --report_timeout "60"
 

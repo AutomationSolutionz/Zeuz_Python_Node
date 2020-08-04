@@ -188,12 +188,15 @@ def main():
         print("Provide all the arguments. Execute 'python deploy.py -h' to learn more")
         return EXIT_CODE_ERR_INVALID_ARGS
 
-    # Extract the runtime parameters from file or string into a python object
-    runtime_parameters = extract_runtime_parameters(runtime_parameters)
+    if runtime_parameters:
+        # Extract the runtime parameters from file or string into a python object
+        runtime_parameters = extract_runtime_parameters(runtime_parameters)
 
-    if not runtime_parameters:
-        print("Invalid runtime parameters format/file.")
-        return EXIT_CODE_INVALID_RUNTIME_PARAMETERS
+        if not runtime_parameters:
+            print("Invalid runtime parameters format/file.")
+            return EXIT_CODE_INVALID_RUNTIME_PARAMETERS
+    else:
+        runtime_parameters = {}
 
     # Get token for the given API key
     token = get_token_from_api(api_key, host)
