@@ -159,7 +159,7 @@ def zeuz_authentication_prompts_for_cli():
                 AUTHENTICATION_TAG, prompt, password_hash(False, "zeuz", value)
             )
         else:
-            display_text = prompt.replace('_', ' ').capitalize()
+            display_text = prompt.replace("_", " ").capitalize()
             value = input(f"{display_text} : ")
             ConfigModule.add_config_value(AUTHENTICATION_TAG, prompt, str(value))
 

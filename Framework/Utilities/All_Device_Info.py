@@ -241,7 +241,7 @@ def get_all_connected_device_info():
         android_devices = get_all_connected_android_info()
         if android_devices:
             device_list = android_devices
-        
+
         if sys.platform == "darwin":
             device_list.update(get_all_booted_ios_simulator_info())
             device_list.update(

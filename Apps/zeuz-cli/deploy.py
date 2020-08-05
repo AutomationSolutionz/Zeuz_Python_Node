@@ -122,10 +122,7 @@ def extract_runtime_parameters(param_str: str) -> str:
         result = {}
 
         for key in data:
-            result[key] = {
-                "field": key,
-                "subfield": data[key]
-            }
+            result[key] = {"field": key, "subfield": data[key]}
 
         return result
     except Exception as e:
@@ -168,7 +165,10 @@ def main():
             default=60,
             help="Minutes to wait before reporting the deployment progress [will be reported instantly upon completion] (default: 60)",
         )
-        parser.add_argument("--runtime_parameters", help="Runtime parameters (must be in JSON format or a file containing JSON).")
+        parser.add_argument(
+            "--runtime_parameters",
+            help="Runtime parameters (must be in JSON format or a file containing JSON).",
+        )
 
         args = parser.parse_args()
 

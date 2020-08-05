@@ -2023,8 +2023,11 @@ def main(device_dict):
                     send_log_file_only_for_fail=send_log_file_only_for_fail,
                 )
 
-                all_logs_list = CommonUtil.get_all_logs()  # get all logs
-                write_all_logs_to_server(all_logs_list)  # write logs to server
+                # If we're in debug mode, don't send logs to server.
+                if not str(run_id).lower().startswith("debug"):
+                    all_logs_list = CommonUtil.get_all_logs()  # get all logs
+                    write_all_logs_to_server(all_logs_list)  # write logs to server
+
                 CommonUtil.clear_all_logs()  # clear logs
 
         # calculate elapsed time of runid
