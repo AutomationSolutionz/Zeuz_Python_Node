@@ -70,7 +70,6 @@ programming_logic_keywords = ["if else", "while loop", "for loop", "loop setting
 MODULE_NAME = inspect.getmodulename(__file__)
 
 
-@logger
 def unmask_string(givenText):
     for e in list(unmask_characters.keys()):
         givenText = givenText.replace(e, unmask_characters[e])
