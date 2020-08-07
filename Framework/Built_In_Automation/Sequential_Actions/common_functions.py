@@ -77,7 +77,6 @@ def unmask_string(givenText):
     return givenText
 
 
-@logger
 def unmask_step_data(step_data):
     """
     unmasks the special characters sent from servers
@@ -101,7 +100,6 @@ def unmask_step_data(step_data):
         return CommonUtil.Exception_Handler(sys.exc_info())
 
 
-@logger
 def sanitize(step_data):
     """ Sanitize step data Field and Sub-Field """
     """ Usage:

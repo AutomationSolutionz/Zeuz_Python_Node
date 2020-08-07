@@ -1214,7 +1214,6 @@ def uninstall_application(data_set):
     if skip_or_not == False:
         return "passed"
 
-
     # Parse data set
     try:
         package = ""
@@ -1271,7 +1270,6 @@ def Swipe(x_start, y_start, x_end, y_end, duration=1000, adb=False):
     # duration in mS - how long the gesture should take
 
     sModuleInfo = inspect.currentframe().f_code.co_name + " : " + MODULE_NAME
-
 
     try:
         CommonUtil.ExecLog(sModuleInfo, "Starting to swipe the screen...", 0)
@@ -1448,7 +1446,6 @@ def swipe_handler_android(data_set):
     skip_or_not = filter_optional_action_and_step_data(data_set, sModuleInfo)
     if skip_or_not == False:
         return "passed"
-
 
     @logger
     def Calc_Swipe(w, h, inset, direction, position, exact):
@@ -1690,7 +1687,6 @@ def read_screen_heirarchy():
 
     sModuleInfo = inspect.currentframe().f_code.co_name + " : " + MODULE_NAME
 
-
     try:
         data = appium_driver.page_source  # Read screen and get xml formatted text
         CommonUtil.ExecLog(sModuleInfo, "Read screen heirarchy successfully", 1)
@@ -1804,7 +1800,6 @@ def go_to_webpage(data_set):
     if skip_or_not == False:
         return "passed"
 
-
     # Parse data set
     try:
         url = data_set[0][2]
@@ -1832,7 +1827,6 @@ def tap_location(data_set):
     skip_or_not = filter_optional_action_and_step_data(data_set, sModuleInfo)
     if skip_or_not == False:
         return "passed"
-
 
     # Parse data set
     try:
@@ -1863,7 +1857,6 @@ def get_element_location_by_id(data_set):
     skip_or_not = filter_optional_action_and_step_data(data_set, sModuleInfo)
     if skip_or_not == False:
         return "passed"
-
 
     # Parse data set
     try:
@@ -1911,7 +1904,6 @@ def get_window_size(read_type=False):
 
     sModuleInfo = inspect.currentframe().f_code.co_name + " : " + MODULE_NAME
 
-
     try:
         if read_type:
             return appium_driver.find_element_by_xpath(
@@ -1945,7 +1937,6 @@ def Click_Element_Appium(data_set):
     skip_or_not = filter_optional_action_and_step_data(data_set, sModuleInfo)
     if skip_or_not == False:
         return "passed"
-
 
     try:
 
@@ -2130,7 +2121,6 @@ def Tap_Appium(data_set):
     if skip_or_not == False:
         return "passed"
 
-
     try:
 
         x_offset = False
@@ -2276,7 +2266,6 @@ def Long_Press_Appium(data_set):
     if skip_or_not == False:
         return "passed"
 
-
     try:
         Element = LocateElement.Get_Element(data_set, appium_driver)
         if Element == "failed":
@@ -2320,7 +2309,6 @@ def Enter_Text_Appium(data_set):
     skip_or_not = filter_optional_action_and_step_data(data_set, sModuleInfo)
     if skip_or_not == False:
         return "passed"
-
 
     # Find text from action line
     text_value = (
@@ -2521,7 +2509,6 @@ def Pickerwheel_Appium(data_set):
     if skip_or_not == False:
         return "passed"
 
-
     # Find text from action line
     text_value = (
         ""  # Initialize as empty string in case user wants to pass an empty string
@@ -2589,7 +2576,6 @@ def Clear_And_Enter_Text_ADB(data_set, serial=""):
             2,
         )
         return "passed"
-
 
     # Parse data set
     try:
@@ -2670,7 +2656,6 @@ def Clear_And_Enter_Text_Appium(data_set):
     skip_or_not = filter_optional_action_and_step_data(data_set, sModuleInfo)
     if skip_or_not == False:
         return "passed"
-
 
     # Find text from action line
     text_value = (
@@ -2763,7 +2748,6 @@ def Hide_Keyboard(data_set):
         )
         return "passed"
 
-
     try:
         if appium_driver.is_keyboard_shown():
             appium_driver.hide_keyboard()  # Remove keyboard
@@ -2779,7 +2763,6 @@ def Android_Keystroke_Key_Mapping(keystroke, hold_key=False):
     # Keycodes: https://developer.android.com/reference/android/view/KeyEvent.html
 
     sModuleInfo = inspect.currentframe().f_code.co_name + " : " + MODULE_NAME
-
 
     # Sanitize input
     keystroke = keystroke.strip()
@@ -2844,7 +2827,6 @@ def Android_Keystroke_Key_Mapping(keystroke, hold_key=False):
 def iOS_Keystroke_Key_Mapping(keystroke):
     sModuleInfo = inspect.currentframe().f_code.co_name + " : " + MODULE_NAME
 
-
     CommonUtil.ExecLog(sModuleInfo, "IOS key events not yet supported" % keystroke, 3)
     return "failed"
 
@@ -2907,7 +2889,6 @@ def Keystroke_Appium(data_set):
     skip_or_not = filter_optional_action_and_step_data(data_set, sModuleInfo)
     if skip_or_not == False:
         return "passed"
-
 
     # Parse data set
     try:
@@ -3166,8 +3147,7 @@ def get_program_names(search_name):
 
     sModuleInfo = inspect.currentframe().f_code.co_name + " : " + MODULE_NAME
 
-
-    # @logger    
+    # @logger
     # def find_activity(secs):
     #         global activity_list
     #         activity_list = []
@@ -3299,7 +3279,6 @@ def device_information(data_set):
     skip_or_not = filter_optional_action_and_step_data(data_set, sModuleInfo)
     if skip_or_not == False:
         return "passed"
-
 
     # Parse data set
     try:
@@ -3455,7 +3434,6 @@ def set_device_password(data_set):
     if skip_or_not == False:
         return "passed"
 
-
     # Parse data set
     try:
         password = data_set[0][2].strip()  # Read password from Value field
@@ -3490,7 +3468,6 @@ def switch_device(data_set):
     skip_or_not = filter_optional_action_and_step_data(data_set, sModuleInfo)
     if skip_or_not == False:
         return "passed"
-
 
     # Parse data set
     try:
@@ -3538,7 +3515,6 @@ def package_information(data_set):
     skip_or_not = filter_optional_action_and_step_data(data_set, sModuleInfo)
     if skip_or_not == False:
         return "passed"
-
 
     # Parse data set
     try:
@@ -3629,7 +3605,6 @@ def minimize_appilcation(data_set):
     if skip_or_not == False:
         return "passed"
 
-
     try:
         appium_driver.press_keycode(3)
         return "passed"
@@ -3651,7 +3626,6 @@ def maximize_appilcation(data_set):
     if skip_or_not == False:
         return "passed"
 
-
     try:
         appium_driver.launch_app()
         return "passed"
@@ -3666,7 +3640,6 @@ def serial_in_devices(serial, devices):
     """ Displays the original program that was launched by appium """
 
     sModuleInfo = inspect.currentframe().f_code.co_name + " : " + MODULE_NAME
-
 
     try:
         for device in devices:
@@ -3697,7 +3670,6 @@ def Handle_Mobile_Alert(data_set):
     skip_or_not = filter_optional_action_and_step_data(data_set, sModuleInfo)
     if skip_or_not == False:
         return "passed"
-
 
     try:
         choice = None
@@ -3805,7 +3777,6 @@ def Switch_Context(data_set):
     if skip_or_not == False:
         return "passed"
 
-
     try:
         choice = None
         for row in data_set:
@@ -3881,7 +3852,6 @@ def Save_Attribute(step_data):
     if skip_or_not == False:
         return "passed"
 
-
     try:
         Element = LocateElement.Get_Element(step_data, appium_driver)
         if Element == "failed":
@@ -3947,7 +3917,6 @@ def if_element_exists(data_set):
     skip_or_not = filter_optional_action_and_step_data(data_set, sModuleInfo)
     if skip_or_not == False:
         return "passed"
-
 
     try:
         variable_name = ""
