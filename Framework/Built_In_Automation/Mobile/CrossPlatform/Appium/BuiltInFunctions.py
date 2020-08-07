@@ -15,6 +15,7 @@ from appium import webdriver
 import traceback
 import os, sys, datetime, time, inspect, subprocess, re, signal, _thread, requests
 from Framework.Utilities import CommonUtil
+from Framework.Utilities.decorators import logger
 from Framework.Built_In_Automation.Built_In_Utility.CrossPlatform import (
     BuiltInUtilityFunction as Utility_Functions,
 )
@@ -112,11 +113,11 @@ if Shared_Resources.Test_Shared_Variables(
     )  # Retreive device_info
 
 
+@logger
 def find_appium():
     """ Do our very best to find the appium executable """
 
     sModuleInfo = inspect.currentframe().f_code.co_name + " : " + MODULE_NAME
-    CommonUtil.ExecLog(sModuleInfo, "Function Start", 0)
 
     # Expected locations
     appium_list = [
@@ -168,6 +169,7 @@ def find_appium():
         CommonUtil.ExecLog(sModuleInfo, "Found appium: %s" % appium_binary, 1)
 
 
+@logger
 def find_exe_in_path(exe):
     """ Search the path for an executable """
 
@@ -199,18 +201,19 @@ appium_binary = ""
 find_appium()
 
 
+@logger
 def get_driver():
     """ For custom functions external to this script that need access to the driver """
     # Caveat: create_appium_driver() must be executed before this variable is populated
     return appium_driver
 
 
+@logger
 def find_correct_device_on_first_run(serial_or_name, device_info):
     """ Considers information from the data set, deployed devices, and connected devices to determine which device to use """
     # Only used when launching an application, which creates the appium instance.
 
     sModuleInfo = inspect.currentframe().f_code.co_name + " : " + MODULE_NAME
-    CommonUtil.ExecLog(sModuleInfo, "Function Start", 0)
     global device_id, device_serial, appium_details
     CommonUtil.ExecLog(
         sModuleInfo, "List of devices provided by server: %s" % str(device_info), 1
@@ -376,11 +379,11 @@ def find_correct_device_on_first_run(serial_or_name, device_info):
         )
 
 
+@logger
 def unlock_android_device(data_set):
     """ Unlocks an androi device with adb commands"""
 
     sModuleInfo = inspect.currentframe().f_code.co_name + " : " + MODULE_NAME
-    CommonUtil.ExecLog(sModuleInfo, "Function Start", 0)
 
     global device_serial, appium_details, appium_driver, device_id, device_info
     # Recall appium details
@@ -431,11 +434,11 @@ def unlock_android_device(data_set):
         )
 
 
+@logger
 def unlock_android_app(data_set):
     """ Unlocks an androi device with adb commands"""
 
     sModuleInfo = inspect.currentframe().f_code.co_name + " : " + MODULE_NAME
-    CommonUtil.ExecLog(sModuleInfo, "Function Start", 0)
 
     global device_serial, appium_details, appium_driver, device_id, device_info
     # Recall appium details
@@ -482,11 +485,11 @@ def unlock_android_app(data_set):
         )
 
 
+@logger
 def launch_application(data_set):
     """ Launch the application the appium instance was created with, and create the instance if necessary """
 
     sModuleInfo = inspect.currentframe().f_code.co_name + " : " + MODULE_NAME
-    CommonUtil.ExecLog(sModuleInfo, "Function Start", 0)
 
     global device_serial, appium_details, appium_driver, device_id, device_info
     # Recall appium details
@@ -629,6 +632,7 @@ def launch_application(data_set):
         )
 
 
+@logger
 def set_pdeathsig(sig=signal.SIGTERM):
     """ Linux only - Capture any children that are spawned by programs executed by Popen() """
 
@@ -636,16 +640,17 @@ def set_pdeathsig(sig=signal.SIGTERM):
 
     libc = ctypes.CDLL("libc.so.6")
 
+    @logger
     def callable():
         return libc.prctl(1, sig)
 
     return callable
 
 
+@logger
 def start_appium_server():
     """ Starts the external Appium server """
     sModuleInfo = inspect.currentframe().f_code.co_name + " : " + MODULE_NAME
-    CommonUtil.ExecLog(sModuleInfo, "Function Start", 0)
 
     global appium_port, appium_details, device_serial, appium_binary, device_id, wdaLocalPort
 
@@ -754,6 +759,7 @@ def start_appium_server():
         )
 
 
+@logger
 def start_appium_driver(
     package_name="",
     activity_name="",
@@ -769,7 +775,6 @@ def start_appium_driver(
     # Does not execute application
 
     sModuleInfo = inspect.currentframe().f_code.co_name + " : " + MODULE_NAME
-    CommonUtil.ExecLog(sModuleInfo, "Function Start", 0)
 
     try:
         global appium_driver, appium_details, device_id, wdaLocalPort
@@ -975,11 +980,11 @@ def start_appium_driver(
         return CommonUtil.Exception_Handler(sys.exc_info()), launch_app
 
 
+@logger
 def kill_appium_on_windows(appium_server):
     """ Killing Appium server on windows involves killing off it's children """
 
     sModuleInfo = inspect.currentframe().f_code.co_name + " : " + MODULE_NAME
-    CommonUtil.ExecLog(sModuleInfo, "Function Start", 0)
 
     try:
         import psutil, signal
@@ -1002,6 +1007,7 @@ def kill_appium_on_windows(appium_server):
         )
 
 
+@logger
 def kill_node():
     """ Kill appium node"""
 
@@ -1025,11 +1031,11 @@ def kill_node():
         )
 
 
+@logger
 def teardown_appium(data_set):
     """ Teardown of appium instance """
 
     sModuleInfo = inspect.currentframe().f_code.co_name + " : " + MODULE_NAME
-    CommonUtil.ExecLog(sModuleInfo, "Function Start", 0)
 
     global appium_details, appium_server, device_id, device_serial, device_info, appium_port, wdaLocalPort
 
@@ -1086,11 +1092,11 @@ def teardown_appium(data_set):
     return "passed"
 
 
+@logger
 def close_application(data_set):
     """ Exit the application """
 
     sModuleInfo = inspect.currentframe().f_code.co_name + " : " + MODULE_NAME
-    CommonUtil.ExecLog(sModuleInfo, "Function Start", 0)
 
     try:
         CommonUtil.ExecLog(sModuleInfo, "Trying to close the app", 0)
@@ -1102,11 +1108,11 @@ def close_application(data_set):
         return CommonUtil.Exception_Handler(sys.exc_info(), None, errMsg)
 
 
+@logger
 def reset_application(data_set):
     """ Resets / clears the application cache """
 
     sModuleInfo = inspect.currentframe().f_code.co_name + " : " + MODULE_NAME
-    CommonUtil.ExecLog(sModuleInfo, "Function Start", 0)
 
     try:
         CommonUtil.ExecLog(sModuleInfo, "Trying to reset the app", 0)
@@ -1118,13 +1124,13 @@ def reset_application(data_set):
         return CommonUtil.Exception_Handler(sys.exc_info(), None, errMsg)
 
 
+@logger
 def install_application(data_set):
     """ Install application to device """
     # adb does the work. Does not require appium instance. User needs to call launch action to create instance
     # Two formats allowed: Filename on action row, or filename on element parameter row, and optional serial number on action row
 
     sModuleInfo = inspect.currentframe().f_code.co_name + " : " + MODULE_NAME
-    CommonUtil.ExecLog(sModuleInfo, "Function Start", 0)
 
     skip_or_not = filter_optional_action_and_step_data(data_set, sModuleInfo)
     if skip_or_not == False:
@@ -1198,6 +1204,7 @@ def install_application(data_set):
         return CommonUtil.Exception_Handler(sys.exc_info(), None, errMsg)
 
 
+@logger
 def uninstall_application(data_set):
     """ Uninstalls/removes application from device """
 
@@ -1207,7 +1214,6 @@ def uninstall_application(data_set):
     if skip_or_not == False:
         return "passed"
 
-    CommonUtil.ExecLog(sModuleInfo, "Function Start", 0)
 
     # Parse data set
     try:
@@ -1259,13 +1265,13 @@ def uninstall_application(data_set):
         return CommonUtil.Exception_Handler(sys.exc_info(), None, errMsg)
 
 
+@logger
 def Swipe(x_start, y_start, x_end, y_end, duration=1000, adb=False):
     """ Perform single swipe gesture with provided start and end positions """
     # duration in mS - how long the gesture should take
 
     sModuleInfo = inspect.currentframe().f_code.co_name + " : " + MODULE_NAME
 
-    CommonUtil.ExecLog(sModuleInfo, "Function Start", 0)
 
     try:
         CommonUtil.ExecLog(sModuleInfo, "Starting to swipe the screen...", 0)
@@ -1288,6 +1294,7 @@ def Swipe(x_start, y_start, x_end, y_end, duration=1000, adb=False):
         return CommonUtil.Exception_Handler(sys.exc_info(), None, errMsg)
 
 
+@logger
 def swipe_in_direction(data_set):
     sModuleInfo = inspect.currentframe().f_code.co_name + " : " + MODULE_NAME
 
@@ -1357,6 +1364,7 @@ def swipe_in_direction(data_set):
         return CommonUtil.Exception_Handler(sys.exc_info(), None, errMsg)
 
 
+@logger
 def swipe_handler_wrapper(data_set):
     try:
         if appium_details[device_id]["type"] == "ios":  # for ios
@@ -1368,6 +1376,7 @@ def swipe_handler_wrapper(data_set):
         return CommonUtil.Exception_Handler(sys.exc_info(), None, errMsg)
 
 
+@logger
 def swipe_handler_ios(data_set):
     sModuleInfo = inspect.currentframe().f_code.co_name + " : " + MODULE_NAME
 
@@ -1420,6 +1429,7 @@ def swipe_handler_ios(data_set):
         return CommonUtil.Exception_Handler(sys.exc_info(), None, errMsg)
 
 
+@logger
 def swipe_handler_android(data_set):
     """ Swipe screen based on user input """
     """
@@ -1439,8 +1449,8 @@ def swipe_handler_android(data_set):
     if skip_or_not == False:
         return "passed"
 
-    CommonUtil.ExecLog(sModuleInfo, "Function Start", 0)
 
+    @logger
     def Calc_Swipe(w, h, inset, direction, position, exact):
         """ Calculate swipe based on area of interest (screen or element) """
         try:
@@ -1674,12 +1684,12 @@ def swipe_handler_android(data_set):
         )
 
 
+@logger
 def read_screen_heirarchy():
     """ Read the XML string of the device's GUI and return it """
 
     sModuleInfo = inspect.currentframe().f_code.co_name + " : " + MODULE_NAME
 
-    CommonUtil.ExecLog(sModuleInfo, "Function Start", 0)
 
     try:
         data = appium_driver.page_source  # Read screen and get xml formatted text
@@ -1693,9 +1703,9 @@ def read_screen_heirarchy():
         return False
 
 
+@logger
 def clear_existing_media_ios(data_set):
     sModuleInfo = inspect.currentframe().f_code.co_name + " : " + MODULE_NAME
-    CommonUtil.ExecLog(sModuleInfo, "Function Start", 0)
 
     # Clears all media (photos and videos) from a booted device
 
@@ -1731,9 +1741,9 @@ def clear_existing_media_ios(data_set):
         return CommonUtil.Exception_Handler(sys.exc_info(), None, errMsg)
 
 
+@logger
 def add_media_ios(data_set):
     sModuleInfo = inspect.currentframe().f_code.co_name + " : " + MODULE_NAME
-    CommonUtil.ExecLog(sModuleInfo, "Function Start", 0)
 
     try:
         media_name = str(data_set[0][2]).strip()
@@ -1746,6 +1756,7 @@ def add_media_ios(data_set):
         return CommonUtil.Exception_Handler(sys.exc_info(), None, errMsg)
 
 
+@logger
 def take_screenshot_appium(data_set):
     """
     Data set:
@@ -1755,7 +1766,6 @@ def take_screenshot_appium(data_set):
     """
     sModuleInfo = inspect.currentframe().f_code.co_name + " : " + MODULE_NAME
 
-    CommonUtil.ExecLog(sModuleInfo, "Function Start", 0)
     from pathlib import Path
     import time
 
@@ -1786,6 +1796,7 @@ def take_screenshot_appium(data_set):
         return CommonUtil.Exception_Handler(sys.exc_info(), None, errMsg)
 
 
+@logger
 def go_to_webpage(data_set):
     sModuleInfo = inspect.currentframe().f_code.co_name + " : " + MODULE_NAME
 
@@ -1793,7 +1804,6 @@ def go_to_webpage(data_set):
     if skip_or_not == False:
         return "passed"
 
-    CommonUtil.ExecLog(sModuleInfo, "Function Start", 0)
 
     # Parse data set
     try:
@@ -1812,6 +1822,7 @@ def go_to_webpage(data_set):
         return CommonUtil.Exception_Handler(sys.exc_info(), None, errMsg)
 
 
+@logger
 def tap_location(data_set):
     """ Tap the provided position using x,y cooridnates """
     # positions: list containing x,y coordinates
@@ -1822,7 +1833,6 @@ def tap_location(data_set):
     if skip_or_not == False:
         return "passed"
 
-    CommonUtil.ExecLog(sModuleInfo, "Function Start", 0)
 
     # Parse data set
     try:
@@ -1844,6 +1854,7 @@ def tap_location(data_set):
         return CommonUtil.Exception_Handler(sys.exc_info(), None, errMsg)
 
 
+@logger
 def get_element_location_by_id(data_set):
     """ Find and return an element's x,y coordinates """
 
@@ -1853,7 +1864,6 @@ def get_element_location_by_id(data_set):
     if skip_or_not == False:
         return "passed"
 
-    CommonUtil.ExecLog(sModuleInfo, "Function Start", 0)
 
     # Parse data set
     try:
@@ -1894,13 +1904,13 @@ def get_element_location_by_id(data_set):
         return CommonUtil.Exception_Handler(sys.exc_info(), None, errMsg)
 
 
+@logger
 def get_window_size(read_type=False):
     """ Read the device's LCD resolution / screen size """
     # Returns a dictionary of width and height
 
     sModuleInfo = inspect.currentframe().f_code.co_name + " : " + MODULE_NAME
 
-    CommonUtil.ExecLog(sModuleInfo, "Function Start", 0)
 
     try:
         if read_type:
@@ -1917,6 +1927,7 @@ def get_window_size(read_type=False):
         return CommonUtil.Exception_Handler(sys.exc_info(), None, errMsg)
 
 
+@logger
 def Click_Element_Appium(data_set):
     """ Execute "click" for an element 
     
@@ -1935,7 +1946,6 @@ def Click_Element_Appium(data_set):
     if skip_or_not == False:
         return "passed"
 
-    CommonUtil.ExecLog(sModuleInfo, "Function Start", 0)
 
     try:
 
@@ -2102,6 +2112,7 @@ def Click_Element_Appium(data_set):
         return CommonUtil.Exception_Handler(sys.exc_info(), None, errMsg)
 
 
+@logger
 def Tap_Appium(data_set):
     """ Execute "Tap" for an element 
       if optional parameter is provided for offset, we will take it from the center of the object and % center of the bound
@@ -2119,7 +2130,6 @@ def Tap_Appium(data_set):
     if skip_or_not == False:
         return "passed"
 
-    CommonUtil.ExecLog(sModuleInfo, "Function Start", 0)
 
     try:
 
@@ -2212,6 +2222,7 @@ def Tap_Appium(data_set):
         return CommonUtil.Exception_Handler(sys.exc_info(), None, errMsg)
 
 
+@logger
 def Double_Tap_Appium(data_set):
     #!!!not yet tested or used
     sModuleInfo = inspect.currentframe().f_code.co_name + " : " + MODULE_NAME
@@ -2220,7 +2231,6 @@ def Double_Tap_Appium(data_set):
     if skip_or_not == False:
         return "passed"
 
-    CommonUtil.ExecLog(sModuleInfo, "Function Start", 0)
     try:
         Element = LocateElement.Get_Element(data_set, appium_driver)
         if Element == "failed":
@@ -2256,6 +2266,7 @@ def Double_Tap_Appium(data_set):
         return CommonUtil.Exception_Handler(sys.exc_info(), None, errMsg)
 
 
+@logger
 def Long_Press_Appium(data_set):
     """ Press and hold an element """
 
@@ -2265,7 +2276,6 @@ def Long_Press_Appium(data_set):
     if skip_or_not == False:
         return "passed"
 
-    CommonUtil.ExecLog(sModuleInfo, "Function Start", 0)
 
     try:
         Element = LocateElement.Get_Element(data_set, appium_driver)
@@ -2300,6 +2310,7 @@ def Long_Press_Appium(data_set):
         return CommonUtil.Exception_Handler(sys.exc_info(), None, errMsg)
 
 
+@logger
 def Enter_Text_Appium(data_set):
     """ Write text to an element """
 
@@ -2310,7 +2321,6 @@ def Enter_Text_Appium(data_set):
     if skip_or_not == False:
         return "passed"
 
-    CommonUtil.ExecLog(sModuleInfo, "Function Start", 0)
 
     # Find text from action line
     text_value = (
@@ -2501,6 +2511,7 @@ def Enter_Text_Appium(data_set):
         return CommonUtil.Exception_Handler(sys.exc_info(), None, errMsg)
 
 
+@logger
 def Pickerwheel_Appium(data_set):
     """ Write text to a pickerwheel """
 
@@ -2510,7 +2521,6 @@ def Pickerwheel_Appium(data_set):
     if skip_or_not == False:
         return "passed"
 
-    CommonUtil.ExecLog(sModuleInfo, "Function Start", 0)
 
     # Find text from action line
     text_value = (
@@ -2564,6 +2574,7 @@ def Pickerwheel_Appium(data_set):
         return CommonUtil.Exception_Handler(sys.exc_info(), None, errMsg)
 
 
+@logger
 def Clear_And_Enter_Text_ADB(data_set, serial=""):
     """ Enter string via adb"""
 
@@ -2579,7 +2590,6 @@ def Clear_And_Enter_Text_ADB(data_set, serial=""):
         )
         return "passed"
 
-    CommonUtil.ExecLog(sModuleInfo, "Function Start", 0)
 
     # Parse data set
     try:
@@ -2651,6 +2661,7 @@ def Clear_And_Enter_Text_ADB(data_set, serial=""):
         return CommonUtil.Exception_Handler(sys.exc_info(), None, errMsg)
 
 
+@logger
 def Clear_And_Enter_Text_Appium(data_set):
     """ Write text to an element """
 
@@ -2660,7 +2671,6 @@ def Clear_And_Enter_Text_Appium(data_set):
     if skip_or_not == False:
         return "passed"
 
-    CommonUtil.ExecLog(sModuleInfo, "Function Start", 0)
 
     # Find text from action line
     text_value = (
@@ -2732,6 +2742,7 @@ def Clear_And_Enter_Text_Appium(data_set):
         return CommonUtil.Exception_Handler(sys.exc_info(), None, errMsg)
 
 
+@logger
 def Hide_Keyboard(data_set):
     """ 
     This action is used to hide keyboard:
@@ -2752,7 +2763,6 @@ def Hide_Keyboard(data_set):
         )
         return "passed"
 
-    CommonUtil.ExecLog(sModuleInfo, "Function Start", 0)
 
     try:
         if appium_driver.is_keyboard_shown():
@@ -2763,13 +2773,13 @@ def Hide_Keyboard(data_set):
         return CommonUtil.Exception_Handler(sys.exc_info(), None, errMsg)
 
 
+@logger
 def Android_Keystroke_Key_Mapping(keystroke, hold_key=False):
     """ Provides a friendly interface to invoke key events """
     # Keycodes: https://developer.android.com/reference/android/view/KeyEvent.html
 
     sModuleInfo = inspect.currentframe().f_code.co_name + " : " + MODULE_NAME
 
-    CommonUtil.ExecLog(sModuleInfo, "Function Start", 0)
 
     # Sanitize input
     keystroke = keystroke.strip()
@@ -2830,10 +2840,10 @@ def Android_Keystroke_Key_Mapping(keystroke, hold_key=False):
         return CommonUtil.Exception_Handler(sys.exc_info())
 
 
+@logger
 def iOS_Keystroke_Key_Mapping(keystroke):
     sModuleInfo = inspect.currentframe().f_code.co_name + " : " + MODULE_NAME
 
-    CommonUtil.ExecLog(sModuleInfo, "Function Start", 0)
 
     CommonUtil.ExecLog(sModuleInfo, "IOS key events not yet supported" % keystroke, 3)
     return "failed"
@@ -2857,6 +2867,7 @@ def iOS_Keystroke_Key_Mapping(keystroke):
         return CommonUtil.Exception_Handler(sys.exc_info(), None, errMsg)
 
 
+@logger
 def Keystroke_Appium(data_set):
     """ Send physical or virtual key press or long key press event
 
@@ -2897,7 +2908,6 @@ def Keystroke_Appium(data_set):
     if skip_or_not == False:
         return "passed"
 
-    CommonUtil.ExecLog(sModuleInfo, "Function Start", 0)
 
     # Parse data set
     try:
@@ -2954,6 +2964,7 @@ def Keystroke_Appium(data_set):
 
 
 # Validating text from an element given information regarding the expected text
+@logger
 def Validate_Text_Appium(data_set):
     """
 
@@ -2968,7 +2979,6 @@ def Validate_Text_Appium(data_set):
     if skip_or_not == False:
         return "passed"
 
-    CommonUtil.ExecLog(sModuleInfo, "Function Start", 0)
     data_set = [data_set]
     try:
         for each_step_data_item in data_set[0]:
@@ -3146,6 +3156,7 @@ def Validate_Text_Appium(data_set):
         return CommonUtil.Exception_Handler(sys.exc_info(), None, errMsg)
 
 
+@logger
 def get_program_names(search_name):
     """ Find Package and Activity name based on wildcard match """
     # Android only
@@ -3155,9 +3166,9 @@ def get_program_names(search_name):
 
     sModuleInfo = inspect.currentframe().f_code.co_name + " : " + MODULE_NAME
 
-    CommonUtil.ExecLog(sModuleInfo, "Function Start", 0)
 
-    #     def find_activity(secs):
+    # @logger    
+    # def find_activity(secs):
     #         global activity_list
     #         activity_list = []
     #         etime = time.time() + secs # End time
@@ -3277,6 +3288,7 @@ def get_program_names(search_name):
         return result, ""
 
 
+@logger
 def device_information(data_set):
     """ Returns the requested device information """
     # This is the sequential action interface for much of the adbOptions.py and iosOptions.py, which provides direct device access via their standard comman line tools
@@ -3288,7 +3300,6 @@ def device_information(data_set):
     if skip_or_not == False:
         return "passed"
 
-    CommonUtil.ExecLog(sModuleInfo, "Function Start", 0)
 
     # Parse data set
     try:
@@ -3433,6 +3444,7 @@ def device_information(data_set):
         return CommonUtil.Exception_Handler(sys.exc_info())
 
 
+@logger
 def set_device_password(data_set):
     """ Saves the device password to shared variables for use in unlocking the phone """
     # Caveat: Only allows one password stored at a time
@@ -3443,7 +3455,6 @@ def set_device_password(data_set):
     if skip_or_not == False:
         return "passed"
 
-    CommonUtil.ExecLog(sModuleInfo, "Function Start", 0)
 
     # Parse data set
     try:
@@ -3468,6 +3479,7 @@ def set_device_password(data_set):
         )
 
 
+@logger
 def switch_device(data_set):
     """ When multiple devices are connected, switches focus to one in particular given the serial number """
     # Device will be set as default until this function is called again
@@ -3479,7 +3491,6 @@ def switch_device(data_set):
     if skip_or_not == False:
         return "passed"
 
-    CommonUtil.ExecLog(sModuleInfo, "Function Start", 0)
 
     # Parse data set
     try:
@@ -3516,6 +3527,7 @@ def switch_device(data_set):
         )
 
 
+@logger
 def package_information(data_set):
     """ Performs serveral actions on a package """
     # Note: Appium doens't have an API that allows us to execute anything we want, so this is the solution
@@ -3527,7 +3539,6 @@ def package_information(data_set):
     if skip_or_not == False:
         return "passed"
 
-    CommonUtil.ExecLog(sModuleInfo, "Function Start", 0)
 
     # Parse data set
     try:
@@ -3608,6 +3619,7 @@ def package_information(data_set):
         )
 
 
+@logger
 def minimize_appilcation(data_set):
     """ Hides the foreground application by pressing the home key """
 
@@ -3617,7 +3629,6 @@ def minimize_appilcation(data_set):
     if skip_or_not == False:
         return "passed"
 
-    CommonUtil.ExecLog(sModuleInfo, "Function Start", 0)
 
     try:
         appium_driver.press_keycode(3)
@@ -3630,6 +3641,7 @@ def minimize_appilcation(data_set):
         )
 
 
+@logger
 def maximize_appilcation(data_set):
     """ Displays the original program that was launched by appium """
 
@@ -3639,7 +3651,6 @@ def maximize_appilcation(data_set):
     if skip_or_not == False:
         return "passed"
 
-    CommonUtil.ExecLog(sModuleInfo, "Function Start", 0)
 
     try:
         appium_driver.launch_app()
@@ -3650,12 +3661,12 @@ def maximize_appilcation(data_set):
         )
 
 
+@logger
 def serial_in_devices(serial, devices):
     """ Displays the original program that was launched by appium """
 
     sModuleInfo = inspect.currentframe().f_code.co_name + " : " + MODULE_NAME
 
-    CommonUtil.ExecLog(sModuleInfo, "Function Start", 0)
 
     try:
         for device in devices:
@@ -3668,6 +3679,7 @@ def serial_in_devices(serial, devices):
         )
 
 
+@logger
 def Handle_Mobile_Alert(data_set):
     # accepts browser alert
     """
@@ -3686,7 +3698,6 @@ def Handle_Mobile_Alert(data_set):
     if skip_or_not == False:
         return "passed"
 
-    CommonUtil.ExecLog(sModuleInfo, "Function Start", 0)
 
     try:
         choice = None
@@ -3776,6 +3787,7 @@ def Handle_Mobile_Alert(data_set):
         return CommonUtil.Exception_Handler(sys.exc_info(), None, ErrorMessage)
 
 
+@logger
 def Switch_Context(data_set):
     # switches context between native and webview
     """
@@ -3793,7 +3805,6 @@ def Switch_Context(data_set):
     if skip_or_not == False:
         return "passed"
 
-    CommonUtil.ExecLog(sModuleInfo, "Function Start", 0)
 
     try:
         choice = None
@@ -3856,6 +3867,7 @@ def Switch_Context(data_set):
         return CommonUtil.Exception_Handler(sys.exc_info(), None, ErrorMessage)
 
 
+@logger
 def Save_Attribute(step_data):
     # switches context between native and webview
     """
@@ -3869,7 +3881,6 @@ def Save_Attribute(step_data):
     if skip_or_not == False:
         return "passed"
 
-    CommonUtil.ExecLog(sModuleInfo, "Function Start", 0)
 
     try:
         Element = LocateElement.Get_Element(step_data, appium_driver)
@@ -3927,6 +3938,7 @@ def Save_Attribute(step_data):
         return CommonUtil.Exception_Handler(sys.exc_info())
 
 
+@logger
 def if_element_exists(data_set):
     """ Click on an element """
 
@@ -3936,7 +3948,6 @@ def if_element_exists(data_set):
     if skip_or_not == False:
         return "passed"
 
-    CommonUtil.ExecLog(sModuleInfo, "Function Start", 0)
 
     try:
         variable_name = ""
@@ -3961,6 +3972,7 @@ def if_element_exists(data_set):
         return CommonUtil.Exception_Handler(sys.exc_info(), None, errMsg)
 
 
+@logger
 def filter_optional_action_and_step_data(data_set, sModuleInfo):
     sModuleInfo = inspect.currentframe().f_code.co_name + " : " + MODULE_NAME
     try:
@@ -3994,6 +4006,7 @@ def filter_optional_action_and_step_data(data_set, sModuleInfo):
         return True
 
 
+@logger
 def auto_switch_context_and_try(native_web):
 
     sModuleInfo = inspect.currentframe().f_code.co_name + " : " + MODULE_NAME

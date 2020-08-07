@@ -7,9 +7,11 @@ import time, ast, os, sys
 sys.path.insert(0, os.getcwd())
 from Framework import MainDriverApi
 from Framework.Utilities import CommonUtil
+from Framework.Utilities.decorators import logger
 from concurrent.futures import ThreadPoolExecutor
 
 
+@logger
 def get_stop_timeout():
     file = open(
         os.getcwd()

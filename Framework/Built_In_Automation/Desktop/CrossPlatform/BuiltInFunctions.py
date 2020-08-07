@@ -15,6 +15,7 @@
 import pyautogui as gui  # https://pyautogui.readthedocs.io/en/latest/
 import os, os.path, sys, time, inspect, subprocess
 from Framework.Utilities import CommonUtil, FileUtilities as FL
+from Framework.Utilities.decorators import logger
 from Framework.Built_In_Automation.Built_In_Utility.CrossPlatform import (
     BuiltInUtilityFunction as FU,
 )
@@ -65,16 +66,17 @@ if Shared_Resources.Test_Shared_Variables("file_attachment"):
 #########################
 
 
+@logger
 def get_driver():
     """ Returns pyautogui as the driver for compatibility with other modules """
     return gui
 
 
+@logger
 def getCoordinates(element, position):
     """ Return coordinates of attachment's centre """
 
     sModuleInfo = inspect.currentframe().f_code.co_name + " : " + MODULE_NAME
-    CommonUtil.ExecLog(sModuleInfo, "Function Start", 0)
 
     # Parse input
     try:
@@ -114,11 +116,11 @@ def getCoordinates(element, position):
         )
 
 
+@logger
 def get_exec_from_icon(file_name):
     """ Read the Exec line from a Linux icon file """
 
     sModuleInfo = inspect.currentframe().f_code.co_name + " : " + MODULE_NAME
-    CommonUtil.ExecLog(sModuleInfo, "Function Start", 0)
 
     try:
         # Open file and read into memory
@@ -148,11 +150,11 @@ def get_exec_from_icon(file_name):
 #########################
 
 
+@logger
 def Enter_Text(data_set):
     """ Insert text """
 
     sModuleInfo = inspect.currentframe().f_code.co_name + " : " + MODULE_NAME
-    CommonUtil.ExecLog(sModuleInfo, "Function Start", 0)
 
     # Parse data set
     try:
@@ -238,6 +240,7 @@ def Enter_Text(data_set):
         return CommonUtil.Exception_Handler(sys.exc_info(), None, errMsg)
 
 
+@logger
 def execute_hotkey(data_set) -> str:
     """Executes the provided hotkey.
     The hotkey sequence should be a plus (+) separated string:
@@ -256,7 +259,6 @@ def execute_hotkey(data_set) -> str:
     """
 
     sModuleInfo = inspect.currentframe().f_code.co_name + " : " + MODULE_NAME
-    CommonUtil.ExecLog(sModuleInfo, "Function Start", 0)
 
     try:
         hotkey_combination = [i.strip() for i in data_set[0][2].split("+")]
@@ -267,6 +269,7 @@ def execute_hotkey(data_set) -> str:
         return CommonUtil.Exception_Handler(sys.exc_info(), None, errMsg)
 
 
+@logger
 def move_mouse_cursor(data_set) -> str:
     """Moves the mouse cursor to the given coordinate from the current position.
 
@@ -288,7 +291,6 @@ def move_mouse_cursor(data_set) -> str:
     """
 
     sModuleInfo = inspect.currentframe().f_code.co_name + " : " + MODULE_NAME
-    CommonUtil.ExecLog(sModuleInfo, "Function Start", 0)
 
     try:
         relative = False
@@ -319,6 +321,7 @@ def move_mouse_cursor(data_set) -> str:
         return CommonUtil.Exception_Handler(sys.exc_info(), None, errMsg)
 
 
+@logger
 def click_on_coordinates(data_set):
     """
     This action executes a Left Click on the location of a given X,Y coordinates. Example:
@@ -329,7 +332,6 @@ def click_on_coordinates(data_set):
     """
 
     sModuleInfo = inspect.currentframe().f_code.co_name + " : " + MODULE_NAME
-    CommonUtil.ExecLog(sModuleInfo, "Function Start", 0)
     try:
         data = ""
         for left, _, right in data_set:
@@ -353,6 +355,7 @@ def click_on_coordinates(data_set):
         return CommonUtil.Exception_Handler(sys.exc_info(), None, errMsg)
 
 
+@logger
 def Wait_For_Element_Pyautogui(data_set):
     """
     You need to add an image in the attachment section and mention the filename as below. This action will then search
@@ -372,7 +375,6 @@ def Wait_For_Element_Pyautogui(data_set):
 
     """
     sModuleInfo = inspect.currentframe().f_code.co_name + " : " + MODULE_NAME
-    CommonUtil.ExecLog(sModuleInfo, "Function Start", 0)
 
     try:
         wait_for_element_to_disappear = False
@@ -433,13 +435,13 @@ def Wait_For_Element_Pyautogui(data_set):
         return CommonUtil.Exception_Handler(sys.exc_info())
 
 
+@logger
 def Keystroke_For_Element(data_set):
     """ Insert characters - mainly key combonations"""
     # Example: Ctrl+c
     # Repeats keypress if a number follows, example: tab,3
 
     sModuleInfo = inspect.currentframe().f_code.co_name + " : " + MODULE_NAME
-    CommonUtil.ExecLog(sModuleInfo, "Function Start", 0)
 
     # Parse dataset
     try:
@@ -483,11 +485,11 @@ def Keystroke_For_Element(data_set):
         return CommonUtil.Exception_Handler(sys.exc_info(), None, errMsg)
 
 
+@logger
 def close_program(data_set):
     """ Exit a running program via process kill """
 
     sModuleInfo = inspect.currentframe().f_code.co_name + " : " + MODULE_NAME
-    CommonUtil.ExecLog(sModuleInfo, "Function Start", 0)
 
     # Parse data set
     try:
@@ -566,11 +568,11 @@ def close_program(data_set):
         return CommonUtil.Exception_Handler(sys.exc_info(), None, errMsg)
 
 
+@logger
 def move_mouse(data_set):
     """ Hover over element or move to specified x,y coordinates """
 
     sModuleInfo = inspect.currentframe().f_code.co_name + " : " + MODULE_NAME
-    CommonUtil.ExecLog(sModuleInfo, "Function Start", 0)
 
     # Parse data set
     try:
@@ -688,11 +690,11 @@ def move_mouse(data_set):
         return CommonUtil.Exception_Handler(sys.exc_info(), None, errMsg)
 
 
+@logger
 def Click_Element(data_set):
     """ Single or double mouse click on element """
 
     sModuleInfo = inspect.currentframe().f_code.co_name + " : " + MODULE_NAME
-    CommonUtil.ExecLog(sModuleInfo, "Function Start", 0)
 
     # Parse data set
     try:
@@ -786,11 +788,11 @@ def Click_Element(data_set):
         return CommonUtil.Exception_Handler(sys.exc_info(), None, errMsg)
 
 
+@logger
 def check_for_element(data_set):
     """ Tests whether or not an element is visible on screen """
 
     sModuleInfo = inspect.currentframe().f_code.co_name + " : " + MODULE_NAME
-    CommonUtil.ExecLog(sModuleInfo, "Function Start", 0)
 
     # Parse data set
     try:
@@ -834,13 +836,13 @@ def check_for_element(data_set):
         return CommonUtil.Exception_Handler(sys.exc_info(), None, errMsg)
 
 
+@logger
 def launch_program(data_set):
     """ Execute a program or desktop icon """
     # If a linux desktop icon filename is specified, then it will read the file, and extract the Exec line to execute it directly
     # Anything else is executed, including if it's an attachment
 
     sModuleInfo = inspect.currentframe().f_code.co_name + " : " + MODULE_NAME
-    CommonUtil.ExecLog(sModuleInfo, "Function Start", 0)
 
     # Parse data set
     try:
@@ -933,6 +935,7 @@ def launch_program(data_set):
         return CommonUtil.Exception_Handler(sys.exc_info(), None, errMsg)
 
 
+@logger
 def teardown(data_set):
     """ Cleanup automation """
 
@@ -941,11 +944,11 @@ def teardown(data_set):
     return "passed"
 
 
+@logger
 def Drag_Element(data_set):
     """ Drag element from source to destination """
 
     sModuleInfo = inspect.currentframe().f_code.co_name + " : " + MODULE_NAME
-    CommonUtil.ExecLog(sModuleInfo, "Function Start", 0)
 
     # Parse data set
     try:
@@ -1058,6 +1061,7 @@ def Drag_Element(data_set):
         return CommonUtil.Exception_Handler(sys.exc_info(), None, errMsg)
 
 
+@logger
 def navigate_listbox(data_set):
     """ Scroll listbox until image element is found or timeout is hit """
     # Continually presses page down and checks for the image
@@ -1066,7 +1070,6 @@ def navigate_listbox(data_set):
     # Produces: Pass/Fail - User is responsible for performing the action they desire now that the listbox is where their element is visible
 
     sModuleInfo = inspect.currentframe().f_code.co_name + " : " + MODULE_NAME
-    CommonUtil.ExecLog(sModuleInfo, "Function Start", 0)
 
     # Maximum number of tries to find the element. Have no way of knowing when we hit the last list item, so we have to hard code a value
     max_tries = 10

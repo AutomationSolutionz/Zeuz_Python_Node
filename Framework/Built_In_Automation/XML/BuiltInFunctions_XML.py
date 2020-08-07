@@ -19,6 +19,7 @@
 import sys, inspect
 from lxml import etree as ET
 from Framework.Utilities import CommonUtil
+from Framework.Utilities.decorators import logger
 from Framework.Built_In_Automation.Shared_Resources import LocateElement as LE
 from Framework.Utilities.CommonUtil import passed_tag_list, failed_tag_list
 
@@ -63,12 +64,12 @@ add_tag_list = ["Add", "add", "ADD"]  # Add additional line(s) or element(s)
 "===================== ===x=== Actions on XML File ===x=== ======================"
 
 
+@logger
 def update_element(step_data):
     """
      Function to update the target element(s) of XML tree
     """
     sModuleInfo = inspect.currentframe().f_code.co_name + " : " + MODULE_NAME
-    CommonUtil.ExecLog(sModuleInfo, "Function: update_element", 1)
     try:
         if len([step_data]) != 1:  # Verifies that length of step_data greater than one
             CommonUtil.ExecLog(
@@ -132,12 +133,12 @@ def update_element(step_data):
         return CommonUtil.Exception_Handler(sys.exc_info(), None, errMsg)
 
 
+@logger
 def read_element(step_data):
     """
     Function to read the elements from XML file 
     """
     sModuleInfo = inspect.currentframe().f_code.co_name + " : " + MODULE_NAME
-    CommonUtil.ExecLog(sModuleInfo, "Function: read_element", 1)
     try:
         if len([step_data]) != 1:  # Verifies that length of step_data greater than one
             CommonUtil.ExecLog(
@@ -179,9 +180,9 @@ def read_element(step_data):
 """ This delete function not ready yet """
 
 
+@logger
 def delete_element(step_data, action_name, action_value):
     sModuleInfo = inspect.currentframe().f_code.co_name + " : " + MODULE_NAME
-    CommonUtil.ExecLog(sModuleInfo, "Function: delete_element", 1)
     try:
         if len([step_data]) != 1:  # Verifies that length of step_data greater than one
             CommonUtil.ExecLog(
@@ -248,12 +249,12 @@ def delete_element(step_data, action_name, action_value):
 "===================== ===x=== Get Elements From Step Data ===x=== ======================"
 
 
+@logger
 def get_element_step_data(step_data):
     """
     Function to collect user provided target and action elements from step data
     """
     sModuleInfo = inspect.currentframe().f_code.co_name + " : " + MODULE_NAME
-    CommonUtil.ExecLog(sModuleInfo, "Function: get_element_step_data", 1)
     try:
         file_path = False
         target_parameter = False
@@ -310,6 +311,7 @@ def get_element_step_data(step_data):
 "===================== ===x=== Get Elements From XML File ===x=== ======================"
 
 
+@logger
 def get_target_element(
     file_path, target_parameter, target_value, action_name, action_value, step_data
 ):
@@ -317,7 +319,6 @@ def get_target_element(
     Function to get the target element(s) as per 'action'
     """
     sModuleInfo = inspect.currentframe().f_code.co_name + " : " + MODULE_NAME
-    CommonUtil.ExecLog(sModuleInfo, "Function: get_target_element", 1)
     try:
         file_tree = []
         # Function to get the XML file tree
@@ -352,9 +353,9 @@ def get_target_element(
  Function to get the XML file tree without deleting any user comment(s) """
 
 
+@logger
 def get_file_tree(file_path):
     sModuleInfo = inspect.currentframe().f_code.co_name + " : " + MODULE_NAME
-    CommonUtil.ExecLog(sModuleInfo, "Function: get_file_tree", 1)
     try:
         # Function to get the file parse
         doc = ET.parse(file_path)
@@ -373,6 +374,7 @@ def get_file_tree(file_path):
 "===================== ===x=== Updating Elements ===x=== ======================"
 
 
+@logger
 def update_target_element(
     file_path,
     doc,
@@ -386,7 +388,6 @@ def update_target_element(
      Function to update the target element value
     """
     sModuleInfo = inspect.currentframe().f_code.co_name + " : " + MODULE_NAME
-    CommonUtil.ExecLog(sModuleInfo, "Function: update_target_element", 1)
     try:
         current_value = matching_elements.attrib[target_attrib]
         if current_value == action_value:
@@ -442,12 +443,12 @@ def update_target_element(
         return CommonUtil.Exception_Handler(sys.exc_info(), None, errMsg)
 
 
+@logger
 def update_action_value(file_path, doc):
     """
      Function the write the user provided action value in the XML file
     """
     sModuleInfo = inspect.currentframe().f_code.co_name + " : " + MODULE_NAME
-    CommonUtil.ExecLog(sModuleInfo, "Function: update_action_value", 1)
     try:
         sModuleInfo = inspect.currentframe().f_code.co_name + " : " + MODULE_NAME
 

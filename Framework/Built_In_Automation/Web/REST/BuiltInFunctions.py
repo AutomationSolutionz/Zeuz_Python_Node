@@ -23,6 +23,7 @@ from Framework.Built_In_Automation.Shared_Resources import (
 requests.packages.urllib3.disable_warnings()
 
 from Framework.Utilities import CommonUtil
+from Framework.Utilities.decorators import logger
 from Framework.Utilities.CommonUtil import (
     passed_tag_list,
     failed_tag_list,
@@ -40,9 +41,9 @@ MODULE_NAME = inspect.getmodulename(__file__)
 
 
 # Method to get the element step data from the original step_data
+@logger
 def Get_Element_Step_Data(step_data):
     sModuleInfo = inspect.currentframe().f_code.co_name + " : " + MODULE_NAME
-    CommonUtil.ExecLog(sModuleInfo, "Function: Get Element Step Data", 1)
     try:
         element_step_data = []
         for each in step_data:
@@ -59,9 +60,9 @@ def Get_Element_Step_Data(step_data):
 
 
 # Handles actions for the sequential logic, based on the input from the mentioned function
+@logger
 def Action_Handler(action_step_data, action_row):
     sModuleInfo = inspect.currentframe().f_code.co_name + " : " + MODULE_NAME
-    CommonUtil.ExecLog(sModuleInfo, "Function: Action_Handler", 1)
     try:
         action_name = action_row[0]
         if action_name == "save response":
@@ -110,15 +111,16 @@ def Action_Handler(action_step_data, action_row):
         return CommonUtil.Exception_Handler(sys.exc_info())
 
 
+@logger
 def Initialize_List(data_set):
     """ Temporary wrapper until we can convert everything to use just data_set and not need the extra [] """
     return Shared_Resources.Initialize_List([data_set])
 
 
 # Validating text from an element given information regarding the expected text
+@logger
 def Compare_Lists(step_data):
     sModuleInfo = inspect.currentframe().f_code.co_name + " : " + MODULE_NAME
-    CommonUtil.ExecLog(sModuleInfo, "Function: Compare_Lists", 1)
     try:
         element_step_data = Get_Element_Step_Data(step_data)
         if (element_step_data == []) or (element_step_data == "failed"):
@@ -130,9 +132,9 @@ def Compare_Lists(step_data):
 
 
 # Validating text from an element given information regarding the expected text
+@logger
 def Compare_Variables(step_data):
     sModuleInfo = inspect.currentframe().f_code.co_name + " : " + MODULE_NAME
-    CommonUtil.ExecLog(sModuleInfo, "Function: Compare_Variables", 1)
     try:
         element_step_data = Get_Element_Step_Data(step_data)
         if (element_step_data == []) or (element_step_data == "failed"):
@@ -144,15 +146,16 @@ def Compare_Variables(step_data):
 
 
 # Method to return dictonaries from string
+@logger
 def get_value_as_list(data):
     sModuleInfo = inspect.currentframe().f_code.co_name + " : " + MODULE_NAME
-    CommonUtil.ExecLog(sModuleInfo, "Function: get value as list", 1)
     try:
         return json.loads(data)
     except Exception:
         return CommonUtil.Exception_Handler(sys.exc_info())
 
 
+@logger
 def get_all_val(x, target):
     global all_val
     for key, value in list(x.items()):
@@ -172,6 +175,7 @@ def get_all_val(x, target):
                 continue
 
 
+@logger
 def get_val(x, target):
     global count, index
     for key, value in list(x.items()):
@@ -218,6 +222,7 @@ def get_val(x, target):
     return False
 
 
+@logger
 def search_val(x, target, target_val):
     for key, value in list(x.items()):
         if str(key) == target and str(value) == target_val:
@@ -249,6 +254,7 @@ def search_val(x, target, target_val):
     return False
 
 
+@logger
 def search_val_wrapper(x, target, target_val, equal=True):
     target_val = target_val.replace("[[", "(")
     target_val = target_val.replace("]]", ")")
@@ -260,9 +266,9 @@ def search_val_wrapper(x, target, target_val, equal=True):
 
 
 # Method to save rest call parameters
+@logger
 def save_fields_from_rest_call(result_dict, fields_to_be_saved):
     sModuleInfo = inspect.currentframe().f_code.co_name + " : " + MODULE_NAME
-    CommonUtil.ExecLog(sModuleInfo, "Function: save fields from rest call", 1)
     try:
         global index, count
         fields_to_be_saved = fields_to_be_saved.split(",")
@@ -321,9 +327,9 @@ def save_fields_from_rest_call(result_dict, fields_to_be_saved):
         return CommonUtil.Exception_Handler(sys.exc_info())
 
 
+@logger
 def insert_fields_from_rest_call_into_list(result_dict, fields_to_be_saved, list_name):
     sModuleInfo = inspect.currentframe().f_code.co_name + " : " + MODULE_NAME
-    CommonUtil.ExecLog(sModuleInfo, "Function: save fields from rest call", 1)
     try:
         global index, count, all_val
         fields_to_be_saved = fields_to_be_saved.split(",")
@@ -412,9 +418,9 @@ def insert_fields_from_rest_call_into_list(result_dict, fields_to_be_saved, list
 
 
 # Inserting a field into a list of shared variables
+@logger
 def Insert_Into_List(step_data):
     sModuleInfo = inspect.currentframe().f_code.co_name + " : " + MODULE_NAME
-    CommonUtil.ExecLog(sModuleInfo, "Function: Insert_Into_List", 1)
     try:
         fields_to_be_saved = ""
         for row in step_data:
@@ -504,6 +510,7 @@ def Insert_Into_List(step_data):
         return CommonUtil.Exception_Handler(sys.exc_info())
 
 
+@logger
 def search_condition_wrapper(data, condition_string):
     sModuleInfo = inspect.currentframe().f_code.co_name + " : " + MODULE_NAME
     try:
@@ -626,6 +633,7 @@ def search_condition_wrapper(data, condition_string):
 
 
 # Method to handle rest calls
+@logger
 def handle_rest_call(
     data,
     fields_to_be_saved,
@@ -641,7 +649,6 @@ def handle_rest_call(
     wait_for_response_code=0,
 ):
     sModuleInfo = inspect.currentframe().f_code.co_name + " : " + MODULE_NAME
-    CommonUtil.ExecLog(sModuleInfo, "Function: handle rest call", 1)
     try:
         global index, count
         Shared_Resources.Set_Shared_Variables(
@@ -876,9 +883,9 @@ def handle_rest_call(
 
 
 # Get Response Wrapper Normal
+@logger
 def Get_Response_Wrapper(step_data):
     sModuleInfo = inspect.currentframe().f_code.co_name + " : " + MODULE_NAME
-    CommonUtil.ExecLog(sModuleInfo, "Function: Get_Response_Wrapper", 1)
     try:
         return Get_Response(step_data)
     except Exception:
@@ -886,9 +893,9 @@ def Get_Response_Wrapper(step_data):
 
 
 # Get Response Wrapper With Cookie
+@logger
 def Get_Response_Wrapper_With_Cookie(step_data):
     sModuleInfo = inspect.currentframe().f_code.co_name + " : " + MODULE_NAME
-    CommonUtil.ExecLog(sModuleInfo, "Function: Get_Response_Wrapper_With_Cookie", 1)
     try:
         return Get_Response(step_data, True)
     except Exception:
@@ -896,9 +903,9 @@ def Get_Response_Wrapper_With_Cookie(step_data):
 
 
 # Method to get responses
+@logger
 def Get_Response(step_data, save_cookie=False):
     sModuleInfo = inspect.currentframe().f_code.co_name + " : " + MODULE_NAME
-    CommonUtil.ExecLog(sModuleInfo, "Function: Get_Response", 1)
     try:
         wait_for_response_code = 0
         fields_to_be_saved = ""
@@ -930,9 +937,9 @@ def Get_Response(step_data, save_cookie=False):
 
 
 # Method to search responses, if certain key value pair exists in REST response
+@logger
 def Search_Response(step_data):
     sModuleInfo = inspect.currentframe().f_code.co_name + " : " + MODULE_NAME
-    CommonUtil.ExecLog(sModuleInfo, "Function: Search_Response", 1)
     try:
         fields_to_be_saved = ""
         key = ""
@@ -1005,9 +1012,9 @@ def Search_Response(step_data):
         return CommonUtil.Exception_Handler(sys.exc_info())
 
 
+@logger
 def Get_Element(returned_step_data_list, fields_to_be_saved):
     sModuleInfo = inspect.currentframe().f_code.co_name + " : " + MODULE_NAME
-    CommonUtil.ExecLog(sModuleInfo, "Function: Get_Response", 1)
     try:
         return_result = handle_rest_call(returned_step_data_list, fields_to_be_saved)
         return return_result
@@ -1016,9 +1023,9 @@ def Get_Element(returned_step_data_list, fields_to_be_saved):
 
 
 # Method to sleep for a particular duration
+@logger
 def Sleep(step_data):
     sModuleInfo = inspect.currentframe().f_code.co_name + " : " + MODULE_NAME
-    CommonUtil.ExecLog(sModuleInfo, "Function: Sleep", 1)
     try:
         tuple = step_data[0]
         seconds = int(tuple[2])
@@ -1031,9 +1038,9 @@ def Sleep(step_data):
 
 
 # Method to return pass or fail for the step outcome
+@logger
 def Step_Result(step_data):
     sModuleInfo = inspect.currentframe().f_code.co_name + " : " + MODULE_NAME
-    CommonUtil.ExecLog(sModuleInfo, "Function: Step_Result", 1)
     try:
         if 1 < len(step_data) >= 5:
             CommonUtil.ExecLog(
@@ -1057,9 +1064,9 @@ def Step_Result(step_data):
 
 
 # Performs a series of action or conditional logical action decisions based on user input
+@logger
 def Sequential_Actions(step_data):
     sModuleInfo = inspect.currentframe().f_code.co_name + " : " + MODULE_NAME
-    CommonUtil.ExecLog(sModuleInfo, "Function: Sequential_Actions", 1)
     try:
         for each in step_data:
             logic_row = []
@@ -1183,9 +1190,9 @@ def Sequential_Actions(step_data):
 
 
 # Validation of step data passed on by the user
+@logger
 def Validate_Step_Data(step_data):
     sModuleInfo = inspect.currentframe().f_code.co_name + " : " + MODULE_NAME
-    CommonUtil.ExecLog(sModuleInfo, "Function: Validate_Step_Data", 1)
     try:
         method = ""
         url = ""
@@ -1233,6 +1240,7 @@ def Validate_Step_Data(step_data):
         return CommonUtil.Exception_Handler(sys.exc_info(), None, errMsg)
 
 
+@logger
 def get_data_from_list(input_list, identifier):
     try:
         for id in str(identifier).strip().split("."):
@@ -1247,9 +1255,9 @@ def get_data_from_list(input_list, identifier):
 
 
 # Inserting a field into a list of shared variables
+@logger
 def Insert_Tuple_Into_List(step_data):
     sModuleInfo = inspect.currentframe().f_code.co_name + " : " + MODULE_NAME
-    CommonUtil.ExecLog(sModuleInfo, "Function: Insert_Tuple_Into_List", 1)
     try:
         list_name = ""
         iterate_over = ""

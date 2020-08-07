@@ -5,6 +5,7 @@
 __author__ = "minar"
 import subprocess, inspect, os, sys, re, math, time
 from Framework.Utilities import CommonUtil
+from Framework.Utilities.decorators import logger
 from Framework.Built_In_Automation.Shared_Resources import (
     BuiltInFunctionSharedResources as sr,
 )
@@ -13,6 +14,7 @@ from Framework.Built_In_Automation.Shared_Resources import (
 MODULE_NAME = inspect.getmodulename(__file__)
 
 
+@logger
 def start_adb_server():
     sModuleInfo = inspect.currentframe().f_code.co_name + " : " + MODULE_NAME
     try:
@@ -27,6 +29,7 @@ def start_adb_server():
         return CommonUtil.Exception_Handler(sys.exc_info(), None, errMsg)
 
 
+@logger
 def kill_adb_server():
     sModuleInfo = inspect.currentframe().f_code.co_name + " : " + MODULE_NAME
     try:
@@ -41,6 +44,7 @@ def kill_adb_server():
         return CommonUtil.Exception_Handler(sys.exc_info(), None, errMsg)
 
 
+@logger
 def get_android_version(serial=""):
     sModuleInfo = inspect.currentframe().f_code.co_name + " : " + MODULE_NAME
     try:
@@ -60,6 +64,7 @@ def get_android_version(serial=""):
         return CommonUtil.Exception_Handler(sys.exc_info(), None, errMsg)
 
 
+@logger
 def get_device_model(serial=""):
     sModuleInfo = inspect.currentframe().f_code.co_name + " : " + MODULE_NAME
     try:
@@ -78,6 +83,7 @@ def get_device_model(serial=""):
         return CommonUtil.Exception_Handler(sys.exc_info(), None, errMsg)
 
 
+@logger
 def get_device_name(serial=""):
     sModuleInfo = inspect.currentframe().f_code.co_name + " : " + MODULE_NAME
     try:
@@ -96,6 +102,7 @@ def get_device_name(serial=""):
         return CommonUtil.Exception_Handler(sys.exc_info(), None, errMsg)
 
 
+@logger
 def get_work_profile():
     sModuleInfo = inspect.currentframe().f_code.co_name + " : " + MODULE_NAME
     try:
@@ -118,6 +125,7 @@ def get_work_profile():
         return "failed"
 
 
+@logger
 def get_device_serial_no(serial=""):
     sModuleInfo = inspect.currentframe().f_code.co_name + " : " + MODULE_NAME
     try:
@@ -134,6 +142,7 @@ def get_device_serial_no(serial=""):
         return CommonUtil.Exception_Handler(sys.exc_info(), None, errMsg)
 
 
+@logger
 def get_package_version(package, serial=""):
     sModuleInfo = inspect.currentframe().f_code.co_name + " : " + MODULE_NAME
     try:
@@ -159,6 +168,7 @@ def get_package_version(package, serial=""):
         return CommonUtil.Exception_Handler(sys.exc_info(), None, errMsg)
 
 
+@logger
 def get_device_storage(serial=""):
     sModuleInfo = inspect.currentframe().f_code.co_name + " : " + MODULE_NAME
     try:
@@ -189,6 +199,7 @@ def get_device_storage(serial=""):
         return CommonUtil.Exception_Handler(sys.exc_info(), None, errMsg)
 
 
+@logger
 def get_device_manufacturer(serial=""):
     sModuleInfo = inspect.currentframe().f_code.co_name + " : " + MODULE_NAME
     try:
@@ -207,6 +218,7 @@ def get_device_manufacturer(serial=""):
         return CommonUtil.Exception_Handler(sys.exc_info(), None, errMsg)
 
 
+@logger
 def get_device_imei_info(serial=""):
     """ Returns the device's IMEI """
     # Output: IMEI as a string
@@ -255,6 +267,7 @@ def get_device_imei_info(serial=""):
         return CommonUtil.Exception_Handler(sys.exc_info(), None, errMsg)
 
 
+@logger
 def get_device_summary():
     sModuleInfo = inspect.currentframe().f_code.co_name + " : " + MODULE_NAME
     try:
@@ -267,6 +280,7 @@ def get_device_summary():
         return CommonUtil.Exception_Handler(sys.exc_info(), None, errMsg)
 
 
+@logger
 def get_device_complete_info():
     sModuleInfo = inspect.currentframe().f_code.co_name + " : " + MODULE_NAME
     try:
@@ -279,6 +293,7 @@ def get_device_complete_info():
         return CommonUtil.Exception_Handler(sys.exc_info(), None, errMsg)
 
 
+@logger
 def get_devices():
     """ Retrieves a list of connected devices in the format of "SERIAL_NO STATE" and returns as a list """
     # State may be "device" if connected and we can talk to it, or "unauthorized" if we can't talk to it
@@ -306,6 +321,7 @@ def get_devices():
         return []
 
 
+@logger
 def is_android_connected(serial=""):
     """ Return True/False if at least one device is connected """
 
@@ -331,6 +347,7 @@ def is_android_connected(serial=""):
         return False
 
 
+@logger
 def get_android_sdk(serial=""):
     sModuleInfo = inspect.currentframe().f_code.co_name + " : " + MODULE_NAME
     try:
@@ -349,6 +366,7 @@ def get_android_sdk(serial=""):
         return CommonUtil.Exception_Handler(sys.exc_info(), None, errMsg)
 
 
+@logger
 def install_app(apk_path, serial=""):
     sModuleInfo = inspect.currentframe().f_code.co_name + " : " + MODULE_NAME
     try:
@@ -365,6 +383,7 @@ def install_app(apk_path, serial=""):
         return CommonUtil.Exception_Handler(sys.exc_info(), None, errMsg)
 
 
+@logger
 def uninstall_app(package, serial=""):
     sModuleInfo = inspect.currentframe().f_code.co_name + " : " + MODULE_NAME
     try:
@@ -381,6 +400,7 @@ def uninstall_app(package, serial=""):
         return CommonUtil.Exception_Handler(sys.exc_info(), None, errMsg)
 
 
+@logger
 def connect_device_via_wifi(device_ip):
     sModuleInfo = inspect.currentframe().f_code.co_name + " : " + MODULE_NAME
     try:
@@ -403,6 +423,7 @@ def connect_device_via_wifi(device_ip):
         return CommonUtil.Exception_Handler(sys.exc_info(), None, errMsg)
 
 
+@logger
 def take_screenshot(image_name, serial=""):
     sModuleInfo = inspect.currentframe().f_code.co_name + " : " + MODULE_NAME
     try:
@@ -419,6 +440,7 @@ def take_screenshot(image_name, serial=""):
         return CommonUtil.Exception_Handler(sys.exc_info(), None, errMsg)
 
 
+@logger
 def record_screen(folder_path, video_name, serial=""):
     sModuleInfo = inspect.currentframe().f_code.co_name + " : " + MODULE_NAME
     try:
@@ -437,6 +459,7 @@ def record_screen(folder_path, video_name, serial=""):
         return CommonUtil.Exception_Handler(sys.exc_info(), None, errMsg)
 
 
+@logger
 def get_device_battery_info(serial=""):
     sModuleInfo = inspect.currentframe().f_code.co_name + " : " + MODULE_NAME
     try:
@@ -453,6 +476,7 @@ def get_device_battery_info(serial=""):
         return CommonUtil.Exception_Handler(sys.exc_info(), None, errMsg)
 
 
+@logger
 def get_device_wifi_info(serial=""):
     sModuleInfo = inspect.currentframe().f_code.co_name + " : " + MODULE_NAME
     try:
@@ -469,6 +493,7 @@ def get_device_wifi_info(serial=""):
         return CommonUtil.Exception_Handler(sys.exc_info(), None, errMsg)
 
 
+@logger
 def get_device_cpu_info(serial=""):
     sModuleInfo = inspect.currentframe().f_code.co_name + " : " + MODULE_NAME
     try:
@@ -485,6 +510,7 @@ def get_device_cpu_info(serial=""):
         return CommonUtil.Exception_Handler(sys.exc_info(), None, errMsg)
 
 
+@logger
 def get_package_name(serial=""):
     sModuleInfo = inspect.currentframe().f_code.co_name + " : " + MODULE_NAME
     try:
@@ -503,6 +529,7 @@ def get_package_name(serial=""):
         return CommonUtil.Exception_Handler(sys.exc_info(), None, errMsg)
 
 
+@logger
 def wake_android(serial=""):
     """ Sends the wakeup keypress and a swipe up gesture to try to unlock the device and get it to a usable state for automation """
 
@@ -548,6 +575,7 @@ def wake_android(serial=""):
         return CommonUtil.Exception_Handler(sys.exc_info(), None, errMsg)
 
 
+@logger
 def unlock_android(serial=""):
     """ Attempt to enter password for locked phone """
     # Caveat 1: Only works if device has PIN or PASSWORD, not if they use a pattern, or pattern as a fingerprint backup
@@ -645,6 +673,7 @@ def unlock_android(serial=""):
         return CommonUtil.Exception_Handler(sys.exc_info(), None, errMsg)
 
 
+@logger
 def Enter_Password_UIAutomator(password, serial=""):
     """ This function can evolve a lot more. For time being we are just looking for button with text and clicking for UNLOCKING only"""
 
@@ -696,6 +725,7 @@ def Enter_Password_UIAutomator(password, serial=""):
         return CommonUtil.Exception_Handler(sys.exc_info(), None, errMsg)
 
 
+@logger
 def unlock_android_app(serial=""):
     """ Attempt to enter password for locked app.  It is up to the user to put proper logic to figure out if the app is password protected.  
     We will assume user have already checked that"""
@@ -740,6 +770,7 @@ def unlock_android_app(serial=""):
         return CommonUtil.Exception_Handler(sys.exc_info(), None, errMsg)
 
 
+@logger
 def check_if_device_is_unlocked(serial=""):
     # if device is locked, current focused window always shows "StatusBar" only
     sModuleInfo = inspect.currentframe().f_code.co_name + " : " + MODULE_NAME
@@ -772,6 +803,7 @@ def check_if_device_is_unlocked(serial=""):
         return CommonUtil.Exception_Handler(sys.exc_info(), None, errMsg)
 
 
+# @logger
 # def detect_foreground_android(serial=''):
 #     ''' Return whatever has the foreground '''
 #
@@ -789,6 +821,7 @@ def check_if_device_is_unlocked(serial=""):
 #         return CommonUtil.Exception_Handler(sys.exc_info(), None, errMsg)
 
 
+@logger
 def swipe_android(x_start, y_start, x_end, y_end, duration=1000, serial=""):
     """ Sends a swipe gesture to a device """
 
@@ -814,6 +847,7 @@ def swipe_android(x_start, y_start, x_end, y_end, duration=1000, serial=""):
         )
 
 
+@logger
 def reset_android(serial=""):
     """ Resets the specified device, or the only device connected """
 
@@ -833,6 +867,7 @@ def reset_android(serial=""):
         )
 
 
+@logger
 def reset_all_android():
     """ Resets all connected devices """
 
@@ -849,6 +884,7 @@ def reset_all_android():
         )
 
 
+@logger
 def execute_program(package_name, serial=""):
     """ Executes an Android program """
 

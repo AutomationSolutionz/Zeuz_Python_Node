@@ -25,6 +25,7 @@ import inspect, time, datetime, os, sys
 from os import system
 from _elementtree import Element  # What is this for?
 from Framework.Utilities import CommonUtil
+from Framework.Utilities.decorators import logger
 
 MODULE_NAME = inspect.getmodulename(__file__)
 
@@ -66,9 +67,9 @@ global recur_count
 recur_count = 0  # To be deleted
 
 
+@logger
 def go_to_desktop(data_set):
     sModuleInfo = inspect.currentframe().f_code.co_name + " : " + MODULE_NAME
-    CommonUtil.ExecLog(sModuleInfo, "Function start", 0)
     invoke = "true"
     Element = get_element("", "Show desktop", "TrayShowDesktopButtonWClass")
     if Element in failed_tag_list:
@@ -90,11 +91,11 @@ def go_to_desktop(data_set):
 
 
 # Method to click on element; step data passed on by the user
+@logger
 def Click_Element(data_set):
     """ Click using element, first get the elemnent then click"""
 
     sModuleInfo = inspect.currentframe().f_code.co_name + " : " + MODULE_NAME
-    CommonUtil.ExecLog(sModuleInfo, "Function start", 0)
 
     expand = None
     invoke = None
@@ -185,9 +186,9 @@ def Click_Element(data_set):
         return CommonUtil.Exception_Handler(sys.exc_info(), None, errMsg)
 
 
+@logger
 def Right_Click_Element(data_set):
     sModuleInfo = inspect.currentframe().f_code.co_name + " : " + MODULE_NAME
-    CommonUtil.ExecLog(sModuleInfo, "Function start", 0)
     try:
         # Get element object
         # try for 10 seconds with 2 seconds delay
@@ -259,6 +260,7 @@ local_run = False
 """
 
 
+@logger
 def get_element(
     MainWindowName_OR_ParentElement,
     Element_Name,
@@ -327,6 +329,7 @@ def get_element(
         )
 
 
+@logger
 def _child_search(
     ParentElement,
     Element_Name,
@@ -634,6 +637,7 @@ def _child_search(
         return "failed"
 
 
+@logger
 def _get_main_window(WindowName):
     try:
         MainWindowsList = AutomationElement.RootElement.FindAll(
@@ -669,6 +673,7 @@ def _get_main_window(WindowName):
         )
 
 
+@logger
 def Click_Element_None_Mouse(
     Element, Expand=None, Invoke=None, Select=None, Toggle=None
 ):
@@ -803,9 +808,9 @@ def Click_Element_None_Mouse(
         return "failed"
 
 
+@logger
 def Drag_and_Drop_Element(data_set):
     sModuleInfo = inspect.currentframe().f_code.co_name + " : " + MODULE_NAME
-    CommonUtil.ExecLog(sModuleInfo, "Function start", 0)
 
     element_name = []
     window_name = []
@@ -883,6 +888,7 @@ def Drag_and_Drop_Element(data_set):
         )
 
 
+@logger
 def Drag_Object(Element1_source, Element2_destination):
     try:
         print("clicking your element")
@@ -930,9 +936,9 @@ def Drag_Object(Element1_source, Element2_destination):
         return "failed"
 
 
+@logger
 def Double_Click_Element(data_set):
     sModuleInfo = inspect.currentframe().f_code.co_name + " : " + MODULE_NAME
-    CommonUtil.ExecLog(sModuleInfo, "Function start", 0)
     try:
         # Get element object
         # try for 10 seconds with 2 seconds delay
@@ -978,9 +984,9 @@ def Double_Click_Element(data_set):
         )
 
 
+@logger
 def Hover_Over_Element(data_set):
     sModuleInfo = inspect.currentframe().f_code.co_name + " : " + MODULE_NAME
-    CommonUtil.ExecLog(sModuleInfo, "Function start", 0)
     try:
         # Get element object
         # try for 10 seconds with 2 seconds delay
@@ -1024,9 +1030,9 @@ def Hover_Over_Element(data_set):
         )
 
 
+@logger
 def Validate_Text(data_set):
     sModuleInfo = inspect.currentframe().f_code.co_name + " : " + MODULE_NAME
-    CommonUtil.ExecLog(sModuleInfo, "Function start", 0)
     try:
         expected_text = ""
         for row in data_set:
@@ -1080,9 +1086,9 @@ def Validate_Text(data_set):
         )
 
 
+@logger
 def Save_Text(data_set):
     sModuleInfo = inspect.currentframe().f_code.co_name + " : " + MODULE_NAME
-    CommonUtil.ExecLog(sModuleInfo, "Function start", 0)
     try:
         variable_name = ""
         field = "value"
@@ -1157,11 +1163,11 @@ def Save_Text(data_set):
         )
 
 
+@logger
 def getCoordinates(element, position):
     """ Return coordinates of attachment's centre """
 
     sModuleInfo = inspect.currentframe().f_code.co_name + " : " + MODULE_NAME
-    CommonUtil.ExecLog(sModuleInfo, "Function Start", 0)
 
     # Parse input
     try:
@@ -1201,11 +1207,11 @@ def getCoordinates(element, position):
         )
 
 
+@logger
 def Enter_Text_In_Text_Box(data_set):
     """ Insert text """
 
     sModuleInfo = inspect.currentframe().f_code.co_name + " : " + MODULE_NAME
-    CommonUtil.ExecLog(sModuleInfo, "Function Start", 0)
     try:
         text = ""
         keystroke = True
@@ -1280,10 +1286,10 @@ def Enter_Text_In_Text_Box(data_set):
         return CommonUtil.Exception_Handler(sys.exc_info(), None, "Couln't enter text")
 
 
+@logger
 def Scroll(data_set):
     try:
         sModuleInfo = inspect.currentframe().f_code.co_name + " : " + MODULE_NAME
-        CommonUtil.ExecLog(sModuleInfo, "Function Start", 0)
         # Get element object
         # try for 10 seconds with 2 seconds delay
         max_try = 5
@@ -1325,11 +1331,11 @@ def Scroll(data_set):
         )
 
 
+@logger
 def Get_Element(data_set):
     """ Insert text """
 
     sModuleInfo = inspect.currentframe().f_code.co_name + " : " + MODULE_NAME
-    CommonUtil.ExecLog(sModuleInfo, "Function Start", 0)
 
     element_name = ""
     window_name = ""
@@ -1404,9 +1410,9 @@ def Get_Element(data_set):
         return CommonUtil.Exception_Handler(sys.exc_info(), None, errMsg)
 
 
+@logger
 def Run_Application(data_set):
     sModuleInfo = inspect.currentframe().f_code.co_name + " : " + MODULE_NAME
-    CommonUtil.ExecLog(sModuleInfo, "Function Start", 0)
     try:
         Desktop_app = ""
         for row in data_set:
@@ -1426,9 +1432,9 @@ def Run_Application(data_set):
         return "failed"
 
 
+@logger
 def Close_Application(data_set):
     sModuleInfo = inspect.currentframe().f_code.co_name + " : " + MODULE_NAME
-    CommonUtil.ExecLog(sModuleInfo, "Function Start", 0)
     try:
         Desktop_app = ""
         for row in data_set:
@@ -1448,13 +1454,13 @@ def Close_Application(data_set):
         return "failed"
 
 
+@logger
 def Keystroke_For_Element(data_set):
     """ Insert characters - mainly key combonations"""
     # Example: Ctrl+c
     # Repeats keypress if a number follows, example: tab,3
 
     sModuleInfo = inspect.currentframe().f_code.co_name + " : " + MODULE_NAME
-    CommonUtil.ExecLog(sModuleInfo, "Function Start", 0)
 
     # Parse dataset
     try:

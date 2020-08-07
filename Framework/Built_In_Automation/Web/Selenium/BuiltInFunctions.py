@@ -34,6 +34,7 @@ from Framework.Utilities import CommonUtil, ConfigModule
 from Framework.Built_In_Automation.Shared_Resources import (
     BuiltInFunctionSharedResources as Shared_Resources,
 )
+from Framework.Utilities.decorators import logger
 from Framework.Built_In_Automation.Shared_Resources import LocateElement
 from Framework.Utilities.CommonUtil import (
     passed_tag_list,
@@ -81,12 +82,12 @@ else:
     raise ValueError("No dependency set - Cannot run")
 
 
+@logger
 def Open_Browser(dependency, window_size_X=None, window_size_Y=None):
     """ Launch browser and create instance """
 
     global selenium_driver
     sModuleInfo = inspect.currentframe().f_code.co_name + " : " + MODULE_NAME
-    CommonUtil.ExecLog(sModuleInfo, "Function Start", 0)
 
     try:
         browser = dependency["Browser"]
@@ -215,11 +216,11 @@ def Open_Browser(dependency, window_size_X=None, window_size_Y=None):
         return CommonUtil.Exception_Handler(sys.exc_info())
 
 
+@logger
 def Open_Browser_Wrapper(step_data):
     """ Temporary wrapper for open_browser() until that function can be updated to use only data_set """
 
     sModuleInfo = inspect.currentframe().f_code.co_name + " : " + MODULE_NAME
-    CommonUtil.ExecLog(sModuleInfo, "Function Start", 0)
 
     try:
         global dependency
@@ -247,11 +248,11 @@ def Open_Browser_Wrapper(step_data):
         return CommonUtil.Exception_Handler(sys.exc_info(), None, ErrorMessage)
 
 
+@logger
 def Go_To_Link(step_data, page_title=False):
     # this function needs work with validating page title.  We need to check if user entered any title.
     # if not then we don't do the validation
     sModuleInfo = inspect.currentframe().f_code.co_name + " : " + MODULE_NAME
-    CommonUtil.ExecLog(sModuleInfo, "Function Start", 0)
     window_size_X = ConfigModule.get_config_value("", "window_size_x")
     window_size_Y = ConfigModule.get_config_value("", "window_size_y")
     # Open browser and create driver if user has not already done so
@@ -302,6 +303,7 @@ def Go_To_Link(step_data, page_title=False):
         return CommonUtil.Exception_Handler(sys.exc_info(), None, ErrorMessage)
 
 
+@logger
 def Handle_Browser_Alert(step_data):
     # accepts browser alert
     """
@@ -311,7 +313,6 @@ def Handle_Browser_Alert(step_data):
     handle alert   selenium action     reject, fail, no, cancel (any of these would work)
     """
     sModuleInfo = inspect.currentframe().f_code.co_name + " : " + MODULE_NAME
-    CommonUtil.ExecLog(sModuleInfo, "Function Start", 0)
 
     try:
         choice = str(step_data[0][2])
@@ -394,11 +395,13 @@ def Handle_Browser_Alert(step_data):
         return CommonUtil.Exception_Handler(sys.exc_info(), None, ErrorMessage)
 
 
+@logger
 def Initialize_List(data_set):
     """ Temporary wrapper until we can convert everything to use just data_set and not need the extra [] """
     return Shared_Resources.Initialize_List([data_set])
 
 
+@logger
 def save_screenshot(driver, path):
     """
     Take the screenshot of the whole web page
@@ -424,9 +427,9 @@ def save_screenshot(driver, path):
     driver.set_window_size(original_size["width"], original_size["height"])
 
 
+@logger
 def take_screenshot_selenium(data_set):
     sModuleInfo = inspect.currentframe().f_code.co_name + " : " + MODULE_NAME
-    CommonUtil.ExecLog(sModuleInfo, "Function Start", 0)
 
     from pathlib import Path
     import time
@@ -461,9 +464,9 @@ def take_screenshot_selenium(data_set):
 
 
 # Method to enter texts in a text box; step data passed on by the user
+@logger
 def Enter_Text_In_Text_Box(step_data):
     sModuleInfo = inspect.currentframe().f_code.co_name + " : " + MODULE_NAME
-    CommonUtil.ExecLog(sModuleInfo, "Function Start", 0)
 
     try:
         delay = 0
@@ -509,6 +512,7 @@ def Enter_Text_In_Text_Box(step_data):
         return CommonUtil.Exception_Handler(sys.exc_info(), None, errMsg)
 
 
+@logger
 def Keystroke_For_Element(data_set):
     """ Send a key stroke or string to an element or wherever the cursor is located """
     # Keystroke Keys: Any key. Eg: Tab, Escape, etc
@@ -516,7 +520,6 @@ def Keystroke_For_Element(data_set):
     # If no element parameter is provided, it will enter the keystroke wherever the cursor is located
 
     sModuleInfo = inspect.currentframe().f_code.co_name + " : " + MODULE_NAME
-    CommonUtil.ExecLog(sModuleInfo, "Function start", 0)
     global selenium_driver
     # Parse the data set
     try:
@@ -600,11 +603,11 @@ def Keystroke_For_Element(data_set):
 
 
 # Method to click on element; step data passed on by the user
+@logger
 def Click_Element(data_set):
     """ Click using element or location """
 
     sModuleInfo = inspect.currentframe().f_code.co_name + " : " + MODULE_NAME
-    CommonUtil.ExecLog(sModuleInfo, "Function start", 0)
     global selenium_driver
     try:
         bodyElement = ""
@@ -675,6 +678,7 @@ def Click_Element(data_set):
             )
 
 
+@logger
 def Mouse_Click_Element(data_set):
     """ 
     This funciton will move the mouse to the element and then perform a physical mouse click 
@@ -686,7 +690,6 @@ def Mouse_Click_Element(data_set):
     
     """
     sModuleInfo = inspect.currentframe().f_code.co_name + " : " + MODULE_NAME
-    CommonUtil.ExecLog(sModuleInfo, "Function start", 0)
     global selenium_driver
     # Click using elemen
     CommonUtil.ExecLog(sModuleInfo, "Looking for element", 0)
@@ -727,12 +730,12 @@ def Mouse_Click_Element(data_set):
 
 
 # Method to click and hold on element; step data passed on by the user
+@logger
 def Click_and_Text(data_set):
 
     """ Click and enter text specially for dropdown box"""
 
     sModuleInfo = inspect.currentframe().f_code.co_name + " : " + MODULE_NAME
-    CommonUtil.ExecLog(sModuleInfo, "Function start", 0)
     global selenium_driver
     try:
         data_set_to = []
@@ -752,9 +755,9 @@ def Click_and_Text(data_set):
         return CommonUtil.Exception_Handler(sys.exc_info())
 
 
+@logger
 def Click_and_Hold_Element(step_data):
     sModuleInfo = inspect.currentframe().f_code.co_name + " : " + MODULE_NAME
-    CommonUtil.ExecLog(sModuleInfo, "Function Start", 0)
     global selenium_driver
     try:
         Element = LocateElement.Get_Element(step_data, selenium_driver)
@@ -786,9 +789,9 @@ def Click_and_Hold_Element(step_data):
 
 
 # Method to right click on element; step data passed on by the user
+@logger
 def Context_Click_Element(step_data):
     sModuleInfo = inspect.currentframe().f_code.co_name + " : " + MODULE_NAME
-    CommonUtil.ExecLog(sModuleInfo, "Function Start", 0)
     global selenium_driver
     try:
         Element = LocateElement.Get_Element(step_data, selenium_driver)
@@ -820,9 +823,9 @@ def Context_Click_Element(step_data):
 
 
 # Method to double click on element; step data passed on by the user
+@logger
 def Double_Click_Element(step_data):
     sModuleInfo = inspect.currentframe().f_code.co_name + " : " + MODULE_NAME
-    CommonUtil.ExecLog(sModuleInfo, "Function Start", 0)
     global selenium_driver
     try:
         Element = LocateElement.Get_Element(step_data, selenium_driver)
@@ -854,9 +857,9 @@ def Double_Click_Element(step_data):
 
 
 # Method to move to middle of the element; step data passed on by the user
+@logger
 def Move_To_Element(step_data):
     sModuleInfo = inspect.currentframe().f_code.co_name + " : " + MODULE_NAME
-    CommonUtil.ExecLog(sModuleInfo, "Function Start", 0)
     global selenium_driver
     try:
         Element = LocateElement.Get_Element(step_data, selenium_driver)
@@ -887,9 +890,9 @@ def Move_To_Element(step_data):
 
 
 # Method to hover over element; step data passed on by the user
+@logger
 def Hover_Over_Element(step_data):
     sModuleInfo = inspect.currentframe().f_code.co_name + " : " + MODULE_NAME
-    CommonUtil.ExecLog(sModuleInfo, "Function Start", 0)
     global selenium_driver
     try:
         Element = LocateElement.Get_Element(step_data, selenium_driver)
@@ -920,11 +923,11 @@ def Hover_Over_Element(step_data):
         return CommonUtil.Exception_Handler(sys.exc_info())
 
 
+@logger
 def get_location_of_element(data_set):
     """ Returns the x,y location of an element """
 
     sModuleInfo = inspect.currentframe().f_code.co_name + " : " + MODULE_NAME
-    CommonUtil.ExecLog(sModuleInfo, "Function start", 0)
     global selenium_driver
     # Parse data set
     try:
@@ -971,9 +974,9 @@ def get_location_of_element(data_set):
     return "passed"
 
 
+@logger
 def Save_Attribute(step_data):
     sModuleInfo = inspect.currentframe().f_code.co_name + " : " + MODULE_NAME
-    CommonUtil.ExecLog(sModuleInfo, "Function start", 0)
     global selenium_driver
     try:
         Element = LocateElement.Get_Element(step_data, selenium_driver)
@@ -1003,9 +1006,9 @@ def Save_Attribute(step_data):
 
 
 # Search for element on new page after a particular time-out duration entered by the user through step-data
+@logger
 def Wait_For_New_Element(step_data):
     sModuleInfo = inspect.currentframe().f_code.co_name + " : " + MODULE_NAME
-    CommonUtil.ExecLog(sModuleInfo, "Function Start", 0)
     global selenium_driver
     try:
         Element = LocateElement.Get_Element(step_data, selenium_driver)
@@ -1044,9 +1047,9 @@ def Wait_For_New_Element(step_data):
 
 
 # Validating text from an element given information regarding the expected text
+@logger
 def Compare_Lists(step_data):
     sModuleInfo = inspect.currentframe().f_code.co_name + " : " + MODULE_NAME
-    CommonUtil.ExecLog(sModuleInfo, "Function start", 0)
     try:
         return Shared_Resources.Compare_Lists([step_data])
     except:
@@ -1054,9 +1057,9 @@ def Compare_Lists(step_data):
 
 
 # Validating text from an element given information regarding the expected text
+@logger
 def Compare_Variables(step_data):
     sModuleInfo = inspect.currentframe().f_code.co_name + " : " + MODULE_NAME
-    CommonUtil.ExecLog(sModuleInfo, "Function start", 0)
     try:
         return Shared_Resources.Compare_Variables([step_data])
     except:
@@ -1064,9 +1067,9 @@ def Compare_Variables(step_data):
 
 
 # Inserting a field into a list of shared variables
+@logger
 def Insert_Into_List(step_data):
     sModuleInfo = inspect.currentframe().f_code.co_name + " : " + MODULE_NAME
-    CommonUtil.ExecLog(sModuleInfo, "Function start", 0)
     try:
         if len(step_data) == 1:  # will have to test #saving direct input string data
             list_name = ""
@@ -1156,9 +1159,9 @@ def Insert_Into_List(step_data):
 
 
 # Validating text from an element given information regarding the expected text
+@logger
 def Save_Text(step_data):
     sModuleInfo = inspect.currentframe().f_code.co_name + " : " + MODULE_NAME
-    CommonUtil.ExecLog(sModuleInfo, "Function start", 0)
     global selenium_driver
     try:
         Element = LocateElement.Get_Element(step_data, selenium_driver)
@@ -1192,6 +1195,7 @@ def Save_Text(step_data):
         return CommonUtil.Exception_Handler(sys.exc_info())
 
 
+@logger
 def save_attribute_values_in_list(step_data):
     """
     This action will expect users to provide a parent element under which they are expecting
@@ -1208,7 +1212,6 @@ def save_attribute_values_in_list(step_data):
         
     """
     sModuleInfo = inspect.currentframe().f_code.co_name + " : " + MODULE_NAME
-    CommonUtil.ExecLog(sModuleInfo, "Function start", 0)
     global selenium_driver
     try:
         # this is the parent object.  If the user wants to search the entire page, they can
@@ -1289,9 +1292,9 @@ def save_attribute_values_in_list(step_data):
 
 
 # Validating text from an element given information regarding the expected text
+@logger
 def Validate_Text(step_data):
     sModuleInfo = inspect.currentframe().f_code.co_name + " : " + MODULE_NAME
-    CommonUtil.ExecLog(sModuleInfo, "Function start", 0)
     global selenium_driver
     try:
         Element = LocateElement.Get_Element(step_data, selenium_driver)
@@ -1358,9 +1361,9 @@ def Validate_Text(step_data):
         return CommonUtil.Exception_Handler(sys.exc_info())
 
 
+@logger
 def Validate_Url(step_data):
     sModuleInfo = inspect.currentframe().f_code.co_name + " : " + MODULE_NAME
-    CommonUtil.ExecLog(sModuleInfo, "Function start", 0)
     global selenium_driver
     try:
         url = selenium_driver.current_url
@@ -1393,9 +1396,9 @@ def Validate_Url(step_data):
 
 
 # Method to sleep for a particular duration
+@logger
 def Sleep(step_data):
     sModuleInfo = inspect.currentframe().f_code.co_name + " : " + MODULE_NAME
-    CommonUtil.ExecLog(sModuleInfo, "Function start", 0)
     global selenium_driver
     try:
         if 1 < len(step_data) >= 2:
@@ -1417,9 +1420,9 @@ def Sleep(step_data):
 
 
 # Method to scroll down a page
+@logger
 def Scroll(step_data):
     sModuleInfo = inspect.currentframe().f_code.co_name + " : " + MODULE_NAME
-    CommonUtil.ExecLog(sModuleInfo, "Function start", 0)
     global selenium_driver
     selenium_driver.switch_to_default_content()
     try:
@@ -1504,9 +1507,9 @@ def Scroll(step_data):
 
 
 # Method to scroll to view an element
+@logger
 def scroll_to_element(step_data):
     sModuleInfo = inspect.currentframe().f_code.co_name + " : " + MODULE_NAME
-    CommonUtil.ExecLog(sModuleInfo, "Function start", 0)
     global selenium_driver
     try:
         scroll_element = LocateElement.Get_Element(step_data, selenium_driver)
@@ -1531,9 +1534,9 @@ def scroll_to_element(step_data):
 
 
 # Method to scroll to view an element
+@logger
 def scroll_element_to_top(step_data):
     sModuleInfo = inspect.currentframe().f_code.co_name + " : " + MODULE_NAME
-    CommonUtil.ExecLog(sModuleInfo, "Function start", 0)
     global selenium_driver
     try:
         scroll_element = LocateElement.Get_Element(step_data, selenium_driver)
@@ -1555,9 +1558,9 @@ def scroll_element_to_top(step_data):
 
 
 # Method to return pass or fail for the step outcome
+@logger
 def Navigate(step_data):
     sModuleInfo = inspect.currentframe().f_code.co_name + " : " + MODULE_NAME
-    CommonUtil.ExecLog(sModuleInfo, "Function start", 0)
     global selenium_driver
     try:
         if 1 < len(step_data) >= 2:
@@ -1586,9 +1589,9 @@ def Navigate(step_data):
         return CommonUtil.Exception_Handler(sys.exc_info())
 
 
+@logger
 def Select_Deselect(step_data):
     sModuleInfo = inspect.currentframe().f_code.co_name + " : " + MODULE_NAME
-    CommonUtil.ExecLog(sModuleInfo, "Function start", 0)
     global selenium_driver
     try:
         Element = LocateElement.Get_Element(step_data, selenium_driver)
@@ -1656,6 +1659,7 @@ def Select_Deselect(step_data):
         return CommonUtil.Exception_Handler(sys.exc_info())
 
 
+@logger
 def validate_table(data_set):
     """ Compare the table provided in step data with the one found on the web page """
     # Compare a webpage table with one specified in the step data
@@ -1667,7 +1671,6 @@ def validate_table(data_set):
     # > exact: True (default) do nothing. False= Infer which cells to ignore. This is similar to ignore rows/cols, but can ignore specific cells if the user does not specify them. Mutually exclusive of ignore rows/cols
     global selenium_driver
     sModuleInfo = inspect.currentframe().f_code.co_name + " : " + MODULE_NAME
-    CommonUtil.ExecLog(sModuleInfo, "Function start", 0)
 
     # Initialize variables
     have_table = False  # Tells us if we read a table from the step data
@@ -1912,11 +1915,11 @@ def validate_table(data_set):
     return "passed"
 
 
+@logger
 def validate_table_row_size(data_set):
     """ Save row size in a share variable of the table provided in step data"""
 
     sModuleInfo = inspect.currentframe().f_code.co_name + " : " + MODULE_NAME
-    CommonUtil.ExecLog(sModuleInfo, "Function start", 0)
     global selenium_driver
     try:
         # Initialize variables
@@ -1977,11 +1980,11 @@ def validate_table_row_size(data_set):
         return CommonUtil.Exception_Handler(sys.exc_info(), None)
 
 
+@logger
 def validate_table_column_size(data_set):
     """ Save row size in a share variable of the table provided in step data"""
     global selenium_driver
     sModuleInfo = inspect.currentframe().f_code.co_name + " : " + MODULE_NAME
-    CommonUtil.ExecLog(sModuleInfo, "Function start", 0)
     try:
         # Initialize variables
         expected_col = ""  # variable where the row size will be saved
@@ -2061,6 +2064,7 @@ def validate_table_column_size(data_set):
         return CommonUtil.Exception_Handler(sys.exc_info(), None)
 
 
+@logger
 def get_webpage_table_html(data_set, ignore_rows=[], ignore_cols=[], retain_case=True):
     """ Find an HTML table given the elements, extract the text and return as a dictionary containing lists holding the data """
     # data_set: Contains user defined identifiers used to get the element of table
@@ -2069,7 +2073,6 @@ def get_webpage_table_html(data_set, ignore_rows=[], ignore_cols=[], retain_case
     # retain_case: Set to true to keep data exactly as is. Set to false to set it to lower case which is useful for case insensitive matching
 
     sModuleInfo = inspect.currentframe().f_code.co_name + " : " + MODULE_NAME
-    CommonUtil.ExecLog(sModuleInfo, "Function start", 0)
     global selenium_driver
     try:
         # Get element representing entire table
@@ -2113,6 +2116,7 @@ def get_webpage_table_html(data_set, ignore_rows=[], ignore_cols=[], retain_case
         )
 
 
+@logger
 def get_webpage_table_css(data_set, ignore_rows=[], ignore_cols=[], retain_case=True):
     """ Find a CSS table given the elements, extract the text and return as a dictionary containing lists holding the data """
     # data_set: Contains user defined identifiers used to get the element of table
@@ -2121,7 +2125,6 @@ def get_webpage_table_css(data_set, ignore_rows=[], ignore_cols=[], retain_case=
     # retain_case: Set to true to keep data exactly as is. Set to false to set it to lower case which is useful for case insensitive matching
 
     sModuleInfo = inspect.currentframe().f_code.co_name + " : " + MODULE_NAME
-    CommonUtil.ExecLog(sModuleInfo, "Function start", 0)
     global selenium_driver
     try:
         # Get element representing entire table
@@ -2184,9 +2187,9 @@ def get_webpage_table_css(data_set, ignore_rows=[], ignore_cols=[], retain_case=
         )
 
 
+@logger
 def Tear_Down_Selenium(step_data=[[[]]]):
     sModuleInfo = inspect.currentframe().f_code.co_name + " : " + MODULE_NAME
-    CommonUtil.ExecLog(sModuleInfo, "Function Start", 0)
     global selenium_driver
     try:
         CommonUtil.ExecLog(
@@ -2201,9 +2204,9 @@ def Tear_Down_Selenium(step_data=[[[]]]):
 
 
 ##@Riz and @Sreejoy: More work is needed here. Please investigate further.
+@logger
 def Get_Plain_Text_Element(element_parameter, element_value, parent=False):
     sModuleInfo = inspect.currentframe().f_code.co_name + " : " + MODULE_NAME
-    CommonUtil.ExecLog(sModuleInfo, "Function start", 0)
     global selenium_driver
     try:
         if parent == False:
@@ -2257,15 +2260,16 @@ def Get_Plain_Text_Element(element_parameter, element_value, parent=False):
         return CommonUtil.Exception_Handler(sys.exc_info(), None, errMsg)
 
 
+@logger
 def get_driver():
     global selenium_driver
     return selenium_driver
 
 
 # Method to open a new tab
+@logger
 def open_new_tab(step_data):
     sModuleInfo = inspect.currentframe().f_code.co_name + " : " + MODULE_NAME
-    CommonUtil.ExecLog(sModuleInfo, "Function start", 0)
     global selenium_driver
     try:
         time.sleep(2)
@@ -2280,9 +2284,9 @@ def open_new_tab(step_data):
 
 
 # Method to switch to a new tab
+@logger
 def switch_tab(step_data):
     sModuleInfo = inspect.currentframe().f_code.co_name + " : " + MODULE_NAME
-    CommonUtil.ExecLog(sModuleInfo, "Function start", 0)
     global selenium_driver
     try:
         tab = 1
@@ -2303,9 +2307,9 @@ def switch_tab(step_data):
 
 
 # Method to switch to a new tab
+@logger
 def switch_window(step_data):
     sModuleInfo = inspect.currentframe().f_code.co_name + " : " + MODULE_NAME
-    CommonUtil.ExecLog(sModuleInfo, "Function start", 0)
     global selenium_driver
     try:
 
@@ -2358,9 +2362,9 @@ def switch_window(step_data):
 
 
 # Method to upload file
+@logger
 def upload_file(step_data):
     sModuleInfo = inspect.currentframe().f_code.co_name + " : " + MODULE_NAME
-    CommonUtil.ExecLog(sModuleInfo, "Function start", 0)
     global selenium_driver
     try:
         file_name = ""
@@ -2402,9 +2406,9 @@ def upload_file(step_data):
 
 
 # Method to upload file
+@logger
 def drag_and_drop(step_data):
     sModuleInfo = inspect.currentframe().f_code.co_name + " : " + MODULE_NAME
-    CommonUtil.ExecLog(sModuleInfo, "Function start", 0)
     global selenium_driver
     try:
         source = ""
@@ -2458,11 +2462,11 @@ def drag_and_drop(step_data):
         return CommonUtil.Exception_Handler(sys.exc_info())
 
 
+@logger
 def if_element_exists(data_set):
     """ Click on an element """
 
     sModuleInfo = inspect.currentframe().f_code.co_name + " : " + MODULE_NAME
-    CommonUtil.ExecLog(sModuleInfo, "Function Start", 0)
     global selenium_driver
     try:
         variable_name = ""

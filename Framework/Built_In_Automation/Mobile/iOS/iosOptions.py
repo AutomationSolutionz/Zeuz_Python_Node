@@ -8,11 +8,13 @@
 """
 import subprocess, inspect, sys
 from Framework.Utilities import CommonUtil
+from Framework.Utilities.decorators import logger
 
 MODULE_NAME = inspect.getmodulename(__file__)
 imobiledevice_path = "/usr/local/bin/"  # Install location of iMobileDevice programs
 
 
+@logger
 def run_program(cmd):
     """ Executes a command line program """
 
@@ -26,6 +28,7 @@ def run_program(cmd):
         return CommonUtil.Exception_Handler(sys.exc_info())
 
 
+@logger
 def get_list_udid():
     """ Returns a list of UDID's for connected IOS devices """
 
@@ -42,6 +45,7 @@ def get_list_udid():
         return CommonUtil.Exception_Handler(sys.exc_info())
 
 
+@logger
 def get_list_device_names(UDID=""):
     """ Returns a list of device names """
 
@@ -60,6 +64,7 @@ def get_list_device_names(UDID=""):
         return CommonUtil.Exception_Handler(sys.exc_info())
 
 
+@logger
 def get_device_info(UDID=""):
     """ Returns list of device information """
 
@@ -78,6 +83,7 @@ def get_device_info(UDID=""):
         return CommonUtil.Exception_Handler(sys.exc_info())
 
 
+@logger
 def get_list_installed_packages(UDID=""):
     """ Returns a list of all installed packages """
 
@@ -100,6 +106,7 @@ def get_list_installed_packages(UDID=""):
         return CommonUtil.Exception_Handler(sys.exc_info())
 
 
+@logger
 def take_screenshot(UDID=""):
     """ Captures a screenshot of the device, and returns the filename """
 
@@ -118,6 +125,7 @@ def take_screenshot(UDID=""):
         return CommonUtil.Exception_Handler(sys.exc_info())
 
 
+@logger
 def ios_reboot(UDID=""):
     """ Reboots the device """
 
@@ -136,6 +144,7 @@ def ios_reboot(UDID=""):
         return CommonUtil.Exception_Handler(sys.exc_info())
 
 
+@logger
 def ios_shutdown(UDID=""):
     """ Turns off the device """
 
@@ -154,6 +163,7 @@ def ios_shutdown(UDID=""):
         return CommonUtil.Exception_Handler(sys.exc_info())
 
 
+@logger
 def get_ios_imei(UDID=""):
     """ Reads the device IMEI """
 
@@ -180,6 +190,7 @@ def get_ios_imei(UDID=""):
         return CommonUtil.Exception_Handler(sys.exc_info())
 
 
+@logger
 def get_ios_version(UDID=""):
     """ Reads the device version """
 
@@ -209,6 +220,7 @@ def get_ios_version(UDID=""):
         return CommonUtil.Exception_Handler(sys.exc_info())
 
 
+@logger
 def get_phone_name(UDID=""):
     """ Reads the phone name """
 
@@ -238,6 +250,7 @@ def get_phone_name(UDID=""):
         return CommonUtil.Exception_Handler(sys.exc_info())
 
 
+@logger
 def get_product_name(UDID=""):
     """ Reads the phone name """
 

@@ -26,6 +26,7 @@ from Framework.Utilities.CommonUtil import (
     failed_tag_list,
     skipped_tag_list,
 )  # Allowed return strings, used to normalize pass/fail
+from Framework.Utilities.decorators import logger
 from Framework.Built_In_Automation.Shared_Resources import LocateElement
 from Framework import MainDriverApi
 from Framework.Utilities import FileUtilities
@@ -69,12 +70,14 @@ programming_logic_keywords = ["if else", "while loop", "for loop", "loop setting
 MODULE_NAME = inspect.getmodulename(__file__)
 
 
+@logger
 def unmask_string(givenText):
     for e in list(unmask_characters.keys()):
         givenText = givenText.replace(e, unmask_characters[e])
     return givenText
 
 
+@logger
 def unmask_step_data(step_data):
     """
     unmasks the special characters sent from servers
@@ -98,6 +101,7 @@ def unmask_step_data(step_data):
         return CommonUtil.Exception_Handler(sys.exc_info())
 
 
+@logger
 def sanitize(step_data):
     """ Sanitize step data Field and Sub-Field """
     """ Usage:
@@ -145,6 +149,7 @@ def sanitize(step_data):
         return CommonUtil.Exception_Handler(sys.exc_info())
 
 
+@logger
 def verify_step_data(step_data):
     """ Verify step data is valid """
 
@@ -298,12 +303,12 @@ def verify_step_data(step_data):
         return CommonUtil.Exception_Handler(sys.exc_info())
 
 
+@logger
 def check_action_types(module, step_data):
     """ Check for a specific module in the step data type and return true/false """
     # To be used when we don't have a dependency, and need to know the type of actions the user have specified
 
     sModuleInfo = inspect.currentframe().f_code.co_name + " : " + MODULE_NAME
-    CommonUtil.ExecLog(sModuleInfo, "Function Start", 0)
 
     for data_set in step_data:
         for row in data_set:
@@ -313,11 +318,11 @@ def check_action_types(module, step_data):
     return False
 
 
+@logger
 def adjust_element_parameters(step_data, platforms):
     """ Strip out element parameters that do not match the dependency """
 
     sModuleInfo = inspect.currentframe().f_code.co_name + " : " + MODULE_NAME
-    CommonUtil.ExecLog(sModuleInfo, "Function Start", 0)
 
     # Get saved dependency and verify if we have the correct dependency
     if sr.Test_Shared_Variables("dependency") == False:  # No dependency at all
@@ -412,6 +417,7 @@ def adjust_element_parameters(step_data, platforms):
     return new_step_data  # Return cleaned step_data that contains only the element paramters we are interested in
 
 
+@logger
 def get_module_and_function(action_name, action_sub_field):
     """ Function to split module from the action name, and with the action name tries to find the corrosponding function name """
 
@@ -484,6 +490,7 @@ def get_module_and_function(action_name, action_sub_field):
         return CommonUtil.Exception_Handler(sys.exc_info())
 
 
+@logger
 def shared_variable_to_value(data_set):
     """ Look for any Shared Variable strings in step data, convert them into their values, and return """
 
@@ -544,11 +551,11 @@ def shared_variable_to_value(data_set):
 # it will remove the module the user specified, replace it with the "common" module, and continue as normal.
 
 
+@logger
 def step_result(data_set):
     """ Returns passed/failed in the standard format, when the user specifies it in the step data """
 
     sModuleInfo = inspect.currentframe().f_code.co_name + " : " + MODULE_NAME
-    CommonUtil.ExecLog(sModuleInfo, "Function Start", 0)
 
     try:
         action_value = ""
@@ -571,11 +578,11 @@ def step_result(data_set):
         return "failed"
 
 
+@logger
 def step_exit(data_set):
     """ Exits a Test Step wtih passed/failed in the standard format, when the user specifies it in the step data """
 
     sModuleInfo = inspect.currentframe().f_code.co_name + " : " + MODULE_NAME
-    CommonUtil.ExecLog(sModuleInfo, "Function Start", 0)
 
     try:
         action_value = ""
@@ -598,11 +605,11 @@ def step_exit(data_set):
         return "failed"
 
 
+@logger
 def Sleep(data_set):
     """ Sleep a specific number of seconds """
 
     sModuleInfo = inspect.currentframe().f_code.co_name + " : " + MODULE_NAME
-    CommonUtil.ExecLog(sModuleInfo, "Function Start", 0)
 
     try:
         seconds = float(data_set[0][2])
@@ -614,6 +621,7 @@ def Sleep(data_set):
         return CommonUtil.Exception_Handler(sys.exc_info())
 
 
+@logger
 def Wait_For_Element(data_set):
     """ Continuously monitors an element for a specified amount of time and returns pass when it's state is changed """
     # Handles two types:
@@ -621,7 +629,6 @@ def Wait_For_Element(data_set):
     # wait disable: Wait for element to disappear/hide
 
     sModuleInfo = inspect.currentframe().f_code.co_name + " : " + MODULE_NAME
-    CommonUtil.ExecLog(sModuleInfo, "Function Start", 0)
 
     # Get webdriver
     if sr.Test_Shared_Variables("common_driver"):
@@ -693,11 +700,11 @@ def Wait_For_Element(data_set):
         return CommonUtil.Exception_Handler(sys.exc_info())
 
 
+@logger
 def Save_Text(data_set):
     """ Save the text from the given element to shared variables under the variable name provided """
 
     sModuleInfo = inspect.currentframe().f_code.co_name + " : " + MODULE_NAME
-    CommonUtil.ExecLog(sModuleInfo, "Function Start", 0)
 
     # Get webdriver
     if sr.Test_Shared_Variables("common_driver"):
@@ -769,54 +776,54 @@ def Save_Text(data_set):
         )
 
 
+@logger
 def Compare_Variables(data_set):
     """ Compare shared variables / strings to eachother """
     # Compares two variables from Field and Value on any line that is not the action line
     sModuleInfo = inspect.currentframe().f_code.co_name + " : " + MODULE_NAME
-    CommonUtil.ExecLog(sModuleInfo, "Function Start", 0)
     return sr.Compare_Variables([data_set])
 
 
+@logger
 def Compare_Partial_Variables(data_set):
     """ Compare shared variables / strings to eachother """
     # Compares two variables partially from Field and Value on any line that is not the action line
     sModuleInfo = inspect.currentframe().f_code.co_name + " : " + MODULE_NAME
-    CommonUtil.ExecLog(sModuleInfo, "Function Start", 0)
     return sr.Compare_Partial_Variables([data_set])
 
 
+@logger
 def Initialize_List(data_set):
     """ Prepares an empty list in shared variables """
     sModuleInfo = inspect.currentframe().f_code.co_name + " : " + MODULE_NAME
-    CommonUtil.ExecLog(sModuleInfo, "Function Start", 0)
     return sr.Initialize_List([data_set])
 
 
+@logger
 def Randomize_List(data_set):
     """ Prepares an empty list in shared variables """
     sModuleInfo = inspect.currentframe().f_code.co_name + " : " + MODULE_NAME
-    CommonUtil.ExecLog(sModuleInfo, "Function Start", 0)
     return sr.Randomize_List([data_set])
 
 
+@logger
 def Initialize_Dict(data_set):
     """ Prepares an empty dict in shared variables """
     sModuleInfo = inspect.currentframe().f_code.co_name + " : " + MODULE_NAME
-    CommonUtil.ExecLog(sModuleInfo, "Function Start", 0)
     return sr.Initialize_Dict([data_set])
 
 
+@logger
 def Compare_Lists_or_Dicts(data_set):
     """ Compare two lists stored in shared variables """
     sModuleInfo = inspect.currentframe().f_code.co_name + " : " + MODULE_NAME
-    CommonUtil.ExecLog(sModuleInfo, "Function Start", 0)
     return sr.Compare_Lists_or_Dicts([data_set])
 
 
+@logger
 def Save_Variable(data_set):
     """ Assign a value to a variable stored in shared variables """
     sModuleInfo = inspect.currentframe().f_code.co_name + " : " + MODULE_NAME
-    CommonUtil.ExecLog(sModuleInfo, "Function Start", 0)
     variable_name = ""
     variable_value = ""
     for each in data_set:
@@ -829,10 +836,10 @@ def Save_Variable(data_set):
         return "failed"
 
 
+@logger
 def Save_Current_Time(data_set):
     """ Assign a value to a variable stored in shared variables """
     sModuleInfo = inspect.currentframe().f_code.co_name + " : " + MODULE_NAME
-    CommonUtil.ExecLog(sModuleInfo, "Function Start", 0)
     variable_name = ""
     variable_value = ""
     time = ""
@@ -871,13 +878,13 @@ def Save_Current_Time(data_set):
         return "failed"
 
 
+@logger
 def delete_all_shared_variables(data_set):
     """ Delete all shared variables - Wrapper for Clean_Up_Shared_Variables() """
     # To delete only one, use the action "save variable", and set it to an empty string
     # Takes no inputs
 
     sModuleInfo = inspect.currentframe().f_code.co_name + " : " + MODULE_NAME
-    CommonUtil.ExecLog(sModuleInfo, "Function Start", 0)
 
     try:
         return sr.Clean_Up_Shared_Variables()
@@ -885,12 +892,12 @@ def delete_all_shared_variables(data_set):
         return CommonUtil.Exception_Handler(sys.exc_info())
 
 
+@logger
 def append_list_shared_variable(data_set):
     """ Creates and appends a python list variable """
     # Note: List is created if it doesn't already exist
 
     sModuleInfo = inspect.currentframe().f_code.co_name + " : " + MODULE_NAME
-    CommonUtil.ExecLog(sModuleInfo, "Function Start", 0)
 
     try:
         # Parse data set
@@ -913,12 +920,12 @@ def append_list_shared_variable(data_set):
         return CommonUtil.Exception_Handler(sys.exc_info())
 
 
+@logger
 def append_dict_shared_variable(data_set):
     """ Creates and appends a python dict variable """
     # Note: List is created if it doesn't already exist
 
     sModuleInfo = inspect.currentframe().f_code.co_name + " : " + MODULE_NAME
-    CommonUtil.ExecLog(sModuleInfo, "Function Start", 0)
 
     try:
         # Parse data set
@@ -947,11 +954,11 @@ def append_dict_shared_variable(data_set):
         return CommonUtil.Exception_Handler(sys.exc_info())
 
 
+@logger
 def save_dict_value_by_key(data_set):
     """ Gets the value of a key in a dictionary and saves it in a shared variable """
 
     sModuleInfo = inspect.currentframe().f_code.co_name + " : " + MODULE_NAME
-    CommonUtil.ExecLog(sModuleInfo, "Function Start", 0)
 
     try:
         # Split the data into left and right side (just like variable assignment x = y)
@@ -980,6 +987,7 @@ def save_dict_value_by_key(data_set):
         return CommonUtil.Exception_Handler(sys.exc_info())
 
 
+@logger
 def save_key_value_from_dict_list(data_set):
     """
     From a list of dictionaries, return the value of another key in the dictionary
@@ -990,7 +998,6 @@ def save_key_value_from_dict_list(data_set):
     """
 
     sModuleInfo = inspect.currentframe().f_code.co_name + " : " + MODULE_NAME
-    CommonUtil.ExecLog(sModuleInfo, "Function Start", 0)
 
     try:
         # Split the data into left and right side (just like variable assignment x = y)
@@ -1035,6 +1042,7 @@ def save_key_value_from_dict_list(data_set):
         return CommonUtil.Exception_Handler(sys.exc_info())
 
 
+@logger
 def extract_date(data_set):
     """
     Parse date from a given string and save it into a variable
@@ -1044,7 +1052,6 @@ def extract_date(data_set):
     """
 
     sModuleInfo = inspect.currentframe().f_code.co_name + " : " + MODULE_NAME
-    CommonUtil.ExecLog(sModuleInfo, "Function Start", 0)
 
     try:
         variable_name = None
@@ -1076,12 +1083,12 @@ def extract_date(data_set):
         return CommonUtil.Exception_Handler(sys.exc_info())
 
 
+@logger
 def insert_list_into_another_list(data_set):
     """ Creates and appends a python list variable """
     # Note: List is created if it doesn't already exist
 
     sModuleInfo = inspect.currentframe().f_code.co_name + " : " + MODULE_NAME
-    CommonUtil.ExecLog(sModuleInfo, "Function Start", 0)
 
     try:
         # Parse data set
@@ -1136,12 +1143,12 @@ def insert_list_into_another_list(data_set):
         return CommonUtil.Exception_Handler(sys.exc_info())
 
 
+@logger
 def insert_dict_into_another_dict(data_set):
     """ Creates and appends a python list variable """
     # Note: List is created if it doesn't already exist
 
     sModuleInfo = inspect.currentframe().f_code.co_name + " : " + MODULE_NAME
-    CommonUtil.ExecLog(sModuleInfo, "Function Start", 0)
 
     try:
         # Parse data set
@@ -1182,11 +1189,11 @@ def insert_dict_into_another_dict(data_set):
         return CommonUtil.Exception_Handler(sys.exc_info())
 
 
+@logger
 def sequential_actions_settings(data_set):
     """ Test Step front end for modifying certain variables used by Sequential Actions """
 
     sModuleInfo = inspect.currentframe().f_code.co_name + " : " + MODULE_NAME
-    CommonUtil.ExecLog(sModuleInfo, "Function Start", 0)
 
     try:
         # Parse data set
@@ -1218,11 +1225,13 @@ def sequential_actions_settings(data_set):
         return CommonUtil.Exception_Handler(sys.exc_info())
 
 
+@logger
 def print_shared_variables():
     for each in sr.shared_variables:
         print(each + " : " + str(sr.shared_variables[each]))
 
 
+@logger
 def set_server_variable(data_set):
     # can set multiple server variable with one action
     sModuleInfo = inspect.currentframe().f_code.co_name + " : " + MODULE_NAME
@@ -1244,6 +1253,7 @@ def set_server_variable(data_set):
         return CommonUtil.Exception_Handler(sys.exc_info())
 
 
+@logger
 def get_server_variable(data_set):
     # can get multiple server variable with one action
     sModuleInfo = inspect.currentframe().f_code.co_name + " : " + MODULE_NAME
@@ -1269,6 +1279,7 @@ def get_server_variable(data_set):
         return CommonUtil.Exception_Handler(sys.exc_info())
 
 
+@logger
 def get_server_variable_and_wait(data_set):
     # can get multiple server variable with one action
     sModuleInfo = inspect.currentframe().f_code.co_name + " : " + MODULE_NAME
@@ -1342,6 +1353,7 @@ def get_server_variable_and_wait(data_set):
         return CommonUtil.Exception_Handler(sys.exc_info())
 
 
+@logger
 def get_all_server_variable(data_set):
     sModuleInfo = inspect.currentframe().f_code.co_name + " : " + MODULE_NAME
     try:
@@ -1358,11 +1370,11 @@ def get_all_server_variable(data_set):
         return CommonUtil.Exception_Handler(sys.exc_info())
 
 
+@logger
 def start_timer(data_set):
     """ Test Step front end for modifying certain variables used by Sequential Actions """
 
     sModuleInfo = inspect.currentframe().f_code.co_name + " : " + MODULE_NAME
-    CommonUtil.ExecLog(sModuleInfo, "Function Start", 0)
 
     try:
         # Parse data set
@@ -1385,11 +1397,11 @@ def start_timer(data_set):
         return CommonUtil.Exception_Handler(sys.exc_info())
 
 
+@logger
 def wait_for_timer(data_set):
     """ Test Step front end for modifying certain variables used by Sequential Actions """
 
     sModuleInfo = inspect.currentframe().f_code.co_name + " : " + MODULE_NAME
-    CommonUtil.ExecLog(sModuleInfo, "Function Start", 0)
 
     try:
         seconds_to_wait = int(str(data_set[0][2]).strip())
@@ -1421,12 +1433,12 @@ def wait_for_timer(data_set):
         return CommonUtil.Exception_Handler(sys.exc_info())
 
 
+@logger
 def create_3d_list(data_set):
     """ Creates and appends a python list variable """
     # Note: List is created if it doesn't already exist
 
     sModuleInfo = inspect.currentframe().f_code.co_name + " : " + MODULE_NAME
-    CommonUtil.ExecLog(sModuleInfo, "Function Start", 0)
 
     try:
         # Parse data set
@@ -1516,9 +1528,9 @@ def create_3d_list(data_set):
         return CommonUtil.Exception_Handler(sys.exc_info())
 
 
+@logger
 def download_ftp_file(data_set):
     sModuleInfo = inspect.currentframe().f_code.co_name + " : " + MODULE_NAME
-    CommonUtil.ExecLog(sModuleInfo, "Function Start", 0)
 
     try:
         ftp_srv = ""
@@ -1581,9 +1593,9 @@ def download_ftp_file(data_set):
         return CommonUtil.Exception_Handler(sys.exc_info())
 
 
+@logger
 def send_mail(data_set):
     sModuleInfo = inspect.currentframe().f_code.co_name + " : " + MODULE_NAME
-    CommonUtil.ExecLog(sModuleInfo, "Function Start", 0)
 
     try:
         smtp_server = ""
@@ -1639,9 +1651,9 @@ def send_mail(data_set):
         return CommonUtil.Exception_Handler(sys.exc_info())
 
 
+@logger
 def check_latest_mail(data_set):
     sModuleInfo = inspect.currentframe().f_code.co_name + " : " + MODULE_NAME
-    CommonUtil.ExecLog(sModuleInfo, "Function Start", 0)
 
     try:
         imap_host = ""
@@ -1697,9 +1709,9 @@ def check_latest_mail(data_set):
         return CommonUtil.Exception_Handler(sys.exc_info())
 
 
+@logger
 def write_into_single_cell_in_excel(data_set):
     sModuleInfo = inspect.currentframe().f_code.co_name + " : " + MODULE_NAME
-    CommonUtil.ExecLog(sModuleInfo, "Function Start", 0)
 
     try:
         sheet_name = ""
@@ -1744,9 +1756,9 @@ def write_into_single_cell_in_excel(data_set):
         return CommonUtil.Exception_Handler(sys.exc_info())
 
 
+@logger
 def run_macro_in_excel(data_set):
     sModuleInfo = inspect.currentframe().f_code.co_name + " : " + MODULE_NAME
-    CommonUtil.ExecLog(sModuleInfo, "Function Start", 0)
 
     try:
         macro_name = ""
@@ -1778,9 +1790,9 @@ def run_macro_in_excel(data_set):
         return CommonUtil.Exception_Handler(sys.exc_info())
 
 
+@logger
 def excel_read(data_set):
     sModuleInfo = inspect.currentframe().f_code.co_name + " : " + MODULE_NAME
-    CommonUtil.ExecLog(sModuleInfo, "Function Start", 0)
 
     try:
         filepath = None
@@ -1825,6 +1837,7 @@ def excel_read(data_set):
         return CommonUtil.Exception_Handler(sys.exc_info())
 
 
+@logger
 def excel_comparison(data_set):
     """Compares the given range of data from an excel sheet with another
       data source.
@@ -1838,7 +1851,6 @@ def excel_comparison(data_set):
     """
 
     sModuleInfo = inspect.currentframe().f_code.co_name + " : " + MODULE_NAME
-    CommonUtil.ExecLog(sModuleInfo, "Function Start", 0)
 
     try:
         filepath = None
@@ -1914,10 +1926,10 @@ def excel_comparison(data_set):
         return CommonUtil.Exception_Handler(sys.exc_info())
 
 
+@logger
 def get_excel_table(data_set):
     """DEPRECATED. Will be removed in a future release"""
     sModuleInfo = inspect.currentframe().f_code.co_name + " : " + MODULE_NAME
-    CommonUtil.ExecLog(sModuleInfo, "Function Start", 0)
 
     try:
         sheet_name = ""
@@ -1962,6 +1974,7 @@ def get_excel_table(data_set):
         return CommonUtil.Exception_Handler(sys.exc_info())
 
 
+@logger
 def split_string(data_set):
     """Splits a given string based on the given expression.
 
@@ -1981,7 +1994,6 @@ def split_string(data_set):
     """
 
     sModuleInfo = inspect.currentframe().f_code.co_name + " : " + MODULE_NAME
-    CommonUtil.ExecLog(sModuleInfo, "Function Start", 0)
 
     try:
         var_name = None
@@ -2019,9 +2031,9 @@ def split_string(data_set):
         return CommonUtil.Exception_Handler(sys.exc_info())
 
 
+@logger
 def save_text_from_file_into_variable(data_set):
     sModuleInfo = inspect.currentframe().f_code.co_name + " : " + MODULE_NAME
-    CommonUtil.ExecLog(sModuleInfo, "Function Start", 0)
 
     try:
         text_file_path = ""
@@ -2080,6 +2092,7 @@ def save_text_from_file_into_variable(data_set):
         return CommonUtil.Exception_Handler(sys.exc_info())
 
 
+@logger
 def voice_command_response(step_data):
     """
     this action is used to communicate with voice activated device such as Alex.  the computer will speak out the wakeup word(s) such as 
@@ -2101,7 +2114,6 @@ def voice_command_response(step_data):
     """
 
     sModuleInfo = inspect.currentframe().f_code.co_name + " : " + MODULE_NAME
-    CommonUtil.ExecLog(sModuleInfo, "Function start", 0)
     try:
         import pyttsx3
         import speech_recognition
@@ -2235,6 +2247,7 @@ DB_ODBC_DRIVER = "odbc_driver"
 
 
 # [NON ACTION]
+@logger
 def find_odbc_driver(db_type="postgresql"):
     """
     Finds the ODBC driver to work with based on the given database type
@@ -2245,7 +2258,6 @@ def find_odbc_driver(db_type="postgresql"):
     import pyodbc
 
     sModuleInfo = inspect.currentframe().f_code.co_name + " : " + MODULE_NAME
-    CommonUtil.ExecLog(sModuleInfo, "Function start", 0)
 
     db_type = db_type.lower()
 
@@ -2299,6 +2311,7 @@ def find_odbc_driver(db_type="postgresql"):
 
 
 # [NON ACTION]
+@logger
 def db_get_connection():
     """
     Convenience function for getting the cursor for db access
@@ -2308,7 +2321,6 @@ def db_get_connection():
     import pyodbc
 
     sModuleInfo = inspect.currentframe().f_code.co_name + " : " + MODULE_NAME
-    CommonUtil.ExecLog(sModuleInfo, "Function start", 0)
 
     try:
         # Alias for Shared_Resources.Get_Shared_Variables
@@ -2373,6 +2385,7 @@ def db_get_connection():
         return CommonUtil.Exception_Handler(sys.exc_info())
 
 
+@logger
 def connect_to_db(data_set):
     """
     This action just stores the different database specific configs into shared variables for use by other actions.
@@ -2392,7 +2405,6 @@ def connect_to_db(data_set):
     """
 
     sModuleInfo = inspect.currentframe().f_code.co_name + " : " + MODULE_NAME
-    CommonUtil.ExecLog(sModuleInfo, "Function start", 0)
 
     try:
         for row in data_set:
@@ -2417,6 +2429,7 @@ def connect_to_db(data_set):
         return CommonUtil.Exception_Handler(sys.exc_info())
 
 
+@logger
 def db_select(data_set):
     """
     This action performs a select query and stores the result of the query in the variable <var_name>
@@ -2433,7 +2446,6 @@ def db_select(data_set):
     import pyodbc
 
     sModuleInfo = inspect.currentframe().f_code.co_name + " : " + MODULE_NAME
-    CommonUtil.ExecLog(sModuleInfo, "Function start", 0)
 
     try:
         variable_name = None
@@ -2505,6 +2517,7 @@ def db_select(data_set):
         return CommonUtil.Exception_Handler(sys.exc_info())
 
 
+@logger
 def db_select_single_value(data_set):
     """
     This action performs a select query and stores the ONLY value (a single value) of the query in the variable <var_name>
@@ -2522,7 +2535,6 @@ def db_select_single_value(data_set):
     import pyodbc
 
     sModuleInfo = inspect.currentframe().f_code.co_name + " : " + MODULE_NAME
-    CommonUtil.ExecLog(sModuleInfo, "Function start", 0)
 
     try:
         variable_name = None
@@ -2588,6 +2600,7 @@ def db_select_single_value(data_set):
         return CommonUtil.Exception_Handler(sys.exc_info())
 
 
+@logger
 def db_non_query(data_set):
     """
     This action performs a non-query (insert/update/delete) query and stores the "number of rows affected"
@@ -2606,7 +2619,6 @@ def db_non_query(data_set):
     import pyodbc
 
     sModuleInfo = inspect.currentframe().f_code.co_name + " : " + MODULE_NAME
-    CommonUtil.ExecLog(sModuleInfo, "Function start", 0)
 
     try:
         variable_name = None
@@ -2676,6 +2688,7 @@ def db_non_query(data_set):
 # Gloabal variable actions
 
 
+@logger
 def get_global_list_variable(data_set):
     # get the global list variable content
     sModuleInfo = inspect.currentframe().f_code.co_name + " : " + MODULE_NAME
@@ -2703,6 +2716,7 @@ def get_global_list_variable(data_set):
         return CommonUtil.Exception_Handler(sys.exc_info())
 
 
+@logger
 def append_to_global_list_variable(data_set):
     # append an item to global list variable
     sModuleInfo = inspect.currentframe().f_code.co_name + " : " + MODULE_NAME
@@ -2729,6 +2743,7 @@ def append_to_global_list_variable(data_set):
         return CommonUtil.Exception_Handler(sys.exc_info())
 
 
+@logger
 def remove_item_from_global_list_variable(data_set):
     # remove an item from a global list variable
     sModuleInfo = inspect.currentframe().f_code.co_name + " : " + MODULE_NAME
@@ -2755,12 +2770,12 @@ def remove_item_from_global_list_variable(data_set):
         return CommonUtil.Exception_Handler(sys.exc_info())
 
 
+@logger
 def save_variable_by_list_difference(data_set):
     import ast
 
     """ save a variable by comparing two lists, here compare means set difference """
     sModuleInfo = inspect.currentframe().f_code.co_name + " : " + MODULE_NAME
-    CommonUtil.ExecLog(sModuleInfo, "Function Start", 0)
     saved_variable_name = ""
     variable1 = ""
     variable2 = ""

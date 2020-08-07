@@ -5,6 +5,7 @@ import json
 import requests
 from datetime import datetime
 from Framework.Utilities import CommonUtil
+from Framework.Utilities.decorators import logger
 from Framework.Built_In_Automation.Web.Selenium import BuiltInFunctions
 
 sys.path.append("..")
@@ -15,6 +16,7 @@ MODULE_NAME = inspect.getmodulename(__file__)
 
 # Basic API Helper methods. Currently supporting GET and POST calls
 ## Need to add more functionality later
+@logger
 def rest_API_Helper(
     rest_call_type,
     url,
@@ -24,7 +26,6 @@ def rest_API_Helper(
     extraction_fields=False,
 ):
     sModuleInfo = inspect.currentframe().f_code.co_name + " : " + MODULE_NAME
-    CommonUtil.ExecLog(sModuleInfo, "Function: rest_API_Helper", 1)
     try:
         if (rest_call_type == "") or (url == ""):
             CommonUtil.ExecLog(
@@ -96,9 +97,9 @@ def rest_API_Helper(
 
 # Internal method
 ## Will be improved upon in the future
+@logger
 def _response_Validation(payload_type, response, extraction_data=False):
     sModuleInfo = inspect.currentframe().f_code.co_name + " : " + MODULE_NAME
-    CommonUtil.ExecLog(sModuleInfo, "Function: _response_Validation", 1)
     try:
         #         extraction_fields = extraction_data.split(',')
 
@@ -135,6 +136,7 @@ def _response_Validation(payload_type, response, extraction_data=False):
         return CommonUtil.Exception_Handler(sys.exc_info(), None, errMsg)
 
 
+@logger
 def Exception_Info(sModuleInfo, errMsg):
     exc_type, exc_obj, exc_tb = sys.exc_info()
     fname = os.path.split(exc_tb.tb_frame.f_code.co_filename)[1]
