@@ -257,6 +257,9 @@ def ExecLog(
         line_color = Fore.RED
     elif iLogLevel == 4:
         status = "Console"
+    elif iLogLevel == 5:
+        status = "Info"
+        line_color = Fore.CYAN
     elif iLogLevel == 6:
         status = "BrowserConsole"
     else:
@@ -265,20 +268,23 @@ def ExecLog(
 
     if not sModuleInfo:
         sModuleInfo = ""
+        info = ""
+    else:
+        info = f"{sModuleInfo}\t\n"
 
     # Display on console
     # Change the format for console, mainly leave out the status level
     if status == "Console":
-        msg = f"{sModuleInfo}\t{sDetails}" if sModuleInfo else sDetails
+        msg = f"{info}{sDetails}" if sModuleInfo else sDetails
         print(line_color + msg)
     else:
-        print(line_color + f"{status.upper()} - {sModuleInfo}\n\t{sDetails}")
+        print(line_color + f"{status.upper()} - {info}{sDetails}")
 
     current_log_line = f"{status.upper()} - {sModuleInfo} - {sDetails}"
 
     global previous_log_line
     # Skip duplicate logs
-    if previous_log_line == current_log_line:
+    if previous_log_line and previous_log_line.strip() == current_log_line.strip():
         return
 
     # Set current log as the next previous log
