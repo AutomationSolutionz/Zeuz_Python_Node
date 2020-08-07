@@ -259,6 +259,7 @@ def ExecLog(
         status = "Console"
     elif iLogLevel == 5:
         status = "Info"
+        iLogLevel = 1
         line_color = Fore.CYAN
     elif iLogLevel == 6:
         status = "BrowserConsole"
