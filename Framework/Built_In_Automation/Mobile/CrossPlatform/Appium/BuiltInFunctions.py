@@ -13,6 +13,7 @@
 
 from appium import webdriver
 import traceback
+import socket
 import os, sys, datetime, time, inspect, subprocess, re, signal, _thread, requests
 from Framework.Utilities import CommonUtil
 from Framework.Utilities.decorators import logger
@@ -648,6 +649,12 @@ def set_pdeathsig(sig=signal.SIGTERM):
 
 
 @logger
+def is_port_in_use(port):
+    with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
+        return s.connect_ex(('localhost', port)) == 0
+
+
+@logger
 def start_appium_server():
     """ Starts the external Appium server """
     sModuleInfo = inspect.currentframe().f_code.co_name + " : " + MODULE_NAME
@@ -656,20 +663,32 @@ def start_appium_server():
 
     try:
         # Shutdown appium server if it's already running
-        if appium_details[device_id][
-            "driver"
-        ]:  # Check if the appium server was previously run (likely not)
-            appium_server = appium_details[device_id][
-                "driver"
-            ]  # Get the subprocess object
-            try:
-                appium_server.kill()  # Kill the server
-            except:
-                pass
+        # if appium_details[device_id][
+        #     "driver"
+        # ]:  # Check if the appium server was previously run (likely not)
+        #     appium_server = appium_details[device_id][
+        #         "driver"
+        #     ]  # Get the subprocess object
+        #     try:
+        #         appium_server.kill()  # Kill the server
+        #     except:
+        #         pass
 
         # Execute appium server
-        appium_port += 2  # Increment the port number (by 2 because adb seems to grab the next port), for the next time we run, so we can have multiple instances
-        wdaLocalPort += 2
+        # appium_port += 2  # Increment the port number (by 2 because adb seems to grab the next port), for the next time we run, so we can have multiple instances
+        # wdaLocalPort += 2
+
+        appium_port = 4723
+        wdaLocalPort = 8100
+        tries = 0
+        while is_port_in_use(appium_port) and tries < 20:
+            appium_port += 2
+            wdaLocalPort += 2
+        
+        if tries >= 20:
+            CommonUtil.ExecLog(sModuleInfo, "Failed to find a free port for running appium after 20 tries.", 1)
+            return "failed"
+
         try:
             appium_server = None
             if (
@@ -716,7 +735,6 @@ def start_appium_server():
                         "Couldn't launch appium server, please do it manually by typing 'appium &' in the terminal",
                         2,
                     )
-                    pass
             appium_details[device_id][
                 "server"
             ] = appium_server  # Save the server object for teardown
@@ -1047,11 +1065,16 @@ def teardown_appium(data_set):
                     appium_details[name]["driver"].quit()  # Destroy driver
                 except:
                     pass
-                if (
-                    sys.platform == "win32"
-                ):  # Special kill for appium children on Windows
-                    kill_appium_on_windows(appium_details[name]["server"])
-                appium_details[name]["server"].kill()  # Terminate server
+                # if (
+                #     sys.platform == "win32"
+                # ):  # Special kill for appium children on Windows
+                #     kill_appium_on_windows(appium_details[name]["server"])
+                try:
+                    appium_details[name]["server"].kill()  # Terminate server
+                except:
+                    pass
+                    
+                # kill_node()
             except:
                 CommonUtil.ExecLog(
                     sModuleInfo,
@@ -1070,14 +1093,13 @@ def teardown_appium(data_set):
                         adbOptions.kill_adb_server()
                 except:
                     pass
-            kill_node()
         except:
             pass
         # Delete variables
         appium_details = {}
         device_info = {}
-        appium_port = 4721
-        wdaLocalPort = 8100
+        # appium_port = 4721
+        # wdaLocalPort = 8100
         appium_server, device_id, device_serial = "", "", ""
         Shared_Resources.Set_Shared_Variables("appium_details", "")
         Shared_Resources.Set_Shared_Variables("device_info", "")
