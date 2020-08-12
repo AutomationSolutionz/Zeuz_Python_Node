@@ -507,20 +507,19 @@ def close_program(data_set):
 
     # Perform action
     try:
-        if dependency["PC"].lower() == "linux" or dependency["PC"].lower() == "mac":
+        if dependency["OS"].lower() == "linux" or dependency["OS"].lower() == "mac":
             command = (
                 "pkill -f " + program_name
             )  # Try Process Kill with full command checking set, which finds most programs automatically
-            close_status, output = FU.run_cmd(
-                command, return_status=True
-            )  # Execute command and return the return code
-
-            # Check result
-            if close_status == None or close_status < 1:
+            try:
+                subprocess.Popen(
+                    command.split(" ")
+                )  # FU.run_cmd() blocks further execution, so we'll just use subprocess here
+                # Check result
                 close_status = "passed"
 
             # pkill failed, try another method
-            else:
+            except Exception:
                 CommonUtil.ExecLog(
                     sModuleInfo, "pKill command failed, trying another method", 0
                 )
