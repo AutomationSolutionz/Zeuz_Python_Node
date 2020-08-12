@@ -33,6 +33,7 @@ from Framework.Utilities import FileUtilities
 import datetime
 import datefinder
 import traceback
+import json
 from datetime import timedelta
 from .utility import send_email, check_latest_received_email
 
@@ -787,6 +788,72 @@ def Compare_Partial_Variables(data_set):
     # Compares two variables partially from Field and Value on any line that is not the action line
     sModuleInfo = inspect.currentframe().f_code.co_name + " : " + MODULE_NAME
     return sr.Compare_Partial_Variables([data_set])
+
+
+@logger
+def create_append_list_or_dict(data_set):
+    """Creates/appends/updates a list or dictionary from the given data.
+    
+    Accepts any valid JSON data.
+
+    Args:
+        data_set:
+          data                                | element parameter | valid JSON string
+          operation                           | element parameter | save/update
+          create/append to list or dictionary | common action     | variable_name
+
+    Returns:
+        "passed" if success.
+        "failed" otherwise.
+    """
+
+    sModuleInfo = inspect.currentframe().f_code.co_name + " : " + MODULE_NAME
+
+    try:
+
+        operation = "save"
+        variable_value = None
+        variable_name = None
+
+        try:
+            for left, mid, right in data_set:
+                left = left.strip().lower()
+                if "operation" in left:
+                    operation = right.strip().lower()
+                if "data" in left:
+                    variable_value = json.loads(right)
+                if "action" in mid:
+                    variable_name = right.strip()
+        except:
+            CommonUtil.ExecLog(sModuleInfo, "Failed to parse data.", 1)
+            traceback.print_exc()
+            return "failed"
+
+        if operation == "save":
+            # Noop.
+            pass
+        elif operation == "append":
+            var = sr.Get_Shared_Variables(variable_name)
+            if type(var) == list:
+                var += variable_value
+            elif type(var) == dict:
+                var.update(variable_value)
+            else:
+                CommonUtil.ExecLog(
+                    sModuleInfo,
+                    f"Invalid data type: {type(var)}. Must be either list or dict.",
+                    1
+                )
+                return "failed"
+
+            variable_value = var
+
+        sr.Set_Shared_Variables(variable_name, variable_value)
+
+        return "passed"
+    except:
+        CommonUtil.ExecLog(sModuleInfo, "Failed to create/append/update list or dictionary", 1)
+        return "failed"
 
 
 @logger

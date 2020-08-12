@@ -326,6 +326,12 @@ actions = {  # Numbers are arbitrary, and are not used anywhere
         "name": "excel comparison",
         "function": "excel_comparison",
     },
+    151: {
+        "module": "common",
+        "screenshot": "desktop",
+        "name": "create/append to list or dictionary",
+        "function": "create_append_list_or_dict",
+    },
 
     200: {
         "module": "appium",
