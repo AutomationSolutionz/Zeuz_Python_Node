@@ -332,7 +332,6 @@ actions = {  # Numbers are arbitrary, and are not used anywhere
         "name": "create/append to list or dictionary",
         "function": "create_append_list_or_dict",
     },
-
     200: {
         "module": "appium",
         "screenshot": "mobile",

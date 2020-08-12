@@ -842,7 +842,7 @@ def create_append_list_or_dict(data_set):
                 CommonUtil.ExecLog(
                     sModuleInfo,
                     f"Invalid data type: {type(var)}. Must be either list or dict.",
-                    1
+                    1,
                 )
                 return "failed"
 
@@ -852,7 +852,9 @@ def create_append_list_or_dict(data_set):
 
         return "passed"
     except:
-        CommonUtil.ExecLog(sModuleInfo, "Failed to create/append/update list or dictionary", 1)
+        CommonUtil.ExecLog(
+            sModuleInfo, "Failed to create/append/update list or dictionary", 1
+        )
         return "failed"
 
 

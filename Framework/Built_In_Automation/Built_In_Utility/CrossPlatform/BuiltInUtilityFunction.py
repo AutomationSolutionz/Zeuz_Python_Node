@@ -3595,31 +3595,29 @@ def datatype_conversion(data_set):
                 decimal_point = right.strip()
             elif "datatype conversion" in left:
                 conversion_type = right.strip().lower()
-            elif "ceil floor round" in left :
+            elif "ceil floor round" in left:
                 ceil_floor_round = right.strip().lower()
             elif "index" in left:
                 index = right.strip()
 
         if not Shared_Resources.Test_Shared_Variables(in_variable_name):
             CommonUtil.ExecLog(
-                sModuleInfo,
-                "Variable you have chosen is not defined",
-                3,
+                sModuleInfo, "Variable you have chosen is not defined", 3,
             )
             return "failed"
 
         if out_variable_name == "":
             CommonUtil.ExecLog(
-                sModuleInfo,
-                "Output variable name was not set",
-                3,
+                sModuleInfo, "Output variable name was not set", 3,
             )
             return "failed"
 
-        if re.match("^[-+]?[0-9]+$", decimal_point) is not None:    # Checking if the decimal value is integer
+        if (
+            re.match("^[-+]?[0-9]+$", decimal_point) is not None
+        ):  # Checking if the decimal value is integer
             decimal_point = int(decimal_point)
             decimal_condition = True
-        else:       # We cannot round a float number if the decimal_point is set to other than int number
+        else:  # We cannot round a float number if the decimal_point is set to other than int number
             CommonUtil.ExecLog(
                 sModuleInfo,
                 "Decimal value is not set. So extracting the float number with all decimal values from the given item",
@@ -3627,7 +3625,9 @@ def datatype_conversion(data_set):
             )
             decimal_condition = False
 
-        if re.match("^[-+]?[0-9]+$", index) is not None:        #Checking if the decimal value is integer
+        if (
+            re.match("^[-+]?[0-9]+$", index) is not None
+        ):  # Checking if the decimal value is integer
             index = int(index)
         else:
             CommonUtil.ExecLog(
@@ -3639,17 +3639,17 @@ def datatype_conversion(data_set):
 
     except:
         errMsg = ""
-        return CommonUtil.Exception_Handler(
-            sys.exc_info()
-        )
+        return CommonUtil.Exception_Handler(sys.exc_info())
 
     try:
         if "str to int" == conversion_type:
             in_variable_value = Shared_Resources.Get_Shared_Variables(in_variable_name)
             # in_variable_value = ['muntasib', '1', '+2', 1, 2, 2.5, '3.5','-100', 'muhib232', '3.9', '3.1', '+23.3', '-23.3']
 
-            out_variable_value = str_to_int(sModuleInfo, in_variable_value, ceil_floor_round)
-            Shared_Resources.Set_Shared_Variables(out_variable_name,out_variable_value)
+            out_variable_value = str_to_int(
+                sModuleInfo, in_variable_value, ceil_floor_round
+            )
+            Shared_Resources.Set_Shared_Variables(out_variable_name, out_variable_value)
 
             # print(".........................Printing Input Variable...........................")
             # print(in_variable_value)
@@ -3665,8 +3665,10 @@ def datatype_conversion(data_set):
             # in_variable_value = ['muntasib','1','+2',1,2.6,'+3.5','368.65555','-3.8654','-4','muhib232']
             # in_variable_value = "+368.65665"
 
-            out_variable_value = str_to_float(sModuleInfo, in_variable_value, decimal_point, decimal_condition)
-            Shared_Resources.Set_Shared_Variables(out_variable_name,out_variable_value)
+            out_variable_value = str_to_float(
+                sModuleInfo, in_variable_value, decimal_point, decimal_condition
+            )
+            Shared_Resources.Set_Shared_Variables(out_variable_name, out_variable_value)
 
             # print(".........................Printing Input Variable...........................")
             # print(in_variable_value)
@@ -3683,7 +3685,9 @@ def datatype_conversion(data_set):
 
             # in_variable_value = ['muntasib', '1', '+2', 1, 2, 2.6, 32, 3654,+100, -200, -23.3, 'muhib232']
 
-            out_variable_value = int_to_float(sModuleInfo, in_variable_value, decimal_point, decimal_condition)
+            out_variable_value = int_to_float(
+                sModuleInfo, in_variable_value, decimal_point, decimal_condition
+            )
             Shared_Resources.Set_Shared_Variables(out_variable_name, out_variable_value)
 
             # print(".........................Printing Input Variable...........................")
@@ -3700,8 +3704,10 @@ def datatype_conversion(data_set):
             # in_variable_value = ['muntasib', '1', '+2', 1, 2, 2.6,3.5,3.9,3.1,+23.3,-23.3, '3.5','muhib232']
             # in_variable_value = 3.55
 
-            out_variable_value = float_to_int(sModuleInfo, in_variable_value, ceil_floor_round)
-            Shared_Resources.Set_Shared_Variables(out_variable_name,out_variable_value)
+            out_variable_value = float_to_int(
+                sModuleInfo, in_variable_value, ceil_floor_round
+            )
+            Shared_Resources.Set_Shared_Variables(out_variable_name, out_variable_value)
 
             # print(".........................Printing Input Variable...........................")
             # print(in_variable_value)
@@ -3717,8 +3723,10 @@ def datatype_conversion(data_set):
             # in_variable_value = ['+23.6muntasib-23.6',1,2.6,'3.5','as-368muhib+232 36.6665 dollar', 'hi']
             # in_variable_value = "mun354tasib1235.56875"
 
-            out_variable_value = extract_num_from_str(sModuleInfo, in_variable_value, decimal_point, decimal_condition, index)
-            Shared_Resources.Set_Shared_Variables(out_variable_name,out_variable_value)
+            out_variable_value = extract_num_from_str(
+                sModuleInfo, in_variable_value, decimal_point, decimal_condition, index
+            )
+            Shared_Resources.Set_Shared_Variables(out_variable_name, out_variable_value)
 
             # print(".........................Printing Input Variable...........................")
             # print(in_variable_value)
@@ -3733,7 +3741,7 @@ def datatype_conversion(data_set):
         else:
             CommonUtil.ExecLog(
                 sModuleInfo,
-                'Unknown Type conversion was selected. Hence setting the values without any conversion',
+                "Unknown Type conversion was selected. Hence setting the values without any conversion",
                 2,
             )
             in_variable_value = Shared_Resources.Get_Shared_Variables(in_variable_name)
@@ -3743,9 +3751,7 @@ def datatype_conversion(data_set):
 
     except:
         CommonUtil.ExecLog(
-            sModuleInfo,
-            'Could not convert the data type of the given variable',
-            3,
+            sModuleInfo, "Could not convert the data type of the given variable", 3,
         )
         return "failed"
 
@@ -3753,7 +3759,9 @@ def datatype_conversion(data_set):
 def str_to_int(sModuleInfo, in_variable_value, ceil_floor_round):
 
     if type(in_variable_value) == type(""):
-        if re.match("^[-+]?\d+?\.\d+?$", in_variable_value) is not None:    # Checking if the string has float number
+        if (
+            re.match("^[-+]?\d+?\.\d+?$", in_variable_value) is not None
+        ):  # Checking if the string has float number
             if ceil_floor_round == "ceil":
                 out_variable_value = int(ceil(float(in_variable_value)))
             elif ceil_floor_round == "floor":
@@ -3763,7 +3771,9 @@ def str_to_int(sModuleInfo, in_variable_value, ceil_floor_round):
             else:
                 out_variable_value = int(float(in_variable_value))
 
-        elif re.match("^[-+]?[0-9]+$", in_variable_value) is not None:  # Checking if the string has int number
+        elif (
+            re.match("^[-+]?[0-9]+$", in_variable_value) is not None
+        ):  # Checking if the string has int number
             out_variable_value = int(in_variable_value)
         else:
             CommonUtil.ExecLog(
@@ -3775,72 +3785,80 @@ def str_to_int(sModuleInfo, in_variable_value, ceil_floor_round):
 
     elif type(in_variable_value) == type([]):
 
-         out_variable_value = []
-         for i in in_variable_value:
-             if type(i) == type(""):
+        out_variable_value = []
+        for i in in_variable_value:
+            if type(i) == type(""):
 
-                 if re.match("^[-+]?\d+?\.\d+?$",i) is not None:  # Checking if the string has float number
-                     if ceil_floor_round == "ceil":
-                         out_variable_value.append(int(ceil(float(i))))
-                     elif ceil_floor_round == "floor":
-                         out_variable_value.append(int(floor(float(i))))
-                     elif ceil_floor_round == "round":
-                         out_variable_value.append(round(float(i)))
-                     else:
-                         out_variable_value.append(int(float(i)))
+                if (
+                    re.match("^[-+]?\d+?\.\d+?$", i) is not None
+                ):  # Checking if the string has float number
+                    if ceil_floor_round == "ceil":
+                        out_variable_value.append(int(ceil(float(i))))
+                    elif ceil_floor_round == "floor":
+                        out_variable_value.append(int(floor(float(i))))
+                    elif ceil_floor_round == "round":
+                        out_variable_value.append(round(float(i)))
+                    else:
+                        out_variable_value.append(int(float(i)))
 
-                 elif re.match("^[-+]?[0-9]+$", i) is not None:  # Checking if the string has int number
-                     out_variable_value.append(int(i))
-                 else:
-                     CommonUtil.ExecLog(
-                         sModuleInfo,
-                         "The string has other characters than digits and +-. symbols. Try extracting numbers first. Returning same value without any conversion",
-                         0,
-                     )
-                     out_variable_value.append(i)
+                elif (
+                    re.match("^[-+]?[0-9]+$", i) is not None
+                ):  # Checking if the string has int number
+                    out_variable_value.append(int(i))
+                else:
+                    CommonUtil.ExecLog(
+                        sModuleInfo,
+                        "The string has other characters than digits and +-. symbols. Try extracting numbers first. Returning same value without any conversion",
+                        0,
+                    )
+                    out_variable_value.append(i)
 
-             elif type(i) == type([]):
+            elif type(i) == type([]):
 
-                 nested_list = []
-                 for j in i:
-                     if type(j) == type([]):
-                         CommonUtil.ExecLog(
-                             sModuleInfo,
-                             "This action cannot handle higher than 2 dimensional list",
-                             3,
-                         )
-                         return "failed"
-                     if type(j) == type("") and re.match("^-?\d+?\.\d+?$",j) is not None:  # Checking if the string has float number
-                         if ceil_floor_round == "ceil":
-                             nested_list.append(int(ceil(float(j))))
-                         elif ceil_floor_round == "floor":
-                             nested_list.append(int(floor(float(j))))
-                         elif ceil_floor_round == "round":
-                             nested_list.append(round(float(j)))
-                         else:
-                             nested_list.append(int(float(j)))
+                nested_list = []
+                for j in i:
+                    if type(j) == type([]):
+                        CommonUtil.ExecLog(
+                            sModuleInfo,
+                            "This action cannot handle higher than 2 dimensional list",
+                            3,
+                        )
+                        return "failed"
+                    if (
+                        type(j) == type("")
+                        and re.match("^-?\d+?\.\d+?$", j) is not None
+                    ):  # Checking if the string has float number
+                        if ceil_floor_round == "ceil":
+                            nested_list.append(int(ceil(float(j))))
+                        elif ceil_floor_round == "floor":
+                            nested_list.append(int(floor(float(j))))
+                        elif ceil_floor_round == "round":
+                            nested_list.append(round(float(j)))
+                        else:
+                            nested_list.append(int(float(j)))
 
-                     elif type(j) == type("") and re.match("^[-+]?[0-9]+$",j) is not None:  # Checking if the string has int number
-                         nested_list.append(int(j))
-                     elif type(j) == type(""):
-                         CommonUtil.ExecLog(
-                             sModuleInfo,
-                             "The string has other characters than digits and +-. symbols. Try extracting numbers first. Returning same value without any conversion",
-                             0,
-                         )
-                         nested_list.append(j)
-                     else:
-                         nested_list.append(j)
-                 out_variable_value.append(nested_list)
+                    elif (
+                        type(j) == type("") and re.match("^[-+]?[0-9]+$", j) is not None
+                    ):  # Checking if the string has int number
+                        nested_list.append(int(j))
+                    elif type(j) == type(""):
+                        CommonUtil.ExecLog(
+                            sModuleInfo,
+                            "The string has other characters than digits and +-. symbols. Try extracting numbers first. Returning same value without any conversion",
+                            0,
+                        )
+                        nested_list.append(j)
+                    else:
+                        nested_list.append(j)
+                out_variable_value.append(nested_list)
 
-             else:
-                 out_variable_value.append(i)
+            else:
+                out_variable_value.append(i)
 
     else:
         out_variable_value = in_variable_value
 
     return out_variable_value
-
 
 
 def float_to_int(sModuleInfo, in_variable_value, ceil_floor_round):
@@ -3857,46 +3875,46 @@ def float_to_int(sModuleInfo, in_variable_value, ceil_floor_round):
 
     elif type(in_variable_value) == type([]):
 
-         out_variable_value = []
-         for i in in_variable_value:
-             if type(i) == type(4.0):
+        out_variable_value = []
+        for i in in_variable_value:
+            if type(i) == type(4.0):
 
-                 if ceil_floor_round == "ceil":
-                     out_variable_value.append(ceil(i))
-                 elif ceil_floor_round == "floor":
-                     out_variable_value.append(floor(i))
-                 elif ceil_floor_round == "round":
-                     out_variable_value.append(round(i))
-                 else:
-                     out_variable_value.append(int(i))
+                if ceil_floor_round == "ceil":
+                    out_variable_value.append(ceil(i))
+                elif ceil_floor_round == "floor":
+                    out_variable_value.append(floor(i))
+                elif ceil_floor_round == "round":
+                    out_variable_value.append(round(i))
+                else:
+                    out_variable_value.append(int(i))
 
-             elif type(i) == type([]):
+            elif type(i) == type([]):
 
-             # for i in in_variable_value:
-                 nested_list = []
-                 for j in i:
-                     if type(j) == type([]):
-                         CommonUtil.ExecLog(
-                             sModuleInfo,
-                             "This action cannot handle higher than 2 dimensional list",
-                             3,
-                         )
-                         return "failed"
-                     if type(j) == type(4.0):
-                         if ceil_floor_round == "ceil":
-                             nested_list.append(ceil(j))
-                         elif ceil_floor_round == "floor":
-                             nested_list.append(floor(j))
-                         elif ceil_floor_round == "round":
-                             nested_list.append(round(j))
-                         else:
-                             nested_list.append(int(j))
-                     else:
-                         nested_list.append(j)
-                 out_variable_value.append(nested_list)
+                # for i in in_variable_value:
+                nested_list = []
+                for j in i:
+                    if type(j) == type([]):
+                        CommonUtil.ExecLog(
+                            sModuleInfo,
+                            "This action cannot handle higher than 2 dimensional list",
+                            3,
+                        )
+                        return "failed"
+                    if type(j) == type(4.0):
+                        if ceil_floor_round == "ceil":
+                            nested_list.append(ceil(j))
+                        elif ceil_floor_round == "floor":
+                            nested_list.append(floor(j))
+                        elif ceil_floor_round == "round":
+                            nested_list.append(round(j))
+                        else:
+                            nested_list.append(int(j))
+                    else:
+                        nested_list.append(j)
+                out_variable_value.append(nested_list)
 
-             else:
-                 out_variable_value.append(i)
+            else:
+                out_variable_value.append(i)
 
     else:
         out_variable_value = in_variable_value
@@ -3904,17 +3922,20 @@ def float_to_int(sModuleInfo, in_variable_value, ceil_floor_round):
     return out_variable_value
 
 
-
 def str_to_float(sModuleInfo, in_variable_value, decimal_point, decimal_condition):
 
     if type(in_variable_value) == type(""):
-        if re.match("^[-+]?\d+?\.\d+?$", in_variable_value) is not None:    # Checking if the string has float number
+        if (
+            re.match("^[-+]?\d+?\.\d+?$", in_variable_value) is not None
+        ):  # Checking if the string has float number
             if decimal_condition:
                 out_variable_value = round(float(in_variable_value), decimal_point)
             else:
                 out_variable_value = float(in_variable_value)
 
-        elif re.match("^[-+]?[0-9]+$", in_variable_value) is not None:  # Checking if the string has int number
+        elif (
+            re.match("^[-+]?[0-9]+$", in_variable_value) is not None
+        ):  # Checking if the string has int number
             if decimal_condition:
                 out_variable_value = round(float(in_variable_value), decimal_point)
             else:
@@ -3930,65 +3951,74 @@ def str_to_float(sModuleInfo, in_variable_value, decimal_point, decimal_conditio
 
     elif type(in_variable_value) == type([]):
 
-         out_variable_value = []
-         for i in in_variable_value:
-             if type(i) == type(""):
+        out_variable_value = []
+        for i in in_variable_value:
+            if type(i) == type(""):
 
-                 if re.match("^[-+]?\d+?\.\d+?$",i) is not None:  # Checking if the string has float number
-                     if decimal_condition:
-                         out_variable_value.append(round(float(i), decimal_point))
-                     else:
-                         out_variable_value.append(float(i))
+                if (
+                    re.match("^[-+]?\d+?\.\d+?$", i) is not None
+                ):  # Checking if the string has float number
+                    if decimal_condition:
+                        out_variable_value.append(round(float(i), decimal_point))
+                    else:
+                        out_variable_value.append(float(i))
 
-                 elif re.match("^[-+]?[0-9]+$", i) is not None:  # Checking if the string has int number
-                     if decimal_condition:
-                         out_variable_value.append(round(float(i), decimal_point))
-                     else:
-                         out_variable_value.append(float(i))
-                 else:
-                     CommonUtil.ExecLog(
-                         sModuleInfo,
-                         "The string has other characters than digits and +-. symbols. Try extracting numbers first. Returning same value without any conversion",
-                         0,
-                     )
-                     out_variable_value.append(i)
+                elif (
+                    re.match("^[-+]?[0-9]+$", i) is not None
+                ):  # Checking if the string has int number
+                    if decimal_condition:
+                        out_variable_value.append(round(float(i), decimal_point))
+                    else:
+                        out_variable_value.append(float(i))
+                else:
+                    CommonUtil.ExecLog(
+                        sModuleInfo,
+                        "The string has other characters than digits and +-. symbols. Try extracting numbers first. Returning same value without any conversion",
+                        0,
+                    )
+                    out_variable_value.append(i)
 
-             elif type(i) == type([]):
+            elif type(i) == type([]):
 
-                 nested_list = []
-                 for j in i:
-                     if type(j) == type([]):
-                         CommonUtil.ExecLog(
-                             sModuleInfo,
-                             "This action cannot handle higher than 2 dimensional list",
-                             3,
-                         )
-                         return "failed"
-                     if type(j) == type("") and re.match("^-?\d+?\.\d+?$",j) is not None:  # Checking if the string has float number
-                         if decimal_condition:
-                             nested_list.append(round(float(i), decimal_point))
-                         else:
-                             nested_list.append(float(i))
+                nested_list = []
+                for j in i:
+                    if type(j) == type([]):
+                        CommonUtil.ExecLog(
+                            sModuleInfo,
+                            "This action cannot handle higher than 2 dimensional list",
+                            3,
+                        )
+                        return "failed"
+                    if (
+                        type(j) == type("")
+                        and re.match("^-?\d+?\.\d+?$", j) is not None
+                    ):  # Checking if the string has float number
+                        if decimal_condition:
+                            nested_list.append(round(float(i), decimal_point))
+                        else:
+                            nested_list.append(float(i))
 
-                     elif type(j) == type("") and re.match("^[-+]?[0-9]+$",j) is not None:  # Checking if the string has int number
-                         if decimal_condition:
-                             nested_list.append(round(float(i), decimal_point))
-                         else:
-                             nested_list.append(float(i))
-                     elif type(j) == type(""):
-                         CommonUtil.ExecLog(
-                             sModuleInfo,
-                             "The string has other characters than digits and +-. symbols. Try extracting numbers first. Returning same value without any conversion",
-                             0,
-                         )
-                         nested_list.append(j)
-                     else:
-                         nested_list.append(j)
+                    elif (
+                        type(j) == type("") and re.match("^[-+]?[0-9]+$", j) is not None
+                    ):  # Checking if the string has int number
+                        if decimal_condition:
+                            nested_list.append(round(float(i), decimal_point))
+                        else:
+                            nested_list.append(float(i))
+                    elif type(j) == type(""):
+                        CommonUtil.ExecLog(
+                            sModuleInfo,
+                            "The string has other characters than digits and +-. symbols. Try extracting numbers first. Returning same value without any conversion",
+                            0,
+                        )
+                        nested_list.append(j)
+                    else:
+                        nested_list.append(j)
 
-                 out_variable_value.append(nested_list)
+                out_variable_value.append(nested_list)
 
-             else:
-                 out_variable_value.append(i)
+            else:
+                out_variable_value.append(i)
 
     else:
         out_variable_value = in_variable_value
@@ -4006,38 +4036,38 @@ def int_to_float(sModuleInfo, in_variable_value, decimal_point, decimal_conditio
 
     elif type(in_variable_value) == type([]):
 
-         out_variable_value = []
-         for i in in_variable_value:
-             if type(i) == type(4):
+        out_variable_value = []
+        for i in in_variable_value:
+            if type(i) == type(4):
 
-                 if decimal_condition:
-                     out_variable_value.append(round(float(i), decimal_point))
-                 else:
-                     out_variable_value.append(float(i))
+                if decimal_condition:
+                    out_variable_value.append(round(float(i), decimal_point))
+                else:
+                    out_variable_value.append(float(i))
 
-             elif type(i) == type([]):
+            elif type(i) == type([]):
 
-                 nested_list = []
-                 for j in i:
-                     if type(j) == type([]):
-                         CommonUtil.ExecLog(
-                             sModuleInfo,
-                             "This action cannot handle higher than 2 dimensional list",
-                             3,
-                         )
-                         return "failed"
-                     if type(j) == type(4):
-                         if decimal_condition:
-                             nested_list.append(round(float(i), decimal_point))
-                         else:
-                             nested_list.append(float(i))
-                     else:
-                         nested_list.append(j)
+                nested_list = []
+                for j in i:
+                    if type(j) == type([]):
+                        CommonUtil.ExecLog(
+                            sModuleInfo,
+                            "This action cannot handle higher than 2 dimensional list",
+                            3,
+                        )
+                        return "failed"
+                    if type(j) == type(4):
+                        if decimal_condition:
+                            nested_list.append(round(float(i), decimal_point))
+                        else:
+                            nested_list.append(float(i))
+                    else:
+                        nested_list.append(j)
 
-                 out_variable_value.append(nested_list)
+                out_variable_value.append(nested_list)
 
-             else:
-                 out_variable_value.append(i)
+            else:
+                out_variable_value.append(i)
 
     else:
         out_variable_value = in_variable_value
@@ -4045,21 +4075,21 @@ def int_to_float(sModuleInfo, in_variable_value, decimal_point, decimal_conditio
     return out_variable_value
 
 
-def extract_num_from_str(sModuleInfo, in_variable_value, decimal_point, decimal_condition, index):
+def extract_num_from_str(
+    sModuleInfo, in_variable_value, decimal_point, decimal_condition, index
+):
 
     if type(in_variable_value) == type(""):
         try:
             no_numbers_found = False
             all_nums = [s for s in re.findall(r"-?\d+\.?\d*", in_variable_value)]
-            if all_nums == [] :
+            if all_nums == []:
                 no_numbers_found = True
             else:
                 extracted_number = all_nums[index]
         except:
             CommonUtil.ExecLog(
-                sModuleInfo,
-                "Index is out of range",
-                3,
+                sModuleInfo, "Index is out of range", 3,
             )
             return "failed"
 
@@ -4070,120 +4100,136 @@ def extract_num_from_str(sModuleInfo, in_variable_value, decimal_point, decimal_
                 0,
             )
             out_variable_value = in_variable_value
-        elif re.match("^[-+]?\d+?\.\d+?$", extracted_number) is not None: # Checking if the extracted num has float number
+        elif (
+            re.match("^[-+]?\d+?\.\d+?$", extracted_number) is not None
+        ):  # Checking if the extracted num has float number
             print("................Check float ......................")
             if decimal_condition:
                 out_variable_value = round(float(extracted_number), decimal_point)
             else:
                 out_variable_value = float(extracted_number)
 
-        elif re.match("^[-+]?[0-9]+$", extracted_number) is not None:  # Checking if the extracted num has int number
+        elif (
+            re.match("^[-+]?[0-9]+$", extracted_number) is not None
+        ):  # Checking if the extracted num has int number
             print("................Check int ......................")
             if decimal_condition:
                 out_variable_value = round(int(extracted_number), decimal_point)
             else:
                 out_variable_value = int(extracted_number)
         else:
-            pass     ##What can be done here?
+            pass  ##What can be done here?
 
     elif type(in_variable_value) == type([]):
 
-         out_variable_value = []
-         for i in in_variable_value:
-             if type(i) == type(""):
+        out_variable_value = []
+        for i in in_variable_value:
+            if type(i) == type(""):
 
-                 try:
-                     no_numbers_found = False
-                     all_nums = [s for s in re.findall(r"-?\d+\.?\d*", i)]
-                     if all_nums == []:
-                         no_numbers_found = True
-                     else:
-                         extracted_number = all_nums[index]
-                 except:
-                     CommonUtil.ExecLog(
-                         sModuleInfo,
-                         "Index is out of range",
-                         3,
-                     )
-                     return "failed"
+                try:
+                    no_numbers_found = False
+                    all_nums = [s for s in re.findall(r"-?\d+\.?\d*", i)]
+                    if all_nums == []:
+                        no_numbers_found = True
+                    else:
+                        extracted_number = all_nums[index]
+                except:
+                    CommonUtil.ExecLog(
+                        sModuleInfo, "Index is out of range", 3,
+                    )
+                    return "failed"
 
-                 if no_numbers_found:
-                     CommonUtil.ExecLog(
-                         sModuleInfo,
-                         "Your string has no number to be extracted so returning the string as it is",
-                         2,
-                     )
-                     out_variable_value.append(i)
+                if no_numbers_found:
+                    CommonUtil.ExecLog(
+                        sModuleInfo,
+                        "Your string has no number to be extracted so returning the string as it is",
+                        2,
+                    )
+                    out_variable_value.append(i)
 
-                 elif re.match("^[-+]?\d+?\.\d+?$",extracted_number) is not None:  # Checking if extracted_number has float number
-                     if decimal_condition:
-                         out_variable_value.append(round(float(extracted_number), decimal_point))
-                     else:
-                         out_variable_value.append(float(extracted_number))
+                elif (
+                    re.match("^[-+]?\d+?\.\d+?$", extracted_number) is not None
+                ):  # Checking if extracted_number has float number
+                    if decimal_condition:
+                        out_variable_value.append(
+                            round(float(extracted_number), decimal_point)
+                        )
+                    else:
+                        out_variable_value.append(float(extracted_number))
 
-                 elif re.match("^[-+]?[0-9]+$", extracted_number) is not None:  # Checking if extracted_number has int number
-                     if decimal_condition:
-                         out_variable_value.append(round(float(extracted_number), decimal_point))
-                     else:
-                         out_variable_value.append(float(extracted_number))
-                 else:
-                     pass   #What can be done here?
+                elif (
+                    re.match("^[-+]?[0-9]+$", extracted_number) is not None
+                ):  # Checking if extracted_number has int number
+                    if decimal_condition:
+                        out_variable_value.append(
+                            round(float(extracted_number), decimal_point)
+                        )
+                    else:
+                        out_variable_value.append(float(extracted_number))
+                else:
+                    pass  # What can be done here?
 
-             elif type(i) == type([]):
+            elif type(i) == type([]):
 
-                 nested_list = []
-                 for j in i:
-                     if type(j) == type([]):
-                         CommonUtil.ExecLog(
-                             sModuleInfo,
-                             "This action cannot handle higher than 2 dimensional list",
-                             3,
-                         )
-                         return "failed"
-                     if type(j) == type(""):
+                nested_list = []
+                for j in i:
+                    if type(j) == type([]):
+                        CommonUtil.ExecLog(
+                            sModuleInfo,
+                            "This action cannot handle higher than 2 dimensional list",
+                            3,
+                        )
+                        return "failed"
+                    if type(j) == type(""):
 
-                         try:
-                             no_numbers_found = False
-                             all_nums = [s for s in re.findall(r"-?\d+\.?\d*", j)]
-                             if all_nums == []:
-                                 no_numbers_found = True
-                             else:
-                                 extracted_number = all_nums[index]
-                         except:
-                             CommonUtil.ExecLog(
-                                 sModuleInfo,
-                                 "Index is out of range",
-                                 3,
-                             )
-                             return "failed"
+                        try:
+                            no_numbers_found = False
+                            all_nums = [s for s in re.findall(r"-?\d+\.?\d*", j)]
+                            if all_nums == []:
+                                no_numbers_found = True
+                            else:
+                                extracted_number = all_nums[index]
+                        except:
+                            CommonUtil.ExecLog(
+                                sModuleInfo, "Index is out of range", 3,
+                            )
+                            return "failed"
 
-                         if no_numbers_found:
-                             CommonUtil.ExecLog(
-                                 sModuleInfo,
-                                 "Your string has no number to be extracted so returning the string as it is",
-                                 2,
-                             )
-                             nested_list.append(j)
-                         elif re.match("^-?\d+?\.\d+?$",extracted_number) is not None:  # Checking if extracted_number has float number
-                             if decimal_condition:
-                                 nested_list.append(round(float(extracted_number), decimal_point))
-                             else:
-                                 nested_list.append(float(extracted_number))
+                        if no_numbers_found:
+                            CommonUtil.ExecLog(
+                                sModuleInfo,
+                                "Your string has no number to be extracted so returning the string as it is",
+                                2,
+                            )
+                            nested_list.append(j)
+                        elif (
+                            re.match("^-?\d+?\.\d+?$", extracted_number) is not None
+                        ):  # Checking if extracted_number has float number
+                            if decimal_condition:
+                                nested_list.append(
+                                    round(float(extracted_number), decimal_point)
+                                )
+                            else:
+                                nested_list.append(float(extracted_number))
 
-                         elif re.match("^[-+]?[0-9]+$",extracted_number) is not None:  # Checking if the string has int number
-                             if decimal_condition:
-                                 nested_list.append(round(float(extracted_number), decimal_point))
-                             else:
-                                 nested_list.append(float(extracted_number))
-                         else :
-                             pass     #What can be done here?
-                     else:
-                         nested_list.append(j)
+                        elif (
+                            re.match("^[-+]?[0-9]+$", extracted_number) is not None
+                        ):  # Checking if the string has int number
+                            if decimal_condition:
+                                nested_list.append(
+                                    round(float(extracted_number), decimal_point)
+                                )
+                            else:
+                                nested_list.append(float(extracted_number))
+                        else:
+                            pass  # What can be done here?
+                    else:
+                        nested_list.append(j)
 
-                 out_variable_value.append(nested_list)
+                out_variable_value.append(nested_list)
 
-             else:
-                 out_variable_value.append(i)
+            else:
+                out_variable_value.append(i)
 
     else:
         out_variable_value = in_variable_value
