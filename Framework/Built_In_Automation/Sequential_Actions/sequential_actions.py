@@ -326,6 +326,7 @@ actions = {  # Numbers are arbitrary, and are not used anywhere
         "name": "excel comparison",
         "function": "excel_comparison",
     },
+
     200: {
         "module": "appium",
         "screenshot": "mobile",
@@ -1123,6 +1124,12 @@ actions = {  # Numbers are arbitrary, and are not used anywhere
         "screenshot": "none",
         "name": "compare images",
         "function": "compare_images",
+    },
+    537: {
+        "module": "utility",
+        "screenshot": "none",
+        "name": "datatype conversion",
+        "function": "datatype_conversion",
     },
     600: {
         "module": "xml",
