@@ -34,7 +34,7 @@ from Framework.Utilities import CommonUtil, ConfigModule
 from Framework.Built_In_Automation.Shared_Resources import (
     BuiltInFunctionSharedResources as Shared_Resources,
 )
-from Framework.Utilities.decorators import logger
+from Framework.Utilities.decorators import logger, deprecated
 from Framework.Built_In_Automation.Shared_Resources import LocateElement
 from Framework.Utilities.CommonUtil import (
     passed_tag_list,
@@ -396,6 +396,7 @@ def Handle_Browser_Alert(step_data):
 
 
 @logger
+@deprecated
 def Initialize_List(data_set):
     """ Temporary wrapper until we can convert everything to use just data_set and not need the extra [] """
     return Shared_Resources.Initialize_List([data_set])

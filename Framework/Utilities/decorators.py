@@ -24,3 +24,19 @@ def logger(func):
         return result
 
     return wrapper
+
+
+def deprecated(func):
+    """Used to denote that a function has been deprecated."""
+
+    @functools.wraps(func)
+    def wrapper(*args, **kwargs):
+        start_time = time.perf_counter()
+        CommonUtil.ExecLog(
+            None,
+            f"The function {func.__name__!r} has been deprecated and will be removed at a later period.",
+            2,
+        )
+        return func(*args, **kwargs)
+
+    return wrapper

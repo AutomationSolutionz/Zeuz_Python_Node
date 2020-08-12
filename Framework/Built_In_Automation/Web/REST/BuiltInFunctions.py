@@ -23,7 +23,7 @@ from Framework.Built_In_Automation.Shared_Resources import (
 requests.packages.urllib3.disable_warnings()
 
 from Framework.Utilities import CommonUtil
-from Framework.Utilities.decorators import logger
+from Framework.Utilities.decorators import logger, deprecated
 from Framework.Utilities.CommonUtil import (
     passed_tag_list,
     failed_tag_list,
@@ -112,6 +112,7 @@ def Action_Handler(action_step_data, action_row):
 
 
 @logger
+@deprecated
 def Initialize_List(data_set):
     """ Temporary wrapper until we can convert everything to use just data_set and not need the extra [] """
     return Shared_Resources.Initialize_List([data_set])

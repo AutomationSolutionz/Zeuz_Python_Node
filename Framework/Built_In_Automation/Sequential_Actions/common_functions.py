@@ -26,7 +26,7 @@ from Framework.Utilities.CommonUtil import (
     failed_tag_list,
     skipped_tag_list,
 )  # Allowed return strings, used to normalize pass/fail
-from Framework.Utilities.decorators import logger
+from Framework.Utilities.decorators import logger, deprecated
 from Framework.Built_In_Automation.Shared_Resources import LocateElement
 from Framework import MainDriverApi
 from Framework.Utilities import FileUtilities
@@ -790,6 +790,7 @@ def Compare_Partial_Variables(data_set):
 
 
 @logger
+@deprecated
 def Initialize_List(data_set):
     """ Prepares an empty list in shared variables """
     sModuleInfo = inspect.currentframe().f_code.co_name + " : " + MODULE_NAME
@@ -804,6 +805,7 @@ def Randomize_List(data_set):
 
 
 @logger
+@deprecated
 def Initialize_Dict(data_set):
     """ Prepares an empty dict in shared variables """
     sModuleInfo = inspect.currentframe().f_code.co_name + " : " + MODULE_NAME
@@ -890,6 +892,7 @@ def delete_all_shared_variables(data_set):
 
 
 @logger
+@deprecated
 def append_list_shared_variable(data_set):
     """ Creates and appends a python list variable """
     # Note: List is created if it doesn't already exist
@@ -918,6 +921,7 @@ def append_list_shared_variable(data_set):
 
 
 @logger
+@deprecated
 def append_dict_shared_variable(data_set):
     """ Creates and appends a python dict variable """
     # Note: List is created if it doesn't already exist
@@ -1081,6 +1085,7 @@ def extract_date(data_set):
 
 
 @logger
+@deprecated
 def insert_list_into_another_list(data_set):
     """ Creates and appends a python list variable """
     # Note: List is created if it doesn't already exist
@@ -1141,6 +1146,7 @@ def insert_list_into_another_list(data_set):
 
 
 @logger
+@deprecated
 def insert_dict_into_another_dict(data_set):
     """ Creates and appends a python list variable """
     # Note: List is created if it doesn't already exist
@@ -1924,6 +1930,7 @@ def excel_comparison(data_set):
 
 
 @logger
+@deprecated
 def get_excel_table(data_set):
     """DEPRECATED. Will be removed in a future release"""
     sModuleInfo = inspect.currentframe().f_code.co_name + " : " + MODULE_NAME

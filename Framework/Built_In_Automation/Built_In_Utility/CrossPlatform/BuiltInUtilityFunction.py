@@ -1684,7 +1684,6 @@ def Run_Command(data_set):
         )
 
 
-@logger
 # def Run_Command(step_data):
 #     sModuleInfo = inspect.currentframe().f_code.co_name + " : " + MODULE_NAME
 #
@@ -1722,7 +1721,6 @@ def Run_Command(data_set):
 #         return CommonUtil.Exception_Handler(sys.exc_info())
 #
 # # Method to Run Command
-@logger
 # def Run_Command_and_Save(step_data):
 #     sModuleInfo = inspect.currentframe().f_code.co_name + " : " + MODULE_NAME
 #

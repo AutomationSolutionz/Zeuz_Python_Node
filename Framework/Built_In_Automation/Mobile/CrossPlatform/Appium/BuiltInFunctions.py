@@ -651,7 +651,7 @@ def set_pdeathsig(sig=signal.SIGTERM):
 @logger
 def is_port_in_use(port):
     with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
-        return s.connect_ex(('localhost', port)) == 0
+        return s.connect_ex(("localhost", port)) == 0
 
 
 @logger
@@ -684,9 +684,13 @@ def start_appium_server():
         while is_port_in_use(appium_port) and tries < 20:
             appium_port += 2
             wdaLocalPort += 2
-        
+
         if tries >= 20:
-            CommonUtil.ExecLog(sModuleInfo, "Failed to find a free port for running appium after 20 tries.", 1)
+            CommonUtil.ExecLog(
+                sModuleInfo,
+                "Failed to find a free port for running appium after 20 tries.",
+                1,
+            )
             return "failed"
 
         try:
@@ -1073,7 +1077,7 @@ def teardown_appium(data_set):
                     appium_details[name]["server"].kill()  # Terminate server
                 except:
                     pass
-                    
+
                 # kill_node()
             except:
                 CommonUtil.ExecLog(
