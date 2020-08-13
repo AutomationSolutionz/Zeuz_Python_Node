@@ -4103,7 +4103,6 @@ def extract_num_from_str(
         elif (
             re.match("^[-+]?\d+?\.\d+?$", extracted_number) is not None
         ):  # Checking if the extracted num has float number
-            print("................Check float ......................")
             if decimal_condition:
                 out_variable_value = round(float(extracted_number), decimal_point)
             else:
@@ -4112,7 +4111,6 @@ def extract_num_from_str(
         elif (
             re.match("^[-+]?[0-9]+$", extracted_number) is not None
         ):  # Checking if the extracted num has int number
-            print("................Check int ......................")
             if decimal_condition:
                 out_variable_value = round(int(extracted_number), decimal_point)
             else:
@@ -4143,7 +4141,7 @@ def extract_num_from_str(
                     CommonUtil.ExecLog(
                         sModuleInfo,
                         "Your string has no number to be extracted so returning the string as it is",
-                        2,
+                        0,
                     )
                     out_variable_value.append(i)
 
@@ -4162,10 +4160,10 @@ def extract_num_from_str(
                 ):  # Checking if extracted_number has int number
                     if decimal_condition:
                         out_variable_value.append(
-                            round(float(extracted_number), decimal_point)
+                            round(int(extracted_number), decimal_point)
                         )
                     else:
-                        out_variable_value.append(float(extracted_number))
+                        out_variable_value.append(int(extracted_number))
                 else:
                     pass  # What can be done here?
 
@@ -4217,10 +4215,10 @@ def extract_num_from_str(
                         ):  # Checking if the string has int number
                             if decimal_condition:
                                 nested_list.append(
-                                    round(float(extracted_number), decimal_point)
+                                    round(int(extracted_number), decimal_point)
                                 )
                             else:
-                                nested_list.append(float(extracted_number))
+                                nested_list.append(int(extracted_number))
                         else:
                             pass  # What can be done here?
                     else:
