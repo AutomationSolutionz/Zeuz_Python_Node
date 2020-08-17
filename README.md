@@ -13,3 +13,5 @@ $ black /path/to/ZeuzPythonNode
 ## Description
 
 Client side application for running automated testing.
+
+To run Zeuz Node in daemon mode (as a background process), execute the `daemon.sh` script.
