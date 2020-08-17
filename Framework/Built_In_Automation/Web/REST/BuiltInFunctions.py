@@ -666,10 +666,10 @@ def handle_rest_call(
 
         headers = get_value_as_list(headers)
 
-        CommonUtil.ExecLog(sModuleInfo, "Calling %s method" % method, 1)
-        CommonUtil.ExecLog(sModuleInfo, "URL: %s" % url, 1)
-        CommonUtil.ExecLog(sModuleInfo, "body: %s" % body, 1)
-        CommonUtil.ExecLog(sModuleInfo, "headers %s" % headers, 1)
+        CommonUtil.ExecLog(sModuleInfo, "Calling %s method" % method, 5)
+        CommonUtil.ExecLog(sModuleInfo, "URL: %s" % url, 5)
+        CommonUtil.ExecLog(sModuleInfo, "body: %s" % body, 5)
+        CommonUtil.ExecLog(sModuleInfo, "headers %s" % headers, 5)
         if payload != "":
             CommonUtil.ExecLog(sModuleInfo, "payload %s" % payload, 1)
 
@@ -682,9 +682,31 @@ def handle_rest_call(
         status_code = 1  # dummy value
         while count < request_count:
             if method.lower().strip() == "post":
-                result = requests.post(
-                    url, json=body, data=payload, headers=headers, verify=False
-                )
+                if "Content-Type" in headers:
+                    content_header = headers["Content-Type"]
+                    if content_header == "application/json":
+                        result = requests.request(
+                            method="post", url=url, json=body, headers=headers, verify=False
+                        )
+                    elif content_header == "multipart/form-data":
+                        # delete the header itself before making the request, as you also need to
+                        # set a boundary
+                        del headers["Content-Type"]
+                        result = requests.request(
+                            method="post", url=url, files=body, headers=headers, verify=False
+                        )
+                    elif content_header == "application/x-www-form-urlencoded":
+                        result = requests.request(
+                            method="post", url=url, data=body, headers=headers, verify=False
+                        )
+                    else:
+                        result = requests.request(
+                            method="post", url=url, json=body, data=payload, headers=headers, verify=False
+                        )
+                else:
+                    result = requests.request(
+                        method="post", url=url, json=body, data=payload, headers=headers, verify=False
+                    )
             elif method.lower().strip() == "put":
                 result = requests.put(
                     url, json=body, data=payload, headers=headers, verify=False
