@@ -1349,7 +1349,7 @@ actions = {  # Numbers are arbitrary, and are not used anywhere
 }
 
 # List of Sub-Field keywords, must be all lowercase, and using single spaces - no underscores
-action_support = [
+action_support = (
     "action",
     "optional action",
     "loop action",
@@ -1378,7 +1378,8 @@ action_support = [
     "loop settings",
     "attribute constrain",
     "optional option",
-]
+    "graphql",
+)
 
 # List of supported mobile platforms - must be lower case
 supported_platforms = ("android", "ios")

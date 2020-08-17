@@ -664,11 +664,14 @@ def handle_rest_call(
         body = data[2]
         headers = data[3]
         payload = data[4]
+        
+        # Parse header into proper object.
+        headers = get_value_as_list(headers)
+
+        # Parse body into proper object unless it is not GraphQL.
         temp = get_value_as_list(body)
         if temp not in failed_tag_list:
             body = temp
-
-        headers = get_value_as_list(headers)
 
         CommonUtil.ExecLog(sModuleInfo, "Calling %s method" % method, 5)
         CommonUtil.ExecLog(sModuleInfo, "URL: %s" % url, 5)
@@ -1220,33 +1223,35 @@ def Validate_Step_Data(step_data):
     try:
         method = ""
         url = ""
-        body = "{"
+        body = None
+        temp_body = "{"
         headers = "{"
         plain_body_text = False
         payload = ""
+        graphql_dict = dict()
+        
         for each in step_data:
-            if each[1].lower().strip() == "element parameter":
-                element_parameter = each[0]
-                if element_parameter.lower().strip() == "method":
+            if "graphql" in each[1]:
+                graphql_dict[each[0].strip()] = each[2]
+            elif each[1].lower().strip() == "element parameter":
+                element_parameter = each[0].lower().strip()
+                if element_parameter == "method":
                     method = each[2]
-                elif element_parameter.lower().strip() == "url":
+                elif element_parameter == "url":
                     url = each[2]
-                elif element_parameter.lower().strip() == "payload":
+                elif element_parameter == "payload":
                     payload = """%s""" % str(each[2])
             elif each[1].lower().strip() == "body":
                 if each[0].lower().strip() == "plain text":
-                    body = each[2]
+                    temp_body = each[2]
                     plain_body_text = True
                 else:
-                    if body == "{":
-                        body += '"%s" : "%s"' % (each[0], each[2])
+                    if temp_body == "{":
+                        temp_body += '"%s" : "%s"' % (each[0], each[2])
                     else:
-                        body += ', "%s" : "%s"' % (each[0], each[2])
+                        temp_body += ', "%s" : "%s"' % (each[0], each[2])
 
-            elif (
-                each[1].lower().strip() == "header"
-                or each[1].lower().strip() == "headers"
-            ):
+            elif each[1].lower().strip() in ("header", "headers"):
                 if headers == "{":
                     headers += '"%s" : "%s"' % (each[0], each[2])
                 else:
@@ -1254,7 +1259,13 @@ def Validate_Step_Data(step_data):
 
         headers += "}"
         if not plain_body_text:
-            body += "}"
+            temp_body += "}"
+
+        # If its a GraphQL request, we should take body as raw.
+        if graphql_dict:
+            body = graphql_dict
+        else:
+            body = temp_body
 
         validated_data = (url, method, body, headers, payload)
         return validated_data
