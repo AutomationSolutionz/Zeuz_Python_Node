@@ -664,7 +664,7 @@ def handle_rest_call(
         body = data[2]
         headers = data[3]
         payload = data[4]
-        
+
         # Parse header into proper object.
         headers = get_value_as_list(headers)
 
@@ -694,31 +694,57 @@ def handle_rest_call(
                     content_header = headers["Content-Type"]
                     if content_header == "application/json":
                         result = requests.request(
-                            method=method, url=url, json=body, headers=headers, verify=False
+                            method=method,
+                            url=url,
+                            json=body,
+                            headers=headers,
+                            verify=False,
                         )
                     elif content_header == "multipart/form-data":
                         # delete the header itself before making the request, as you also need to
                         # set a boundary
                         del headers["Content-Type"]
                         result = requests.request(
-                            method=method, url=url, files=body, headers=headers, verify=False
+                            method=method,
+                            url=url,
+                            files=body,
+                            headers=headers,
+                            verify=False,
                         )
                     elif content_header == "application/x-www-form-urlencoded":
                         result = requests.request(
-                            method=method, url=url, data=body, headers=headers, verify=False
+                            method=method,
+                            url=url,
+                            data=body,
+                            headers=headers,
+                            verify=False,
                         )
                     else:
                         result = requests.request(
-                            method=method, url=url, json=body, data=payload, headers=headers, verify=False
+                            method=method,
+                            url=url,
+                            json=body,
+                            data=payload,
+                            headers=headers,
+                            verify=False,
                         )
                 else:
                     result = requests.request(
-                        method=method, url=url, json=body, data=payload, headers=headers, verify=False
+                        method=method,
+                        url=url,
+                        json=body,
+                        data=payload,
+                        headers=headers,
+                        verify=False,
                     )
             elif method in ("get", "head"):
-                result = requests.request(method=method, url=url, headers=headers, verify=False)
+                result = requests.request(
+                    method=method, url=url, headers=headers, verify=False
+                )
             elif method == "delete":
-                result = requests.request(method=method, url=url, json=body, headers=headers, verify=False)
+                result = requests.request(
+                    method=method, url=url, json=body, headers=headers, verify=False
+                )
             else:
                 return "failed"
             status_code = int(result.status_code)
@@ -1229,7 +1255,7 @@ def Validate_Step_Data(step_data):
         plain_body_text = False
         payload = ""
         graphql_dict = dict()
-        
+
         for each in step_data:
             if "graphql" in each[1]:
                 graphql_dict[each[0].strip()] = each[2]
