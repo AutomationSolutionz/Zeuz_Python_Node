@@ -9,6 +9,10 @@ Created on April 10, 2017
 import sys, json
 import os
 import requests
+from urllib3.exceptions import InsecureRequestWarning
+
+# Suppress the InsecureRequestWarning since we use verify=False parameter.
+requests.packages.urllib3.disable_warnings(category=InsecureRequestWarning)
 
 
 sys.path.append("..")
@@ -681,40 +685,37 @@ def handle_rest_call(
 
         status_code = 1  # dummy value
         while count < request_count:
-            if method.lower().strip() == "post":
+            method = method.lower().strip()
+            if method in ("post", "put"):
                 if "Content-Type" in headers:
                     content_header = headers["Content-Type"]
                     if content_header == "application/json":
                         result = requests.request(
-                            method="post", url=url, json=body, headers=headers, verify=False
+                            method=method, url=url, json=body, headers=headers, verify=False
                         )
                     elif content_header == "multipart/form-data":
                         # delete the header itself before making the request, as you also need to
                         # set a boundary
                         del headers["Content-Type"]
                         result = requests.request(
-                            method="post", url=url, files=body, headers=headers, verify=False
+                            method=method, url=url, files=body, headers=headers, verify=False
                         )
                     elif content_header == "application/x-www-form-urlencoded":
                         result = requests.request(
-                            method="post", url=url, data=body, headers=headers, verify=False
+                            method=method, url=url, data=body, headers=headers, verify=False
                         )
                     else:
                         result = requests.request(
-                            method="post", url=url, json=body, data=payload, headers=headers, verify=False
+                            method=method, url=url, json=body, data=payload, headers=headers, verify=False
                         )
                 else:
                     result = requests.request(
-                        method="post", url=url, json=body, data=payload, headers=headers, verify=False
+                        method=method, url=url, json=body, data=payload, headers=headers, verify=False
                     )
-            elif method.lower().strip() == "put":
-                result = requests.put(
-                    url, json=body, data=payload, headers=headers, verify=False
-                )
-            elif method.lower().strip() == "get":
-                result = requests.get(url, headers=headers, verify=False)
-            elif method.lower().strip() == "delete":
-                result = requests.delete(url, json=body, headers=headers, verify=False)
+            elif method in ("get", "head"):
+                result = requests.request(method=method, url=url, headers=headers, verify=False)
+            elif method == "delete":
+                result = requests.request(method=method, url=url, json=body, headers=headers, verify=False)
             else:
                 return "failed"
             status_code = int(result.status_code)
