@@ -191,7 +191,14 @@ def Open_Browser(dependency, window_size_X=None, window_size_Y=None):
                 + os.sep
                 + "selenium-server-standalone-2.45.0.jar"
             )
-            selenium_driver = webdriver.Safari()
+            desired_capabilities = DesiredCapabilities.SAFARI
+            if "ios" in browser:
+                desired_capabilities["platformName"] = "ios"
+
+                if "simulator" in browser:
+                    desired_capabilities["safari:useSimulator"] = True
+
+            selenium_driver = webdriver.Safari(desired_capabilities=desired_capabilities)
             selenium_driver.implicitly_wait(WebDriver_Wait)
             if window_size_X is None and window_size_Y is None:
                 selenium_driver.maximize_window()
