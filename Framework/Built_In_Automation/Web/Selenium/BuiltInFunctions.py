@@ -479,30 +479,44 @@ def Enter_Text_In_Text_Box(step_data):
     try:
         delay = 0
         text_value = ""
+        use_js = False
+
         global selenium_driver
         Element = LocateElement.Get_Element(step_data, selenium_driver)
         if Element != "failed":
             for each in step_data:
                 if each[1] == "action":
                     text_value = each[2]
-                    break
                 elif each[0] == "delay":
                     delay = float(each[2])
-                else:
-                    continue
-            Element.click()
-            # Element.clear()
-            Element.send_keys(Keys.CONTROL, "a")
-            if delay == 0:
-                Element.send_keys(text_value)
+                if "use js" in each[0].lower():
+                    use_js = each[2].strip().lower() in ("true", "yes", "1")
+
+            if use_js:
+                # Click on element.
+                selenium_driver.execute_script("arguments[0].click();", Element)
+
+                # Fill up the value.
+                selenium_driver.execute_script(f"arguments[0].value = `{text_value}`;", Element)
+
+                # Soemtimes text field becomes unclickable after entering text?
+                selenium_driver.execute_script("arguments[0].click();", Element)
             else:
-                for c in text_value:
-                    Element.send_keys(c)
-                    time.sleep(delay)
-            try:
                 Element.click()
-            except:  # sometimes text field can be unclickable after entering text
-                pass
+
+                # Element.clear()
+                Element.send_keys(Keys.CONTROL, "a")
+                if delay == 0:
+                    Element.send_keys(text_value)
+                else:
+                    for c in text_value:
+                        Element.send_keys(c)
+                        time.sleep(delay)
+                try:
+                    Element.click()
+                except:  # sometimes text field can be unclickable after entering text
+                    pass
+
             CommonUtil.TakeScreenShot(sModuleInfo)
             CommonUtil.ExecLog(
                 sModuleInfo,
@@ -617,6 +631,8 @@ def Click_Element(data_set):
 
     sModuleInfo = inspect.currentframe().f_code.co_name + " : " + MODULE_NAME
     global selenium_driver
+    
+    use_js = False  # Use js to click on element?
     try:
         bodyElement = ""
         for row in data_set:
@@ -627,6 +643,8 @@ def Click_Element(data_set):
                 shared_var = row[
                     2
                 ]  # Save shared variable name, or coordinates if entered directory in step data
+            if "use js" in row[0].lower():
+                use_js = row[2].strip().lower() in ("true", "yes", "1")
     except Exception:
         return CommonUtil.Exception_Handler(
             sys.exc_info(), None, "Error parsing data set"
@@ -644,7 +662,12 @@ def Click_Element(data_set):
 
         # Click element
         try:
-            Element.click()
+            if use_js:
+                # Click on element.
+                selenium_driver.execute_script("arguments[0].click();", Element)
+            else:
+                Element.click()
+
             CommonUtil.TakeScreenShot(sModuleInfo)
             CommonUtil.ExecLog(sModuleInfo, "Successfully clicked the element", 1)
             return "passed"
