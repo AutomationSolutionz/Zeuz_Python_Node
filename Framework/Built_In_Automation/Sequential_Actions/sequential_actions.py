@@ -914,6 +914,12 @@ actions = {  # Numbers are arbitrary, and are not used anywhere
         "name": "mouse click",
         "function": "Mouse_Click_Element",
     },
+    446: {
+        "module": "selenium",
+        "screenshot": "web",
+        "name": "execute javascript",
+        "function": "execute_javascript",
+    },
     500: {
         "module": "utility",
         "screenshot": "none",

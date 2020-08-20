@@ -198,7 +198,9 @@ def Open_Browser(dependency, window_size_X=None, window_size_Y=None):
                 if "simulator" in browser:
                     desired_capabilities["safari:useSimulator"] = True
 
-            selenium_driver = webdriver.Safari(desired_capabilities=desired_capabilities)
+            selenium_driver = webdriver.Safari(
+                desired_capabilities=desired_capabilities
+            )
             selenium_driver.implicitly_wait(WebDriver_Wait)
             if window_size_X is None and window_size_Y is None:
                 selenium_driver.maximize_window()
@@ -479,30 +481,46 @@ def Enter_Text_In_Text_Box(step_data):
     try:
         delay = 0
         text_value = ""
+        use_js = False
+
         global selenium_driver
         Element = LocateElement.Get_Element(step_data, selenium_driver)
         if Element != "failed":
             for each in step_data:
                 if each[1] == "action":
                     text_value = each[2]
-                    break
                 elif each[0] == "delay":
                     delay = float(each[2])
-                else:
-                    continue
-            Element.click()
-            # Element.clear()
-            Element.send_keys(Keys.CONTROL, "a")
-            if delay == 0:
-                Element.send_keys(text_value)
+                if "use js" in each[0].lower():
+                    use_js = each[2].strip().lower() in ("true", "yes", "1")
+
+            if use_js:
+                # Click on element.
+                selenium_driver.execute_script("arguments[0].click();", Element)
+
+                # Fill up the value.
+                selenium_driver.execute_script(
+                    f"arguments[0].value = `{text_value}`;", Element
+                )
+
+                # Soemtimes text field becomes unclickable after entering text?
+                selenium_driver.execute_script("arguments[0].click();", Element)
             else:
-                for c in text_value:
-                    Element.send_keys(c)
-                    time.sleep(delay)
-            try:
                 Element.click()
-            except:  # sometimes text field can be unclickable after entering text
-                pass
+
+                # Element.clear()
+                Element.send_keys(Keys.CONTROL, "a")
+                if delay == 0:
+                    Element.send_keys(text_value)
+                else:
+                    for c in text_value:
+                        Element.send_keys(c)
+                        time.sleep(delay)
+                try:
+                    Element.click()
+                except:  # sometimes text field can be unclickable after entering text
+                    pass
+
             CommonUtil.TakeScreenShot(sModuleInfo)
             CommonUtil.ExecLog(
                 sModuleInfo,
@@ -610,6 +628,57 @@ def Keystroke_For_Element(data_set):
         return "failed"
 
 
+@logger
+def execute_javascript(data_set):
+    """Executes the JavaScript code.
+
+    Args:
+        data_set:
+          id/class/etc | element parameter  | button_id     ; optional row
+          variable     | optional parameter | var_name      ; store result into variable
+          execute js   | selenium action    | js_code_here  ; example: $elem.click();
+
+    Returns:
+        "passed" if the given script execution is successful.
+        "failed" otherwise.
+    """
+
+    try:
+        Element = None
+        var_name = None
+        script_to_exec = None
+
+        for left, mid, right in data_set:
+            left = left.lower().strip()
+            mid = mid.lower().strip()
+            right = right.strip()
+
+            if "element parameter" in mid:
+                Element = LocateElement.Get_Element(data_set, selenium_driver)
+
+            if "variable" in left:
+                var_name = right
+
+            if "action" in mid:
+                script_to_exec = right
+
+        # Element parameter is provided to use Zeuz Node's element finding approach.
+        if Element:
+            # Replace "$elem" with "arguments[0]". For convenience only.
+            script_to_exec = script_to_exec.replace("$elem", "arguments[0]")
+
+            # Execute the script.
+            result = selenium_driver.execute_script(script_to_exec, Element)
+        else:
+            result = selenium_driver.execute_script(script_to_exec, Element)
+
+        if var_name:
+            Shared_Resources.Set_Shared_Variables(var_name, result)
+    except Exception:
+        errMsg = "Failed to execute javascript."
+        return CommonUtil.Exception_Handler(sys.exc_info(), None, errMsg)
+
+
 # Method to click on element; step data passed on by the user
 @logger
 def Click_Element(data_set):
@@ -617,6 +686,8 @@ def Click_Element(data_set):
 
     sModuleInfo = inspect.currentframe().f_code.co_name + " : " + MODULE_NAME
     global selenium_driver
+
+    use_js = False  # Use js to click on element?
     try:
         bodyElement = ""
         for row in data_set:
@@ -627,6 +698,8 @@ def Click_Element(data_set):
                 shared_var = row[
                     2
                 ]  # Save shared variable name, or coordinates if entered directory in step data
+            if "use js" in row[0].lower():
+                use_js = row[2].strip().lower() in ("true", "yes", "1")
     except Exception:
         return CommonUtil.Exception_Handler(
             sys.exc_info(), None, "Error parsing data set"
@@ -644,7 +717,12 @@ def Click_Element(data_set):
 
         # Click element
         try:
-            Element.click()
+            if use_js:
+                # Click on element.
+                selenium_driver.execute_script("arguments[0].click();", Element)
+            else:
+                Element.click()
+
             CommonUtil.TakeScreenShot(sModuleInfo)
             CommonUtil.ExecLog(sModuleInfo, "Successfully clicked the element", 1)
             return "passed"
