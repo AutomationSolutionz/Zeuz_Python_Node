@@ -198,7 +198,9 @@ def Open_Browser(dependency, window_size_X=None, window_size_Y=None):
                 if "simulator" in browser:
                     desired_capabilities["safari:useSimulator"] = True
 
-            selenium_driver = webdriver.Safari(desired_capabilities=desired_capabilities)
+            selenium_driver = webdriver.Safari(
+                desired_capabilities=desired_capabilities
+            )
             selenium_driver.implicitly_wait(WebDriver_Wait)
             if window_size_X is None and window_size_Y is None:
                 selenium_driver.maximize_window()
@@ -497,7 +499,9 @@ def Enter_Text_In_Text_Box(step_data):
                 selenium_driver.execute_script("arguments[0].click();", Element)
 
                 # Fill up the value.
-                selenium_driver.execute_script(f"arguments[0].value = `{text_value}`;", Element)
+                selenium_driver.execute_script(
+                    f"arguments[0].value = `{text_value}`;", Element
+                )
 
                 # Soemtimes text field becomes unclickable after entering text?
                 selenium_driver.execute_script("arguments[0].click();", Element)
@@ -633,7 +637,7 @@ def execute_javascript(data_set):
           id/class/etc | element parameter  | button_id     ; optional row
           variable     | optional parameter | var_name      ; store result into variable
           execute js   | selenium action    | js_code_here  ; example: $elem.click();
-    
+
     Returns:
         "passed" if the given script execution is successful.
         "failed" otherwise.
@@ -682,7 +686,7 @@ def Click_Element(data_set):
 
     sModuleInfo = inspect.currentframe().f_code.co_name + " : " + MODULE_NAME
     global selenium_driver
-    
+
     use_js = False  # Use js to click on element?
     try:
         bodyElement = ""
