@@ -624,6 +624,57 @@ def Keystroke_For_Element(data_set):
         return "failed"
 
 
+@logger
+def execute_javascript(data_set):
+    """Executes the JavaScript code.
+
+    Args:
+        data_set:
+          id/class/etc | element parameter  | button_id     ; optional row
+          variable     | optional parameter | var_name      ; store result into variable
+          execute js   | selenium action    | js_code_here  ; example: $elem.click();
+    
+    Returns:
+        "passed" if the given script execution is successful.
+        "failed" otherwise.
+    """
+
+    try:
+        Element = None
+        var_name = None
+        script_to_exec = None
+
+        for left, mid, right in data_set:
+            left = left.lower().strip()
+            mid = mid.lower().strip()
+            right = right.strip()
+
+            if "element parameter" in mid:
+                Element = LocateElement.Get_Element(data_set, selenium_driver)
+
+            if "variable" in left:
+                var_name = right
+
+            if "action" in mid:
+                script_to_exec = right
+
+        # Element parameter is provided to use Zeuz Node's element finding approach.
+        if Element:
+            # Replace "$elem" with "arguments[0]". For convenience only.
+            script_to_exec = script_to_exec.replace("$elem", "arguments[0]")
+
+            # Execute the script.
+            result = selenium_driver.execute_script(script_to_exec, Element)
+        else:
+            result = selenium_driver.execute_script(script_to_exec, Element)
+
+        if var_name:
+            Shared_Resources.Set_Shared_Variables(var_name, result)
+    except Exception:
+        errMsg = "Failed to execute javascript."
+        return CommonUtil.Exception_Handler(sys.exc_info(), None, errMsg)
+
+
 # Method to click on element; step data passed on by the user
 @logger
 def Click_Element(data_set):
