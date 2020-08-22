@@ -3577,6 +3577,18 @@ def extract_number(data_set):
 
 
 def datatype_conversion(data_set):
+    """
+    This action executes following sub actions-
+
+    str to int
+    str to float
+    int to float
+    float to int
+    extract number from str
+
+    This action can handle a single value, 1 dimensional list and 2 dimensional list. So you can easily manipulate
+    table data of your excel file.
+    """
     sModuleInfo = inspect.currentframe().f_code.co_name + " : " + MODULE_NAME
     CommonUtil.ExecLog(sModuleInfo, "Function Start", 0)
     try:
@@ -3757,7 +3769,15 @@ def datatype_conversion(data_set):
 
 
 def str_to_int(sModuleInfo, in_variable_value, ceil_floor_round):
+    """
+    Field	                Sub Field	        Value
+    input variable name	    input parameter	    inp
+    output variable name    output parameter    out
+    ceil floor round        optional parameter  ceil
+    datatype conversion     utility action      str to int
 
+    Action: "29.1" >> 30
+    """
     if type(in_variable_value) == type(""):
         if (
             re.match("^[-+]?\d+?\.\d+?$", in_variable_value) is not None
@@ -3862,6 +3882,15 @@ def str_to_int(sModuleInfo, in_variable_value, ceil_floor_round):
 
 
 def float_to_int(sModuleInfo, in_variable_value, ceil_floor_round):
+    """
+    Field	                Sub Field	        Value
+    input variable name	    input parameter	    inp
+    output variable name    output parameter    out
+    ceil floor round        optional parameter  round
+    datatype conversion     utility action      float to int
+
+    Action: 368.6555 >> 367
+    """
 
     if type(in_variable_value) == type(4.0):
         if ceil_floor_round == "ceil":
@@ -3923,7 +3952,15 @@ def float_to_int(sModuleInfo, in_variable_value, ceil_floor_round):
 
 
 def str_to_float(sModuleInfo, in_variable_value, decimal_point, decimal_condition):
+    """
+    Field	                Sub Field	        Value
+    input variable name	    input parameter	    inp
+    output variable name    output parameter    out
+    decimal point           optional parameter  2
+    datatype conversion     utility action      str to float
 
+    Action: "368.6555" >> 368.66
+    """
     if type(in_variable_value) == type(""):
         if (
             re.match("^[-+]?\d+?\.\d+?$", in_variable_value) is not None
@@ -4027,7 +4064,14 @@ def str_to_float(sModuleInfo, in_variable_value, decimal_point, decimal_conditio
 
 
 def int_to_float(sModuleInfo, in_variable_value, decimal_point, decimal_condition):
+    """
+    Field	                Sub Field	        Value
+    input variable name	    input parameter	    inp
+    output variable name    output parameter    out
+    datatype conversion     utility action      int to float
 
+    Action: 368 >> 368.0
+    """
     if type(in_variable_value) == type(4):
         if decimal_condition:
             out_variable_value = round(float(in_variable_value), decimal_point)
@@ -4078,6 +4122,16 @@ def int_to_float(sModuleInfo, in_variable_value, decimal_point, decimal_conditio
 def extract_num_from_str(
     sModuleInfo, in_variable_value, decimal_point, decimal_condition, index
 ):
+    """
+    Field	                Sub Field	        Value
+    input variable name	    input parameter	    inp
+    output variable name    output parameter    out
+    index                   optional parameter  -1
+    decimal point           optional parameter  0
+    datatype conversion     utility action      str to float
+
+    Action: "30 dollar 400.35469 pound" >> 400.0
+    """
 
     if type(in_variable_value) == type(""):
         try:
@@ -4197,7 +4251,7 @@ def extract_num_from_str(
                             CommonUtil.ExecLog(
                                 sModuleInfo,
                                 "Your string has no number to be extracted so returning the string as it is",
-                                2,
+                                0,
                             )
                             nested_list.append(j)
                         elif (
