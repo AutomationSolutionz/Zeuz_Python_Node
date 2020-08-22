@@ -229,34 +229,58 @@ def get_val(x, target):
 
 @logger
 def search_val(x, target, target_val):
-    for key, value in list(x.items()):
-        if str(key) == target and str(value) == target_val:
-            return True
-
-        else:
-            if isinstance(value, dict):
-                result = search_val(value, target, target_val)
-                if not result:
-                    continue
+    if isinstance(x, list):
+        for each in x:
+            if isinstance(each, str):
+                if str(key) == target and str(each) == target_val:
+                    return True
                 else:
-                    return result
-            elif isinstance(value, list):
-                for each in value:
-                    if isinstance(each, str) or isinstance(each, str):
-                        if str(key) == target and str(each) == target_val:
-                            return True
-                        else:
-                            continue
-                    else:
-                        result = search_val(each, target, target_val)
-                        if not result:
-                            continue
-                        else:
-                            return result
-            else:
-                continue
+                    continue
+            elif isinstance(each, list) or isinstance(each, dict):
+                result = search_val(each, target, target_val)
+                if result:
+                    return True
 
-    return False
+    elif isinstance(x, dict):
+        for key, value in x.items():
+            # if isinstance(value, str):
+            if str(key) == target and str(value) == target_val:
+                return True
+            elif isinstance(value, list) or isinstance(value, dict):
+                result = search_val(value, target, target_val, key)
+                if result:
+                    return True
+    else:
+        return False
+
+    # for key, value in list(x.items()):
+    #     if str(key) == target and str(value) == target_val:
+    #         return True
+    #
+    #     else:
+    #         if isinstance(value, dict):
+    #             result = search_val(value, target, target_val)
+    #             if not result:
+    #                 continue
+    #             else:
+    #                 return result
+    #         elif isinstance(value, list):
+    #             for each in value:
+    #                 if isinstance(each, str) or isinstance(each, str):
+    #                     if str(key) == target and str(each) == target_val:
+    #                         return True
+    #                     else:
+    #                         continue
+    #                 else:
+    #                     result = search_val(each, target, target_val)
+    #                     if not result:
+    #                         continue
+    #                     else:
+    #                         return result
+    #         else:
+    #             continue
+    #
+    # return False
 
 
 @logger
