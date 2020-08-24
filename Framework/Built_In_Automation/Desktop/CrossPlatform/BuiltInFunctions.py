@@ -348,6 +348,14 @@ def click_on_coordinates(data_set):
             return CommonUtil.Exception_Handler(sys.exc_info(), None, errMsg)
 
         gui.click(x, y)
+
+        max_x, max_y = gui.size()
+        x = max_x if x > max_x else x
+        x = 0 if x < 0 else x
+        y = max_y if y > max_y else y
+        y = 0 if y < 0 else y
+        Msg = "Clicked on " + str(x) + ", " + str(y) + " successfully"
+        CommonUtil.ExecLog(sModuleInfo, Msg, 1)
         return "passed"
 
     except:
