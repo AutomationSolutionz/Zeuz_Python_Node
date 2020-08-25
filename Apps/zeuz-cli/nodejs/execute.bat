@@ -10,7 +10,7 @@ node deploy.js ^
     --milestone "7146" ^
     --runtime_parameters "" ^
     --machine_timeout "60" ^
-    --report_timeout "60"
+    --report_timeout "60" ^
     --report_filename "report.json"
 
 @echo off

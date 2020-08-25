@@ -311,13 +311,13 @@ def main():
 
     for key in report["status"]:
         print(key.upper(), report["status"][key])
-    
+
     print("REPORT_URL", run_url)
 
     # Write detailed report to file.
     with open(report_filename, "w") as f:
         f.write(json.dumps(report))
-    
+
     print("REPORT_FILE", report_filename)
 
     return EXIT_CODE_SUCCESS
