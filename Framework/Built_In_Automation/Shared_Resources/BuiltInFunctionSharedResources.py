@@ -385,9 +385,27 @@ def parse_variable(name):
             val = Get_Shared_Variables(name)
             for idx in indices:
                 if idx[0] == '"' or idx[0] == "'":
+                    # Check to see if it's a string.
                     idx = idx[1:len(idx)-1]
                 else:
-                    idx = int(idx)
+                    # Otherwise check to see if its an integer or another variable
+                    try:
+                        # Try converting to int.
+                        idx = int(idx)
+                    except:
+                        # Since it's not an int, try getting the value from the shared variables.
+                        idx = Get_Shared_Variables(idx)
+
+                        if idx == "failed":
+                            return "failed"
+                        else:
+                            try:
+                                # Otherwise convert to int.
+                                idx = int(idx)
+                            except:
+                                if idx[0] == '"' or idx[0] == "'":
+                                    # Check to see if it's a quoted string.
+                                    idx = idx[1:len(idx)-1]
 
                 val = val[idx]
             return val
