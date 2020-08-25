@@ -169,6 +169,10 @@ def main():
             "--runtime_parameters",
             help="Runtime parameters (must be in JSON format or a file containing JSON).",
         )
+        parser.add_argument(
+            "--report_filename",
+            help="File path to save the detailed report. (default: report.json)",
+        )
 
         args = parser.parse_args()
 
@@ -184,6 +188,7 @@ def main():
         runtime_parameters = args.runtime_parameters
         machine_timeout = int(args.machine_timeout)
         report_timeout = int(args.report_timeout)
+        report_filename = args.report_filename
     except:
         print("Provide all the arguments. Execute 'python deploy.py -h' to learn more")
         return EXIT_CODE_ERR_INVALID_ARGS
@@ -283,20 +288,37 @@ def main():
     # Status for complete runs
     RUN_COMPLETE = ["complete", "cancelled"]
 
+    run_id_status = None
+    report = None
+
     for _ in range(2 * report_timeout):
         run_status = get_run_status(token, host, deploy_info["run_id"])
+        run_id_status = run_status["run_id_status"].lower()
 
-        if run_status["run_id_status"].lower() in RUN_COMPLETE:
-            print(run_status["run_id_status"].lower())
+        if run_id_status in RUN_COMPLETE:
+            report = run_status
             break
 
         # Retry after 1 minute
         time.sleep(SLEEP_TIMEOUT)
-    else:
-        # Deployment still in progress
-        print("in-progress")
 
-    print(run_url)
+    if run_id_status not in [RUN_COMPLETE]:
+        # Deployment still in progress
+        run_id_status = "in-progress"
+
+    # Write brief report to console.
+    print("STATUS", run_id_status)
+
+    for key in report["status"]:
+        print(key.upper(), report["status"][key])
+    
+    print("REPORT_URL", run_url)
+
+    # Write detailed report to file.
+    with open(report_filename, "w") as f:
+        f.write(json.dumps(report))
+    
+    print("REPORT_FILE", report_filename)
 
     return EXIT_CODE_SUCCESS
 

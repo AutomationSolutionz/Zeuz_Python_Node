@@ -186,6 +186,7 @@ async function main() {
         .option("--machine_timeout <machine_timeout:number>", "Minutes to wait for any automated machine to be available (default: 60)", 60)
         .option("--report_timeout <report_timeout:number>", "Minutes to wait before reporting the deployment progress [will be reported instantly upon completion] (default: 60)", 60)
         .option("--runtime_parameters <runtime_parameters:json|file>", "Runtime parameters, must be in JSON format or a file containing JSON. (default: {})", {})
+        .option("--report_filename <report_filepath:file>", "File path to save the detailed report. (default: report.json)", "report.json")
 
     program.parse(process.argv);
 
@@ -199,12 +200,13 @@ async function main() {
         team,
         milestone,
         machine_timeout,
-        report_timeout
+        report_timeout,
+        report_filename,
     } = program;
 
     let {
         machine,
-        runtime_parameters
+        runtime_parameters,
     } = program;
 
     if (runtime_parameters) {
@@ -321,27 +323,43 @@ async function main() {
 
     // Status for complete runs
     const RUN_COMPLETE = ["complete", "cancelled"];
-    let status = null;
+    let run_id_status = null;
+    let report = null;
 
     for (let i = 0; i < 2 * report_timeout; i++) {
         const run_status = await get_run_status(token, host, deploy_info["run_id"]);
         dlog("Run status", run_status);
 
-        status = run_status["run_id_status"].toLowerCase();
+        run_id_status = run_status["run_id_status"].toLowerCase();
 
-        if (RUN_COMPLETE.includes(status)) {
-            console.log(status);
+        if (RUN_COMPLETE.includes(run_id_status)) {
+            report = run_status;
             break;
         }
 
         await sleep(SLEEP_TIMEOUT);
     }
 
-    if (!RUN_COMPLETE.includes(status)) {
-        console.log("in-progress");
+    if (!RUN_COMPLETE.includes(run_id_status)) {
+        run_id_status = "in-progress";
     }
 
-    console.log(run_url);
+    // Write brief report to console.
+    console.log("STATUS", run_id_status);
+
+    {
+        const keys = Object.keys(report["status"]);
+        const values = Object.values(report["status"]);
+        for (let i = 0; i < keys.length; i++) {
+            console.log(keys[i].toUpperCase(), values[i]);
+        }
+    }
+
+    console.log("REPORT_URL", run_url);
+
+    // Write detailed report to file.
+    fs.writeFileSync(report_filename, JSON.stringify(report));
+    console.log("REPORT_FILE", report_filename)
 
     return EXIT_CODE_SUCCESS;
 }
