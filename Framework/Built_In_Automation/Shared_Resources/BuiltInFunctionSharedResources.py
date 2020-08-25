@@ -6,10 +6,13 @@
 import inspect, sys, time, collections
 import string
 import random
+import re
 from Framework.Utilities import CommonUtil
 from Framework.Utilities.CommonUtil import passed_tag_list, failed_tag_list
 from datetime import datetime
 from dateutil.relativedelta import relativedelta
+from Framework.Utilities.decorators import logger, deprecated
+
 
 global shared_variables
 shared_variables = {}
@@ -364,11 +367,38 @@ def handle_nested_rest_json(result, string):
         return "failed"
 
 
+@logger
+def parse_variable(name):
+    """Parse a given variable (probalby indexed
+      like var["hello"][0]["test"]) and return its value."""
+    
+    try:
+        pattern = r'\[(.*?)\]'
+        indices = re.findall(pattern, name)
+
+        if len(indices) == 0:
+            # If there are no [ ] style indexing.
+            return Get_Shared_Variables(name)
+        else:
+            name = name[:name.find('[')]
+
+            val = Get_Shared_Variables(name)
+            for idx in indices:
+                if idx[0] == '"' or idx[0] == "'":
+                    idx = idx[1:len(idx)-1]
+                else:
+                    idx = int(idx)
+
+                val = val[idx]
+            return val
+    except:
+        print("Failed to parse variable.")
+        return "failed"
+
+
+@logger
 def get_previous_response_variables_in_strings(step_data_string_input):
     sModuleInfo = inspect.currentframe().f_code.co_name + " : " + MODULE_NAME
-    CommonUtil.ExecLog(
-        sModuleInfo, "Function: get previous response variables in strings", 0
-    )
     try:
         changed = False
         input = step_data_string_input
@@ -508,7 +538,7 @@ def get_previous_response_variables_in_strings(step_data_string_input):
                     )
 
                 else:
-                    var_value = Get_Shared_Variables(parts[0])
+                    var_value = parse_variable(parts[0])
                     if var_value == "failed":
                         CommonUtil.ExecLog(
                             sModuleInfo,
