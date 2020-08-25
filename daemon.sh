@@ -1,4 +1,5 @@
-#/bin/sh
+#!/bin/env bash
+
 # Starts node_cli in the background. Make sure to login at least once
 # before trying to execute this script.
 # 
