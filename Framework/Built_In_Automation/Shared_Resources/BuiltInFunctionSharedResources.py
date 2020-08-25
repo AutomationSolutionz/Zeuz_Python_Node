@@ -371,22 +371,23 @@ def handle_nested_rest_json(result, string):
 def parse_variable(name):
     """Parse a given variable (probalby indexed
       like var["hello"][0]["test"]) and return its value."""
-    
+
     try:
-        pattern = r'\[(.*?)\]'
+        pattern = r"\[(.*?)\]"
         indices = re.findall(pattern, name)
 
         if len(indices) == 0:
             # If there are no [ ] style indexing.
             return Get_Shared_Variables(name)
         else:
-            name = name[:name.find('[')]
+            name = name[: name.find("[")]
 
             val = Get_Shared_Variables(name)
             for idx in indices:
+                # Check to see if it's a quoted string.
                 if idx[0] == '"' or idx[0] == "'":
-                    # Check to see if it's a string.
-                    idx = idx[1:len(idx)-1]
+                    # Remove quotations.
+                    idx = idx[1 : len(idx) - 1]
                 else:
                     # Otherwise check to see if its an integer or another variable
                     try:
@@ -400,14 +401,19 @@ def parse_variable(name):
                             return "failed"
                         else:
                             try:
-                                # Otherwise convert to int.
+                                # Try converting to int.
                                 idx = int(idx)
                             except:
+                                # Not an int? Check to see if it's a quoted string.
                                 if idx[0] == '"' or idx[0] == "'":
-                                    # Check to see if it's a quoted string.
-                                    idx = idx[1:len(idx)-1]
+                                    # Remove quotations.
+                                    idx = idx[1 : len(idx) - 1]
 
-                val = val[idx]
+                try:
+                    val = val[idx]
+                except:
+                    # Edge case. Try converting the idx into str and see if it can be accessed.
+                    val = val[str(idx)]
             return val
     except:
         print("Failed to parse variable.")
