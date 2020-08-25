@@ -151,10 +151,10 @@ def main():
             "--email", help="Email address where the report will be delivered"
         )
         parser.add_argument("--objective", help="Objective of the deployment")
-        parser.add_argument("--project", help="Project Id, example: PROJ-10")
-        parser.add_argument("--team", help="Team Id, example: 10")
-        parser.add_argument("--machine", help="Machine Id (default: any)")
-        parser.add_argument("--milestone", help="Milestone Id")
+        parser.add_argument("--project", help="Project ID, example: PROJ-10")
+        parser.add_argument("--team", help="Team ID, example: 10")
+        parser.add_argument("--machine", help="Machine ID (default: any)")
+        parser.add_argument("--milestone", help="Milestone ID")
         parser.add_argument(
             "--machine_timeout",
             default=60,
