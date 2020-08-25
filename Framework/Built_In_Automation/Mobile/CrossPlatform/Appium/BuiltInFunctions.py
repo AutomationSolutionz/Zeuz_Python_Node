@@ -1770,7 +1770,7 @@ def add_media_ios(data_set):
     try:
         media_name = str(data_set[0][2]).strip()
         # Add image or video to a booted ios simulator
-        os.system("xcrun simctl addmedia booted ~/Desktop/Attachments/%s" % media_name)
+        os.system("xcrun simctl addmedia booted %s" % media_name)
         CommonUtil.ExecLog(sModuleInfo, "Successfully added media to device.", 0)
         return "passed"
     except:
