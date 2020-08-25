@@ -399,15 +399,15 @@ def parse_variable(name):
 
                     if idx == "failed":
                         return "failed"
-                    else:
-                        try:
-                            # Try converting to int.
-                            idx = int(idx)
-                        except:
-                            # Not an int? Check to see if it's a quoted string.
-                            if idx[0] == '"' or idx[0] == "'":
-                                # Remove quotations.
-                                idx = idx[1 : len(idx) - 1]
+
+                    try:
+                        # Try converting to int.
+                        idx = int(idx)
+                    except:
+                        # Not an int? Check to see if it's a quoted string.
+                        if idx[0] == '"' or idx[0] == "'":
+                            # Remove quotations.
+                            idx = idx[1 : len(idx) - 1]
 
             try:
                 val = val[idx]
