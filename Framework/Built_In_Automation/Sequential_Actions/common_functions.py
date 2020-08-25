@@ -821,7 +821,10 @@ def create_append_list_or_dict(data_set):
                 if "operation" in left:
                     operation = right.strip().lower()
                 if "data" in left:
-                    variable_value = json.loads(right)
+                    try:
+                        variable_value = json.loads(right)
+                    except:
+                        variable_value = ast.literal_eval(right)
                 if "action" in mid:
                     variable_name = right.strip()
         except:
