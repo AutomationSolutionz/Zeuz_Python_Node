@@ -379,42 +379,43 @@ def parse_variable(name):
         if len(indices) == 0:
             # If there are no [ ] style indexing.
             return Get_Shared_Variables(name)
-        else:
-            name = name[: name.find("[")]
 
-            val = Get_Shared_Variables(name)
-            for idx in indices:
-                # Check to see if it's a quoted string.
-                if idx[0] == '"' or idx[0] == "'":
-                    # Remove quotations.
-                    idx = idx[1 : len(idx) - 1]
-                else:
-                    # Otherwise check to see if its an integer or another variable
-                    try:
-                        # Try converting to int.
-                        idx = int(idx)
-                    except:
-                        # Since it's not an int, try getting the value from the shared variables.
-                        idx = Get_Shared_Variables(idx)
+        name = name[: name.find("[")]
 
-                        if idx == "failed":
-                            return "failed"
-                        else:
-                            try:
-                                # Try converting to int.
-                                idx = int(idx)
-                            except:
-                                # Not an int? Check to see if it's a quoted string.
-                                if idx[0] == '"' or idx[0] == "'":
-                                    # Remove quotations.
-                                    idx = idx[1 : len(idx) - 1]
-
+        val = Get_Shared_Variables(name)
+        for idx in indices:
+            # Check to see if it's a quoted string.
+            if idx[0] == '"' or idx[0] == "'":
+                # Remove quotations.
+                idx = idx[1 : len(idx) - 1]
+            else:
+                # Otherwise check to see if its an integer or another variable
                 try:
-                    val = val[idx]
+                    # Try converting to int.
+                    idx = int(idx)
                 except:
-                    # Edge case. Try converting the idx into str and see if it can be accessed.
-                    val = val[str(idx)]
-            return val
+                    # Since it's not an int, try getting the value from the shared variables.
+                    idx = Get_Shared_Variables(idx)
+
+                    if idx == "failed":
+                        return "failed"
+                    else:
+                        try:
+                            # Try converting to int.
+                            idx = int(idx)
+                        except:
+                            # Not an int? Check to see if it's a quoted string.
+                            if idx[0] == '"' or idx[0] == "'":
+                                # Remove quotations.
+                                idx = idx[1 : len(idx) - 1]
+
+            try:
+                val = val[idx]
+            except:
+                # Edge case. Try converting the idx into str and see if it can be accessed.
+                val = val[str(idx)]
+
+        return val
     except:
         print("Failed to parse variable.")
         return "failed"
