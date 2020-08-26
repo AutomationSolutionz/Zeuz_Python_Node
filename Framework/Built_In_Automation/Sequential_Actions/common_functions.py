@@ -791,16 +791,18 @@ def Compare_Partial_Variables(data_set):
 
 
 @logger
-def create_append_list_or_dict(data_set):
-    """Creates/appends/updates a list or dictionary from the given data.
+def save_into_variable(data_set):
+    """Save variable with native python type.
     
-    Accepts any valid JSON data.
+    Can also create/append/update a str, list or dictionary from the given data.
+    
+    Accepts any valid Python representation or JSON data.
 
     Args:
         data_set:
-          data                                | element parameter | valid JSON string
-          operation                           | element parameter | save/update
-          create/append to list or dictionary | common action     | variable_name
+          data               | element parameter | valid JSON string
+          operation          | element parameter | save/update
+          save into variable | common action     | variable_name
 
     Returns:
         "passed" if success.
@@ -821,10 +823,7 @@ def create_append_list_or_dict(data_set):
                 if "operation" in left:
                     operation = right.strip().lower()
                 if "data" in left:
-                    try:
-                        variable_value = json.loads(right)
-                    except:
-                        variable_value = ast.literal_eval(right)
+                    variable_value = parse_value_into_object(right)
                 if "action" in mid:
                     variable_name = right.strip()
         except:
@@ -837,27 +836,30 @@ def create_append_list_or_dict(data_set):
             pass
         elif operation == "append":
             var = sr.Get_Shared_Variables(variable_name)
-            if type(var) == list:
+            if type(var) in (list, str):
                 var += variable_value
             elif type(var) == dict:
                 var.update(variable_value)
             else:
                 CommonUtil.ExecLog(
                     sModuleInfo,
-                    f"Invalid data type: {type(var)}. Must be either list or dict.",
+                    f"Invalid data type for 'append': {type(var)}. Must be either str, list or dict.",
                     1,
                 )
                 return "failed"
 
             variable_value = var
+        else:
+            CommonUtil.ExecLog(
+                sModuleInfo, f"Invalid operation. Supported operations: save/append", 1,
+            )
+            return "failed"
 
         sr.Set_Shared_Variables(variable_name, variable_value)
 
         return "passed"
     except:
-        CommonUtil.ExecLog(
-            sModuleInfo, "Failed to create/append/update list or dictionary", 1
-        )
+        CommonUtil.ExecLog(sModuleInfo, "Failed to save variable.", 1)
         return "failed"
 
 
@@ -892,6 +894,7 @@ def Compare_Lists_or_Dicts(data_set):
 
 
 @logger
+@deprecated
 def Save_Variable(data_set):
     """ Assign a value to a variable stored in shared variables """
     variable_name = ""
@@ -917,7 +920,8 @@ def parse_value_into_object(val):
         except:
             try:
                 val = ast.literal_eval(f'"{val}"')
-            except: pass
+            except:
+                pass
 
     return val
 
@@ -940,6 +944,7 @@ def save_length(data_set):
         return sr.Set_Shared_Variables(variable_name, value_length)
     except:
         return "failed"
+
 
 @logger
 def Save_Current_Time(data_set):

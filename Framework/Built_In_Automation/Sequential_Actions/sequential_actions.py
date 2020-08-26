@@ -330,9 +330,15 @@ actions = {  # Numbers are arbitrary, and are not used anywhere
         "module": "common",
         "screenshot": "desktop",
         "name": "create/append to list or dictionary",
-        "function": "create_append_list_or_dict",
+        "function": "save_into_variable",
     },
     152: {
+        "module": "common",
+        "screenshot": "desktop",
+        "name": "save into variable",
+        "function": "save_into_variable",
+    },
+    153: {
         "module": "common",
         "screenshot": "desktop",
         "name": "save length",
