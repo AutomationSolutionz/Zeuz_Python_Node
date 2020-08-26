@@ -894,7 +894,6 @@ def Compare_Lists_or_Dicts(data_set):
 @logger
 def Save_Variable(data_set):
     """ Assign a value to a variable stored in shared variables """
-    sModuleInfo = inspect.currentframe().f_code.co_name + " : " + MODULE_NAME
     variable_name = ""
     variable_value = ""
     for each in data_set:
@@ -906,6 +905,41 @@ def Save_Variable(data_set):
     else:
         return "failed"
 
+
+def parse_value_into_object(val):
+    """Parses the given value into a Python object: int, str, list, dict."""
+
+    try:
+        val = ast.literal_eval(val)
+    except:
+        try:
+            val = json.loads(val)
+        except:
+            try:
+                val = ast.literal_eval(f'"{val}"')
+            except: pass
+
+    return val
+
+
+@logger
+def save_length(data_set):
+    """Save the length/size of a given value into a variable."""
+
+    variable_name = ""
+    value = ""
+    for each in data_set:
+        if "parameter" in each[1]:
+            variable_name = each[0]
+            value = each[2]
+
+    value = parse_value_into_object(value)
+
+    try:
+        value_length = len(value)
+        return sr.Set_Shared_Variables(variable_name, value_length)
+    except:
+        return "failed"
 
 @logger
 def Save_Current_Time(data_set):

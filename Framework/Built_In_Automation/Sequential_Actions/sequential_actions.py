@@ -332,6 +332,12 @@ actions = {  # Numbers are arbitrary, and are not used anywhere
         "name": "create/append to list or dictionary",
         "function": "create_append_list_or_dict",
     },
+    152: {
+        "module": "common",
+        "screenshot": "desktop",
+        "name": "save length",
+        "function": "save_length",
+    },
     200: {
         "module": "appium",
         "screenshot": "mobile",
