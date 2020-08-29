@@ -261,8 +261,24 @@ def execute_hotkey(data_set) -> str:
     sModuleInfo = inspect.currentframe().f_code.co_name + " : " + MODULE_NAME
 
     try:
-        hotkey_combination = [i.strip() for i in data_set[0][2].split("+")]
-        gui.hotkey(*hotkey_combination)
+        count = 1
+        for left, mid, right in data_set:
+            left = left.strip()
+            if "hotkey" in left:
+                hotkey_combination = [i.strip() for i in right.split("+")]
+            elif "count" in left:
+                try:
+                    count = int(right)
+                except:
+                    count = 1
+                    CommonUtil.ExecLog(
+                        sModuleInfo,
+                        "Count is set to 1",
+                        2,
+                    )
+        for i in range(0, count):
+            gui.hotkey(*hotkey_combination)
+
         return "passed"
     except:
         errMsg = "Failed to execute hotkey"
