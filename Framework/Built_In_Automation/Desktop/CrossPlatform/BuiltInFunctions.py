@@ -946,20 +946,27 @@ def Drag_Element(data_set):
         file_name = ""
         src_file_name = ""
         position = "centre"
+        Drag_Element_to_a_coordinate = False
+
         for row in data_set:
             if row[1] == "action":
                 if row[0] == "drag":
                     cmd = "drag"
                     position = row[2]
             elif row[1] == "element parameter":
-                file_name = row[2]
+                if "coordinates" in row[0].lower():
+                    dst_x, dst_y = row[2].replace(" ","").split(",")
+                    dst_x, dst_y = int(dst_x), int(dst_y)
+                    Drag_Element_to_a_coordinate = True
+                else:
+                    file_name = row[2]
             elif row[1] == "source parameter":
                 src_file_name = row[2]
 
         if cmd == "":
             CommonUtil.ExecLog(
                 sModuleInfo,
-                "Valid action not found. Expected Field set to 'click' or 'doubleclick', and the Value one of: %s"
+                "Valid action not found. Expected Field set to 'drag' and the Value one of: %s"
                 % str(positions),
                 3,
             )
@@ -972,14 +979,6 @@ def Drag_Element(data_set):
                 2,
             )
             position = "centre"
-
-        if file_name == "":
-            CommonUtil.ExecLog(
-                sModuleInfo,
-                "Valid element not found. Expected Sub-Field to be 'element parameter', and Value to be a filename",
-                3,
-            )
-            return "failed"
 
         if src_file_name == "":
             CommonUtil.ExecLog(
@@ -997,6 +996,8 @@ def Drag_Element(data_set):
     try:
         # Get coordinates for source and destiniation
         for filename in (file_name, src_file_name):
+            if Drag_Element_to_a_coordinate and filename == file_name:
+                continue
             tmp_data_set = [("image", "element parameter", filename)]
             # Find image coordinates for destination element
             CommonUtil.ExecLog(
@@ -1040,6 +1041,18 @@ def Drag_Element(data_set):
                 sModuleInfo, "Couldn't dragged element with given images", 3
             )
             return "failed"
+        elif Drag_Element_to_a_coordinate:
+
+            max_x, max_y = gui.size()
+            dst_x = max_x if dst_x > max_x else dst_x
+            dst_x = 0 if dst_x < 0 else dst_x
+            dst_y = max_y if dst_y > max_y else dst_y
+            dst_y = 0 if dst_y < 0 else dst_y
+
+            CommonUtil.ExecLog(
+                sModuleInfo, "Successfully dragged element to the %d, %d coordinates" % (dst_x, dst_y), 1
+            )
+            return "passed"
         else:
             CommonUtil.ExecLog(
                 sModuleInfo, "Successfully dragged element with given images", 1
