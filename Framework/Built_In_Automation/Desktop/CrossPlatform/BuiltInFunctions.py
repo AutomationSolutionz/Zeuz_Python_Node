@@ -813,7 +813,20 @@ def teardown(data_set):
 
 @logger
 def Drag_Element(data_set):
-    """ Drag element from source to destination """
+    """ Drag element from source to destination
+
+    Action: Drag an element to a specific coordinates
+    Field	        Sub Field	        Value
+    coordinates     element parameter	100,250
+    image           source parameter    source_image.png
+    drag            desktop action      left
+
+    Action: Drag element by images
+    Field	        Sub Field	        Value
+    image           element parameter	destination_image.png
+    image           source parameter    source_image.png
+    drag            desktop action      left
+    """
 
     sModuleInfo = inspect.currentframe().f_code.co_name + " : " + MODULE_NAME
 
@@ -943,7 +956,13 @@ def Drag_Element(data_set):
 
 @logger
 def navigate_listbox(data_set):
-    """ Scroll listbox until image element is found or timeout is hit """
+    """ Scroll listbox until image element is found or timeout is hit
+
+    Action: Finding element from dropdown list
+    Field	        Sub Field	        Value
+    image           element parameter	file_name.png
+    listbox         desktop action      5
+    """
     # Continually presses page down and checks for the image
     # Assumptions: Listbox already has focus - user ought to use click action to click on the listbox, or the drop down menu's arrow
     # Assumptions: User has image of the list item they want to find
@@ -965,14 +984,11 @@ def navigate_listbox(data_set):
                 file_name = row[2]
             elif row[1] == "action":
                 try:
-                    delay = int(
-                        row[2]
-                    )  # Test if user specified a delay on the action line
-                    CommonUtil.ExecLog(
-                        sModuleInfo, "Using customer specified delay of %d" % delay, 1
-                    )
+                    max_tries = int(
+                        row[2].strip()
+                    )  # Test if user specified a max_tries on the action line
                 except:
-                    delay = 1  # Default delay - user did not specify
+                    max_tries = 10  # Default max_tries - user did not specify
 
         if file_name == "":
             CommonUtil.ExecLog(
@@ -1000,7 +1016,7 @@ def navigate_listbox(data_set):
                 gui.hotkey("pgdn")
                 time.sleep(delay)  # Wait for listbox to update
             else:
-                CommonUtil.ExecLog(sModuleInfo, "Found element", 1)
+                CommonUtil.ExecLog(sModuleInfo, "Found element after %d tries" % (i+1), 1)
                 return "passed"
 
         CommonUtil.TakeScreenShot(
