@@ -1190,12 +1190,6 @@ actions = {  # Numbers are arbitrary, and are not used anywhere
         "name": "check",
         "function": "check_for_element",
     },
-    709: {
-        "module": "desktop",
-        "screenshot": "desktop",
-        "name": "move",
-        "function": "move_mouse",
-    },
     710: {
         "module": "desktop",
         "screenshot": "desktop",
@@ -1255,12 +1249,6 @@ actions = {  # Numbers are arbitrary, and are not used anywhere
         "screenshot": "desktop",
         "name": "right click",
         "function": "Right_Click_Element",
-    },
-    803: {
-        "module": "windows",
-        "screenshot": "desktop",
-        "name": "drag and drop",
-        "function": "Drag_and_Drop_Element",
     },
     804: {
         "module": "windows",
