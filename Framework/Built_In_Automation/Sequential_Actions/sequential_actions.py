@@ -1166,18 +1166,6 @@ actions = {  # Numbers are arbitrary, and are not used anywhere
         "name": "hover",
         "function": "move_mouse",
     },
-    703: {
-        "module": "desktop",
-        "screenshot": "desktop",
-        "name": "keystroke keys",
-        "function": "Keystroke_For_Element",
-    },
-    704: {
-        "module": "desktop",
-        "screenshot": "desktop",
-        "name": "keystroke chars",
-        "function": "Keystroke_For_Element",
-    },
     705: {
         "module": "desktop",
         "screenshot": "desktop",
@@ -1285,18 +1273,6 @@ actions = {  # Numbers are arbitrary, and are not used anywhere
         "screenshot": "desktop",
         "name": "hover",
         "function": "Hover_Over_Element",
-    },
-    806: {
-        "module": "windows",
-        "screenshot": "desktop",
-        "name": "keystroke keys",
-        "function": "Keystroke_For_Element",
-    },
-    807: {
-        "module": "windows",
-        "screenshot": "desktop",
-        "name": "keystroke chars",
-        "function": "Keystroke_For_Element",
     },
     808: {
         "module": "windows",

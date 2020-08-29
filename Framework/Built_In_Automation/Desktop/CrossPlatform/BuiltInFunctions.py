@@ -251,7 +251,18 @@ def execute_hotkey(data_set) -> str:
 
     Args:
         data_set: The data set is only one row,
-          hotkey      element parameter       Ctrl + Shift + S
+
+        Example 1:
+        Field       Sub field           Value
+        hotkey      desktop action      Ctrl + Shift + S
+
+        Example 2:
+        Field       Sub field           Value
+        hotkey      desktop action      tab
+        count       optional parameter  3
+
+        Find all valid string to pass into hotkey() from link below:
+        https://pyautogui.readthedocs.io/en/latest/keyboard.html#the-hotkey-function
     
     Returns:
         "passed" if successful.
@@ -276,9 +287,23 @@ def execute_hotkey(data_set) -> str:
                         "Count is set to 1",
                         2,
                     )
+    except:
+        CommonUtil.ExecLog(
+            sModuleInfo,
+            "Couldn't  parse data_set",
+            3,
+        )
+        return "failed"
+
+    try:
         for i in range(0, count):
             gui.hotkey(*hotkey_combination)
 
+        CommonUtil.ExecLog(
+            sModuleInfo,
+            "Successfully executed hotkey " + str(hotkey_combination) + " " + str(count) + " times",
+            1,
+        )
         return "passed"
     except:
         errMsg = "Failed to execute hotkey"
@@ -449,56 +474,6 @@ def Wait_For_Element_Pyautogui(data_set):
 
     except Exception:
         return CommonUtil.Exception_Handler(sys.exc_info())
-
-
-@logger
-def Keystroke_For_Element(data_set):
-    """ Insert characters - mainly key combonations"""
-    # Example: Ctrl+c
-    # Repeats keypress if a number follows, example: tab,3
-
-    sModuleInfo = inspect.currentframe().f_code.co_name + " : " + MODULE_NAME
-
-    # Parse dataset
-    try:
-        keystroke_value = ""
-        for row in data_set:
-            if "action" in row[1]:
-                if row[0] == "keystroke keys":
-                    keystroke_value = str(row[2]).lower()  # Store keystrok
-
-        if keystroke_value == "":
-            CommonUtil.ExecLog(sModuleInfo, "Invalid action found", 3)
-            return "failed"
-
-    except Exception:
-        errMsg = "Error parsing data set"
-        return CommonUtil.Exception_Handler(sys.exc_info(), None, errMsg)
-
-    # Perform action
-    try:
-        count = 1
-        if "," in keystroke_value:  # Check for delimiter indicating multiple keystrokes
-            keystroke_value, count = keystroke_value.split(
-                ","
-            )  # Separate keystroke and count
-            count = int(count.strip())
-        keys = keystroke_value.split("+")  # Split string into array
-        keys = [x.strip() for x in keys]  # Clean it up
-
-        for i in range(count):
-            gui.hotkey(*keys)  # Send keypress (as individual values using the asterisk)
-
-        CommonUtil.TakeScreenShot(
-            sModuleInfo
-        )  # Capture screenshot, if settings allow for it
-
-        CommonUtil.ExecLog(sModuleInfo, "Successfully entered keystroke", 1)
-        return "passed"
-
-    except Exception:
-        errMsg = "Could not enter keystroke for your element."
-        return CommonUtil.Exception_Handler(sys.exc_info(), None, errMsg)
 
 
 @logger
