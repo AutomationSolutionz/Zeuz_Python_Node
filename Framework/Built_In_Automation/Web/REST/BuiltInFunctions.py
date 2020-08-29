@@ -228,7 +228,7 @@ def get_val(x, target):
 
 
 @logger
-def search_val(x, target, target_val):
+def search_val(x, target, target_val, key = ""):
     if isinstance(x, list):
         for each in x:
             if isinstance(each, str):
@@ -237,7 +237,7 @@ def search_val(x, target, target_val):
                 else:
                     continue
             elif isinstance(each, list) or isinstance(each, dict):
-                result = search_val(each, target, target_val)
+                result = search_val(each, target, target_val, key)
                 if result:
                     return True
 

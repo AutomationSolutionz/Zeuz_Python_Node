@@ -3575,7 +3575,7 @@ def extract_number(data_set):
     except Exception:
         return CommonUtil.Exception_Handler(sys.exc_info())
 
-
+@logger
 def datatype_conversion(data_set):
     """
     This action executes following sub actions-
