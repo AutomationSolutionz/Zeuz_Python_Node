@@ -1,14 +1,18 @@
-# -*- coding: utf-8 -*-
-# -*- coding: cp1252 -*-
+# -- coding: utf-8 --
+# -- coding: cp1252 --
 
 from . import ConfigModule
 import requests
 import json
+from urllib3.exceptions import InsecureRequestWarning
 
 SERVER_TAG = "Authentication"
 SERVER_ADDRESS_TAG = "server_address"
 SERVER_PORT = "server_port"
 REQUEST_TIMEOUT = 2 * 60
+
+# Suppress the InsecureRequestWarning since we use verify=False parameter.
+requests.packages.urllib3.disable_warnings(category=InsecureRequestWarning)
 
 
 def form_uri(resource_path):
@@ -64,6 +68,7 @@ def Get(resource_path, payload=None):
             form_uri(resource_path + "/"),
             params=json.dumps(payload),
             timeout=REQUEST_TIMEOUT,
+            verify=False,
         ).json()
 
     except requests.exceptions.RequestException:
@@ -85,7 +90,10 @@ def UpdatedGet(resource_path, payload=None):
         payload = {}
     try:
         return requests.get(
-            form_uri(resource_path + "/"), params=payload, timeout=REQUEST_TIMEOUT
+            form_uri(resource_path + "/"),
+            params=payload,
+            timeout=REQUEST_TIMEOUT,
+            verify=False,
         ).json()
 
     except requests.exceptions.RequestException as e:
@@ -104,7 +112,7 @@ def UpdatedGet(resource_path, payload=None):
 def Head(resource_path):
     try:
         uri = form_uri(resource_path)
-        return requests.head(uri, timeout=REQUEST_TIMEOUT)
+        return requests.head(uri, timeout=REQUEST_TIMEOUT, verify=False)
 
     except requests.exceptions.RequestException:
         print(
