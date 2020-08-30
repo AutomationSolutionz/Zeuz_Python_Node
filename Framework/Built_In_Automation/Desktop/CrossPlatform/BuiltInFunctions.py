@@ -296,7 +296,7 @@ def execute_hotkey(data_set) -> str:
         return "failed"
 
     try:
-        for i in range(0, count):
+        for i in range(count):
             gui.hotkey(*hotkey_combination)
 
         CommonUtil.ExecLog(

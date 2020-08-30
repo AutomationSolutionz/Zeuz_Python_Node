@@ -1256,6 +1256,18 @@ actions = {  # Numbers are arbitrary, and are not used anywhere
         "name": "double click",
         "function": "Double_Click_Element",
     },
+    806: {
+        "module": "windows",
+        "screenshot": "desktop",
+        "name": "keystroke keys",
+        "function": "Keystroke_For_Element",
+    },
+    807: {
+        "module": "windows",
+        "screenshot": "desktop",
+        "name": "keystroke chars",
+        "function": "Keystroke_For_Element",
+    },
     805: {
         "module": "windows",
         "screenshot": "desktop",
