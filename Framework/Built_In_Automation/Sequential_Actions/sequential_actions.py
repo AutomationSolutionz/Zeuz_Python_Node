@@ -1250,11 +1250,23 @@ actions = {  # Numbers are arbitrary, and are not used anywhere
         "name": "right click",
         "function": "Right_Click_Element",
     },
+    803: {
+        "module": "windows",
+        "screenshot": "desktop",
+        "name": "drag and drop",
+        "function": "Drag_and_Drop_Element",
+    },
     804: {
         "module": "windows",
         "screenshot": "desktop",
         "name": "double click",
         "function": "Double_Click_Element",
+    },
+    805: {
+        "module": "windows",
+        "screenshot": "desktop",
+        "name": "hover",
+        "function": "Hover_Over_Element",
     },
     806: {
         "module": "windows",
@@ -1267,12 +1279,6 @@ actions = {  # Numbers are arbitrary, and are not used anywhere
         "screenshot": "desktop",
         "name": "keystroke chars",
         "function": "Keystroke_For_Element",
-    },
-    805: {
-        "module": "windows",
-        "screenshot": "desktop",
-        "name": "hover",
-        "function": "Hover_Over_Element",
     },
     808: {
         "module": "windows",
