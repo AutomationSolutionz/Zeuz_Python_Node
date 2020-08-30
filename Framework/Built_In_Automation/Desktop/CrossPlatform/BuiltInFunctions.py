@@ -251,7 +251,18 @@ def execute_hotkey(data_set) -> str:
 
     Args:
         data_set: The data set is only one row,
-          hotkey      element parameter       Ctrl + Shift + S
+
+        Example 1:
+        Field       Sub field           Value
+        hotkey      desktop action      Ctrl + Shift + S
+
+        Example 2:
+        Field       Sub field           Value
+        hotkey      desktop action      tab
+        count       optional parameter  3
+
+        Find all valid string to pass into hotkey() from link below:
+        https://pyautogui.readthedocs.io/en/latest/keyboard.html#the-hotkey-function
     
     Returns:
         "passed" if successful.
@@ -261,8 +272,38 @@ def execute_hotkey(data_set) -> str:
     sModuleInfo = inspect.currentframe().f_code.co_name + " : " + MODULE_NAME
 
     try:
-        hotkey_combination = [i.strip() for i in data_set[0][2].split("+")]
-        gui.hotkey(*hotkey_combination)
+        count = 1
+        for left, mid, right in data_set:
+            left = left.strip()
+            if "hotkey" in left:
+                hotkey_combination = [i.strip() for i in right.split("+")]
+            elif "count" in left:
+                try:
+                    count = int(right)
+                except:
+                    count = 1
+                    CommonUtil.ExecLog(
+                        sModuleInfo,
+                        "Count is set to 1",
+                        2,
+                    )
+    except:
+        CommonUtil.ExecLog(
+            sModuleInfo,
+            "Couldn't  parse data_set",
+            3,
+        )
+        return "failed"
+
+    try:
+        for i in range(count):
+            gui.hotkey(*hotkey_combination)
+
+        CommonUtil.ExecLog(
+            sModuleInfo,
+            "Successfully executed hotkey " + str(hotkey_combination) + " " + str(count) + " times",
+            1,
+        )
         return "passed"
     except:
         errMsg = "Failed to execute hotkey"
@@ -444,56 +485,6 @@ def Wait_For_Element_Pyautogui(data_set):
 
 
 @logger
-def Keystroke_For_Element(data_set):
-    """ Insert characters - mainly key combonations"""
-    # Example: Ctrl+c
-    # Repeats keypress if a number follows, example: tab,3
-
-    sModuleInfo = inspect.currentframe().f_code.co_name + " : " + MODULE_NAME
-
-    # Parse dataset
-    try:
-        keystroke_value = ""
-        for row in data_set:
-            if "action" in row[1]:
-                if row[0] == "keystroke keys":
-                    keystroke_value = str(row[2]).lower()  # Store keystrok
-
-        if keystroke_value == "":
-            CommonUtil.ExecLog(sModuleInfo, "Invalid action found", 3)
-            return "failed"
-
-    except Exception:
-        errMsg = "Error parsing data set"
-        return CommonUtil.Exception_Handler(sys.exc_info(), None, errMsg)
-
-    # Perform action
-    try:
-        count = 1
-        if "," in keystroke_value:  # Check for delimiter indicating multiple keystrokes
-            keystroke_value, count = keystroke_value.split(
-                ","
-            )  # Separate keystroke and count
-            count = int(count.strip())
-        keys = keystroke_value.split("+")  # Split string into array
-        keys = [x.strip() for x in keys]  # Clean it up
-
-        for i in range(count):
-            gui.hotkey(*keys)  # Send keypress (as individual values using the asterisk)
-
-        CommonUtil.TakeScreenShot(
-            sModuleInfo
-        )  # Capture screenshot, if settings allow for it
-
-        CommonUtil.ExecLog(sModuleInfo, "Successfully entered keystroke", 1)
-        return "passed"
-
-    except Exception:
-        errMsg = "Could not enter keystroke for your element."
-        return CommonUtil.Exception_Handler(sys.exc_info(), None, errMsg)
-
-
-@logger
 def close_program(data_set):
     """ Exit a running program via process kill """
 
@@ -515,20 +506,19 @@ def close_program(data_set):
 
     # Perform action
     try:
-        if dependency["PC"].lower() == "linux" or dependency["PC"].lower() == "mac":
+        if dependency["OS"].lower() == "linux" or dependency["OS"].lower() == "mac":
             command = (
                 "pkill -f " + program_name
             )  # Try Process Kill with full command checking set, which finds most programs automatically
-            close_status, output = FU.run_cmd(
-                command, return_status=True
-            )  # Execute command and return the return code
-
-            # Check result
-            if close_status == None or close_status < 1:
+            try:
+                subprocess.Popen(
+                    command.split(" ")
+                )  # FU.run_cmd() blocks further execution, so we'll just use subprocess here
+                # Check result
                 close_status = "passed"
 
             # pkill failed, try another method
-            else:
+            except Exception:
                 CommonUtil.ExecLog(
                     sModuleInfo, "pKill command failed, trying another method", 0
                 )
@@ -574,129 +564,6 @@ def close_program(data_set):
     except Exception:
         errMsg = "Could not close the program"
         return CommonUtil.Exception_Handler(sys.exc_info(), None, errMsg)
-
-
-@logger
-def move_mouse(data_set):
-    """ Hover over element or move to specified x,y coordinates """
-
-    sModuleInfo = inspect.currentframe().f_code.co_name + " : " + MODULE_NAME
-
-    # Parse data set
-    try:
-        cmd = ""
-        file_name = ""
-        position = "centre"
-        for row in data_set:
-            if row[1] == "action":
-                if row[0] == "hover":
-                    cmd = "hover"
-                    position = row[2]  # Store coordinates
-                elif row[0] == "move":
-                    cmd = "move"
-                    file_name = row[2]  # Store position (see positions at top)
-            elif row[1] == "element parameter":
-                file_name = row[2]  # Store filename for hover
-
-        if cmd == "":
-            CommonUtil.ExecLog(
-                sModuleInfo,
-                "Valid action not found. Expected Field set to 'move' or 'hover'",
-                3,
-            )
-            return "failed"
-
-        if cmd == "hover":
-            if file_name == "":
-                CommonUtil.ExecLog(
-                    sModuleInfo,
-                    "Valid element not found. Expected Sub-Field to be 'element parameter', and Value to be a filename",
-                    3,
-                )
-                return "failed"
-            if position not in positions:
-                CommonUtil.ExecLog(
-                    sModuleInfo,
-                    "Will click on centre of element. Expected Value to be one of: %s"
-                    % str(positions),
-                    2,
-                )
-                position = "centre"
-        elif cmd == "move":
-            if file_name == "":
-                CommonUtil.ExecLog(
-                    sModuleInfo,
-                    "Valid action not found. Expected Value to be coordinates in format of 'x,y'",
-                    3,
-                )
-                return "failed"
-
-    except Exception:
-        errMsg = "Error parsing data set"
-        return CommonUtil.Exception_Handler(sys.exc_info(), None, errMsg)
-
-    # Perform action
-    try:
-        if cmd == "hover":
-            # Find image coordinates
-            CommonUtil.ExecLog(
-                sModuleInfo, "Performing %s action on file %s" % (cmd, file_name), 0
-            )
-            element = LocateElement.Get_Element(data_set, gui)  # (x, y, w, h)
-            if element in failed_tag_list:  # Error reason logged by Get_Element
-                CommonUtil.ExecLog(sModuleInfo, "Could not locate element", 3)
-                return "failed"
-
-            # Get coordinates for position user specified
-            x, y = getCoordinates(element, position)  # Find coordinates (x,y)
-            if x in failed_tag_list:  # Error reason logged by Get_Element
-                CommonUtil.ExecLog(sModuleInfo, "Error calculating coordinates", 3)
-                return "failed"
-            CommonUtil.ExecLog(
-                sModuleInfo, "Image coordinates on screen %d x %d" % (x, y), 0
-            )
-
-        elif cmd == "move":
-            try:
-                if "," not in file_name:
-                    CommonUtil.ExecLog(
-                        sModuleInfo,
-                        "Expected Value to be 'X,Y' format for coordinates. If you want to use an image, try using the 'hover' action",
-                        3,
-                    )
-                    return "failed"
-
-                x, y = file_name.replace(" ", "").split(",")  # Get the coordinates
-                x = int(x)
-                y = int(y)
-            except:
-                return CommonUtil.Exception_Handler(
-                    sys.exc_info(),
-                    None,
-                    "Expected Value to be 'X,Y' format for coordinates. If you want to use an image, try using the 'hover' action",
-                )
-
-        # Move mouse pointer
-        CommonUtil.ExecLog(
-            sModuleInfo, "Image coordinates on screen %d x %d" % (x, y), 0
-        )
-        result = gui.moveTo(x, y)  # Move to element / Hover over element
-
-        CommonUtil.TakeScreenShot(
-            sModuleInfo
-        )  # Capture screenshot, if settings allow for it
-
-        if result in failed_tag_list:
-            CommonUtil.ExecLog(sModuleInfo, "Couldn't move mouse pointer", 3)
-            return "failed"
-        else:
-            CommonUtil.ExecLog(sModuleInfo, "Successfully mouse pointer", 1)
-            return "passed"
-
-    except Exception:
-        errMsg = "Error while trying to move mouse pointer"
-        return CommonUtil.Exception_Handler(sys.exc_info(), None, errMsg)
-
 
 @logger
 def Click_Element(data_set):
@@ -954,7 +821,20 @@ def teardown(data_set):
 
 @logger
 def Drag_Element(data_set):
-    """ Drag element from source to destination """
+    """ Drag element from source to destination
+
+    Action: Drag an element to a specific coordinates
+    Field	        Sub Field	        Value
+    coordinates     element parameter	100,250
+    image           source parameter    source_image.png
+    drag            desktop action      left
+
+    Action: Drag element by images
+    Field	        Sub Field	        Value
+    image           element parameter	destination_image.png
+    image           source parameter    source_image.png
+    drag            desktop action      left
+    """
 
     sModuleInfo = inspect.currentframe().f_code.co_name + " : " + MODULE_NAME
 
@@ -964,20 +844,27 @@ def Drag_Element(data_set):
         file_name = ""
         src_file_name = ""
         position = "centre"
+        Drag_Element_to_a_coordinate = False
+
         for row in data_set:
             if row[1] == "action":
                 if row[0] == "drag":
                     cmd = "drag"
                     position = row[2]
             elif row[1] == "element parameter":
-                file_name = row[2]
+                if "coordinates" in row[0].lower():
+                    dst_x, dst_y = row[2].replace(" ","").split(",")
+                    dst_x, dst_y = int(dst_x), int(dst_y)
+                    Drag_Element_to_a_coordinate = True
+                else:
+                    file_name = row[2]
             elif row[1] == "source parameter":
                 src_file_name = row[2]
 
         if cmd == "":
             CommonUtil.ExecLog(
                 sModuleInfo,
-                "Valid action not found. Expected Field set to 'click' or 'doubleclick', and the Value one of: %s"
+                "Valid action not found. Expected Field set to 'drag' and the Value one of: %s"
                 % str(positions),
                 3,
             )
@@ -990,14 +877,6 @@ def Drag_Element(data_set):
                 2,
             )
             position = "centre"
-
-        if file_name == "":
-            CommonUtil.ExecLog(
-                sModuleInfo,
-                "Valid element not found. Expected Sub-Field to be 'element parameter', and Value to be a filename",
-                3,
-            )
-            return "failed"
 
         if src_file_name == "":
             CommonUtil.ExecLog(
@@ -1015,6 +894,8 @@ def Drag_Element(data_set):
     try:
         # Get coordinates for source and destiniation
         for filename in (file_name, src_file_name):
+            if Drag_Element_to_a_coordinate and filename == file_name:
+                continue
             tmp_data_set = [("image", "element parameter", filename)]
             # Find image coordinates for destination element
             CommonUtil.ExecLog(
@@ -1058,6 +939,18 @@ def Drag_Element(data_set):
                 sModuleInfo, "Couldn't dragged element with given images", 3
             )
             return "failed"
+        elif Drag_Element_to_a_coordinate:
+
+            max_x, max_y = gui.size()
+            dst_x = max_x if dst_x > max_x else dst_x
+            dst_x = 0 if dst_x < 0 else dst_x
+            dst_y = max_y if dst_y > max_y else dst_y
+            dst_y = 0 if dst_y < 0 else dst_y
+
+            CommonUtil.ExecLog(
+                sModuleInfo, "Successfully dragged element to the %d, %d coordinates" % (dst_x, dst_y), 1
+            )
+            return "passed"
         else:
             CommonUtil.ExecLog(
                 sModuleInfo, "Successfully dragged element with given images", 1
@@ -1071,7 +964,13 @@ def Drag_Element(data_set):
 
 @logger
 def navigate_listbox(data_set):
-    """ Scroll listbox until image element is found or timeout is hit """
+    """ Scroll listbox until image element is found or timeout is hit
+
+    Action: Finding element from dropdown list
+    Field	        Sub Field	        Value
+    image           element parameter	file_name.png
+    listbox         desktop action      5
+    """
     # Continually presses page down and checks for the image
     # Assumptions: Listbox already has focus - user ought to use click action to click on the listbox, or the drop down menu's arrow
     # Assumptions: User has image of the list item they want to find
@@ -1093,14 +992,11 @@ def navigate_listbox(data_set):
                 file_name = row[2]
             elif row[1] == "action":
                 try:
-                    delay = int(
-                        row[2]
-                    )  # Test if user specified a delay on the action line
-                    CommonUtil.ExecLog(
-                        sModuleInfo, "Using customer specified delay of %d" % delay, 1
-                    )
+                    max_tries = int(
+                        row[2].strip()
+                    )  # Test if user specified a max_tries on the action line
                 except:
-                    delay = 1  # Default delay - user did not specify
+                    max_tries = 10  # Default max_tries - user did not specify
 
         if file_name == "":
             CommonUtil.ExecLog(
@@ -1128,7 +1024,7 @@ def navigate_listbox(data_set):
                 gui.hotkey("pgdn")
                 time.sleep(delay)  # Wait for listbox to update
             else:
-                CommonUtil.ExecLog(sModuleInfo, "Found element", 1)
+                CommonUtil.ExecLog(sModuleInfo, "Found element after %d tries" % (i+1), 1)
                 return "passed"
 
         CommonUtil.TakeScreenShot(
