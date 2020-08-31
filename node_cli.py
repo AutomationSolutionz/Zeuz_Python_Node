@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 # -*- coding: cp1252 -*-
 
-import os, sys, time, os.path, base64, signal
+import os, sys, time, os.path, base64, signal, argparse
 from pathlib import Path
 from getpass import getpass
 
@@ -638,13 +638,84 @@ def pass_decode(key, enc):
     return "".join(dec)
 
 
+def command_line_args():
+    """
+    This function handles command line scripts with given arguments
+
+    Example 1:
+    1. python node_cli.py
+    2. node_cli.py
+    These 2 scripts will skip all kind of actions in this function because they dont have any arguments and will execute
+    Login(CLI=true) from __main__
+
+    Example 2:
+    1. python node_cli.py --logout
+    2. node_cli.py --logout
+    3. node_cli.py -l
+
+    These 3 scripts will will execute logout from server and then will execute Login(CLI=true) from __main__ then
+    you have to provide server, username, password one by one in the terminal to login
+
+    Example 3:
+    1. python node_cli.py --username USER_NAME --password PASS_XYZ --server https://zeuz.zeuz.ai
+    2. node_cli.py --logout --username USER_NAME --password PASS_XYZ --server https://zeuz.zeuz.ai
+    3. node_cli.py -u USER_NAME -p PASS_XYZ -s https://zeuz.zeuz.ai
+
+    These 3 scripts will will execute logout from server and then will execute Login(CLI=true) from __main__ but you
+    don't need to provide server, username, password again. It will execute the login process automatically for you
+
+    Example 3:
+    1. python node_cli.py --help
+    2. node_cli.py --help
+    3. node_cli.py -h
+
+    These 3 scripts will show the documentation for every arguments and will execute sys.exit()
+
+    Example 4:
+    1. python node_cli.py --ussssername USER_NAME --password PASS_XYZ --server https://zeuz.zeuz.ai
+    2. node_cli.py --u USER_NAME -p PASS_XYZ -s
+    3. node_cli.py --logout https://zeuz.zeuz.ai
+
+    Above are some invalid arguments which will show some log/documentation and will execute sys.exit()
+    """
+    # try:
+    parser_object = argparse.ArgumentParser("node_cli parser")
+    parser_object.add_argument("-u", "--username", action="store", help="Enter your username", metavar="")
+    parser_object.add_argument("-p", "--password", action="store", help="Enter your password", metavar="")
+    parser_object.add_argument("-s", "--server", action="store", help="Enter server address", metavar="")
+    parser_object.add_argument("-l", "--logout", action="store_true", help="Logout from the server")
+
+    all_arguments = parser_object.parse_args()
+
+    username = all_arguments.username
+    password = all_arguments.password
+    server = all_arguments.server
+    logout = all_arguments.logout
+
+    if username or password or server or logout:
+        if username and password and server:
+            ConfigModule.remove_config_value(AUTHENTICATION_TAG, "server_address")
+            ConfigModule.add_config_value(AUTHENTICATION_TAG, "username", username)
+            ConfigModule.add_config_value(AUTHENTICATION_TAG, "password", password_hash(False, "zeuz", password))
+            ConfigModule.add_config_value(AUTHENTICATION_TAG, "server_address", server)
+        elif logout:
+            ConfigModule.remove_config_value(AUTHENTICATION_TAG, "server_address")
+        else:
+            CommonUtil.ExecLog("AUTHENTICATION FAILED", "Enter the command line arguments in correct format", 3)
+            sys.exit()  # exit and let the user try again from command line
+
+    """argparse module automatically shows exceptions of corresponding wrong arguments
+     and executes sys.exit(). So we don't need to use try except"""
+    # except:
+    #     CommonUtil.ExecLog("\ncommand_line_args : node_cli.py","Did not parse anything from given arguments",4)
+    #     sys.exit()
+
 if __name__ == "__main__":
     signal.signal(signal.SIGINT, signal_handler)
     print("Press Ctrl-C to disconnect and quit.")
 
-    arg_options = [arg for arg in sys.argv[1:] if arg.startswith("--")]
-
-    if "--logout" in arg_options:
-        ConfigModule.remove_config_value(AUTHENTICATION_TAG, "server_address")
+    """We can use this condition to skip command_line_args() when "python node_cli.py" or "node_cli.py" is executed"""
+    # if (len(sys.argv)) > 1:
+    command_line_args()
 
     Login(cli=True)
