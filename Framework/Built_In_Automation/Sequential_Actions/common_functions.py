@@ -1709,6 +1709,21 @@ def download_ftp_file(data_set):
 
 @logger
 def send_mail(data_set):
+    """
+    This is the action to send a mail
+
+    Example:
+    Field	            Sub Field	            Value
+    smtp server         element parameter	    smtp.gmail.com
+    smtp port           element parameter       587
+    sender email        element parameter       sender@gmail.com
+    sender password     element parameter       sender_pass
+    receiver email      element parameter       receiver@gmail.com
+    subject             element parameter       mail_subject
+    body                element parameter       main content
+    send mail           common action           send mail
+    """
+
     sModuleInfo = inspect.currentframe().f_code.co_name + " : " + MODULE_NAME
 
     try:
@@ -1767,6 +1782,21 @@ def send_mail(data_set):
 
 @logger
 def check_latest_mail(data_set):
+    """
+    This is the action to check sender's name, mail and subject of the latest mail
+
+    Example:
+    Field	                Sub Field	            Value
+    imap host               element parameter	    imap.gmail.com
+    imap port               element parameter       993
+    imap user               element parameter       user@gmail.com
+    imap password           element parameter       user_pass
+    select mailbox          element parameter       INBOX
+    subject to check        element parameter       mail_subject
+    sender mail to check    element parameter       sender@gmail.com
+    sender name to check    optional parameter      Sender Name
+    check latest mail       common action           check latest mail
+    """
     sModuleInfo = inspect.currentframe().f_code.co_name + " : " + MODULE_NAME
 
     try:
