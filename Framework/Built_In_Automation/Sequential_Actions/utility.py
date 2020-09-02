@@ -17,7 +17,8 @@ def check_latest_received_email(
     imap_pass,
     select_mailbox,
     subject_to_check,
-    sender_to_check,
+    sender_mail_to_check,
+    sender_name_to_check
 ):
     # Gmail requires to generate One-Time App Password
     # https://security.google.com/settings/security/apppasswords
@@ -88,9 +89,23 @@ def check_latest_received_email(
     imap.close()
     imap.logout()
 
-    if (subject_to_check == mail["subject"].strip()) and (
-        sender_to_check == mail["sender"].strip()
-    ):
+    sender_mail_from_response = email.utils.parseaddr(mail["sender"])[-1]
+    sender_name_from_response = email.utils.parseaddr(mail["sender"])[0]
+
+    subject_matched = False
+    mail_matched = False
+    name_matched = False
+
+    if subject_to_check == mail["subject"].strip():
+        subject_matched = True
+    if sender_mail_to_check == sender_mail_from_response:
+        mail_matched = True
+    if sender_name_to_check == "":
+        name_matched = True
+    elif sender_name_to_check.lower().strip() == sender_name_from_response.lower():
+        name_matched = True
+
+    if name_matched and mail_matched and subject_matched:
         return True
     else:
         return False

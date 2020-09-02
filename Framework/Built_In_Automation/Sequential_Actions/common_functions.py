@@ -1776,23 +1776,29 @@ def check_latest_mail(data_set):
         imap_pass = ""
         select_mailbox = ""
         subject_to_check = ""
-        sender_to_check = ""
+        sender_mail_to_check = ""
+        sender_name_to_check = ""
 
-        for row in data_set:
-            if str(row[0]).strip().lower() == "imap host":
-                imap_host = str(row[2]).strip()
-            elif str(row[0]).strip().lower() == "imap port":
-                imap_port = str(row[2]).strip()
-            elif str(row[0]).strip().lower() == "imap user":
-                imap_user = str(row[2]).strip()
-            elif str(row[0]).strip().lower() == "imap password":
-                imap_pass = str(row[2]).strip()
-            elif str(row[0]).strip().lower() == "select mailbox":
-                select_mailbox = str(row[2]).strip()
-            elif str(row[0]).strip().lower() == "subject to check":
-                subject_to_check = str(row[2]).strip()
-            elif str(row[0]).strip().lower() == "sender to check":
-                sender_to_check = str(row[2]).strip()
+        for left, mid, right in data_set:
+            left = left.lower()
+            right = right.strip()
+            if "imap host" in left:
+                imap_host = right
+            elif "imap port" in left:
+                imap_port = right
+            elif  "imap user" in left:
+                imap_user = right
+            elif "imap password" in left:
+                imap_pass = right
+            elif "select mailbox" in left:
+                select_mailbox = right
+            elif "subject to check" in left:
+                subject_to_check = right
+            elif "sender mail to check" in left:
+                sender_mail_to_check = right
+            elif "sender name to check" in left:
+                sender_name_to_check = right
+
 
         if imap_host == "" or imap_port == "" or imap_user == "" or imap_pass == "":
             CommonUtil.ExecLog(
@@ -1810,13 +1816,21 @@ def check_latest_mail(data_set):
             imap_pass,
             select_mailbox,
             subject_to_check,
-            sender_to_check,
+            sender_mail_to_check,
+            sender_name_to_check
         )
 
         if result:
+            if sender_name_to_check == "":
+                CommonUtil.ExecLog(sModuleInfo, "Subject and sender matched", 1)
+            else:
+                CommonUtil.ExecLog(sModuleInfo, "Subject, sender and name matched", 1)
             return "passed"
         else:
-            CommonUtil.ExecLog(sModuleInfo, "Subject and sender didn't match", 3)
+            if sender_name_to_check == "":
+                CommonUtil.ExecLog(sModuleInfo, "Subject and sender didn't match", 3)
+            else:
+                CommonUtil.ExecLog(sModuleInfo, "Subject, sender and name didn't match", 3)
             return "failed"
 
     except Exception:
