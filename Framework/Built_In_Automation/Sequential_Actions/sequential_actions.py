@@ -1038,7 +1038,7 @@ actions = {  # Numbers are arbitrary, and are not used anywhere
         "module": "utility",
         "screenshot": "none",
         "name": "run command",
-        "function": "Run_Command",
+        "function": "run_command",
     },
     519: {
         "module": "utility",

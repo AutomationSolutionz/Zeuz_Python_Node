@@ -680,10 +680,18 @@ def command_line_args():
     """
     # try:
     parser_object = argparse.ArgumentParser("node_cli parser")
-    parser_object.add_argument("-u", "--username", action="store", help="Enter your username", metavar="")
-    parser_object.add_argument("-p", "--password", action="store", help="Enter your password", metavar="")
-    parser_object.add_argument("-s", "--server", action="store", help="Enter server address", metavar="")
-    parser_object.add_argument("-l", "--logout", action="store_true", help="Logout from the server")
+    parser_object.add_argument(
+        "-u", "--username", action="store", help="Enter your username", metavar=""
+    )
+    parser_object.add_argument(
+        "-p", "--password", action="store", help="Enter your password", metavar=""
+    )
+    parser_object.add_argument(
+        "-s", "--server", action="store", help="Enter server address", metavar=""
+    )
+    parser_object.add_argument(
+        "-l", "--logout", action="store_true", help="Logout from the server"
+    )
 
     all_arguments = parser_object.parse_args()
 
@@ -696,12 +704,18 @@ def command_line_args():
         if username and password and server:
             ConfigModule.remove_config_value(AUTHENTICATION_TAG, "server_address")
             ConfigModule.add_config_value(AUTHENTICATION_TAG, "username", username)
-            ConfigModule.add_config_value(AUTHENTICATION_TAG, "password", password_hash(False, "zeuz", password))
+            ConfigModule.add_config_value(
+                AUTHENTICATION_TAG, "password", password_hash(False, "zeuz", password)
+            )
             ConfigModule.add_config_value(AUTHENTICATION_TAG, "server_address", server)
         elif logout:
             ConfigModule.remove_config_value(AUTHENTICATION_TAG, "server_address")
         else:
-            CommonUtil.ExecLog("AUTHENTICATION FAILED", "Enter the command line arguments in correct format", 3)
+            CommonUtil.ExecLog(
+                "AUTHENTICATION FAILED",
+                "Enter the command line arguments in correct format",
+                3,
+            )
             sys.exit()  # exit and let the user try again from command line
 
     """argparse module automatically shows exceptions of corresponding wrong arguments
@@ -709,6 +723,7 @@ def command_line_args():
     # except:
     #     CommonUtil.ExecLog("\ncommand_line_args : node_cli.py","Did not parse anything from given arguments",4)
     #     sys.exit()
+
 
 if __name__ == "__main__":
     signal.signal(signal.SIGINT, signal_handler)

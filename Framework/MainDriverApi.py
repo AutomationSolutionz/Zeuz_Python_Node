@@ -1633,10 +1633,10 @@ def run_test_case(
         shared.Clean_Up_Shared_Variables()  # clean up shared variables
 
     if debug:
-        '''
+        """
         Drivers shouldn't be teared down and variables shouldn't be cleared after debugging all steps though
         "Cleanup Drivers and Variables" is set to YES in server
-        '''
+        """
         # if cleanup_drivers_during_debug:
         #     cleanup_driver_instances()  # clean up drivers
         #     shared.Clean_Up_Shared_Variables()  # clean up shared variables

@@ -1605,158 +1605,81 @@ def Calculate(step_data):
 
 
 @logger
-@logger
-def Run_Command(data_set):
-    """Executes a command."""
+def run_command(data_set):
+    """Executes the given command."""
+
     sModuleInfo = inspect.currentframe().f_code.co_name + " : " + MODULE_NAME
 
-    # Parse data set
     try:
-        commands = (
-            []
-        )  # Need at least one command, multiple commands will be executed in order
-        shared_var = ""  # Optional - store output of command in shared variable
-        for row in data_set:
-            op = row[0].lower().strip()
-            cmd = row[2].strip()
-            if op == "run command":
-                commands.append(cmd)
-            elif op in ("shared var", "shared variable", "var", "variable", "save"):
-                shared_var = cmd.replace("%|", "").replace(
-                    "|%", ""
-                )  # Save variable name, remove identifying characters if accidentally provided
-        if len(commands) == 0:
+        command = None
+        run_in_background = False
+        strip_whitespaces = True
+        variable_name = None
+
+        for left, mid, right in data_set:
+            left = left.lower()
+            if "action" in mid:
+                variable_name = right.strip()
+            elif "run in background" in left:
+                run_in_background = right.strip().lower() in ("true", "yes")
+            elif "strip whitespaces" in left:
+                strip_whitespaces = right.strip().lower() in ("true", "yes")
+            elif "command" in left:
+                command = right
+
+        if None in (command, variable_name):
             CommonUtil.ExecLog(
-                sModuleInfo,
-                "No commands specified. Expected at least one row to contain 'run command' in the Field, and the command to execute in the Value field",
-                3,
+                sModuleInfo, "Variable name and command must be rovided.", 3
             )
             return "failed"
-    except Exception:
-        return CommonUtil.Exception_Handler(
-            sys.exc_info(), None, "Error parsing data set"
-        )
 
-    # Execute command
-    try:
-        # Set command deliminator
-        if _platform == "win32":
-            delim = "&"
-        else:
-            delim = ";"
+        args = {"shell": True, "stdin": None, "stdout": None, "stderr": None}
 
-        # Execute commands as a single command line command, separated by the OS's shell deliminator. This allows us to maintain a shell history, so all commands work as expected
-        h = subprocess.Popen(
-            delim.join(commands),
-            shell=True,
-            stdout=subprocess.PIPE,
-            stderr=subprocess.STDOUT,
-        )  # Execute commands, collect STDERR and redirect it to STDOUT, so it's all together
-        h.wait()  # Wait for process to complete
-        result = h.returncode  # Get last command result
+        if not run_in_background:
+            args.update(
+                {
+                    "stdin": subprocess.PIPE,
+                    "stdout": subprocess.PIPE,
+                    "stderr": subprocess.STDOUT,
+                }
+            )
+
+        proc = subprocess.Popen([command], **args)
+
+        if not run_in_background:
+            proc.wait()
+
+        return_code = proc.returncode
         output = ""
-        for line in h.stdout:
-            output += line  # Get command output from STDOUT and STDERR
 
-        CommonUtil.ExecLog(
-            sModuleInfo, "Command output: %s" % output, 1
-        )  # Write output to log
-        if shared_var:
-            output = output.replace(
-                "\n", ""
-            )  # replace any new line in string that may have came from terminal
-            Shared_Resources.Set_Shared_Variables(
-                shared_var, output
-            )  # Save command output to shared variable, if user specified it
+        # Parse the output and decode from bytes to str
+        try:
+            for line in proc.stdout:
+                line = line.decode()
+                if strip_whitespaces:
+                    line = line.strip()
 
-        # Exit
-        if result != 0:
-            CommonUtil.ExecLog(
-                sModuleInfo, "Command failed. See above for command output", 3
-            )
-            return "failed"
-        else:
-            CommonUtil.ExecLog(sModuleInfo, "Command executed successfully", 1)
-            return "passed"
+                output += line
+        except:
+            # Could not parse any output
+            pass
 
-    except Exception:
-        return CommonUtil.Exception_Handler(
-            sys.exc_info(), None, "Error executing command"
-        )
+        CommonUtil.ExecLog(sModuleInfo, "Command output:\n%s" % output, 5)
+
+        # Output into a dict
+        variable_output = {"return_code": return_code, "output": output}
+
+        Shared_Resources.Set_Shared_Variables(variable_name, variable_output)
+
+        return "passed"
+    except:
+        CommonUtil.ExecLog(sModuleInfo, "Failed to run command.", 3)
+        return CommonUtil.Exception_Handler(sys.exc_info())
 
 
-# def Run_Command(step_data):
-#     sModuleInfo = inspect.currentframe().f_code.co_name + " : " + MODULE_NAME
-#
-#     try:
-#         if step_data[0][0] == "run command":
-#             if _platform == "win32":
-#                 # windows
-#                 command = str(step_data[0][2]).strip()
-#                 result = run_win_cmd(command)
-#                 if result in failed_tag_list:
-#                     CommonUtil.ExecLog(sModuleInfo, "Could not run sudo command '%s'" % (command), 3)
-#                     return "failed"
-#                 else:
-#                     CommonUtil.ExecLog(sModuleInfo, "sudo command is run properly '%s'" % (command), 1)
-#                     return "passed"
-#             elif _platform == "linux" or _platform == "linux2" or _platform == "darwin":
-#
-#                 CommonUtil.ExecLog(sModuleInfo, "Could not run admin command for linux/mac", 3)
-#                 return "failed"
-#         elif step_data[0][0] == "run sudo":
-#             if _platform == "linux" or _platform == "linux2" or _platform == "darwin":
-#                 command = str(step_data[0][2]).strip()
-#                 result = run_cmd(command)
-#                 if result in failed_tag_list:
-#                     CommonUtil.ExecLog(sModuleInfo, "Could not run sudo command '%s'" % (command), 3)
-#                     return "failed"
-#                 else:
-#                     CommonUtil.ExecLog(sModuleInfo, "sudo command is run properly '%s'" % (command), 1)
-#                     return "passed"
-#             elif _platform == "win32":
-#                 # windows
-#                 CommonUtil.ExecLog(sModuleInfo, "Could not run sudo command as it is windows", 3)
-#                 return "failed"
-#     except Exception:
-#         return CommonUtil.Exception_Handler(sys.exc_info())
-#
-# # Method to Run Command
-# def Run_Command_and_Save(step_data):
-#     sModuleInfo = inspect.currentframe().f_code.co_name + " : " + MODULE_NAME
-#
-#     try:
-#
-#             if _platform == "win32":
-#                 # windows
-#                 command = str(step_data[0][2]).strip()
-#                 Shared_var= str(step_data[1][2]).strip()
-#                 result = run_win_cmd_and_save_in_shared_var(command,Shared_var)
-#                 if result in failed_tag_list:
-#                     CommonUtil.ExecLog(sModuleInfo, "Could not run sudo command '%s'" % (command), 3)
-#                     return "failed"
-#                 else:
-#                     CommonUtil.ExecLog(sModuleInfo, "sudo command is run properly '%s'" % (command), 1)
-#                     return "passed"
-#
-#
-#             elif _platform == "linux" or _platform == "linux2" or _platform == "darwin":
-#                 command = str(step_data[0][2]).strip()
-#                 Shared_var = str(step_data[1][2]).strip()
-#                 result = run_cmd_and_save_in_Shared_var(Shared_var,command)
-#                 if result in failed_tag_list:
-#                     CommonUtil.ExecLog(sModuleInfo, "Could not run sudo command '%s'" % (command), 3)
-#                     return "failed"
-#                 else:
-#                     CommonUtil.ExecLog(sModuleInfo, "sudo command is run properly '%s'" % (command), 1)
-#                     return "passed"
-#
-#     except Exception:
-#         return CommonUtil.Exception_Handler(sys.exc_info())
-
-# Method to Get Home Directory
 @logger
 def Get_Home_Directory(data_set):
+    """Get home directory in a variable."""
     sModuleInfo = inspect.currentframe().f_code.co_name + " : " + MODULE_NAME
 
     try:
@@ -3574,6 +3497,7 @@ def extract_number(data_set):
 
     except Exception:
         return CommonUtil.Exception_Handler(sys.exc_info())
+
 
 @logger
 def datatype_conversion(data_set):

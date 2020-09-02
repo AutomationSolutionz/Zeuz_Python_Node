@@ -283,15 +283,11 @@ def execute_hotkey(data_set) -> str:
                 except:
                     count = 1
                     CommonUtil.ExecLog(
-                        sModuleInfo,
-                        "Count is set to 1",
-                        2,
+                        sModuleInfo, "Count is set to 1", 2,
                     )
     except:
         CommonUtil.ExecLog(
-            sModuleInfo,
-            "Couldn't  parse data_set",
-            3,
+            sModuleInfo, "Couldn't  parse data_set", 3,
         )
         return "failed"
 
@@ -301,7 +297,11 @@ def execute_hotkey(data_set) -> str:
 
         CommonUtil.ExecLog(
             sModuleInfo,
-            "Successfully executed hotkey " + str(hotkey_combination) + " " + str(count) + " times",
+            "Successfully executed hotkey "
+            + str(hotkey_combination)
+            + " "
+            + str(count)
+            + " times",
             1,
         )
         return "passed"
@@ -564,6 +564,7 @@ def close_program(data_set):
     except Exception:
         errMsg = "Could not close the program"
         return CommonUtil.Exception_Handler(sys.exc_info(), None, errMsg)
+
 
 @logger
 def Click_Element(data_set):
@@ -853,7 +854,7 @@ def Drag_Element(data_set):
                     position = row[2]
             elif row[1] == "element parameter":
                 if "coordinates" in row[0].lower():
-                    dst_x, dst_y = row[2].replace(" ","").split(",")
+                    dst_x, dst_y = row[2].replace(" ", "").split(",")
                     dst_x, dst_y = int(dst_x), int(dst_y)
                     Drag_Element_to_a_coordinate = True
                 else:
@@ -948,7 +949,10 @@ def Drag_Element(data_set):
             dst_y = 0 if dst_y < 0 else dst_y
 
             CommonUtil.ExecLog(
-                sModuleInfo, "Successfully dragged element to the %d, %d coordinates" % (dst_x, dst_y), 1
+                sModuleInfo,
+                "Successfully dragged element to the %d, %d coordinates"
+                % (dst_x, dst_y),
+                1,
             )
             return "passed"
         else:
@@ -1024,7 +1028,9 @@ def navigate_listbox(data_set):
                 gui.hotkey("pgdn")
                 time.sleep(delay)  # Wait for listbox to update
             else:
-                CommonUtil.ExecLog(sModuleInfo, "Found element after %d tries" % (i+1), 1)
+                CommonUtil.ExecLog(
+                    sModuleInfo, "Found element after %d tries" % (i + 1), 1
+                )
                 return "passed"
 
         CommonUtil.TakeScreenShot(
