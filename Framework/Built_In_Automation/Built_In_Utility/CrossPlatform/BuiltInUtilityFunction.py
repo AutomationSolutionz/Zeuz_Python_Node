@@ -1606,7 +1606,26 @@ def Calculate(step_data):
 
 @logger
 def run_command(data_set):
-    """Executes the given command."""
+    """Executes the given command.
+
+    Args:
+        data_set:
+          command           | value              | command to run
+          run in background | optional parameter | true/false
+          strip whitespaces | optional parameter | true/false
+          run command       | utility action     | variable_name
+    
+    Returns:
+        The result is stored in a shared variable as a dictionary.
+        {
+            "result_code": int,
+            "output": str
+        }
+
+        "passed" if successful.
+        "failed" otherwise.
+    
+    """
 
     sModuleInfo = inspect.currentframe().f_code.co_name + " : " + MODULE_NAME
 
