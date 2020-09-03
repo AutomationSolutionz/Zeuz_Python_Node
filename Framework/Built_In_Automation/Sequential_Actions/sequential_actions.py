@@ -344,6 +344,12 @@ actions = {  # Numbers are arbitrary, and are not used anywhere
         "name": "save length",
         "function": "save_length",
     },
+    154: {
+        "module": "common",
+        "screenshot": "desktop",
+        "name": "write into excel",
+        "function": "excel_write",
+    },
     200: {
         "module": "appium",
         "screenshot": "mobile",
