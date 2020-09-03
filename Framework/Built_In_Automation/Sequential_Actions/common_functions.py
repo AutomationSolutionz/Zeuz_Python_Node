@@ -1873,27 +1873,33 @@ def write_into_single_cell_in_excel(data_set):
 
     try:
         sheet_name = ""
-        colmn = ""
-        colmun_number = ""
+        column = ""
+        column_number = ""
         value = ""
         excel_file_path = ""
 
-        for row in data_set:
-            if str(row[0]).strip().lower() == "sheet name":
-                sheet_name = str(row[2]).strip()
-            elif str(row[0]).strip().lower() == "column name":
-                colmn = str(row[2]).strip()
-            elif str(row[0]).strip().lower() == "column number":
-                colmun_number = str(row[2]).strip()
-            elif str(row[0]).strip().lower() == "text to write":
-                value = str(row[2]).strip()
-            elif str(row[0]).strip().lower() == "excel file path":
-                excel_file_path = str(row[2]).strip()
+        for left, mid, right in data_set:
+            left = left.lower()
+            right = right.strip()
+            if "sheet name" in left:
+                sheet_name = right
+            elif "column name" in left:
+                column = right
+            elif "column number" in left:
+                column_number = right
+            elif "text to write" in left:
+                value = right
+            elif "excel file path" in left:
+                excel_file_path = right
+                # Expand ~ (home directory of user) to absolute path.
+                if "~" in excel_file_path:
+                    excel_file_path = Path(os.path.expanduser(excel_file_path))
+                excel_file_path = Path(excel_file_path)
 
         if (
             sheet_name == ""
-            or colmn == ""
-            or colmun_number == ""
+            or column == ""
+            or column_number == ""
             or excel_file_path == ""
         ):
             CommonUtil.ExecLog(
@@ -1905,10 +1911,115 @@ def write_into_single_cell_in_excel(data_set):
 
         wb = xw.Book(excel_file_path)
         sheet = wb.sheets[sheet_name]
-        cell_value = "%s%s" % (colmn, colmun_number)
+        cell_value = "%s%s" % (column, column_number)
         sheet.range(cell_value).value = value
         wb.save(excel_file_path)
 
+        return "passed"
+    except Exception:
+        return CommonUtil.Exception_Handler(sys.exc_info())
+
+@logger
+def excel_write(data_set):
+    """
+    Action to write data into Excel file. To write hundreds of rows and column only one action is enough
+
+    Example 1:
+    Field	            Sub Field	        Value
+    file path           element parameter	F:\Automation Solutionz\a.xlsx
+    sheet name          element parameter	Sheet1
+    starting cell       element parameter	E2
+    expand              optional parameter	right
+    write into excel    common action   	["Expand to right",1.1021,"10.101"]
+
+    Example 2:
+    Field	            Sub Field	        Value
+    file path           element parameter	F:\Automation Solutionz\a.xlsx
+    sheet name          element parameter	Sheet1
+    starting cell       element parameter	E4
+    expand              optional parameter	down
+    write into excel    common action   	["Exapand down",1.10,"10.01"]
+
+    Example 3:
+    Field	            Sub Field	        Value
+    file path           element parameter	F:\Automation Solutionz\a.xlsx
+    sheet name          element parameter	Sheet1
+    starting cell       element parameter	F9
+    write into excel    common action   	Hello world
+
+    Example 4:
+    Field	            Sub Field	        Value
+    file path           element parameter	F:\Automation Solutionz\a.xlsx
+    sheet name          element parameter	Sheet1
+    starting cell       element parameter	F13
+    write into excel    common action   	[["Name","Dept","Salary"],["Mike","Marketing","1050.55 dollar"],
+                                            ["Fred","Sales",1040],["John","Developer",1040.55]]
+
+    Example 5:
+    Field	            Sub Field	        Value
+    file path           element parameter	F:\Automation Solutionz\a.xlsx
+    sheet name          element parameter	Sheet1
+    starting cell       element parameter	F9
+    write into excel    common action   	%|Excel_variable|%
+    """
+    sModuleInfo = inspect.currentframe().f_code.co_name + " : " + MODULE_NAME
+
+    try:
+        sheet_name = ""
+        cell = ""
+        expand = "right"
+        value = ""
+        excel_file_path = ""
+
+        for left, mid, right in data_set:
+            left = left.lower()
+            right = right.strip()
+            if "sheet name" in left:
+                sheet_name = right
+            elif "starting cell" in left:
+                cell = right
+            elif "expand" in left:
+                expand = right
+            elif "write into excel" in left:
+                value = right
+                value = parse_value_into_object(value)
+                # print("......1......", type(value), ".......", value)
+            elif "file path" in left:
+                excel_file_path = right
+                # Expand ~ (home directory of user) to absolute path.
+                if "~" in excel_file_path:
+                    excel_file_path = Path(os.path.expanduser(excel_file_path))
+                excel_file_path = Path(excel_file_path)
+
+        if (
+            sheet_name == ""
+            or cell == ""
+            or excel_file_path == ""
+        ):
+            CommonUtil.ExecLog(
+                sModuleInfo,
+                "Excel file info not given properly, please see action help",
+                3,
+            )
+            return "failed"
+
+        if expand.lower() == "down":
+            Transpose_condition = True
+        else:
+            expand = "right"
+            Transpose_condition = False
+
+        wb = xw.Book(excel_file_path)
+        sheet = wb.sheets[sheet_name]
+        sheet.range(cell).options(transpose=Transpose_condition).value = value
+        # print(type(sheet.range(cell).value),".....",sheet.range(cell).value)
+        wb.save(excel_file_path)
+
+        CommonUtil.ExecLog(
+            sModuleInfo,
+            "Excel Data has been written successfully starting from %s cell and expanded to %s" % (cell, expand),
+            1,
+        )
         return "passed"
     except Exception:
         return CommonUtil.Exception_Handler(sys.exc_info())
