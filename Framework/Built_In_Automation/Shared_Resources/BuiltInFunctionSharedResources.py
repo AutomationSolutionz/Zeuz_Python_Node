@@ -367,7 +367,6 @@ def handle_nested_rest_json(result, string):
         return "failed"
 
 
-@logger
 def parse_variable(name):
     """Parse a given variable (probalby indexed
       like var["hello"][0]["test"]) and return its value."""
@@ -421,7 +420,6 @@ def parse_variable(name):
         return "failed"
 
 
-@logger
 def get_previous_response_variables_in_strings(step_data_string_input):
     sModuleInfo = inspect.currentframe().f_code.co_name + " : " + MODULE_NAME
     try:
