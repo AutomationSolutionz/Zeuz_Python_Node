@@ -2101,6 +2101,9 @@ def excel_read(data_set):
         # Save into shared variables
         sr.Set_Shared_Variables(var_name, cell_data)
 
+        # Save file so that we don't see the "Want to save" dailog.
+        wb.save()
+
         return "passed"
     except:
         return CommonUtil.Exception_Handler(sys.exc_info())
