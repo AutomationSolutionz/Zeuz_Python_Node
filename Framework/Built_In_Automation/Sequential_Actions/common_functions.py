@@ -2270,7 +2270,6 @@ def split_string(data_set):
 
     try:
         var_name = None
-        idx = None
         split_expression = None
         source_string = None
 
@@ -2283,18 +2282,13 @@ def split_string(data_set):
                 source_string = right
             if "split expression" in left:
                 split_expression = right
-            if "index" in left:
-                idx = int(right.strip())
 
         # Validate data format.
         if None in (var_name, idx, split_expression, source_string):
             CommonUtil.ExecLog(sModuleInfo, "Invalid data format.", 3)
             return "failed"
-        if idx < 0 or idx > 1:
-            CommonUtil.ExecLog(sModuleInfo, "Index must be between [0, 1]", 3)
-            return "failed"
 
-        result = source_string.split(split_expression)[idx]
+        result = source_string.split(split_expression)
 
         # Save into shared variables.
         sr.Set_Shared_Variables(var_name, result)
