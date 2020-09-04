@@ -101,6 +101,23 @@ def to_unicode(obj, encoding="utf-8"):
         return obj
 
 
+def parse_value_into_object(val):
+    """Parses the given value into a Python object: int, str, list, dict."""
+
+    try:
+        val = ast.literal_eval(val)
+    except:
+        try:
+            val = json.loads(val)
+        except:
+            try:
+                val = ast.literal_eval(f'"{val}"')
+            except:
+                pass
+
+    return val
+
+
 def Add_Folder_To_Current_Test_Case_Log(src):
     try:
         # get the current test case locations

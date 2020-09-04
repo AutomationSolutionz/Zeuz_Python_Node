@@ -147,7 +147,6 @@ def sanitize(step_data):
         return CommonUtil.Exception_Handler(sys.exc_info())
 
 
-@logger
 def verify_step_data(step_data):
     """ Verify step data is valid """
 
@@ -301,7 +300,6 @@ def verify_step_data(step_data):
         return CommonUtil.Exception_Handler(sys.exc_info())
 
 
-@logger
 def check_action_types(module, step_data):
     """ Check for a specific module in the step data type and return true/false """
     # To be used when we don't have a dependency, and need to know the type of actions the user have specified
@@ -316,7 +314,6 @@ def check_action_types(module, step_data):
     return False
 
 
-@logger
 def adjust_element_parameters(step_data, platforms):
     """ Strip out element parameters that do not match the dependency """
 
@@ -415,7 +412,6 @@ def adjust_element_parameters(step_data, platforms):
     return new_step_data  # Return cleaned step_data that contains only the element paramters we are interested in
 
 
-@logger
 def get_module_and_function(action_name, action_sub_field):
     """ Function to split module from the action name, and with the action name tries to find the corrosponding function name """
 
@@ -488,7 +484,6 @@ def get_module_and_function(action_name, action_sub_field):
         return CommonUtil.Exception_Handler(sys.exc_info())
 
 
-@logger
 def shared_variable_to_value(data_set):
     """ Look for any Shared Variable strings in step data, convert them into their values, and return """
 
@@ -549,7 +544,6 @@ def shared_variable_to_value(data_set):
 # it will remove the module the user specified, replace it with the "common" module, and continue as normal.
 
 
-@logger
 def step_result(data_set):
     """ Returns passed/failed in the standard format, when the user specifies it in the step data """
 
@@ -576,7 +570,6 @@ def step_result(data_set):
         return "failed"
 
 
-@logger
 def step_exit(data_set):
     """ Exits a Test Step wtih passed/failed in the standard format, when the user specifies it in the step data """
 
@@ -823,7 +816,7 @@ def save_into_variable(data_set):
                 if "operation" in left:
                     operation = right.strip().lower()
                 if "data" in left:
-                    variable_value = parse_value_into_object(right)
+                    variable_value = CommonUtil.parse_value_into_object(right)
                 if "action" in mid:
                     variable_name = right.strip()
         except:
@@ -909,23 +902,6 @@ def Save_Variable(data_set):
         return "failed"
 
 
-def parse_value_into_object(val):
-    """Parses the given value into a Python object: int, str, list, dict."""
-
-    try:
-        val = ast.literal_eval(val)
-    except:
-        try:
-            val = json.loads(val)
-        except:
-            try:
-                val = ast.literal_eval(f'"{val}"')
-            except:
-                pass
-
-    return val
-
-
 @logger
 def save_length(data_set):
     """Save the length/size of a given value into a variable."""
@@ -937,7 +913,7 @@ def save_length(data_set):
             variable_name = each[0]
             value = each[2]
 
-    value = parse_value_into_object(value)
+    value = CommonUtil.parse_value_into_object(value)
 
     try:
         value_length = len(value)
@@ -1548,6 +1524,7 @@ def wait_for_timer(data_set):
 
 
 @logger
+@deprecated
 def create_3d_list(data_set):
     """ Creates and appends a python list variable """
     # Note: List is created if it doesn't already exist
@@ -1982,7 +1959,7 @@ def excel_write(data_set):
                 expand = right
             elif "write into excel" in left:
                 value = right
-                value = parse_value_into_object(value)
+                value = CommonUtil.parse_value_into_object(value)
                 # print("......1......", type(value), ".......", value)
             elif "file path" in left:
                 excel_file_path = right

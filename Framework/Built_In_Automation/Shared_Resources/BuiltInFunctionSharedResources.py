@@ -7,11 +7,20 @@ import inspect, sys, time, collections
 import string
 import random
 import re
+import json
 from Framework.Utilities import CommonUtil
 from Framework.Utilities.CommonUtil import passed_tag_list, failed_tag_list
 from datetime import datetime
 from dateutil.relativedelta import relativedelta
 from Framework.Utilities.decorators import logger, deprecated
+
+
+# Import colorama for console color support
+from colorama import init as colorama_init
+from colorama import Fore, Back
+
+# Initialize colorama for the current platform
+colorama_init(autoreset=True)
 
 
 global shared_variables
@@ -22,6 +31,15 @@ protected_variables = (
 
 
 MODULE_NAME = inspect.getmodulename(__file__)
+
+
+def prettify(key, val):
+    """Tries to pretty print the given value."""
+
+    try:
+        print(Fore.MAGENTA + "%s = %s" % (key, json.dumps(json.loads(val), indent=2, sort_keys=True)))
+    except:
+        return print(Fore.MAGENTA + "%s = %s" % (key, val))
 
 
 def Set_Shared_Variables(key, value, protected=False, allowEmpty=False):
@@ -47,8 +65,12 @@ def Set_Shared_Variables(key, value, protected=False, allowEmpty=False):
 
             # Good to proceed
             shared_variables[key] = value
+
+            # Try to get a pretty print.
+            prettify(key, value)
+
             CommonUtil.ExecLog(
-                sModuleInfo, "Variable value of '%s' is set as: %s" % (key, value), 0
+                sModuleInfo, "Saved variable:\n%s = %s" % (key, value), 0
             )
             return "passed"
     except:
@@ -84,21 +106,23 @@ def Set_List_Shared_Variables(list_name, key, value, protected=False):
             # Good to proceed
             if list_name in shared_variables:
                 shared_variables[list_name][key] = value
+
+                # Try to get a pretty print.
+                prettify(key, value)
+
                 CommonUtil.ExecLog(
-                    sModuleInfo,
-                    "In List '%s' Variable value of '%s' is set as: %s"
-                    % (list_name, key, value),
-                    0,
+                    sModuleInfo, "Saved variable:\n%s = %s" % (key, value), 0
                 )
                 return "passed"
             else:  # create dict if now available
                 shared_variables[list_name] = collections.OrderedDict()
                 shared_variables[list_name][key] = value
+
+                # Try to get a pretty print.
+                prettify(key, value)
+
                 CommonUtil.ExecLog(
-                    sModuleInfo,
-                    "In List '%s' Variable value of '%s' is set as: %s"
-                    % (list_name, key, value),
-                    0,
+                    sModuleInfo, "Saved variable:\n%s = %s" % (key, value), 0
                 )
                 return "passed"
     except:
@@ -156,6 +180,7 @@ def Append_List_Shared_Variables(key, value, protected=False, value_as_list=Fals
         CommonUtil.Exception_Handler(sys.exc_info())
 
 
+@deprecated
 def Append_Dict_Shared_Variables(key, value, protected=False, parent_dict=""):
     """ Creates and appends a python list variable """
 
@@ -211,12 +236,12 @@ def Get_Shared_Variables(key, log=True):
         else:
             if key in shared_variables:
                 value = shared_variables[key]
-                if log:
-                    CommonUtil.ExecLog(
-                        sModuleInfo,
-                        "Variable value of '%s' is: %s" % (str(key), value),
-                        0,
-                    )
+                # Try to get a pretty print.
+                prettify(key, value)
+
+                CommonUtil.ExecLog(
+                    sModuleInfo, "Saved variable:\n%s = %s" % (key, value), 0
+                )
                 return value
             else:
                 if log:
@@ -238,11 +263,15 @@ def Get_List_from_Shared_Variables(list_name):
             return "failed"
         else:
             if list_name in shared_variables:
-                list = shared_variables[list_name]
+                value = shared_variables[list_name]
+
+                # Try to get a pretty print.
+                prettify(key, value)
+
                 CommonUtil.ExecLog(
-                    sModuleInfo, "List: " + list_name + " is: " + str(list), 1
+                    sModuleInfo, "Saved variable:\n%s = %s" % (key, value), 0
                 )
-                return list
+                return value
             else:
                 CommonUtil.ExecLog(
                     sModuleInfo,
@@ -369,7 +398,7 @@ def handle_nested_rest_json(result, string):
 
 def parse_variable(name):
     """Parse a given variable (probalby indexed
-      like var["hello"][0]["test"]) and return its value."""
+    like var["hello"][0]["test"]) and return its value."""
 
     try:
         pattern = r"\[(.*?)\]"
