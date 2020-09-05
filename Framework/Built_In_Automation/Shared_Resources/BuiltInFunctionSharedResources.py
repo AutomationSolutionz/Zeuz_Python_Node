@@ -253,9 +253,10 @@ def Get_Shared_Variables(key, log=True):
                 # Try to get a pretty print.
                 prettify(key, value)
 
-                CommonUtil.ExecLog(
-                    sModuleInfo, "Saved variable:\n%s = %s" % (key, value), 0
-                )
+                if log:
+                    CommonUtil.ExecLog(
+                        sModuleInfo, "Saved variable:\n%s = %s" % (key, value), 0
+                    )
                 return value
             else:
                 if log:
@@ -424,8 +425,10 @@ def parse_variable(name):
 
         name = name[: name.find("[")]
 
-        val = Get_Shared_Variables(name)
+        val = Get_Shared_Variables(name, log=False)
         for idx in indices:
+            result = None
+
             # Check to see if it's a quoted string.
             if idx[0] == '"' or idx[0] == "'":
                 # Remove quotations.
@@ -437,22 +440,31 @@ def parse_variable(name):
                     idx = int(idx)
                 except:
                     # Since it's not an int, try getting the value from the shared variables.
-                    idx = Get_Shared_Variables(idx)
+                    result = Get_Shared_Variables(idx, log=False)
 
-                    if idx == "failed":
-                        return "failed"
-
-                    try:
-                        # Try converting to int.
-                        idx = int(idx)
-                    except:
-                        # Not an int? Check to see if it's a quoted string.
-                        if idx[0] == '"' or idx[0] == "'":
-                            # Remove quotations.
-                            idx = idx[1 : len(idx) - 1]
+                    if result != "failed":
+                        idx = result
+                        try:
+                            # Try converting to int.
+                            idx = int(idx)
+                        except:
+                            # Not an int? Check to see if it's a quoted string.
+                            if idx[0] == '"' or idx[0] == "'":
+                                # Remove quotations.
+                                idx = idx[1 : len(idx) - 1]
 
             try:
-                val = val[idx]
+                if result == "failed":
+                    # Since we failed to obtain from shared variable,
+                    # there is a possiblity that this contains a slice
+                    # syntax - [2:5]
+                    try:
+                        left, right = map(int, idx.split(":"))
+                        val = val[left : right]
+                    except:
+                        return "failed"
+                else:
+                    val = val[idx]
             except:
                 # Edge case. Try converting the idx into str and see if it can be accessed.
                 val = val[str(idx)]
