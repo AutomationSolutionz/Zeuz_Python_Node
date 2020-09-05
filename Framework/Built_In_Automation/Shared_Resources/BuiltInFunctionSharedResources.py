@@ -39,21 +39,12 @@ def prettify(key, val):
     color = Fore.MAGENTA
 
     try:
-        print(
-            color
-            + "%s = %s" % (key, json.dumps(json.loads(val), indent=2, sort_keys=True))
-        )
+        if type(val) == str:
+            val = CommonUtil.parse_value_into_object(val)
+        
+        print(color + "%s = %s" % (key, json.dumps(val, indent=2, sort_keys=True)))
     except:
-        return print(
-            color
-            + "%s = %s"
-            % (
-                key,
-                json.dumps(
-                    CommonUtil.parse_value_into_object(val), indent=2, sort_keys=True
-                ),
-            )
-        )
+        return print(color + "%s = %s" % (key, val))
 
 
 def Set_Shared_Variables(key, value, protected=False, allowEmpty=False):
@@ -413,7 +404,7 @@ def handle_nested_rest_json(result, string):
 
 def parse_variable(name):
     """Parse a given variable (probalby indexed
-    like var["hello"][0]["test"]) and return its value."""
+    like var["hello"][0]["test"][2:3]) and return its value."""
 
     try:
         pattern = r"\[(.*?)\]"
@@ -460,7 +451,7 @@ def parse_variable(name):
                     # syntax - [2:5]
                     try:
                         left, right = map(int, idx.split(":"))
-                        val = val[left : right]
+                        val = val[left:right]
                     except:
                         return "failed"
                 else:
