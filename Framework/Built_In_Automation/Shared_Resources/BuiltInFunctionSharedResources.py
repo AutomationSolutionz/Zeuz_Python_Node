@@ -41,7 +41,7 @@ def prettify(key, val):
     try:
         if type(val) == str:
             val = CommonUtil.parse_value_into_object(val)
-        
+
         print(color + "%s = %s" % (key, json.dumps(val, indent=2, sort_keys=True)))
     except:
         return print(color + "%s = %s" % (key, val))
@@ -450,7 +450,18 @@ def parse_variable(name):
                     # there is a possiblity that this contains a slice
                     # syntax - [2:5]
                     try:
-                        left, right = map(int, idx.split(":"))
+                        left, right = idx.split(":")
+
+                        try:
+                            left = int(left)
+                        except:
+                            left = int(Get_Shared_Variables(left))
+                        
+                        try:
+                            right = int(right)
+                        except:
+                            right = int(Get_Shared_Variables(right))
+
                         val = val[left:right]
                     except:
                         return "failed"
