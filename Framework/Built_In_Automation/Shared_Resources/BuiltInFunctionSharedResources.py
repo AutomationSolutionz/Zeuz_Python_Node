@@ -36,10 +36,24 @@ MODULE_NAME = inspect.getmodulename(__file__)
 def prettify(key, val):
     """Tries to pretty print the given value."""
 
+    color = Fore.MAGENTA
+
     try:
-        print(Fore.MAGENTA + "%s = %s" % (key, json.dumps(json.loads(val), indent=2, sort_keys=True)))
+        print(
+            color
+            + "%s = %s" % (key, json.dumps(json.loads(val), indent=2, sort_keys=True))
+        )
     except:
-        return print(Fore.MAGENTA + "%s = %s" % (key, val))
+        return print(
+            color
+            + "%s = %s"
+            % (
+                key,
+                json.dumps(
+                    CommonUtil.parse_value_into_object(val), indent=2, sort_keys=True
+                ),
+            )
+        )
 
 
 def Set_Shared_Variables(key, value, protected=False, allowEmpty=False):
