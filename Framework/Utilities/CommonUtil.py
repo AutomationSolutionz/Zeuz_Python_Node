@@ -281,8 +281,10 @@ def ExecLog(
     elif iLogLevel == 6:
         status = "BrowserConsole"
     else:
-        print("*** Unknown log level- Set to Warning ***")
-        status = "Warning"
+        print("*** Unknown log level - Set to Info ***")
+        status = "Info"
+        iLogLevel = 5
+        line_color = Fore.CYAN
 
     if not sModuleInfo:
         sModuleInfo = ""
