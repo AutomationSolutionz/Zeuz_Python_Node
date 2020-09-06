@@ -13,6 +13,7 @@ from Framework.Utilities.CommonUtil import passed_tag_list, failed_tag_list
 from datetime import datetime
 from dateutil.relativedelta import relativedelta
 from Framework.Utilities.decorators import logger, deprecated
+from .data_collector import DataCollector
 
 
 # Import colorama for console color support
@@ -31,6 +32,7 @@ protected_variables = (
 
 
 MODULE_NAME = inspect.getmodulename(__file__)
+data_collector = DataCollector()
 
 
 def prettify(key, val):
@@ -460,6 +462,17 @@ def parse_variable(name):
     The variable can be indexed, similar to how Python's variables are
     indexed - lists and dictionaries with [ ] square brackets.
 
+    If a tilde ~ character is specified in front of the variable name,
+    then data collector is run, which collects data from a given
+    pattern.
+
+    Patterns:
+    
+        "_" (underscore) - match all list items.
+        "*" (asterisk)   - match all values of dictionaries.
+        "*xyz"           - partial match for dictionary keys ending with "xyz"
+        "xyz*"           - partial match for dictionary keys starting with "xyz"
+
     Args:
 
         name: Variable name with indices specified if necessary.
@@ -474,6 +487,13 @@ def parse_variable(name):
         var[left:right] - Fetch left and right from shared variables.
         var["hello"][3][2:5]
 
+        ~var[_, *, occurrence, _, line]
+        ~var[_, error*, occurrence, _, line]
+        ~var[_, *error, occurrence, _, line]
+        ~var[_, *, occurrence, _, message]
+        ~var[_, error1, type]
+        ~var[0, error2, occurrence, 0, message]
+
     Returns:
 
         Value of the variable at the given index (if specified).
@@ -487,29 +507,40 @@ def parse_variable(name):
             # If there are no [ ] style indexing.
             return Get_Shared_Variables(name)
 
-        # Get the variable name part, not the indices with [ ]
-        name = name[: name.find("[")]
+        if name[0] == "~":
+            # If the variable name starts with a tilde character, we'll
+            # run data collector.
+            name = name[1:]
+            name = name[: name.find("[")]
+            val = Get_Shared_Variables(name, log=False)
+            val = data_collector.collect(indices[0], val)
+            return val
+        else:
+            # Otherwise, perform variable indexing.
+            
+            # Get the variable name part, not the indices with [ ]
+            name = name[: name.find("[")]
 
-        # Get the root of the variable.
-        val = Get_Shared_Variables(name, log=False)
+            # Get the root of the variable.
+            val = Get_Shared_Variables(name, log=False)
 
-        for idx in indices:
-            _number     = VariableParser.get_number(idx)
-            _string     = VariableParser.get_string(idx)
-            _variable   = VariableParser.get_variable(idx)
-            _slice      = VariableParser.get_slice(idx)
+            for idx in indices:
+                _number     = VariableParser.get_number(idx)
+                _string     = VariableParser.get_string(idx)
+                _variable   = VariableParser.get_variable(idx)
+                _slice      = VariableParser.get_slice(idx)
 
-            if _number is not None:
-                val = val[_number]
-            elif _string is not None:
-                val = val[_string]
-            elif _variable is not None:
-                val = val[_variable]
-            elif _slice is not None:
-                left, right = _slice
-                val = val[left:right]
+                if _number is not None:
+                    val = val[_number]
+                elif _string is not None:
+                    val = val[_string]
+                elif _variable is not None:
+                    val = val[_variable]
+                elif _slice is not None:
+                    left, right = _slice
+                    val = val[left:right]
 
-        return val
+            return val
     except:
         print("Failed to parse variable")
         return "failed"
