@@ -402,9 +402,82 @@ def handle_nested_rest_json(result, string):
         return "failed"
 
 
+class VariableParser:
+    """Helper class for parsing the values of different indices as
+          specified in [ ] square brackets of a variable.
+    """
+
+    @staticmethod
+    def get_number(idx):
+        try: return int(idx)
+        except: return None
+    
+
+    @staticmethod
+    def get_string(idx):
+        if isinstance(idx, str):
+            if idx[0] in ("'", '"'):
+                return idx[1:len(idx)-1]
+
+            return None
+        return None
+
+    
+    @staticmethod
+    def get_slice(idx):
+        try:
+            sp = idx.split(":")
+            if len(sp) > 1:
+                left, right = sp[0], sp[1]
+
+                try: left = int(left)
+                except: left = Get_Shared_Variables(left, log=False)
+
+                try: right = int(right)
+                except: right = Get_Shared_Variables(right, log=False)
+
+                if "failed" in (left, right):
+                    return None
+                else:
+                    left = int(left)
+                    right = int(right)
+
+                return (left, right)
+
+        except: pass
+        return None
+
+
+    @staticmethod
+    def get_variable(idx):
+        val = Get_Shared_Variables(idx, log=False)
+        return val if val != "failed" else None
+
+
 def parse_variable(name):
-    """Parse a given variable (probalby indexed
-    like var["hello"][0]["test"][2:3]) and return its value."""
+    """Parses a given variable and returns its value.
+
+    The variable can be indexed, similar to how Python's variables are
+    indexed - lists and dictionaries with [ ] square brackets.
+
+    Args:
+
+        name: Variable name with indices specified if necessary.
+
+    Examples:
+        
+        var
+        var["hello"]
+        var[hello] - Fetch hello from shared variables.
+        var[3]
+        var[2:5]
+        var[left:right] - Fetch left and right from shared variables.
+        var["hello"][3][2:5]
+
+    Returns:
+
+        Value of the variable at the given index (if specified).
+    """
 
     try:
         pattern = r"\[(.*?)\]"
@@ -414,66 +487,31 @@ def parse_variable(name):
             # If there are no [ ] style indexing.
             return Get_Shared_Variables(name)
 
+        # Get the variable name part, not the indices with [ ]
         name = name[: name.find("[")]
 
+        # Get the root of the variable.
         val = Get_Shared_Variables(name, log=False)
+
         for idx in indices:
-            result = None
+            _number     = VariableParser.get_number(idx)
+            _string     = VariableParser.get_string(idx)
+            _variable   = VariableParser.get_variable(idx)
+            _slice      = VariableParser.get_slice(idx)
 
-            # Check to see if it's a quoted string.
-            if idx[0] == '"' or idx[0] == "'":
-                # Remove quotations.
-                idx = idx[1 : len(idx) - 1]
-            else:
-                # Otherwise check to see if its an integer or another variable
-                try:
-                    # Try converting to int.
-                    idx = int(idx)
-                except:
-                    # Since it's not an int, try getting the value from the shared variables.
-                    result = Get_Shared_Variables(idx, log=False)
-
-                    if result != "failed":
-                        idx = result
-                        try:
-                            # Try converting to int.
-                            idx = int(idx)
-                        except:
-                            # Not an int? Check to see if it's a quoted string.
-                            if idx[0] == '"' or idx[0] == "'":
-                                # Remove quotations.
-                                idx = idx[1 : len(idx) - 1]
-
-            try:
-                if result == "failed":
-                    # Since we failed to obtain from shared variable,
-                    # there is a possiblity that this contains a slice
-                    # syntax - [2:5]
-                    try:
-                        left, right = idx.split(":")
-
-                        try:
-                            left = int(left)
-                        except:
-                            left = int(Get_Shared_Variables(left))
-                        
-                        try:
-                            right = int(right)
-                        except:
-                            right = int(Get_Shared_Variables(right))
-
-                        val = val[left:right]
-                    except:
-                        return "failed"
-                else:
-                    val = val[idx]
-            except:
-                # Edge case. Try converting the idx into str and see if it can be accessed.
-                val = val[str(idx)]
+            if _number is not None:
+                val = val[_number]
+            elif _string is not None:
+                val = val[_string]
+            elif _variable is not None:
+                val = val[_variable]
+            elif _slice is not None:
+                left, right = _slice
+                val = val[left:right]
 
         return val
     except:
-        print("Failed to parse variable.")
+        print("Failed to parse variable")
         return "failed"
 
 
