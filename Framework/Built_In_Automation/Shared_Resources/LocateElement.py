@@ -16,7 +16,7 @@ from Framework.Built_In_Automation.Shared_Resources import (
 from selenium.webdriver.support.ui import WebDriverWait
 from selenium.webdriver.support import expected_conditions as EC
 from selenium.webdriver.common.by import By
-
+import selenium
 global WebDriver_Wait
 WebDriver_Wait = 10
 global generic_driver
@@ -29,7 +29,7 @@ driver_type = None
 MODULE_NAME = inspect.getmodulename(__file__)
 
 
-def Get_Element(step_data_set, driver, query_debug=False, wait_enable=True):
+def Get_Element(step_data_set, driver, query_debug=False, wait_enable=True, return_all_elements=False):
     """
     This funciton will return "Failed" if something went wrong, else it will always return a single element
     if you are trying to produce a query from a step dataset, make sure you provide query_debug =True.  This is
@@ -42,9 +42,13 @@ def Get_Element(step_data_set, driver, query_debug=False, wait_enable=True):
         # Check the driver that is given and set the driver type
         global driver_type
         driver_type = _driver_type(query_debug)
+        if isinstance(driver, selenium.webdriver.remote.webelement.WebElement):
+            web_element_object = True
+        else:
+            web_element_object = False
         if driver_type == None:
             CommonUtil.ExecLog(
-                sModuleInfo, "Incorrect driver.  Please validate driver", 3
+                sModuleInfo, "Incorrect driver. Please validate driver", 3
             )
             return "failed"
 
@@ -165,7 +169,7 @@ def Get_Element(step_data_set, driver, query_debug=False, wait_enable=True):
             # here we switch driver if we need to
             _switch(step_data_set)
             index_number = _locate_index_number(step_data_set)
-            element_query, query_type = _construct_query(step_data_set)
+            element_query, query_type = _construct_query(step_data_set, web_element_object)
             CommonUtil.ExecLog(
                 sModuleInfo,
                 "Element query used to locate the element: %s. Query method used: %s "
@@ -183,7 +187,7 @@ def Get_Element(step_data_set, driver, query_debug=False, wait_enable=True):
             if element_query == False:
                 result = "failed"
             elif query_type == "xpath" and element_query != False:
-                result = _get_xpath_or_css_element(element_query, "xpath", index_number)
+                result = _get_xpath_or_css_element(element_query, "xpath", index_number, return_all_elements)
             elif query_type == "css" and element_query != False:
                 result = _get_xpath_or_css_element(element_query, "css", index_number)
             elif query_type == "unique" and element_query != False:
@@ -206,16 +210,29 @@ def Get_Element(step_data_set, driver, query_debug=False, wait_enable=True):
                         ):
                             is_displayed_value = row[2].strip().lower()
                             if is_displayed_value == "true":
-                                display_status = result.is_displayed()
-                                if display_status == False:
-                                    CommonUtil.ExecLog(
-                                        sModuleInfo,
-                                        "Element was found, however, it was not displayed or enabled. Returning failed",
-                                        2,
-                                    )
-                                    result = "failed"
-                                    break
-                                else:
+                                if not return_all_elements:
+                                    if not result.is_displayed():
+                                        CommonUtil.ExecLog(
+                                            sModuleInfo,
+                                            "Element was found, however, it was not displayed or enabled. Returning failed",
+                                            2,
+                                        )
+                                        result = "failed"
+                                        break
+                                    else:
+                                        break
+                                if return_all_elements:
+                                    i = 0
+                                    for each_element in result:
+                                        i = i+1
+                                        if not each_element.is_displayed():
+                                            CommonUtil.ExecLog(
+                                                sModuleInfo,
+                                                "%s no element was not displayed or enabled. Returning failed" % i,
+                                                2,
+                                            )
+                                            result = "failed"
+                                            break
                                     break
             except:
                 True
@@ -238,7 +255,7 @@ def Get_Element(step_data_set, driver, query_debug=False, wait_enable=True):
         return CommonUtil.Exception_Handler(sys.exc_info())
 
 
-def _construct_query(step_data_set):
+def _construct_query(step_data_set, web_element_object=False):
     """
     first find out if in our dataset user is using css or xpath.  If they are using css or xpath, they cannot use any 
     other feature such as child parameter or multiple element parameter to locate the element
@@ -276,13 +293,14 @@ def _construct_query(step_data_set):
             # here we expect to get raw css query
             return (([x for x in step_data_set if "css" in x[0]][0][2]), "css")
         elif "xpath" in collect_all_attribute and "css" not in collect_all_attribute:
-            # return the raw xpath command with xpath as type.  We do this so that even if user enters other data, we will ignore them.
+            # return the raw xpath command with xpath as type. We do this so that even if user enters other data, we will ignore them.
             # here we expect to get raw xpath query
             return (([x for x in step_data_set if "xpath" in x[0]][0][2]), "xpath")
         elif (
             child_ref_exits == False
             and parent_ref_exits == False
             and sibling_ref_exits == False
+            and web_element_object == False
         ):
             """  If  there are no child or parent as reference, then we construct the xpath differently"""
             # first we collect all rows with element parameter only
@@ -329,6 +347,22 @@ def _construct_query(step_data_set):
             element_xpath_string = element_xpath_string.replace("//", "")
 
             full_query = parent_xpath_string + element_xpath_string
+            return (full_query, "xpath")
+
+        elif (
+            child_ref_exits == False
+            and web_element_object == True
+            and sibling_ref_exits == False
+            and (driver_type == "appium" or driver_type == "selenium")
+        ):
+            """
+            'descendant::<target element tag>[<target element attribute>]'
+            """
+            xpath_element_list = _construct_xpath_list(element_parameter_list)
+            element_xpath_string = _construct_xpath_string_from_list(xpath_element_list)
+            element_xpath_string = element_xpath_string.replace("//", "")
+
+            full_query = "descendant::" + element_xpath_string
             return (full_query, "xpath")
 
         elif (
@@ -578,11 +612,11 @@ def _switch(step_data_set):
         return CommonUtil.Exception_Handler(sys.exc_info())
 
 
-def _get_xpath_or_css_element(element_query, css_xpath, index_number=False):
+def _get_xpath_or_css_element(element_query, css_xpath, index_number=False, return_all_elements= False):
     """
     Here, we actually execute the query based on css/xpath and then analyze if there are multiple.
     If we find multiple we give warning and send the first one we found.
-    We also consider if user sent index.  If they did, we send them the index they provided
+    We also consider if user sent index. If they did, we send them the index they provided
     """
     try:
         all_matching_elements = []
@@ -600,7 +634,7 @@ def _get_xpath_or_css_element(element_query, css_xpath, index_number=False):
                     or unique_key == "accessibility-id"
                     or unique_key == "content-desc"
                     or unique_key == "content desc"
-                ):  # contemt-desc for android, accessibility id for iOS
+                ):  # content-desc for android, accessibility id for iOS
                     unique_element = generic_driver.find_element_by_accessibility_id(
                         unique_value
                     )
@@ -682,14 +716,21 @@ def _get_xpath_or_css_element(element_query, css_xpath, index_number=False):
                     all_matching_elements.append(each)
             except:
                 pass
-        if len(all_matching_elements) == 0:
+        if return_all_elements:
+            CommonUtil.ExecLog(
+                sModuleInfo,
+                "Found %s elements with given condition. Returning all of them" % len(all_matching_elements),
+                1,
+            )
+            return all_matching_elements
+        elif len(all_matching_elements) == 0:
             return False
         elif len(all_matching_elements) == 1 and index_number == False:
             return all_matching_elements[0]
         elif len(all_matching_elements) > 1 and index_number == False:
             CommonUtil.ExecLog(
                 sModuleInfo,
-                "Warning: found %s elements with given condition.  Returning first item.  Consider providing index"
+                "Warning: found %s elements with given condition. Returning first item. Consider providing index"
                 % len(all_matching_elements),
                 2,
             )
@@ -697,7 +738,7 @@ def _get_xpath_or_css_element(element_query, css_xpath, index_number=False):
         elif len(all_matching_elements) == 1 and abs(index_number) > 0:
             CommonUtil.ExecLog(
                 sModuleInfo,
-                "Warning: we only found single element but you provided an index number greater than 0.  Returning the only element",
+                "Warning: we only found single element but you provided an index number greater than 0. Returning the only element",
                 2,
             )
             return all_matching_elements[0]

@@ -1314,7 +1314,7 @@ def save_attribute_values_in_list(step_data):
         search_contains = []
         search_does_not_contain = []
         lists_of_values = []
-        target_query = [('', 'parent parameter', '')]
+        target_query = []
         for each_step_data_item in step_data:
 
             if each_step_data_item[1].strip() == "target parameter":
@@ -1333,15 +1333,17 @@ def save_attribute_values_in_list(step_data):
             if each_step_data_item[0].strip() == "save attribute values in list":
                 list_name = each_step_data_item[2].strip()
 
-        xpathquery = LocateElement._construct_query(target_query)[0]
-        xpathquery = xpathquery[xpathquery.find("descendant"):]
+        # Instead of using LocateElement following 3 lines also work
+        # xpathquery = LocateElement._construct_query(target_query)[0]
+        # xpathquery = xpathquery[xpathquery.find("descendant"):]
+        # all_elements = Element.find_elements_by_xpath(xpathquery)
 
-        all_elements = Element.find_elements_by_xpath(xpathquery)
+        all_elements = LocateElement.Get_Element(target_query, Element, return_all_elements=True)
 
         for each in all_elements:
             try:
                 get_class_attr = each.get_attribute(search_by_attribute)
-                get_area_label_attr = each.get_attribute(attribute_name_to_save)
+                # get_area_label_attr = each.get_attribute(attribute_name_to_save)
             except:
                 True
 
