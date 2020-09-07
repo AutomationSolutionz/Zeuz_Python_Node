@@ -120,6 +120,20 @@ def parse_value_into_object(val):
     return val
 
 
+def prettify(key, val):
+    """Tries to pretty print the given value."""
+
+    color = Fore.MAGENTA
+
+    try:
+        if type(val) == str:
+            val = parse_value_into_object(val)
+
+        print(color + "%s = %s" % (key, json.dumps(val, indent=2, sort_keys=True)))
+    except:
+        return print(color + "%s = %s" % (key, val))
+
+
 def Add_Folder_To_Current_Test_Case_Log(src):
     try:
         # get the current test case locations
@@ -242,7 +256,7 @@ def Result_Analyzer(sTestStepReturnStatus, temp_q):
 
 
 def ExecLog(
-    sModuleInfo, sDetails, iLogLevel=1, _local_run="", sStatus="", force_write=False
+    sModuleInfo, sDetails, iLogLevel=1, _local_run="", sStatus="", force_write=False, variable_print=None
 ):
     # Do not log anything if load testing is going on and we're not forced to write logs
     if load_testing and not force_write:

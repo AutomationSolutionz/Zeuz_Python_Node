@@ -801,10 +801,10 @@ def handle_rest_call(
                 Shared_Resources.Set_Shared_Variables("rest_response", result.json())
                 Shared_Resources.Set_Shared_Variables("http_response", result.json())
                 CommonUtil.ExecLog(
-                    sModuleInfo, "Post Call Returned Response Successfully", 1
+                    sModuleInfo, "HTTP Request successful.", 1
                 )
                 CommonUtil.ExecLog(
-                    sModuleInfo, "Received Response: %s" % result.json(), 1
+                    sModuleInfo, "Received Response", 1
                 )
 
                 # if save cookie option enabled then push cookie into shared variables, if cookie var name is 'id' then you can reference it later with %|id|%
@@ -883,17 +883,17 @@ def handle_rest_call(
                 return "passed"
             else:
                 CommonUtil.ExecLog(
-                    sModuleInfo, "REST Call did not respond in json format", 1
+                    sModuleInfo, "HTTP Request did not respond in json format", 1
                 )
                 response_text = result.json()
                 CommonUtil.ExecLog(
-                    sModuleInfo, "REST Call response is: %s" % str(response_text), 1
+                    sModuleInfo, "Received Response", 1
                 )
                 try:
                     # try to save as dict
                     CommonUtil.ExecLog(
                         sModuleInfo,
-                        "Trying to convert REST Call Response Text to json",
+                        "Trying to convert HTTP Request response text to json",
                         1,
                     )
                     json_of_response = ast.literal_eval(response_text)
@@ -920,7 +920,7 @@ def handle_rest_call(
                         "rest_response", response_text
                     )
                     Shared_Resources.Set_Shared_Variables(
-                        "http_response", response_text
+                        "http_response", CommonUtil.parse_value_into_object(response_text)
                     )
                     CommonUtil.ExecLog(
                         sModuleInfo,

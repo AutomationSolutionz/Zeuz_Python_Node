@@ -16,14 +16,6 @@ from Framework.Utilities.decorators import logger, deprecated
 from .data_collector import DataCollector
 
 
-# Import colorama for console color support
-from colorama import init as colorama_init
-from colorama import Fore, Back
-
-# Initialize colorama for the current platform
-colorama_init(autoreset=True)
-
-
 global shared_variables
 shared_variables = {}
 protected_variables = (
@@ -33,20 +25,6 @@ protected_variables = (
 
 MODULE_NAME = inspect.getmodulename(__file__)
 data_collector = DataCollector()
-
-
-def prettify(key, val):
-    """Tries to pretty print the given value."""
-
-    color = Fore.MAGENTA
-
-    try:
-        if type(val) == str:
-            val = CommonUtil.parse_value_into_object(val)
-
-        print(color + "%s = %s" % (key, json.dumps(val, indent=2, sort_keys=True)))
-    except:
-        return print(color + "%s = %s" % (key, val))
 
 
 def Set_Shared_Variables(key, value, protected=False, allowEmpty=False):
@@ -74,7 +52,7 @@ def Set_Shared_Variables(key, value, protected=False, allowEmpty=False):
             shared_variables[key] = value
 
             # Try to get a pretty print.
-            prettify(key, value)
+            CommonUtil.prettify(key, value)
 
             CommonUtil.ExecLog(
                 sModuleInfo, "Saved variable:\n%s = %s" % (key, value), 0
@@ -115,7 +93,7 @@ def Set_List_Shared_Variables(list_name, key, value, protected=False):
                 shared_variables[list_name][key] = value
 
                 # Try to get a pretty print.
-                prettify(key, value)
+                CommonUtil.prettify(key, value)
 
                 CommonUtil.ExecLog(
                     sModuleInfo, "Saved variable:\n%s = %s" % (key, value), 0
@@ -126,7 +104,7 @@ def Set_List_Shared_Variables(list_name, key, value, protected=False):
                 shared_variables[list_name][key] = value
 
                 # Try to get a pretty print.
-                prettify(key, value)
+                CommonUtil.prettify(key, value)
 
                 CommonUtil.ExecLog(
                     sModuleInfo, "Saved variable:\n%s = %s" % (key, value), 0
@@ -244,7 +222,7 @@ def Get_Shared_Variables(key, log=True):
             if key in shared_variables:
                 value = shared_variables[key]
                 # Try to get a pretty print.
-                prettify(key, value)
+                CommonUtil.prettify(key, value)
 
                 if log:
                     CommonUtil.ExecLog(
@@ -274,7 +252,7 @@ def Get_List_from_Shared_Variables(list_name):
                 value = shared_variables[list_name]
 
                 # Try to get a pretty print.
-                prettify(key, value)
+                CommonUtil.prettify(key, value)
 
                 CommonUtil.ExecLog(
                     sModuleInfo, "Saved variable:\n%s = %s" % (key, value), 0
