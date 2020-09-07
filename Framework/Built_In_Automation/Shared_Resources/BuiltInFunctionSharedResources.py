@@ -228,11 +228,11 @@ def Get_Shared_Variables(key, log=True):
             if key in shared_variables:
                 value = shared_variables[key]
                 # Try to get a pretty print.
-                CommonUtil.prettify(key, value)
+                # CommonUtil.prettify(key, value)
 
                 if log:
                     CommonUtil.ExecLog(
-                        sModuleInfo, "Saved variable:\n%s = %s" % (key, value), 0
+                        sModuleInfo, "Accessed variable:\n%s = %s" % (key, value), 0
                     )
                 return value
             else:
@@ -258,10 +258,10 @@ def Get_List_from_Shared_Variables(list_name):
                 value = shared_variables[list_name]
 
                 # Try to get a pretty print.
-                CommonUtil.prettify(key, value)
+                # CommonUtil.prettify(list_name, value)
 
                 CommonUtil.ExecLog(
-                    sModuleInfo, "Saved variable:\n%s = %s" % (key, value), 0
+                    sModuleInfo, "Accessed variable:\n%s = %s" % (list_name, value), 0
                 )
                 return value
             else:
@@ -487,6 +487,9 @@ def parse_variable(name):
         pattern = r"\[(.*?)\]"
         indices = re.findall(pattern, name)
 
+        # For printing log.
+        copy_of_name = name
+
         if len(indices) == 0:
             # If there are no [ ] style indexing.
             return Get_Shared_Variables(name)
@@ -498,6 +501,9 @@ def parse_variable(name):
             name = name[: name.find("[")]
             val = Get_Shared_Variables(name, log=False)
             val = data_collector.collect(indices[0], val)
+
+            # Print to console.
+            CommonUtil.prettify(copy_of_name, val)
             return val
         else:
             # Otherwise, perform variable indexing.
@@ -527,6 +533,8 @@ def parse_variable(name):
                     left, right = _slice
                     val = val[left:right]
 
+            # Print to console.
+            CommonUtil.prettify(copy_of_name, val)
             return val
     except:
         print("Failed to parse variable")
