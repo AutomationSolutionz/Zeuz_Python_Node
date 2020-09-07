@@ -27,7 +27,7 @@ MODULE_NAME = inspect.getmodulename(__file__)
 data_collector = DataCollector()
 
 
-def Set_Shared_Variables(key, value, protected=False, allowEmpty=False):
+def Set_Shared_Variables(key, value, protected=False, allowEmpty=False, print_variable=True):
     try:
         sModuleInfo = inspect.currentframe().f_code.co_name + " : " + MODULE_NAME
         global shared_variables, protected_variables
@@ -51,12 +51,18 @@ def Set_Shared_Variables(key, value, protected=False, allowEmpty=False):
             # Good to proceed
             shared_variables[key] = value
 
+            if print_variable:
+                CommonUtil.ExecLog(
+                    sModuleInfo, "Saved variable: %s" % key, 1,
+                    variable={
+                        "key": key,
+                        "val": CommonUtil.parse_value_into_object(value)
+                    }
+                )
+                
             # Try to get a pretty print.
             CommonUtil.prettify(key, value)
 
-            CommonUtil.ExecLog(
-                sModuleInfo, "Saved variable:\n%s = %s" % (key, value), 0
-            )
             return "passed"
     except:
         CommonUtil.Exception_Handler(sys.exc_info())

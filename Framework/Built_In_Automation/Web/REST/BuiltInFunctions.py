@@ -45,7 +45,6 @@ MODULE_NAME = inspect.getmodulename(__file__)
 
 
 # Method to get the element step data from the original step_data
-@logger
 def Get_Element_Step_Data(step_data):
     sModuleInfo = inspect.currentframe().f_code.co_name + " : " + MODULE_NAME
     try:
@@ -64,7 +63,6 @@ def Get_Element_Step_Data(step_data):
 
 
 # Handles actions for the sequential logic, based on the input from the mentioned function
-@logger
 def Action_Handler(action_step_data, action_row):
     sModuleInfo = inspect.currentframe().f_code.co_name + " : " + MODULE_NAME
     try:
@@ -798,7 +796,7 @@ def handle_rest_call(
         Shared_Resources.Set_Shared_Variables("status_code", result.status_code)
         try:
             if result.json():
-                Shared_Resources.Set_Shared_Variables("rest_response", result.json())
+                Shared_Resources.Set_Shared_Variables("rest_response", result.json(), print_variable=False)
                 Shared_Resources.Set_Shared_Variables("http_response", result.json())
                 CommonUtil.ExecLog(
                     sModuleInfo, "HTTP Request successful.", 1
@@ -898,7 +896,7 @@ def handle_rest_call(
                     )
                     json_of_response = ast.literal_eval(response_text)
                     Shared_Resources.Set_Shared_Variables(
-                        "rest_response", json_of_response
+                        "rest_response", json_of_response, print_variable=False
                     )
                     Shared_Resources.Set_Shared_Variables(
                         "http_response", json_of_response
@@ -917,7 +915,7 @@ def handle_rest_call(
                         2,
                     )
                     Shared_Resources.Set_Shared_Variables(
-                        "rest_response", response_text
+                        "rest_response", response_text, print_variable=False
                     )
                     Shared_Resources.Set_Shared_Variables(
                         "http_response", CommonUtil.parse_value_into_object(response_text)
@@ -942,7 +940,7 @@ def handle_rest_call(
                     sModuleInfo, "Trying to convert REST Call Response Text to json", 1
                 )
                 json_of_response = ast.literal_eval(response_text)
-                Shared_Resources.Set_Shared_Variables("rest_response", json_of_response)
+                Shared_Resources.Set_Shared_Variables("rest_response", json_of_response, print_variable=False)
                 Shared_Resources.Set_Shared_Variables("http_response", json_of_response)
                 CommonUtil.ExecLog(
                     sModuleInfo,
@@ -956,7 +954,7 @@ def handle_rest_call(
                     "REST Call Response Text couldn't be converted to json",
                     2,
                 )
-                Shared_Resources.Set_Shared_Variables("rest_response", response_text)
+                Shared_Resources.Set_Shared_Variables("rest_response", response_text, print_variable=False)
                 Shared_Resources.Set_Shared_Variables("http_response", response_text)
                 CommonUtil.ExecLog(
                     sModuleInfo,

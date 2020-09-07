@@ -256,7 +256,7 @@ def Result_Analyzer(sTestStepReturnStatus, temp_q):
 
 
 def ExecLog(
-    sModuleInfo, sDetails, iLogLevel=1, _local_run="", sStatus="", force_write=False, variable_print=None
+    sModuleInfo, sDetails, iLogLevel=1, _local_run="", sStatus="", force_write=False, variable=None
 ):
     # Do not log anything if load testing is going on and we're not forced to write logs
     if load_testing and not force_write:
@@ -374,6 +374,9 @@ def ExecLog(
 
             if not log_id:
                 return
+
+            if variable:
+                sDetails = "%s\nVariable name: %s\nVariable value: %s" % (sDetails, variable["key"], variable["val"])
 
             now = datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
             all_logs[all_logs_count] = {
