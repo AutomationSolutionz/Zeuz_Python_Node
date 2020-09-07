@@ -799,6 +799,7 @@ def handle_rest_call(
         try:
             if result.json():
                 Shared_Resources.Set_Shared_Variables("rest_response", result.json())
+                Shared_Resources.Set_Shared_Variables("http_response", result.json())
                 CommonUtil.ExecLog(
                     sModuleInfo, "Post Call Returned Response Successfully", 1
                 )
@@ -899,9 +900,12 @@ def handle_rest_call(
                     Shared_Resources.Set_Shared_Variables(
                         "rest_response", json_of_response
                     )
+                    Shared_Resources.Set_Shared_Variables(
+                        "http_response", json_of_response
+                    )
                     CommonUtil.ExecLog(
                         sModuleInfo,
-                        "REST Call Response Text converted to json and saved in 'rest_response' shared variable",
+                        "REST Call Response Text converted to json and saved in 'http_response' shared variable",
                         1,
                     )
                 except:
@@ -915,9 +919,12 @@ def handle_rest_call(
                     Shared_Resources.Set_Shared_Variables(
                         "rest_response", response_text
                     )
+                    Shared_Resources.Set_Shared_Variables(
+                        "http_response", response_text
+                    )
                     CommonUtil.ExecLog(
                         sModuleInfo,
-                        "REST Call Response Text saved in 'rest_response' shared variable",
+                        "REST Call Response Text saved in 'http_response' shared variable",
                         1,
                     )
                 return "passed"
@@ -936,9 +943,10 @@ def handle_rest_call(
                 )
                 json_of_response = ast.literal_eval(response_text)
                 Shared_Resources.Set_Shared_Variables("rest_response", json_of_response)
+                Shared_Resources.Set_Shared_Variables("http_response", json_of_response)
                 CommonUtil.ExecLog(
                     sModuleInfo,
-                    "REST Call Response Text converted to json and saved in 'rest_response' shared variable",
+                    "REST Call Response Text converted to json and saved in 'http_response' shared variable",
                     1,
                 )
             except:
@@ -949,9 +957,10 @@ def handle_rest_call(
                     2,
                 )
                 Shared_Resources.Set_Shared_Variables("rest_response", response_text)
+                Shared_Resources.Set_Shared_Variables("http_response", response_text)
                 CommonUtil.ExecLog(
                     sModuleInfo,
-                    "REST Call Response Text saved in 'rest_response' shared variable",
+                    "REST Call Response Text saved in 'http_response' shared variable",
                     1,
                 )
             return "passed"

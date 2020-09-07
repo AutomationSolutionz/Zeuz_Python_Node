@@ -524,6 +524,9 @@ def parse_variable(name):
             # Get the root of the variable.
             val = Get_Shared_Variables(name, log=False)
 
+            if isinstance(val, str):
+                val = CommonUtil.parse_value_into_object(val)
+
             for idx in indices:
                 _number     = VariableParser.get_number(idx)
                 _string     = VariableParser.get_string(idx)
