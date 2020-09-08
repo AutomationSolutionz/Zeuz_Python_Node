@@ -1314,12 +1314,13 @@ def save_attribute_values_in_list(step_data):
         search_contains = []
         search_does_not_contain = []
         lists_of_values = []
-
+        target_query = []
         for each_step_data_item in step_data:
 
             if each_step_data_item[1].strip() == "target parameter":
                 attribute_name_to_save = each_step_data_item[0].strip()
                 attribute_partial_value = each_step_data_item[2].strip()
+                target_query.append((attribute_name_to_save, 'element parameter', attribute_partial_value))
 
             if each_step_data_item[0].strip() == "search by":
                 search_by_attribute = each_step_data_item[2].strip()
@@ -1332,30 +1333,30 @@ def save_attribute_values_in_list(step_data):
             if each_step_data_item[0].strip() == "save attribute values in list":
                 list_name = each_step_data_item[2].strip()
 
-        xpathquery = '//*[contains(@%s, "%s")]' % (
-            attribute_name_to_save,
-            attribute_partial_value,
-        )
+        # Instead of using LocateElement following 3 lines also work
+        # xpathquery = LocateElement._construct_query(target_query)[0]
+        # xpathquery = xpathquery[xpathquery.find("descendant"):]
+        # all_elements = Element.find_elements_by_xpath(xpathquery)
 
-        all_elements = selenium_driver.find_elements_by_xpath(xpathquery)
+        all_elements = LocateElement.Get_Element(target_query, Element, return_all_elements=True)
 
         for each in all_elements:
             try:
                 get_class_attr = each.get_attribute(search_by_attribute)
-                get_area_label_attr = each.get_attribute(attribute_name_to_save)
+                # get_area_label_attr = each.get_attribute(attribute_name_to_save)
             except:
                 True
 
             try:
                 for each_contains in search_contains:
-                    if each_contains in get_class_attr:
-                        lists_of_values.append(get_area_label_attr)
+                    if each_contains in get_class_attr or len(search_contains) == 0:
+                        lists_of_values.append(get_class_attr)
             except:
                 True
             try:
                 for each_does_not_contains in search_does_not_contain:
                     if each_does_not_contains in get_class_attr:
-                        lists_of_values.remove(get_area_label_attr)
+                        lists_of_values.remove(get_class_attr)
             except:
                 True
 
