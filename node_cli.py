@@ -38,6 +38,7 @@ from Framework.Utilities import (
     CommonUtil,
     FileUtilities,
     All_Device_Info,
+    self_updater
 )
 from Framework import MainDriverApi
 
@@ -48,6 +49,7 @@ temp_ini_file = (
     / ConfigModule.get_config_value("Advanced Options", "_file")
 )
 
+import subprocess
 
 def signal_handler(sig, frame):
     print("Disconnecting from server...")
@@ -637,6 +639,54 @@ def pass_decode(key, enc):
         dec.append(dec_c)
     return "".join(dec)
 
+def check_for_updates():
+    # Check if there's a new update for zeuz node - this is triggered upon startup or periodically via tk.after()
+    # Always check for updates, but depending on user's settings, either update automatically or inform user of update
+
+    try:
+        # Just check for updates, and schedule testing to see if updates checking is complete
+
+        print("Checking for software updates")
+        self_updater.check_for_updates()
+
+        # No update, do nothing, and thus stop checking
+        if self_updater.check_complete == "noupdate":
+            print("No software updates available")
+
+        # Update check complete, we have an update, start install
+        elif self_updater.check_complete[0:6] == "update":
+            # Print update notes
+            try:
+                print("\nUpdate notes:")
+                for note in str(self_updater.check_complete[7:]).split(";"):
+                    print(note)
+                print("*** A new update is available. Automatically installing.")
+
+                update_path = os.path.dirname(
+                    os.path.realpath(__file__)
+                ).replace(os.sep + "Framework", "")
+                self_updater.main(update_path)
+            except:
+                print("Couldn't install updates")
+
+            try:
+                print("*** Update installed. Automatically restarting. ***")
+                time.sleep(2)  # Wait a bit, so they can see the message
+                subprocess.Popen(
+                    'python "%s"'
+                    % os.path.realpath(sys.argv[0]).replace(os.sep + "Framework", ""),
+                    shell=True,
+                )  # Restart zeuz node
+                quit()  # Exit this process
+            except:
+                print("Exception in selfRestart")
+
+        # Some error occurred during updating
+        elif "error" in self_updater.check_complete:
+            print("An error occurred during update")
+
+    except Exception as e:
+        print("Exception in CheckUpdates")
 
 def command_line_args():
     """
@@ -692,6 +742,9 @@ def command_line_args():
     parser_object.add_argument(
         "-l", "--logout", action="store_true", help="Logout from the server"
     )
+    parser_object.add_argument(
+        "--auto_update", action="store_true", help="Updates your Zeuz Node"
+    )
 
     all_arguments = parser_object.parse_args()
 
@@ -699,7 +752,10 @@ def command_line_args():
     password = all_arguments.password
     server = all_arguments.server
     logout = all_arguments.logout
+    auto_update = all_arguments.auto_update
 
+    if auto_update:
+        print("......Check auto aupdate......")
     if username or password or server or logout:
         if username and password and server:
             ConfigModule.remove_config_value(AUTHENTICATION_TAG, "server_address")
