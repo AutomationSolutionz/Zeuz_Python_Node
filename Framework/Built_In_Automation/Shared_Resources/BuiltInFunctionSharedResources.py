@@ -532,6 +532,9 @@ def parse_variable(name):
             for idx in indices:
                 result.append(data_collector.collect(idx, val, "key"))
 
+            if len(indices) == 1:
+                result = result[0]
+
             CommonUtil.prettify(copy_of_name, result)
             return result
         elif "[" in name:
