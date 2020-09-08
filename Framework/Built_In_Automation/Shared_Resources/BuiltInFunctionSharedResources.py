@@ -471,12 +471,17 @@ def parse_variable(name):
         var[left:right] - Fetch left and right from shared variables.
         var["hello"][3][2:5]
 
-        ~var[_, *, occurrence, _, line]
-        ~var[_, error*, occurrence, _, line]
-        ~var[_, *error, occurrence, _, line]
-        ~var[_, *, occurrence, _, message]
-        ~var[_, error1, type]
-        ~var[0, error2, occurrence, 0, message]
+        var{_, *, occurrence, _, line}
+        var{_, error*, occurrence, _, line}
+        var{_, *error, occurrence, _, line}
+        var{_, *, occurrence, _, message}
+        var{0, error2, occurrence, 0, message}
+        var{_, error1, type}{_, *, type} - Two patterns.
+        var{pattern_1}{pattern_2}{pattern_3} - Three patterns.
+
+        var(key1, key2) - Find 'key1' and 'key2' in the data and store their result.
+        var(key1, key2)(key3, key4) - Two key patterns.
+
 
     Returns:
 
@@ -484,7 +489,8 @@ def parse_variable(name):
     """
 
     try:
-        pattern = r"\[(.*?)\]"
+        # Pattern to match [] {} () brackets.
+        pattern = r"[\[\{\(](.*?)[\)\}\]]"
         indices = re.findall(pattern, name)
 
         # For printing log.
@@ -494,19 +500,40 @@ def parse_variable(name):
             # If there are no [ ] style indexing.
             return Get_Shared_Variables(name)
 
-        if name[0] == "~":
-            # If the variable name starts with a tilde character, we'll
-            # run data collector.
-            name = name[1:]
-            name = name[: name.find("[")]
+        if "{" in name:
+            # Data collector with pattern.
+            # Match with the following pattern.
+            # var_name{pattern1}{pattern2}{...}
+
+            name = name[: name.find("{")]
             val = Get_Shared_Variables(name, log=False)
-            val = data_collector.collect(indices[0], val)
+            result = []
+
+            for idx in indices:
+                result.append(data_collector.collect(idx, val, "pattern"))
+
+            result = list(zip(*result))
 
             # Print to console.
-            CommonUtil.prettify(copy_of_name, val)
-            return val
-        else:
+            CommonUtil.prettify(copy_of_name, result)
+            return result
+        elif "(" in name:
+            # Data collector with keys.
+            # Match with the following pattern.
+            # var_name(pattern1)(pattern2)(...)
+
+            name = name[: name.find("(")]
+            val = Get_Shared_Variables(name, log=False)
+            result = []
+
+            for idx in indices:
+                result.append(data_collector.collect(idx, val, "key"))
+
+            CommonUtil.prettify(copy_of_name, result)
+            return result
+        elif "[" in name:
             # Otherwise, perform variable indexing.
+            # var_name["abc"][xyz][3][2:5]
             
             # Get the variable name part, not the indices with [ ]
             name = name[: name.find("[")]
