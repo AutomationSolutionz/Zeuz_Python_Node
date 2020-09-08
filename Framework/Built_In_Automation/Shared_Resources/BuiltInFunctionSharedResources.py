@@ -512,7 +512,8 @@ def parse_variable(name):
             for idx in indices:
                 result.append(data_collector.collect(idx, val, "pattern"))
 
-            result = list(zip(*result))
+            if len(indices) > 1:
+                result = list(zip(*result))
 
             # Print to console.
             CommonUtil.prettify(copy_of_name, result)
