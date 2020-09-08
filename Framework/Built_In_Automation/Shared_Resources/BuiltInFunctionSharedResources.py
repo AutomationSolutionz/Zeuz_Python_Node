@@ -514,7 +514,7 @@ def parse_variable(name):
 
             if len(indices) > 1:
                 result = list(zip(*result))
-            else:
+            elif len(indices) == 1:
                 result = result[0]
 
             # Print to console.
