@@ -42,10 +42,13 @@ def Get_Element(step_data_set, driver, query_debug=False, wait_enable=True, retu
         # Check the driver that is given and set the driver type
         global driver_type
         driver_type = _driver_type(query_debug)
+
+        # Checking whether the given element is web element or web driver
         if isinstance(driver, selenium.webdriver.remote.webelement.WebElement):
             web_element_object = True
         else:
             web_element_object = False
+
         if driver_type == None:
             CommonUtil.ExecLog(
                 sModuleInfo, "Incorrect driver. Please validate driver", 3
@@ -258,7 +261,9 @@ def Get_Element(step_data_set, driver, query_debug=False, wait_enable=True, retu
 def _construct_query(step_data_set, web_element_object=False):
     """
     first find out if in our dataset user is using css or xpath.  If they are using css or xpath, they cannot use any 
-    other feature such as child parameter or multiple element parameter to locate the element
+    other feature such as child parameter or multiple element parameter to locate the element.
+    If web_element_object = True then it will generate a xpath so that find_elements can find only the child elements
+    inside the given parent element
     """
     try:
         sModuleInfo = inspect.currentframe().f_code.co_name + " : " + MODULE_NAME
@@ -353,7 +358,8 @@ def _construct_query(step_data_set, web_element_object=False):
             child_ref_exits == False
             and web_element_object == True
             and sibling_ref_exits == False
-            and (driver_type == "appium" or driver_type == "selenium")
+            and driver_type == "selenium"
+            and parent_ref_exits == False
         ):
             """
             'descendant::<target element tag>[<target element attribute>]'
@@ -617,6 +623,7 @@ def _get_xpath_or_css_element(element_query, css_xpath, index_number=False, retu
     Here, we actually execute the query based on css/xpath and then analyze if there are multiple.
     If we find multiple we give warning and send the first one we found.
     We also consider if user sent index. If they did, we send them the index they provided
+    If return_all_elements = True then we return all elements.
     """
     try:
         all_matching_elements = []

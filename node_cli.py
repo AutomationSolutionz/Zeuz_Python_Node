@@ -640,9 +640,9 @@ def pass_decode(key, enc):
     return "".join(dec)
 
 def check_for_updates():
-    # Check if there's a new update for zeuz node - this is triggered upon startup or periodically via tk.after()
-    # Always check for updates, but depending on user's settings, either update automatically or inform user of update
-
+    """Checks for update. If any update is not found the code will continue to login prompts, otherwise it will
+    download the newest version of Zeuz Node, install it and restart/quit the terminal.
+    """
     try:
         # Just check for updates, and schedule testing to see if updates checking is complete
 
@@ -650,7 +650,7 @@ def check_for_updates():
         self_updater.check_for_updates()
 
         # No update, do nothing, and thus stop checking
-        if self_updater.check_complete == "noupdate":
+        if self_updater.check_complete in ("check", "noupdate"):
             print("No software updates available")
 
         # Update check complete, we have an update, start install
@@ -679,7 +679,9 @@ def check_for_updates():
                 )  # Restart zeuz node
                 quit()  # Exit this process
             except:
-                print("Exception in selfRestart")
+                print("Exception in Restart. Please restart manually")
+                time.sleep(2)
+                quit()
 
         # Some error occurred during updating
         elif "error" in self_updater.check_complete:
@@ -755,7 +757,7 @@ def command_line_args():
     auto_update = all_arguments.auto_update
 
     if auto_update:
-        print("......Check auto aupdate......")
+        check_for_updates()
     if username or password or server or logout:
         if username and password and server:
             ConfigModule.remove_config_value(AUTHENTICATION_TAG, "server_address")
