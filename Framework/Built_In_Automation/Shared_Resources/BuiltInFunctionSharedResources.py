@@ -514,6 +514,8 @@ def parse_variable(name):
 
             if len(indices) > 1:
                 result = list(zip(*result))
+            else:
+                result = result[0]
 
             # Print to console.
             CommonUtil.prettify(copy_of_name, result)
