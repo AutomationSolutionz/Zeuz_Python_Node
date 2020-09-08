@@ -745,7 +745,7 @@ def command_line_args():
         "-l", "--logout", action="store_true", help="Logout from the server"
     )
     parser_object.add_argument(
-        "--auto_update", action="store_true", help="Updates your Zeuz Node"
+        "-a", "--auto_update", action="store_true", help="Updates your Zeuz Node"
     )
 
     all_arguments = parser_object.parse_args()
