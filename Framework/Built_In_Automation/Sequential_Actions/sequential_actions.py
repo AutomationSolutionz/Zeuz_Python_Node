@@ -385,10 +385,8 @@ def Handle_While_Loop_Action(step_data, data_set_no):
                     die = True
                     break
                 elif var_name != "" and sr.Test_Shared_Variables(var_name):
-                    shared_variable_value = sr.Get_Shared_Variables(var_name).lower()
-                    if ("true" in shared_variable_value and "true" in var_value) or (
-                        "false" in shared_variable_value and "false" in var_value
-                    ):
+                    shared_variable_value = str(sr.Get_Shared_Variables(var_name)).strip().lower()
+                    if (shared_variable_value == var_value):
                         CommonUtil.ExecLog(
                             sModuleInfo,
                             "Loop exit condition satisfied. Exiting loop",
