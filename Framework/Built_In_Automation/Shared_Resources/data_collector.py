@@ -25,12 +25,12 @@ class DataCollector:
                 index = int(_pattern)
                 self._collect_pattern(collector, pattern, pos + 1, data[index])
             except:
-                if _pattern == "_":
+                if _pattern == "_all_":
                     for item in data:
                         self._collect_pattern(collector, pattern, pos + 1, item)
                 return
         elif _type in self.dict_classes:
-            if _pattern == "*":
+            if _pattern == "_all_":
                 for key in data:
                     self._collect_pattern(collector, pattern, pos + 1, data[key])
             elif _pattern[-1] == "*":
