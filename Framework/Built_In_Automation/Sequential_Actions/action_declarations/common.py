@@ -276,6 +276,11 @@ declarations = (
         "name": "write into excel",
         "function": "excel_write",
     },
+    {
+        "screenshot": "desktop",
+        "name": "validate schema",
+        "function": "validate_schema",
+    },
 )
 
 module_name = "common"

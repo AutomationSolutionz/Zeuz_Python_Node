@@ -1845,6 +1845,49 @@ def check_latest_mail(data_set):
 
 
 @logger
+def validate_schema(data_set):
+    """Validates a given JSON/Python object against a given JSON schema."""
+    
+    from jsonschema import validate, draft7_format_checker
+
+    try:
+        schema = None
+        data = None
+        variable_name = None
+
+        for left, mid, right in data_set:
+            if "action" in mid:
+                variable_name = right.strip()
+            elif "schema" in left:
+                schema = right.strip()
+            elif "data" in left:
+                data = right.strip()
+
+        try:
+            data = CommonUtil.parse_value_into_object(data)
+            schema = CommonUtil.parse_value_into_object(schema)
+
+            validate(
+                instance=data,
+                schema=schema,
+                format_checker=draft7_format_checker,
+            )
+        except Exception as e:
+            sModuleInfo = inspect.currentframe().f_code.co_name + " : " + MODULE_NAME
+            CommonUtil.ExecLog(
+                sModuleInfo,
+                "Schema validation failed.\n%s" % e,
+                3,
+            )
+            return CommonUtil.Exception_Handler(sys.exc_info())
+
+        sr.Set_Shared_Variables(variable_name, True, print_variable=True)
+        return "passed"
+    except Exception:
+        return CommonUtil.Exception_Handler(sys.exc_info())
+
+
+@logger
 def write_into_single_cell_in_excel(data_set):
     sModuleInfo = inspect.currentframe().f_code.co_name + " : " + MODULE_NAME
 
