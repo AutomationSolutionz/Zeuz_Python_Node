@@ -34,3 +34,11 @@ opencv-contrib-python
 https://github.com/AutomationSolutionz/PyGetWindow-0.0.5/archive/master.zip
 appscript
 webdrivermanager
+jsonschema
+webcolors
+jsonpointer
+rfc3339-validator
+rfc3986-validator
+idna
+pyrsistent
+attrs

@@ -29,3 +29,11 @@ datefinder
 regex
 pyttsx3
 webdrivermanager
+jsonschema
+webcolors
+jsonpointer
+rfc3339-validator
+rfc3986-validator
+idna
+pyrsistent
+attrs
