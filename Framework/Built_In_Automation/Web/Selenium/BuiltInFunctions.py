@@ -73,7 +73,7 @@ selenium_driver = None
 # Recall dependency, if not already set
 dependency = None
 if Shared_Resources.Test_Shared_Variables(
-    "dependency"
+        "dependency"
 ):  # Check if driver is already set in shared variables
     dependency = Shared_Resources.Get_Shared_Variables(
         "dependency"
@@ -185,11 +185,11 @@ def Open_Browser(dependency, window_size_X=None, window_size_Y=None):
 
         elif "safari" in browser:
             os.environ["SELENIUM_SERVER_JAR"] = (
-                os.sys.prefix
-                + os.sep
-                + "Scripts"
-                + os.sep
-                + "selenium-server-standalone-2.45.0.jar"
+                    os.sys.prefix
+                    + os.sep
+                    + "Scripts"
+                    + os.sep
+                    + "selenium-server-standalone-2.45.0.jar"
             )
             desired_capabilities = DesiredCapabilities.SAFARI
             if "ios" in browser:
@@ -235,7 +235,7 @@ def Open_Browser_Wrapper(step_data):
         global dependency
         # Get the dependency again in case it was missed
         if Shared_Resources.Test_Shared_Variables(
-            "dependency"
+                "dependency"
         ):  # Check if driver is already set in shared variables
             dependency = Shared_Resources.Get_Shared_Variables(
                 "dependency"
@@ -275,7 +275,7 @@ def Go_To_Link(step_data, page_title=False):
             global dependency
             # Get the dependency again in case it was missed
             if Shared_Resources.Test_Shared_Variables(
-                "dependency"
+                    "dependency"
             ):  # Check if driver is already set in shared variables
                 dependency = Shared_Resources.Get_Shared_Variables(
                     "dependency"
@@ -316,8 +316,8 @@ def Go_To_Link(step_data, page_title=False):
 def Handle_Browser_Alert(step_data):
     # accepts browser alert
     """
-    handle alert   selenium action     get text = my_variable 
-    handle alert   selenium action     send text = my text to send to alert   
+    handle alert   selenium action     get text = my_variable
+    handle alert   selenium action     send text = my text to send to alert
     handle alert   selenium action     accept, pass, yes, ok (any of these would work)
     handle alert   selenium action     reject, fail, no, cancel (any of these would work)
     """
@@ -327,10 +327,10 @@ def Handle_Browser_Alert(step_data):
         choice = str(step_data[0][2])
         choice_lower = choice.lower()
         if (
-            choice_lower == "accept"
-            or choice == "pass"
-            or choice == "yes"
-            or choice == "ok"
+                choice_lower == "accept"
+                or choice == "pass"
+                or choice == "yes"
+                or choice == "ok"
         ):
             try:
                 selenium_driver.switch_to_alert().accept()
@@ -340,10 +340,10 @@ def Handle_Browser_Alert(step_data):
                 CommonUtil.ExecLog(sModuleInfo, "Browser alert not found", 3)
                 return "failed"
         elif (
-            choice_lower == "reject"
-            or choice == "fail"
-            or choice == "no"
-            or choice == "cancel"
+                choice_lower == "reject"
+                or choice == "fail"
+                or choice == "no"
+                or choice == "cancel"
         ):
             try:
                 selenium_driver.switch_to_alert().dismiss()
@@ -766,14 +766,14 @@ def Click_Element(data_set):
 
 @logger
 def Mouse_Click_Element(data_set):
-    """ 
-    This funciton will move the mouse to the element and then perform a physical mouse click 
-    
+    """
+    This funciton will move the mouse to the element and then perform a physical mouse click
+
     element_prop        element parameter          element_value
     mouse click        selenium action            click
-    
-    
-    
+
+
+
     """
     sModuleInfo = inspect.currentframe().f_code.co_name + " : " + MODULE_NAME
     global selenium_driver
@@ -818,7 +818,6 @@ def Mouse_Click_Element(data_set):
 # Method to click and hold on element; step data passed on by the user
 @logger
 def Click_and_Text(data_set):
-
     """ Click and enter text specially for dropdown box"""
 
     sModuleInfo = inspect.currentframe().f_code.co_name + " : " + MODULE_NAME
@@ -1075,7 +1074,14 @@ def Save_Attribute(step_data):
             if "parameter" in each_step_data_item[1]:
                 variable_name = each_step_data_item[2]
                 attribute_name = each_step_data_item[0]
-        attribute_value = Element.get_attribute(attribute_name)
+
+        if attribute_name == "text":
+            attribute_value = Element.text
+        elif attribute_name == "tag":
+            attribute_value = Element.tag_name
+        else:
+            attribute_value = Element.get_attribute(attribute_name)
+
         result = Shared_Resources.Set_Shared_Variables(variable_name, attribute_value)
         if result in failed_tag_list:
             CommonUtil.ExecLog(
@@ -1287,15 +1293,22 @@ def save_attribute_values_in_list(step_data):
     This action will expect users to provide a parent element under which they are expecting
     to collect multiple objects.  Users can provide certain constrain to search their elements
     Sample data:
-    
-    aria-label                       element parameter       Calendar
-    aria-label                       target parameter        "Not available"
-    search by                        source parameter        class 
-    search contains                  attribute constrain     blocked_calendar  
-    search does not contain          attribute constrain     out_of_range
-    search does not contain          attribute constrain     CalendarDay__today
-    save attribute values in list    selenium action         list_name
-        
+
+    aria-label                       element parameter      Calendar
+
+    attributes                       target parameter       data-automation="productItemName",
+                                                            class="S58f2saa25a3w1",
+                                                            return="text",
+                                                            return_contains="128GB",
+                                                            return_does_not_contain="Windows 10",
+                                                            return_does_not_contain="Linux"
+
+    attributes                       target parameter       class="productPricingContainer_3gTS3",
+                                                            return="text",
+                                                            return_does_not_contain="99.99"
+
+    save attribute values in list    selenium action        list_name
+
     """
     sModuleInfo = inspect.currentframe().f_code.co_name + " : " + MODULE_NAME
     global selenium_driver
@@ -1309,71 +1322,88 @@ def save_attribute_values_in_list(step_data):
             )
             return "failed"
 
-        attribute_partial_value = ""
-        value = ""
-        search_contains = []
-        search_does_not_contain = []
-        lists_of_values = []
-        target_query = []
-        for each_step_data_item in step_data:
+        all_elements = []
+        target_index = 0
+        target = []
 
-            if each_step_data_item[1].strip() == "target parameter":
-                attribute_name_to_save = each_step_data_item[0].strip()
-                attribute_partial_value = each_step_data_item[2].strip()
-                target_query.append((attribute_name_to_save, 'element parameter', attribute_partial_value))
+        try:
+            for left, mid, right in step_data:
+                left = left.strip().lower()
+                mid = mid.strip().lower()
+                right = right.strip()
+                if "target parameter" in mid:
+                    target.append([[],[],[],[]])
+                    temp = right.strip(",").split(",")
+                    data = []
+                    for each in temp:
+                        data.append(each.strip().split("="))
+                    for i in range(len(data)):
+                        for j in range(len(data[i])):
+                            data[i][j] = data[i][j].strip()
+                            if j == 1:
+                                data[i][j] = data[i][j].strip('"').strip()
 
-            if each_step_data_item[0].strip() == "search by":
-                search_by_attribute = each_step_data_item[2].strip()
+                    for Left, Right in data:
+                        if Left == "return":
+                            target[target_index][1] = Right
+                        elif Left == "return_contains":
+                            target[target_index][2].append(Right)
+                        elif Left == "return_does_not_contain":
+                            target[target_index][3].append(Right)
+                        else:
+                            target[target_index][0].append((Left, 'element parameter', Right))
 
-            if each_step_data_item[0].strip() == "search contains":
-                search_contains.append(each_step_data_item[2].strip())
-            if each_step_data_item[0].strip() == "search does not contain":
-                search_does_not_contain.append(each_step_data_item[2].strip())
-
-            if each_step_data_item[0].strip() == "save attribute values in list":
-                list_name = each_step_data_item[2].strip()
-
-        # Instead of using LocateElement following 3 lines also work
-        # xpathquery = LocateElement._construct_query(target_query)[0]
-        # xpathquery = xpathquery[xpathquery.find("descendant"):]
-        # all_elements = Element.find_elements_by_xpath(xpathquery)
-
-        all_elements = LocateElement.Get_Element(target_query, Element, return_all_elements=True)
-
-        for each in all_elements:
-            try:
-                get_class_attr = each.get_attribute(search_by_attribute)
-                # get_area_label_attr = each.get_attribute(attribute_name_to_save)
-            except:
-                True
-
-            try:
-                for each_contains in search_contains:
-                    if each_contains in get_class_attr or len(search_contains) == 0:
-                        lists_of_values.append(get_class_attr)
-            except:
-                True
-            try:
-                for each_does_not_contains in search_does_not_contain:
-                    if each_does_not_contains in get_class_attr:
-                        lists_of_values.remove(get_class_attr)
-            except:
-                True
-
-        for value in lists_of_values:
-            result = Shared_Resources.Append_List_Shared_Variables(
-                list_name, value.strip()
+                    target_index = target_index + 1
+                elif left == "save attribute values in list":
+                    variable_name = right
+        except:
+            CommonUtil.ExecLog(
+                sModuleInfo, "Unable to parse data. Please write data in correct format", 3
             )
-            if result in failed_tag_list:
-                CommonUtil.ExecLog(
-                    sModuleInfo,
-                    "Value of Variable '%s' could not be saved!!!" % list_name,
-                    3,
-                )
-                return "failed"
-        else:
-            Shared_Resources.Show_All_Shared_Variables()
-            return "passed"
+            return "failed"
+
+        for each in target:
+            all_elements.append(LocateElement.Get_Element(each[0], Element, return_all_elements=True))
+
+        variable_value_size = 0
+        for each in all_elements:
+            variable_value_size = max(variable_value_size, len(each))
+
+        variable_value = []
+        for i in range(variable_value_size):
+            variable_value.append([])
+
+        i = 0
+        for each in all_elements:
+            search_by_attribute = target[i][1]
+            j = 0
+            for elem in each:
+                if search_by_attribute == "text":
+                    Attribute_value = elem.text
+                elif search_by_attribute == 'tag':
+                    Attribute_value = elem.tag_name
+                else:
+                    Attribute_value = elem.get_attribute(search_by_attribute)
+                try:
+                    for search_contain in target[i][2]:
+                        if not isinstance(search_contain, type(Attribute_value)) or search_contain in Attribute_value or len(search_contain) == 0:
+                            pass
+                        else:
+                            Attribute_value = None
+
+                    for search_doesnt_contain in target[i][3]:
+                        if isinstance(search_doesnt_contain, type(Attribute_value)) and search_doesnt_contain in Attribute_value:
+                            Attribute_value = None
+                except:
+                    CommonUtil.ExecLog(
+                        sModuleInfo, "Couldn't search by return_contains and return_does_not_contain", 2
+                    )
+                variable_value[j].append(Attribute_value)
+                j = j + 1
+            i = i + 1
+
+        Shared_Resources.Set_Shared_Variables(variable_name, variable_value)
+
     except Exception:
         return CommonUtil.Exception_Handler(sys.exc_info())
 
@@ -1528,7 +1558,7 @@ def Scroll(step_data):
             return "failed"
 
         if (
-            len(step_data) > 1
+                len(step_data) > 1
         ):  # element given scroll inside element, not on full window
             scroll_inside_element = True
             scroll_window_name = "arguments[0]"
@@ -1790,54 +1820,54 @@ def validate_table(data_set):
                     )
                     return "failed"
             elif (
-                subfield == "table parameter"
+                    subfield == "table parameter"
             ):  # Inspect the table parameters (element parameters go to a different section)
 
                 # Parse table instructions
                 if (
-                    field == "ignore row" or field == "ignore rows"
+                        field == "ignore row" or field == "ignore rows"
                 ):  # User specified list of rows to ignore
                     ignore_rows = value.split(
                         ","
                     )  # Get rows as comma delimited string and store in list
                     ignore_rows = list(map(int, ignore_rows))  # Convert to integers
                 elif (
-                    field == "ignore column" or field == "ignore columns"
+                        field == "ignore column" or field == "ignore columns"
                 ):  # User specified list of columns to ignore
                     ignore_cols = value.split(
                         ","
                     )  # Get columns as comma delimited string and store in list
                     ignore_cols = list(map(int, ignore_cols))  # Convert to integers
                 elif (
-                    field == "coordinates"
+                        field == "coordinates"
                 ):  # Check if user specifies if table coordinates should match
                     if (
-                        value.lower().strip() == "identical"
+                            value.lower().strip() == "identical"
                     ):  # Table coordinates should match
                         coordinates_exact = True
                     elif (
-                        value.lower().strip() == "nonidentical"
+                            value.lower().strip() == "nonidentical"
                     ):  # Table coordinates don't have to match
                         coordinates_exact = False
                 elif field == "case":  # User specified case sensitivity
                     if (
-                        value.lower().strip() == "exact"
-                        or value.lower().strip() == "sensitive"
+                            value.lower().strip() == "exact"
+                            or value.lower().strip() == "sensitive"
                     ):  # Sensitive match (default)
                         case_sensitive = True
                     elif (
-                        value.lower().strip() == "insensitive"
+                            value.lower().strip() == "insensitive"
                     ):  # Insensitive match - we'll convert everything to lower case
                         case_sensitive = False
                 elif field == "exact":  # User specified type of table matching
                     if (
-                        value.lower().strip() == "true"
-                        or value.lower().strip() == "yes"
+                            value.lower().strip() == "true"
+                            or value.lower().strip() == "yes"
                     ):  # Exact table match, but user can specify rows/columns to ignore
                         exact_table = True
                     elif (
-                        value.lower().strip() == "false"
-                        or value.lower().strip() == "no"
+                            value.lower().strip() == "false"
+                            or value.lower().strip() == "no"
                     ):  # Not an exact match for all cells, only match the ones the user specified
                         exact_table = False
                     else:
@@ -1856,17 +1886,17 @@ def validate_table(data_set):
                             ","
                         )  # Field should be in the format of ROW,COL
                         if (
-                            table_row != "" and table_col != ""
+                                table_row != "" and table_col != ""
                         ):  # Check to ensure this was a table cell identifier - may not be
                             if (
-                                case_sensitive == False
+                                    case_sensitive == False
                             ):  # User specified case insensitive serach
                                 value = (
                                     value.lower()
                                 )  # Prepare this table by setting all cell values to lowercase
                             user_table[
                                 "%s,%s" % (table_row, table_col)
-                            ] = value  # Save value using the row,col as an identifier
+                                ] = value  # Save value using the row,col as an identifier
                             have_table = True  # Indicate we have at least one cell of a table specified
                         else:
                             CommonUtil.ExecLog(
@@ -1922,19 +1952,19 @@ def validate_table(data_set):
     # If user did not specify any rows or columns to ignore, we will infer that rows and columns NOT defined are meant to be ignored
     # We do this by modifying the webpage table to remove rows and columns that don't match
     if (
-        exact_table == False and ignore_rows == [] and ignore_cols == []
+            exact_table == False and ignore_rows == [] and ignore_cols == []
     ):  # If user did not specify anything to ignore
         CommonUtil.ExecLog(
             sModuleInfo, "Inferring which cells from the webpage table to ignore", 0
         )
         unmatched_cells = []
         for (
-            ids
+                ids
         ) in (
-            webpage_table
+                webpage_table
         ):  # For each table cell on the user table - basically looking for items that are specified, but not found
             if (
-                ids not in user_table
+                    ids not in user_table
             ):  # if cell from user table not found in webpage table
                 unmatched_cells.append(
                     ids
@@ -1944,12 +1974,12 @@ def validate_table(data_set):
         )
         for ids in unmatched_cells:  # Remove these cells from the webpage table
             if (
-                ids in webpage_table
+                    ids in webpage_table
             ):  # Check if the ID exists in case the user specified something that's not actually in the webpage table
                 del webpage_table[ids]
 
     if (
-        coordinates_exact == False
+            coordinates_exact == False
     ):  # If user specifies that cells locations do not have to match
         unmatched_cells = []
         for ids in user_table:
@@ -1972,7 +2002,7 @@ def validate_table(data_set):
     for ids in webpage_table:  # For each table cell on the webpage table
         if ids in user_table:  # If that table cell is also in the user defined table
             if (
-                webpage_table[ids] != user_table[ids]
+                    webpage_table[ids] != user_table[ids]
             ):  # Check if the values of these two cells match
                 failed_matches.append(
                     '%s:"%s" != %s:"%s"'
@@ -1982,12 +2012,12 @@ def validate_table(data_set):
             failed_matches.append("Cell %s is not defined in the step data" % ids)
 
     for (
-        ids
+            ids
     ) in (
-        user_table
+            user_table
     ):  # For each table cell on the user table - basically looking for items that are specified, but not found
         if (
-            ids not in webpage_table
+                ids not in webpage_table
         ):  # if cell from user table not found in webpage table
             failed_matches.append("Cell %s is not found in the webpage table" % ids)
 
@@ -2117,7 +2147,7 @@ def validate_table_column_size(data_set):
                     "td"
                 )  # Get element list for all columns in this row
                 if (
-                    len(all_cols) == 0
+                        len(all_cols) == 0
                 ):  # No <TD> type columns, so check if there were header type columns, and use those instead
                     all_cols = all_rows[0].find_elements_by_tag_name(
                         "th"
@@ -2180,7 +2210,7 @@ def get_webpage_table_html(data_set, ignore_rows=[], ignore_cols=[], retain_case
                 "td"
             )  # Get element list for all columns in this row
             if (
-                len(td_list) == 0
+                    len(td_list) == 0
             ):  # No <TD> type columns, so check if there were header type columns, and use those instead
                 td_list = tr.find_elements_by_tag_name(
                     "th"
@@ -2194,7 +2224,7 @@ def get_webpage_table_html(data_set, ignore_rows=[], ignore_cols=[], retain_case
                     value = value.lower()  # change cell text to lower case
                 master_text_table[
                     "%s,%s" % (table_row, table_col)
-                ] = value  # Put value from cell in dictionary
+                    ] = value  # Put value from cell in dictionary
 
         return master_text_table  # Return table text as dictionary
     except Exception:
@@ -2243,7 +2273,7 @@ def get_webpage_table_css(data_set, ignore_rows=[], ignore_cols=[], retain_case=
                         for column_obj in col_element:  # For each column on the row
                             table_col += 1
                             if (
-                                table_col not in ignore_cols
+                                    table_col not in ignore_cols
                             ):  # Skip columns the user wants to ignore
                                 value = str(
                                     column_obj.text
@@ -2254,7 +2284,7 @@ def get_webpage_table_css(data_set, ignore_rows=[], ignore_cols=[], retain_case=
                                     )  # change cell text to lower case
                                 master_text_table[
                                     "%s,%s" % (table_row, table_col)
-                                ] = value  # Put value from cell in dictionary
+                                    ] = value  # Put value from cell in dictionary
 
                     except:  # This will crash for single column tables or lists
                         table_col = 1  # Likely only one column
@@ -2265,7 +2295,7 @@ def get_webpage_table_css(data_set, ignore_rows=[], ignore_cols=[], retain_case=
                             value = value.lower()  # change cell text to lower case
                         master_text_table[
                             "%s,%s" % (table_row, table_col)
-                        ] = value  # Put value from cell in dictionary
+                            ] = value  # Put value from cell in dictionary
 
         return master_text_table  # Return table text as dictionary
     except Exception:
@@ -2576,3 +2606,9 @@ def if_element_exists(data_set):
             "Failed to parse data/locate element. Data format: variableName = value"
         )
         return CommonUtil.Exception_Handler(sys.exc_info(), None, errMsg)
+
+
+
+
+
+
