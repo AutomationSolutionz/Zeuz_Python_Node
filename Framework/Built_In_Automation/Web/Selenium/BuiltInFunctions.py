@@ -1074,7 +1074,14 @@ def Save_Attribute(step_data):
             if "parameter" in each_step_data_item[1]:
                 variable_name = each_step_data_item[2]
                 attribute_name = each_step_data_item[0]
-        attribute_value = Element.get_attribute(attribute_name)
+
+        if attribute_name == "text":
+            attribute_value = Element.text
+        elif attribute_name == "tag":
+            attribute_value = Element.tag_name
+        else:
+            attribute_value = Element.get_attribute(attribute_name)
+
         result = Shared_Resources.Set_Shared_Variables(variable_name, attribute_value)
         if result in failed_tag_list:
             CommonUtil.ExecLog(
@@ -1287,13 +1294,20 @@ def save_attribute_values_in_list(step_data):
     to collect multiple objects.  Users can provide certain constrain to search their elements
     Sample data:
 
-    aria-label                       element parameter       Calendar
-    aria-label                       target parameter        "Not available"
-    search by                        source parameter        class
-    search contains                  attribute constrain     blocked_calendar
-    search does not contain          attribute constrain     out_of_range
-    search does not contain          attribute constrain     CalendarDay__today
-    save attribute values in list    selenium action         list_name
+    aria-label                       element parameter      Calendar
+
+    attributes                       target parameter       data-automation="productItemName",
+                                                            class="S58f2saa25a3w1",
+                                                            return="text",
+                                                            return_contains="128GB",
+                                                            return_does_not_contain="Windows 10",
+                                                            return_does_not_contain="Linux"
+
+    attributes                       target parameter       class="productPricingContainer_3gTS3",
+                                                            return="text",
+                                                            return_does_not_contain="99.99"
+
+    save attribute values in list    selenium action        list_name
 
     """
     sModuleInfo = inspect.currentframe().f_code.co_name + " : " + MODULE_NAME
@@ -1308,141 +1322,88 @@ def save_attribute_values_in_list(step_data):
             )
             return "failed"
 
-        attribute_partial_value = ""
-        value = ""
-        search_contains = []
-        search_does_not_contain = []
-        search_by_attribute = []
-        lists_of_values = []
-        target_query = []
-        temp = []
-        pre_index = 0
-        index = 0
-        digits = ("0", "1", "2", "3", "4", "5", "6", "7", "8", "9")
         all_elements = []
+        target_index = 0
+        target = []
 
-        for left, mid, right in step_data:
-            left = left.strip().lower()
-            mid = mid.strip().lower()
-            right = right.strip()
-            if "target parameter" in mid:
-                attribute_name_to_save = left
-                attribute_partial_value = right
-                if any(each in mid for each in digits):
-                    index = int(mid[-1]) - 1
-                    if index == pre_index:
-                        temp.append((attribute_name_to_save, 'element parameter', attribute_partial_value))
-                    else:
-                        target_query.append(temp)
-                        temp = []
-                        temp.append((attribute_name_to_save, 'element parameter', attribute_partial_value))
-                    pre_index = index
-                else:
-                    target_query.append((attribute_name_to_save, 'element parameter', attribute_partial_value))
+        try:
+            for left, mid, right in step_data:
+                left = left.strip().lower()
+                mid = mid.strip().lower()
+                right = right.strip()
+                if "target parameter" in mid:
+                    target.append([[],[],[],[]])
+                    temp = right.strip(",").split(",")
+                    data = []
+                    for each in temp:
+                        data.append(each.strip().split("="))
+                    for i in range(len(data)):
+                        for j in range(len(data[i])):
+                            data[i][j] = data[i][j].strip()
+                            if j == 1:
+                                data[i][j] = data[i][j].strip('"').strip()
 
-            if "source parameter" in mid:
-                search_by_attribute.append(right)
+                    for Left, Right in data:
+                        if Left == "return":
+                            target[target_index][1] = Right
+                        elif Left == "return_contains":
+                            target[target_index][2].append(Right)
+                        elif Left == "return_does_not_contain":
+                            target[target_index][3].append(Right)
+                        else:
+                            target[target_index][0].append((Left, 'element parameter', Right))
 
-            if left == "search contains":
-                search_contains.append(right)
-            if left == "search does not contain":
-                search_does_not_contain.append(right)
-
-            if left == "save attribute values in list":
-                variable_name = right
-
-        target_query.append(temp)
-        if not isinstance(target_query[0], list):
-            target_query = [target_query]
-
-        search_method = ""
-        if len(search_by_attribute) == 1 and len(target_query) == 1:
-            search_method = "single"
-        elif len(search_by_attribute) == 1 and len(target_query) > 1:
-            search_method = "single"
-        elif len(search_by_attribute) == len(target_query):
-            search_method = "dedicated"
-        elif len(search_by_attribute) != len(target_query):
+                    target_index = target_index + 1
+                elif left == "save attribute values in list":
+                    variable_name = right
+        except:
             CommonUtil.ExecLog(
-                sModuleInfo,
-                "Please provide source parameter for every target parameter. Taking the first source parameter commonly for all target parameter",
-                2,
+                sModuleInfo, "Unable to parse data. Please write data in correct format", 3
             )
-            search_method = "single"
-            search_by_attribute = [search_by_attribute[0]]
+            return "failed"
 
-        # Instead of using LocateElement following 3 lines also work
-        # xpathquery = LocateElement._construct_query(target_query)[0]
-        # xpathquery = xpathquery[xpathquery.find("descendant"):]
-        # all_elements = Element.find_elements_by_xpath(xpathquery)
+        for each in target:
+            all_elements.append(LocateElement.Get_Element(each[0], Element, return_all_elements=True))
+
+        variable_value_size = 0
+        for each in all_elements:
+            variable_value_size = max(variable_value_size, len(each))
 
         variable_value = []
-        for each in target_query:
-            # variable_value.append([])
-            all_elements.append(LocateElement.Get_Element(each, Element, return_all_elements=True))
-
-        for each in all_elements[0]:
+        for i in range(variable_value_size):
             variable_value.append([])
+
         i = 0
-        temp = search_by_attribute
         for each in all_elements:
-
-            if search_method == "single":
-                search_by_attribute = temp[0]
-            elif search_method == "dedicated":
-                search_by_attribute = temp[i]
-
+            search_by_attribute = target[i][1]
             j = 0
             for elem in each:
+                if search_by_attribute == "text":
+                    Attribute_value = elem.text
+                elif search_by_attribute == 'tag':
+                    Attribute_value = elem.tag_name
+                else:
+                    Attribute_value = elem.get_attribute(search_by_attribute)
                 try:
-                    if search_by_attribute == "text":
-                        Attribute_value = elem.text
-                    elif search_by_attribute == 'tag':
-                        Attribute_value = elem.tag_name
-                    else:
-                        Attribute_value = elem.get_attribute(search_by_attribute)
-                    # get_area_label_attr = each.get_attribute(attribute_name_to_save)
-                except:
-                    True
+                    for search_contain in target[i][2]:
+                        if not isinstance(search_contain, type(Attribute_value)) or search_contain in Attribute_value or len(search_contain) == 0:
+                            pass
+                        else:
+                            Attribute_value = None
 
+                    for search_doesnt_contain in target[i][3]:
+                        if isinstance(search_doesnt_contain, type(Attribute_value)) and search_doesnt_contain in Attribute_value:
+                            Attribute_value = None
+                except:
+                    CommonUtil.ExecLog(
+                        sModuleInfo, "Couldn't search by return_contains and return_does_not_contain", 2
+                    )
                 variable_value[j].append(Attribute_value)
                 j = j + 1
             i = i + 1
-        print("......... Variable value ..........")
-        print(variable_value)
 
         Shared_Resources.Set_Shared_Variables(variable_name, variable_value)
-        try:
-            for each_search in search_contains:
-                for i in range(len(variable_value)):
-                    for j in range(len(variable_value[i])):
-                        if each_search in variable_value[i][j] or len(search_contains) == 0:
-                            pass
-                        else:
-                            variable_value[i][j] = None
-        except:
-            True
-        try:
-            for each_does_not_contains in search_does_not_contain:
-                if each_does_not_contains in Attribute_value:
-                    lists_of_values.remove(Attribute_value)
-        except:
-            True
 
-        # for value in lists_of_values:
-        #     result = Shared_Resources.Append_List_Shared_Variables(
-        #         list_name, value.strip()
-        #     )
-        #     if result in failed_tag_list:
-        #         CommonUtil.ExecLog(
-        #             sModuleInfo,
-        #             "Value of Variable '%s' could not be saved!!!" % list_name,
-        #             3,
-        #         )
-        #         return "failed"
-        # else:
-        #     Shared_Resources.Show_All_Shared_Variables()
-        #     return "passed"
     except Exception:
         return CommonUtil.Exception_Handler(sys.exc_info())
 
