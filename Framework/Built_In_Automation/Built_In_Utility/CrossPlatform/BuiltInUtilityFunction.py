@@ -22,7 +22,7 @@ from math import ceil, floor
 from sys import platform as _platform
 from Framework.Utilities import ConfigModule
 from Framework.Utilities import CommonUtil
-from Framework.Utilities.decorators import logger
+from Framework.Utilities.decorators import logger, deprecated
 from Framework.Utilities.CommonUtil import (
     passed_tag_list,
     failed_tag_list,
@@ -3423,8 +3423,10 @@ This function saves the variable to a defined variable(not the source variable)
 
 
 @logger
+@deprecated
 def extract_number(data_set):
     sModuleInfo = inspect.currentframe().f_code.co_name + " : " + MODULE_NAME
+    CommonUtil.ExecLog(sModuleInfo, "Try our new action named 'Extract number or Convert data type'", 2)
     # Parse data set
     try:
         from_var = ""  # the varibale from which string will be copied
