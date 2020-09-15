@@ -2430,7 +2430,7 @@ def switch_tab(step_data):
 @logger
 def switch_window(step_data):
     sModuleInfo = inspect.currentframe().f_code.co_name + " : " + MODULE_NAME
-    CommonUtil.ExecLog(sModuleInfo, "Try our new action named 'Switch window/tab'", 2)
+    CommonUtil.ExecLog(sModuleInfo, "Try our new action named 'Switch Window/Tab'", 2)
     global selenium_driver
     try:
         switch_by_title_condition = False
@@ -2483,6 +2483,26 @@ def switch_window(step_data):
 
 @logger
 def switch_window_or_tab(step_data):
+    """
+    This action will switch tab/window in browser. Basically window and tabs are same in selenium.
+
+    Example 1:
+    Field	            Sub Field	        Value
+    *window title       element parameter	googl
+    switch window       selenium action 	switch window
+
+
+    Example 2:
+    Field	            Sub Field	        Value
+    window title        element parameter	google
+    switch window       selenium action 	switch window
+
+    Example 3:
+    Field	            Sub Field	        Value
+    window index        element parameter	9
+    switch window       selenium action 	switch window
+
+    """
     sModuleInfo = inspect.currentframe().f_code.co_name + " : " + MODULE_NAME
     global selenium_driver
     try:
