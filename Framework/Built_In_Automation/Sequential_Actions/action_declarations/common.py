@@ -71,6 +71,11 @@ declarations = (
     },
     {
         "screenshot": "none",
+        "name": "validate order",
+        "function": "validate_list_order",
+    },
+    {
+        "screenshot": "none",
         "name": "create or append dictionary into dictionary",
         "function": "insert_dict_into_another_dict",
     },
