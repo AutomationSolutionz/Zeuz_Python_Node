@@ -1886,11 +1886,11 @@ def validate_schema(data_set):
     except Exception:
         return CommonUtil.Exception_Handler(sys.exc_info())
 
-
+@deprecated
 @logger
 def write_into_single_cell_in_excel(data_set):
     sModuleInfo = inspect.currentframe().f_code.co_name + " : " + MODULE_NAME
-
+    CommonUtil.ExecLog(sModuleInfo, "Try our new action named 'Write into excel'", 2)
     try:
         sheet_name = ""
         column = ""

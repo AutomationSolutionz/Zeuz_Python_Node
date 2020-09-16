@@ -206,6 +206,11 @@ declarations = (
     },
     {
         "screenshot": "web",
+        "name": "switch window/tab",
+        "function": "switch_window_or_tab",
+    },
+    {
+        "screenshot": "web",
         "name": "save attribute",
         "function": "Save_Attribute",
     },

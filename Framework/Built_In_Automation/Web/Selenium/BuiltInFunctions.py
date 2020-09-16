@@ -1341,7 +1341,7 @@ def save_attribute_values_in_list(step_data):
                         for j in range(len(data[i])):
                             data[i][j] = data[i][j].strip()
                             if j == 1:
-                                data[i][j] = data[i][j].strip('"').strip()
+                                data[i][j] = data[i][j].strip('"')  # do not add another strip here. dont need to strip inside cotation mark
 
                     for Left, Right in data:
                         if Left == "return":
@@ -2401,9 +2401,11 @@ def open_new_tab(step_data):
 
 
 # Method to switch to a new tab
+@deprecated
 @logger
 def switch_tab(step_data):
     sModuleInfo = inspect.currentframe().f_code.co_name + " : " + MODULE_NAME
+    CommonUtil.ExecLog(sModuleInfo, "Try our new action named 'Switch window/tab'", 2)
     global selenium_driver
     try:
         tab = 1
@@ -2424,38 +2426,40 @@ def switch_tab(step_data):
 
 
 # Method to switch to a new tab
+@deprecated
 @logger
 def switch_window(step_data):
     sModuleInfo = inspect.currentframe().f_code.co_name + " : " + MODULE_NAME
+    CommonUtil.ExecLog(sModuleInfo, "Try our new action named 'Switch Window/Tab'", 2)
     global selenium_driver
     try:
+        switch_by_title_condition = False
+        switch_by_index_condition = False
+        for left, mid, right in step_data:
+            left = left.lower().strip()
+            if left == "window title":
+                switch_by_title = right
+                switch_by_title_condition = True
+            elif left == "window index":
+                switch_by_index = right.strip()
+                switch_by_index_condition = True
 
-        try:
-            switch_by_title = [x for x in step_data if "window title" == x[0]][0][2]
-        except:
-            switch_by_title = False
-
-        try:
-            switch_by_index = [x for x in step_data if "window index" == x[0]][0][2]
-        except:
-            switch_by_index = False
-
-        if switch_by_title != False:
+        if switch_by_title_condition:
             all_windows = selenium_driver.window_handles
             window_handles_found = False
             for each in all_windows:
                 selenium_driver.switch_to.window(each)
-                if switch_by_title in (selenium_driver.title):
+                if switch_by_title == (selenium_driver.title):
                     window_handles_found = True
                     CommonUtil.ExecLog(sModuleInfo, "switched your window", 1)
                     break
             if window_handles_found == False:
-                CommonUtil.ExecLog(sModuleInfo, "unable to switch your window", 3)
+                CommonUtil.ExecLog(sModuleInfo, "unable to find your given title among the windows", 3)
                 return False
             else:
                 return True
 
-        elif switch_by_index != False:
+        elif switch_by_index_condition:
             check_if_index = ["0", "1", "2", "3", "4", "5"]
             if switch_by_index in check_if_index:
                 window_index = int(switch_by_index)
@@ -2470,7 +2474,86 @@ def switch_window(step_data):
                 )
                 return False
         else:
-            CommonUtil.ExecLog(sModuleInfo, "unable to switch your window", 3)
+            CommonUtil.ExecLog(sModuleInfo, "Wrong data set provided. Choose between window title or window index", 3)
+            return False
+
+    except Exception:
+        CommonUtil.ExecLog(sModuleInfo, "unable to switch your window", 3)
+        return CommonUtil.Exception_Handler(sys.exc_info())
+
+@logger
+def switch_window_or_tab(step_data):
+    """
+    This action will switch tab/window in browser. Basically window and tabs are same in selenium.
+
+    Example 1:
+    Field	            Sub Field	        Value
+    *window title       element parameter	googl
+    switch window       selenium action 	switch window
+
+
+    Example 2:
+    Field	            Sub Field	        Value
+    window title        element parameter	google
+    switch window       selenium action 	switch window
+
+    Example 3:
+    Field	            Sub Field	        Value
+    window index        element parameter	9
+    switch window       selenium action 	switch window
+
+    """
+    sModuleInfo = inspect.currentframe().f_code.co_name + " : " + MODULE_NAME
+    global selenium_driver
+    try:
+        title_condition = False
+        index_condition = False
+        partial_match = False
+        for left, mid, right in step_data:
+            left = left.lower().strip()
+            if left == "window title":
+                switch_by_title = right
+                title_condition = True
+            elif left == "*window title":
+                switch_by_title = right
+                partial_match = True
+                title_condition = True
+            elif left == "window index":
+                switch_by_index = right.strip()
+                index_condition = True
+                title_condition = False
+                break      # Index priority is highest so break the loop
+
+        if title_condition:
+            all_windows = selenium_driver.window_handles
+            window_handles_found = False
+            Tries = 3
+            for Try in range(Tries):
+                for each in all_windows:
+                    selenium_driver.switch_to.window(each)
+                    if (partial_match and switch_by_title in (selenium_driver.title)) or (not partial_match and switch_by_title == (selenium_driver.title)):
+                        window_handles_found = True
+                        CommonUtil.ExecLog(sModuleInfo, "switched your window", 1)
+                        break
+                else:
+                    CommonUtil.ExecLog(sModuleInfo, "Couldn't find the title. Trying again after 1 second delay", 2)
+                    time.sleep(1)
+                    continue # only executed if the inner loop did not break
+                break   # only executed if the inner loop did break
+
+            if not window_handles_found:
+                CommonUtil.ExecLog(sModuleInfo, "unable to find the title among the windows. If you want to match partially please use '*windows title'", 3)
+                return False
+            else:
+                return True
+
+        elif index_condition:
+            window_index = int(switch_by_index)
+            window_to_switch = selenium_driver.window_handles[window_index]
+            selenium_driver.switch_to.window(window_to_switch)
+            return True
+        else:
+            CommonUtil.ExecLog(sModuleInfo, "Wrong data set provided. Choose between window title or window index", 3)
             return False
 
     except Exception:
