@@ -3162,7 +3162,7 @@ def validate_list_order(data_set):
                     'Your list is not in ascending order. Its in %s order' % order,
                     3
                 )
-                # return "failed"
+                return "failed"
         elif order_type == "descending":
             if sorted(value, reverse=True) == value:
                 CommonUtil.ExecLog(
@@ -3178,7 +3178,7 @@ def validate_list_order(data_set):
                     'Your list is not in descending order. Its in %s order' % order,
                     3
                 )
-                # return "failed"
+                return "failed"
     except:
         CommonUtil.ExecLog(
             sModuleInfo,
