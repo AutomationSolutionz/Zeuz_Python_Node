@@ -3083,3 +3083,107 @@ def save_variable_by_list_difference(data_set):
         return sr.Set_Shared_Variables(saved_variable_name, variable_value)
     else:
         return "failed"
+
+@logger
+def validate_list_order(data_set):
+    """ To validate whether a list is in ascending or in descending order
+    Example 1:
+    Field	             Sub Field	            Value
+    order type           element parameter	    ascending
+    validate order       common action  	    [1,2,3.5]
+
+    Example 2:
+    Field	             Sub Field	            Value
+    order type           element parameter	    descending
+    validate order       common action  	    %|var|%
+
+    Example 3:
+    Field	             Sub Field	            Value
+    order type           element parameter	    descending
+    case sensitivity     optional parameter     False
+    validate order       common action  	    ["c","A","3","t"]
+    """
+    sModuleInfo = inspect.currentframe().f_code.co_name + " : " + MODULE_NAME
+
+    case_sensitivity = True
+    order_type = ""
+    for left, mid, right in data_set:
+        left = left.strip().lower()
+        right = right.strip()
+        if left == "validate order":
+            try:
+                value = right
+                value = CommonUtil.parse_value_into_object(value)
+            except:
+                CommonUtil.ExecLog(
+                    sModuleInfo,
+                    "Couldn't parse your list",
+                    3,
+                )
+                return "failed"
+        elif left == "case sensitivity":
+            case_sensitivity = False if right.lower() == "false" else True
+        elif left == "order type":
+            order_type = right.lower()
+
+    if isinstance(value[0], str) and not case_sensitivity:
+        try:
+            for i in range(len(value)):
+                value[i] = value[i].lower()
+        except:
+            CommonUtil.ExecLog(
+                sModuleInfo,
+                'Please provide a simple list of numbers or list of strings.Such as [1, 2.5, 3] or ["c","a","t"]',
+                3
+            )
+            return "failed"
+
+    if order_type not in ("ascending", "descending"):
+        CommonUtil.ExecLog(
+            sModuleInfo,
+            "Order type should be provided between 'ascending' or 'descending' Taking 'ascending' by default ",
+            2
+        )
+        order_type = "ascending"
+
+    try:
+        if order_type == "ascending":
+            if sorted(value, reverse=False) == value:
+                CommonUtil.ExecLog(
+                    sModuleInfo,
+                    'Your list is in ascending order',
+                    1
+                )
+                return "passed"
+            else:
+                order = "descending" if sorted(value, reverse=True) == value else "random"
+                CommonUtil.ExecLog(
+                    sModuleInfo,
+                    'Your list is not in ascending order. Its in %s order' % order,
+                    3
+                )
+                return "failed"
+        elif order_type == "descending":
+            if sorted(value, reverse=True) == value:
+                CommonUtil.ExecLog(
+                    sModuleInfo,
+                    'Your list is in descending order',
+                    1
+                )
+                return "passed"
+            else:
+                order = "ascending" if sorted(value, reverse=False) == value else "random"
+                CommonUtil.ExecLog(
+                    sModuleInfo,
+                    'Your list is not in descending order. Its in %s order' % order,
+                    3
+                )
+                return "failed"
+    except:
+        CommonUtil.ExecLog(
+            sModuleInfo,
+            'Please provide a simple list of numbers or list of strings.Such as [1, 2.5, 3] or ["c","a","t"]',
+            3
+        )
+        return "failed"
+
