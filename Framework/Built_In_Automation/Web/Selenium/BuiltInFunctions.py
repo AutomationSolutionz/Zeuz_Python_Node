@@ -327,10 +327,7 @@ def Handle_Browser_Alert(step_data):
         choice = str(step_data[0][2])
         choice_lower = choice.lower()
         if (
-                choice_lower == "accept"
-                or choice == "pass"
-                or choice == "yes"
-                or choice == "ok"
+                choice_lower in ("accept", "pass", "yes", "ok")
         ):
             try:
                 selenium_driver.switch_to_alert().accept()
@@ -340,10 +337,7 @@ def Handle_Browser_Alert(step_data):
                 CommonUtil.ExecLog(sModuleInfo, "Browser alert not found", 3)
                 return "failed"
         elif (
-                choice_lower == "reject"
-                or choice == "fail"
-                or choice == "no"
-                or choice == "cancel"
+                choice_lower in ("reject", "fail", "no", "cancel")
         ):
             try:
                 selenium_driver.switch_to_alert().dismiss()
@@ -2391,7 +2385,8 @@ def open_new_tab(step_data):
     try:
         time.sleep(2)
         CommonUtil.ExecLog(sModuleInfo, "Opening New Tab in Browser", 1)
-        selenium_driver.execute_script("""window.open(" ","_blank");""")
+        selenium_driver.execute_script("""window.open("");""")
+        selenium_driver.switch_to.window(selenium_driver.window_handles[-1])
 
         CommonUtil.ExecLog(sModuleInfo, "New Tab Opened Successfully in Browser", 1)
 
