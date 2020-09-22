@@ -497,6 +497,12 @@ def Enter_Text_In_Text_Box(step_data):
                 if not without_click:
                     # Click on element.
                     selenium_driver.execute_script("arguments[0].click();", Element)
+                else:
+                    CommonUtil.ExecLog(
+                        sModuleInfo,
+                        "Entering text without clicking the element",
+                        2,
+                    )
 
                 # Fill up the value.
                 selenium_driver.execute_script(
@@ -507,14 +513,13 @@ def Enter_Text_In_Text_Box(step_data):
                 selenium_driver.execute_script("arguments[0].click();", Element)
             else:
                 if not without_click:
-                    try:
-                        Element.click()
-                    except:
-                        CommonUtil.ExecLog(
-                            sModuleInfo,
-                            "Successfully set the value of to text to: %s" % text_value,
-                            2,
-                        )
+                    Element.click()
+                else:
+                    CommonUtil.ExecLog(
+                        sModuleInfo,
+                        "Entering text without clicking the element",
+                        2,
+                    )
 
                 # Element.clear()
                 Element.send_keys(Keys.CONTROL, "a")
