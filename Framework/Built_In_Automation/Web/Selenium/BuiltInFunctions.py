@@ -476,21 +476,27 @@ def Enter_Text_In_Text_Box(step_data):
         delay = 0
         text_value = ""
         use_js = False
+        without_click = False
 
         global selenium_driver
         Element = LocateElement.Get_Element(step_data, selenium_driver)
         if Element != "failed":
-            for each in step_data:
-                if each[1] == "action":
-                    text_value = each[2]
-                elif each[0] == "delay":
-                    delay = float(each[2])
-                if "use js" in each[0].lower():
-                    use_js = each[2].strip().lower() in ("true", "yes", "1")
+            for left, mid, right in step_data:
+                mid = mid.strip().lower()
+                left = left.lower()
+                if "action" in mid:
+                    text_value = right
+                elif "delay" in left:
+                    delay = float(right.strip())
+                elif "use js" in left:
+                    use_js = right.strip().lower() in ("true", "yes", "1")
+                elif "without click" in left:
+                    without_click = True if right.strip().lower() in ("true", "yes", "ok") else False
 
             if use_js:
-                # Click on element.
-                selenium_driver.execute_script("arguments[0].click();", Element)
+                if not without_click:
+                    # Click on element.
+                    selenium_driver.execute_script("arguments[0].click();", Element)
 
                 # Fill up the value.
                 selenium_driver.execute_script(
@@ -500,7 +506,15 @@ def Enter_Text_In_Text_Box(step_data):
                 # Soemtimes text field becomes unclickable after entering text?
                 selenium_driver.execute_script("arguments[0].click();", Element)
             else:
-                Element.click()
+                if not without_click:
+                    try:
+                        Element.click()
+                    except:
+                        CommonUtil.ExecLog(
+                            sModuleInfo,
+                            "Successfully set the value of to text to: %s" % text_value,
+                            2,
+                        )
 
                 # Element.clear()
                 Element.send_keys(Keys.CONTROL, "a")
