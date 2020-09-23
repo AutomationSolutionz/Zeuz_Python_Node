@@ -258,17 +258,34 @@ def Sequential_Actions(
 def get_data_set_nums(action_value):
     try:
         data_set_nums = []
-        splitted = str(action_value).split(",")
-        for each in splitted:
-            try:
-                string = str(each).split("#")[1].strip()
-                if string.endswith(")"):
-                    string = string[:-1]
-                elif " " in string:
-                    string = string.split(" ")[0]
-                data_set_nums.append(int(string) - 1)
-            except:
-                pass
+
+        if "run" in action_value or "#" in action_value:
+            splitted = str(action_value).split(",")
+            for each in splitted:
+                try:
+                    string = str(each).split("#")[1].strip()
+                    if string.endswith(")"):
+                        string = string[:-1]
+                    elif " " in string:
+                        string = string.split(" ")[0]
+                    data_set_nums.append(int(string) - 1)
+                except:
+                    pass
+        else:
+            splitted = str(action_value).strip().split(",")
+            for each in splitted:
+                try:
+                    if "-" in each:
+                        start, end = each.replace(" ","").split("-")
+                        for i in range(int(start), int(end)+1):
+                            data_set_nums.append(i-1)
+
+                    else:
+                        string = each.strip()
+                        data_set_nums.append(int(string)-1)
+                except:
+                    pass
+
         return data_set_nums
     except:
         return []
@@ -304,10 +321,9 @@ def Handle_Conditional_Action(step_data, data_set_no):
         if next_level_step_data == []:
             CommonUtil.ExecLog(
                 sModuleInfo,
-                "Conditional action step data is invalid, please see action help for more info",
-                3,
+                "No conditions matched. Skipping action %s" % [i+1 for i in skip],
+                2,
             )
-            return "failed", []
 
         for data_set_index in next_level_step_data:
             result, skip_for_loop = Run_Sequential_Actions(
