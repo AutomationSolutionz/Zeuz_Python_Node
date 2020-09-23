@@ -17,31 +17,12 @@ requests.packages.urllib3.disable_warnings(category=InsecureRequestWarning)
 
 def form_uri(resource_path):
     web_server_address = ConfigModule.get_config_value(SERVER_TAG, SERVER_ADDRESS_TAG)
-    web_server_port = ""
 
-    web_server_address = str(web_server_address).strip().strip("/")
-    web_server_port = str(web_server_port).strip()
-    if web_server_port == "":
-        if web_server_address.startswith("https://"):
-            web_server_port = "443"
-        else:
-            if web_server_address.startswith("http://"):
-                web_server_domain = web_server_address.split("//")[1]
-            else:
-                web_server_domain = web_server_address.split("//")[0]
-            if web_server_domain in ["localhost", "127.0.0.1"]:
-                web_server_port = "8000"
-            else:
-                web_server_port = "80"
-    ConfigModule.add_config_value("Authentication", "server_port", web_server_port)
-    if web_server_address.startswith("http://") or web_server_address.startswith(
-        "https://"
-    ):
-        base_server_address = "{}:{}/".format(web_server_address, web_server_port)
-    else:
-        base_server_address = "http://{}:{}/".format(
-            web_server_address, web_server_port
-        )
+    if resource_path[0] == "/":
+        resource_path = resource_path[1:]
+
+    base_server_address = web_server_address + "/" + resource_path
+
     return base_server_address + resource_path
 
 
