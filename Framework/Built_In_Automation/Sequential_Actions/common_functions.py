@@ -815,13 +815,13 @@ def save_into_variable(data_set):
         try:
             for left, mid, right in data_set:
                 left = left.strip().lower()
-                if "operation" in left:
-                    operation = right.strip().lower()
                 if "extra operation" in left:
                     extra_operation = right.strip().lower()
-                if "data" in left:
+                elif "operation" in left:
+                    operation = right.strip().lower()
+                elif "data" in left:
                     variable_value = CommonUtil.parse_value_into_object(right)
-                if "action" in mid:
+                elif "action" in mid:
                     variable_name = right.strip()
         except:
             CommonUtil.ExecLog(sModuleInfo, "Failed to parse data.", 1)
