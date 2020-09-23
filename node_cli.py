@@ -163,6 +163,9 @@ def zeuz_authentication_prompts_for_cli():
         else:
             display_text = prompt.replace("_", " ").capitalize()
             value = input(f"{display_text} : ")
+            if prompt == "server_address":
+                if value[-1] == "/":
+                    value = value[:-1]
             ConfigModule.add_config_value(AUTHENTICATION_TAG, prompt, str(value))
 
 
@@ -756,6 +759,9 @@ def command_line_args():
     logout = all_arguments.logout
     auto_update = all_arguments.auto_update
 
+    if server and server[-1] == "/":
+        server = server[:-1]
+
     if auto_update:
         check_for_updates()
     if username or password or server or logout:
@@ -792,3 +798,4 @@ if __name__ == "__main__":
     command_line_args()
 
     Login(cli=True)
+

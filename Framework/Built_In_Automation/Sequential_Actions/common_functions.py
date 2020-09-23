@@ -793,9 +793,10 @@ def save_into_variable(data_set):
 
     Args:
         data_set:
-          data               | element parameter | valid JSON string
-          operation          | element parameter | save/update
-          save into variable | common action     | variable_name
+          data               | element parameter  | valid JSON string
+          operation          | element parameter  | save/update
+          extra operation    | optional parameter | length/no duplicate
+          save into variable | common action      | variable_name
 
     Returns:
         "passed" if success.
@@ -807,6 +808,7 @@ def save_into_variable(data_set):
     try:
 
         operation = "save"
+        extra_operation = None
         variable_value = None
         variable_name = None
 
@@ -815,6 +817,8 @@ def save_into_variable(data_set):
                 left = left.strip().lower()
                 if "operation" in left:
                     operation = right.strip().lower()
+                if "extra operation" in left:
+                    extra_operation = right.strip().lower()
                 if "data" in left:
                     variable_value = CommonUtil.parse_value_into_object(right)
                 if "action" in mid:
@@ -848,6 +852,19 @@ def save_into_variable(data_set):
             )
             return "failed"
 
+        try:
+            if extra_operation:
+                if "length" in extra_operation:
+                    variable_value = len(variable_value)
+                elif "no duplicate" in extra_operation:
+                    variable_value = list(set(variable_value))
+        except:
+            CommonUtil.ExecLog(
+                    sModuleInfo, f"Failed to perform extra action.", 1,
+            )
+            return "failed"
+
+        
         sr.Set_Shared_Variables(variable_name, variable_value)
 
         return "passed"
