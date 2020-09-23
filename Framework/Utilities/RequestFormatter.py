@@ -17,13 +17,13 @@ requests.packages.urllib3.disable_warnings(category=InsecureRequestWarning)
 
 def form_uri(resource_path):
     web_server_address = ConfigModule.get_config_value(SERVER_TAG, SERVER_ADDRESS_TAG)
+    base_server_address = web_server_address
+    if len(resource_path) > 0:
+        if resource_path[0] == "/":
+            resource_path = resource_path[1:]
+        base_server_address += "/" + resource_path 
 
-    if resource_path[0] == "/":
-        resource_path = resource_path[1:]
-
-    base_server_address = web_server_address + "/" + resource_path
-
-    return base_server_address + resource_path
+    return base_server_address
 
 
 def Post(resource_path, payload=None):
