@@ -148,16 +148,6 @@ def Compare_Variables(step_data):
         return CommonUtil.Exception_Handler(sys.exc_info())
 
 
-# Method to return dictonaries from string
-@logger
-def get_value_as_list(data):
-    sModuleInfo = inspect.currentframe().f_code.co_name + " : " + MODULE_NAME
-    try:
-        return json.loads(data)
-    except Exception:
-        return CommonUtil.Exception_Handler(sys.exc_info())
-
-
 @logger
 def get_all_val(x, target):
     global all_val
@@ -688,10 +678,10 @@ def handle_rest_call(
         payload = data[4]
 
         # Parse header into proper object.
-        headers = get_value_as_list(headers)
+        headers = CommonUtil.parse_value_into_object(headers)
 
         # Parse body into proper object unless it is not GraphQL.
-        temp = get_value_as_list(body)
+        temp = CommonUtil.parse_value_into_object(body)
         if temp not in failed_tag_list:
             body = temp
 
