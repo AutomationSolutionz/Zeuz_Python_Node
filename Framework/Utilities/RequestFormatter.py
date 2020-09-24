@@ -41,15 +41,16 @@ def Post(resource_path, payload=None):
         return {}
 
 
-def Get(resource_path, payload=None):
+def Get(resource_path, payload=None,**kwargs):
     if payload is None:  # Removing default mutable argument
         payload = {}
     try:
         return requests.get(
-            form_uri(resource_path + "/"),
+            form_uri(resource_path ),
             params=json.dumps(payload),
             timeout=REQUEST_TIMEOUT,
             verify=False,
+            **kwargs
         ).json()
 
     except requests.exceptions.RequestException:
