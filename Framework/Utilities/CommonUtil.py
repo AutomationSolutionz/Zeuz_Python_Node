@@ -106,6 +106,9 @@ def to_unicode(obj, encoding="utf-8"):
 def parse_value_into_object(val):
     """Parses the given value into a Python object: int, str, list, dict."""
 
+    if not isinstance(val, str):
+        return val
+
     try:
         val = ast.literal_eval(val)
     except:
