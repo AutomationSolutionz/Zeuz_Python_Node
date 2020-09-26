@@ -302,6 +302,73 @@ def Handle_Conditional_Action(step_data, data_set_no):
             return "failed"
 
         for left, _, right in data_set:
+            statement = ""
+            operator = ""
+            operators = {"==": 0, "!=": 0, "<=": 0, ">=": 0, ">": 0, "<": 0}
+            statements = ("else if", "else", "if")
+            for i in statements:
+                if left.lower().find(i) == 0:
+                    statement = i
+                    break
+            statement = left.lower()[0:left.find(" ")]
+            for i in operators:
+                if i in left:
+                    operators[i] += 1
+            operators["<"] -= operators["<="]
+            operators[">"] -= operators[">="]
+
+            if statement not in statements:
+                CommonUtil.ExecLog(
+                    sModuleInfo,
+                    "Specify a statement among (if, else if, else) and add a <single space> after that",
+                    3,
+                )
+                return "failed"
+            if sum(operators.values()) == 0:
+                CommonUtil.ExecLog(
+                    sModuleInfo,
+                    "Specify an operator among (==, !=, <, >, <=, >=) and add <single space> before and after the operator",
+                    3,
+                )
+                return "failed"
+            elif sum(operators.values()) == 1:
+                for i in operators:
+                    if operators[i] == 1:
+                        operator = i
+                        break
+            else:
+                # need regex to handle more than one operators to separate operator and right/left values
+                pass
+
+            """Actual format: Statement <single space> Lvalue <single space> operator <single space> Rvalue
+            Lvalue and Rvalue can have spaces at starting or ending so don't try stripping them. it can manipulate
+            their actual values. Suppose, %|XY|% = "Hello " stripping will remove the last space"""
+
+            Lvalue, Rvalue = left.replace(statement + " ", "", 1).split(operator)  # remove "if "
+            Lvalue = Lvalue[:-1] if Lvalue[-1] == " " else Lvalue  # remove 1 space before the operator
+            Rvalue = Rvalue[1:] if Rvalue[0] == " " else Rvalue  # remove 1 space after the operator
+            Lvalue, Rvalue = CommonUtil.parse_value_into_object(Lvalue), CommonUtil.parse_value_into_object(Rvalue)
+
+            if statement == "if":
+                if operator == "==":
+                    if lvalue == rvalue:
+                        for i in get_data_set_nums(str(right).strip()):
+                            next_level_step_data.append(i)
+                        skip += next_level_step_data
+                    else:
+                        skip += get_data_set_nums(str(right).strip())
+                elif operator == "!=":
+                    if lvalue != rvalue:
+                        for i in get_data_set_nums(str(right).strip()):
+                            next_level_step_data.append(i)
+                        skip += next_level_step_data
+                    else:
+                        skip += get_data_set_nums(str(right).strip())
+
+                        
+######################################################################################################################
+
+
             # Verify that the row we're executing contains the 'if' and '==' tokens.
             if "if" in left.lower() and "==" in left:
                 # if left_value == right_value
@@ -313,7 +380,8 @@ def Handle_Conditional_Action(step_data, data_set_no):
 
                 # If both side matches
                 if lvalue == rvalue:
-                    next_level_step_data = get_data_set_nums(str(right).strip())
+                    for i in get_data_set_nums(str(right).strip()):
+                        next_level_step_data.append(i)
                     skip += next_level_step_data
                 else:
                     skip += get_data_set_nums(str(right).strip())
