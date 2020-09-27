@@ -23,7 +23,7 @@ from selenium.webdriver.firefox.firefox_binary import FirefoxBinary
 from selenium.webdriver.support.ui import Select
 from selenium.webdriver.support.ui import WebDriverWait
 from selenium.webdriver.common.action_chains import ActionChains
-from selenium.common.exceptions import NoAlertPresentException
+from selenium.common.exceptions import NoAlertPresentException, ElementClickInterceptedException
 from selenium.webdriver.common.keys import Keys
 from selenium.webdriver.common.by import By
 from selenium.webdriver.support import expected_conditions as EC
@@ -476,21 +476,30 @@ def Enter_Text_In_Text_Box(step_data):
         delay = 0
         text_value = ""
         use_js = False
+        without_click = False
 
         global selenium_driver
         Element = LocateElement.Get_Element(step_data, selenium_driver)
         if Element != "failed":
-            for each in step_data:
-                if each[1] == "action":
-                    text_value = each[2]
-                elif each[0] == "delay":
-                    delay = float(each[2])
-                if "use js" in each[0].lower():
-                    use_js = each[2].strip().lower() in ("true", "yes", "1")
+            for left, mid, right in step_data:
+                mid = mid.strip().lower()
+                left = left.lower()
+                if "action" in mid:
+                    text_value = right
+                elif "delay" in left:
+                    delay = float(right.strip())
+                elif "use js" in left:
+                    use_js = right.strip().lower() in ("true", "yes", "1")
 
             if use_js:
-                # Click on element.
-                selenium_driver.execute_script("arguments[0].click();", Element)
+                try:
+                    selenium_driver.execute_script("arguments[0].click();", Element)
+                except:
+                    CommonUtil.ExecLog(
+                        sModuleInfo,
+                        "Entering text without clicking the element",
+                        2,
+                    )
 
                 # Fill up the value.
                 selenium_driver.execute_script(
@@ -500,7 +509,14 @@ def Enter_Text_In_Text_Box(step_data):
                 # Soemtimes text field becomes unclickable after entering text?
                 selenium_driver.execute_script("arguments[0].click();", Element)
             else:
-                Element.click()
+                try:
+                    Element.click()
+                except:
+                    CommonUtil.ExecLog(
+                        sModuleInfo,
+                        "Entering text without clicking the element",
+                        2,
+                    )
 
                 # Element.clear()
                 Element.send_keys(Keys.CONTROL, "a")
@@ -720,6 +736,25 @@ def Click_Element(data_set):
             CommonUtil.TakeScreenShot(sModuleInfo)
             CommonUtil.ExecLog(sModuleInfo, "Successfully clicked the element", 1)
             return "passed"
+
+        except ElementClickInterceptedException:
+            try:
+                selenium_driver.execute_script("arguments[0].click();", Element)
+                CommonUtil.TakeScreenShot(sModuleInfo)
+                CommonUtil.ExecLog(
+                    sModuleInfo,
+                    "Your element is overlapped with another sibling element. Executing JavaScript for clicking the element",
+                    2
+                )
+                return "passed"
+            except Exception:
+                element_attributes = Element.get_attribute("outerHTML")
+                CommonUtil.ExecLog(
+                    sModuleInfo, "Element Attributes: %s" % (element_attributes), 3
+                )
+                errMsg = "Could not select/click your element."
+                return CommonUtil.Exception_Handler(sys.exc_info(), None, errMsg)
+
         except Exception:
             element_attributes = Element.get_attribute("outerHTML")
             CommonUtil.ExecLog(
@@ -1326,7 +1361,7 @@ def save_attribute_values_in_list(step_data):
                 mid = mid.strip().lower()
                 right = right.strip()
                 if "target parameter" in mid:
-                    target.append([[],[],[],[]])
+                    target.append([[], [], [], []])
                     temp = right.strip(",").split(",")
                     data = []
                     for each in temp:
@@ -1335,7 +1370,8 @@ def save_attribute_values_in_list(step_data):
                         for j in range(len(data[i])):
                             data[i][j] = data[i][j].strip()
                             if j == 1:
-                                data[i][j] = data[i][j].strip('"')  # do not add another strip here. dont need to strip inside cotation mark
+                                data[i][j] = data[i][j].strip(
+                                    '"')  # do not add another strip here. dont need to strip inside cotation mark
 
                     for Left, Right in data:
                         if Left == "return":
@@ -1380,13 +1416,16 @@ def save_attribute_values_in_list(step_data):
                     Attribute_value = elem.get_attribute(search_by_attribute)
                 try:
                     for search_contain in target[i][2]:
-                        if not isinstance(search_contain, type(Attribute_value)) or search_contain in Attribute_value or len(search_contain) == 0:
+                        if not isinstance(search_contain,
+                                          type(Attribute_value)) or search_contain in Attribute_value or len(
+                                search_contain) == 0:
                             pass
                         else:
                             Attribute_value = None
 
                     for search_doesnt_contain in target[i][3]:
-                        if isinstance(search_doesnt_contain, type(Attribute_value)) and search_doesnt_contain in Attribute_value:
+                        if isinstance(search_doesnt_contain,
+                                      type(Attribute_value)) and search_doesnt_contain in Attribute_value:
                             Attribute_value = None
                 except:
                     CommonUtil.ExecLog(
@@ -2476,6 +2515,7 @@ def switch_window(step_data):
         CommonUtil.ExecLog(sModuleInfo, "unable to switch your window", 3)
         return CommonUtil.Exception_Handler(sys.exc_info())
 
+
 @logger
 def switch_window_or_tab(step_data):
     """
@@ -2517,7 +2557,7 @@ def switch_window_or_tab(step_data):
                 switch_by_index = right.strip()
                 index_condition = True
                 title_condition = False
-                break      # Index priority is highest so break the loop
+                break  # Index priority is highest so break the loop
 
         if title_condition:
             all_windows = selenium_driver.window_handles
@@ -2526,18 +2566,21 @@ def switch_window_or_tab(step_data):
             for Try in range(Tries):
                 for each in all_windows:
                     selenium_driver.switch_to.window(each)
-                    if (partial_match and switch_by_title in (selenium_driver.title)) or (not partial_match and switch_by_title == (selenium_driver.title)):
+                    if (partial_match and switch_by_title in (selenium_driver.title)) or (
+                            not partial_match and switch_by_title == (selenium_driver.title)):
                         window_handles_found = True
                         CommonUtil.ExecLog(sModuleInfo, "switched your window", 1)
                         break
                 else:
                     CommonUtil.ExecLog(sModuleInfo, "Couldn't find the title. Trying again after 1 second delay", 2)
                     time.sleep(1)
-                    continue # only executed if the inner loop did not break
-                break   # only executed if the inner loop did break
+                    continue  # only executed if the inner loop did not break
+                break  # only executed if the inner loop did break
 
             if not window_handles_found:
-                CommonUtil.ExecLog(sModuleInfo, "unable to find the title among the windows. If you want to match partially please use '*windows title'", 3)
+                CommonUtil.ExecLog(sModuleInfo,
+                                   "unable to find the title among the windows. If you want to match partially please use '*windows title'",
+                                   3)
                 return False
             else:
                 return True
@@ -2684,9 +2727,3 @@ def if_element_exists(data_set):
             "Failed to parse data/locate element. Data format: variableName = value"
         )
         return CommonUtil.Exception_Handler(sys.exc_info(), None, errMsg)
-
-
-
-
-
-
