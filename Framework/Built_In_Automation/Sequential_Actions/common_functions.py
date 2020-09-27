@@ -2622,11 +2622,11 @@ def db_get_connection():
     :return: pyodbc.Cursor
     """
 
-    import pyodbc
-
     sModuleInfo = inspect.currentframe().f_code.co_name + " : " + MODULE_NAME
 
     try:
+        db_con = None
+
         # Alias for Shared_Resources.Get_Shared_Variables
         g = sr.Get_Shared_Variables
 
@@ -2638,19 +2638,33 @@ def db_get_connection():
         db_host = g(DB_HOST)
         db_port = g(DB_PORT)
 
-        # Get the driver for the ODBC connection
-        odbc_driver = find_odbc_driver(db_type)
+        if "mariadb" in db_type:
+            import mariadb
 
-        # Construct the connection string
-        connection_str = f"DRIVER={{{odbc_driver}}};UID={db_user_id};PWD={db_password};DATABASE={db_name};SERVER={db_host};PORT={db_port}"
+            # Connect to db
+            db_con = mariadb.connect(
+                user=db_user_id,
+                password=db_password,
+                database=db_name,
+                host=db_host,
+                port=db_port
+            )
+        else:
+            import pyodbc
 
-        # Connect to db
-        db_con = pyodbc.connect(connection_str)
+            # Get the driver for the ODBC connection
+            odbc_driver = find_odbc_driver(db_type)
 
-        # This is just an example that works for PostgreSQL and MySQL, with Python 2.7.
-        db_con.setdecoding(pyodbc.SQL_CHAR, encoding="utf-8")
-        db_con.setdecoding(pyodbc.SQL_WCHAR, encoding="utf-8")
-        db_con.setencoding(encoding="utf-8")
+            # Construct the connection string
+            connection_str = f"DRIVER={{{odbc_driver}}};UID={db_user_id};PWD={db_password};DATABASE={db_name};SERVER={db_host};PORT={db_port}"
+
+            # Connect to db
+            db_con = pyodbc.connect(connection_str)
+
+            # This is just an example that works for PostgreSQL and MySQL, with Python 2.7.
+            db_con.setdecoding(pyodbc.SQL_CHAR, encoding="utf-8")
+            db_con.setdecoding(pyodbc.SQL_WCHAR, encoding="utf-8")
+            db_con.setencoding(encoding="utf-8")
 
         # Get db_cursor
         return db_con
@@ -2858,9 +2872,12 @@ def db_select_single_value(data_set):
         db_cursor.execute(query)
 
         # Fetch a single value
-        db_val = db_cursor.fetchval()
+        try:
+            db_val = db_cursor.fetchone()[0]
+        except:
+            db_val = None
 
-        # Set the rows as a shared variable
+        # Set the value as a shared variable
         sr.Set_Shared_Variables(variable_name, db_val)
 
         CommonUtil.ExecLog(
