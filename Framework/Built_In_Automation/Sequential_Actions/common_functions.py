@@ -2638,7 +2638,29 @@ def db_get_connection():
         db_host = g(DB_HOST)
         db_port = g(DB_PORT)
 
-        if "mariadb" in db_type:
+        if "postgres" in db_type:
+            import psycopg2
+
+            # Connect to db
+            db_con = psycopg2.connect(
+                user=db_user_id,
+                password=db_password,
+                database=db_name,
+                host=db_host,
+                port=db_port
+            )
+        elif "mysql" in db_type:
+            import mysql.connector
+
+            # Connect to db
+            db_con = mysql.connector.connect(
+                user=db_user_id,
+                password=db_password,
+                database=db_name,
+                host=db_host,
+                port=db_port
+            )
+        elif "mariadb" in db_type:
             import mariadb
 
             # Connect to db
