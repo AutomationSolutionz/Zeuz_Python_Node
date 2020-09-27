@@ -23,7 +23,7 @@ from selenium.webdriver.firefox.firefox_binary import FirefoxBinary
 from selenium.webdriver.support.ui import Select
 from selenium.webdriver.support.ui import WebDriverWait
 from selenium.webdriver.common.action_chains import ActionChains
-from selenium.common.exceptions import NoAlertPresentException
+from selenium.common.exceptions import NoAlertPresentException, ElementClickInterceptedException
 from selenium.webdriver.common.keys import Keys
 from selenium.webdriver.common.by import By
 from selenium.webdriver.support import expected_conditions as EC
@@ -736,6 +736,25 @@ def Click_Element(data_set):
             CommonUtil.TakeScreenShot(sModuleInfo)
             CommonUtil.ExecLog(sModuleInfo, "Successfully clicked the element", 1)
             return "passed"
+
+        except ElementClickInterceptedException:
+            try:
+                selenium_driver.execute_script("arguments[0].click();", Element)
+                CommonUtil.TakeScreenShot(sModuleInfo)
+                CommonUtil.ExecLog(
+                    sModuleInfo,
+                    "Your element is overlapped with another sibling element. Executing JavaScript for clicking the element",
+                    2
+                )
+                return "passed"
+            except Exception:
+                element_attributes = Element.get_attribute("outerHTML")
+                CommonUtil.ExecLog(
+                    sModuleInfo, "Element Attributes: %s" % (element_attributes), 3
+                )
+                errMsg = "Could not select/click your element."
+                return CommonUtil.Exception_Handler(sys.exc_info(), None, errMsg)
+
         except Exception:
             element_attributes = Element.get_attribute("outerHTML")
             CommonUtil.ExecLog(
