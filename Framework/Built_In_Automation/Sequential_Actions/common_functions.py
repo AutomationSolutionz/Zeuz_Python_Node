@@ -2614,6 +2614,43 @@ def find_odbc_driver(db_type="postgresql"):
     return selected_driver
 
 
+def handle_db_exception(sModuleInfo, e):
+    import pyodbc
+    
+    if pyodbc.DataError == e:
+        traceback.print_exc()
+        CommonUtil.ExecLog(sModuleInfo, "pyodbc.DataError", 3)
+        return CommonUtil.Exception_Handler(e)
+
+    if pyodbc.InternalError == e:
+        traceback.print_exc()
+        CommonUtil.ExecLog(sModuleInfo, "pyodbc.InternalError", 3)
+        return CommonUtil.Exception_Handler(e)
+
+    if pyodbc.IntegrityError == e:
+        traceback.print_exc()
+        CommonUtil.ExecLog(sModuleInfo, "pyodbc.IntegrityError", 3)
+        return CommonUtil.Exception_Handler(e)
+
+    if pyodbc.OperationalError == e:
+        traceback.print_exc()
+        CommonUtil.ExecLog(sModuleInfo, "pyodbc.OperationalError", 3)
+        return CommonUtil.Exception_Handler(e)
+
+    if pyodbc.NotSupportedError == e:
+        traceback.print_exc()
+        CommonUtil.ExecLog(sModuleInfo, "pyodbc.NotSupportedError", 3)
+        return CommonUtil.Exception_Handler(e)
+
+    if pyodbc.ProgrammingError == e:
+        traceback.print_exc()
+        CommonUtil.ExecLog(sModuleInfo, "pyodbc.ProgrammingError", 3)
+        return CommonUtil.Exception_Handler(e)
+    else:
+        CommonUtil.ExecLog(sModuleInfo, "Database exception:\n%s" % e, 3)
+        return CommonUtil.Exception_Handler(sys.exc_info())
+
+
 # [NON ACTION]
 @logger
 def db_get_connection():
@@ -2637,7 +2674,7 @@ def db_get_connection():
         db_user_id = g(DB_USER_ID)
         db_password = g(DB_PASSWORD)
         db_host = g(DB_HOST)
-        db_port = g(DB_PORT)
+        db_port = int(g(DB_PORT))
 
         if "postgres" in db_type:
             import psycopg2
@@ -2682,7 +2719,6 @@ def db_get_connection():
             # Connect to db
             db_con = pyodbc.connect(connection_str)
 
-            # This is just an example that works for PostgreSQL and MySQL, with Python 2.7.
             db_con.setdecoding(pyodbc.SQL_CHAR, encoding="utf-8")
             db_con.setdecoding(pyodbc.SQL_WCHAR, encoding="utf-8")
             db_con.setencoding(encoding="utf-8")
@@ -2690,39 +2726,8 @@ def db_get_connection():
         # Get db_cursor
         return db_con
 
-    except pyodbc.DataError as e:
-        traceback.print_exc()
-        CommonUtil.ExecLog(sModuleInfo, "pyodbc.DataError", 3)
-        return CommonUtil.Exception_Handler(e)
-
-    except pyodbc.InternalError as e:
-        traceback.print_exc()
-        CommonUtil.ExecLog(sModuleInfo, "pyodbc.InternalError", 3)
-        return CommonUtil.Exception_Handler(e)
-
-    except pyodbc.IntegrityError as e:
-        traceback.print_exc()
-        CommonUtil.ExecLog(sModuleInfo, "pyodbc.IntegrityError", 3)
-        return CommonUtil.Exception_Handler(e)
-
-    except pyodbc.OperationalError as e:
-        traceback.print_exc()
-        CommonUtil.ExecLog(sModuleInfo, "pyodbc.OperationalError", 3)
-        return CommonUtil.Exception_Handler(e)
-
-    except pyodbc.NotSupportedError as e:
-        traceback.print_exc()
-        CommonUtil.ExecLog(sModuleInfo, "pyodbc.NotSupportedError", 3)
-        return CommonUtil.Exception_Handler(e)
-
-    except pyodbc.ProgrammingError as e:
-        traceback.print_exc()
-        CommonUtil.ExecLog(sModuleInfo, "pyodbc.ProgrammingError", 3)
-        return CommonUtil.Exception_Handler(e)
-
-    except Exception:
-        traceback.print_exc()
-        return CommonUtil.Exception_Handler(sys.exc_info())
+    except Exception as e:
+        return handle_db_exception(sModuleInfo, e)
 
 
 @logger
@@ -2743,8 +2748,6 @@ def connect_to_db(data_set):
     :param data_set: Action data set
     :return: string: "passed" or "failed" depending on the outcome
     """
-
-    sModuleInfo = inspect.currentframe().f_code.co_name + " : " + MODULE_NAME
 
     try:
         for row in data_set:
@@ -2822,39 +2825,8 @@ def db_select(data_set):
             0,
         )
         return "passed"
-    except pyodbc.DataError as e:
-        traceback.print_exc()
-        CommonUtil.ExecLog(sModuleInfo, "pyodbc.DataError", 3)
-        return CommonUtil.Exception_Handler(e)
-
-    except pyodbc.InternalError as e:
-        traceback.print_exc()
-        CommonUtil.ExecLog(sModuleInfo, "pyodbc.InternalError", 3)
-        return CommonUtil.Exception_Handler(e)
-
-    except pyodbc.IntegrityError as e:
-        traceback.print_exc()
-        CommonUtil.ExecLog(sModuleInfo, "pyodbc.IntegrityError", 3)
-        return CommonUtil.Exception_Handler(e)
-
-    except pyodbc.OperationalError as e:
-        traceback.print_exc()
-        CommonUtil.ExecLog(sModuleInfo, "pyodbc.OperationalError", 3)
-        return CommonUtil.Exception_Handler(e)
-
-    except pyodbc.NotSupportedError as e:
-        traceback.print_exc()
-        CommonUtil.ExecLog(sModuleInfo, "pyodbc.NotSupportedError", 3)
-        return CommonUtil.Exception_Handler(e)
-
-    except pyodbc.ProgrammingError as e:
-        traceback.print_exc()
-        CommonUtil.ExecLog(sModuleInfo, "pyodbc.ProgrammingError", 3)
-        return CommonUtil.Exception_Handler(e)
-
-    except Exception:
-        traceback.print_exc()
-        return CommonUtil.Exception_Handler(sys.exc_info())
+    except Exception as e:
+        return handle_db_exception(sModuleInfo, e)
 
 
 @logger
@@ -2908,39 +2880,8 @@ def db_select_single_value(data_set):
             0,
         )
         return "passed"
-    except pyodbc.DataError as e:
-        traceback.print_exc()
-        CommonUtil.ExecLog(sModuleInfo, "pyodbc.DataError", 3)
-        return CommonUtil.Exception_Handler(e)
-
-    except pyodbc.InternalError as e:
-        traceback.print_exc()
-        CommonUtil.ExecLog(sModuleInfo, "pyodbc.InternalError", 3)
-        return CommonUtil.Exception_Handler(e)
-
-    except pyodbc.IntegrityError as e:
-        traceback.print_exc()
-        CommonUtil.ExecLog(sModuleInfo, "pyodbc.IntegrityError", 3)
-        return CommonUtil.Exception_Handler(e)
-
-    except pyodbc.OperationalError as e:
-        traceback.print_exc()
-        CommonUtil.ExecLog(sModuleInfo, "pyodbc.OperationalError", 3)
-        return CommonUtil.Exception_Handler(e)
-
-    except pyodbc.NotSupportedError as e:
-        traceback.print_exc()
-        CommonUtil.ExecLog(sModuleInfo, "pyodbc.NotSupportedError", 3)
-        return CommonUtil.Exception_Handler(e)
-
-    except pyodbc.ProgrammingError as e:
-        traceback.print_exc()
-        CommonUtil.ExecLog(sModuleInfo, "pyodbc.ProgrammingError", 3)
-        return CommonUtil.Exception_Handler(e)
-
-    except Exception:
-        traceback.print_exc()
-        return CommonUtil.Exception_Handler(sys.exc_info())
+    except Exception as e:
+        return handle_db_exception(sModuleInfo, e)
 
 
 @logger
@@ -2993,39 +2934,8 @@ def db_non_query(data_set):
             sModuleInfo, "Number of rows affected: %d" % db_rows_affected, 0
         )
         return "passed"
-    except pyodbc.DataError as e:
-        traceback.print_exc()
-        CommonUtil.ExecLog(sModuleInfo, "pyodbc.DataError", 3)
-        return CommonUtil.Exception_Handler(e)
-
-    except pyodbc.InternalError as e:
-        traceback.print_exc()
-        CommonUtil.ExecLog(sModuleInfo, "pyodbc.InternalError", 3)
-        return CommonUtil.Exception_Handler(e)
-
-    except pyodbc.IntegrityError as e:
-        traceback.print_exc()
-        CommonUtil.ExecLog(sModuleInfo, "pyodbc.IntegrityError", 3)
-        return CommonUtil.Exception_Handler(e)
-
-    except pyodbc.OperationalError as e:
-        traceback.print_exc()
-        CommonUtil.ExecLog(sModuleInfo, "pyodbc.OperationalError", 3)
-        return CommonUtil.Exception_Handler(e)
-
-    except pyodbc.NotSupportedError as e:
-        traceback.print_exc()
-        CommonUtil.ExecLog(sModuleInfo, "pyodbc.NotSupportedError", 3)
-        return CommonUtil.Exception_Handler(e)
-
-    except pyodbc.ProgrammingError as e:
-        traceback.print_exc()
-        CommonUtil.ExecLog(sModuleInfo, "pyodbc.ProgrammingError", 3)
-        return CommonUtil.Exception_Handler(e)
-
-    except Exception:
-        traceback.print_exc()
-        return CommonUtil.Exception_Handler(sys.exc_info())
+    except Exception as e:
+        return handle_db_exception(sModuleInfo, e)
 
 
 # Gloabal variable actions
