@@ -297,6 +297,7 @@ def Handle_Conditional_Action(step_data, data_set_no):
         data_set = step_data[data_set_no]
         next_level_step_data = []
         skip = []
+        condition_matched = False
         data_set = common.shared_variable_to_value(data_set)
         if data_set in failed_tag_list:
             return "failed"
@@ -310,7 +311,6 @@ def Handle_Conditional_Action(step_data, data_set_no):
                 if left.lower().find(i) == 0:
                     statement = i
                     break
-            statement = left.lower()[0:left.find(" ")]
             for i in operators:
                 if i in left:
                     operators[i] += 1
@@ -324,10 +324,10 @@ def Handle_Conditional_Action(step_data, data_set_no):
                     3,
                 )
                 return "failed"
-            if sum(operators.values()) == 0:
+            if sum(operators.values()) == 0 and statement != "else":
                 CommonUtil.ExecLog(
                     sModuleInfo,
-                    "Specify an operator among (==, !=, <, >, <=, >=) and add <single space> before and after the operator",
+                    "Specify an operator among (==, !=, <, >, <=, >=) and add a <single space> before and after the operator",
                     3,
                 )
                 return "failed"
@@ -340,51 +340,90 @@ def Handle_Conditional_Action(step_data, data_set_no):
                 # need regex to handle more than one operators to separate operator and right/left values
                 pass
 
-            """Actual format: Statement <single space> Lvalue <single space> operator <single space> Rvalue
-            Lvalue and Rvalue can have spaces at starting or ending so don't try stripping them. it can manipulate
-            their actual values. Suppose, %|XY|% = "Hello " stripping will remove the last space"""
+            try:
+                """Actual format: Statement <single space> Lvalue <single space> operator <single space> Rvalue
+                Lvalue and Rvalue can have spaces at starting or ending so don't try stripping them. it can manipulate
+                their actual values. Suppose, %|XY|% = "Hello " stripping will remove the last space"""
 
-            Lvalue, Rvalue = left.replace(statement + " ", "", 1).split(operator)  # remove "if "
-            Lvalue = Lvalue[:-1] if Lvalue[-1] == " " else Lvalue  # remove 1 space before the operator
-            Rvalue = Rvalue[1:] if Rvalue[0] == " " else Rvalue  # remove 1 space after the operator
-            Lvalue, Rvalue = CommonUtil.parse_value_into_object(Lvalue), CommonUtil.parse_value_into_object(Rvalue)
+                if statement != "else":
+                    Lvalue, Rvalue = left[len(statement + " "):].split(operator)  # remove "if "
+                    Lvalue = Lvalue[:-1] if Lvalue[-1] == " " else Lvalue  # remove 1 space before the operator
+                    Rvalue = Rvalue[1:] if Rvalue[0] == " " else Rvalue  # remove 1 space after the operator
+                    Lvalue, Rvalue = CommonUtil.parse_value_into_object(Lvalue), CommonUtil.parse_value_into_object(Rvalue)
+            except:
+                CommonUtil.ExecLog(
+                    sModuleInfo,
+                    "Couldn't parse Left and Right values",
+                    3,
+                )
+                return "failed"
 
-            if statement == "if":
-                if operator == "==":
-                    if lvalue == rvalue:
+            def check_operators():
+                nonlocal skip, next_level_step_data, condition_matched
+                if statement == "else":
+                    if not condition_matched:
+                        condition_matched = True
+                        for i in get_data_set_nums(str(right).strip()):
+                            next_level_step_data.append(i)
+                        skip += next_level_step_data
+                    else:
+                        skip += get_data_set_nums(str(right).strip())
+
+                elif operator == "==":
+                    if Lvalue == Rvalue and not condition_matched:
+                        condition_matched = True
                         for i in get_data_set_nums(str(right).strip()):
                             next_level_step_data.append(i)
                         skip += next_level_step_data
                     else:
                         skip += get_data_set_nums(str(right).strip())
                 elif operator == "!=":
-                    if lvalue != rvalue:
+                    if Lvalue != Rvalue and not condition_matched:
+                        condition_matched = True
+                        for i in get_data_set_nums(str(right).strip()):
+                            next_level_step_data.append(i)
+                        skip += next_level_step_data
+                    else:
+                        skip += get_data_set_nums(str(right).strip())
+                elif operator == "<=":
+                    if Lvalue <= Rvalue and not condition_matched:
+                        condition_matched = True
+                        for i in get_data_set_nums(str(right).strip()):
+                            next_level_step_data.append(i)
+                        skip += next_level_step_data
+                    else:
+                        skip += get_data_set_nums(str(right).strip())
+                elif operator == ">=":
+                    if Lvalue >= Rvalue and not condition_matched:
+                        condition_matched = True
+                        for i in get_data_set_nums(str(right).strip()):
+                            next_level_step_data.append(i)
+                        skip += next_level_step_data
+                    else:
+                        skip += get_data_set_nums(str(right).strip())
+                elif operator == "<":
+                    if Lvalue < Rvalue and not condition_matched:
+                        condition_matched = True
+                        for i in get_data_set_nums(str(right).strip()):
+                            next_level_step_data.append(i)
+                        skip += next_level_step_data
+                    else:
+                        skip += get_data_set_nums(str(right).strip())
+                elif operator == ">":
+                    if Lvalue > Rvalue and not condition_matched:
+                        condition_matched = True
                         for i in get_data_set_nums(str(right).strip()):
                             next_level_step_data.append(i)
                         skip += next_level_step_data
                     else:
                         skip += get_data_set_nums(str(right).strip())
 
-                        
-######################################################################################################################
-
-
-            # Verify that the row we're executing contains the 'if' and '==' tokens.
-            if "if" in left.lower() and "==" in left:
-                # if left_value == right_value
-                condition = left.strip().split("==")
-                # lvalue = left_value
-                lvalue = condition[0].strip().split()[1]
-                # rvalue = right_value
-                rvalue = condition[1].strip()
-
-                # If both side matches
-                if lvalue == rvalue:
-                    for i in get_data_set_nums(str(right).strip()):
-                        next_level_step_data.append(i)
-                    skip += next_level_step_data
-                else:
-                    skip += get_data_set_nums(str(right).strip())
+            if statement == "if":
+                check_operators()
+            elif statement == "else if":
+                check_operators()
+            elif statement == "else":
+                check_operators()
 
         if next_level_step_data == []:
             CommonUtil.ExecLog(
@@ -405,7 +444,7 @@ def Handle_Conditional_Action(step_data, data_set_no):
         return "passed", skip
     except:
         CommonUtil.ExecLog(sModuleInfo, "Error while handling conditional action", 3)
-        return "failed", []
+        return CommonUtil.Exception_Handler(sys.exc_info()), []
 
 
 def Handle_While_Loop_Action(step_data, data_set_no):
