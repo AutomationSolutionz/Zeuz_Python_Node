@@ -174,6 +174,19 @@ def Login(cli=False):
     username = ConfigModule.get_config_value(AUTHENTICATION_TAG, USERNAME_TAG)
     password = ConfigModule.get_config_value(AUTHENTICATION_TAG, PASSWORD_TAG)
     server_name = ConfigModule.get_config_value(AUTHENTICATION_TAG, "server_address")
+    api = ConfigModule.get_config_value(AUTHENTICATION_TAG, "api-key")
+    flag=True
+    if len(api) > 3 and server_name and check_server_online():
+        url = '/api/auth/token/verify?api_key=%s' % (api)
+        r = RequestFormatter.Get(url)
+    if (isinstance(r,dict)) and r['status'] == 200:
+            token=r['token']
+            res = RequestFormatter.Get("/api/user", headers={'Authorization': "Bearer %s" % token})
+            info = res[0]
+            username=info['username']
+            flag=False
+            ConfigModule.add_config_value(AUTHENTICATION_TAG, "username", username)
+
 
     if password == "YourUserNameGoesHere":
         password = password
@@ -182,10 +195,10 @@ def Login(cli=False):
 
     # form payload object
     user_info_object = {
-        "username": username,
-        "password": password,
-        "project": "",
-        "team": "",
+    "username": username,
+    "password": password,
+    "project": "",
+    "team": "",
     }
 
     # Iniitalize GUI Offline call
@@ -226,9 +239,9 @@ def Login(cli=False):
                 CommonUtil.ExecLog(
                     "", f"Authenticating user: {username}", 4, False,
                 )
-
-                r = RequestFormatter.Get("login_api", user_info_object)
-                if r:
+                if flag:
+                    r = RequestFormatter.Get("login_api", user_info_object)
+                if (isinstance(r,dict) and r['status']==200) or r:
                     CommonUtil.ExecLog(
                         "",
                         f"Authentication successful: USER='{username}', "
@@ -715,6 +728,7 @@ def command_line_args():
     1. python node_cli.py --username USER_NAME --password PASS_XYZ --server https://zeuz.zeuz.ai
     2. node_cli.py --logout --username USER_NAME --password PASS_XYZ --server https://zeuz.zeuz.ai
     3. node_cli.py -u USER_NAME -p PASS_XYZ -s https://zeuz.zeuz.ai
+    4. python node_cli.py -k YOUR_API_KEY --server https://zeuz.zeuz.ai
 
     These 3 scripts will will execute logout from server and then will execute Login(CLI=true) from __main__ but you
     don't need to provide server, username, password again. It will execute the login process automatically for you
@@ -745,6 +759,9 @@ def command_line_args():
         "-s", "--server", action="store", help="Enter server address", metavar=""
     )
     parser_object.add_argument(
+        "-k", "--api_key", action="store", help="Enter api key", metavar=""
+    )
+    parser_object.add_argument(
         "-l", "--logout", action="store_true", help="Logout from the server"
     )
     parser_object.add_argument(
@@ -756,6 +773,7 @@ def command_line_args():
     username = all_arguments.username
     password = all_arguments.password
     server = all_arguments.server
+    api=all_arguments.api_key
     logout = all_arguments.logout
     auto_update = all_arguments.auto_update
 
@@ -764,8 +782,15 @@ def command_line_args():
 
     if auto_update:
         check_for_updates()
-    if username or password or server or logout:
-        if username and password and server:
+    if username or password or server or logout or api:
+        if api and server:
+            ConfigModule.remove_config_value(AUTHENTICATION_TAG, "api-key")
+            ConfigModule.add_config_value(AUTHENTICATION_TAG, "api-key", api)
+            ConfigModule.remove_config_value(AUTHENTICATION_TAG, "server_address")
+            ConfigModule.add_config_value(AUTHENTICATION_TAG, "server_address", server)
+
+
+        elif username and password and server:
             ConfigModule.remove_config_value(AUTHENTICATION_TAG, "server_address")
             ConfigModule.add_config_value(AUTHENTICATION_TAG, "username", username)
             ConfigModule.add_config_value(
