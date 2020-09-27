@@ -2625,6 +2625,7 @@ def db_get_connection():
     sModuleInfo = inspect.currentframe().f_code.co_name + " : " + MODULE_NAME
 
     try:
+        import pyodbc
         db_con = None
 
         # Alias for Shared_Resources.Get_Shared_Variables
@@ -2672,8 +2673,6 @@ def db_get_connection():
                 port=db_port
             )
         else:
-            import pyodbc
-
             # Get the driver for the ODBC connection
             odbc_driver = find_odbc_driver(db_type)
 
@@ -2690,6 +2689,7 @@ def db_get_connection():
 
         # Get db_cursor
         return db_con
+
     except pyodbc.DataError as e:
         traceback.print_exc()
         CommonUtil.ExecLog(sModuleInfo, "pyodbc.DataError", 3)
