@@ -175,18 +175,29 @@ def Login(cli=False):
     password = ConfigModule.get_config_value(AUTHENTICATION_TAG, PASSWORD_TAG)
     server_name = ConfigModule.get_config_value(AUTHENTICATION_TAG, "server_address")
     api = ConfigModule.get_config_value(AUTHENTICATION_TAG, "api-key")
-    flag=True
-    if len(api) > 3 and server_name and check_server_online():
+    api_flag = True
+
+    if api:
+        if not server_name:
+            print("Please provide server url with --server")
+            return
+
         url = '/api/auth/token/verify?api_key=%s' % (api)
         r = RequestFormatter.Get(url)
-    if (isinstance(r,dict)) and r['status'] == 200:
-            token=r['token']
-            res = RequestFormatter.Get("/api/user", headers={'Authorization': "Bearer %s" % token})
-            info = res[0]
-            username=info['username']
-            flag=False
-            ConfigModule.add_config_value(AUTHENTICATION_TAG, "username", username)
-
+        if r:
+            try:
+                token = r['token']
+                res = RequestFormatter.Get("/api/user", headers={'Authorization': "Bearer %s" % token})
+                info = res[0]
+                username=info['username']
+                api_flag=False
+                ConfigModule.add_config_value(AUTHENTICATION_TAG, "username", username)
+            except:
+                print("Incorrect API key...")
+                return
+        else:
+            print("Failed to get authentication token from server.")
+            return
 
     if password == "YourUserNameGoesHere":
         password = password
@@ -195,10 +206,10 @@ def Login(cli=False):
 
     # form payload object
     user_info_object = {
-    "username": username,
-    "password": password,
-    "project": "",
-    "team": "",
+        "username": username,
+        "password": password,
+        "project": "",
+        "team": "",
     }
 
     # Iniitalize GUI Offline call
@@ -239,8 +250,10 @@ def Login(cli=False):
                 CommonUtil.ExecLog(
                     "", f"Authenticating user: {username}", 4, False,
                 )
-                if flag:
+
+                if api_flag:
                     r = RequestFormatter.Get("login_api", user_info_object)
+
                 if (isinstance(r,dict) and r['status']==200) or r:
                     CommonUtil.ExecLog(
                         "",

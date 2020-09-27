@@ -37,3 +37,4 @@ rfc3986-validator
 idna
 pyrsistent
 attrs
+mariadb
