@@ -88,6 +88,11 @@ def load_sa_modules(
 
         if module == "common":
             pass  # Already imported at top of this file
+        elif module == "database":
+            global database
+            from Framework.Built_In_Automation.Database import (
+                BuiltInFunctions as database
+            )
         elif module == "appium":
             global appium
             from Framework.Built_In_Automation.Mobile.CrossPlatform.Appium import (
@@ -1419,7 +1424,7 @@ def Conditional_Action_Handler(data_set, row, logic_row):
             logic_decision = "false"
 
     elif (
-        module == "common"
+        module == "common" or module == "database"
     ):  # compare variable or list, and based on the result conditional actions will work
         try:
             result = common.Compare_Variables(

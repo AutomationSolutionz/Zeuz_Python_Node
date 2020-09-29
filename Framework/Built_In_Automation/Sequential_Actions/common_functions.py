@@ -2616,7 +2616,7 @@ def find_odbc_driver(db_type="postgresql"):
 
 def handle_db_exception(sModuleInfo, e):
     import pyodbc
-    
+
     if isinstance(e, pyodbc.DataError):
         traceback.print_exc()
         CommonUtil.ExecLog(sModuleInfo, "pyodbc.DataError", 3)
