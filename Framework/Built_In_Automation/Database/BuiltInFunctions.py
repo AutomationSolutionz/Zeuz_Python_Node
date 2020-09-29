@@ -232,21 +232,21 @@ def connect_to_db(data_set):
     """
 
     try:
-        for row in data_set:
-            if row[0] == DB_TYPE:
-                sr.Set_Shared_Variables(DB_TYPE, row[2])
-            if row[0] == DB_NAME:
-                sr.Set_Shared_Variables(DB_NAME, row[2])
-            if row[0] == DB_USER_ID:
-                sr.Set_Shared_Variables(DB_USER_ID, row[2])
-            if row[0] == DB_PASSWORD:
-                sr.Set_Shared_Variables(DB_PASSWORD, row[2], allowEmpty=True)
-            if row[0] == DB_HOST:
-                sr.Set_Shared_Variables(DB_HOST, row[2])
-            if row[0] == DB_PORT:
-                sr.Set_Shared_Variables(DB_PORT, row[2])
-            if row[0] == DB_ODBC_DRIVER:
-                sr.Set_Shared_Variables(DB_ODBC_DRIVER, row[2])
+        for left, _, right in data_set:
+            if left == DB_TYPE:
+                sr.Set_Shared_Variables(DB_TYPE, right)
+            if left == DB_NAME:
+                sr.Set_Shared_Variables(DB_NAME, right)
+            if left == DB_USER_ID:
+                sr.Set_Shared_Variables(DB_USER_ID, right)
+            if left == DB_PASSWORD:
+                sr.Set_Shared_Variables(DB_PASSWORD, right, allowEmpty=True)
+            if left == DB_HOST:
+                sr.Set_Shared_Variables(DB_HOST, right)
+            if left == DB_PORT:
+                sr.Set_Shared_Variables(DB_PORT, right)
+            if left == DB_ODBC_DRIVER:
+                sr.Set_Shared_Variables(DB_ODBC_DRIVER, right)
 
         return "passed"
     except Exception:
@@ -274,13 +274,13 @@ def db_select(data_set):
         variable_name = None
         query = None
 
-        for row in data_set:
-            if row[0] == "query":
+        for left, mid, right in data_set:
+            if left == "query":
                 # Get the and query, and remove any whitespaces
-                query = row[2].strip()
+                query = right.strip()
 
-            if "action" in row[1]:
-                variable_name = row[2].strip()
+            if "action" in mid:
+                variable_name = right.strip()
 
         if variable_name is None:
             CommonUtil.ExecLog(sModuleInfo, "Variable name must be provided.", 3)
@@ -339,13 +339,13 @@ def db_non_query(data_set):
         variable_name = None
         query = None
 
-        for row in data_set:
-            if row[0] == "query":
+        for left, mid, right in data_set:
+            if left == "query":
                 # Get the query, and remove any whitespaces
-                query = row[2].strip()
+                query = right.strip()
 
-            if "action" in row[1]:
-                variable_name = row[2].strip()
+            if "action" in mid:
+                variable_name = right.strip()
         
         if variable_name is None:
             CommonUtil.ExecLog(sModuleInfo, "Variable name must be provided.", 3)
