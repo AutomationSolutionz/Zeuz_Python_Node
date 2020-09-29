@@ -2617,32 +2617,32 @@ def find_odbc_driver(db_type="postgresql"):
 def handle_db_exception(sModuleInfo, e):
     import pyodbc
     
-    if pyodbc.DataError == e:
+    if isinstance(e, pyodbc.DataError):
         traceback.print_exc()
         CommonUtil.ExecLog(sModuleInfo, "pyodbc.DataError", 3)
         return CommonUtil.Exception_Handler(e)
 
-    if pyodbc.InternalError == e:
+    if isinstance(e, pyodbc.InternalError):
         traceback.print_exc()
         CommonUtil.ExecLog(sModuleInfo, "pyodbc.InternalError", 3)
         return CommonUtil.Exception_Handler(e)
 
-    if pyodbc.IntegrityError == e:
+    if isinstance(e, pyodbc.IntegrityError):
         traceback.print_exc()
         CommonUtil.ExecLog(sModuleInfo, "pyodbc.IntegrityError", 3)
         return CommonUtil.Exception_Handler(e)
 
-    if pyodbc.OperationalError == e:
+    if isinstance(e, pyodbc.OperationalError):
         traceback.print_exc()
         CommonUtil.ExecLog(sModuleInfo, "pyodbc.OperationalError", 3)
         return CommonUtil.Exception_Handler(e)
 
-    if pyodbc.NotSupportedError == e:
+    if isinstance(e, pyodbc.NotSupportedError):
         traceback.print_exc()
         CommonUtil.ExecLog(sModuleInfo, "pyodbc.NotSupportedError", 3)
         return CommonUtil.Exception_Handler(e)
 
-    if pyodbc.ProgrammingError == e:
+    if isinstance(e, pyodbc.ProgrammingError):
         traceback.print_exc()
         CommonUtil.ExecLog(sModuleInfo, "pyodbc.ProgrammingError", 3)
         return CommonUtil.Exception_Handler(e)
