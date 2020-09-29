@@ -318,6 +318,298 @@ def db_select(data_set):
 
 
 @logger
+def select_from_db(data_set):
+    """
+    This action performs a select query and stores the result of the query in the variable <var_name>
+    The result will be stored in the format: list of lists
+        [ [row1...], [row2...], ... ]
+
+    table             input parameter         <table name: test >
+    columns             input parameter         <column name: name,id>
+    select from db        database action         <var_name: name of the variable to store the result of the query>
+
+    :param data_set: Action data set
+    :return: string: "passed" or "failed" depending on the outcome
+    """
+
+    sModuleInfo = inspect.currentframe().f_code.co_name + " : " + MODULE_NAME
+
+    try:
+        table_name = None
+        query = None
+        where=None
+        columns=None
+        variable_name=None
+
+        for left, mid, right in data_set:
+            if "table" in left.lower():
+                # Get the and query, and remove any whitespaces
+                table_name= right.strip()
+            if left.lower()=="where":
+                where=right.strip()
+            if "action" in mid.lower():
+                variable_name = right.strip()
+            if "columns" in left.lower():
+                if right=="" or right=="*":
+                    columns=["*"]
+                columns=right.split(',')
+
+        if variable_name is None:
+            CommonUtil.ExecLog(sModuleInfo, "Variable name must be provided.", 3)
+            return "failed"
+
+        query="select "
+        for index in range(len(columns)):
+            query+=columns[index]+" "
+            if(index!=(len(columns)-1)):
+                query+=","
+        query+="from "+table_name
+        if where is not None:
+            query+=" where "+where
+        # Get db_cursor and execute
+        db_con = db_get_connection()
+        db_cursor = db_con.cursor()
+        db_cursor.execute(query)
+        # Commit the changes
+        db_con.commit()
+        # Fetch all rows and convert into list
+        db_rows = []
+        while True:
+            db_row = db_cursor.fetchone()
+            if not db_row:
+                break
+            db_rows.append(list(db_row))
+
+        # Set the rows as a shared variable
+        sr.Set_Shared_Variables(variable_name, db_rows)
+
+        CommonUtil.ExecLog(
+            sModuleInfo,
+            "Fetched %d rows and stored into variable: %s"
+            % (len(db_rows), variable_name),
+            0,
+        )
+        return "passed"
+    except Exception as e:
+        return handle_db_exception(sModuleInfo, e)
+
+
+@logger
+def insert_into_db(data_set):
+    """
+    This action performs a  insert query and stores the "number of rows affected"
+    in the variable <var_name>
+
+    The result will be stored in the format: int
+        value
+
+    table             input parameter         <table name: test >
+    columns             input parameter         <column name: name>
+    values             input parameter         <values : admin>
+    insert into db        database action         <var_name: name of the variable to store the result of the query>
+
+    :param data_set: Action data set
+    :return: string: "passed" or "failed" depending on the outcome
+    """
+
+    sModuleInfo = inspect.currentframe().f_code.co_name + " : " + MODULE_NAME
+
+    try:
+        table_name = None
+        query = None
+        values=None
+        columns=None
+        variable_name=None
+
+        for left, mid, right in data_set:
+            if "table" in left.lower():
+                # Get the and query, and remove any whitespaces
+                table_name= right.strip()
+            if "values" in left.lower():
+                values=right.split(',')
+            if "action" in mid:
+                variable_name = right.strip()
+            if "columns" in left.lower():
+                columns=right.split(',')
+
+        if variable_name is None:
+            CommonUtil.ExecLog(sModuleInfo, "Variable name must be provided.", 3)
+            return "failed"
+
+        query="insert into  "+table_name+' ( '
+        for index in range(len(columns)):
+            query+=columns[index]+" "
+            if(index!=(len(columns)-1)):
+                query+=","
+                # Get db_cursor and execute
+        query+=") values ("
+        for index in range(len(values)):
+            query += values[index] + " "
+            if (index != (len(values) - 1)):
+                query += ","
+        query+=" ) "
+        db_con = db_get_connection()
+        db_cursor = db_con.cursor()
+        db_cursor.execute(query)
+        # Commit the changes
+        db_con.commit()
+
+        # Fetch the number of rows affected
+        db_rows_affected = db_cursor.rowcount
+
+        # Set the rows as a shared variable
+        sr.Set_Shared_Variables(variable_name, db_rows_affected)
+
+        CommonUtil.ExecLog(
+            sModuleInfo, "Number of rows affected: %d" % db_rows_affected, 0
+        )
+        return "passed"
+
+    except Exception as e:
+        return handle_db_exception(sModuleInfo, e)
+
+
+@logger
+def delete_from_db(data_set):
+    """
+    This action performs a  delete query and stores the "number of rows affected"
+    in the variable <var_name>
+
+    The result will be stored in the format: int
+        value
+
+    table             input parameter         <table name: test >
+    where             input parameter         <where condition: name='admin'>
+    delete from db        database action         <var_name: name of the variable to store the result of the query>
+
+    :param data_set: Action data set
+    :return: string: "passed" or "failed" depending on the outcome
+    """
+
+
+    sModuleInfo = inspect.currentframe().f_code.co_name + " : " + MODULE_NAME
+
+    try:
+        table_name = None
+        query = None
+        where = None
+        variable_name = None
+
+        for left, mid, right in data_set:
+            if "table" in left.lower():
+                # Get the and query, and remove any whitespaces
+                table_name = right.strip()
+            if left == "where":
+                where = right.strip()
+            if "action" in mid:
+                variable_name = right.strip()
+
+        if variable_name is None:
+            CommonUtil.ExecLog(sModuleInfo, "Variable name must be provided.", 3)
+            return "failed"
+
+        query = "delete from "+ table_name
+        if where is not None:
+            query +=" where "+where
+        # Get db_cursor and execute
+        db_con = db_get_connection()
+        db_cursor = db_con.cursor()
+        db_cursor.execute(query)
+
+        # Commit the changes
+        db_con.commit()
+
+        # Fetch the number of rows affected
+        db_rows_affected = db_cursor.rowcount
+
+        # Set the rows as a shared variable
+        sr.Set_Shared_Variables(variable_name, db_rows_affected)
+
+        CommonUtil.ExecLog(
+            sModuleInfo, "Number of rows affected: %d" % db_rows_affected, 0
+        )
+        return "passed"
+
+    except Exception as e:
+        return handle_db_exception(sModuleInfo, e)
+
+
+@logger
+def update_into_db(data_set):
+    """
+    This action performs a  update query and stores the "number of rows affected"
+    in the variable <var_name>
+
+    The result will be stored in the format: int
+        value
+
+    table             input parameter         <table name: test >
+    columns             input parameter         <column name: name>
+    values             input parameter         <column name: admin>
+    where             input parameter         <where condition: name='admin'>
+    update into db        database action         <var_name: name of the variable to store the result of the query>
+
+    :param data_set: Action data set
+    :return: string: "passed" or "failed" depending on the outcome
+    """
+
+    sModuleInfo = inspect.currentframe().f_code.co_name + " : " + MODULE_NAME
+
+    try:
+        table_name = None
+        query = None
+        where=None
+        columns=None
+        values=None
+        variable_name=None
+
+        for left, mid, right in data_set:
+            if "table" in left.lower():
+                # Get the and query, and remove any whitespaces
+                table_name= right.strip()
+            if left=="where":
+                where=right.strip()
+            if "action" in mid:
+                variable_name = right.strip()
+            if "columns" in left.lower():
+                columns=right.split(',')
+            if "values" in left.lower():
+                values=right.split(',')
+
+        if variable_name is None:
+            CommonUtil.ExecLog(sModuleInfo, "Variable name must be provided.", 3)
+            return "failed"
+
+        query="update "+table_name+" set "
+        for index in range(len(columns)):
+            query+=columns[index]+"= "
+            query+=values[index]+" "
+            if(index!=(len(columns)-1)):
+                query+=","
+        if where is not None:
+            query+=" where "+where
+        # Get db_cursor and execute
+        db_con = db_get_connection()
+        db_cursor = db_con.cursor()
+        db_cursor.execute(query)
+        db_con.commit()
+
+        # Fetch the number of rows affected
+        db_rows_affected = db_cursor.rowcount
+
+        # Set the rows as a shared variable
+        sr.Set_Shared_Variables(variable_name, db_rows_affected)
+
+        CommonUtil.ExecLog(
+            sModuleInfo, "Number of rows affected: %d" % db_rows_affected, 0
+        )
+        return "passed"
+
+    except Exception as e:
+        return handle_db_exception(sModuleInfo, e)
+
+
+@logger
 def db_non_query(data_set):
     """
     This action performs a non-query (insert/update/delete) query and stores the "number of rows affected"
