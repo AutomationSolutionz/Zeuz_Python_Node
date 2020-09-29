@@ -225,7 +225,7 @@ def connect_to_db(data_set):
     db_host         input parameter         <host of db, ex: localhost, 127.0.0.1>
     db_port         input parameter         <port of db, ex: 5432 for postgres by default>
     odbc_driver     optional parameter      <specify the odbc driver, optional, can be found from pyodbc.drivers()>
-    connect to db   common action           Connect to a database
+    connect to db   database action         Connect to a database
 
     :param data_set: Action data set
     :return: string: "passed" or "failed" depending on the outcome
@@ -247,8 +247,6 @@ def connect_to_db(data_set):
                 sr.Set_Shared_Variables(DB_PORT, row[2])
             if row[0] == DB_ODBC_DRIVER:
                 sr.Set_Shared_Variables(DB_ODBC_DRIVER, row[2])
-        
-
 
         return "passed"
     except Exception:
@@ -264,7 +262,7 @@ def db_select(data_set):
         [ [row1...], [row2...], ... ]
 
     query               input parameter         <query: SELECT * FROM test_cases ORDER BY tc_id ASC LIMIT 10>
-    db: select     input parameter         <var_name: name of the variable to store the result of the query>
+    select query        database action         <var_name: name of the variable to store the result of the query>
 
     :param data_set: Action data set
     :return: string: "passed" or "failed" depending on the outcome
@@ -281,8 +279,16 @@ def db_select(data_set):
                 # Get the and query, and remove any whitespaces
                 query = row[2].strip()
 
-            if row[0] == "db: select":
+            if "action" in row[1]:
                 variable_name = row[2].strip()
+
+        if variable_name is None:
+            CommonUtil.ExecLog(sModuleInfo, "Variable name must be provided.", 3)
+            return "failed"
+        
+        if query is None:
+            CommonUtil.ExecLog(sModuleInfo, "SQL query must be provided.", 3)
+            return "failed"
 
         # Get db_cursor and execute
         db_con = db_get_connection()
@@ -312,15 +318,16 @@ def db_select(data_set):
 
 
 @logger
-def db_select_single_value(data_set):
+def db_non_query(data_set):
     """
-    This action performs a select query and stores the ONLY value (a single value) of the query in the variable <var_name>
-    NOTE: This is NOT equivalent to a row, it just stores the result of a single value, say the count(...) function
-    The result will be stored in the format: string
+    This action performs a non-query (insert/update/delete) query and stores the "number of rows affected"
+    in the variable <var_name>
+
+    The result will be stored in the format: int
         value
 
-    query                       input parameter    <query: SELECT count(*) FROM user_info>
-    db: select single value  input parameter    <var_name: name of the variable to store the result of the query>
+    query                            input parameter    <query: INSERT INTO table_name(col1, col2, ...) VALUES (val1, val2, ...)>
+    insert update delete query       database action    <var_name: name of the variable to store the no of rows affected>
 
     :param data_set: Action data set
     :return: string: "passed" or "failed" depending on the outcome
@@ -337,62 +344,16 @@ def db_select_single_value(data_set):
                 # Get the query, and remove any whitespaces
                 query = row[2].strip()
 
-            if row[0] == "db: select single value":
+            if "action" in row[1]:
                 variable_name = row[2].strip()
-
-        # Get db_cursor and execute
-        db_con = db_get_connection()
-        db_cursor = db_con.cursor()
-        db_cursor.execute(query)
-
-        # Fetch a single value
-        try:
-            db_val = db_cursor.fetchone()[0]
-        except:
-            db_val = None
-
-        # Set the value as a shared variable
-        sr.Set_Shared_Variables(variable_name, db_val)
-
-        CommonUtil.ExecLog(
-            sModuleInfo,
-            "Fetched single val and stored into - %s = %s" % (variable_name, db_val),
-            0,
-        )
-        return "passed"
-    except Exception as e:
-        return handle_db_exception(sModuleInfo, e)
-
-
-@logger
-def db_non_query(data_set):
-    """
-    This action performs a non-query (insert/update/delete) query and stores the "number of rows affected"
-    in the variable <var_name>
-
-    The result will be stored in the format: int
-        value
-
-    non query                            input parameter    <query: INSERT INTO table_name(col1, col2, ...) VALUES (val1, val2, ...)>
-    db: non query: insert/update/delete  input parameter    <var_name: name of the variable to store the no of rows affected>
-
-    :param data_set: Action data set
-    :return: string: "passed" or "failed" depending on the outcome
-    """
-
-    sModuleInfo = inspect.currentframe().f_code.co_name + " : " + MODULE_NAME
-
-    try:
-        variable_name = None
-        query = None
-
-        for row in data_set:
-            if row[0] == "non query":
-                # Get the query, and remove any whitespaces
-                query = row[2].strip()
-
-            if row[0] == "db: non query: insert/update/delete":
-                variable_name = row[2].strip()
+        
+        if variable_name is None:
+            CommonUtil.ExecLog(sModuleInfo, "Variable name must be provided.", 3)
+            return "failed"
+        
+        if query is None:
+            CommonUtil.ExecLog(sModuleInfo, "SQL query must be provided.", 3)
+            return "failed"
 
         # Get db_cursor and execute
         db_con = db_get_connection()
