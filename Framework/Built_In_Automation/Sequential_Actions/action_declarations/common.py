@@ -28,36 +28,36 @@ declarations = (
     { "name": "randomize list",                              "function": "Randomize_List",                        "screenshot": "none" },
     { "name": "create 3d list",                              "function": "create_3d_list",                        "screenshot": "none" },
     { "name": "download ftp file",                           "function": "download_ftp_file",                     "screenshot": "none" },
-    { "name": "write into single cell in excel",             "function": "write_into_single_cell_in_excel",       "screenshot": "desktop" },
-    { "name": "run macro in excel",                          "function": "run_macro_in_excel",                    "screenshot": "desktop" },
-    { "name": "get excel table",                             "function": "get_excel_table",                       "screenshot": "desktop" },
     { "name": "save text from file into variable",           "function": "save_text_from_file_into_variable",     "screenshot": "none" },
     { "name": "compare partial variable",                    "function": "Compare_Partial_Variables",             "screenshot": "none" },
-    { "name": "send mail",                                   "function": "send_mail",                             "screenshot": "none" },
-    { "name": "check latest mail",                           "function": "check_latest_mail",                     "screenshot": "none" },
     { "name": "save value from dictionary by key",           "function": "save_dict_value_by_key",                "screenshot": "none" },
     { "name": "save key value from dict list",               "function": "save_key_value_from_dict_list",         "screenshot": "none" },
     { "name": "extract date",                                "function": "extract_date",                          "screenshot": "none" },
     { "name": "voice command response",                      "function": "voice_command_response",                "screenshot": "none" },
     { "name": "compare partial variables",                   "function": "Compare_Partial_Variables",             "screenshot": "none" },
-    # Database actions
-    { "name": "connect to db",                               "function": "connect_to_db",                         "screenshot": "none" },
-    { "name": "db: select",                                  "function": "db_select",                             "screenshot": "none" },
-    { "name": "db: select single value",                     "function": "db_select_single_value",                "screenshot": "none" },
-    { "name": "db: insert/update/delete",                    "function": "db_non_query",                          "screenshot": "none" },
+    { "name": "save variable by list difference",            "function": "save_variable_by_list_difference",      "screenshot": "none" },
+    { "name": "split string",                                "function": "split_string",                          "screenshot": "desktop" },
+    { "name": "create/append to list or dictionary",         "function": "save_into_variable",                    "screenshot": "desktop" },
+    { "name": "save into variable",                          "function": "save_into_variable",                    "screenshot": "desktop" },
+    { "name": "save length",                                 "function": "save_length",                           "screenshot": "desktop" },
+    { "name": "validate schema",                             "function": "validate_schema",                       "screenshot": "desktop" },
+
+    # Mail actions
+    { "name": "send mail",                                   "function": "send_mail",                             "screenshot": "none" },
+    { "name": "check latest mail",                           "function": "check_latest_mail",                     "screenshot": "none" },
+
     # Global Variable Actions
     { "name": "get global list variable",                    "function": "get_global_list_variable",              "screenshot": "none" },
     { "name": "append to global list variable",              "function": "append_to_global_list_variable",        "screenshot": "none" },
     { "name": "remove item from global list variable",       "function": "remove_item_from_global_list_variable", "screenshot": "none" },
-    { "name": "save variable by list difference",            "function": "save_variable_by_list_difference",      "screenshot": "none" },
-    { "name": "read from excel",                             "function": "excel_read",                            "screenshot": "desktop" },
-    { "name": "split string",                                "function": "split_string",                          "screenshot": "desktop" },
-    { "name": "excel comparison",                            "function": "excel_comparison",                      "screenshot": "desktop" },
-    { "name": "create/append to list or dictionary",         "function": "save_into_variable",                    "screenshot": "desktop" },
-    { "name": "save into variable",                          "function": "save_into_variable",                    "screenshot": "desktop" },
-    { "name": "save length",                                 "function": "save_length",                           "screenshot": "desktop" },
+
+    # Excel actions
+    { "name": "write into single cell in excel",             "function": "write_into_single_cell_in_excel",       "screenshot": "desktop" },
+    { "name": "run macro in excel",                          "function": "run_macro_in_excel",                    "screenshot": "desktop" },
+    { "name": "get excel table",                             "function": "get_excel_table",                       "screenshot": "desktop" },
     { "name": "write into excel",                            "function": "excel_write",                           "screenshot": "desktop" },
-    { "name": "validate schema",                             "function": "validate_schema",                       "screenshot": "desktop" },
+    { "name": "excel comparison",                            "function": "excel_comparison",                      "screenshot": "desktop" },
+    { "name": "read from excel",                             "function": "excel_read",                            "screenshot": "desktop" },
 )
 
 module_name = "common"
