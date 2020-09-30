@@ -298,6 +298,7 @@ def Handle_Conditional_Action(step_data, data_set_no):
         next_level_step_data = []
         skip = []
         condition_matched = False
+        if_exists = False
         data_set = common.shared_variable_to_value(data_set)
         if data_set in failed_tag_list:
             return "failed"
@@ -419,10 +420,18 @@ def Handle_Conditional_Action(step_data, data_set_no):
                         skip += get_data_set_nums(str(right).strip())
 
             if statement == "if":
+                if_exists = True
+                condition_matched = False
                 check_operators()
             elif statement == "else if":
+                if not if_exists:
+                    CommonUtil.ExecLog(sModuleInfo, "No 'if' statement found. Please define a 'if' statement first", 3)
+                    return "failed", []
                 check_operators()
             elif statement == "else":
+                if not if_exists:
+                    CommonUtil.ExecLog(sModuleInfo, "No 'if' statement found. Please define a 'if' statement first", 3)
+                    return "failed", []
                 check_operators()
 
         if next_level_step_data == []:
@@ -433,9 +442,22 @@ def Handle_Conditional_Action(step_data, data_set_no):
             )
 
         for data_set_index in next_level_step_data:
+            if data_set_index >= len(step_data):
+                CommonUtil.ExecLog(
+                    sModuleInfo,
+                    "You did not define action %s. So skipping this action index" % str(data_set_index+1),
+                    2
+                )
+                continue
+            elif data_set_index == data_set_no:
+                CommonUtil.ExecLog(
+                    sModuleInfo,
+                    "You are running an if else action within another if else action. It may create infinite recursion in some cases",
+                    2
+                )
             result, skip_for_loop = Run_Sequential_Actions(
                 [data_set_index]
-            )  # new edit: full step data is passed. [step_data[data_set_index]]) # Recursively call this function until all called data sets are complete
+            ) # Running
             if result in failed_tag_list:
                 return result, list(set(skip + skip_for_loop))
             skip = list(set(skip + skip_for_loop))
