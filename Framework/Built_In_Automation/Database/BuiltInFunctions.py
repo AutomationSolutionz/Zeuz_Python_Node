@@ -340,6 +340,9 @@ def select_from_db(data_set):
         where=None
         columns=None
         variable_name=None
+        group_by=None
+        order_by=None
+        order=" "
 
         for left, mid, right in data_set:
             if "table" in left.lower():
@@ -349,6 +352,11 @@ def select_from_db(data_set):
                 where=right.strip()
             if "action" in mid.lower():
                 variable_name = right.strip()
+            if "group" in left.lower():
+                group_by=right.split(',')
+            if "order" in left.lower():
+                order_by=right.split(',')
+
             if "columns" in left.lower():
                 if right=="" or right=="*":
                     columns=["*"]
@@ -363,9 +371,25 @@ def select_from_db(data_set):
             query+=columns[index]+" "
             if(index!=(len(columns)-1)):
                 query+=","
+
         query+="from "+table_name
         if where is not None:
             query+=" where "+where
+
+        if group_by is not  None:
+            query+=" group by "
+            for index in range(len(group_by)):
+                query+=group_by[index]+" "
+                if(index!=(len(group_by)-1)):
+                    query+=","
+
+        if order_by is not None:
+            query += " order by "
+            for index in range(len(order_by)):
+                query += order_by[index] + " "
+                if (index != (len(order_by) - 1)):
+                    query += ","
+
         # Get db_cursor and execute
         db_con = db_get_connection()
         db_cursor = db_con.cursor()
