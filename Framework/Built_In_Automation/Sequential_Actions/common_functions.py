@@ -786,16 +786,16 @@ def Compare_Partial_Variables(data_set):
 @logger
 def save_into_variable(data_set):
     """Save variable with native python type.
-    
+
     Can also create/append/update a str, list or dictionary from the given data.
-    
+
     Accepts any valid Python representation or JSON data.
 
     Args:
         data_set:
           data               | element parameter  | valid JSON string
           operation          | element parameter  | save/update
-          extra operation    | optional parameter | length/no duplicate
+          extra operation    | optional parameter | length/no duplicate/ascending sort/descending sort
           save into variable | common action      | variable_name
 
     Returns:
@@ -858,20 +858,58 @@ def save_into_variable(data_set):
                     variable_value = len(variable_value)
                 elif "no duplicate" in extra_operation:
                     variable_value = list(set(variable_value))
+                elif "sort" in extra_operation:
+                    variable_value = sort_list(variable_value, extra_operation)
         except:
             CommonUtil.ExecLog(
-                    sModuleInfo, f"Failed to perform extra action.", 1,
+                    sModuleInfo, f"Failed to perform extra action.", 3,
             )
             return "failed"
 
-        
         sr.Set_Shared_Variables(variable_name, variable_value)
 
         return "passed"
     except:
-        CommonUtil.ExecLog(sModuleInfo, "Failed to save variable.", 1)
+        CommonUtil.ExecLog(sModuleInfo, "Failed to save variable.", 3)
         return "failed"
 
+
+def sort_list(variable_value, extra_operation, dictionary=False):
+    if isinstance(variable_value,dict):
+        dictionary = True
+    index = 0
+    for i in variable_value:
+        if isinstance(i, list):
+            variable_value[index] = sort_list(i, extra_operation)
+        elif isinstance(i, dict):
+            variable_value[index] = sort_list(i, extra_operation, dictionary=True)
+        else:
+            try:
+                return_when_error = variable_value
+                if dictionary and (isinstance(variable_value[i], list) or isinstance(variable_value[i], dict)):
+                    variable_value[i] = sort_list(variable_value[i], extra_operation)
+                else:
+                    if "descending" in extra_operation:
+                        variable_value = sorted(variable_value, reverse=True)
+                    else:
+                        variable_value = sorted(variable_value)
+                    break
+            except TypeError:
+                CommonUtil.ExecLog(
+                    "",
+                    "Skipping the list %s\n" %str(variable_value)+
+                    "Items inside your list should be of same datatype. Example:\n" +
+                    "<list of numbers> [1,2,4,3.5]\n" +
+                    "<list of strings> ['apple','cat','20.5']\n" +
+                    "<list of lists> [ [1,2,4,3.5], ['apple','cat','20.5'] ]\n" +
+                    "Above is a 2 Dimensional list but you can provide any n Dimensional list but the unit lists should have items of same datatype\n" +
+                    "<list of dicts> [ {'name':'John', 'id':20}, {'name':'Mike', 'id':10} ]",
+                    2
+                )
+                return return_when_error
+
+        index += 1
+    return variable_value
 
 @logger
 @deprecated
