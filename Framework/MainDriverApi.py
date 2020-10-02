@@ -540,11 +540,11 @@ def upload_zip(server_id, port_id, temp_folder, run_id, file_name, base_path=Fal
                 "file_name": file_name,
                 "base_path": base_path,
             }
-            r = requests.post(url_link, files=file_list, data=data_list)
+            r = requests.post(url_link, files=file_list, data=data_list, verify=False)
             if r.status_code == 200:
                 CommonUtil.ExecLog(
                     sModuleInfo,
-                    "Zip File is uploaded to production successfully",
+                    "Uploaded logs and screenshots as zip file to server.",
                     4,
                     False,
                 )
@@ -552,7 +552,7 @@ def upload_zip(server_id, port_id, temp_folder, run_id, file_name, base_path=Fal
             else:
                 CommonUtil.ExecLog(
                     sModuleInfo,
-                    "Zip File is not uploaded to production successfully. Trying again",
+                    "Failed to upload zip file to server... retrying %d." % i+1,
                     4,
                     False,
                 )
@@ -561,7 +561,7 @@ def upload_zip(server_id, port_id, temp_folder, run_id, file_name, base_path=Fal
         except:
             CommonUtil.ExecLog(
                 sModuleInfo,
-                "Zip File is not uploaded to production successfully. Trying again",
+                "Failed to upload zip file to server... retrying %d." % i+1,
                 4,
                 False,
             )
@@ -675,7 +675,7 @@ def download_attachments_for_test_case(sModuleInfo, run_id, test_case, temp_ini_
         download_url += "/static" + each[0]
 
         # Use request streaming to efficiently download files
-        with requests.get(download_url, stream=True) as r:
+        with requests.get(download_url, stream=True, verify=False) as r:
             shutil.copyfileobj(r.raw, f)
 
         # f.write(urllib.request.urlopen(download_url).read())
