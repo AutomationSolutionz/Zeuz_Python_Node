@@ -874,20 +874,21 @@ def save_into_variable(data_set):
         return "failed"
 
 
-def sort_list(variable_value, extra_operation, dictionary=False):
-    if isinstance(variable_value,dict):
-        dictionary = True
+def sort_list(variable_value, extra_operation):
+    dictionary = True if isinstance(variable_value, dict) else False
     index = 0
     for i in variable_value:
         if isinstance(i, list):
             variable_value[index] = sort_list(i, extra_operation)
         elif isinstance(i, dict):
-            variable_value[index] = sort_list(i, extra_operation, dictionary=True)
+            variable_value[index] = sort_list(i, extra_operation)
         else:
             try:
                 return_when_error = variable_value
                 if dictionary and (isinstance(variable_value[i], list) or isinstance(variable_value[i], dict)):
                     variable_value[i] = sort_list(variable_value[i], extra_operation)
+                elif dictionary:
+                    pass
                 else:
                     if "descending" in extra_operation:
                         variable_value = sorted(variable_value, reverse=True)
