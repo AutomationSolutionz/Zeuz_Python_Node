@@ -23,13 +23,13 @@ from selenium.webdriver.firefox.firefox_binary import FirefoxBinary
 from selenium.webdriver.support.ui import Select
 from selenium.webdriver.support.ui import WebDriverWait
 from selenium.webdriver.common.action_chains import ActionChains
-from selenium.common.exceptions import NoAlertPresentException, ElementClickInterceptedException
+from selenium.common.exceptions import NoAlertPresentException, ElementClickInterceptedException, WebDriverException, SessionNotCreatedException
 from selenium.webdriver.common.keys import Keys
 from selenium.webdriver.common.by import By
 from selenium.webdriver.support import expected_conditions as EC
 import pyautogui
 from pyautogui import press, typewrite
-
+import driver_updater
 from Framework.Utilities import CommonUtil, ConfigModule
 from Framework.Built_In_Automation.Shared_Resources import (
     BuiltInFunctionSharedResources as Shared_Resources,
@@ -83,7 +83,7 @@ else:
 
 
 @logger
-def Open_Browser(dependency, window_size_X=None, window_size_Y=None):
+def Open_Browser(dependency, window_size_X=None, window_size_Y=None, update_driver_on_fail = True):
     """ Launch browser and create instance """
 
     global selenium_driver
@@ -221,6 +221,31 @@ def Open_Browser(dependency, window_size_X=None, window_size_Y=None):
             )
             return "failed"
         # time.sleep(3)
+
+    except SessionNotCreatedException as exc:
+        if "This version" in exc.msg and "only supports" in exc.msg and update_driver_on_fail:
+            CommonUtil.ExecLog(
+                sModuleInfo,
+                "Couldn't open the browser because the webdriver is backdated. Trying again after updating webdrivers",
+                2
+            )
+            driver_updater.main()
+            Open_Browser(dependency, window_size_X, window_size_Y, update_driver_on_fail=False)
+        else:
+            return CommonUtil.Exception_Handler(sys.exc_info())
+
+    except WebDriverException as exc:
+        if "needs to be in PATH" in exc.msg and update_driver_on_fail:
+            CommonUtil.ExecLog(
+                sModuleInfo,
+                "Couldn't open the browser because the webdriver is not installed. Trying again after installing webdrivers",
+                2
+            )
+            driver_updater.main()
+            Open_Browser(dependency, window_size_X, window_size_Y, update_driver_on_fail=False)
+        else:
+            return CommonUtil.Exception_Handler(sys.exc_info())
+
     except Exception:
         return CommonUtil.Exception_Handler(sys.exc_info())
 
