@@ -37,9 +37,9 @@ def main():
     print("> %s" % PYTHON_SCRIPTS_DIR)
 
     update(pathname=PYTHON_SCRIPTS_DIR)
-
-    print("\nUpdate complete. Press any key or [ENTER] to exit.")
-    input()
+    if __name__ == "__main__":
+        print("\nUpdate complete. Press any key or [ENTER] to exit.")
+        input()
 
 
 if __name__ == "__main__":
