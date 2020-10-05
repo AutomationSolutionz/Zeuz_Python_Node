@@ -766,10 +766,14 @@ def Save_Text(data_set):
             sys.exc_info(), None, "Error reading and saving element text"
         )
 
-
+@deprecated
 @logger
 def Compare_Variables(data_set):
-    """ Compare shared variables / strings to eachother """
+    """ Compare shared variables / strings to each other """
+    CommonUtil.ExecLog(
+        "",
+        " Use our other action 'if else'",
+        2)
     # Compares two variables from Field and Value on any line that is not the action line
     sModuleInfo = inspect.currentframe().f_code.co_name + " : " + MODULE_NAME
     return sr.Compare_Variables([data_set])
@@ -1097,13 +1101,17 @@ def append_dict_shared_variable(data_set):
     except Exception:
         return CommonUtil.Exception_Handler(sys.exc_info())
 
-
+@deprecated
 @logger
 def save_dict_value_by_key(data_set):
     """ Gets the value of a key in a dictionary and saves it in a shared variable """
 
     sModuleInfo = inspect.currentframe().f_code.co_name + " : " + MODULE_NAME
-
+    CommonUtil.ExecLog(
+        sModuleInfo,
+        "You can access any index of list or dictionary using python syntax.\n" +
+        " Use our other action 'Save variable - number string list dictionary'",
+        2)
     try:
         # Split the data into left and right side (just like variable assignment x = y)
         left_side, right_side = data_set[0][2].split("=", 1)

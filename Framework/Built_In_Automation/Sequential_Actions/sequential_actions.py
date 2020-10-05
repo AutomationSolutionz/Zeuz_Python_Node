@@ -302,26 +302,142 @@ def Handle_Conditional_Action(step_data, data_set_no):
         data_set = step_data[data_set_no]
         next_level_step_data = []
         skip = []
+        condition_matched = False
+        if_exists = False
         data_set = common.shared_variable_to_value(data_set)
         if data_set in failed_tag_list:
             return "failed"
 
         for left, _, right in data_set:
-            # Verify that the row we're executing contains the 'if' and '==' tokens.
-            if "if" in left.lower() and "==" in left:
-                # if left_value == right_value
-                condition = left.strip().split("==")
-                # lvalue = left_value
-                lvalue = condition[0].strip().split()[1]
-                # rvalue = right_value
-                rvalue = condition[1].strip()
+            statement = ""
+            operator = ""
+            operators = {"==": 0, "!=": 0, "<=": 0, ">=": 0, ">": 0, "<": 0}
+            statements = ("else if", "else", "if")
+            for i in statements:
+                if left.lower().find(i) == 0:
+                    statement = i
+                    break
+            for i in operators:
+                if i in left:
+                    operators[i] += 1
+            operators["<"] -= operators["<="]
+            operators[">"] -= operators[">="]
 
-                # If both side matches
-                if lvalue == rvalue:
-                    next_level_step_data = get_data_set_nums(str(right).strip())
-                    skip += next_level_step_data
-                else:
-                    skip += get_data_set_nums(str(right).strip())
+            if statement not in statements:
+                CommonUtil.ExecLog(
+                    sModuleInfo,
+                    "Specify a statement among (if, else if, else) and add a <single space> after that",
+                    3,
+                )
+                return "failed"
+            if sum(operators.values()) == 0 and statement != "else":
+                CommonUtil.ExecLog(
+                    sModuleInfo,
+                    "Specify an operator among (==, !=, <, >, <=, >=) and add a <single space> before and after the operator",
+                    3,
+                )
+                return "failed"
+            elif sum(operators.values()) == 1:
+                for i in operators:
+                    if operators[i] == 1:
+                        operator = i
+                        break
+            else:
+                # need regex to handle more than one operators to separate operator and right/left values
+                pass
+
+            try:
+                """Actual format: Statement <single space> Lvalue <single space> operator <single space> Rvalue
+                Lvalue and Rvalue can have spaces at starting or ending so don't try stripping them. it can manipulate
+                their actual values. Suppose, %|XY|% = "Hello " stripping will remove the last space"""
+
+                if statement != "else":
+                    Lvalue, Rvalue = left[len(statement + " "):].split(operator)  # remove "if "
+                    Lvalue = Lvalue[:-1] if Lvalue[-1] == " " else Lvalue  # remove 1 space before the operator
+                    Rvalue = Rvalue[1:] if Rvalue[0] == " " else Rvalue  # remove 1 space after the operator
+                    Lvalue, Rvalue = CommonUtil.parse_value_into_object(Lvalue), CommonUtil.parse_value_into_object(Rvalue)
+            except:
+                CommonUtil.ExecLog(
+                    sModuleInfo,
+                    "Couldn't parse Left and Right values",
+                    3,
+                )
+                return "failed"
+
+            def check_operators():
+                nonlocal skip, next_level_step_data, condition_matched
+                if statement == "else":
+                    if not condition_matched:
+                        condition_matched = True
+                        for i in get_data_set_nums(str(right).strip()):
+                            next_level_step_data.append(i)
+                        skip += next_level_step_data
+                    else:
+                        skip += get_data_set_nums(str(right).strip())
+
+                elif operator == "==":
+                    if Lvalue == Rvalue and not condition_matched:
+                        condition_matched = True
+                        for i in get_data_set_nums(str(right).strip()):
+                            next_level_step_data.append(i)
+                        skip += next_level_step_data
+                    else:
+                        skip += get_data_set_nums(str(right).strip())
+                elif operator == "!=":
+                    if Lvalue != Rvalue and not condition_matched:
+                        condition_matched = True
+                        for i in get_data_set_nums(str(right).strip()):
+                            next_level_step_data.append(i)
+                        skip += next_level_step_data
+                    else:
+                        skip += get_data_set_nums(str(right).strip())
+                elif operator == "<=":
+                    if Lvalue <= Rvalue and not condition_matched:
+                        condition_matched = True
+                        for i in get_data_set_nums(str(right).strip()):
+                            next_level_step_data.append(i)
+                        skip += next_level_step_data
+                    else:
+                        skip += get_data_set_nums(str(right).strip())
+                elif operator == ">=":
+                    if Lvalue >= Rvalue and not condition_matched:
+                        condition_matched = True
+                        for i in get_data_set_nums(str(right).strip()):
+                            next_level_step_data.append(i)
+                        skip += next_level_step_data
+                    else:
+                        skip += get_data_set_nums(str(right).strip())
+                elif operator == "<":
+                    if Lvalue < Rvalue and not condition_matched:
+                        condition_matched = True
+                        for i in get_data_set_nums(str(right).strip()):
+                            next_level_step_data.append(i)
+                        skip += next_level_step_data
+                    else:
+                        skip += get_data_set_nums(str(right).strip())
+                elif operator == ">":
+                    if Lvalue > Rvalue and not condition_matched:
+                        condition_matched = True
+                        for i in get_data_set_nums(str(right).strip()):
+                            next_level_step_data.append(i)
+                        skip += next_level_step_data
+                    else:
+                        skip += get_data_set_nums(str(right).strip())
+
+            if statement == "if":
+                if_exists = True
+                condition_matched = False
+                check_operators()
+            elif statement == "else if":
+                if not if_exists:
+                    CommonUtil.ExecLog(sModuleInfo, "No 'if' statement found. Please define a 'if' statement first", 3)
+                    return "failed", []
+                check_operators()
+            elif statement == "else":
+                if not if_exists:
+                    CommonUtil.ExecLog(sModuleInfo, "No 'if' statement found. Please define a 'if' statement first", 3)
+                    return "failed", []
+                check_operators()
 
         if next_level_step_data == []:
             CommonUtil.ExecLog(
@@ -331,9 +447,22 @@ def Handle_Conditional_Action(step_data, data_set_no):
             )
 
         for data_set_index in next_level_step_data:
+            if data_set_index >= len(step_data):
+                CommonUtil.ExecLog(
+                    sModuleInfo,
+                    "You did not define action %s. So skipping this action index" % str(data_set_index+1),
+                    2
+                )
+                continue
+            elif data_set_index == data_set_no:
+                CommonUtil.ExecLog(
+                    sModuleInfo,
+                    "You are running an if else action within another if else action. It may create infinite recursion in some cases",
+                    2
+                )
             result, skip_for_loop = Run_Sequential_Actions(
                 [data_set_index]
-            )  # new edit: full step data is passed. [step_data[data_set_index]]) # Recursively call this function until all called data sets are complete
+            ) # Running
             if result in failed_tag_list:
                 return result, list(set(skip + skip_for_loop))
             skip = list(set(skip + skip_for_loop))
@@ -342,7 +471,7 @@ def Handle_Conditional_Action(step_data, data_set_no):
         return "passed", skip
     except:
         CommonUtil.ExecLog(sModuleInfo, "Error while handling conditional action", 3)
-        return "failed", []
+        return CommonUtil.Exception_Handler(sys.exc_info()), []
 
 
 def Handle_While_Loop_Action(step_data, data_set_no):
@@ -1439,6 +1568,11 @@ def Conditional_Action_Handler(data_set, row, logic_row):
         module == "common" or module == "database"
     ):  # compare variable or list, and based on the result conditional actions will work
         try:
+            CommonUtil.ExecLog(
+                sModuleInfo,
+                "The function has been deprecated and will be removed at a later period.\n" +
+                " Use our other action 'if else'",
+                2)
             result = common.Compare_Variables(
                 data_set
             )  # Get the element object or 'failed'
