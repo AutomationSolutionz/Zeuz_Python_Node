@@ -1412,14 +1412,16 @@ def swipe_handler_ios(data_set):
         direction = ""
         predicateString = ""
         swipe_direction_and_predicate = ""
+        element_given = False
         try:
             for each in data_set:
-                if each[1] == "action":
+                if "element parameter" in each[1]:
+                    element_given = True
+                elif "direction" in each[0]:
                     swipe_direction_and_predicate = str(each[2]).strip()
-                else:
-                    continue
+
         except:
-            errMsg = "Error while looking for action line"
+            errMsg = "Invalid action data. Please try with a valid action data by adding a new action."
             return CommonUtil.Exception_Handler(sys.exc_info(), None, errMsg)
 
         if swipe_direction_and_predicate in ("up", "down", "left", "right"):
@@ -1427,24 +1429,25 @@ def swipe_handler_ios(data_set):
         else:
             predicateString = swipe_direction_and_predicate
 
-        # Enter text into element
         try:
-            Element = LocateElement.Get_Element(data_set, appium_driver)
-            if Element == "failed":
-                CommonUtil.ExecLog(
-                    sModuleInfo, "Unable to locate your element with given data.", 3
-                )
-                return "failed"
-            else:
-                swipe_dict = {}
-                swipe_dict["element"] = Element
-                if direction != "":
-                    swipe_dict["direction"] = direction
+            swipe_dict = {}
+
+            if element_given:
+                Element = LocateElement.Get_Element(data_set, appium_driver)
+                if Element == "failed":
+                    CommonUtil.ExecLog(
+                        sModuleInfo, "Unable to locate the element, performing swipe without element.", 2
+                    )
                 else:
-                    swipe_dict["predicateString"] = predicateString
-                appium_driver.execute_script("mobile: scroll", swipe_dict)
+                    swipe_dict["element"] = Element
+
+            if direction != "":
+                swipe_dict["direction"] = direction
+            else:
+                swipe_dict["predicateString"] = predicateString
+            appium_driver.execute_script("mobile: scroll", swipe_dict)
         except:
-            errMsg = "Element to swipe couldn't be found, please read help for mobile swipe to learn more"
+            errMsg = "Failed to perform swipe."
             return CommonUtil.Exception_Handler(sys.exc_info(), None, errMsg)
 
         return "passed"
