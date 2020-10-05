@@ -1407,9 +1407,21 @@ def Conditional_Action_Handler(data_set, row, logic_row):
 
     elif module == "appium" or module == "selenium":
         try:
-            Element = LocateElement.Get_Element(
-                data_set, eval(module).get_driver()
-            )  # Get the element object or 'failed'
+            wait = 0
+            for left, mid, right in data_set:
+                mid = mid.lower()
+                left = left.lower()
+                if "optional parameter" in mid and "wait" in left:
+                    wait = float(right.strip())
+            start_time = time.time()
+            end_time = start_time + wait
+            while True:
+                Element = LocateElement.Get_Element(
+                    data_set, eval(module).get_driver()
+                )  # Get the element object or 'failed'
+                if (Element not in failed_tag_list) or (time.time() >= end_time):
+                    break
+                # time.sleep(0.5)
             if Element in failed_tag_list:
                 CommonUtil.ExecLog(
                     sModuleInfo, "Conditional Actions could not find the element", 3
