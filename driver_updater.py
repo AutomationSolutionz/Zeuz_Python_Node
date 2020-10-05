@@ -23,7 +23,15 @@ def update(pathname):
             driver = drivers[name](
                 download_root=driver_download_path, link_path=pathname
             )
-            driver.download_and_install()
+            if __name__ == "__main__":
+                print("Specify the version number of %s driver. Simply press Enter if you want the latest version" % name)
+                version = input()
+                if len(version) == 0:
+                    driver.download_and_install()
+                else:
+                    driver.download_and_install(version)
+            else:
+                driver.download_and_install()
         except RuntimeError:
             print("Skipping download of %s" % name)
 
@@ -35,12 +43,9 @@ def main():
 
     print("Starting update. Drivers will be placed in the following directory:")
     print("> %s" % PYTHON_SCRIPTS_DIR)
-
     update(pathname=PYTHON_SCRIPTS_DIR)
-    if __name__ == "__main__":
-        print("\nUpdate complete. Press any key or [ENTER] to exit.")
-        input()
-
 
 if __name__ == "__main__":
     main()
+    print("\nUpdate complete. Press any key or [ENTER] to exit.")
+    input()
