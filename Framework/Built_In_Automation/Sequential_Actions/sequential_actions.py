@@ -1551,6 +1551,11 @@ def Conditional_Action_Handler(data_set, row, logic_row):
         module == "common"
     ):  # compare variable or list, and based on the result conditional actions will work
         try:
+            CommonUtil.ExecLog(
+                sModuleInfo,
+                "The function has been deprecated and will be removed at a later period.\n" +
+                " Use our other action 'if else'",
+                2)
             result = common.Compare_Variables(
                 data_set
             )  # Get the element object or 'failed'

@@ -57,6 +57,7 @@ action_support = (
     "save parameter",
     "get parameter",
     "loop settings",
+    "optional loop settings",
     "attribute constrain",
     "optional option",
     "graphql",
