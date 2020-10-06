@@ -2368,8 +2368,8 @@ def split_string(data_set):
                 split_expression = right
 
         # Validate data format.
-        if None in (var_name, idx, split_expression, source_string):
-            CommonUtil.ExecLog(sModuleInfo, "Invalid data format.", 3)
+        if None in (var_name, split_expression, source_string):
+            CommonUtil.ExecLog(sModuleInfo, "Invalid/missing data format.", 3)
             return "failed"
 
         result = source_string.split(split_expression)
