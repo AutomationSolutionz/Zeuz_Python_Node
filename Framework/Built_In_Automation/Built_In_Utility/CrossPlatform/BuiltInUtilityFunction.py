@@ -3544,7 +3544,7 @@ def datatype_conversion(data_set):
         index = ""
         for left, mid, right in data_set:
             left = left.lower()
-            if "input variable name" in left:
+            if "input" in left:
                 in_variable_name = right.strip()
             elif "output variable name" in left:
                 out_variable_name = right.strip()
@@ -3558,10 +3558,18 @@ def datatype_conversion(data_set):
                 index = right.strip()
 
         if not Shared_Resources.Test_Shared_Variables(in_variable_name):
+            # CommonUtil.ExecLog(
+            #     sModuleInfo, "Variable you have chosen is not defined", 3,
+            # )
+            # return "failed"
+            in_variable_value = CommonUtil.parse_value_into_object(in_variable_name)
+        else:
             CommonUtil.ExecLog(
-                sModuleInfo, "Variable you have chosen is not defined", 3,
+                sModuleInfo,
+                "Please use %| |% for using variable. From now you can use any variable, list, string, number in the input row",
+                2
             )
-            return "failed"
+            in_variable_value = Shared_Resources.Get_Shared_Variables(in_variable_name)
 
         if out_variable_name == "":
             CommonUtil.ExecLog(
@@ -3600,7 +3608,8 @@ def datatype_conversion(data_set):
 
     try:
         if "str to int" == conversion_type:
-            in_variable_value = Shared_Resources.Get_Shared_Variables(in_variable_name)
+            # in_variable_value = Shared_Resources.Get_Shared_Variables(in_variable_name)
+
             # in_variable_value = ['muntasib', '1', '+2', 1, 2, 2.5, '3.5','-100', 'muhib232', '3.9', '3.1', '+23.3', '-23.3']
 
             out_variable_value = str_to_int(
@@ -3617,7 +3626,7 @@ def datatype_conversion(data_set):
             return "passed"
 
         elif "str to float" == conversion_type:
-            in_variable_value = Shared_Resources.Get_Shared_Variables(in_variable_name)
+            # in_variable_value = Shared_Resources.Get_Shared_Variables(in_variable_name)
 
             # in_variable_value = ['muntasib','1','+2',1,2.6,'+3.5','368.65555','-3.8654','-4','muhib232']
             # in_variable_value = "+368.65665"
@@ -3638,7 +3647,7 @@ def datatype_conversion(data_set):
             return "passed"
 
         elif "int to float" == conversion_type:
-            in_variable_value = Shared_Resources.Get_Shared_Variables(in_variable_name)
+            # in_variable_value = Shared_Resources.Get_Shared_Variables(in_variable_name)
 
             # in_variable_value = ['muntasib', '1', '+2', 1, 2, 2.6, 32, 3654,+100, -200, -23.3, 'muhib232']
 
@@ -3656,7 +3665,7 @@ def datatype_conversion(data_set):
             return "passed"
 
         elif "float to int" == conversion_type:
-            in_variable_value = Shared_Resources.Get_Shared_Variables(in_variable_name)
+            # in_variable_value = Shared_Resources.Get_Shared_Variables(in_variable_name)
 
             # in_variable_value = ['muntasib', '1', '+2', 1, 2, 2.6,3.5,3.9,3.1,+23.3,-23.3, '3.5','muhib232']
             # in_variable_value = 3.55
@@ -3675,7 +3684,7 @@ def datatype_conversion(data_set):
             return "passed"
 
         elif "extract number from str" == conversion_type:
-            in_variable_value = Shared_Resources.Get_Shared_Variables(in_variable_name)
+            # in_variable_value = Shared_Resources.Get_Shared_Variables(in_variable_name)
 
             # in_variable_value = ['+23.6muntasib-23.6',1,2.6,'3.5','as-368muhib+232 36.6665 dollar', 'hi']
             # in_variable_value = "mun354tasib1235.56875"
