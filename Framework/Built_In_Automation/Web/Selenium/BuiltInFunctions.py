@@ -515,8 +515,10 @@ def Enter_Text_In_Text_Box(step_data):
                     delay = float(right.strip())
                 elif "use js" in left:
                     use_js = right.strip().lower() in ("true", "yes", "1")
+                elif "without click" in left and "yes" in right.lower():
+                    without_click = True
 
-            if use_js:
+            if use_js and not without_click:
                 try:
                     selenium_driver.execute_script("arguments[0].click();", Element)
                 except:
@@ -535,7 +537,8 @@ def Enter_Text_In_Text_Box(step_data):
                 selenium_driver.execute_script("arguments[0].click();", Element)
             else:
                 try:
-                    Element.click()
+                    if not without_click:
+                        Element.click()
                 except:
                     CommonUtil.ExecLog(
                         sModuleInfo,
