@@ -769,10 +769,6 @@ def Save_Text(data_set):
 @logger
 def Compare_Variables(data_set):
     """ Compare shared variables / strings to each other """
-    CommonUtil.ExecLog(
-        "",
-        " Use our other action 'if else'",
-        2)
     # Compares two variables from Field and Value on any line that is not the action line
     return sr.Compare_Variables([data_set])
 
