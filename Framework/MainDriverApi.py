@@ -749,7 +749,7 @@ def call_driver_function_of_test_step(
         if current_driver in driver_list:
             try:
                 module_name = importlib.import_module(current_driver)  # get module
-                print("FOUND")
+                print("STEP DATA and VARIABLES")
                 # get step name
                 if TestStepsList[StepSeq - 1][8] != None:
                     step_name = (TestStepsList[StepSeq - 1][7]).strip()
@@ -974,9 +974,10 @@ def run_all_test_steps_in_a_test_case(
         current_step_sequence = TestStepsList[StepSeq - 1][2]
 
         # add log
-        print("-"*40)
-        CommonUtil.ExecLog(sModuleInfo, "STEP #%d: %s " % (StepSeq, current_step_name), 4)
-        print("-"*40)
+        log_line = "STEP #%d: %s " % (StepSeq, current_step_name)
+        print("-"*len(log_line))
+        CommonUtil.ExecLog(sModuleInfo, log_line, 4)
+        print("-"*len(log_line))
 
         step_meta_data = get_step_meta_data_of_a_step(
             run_id, test_case, StepSeq

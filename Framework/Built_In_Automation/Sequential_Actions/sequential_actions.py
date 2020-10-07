@@ -1816,9 +1816,6 @@ def Action_Handler(_data_set, action_row):
             CommonUtil.ExecLog(sModuleInfo, "Can't find module for %s" % module, 3)
             return "failed"
 
-        CommonUtil.ExecLog(
-            sModuleInfo, "Executing %s with data set %s" % (function, str(data_set)), 1
-        )
         run_function = getattr(
             eval(module), function
         )  # create a reference to the function

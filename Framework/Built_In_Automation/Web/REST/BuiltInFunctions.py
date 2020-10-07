@@ -647,7 +647,6 @@ def search_condition_wrapper(data, condition_string):
 
 
 # Method to handle rest calls
-@logger
 def handle_rest_call(
     data,
     fields_to_be_saved,
