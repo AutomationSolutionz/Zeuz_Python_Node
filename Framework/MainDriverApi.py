@@ -1471,11 +1471,6 @@ def run_test_case(
         # check if test case is copied
         copy_status = check_if_test_case_is_copied(run_id, test_case)
         if copy_status:
-            CommonUtil.ExecLog(
-                sModuleInfo,
-                "Gathered data for test case %s complete." % test_case,
-                1,
-            )
             break
 
         time.sleep(3)
@@ -1491,10 +1486,15 @@ def run_test_case(
     TestCaseName = test_case_detail[0][1]
 
     # add log
-    CommonUtil.ExecLog(sModuleInfo, "", 1)
+    log_line = "# EXECUTING TEST CASE : %s :: %s #" % (test_case, TestCaseName),
+    print("*"*(len(log_line + 4)))
     CommonUtil.ExecLog(
-        sModuleInfo, "\n-------------*************--------------\nRunning Test Case ID : %s :: %s\n-------------*************--------------" % (test_case, TestCaseName), 1
+        "",
+        log_line,
+        4,
+        False,
     )
+    print("*"*(len(log_line + 4)))
 
     # get test case start time
     sTestCaseStartTime = datetime.fromtimestamp(time.time()).strftime(
