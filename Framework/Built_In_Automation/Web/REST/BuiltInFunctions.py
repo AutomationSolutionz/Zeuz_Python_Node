@@ -669,7 +669,7 @@ def handle_rest_call(
     try:
         global index, count
         Shared_Resources.Set_Shared_Variables(
-            "status_code", 0
+            "status_code", 0, print_variable=False
         )  # Reset this shared variable, so we do not get confused with any previous run
         url = data[0]
         method = data[1]
@@ -685,19 +685,20 @@ def handle_rest_call(
         if temp not in failed_tag_list:
             body = temp
 
-        CommonUtil.ExecLog(sModuleInfo, "Calling %s method" % method, 5)
-        CommonUtil.ExecLog(sModuleInfo, "URL: %s" % url, 5)
-        CommonUtil.ExecLog(sModuleInfo, "body: %s" % body, 5)
-        CommonUtil.ExecLog(sModuleInfo, "headers %s" % headers, 5)
-        if payload != "":
-            CommonUtil.ExecLog(sModuleInfo, "payload %s" % payload, 1)
+        CommonUtil.ExecLog(sModuleInfo, "HTTP method:\t%s" % method, 5)
+        CommonUtil.ExecLog(sModuleInfo, "URL:\t%s" % url, 5)
+        CommonUtil.ExecLog(sModuleInfo, "BODY: %s" % body, 5)
+        CommonUtil.ExecLog(sModuleInfo, "HEADERS: %s" % headers, 5)
+        if payload:
+            CommonUtil.ExecLog(sModuleInfo, "PAYLOAD: %s" % payload, 1)
 
         request_count = 1
         if wait_for_response_code != 0:
-            request_count = 60
+            request_count = 3
 
         count = 0
 
+        result = None
         status_code = 1  # dummy value
         while count < request_count:
             method = method.lower().strip()
@@ -761,14 +762,14 @@ def handle_rest_call(
                 return "failed"
             status_code = int(result.status_code)
             CommonUtil.ExecLog(
-                sModuleInfo, "Post Call returned status code: %d" % status_code, 1
+                sModuleInfo, "HTTP status code: %d" % status_code, 1
             )
 
             if request_count > 1:
                 if status_code != wait_for_response_code:
                     CommonUtil.ExecLog(
                         sModuleInfo,
-                        "Post Call Status Code %d did not match with Expected Status Code %d, Retrying again"
+                        "HTTP Status Code %d did not match with Expected Status Code %d, retrying again."
                         % (status_code, wait_for_response_code),
                         1,
                     )
@@ -776,7 +777,7 @@ def handle_rest_call(
                 else:
                     CommonUtil.ExecLog(
                         sModuleInfo,
-                        "Post Call Status Code %d matched with Expected Status Code %d"
+                        "HTTP Status Code %d matched with Expected Status Code %d"
                         % (status_code, wait_for_response_code),
                         1,
                     )
@@ -979,7 +980,6 @@ def Get_Response_Wrapper_With_Cookie(step_data):
 # Method to get responses
 @logger
 def Get_Response(step_data, save_cookie=False):
-    sModuleInfo = inspect.currentframe().f_code.co_name + " : " + MODULE_NAME
     try:
         wait_for_response_code = 0
         fields_to_be_saved = ""
