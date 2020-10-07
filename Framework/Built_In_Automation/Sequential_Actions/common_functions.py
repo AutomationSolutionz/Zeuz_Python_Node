@@ -766,6 +766,7 @@ def Save_Text(data_set):
         )
 
 
+@deprecated
 @logger
 def Compare_Variables(data_set):
     """ Compare shared variables / strings to each other """
