@@ -837,9 +837,12 @@ def Compare_Variables(step_data):
                 result.append(False)
                 fail_count += 1
 
-        CommonUtil.ExecLog(sModuleInfo, "### Variable Comparison Results ###", 1)
         CommonUtil.ExecLog(sModuleInfo, "Matched Variables: %d" % pass_count, 1)
-        CommonUtil.ExecLog(sModuleInfo, "Not Matched Variables: %d" % fail_count, 2)
+
+        if fail_count == 0:
+            CommonUtil.ExecLog(sModuleInfo, "Not Matched Variables: %d" % fail_count, 1)
+        else:
+            CommonUtil.ExecLog(sModuleInfo, "Not Matched Variables: %d" % fail_count, 3)
 
         for i in range(0, len(variable_list1)):
             if result[i] == True:
