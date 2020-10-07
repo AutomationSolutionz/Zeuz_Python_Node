@@ -1009,6 +1009,7 @@ def Loop_Action_Handler(data, row, dataset_cnt):
         nested_loop = False
         nested_double = False
         max_retry = 50  # wil search for any elemnt this amount of time in while loop
+        loop_method = None
         ### Create sub-set of step data that we will send to SA for processing
         try:
             if str(row[2]).strip().startswith("nested"):
@@ -1100,12 +1101,10 @@ def Loop_Action_Handler(data, row, dataset_cnt):
                         else:
                             loop_method = "list"
 
-                        if (
-                            type(loop_type) != list
-                        ):  # Make sure shared variable is a list
+                        if type(loop_type) not in (list, str):
                             CommonUtil.ExecLog(
                                 sModuleInfo,
-                                "Shared Variable found for Loop action, but is not in list format, which is required.",
+                                "Shared Variable found for Loop action, but is not in list/str format, which is required.",
                                 3,
                             )
                             return "failed"
