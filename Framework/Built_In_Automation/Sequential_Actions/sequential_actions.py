@@ -589,8 +589,8 @@ def Run_Sequential_Actions(
         for dataset_cnt in data_set_list:  # For each data set within step data
             CommonUtil.ExecLog(
                 sModuleInfo,
-                "********** Starting Data Set #%d **********" % (dataset_cnt + 1),
-                1,
+                "********** Starting Action #%d **********" % (dataset_cnt + 1),
+                4,
             )  # Offset by one to make it look proper
             data_set = step_data[dataset_cnt]  # Save data set to variable
             if dataset_cnt in skip:
@@ -600,7 +600,7 @@ def Run_Sequential_Actions(
                 CommonUtil.check_offline()
             ):  # Check if user initiated offline command from GUI
                 CommonUtil.ExecLog(
-                    sModuleInfo, "User requested Zeuz Node to go Offline", 2
+                    sModuleInfo, "User requested Zeuz Node to go offline.", 2
                 )
                 return "failed", skip_for_loop
 

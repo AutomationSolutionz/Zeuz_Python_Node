@@ -381,7 +381,7 @@ def RunProcess(sTesterid):
                 processing_test_case = True
                 CommonUtil.ExecLog(
                     "",
-                    "**************************\n* STARTING NEW TEST CASE *\n**************************",
+                    "**************************\n*    STARTING SESSION    *\n**************************",
                     4,
                     False,
                 )

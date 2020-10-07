@@ -59,7 +59,7 @@ def Set_Shared_Variables(key, value, protected=False, allowEmpty=False, print_va
                         "val": CommonUtil.parse_value_into_object(value)
                     }
                 )
-                
+
             # Try to get a pretty print.
             CommonUtil.prettify(key, value)
 

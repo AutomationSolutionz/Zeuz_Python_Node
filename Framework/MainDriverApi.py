@@ -744,7 +744,7 @@ def call_driver_function_of_test_step(
         else:
             current_driver = TestStepsList[StepSeq - 1][3]
 
-        print("@@@@@@@@@@ CURRENT DRIVER: {}".format(current_driver))
+        print("DRIVER: {}".format(current_driver))
 
         if current_driver in driver_list:
             try:
@@ -974,9 +974,9 @@ def run_all_test_steps_in_a_test_case(
         current_step_sequence = TestStepsList[StepSeq - 1][2]
 
         # add log
-        CommonUtil.ExecLog(sModuleInfo, "Step : %s" % current_step_name, 1)
-
-        # get step meta data
+        print("-"*40)
+        CommonUtil.ExecLog(sModuleInfo, "STEP #%d: %s " % (StepSeq, current_step_name), 4)
+        print("-"*40)
 
         step_meta_data = get_step_meta_data_of_a_step(
             run_id, test_case, StepSeq
@@ -1030,14 +1030,6 @@ def run_all_test_steps_in_a_test_case(
         # get test step data
         test_steps_data = get_test_step_data(
             run_id, test_case, current_step_sequence, sModuleInfo
-        )
-
-        # add log
-        CommonUtil.ExecLog(
-            sModuleInfo,
-            "********** steps data for Step #%d: %s **********"
-            % (StepSeq, str(test_steps_data)),
-            1,
         )
 
         # take screen-shot
@@ -1467,11 +1459,6 @@ def run_test_case(
         "sectionOne", "sTestStepExecLogId", "MainDriver", temp_ini_file
     )
 
-    # add log
-    CommonUtil.ExecLog(
-        sModuleInfo, "Gathering data for test case %s" % (test_case), 4, False
-    )
-
     retry = 1
     while not copy_status:
         if retry > 100:
@@ -1485,7 +1472,7 @@ def run_test_case(
         if copy_status:
             CommonUtil.ExecLog(
                 sModuleInfo,
-                "Gathering data for test case %s is completed" % test_case,
+                "Gathered data for test case %s complete." % test_case,
                 1,
             )
             break
@@ -1503,9 +1490,9 @@ def run_test_case(
     TestCaseName = test_case_detail[0][1]
 
     # add log
-    CommonUtil.ExecLog(sModuleInfo, "-------------*************--------------", 1)
+    CommonUtil.ExecLog(sModuleInfo, "", 1)
     CommonUtil.ExecLog(
-        sModuleInfo, "Running Test case id : %s :: %s" % (test_case, TestCaseName), 1
+        sModuleInfo, "\n-------------*************--------------\nRunning Test Case ID : %s :: %s\n-------------*************--------------" % (test_case, TestCaseName), 1
     )
 
     # get test case start time
@@ -1774,9 +1761,6 @@ def main(device_dict):
     # get module info
     sModuleInfo = inspect.currentframe().f_code.co_name + " : " + MODULE_NAME
 
-    # add log
-    CommonUtil.ExecLog(sModuleInfo, "MainDriver is starting", 4, False)
-
     # get temp file
     # temp_ini_file = os.path.join(os.path.join(FL.get_home_folder(), os.path.join('Desktop',os.path.join('AutomationLog',ConfigModule.get_config_value('Advanced Options', '_file')))))
 
@@ -1815,15 +1799,7 @@ def main(device_dict):
     # set device info according to user order
     set_device_info_according_to_user_order(device_order, device_dict)
 
-    # add log
-    if len(TestRunLists) > 0:
-        CommonUtil.ExecLog(
-            sModuleInfo,
-            "Running Test cases from Test Set : %s"
-            % TestRunLists[0 : len(TestRunLists)],
-            1,
-        )
-    else:
+    if len(TestRunLists) == 0:
         CommonUtil.ExecLog(
             sModuleInfo,
             "No Test Run Schedule found for the current user : %s" % Userid,
@@ -1893,10 +1869,10 @@ def main(device_dict):
         # add log
         if len(TestCaseLists) > 0:
             CommonUtil.ExecLog(
-                sModuleInfo,
-                "Running Test cases from list : %s"
-                % TestCaseLists[0 : len(TestCaseLists)],
-                1,
+                "",
+                "**************************\n* STARTING NEW TEST CASE *\n**************************\nTotal number of test cases: %s" % len(TestCaseLists),
+                4,
+                False,
             )
             CommonUtil.ExecLog(
                 sModuleInfo,

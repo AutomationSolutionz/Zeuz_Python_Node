@@ -313,11 +313,12 @@ def ExecLog(
 
     # Display on console
     # Change the format for console, mainly leave out the status level
-    if status == "Console":
-        msg = f"{info}{sDetails}" if sModuleInfo else sDetails
-        print(line_color + msg)
-    else:
-        print(line_color + f"{status.upper()} - {info}{sDetails}")
+    if "saved variable" not in sDetails.lower():
+        if status == "Console":
+            msg = f"{info}{sDetails}" if sModuleInfo else sDetails
+            print(line_color + msg)
+        else:
+            print(line_color + f"{status.upper()} - {info}{sDetails}")
 
     current_log_line = f"{status.upper()} - {sModuleInfo} - {sDetails}"
 

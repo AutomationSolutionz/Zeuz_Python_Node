@@ -148,7 +148,6 @@ def Compare_Variables(step_data):
         return CommonUtil.Exception_Handler(sys.exc_info())
 
 
-@logger
 def get_all_val(x, target):
     global all_val
     for key, value in list(x.items()):
@@ -168,7 +167,6 @@ def get_all_val(x, target):
                 continue
 
 
-@logger
 def get_val(x, target):
     global count, index
     for key, value in list(x.items()):
@@ -283,7 +281,6 @@ def search_val_wrapper(x, target, target_val, equal=True):
 
 
 # Method to save rest call parameters
-@logger
 def save_fields_from_rest_call(result_dict, fields_to_be_saved):
     sModuleInfo = inspect.currentframe().f_code.co_name + " : " + MODULE_NAME
     try:
@@ -339,7 +336,7 @@ def save_fields_from_rest_call(result_dict, fields_to_be_saved):
                 1,
             )
 
-        Shared_Resources.Show_All_Shared_Variables()
+        # Shared_Resources.Show_All_Shared_Variables()
     except Exception:
         return CommonUtil.Exception_Handler(sys.exc_info())
 
@@ -477,7 +474,7 @@ def Insert_Into_List(step_data):
                 )
                 return "failed"
             else:
-                Shared_Resources.Show_All_Shared_Variables()
+                # Shared_Resources.Show_All_Shared_Variables()
                 return "passed"
 
         else:
@@ -685,10 +682,7 @@ def handle_rest_call(
         if temp not in failed_tag_list:
             body = temp
 
-        CommonUtil.ExecLog(sModuleInfo, "HTTP method:\t%s" % method, 5)
-        CommonUtil.ExecLog(sModuleInfo, "URL:\t%s" % url, 5)
-        CommonUtil.ExecLog(sModuleInfo, "BODY: %s" % body, 5)
-        CommonUtil.ExecLog(sModuleInfo, "HEADERS: %s" % headers, 5)
+        CommonUtil.ExecLog(sModuleInfo, "HTTP method: %s\nURL: %s\nBODY: %s\nHEADERS: %s" % (method, url, body, headers), 5)
         if payload:
             CommonUtil.ExecLog(sModuleInfo, "PAYLOAD: %s" % payload, 1)
 
@@ -761,9 +755,6 @@ def handle_rest_call(
             else:
                 return "failed"
             status_code = int(result.status_code)
-            CommonUtil.ExecLog(
-                sModuleInfo, "HTTP status code: %d" % status_code, 1
-            )
 
             if request_count > 1:
                 if status_code != wait_for_response_code:
@@ -791,9 +782,6 @@ def handle_rest_call(
                 Shared_Resources.Set_Shared_Variables("http_response", result.json())
                 CommonUtil.ExecLog(
                     sModuleInfo, "HTTP Request successful.", 1
-                )
-                CommonUtil.ExecLog(
-                    sModuleInfo, "Received Response", 1
                 )
 
                 # if save cookie option enabled then push cookie into shared variables, if cookie var name is 'id' then you can reference it later with %|id|%
@@ -958,7 +946,6 @@ def handle_rest_call(
 
 
 # Get Response Wrapper Normal
-@logger
 def Get_Response_Wrapper(step_data):
     sModuleInfo = inspect.currentframe().f_code.co_name + " : " + MODULE_NAME
     try:
@@ -968,7 +955,6 @@ def Get_Response_Wrapper(step_data):
 
 
 # Get Response Wrapper With Cookie
-@logger
 def Get_Response_Wrapper_With_Cookie(step_data):
     sModuleInfo = inspect.currentframe().f_code.co_name + " : " + MODULE_NAME
     try:
@@ -1264,7 +1250,6 @@ def Sequential_Actions(step_data):
 
 
 # Validation of step data passed on by the user
-@logger
 def Validate_Step_Data(step_data):
     sModuleInfo = inspect.currentframe().f_code.co_name + " : " + MODULE_NAME
     try:

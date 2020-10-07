@@ -151,7 +151,6 @@ def verify_step_data(step_data):
     """ Verify step data is valid """
 
     sModuleInfo = inspect.currentframe().f_code.co_name + " : " + MODULE_NAME
-    CommonUtil.ExecLog(sModuleInfo, "Verifying Step Data", 1)
 
     try:
         data_set_index = 0
@@ -766,6 +765,7 @@ def Save_Text(data_set):
             sys.exc_info(), None, "Error reading and saving element text"
         )
 
+
 @deprecated
 @logger
 def Compare_Variables(data_set):
@@ -775,7 +775,6 @@ def Compare_Variables(data_set):
         " Use our other action 'if else'",
         2)
     # Compares two variables from Field and Value on any line that is not the action line
-    sModuleInfo = inspect.currentframe().f_code.co_name + " : " + MODULE_NAME
     return sr.Compare_Variables([data_set])
 
 
