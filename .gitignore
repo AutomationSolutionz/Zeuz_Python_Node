@@ -14,7 +14,7 @@
 # Zeuz Node specific ignores
 Framework/settings.conf
 AutomationLog/
-iosSimulator/*.app
+iosSimulator/*
 
 # Nodejs gitignore
 # Logs

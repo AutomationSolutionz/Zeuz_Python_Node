@@ -2514,6 +2514,7 @@ def Enter_Text_Appium(data_set):
                     1,
                 )
                 context_result = auto_switch_context_and_try("native")
+            errMsg = "Failed to enter text"
             return CommonUtil.Exception_Handler(sys.exc_info(), None, errMsg)
 
     except Exception:
