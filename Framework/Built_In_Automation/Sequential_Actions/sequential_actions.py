@@ -589,7 +589,7 @@ def Run_Sequential_Actions(
         for dataset_cnt in data_set_list:  # For each data set within step data
             CommonUtil.ExecLog(
                 sModuleInfo,
-                "********** Starting Action #%d **********" % (dataset_cnt + 1),
+                "\n********** Starting Action #%d **********\n" % (dataset_cnt + 1),
                 4,
             )  # Offset by one to make it look proper
             data_set = step_data[dataset_cnt]  # Save data set to variable

@@ -587,10 +587,6 @@ def get_final_dependency_list(dependency_list, run_description):
 
 # downloads attachments for a test step
 def download_attachments_for_test_case(sModuleInfo, run_id, test_case, temp_ini_file):
-    CommonUtil.ExecLog(sModuleInfo, "-------------*************--------------", 1)
-    CommonUtil.ExecLog(
-        sModuleInfo, "Creating Built_In_Automation Log for test case: %s" % test_case, 1
-    )
     try:
         log_file_path = ConfigModule.get_config_value(
             "sectionOne", "temp_run_file_path", temp_ini_file
@@ -974,7 +970,7 @@ def run_all_test_steps_in_a_test_case(
         current_step_sequence = TestStepsList[StepSeq - 1][2]
 
         # add log
-        log_line = "STEP #%d: %s " % (StepSeq, current_step_name)
+        log_line = "STEP #%d: %s" % (StepSeq, current_step_name)
         print("-"*len(log_line))
         CommonUtil.ExecLog(sModuleInfo, log_line, 4)
         print("-"*len(log_line))
@@ -1486,15 +1482,15 @@ def run_test_case(
     TestCaseName = test_case_detail[0][1]
 
     # add log
-    log_line = "# EXECUTING TEST CASE : %s :: %s #" % (test_case, TestCaseName),
-    print("*"*(len(log_line + 4)))
+    log_line = "# EXECUTING TEST CASE : %s :: %s #" % (test_case, TestCaseName)
+    print("#"*(len(log_line)))
     CommonUtil.ExecLog(
         "",
         log_line,
         4,
         False,
     )
-    print("*"*(len(log_line + 4)))
+    print("#"*(len(log_line)))
 
     # get test case start time
     sTestCaseStartTime = datetime.fromtimestamp(time.time()).strftime(
@@ -1869,12 +1865,6 @@ def main(device_dict):
 
         # add log
         if len(TestCaseLists) > 0:
-            CommonUtil.ExecLog(
-                "",
-                "**************************\n* STARTING NEW TEST CASE *\n**************************\nTotal number of test cases: %s" % len(TestCaseLists),
-                4,
-                False,
-            )
             CommonUtil.ExecLog(
                 sModuleInfo,
                 "Total number of test cases %s" % len(TestCaseLists),

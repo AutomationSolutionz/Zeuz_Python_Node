@@ -380,7 +380,7 @@ def ExecLog(
                 return
 
             if variable:
-                sDetails = "%s\nVariable value: %s" % (sDetails, variable["key"], variable["val"])
+                sDetails = "%s\nVariable value: %s" % (sDetails, variable["val"])
 
             now = datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
             all_logs[all_logs_count] = {
