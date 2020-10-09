@@ -264,7 +264,15 @@ def get_data_set_nums(action_value):
     try:
         data_set_nums = []
 
-        if "run" in action_value or "#" in action_value:
+        if action_value.strip().lower() in ("pass", "passed"):
+            sr.shared_variables["step_data"].append([("step exit", "common action", "pass")])
+            data_set_nums.append(len(sr.shared_variables["step_data"])-1)
+
+        elif action_value.strip().lower() in ("fail", "failed"):
+            sr.shared_variables["step_data"].append([("step exit", "common action", "fail")])
+            data_set_nums.append(len(sr.shared_variables["step_data"])-1)
+
+        elif "run" in action_value or "#" in action_value:
             splitted = str(action_value).split(",")
             for each in splitted:
                 try:
