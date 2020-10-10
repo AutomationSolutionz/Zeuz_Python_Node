@@ -264,6 +264,14 @@ def get_data_set_nums(action_value):
     try:
         data_set_nums = []
 
+        # if action_value.strip().lower() in ("pass", "passed"):
+            # sr.shared_variables["step_data"].append([("step exit", "common action", "pass")])
+            # data_set_nums.append(len(sr.shared_variables["step_data"])-1)
+
+        # elif action_value.strip().lower() in ("fail", "failed"):
+            # sr.shared_variables["step_data"].append([("step exit", "common action", "fail")])
+            # data_set_nums.append(len(sr.shared_variables["step_data"])-1)
+
         if "run" in action_value or "#" in action_value:
             splitted = str(action_value).split(",")
             for each in splitted:
@@ -284,7 +292,12 @@ def get_data_set_nums(action_value):
                         start, end = each.replace(" ","").split("-")
                         for i in range(int(start), int(end)+1):
                             data_set_nums.append(i-1)
-
+                    elif each in ("pass", "passed"):
+                        data_set_nums.append("p")
+                        break
+                    elif each in ("fail", "failed"):
+                        data_set_nums.append("f")
+                        break
                     else:
                         string = each.strip()
                         data_set_nums.append(int(string)-1)
@@ -447,7 +460,11 @@ def Handle_Conditional_Action(step_data, data_set_no):
             )
 
         for data_set_index in next_level_step_data:
-            if data_set_index >= len(step_data):
+            if data_set_index in ("p", "f"):
+                skip = [i for i in range(len(step_data))]
+                CommonUtil.ExecLog(sModuleInfo, "Step Exit called. Stopping Test Step.", 1)
+                return "passed" if data_set_index == "p" else "failed", skip
+            elif data_set_index >= len(step_data):
                 CommonUtil.ExecLog(
                     sModuleInfo,
                     "You did not define action %s. So skipping this action index" % str(data_set_index+1),
