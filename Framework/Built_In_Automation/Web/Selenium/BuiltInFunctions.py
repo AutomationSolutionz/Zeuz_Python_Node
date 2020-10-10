@@ -23,7 +23,7 @@ from selenium.webdriver.firefox.firefox_binary import FirefoxBinary
 from selenium.webdriver.support.ui import Select
 from selenium.webdriver.support.ui import WebDriverWait
 from selenium.webdriver.common.action_chains import ActionChains
-from selenium.common.exceptions import NoAlertPresentException, ElementClickInterceptedException, WebDriverException, SessionNotCreatedException
+from selenium.common.exceptions import NoAlertPresentException, ElementClickInterceptedException, WebDriverException, SessionNotCreatedException, TimeoutException
 from selenium.webdriver.common.keys import Keys
 from selenium.webdriver.common.by import By
 from selenium.webdriver.support import expected_conditions as EC
@@ -341,6 +341,7 @@ def Go_To_Link(step_data, page_title=False):
 def Handle_Browser_Alert(step_data):
     # accepts browser alert
     """
+    wait           optional parameter  5.0
     handle alert   selenium action     get text = my_variable
     handle alert   selenium action     send text = my text to send to alert
     handle alert   selenium action     accept, pass, yes, ok (any of these would work)
@@ -348,67 +349,62 @@ def Handle_Browser_Alert(step_data):
     """
     sModuleInfo = inspect.currentframe().f_code.co_name + " : " + MODULE_NAME
 
+    wait = 5.0
+    choice, choice_lower = "", ""
     try:
-        choice = str(step_data[0][2])
-        choice_lower = choice.lower()
-        if (
-                choice_lower in ("accept", "pass", "yes", "ok")
-        ):
-            try:
-                selenium_driver.switch_to_alert().accept()
-                CommonUtil.ExecLog(sModuleInfo, "Browser alert accepted", 1)
-                return "passed"
-            except NoAlertPresentException as e:
-                CommonUtil.ExecLog(sModuleInfo, "Browser alert not found", 3)
-                return "failed"
-        elif (
-                choice_lower in ("reject", "fail", "no", "cancel")
-        ):
-            try:
-                selenium_driver.switch_to_alert().dismiss()
-                CommonUtil.ExecLog(sModuleInfo, "Browser alert rejected", 1)
-                return "passed"
-            except NoAlertPresentException as e:
-                CommonUtil.ExecLog(sModuleInfo, "Browser alert not found", 3)
-                return "failed"
+        for left, mid, right in step_data:
+            left = left.lower()
+            if "handle alert" in left:
+                choice = right
+                choice_lower = right.strip().lower()
+            elif "wait" in left:
+                wait = float(right.strip())
 
-        elif "get text" in choice:
-            try:
-                alert_text = selenium_driver.switch_to_alert().text
-                selenium_driver.switch_to_alert().accept()
-                variable_name = (choice.split("="))[1]
-                result = Shared_Resources.Set_Shared_Variables(
-                    variable_name, alert_text
-                )
-                if result in failed_tag_list:
-                    CommonUtil.ExecLog(
-                        sModuleInfo,
-                        "Value of Variable '%s' could not be saved!!!" % variable_name,
-                        3,
-                    )
-                    return "failed"
-                else:
-                    Shared_Resources.Show_All_Shared_Variables()
-                    return "passed"
+    except Exception:
+        CommonUtil.ExecLog(sModuleInfo, "Failed to parse data", 3)
+        return "failed"
 
-            except NoAlertPresentException as e:
+    try:
+        CommonUtil.ExecLog("", "Waiting %s seconds max for the alert box to appear" % str(wait), 1)
+        WebDriverWait(selenium_driver, wait).until(EC.alert_is_present())
+        time.sleep(2)
+    except TimeoutException:
+        CommonUtil.ExecLog(sModuleInfo, "Waited %s seconds but no alert box appeared" % str(wait), 3)
+        return "failed"
+
+    try:
+        if choice_lower in ("accept", "pass", "yes", "ok"):
+            selenium_driver.switch_to_alert().accept()
+            CommonUtil.ExecLog(sModuleInfo, "Browser alert accepted", 1)
+            return "passed"
+
+        elif choice_lower in ("reject", "fail", "no", "cancel"):
+            selenium_driver.switch_to_alert().dismiss()
+            CommonUtil.ExecLog(sModuleInfo, "Browser alert rejected", 1)
+            return "passed"
+
+        elif "get text" in choice_lower:
+            alert_text = selenium_driver.switch_to_alert().text
+            selenium_driver.switch_to_alert().accept()
+            variable_name = (choice.split("="))[1]
+            result = Shared_Resources.Set_Shared_Variables(
+                variable_name, alert_text
+            )
+            if result in failed_tag_list:
                 CommonUtil.ExecLog(
-                    sModuleInfo, "Browser alert not found.  Unable to collect text", 3
+                    sModuleInfo,
+                    "Value of Variable '%s' could not be saved!!!" % variable_name,
+                    3,
                 )
                 return "failed"
-
-        elif "send text" in choice:
-            try:
-                text_to_send = (choice.split("="))[1]
-                selenium_driver.switch_to_alert().send_keys(text_to_send)
-                selenium_driver.switch_to_alert().accept()
+            else:
                 return "passed"
 
-            except NoAlertPresentException as e:
-                CommonUtil.ExecLog(
-                    sModuleInfo, "Unable to send text to alert pop up", 3
-                )
-                return "failed"
+        elif "send text" in choice_lower:
+            text_to_send = (choice.split("="))[1]
+            selenium_driver.switch_to_alert().send_keys(text_to_send)
+            selenium_driver.switch_to_alert().accept()
+            return "passed"
 
         else:
             CommonUtil.ExecLog(
