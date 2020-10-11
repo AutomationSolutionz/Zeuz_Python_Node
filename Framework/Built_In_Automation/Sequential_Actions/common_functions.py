@@ -494,7 +494,8 @@ def shared_variable_to_value(data_set):
     skip_conversion_of_shared_variable_for_actions = [
         "if element exists",
         "run actions",
-        "loop settings",
+        "optional loop settings",
+        "loop settings"
     ]
 
     try:
