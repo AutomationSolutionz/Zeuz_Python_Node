@@ -259,11 +259,13 @@ def Sequential_Actions(
 
     return result
 
-
+deprecateLog = True
 def get_data_set_nums(action_value):
     try:
         data_set_nums = []
-        if "run" in action_value or "#" in action_value.lower():
+        global deprecateLog
+        if "run" in action_value or "#" in action_value.lower() and deprecateLog:
+            deprecateLog = False
             CommonUtil.ExecLog(
                 "",
                 "remove 'action#', 'run'. This one is older syntax and will be removed on a later period. Try the simple syntax format writen in document",
@@ -317,6 +319,8 @@ def Handle_Conditional_Action(step_data, data_set_no):
         condition_matched = False
         if_exists = False
         data_set = common.shared_variable_to_value(data_set)
+        global deprecateLog
+        deprecateLog = True
         if data_set in failed_tag_list:
             return "failed"
 
@@ -501,6 +505,9 @@ def Handle_While_Loop_Action(step_data, data_set_no):
         max_no_of_loop = 1
         operand_matching = ""
         var_name, var_value = "", ""
+        deprecate_log = True
+        global deprecateLog
+        deprecateLog = True
         data_set = common.shared_variable_to_value(data_set)
         if data_set in failed_tag_list:
             return "failed", []
@@ -523,7 +530,8 @@ def Handle_While_Loop_Action(step_data, data_set_no):
                     boolean_data_list = value.split("==")
                     var_name = boolean_data_list[0].split("%|")[1].split("|%")[0]
                     var_value = boolean_data_list[1].strip().lower()
-                if "loop settings" == row[1].strip().lower():
+                if "loop settings" == row[1].strip().lower() and deprecate_log:
+                    deprecate_log = False
                     CommonUtil.ExecLog(
                         sModuleInfo,
                         "Use 'optional loop setting' instead of 'loop settings' to get our updated feature. Try the simple syntax format writen in document",
