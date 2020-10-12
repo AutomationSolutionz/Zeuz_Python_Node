@@ -259,20 +259,18 @@ def Sequential_Actions(
 
     return result
 
-
+deprecateLog = True
 def get_data_set_nums(action_value):
     try:
         data_set_nums = []
-
-        # if action_value.strip().lower() in ("pass", "passed"):
-            # sr.shared_variables["step_data"].append([("step exit", "common action", "pass")])
-            # data_set_nums.append(len(sr.shared_variables["step_data"])-1)
-
-        # elif action_value.strip().lower() in ("fail", "failed"):
-            # sr.shared_variables["step_data"].append([("step exit", "common action", "fail")])
-            # data_set_nums.append(len(sr.shared_variables["step_data"])-1)
-
-        if "run" in action_value or "#" in action_value:
+        global deprecateLog
+        if "run" in action_value or "#" in action_value.lower() and deprecateLog:
+            deprecateLog = False
+            CommonUtil.ExecLog(
+                "",
+                "remove 'action#', 'run'. This one is older syntax and will be removed on a later period. Try the simple syntax format writen in document",
+                2,
+            )
             splitted = str(action_value).split(",")
             for each in splitted:
                 try:
@@ -284,6 +282,9 @@ def get_data_set_nums(action_value):
                     data_set_nums.append(int(string) - 1)
                 except:
                     pass
+        elif "if" in action_value.lower():
+            data = action_value.lower().replace("if", "").replace("pass", "").replace("fail", "").replace("ed", "").replace(" ", "")
+            data_set_nums.append(int(data)-1)
         else:
             splitted = str(action_value).strip().split(",")
             for each in splitted:
@@ -292,10 +293,10 @@ def get_data_set_nums(action_value):
                         start, end = each.replace(" ","").split("-")
                         for i in range(int(start), int(end)+1):
                             data_set_nums.append(i-1)
-                    elif each in ("pass", "passed"):
+                    elif each.strip().lower() in ("pass", "passed"):
                         data_set_nums.append("p")
                         break
-                    elif each in ("fail", "failed"):
+                    elif each.strip().lower() in ("fail", "failed"):
                         data_set_nums.append("f")
                         break
                     else:
@@ -318,6 +319,8 @@ def Handle_Conditional_Action(step_data, data_set_no):
         condition_matched = False
         if_exists = False
         data_set = common.shared_variable_to_value(data_set)
+        global deprecateLog
+        deprecateLog = True
         if data_set in failed_tag_list:
             return "failed"
 
@@ -498,31 +501,42 @@ def Handle_While_Loop_Action(step_data, data_set_no):
         loop_this_data_sets = []
         passing_data_sets = []
         failing_data_sets = []
-        skip = []
+        outer_skip, inner_skip = [], []
         max_no_of_loop = 1
-        var_name = ""
-        var_value = ""
+        operand_matching = ""
+        var_name, var_value = "", ""
+        deprecate_log = True
+        global deprecateLog
+        deprecateLog = True
         data_set = common.shared_variable_to_value(data_set)
         if data_set in failed_tag_list:
             return "failed", []
 
         for row in data_set:
-            if str(row[0]).strip().lower() == "run actions":
-                loop_this_data_sets = get_data_set_nums(str(row[2]).strip())
-                skip += get_data_set_nums(str(row[2]).strip())
-            elif str(row[0]).strip().lower() == "repeat":
-                max_no_of_loop = int(str(row[2]).strip())
-            elif str(row[0]).strip().lower() == "exit loop":
-                value = str(row[2]).strip()
-                if "pass" in value:
+            if row[0].strip().lower() == "run actions":
+                loop_this_data_sets = get_data_set_nums(row[2].strip())
+                outer_skip += loop_this_data_sets
+            elif row[0].strip().lower() == "repeat":
+                max_no_of_loop = int(row[2].strip())
+            elif row[0].strip().lower() == "exit loop":
+                value = row[2].strip()
+                if "pass" in value.lower():
                     passing_data_sets += get_data_set_nums(value)
-                elif "fail" in value:
+                elif "fail" in value.lower():
                     failing_data_sets += get_data_set_nums(value)
+                elif "==" in value and "optional loop settings" in row[1].strip().lower():
+                    operand_matching = row
                 elif "==" in value:
                     boolean_data_list = value.split("==")
                     var_name = boolean_data_list[0].split("%|")[1].split("|%")[0]
                     var_value = boolean_data_list[1].strip().lower()
-
+                if "loop settings" == row[1].strip().lower() and deprecate_log:
+                    deprecate_log = False
+                    CommonUtil.ExecLog(
+                        sModuleInfo,
+                        "Use 'optional loop setting' instead of 'loop settings' to get our updated feature. Try the simple syntax format writen in document",
+                        2,
+                    )
         if loop_this_data_sets == []:
             CommonUtil.ExecLog(
                 sModuleInfo,
@@ -535,39 +549,63 @@ def Handle_While_Loop_Action(step_data, data_set_no):
         while i < max_no_of_loop:
             die = False
             for data_set_index in loop_this_data_sets:
-                result, skip_for_loop = Run_Sequential_Actions(
-                    [data_set_index]
-                )  # new edit: full step data is passed. [step_data[data_set_index]]) # Recursively call this function until all called data sets are complete
-                skip = list(set(skip + skip_for_loop))
+                if data_set_index not in inner_skip:    # if data_set_index not in skip_for_loop:.... need to improve this for nested loop, if else
+                    result, skip = Run_Sequential_Actions(
+                        [data_set_index]
+                    )  # new edit: full step data is passed. [step_data[data_set_index]])
+                    # Recursively call this function until all called data sets are complete
+                    inner_skip = list(set(inner_skip + skip))
+                    outer_skip = list(set(outer_skip + inner_skip))
+                else:
+                    continue
                 if result in passed_tag_list and data_set_index in passing_data_sets:
                     CommonUtil.ExecLog(
-                        sModuleInfo, "Loop exit condition satisfied. Exiting loop", 1
+                        sModuleInfo,
+                        "Loop exit condition satisfied. Action %s passed. Exiting loop" % str(data_set_index+1),
+                        1
                     )
                     die = True
                     break
                 elif result in failed_tag_list and data_set_index in failing_data_sets:
                     CommonUtil.ExecLog(
-                        sModuleInfo, "Loop exit condition satisfied. Exiting loop", 1
+                        sModuleInfo,
+                        "Loop exit condition satisfied. Action %s failed. Exiting loop" % str(data_set_index+1),
+                        1
                     )
                     die = True
                     break
+                elif operand_matching != "":
+                    operand_matching_2 = operand_matching[2][3:] if operand_matching[2][2] == " " else operand_matching[2][2:]
+                    data = [(operand_matching[0], "optional parameter", operand_matching_2)]
+                    RandL = common.shared_variable_to_value(data)[0][2]
+                    Lvalue, Rvalue = RandL.split("==")
+                    Lvalue = Lvalue[:-1] if Lvalue[-1] == " " else Lvalue  # remove 1 space before the operator
+                    Rvalue = Rvalue[1:] if Rvalue[0] == " " else Rvalue  # remove 1 space after the operator
+                    Lvalue, Rvalue = CommonUtil.parse_value_into_object(Lvalue), CommonUtil.parse_value_into_object(Rvalue)
+                    if Lvalue == Rvalue:
+                        CommonUtil.ExecLog(
+                            sModuleInfo,
+                            "Loop exit condition satisfied. Left and Right operands matched. Exiting loop",
+                            1,
+                        )
+                        die = True
+                        break
                 elif var_name != "" and sr.Test_Shared_Variables(var_name):
                     shared_variable_value = str(sr.Get_Shared_Variables(var_name)).strip().lower()
                     if (shared_variable_value == var_value):
                         CommonUtil.ExecLog(
                             sModuleInfo,
-                            "Loop exit condition satisfied. Exiting loop",
+                            "Loop exit condition satisfied. Left and Right operands matched. Exiting loop",
                             1,
                         )
                         die = True
                         break
-
             if die:
                 break
             i += 1
 
         CommonUtil.ExecLog(sModuleInfo, "Loop action handled successfully", 1)
-        return "passed", skip
+        return "passed", outer_skip
     except:
         CommonUtil.ExecLog(sModuleInfo, "Error while handling loop action", 3)
         return "failed", []
