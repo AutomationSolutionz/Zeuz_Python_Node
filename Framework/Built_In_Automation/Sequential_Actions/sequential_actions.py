@@ -549,10 +549,14 @@ def Handle_While_Loop_Action(step_data, data_set_no):
         while i < max_no_of_loop:
             die = False
             for data_set_index in loop_this_data_sets:
-                result, skip_for_loop = Run_Sequential_Actions(
-                    [data_set_index]
-                )  # new edit: full step data is passed. [step_data[data_set_index]]) # Recursively call this function until all called data sets are complete
-                skip = list(set(skip + skip_for_loop))
+                if True : # if data_set_index not in skip_for_loop:.... need to improve this for nested loop, if else
+                    result, skip_for_loop = Run_Sequential_Actions(
+                        [data_set_index]
+                    )  # new edit: full step data is passed. [step_data[data_set_index]])
+                    # Recursively call this function until all called data sets are complete
+                    skip = list(set(skip + skip_for_loop))
+                else:
+                    continue
                 if result in passed_tag_list and data_set_index in passing_data_sets:
                     CommonUtil.ExecLog(
                         sModuleInfo,
@@ -570,7 +574,9 @@ def Handle_While_Loop_Action(step_data, data_set_no):
                     die = True
                     break
                 elif operand_matching != "":
-                    RandL = common.shared_variable_to_value([(operand_matching[0], "optional parameter", operand_matching[2])])[0][2]
+                    operand_matching_2 = operand_matching[2][3:] if operand_matching[2][2] == " " else operand_matching[2][2:]
+                    data = [(operand_matching[0], "optional parameter", operand_matching_2)]
+                    RandL = common.shared_variable_to_value(data)[0][2]
                     Lvalue, Rvalue = RandL.split("==")
                     Lvalue = Lvalue[:-1] if Lvalue[-1] == " " else Lvalue  # remove 1 space before the operator
                     Rvalue = Rvalue[1:] if Rvalue[0] == " " else Rvalue  # remove 1 space after the operator
