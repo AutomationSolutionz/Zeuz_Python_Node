@@ -501,7 +501,7 @@ def Handle_While_Loop_Action(step_data, data_set_no):
         loop_this_data_sets = []
         passing_data_sets = []
         failing_data_sets = []
-        skip = []
+        outer_skip, inner_skip = [], []
         max_no_of_loop = 1
         operand_matching = ""
         var_name, var_value = "", ""
@@ -515,7 +515,7 @@ def Handle_While_Loop_Action(step_data, data_set_no):
         for row in data_set:
             if row[0].strip().lower() == "run actions":
                 loop_this_data_sets = get_data_set_nums(row[2].strip())
-                skip += loop_this_data_sets
+                outer_skip += loop_this_data_sets
             elif row[0].strip().lower() == "repeat":
                 max_no_of_loop = int(row[2].strip())
             elif row[0].strip().lower() == "exit loop":
@@ -549,12 +549,13 @@ def Handle_While_Loop_Action(step_data, data_set_no):
         while i < max_no_of_loop:
             die = False
             for data_set_index in loop_this_data_sets:
-                if True : # if data_set_index not in skip_for_loop:.... need to improve this for nested loop, if else
-                    result, skip_for_loop = Run_Sequential_Actions(
+                if data_set_index not in inner_skip:    # if data_set_index not in skip_for_loop:.... need to improve this for nested loop, if else
+                    result, skip = Run_Sequential_Actions(
                         [data_set_index]
                     )  # new edit: full step data is passed. [step_data[data_set_index]])
                     # Recursively call this function until all called data sets are complete
-                    skip = list(set(skip + skip_for_loop))
+                    inner_skip = list(set(inner_skip + skip))
+                    outer_skip = list(set(outer_skip + inner_skip))
                 else:
                     continue
                 if result in passed_tag_list and data_set_index in passing_data_sets:
@@ -604,7 +605,7 @@ def Handle_While_Loop_Action(step_data, data_set_no):
             i += 1
 
         CommonUtil.ExecLog(sModuleInfo, "Loop action handled successfully", 1)
-        return "passed", skip
+        return "passed", outer_skip
     except:
         CommonUtil.ExecLog(sModuleInfo, "Error while handling loop action", 3)
         return "failed", []
