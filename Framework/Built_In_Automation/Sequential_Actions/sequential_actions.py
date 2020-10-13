@@ -315,7 +315,7 @@ def Handle_Conditional_Action(step_data, data_set_no):
     try:
         data_set = step_data[data_set_no]
         next_level_step_data = []
-        skip = []
+        inner_skip, outer_skip = [], []
         condition_matched = False
         if_exists = False
         data_set = common.shared_variable_to_value(data_set)
@@ -381,64 +381,64 @@ def Handle_Conditional_Action(step_data, data_set_no):
                 return "failed"
 
             def check_operators():
-                nonlocal skip, next_level_step_data, condition_matched
+                nonlocal outer_skip, next_level_step_data, condition_matched
                 if statement == "else":
                     if not condition_matched:
                         condition_matched = True
                         for i in get_data_set_nums(str(right).strip()):
                             next_level_step_data.append(i)
-                        skip += next_level_step_data
+                        outer_skip += next_level_step_data
                     else:
-                        skip += get_data_set_nums(str(right).strip())
+                        outer_skip += get_data_set_nums(str(right).strip())
 
                 elif operator == "==":
                     if Lvalue == Rvalue and not condition_matched:
                         condition_matched = True
                         for i in get_data_set_nums(str(right).strip()):
                             next_level_step_data.append(i)
-                        skip += next_level_step_data
+                        outer_skip += next_level_step_data
                     else:
-                        skip += get_data_set_nums(str(right).strip())
+                        outer_skip += get_data_set_nums(str(right).strip())
                 elif operator == "!=":
                     if Lvalue != Rvalue and not condition_matched:
                         condition_matched = True
                         for i in get_data_set_nums(str(right).strip()):
                             next_level_step_data.append(i)
-                        skip += next_level_step_data
+                        outer_skip += next_level_step_data
                     else:
-                        skip += get_data_set_nums(str(right).strip())
+                        outer_skip += get_data_set_nums(str(right).strip())
                 elif operator == "<=":
                     if Lvalue <= Rvalue and not condition_matched:
                         condition_matched = True
                         for i in get_data_set_nums(str(right).strip()):
                             next_level_step_data.append(i)
-                        skip += next_level_step_data
+                        outer_skip += next_level_step_data
                     else:
-                        skip += get_data_set_nums(str(right).strip())
+                        outer_skip += get_data_set_nums(str(right).strip())
                 elif operator == ">=":
                     if Lvalue >= Rvalue and not condition_matched:
                         condition_matched = True
                         for i in get_data_set_nums(str(right).strip()):
                             next_level_step_data.append(i)
-                        skip += next_level_step_data
+                        outer_skip += next_level_step_data
                     else:
-                        skip += get_data_set_nums(str(right).strip())
+                        outer_skip += get_data_set_nums(str(right).strip())
                 elif operator == "<":
                     if Lvalue < Rvalue and not condition_matched:
                         condition_matched = True
                         for i in get_data_set_nums(str(right).strip()):
                             next_level_step_data.append(i)
-                        skip += next_level_step_data
+                        outer_skip += next_level_step_data
                     else:
-                        skip += get_data_set_nums(str(right).strip())
+                        outer_skip += get_data_set_nums(str(right).strip())
                 elif operator == ">":
                     if Lvalue > Rvalue and not condition_matched:
                         condition_matched = True
                         for i in get_data_set_nums(str(right).strip()):
                             next_level_step_data.append(i)
-                        skip += next_level_step_data
+                        outer_skip += next_level_step_data
                     else:
-                        skip += get_data_set_nums(str(right).strip())
+                        outer_skip += get_data_set_nums(str(right).strip())
 
             if statement == "if":
                 if_exists = True
@@ -455,18 +455,20 @@ def Handle_Conditional_Action(step_data, data_set_no):
                     return "failed", []
                 check_operators()
 
+        while "f" in outer_skip: outer_skip.remove("f")
+        while "p" in outer_skip: outer_skip.remove("p")
         if next_level_step_data == []:
             CommonUtil.ExecLog(
                 sModuleInfo,
-                "No conditions matched. Skipping action %s" % [i+1 for i in skip],
+                "No conditions matched. Skipping action %s" % [i+1 for i in outer_skip],
                 2,
             )
 
         for data_set_index in next_level_step_data:
             if data_set_index in ("p", "f"):
-                skip = [i for i in range(len(step_data))]
+                outer_skip = [i for i in range(len(step_data))]
                 CommonUtil.ExecLog(sModuleInfo, "Step Exit called. Stopping Test Step.", 1)
-                return "passed" if data_set_index == "p" else "failed", skip
+                return "passed" if data_set_index == "p" else "failed", outer_skip
             elif data_set_index >= len(step_data):
                 CommonUtil.ExecLog(
                     sModuleInfo,
@@ -480,15 +482,17 @@ def Handle_Conditional_Action(step_data, data_set_no):
                     "You are running an if else action within another if else action. It may create infinite recursion in some cases",
                     2
                 )
-            result, skip_for_loop = Run_Sequential_Actions(
-                [data_set_index]
-            ) # Running
-            if result in failed_tag_list:
-                return result, list(set(skip + skip_for_loop))
-            skip = list(set(skip + skip_for_loop))
+            if data_set_index not in inner_skip:
+                result, skip = Run_Sequential_Actions(
+                    [data_set_index]
+                ) # Running
+                inner_skip = list(set(inner_skip+skip))
+                outer_skip = list(set(outer_skip + inner_skip))
+                if result in failed_tag_list:
+                    return result, outer_skip
 
         CommonUtil.ExecLog(sModuleInfo, "Conditional action handled successfully", 1)
-        return "passed", skip
+        return "passed", outer_skip
     except:
         CommonUtil.ExecLog(sModuleInfo, "Error while handling conditional action", 3)
         return CommonUtil.Exception_Handler(sys.exc_info()), []
@@ -549,7 +553,22 @@ def Handle_While_Loop_Action(step_data, data_set_no):
         while i < max_no_of_loop:
             die = False
             for data_set_index in loop_this_data_sets:
-                if data_set_index not in inner_skip:    # if data_set_index not in skip_for_loop:.... need to improve this for nested loop, if else
+                if data_set_index not in inner_skip:
+                    if data_set_index >= len(step_data):
+                        CommonUtil.ExecLog(
+                            sModuleInfo,
+                            "You did not define action %s. So skipping this action index" % str(data_set_index + 1),
+                            2
+                        )
+                        while data_set_index in loop_this_data_sets: loop_this_data_sets.remove(data_set_index)
+                        outer_skip = list(set(outer_skip + [data_set_index]))
+                        continue
+                    elif data_set_index == data_set_no:
+                        CommonUtil.ExecLog(
+                            sModuleInfo,
+                            "You are running an Loop action within the same Loop action. It may create infinite recursion in some cases",
+                            2
+                        )
                     result, skip = Run_Sequential_Actions(
                         [data_set_index]
                     )  # new edit: full step data is passed. [step_data[data_set_index]])
@@ -754,6 +773,7 @@ def Run_Sequential_Actions(
                             step_data, dataset_cnt
                         )
                         skip += to_skip
+                        skip_for_loop += to_skip
                         if result in failed_tag_list:
                             CommonUtil.ExecLog(
                                 sModuleInfo,
@@ -959,7 +979,8 @@ def Run_Sequential_Actions(
                         CommonUtil.ExecLog(
                             sModuleInfo, "Step Exit called. Stopping Test Step.", 1
                         )
-                        return result, skip_for_loop
+                        skip_all = [i for i in range(len(step_data))]
+                        return result, skip_all
 
                     # Check if user wants to store the result for later use
                     stored = False
