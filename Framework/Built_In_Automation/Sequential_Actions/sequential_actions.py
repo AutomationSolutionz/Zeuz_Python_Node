@@ -455,6 +455,8 @@ def Handle_Conditional_Action(step_data, data_set_no):
                     return "failed", []
                 check_operators()
 
+        while "f" in outer_skip: outer_skip.remove("f")
+        while "p" in outer_skip: outer_skip.remove("p")
         if next_level_step_data == []:
             CommonUtil.ExecLog(
                 sModuleInfo,
@@ -551,7 +553,22 @@ def Handle_While_Loop_Action(step_data, data_set_no):
         while i < max_no_of_loop:
             die = False
             for data_set_index in loop_this_data_sets:
-                if data_set_index not in inner_skip:    # if data_set_index not in skip_for_loop:.... need to improve this for nested loop, if else
+                if data_set_index not in inner_skip:
+                    if data_set_index >= len(step_data):
+                        CommonUtil.ExecLog(
+                            sModuleInfo,
+                            "You did not define action %s. So skipping this action index" % str(data_set_index + 1),
+                            2
+                        )
+                        while data_set_index in loop_this_data_sets: loop_this_data_sets.remove(data_set_index)
+                        outer_skip = list(set(outer_skip + [data_set_index]))
+                        continue
+                    elif data_set_index == data_set_no:
+                        CommonUtil.ExecLog(
+                            sModuleInfo,
+                            "You are running an Loop action within the same Loop action. It may create infinite recursion in some cases",
+                            2
+                        )
                     result, skip = Run_Sequential_Actions(
                         [data_set_index]
                     )  # new edit: full step data is passed. [step_data[data_set_index]])
@@ -962,7 +979,8 @@ def Run_Sequential_Actions(
                         CommonUtil.ExecLog(
                             sModuleInfo, "Step Exit called. Stopping Test Step.", 1
                         )
-                        return result, skip_for_loop
+                        skip_all = [i for i in range(len(step_data))]
+                        return result, skip_all
 
                     # Check if user wants to store the result for later use
                     stored = False
