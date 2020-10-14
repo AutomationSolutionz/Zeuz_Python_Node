@@ -618,15 +618,6 @@ def get_previous_response_variables_in_strings(step_data_string_input):
                         )
                         return "failed"
 
-                    if random_string in failed_tag_list:
-                        CommonUtil.ExecLog(
-                            sModuleInfo,
-                            'Wrong format provided. The correct for %|random_data()|% is below\n' +
-                            '%|random_data([False,"a",True])|%\n%|random_string(100-200)|%',
-                            3,
-                        )
-                        return "failed"
-
                     output += random_string
                     CommonUtil.ExecLog(
                         sModuleInfo,
