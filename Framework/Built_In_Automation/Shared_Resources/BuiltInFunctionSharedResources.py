@@ -591,7 +591,12 @@ def get_previous_response_variables_in_strings(step_data_string_input):
                     if "(" in full_string:
                         temp = full_string.split("(")
                         params = temp[1].split(")")[0]
-                        if "," in params:
+                        if isinstance(CommonUtil.parse_value_into_object(params), list):
+                            random_string = str(random.choice(CommonUtil.parse_value_into_object(params)))
+                        elif re.search("^\s*\d+\s*-{1}\s*\d+\s*$", params):
+                            start, end = params.replace(" ", "").split("-")
+                            random_string = str(random.randrange(int(start), int(end), 1))
+                        elif "," in params:
                             list_of_params = params.split(",")
                             random_string = random_string_generator(
                                 list_of_params[0].strip(),
