@@ -30,7 +30,7 @@ from Framework.Utilities.decorators import logger, deprecated
 from Framework.Built_In_Automation.Shared_Resources import LocateElement
 from Framework import MainDriverApi
 from Framework.Utilities import FileUtilities
-import datetime
+import datetime, random
 import datefinder
 import traceback
 import json
@@ -892,6 +892,8 @@ def sort_list(variable_value, extra_operation):
                 else:
                     if "descending" in extra_operation:
                         variable_value = sorted(variable_value, reverse=True)
+                    elif "random" in extra_operation:
+                        random.shuffle(variable_value)
                     else:
                         variable_value = sorted(variable_value)
                     break
@@ -911,6 +913,7 @@ def sort_list(variable_value, extra_operation):
 
         index += 1
     return variable_value
+
 
 @logger
 @deprecated
