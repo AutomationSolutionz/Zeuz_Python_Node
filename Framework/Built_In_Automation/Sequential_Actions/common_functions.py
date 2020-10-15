@@ -30,7 +30,7 @@ from Framework.Utilities.decorators import logger, deprecated
 from Framework.Built_In_Automation.Shared_Resources import LocateElement
 from Framework import MainDriverApi
 from Framework.Utilities import FileUtilities
-import datetime
+import datetime, random
 import datefinder
 import traceback
 import json
@@ -858,7 +858,7 @@ def save_into_variable(data_set):
                     variable_value = len(variable_value)
                 elif "no duplicate" in extra_operation:
                     variable_value = list(set(variable_value))
-                elif "sort" in extra_operation:
+                elif "sort" in extra_operation or "shuffle" in extra_operation:
                     variable_value = sort_list(variable_value, extra_operation)
         except:
             CommonUtil.ExecLog(
@@ -892,13 +892,15 @@ def sort_list(variable_value, extra_operation):
                 else:
                     if "descending" in extra_operation:
                         variable_value = sorted(variable_value, reverse=True)
+                    elif "shuffle" in extra_operation:
+                        random.shuffle(variable_value)
                     else:
                         variable_value = sorted(variable_value)
                     break
             except TypeError:
                 CommonUtil.ExecLog(
                     "",
-                    "Skipping the list %s\n" %str(variable_value)+
+                    "Skipping the list %s\n" % str(variable_value) +
                     "Items inside your list should be of same datatype. Example:\n" +
                     "<list of numbers> [1,2,4,3.5]\n" +
                     "<list of strings> ['apple','cat','20.5']\n" +
@@ -911,6 +913,7 @@ def sort_list(variable_value, extra_operation):
 
         index += 1
     return variable_value
+
 
 @logger
 @deprecated

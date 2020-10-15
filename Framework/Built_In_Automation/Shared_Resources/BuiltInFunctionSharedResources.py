@@ -585,7 +585,52 @@ def get_previous_response_variables_in_strings(step_data_string_input):
             if "|%" in each:
                 changed = True
                 parts = each.split("|%")
-                if str(parts[0]).startswith("random_string"):
+
+                if str(parts[0]).startswith("random_data"):
+                    full_string = str(parts[0])
+                    random_string = ""
+                    if "(" in full_string:
+                        temp = full_string.split("(")
+                        params = temp[1].split(")")[0]
+                        if isinstance(CommonUtil.parse_value_into_object(params.strip()), list):
+                            random_string = str(random.choice(CommonUtil.parse_value_into_object(params.strip())))
+                        elif re.search("^\s*\d+\s*-{1}\s*\d+\s*$", params):
+                            start, end = params.replace(" ", "").split("-")
+                            random_string = str(random.randrange(int(start), int(end), 1))
+                        elif "," in params:
+                            list_of_params = params.split(",")
+                            random_string = random_string_generator(
+                                list_of_params[0].strip(),
+                                int(list_of_params[1].strip()),
+                            )
+                        else:
+                            if params.strip() == "":
+                                random_string = random_string_generator()
+                            else:
+                                random_string = random_string_generator(params.strip())
+
+                    else:
+                        CommonUtil.ExecLog(
+                            sModuleInfo,
+                            'Wrong format provided. The correct for %|random_data()|% is below\n' +
+                            '%|random_data( [False , "a", True] )|%\n%|random_string(100-200)|%',
+                            3,
+                        )
+                        return "failed"
+
+                    output += random_string
+                    CommonUtil.ExecLog(
+                        sModuleInfo,
+                        'Replacing variable "%s" with its value "%s"'
+                        % (parts[0], random_string),
+                        0,
+                    )
+                elif str(parts[0]).startswith("random_string"):
+                    CommonUtil.ExecLog(
+                        "",
+                        '%|random_string()|% is deprecated and will be deleted soon. Use %|random_data()|% to get updated features',
+                        2
+                    )
                     full_string = str(parts[0])
                     random_string = ""
                     if "(" in full_string:
