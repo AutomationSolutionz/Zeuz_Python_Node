@@ -19,7 +19,7 @@ def update(pathname):
 
     for name in drivers:
         try:
-            print("\nDownloading %s..." % name)
+            print("\n%s Driver..." % name.upper())
             driver = drivers[name](
                 download_root=driver_download_path, link_path=pathname
             )
@@ -27,10 +27,13 @@ def update(pathname):
                 print("Specify the version number of %s driver. Simply press Enter if you want the latest version" % name)
                 version = input()
                 if len(version) == 0:
+                    print("Downloading the latest version of %s driver. Please wait a bit..." % name)
                     driver.download_and_install()
                 else:
+                    print("Downloading the %s version of %s driver. Please wait a bit..." % (version, name))
                     driver.download_and_install(version)
             else:
+                print("Downloading the latest version of %s driver. Please wait a bit..." % name)
                 driver.download_and_install()
         except RuntimeError:
             print("Skipping download of %s" % name)
