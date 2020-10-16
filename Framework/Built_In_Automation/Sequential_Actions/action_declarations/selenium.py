@@ -40,7 +40,7 @@ declarations = (
     { "name": "validate url",                  "function": "Validate_Url",                  "screenshot": "web" },
     { "name": "scroll element to top",         "function": "scroll_element_to_top",         "screenshot": "web" },
     { "name": "switch window",                 "function": "switch_window",                 "screenshot": "web" },
-    { "name": "switch window/tab",             "function": "switch_window_or_tab",          "screenshot": "web" },
+    { "name": "switch window or frame",        "function": "switch_window_or_tab",          "screenshot": "web" },
     { "name": "save attribute",                "function": "Save_Attribute",                "screenshot": "web" },
     { "name": "save attribute values in list", "function": "save_attribute_values_in_list", "screenshot": "web" },
     { "name": "take screenshot web",           "function": "take_screenshot_selenium",      "screenshot": "web" },
