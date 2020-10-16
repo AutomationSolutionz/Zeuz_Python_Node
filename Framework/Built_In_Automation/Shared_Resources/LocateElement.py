@@ -58,7 +58,7 @@ def Get_Element(step_data_set, driver, query_debug=False, wait_enable=True, retu
         # We need to switch to default content just in case previous action switched to something else
         try:
             if driver_type == "selenium":
-                generic_driver.switch_to.default_content()
+                pass #generic_driver.switch_to.default_content()
                 # we need to see if there are more than one handles.  Since we cannot know if we had switch
                 # windows before, we are going to assume that we can always safely switch to default handle 0
                 """
@@ -570,6 +570,11 @@ def _switch(step_data_set):
         # find if frame switch is there.  If user enters more than one frame, it will ignore
         # user should enter multiple frame in this order parent > child > grand child ... and so on
         if "switch frame" in [x[0] for x in step_data_set]:
+            CommonUtil.ExecLog(
+                sModuleInfo,
+                "This method of 'switch frame' is deprecated and will be removed at a later period.\n" +
+                "Please use our new action 'Switch Window or Frame' to get updated features",
+                2)
             frame_switch = [x for x in step_data_set if "switch frame" == x[0]][0][2]
             # first we split by > and then we reconstruct the list by striping trailing spaces
             frame_switch_list = [(x.strip()) for x in (frame_switch.split(">"))]
