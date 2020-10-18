@@ -2549,20 +2549,41 @@ def switch_window_or_tab(step_data):
     This action will switch tab/window in browser. Basically window and tabs are same in selenium.
 
     Example 1:
-    Field	            Sub Field	        Value
-    *window title       element parameter	googl
-    switch window       selenium action 	switch window
+    Field	                    Sub Field	        Value
+    *window title               element parameter	googl
+    switch window or frame      selenium action 	switch window or frame
 
 
     Example 2:
-    Field	            Sub Field	        Value
-    window title        element parameter	google
-    switch window       selenium action 	switch window
+    Field	                    Sub Field	        Value
+    window title                element parameter	google
+    switch window or frame      selenium action 	switch window or frame
 
     Example 3:
-    Field	            Sub Field	        Value
-    window index        element parameter	9
-    switch window       selenium action 	switch window
+    Field	                    Sub Field	        Value
+    window index                element parameter	9
+    switch window or frame      selenium action 	switch window or frame
+
+    Example 4:
+    Field	                    Sub Field	        Value
+    frame index                 element parameter	1
+    switch window or frame      selenium action 	switch window or frame
+
+    Example 5:
+    Field	                    Sub Field	        Value
+    frame title                 element parameter	iFrame1
+    switch window or frame      selenium action 	switch window or frame
+
+    Example 6:
+    Field	                    Sub Field	        Value
+    frame index                 element parameter	default content
+    switch window or frame      selenium action 	switch window or frame
+
+    Example 7:
+    Field	                    Sub Field	        Value
+    frame title                 element parameter	iFrame1
+    frame index                 element parameter	1
+    switch window or frame      selenium action 	switch window or frame
 
     """
     sModuleInfo = inspect.currentframe().f_code.co_name + " : " + MODULE_NAME

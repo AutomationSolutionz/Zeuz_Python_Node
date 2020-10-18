@@ -570,6 +570,7 @@ def _switch(step_data_set):
         # find if frame switch is there.  If user enters more than one frame, it will ignore
         # user should enter multiple frame in this order parent > child > grand child ... and so on
         if "switch frame" in [x[0] for x in step_data_set]:
+            generic_driver.switch_to.default_content()
             CommonUtil.ExecLog(
                 sModuleInfo,
                 "This method of 'switch frame' is deprecated and will be removed at a later period.\n" +
@@ -585,7 +586,10 @@ def _switch(step_data_set):
                 check_if_index = ["0", "1", "2", "3", "4", "5"]
                 if each_frame in check_if_index:
                     each_frame = int(each_frame)
-                generic_driver.switch_to_frame(each_frame)
+                if isinstance(each_frame, str) and each_frame.strip().lower() == "default content":
+                    continue
+                else:
+                    generic_driver.switch_to_frame(each_frame)
 
             return True
             """
