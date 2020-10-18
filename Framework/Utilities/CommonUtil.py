@@ -3,7 +3,7 @@
 
 import sys
 import inspect
-import os, psutil, os.path, threading
+import os, os.path, threading
 import ast
 import json
 import logging
@@ -444,10 +444,11 @@ def clear_all_logs():
 
 def PhysicalAvailableMemory():
     try:
+        import psutil
         return (int(str(psutil.virtual_memory().available))) / (1024 * 1024)
 
     except Exception as e:
-        return Exception_Handler(sys.exc_info())
+        return 1
 
 
 screen_capture_driver, screen_capture_type = (
