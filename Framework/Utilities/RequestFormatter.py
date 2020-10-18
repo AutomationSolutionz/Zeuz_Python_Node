@@ -56,7 +56,7 @@ def Get(resource_path, payload=None,**kwargs):
     except requests.exceptions.RequestException:
         print(
             "Exception in UpdateGet: Authentication Failed. Please check your server, username and password. "
-            "Please include full server name. Example: https://zeuz.zeuz.ai. "
+            "Please include full server name. Example: https://zeuz.zeuz.ai.\n"
             "If you are using IP Address: Type in just the IP without http.  Example: 12.15.10.6"
         )
         return ""

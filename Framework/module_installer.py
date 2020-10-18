@@ -6,6 +6,14 @@ import traceback
 from Framework.Utilities import CommonUtil
 
 
+# NULL output device for disabling print output of pip installs
+try:
+    from subprocess import DEVNULL # py3k
+except ImportError:
+    import os
+    DEVNULL = open(os.devnull, 'wb')
+
+
 def install_missing_modules():
     """
     Purpose: This function will check all the installed modules, compare with what is in requirements-win.txt file
@@ -61,11 +69,15 @@ def install_missing_modules():
 
         # installing any missing modules
         installed = False
-        for each in req_list:
-            if each.lower() not in alredy_installed_list:
-                subprocess.check_call([sys.executable, "-m", "pip", "install", each])
-                print("module_installer: Installed missing module: %s" % each)
-                installed = True
+        for module_name in req_list:
+            if module_name.lower() not in alredy_installed_list:
+                try:
+                    print("module_installer: Installing module: %s" % module_name)
+                    subprocess.check_call([sys.executable, "-m", "pip", "install", module_name], stderr=DEVNULL, stdout=DEVNULL,)
+                    print("module_installer: Installed missing module: %s" % module_name)
+                    installed = True
+                except:
+                    print("module_installer: Failed to install module: %s" % module_name)
 
         if installed:
             print("module_installer: New modules installed.")
