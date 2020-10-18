@@ -7,7 +7,6 @@ from getpass import getpass
 
 from Framework.module_installer import install_missing_modules
 from Framework.Utilities import ConfigModule
-from utils import input_with_timeout, TimeoutExpired
 
 PROJECT_ROOT = os.path.abspath(os.curdir)
 
