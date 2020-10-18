@@ -63,7 +63,13 @@ def password_hash(encrypt, key, pw):
     # Zeuz_Node.py has a similar function that will need to be updated if this is changed
 
     try:
-        from node_gui import pass_encode
+        def pass_encode(key, clear):
+            enc = []
+            for i in range(len(clear)):
+                key_c = key[i % len(key)]
+                enc_c = (ord(clear[i]) + ord(key_c)) % 256
+                enc.append(enc_c)
+            return base64.urlsafe_b64encode(bytes(enc))
 
         result = pass_encode(key, pw)
 
