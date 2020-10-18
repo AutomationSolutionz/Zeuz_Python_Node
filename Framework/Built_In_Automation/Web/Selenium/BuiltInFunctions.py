@@ -27,8 +27,14 @@ from selenium.common.exceptions import NoAlertPresentException, ElementClickInte
 from selenium.webdriver.common.keys import Keys
 from selenium.webdriver.common.by import By
 from selenium.webdriver.support import expected_conditions as EC
-import pyautogui
-from pyautogui import press, typewrite
+try:
+    import pyautogui
+except:
+    True
+try: 
+    from pyautogui import press, typewrite
+except:
+    True
 import driver_updater
 from Framework.Utilities import CommonUtil, ConfigModule
 from Framework.Built_In_Automation.Shared_Resources import (
@@ -109,6 +115,7 @@ def Open_Browser(dependency, window_size_X=None, window_size_Y=None, update_driv
             options = Options()
             options.add_argument("--no-sandbox")
             options.add_argument("--disable-extensions")
+            options.add_argument("ignore-certificate-errors")
             options.add_experimental_option("useAutomationExtension", False)
             d = DesiredCapabilities.CHROME
             d["loggingPrefs"] = {"browser": "ALL"}
