@@ -24,11 +24,17 @@ def update(pathname):
                 download_root=driver_download_path, link_path=pathname
             )
             if __name__ == "__main__":
-                print("Specify the version number of %s driver. Simply press Enter if you want the latest version" % name)
+                print("Specify the version number of %s driver and press [Enter].\n" % name +
+                      "Press [Enter] for the latest version of %s driver \n" % name +
+                      "Press [Space] + [Enter] to skip the downloading of %s driver " % name
+                      )
                 version = input()
                 if len(version) == 0:
                     print("Downloading the latest version of %s driver. Please wait a bit..." % name)
                     driver.download_and_install()
+                elif version == " ":
+                    print("Skipping download of %s" % name)
+                    continue
                 else:
                     print("Downloading the %s version of %s driver. Please wait a bit..." % (version, name))
                     driver.download_and_install(version)
