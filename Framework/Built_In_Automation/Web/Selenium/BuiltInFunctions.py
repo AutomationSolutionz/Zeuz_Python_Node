@@ -23,7 +23,8 @@ from selenium.webdriver.firefox.firefox_binary import FirefoxBinary
 from selenium.webdriver.support.ui import Select
 from selenium.webdriver.support.ui import WebDriverWait
 from selenium.webdriver.common.action_chains import ActionChains
-from selenium.common.exceptions import NoAlertPresentException, ElementClickInterceptedException, WebDriverException, SessionNotCreatedException, TimeoutException, NoSuchFrameException
+from selenium.common.exceptions import NoAlertPresentException, ElementClickInterceptedException, WebDriverException,\
+    SessionNotCreatedException, TimeoutException, NoSuchFrameException, StaleElementReferenceException
 from selenium.webdriver.common.keys import Keys
 from selenium.webdriver.common.by import By
 from selenium.webdriver.support import expected_conditions as EC
@@ -769,6 +770,28 @@ def Click_Element(data_set):
                 )
                 return "passed"
             except Exception:
+                element_attributes = Element.get_attribute("outerHTML")
+                CommonUtil.ExecLog(
+                    sModuleInfo, "Element Attributes: %s" % (element_attributes), 3
+                )
+                errMsg = "Could not select/click your element."
+                return CommonUtil.Exception_Handler(sys.exc_info(), None, errMsg)
+        except StaleElementReferenceException:
+            try:
+                CommonUtil.ExecLog(
+                    sModuleInfo,
+                    "javascript for the element is not fully loaded so trying again after 2 seconds",
+                    2
+                )
+                time.sleep(2.0)     # wait 2 sec and try again
+                if use_js:
+                    selenium_driver.execute_script("arguments[0].click();", Element)
+                else:
+                    Element.click()
+                CommonUtil.TakeScreenShot(sModuleInfo)
+                CommonUtil.ExecLog(sModuleInfo, "Successfully clicked the element", 1)
+                return "passed"
+            except:
                 element_attributes = Element.get_attribute("outerHTML")
                 CommonUtil.ExecLog(
                     sModuleInfo, "Element Attributes: %s" % (element_attributes), 3
