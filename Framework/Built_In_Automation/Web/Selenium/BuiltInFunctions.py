@@ -110,6 +110,7 @@ def Open_Browser(dependency, window_size_X=None, window_size_Y=None, update_driv
             options = Options()
             options.add_argument("--no-sandbox")
             options.add_argument("--disable-extensions")
+            options.add_argument('ignore-certificate-errors')
             options.add_experimental_option("useAutomationExtension", False)
             d = DesiredCapabilities.CHROME
             d["loggingPrefs"] = {"browser": "ALL"}
@@ -154,7 +155,9 @@ def Open_Browser(dependency, window_size_X=None, window_size_Y=None, update_driv
                         firefox_path = path[1]
                         binary = FirefoxBinary(firefox_path)
                         break
-            selenium_driver = webdriver.Firefox()
+            capabilities = webdriver.DesiredCapabilities().FIREFOX
+            capabilities['acceptSslCerts'] = True
+            selenium_driver = webdriver.Firefox(capabilities=capabilities)
             selenium_driver.implicitly_wait(WebDriver_Wait)
             if window_size_X is None and window_size_Y is None:
                 selenium_driver.maximize_window()
@@ -169,7 +172,9 @@ def Open_Browser(dependency, window_size_X=None, window_size_Y=None, update_driv
             CommonUtil.set_screenshot_vars(Shared_Resources.Shared_Variable_Export())
             return "passed"
         elif "ie" in browser:
-            selenium_driver = webdriver.Ie()
+            capabilities = webdriver.DesiredCapabilities().INTERNETEXPLORER
+            capabilities['acceptSslCerts'] = True
+            selenium_driver = webdriver.Ie(capabilities=capabilities)
             selenium_driver.implicitly_wait(WebDriver_Wait)
             if window_size_X is None and window_size_Y is None:
                 selenium_driver.maximize_window()
