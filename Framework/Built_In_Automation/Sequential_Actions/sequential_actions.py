@@ -264,13 +264,14 @@ def get_data_set_nums(action_value):
     try:
         data_set_nums = []
         global deprecateLog
-        if "run" in action_value or "#" in action_value.lower() and deprecateLog:
-            deprecateLog = False
-            CommonUtil.ExecLog(
-                "",
-                "remove 'action#', 'run'. This one is older syntax and will be removed on a later period. Try the simple syntax format writen in document",
-                2,
-            )
+        if "run" in action_value.lower() or "#" in action_value.lower():
+            if deprecateLog:
+                deprecateLog = False
+                CommonUtil.ExecLog(
+                    "",
+                    "remove 'action#', 'run'. This one is older syntax and will be removed on a later period. Try the simple syntax format writen in document",
+                    2,
+                )
             splitted = str(action_value).split(",")
             for each in splitted:
                 try:
@@ -283,8 +284,12 @@ def get_data_set_nums(action_value):
                 except:
                     pass
         elif "if" in action_value.lower():
-            data = action_value.lower().replace("if", "").replace("pass", "").replace("fail", "").replace("ed", "").replace(" ", "")
-            data_set_nums.append(int(data)-1)
+            valid, data = ('0', '1', '2', '3', '4', '5', '6', '7', '8', '9', '-', ','), ""
+            for i in action_value:
+                if i in valid:
+                    data += i
+            data_set_nums += get_data_set_nums(data)
+
         else:
             splitted = str(action_value).strip().split(",")
             for each in splitted:
@@ -743,7 +748,7 @@ def Run_Sequential_Actions(
                         ]  # Add the processed data sets, executed by the conditional action to the skip list, so we can process the rest of the data sets (do this for both conditional actions)
 
                         # Only run this when we have two conditional actions for this data set (a true and a false preferably)
-                        if len(logic_row) == 2:
+                        if len(logic_row) == 2 or len(logic_row) == 1:
                             CommonUtil.ExecLog(
                                 sModuleInfo,
                                 "Found 2 conditional actions - moving ahead with them",
