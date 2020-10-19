@@ -748,7 +748,7 @@ def Run_Sequential_Actions(
                         ]  # Add the processed data sets, executed by the conditional action to the skip list, so we can process the rest of the data sets (do this for both conditional actions)
 
                         # Only run this when we have two conditional actions for this data set (a true and a false preferably)
-                        if len(logic_row) == 2:
+                        if len(logic_row) == 2 or len(logic_row) == 1:
                             CommonUtil.ExecLog(
                                 sModuleInfo,
                                 "Found 2 conditional actions - moving ahead with them",
