@@ -332,17 +332,12 @@ def Handle_Conditional_Action(step_data, data_set_no):
         for left, _, right in data_set:
             statement = ""
             operator = ""
-            operators = {"==": 0, "!=": 0, "<=": 0, ">=": 0, ">": 0, "<": 0}
+            operators = {" |==| ": 0, " |!=| ": 0, " |<=| ": 0, " |>=| ": 0, " |>| ": 0, " |<| ": 0, " |in| ": 0}
             statements = ("else if", "else", "if")
             for i in statements:
                 if left.lower().find(i) == 0:
                     statement = i
                     break
-            for i in operators:
-                if i in left:
-                    operators[i] += 1
-            operators["<"] -= operators["<="]
-            operators[">"] -= operators[">="]
 
             if statement not in statements:
                 CommonUtil.ExecLog(
@@ -351,21 +346,36 @@ def Handle_Conditional_Action(step_data, data_set_no):
                     3,
                 )
                 return "failed"
-            if sum(operators.values()) == 0 and statement != "else":
-                CommonUtil.ExecLog(
-                    sModuleInfo,
-                    "Specify an operator among (==, !=, <, >, <=, >=) and add a <single space> before and after the operator",
-                    3,
-                )
-                return "failed"
-            elif sum(operators.values()) == 1:
+
+            if statement != "else":
                 for i in operators:
-                    if operators[i] == 1:
-                        operator = i
-                        break
-            else:
-                # need regex to handle more than one operators to separate operator and right/left values
-                pass
+                    if i in left:
+                        operators[i] += 1
+                operators[" |<| "] -= operators[" |<=| "]
+                operators[" |>| "] -= operators[" |>=| "]
+
+                if sum(operators.values()) == 0:
+                    for i in operators:
+                        if i.strip() in left:
+                            operators[i] += 1
+                    operators[" |<| "] -= operators[" |<=| "]
+                    operators[" |>| "] -= operators[" |>=| "]
+
+                    if sum(operators.values()) ==0:
+                        CommonUtil.ExecLog(
+                            sModuleInfo,
+                            "Specify an operator among |==|, |!=|, |<|, |>|, |<=|, |>=|, |in| and add a <single space> before and after the operator",
+                            3,
+                        )
+                        return "failed"
+                if sum(operators.values()) == 1:
+                    for i in operators:
+                        if operators[i] == 1:
+                            operator = i.strip()
+                            break
+                else:
+                    # need regex to handle more than one operators to separate operator and right/left values
+                    pass
 
             try:
                 """Actual format: Statement <single space> Lvalue <single space> operator <single space> Rvalue
@@ -396,7 +406,7 @@ def Handle_Conditional_Action(step_data, data_set_no):
                     else:
                         outer_skip += get_data_set_nums(str(right).strip())
 
-                elif operator == "==":
+                elif operator == "|==|":
                     if Lvalue == Rvalue and not condition_matched:
                         condition_matched = True
                         for i in get_data_set_nums(str(right).strip()):
@@ -404,7 +414,7 @@ def Handle_Conditional_Action(step_data, data_set_no):
                         outer_skip += next_level_step_data
                     else:
                         outer_skip += get_data_set_nums(str(right).strip())
-                elif operator == "!=":
+                elif operator == "|!=|":
                     if Lvalue != Rvalue and not condition_matched:
                         condition_matched = True
                         for i in get_data_set_nums(str(right).strip()):
@@ -412,7 +422,7 @@ def Handle_Conditional_Action(step_data, data_set_no):
                         outer_skip += next_level_step_data
                     else:
                         outer_skip += get_data_set_nums(str(right).strip())
-                elif operator == "<=":
+                elif operator == "|<=|":
                     if Lvalue <= Rvalue and not condition_matched:
                         condition_matched = True
                         for i in get_data_set_nums(str(right).strip()):
@@ -420,7 +430,7 @@ def Handle_Conditional_Action(step_data, data_set_no):
                         outer_skip += next_level_step_data
                     else:
                         outer_skip += get_data_set_nums(str(right).strip())
-                elif operator == ">=":
+                elif operator == "|>=|":
                     if Lvalue >= Rvalue and not condition_matched:
                         condition_matched = True
                         for i in get_data_set_nums(str(right).strip()):
@@ -428,7 +438,7 @@ def Handle_Conditional_Action(step_data, data_set_no):
                         outer_skip += next_level_step_data
                     else:
                         outer_skip += get_data_set_nums(str(right).strip())
-                elif operator == "<":
+                elif operator == "|<|":
                     if Lvalue < Rvalue and not condition_matched:
                         condition_matched = True
                         for i in get_data_set_nums(str(right).strip()):
@@ -436,8 +446,16 @@ def Handle_Conditional_Action(step_data, data_set_no):
                         outer_skip += next_level_step_data
                     else:
                         outer_skip += get_data_set_nums(str(right).strip())
-                elif operator == ">":
+                elif operator == "|>|":
                     if Lvalue > Rvalue and not condition_matched:
+                        condition_matched = True
+                        for i in get_data_set_nums(str(right).strip()):
+                            next_level_step_data.append(i)
+                        outer_skip += next_level_step_data
+                    else:
+                        outer_skip += get_data_set_nums(str(right).strip())
+                elif operator == "|in|":
+                    if Lvalue in Rvalue and not condition_matched:
                         condition_matched = True
                         for i in get_data_set_nums(str(right).strip()):
                             next_level_step_data.append(i)
