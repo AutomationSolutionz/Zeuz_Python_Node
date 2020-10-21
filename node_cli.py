@@ -257,7 +257,7 @@ def Login(cli=False):
                 )
 
                 if api_flag:
-                    r = RequestFormatter.Post("login_api", user_info_object)
+                    r = RequestFormatter.Get("login_api", user_info_object)
 
                 if r or (isinstance(r,dict) and r['status']==200):
                     CommonUtil.ExecLog(
