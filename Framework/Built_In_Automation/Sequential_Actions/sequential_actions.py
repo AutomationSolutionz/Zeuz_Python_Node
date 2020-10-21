@@ -804,58 +804,58 @@ def Run_Sequential_Actions(
                             return result, skip_for_loop
                         break
 
-
-                        CommonUtil.ExecLog(
-                            sModuleInfo,
-                            "Checking the logical conditional action to be performed in the conditional action row: %s"
-                            % str(row),
-                            0,
-                        )
-                        logic_row.append(row)  # Keep track of the conditional action row, so we can access it later
-                        [skip_tmp.append(int(x) - 1) for x in row[2].replace(" ", "").split(",")]
-                        # Add the processed data sets, executed by the conditional action to the skip list,
-                        # so we can process the rest of the data sets (do this for both conditional actions)
-
-                        # Only run this when we have two conditional actions for this data set (a true and a false preferably)
-                        if len(logic_row) == 2 or len(logic_row) == 1:
-                            CommonUtil.ExecLog(
-                                sModuleInfo,
-                                "Found 2 conditional actions - moving ahead with them",
-                                1,
-                            )
-                            result = Conditional_Action_Handler(
-                                data_set, row, logic_row
-                            )  # send full data for recursive conditional call
-
-                            CommonUtil.ExecLog(
-                                sModuleInfo, "Conditional Actions complete", 1
-                            )
-                            if result in failed_tag_list:
-                                CommonUtil.ExecLog(
-                                    sModuleInfo,
-                                    "Returned result from Conditional Action Failed",
-                                    3,
-                                )
-                                return result, skip_for_loop
-                            logic_row = (
-                                []
-                            )  # Unset this, so if there is another conditional action in the test step, we can process it
-                            skip = skip_tmp  # Add to the skip list, now that processing is complete
-                            skip_tmp = []
-                    else:
-                        result, to_skip = Handle_Conditional_Action(
-                            step_data, dataset_cnt
-                        )
-                        skip += to_skip
-                        skip_for_loop += to_skip
-                        if result in failed_tag_list:
-                            CommonUtil.ExecLog(
-                                sModuleInfo,
-                                "Returned result from Conditional Action Failed",
-                                3,
-                            )
-                            return result, skip_for_loop
-                        break
+                    """ Below are the older version of code. Will be deleted soon after testing """
+                    #     CommonUtil.ExecLog(
+                    #         sModuleInfo,
+                    #         "Checking the logical conditional action to be performed in the conditional action row: %s"
+                    #         % str(row),
+                    #         0,
+                    #     )
+                    #     logic_row.append(row)  # Keep track of the conditional action row, so we can access it later
+                    #     [skip_tmp.append(int(x) - 1) for x in row[2].replace(" ", "").split(",")]
+                    #     # Add the processed data sets, executed by the conditional action to the skip list,
+                    #     # so we can process the rest of the data sets (do this for both conditional actions)
+                    #
+                    #     # Only run this when we have two conditional actions for this data set (a true and a false preferably)
+                    #     if len(logic_row) == 2 or len(logic_row) == 1:
+                    #         CommonUtil.ExecLog(
+                    #             sModuleInfo,
+                    #             "Found 2 conditional actions - moving ahead with them",
+                    #             1,
+                    #         )
+                    #         result = Conditional_Action_Handler(
+                    #             data_set, row, logic_row
+                    #         )  # send full data for recursive conditional call
+                    #
+                    #         CommonUtil.ExecLog(
+                    #             sModuleInfo, "Conditional Actions complete", 1
+                    #         )
+                    #         if result in failed_tag_list:
+                    #             CommonUtil.ExecLog(
+                    #                 sModuleInfo,
+                    #                 "Returned result from Conditional Action Failed",
+                    #                 3,
+                    #             )
+                    #             return result, skip_for_loop
+                    #         logic_row = (
+                    #             []
+                    #         )  # Unset this, so if there is another conditional action in the test step, we can process it
+                    #         skip = skip_tmp  # Add to the skip list, now that processing is complete
+                    #         skip_tmp = []
+                    # else:
+                    #     result, to_skip = Handle_Conditional_Action(
+                    #         step_data, dataset_cnt
+                    #     )
+                    #     skip += to_skip
+                    #     skip_for_loop += to_skip
+                    #     if result in failed_tag_list:
+                    #         CommonUtil.ExecLog(
+                    #             sModuleInfo,
+                    #             "Returned result from Conditional Action Failed",
+                    #             3,
+                    #         )
+                    #         return result, skip_for_loop
+                    #     break
 
                 # Simulate a while/for loop with the specified data sets
                 elif "loop action" in action_name:
@@ -1894,9 +1894,6 @@ def Conditional_Action_Handler(step_data, dataset_cnt):
 
     CommonUtil.ExecLog(sModuleInfo, "Conditional action handled successfully", 1)
 
-
-
-
     """ Below are the older version of code. Will be deleted soon after testing """
 
     # for conditional_steps in logic_row:  # For each conditional action from the data set
@@ -1926,6 +1923,7 @@ def Conditional_Action_Handler(step_data, dataset_cnt):
     #
     # # Shouldn't get here, but just in case
     # return "passed"
+
     return "passed", outer_skip
 
 
