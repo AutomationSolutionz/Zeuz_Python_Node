@@ -257,9 +257,9 @@ def Login(cli=False):
                 )
 
                 if api_flag:
-                    r = RequestFormatter.Get("login_api", user_info_object)
+                    r = RequestFormatter.Post("login_api", user_info_object)
 
-                if (isinstance(r,dict) and r['status']==200) or r:
+                if r or (isinstance(r,dict) and r['status']==200):
                     CommonUtil.ExecLog(
                         "",
                         f"Authentication successful: USER='{username}', "
