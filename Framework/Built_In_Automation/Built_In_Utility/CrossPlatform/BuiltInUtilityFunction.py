@@ -1648,7 +1648,7 @@ def run_command(data_set):
 
         if None in (command, variable_name):
             CommonUtil.ExecLog(
-                sModuleInfo, "Variable name and command must be rovided.", 3
+                sModuleInfo, "Variable name and command must be provided.", 3
             )
             return "failed"
 
@@ -1662,7 +1662,7 @@ def run_command(data_set):
                     "stderr": subprocess.STDOUT,
                 }
             )
-
+        CommonUtil.ExecLog(sModuleInfo, "Running Command: '%s'" % (command), 1)    
         proc = subprocess.Popen([command], **args)
 
         if not run_in_background:
