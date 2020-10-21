@@ -315,6 +315,25 @@ def get_data_set_nums(action_value):
         return []
 
 
+def if_else_log_for_actions(left, next_level_step_data, statement="if"):
+    log_actions = []
+    for i in next_level_step_data:
+        if "p" == i:
+            log_actions.append("Step pass")
+            break
+        elif "f" == i:
+            log_actions.append("Step fail")
+            break
+        log_actions.append(i+1)
+    log_actions = str(log_actions).replace("'", "")
+
+    if statement == "else":
+        return "Entered 'else' statement\nRunning actions: " + log_actions
+    elif statement == "element":
+        return left + "Running actions: " + log_actions
+    return left + ".... condition matched\n" + "Running actions: " + log_actions
+
+
 def Handle_Conditional_Action(step_data, data_set_no):
     sModuleInfo = inspect.currentframe().f_code.co_name + " : " + MODULE_NAME
     try:
@@ -323,6 +342,7 @@ def Handle_Conditional_Action(step_data, data_set_no):
         inner_skip, outer_skip = [], []
         condition_matched = False
         if_exists = False
+        data_set_for_log, row_index = data_set, 0
         data_set = common.shared_variable_to_value(data_set)
         global deprecateLog
         deprecateLog = True
@@ -467,16 +487,29 @@ def Handle_Conditional_Action(step_data, data_set_no):
                 if_exists = True
                 condition_matched = False
                 check_operators()
+                if condition_matched:
+                    log = if_else_log_for_actions(data_set_for_log[row_index][0], next_level_step_data)
+                    CommonUtil.ExecLog(sModuleInfo, log, 1)
             elif statement == "else if":
                 if not if_exists:
                     CommonUtil.ExecLog(sModuleInfo, "No 'if' statement found. Please define a 'if' statement first", 3)
                     return "failed", []
+                else_if_log = True if not condition_matched else False
                 check_operators()
+                if condition_matched and else_if_log:
+                    log = if_else_log_for_actions(data_set_for_log[row_index][0], next_level_step_data)
+                    CommonUtil.ExecLog(sModuleInfo, log, 1)
             elif statement == "else":
                 if not if_exists:
                     CommonUtil.ExecLog(sModuleInfo, "No 'if' statement found. Please define a 'if' statement first", 3)
                     return "failed", []
+                else_log = True if not condition_matched else False
                 check_operators()
+                if condition_matched and else_log:
+                    log = if_else_log_for_actions(left, next_level_step_data, "else")
+                    CommonUtil.ExecLog(sModuleInfo, log, 1)
+
+            row_index += 1
 
         while "f" in outer_skip: outer_skip.remove("f")
         while "p" in outer_skip: outer_skip.remove("p")
@@ -685,12 +718,17 @@ def Run_Sequential_Actions(
 
         for dataset_cnt in data_set_list:  # For each data set within step data
             CommonUtil.ExecLog(
-                sModuleInfo,
+                "",
                 "\n********** Starting Action #%d **********\n" % (dataset_cnt + 1),
                 4,
             )  # Offset by one to make it look proper
             data_set = step_data[dataset_cnt]  # Save data set to variable
             if dataset_cnt in skip:
+                CommonUtil.ExecLog(
+                    "",
+                    "Action %s is skipped" % (dataset_cnt + 1),
+                    4,
+                )
                 continue  # If this data set is in the skip list, do not process it
 
             if (
@@ -751,19 +789,32 @@ def Run_Sequential_Actions(
                         and action_name.lower().strip() != "if else"
                     ):  # old style conditional action
                         # CommonUtil.ExecLog(sModuleInfo,"Old style conditional action found", 1)
+
+                        result, to_skip = Conditional_Action_Handler(
+                            step_data, dataset_cnt
+                        )
+                        skip += to_skip
+                        skip_for_loop += to_skip
+                        if result in failed_tag_list:
+                            CommonUtil.ExecLog(
+                                sModuleInfo,
+                                "Returned result from Conditional Action Failed",
+                                3,
+                            )
+                            return result, skip_for_loop
+                        break
+
+
                         CommonUtil.ExecLog(
                             sModuleInfo,
                             "Checking the logical conditional action to be performed in the conditional action row: %s"
                             % str(row),
                             0,
                         )
-                        logic_row.append(
-                            row
-                        )  # Keep track of the conditional action row, so we can access it later
-                        [
-                            skip_tmp.append(int(x) - 1)
-                            for x in row[2].replace(" ", "").split(",")
-                        ]  # Add the processed data sets, executed by the conditional action to the skip list, so we can process the rest of the data sets (do this for both conditional actions)
+                        logic_row.append(row)  # Keep track of the conditional action row, so we can access it later
+                        [skip_tmp.append(int(x) - 1) for x in row[2].replace(" ", "").split(",")]
+                        # Add the processed data sets, executed by the conditional action to the skip list,
+                        # so we can process the rest of the data sets (do this for both conditional actions)
 
                         # Only run this when we have two conditional actions for this data set (a true and a false preferably)
                         if len(logic_row) == 2 or len(logic_row) == 1:
@@ -1583,17 +1634,19 @@ def Loop_Action_Handler(data, row, dataset_cnt):
         return CommonUtil.Exception_Handler(sys.exc_info())
 
 
-def Conditional_Action_Handler(data_set, row, logic_row):
+def Conditional_Action_Handler(step_data, dataset_cnt):
     """ Process conditional actions, called only by Sequential_Actions() """
 
     sModuleInfo = inspect.currentframe().f_code.co_name + " : " + MODULE_NAME
-    CommonUtil.ExecLog(sModuleInfo, "Function Start", 0)
+
 
     # Get module and dynamically load it
-    module = row[1].split(" ")[0]
-    load_sa_modules(module)
-
+    # module = row[1].split(" ")[0]
+    module = ""
+    # load_sa_modules(module)
+    log_msg = ""
     # Convert any shared variables into their strings
+    data_set = step_data[dataset_cnt]
     data_set = common.shared_variable_to_value(data_set)
     if data_set in failed_tag_list:
         return "failed"
@@ -1601,30 +1654,35 @@ def Conditional_Action_Handler(data_set, row, logic_row):
     # Test if data set contains the recall line, and if so, get the saved result from the previous action
     try:
         stored = False
-        for row in data_set:
-            if (
-                row[0].lower().strip() == "recall"
-                and row[1].lower().strip() == "result"
-            ):  # If Field = recall and Sub-Field = result
-                CommonUtil.ExecLog(sModuleInfo, "Recalled result: %s" % str(row[2]), 1)
+        for left, mid, right in data_set:
+            left = left.lower()
+            mid = mid.lower()
+            if "recall" in left and "result" in mid:  # If Field = recall and Sub-Field = result
+                CommonUtil.ExecLog(sModuleInfo, "Recalled result: %s" % right, 1)
                 stored = True
-                result = row[
-                    2
-                ]  # Retrieve the saved result (already converted from shared variable)
+                result = right  # Retrieve the saved result (already converted from shared variable)
+            elif "conditional action" in mid:
+                module = mid.strip().split(" ")[0]
+                actions_for_true = get_data_set_nums(right)
+        load_sa_modules(module)
+
     except:
         errMsg = "Error reading stored result. Perhaps it was not stored, or you failed to include the store result line in your previous action"
         return CommonUtil.Exception_Handler(sys.exc_info(), None, errMsg)
 
-    if (
-        stored == False
-    ):  # Just to be clear, we can't to log that we are using the old method
+    # if not stored:  # Just to be clear, we can't to log that we are using the old method
+    #     CommonUtil.ExecLog(
+    #         sModuleInfo,
+    #         "Could not find the recall result row. It's either missing or misspelled. Trying in different method",
+    #         2,
+    #     )
+
+    if stored:  # Use saved result from previous data set
         CommonUtil.ExecLog(
             sModuleInfo,
-            "Could not find the recall result row. It's either missing or mispelled. Trying in different method",
-            2,
-        )
-
-    if stored == True:  # Use saved result from previous data set
+            "The action has been deprecated and will be removed at a later period.\n" +
+            "Try our other action 'if else'",
+            2)
         if result in failed_tag_list:  # Check result from previous action
             logic_decision = "false"
         else:  # Passed / Skipped
@@ -1640,6 +1698,7 @@ def Conditional_Action_Handler(data_set, row, logic_row):
                 left = left.lower()
                 if "optional parameter" in mid and "wait" in left:
                     wait = float(right.strip())
+
             start_time = time.time()
             end_time = start_time + wait
             while True:
@@ -1648,28 +1707,30 @@ def Conditional_Action_Handler(data_set, row, logic_row):
                 )  # Get the element object or 'failed'
                 if (Element not in failed_tag_list) or (time.time() >= end_time):
                     break
-                # time.sleep(0.5)
+
             if Element in failed_tag_list:
                 CommonUtil.ExecLog(
                     sModuleInfo, "Conditional Actions could not find the element", 3
                 )
                 logic_decision = "false"
+                log_msg += "Element is not found\n"
             else:
                 logic_decision = "true"
+                log_msg += "Element is found\n"
+
         except:  # Element doesn't exist, proceed with the step data following the fail/false path
             CommonUtil.ExecLog(
                 sModuleInfo, "Conditional Actions could not find the element", 3
             )
             logic_decision = "false"
+            log_msg += "Element is not found\n"
 
-    elif (
-        module == "common" or module == "database"
-    ):  # compare variable or list, and based on the result conditional actions will work
+    elif module == "common" or module == "database":  # compare variable or list, and based on the result conditional actions will work
         try:
             CommonUtil.ExecLog(
                 sModuleInfo,
-                "The function has been deprecated and will be removed at a later period.\n" +
-                " Use our other action 'if else'",
+                "The action has been deprecated and will be removed at a later period.\n" +
+                "Try our other action 'if else'",
                 2)
             result = common.Compare_Variables(
                 data_set
@@ -1694,6 +1755,11 @@ def Conditional_Action_Handler(data_set, row, logic_row):
             logic_decision = "false"
 
     elif module == "rest":
+        CommonUtil.ExecLog(
+            sModuleInfo,
+            "The action has been deprecated and will be removed at a later period.\n" +
+            "Try our other action 'if else'",
+            2)
         Get_Element_Step_Data = getattr(eval(module), "Get_Element_Step_Data")
         element_step_data = Get_Element_Step_Data(
             [data_set]
@@ -1702,9 +1768,7 @@ def Conditional_Action_Handler(data_set, row, logic_row):
         returned_step_data_list = Validate_Step_Data(
             element_step_data[0]
         )  # Make sure the element step data we got back from above is good
-        if (returned_step_data_list == []) or (
-            returned_step_data_list == "failed"
-        ):  # Element step data is bad, so fail
+        if (returned_step_data_list == []) or (returned_step_data_list == "failed"):  # Element step data is bad, so fail
             CommonUtil.ExecLog(
                 sModuleInfo, "Element data is bad: %s" % str(element_step_data), 3
             )
@@ -1714,20 +1778,21 @@ def Conditional_Action_Handler(data_set, row, logic_row):
             try:
                 Get_Response = getattr(eval(module), "Get_Response")
                 Element = Get_Response(element_step_data[0])
-                if (
-                    Element == "failed"
-                ):  # Element doesn't exist, proceed with the step data following the fail/false path
+                if Element == "failed":  # Element doesn't exist, proceed with the step data following the fail/false path
                     logic_decision = "false"
                 else:  # Any other return means we found the element, proceed with the step data following the pass/true pass
                     logic_decision = "true"
             except Exception:  # Element doesn't exist, proceed with the step data following the fail/false path
-                CommonUtil.ExecLog(
-                    sModuleInfo, "Could not find element in the by the criteria...", 3
-                )
+                CommonUtil.ExecLog(sModuleInfo, "Could not find element in the by the criteria...", 3)
                 logic_decision = "false"
                 return CommonUtil.Exception_Handler(sys.exc_info())
 
     elif module == "utility":
+        CommonUtil.ExecLog(
+            sModuleInfo,
+            "The action has been deprecated and will be removed at a later period.\n" +
+            "Try our other action 'if else'",
+            2)
         Get_Path_Step_Data = getattr(eval(module), "Get_Path_Step_Data")
         element_step_data = Get_Path_Step_Data(
             data_set
@@ -1770,53 +1835,98 @@ def Conditional_Action_Handler(data_set, row, logic_row):
         return "failed"
 
     # Process the path as defined above (pass/fail)
-    skip_for_loop = []
-    for conditional_steps in logic_row:  # For each conditional action from the data set
+
+    inner_skip, outer_skip, next_level_step_data = [], [], []
+    for left, mid, right in data_set:
+        left = left.lower()
+        mid = mid.lower()
+        if "true" in left and "conditional action" in mid:
+            outer_skip += get_data_set_nums(str(right).strip())
+            if logic_decision == "true":
+                for i in get_data_set_nums(str(right).strip()):
+                    next_level_step_data.append(i)
+                log_msg = if_else_log_for_actions(log_msg, next_level_step_data, "element")
+
+        elif "false" in left and "conditional action" in mid:
+            outer_skip += get_data_set_nums(str(right).strip())
+            if logic_decision == "false":
+                for i in get_data_set_nums(str(right).strip()):
+                    next_level_step_data.append(i)
+                log_msg = if_else_log_for_actions(log_msg, next_level_step_data, "element")
+
+    CommonUtil.ExecLog(sModuleInfo, log_msg, 1)
+
+    while "f" in outer_skip: outer_skip.remove("f")
+    while "p" in outer_skip: outer_skip.remove("p")
+    if next_level_step_data == []:
         CommonUtil.ExecLog(
-            sModuleInfo, "Processing conditional action: %s" % str(conditional_steps), 1
+            sModuleInfo,
+            "No actions found regarding. Skipping action %s" % [i+1 for i in outer_skip],
+            2,
         )
-        if (
-            logic_decision in conditional_steps
-        ):  # If we have a result from the element check above (true/false)
-            list_of_steps = conditional_steps[2].split(
-                ","
-            )  # Get the data set numbers for this conditional action and put them in a list
-            for (
-                each_item
-            ) in (
-                list_of_steps
-            ):  # For each data set number we need to process before finishing
-                if int(each_item) - 1 in skip_for_loop:
-                    continue
-                if (
-                    CommonUtil.check_offline()
-                ):  # Check if user initiated offline command from GUI
-                    CommonUtil.ExecLog(
-                        sModuleInfo, "User requested Zeuz Node to go Offline", 2
-                    )
-                    return "failed"
 
-                CommonUtil.ExecLog(
-                    sModuleInfo, "Processing conditional step %s" % str(each_item), 1
-                )
-                data_set_index = (
-                    int(each_item.strip()) - 1
-                )  # data set number, -1 to offset for data set numbering system
-                result, skip_for_loop = Run_Sequential_Actions(
-                    [data_set_index]
-                )  # new edit: full step data is passed. [step_data[data_set_index]]) # Recursively call this function until all called data sets are complete
-                if row[0].lower().strip() == "step exit":
-                    CommonUtil.ExecLog(
-                        sModuleInfo, "Step Exit called. Stopping Test Step.", 1
-                    )
-                    return result
+    for data_set_index in next_level_step_data:
+        if data_set_index in ("p", "f"):
+            outer_skip = [i for i in range(len(step_data))]
+            CommonUtil.ExecLog(sModuleInfo, "Step Exit called. Stopping Test Step.", 1)
+            return "passed" if data_set_index == "p" else "failed", outer_skip
+        elif data_set_index >= len(step_data):
+            CommonUtil.ExecLog(
+                sModuleInfo,
+                "You did not define action %s. So skipping this action index" % str(data_set_index + 1),
+                2
+            )
+            continue
+        elif data_set_index == dataset_cnt:
+            CommonUtil.ExecLog(
+                sModuleInfo,
+                "You are running an if else action within another if else action. It may create infinite recursion in some cases",
+                2
+            )
+        if data_set_index not in inner_skip:
+            result, skip = Run_Sequential_Actions(
+                [data_set_index]
+            )  # Running
+            inner_skip = list(set(inner_skip + skip))
+            outer_skip = list(set(outer_skip + inner_skip))
+            if result in failed_tag_list:
+                return result, outer_skip
 
-                if result in failed_tag_list:
-                    return result  # Return on any failure
-            return result  # Return only the last result of the last row of the last data set processed - This should generally be a "step result action" command
+    CommonUtil.ExecLog(sModuleInfo, "Conditional action handled successfully", 1)
 
-    # Shouldn't get here, but just in case
-    return "passed"
+
+
+
+    """ Below are the older version of code. Will be deleted soon after testing """
+
+    # for conditional_steps in logic_row:  # For each conditional action from the data set
+    #     CommonUtil.ExecLog(sModuleInfo, "Processing conditional action: %s" % str(conditional_steps), 1)
+    #     if logic_decision in conditional_steps:  # If we have a result from the element check above (true/false)
+    #         list_of_steps = conditional_steps[2].split(",")
+    #         # Get the data set numbers for this conditional action and put them in a list
+    #         for each_item in list_of_steps:  # For each data set number we need to process before finishing
+    #             if int(each_item) - 1 in skip_for_loop:
+    #                 continue
+    #             if CommonUtil.check_offline():  # Check if user initiated offline command from GUI
+    #                 CommonUtil.ExecLog(sModuleInfo, "User requested Zeuz Node to go Offline", 2)
+    #                 return "failed"
+    #
+    #             CommonUtil.ExecLog(sModuleInfo, "Processing conditional step %s" % str(each_item), 1)
+    #             data_set_index = (int(each_item.strip()) - 1)  # data set number, -1 to offset for data set numbering system
+    #             result, skip_for_loop = Run_Sequential_Actions(
+    #                 [data_set_index]
+    #             )  # new edit: full step data is passed. [step_data[data_set_index]]) # Recursively call this function until all called data sets are complete
+    #             if row[0].lower().strip() == "step exit":
+    #                 CommonUtil.ExecLog(sModuleInfo, "Step Exit called. Stopping Test Step.", 1)
+    #                 return result
+    #
+    #             if result in failed_tag_list:
+    #                 return result  # Return on any failure
+    #         return result  # Return only the last result of the last row of the last data set processed - This should generally be a "step result action" command
+    #
+    # # Shouldn't get here, but just in case
+    # return "passed"
+    return "passed", outer_skip
 
 
 def Action_Handler(_data_set, action_row):
