@@ -37,4 +37,3 @@ rfc3986-validator
 idna
 pyrsistent
 attrs
-psycopg2-binary
