@@ -3,7 +3,6 @@ psutil
 pillow
 pyserial
 colorama
-numpy
 simplejson
 urllib3
 selenium
@@ -28,9 +27,6 @@ regex
 pyttsx3
 pyaudio
 imutils
-scikit-image
-opencv-python
-opencv-contrib-python
 https://github.com/AutomationSolutionz/PyGetWindow-0.0.5/archive/master.zip
 appscript
 webdrivermanager

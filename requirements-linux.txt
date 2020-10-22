@@ -3,7 +3,6 @@ psutil
 pillow
 pyserial
 python-dateutil
-numpy
 urllib3
 selenium
 uiautomator
@@ -21,9 +20,6 @@ tzlocal
 pyautocad
 PyPDF2
 imutils
-scikit-image
-opencv-python
-opencv-contrib-python
 pyshortcuts
 datefinder
 regex

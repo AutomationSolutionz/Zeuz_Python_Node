@@ -3,7 +3,6 @@ clint
 pillow
 setuptools
 pyserial
-numpy
 simplejson
 urllib3
 selenium
@@ -24,9 +23,6 @@ tzlocal
 pyautocad
 PyPDF2
 imutils
-scikit-image
-opencv-python
-opencv-contrib-python
 pyshortcuts
 datefinder
 regex
