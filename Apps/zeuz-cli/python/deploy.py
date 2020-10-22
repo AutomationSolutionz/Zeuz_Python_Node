@@ -19,7 +19,12 @@ def req(req_type, host, url, payload=dict(), headers=dict(), params=dict()):
     url = host + url
 
     response = requests.request(
-        req_type, url, headers=headers, params=params, data=payload
+        req_type,
+        url,
+        headers=headers,
+        params=params,
+        data=payload,
+        verify=False
     )
     return response
 
@@ -140,6 +145,9 @@ def main():
     EXIT_CODE_INVALID_RUNTIME_PARAMETERS = 6
 
     SLEEP_TIMEOUT = 30
+
+    # Disable SSL warnings.
+    requests.packages.urllib3.disable_warnings()
 
     # Collect arguments from the command line
     try:
