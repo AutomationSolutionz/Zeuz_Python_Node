@@ -860,6 +860,17 @@ def save_into_variable(data_set):
                     variable_value = list(set(variable_value))
                 elif "sort" in extra_operation or "shuffle" in extra_operation:
                     variable_value = sort_list(variable_value, extra_operation)
+                elif "sum" in extra_operation:
+                    s = 0
+                    for i in variable_value:
+                        try:
+                            if isinstance(i, float) or isinstance(i, str) and "." in i:
+                                s += float(i)
+                            else:
+                                s += int(i)
+                        except:
+                            continue
+                    variable_value = s
         except:
             CommonUtil.ExecLog(
                     sModuleInfo, f"Failed to perform extra action.", 3,
