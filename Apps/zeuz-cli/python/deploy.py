@@ -217,6 +217,9 @@ def main():
         print("Invalid API key")
         return EXIT_CODE_INVALID_API
 
+    # Extract token from request
+    token = token["token"]
+
     # Verify test set
     r = get_test_set(token, host, project, team, test_set_name)
     if len(r) == 0:
