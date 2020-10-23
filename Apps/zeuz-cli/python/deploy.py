@@ -99,7 +99,7 @@ def extract_runtime_parameters(param_str: str) -> str:
 
     Returns:
         A dictionary of the following format:
-        
+
           {
               "key1": {
                   "field": "key1",
@@ -211,6 +211,10 @@ def main():
     else:
         runtime_parameters = {}
 
+
+    # Parse emails
+    emails = [e.strip() for e in email.split(",")]
+
     # Get token for the given API key
     token = get_token_from_api(api_key, host)
     if "status" in token and token["status"] == 404:
@@ -258,7 +262,7 @@ def main():
         {
             "test_set_name": test_set_name,
             "dependency": {"Brower": "Chrome", "OS": "Windows"},
-            "email_receiver": [email,],
+            "email_receiver": emails,
             "objective": objective,
             "milestone": milestone,
             "project_id": project,

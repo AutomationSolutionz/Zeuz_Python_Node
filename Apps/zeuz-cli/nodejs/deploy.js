@@ -220,6 +220,9 @@ async function main() {
     }
     dlog("Rutnime params", runtime_parameters);
 
+    // Parse emails
+    const emails = email.split(",").map(e => e.trim());
+
     // Get token for the given API key
     const token = await get_token_from_api(api_key, host);
     if (!token) {
@@ -283,7 +286,7 @@ async function main() {
     const payload_data = {
         "test_set_name": test_set_name,
         "dependency": { "Brower": "Chrome", "OS": "Windows" },
-        "email_receiver": [email,],
+        "email_receiver": emails,
         "objective": objective,
         "milestone": milestone,
         "project_id": project,
