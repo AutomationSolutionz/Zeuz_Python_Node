@@ -244,17 +244,22 @@ def main():
 
     # If 'any' is specified as the parameter for machine,
     machine_list = list()
-    if machine == "any":
-        for _ in range(machine_timeout):
-            machine_list = get_available_machines(token, host, project, team)
-            if len(machine_list) == 0:
-                time.sleep(SLEEP_TIMEOUT)
-                machine_list = None
-            else:
+    machine_name = machine
+    for _ in range(machine_timeout):
+        machine_list = get_available_machines(token, host, project, team)
+        if len(machine_list) == 0:
+            time.sleep(SLEEP_TIMEOUT)
+        else:
+            if machine_name == "any":
                 machine = machine_list[0]["id"]
-                break
+            else:
+                machine = next(
+                    (m["id"] for m in machine_list if m["name"] == machine_name),
+                    None
+                )
+            break
 
-    if machine_list == None:
+    if len(machine_list) == 0 or machine is None:
         print("Could not find any available automated machine... exiting")
         return EXIT_CODE_ERR_NO_MACHINES
 
