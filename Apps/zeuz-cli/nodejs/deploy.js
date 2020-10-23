@@ -224,12 +224,19 @@ async function main() {
     const emails = email.split(",").map(e => e.trim());
 
     // Get token for the given API key
-    const token = await get_token_from_api(api_key, host);
-    if (!token) {
-        console.log("Invalid API key");
-        return EXIT_CODE_INVALID_API;
+    let token = "";
+    try {
+        token = await get_token_from_api(api_key, host);
+        token = token["token"];
+        if (!token) {
+            console.log("Invalid API key");
+            return EXIT_CODE_INVALID_API;
+        }
+        dlog("Token", token);
+    } catch (e) {
+        console.log("Failed to fetch token");
+        dlog("Token error", e);
     }
-    dlog("Token", token);
 
     // Verify test set
     let r = await get_test_set(token, host, project, team, test_set_name);
@@ -263,11 +270,11 @@ async function main() {
         dlog("Machine list", machine_list);
 
         for (let k = 0; k < machine_list.length; k++) {
-            const id = machine_list[k]["id"];
-            dlog("loop, machine id", id);
+            const curr = machine_list[k];
+            dlog("Machine list loop, machine id", curr["id"]);
 
-            if (machine === "any" || machine == id) {
-                machine = id;
+            if (machine === "any" || machine == curr["name"]) {
+                machine = curr["id"];
                 machine_found = true;
                 break;
             }
