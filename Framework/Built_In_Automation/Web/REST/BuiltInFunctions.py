@@ -761,7 +761,7 @@ def handle_rest_call(
                         sModuleInfo,
                         "HTTP Status Code %d did not match with Expected Status Code %d, retrying again."
                         % (status_code, wait_for_response_code),
-                        1,
+                        2,
                     )
                     time.sleep(2)
                 else:
@@ -773,6 +773,15 @@ def handle_rest_call(
                     )
                     break
             count += 1
+
+        if status_code != wait_for_response_code:
+            CommonUtil.ExecLog(
+                sModuleInfo,
+                "'Response' HTTP status code %d did not match with 'Expected' HTTP status code %d."
+                % (status_code, wait_for_response_code),
+                3,
+            )
+            return "failed"
 
         Shared_Resources.Set_Shared_Variables("status_code", result.status_code)
         try:
