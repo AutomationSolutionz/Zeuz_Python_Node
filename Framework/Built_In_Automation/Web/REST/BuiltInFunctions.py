@@ -774,7 +774,7 @@ def handle_rest_call(
                     break
             count += 1
 
-        if status_code != wait_for_response_code:
+        if wait_for_response_code != 0 and status_code != wait_for_response_code:
             CommonUtil.ExecLog(
                 sModuleInfo,
                 "'Response' HTTP status code %d did not match with 'Expected' HTTP status code %d."
