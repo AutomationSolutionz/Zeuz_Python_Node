@@ -3,6 +3,7 @@ python deploy.py ^
     --api_key "12345" ^
     --test_set_name "CLI Deployment" ^
     --email "foo@test.com, bar@test.com" ^
+    --email_pref "onfail" ^
     --objective "Deploy from cli with runtime params" ^
     --project "PROJ-17" ^
     --team "2" ^

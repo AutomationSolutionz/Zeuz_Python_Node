@@ -158,6 +158,11 @@ def main():
         parser.add_argument(
             "--email", help="Email address where the report will be delivered"
         )
+        parser.add_argument(
+            "--email_pref",
+            default="always",
+            help="Email preference after deployment is complete. example: onfail/always (default: always)",
+        )
         parser.add_argument("--objective", help="Objective of the deployment")
         parser.add_argument("--project", help="Project ID, example: PROJ-10")
         parser.add_argument("--team", help="Team ID, example: 10")
@@ -188,6 +193,7 @@ def main():
         api_key = args.api_key
         test_set_name = args.test_set_name
         email = args.email
+        email_pref = args.email_pref
         objective = args.objective
         project = args.project
         team = args.team
@@ -268,6 +274,7 @@ def main():
             "test_set_name": test_set_name,
             "dependency": {"Brower": "Chrome", "OS": "Windows"},
             "email_receiver": emails,
+            "email_pref": email_pref,
             "objective": objective,
             "milestone": milestone,
             "project_id": project,
