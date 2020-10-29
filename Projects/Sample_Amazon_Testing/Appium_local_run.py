@@ -136,6 +136,7 @@ from Framework.Built_In_Automation.Sequential_Actions.sequential_actions import 
 #
 
 dependency = {'Mobile': 'Android'}
+debug_actions = ['0', '1', '2', '3']
 device_info =\
     {'device 1':
          {'id': 'emulator-5554',
@@ -228,6 +229,7 @@ if __name__ == "__main__":
     result = Sequential_Actions(
         step_data=step_data,
         _dependency=dependency,
+        debug_actions=debug_actions,
         _device_info=device_info
     )
     print(result)
