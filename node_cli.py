@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 # -*- coding: cp1252 -*-
 
-import os, sys, time, os.path, base64, signal, argparse
+import os, sys, time, os.path, base64, signal, argparse, psutil
 from pathlib import Path
 from getpass import getpass
 
@@ -12,6 +12,31 @@ PROJECT_ROOT = os.path.abspath(os.curdir)
 
 # Append correct paths so that it can find the configuration files and other modules
 sys.path.append(os.path.join(os.path.dirname(os.path.realpath(__file__)), "Framework"))
+
+# kill any process that is running  from the same node folder
+pid = os.getpid()
+
+try:
+    #try to read to see if file exists 
+    pidfile = (os.path.realpath(__file__).split("node_cli.py")[0]+'pid.txt')
+except:
+    True
+try:
+    pidfile_read = open(pidfile)
+    pidNumber = pidfile_read.read()
+    pidNumber = int("".join(pidNumber.split()))
+    print (pidNumber)
+    p = psutil.Process(pidNumber)
+    p.terminate() 
+except:
+    True
+try: 
+    f = open(pidfile, "w")
+    f.write(str(os.getpid()))
+    f.close()
+except: 
+    True
+
 
 
 if not os.path.exists(
