@@ -6,7 +6,6 @@
 import os.path, sys, time, traceback, base64
 import webbrowser
 from threading import Thread
-
 # Import colorama for console color support
 from colorama import init as colorama_init
 from colorama import Fore
@@ -18,6 +17,31 @@ from utils import MyDialogBox
 colorama_init(autoreset=True)
 
 PROJECT_ROOT = os.path.abspath(os.curdir)
+
+# kill any process that is running  from the same node folder
+pid = os.getpid()
+
+try:
+    #try to read to see if file exists 
+    pidfile = (os.path.realpath(__file__).split("node_cli.py")[0]+'pid.txt')
+except:
+    True
+try:
+    import psutil
+    pidfile_read = open(pidfile)
+    pidNumber = pidfile_read.read()
+    pidNumber = int("".join(pidNumber.split()))
+    print (pidNumber)
+    p = psutil.Process(pidNumber)
+    p.terminate() 
+except:
+    True
+try: 
+    f = open(pidfile, "w")
+    f.write(str(os.getpid()))
+    f.close()
+except: 
+    True
 
 
 def detect_admin():

@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 # -*- coding: cp1252 -*-
 
-import os, sys, time, os.path, base64, signal, argparse, psutil
+import os, sys, time, os.path, base64, signal, argparse
 from pathlib import Path
 from getpass import getpass
 
@@ -22,6 +22,7 @@ try:
 except:
     True
 try:
+    import psutil
     pidfile_read = open(pidfile)
     pidNumber = pidfile_read.read()
     pidNumber = int("".join(pidNumber.split()))
