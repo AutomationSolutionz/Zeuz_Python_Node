@@ -2716,6 +2716,17 @@ def switch_window_or_tab(step_data):
 # Method to upload file
 @logger
 def upload_file(step_data):
+    
+    """
+    This action will use normal element search parameters to locate the upload button
+    You can upload the attachment to your test case and use the name as a variable for reference
+
+    Example 1:
+    Field                        Sub Field            Value
+    id                           element parameter    fileUPload
+    upload file                  selenium action      %|log.rtf|%
+    
+    """
     sModuleInfo = inspect.currentframe().f_code.co_name + " : " + MODULE_NAME
     global selenium_driver
     try:
@@ -2738,6 +2749,7 @@ def upload_file(step_data):
 
         upload_button = LocateElement.Get_Element(step_data, selenium_driver)
         upload_button.send_keys(file_name)
+        CommonUtil.ExecLog(sModuleInfo, "Uploaded the file: %s successfully."%file_name, 1)
 
   
 
