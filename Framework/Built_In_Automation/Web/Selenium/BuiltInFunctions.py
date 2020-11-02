@@ -2735,22 +2735,11 @@ def upload_file(step_data):
             )
             return "failed"
 
-        if sys.platform != "darwin":
-            file_window = LocateElement.Get_Element(step_data, selenium_driver)
-            file_window.click()
-            time.sleep(5)  # wait for the window to appear
 
-            pyautogui.typewrite(file_name)  # type file name
-            pyautogui.hotkey("ENTER")
-            CommonUtil.ExecLog(
-                sModuleInfo, "File '%s' uploaded successfully" % file_name, 1
-            )
-        else:
-            CommonUtil.ExecLog(
-                sModuleInfo,
-                "Uploading file not supported in Mac Platform right now!",
-                2,
-            )
+        upload_button = LocateElement.Get_Element(step_data, selenium_driver)
+        upload_button.send_keys(file_name)
+
+  
 
         return "passed"
     except Exception:
