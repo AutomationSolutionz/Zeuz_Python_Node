@@ -847,7 +847,7 @@ def command_line_args():
         else:
             CommonUtil.ExecLog(
                 "AUTHENTICATION FAILED",
-                "Enter the command line arguments in correct format",
+                "Enter the command line arguments in correct format.  Type -h for help.",
                 3,
             )
             sys.exit()  # exit and let the user try again from command line
