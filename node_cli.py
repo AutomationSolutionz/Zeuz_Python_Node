@@ -29,6 +29,7 @@ try:
     print (pidNumber)
     p = psutil.Process(pidNumber)
     p.terminate() 
+    
 except:
     True
 try: 
@@ -210,7 +211,7 @@ def Login(cli=False):
 
     if api:
         if not server_name:
-            print("Please provide server url with --server")
+            print("Please provide server url with --server and --api-key or type  -h for more info")
             return
 
         url = '/api/auth/token/verify?api_key=%s' % (api)
