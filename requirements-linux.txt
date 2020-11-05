@@ -10,7 +10,6 @@ requests
 wheel
 colorama
 pyodbc
-pyautogui
 Appium-Python-Client
 lxml
 pyscreenshot
