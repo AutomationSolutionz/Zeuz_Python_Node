@@ -28,8 +28,11 @@ from selenium.common.exceptions import NoAlertPresentException, ElementClickInte
 from selenium.webdriver.common.keys import Keys
 from selenium.webdriver.common.by import By
 from selenium.webdriver.support import expected_conditions as EC
-import pyautogui
-from pyautogui import press, typewrite
+try:
+    import pyautogui
+    from pyautogui import press, typewrite
+except:
+    True
 import driver_updater
 from Framework.Utilities import CommonUtil, ConfigModule
 from Framework.Built_In_Automation.Shared_Resources import (
@@ -53,7 +56,7 @@ MODULE_NAME = inspect.getmodulename(__file__)
 
 temp_config = os.path.join(
     os.path.join(
-        os.path.realpath(__file__).split("Framework")[0],
+        os.path.abspath(__file__).split("Framework")[0],
         os.path.join(
             "AutomationLog", ConfigModule.get_config_value("Advanced Options", "_file")
         ),
@@ -135,9 +138,12 @@ def Open_Browser(dependency, window_size_X=None, window_size_Y=None, update_driv
             CommonUtil.set_screenshot_vars(Shared_Resources.Shared_Variable_Export())
             return "passed"
 
-        elif browser == "firefox":
+        elif browser == "firefox" or "firefoxheadless":
             from sys import platform as _platform
-
+            from selenium.webdriver.firefox.options import Options
+            options = Options()
+            if "headless" in browser:
+                options.headless = True
             if _platform == "win32":
                 try:
                     import winreg
@@ -157,7 +163,7 @@ def Open_Browser(dependency, window_size_X=None, window_size_Y=None, update_driv
                         break
             capabilities = webdriver.DesiredCapabilities().FIREFOX
             capabilities['acceptSslCerts'] = True
-            selenium_driver = webdriver.Firefox(capabilities=capabilities)
+            selenium_driver = webdriver.Firefox(capabilities=capabilities,options=options)
             selenium_driver.implicitly_wait(WebDriver_Wait)
             if window_size_X is None and window_size_Y is None:
                 selenium_driver.maximize_window()

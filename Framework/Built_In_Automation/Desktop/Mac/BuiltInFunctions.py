@@ -8,7 +8,10 @@ import glob
 
 sys.path.append(os.path.dirname(__file__))
 from Framework.Utilities import CommonUtil
-import pyautogui as gui  # https://pyautogui.readthedocs.io/en/latest/
+try:
+    import pyautogui as gui  # https://pyautogui.readthedocs.io/en/latest/
+except: 
+    True
 from Framework.Utilities.decorators import logger
 from Framework.Built_In_Automation.Shared_Resources import (
     BuiltInFunctionSharedResources as Shared_Resources,

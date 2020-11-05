@@ -22,7 +22,7 @@ from . import ConfigModule
 # Global variables
 version_url = "https://raw.githubusercontent.com/AutomationSolutionz/Zeuz_Python_Node/master/Framework/Version.txt"  # Version of newest software
 version_path = os.path.join(
-    os.path.dirname(os.path.realpath(__file__)), "..", "Version.txt"
+    os.path.dirname(os.path.abspath(__file__)), "..", "Version.txt"
 )  # Version of installed software
 zeuz_node_package = "https://github.com/AutomationSolutionz/Zeuz_Python_Node/archive/master.zip"  # Location of newest software
 skip = [

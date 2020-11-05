@@ -44,13 +44,13 @@ MODULE_NAME = inspect.getmodulename(__file__)
 
 # temp_config = os.path.join(os.path.join (os.path.realpath(__file__).split("Framework")[0] , os.path.join ('AutomationLog',ConfigModule.get_config_value('Advanced Options', '_file'))))
 temp_config = Path(
-    os.path.join(os.path.realpath(__file__).split("Framework")[0])
+    os.path.join(os.path.abspath(__file__).split("Framework")[0])
     / Path("AutomationLog")
     / Path(
         ConfigModule.get_config_value(
             "Advanced Options",
             "_file",
-            Path(os.path.realpath(__file__)).parent.parent / Path("settings.conf"),
+            Path(os.path.abspath(__file__)).parent.parent / Path("settings.conf"),
         )
     )
 )
@@ -708,7 +708,7 @@ class MachineInfo:
 
             # node_id_file_path = os.path.join (os.path.realpath(__file__).split("Framework")[0] , os.path.join ('node_id.conf'))
             node_id_file_path = Path(
-                os.path.realpath(__file__).split("Framework")[0]
+                os.path.abspath(__file__).split("Framework")[0]
             ) / Path("node_id.conf")
 
             if os.path.isfile(node_id_file_path):
@@ -763,7 +763,7 @@ class MachineInfo:
             # node_id_file_path = os.path.join(FL.get_home_folder(), os.path.join('Desktop', 'node_id.conf'))
             # node_id_file_path = os.path.join (os.path.realpath(__file__).split("Framework")[0] , os.path.join ('node_id.conf'))
             node_id_file_path = Path(
-                os.path.realpath(__file__).split("Framework")[0]
+                os.path.abspath(__file__).split("Framework")[0]
             ) / Path("node_id.conf")
 
             if os.path.isfile(node_id_file_path):

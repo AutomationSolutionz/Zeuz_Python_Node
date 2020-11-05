@@ -38,7 +38,7 @@ class MyDialogBox:
         _thread.start_new_thread(
             self_updater.main,
             (
-                os.path.dirname(os.path.realpath(__file__)).replace(
+                os.path.dirname(os.path.abspath(__file__)).replace(
                     os.sep + "Framework" + os.sep + "Utilities", ""
                 ),
             ),

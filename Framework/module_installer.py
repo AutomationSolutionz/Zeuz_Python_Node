@@ -39,7 +39,7 @@ def install_missing_modules():
         req_file_path = True
         if req_file_path:
             req_file_path = (
-                os.path.dirname(os.path.realpath(__file__)).replace(
+                os.path.dirname(os.path.abspath(__file__)).replace(
                     os.sep + "Framework", ""
                 )
                 + os.sep

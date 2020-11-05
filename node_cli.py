@@ -11,14 +11,14 @@ from Framework.Utilities import ConfigModule
 PROJECT_ROOT = os.path.abspath(os.curdir)
 
 # Append correct paths so that it can find the configuration files and other modules
-sys.path.append(os.path.join(os.path.dirname(os.path.realpath(__file__)), "Framework"))
+sys.path.append(os.path.join(os.path.dirname(os.path.abspath(__file__)), "Framework"))
 
 # kill any process that is running  from the same node folder
 pid = os.getpid()
 
 try:
     #try to read to see if file exists 
-    pidfile = (os.path.realpath(__file__).split("node_cli.py")[0]+'pid.txt')
+    pidfile = (os.path.abspath(__file__).split("node_cli.py")[0]+'pid.txt')
 except:
     True
 try:
@@ -43,20 +43,20 @@ except:
 
 if not os.path.exists(
     os.path.join(
-        os.path.realpath(__file__).split("node_cli.py")[0],
+        os.path.abspath(__file__).split("node_cli.py")[0],
         os.path.join("AutomationLog"),
     )
 ):
     os.mkdir(
         os.path.join(
-            os.path.realpath(__file__).split("node_cli.py")[0],
+            os.path.abspath(__file__).split("node_cli.py")[0],
             os.path.join("AutomationLog"),
         )
     )
 
 
 # Move to Framework directory, so all modules can be seen
-os.chdir(os.path.join(os.path.dirname(os.path.realpath(__file__)), "Framework"))
+os.chdir(os.path.join(os.path.dirname(os.path.abspath(__file__)), "Framework"))
 sys.path.append("..")
 
 from Framework.Utilities import (
@@ -724,7 +724,7 @@ def check_for_updates():
                 print("*** A new update is available. Automatically installing.")
 
                 update_path = os.path.dirname(
-                    os.path.realpath(__file__)
+                    os.path.abspath(__file__)
                 ).replace(os.sep + "Framework", "")
                 self_updater.main(update_path)
             except:
@@ -735,7 +735,7 @@ def check_for_updates():
                 time.sleep(2)  # Wait a bit, so they can see the message
                 subprocess.Popen(
                     'python "%s"'
-                    % os.path.realpath(sys.argv[0]).replace(os.sep + "Framework", ""),
+                    % os.path.abspath(sys.argv[0]).replace(os.sep + "Framework", ""),
                     shell=True,
                 )  # Restart zeuz node
                 quit()  # Exit this process

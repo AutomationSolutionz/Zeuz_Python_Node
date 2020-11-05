@@ -11,8 +11,10 @@
 #        Modules        #
 #                       #
 #########################
-
-import pyautogui as gui  # https://pyautogui.readthedocs.io/en/latest/
+try:
+    import pyautogui as gui
+except:
+    True  # https://pyautogui.readthedocs.io/en/latest/
 import os, os.path, sys, time, inspect, subprocess
 from Framework.Utilities import CommonUtil, FileUtilities as FL
 from Framework.Utilities.decorators import logger

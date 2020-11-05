@@ -23,7 +23,7 @@ pid = os.getpid()
 
 try:
     #try to read to see if file exists 
-    pidfile = (os.path.realpath(__file__).split("node_cli.py")[0]+'pid.txt')
+    pidfile = (os.path.abspath(__file__).split("node_cli.py")[0]+'pid.txt')
 except:
     True
 try:
@@ -143,7 +143,7 @@ from node_cli import (
 )  # Controlling node status and logging in
 
 # os.chdir(
-#     os.path.join(os.path.dirname(os.path.realpath(__file__)), "Framework")
+#     os.path.join(os.path.dirname(os.path.abspath(__file__)), "Framework")
 # )  # Move to Framework directory, so all modules can be seen
 
 # Find node id file
@@ -569,7 +569,7 @@ class Application(tk.Frame):
                         )
 
                         update_path = os.path.dirname(
-                            os.path.realpath(__file__)
+                            os.path.abspath(__file__)
                         ).replace(os.sep + "Framework", "")
                         Thread(target=self_updater.main, args=(update_path,)).start()
                         self.after(
@@ -639,7 +639,7 @@ class Application(tk.Frame):
             else:  # Not running a test case, so it should be safe to restart
                 subprocess.Popen(
                     'python "%s"'
-                    % os.path.realpath(sys.argv[0]).replace(os.sep + "Framework", ""),
+                    % os.path.abspath(sys.argv[0]).replace(os.sep + "Framework", ""),
                     shell=True,
                 )  # Restart zeuz node
                 quit()  # Exit this process
