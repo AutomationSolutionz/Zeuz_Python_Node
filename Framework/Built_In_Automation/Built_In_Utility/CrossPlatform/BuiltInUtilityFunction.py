@@ -2179,7 +2179,7 @@ def Upload(step_data):
 
             temp_ini_file = os.path.join(
                 os.path.join(
-                    os.path.realpath(__file__).split("Framework")[0],
+                    os.path.abspath(__file__).split("Framework")[0],
                     os.path.join(
                         "AutomationLog",
                         ConfigModule.get_config_value("Advanced Options", "_file"),
@@ -2206,7 +2206,7 @@ def Upload(step_data):
             # temp_ini_file = get_home_folder() + raw("\Desktop\AutomationLog\temp_config.ini")
             temp_ini_file = os.path.join(
                 os.path.join(
-                    os.path.realpath(__file__).split("Framework")[0],
+                    os.path.abspath(__file__).split("Framework")[0],
                     os.path.join(
                         "AutomationLog",
                         ConfigModule.get_config_value("Advanced Options", "_file"),
@@ -2250,7 +2250,7 @@ def Upload(step_data):
 
 temp_config = os.path.join(
     os.path.join(
-        os.path.realpath(__file__).split("Framework")[0],
+        os.path.abspath(__file__).split("Framework")[0],
         os.path.join(
             "AutomationLog", ConfigModule.get_config_value("Advanced Options", "_file")
         ),
