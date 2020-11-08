@@ -122,12 +122,15 @@ def Get_Element(step_data_set, driver, query_debug=False, wait_enable=True, retu
 
         save_parameter = ""
         get_parameter = ""
+        Filter = ""
         for row in step_data_set:
             if row[1] == "save parameter":
                 if row[2] != "ignore":
                     save_parameter = row[0]
             elif row[1] == "get parameter":
                 get_parameter = row[0]
+            elif row[1].strip().lower() == "option":
+                Filter = row[0].strip().lower() if row[2].strip().lower() in ("yes", "true", "ok") else Filter
 
         if get_parameter != "":
 
@@ -148,109 +151,104 @@ def Get_Element(step_data_set, driver, query_debug=False, wait_enable=True, retu
                 )
                 return "failed"
 
-        wait_time = int(sr.Get_Shared_Variables("element_wait"))
-        etime = time.time() + wait_time  # Default time to wait for an element
-        while (
-            time.time() < etime
-        ):  # Our own built in "wait" until True because sometimes elements do not appear fast enough
-            # If driver is pyautogui, perform specific get element function and exit
-            if driver_type == "pyautogui":
-                result = _pyautogui(step_data_set)
-                if result not in failed_tag_list:
-                    if save_parameter != "":  # save element to a variable
-                        sr.Set_Shared_Variables(save_parameter, result)
-                    return result  # Return on pass
-                if not wait_enable:
-                    CommonUtil.ExecLog(
-                        sModuleInfo,
-                        "Element not found. Waiting is disabled, so returning",
-                        3,
-                    )
-                    return result  # If asked not to loop, return the failure
-                continue  # If fail, but instructed to loop, do so
+        # wait_time = int(sr.Get_Shared_Variables("element_wait"))
+        # etime = time.time() + wait_time  # Default time to wait for an element
+        # while (
+        #     time.time() < etime
+        # ):  # Our own built in "wait" until True because sometimes elements do not appear fast enough
+        # If driver is pyautogui, perform specific get element function and exit
+        if driver_type == "pyautogui":
+            result = _pyautogui(step_data_set)
+            if save_parameter != "":  # save element to a variable
+                sr.Set_Shared_Variables(save_parameter, result)
+            return result  # Return on pass
+            # if not wait_enable:
+            #     CommonUtil.ExecLog(
+            #         sModuleInfo,
+            #         "Element not found. Waiting is disabled, so returning",
+            #         3,
+            #     )
+            #     return result  # If asked not to loop, return the failure
+            # continue  # If fail, but instructed to loop, do so
 
-            # here we switch driver if we need to
-            _switch(step_data_set)
-            index_number = _locate_index_number(step_data_set)
-            element_query, query_type = _construct_query(step_data_set, web_element_object)
-            CommonUtil.ExecLog(
-                sModuleInfo,
-                "Element query used to locate the element: %s. Query method used: %s "
-                % (element_query, query_type),
-                1,
-            )
+        # here we switch driver if we need to
+        _switch(step_data_set)
+        index_number = _locate_index_number(step_data_set)
+        element_query, query_type = _construct_query(step_data_set, web_element_object)
+        CommonUtil.ExecLog(
+            sModuleInfo,
+            "Element query used to locate the element: %s. Query method used: %s "
+            % (element_query, query_type),
+            1,
+        )
 
-            if query_debug == True:
-                print(
-                    "This query will not be run as query_debug is enabled.  It will only print out in console"
-                )
-                print("Your query from the step data provided is:  %s" % element_query)
-                print("Your query type is: %s" % query_type)
-                result = "passed"
-            if element_query == False:
-                result = "failed"
-            elif query_type == "xpath" and element_query != False:
-                result = _get_xpath_or_css_element(element_query, "xpath", index_number, return_all_elements)
-            elif query_type == "css" and element_query != False:
-                result = _get_xpath_or_css_element(element_query, "css", index_number)
-            elif query_type == "unique" and element_query != False:
-                result = _get_xpath_or_css_element(
-                    element_query, "unique", index_number
-                )
-            else:
-                result = "failed"
+        if query_debug == True:
+            print("This query will not be run as query_debug is enabled.  It will only print out in console")
+            print("Your query from the step data provided is:  %s" % element_query)
+            print("Your query type is: %s" % query_type)
+            result = "passed"
+        if element_query == False:
+            result = "failed"
+        elif query_type == "xpath" and element_query != False:
+            result = _get_xpath_or_css_element(element_query, "xpath", index_number, Filter, return_all_elements)
+        elif query_type == "css" and element_query != False:
+            result = _get_xpath_or_css_element(element_query, "css", index_number, Filter)
+        elif query_type == "unique" and element_query != False:
+            result = _get_xpath_or_css_element(element_query, "unique", index_number, Filter)
+        else:
+            result = "failed"
 
-            # if user sends optional option check if element is displayed or not.    We may need to add more
-            # items here such as enabled, visible and such.
+        # if user sends optional option check if element is displayed or not.    We may need to add more
+        # items here such as enabled, visible and such.
 
-            try:
-                if driver_type == "appium" or driver_type == "selenium":
-                    is_displayed_value = ""
-                    for row in step_data_set:
-                        if (
-                            "option" in str(row[1]).lower().strip()
-                            and "is_displayed" in str(row[0]).lower().strip()
-                        ):
-                            is_displayed_value = row[2].strip().lower()
-                            if is_displayed_value == "true":
-                                if not return_all_elements:
-                                    if not result.is_displayed():
+        try:
+            if driver_type == "appium" or driver_type == "selenium":
+                is_displayed_value = ""
+                for row in step_data_set:
+                    if (
+                        "option" in str(row[1]).lower().strip()
+                        and "is_displayed" in str(row[0]).lower().strip()
+                    ):
+                        is_displayed_value = row[2].strip().lower()
+                        if is_displayed_value == "true":
+                            if not return_all_elements:
+                                if not result.is_displayed():
+                                    CommonUtil.ExecLog(
+                                        sModuleInfo,
+                                        "Element was found, however, it was not displayed or enabled. Returning failed",
+                                        2,
+                                    )
+                                    result = "failed"
+                                    break
+                                else:
+                                    break
+                            if return_all_elements:
+                                i = 0
+                                for each_element in result:
+                                    i = i+1
+                                    if not each_element.is_displayed():
                                         CommonUtil.ExecLog(
                                             sModuleInfo,
-                                            "Element was found, however, it was not displayed or enabled. Returning failed",
+                                            "%s no element was not displayed or enabled. Returning failed" % i,
                                             2,
                                         )
                                         result = "failed"
                                         break
-                                    else:
-                                        break
-                                if return_all_elements:
-                                    i = 0
-                                    for each_element in result:
-                                        i = i+1
-                                        if not each_element.is_displayed():
-                                            CommonUtil.ExecLog(
-                                                sModuleInfo,
-                                                "%s no element was not displayed or enabled. Returning failed" % i,
-                                                2,
-                                            )
-                                            result = "failed"
-                                            break
-                                    break
-            except:
-                True
+                                break
+        except:
+            True
 
-            if result not in failed_tag_list:
-                if save_parameter != "":  # save element to a variable
-                    sr.Set_Shared_Variables(save_parameter, result)
-                return result  # Return on pass
-            if not wait_enable:
-                CommonUtil.ExecLog(
-                    sModuleInfo,
-                    "Element not found. Waiting is disabled, so returning",
-                    2,
-                )
-                return result  # If asked not to loop, return the failure
+        if result not in failed_tag_list:
+            if save_parameter != "":  # save element to a variable
+                sr.Set_Shared_Variables(save_parameter, result)
+            return result  # Return on pass
+        if not wait_enable:
+            CommonUtil.ExecLog(
+                sModuleInfo,
+                "Element not found. Waiting is disabled, so returning",
+                2,
+            )
+            return result  # If asked not to loop, return the failure
             # If fail, but instructed to loop, do so
         return "failed"
 
@@ -358,7 +356,7 @@ def _construct_query(step_data_set, web_element_object=False):
             child_ref_exits == False
             and web_element_object == True
             and sibling_ref_exits == False
-            and driver_type == "selenium"
+            and (driver_type == "appium" or driver_type == "selenium")
             and parent_ref_exits == False
         ):
             """
@@ -627,7 +625,7 @@ def _switch(step_data_set):
         return CommonUtil.Exception_Handler(sys.exc_info())
 
 
-def _get_xpath_or_css_element(element_query, css_xpath, index_number=False, return_all_elements= False):
+def _get_xpath_or_css_element(element_query, css_xpath, index_number=False, Filter="", return_all_elements= False):
     """
     Here, we actually execute the query based on css/xpath and then analyze if there are multiple.
     If we find multiple we give warning and send the first one we found.
@@ -635,103 +633,104 @@ def _get_xpath_or_css_element(element_query, css_xpath, index_number=False, retu
     If return_all_elements = True then we return all elements.
     """
     try:
-        all_matching_elements = []
         all_matching_elements_visible_invisible = []
         sModuleInfo = inspect.currentframe().f_code.co_name + " : " + MODULE_NAME
 
-        if css_xpath == "unique" and (
-            driver_type == "appium" or driver_type == "selenium"
-        ):  # for unique id
-            try:
-                unique_key = element_query[0]
-                unique_value = element_query[1]
-                if driver_type == "appium" and (
-                    unique_key == "accessibility id"
-                    or unique_key == "accessibility-id"
-                    or unique_key == "content-desc"
-                    or unique_key == "content desc"
-                ):  # content-desc for android, accessibility id for iOS
-                    unique_element = generic_driver.find_element_by_accessibility_id(
-                        unique_value
-                    )
-                elif unique_key == "id" or (
-                    driver_type == "appium"
-                    and (
-                        unique_key == "resource id"
-                        or unique_key == "resource-id"
-                        or unique_key == "name"
-                    )
-                ):  # name for iOS
-                    unique_element = generic_driver.find_element(By.ID, unique_value)
-                elif unique_key == "name":
-                    unique_element = generic_driver.find_element(By.NAME, unique_value)
-                elif unique_key == "class":
-                    unique_element = generic_driver.find_element(
-                        By.CLASS_NAME, unique_value
-                    )
-                elif unique_key == "tag":
-                    unique_element = generic_driver.find_element(
-                        By.TAG_NAME, unique_value
-                    )
-                elif unique_key == "css":
-                    unique_element = generic_driver.find_element(
-                        By.CSS_SELECTOR, unique_value
-                    )
-                elif unique_key == "xpath":
-                    unique_element = generic_driver.find_element(By.XPATH, unique_value)
-                elif unique_key in ["text", "*text"]:
-                    if driver_type == "appium":
-                        if unique_key == "text":
+        exception_msg = ""
+        exception_cnd = False
+        start = time.time()
+        end = start + int(sr.Get_Shared_Variables("element_wait"))
+        while time.time() < end:
+            if css_xpath == "unique" and (
+                driver_type == "appium" or driver_type == "selenium"
+            ):  # for unique id
+                try:
+                    unique_key = element_query[0]
+                    unique_value = element_query[1]
+                    if driver_type == "appium" and (
+                        unique_key == "accessibility id"
+                        or unique_key == "accessibility-id"
+                        or unique_key == "content-desc"
+                        or unique_key == "content desc"
+                    ):  # content-desc for android, accessibility id for iOS
+                        unique_element = generic_driver.find_element_by_accessibility_id(
+                            unique_value
+                        )
+                    elif unique_key == "id" or (driver_type == "appium" and (unique_key == "resource id" or unique_key == "resource-id" or unique_key == "name")):  # name for iOS
+                        unique_element = generic_driver.find_element(By.ID, unique_value)
+                    elif unique_key == "name":
+                        unique_element = generic_driver.find_element(By.NAME, unique_value)
+                    elif unique_key == "class":
+                        unique_element = generic_driver.find_element(
+                            By.CLASS_NAME, unique_value
+                        )
+                    elif unique_key == "tag":
+                        unique_element = generic_driver.find_element(
+                            By.TAG_NAME, unique_value
+                        )
+                    elif unique_key == "css":
+                        unique_element = generic_driver.find_element(
+                            By.CSS_SELECTOR, unique_value
+                        )
+                    elif unique_key == "xpath":
+                        unique_element = generic_driver.find_element(By.XPATH, unique_value)
+                    elif unique_key in ["text", "*text"]:
+                        if driver_type == "appium":
+                            if unique_key == "text":
+                                unique_element = generic_driver.find_element(
+                                    By.XPATH, '//*[@text="%s"]' % unique_value
+                                )
+                            else:
+                                unique_element = generic_driver.find_element(
+                                    By.XPATH, '//*[contains(@text,"%s")]' % unique_value
+                                )
+                        else:
+                            if unique_key == "text":
+                                unique_element = generic_driver.find_element(
+                                    By.XPATH, '//*[text()="%s"]' % unique_value
+                                )
+                            else:
+                                unique_element = generic_driver.find_element(
+                                    By.XPATH, '//*[contains(text(),"%s")]' % unique_value
+                                )
+                    else:
+                        if "*" in unique_key:
+                            unique_key = unique_key[1:]  # drop the asterisk
                             unique_element = generic_driver.find_element(
-                                By.XPATH, '//*[@text="%s"]' % unique_value
+                                By.XPATH,
+                                "//*[contains(@%s,'%s')]" % (unique_key, unique_value),
                             )
                         else:
                             unique_element = generic_driver.find_element(
-                                By.XPATH, '//*[contains(@text,"%s")]' % unique_value
+                                By.XPATH, "//*[@%s='%s']" % (unique_key, unique_value)
                             )
-                    else:
-                        if unique_key == "text":
-                            unique_element = generic_driver.find_element(
-                                By.XPATH, '//*[text()="%s"]' % unique_value
-                            )
-                        else:
-                            unique_element = generic_driver.find_element(
-                                By.XPATH, '//*[contains(text(),"%s")]' % unique_value
-                            )
-                else:
-                    if "*" in unique_key:
-                        unique_key = unique_key[1:]  # drop the asterisk
-                        unique_element = generic_driver.find_element(
-                            By.XPATH,
-                            "//*[contains(@%s,'%s')]" % (unique_key, unique_value),
-                        )
-                    else:
-                        unique_element = generic_driver.find_element(
-                            By.XPATH, "//*[@%s='%s']" % (unique_key, unique_value)
-                        )
-                return unique_element
-            except Exception as e:
-                print(e)
-                return "failed"
-        elif css_xpath == "xpath" and driver_type != "xml":
-            all_matching_elements_visible_invisible = generic_driver.find_elements(
-                By.XPATH, element_query
-            )
-        elif css_xpath == "xpath" and driver_type == "xml":
-            all_matching_elements_visible_invisible = generic_driver.xpath(
-                element_query
-            )
-        elif css_xpath == "css":
-            all_matching_elements_visible_invisible = generic_driver.find_elements(
-                By.CSS_SELECTOR, element_query
-            )
-        # we will filter out all "not visible elements"
-        for each in all_matching_elements_visible_invisible:
-            try:
-                if each.is_displayed():
-                    all_matching_elements.append(each)
-            except:
-                pass
+                    return unique_element
+                except Exception as e:
+                    exception_msg = e
+                    exception_cnd = True
+                    continue
+            elif css_xpath == "xpath" and driver_type != "xml":
+                all_matching_elements_visible_invisible = generic_driver.find_elements(
+                    By.XPATH, element_query
+                )
+            elif css_xpath == "xpath" and driver_type == "xml":
+                all_matching_elements_visible_invisible = generic_driver.xpath(
+                    element_query
+                )
+            elif css_xpath == "css":
+                all_matching_elements_visible_invisible = generic_driver.find_elements(
+                    By.CSS_SELECTOR, element_query
+                )
+
+            if all_matching_elements_visible_invisible:
+                break
+
+        if exception_cnd:
+            print(exception_msg)
+            return "failed"
+
+        all_matching_elements = filter_elements(all_matching_elements_visible_invisible, Filter)
+
         if return_all_elements:
             CommonUtil.ExecLog(
                 sModuleInfo,
@@ -785,6 +784,20 @@ def _get_xpath_or_css_element(element_query, css_xpath, index_number=False, retu
         )
         return "failed"
 
+def filter_elements(all_matching_elements_visible_invisible, Filter):
+    # visible, enable
+    all_matching_elements = []
+    if Filter != "allow hidden":
+        for each in all_matching_elements_visible_invisible:
+            try:
+                if each.is_displayed():
+                    all_matching_elements.append(each)
+            except:
+                pass
+    else:
+        all_matching_elements = all_matching_elements_visible_invisible
+
+    return all_matching_elements
 
 def _locate_index_number(step_data_set):
     """
@@ -977,9 +990,15 @@ def _pyautogui(step_data_set):
             CommonUtil.ExecLog(sModuleInfo, "Not scaling image", 0)
 
         # Find image on screen (file_name here is either an actual directory/file or a PIL image object after scaling)
-        element = pyautogui.locateAllOnScreen(
-            file_name, grayscale=True, confidence=0.85
-        )  # Get coordinates of element. Use greyscale for increased speed and better matching across machines. May cause higher number of false-positives
+        start = time.time()
+        while time.time() < start + int(sr.Get_Shared_Variables("element_wait")):
+            element = pyautogui.locateAllOnScreen(
+                file_name, grayscale=True, confidence=0.85
+            )  # Get coordinates of element. Use greyscale for increased speed and better matching across machines. May cause higher number of false-positives
+            element_list = tuple(element)
+            if element_list:
+                break
+            time.sleep(0.1)
         #         if len(tuple(tmp)) == 0: # !!! This should work, but accessing the generator causes it to lose one or more of it's results, thus causing an error when we  try to use it with a single image
         #             print ">>>>IN", element
         #             CommonUtil.ExecLog(sModuleInfo, "Image element not found", 0)
@@ -991,7 +1010,7 @@ def _pyautogui(step_data_set):
 
         # If no reference image, just return the first match
         if file_name_parent == "":
-            element_list = tuple(element)
+            # element_list = tuple(element)
             # First match reassigned as the only element
             element = element_list[0] if len(element_list) > 0 else None
 
@@ -1000,9 +1019,14 @@ def _pyautogui(step_data_set):
             CommonUtil.ExecLog(sModuleInfo, "Locating with a reference element", 0)
 
             # Get coordinates of reference image
-            element_parent = pyautogui.locateOnScreen(
-                file_name_parent, grayscale=True, confidence=0.85
-            )
+            start = time.time()
+            while time.time() < start + int(sr.Get_Shared_Variables("element_wait")):
+                element_parent = pyautogui.locateOnScreen(
+                    file_name_parent, grayscale=True, confidence=0.85
+                )
+                if element_parent:
+                    break
+                time.sleep(0.1)
             if element_parent == None:
                 CommonUtil.ExecLog(sModuleInfo, "Reference image not found", 0)
                 return "failed"

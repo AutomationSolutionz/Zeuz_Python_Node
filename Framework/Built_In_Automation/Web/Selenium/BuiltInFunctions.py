@@ -1470,16 +1470,13 @@ def save_attribute_values_in_list(step_data):
                     Attribute_value = elem.get_attribute(search_by_attribute)
                 try:
                     for search_contain in target[i][2]:
-                        if not isinstance(search_contain,
-                                          type(Attribute_value)) or search_contain in Attribute_value or len(
-                                search_contain) == 0:
+                        if not isinstance(search_contain, type(Attribute_value)) or search_contain in Attribute_value or len(search_contain) == 0:
                             pass
                         else:
                             Attribute_value = None
 
                     for search_doesnt_contain in target[i][3]:
-                        if isinstance(search_doesnt_contain,
-                                      type(Attribute_value)) and search_doesnt_contain in Attribute_value:
+                        if isinstance(search_doesnt_contain, type(Attribute_value)) and search_doesnt_contain in Attribute_value:
                             Attribute_value = None
                 except:
                     CommonUtil.ExecLog(
@@ -1489,7 +1486,10 @@ def save_attribute_values_in_list(step_data):
                 j = j + 1
             i = i + 1
 
-        Shared_Resources.Set_Shared_Variables(variable_name, variable_value)
+        if Shared_Resources.Set_Shared_Variables(variable_name, variable_value) == "passed":
+            return "passed"
+        else:
+            return "failed"
 
     except Exception:
         return CommonUtil.Exception_Handler(sys.exc_info())
@@ -2752,14 +2752,15 @@ def upload_file(step_data):
             )
             return "failed"
 
-
         upload_button = LocateElement.Get_Element(step_data, selenium_driver)
+        if upload_button in failed_tag_list:
+            CommonUtil.ExecLog(sModuleInfo, "Could not find the element with given data", 3)
+            return "failed"
+
         upload_button.send_keys(file_name)
         CommonUtil.ExecLog(sModuleInfo, "Uploaded the file: %s successfully."%file_name, 1)
-
-  
-
         return "passed"
+
     except Exception:
         return CommonUtil.Exception_Handler(sys.exc_info())
 

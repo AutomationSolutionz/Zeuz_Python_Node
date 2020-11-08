@@ -3869,7 +3869,7 @@ def Switch_Context(data_set):
 
 
 @logger
-def Save_Attribute(step_data):
+def Save_Attribute_appium(step_data):
     # switches context between native and webview
     """
     this works for both ios and Android
@@ -3934,6 +3934,135 @@ def Save_Attribute(step_data):
                 sModuleInfo, "Value of Variable '%s' was saved" % variable_name, 1
             )
             return "passed"
+    except Exception:
+        return CommonUtil.Exception_Handler(sys.exc_info())
+
+
+@logger
+def save_attribute_values_appium(step_data):
+    """
+    This action will expect users to provide a parent element under which they are expecting
+    to collect multiple objects.  Users can provide certain constrain to search their elements
+    Sample data:
+
+    aria-label                       element parameter      Calendar
+
+    attributes                       target parameter       data-automation="productItemName",
+                                                            class="S58f2saa25a3w1",
+                                                            return="text",
+                                                            return_contains="128GB",
+                                                            return_does_not_contain="Windows 10",
+                                                            return_does_not_contain="Linux"
+
+    attributes                       target parameter       class="productPricingContainer_3gTS3",
+                                                            return="text",
+                                                            return_does_not_contain="99.99"
+
+    save attribute values in list    selenium action        list_name
+
+    """
+    sModuleInfo = inspect.currentframe().f_code.co_name + " : " + MODULE_NAME
+    global selenium_driver
+    try:
+        # this is the parent object.  If the user wants to search the entire page, they can
+        # provide tag = html
+        Element = LocateElement.Get_Element([("resource-id","element parameter","android:id/list")], appium_driver)
+        if Element == "failed":
+            CommonUtil.ExecLog(
+                sModuleInfo, "Unable to locate your element with given data.", 3
+            )
+            return "failed"
+
+        all_elements = []
+        target_index = 0
+        target = []
+
+        try:
+            for left, mid, right in step_data:
+                left = left.strip().lower()
+                mid = mid.strip().lower()
+                right = right.strip()
+                if "target parameter" in mid:
+                    target.append([[], [], [], []])
+                    temp = right.strip(",").split(",")
+                    data = []
+                    for each in temp:
+                        data.append(each.strip().split("="))
+                    for i in range(len(data)):
+                        for j in range(len(data[i])):
+                            data[i][j] = data[i][j].strip()
+                            if j == 1:
+                                data[i][j] = data[i][j].strip(
+                                    '"')  # do not add another strip here. dont need to strip inside cotation mark
+
+                    for Left, Right in data:
+                        if Left == "return":
+                            target[target_index][1] = Right
+                        elif Left == "return_contains":
+                            target[target_index][2].append(Right)
+                        elif Left == "return_does_not_contain":
+                            target[target_index][3].append(Right)
+                        else:
+                            target[target_index][0].append((Left, 'element parameter', Right))
+
+                    target_index = target_index + 1
+                elif left == "save attribute values in list":
+                    variable_name = right
+        except:
+            CommonUtil.ExecLog(
+                sModuleInfo, "Unable to parse data. Please write data in correct format", 3
+            )
+            return "failed"
+
+        for each in target:
+            all_elements.append(LocateElement.Get_Element(each[0], Element, return_all_elements=True))
+        # appium_driver.find_elements_by_android_uiautomator("new UiScrollable(new UiSelector().resourceId(\"com.android.contacts:id/cliv_name_textview\")).scrollIntoView();")
+        # appium_driver.findElement(MobileBy.AndroidUIAutomator("new UiScrollable(new UiSelector()).scrollIntoView();"))
+
+        variable_value_size = 0
+        for each in all_elements:
+            variable_value_size = max(variable_value_size, len(each))
+
+        variable_value = []
+        for i in range(variable_value_size):
+            variable_value.append([])
+
+        i = 0
+        for each in all_elements:
+            search_by_attribute = target[i][1]
+            j = 0
+            for elem in each:
+                # if search_by_attribute == "text":
+                #     Attribute_value = elem.text
+                # elif search_by_attribute == 'tag':
+                #     Attribute_value = elem.tag_name
+                if True:
+                    Attribute_value = elem.get_attribute(search_by_attribute)
+                try:
+                    for search_contain in target[i][2]:
+                        if not isinstance(search_contain, type(Attribute_value)) or\
+                                search_contain in Attribute_value or len(search_contain) == 0:
+                            pass
+                        else:
+                            Attribute_value = None
+
+                    for search_doesnt_contain in target[i][3]:
+                        if isinstance(search_doesnt_contain, type(Attribute_value)) and \
+                                search_doesnt_contain in Attribute_value:
+                            Attribute_value = None
+                except:
+                    CommonUtil.ExecLog(
+                        sModuleInfo, "Couldn't search by return_contains and return_does_not_contain", 2
+                    )
+                variable_value[j].append(Attribute_value)
+                j = j + 1
+            i = i + 1
+
+        if Shared_Resources.Set_Shared_Variables(variable_name, variable_value) == "passed":
+            return "passed"
+        else:
+            return "failed"
+
     except Exception:
         return CommonUtil.Exception_Handler(sys.exc_info())
 

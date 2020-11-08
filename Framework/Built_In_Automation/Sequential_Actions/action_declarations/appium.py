@@ -44,8 +44,9 @@ declarations = (
     { "name": "clear media",              "function": "clear_existing_media_ios",    "screenshot": "mobile" },
     { "name": "add media",                "function": "add_media_ios",               "screenshot": "mobile" },
     { "name": "take screenshot mobile",   "function": "take_screenshot_appium",      "screenshot": "mobile" },
-    { "name": "save attribute",           "function": "Save_Attribute",              "screenshot": "mobile" },
+    { "name": "save attribute",           "function": "Save_Attribute_appium",        "screenshot": "mobile" },
     { "name": "go to webpage",            "function": "go_to_webpage",               "screenshot": "mobile" },
+    {"name": "save attribute values in list", "function": "save_attribute_values_appium", "screenshot": "mobile"},
 )
 
 module_name = "appium"

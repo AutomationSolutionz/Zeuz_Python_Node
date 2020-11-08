@@ -622,9 +622,10 @@ def Handle_While_Loop_Action(step_data, data_set_no):
                     elif data_set_index == data_set_no:
                         CommonUtil.ExecLog(
                             sModuleInfo,
-                            "You are running an Loop action within the same Loop action. It may create infinite recursion in some cases",
-                            2
+                            "You are running an Loop action within the same Loop action. It will create infinite recursion",
+                            3
                         )
+                        return "failed", outer_skip
                     result, skip = Run_Sequential_Actions(
                         [data_set_index]
                     )  # new edit: full step data is passed. [step_data[data_set_index]])
