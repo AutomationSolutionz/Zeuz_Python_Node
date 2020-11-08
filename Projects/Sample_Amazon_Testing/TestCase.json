@@ -1,0 +1,88 @@
+{
+    "TestCases":
+        [
+            {
+                "Title": "muhib appium local run",
+                "Folder": "Muhib Rough Tests",
+                "Feature": "testtest",
+                "final_dependency": {"Mobile": "Android"},
+                "run_time_params": {"param1": "subfield_val1_param1", "param2": "subfield_val2_param2"},
+                "Steps":
+                    [
+                        {
+                            "Step name": "Launch app",
+                            "Step description": "muhib Sample Step",
+                            "Step expected": "muhib Sample Step",
+                            "Step actions":
+                                [
+                                    {
+                                        "Action name": "None",
+                                        "Action data":
+                                            [
+                                                ["package", "element parameter", "com.android.contacts"],
+                                                ["launch", "appium action", "launch"]
+                                            ]
+                                    }
+                                ]
+                        }
+                        ,
+                        {
+                            "Step name": "Click Emulator element",
+                            "Step description": "Click Emulator element",
+                            "Step expected": "Click Emulator element",
+                            "Step actions":
+                                [
+                                    {
+                                        "Action name": "None",
+                                        "Action data":
+                                            [
+                                                ["resource-id", "element parameter", "com.android.contacts:id/floating_action_button"],
+                                                ["click", "appium action", "click"]
+                                            ]
+                                    },
+                                    {
+                                        "Action name": "None",
+                                        "Action data":
+                                            [
+                                                ["sleep", "common action", "10"]
+                                            ]
+                                    },
+                                    {
+                                        "Action name": "None",
+                                        "Action data":
+                                            [
+                                                ["data", "element parameter", "%|param1|%"],
+                                                ["operation", "element parameter", "save"],
+                                                ["save into variable", "common action", "variable_name"]
+                                            ]
+                                    },
+                                    {
+                                        "Action name": "None",
+                                        "Action data":
+                                            [
+                                                ["data", "element parameter", "%|param2|%"],
+                                                ["operation", "element parameter", "save"],
+                                                ["save into variable", "common action", "variable_name"]
+                                            ]
+                                    }
+                                ]
+                        },
+                        {
+                            "Step name": "Teardown Emulator app",
+                            "Step description": "Teardown Emulator",
+                            "Step expected": "Teardown Emulator",
+                            "Step actions":
+                                [
+                                    {
+                                        "Action name": "None",
+                                        "Action data":
+                                            [
+                                                ["teardown", "appium action", "teardown"]
+                                            ]
+                                    }
+                                ]
+                        }
+                    ]
+            }
+        ]
+}
