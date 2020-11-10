@@ -1457,7 +1457,7 @@ def swipe_handler_ios(data_set):
 
 
 @logger
-def swipe_handler_android(data_set):
+def swipe_handler_android(data_set, save_att_data_set={}):
     """ Swipe screen based on user input """
     """
         Function: Performs a single swipe gesture in a vertical or horizonal direction
@@ -1508,24 +1508,24 @@ def swipe_handler_android(data_set):
 
                 # Calculate exact pixel for the swipe
                 if direction == "left":
-                    x1 = inset
+                    x1 = inset - 1
                     x2 = 1
                     y1 = position
                     y2 = position
                 elif direction == "down":
                     x1 = position
                     x2 = position
-                    y1 = inset
-                    y2 = h
+                    y1 = inset + 1
+                    y2 = h - 1
                 elif direction == "right":
-                    x1 = inset
-                    x2 = w
+                    x1 = inset + 1
+                    x2 = w - 1
                     y1 = position
                     y2 = position
                 elif direction == "up":
                     x1 = position
                     x2 = position
-                    y1 = inset
+                    y1 = inset - 1
                     y2 = 1
 
             return (
@@ -1577,32 +1577,41 @@ def swipe_handler_android(data_set):
 
     # Parse data set
     try:
-        inset = 10  # Default 10% of screen from edge as start of swipe
-        direction = ""  # Left/right/up/down
-        exact = ""  # Coordinates of exact swipe gesture in x1, y1, x2, y2
-        position = 50  # Default 50% of screen from edge for general swipes
-        Element = ""  # Optional element object
-        duration = 100  # Duration of the swipe in ms
-        for row in data_set:
-            if row[1] == "input parameter":
-                op = row[0].strip().lower()
-                if op == "inset":
-                    inset = row[2].strip()
-                elif op == "direction":
-                    direction = row[2].lower().strip()
-                elif op == "exact":
-                    exact = row[2].lower().strip().replace(" ", "")
-                elif op == "position":
-                    position = row[2].lower().strip()
-                elif op == "duration":
-                    duration = int(row[2].lower().strip())
-            elif row[1] == "element parameter":
-                Element = LocateElement.Get_Element(data_set, appium_driver)
-                if Element == "failed":
-                    CommonUtil.ExecLog(
-                        sModuleInfo, "Unable to locate your element with given data.", 3
-                    )
-                    return "failed"
+        if save_att_data_set:
+            inset = save_att_data_set["inset"]  # Default 0% of screen from edge as start of swipe
+            direction = save_att_data_set["direction"]  # Left/right/up/down
+            exact = save_att_data_set["exact"]  # Coordinates of exact swipe gesture in x1, y1, x2, y2
+            position = save_att_data_set["position"]  # Default 50% of screen from edge for general swipes
+            Element = save_att_data_set["Element"]  # Optional element object
+            duration = save_att_data_set["duration"]  # Duration of the swipe in ms. default 5000 ms for 1550 pixel
+            ADB = save_att_data_set["adb"]  # Check which method to be used for swipe
+        else:
+            inset = 10  # Default 10% of screen from edge as start of swipe
+            direction = ""  # Left/right/up/down
+            exact = ""  # Coordinates of exact swipe gesture in x1, y1, x2, y2
+            position = 50  # Default 50% of screen from edge for general swipes
+            Element = ""  # Optional element object
+            duration = 100  # Duration of the swipe in ms
+            for row in data_set:
+                if row[1] == "input parameter":
+                    op = row[0].strip().lower()
+                    if op == "inset":
+                        inset = row[2].strip()
+                    elif op == "direction":
+                        direction = row[2].lower().strip()
+                    elif op == "exact":
+                        exact = row[2].lower().strip().replace(" ", "")
+                    elif op == "position":
+                        position = row[2].lower().strip()
+                    elif op == "duration":
+                        duration = int(row[2].lower().strip())
+                elif row[1] == "element parameter" or row[1] == "unique parameter":
+                    Element = LocateElement.Get_Element(data_set, appium_driver)
+                    if Element == "failed":
+                        CommonUtil.ExecLog(
+                            sModuleInfo, "Unable to locate your element with given data.", 3
+                        )
+                        return "failed"
 
         # Verify we have what we need
         if (
@@ -1637,24 +1646,24 @@ def swipe_handler_android(data_set):
             x1, x2, y1, y2, inset, position = Calc_Swipe(
                 elementW, elementH, inset, direction, position, ""
             )
-            if x1 in failed_tag_list:
-                return "failed"
             # Using element calculations, now calculate to make relative to entire screen size
             if direction == "left":
                 x1 += elementX
+                x2 += elementX
                 y1 += elementY
                 y2 += elementY
             elif direction == "down":
                 y1 += elementY
-                y2 = h
+                y2 += elementY
                 x1 += elementX
                 x2 += elementX
             elif direction == "right":
                 x1 += elementX
-                x2 = w
+                x2 += elementX
                 y1 += elementY
                 y2 += elementY
             elif direction == "up":
+                y2 += elementY
                 y1 += elementY
                 x1 += elementX
                 x2 += elementX
@@ -1687,15 +1696,19 @@ def swipe_handler_android(data_set):
                 1,
             )
 
-        if full_screen_mode == True and (
-            y1 >= height_with_navbar or y2 >= height_with_navbar
-        ):  # Swipe in the navigation bar area if the device has one, when in full screen mode
+        if save_att_data_set and ADB:
+            # Use ADB forcely if ADB is set to True otherwise check y1,height_with_navbar as usual
+            result = Swipe(
+                x1, y1, x2, y2, duration, adb=False
+            )
+        elif full_screen_mode and (y1 >= height_with_navbar or y2 >= height_with_navbar):
+            # Swipe in the navigation bar area if the device has one, when in full screen mode
             result = Swipe(
                 x1, y1, x2, y2, duration, adb=True
             )  # Perform swipe using adb
         else:  # Swipe via appium by default
             result = Swipe(
-                x1, y1, x2, y2, duration, adb=True
+                x1, y1, x2, y2, duration, adb=False
             )  # Perform swipe !!!adb set True for testing
 
         if result in failed_tag_list:
