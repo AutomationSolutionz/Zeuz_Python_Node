@@ -217,7 +217,7 @@ def main():
         )
         parser.add_argument(
             "--dependency",
-            default='{"Browser": "chromeheadless", "OS": "linux"}'
+            default='{"Browser": "chromeheadless", "OS": "linux"}',
             help="Dependencies (must be in JSON format or a file containing JSON).",
         )
         parser.add_argument(
