@@ -83,6 +83,27 @@ def deploy(token, host, payload_data):
     ).json()
 
 
+def get_user_info(token, host):
+    return req(
+        "GET",
+        host,
+        "/api/user",
+        dict(),
+        {"Authorization": "Bearer %s" % token},
+    ).json()[0]
+
+
+def get_ondemand_node(token, host, user_id, username):
+    return req(
+        "GET",
+        host,
+        "/Home/ManageMachine/on_demand_node",
+        dict(),
+        dict(),
+        params={"user_id": user_id, "username": username, "host": host},
+    ).json()
+
+
 def get_token_from_api(api_key, host):
     return req(
         "GET", host, "/api/auth/token/verify", params={"api_key": api_key}
@@ -143,6 +164,7 @@ def main():
     EXIT_CODE_TEST_SET_NAME = 4
     EXIT_CODE_INVALID_MILESTONE = 5
     EXIT_CODE_INVALID_RUNTIME_PARAMETERS = 6
+    EXIT_CODE_FAILED_TO_CREATE_ONDEMAND_NODE = 7
 
     SLEEP_TIMEOUT = 30
 
@@ -251,6 +273,24 @@ def main():
     # If 'any' is specified as the parameter for machine,
     machine_list = list()
     machine_name = machine
+
+    # If `ondemand` node needs to be created, create a new ondemand node
+    # and select it.
+    try:
+        if machine_name == "ondemand":
+            user_info = get_user_info(token, host)
+            username = user_info["username"]
+            user_id = user_info["uid"]
+
+            ondemand_node = get_ondemand_node(token, host, user_id, username)
+
+            # Wait 5 secs to let the on demand node start up properly.
+            time.sleep(5)
+
+            machine_name = ondemand_node["node_id"]
+    except:
+        return EXIT_CODE_FAILED_TO_CREATE_ONDEMAND_NODE
+
     for _ in range(machine_timeout):
         machine_list = get_available_machines(token, host, project, team)
         if len(machine_list) == 0:
