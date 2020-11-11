@@ -110,7 +110,7 @@ def get_token_from_api(api_key, host):
     ).json()
 
 
-def extract_runtime_parameters(param_str: str) -> str:
+def extract_runtime_parameters(param_str: str):
     """Extracts the JSON from the given string or file path and converts it
       into suitable a data object.
 
@@ -153,6 +153,17 @@ def extract_runtime_parameters(param_str: str) -> str:
         return result
     except Exception as e:
         return None
+
+
+def extract_dependencies(param_str: str):
+    try:
+        data = json.loads(param_str)
+        return data
+    except Exception as e:
+        return {
+            "Browser": "chromeheadless",
+            "OS": "linux"
+        }
 
 
 def main():
@@ -205,6 +216,11 @@ def main():
             help="Runtime parameters (must be in JSON format or a file containing JSON).",
         )
         parser.add_argument(
+            "--dependency",
+            default='{"Browser": "chromeheadless", "OS": "linux"}'
+            help="Dependencies (must be in JSON format or a file containing JSON).",
+        )
+        parser.add_argument(
             "--report_filename",
             help="File path to save the detailed report. (default: report.json)",
         )
@@ -222,6 +238,7 @@ def main():
         machine = args.machine
         milestone = args.milestone
         runtime_parameters = args.runtime_parameters
+        dependency = args.dependency
         machine_timeout = int(args.machine_timeout)
         report_timeout = int(args.report_timeout)
         report_filename = args.report_filename
@@ -239,6 +256,7 @@ def main():
     else:
         runtime_parameters = {}
 
+    dependency = extract_dependencies(dependency)
 
     # Parse emails
     emails = [e.strip() for e in email.split(",")]
@@ -312,7 +330,7 @@ def main():
     payload_data = json.dumps(
         {
             "test_set_name": test_set_name,
-            "dependency": {"Brower": "Chrome", "OS": "Windows"},
+            "dependency": dependency,
             "email_receiver": emails,
             "email_pref": email_pref,
             "objective": objective,

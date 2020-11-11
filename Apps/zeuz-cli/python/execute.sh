@@ -12,6 +12,7 @@ python3 deploy.py \
     --machine "any" \
     --milestone "7242" \
     --runtime_parameters "" \
+    --dependency '{"Browser": "chromeheadless", "OS": "linux"}' \
     --machine_timeout "60" \
     --report_timeout "60" \
     --report_filename "report.json"
