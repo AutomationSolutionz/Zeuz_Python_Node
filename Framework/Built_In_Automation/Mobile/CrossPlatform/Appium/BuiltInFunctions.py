@@ -1457,7 +1457,7 @@ def swipe_handler_ios(data_set):
 
 
 @logger
-def swipe_handler_android(data_set, save_att_data_set={}):
+def swipe_handler_android(data_set=[], save_att_data_set={}):
     """ Swipe screen based on user input """
     """
         Function: Performs a single swipe gesture in a vertical or horizonal direction
@@ -1509,16 +1509,16 @@ def swipe_handler_android(data_set, save_att_data_set={}):
                 # Calculate exact pixel for the swipe
                 if direction == "left":
                     x1 = inset - 1
-                    x2 = 1
+                    x2 = 0      # don't need 1 here
                     y1 = position
                     y2 = position
                 elif direction == "down":
                     x1 = position
                     x2 = position
-                    y1 = inset + 1
+                    y1 = inset      # don't need +1 here
                     y2 = h - 1
                 elif direction == "right":
-                    x1 = inset + 1
+                    x1 = inset      # don't need +1 here
                     x2 = w - 1
                     y1 = position
                     y2 = position
@@ -1526,7 +1526,7 @@ def swipe_handler_android(data_set, save_att_data_set={}):
                     x1 = position
                     x2 = position
                     y1 = inset - 1
-                    y2 = 1
+                    y2 = 0      # don't need 1 here
 
             return (
                 x1,
@@ -1672,9 +1672,6 @@ def swipe_handler_android(data_set, save_att_data_set={}):
             x1, x2, y1, y2, inset, position = Calc_Swipe(
                 w, h, inset, direction, position, exact
             )
-            if x1 in failed_tag_list:
-                return "failed"
-
     except Exception:
         errMsg = "Unable to parse data set"
         return CommonUtil.Exception_Handler(sys.exc_info(), None, errMsg)
@@ -1699,7 +1696,7 @@ def swipe_handler_android(data_set, save_att_data_set={}):
         if save_att_data_set and ADB:
             # Use ADB forcely if ADB is set to True otherwise check y1,height_with_navbar as usual
             result = Swipe(
-                x1, y1, x2, y2, duration, adb=False
+                x1, y1, x2, y2, duration, adb=True
             )
         elif full_screen_mode and (y1 >= height_with_navbar or y2 >= height_with_navbar):
             # Swipe in the navigation bar area if the device has one, when in full screen mode
@@ -3975,11 +3972,12 @@ def save_attribute_values_appium(step_data):
 
     """
     sModuleInfo = inspect.currentframe().f_code.co_name + " : " + MODULE_NAME
-    global selenium_driver
+    skip_or_not = filter_optional_action_and_step_data(step_data, sModuleInfo)
+    if not skip_or_not:
+        return "passed"
+    global appium_driver
     try:
-        # this is the parent object.  If the user wants to search the entire page, they can
-        # provide tag = html
-        Element = LocateElement.Get_Element([("resource-id","element parameter","android:id/list")], appium_driver)
+        Element = LocateElement.Get_Element(step_data, appium_driver)
         if Element == "failed":
             CommonUtil.ExecLog(
                 sModuleInfo, "Unable to locate your element with given data.", 3
@@ -3989,7 +3987,10 @@ def save_attribute_values_appium(step_data):
         all_elements = []
         target_index = 0
         target = []
-
+        input_param = {"inset": "0", "direction": "up", "exact": "", "position": "50", "adb": False, "Element": Element}
+        size = Element.size
+        elementH = int(size["height"])
+        input_param["duration"] = elementH * 3.2   # Swipe 3.2 pixel in each millisecond
         try:
             for left, mid, right in step_data:
                 left = left.strip().lower()
@@ -4021,61 +4022,167 @@ def save_attribute_values_appium(step_data):
                     target_index = target_index + 1
                 elif left == "save attribute values in list":
                     variable_name = right
+                elif mid == "input parameter":
+                    if left == "inset":
+                        input_param["inset"] = right.strip()
+                    elif left == "direction":
+                        input_param["direction"] = right.lower().strip()
+                    elif left == "exact":
+                        input_param["exact"] = right.lower().strip().replace(" ", "")
+                    elif left == "position":
+                        input_param["position"] = right.lower().strip()
+                    elif left == "duration":
+                        input_param["duration"] = int(right.lower().strip())
         except:
             CommonUtil.ExecLog(
                 sModuleInfo, "Unable to parse data. Please write data in correct format", 3
             )
             return "failed"
 
-        for each in target:
-            all_elements.append(LocateElement.Get_Element(each[0], Element, return_all_elements=True))
-        # appium_driver.find_elements_by_android_uiautomator("new UiScrollable(new UiSelector().resourceId(\"com.android.contacts:id/cliv_name_textview\")).scrollIntoView();")
-        # appium_driver.findElement(MobileBy.AndroidUIAutomator("new UiScrollable(new UiSelector()).scrollIntoView();"))
+        ii = 0
+        final = []
+        pre_value_init = 1
+        pre_value_init_all_once = True
+        while ii <= 45:
+            # Print and take input of scroll times!!!!!!!
+            ii += 1
+            print("scrolled", ii, "times")
 
-        variable_value_size = 0
-        for each in all_elements:
-            variable_value_size = max(variable_value_size, len(each))
+            all_elements = []
+            for each in target:
+                all_elements.append(LocateElement.Get_Element(each[0], Element, return_all_elements=True))
+            # appium_driver.find_elements_by_android_uiautomator("new UiScrollable(new UiSelector().resourceId(\"com.android.contacts:id/cliv_name_textview\")).scrollIntoView();")
+            # appium_driver.findElement(MobileBy.AndroidUIAutomator("new UiScrollable(new UiSelector()).scrollIntoView();"))
 
-        variable_value = []
-        for i in range(variable_value_size):
-            variable_value.append([])
+            variable_value_size = 0
+            for each in all_elements:
+                variable_value_size = max(variable_value_size, len(each))
 
-        i = 0
-        for each in all_elements:
-            search_by_attribute = target[i][1]
-            j = 0
-            for elem in each:
-                # if search_by_attribute == "text":
-                #     Attribute_value = elem.text
-                # elif search_by_attribute == 'tag':
-                #     Attribute_value = elem.tag_name
-                if True:
-                    Attribute_value = elem.get_attribute(search_by_attribute)
-                try:
-                    for search_contain in target[i][2]:
-                        if not isinstance(search_contain, type(Attribute_value)) or\
-                                search_contain in Attribute_value or len(search_contain) == 0:
-                            pass
-                        else:
-                            Attribute_value = None
+            variable_value = []
+            for i in range(variable_value_size):
+                variable_value.append([])
 
-                    for search_doesnt_contain in target[i][3]:
-                        if isinstance(search_doesnt_contain, type(Attribute_value)) and \
-                                search_doesnt_contain in Attribute_value:
-                            Attribute_value = None
-                except:
-                    CommonUtil.ExecLog(
-                        sModuleInfo, "Couldn't search by return_contains and return_does_not_contain", 2
-                    )
-                variable_value[j].append(Attribute_value)
+            for each in variable_value:
+                for i in range(len(all_elements)):
+                    each.append(None)
+
+            if pre_value_init_all_once:
+                pre_value_init_all_once = False
+
+                pre_values_1 = []
+                for i in range(variable_value_size):
+                    pre_values_1.append([])
+                for each in pre_values_1:
+                    for i in range(len(all_elements)):
+                        each.append(None)
+
+                # pre_values_2 = []
+                # for i in range(variable_value_size):
+                #     pre_values_2.append([])
+                # for each in pre_values_2:
+                #     for i in range(len(all_elements)):
+                #         each.append(None)
+
+            else:
+                if pre_value_init == 1:
+                    pre_value_init = 2
+                    pre_values_1 = []
+                    for i in range(variable_value_size):
+                        pre_values_1.append([])
+                    for each in pre_values_1:
+                        for i in range(len(all_elements)):
+                            each.append(None)
+                else:
+                    pre_value_init = 1
+                    pre_values_2 = []
+                    for i in range(variable_value_size):
+                        pre_values_2.append([])
+                    for each in pre_values_2:
+                        for i in range(len(all_elements)):
+                            each.append(None)
+
+            x = [
+                ["title0", "message0"],
+                ["title1", "message1"],
+                ["title2", "message2"],
+                ["title3", "message3"],
+                ["title4", "message4"],
+                ["title5", "message5"],
+                ["title6", "message6"],
+            ]
+
+            j = 0   # j->i because inserting values column by column
+            for branch in all_elements:
+                i = 0
+                search_by_attribute = target[i][1]     # need to be fixed i or j !!!!!!!!!!!!
+                for elem in branch:
+                    try:
+                        Attribute_value = elem.get_attribute(search_by_attribute)
+                    except:
+                        Attribute_value = None
+                    # if pre_value_init == 1:
+                    #     pre_values_2[i][j] = Attribute_value
+                    # else:
+                    #     pre_values_1[i][j] = Attribute_value
+                    variable_value[i][j] = Attribute_value
+                    i = i + 1
                 j = j + 1
-            i = i + 1
+            pre_values_2 = variable_value
 
-        if Shared_Resources.Set_Shared_Variables(variable_name, variable_value) == "passed":
-            return "passed"
-        else:
-            return "failed"
+            # if (pre_value_init == 1 and variable_value == pre_values_1) or (pre_value_init == 2 and variable_value == pre_values_2):
+            if variable_value == pre_values_1:
+                print("******************** SHESH!!!!!!*******************")
+                break   # Stop swiping. End reached!
 
+            I = 0
+            for i in range(variable_value_size):
+                # if pre_value_init == 1:
+                if True:
+                    for j in range(len(all_elements)):
+                        if pre_values_1[len(pre_values_1)-1-i][j] != variable_value[I][j]:
+                            break
+                    else:
+                        print(variable_value[I])
+                        del variable_value[I]
+                        # I = I - 1
+                        continue
+                    break
+                # else:
+                #     for j in range(len(all_elements)):
+                #         if pre_values_2[len(pre_values_2)-1-i][j] != variable_value[I][j]:
+                #             break
+                #     else:
+                #         print(variable_value[I])
+                #         # I = I - 1
+                #         continue
+                #     break
+                # I = I + 1
+            pre_values_1 = pre_values_2
+
+            # try:
+            #     for search_contain in target[i][2]:
+            #         if not isinstance(search_contain, type(Attribute_value)) or\
+            #                 search_contain in Attribute_value or len(search_contain) == 0:
+            #             pass
+            #         else:
+            #             Attribute_value = None
+            #
+            #     for search_doesnt_contain in target[i][3]:
+            #         if isinstance(search_doesnt_contain, type(Attribute_value)) and \
+            #                 search_doesnt_contain in Attribute_value:
+            #             Attribute_value = None
+            # except:
+            #     CommonUtil.ExecLog(
+            #         sModuleInfo, "Couldn't search by return_contains and return_does_not_contain", 2
+            #     )
+
+            final += variable_value
+            swipe_handler_android(save_att_data_set=input_param)
+            # input_param["exact"], input_param["duration"], input_param["Element"] = "540,850,540,800", 50*3.2, ""
+            # swipe_handler_android(save_att_data_set=input_param)
+            # input_param["exact"], input_param["duration"], input_param["Element"] = "", elementH * 3.2, Element
+        return Shared_Resources.Set_Shared_Variables(variable_name, final)
+    # com.android.vending for play_store and com.android.contacts for contact
     except Exception:
         return CommonUtil.Exception_Handler(sys.exc_info())
 
