@@ -125,7 +125,7 @@ def Open_Browser(dependency, window_size_X=None, window_size_Y=None, update_driv
                 chrome_options=options, desired_capabilities=d
             )
             selenium_driver.implicitly_wait(WebDriver_Wait)
-            if window_size_X is None and window_size_Y is None:
+            if not window_size_X and not window_size_Y:
                 selenium_driver.maximize_window()
             else:
                 if window_size_X is None:
@@ -165,7 +165,7 @@ def Open_Browser(dependency, window_size_X=None, window_size_Y=None, update_driv
             capabilities['acceptSslCerts'] = True
             selenium_driver = webdriver.Firefox(capabilities=capabilities,options=options)
             selenium_driver.implicitly_wait(WebDriver_Wait)
-            if window_size_X is None and window_size_Y is None:
+            if not window_size_X and not window_size_Y:
                 selenium_driver.maximize_window()
             else:
                 if window_size_X is None:
@@ -182,7 +182,7 @@ def Open_Browser(dependency, window_size_X=None, window_size_Y=None, update_driv
             capabilities['acceptSslCerts'] = True
             selenium_driver = webdriver.Ie(capabilities=capabilities)
             selenium_driver.implicitly_wait(WebDriver_Wait)
-            if window_size_X is None and window_size_Y is None:
+            if not window_size_X and not window_size_Y:
                 selenium_driver.maximize_window()
             else:
                 if window_size_X is None:
@@ -214,7 +214,7 @@ def Open_Browser(dependency, window_size_X=None, window_size_Y=None, update_driv
                 desired_capabilities=desired_capabilities
             )
             selenium_driver.implicitly_wait(WebDriver_Wait)
-            if window_size_X is None and window_size_Y is None:
+            if not window_size_X and not window_size_Y:
                 selenium_driver.maximize_window()
             else:
                 if window_size_X is None:
