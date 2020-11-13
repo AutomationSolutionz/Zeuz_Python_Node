@@ -121,9 +121,7 @@ def Open_Browser(dependency, window_size_X=None, window_size_Y=None, update_driv
                 options.add_argument(
                     "--headless"
                 )  # Enable headless operation if dependency set
-            selenium_driver = webdriver.Chrome(
-                chrome_options=options, desired_capabilities=d
-            )
+            selenium_driver = webdriver.Chrome(chrome_options=options, desired_capabilities=d)
             selenium_driver.implicitly_wait(WebDriver_Wait)
             if window_size_X is None and window_size_Y is None:
                 selenium_driver.maximize_window()
@@ -138,7 +136,7 @@ def Open_Browser(dependency, window_size_X=None, window_size_Y=None, update_driv
             CommonUtil.set_screenshot_vars(Shared_Resources.Shared_Variable_Export())
             return "passed"
 
-        elif browser == "firefox" or "firefoxheadless":
+        elif "firefox" in browser or "firefoxheadless" in browser:
             from sys import platform as _platform
             from selenium.webdriver.firefox.options import Options
             options = Options()
@@ -196,6 +194,8 @@ def Open_Browser(dependency, window_size_X=None, window_size_Y=None, update_driv
             return "passed"
 
         elif "safari" in browser:
+            CommonUtil.ExecLog(sModuleInfo, "Restart computer after following ... https://developer.apple.com/documentation/webkit/testing_with_webdriver_in_safari ", 1)
+            '''
             os.environ["SELENIUM_SERVER_JAR"] = (
                     os.sys.prefix
                     + os.sep
@@ -203,16 +203,16 @@ def Open_Browser(dependency, window_size_X=None, window_size_Y=None, update_driv
                     + os.sep
                     + "selenium-server-standalone-2.45.0.jar"
             )
+            '''
             desired_capabilities = DesiredCapabilities.SAFARI
+
             if "ios" in browser:
                 desired_capabilities["platformName"] = "ios"
 
                 if "simulator" in browser:
                     desired_capabilities["safari:useSimulator"] = True
 
-            selenium_driver = webdriver.Safari(
-                desired_capabilities=desired_capabilities
-            )
+            selenium_driver = webdriver.Safari(desired_capabilities=desired_capabilities)
             selenium_driver.implicitly_wait(WebDriver_Wait)
             if window_size_X is None and window_size_Y is None:
                 selenium_driver.maximize_window()
