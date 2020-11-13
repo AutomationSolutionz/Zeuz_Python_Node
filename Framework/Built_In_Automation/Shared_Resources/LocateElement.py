@@ -633,7 +633,7 @@ def _get_xpath_or_css_element(element_query, css_xpath, index_number=False, Filt
     If return_all_elements = True then we return all elements.
     """
     try:
-        all_matching_elements_visible_invisible = []
+        all_matching_elements_visible_invisible = False
         sModuleInfo = inspect.currentframe().f_code.co_name + " : " + MODULE_NAME
 
         exception_msg = ""
@@ -645,7 +645,6 @@ def _get_xpath_or_css_element(element_query, css_xpath, index_number=False, Filt
         #while time.time() < end:
         while x <end:
             x = x+1
-            
             if css_xpath == "unique" and (
                 driver_type == "appium" or driver_type == "selenium"
             ):  # for unique id
@@ -725,14 +724,14 @@ def _get_xpath_or_css_element(element_query, css_xpath, index_number=False, Filt
                     By.CSS_SELECTOR, element_query
                 )
 
-            if all_matching_elements_visible_invisible:
+            if all_matching_elements_visible_invisible != False:
                 break
-            time.sleep(0.5)
-            
+
+        time.sleep(0.5)   
         # end of while loop
+
         
         if exception_cnd == True:
-            print(exception_msg)
             return "failed"
 
         all_matching_elements = filter_elements(all_matching_elements_visible_invisible, Filter)
