@@ -28,6 +28,8 @@ from selenium.common.exceptions import NoAlertPresentException, ElementClickInte
 from selenium.webdriver.common.keys import Keys
 from selenium.webdriver.common.by import By
 from selenium.webdriver.support import expected_conditions as EC
+
+
 try:
     import pyautogui
     from pyautogui import press, typewrite
@@ -64,9 +66,9 @@ temp_config = os.path.join(
 )
 
 global WebDriver_Wait
-WebDriver_Wait = 20
+WebDriver_Wait = 1
 global WebDriver_Wait_Short
-WebDriver_Wait_Short = 10
+WebDriver_Wait_Short = 1
 
 global selenium_driver
 selenium_driver = None
@@ -202,8 +204,8 @@ def Open_Browser(dependency, window_size_X=None, window_size_Y=None, update_driv
                     + "Scripts"
                     + os.sep
                     + "selenium-server-standalone-2.45.0.jar"
-            )
-            '''
+            )'''
+            
             desired_capabilities = DesiredCapabilities.SAFARI
 
             if "ios" in browser:
@@ -552,7 +554,15 @@ def Enter_Text_In_Text_Box(step_data):
                     )
 
                 # Element.clear()
-                Element.send_keys(Keys.CONTROL, "a")
+                # Safari Keys are extremely slow and not working
+                if selenium_driver.desired_capabilities['browserName'] == "Safari":
+                    Element.clear()
+                else:
+                    Element.send_keys(Keys.CONTROL, "a")
+                    try:
+                        Element.clear() #some cases it works .. so adding it here just incase
+                    except:
+                        True
                 if delay == 0:
                     Element.send_keys(text_value)
                 else:
