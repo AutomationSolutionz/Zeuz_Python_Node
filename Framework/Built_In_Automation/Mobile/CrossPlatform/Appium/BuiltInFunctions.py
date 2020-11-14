@@ -3984,7 +3984,6 @@ def save_attribute_values_appium(step_data):
             )
             return "failed"
 
-        all_elements = []
         target_index = 0
         target = []
         input_param = {"inset": "0", "direction": "up", "exact": "", "position": "50", "adb": False, "Element": Element}
@@ -4047,48 +4046,45 @@ def save_attribute_values_appium(step_data):
 
         ii = 0
         final = []
-        pre_value_init = 1
-        pre_value_init_all_once = True
+        init_once_only = True
         first_swipe_done = False
-        while ii <= 45:
+        delay = 0
+        max_swipe = 40
+        while ii <= max_swipe:
             # Print and take input of scroll times!!!!!!!
 
             all_elements = []
             for each in target:
                 all_elements.append(LocateElement.Get_Element(each[0], Element, return_all_elements=True))
-            # appium_driver.find_elements_by_android_uiautomator("new UiScrollable(new UiSelector().resourceId(\"com.android.contacts:id/cliv_name_textview\")).scrollIntoView();")
-            # appium_driver.findElement(MobileBy.AndroidUIAutomator("new UiScrollable(new UiSelector()).scrollIntoView();"))
 
-            variable_value_size = 0
+            # variable_value_size = 0
+            # for each in all_elements:
+            #     variable_value_size = max(variable_value_size, len(each))
+
+            variable_value_size = []
             for each in all_elements:
-                variable_value_size = max(variable_value_size, len(each))
+                variable_value_size.append(len(each))
 
             variable_value = []
-            for i in range(variable_value_size):
+            for i in range(len(all_elements)):
                 variable_value.append([])
 
-            for each in variable_value:
-                for i in range(len(all_elements)):
-                    each.append(None)
+            # for each in variable_value:
+            #     for i in range(len(all_elements)):
+            #         each.append(None)
 
-            if pre_value_init_all_once:
-                pre_value_init_all_once = False
+            if init_once_only:
+                init_once_only = False
                 del_range, temp_variable_value = [], []
-
-                # pre_values = []
-                # for i in range(variable_value_size):
-                #     pre_values.append([])
-                # for each in pre_values:
-                #     for i in range(len(all_elements)):
-                #         each.append(None)
-
-                # pre_values_temp = []
-                # for i in range(variable_value_size):
-                #     pre_values_temp.append([])
-                # for each in pre_values_temp:
-                #     for i in range(len(all_elements)):
-                #         each.append(None)
-
+                
+                final = []
+                upper_bound_touched, lower_bound_touched = [], []
+                for i in range(len(all_elements)):
+                    final.append([])
+                    upper_bound_touched.append(False)
+                    lower_bound_touched.append(False)
+                    del_range.append([])
+                    temp_variable_value.append([])
                 # if input_param["direction"] == "up":
                 #     lower_bound_touched = Element.location["y"] + Element.size["height"] - all_elements[0][-1].location["y"] - all_elements[0][-1].size["height"] < 2
                 #     upper_bound_touched = False
@@ -4102,141 +4098,74 @@ def save_attribute_values_appium(step_data):
                 #     lower_bound_touched = False
                 #     upper_bound_touched = all_elements[0][0].location["x"] - Element.location["x"] < 2
 
-            else:
-                pass
-                # if pre_value_init == 1:
-                #     pre_value_init = 2
-                #     pre_values = []
-                #     for i in range(variable_value_size):
-                #         pre_values.append([])
-                #     for each in pre_values:
-                #         for i in range(len(all_elements)):
-                #             each.append(None)
-                # else:
-                #     pre_value_init = 1
-                #     pre_values_temp = []
-                #     for i in range(variable_value_size):
-                #         pre_values_temp.append([])
-                #     for each in pre_values_temp:
-                #         for i in range(len(all_elements)):
-                #             each.append(None)
-
-            x = [
-                ["title0", "message0"],
-                ["title1", "message1"],
-                ["title2", "message2"],
-                ["title3", "message3"],
-                ["title4", "message4"],
-                ["title5", "message5"],
-                ["title6", "message6"],
-            ]
-
-            j = 0   # j->i because inserting values column by column
+            i = 0   # j->i because inserting values column by column
             for branch in all_elements:
-                i = 0
                 search_by_attribute = target[i][1]     # need to be fixed i or j !!!!!!!!!!!!
                 for elem in branch:
                     try:
                         Attribute_value = elem.get_attribute(search_by_attribute)
                     except:
                         Attribute_value = None
-                    # if pre_value_init == 1:
-                    #     pre_values_temp[i][j] = Attribute_value
-                    # else:
-                    #     pre_values[i][j] = Attribute_value
-                    variable_value[i][j] = Attribute_value
-                    i = i + 1
-                j = j + 1
+                    variable_value[i].append(Attribute_value)
+                i = i + 1
             pre_values_temp = copy.deepcopy(variable_value)
 
-            # if (pre_value_init == 1 and variable_value == pre_values) or (pre_value_init == 2 and variable_value == pre_values_temp):
+            for T in range(len(all_elements)):
+                if first_swipe_done and variable_value == pre_values:
+                    # if del_range[T]:
+                    #     for i in del_range[T]:
+                    #         del temp_variable_value[T][0]
+                    #     final[T] += temp_variable_value[T]
+                    print("******************** SHESH!!!!!!*******************")
+                    break   # Stop swiping. End reached!
+
+                if del_range[T]:
+                    final[T] += temp_variable_value[T]
+                    del_range[T], temp_variable_value[T] = [], []
+
+                if input_param["direction"] == "up":
+                    upper_bound_touched[T] = all_elements[T][0].location["y"] - Element.location["y"] < 2
+
+                if first_swipe_done and pre_values[T][len(pre_values[T])-1] == variable_value[T][0] and lower_bound_touched[T] and upper_bound_touched[T]:
+                    print(variable_value[T][0])
+                    del variable_value[T][0]
+
+                elif first_swipe_done:
+                    for i in range(len(pre_values[T])):
+                        if pre_values[T][i] == variable_value[T][0]:
+                            for j in range(len(pre_values[T])-i):
+                                if pre_values[T][i+j] != variable_value[T][j]:
+                                    break
+                            else:
+                                del_range[T] = [jj for jj in range(0, len(pre_values[T])-i)]
+                                temp_variable_value[T] = copy.deepcopy(variable_value[T])
+                            break
+
+                if input_param["direction"] == "up":
+                    lower_bound_touched[T] = Element.location["y"] + Element.size["height"] - all_elements[T][-1].location["y"] - all_elements[T][-1].size["height"] < 2
+
+                if not del_range[T]:
+                    final[T] += variable_value[T]
+            else:
+                pre_values = copy.deepcopy(pre_values_temp)
+                swipe_handler_android(save_att_data_set=input_param)
+                time.sleep(delay)
+                ii += 1
+                print("scrolled", ii, "times")
+                first_swipe_done = True
+                continue
+            break
+
+        for T in range(len(all_elements)):
             if first_swipe_done and variable_value == pre_values:
-                if del_range:
-                    for i in del_range:
-                        del temp_variable_value[i][0]
-                    final += temp_variable_value
-                print("******************** SHESH!!!!!!*******************")
-                break   # Stop swiping. End reached!
+                if del_range[T]:
+                    for i in del_range[T]:
+                        del temp_variable_value[T][0]
+                    final[T] += temp_variable_value[T]
+            else:
+                if del_range[T]:
+                    final[T] += temp_variable_value[T]
 
-            if del_range:
-                final += temp_variable_value
-                del_range, temp_variable_value = [], []
-
-            if input_param["direction"] == "up":
-                upper_bound_touched = all_elements[0][0].location["y"] - Element.location["y"] < 2
-
-            if first_swipe_done and pre_values[len(pre_values)-1][0] == variable_value[0][0] and lower_bound_touched and upper_bound_touched:
-                print(variable_value[0][0])
-                del variable_value[0][0]
-
-            elif first_swipe_done:
-                for i in range(len(pre_values)):
-                    if pre_values[i][0] == variable_value[0][0]:
-                        for j in range(len(pre_values)-i):
-                            if pre_values[i+j][0] != variable_value[j][0]:
-                                break
-                        else:
-                            del_range = [jj for jj in range(0, len(pre_values)-i)]
-                            temp_variable_value = copy.deepcopy(variable_value)
-                            # continue
-                        break
-            # if del_range:
-            #     continue
-
-            if input_param["direction"] == "up":
-                lower_bound_touched = Element.location["y"] + Element.size["height"] - all_elements[0][-1].location["y"] - all_elements[0][-1].size["height"] < 2
-
-            # I = 0
-            # for i in range(variable_value_size):
-            #     # if pre_value_init == 1:
-            #     if True:
-            #         for j in range(len(all_elements)):
-            #             if pre_values[len(pre_values)-1-i][j] != variable_value[I][j]:
-            #                 break
-            #         else:
-            #             print(variable_value[I])
-            #             del variable_value[I]
-            #             # I = I - 1
-            #             continue
-            #         break
-                # else:
-                #     for j in range(len(all_elements)):
-                #         if pre_values_temp[len(pre_values_temp)-1-i][j] != variable_value[I][j]:
-                #             break
-                #     else:
-                #         print(variable_value[I])
-                #         # I = I - 1
-                #         continue
-                #     break
-                # I = I + 1
-
-            # try:
-            #     for search_contain in target[i][2]:
-            #         if not isinstance(search_contain, type(Attribute_value)) or\
-            #                 search_contain in Attribute_value or len(search_contain) == 0:
-            #             pass
-            #         else:
-            #             Attribute_value = None
-            #
-            #     for search_doesnt_contain in target[i][3]:
-            #         if isinstance(search_doesnt_contain, type(Attribute_value)) and \
-            #                 search_doesnt_contain in Attribute_value:
-            #             Attribute_value = None
-            # except:
-            #     CommonUtil.ExecLog(
-            #         sModuleInfo, "Couldn't search by return_contains and return_does_not_contain", 2
-            #     )
-
-            pre_values = copy.deepcopy(pre_values_temp)
-            if not del_range:
-                final += variable_value
-            swipe_handler_android(save_att_data_set=input_param)
-            ii += 1
-            print("scrolled", ii, "times")
-            first_swipe_done = True
-            # input_param["exact"], input_param["duration"], input_param["Element"] = "540,850,540,800", 50*3.2, ""
-            # swipe_handler_android(save_att_data_set=input_param)
-            # input_param["exact"], input_param["duration"], input_param["Element"] = "", elementH * 3.2, Element
         return Shared_Resources.Set_Shared_Variables(variable_name, final)
     # com.android.vending for play_store and com.android.contacts for contact
     except Exception:
