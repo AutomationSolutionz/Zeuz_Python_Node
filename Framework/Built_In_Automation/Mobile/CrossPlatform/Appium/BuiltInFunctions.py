@@ -14,7 +14,7 @@
 from appium import webdriver
 import traceback
 import socket
-import os, sys, datetime, time, inspect, subprocess, re, signal, _thread, requests
+import os, sys, datetime, time, inspect, subprocess, re, signal, _thread, requests, copy
 from Framework.Utilities import CommonUtil
 from Framework.Utilities.decorators import logger
 from Framework.Built_In_Automation.Built_In_Utility.CrossPlatform import (
@@ -3988,9 +3988,16 @@ def save_attribute_values_appium(step_data):
         target_index = 0
         target = []
         input_param = {"inset": "0", "direction": "up", "exact": "", "position": "50", "adb": False, "Element": Element}
-        size = Element.size
-        elementH = int(size["height"])
-        input_param["duration"] = elementH * 3.2   # Swipe 3.2 pixel in each millisecond
+        elementH, elementW, elementX, elementY = Element.size["height"], Element.size["width"], Element.location["x"], Element.location["y"]
+        if input_param["direction"] == "up":
+            input_param["duration"] = elementH * 3.2  # Swipe 3.2 pixel per millisecond
+        elif input_param["direction"] == "down":
+            input_param["duration"] = elementH * 3.2
+        elif input_param["direction"] == "left":
+            input_param["duration"] = elementW * 3.2
+        elif input_param["direction"] == "right":
+            input_param["duration"] = elementW * 3.2
+
         try:
             for left, mid, right in step_data:
                 left = left.strip().lower()
@@ -4006,8 +4013,7 @@ def save_attribute_values_appium(step_data):
                         for j in range(len(data[i])):
                             data[i][j] = data[i][j].strip()
                             if j == 1:
-                                data[i][j] = data[i][j].strip(
-                                    '"')  # do not add another strip here. dont need to strip inside cotation mark
+                                data[i][j] = data[i][j].strip('"')  # do not add another strip here. dont need to strip inside quotation mark
 
                     for Left, Right in data:
                         if Left == "return":
@@ -4043,10 +4049,9 @@ def save_attribute_values_appium(step_data):
         final = []
         pre_value_init = 1
         pre_value_init_all_once = True
+        first_swipe_done = False
         while ii <= 45:
             # Print and take input of scroll times!!!!!!!
-            ii += 1
-            print("scrolled", ii, "times")
 
             all_elements = []
             for each in target:
@@ -4068,38 +4073,53 @@ def save_attribute_values_appium(step_data):
 
             if pre_value_init_all_once:
                 pre_value_init_all_once = False
+                del_range, temp_variable_value = [], []
 
-                pre_values_1 = []
-                for i in range(variable_value_size):
-                    pre_values_1.append([])
-                for each in pre_values_1:
-                    for i in range(len(all_elements)):
-                        each.append(None)
-
-                # pre_values_2 = []
+                # pre_values = []
                 # for i in range(variable_value_size):
-                #     pre_values_2.append([])
-                # for each in pre_values_2:
+                #     pre_values.append([])
+                # for each in pre_values:
                 #     for i in range(len(all_elements)):
                 #         each.append(None)
 
+                # pre_values_temp = []
+                # for i in range(variable_value_size):
+                #     pre_values_temp.append([])
+                # for each in pre_values_temp:
+                #     for i in range(len(all_elements)):
+                #         each.append(None)
+
+                # if input_param["direction"] == "up":
+                #     lower_bound_touched = Element.location["y"] + Element.size["height"] - all_elements[0][-1].location["y"] - all_elements[0][-1].size["height"] < 2
+                #     upper_bound_touched = False
+                # elif input_param["direction"] == "down":
+                #     lower_bound_touched = False
+                #     upper_bound_touched = all_elements[0][0].location["y"] - Element.location["y"] < 2
+                # elif input_param["direction"] == "left":
+                #     lower_bound_touched = Element.location["x"] + Element.size["width"] - all_elements[0][-1].location["x"] - all_elements[0][-1].size["width"] < 2
+                #     upper_bound_touched = False
+                # elif input_param["direction"] == "right":
+                #     lower_bound_touched = False
+                #     upper_bound_touched = all_elements[0][0].location["x"] - Element.location["x"] < 2
+
             else:
-                if pre_value_init == 1:
-                    pre_value_init = 2
-                    pre_values_1 = []
-                    for i in range(variable_value_size):
-                        pre_values_1.append([])
-                    for each in pre_values_1:
-                        for i in range(len(all_elements)):
-                            each.append(None)
-                else:
-                    pre_value_init = 1
-                    pre_values_2 = []
-                    for i in range(variable_value_size):
-                        pre_values_2.append([])
-                    for each in pre_values_2:
-                        for i in range(len(all_elements)):
-                            each.append(None)
+                pass
+                # if pre_value_init == 1:
+                #     pre_value_init = 2
+                #     pre_values = []
+                #     for i in range(variable_value_size):
+                #         pre_values.append([])
+                #     for each in pre_values:
+                #         for i in range(len(all_elements)):
+                #             each.append(None)
+                # else:
+                #     pre_value_init = 1
+                #     pre_values_temp = []
+                #     for i in range(variable_value_size):
+                #         pre_values_temp.append([])
+                #     for each in pre_values_temp:
+                #         for i in range(len(all_elements)):
+                #             each.append(None)
 
             x = [
                 ["title0", "message0"],
@@ -4121,35 +4141,67 @@ def save_attribute_values_appium(step_data):
                     except:
                         Attribute_value = None
                     # if pre_value_init == 1:
-                    #     pre_values_2[i][j] = Attribute_value
+                    #     pre_values_temp[i][j] = Attribute_value
                     # else:
-                    #     pre_values_1[i][j] = Attribute_value
+                    #     pre_values[i][j] = Attribute_value
                     variable_value[i][j] = Attribute_value
                     i = i + 1
                 j = j + 1
-            pre_values_2 = variable_value
+            pre_values_temp = copy.deepcopy(variable_value)
 
-            # if (pre_value_init == 1 and variable_value == pre_values_1) or (pre_value_init == 2 and variable_value == pre_values_2):
-            if variable_value == pre_values_1:
+            # if (pre_value_init == 1 and variable_value == pre_values) or (pre_value_init == 2 and variable_value == pre_values_temp):
+            if first_swipe_done and variable_value == pre_values:
+                if del_range:
+                    for i in del_range:
+                        del temp_variable_value[i][0]
+                    final += temp_variable_value
                 print("******************** SHESH!!!!!!*******************")
                 break   # Stop swiping. End reached!
 
-            I = 0
-            for i in range(variable_value_size):
-                # if pre_value_init == 1:
-                if True:
-                    for j in range(len(all_elements)):
-                        if pre_values_1[len(pre_values_1)-1-i][j] != variable_value[I][j]:
-                            break
-                    else:
-                        print(variable_value[I])
-                        del variable_value[I]
-                        # I = I - 1
-                        continue
-                    break
+            if del_range:
+                final += temp_variable_value
+                del_range, temp_variable_value = [], []
+
+            if input_param["direction"] == "up":
+                upper_bound_touched = all_elements[0][0].location["y"] - Element.location["y"] < 2
+
+            if first_swipe_done and pre_values[len(pre_values)-1][0] == variable_value[0][0] and lower_bound_touched and upper_bound_touched:
+                print(variable_value[0][0])
+                del variable_value[0][0]
+
+            elif first_swipe_done:
+                for i in range(len(pre_values)):
+                    if pre_values[i][0] == variable_value[0][0]:
+                        for j in range(len(pre_values)-i):
+                            if pre_values[i+j][0] != variable_value[j][0]:
+                                break
+                        else:
+                            del_range = [jj for jj in range(0, len(pre_values)-i)]
+                            temp_variable_value = copy.deepcopy(variable_value)
+                            # continue
+                        break
+            # if del_range:
+            #     continue
+
+            if input_param["direction"] == "up":
+                lower_bound_touched = Element.location["y"] + Element.size["height"] - all_elements[0][-1].location["y"] - all_elements[0][-1].size["height"] < 2
+
+            # I = 0
+            # for i in range(variable_value_size):
+            #     # if pre_value_init == 1:
+            #     if True:
+            #         for j in range(len(all_elements)):
+            #             if pre_values[len(pre_values)-1-i][j] != variable_value[I][j]:
+            #                 break
+            #         else:
+            #             print(variable_value[I])
+            #             del variable_value[I]
+            #             # I = I - 1
+            #             continue
+            #         break
                 # else:
                 #     for j in range(len(all_elements)):
-                #         if pre_values_2[len(pre_values_2)-1-i][j] != variable_value[I][j]:
+                #         if pre_values_temp[len(pre_values_temp)-1-i][j] != variable_value[I][j]:
                 #             break
                 #     else:
                 #         print(variable_value[I])
@@ -4157,7 +4209,6 @@ def save_attribute_values_appium(step_data):
                 #         continue
                 #     break
                 # I = I + 1
-            pre_values_1 = pre_values_2
 
             # try:
             #     for search_contain in target[i][2]:
@@ -4176,8 +4227,13 @@ def save_attribute_values_appium(step_data):
             #         sModuleInfo, "Couldn't search by return_contains and return_does_not_contain", 2
             #     )
 
-            final += variable_value
+            pre_values = copy.deepcopy(pre_values_temp)
+            if not del_range:
+                final += variable_value
             swipe_handler_android(save_att_data_set=input_param)
+            ii += 1
+            print("scrolled", ii, "times")
+            first_swipe_done = True
             # input_param["exact"], input_param["duration"], input_param["Element"] = "540,850,540,800", 50*3.2, ""
             # swipe_handler_android(save_att_data_set=input_param)
             # input_param["exact"], input_param["duration"], input_param["Element"] = "", elementH * 3.2, Element
