@@ -8,11 +8,11 @@ from Framework.Utilities.CommonUtil import parse_value_into_object
 import json
 
 if __name__ == "__main__":
-    with open("TestCase.json", "r") as f:
+    with open("TestCases.json", "r") as f:
         Test_Case = json.load(f)
         if isinstance(Test_Case, str):
             Test_Case = json.loads(Test_Case)
-    with open("TestCase.json", "w") as f:
+    with open("TestCases.json", "w") as f:
         json.dump(Test_Case, f, indent=2)
 
     step_data = []
@@ -22,7 +22,7 @@ if __name__ == "__main__":
             step_data.append(j["Action data"])
 
     try:
-        final_dependency = Test_Case["TestCases"][0]["final_dependency"]
+        final_dependency = Test_Case["TestCases"][0]["dependency"]
     except:
         final_dependency = {}
     try:
