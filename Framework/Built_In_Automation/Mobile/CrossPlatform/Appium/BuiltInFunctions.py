@@ -1477,7 +1477,7 @@ def swipe_handler_android(data_set=[], save_att_data_set={}):
         return "passed"
 
     @logger
-    def Calc_Swipe(w, h, inset, direction, position, exact):
+    def Calc_Swipe(w, h, inset, direction, position, exact, adjust):
         """ Calculate swipe based on area of interest (screen or element) """
         try:
             # Adjust numbers depending on type provided by user - float or integer expected here - convert into pixels
@@ -1486,47 +1486,46 @@ def swipe_handler_android(data_set=[], save_att_data_set={}):
             ):  # User specified exact coordinates, so use those and nothing else
                 x1, y1, x2, y2 = list(map(int, exact.split(",")))
             else:
-                inset = int(str(inset).replace("%", "")) / 100.0  # Convert % to float
-                position = (
-                    int(str(position).replace("%", "")) / 100.0
-                )  # Convert % to float
+                inset = float(str(inset).replace("%", "")) / 100.0  # Convert % to float
+                position = float(str(position).replace("%", "")) / 100.0  # Convert % to float
+                adjust = int(adjust) if adjust else 0
 
                 if direction == "left":
                     tmp = 1.0 - inset  # Calculate from other end (X% from max width)
-                    inset = int(tmp * w)
-                    position = int(position * h)
+                    inset = round(tmp * w)
+                    position = round(position * h)
                 elif direction == "down":
-                    inset = int(inset * h)  # Convert into pixels for that direction
-                    position = int(position * w)
+                    inset = round(inset * h)  # Convert into pixels for that direction
+                    position = round(position * w)
                 elif direction == "right":
-                    inset = int(inset * w)  # Convert into pixels for that direction
-                    position = int(position * h)
+                    inset = round(inset * w)  # Convert into pixels for that direction
+                    position = round(position * h)
                 elif direction == "up":
                     tmp = 1.0 - inset  # Calculate from other end (X% from max height)
-                    inset = int(tmp * h)
-                    position = int(position * w)
+                    inset = round(tmp * h)
+                    position = round(position * w)
 
                 # Calculate exact pixel for the swipe
                 if direction == "left":
                     x1 = inset - 1
-                    x2 = 0      # don't need 1 here
+                    x2 = adjust       # don't need +1 here
                     y1 = position
                     y2 = position
                 elif direction == "down":
                     x1 = position
                     x2 = position
-                    y1 = inset      # don't need +1 here
-                    y2 = h - 1
+                    y1 = inset     # don't need +1 here
+                    y2 = h - 1 + adjust
                 elif direction == "right":
                     x1 = inset      # don't need +1 here
-                    x2 = w - 1
+                    x2 = w - 1 - adjust
                     y1 = position
                     y2 = position
                 elif direction == "up":
                     x1 = position
                     x2 = position
                     y1 = inset - 1
-                    y2 = 0      # don't need 1 here
+                    y2 = - adjust       # don't need +1 here
 
             return (
                 x1,
@@ -1585,7 +1584,9 @@ def swipe_handler_android(data_set=[], save_att_data_set={}):
             Element = save_att_data_set["Element"]  # Optional element object
             duration = save_att_data_set["duration"]  # Duration of the swipe in ms. default 5000 ms for 1550 pixel
             ADB = save_att_data_set["adb"]  # Check which method to be used for swipe
+            adjust = save_att_data_set["adjust"]    # Adjust the scrolling amount
         else:
+            adjust = ""
             inset = 10  # Default 10% of screen from edge as start of swipe
             direction = ""  # Left/right/up/down
             exact = ""  # Coordinates of exact swipe gesture in x1, y1, x2, y2
@@ -1605,6 +1606,8 @@ def swipe_handler_android(data_set=[], save_att_data_set={}):
                         position = row[2].lower().strip()
                     elif op == "duration":
                         duration = int(row[2].lower().strip())
+                    elif op == "adjust pixel":
+                        adjust = row[2].strip()
                 elif row[1] == "element parameter" or row[1] == "unique parameter":
                     Element = LocateElement.Get_Element(data_set, appium_driver)
                     if Element == "failed":
@@ -1644,7 +1647,7 @@ def swipe_handler_android(data_set=[], save_att_data_set={}):
 
             # Calculate coordinates, based on element position and size
             x1, x2, y1, y2, inset, position = Calc_Swipe(
-                elementW, elementH, inset, direction, position, ""
+                elementW, elementH, inset, direction, position, "", adjust
             )
             # Using element calculations, now calculate to make relative to entire screen size
             if direction == "left":
@@ -1670,7 +1673,7 @@ def swipe_handler_android(data_set=[], save_att_data_set={}):
         else:
             # No element, calculate swipe coordinates based on screen size
             x1, x2, y1, y2, inset, position = Calc_Swipe(
-                w, h, inset, direction, position, exact
+                w, h, inset, direction, position, exact, adjust
             )
     except Exception:
         errMsg = "Unable to parse data set"
@@ -3986,7 +3989,7 @@ def save_attribute_values_appium(step_data):
 
         target_index = 0
         target = []
-        input_param = {"inset": "0", "direction": "up", "exact": "", "position": "50", "adb": False, "Element": Element}
+        input_param = {"inset": "0", "direction": "up", "exact": "", "position": "50", "adb": False, "Element": Element, "adjust": ""}
         elementH, elementW, elementX, elementY = Element.size["height"], Element.size["width"], Element.location["x"], Element.location["y"]
         if input_param["direction"] == "up":
             input_param["duration"] = elementH * 3.2  # Swipe 3.2 pixel per millisecond
@@ -4038,6 +4041,8 @@ def save_attribute_values_appium(step_data):
                         input_param["position"] = right.lower().strip()
                     elif left == "duration":
                         input_param["duration"] = int(right.lower().strip())
+                    elif left == "adjust pixel":
+                        input_param["adjust"] = right.strip()
         except:
             CommonUtil.ExecLog(
                 sModuleInfo, "Unable to parse data. Please write data in correct format", 3
@@ -4057,10 +4062,6 @@ def save_attribute_values_appium(step_data):
             for each in target:
                 all_elements.append(LocateElement.Get_Element(each[0], Element, return_all_elements=True))
 
-            # variable_value_size = 0
-            # for each in all_elements:
-            #     variable_value_size = max(variable_value_size, len(each))
-
             variable_value_size = []
             for each in all_elements:
                 variable_value_size.append(len(each))
@@ -4068,10 +4069,6 @@ def save_attribute_values_appium(step_data):
             variable_value = []
             for i in range(len(all_elements)):
                 variable_value.append([])
-
-            # for each in variable_value:
-            #     for i in range(len(all_elements)):
-            #         each.append(None)
 
             if init_once_only:
                 init_once_only = False
@@ -4124,7 +4121,7 @@ def save_attribute_values_appium(step_data):
                     del_range[T], temp_variable_value[T] = [], []
 
                 if input_param["direction"] == "up":
-                    upper_bound_touched[T] = all_elements[T][0].location["y"] - Element.location["y"] < 2
+                    upper_bound_touched[T] = all_elements[T][0].location["y"] - Element.location["y"] < 5
 
                 if first_swipe_done and pre_values[T][len(pre_values[T])-1] == variable_value[T][0] and lower_bound_touched[T] and upper_bound_touched[T]:
                     print(variable_value[T][0])
@@ -4142,7 +4139,7 @@ def save_attribute_values_appium(step_data):
                             break
 
                 if input_param["direction"] == "up":
-                    lower_bound_touched[T] = Element.location["y"] + Element.size["height"] - all_elements[T][-1].location["y"] - all_elements[T][-1].size["height"] < 2
+                    lower_bound_touched[T] = Element.location["y"] + Element.size["height"] - all_elements[T][-1].location["y"] - all_elements[T][-1].size["height"] < 5
 
                 if not del_range[T]:
                     final[T] += variable_value[T]
