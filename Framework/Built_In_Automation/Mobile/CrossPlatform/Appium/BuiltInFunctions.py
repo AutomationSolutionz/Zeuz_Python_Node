@@ -2782,6 +2782,7 @@ def Hide_Keyboard(data_set):
         if appium_driver.is_keyboard_shown():
             appium_driver.hide_keyboard()  # Remove keyboard
             CommonUtil.TakeScreenShot(sModuleInfo)  # Capture screen
+        return "passed"
     except Exception:
         errMsg = "Unable to hide your keyboard"
         return CommonUtil.Exception_Handler(sys.exc_info(), None, errMsg)
