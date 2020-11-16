@@ -11,6 +11,8 @@
 .project
 .pydevproject
 
+pid.txt
+
 # Zeuz Node specific ignores
 Framework/settings.conf
 AutomationLog/

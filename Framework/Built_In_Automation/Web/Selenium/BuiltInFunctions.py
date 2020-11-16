@@ -28,11 +28,7 @@ from selenium.common.exceptions import NoAlertPresentException, ElementClickInte
 from selenium.webdriver.common.keys import Keys
 from selenium.webdriver.common.by import By
 from selenium.webdriver.support import expected_conditions as EC
-try:
-    import pyautogui
-    from pyautogui import press, typewrite
-except:
-    True
+
 import driver_updater
 from Framework.Utilities import CommonUtil, ConfigModule
 from Framework.Built_In_Automation.Shared_Resources import (
@@ -64,9 +60,9 @@ temp_config = os.path.join(
 )
 
 global WebDriver_Wait
-WebDriver_Wait = 20
+WebDriver_Wait = 1
 global WebDriver_Wait_Short
-WebDriver_Wait_Short = 10
+WebDriver_Wait_Short = 1
 
 global selenium_driver
 selenium_driver = None
@@ -121,11 +117,9 @@ def Open_Browser(dependency, window_size_X=None, window_size_Y=None, update_driv
                 options.add_argument(
                     "--headless"
                 )  # Enable headless operation if dependency set
-            selenium_driver = webdriver.Chrome(
-                chrome_options=options, desired_capabilities=d
-            )
+            selenium_driver = webdriver.Chrome(chrome_options=options, desired_capabilities=d)
             selenium_driver.implicitly_wait(WebDriver_Wait)
-            if window_size_X is None and window_size_Y is None:
+            if not window_size_X and not window_size_Y:
                 selenium_driver.maximize_window()
             else:
                 if window_size_X is None:
@@ -138,7 +132,7 @@ def Open_Browser(dependency, window_size_X=None, window_size_Y=None, update_driv
             CommonUtil.set_screenshot_vars(Shared_Resources.Shared_Variable_Export())
             return "passed"
 
-        elif browser == "firefox" or "firefoxheadless":
+        elif "firefox" in browser or "firefoxheadless" in browser:
             from sys import platform as _platform
             from selenium.webdriver.firefox.options import Options
             options = Options()
@@ -165,7 +159,7 @@ def Open_Browser(dependency, window_size_X=None, window_size_Y=None, update_driv
             capabilities['acceptSslCerts'] = True
             selenium_driver = webdriver.Firefox(capabilities=capabilities,options=options)
             selenium_driver.implicitly_wait(WebDriver_Wait)
-            if window_size_X is None and window_size_Y is None:
+            if not window_size_X and not window_size_Y:
                 selenium_driver.maximize_window()
             else:
                 if window_size_X is None:
@@ -182,7 +176,7 @@ def Open_Browser(dependency, window_size_X=None, window_size_Y=None, update_driv
             capabilities['acceptSslCerts'] = True
             selenium_driver = webdriver.Ie(capabilities=capabilities)
             selenium_driver.implicitly_wait(WebDriver_Wait)
-            if window_size_X is None and window_size_Y is None:
+            if not window_size_X and not window_size_Y:
                 selenium_driver.maximize_window()
             else:
                 if window_size_X is None:
@@ -196,25 +190,27 @@ def Open_Browser(dependency, window_size_X=None, window_size_Y=None, update_driv
             return "passed"
 
         elif "safari" in browser:
+            CommonUtil.ExecLog(sModuleInfo, "Restart computer after following ... https://developer.apple.com/documentation/webkit/testing_with_webdriver_in_safari ", 1)
+            '''
             os.environ["SELENIUM_SERVER_JAR"] = (
                     os.sys.prefix
                     + os.sep
                     + "Scripts"
                     + os.sep
                     + "selenium-server-standalone-2.45.0.jar"
-            )
+            )'''
+            
             desired_capabilities = DesiredCapabilities.SAFARI
+
             if "ios" in browser:
                 desired_capabilities["platformName"] = "ios"
 
                 if "simulator" in browser:
                     desired_capabilities["safari:useSimulator"] = True
 
-            selenium_driver = webdriver.Safari(
-                desired_capabilities=desired_capabilities
-            )
+            selenium_driver = webdriver.Safari(desired_capabilities=desired_capabilities)
             selenium_driver.implicitly_wait(WebDriver_Wait)
-            if window_size_X is None and window_size_Y is None:
+            if not window_size_X and not window_size_Y:
                 selenium_driver.maximize_window()
             else:
                 if window_size_X is None:
@@ -338,7 +334,7 @@ def Go_To_Link(step_data, page_title=False):
     try:
         web_link = step_data[0][2]  # Save Value field (URL)
         selenium_driver.get(web_link)  # Open in browser
-        selenium_driver.implicitly_wait(WebDriver_Wait)  # Wait for page to load
+        selenium_driver.implicitly_wait(20)  # Wait for page to load
         CommonUtil.ExecLog(
             sModuleInfo, "Successfully opened your link: %s" % web_link, 1
         )
@@ -552,7 +548,15 @@ def Enter_Text_In_Text_Box(step_data):
                     )
 
                 # Element.clear()
-                Element.send_keys(Keys.CONTROL, "a")
+                # Safari Keys are extremely slow and not working
+                if selenium_driver.desired_capabilities['browserName'] == "Safari":
+                    Element.clear()
+                else:
+                    Element.send_keys(Keys.CONTROL, "a")
+                    try:
+                        Element.clear() #some cases it works .. so adding it here just incase
+                    except:
+                        True
                 if delay == 0:
                     Element.send_keys(text_value)
                 else:

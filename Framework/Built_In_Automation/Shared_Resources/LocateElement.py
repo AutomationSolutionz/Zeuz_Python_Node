@@ -18,7 +18,7 @@ from selenium.webdriver.support import expected_conditions as EC
 from selenium.webdriver.common.by import By
 import selenium
 global WebDriver_Wait
-WebDriver_Wait = 10
+WebDriver_Wait = 1
 global generic_driver
 generic_driver = None
 # driver type will be set globally so we can use it anytime
@@ -633,14 +633,18 @@ def _get_xpath_or_css_element(element_query, css_xpath, index_number=False, Filt
     If return_all_elements = True then we return all elements.
     """
     try:
-        all_matching_elements_visible_invisible = []
+        all_matching_elements_visible_invisible = False
         sModuleInfo = inspect.currentframe().f_code.co_name + " : " + MODULE_NAME
 
         exception_msg = ""
         exception_cnd = False
         start = time.time()
-        end = start + int(sr.Get_Shared_Variables("element_wait"))
-        while time.time() < end:
+        #end = start + int(sr.Get_Shared_Variables("element_wait"))
+        end = 10
+        x=0
+        #while time.time() < end:
+        while x <end:
+            x = x+1
             if css_xpath == "unique" and (
                 driver_type == "appium" or driver_type == "selenium"
             ):  # for unique id
@@ -710,9 +714,7 @@ def _get_xpath_or_css_element(element_query, css_xpath, index_number=False, Filt
                     exception_cnd = True
                     continue
             elif css_xpath == "xpath" and driver_type != "xml":
-                all_matching_elements_visible_invisible = generic_driver.find_elements(
-                    By.XPATH, element_query
-                )
+                all_matching_elements_visible_invisible = generic_driver.find_elements(By.XPATH, element_query)
             elif css_xpath == "xpath" and driver_type == "xml":
                 all_matching_elements_visible_invisible = generic_driver.xpath(
                     element_query
@@ -722,11 +724,14 @@ def _get_xpath_or_css_element(element_query, css_xpath, index_number=False, Filt
                     By.CSS_SELECTOR, element_query
                 )
 
-            if all_matching_elements_visible_invisible:
+            if all_matching_elements_visible_invisible != False:
                 break
 
-        if exception_cnd:
-            print(exception_msg)
+        time.sleep(0.5)   
+        # end of while loop
+
+        
+        if exception_cnd == True:
             return "failed"
 
         all_matching_elements = filter_elements(all_matching_elements_visible_invisible, Filter)

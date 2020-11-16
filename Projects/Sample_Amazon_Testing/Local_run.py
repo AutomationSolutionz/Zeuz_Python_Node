@@ -1,24 +1,32 @@
+import sys
+from pathlib import Path
+sys.path.append(str(Path("../../")))
+
 from Framework.Built_In_Automation.Sequential_Actions.sequential_actions import Sequential_Actions
 from Framework.Utilities.All_Device_Info import get_all_connected_device_info
 from Framework.Utilities.CommonUtil import parse_value_into_object
 import json
 
 if __name__ == "__main__":
-    with open("TestCase.json", "r") as f:
-        Test_Case2 = json.load(f)
-    with open("TestCase.json", "w") as f:
-        json.dump(Test_Case2, f, indent=2)
+    with open("TestCases.json", "r") as f:
+        Test_Case = json.load(f)
+        if isinstance(Test_Case, str):
+            Test_Case = json.loads(Test_Case)
+    with open("TestCases.json", "w") as f:
+        json.dump(Test_Case, f, indent=2)
 
     step_data = []
-    for i in Test_Case2["TestCases"][0]["Steps"]:
+    for i in Test_Case["TestCases"][0]["Steps"]:
         all_actions = i["Step actions"]
         for j in all_actions:
             step_data.append(j["Action data"])
 
-    final_dependency = Test_Case2["TestCases"][0]["final_dependency"]
-
     try:
-        run_time_params = Test_Case2["TestCases"][0]["run_time_params"]
+        final_dependency = Test_Case["TestCases"][0]["dependency"]
+    except:
+        final_dependency = {}
+    try:
+        run_time_params = Test_Case["TestCases"][0]["run_time_params"]
     except:
         run_time_params = {}
 

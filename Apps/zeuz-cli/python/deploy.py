@@ -83,13 +83,34 @@ def deploy(token, host, payload_data):
     ).json()
 
 
+def get_user_info(token, host):
+    return req(
+        "GET",
+        host,
+        "/api/user",
+        dict(),
+        {"Authorization": "Bearer %s" % token},
+    ).json()[0]
+
+
+def get_ondemand_node(token, host, user_id, username):
+    return req(
+        "GET",
+        host,
+        "/Home/ManageMachine/on_demand_node",
+        dict(),
+        dict(),
+        params={"user_id": user_id, "username": username, "host": host},
+    ).json()
+
+
 def get_token_from_api(api_key, host):
     return req(
         "GET", host, "/api/auth/token/verify", params={"api_key": api_key}
     ).json()
 
 
-def extract_runtime_parameters(param_str: str) -> str:
+def extract_runtime_parameters(param_str: str):
     """Extracts the JSON from the given string or file path and converts it
       into suitable a data object.
 
@@ -134,6 +155,17 @@ def extract_runtime_parameters(param_str: str) -> str:
         return None
 
 
+def extract_dependencies(param_str: str):
+    try:
+        data = json.loads(param_str)
+        return data
+    except Exception as e:
+        return {
+            "Browser": "chromeheadless",
+            "OS": "linux"
+        }
+
+
 def main():
     # Error codes to return upon completion of main() function
     EXIT_CODE_SUCCESS = 0
@@ -143,6 +175,7 @@ def main():
     EXIT_CODE_TEST_SET_NAME = 4
     EXIT_CODE_INVALID_MILESTONE = 5
     EXIT_CODE_INVALID_RUNTIME_PARAMETERS = 6
+    EXIT_CODE_FAILED_TO_CREATE_ONDEMAND_NODE = 7
 
     SLEEP_TIMEOUT = 30
 
@@ -183,6 +216,11 @@ def main():
             help="Runtime parameters (must be in JSON format or a file containing JSON).",
         )
         parser.add_argument(
+            "--dependency",
+            default='{"Browser": "chromeheadless", "OS": "linux"}',
+            help="Dependencies (must be in JSON format or a file containing JSON).",
+        )
+        parser.add_argument(
             "--report_filename",
             help="File path to save the detailed report. (default: report.json)",
         )
@@ -200,6 +238,7 @@ def main():
         machine = args.machine
         milestone = args.milestone
         runtime_parameters = args.runtime_parameters
+        dependency = args.dependency
         machine_timeout = int(args.machine_timeout)
         report_timeout = int(args.report_timeout)
         report_filename = args.report_filename
@@ -217,6 +256,7 @@ def main():
     else:
         runtime_parameters = {}
 
+    dependency = extract_dependencies(dependency)
 
     # Parse emails
     emails = [e.strip() for e in email.split(",")]
@@ -251,6 +291,24 @@ def main():
     # If 'any' is specified as the parameter for machine,
     machine_list = list()
     machine_name = machine
+
+    # If `ondemand` node needs to be created, create a new ondemand node
+    # and select it.
+    try:
+        if machine_name == "ondemand":
+            user_info = get_user_info(token, host)
+            username = user_info["username"]
+            user_id = user_info["uid"]
+
+            ondemand_node = get_ondemand_node(token, host, user_id, username)
+
+            # Wait 5 secs to let the on demand node start up properly.
+            time.sleep(5)
+
+            machine_name = ondemand_node["node_id"]
+    except:
+        return EXIT_CODE_FAILED_TO_CREATE_ONDEMAND_NODE
+
     for _ in range(machine_timeout):
         machine_list = get_available_machines(token, host, project, team)
         if len(machine_list) == 0:
@@ -272,7 +330,7 @@ def main():
     payload_data = json.dumps(
         {
             "test_set_name": test_set_name,
-            "dependency": {"Brower": "Chrome", "OS": "Windows"},
+            "dependency": dependency,
             "email_receiver": emails,
             "email_pref": email_pref,
             "objective": objective,
