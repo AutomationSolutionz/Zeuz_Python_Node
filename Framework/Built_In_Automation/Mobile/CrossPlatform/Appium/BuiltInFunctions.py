@@ -4180,9 +4180,10 @@ def save_attribute_values_appium(step_data):
                 # print("Calculation = ", time.time() - start, "sec")
                 End_Elem = LocateElement.Get_Element(end_parameter, appium_driver) if end_parameter else "failed"
                 if End_Elem != "failed":
-                    CommonUtil.ExecLog(sModuleInfo, "End Element found. Stopped scrolling", 1)
+                    CommonUtil.ExecLog("", "End Element found. Stopped swiping", 1)
                     break  # Stop swiping. End reached!
                 swipe_handler_android(save_att_data_set=input_param)
+                CommonUtil.ExecLog("", "Delaying " + str(delay) + " sec after swipe", 1)
                 time.sleep(delay)
                 ii += 1
                 CommonUtil.ExecLog("", "Scrolled " + str(ii) + " times", 1)
