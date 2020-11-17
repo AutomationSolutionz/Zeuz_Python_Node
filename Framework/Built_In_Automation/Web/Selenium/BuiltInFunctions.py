@@ -1475,12 +1475,13 @@ def save_attribute_values_in_list(step_data):
                 try:
                     for search_contain in target[i][2]:
                         if not isinstance(search_contain, type(Attribute_value)) or search_contain in Attribute_value or len(search_contain) == 0:
-                            pass
-                        else:
+                            break
+                    else:
+                        if target[i][2]:
                             Attribute_value = None
 
                     for search_doesnt_contain in target[i][3]:
-                        if isinstance(search_doesnt_contain, type(Attribute_value)) and search_doesnt_contain in Attribute_value:
+                        if isinstance(search_doesnt_contain, type(Attribute_value)) and search_doesnt_contain in Attribute_value and len(search_doesnt_contain) != 0:
                             Attribute_value = None
                 except:
                     CommonUtil.ExecLog(

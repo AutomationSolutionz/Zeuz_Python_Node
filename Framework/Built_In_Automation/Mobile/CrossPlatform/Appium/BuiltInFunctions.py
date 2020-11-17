@@ -3959,18 +3959,40 @@ def save_attribute_values_appium(step_data):
     to collect multiple objects.  Users can provide certain constrain to search their elements
     Sample data:
 
-    aria-label                       element parameter      Calendar
+    resource-id                      element parameter      android:id/list
 
-    attributes                       target parameter       data-automation="productItemName",
-                                                            class="S58f2saa25a3w1",
+    attributes                       target parameter       resource-id="com.whatsapp:id/conversations_row_contact_name",
                                                             return="text",
-                                                            return_contains="128GB",
-                                                            return_does_not_contain="Windows 10",
-                                                            return_does_not_contain="Linux"
+                                                            return_contains="J",
+                                                            return_contains="A",
+                                                            return_does_not_contain="John",
+                                                            return_does_not_contain="Abraham"
 
-    attributes                       target parameter       class="productPricingContainer_3gTS3",
+    attributes                       target parameter       class="com.whatsapp:id/conversations_row_date",
                                                             return="text",
-                                                            return_does_not_contain="99.99"
+                                                            return_does_not_contain="yesterday"
+
+    inset                            scroll parameter       15
+
+    duration                         scroll parameter       6.5
+
+    positon                          scroll parameter       60
+
+    direction                        scroll parameter       up
+
+    exact                            scroll parameter       360,1800,360,240
+
+    adb                              scroll parameter       True
+
+    max swipe                        scroll parameter       25
+
+    delay for loading                scroll parameter       2
+
+    adjust scroll                    scroll parameter       +65
+
+    adjust fluctuation               scroll parameter       6
+
+    text                             end parameter          No more suggestions
 
     save attribute values in list    selenium action        list_name
 
@@ -3983,9 +4005,7 @@ def save_attribute_values_appium(step_data):
     try:
         Element = LocateElement.Get_Element(step_data, appium_driver)
         if Element == "failed":
-            CommonUtil.ExecLog(
-                sModuleInfo, "Unable to locate your element with given data.", 3
-            )
+            CommonUtil.ExecLog(sModuleInfo, "Unable to locate your element with given data.", 3)
             return "failed"
 
         target_index = 0
@@ -4001,6 +4021,10 @@ def save_attribute_values_appium(step_data):
         elif input_param["direction"] == "right":
             input_param["duration"] = elementW * 3.2
 
+        delay = 0.0
+        adjust_fluctuation = 5
+        end_parameter = []
+        max_swipe = float('inf')
         try:
             for left, mid, right in step_data:
                 left = left.strip().lower()
@@ -4030,8 +4054,8 @@ def save_attribute_values_appium(step_data):
 
                     target_index = target_index + 1
                 elif left == "save attribute values in list":
-                    variable_name = right
-                elif mid == "input parameter":
+                    variable_name = right.strip()
+                elif mid == "scroll parameter":
                     if left == "inset":
                         input_param["inset"] = right.strip()
                     elif left == "direction":
@@ -4041,9 +4065,20 @@ def save_attribute_values_appium(step_data):
                     elif left == "position":
                         input_param["position"] = right.lower().strip()
                     elif left == "duration":
-                        input_param["duration"] = int(right.lower().strip())
+                        input_param["duration"] = round(float(right.lower().strip()) * 1000)
+                    elif left == "adb":
+                        input_param["adb"] = True if right.strip().lower() in ("true", "yes", "ok") else False
+                    elif left == "delay for loading":
+                        delay = float(right.strip())
                     elif left == "adjust pixel":
                         input_param["adjust"] = right.strip()
+                    elif left == "adjust fluctuation":
+                        adjust_fluctuation = int(right.strip())
+                    elif left == "max swipe":
+                        max_swipe = int(right.strip())
+                elif mid == "end parameter":
+                    end_parameter.append((left, "element parameter", right))
+
         except:
             CommonUtil.ExecLog(
                 sModuleInfo, "Unable to parse data. Please write data in correct format", 3
@@ -4054,15 +4089,14 @@ def save_attribute_values_appium(step_data):
         final = []
         init_once_only = True
         first_swipe_done = False
-        delay = 0
-        max_swipe = 40
-        while ii <= max_swipe:
-            # Print and take input of scroll times!!!!!!!
 
+        while ii < max_swipe:
+            # start = time.time()
             all_elements = []
             for each in target:
                 all_elements.append(LocateElement.Get_Element(each[0], Element, return_all_elements=True))
-
+            # print("Capturing all_elements = ", time.time()-start, "sec")
+            # start = time.time()
             variable_value_size = []
             for each in all_elements:
                 variable_value_size.append(len(each))
@@ -4083,22 +4117,10 @@ def save_attribute_values_appium(step_data):
                     lower_bound_touched.append(False)
                     del_range.append([])
                     temp_variable_value.append([])
-                # if input_param["direction"] == "up":
-                #     lower_bound_touched = Element.location["y"] + Element.size["height"] - all_elements[0][-1].location["y"] - all_elements[0][-1].size["height"] < 2
-                #     upper_bound_touched = False
-                # elif input_param["direction"] == "down":
-                #     lower_bound_touched = False
-                #     upper_bound_touched = all_elements[0][0].location["y"] - Element.location["y"] < 2
-                # elif input_param["direction"] == "left":
-                #     lower_bound_touched = Element.location["x"] + Element.size["width"] - all_elements[0][-1].location["x"] - all_elements[0][-1].size["width"] < 2
-                #     upper_bound_touched = False
-                # elif input_param["direction"] == "right":
-                #     lower_bound_touched = False
-                #     upper_bound_touched = all_elements[0][0].location["x"] - Element.location["x"] < 2
 
             i = 0   # j->i because inserting values column by column
             for branch in all_elements:
-                search_by_attribute = target[i][1]     # need to be fixed i or j !!!!!!!!!!!!
+                search_by_attribute = target[i][1]
                 for elem in branch:
                     try:
                         Attribute_value = elem.get_attribute(search_by_attribute)
@@ -4109,23 +4131,26 @@ def save_attribute_values_appium(step_data):
             pre_values_temp = copy.deepcopy(variable_value)
 
             for T in range(len(all_elements)):
+
                 if first_swipe_done and variable_value == pre_values:
-                    # if del_range[T]:
-                    #     for i in del_range[T]:
-                    #         del temp_variable_value[T][0]
-                    #     final[T] += temp_variable_value[T]
-                    print("******************** SHESH!!!!!!*******************")
+                    CommonUtil.ExecLog(sModuleInfo, "Reached to the end. Stopped scrolling", 1)
                     break   # Stop swiping. End reached!
 
-                if del_range[T]:
+                if first_swipe_done and del_range[T]:
                     final[T] += temp_variable_value[T]
                     del_range[T], temp_variable_value[T] = [], []
 
                 if input_param["direction"] == "up":
-                    upper_bound_touched[T] = all_elements[T][0].location["y"] - Element.location["y"] < 5
+                    upper_bound_touched[T] = all_elements[T][0].location["y"] - Element.location["y"] < adjust_fluctuation
+                elif input_param["direction"] == "down":    # Need to fix
+                    lower_bound_touched[T] = Element.location["y"] + Element.size["height"] - all_elements[T][-1].location["y"] - all_elements[T][-1].size["height"] < adjust_fluctuation
+                elif input_param["direction"] == "left":
+                    upper_bound_touched[T] = all_elements[T][0].location["x"] - Element.location["x"] < adjust_fluctuation
+                elif input_param["direction"] == "right":   # Need to fix
+                    lower_bound_touched[T] = Element.location["x"] + Element.size["width"] - all_elements[T][-1].location["x"] - all_elements[T][-1].size["width"] < adjust_fluctuation
 
                 if first_swipe_done and pre_values[T][len(pre_values[T])-1] == variable_value[T][0] and lower_bound_touched[T] and upper_bound_touched[T]:
-                    print(variable_value[T][0])
+                    CommonUtil.ExecLog("", "Found '" + str(variable_value[T][0]) + "' in previous page. So deleting now", 2)
                     del variable_value[T][0]
 
                 elif first_swipe_done:
@@ -4140,32 +4165,69 @@ def save_attribute_values_appium(step_data):
                             break
 
                 if input_param["direction"] == "up":
-                    lower_bound_touched[T] = Element.location["y"] + Element.size["height"] - all_elements[T][-1].location["y"] - all_elements[T][-1].size["height"] < 5
+                    lower_bound_touched[T] = Element.location["y"] + Element.size["height"] - all_elements[T][-1].location["y"] - all_elements[T][-1].size["height"] < adjust_fluctuation
+                elif input_param["direction"] == "down":    # Need to fix
+                    upper_bound_touched = all_elements[T][0].location["y"] - Element.location["y"] < adjust_fluctuation
+                elif input_param["direction"] == "left":
+                    lower_bound_touched[T] = Element.location["x"] + Element.size["width"] - all_elements[T][-1].location["x"] - all_elements[T][-1].size["width"] < adjust_fluctuation
+                elif input_param["direction"] == "right":   # Need to fix
+                    upper_bound_touched[T] = all_elements[T][0].location["x"] - Element.location["x"] < adjust_fluctuation
 
                 if not del_range[T]:
                     final[T] += variable_value[T]
             else:
                 pre_values = copy.deepcopy(pre_values_temp)
+                # print("Calculation = ", time.time() - start, "sec")
+                End_Elem = LocateElement.Get_Element(end_parameter, appium_driver) if end_parameter else "failed"
+                if End_Elem != "failed":
+                    CommonUtil.ExecLog(sModuleInfo, "End Element found. Stopped scrolling", 1)
+                    break  # Stop swiping. End reached!
                 swipe_handler_android(save_att_data_set=input_param)
                 time.sleep(delay)
                 ii += 1
-                print("scrolled", ii, "times")
+                CommonUtil.ExecLog("", "Scrolled " + str(ii) + " times", 1)
                 first_swipe_done = True
                 continue
             break
-
+        # start = time.time()
         for T in range(len(all_elements)):
             if first_swipe_done and variable_value == pre_values:
                 if del_range[T]:
                     for i in del_range[T]:
+                        CommonUtil.ExecLog("", "Found '" + str(temp_variable_value[T][0]) + "' in previous page. So deleting now", 2)
                         del temp_variable_value[T][0]
                     final[T] += temp_variable_value[T]
             else:
                 if del_range[T]:
                     final[T] += temp_variable_value[T]
 
+        final_size = 0
+        for i in final:
+            final_size = max(final_size, len(i))
+        for i in range(len(final)):
+            if len(final[i]) < final_size:
+                for j in range(final_size - len(final[i])):
+                    final[i].append(None)
+        final = list(map(list, zip(*final)))
+
+        for j in range(len(final[0])):
+            for i in range(len(final)):
+                for search_contain in target[j][2]:
+                    if not isinstance(search_contain, type(final[i][j])) or search_contain in final[i][j] or len(search_contain) == 0:
+                        break
+                else:
+                    if target[j][2]:
+                        final[i][j] = None
+                for search_doesnt_contain in target[j][3]:
+                    if isinstance(search_doesnt_contain, type(final[i][j])) and search_doesnt_contain in final[i][j] and len(search_doesnt_contain) != 0:
+                        final[i][j] = None
+                        break
+
+        # print("Searching =", time.time() - start, "sec")
+
         return Shared_Resources.Set_Shared_Variables(variable_name, final)
     # com.android.vending for play_store and com.android.contacts for contact
+    # com.whatsapp for whatsapp
     except Exception:
         return CommonUtil.Exception_Handler(sys.exc_info())
 
