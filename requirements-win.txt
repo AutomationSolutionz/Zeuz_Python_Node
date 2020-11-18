@@ -36,6 +36,7 @@ wmi
 pyautoit
 winshell
 webdrivermanager
+webdriver_manager
 jsonschema
 webcolors
 jsonpointer

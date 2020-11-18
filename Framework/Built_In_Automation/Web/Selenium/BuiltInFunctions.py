@@ -17,6 +17,11 @@ import sys, os, time, inspect
 
 sys.path.append("..")
 from selenium import webdriver
+from webdriver_manager.chrome import ChromeDriverManager
+from webdriver_manager.firefox import GeckoDriverManager
+from webdriver_manager.microsoft import IEDriverManager
+from webdriver_manager.microsoft import EdgeChromiumDriverManager
+from webdriver_manager.opera import OperaDriverManager
 from selenium.webdriver.remote.webelement import WebElement
 from selenium.webdriver.common.desired_capabilities import DesiredCapabilities
 from selenium.webdriver.firefox.firefox_binary import FirefoxBinary
@@ -117,7 +122,7 @@ def Open_Browser(dependency, window_size_X=None, window_size_Y=None, update_driv
                 options.add_argument(
                     "--headless"
                 )  # Enable headless operation if dependency set
-            selenium_driver = webdriver.Chrome(chrome_options=options, desired_capabilities=d)
+            selenium_driver = webdriver.Chrome(ChromeDriverManager().install(),chrome_options=options, desired_capabilities=d)
             selenium_driver.implicitly_wait(WebDriver_Wait)
             if not window_size_X and not window_size_Y:
                 selenium_driver.maximize_window()
@@ -157,7 +162,7 @@ def Open_Browser(dependency, window_size_X=None, window_size_Y=None, update_driv
                         break
             capabilities = webdriver.DesiredCapabilities().FIREFOX
             capabilities['acceptSslCerts'] = True
-            selenium_driver = webdriver.Firefox(capabilities=capabilities,options=options)
+            selenium_driver = webdriver.Firefox(executable_path=GeckoDriverManager().install(),capabilities=capabilities,options=options)
             selenium_driver.implicitly_wait(WebDriver_Wait)
             if not window_size_X and not window_size_Y:
                 selenium_driver.maximize_window()
@@ -174,7 +179,7 @@ def Open_Browser(dependency, window_size_X=None, window_size_Y=None, update_driv
         elif "ie" in browser:
             capabilities = webdriver.DesiredCapabilities().INTERNETEXPLORER
             capabilities['acceptSslCerts'] = True
-            selenium_driver = webdriver.Ie(capabilities=capabilities)
+            selenium_driver = webdriver.Ie(IEDriverManager().install(),capabilities=capabilities)
             selenium_driver.implicitly_wait(WebDriver_Wait)
             if not window_size_X and not window_size_Y:
                 selenium_driver.maximize_window()
