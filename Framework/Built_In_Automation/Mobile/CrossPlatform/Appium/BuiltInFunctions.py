@@ -3984,7 +3984,7 @@ def save_attribute_values_appium(step_data):
 
     adb                              scroll parameter       True
 
-    max swipe                        scroll parameter       25
+    max scroll                        scroll parameter       25
 
     delay for loading                scroll parameter       2
 
@@ -4074,7 +4074,7 @@ def save_attribute_values_appium(step_data):
                         input_param["adjust"] = right.strip()
                     elif left == "adjust fluctuation":
                         adjust_fluctuation = int(right.strip())
-                    elif left == "max swipe":
+                    elif left == "max scroll":
                         max_swipe = int(right.strip())
                 elif mid == "end parameter":
                     end_parameter.append((left, "element parameter", right))
@@ -4105,7 +4105,7 @@ def save_attribute_values_appium(step_data):
             for i in range(len(all_elements)):
                 variable_value.append([])
 
-            if init_once_only:
+            if init_once_only:  # Initiate these values once per scroll
                 init_once_only = False
                 del_range, temp_variable_value = [], []
                 
@@ -4132,15 +4132,15 @@ def save_attribute_values_appium(step_data):
 
             for T in range(len(all_elements)):
 
-                if first_swipe_done and variable_value == pre_values:
+                if first_swipe_done and variable_value == pre_values:   # Checking if end reached
                     CommonUtil.ExecLog(sModuleInfo, "Reached to the end. Stopped scrolling", 1)
-                    break   # Stop swiping. End reached!
+                    break   # Stop scrolling. End reached!
 
-                if first_swipe_done and del_range[T]:
+                if first_swipe_done and del_range[T]:   # If end is not reached dont delete anything. Add everything
                     final[T] += temp_variable_value[T]
                     del_range[T], temp_variable_value[T] = [], []
 
-                if input_param["direction"] == "up":
+                if input_param["direction"] == "up":    # Checking if the first element of current page touched the edge
                     upper_bound_touched[T] = all_elements[T][0].location["y"] - Element.location["y"] < adjust_fluctuation
                 elif input_param["direction"] == "down":    # Need to fix
                     lower_bound_touched[T] = Element.location["y"] + Element.size["height"] - all_elements[T][-1].location["y"] - all_elements[T][-1].size["height"] < adjust_fluctuation
@@ -4149,10 +4149,12 @@ def save_attribute_values_appium(step_data):
                 elif input_param["direction"] == "right":   # Need to fix
                     lower_bound_touched[T] = Element.location["x"] + Element.size["width"] - all_elements[T][-1].location["x"] - all_elements[T][-1].size["width"] < adjust_fluctuation
 
+                # If last element of previous page and first element of the current page touched the edge and they are same delete that item
                 if first_swipe_done and pre_values[T][len(pre_values[T])-1] == variable_value[T][0] and lower_bound_touched[T] and upper_bound_touched[T]:
                     CommonUtil.ExecLog("", "Found '" + str(variable_value[T][0]) + "' in previous page. So deleting now", 2)
                     del variable_value[T][0]
 
+                # on the last scroll many elements can be duplicated. putting them in a separate list than the main element
                 elif first_swipe_done:
                     for i in range(len(pre_values[T])):
                         if pre_values[T][i] == variable_value[T][0]:
@@ -4164,7 +4166,7 @@ def save_attribute_values_appium(step_data):
                                 temp_variable_value[T] = copy.deepcopy(variable_value[T])
                             break
 
-                if input_param["direction"] == "up":
+                if input_param["direction"] == "up":    # Checking if the last element of previous page touched the edge
                     lower_bound_touched[T] = Element.location["y"] + Element.size["height"] - all_elements[T][-1].location["y"] - all_elements[T][-1].size["height"] < adjust_fluctuation
                 elif input_param["direction"] == "down":    # Need to fix
                     upper_bound_touched = all_elements[T][0].location["y"] - Element.location["y"] < adjust_fluctuation
@@ -4180,10 +4182,10 @@ def save_attribute_values_appium(step_data):
                 # print("Calculation = ", time.time() - start, "sec")
                 End_Elem = LocateElement.Get_Element(end_parameter, appium_driver) if end_parameter else "failed"
                 if End_Elem != "failed":
-                    CommonUtil.ExecLog("", "End Element found. Stopped swiping", 1)
-                    break  # Stop swiping. End reached!
+                    CommonUtil.ExecLog("", "End Element found. Stopped scrolling", 1)
+                    break  # Stop scrolling. End reached!
                 swipe_handler_android(save_att_data_set=input_param)
-                CommonUtil.ExecLog("", "Delaying " + str(delay) + " sec after swipe", 1)
+                CommonUtil.ExecLog("", "Delaying " + str(delay) + " sec after scroll", 1)
                 time.sleep(delay)
                 ii += 1
                 CommonUtil.ExecLog("", "Scrolled " + str(ii) + " times", 1)
@@ -4191,7 +4193,7 @@ def save_attribute_values_appium(step_data):
                 continue
             break
         # start = time.time()
-        for T in range(len(all_elements)):
+        for T in range(len(all_elements)):  # Delete multiple duplicates created for last page scrolling
             if first_swipe_done and variable_value == pre_values:
                 if del_range[T]:
                     for i in del_range[T]:
@@ -4202,6 +4204,7 @@ def save_attribute_values_appium(step_data):
                 if del_range[T]:
                     final[T] += temp_variable_value[T]
 
+        # Filtering the elements with return_contains and return_does_not_contain
         final_size = 0
         for i in final:
             final_size = max(final_size, len(i))
