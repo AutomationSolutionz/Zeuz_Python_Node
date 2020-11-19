@@ -1,5 +1,8 @@
 import sys
 from pathlib import Path
+
+from Projects.Sample_Amazon_Testing.Device_info import get_device_info
+
 sys.path.append(str(Path("../../")))
 
 from Framework.Built_In_Automation.Sequential_Actions.sequential_actions import Sequential_Actions
@@ -26,11 +29,15 @@ if __name__ == "__main__":
     except:
         final_dependency = {}
     try:
+        device_selected = Test_Case["TestCases"][0]["device_info"]
+    except:
+        device_selected = ""
+    try:
         run_time_params = Test_Case["TestCases"][0]["run_time_params"]
     except:
         run_time_params = {}
 
-    device_info = get_all_connected_device_info()
+    device_info = get_device_info(device_selected)
 
     result = Sequential_Actions(
         step_data=step_data,
