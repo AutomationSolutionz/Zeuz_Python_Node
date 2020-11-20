@@ -792,17 +792,23 @@ def _get_xpath_or_css_element(element_query, css_xpath, index_number=False, Filt
 def filter_elements(all_matching_elements_visible_invisible, Filter):
     # visible, enable
     all_matching_elements = []
-    if Filter != "allow hidden":
-        for each in all_matching_elements_visible_invisible:
-            try:
-                if each.is_displayed():
-                    all_matching_elements.append(each)
-            except:
-                pass
-    else:
-        all_matching_elements = all_matching_elements_visible_invisible
-
-    return all_matching_elements
+    try:
+        if len(all_matching_elements_visible_invisible) == 1:
+            all_matching_elements = all_matching_elements_visible_invisible
+            return all_matching_elements
+            
+        elif Filter != "allow hidden":
+            for each in all_matching_elements_visible_invisible:
+                try:
+                    if each.is_displayed():
+                        all_matching_elements.append(each)
+                except:
+                    pass
+        else:
+            all_matching_elements = all_matching_elements_visible_invisible
+    except:
+        all_matching_elements = []
+        return all_matching_elements
 
 def _locate_index_number(step_data_set):
     """
