@@ -2858,3 +2858,86 @@ def if_element_exists(data_set):
             "Failed to parse data/locate element. Data format: variableName = value"
         )
         return CommonUtil.Exception_Handler(sys.exc_info(), None, errMsg)
+
+
+@logger
+def check_uncheck_all(data_set):
+    pass
+
+
+@logger
+def check_uncheck(data_set):
+    pass
+
+
+@logger
+def multiple_check_uncheck(data_set):
+    """ Click using element or location """
+
+    sModuleInfo = inspect.currentframe().f_code.co_name + " : " + MODULE_NAME
+    global selenium_driver
+
+    use_js = False  # Use js to click on element?
+    try:
+        for left, mid, right in data_set:
+            left = left.lower().strip()
+            mid = mid.lower().strip()
+            if "use js" == left:
+                use_js = right.strip().lower() in ("true", "yes", "ok")
+            elif "target parameter" == mid:
+                targets = CommonUtil.parse_value_into_object(right.strip())
+    except Exception:
+        return CommonUtil.Exception_Handler(sys.exc_info(), None, "Error parsing data set")
+
+    Element = LocateElement.Get_Element(data_set, selenium_driver)
+    if Element == "failed":
+        CommonUtil.ExecLog(sModuleInfo, "Could not find element", 3)
+        return "failed"
+
+    element_params = []
+    for left, mid, right in targets:
+        element_params.append([(left, "element parameter", mid)])
+
+    all_elements = []
+    for i in element_params:
+        all_elements.append(LocateElement.Get_Element(i, Element))
+
+    for i in range(len(all_elements)):
+        if all_elements[i] == "failed":
+            CommonUtil.ExecLog("", str(targets[i]) + " was not found so skipped it", 3)
+            continue
+        if targets[i][2] == "check" and all_elements[i].is_selected():
+            CommonUtil.ExecLog("", str(targets[i]) + " is already checked so skipped it", 1)
+            continue
+        if targets[i][2] == "uncheck" and not all_elements[i].is_selected():
+            CommonUtil.ExecLog("", str(targets[i]) + " is already unchecked so skipped it", 1)
+            continue
+
+        try:
+            if use_js:
+                selenium_driver.execute_script("arguments[0].click();", all_elements[i])
+            else:
+                try:
+                    all_elements[i].click()
+                except ElementClickInterceptedException:
+                    try:
+                        selenium_driver.execute_script("arguments[0].click();", all_elements[i])
+                        CommonUtil.TakeScreenShot(sModuleInfo)
+                        return "passed"
+                    except:
+                        if targets[i][2] == "check":
+                            CommonUtil.ExecLog("", str(targets[i]) + " couldn't be checked so skipped it", 3)
+                        else:
+                            CommonUtil.ExecLog("", str(targets[i]) + " couldn't be unchecked so skipped it", 3)
+
+            if targets[i][2] == "check":
+                CommonUtil.ExecLog("", str(targets[i]) + " checked successfully", 1)
+            else:
+                CommonUtil.ExecLog("", str(targets[i]) + " unchecked successfully", 1)
+        except:
+            if targets[i][2] == "check":
+                CommonUtil.ExecLog("", str(targets[i]) + " couldn't be checked so skipped it", 3)
+            else:
+                CommonUtil.ExecLog("", str(targets[i]) + " couldn't be unchecked so skipped it", 3)
+
+    return "passed"

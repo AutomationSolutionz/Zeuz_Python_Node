@@ -47,6 +47,9 @@ declarations = (
     { "name": "take screenshot web",           "function": "take_screenshot_selenium",      "screenshot": "web" },
     { "name": "mouse click",                   "function": "Mouse_Click_Element",           "screenshot": "web" },
     { "name": "execute javascript",            "function": "execute_javascript",            "screenshot": "web" },
+    { "name": "check uncheck all",             "function": "check_uncheck_all",          "screenshot": "web" },
+    { "name": "check uncheck",                 "function": "check_uncheck",          "screenshot": "web" },
+    { "name": "multiple check uncheck",        "function": "multiple_check_uncheck",          "screenshot": "web" },
 )
 
 module_name = "selenium"
