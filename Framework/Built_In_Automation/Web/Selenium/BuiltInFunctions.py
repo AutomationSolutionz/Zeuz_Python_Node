@@ -178,7 +178,7 @@ def Open_Browser(dependency, window_size_X=None, window_size_Y=None, update_driv
             return "passed"
         elif "ie" in browser:
             capabilities = webdriver.DesiredCapabilities().INTERNETEXPLORER
-            capabilities['acceptSslCerts'] = True
+            # capabilities['acceptSslCerts'] = True     # It does not work for internet explorer
             selenium_driver = webdriver.Ie(IEDriverManager().install(),capabilities=capabilities)
             selenium_driver.implicitly_wait(WebDriver_Wait)
             if not window_size_X and not window_size_Y:
