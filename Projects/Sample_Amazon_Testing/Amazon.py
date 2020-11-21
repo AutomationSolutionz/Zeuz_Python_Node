@@ -53,7 +53,7 @@ def Item_Search(search_text):
             CommonUtil.ExecLog(sModuleInfo, "Searching was not successful", 3)
             return "failed"
 
-    except Exception, e:
+    except Exception as e:
         exc_type, exc_obj, exc_tb = sys.exc_info()
         fname = os.path.split(exc_tb.tb_frame.f_code.co_filename)[1]
         Error_Detail = (
@@ -157,7 +157,7 @@ def Add_to_Cart(search_text):
             )
             return "failed"
 
-    except Exception, e:
+    except Exception as e:
         exc_type, exc_obj, exc_tb = sys.exc_info()
         fname = os.path.split(exc_tb.tb_frame.f_code.co_filename)[1]
         Error_Detail = (
@@ -280,7 +280,7 @@ def Add_to_Cart_Using_Selenium(step_data, file_attachment):
             )
             return "failed"
 
-    except Exception, e:
+    except Exception as e:
         exc_type, exc_obj, exc_tb = sys.exc_info()
         fname = os.path.split(exc_tb.tb_frame.f_code.co_filename)[1]
         Error_Detail = (

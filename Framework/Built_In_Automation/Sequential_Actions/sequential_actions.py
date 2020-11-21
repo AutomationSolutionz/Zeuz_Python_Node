@@ -594,7 +594,7 @@ def Handle_While_Loop_Action(step_data, data_set_no):
                     deprecate_log = False
                     CommonUtil.ExecLog(
                         sModuleInfo,
-                        "Use 'optional loop setting' instead of 'loop settings' to get our updated feature. Try the simple syntax format writen in document",
+                        "Use 'optional loop settings' instead of 'loop settings' to get our updated feature. Try the simple syntax format writen in document",
                         2,
                     )
         if loop_this_data_sets == []:

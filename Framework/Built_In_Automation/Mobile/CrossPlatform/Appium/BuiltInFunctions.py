@@ -14,7 +14,7 @@
 from appium import webdriver
 import traceback
 import socket
-import os, sys, datetime, time, inspect, subprocess, re, signal, _thread, requests
+import os, sys, datetime, time, inspect, subprocess, re, signal, _thread, requests, copy
 from Framework.Utilities import CommonUtil
 from Framework.Utilities.decorators import logger
 from Framework.Built_In_Automation.Built_In_Utility.CrossPlatform import (
@@ -1457,7 +1457,7 @@ def swipe_handler_ios(data_set):
 
 
 @logger
-def swipe_handler_android(data_set):
+def swipe_handler_android(data_set=[], save_att_data_set={}):
     """ Swipe screen based on user input """
     """
         Function: Performs a single swipe gesture in a vertical or horizonal direction
@@ -1477,7 +1477,7 @@ def swipe_handler_android(data_set):
         return "passed"
 
     @logger
-    def Calc_Swipe(w, h, inset, direction, position, exact):
+    def Calc_Swipe(w, h, inset, direction, position, exact, adjust):
         """ Calculate swipe based on area of interest (screen or element) """
         try:
             # Adjust numbers depending on type provided by user - float or integer expected here - convert into pixels
@@ -1486,47 +1486,46 @@ def swipe_handler_android(data_set):
             ):  # User specified exact coordinates, so use those and nothing else
                 x1, y1, x2, y2 = list(map(int, exact.split(",")))
             else:
-                inset = int(str(inset).replace("%", "")) / 100.0  # Convert % to float
-                position = (
-                    int(str(position).replace("%", "")) / 100.0
-                )  # Convert % to float
+                inset = float(str(inset).replace("%", "")) / 100.0  # Convert % to float
+                position = float(str(position).replace("%", "")) / 100.0  # Convert % to float
+                adjust = int(adjust) if adjust else 0
 
                 if direction == "left":
                     tmp = 1.0 - inset  # Calculate from other end (X% from max width)
-                    inset = int(tmp * w)
-                    position = int(position * h)
+                    inset = round(tmp * w)
+                    position = round(position * h)
                 elif direction == "down":
-                    inset = int(inset * h)  # Convert into pixels for that direction
-                    position = int(position * w)
+                    inset = round(inset * h)  # Convert into pixels for that direction
+                    position = round(position * w)
                 elif direction == "right":
-                    inset = int(inset * w)  # Convert into pixels for that direction
-                    position = int(position * h)
+                    inset = round(inset * w)  # Convert into pixels for that direction
+                    position = round(position * h)
                 elif direction == "up":
                     tmp = 1.0 - inset  # Calculate from other end (X% from max height)
-                    inset = int(tmp * h)
-                    position = int(position * w)
+                    inset = round(tmp * h)
+                    position = round(position * w)
 
                 # Calculate exact pixel for the swipe
                 if direction == "left":
-                    x1 = inset
-                    x2 = 1
+                    x1 = inset - 1
+                    x2 = adjust       # don't need +1 here
                     y1 = position
                     y2 = position
                 elif direction == "down":
                     x1 = position
                     x2 = position
-                    y1 = inset
-                    y2 = h
+                    y1 = inset     # don't need +1 here
+                    y2 = h - 1 + adjust
                 elif direction == "right":
-                    x1 = inset
-                    x2 = w
+                    x1 = inset      # don't need +1 here
+                    x2 = w - 1 - adjust
                     y1 = position
                     y2 = position
                 elif direction == "up":
                     x1 = position
                     x2 = position
-                    y1 = inset
-                    y2 = 1
+                    y1 = inset - 1
+                    y2 = - adjust       # don't need +1 here
 
             return (
                 x1,
@@ -1577,32 +1576,45 @@ def swipe_handler_android(data_set):
 
     # Parse data set
     try:
-        inset = 10  # Default 10% of screen from edge as start of swipe
-        direction = ""  # Left/right/up/down
-        exact = ""  # Coordinates of exact swipe gesture in x1, y1, x2, y2
-        position = 50  # Default 50% of screen from edge for general swipes
-        Element = ""  # Optional element object
-        duration = 100  # Duration of the swipe in ms
-        for row in data_set:
-            if row[1] == "input parameter":
-                op = row[0].strip().lower()
-                if op == "inset":
-                    inset = row[2].strip()
-                elif op == "direction":
-                    direction = row[2].lower().strip()
-                elif op == "exact":
-                    exact = row[2].lower().strip().replace(" ", "")
-                elif op == "position":
-                    position = row[2].lower().strip()
-                elif op == "duration":
-                    duration = int(row[2].lower().strip())
-            elif row[1] == "element parameter":
-                Element = LocateElement.Get_Element(data_set, appium_driver)
-                if Element == "failed":
-                    CommonUtil.ExecLog(
-                        sModuleInfo, "Unable to locate your element with given data.", 3
-                    )
-                    return "failed"
+        if save_att_data_set:
+            inset = save_att_data_set["inset"]  # Default 0% of screen from edge as start of swipe
+            direction = save_att_data_set["direction"]  # Left/right/up/down
+            exact = save_att_data_set["exact"]  # Coordinates of exact swipe gesture in x1, y1, x2, y2
+            position = save_att_data_set["position"]  # Default 50% of screen from edge for general swipes
+            Element = save_att_data_set["Element"]  # Optional element object
+            duration = save_att_data_set["duration"]  # Duration of the swipe in ms. default 5000 ms for 1550 pixel
+            ADB = save_att_data_set["adb"]  # Check which method to be used for swipe
+            adjust = save_att_data_set["adjust"]    # Adjust the scrolling amount
+        else:
+            adjust = ""
+            inset = 10  # Default 10% of screen from edge as start of swipe
+            direction = ""  # Left/right/up/down
+            exact = ""  # Coordinates of exact swipe gesture in x1, y1, x2, y2
+            position = 50  # Default 50% of screen from edge for general swipes
+            Element = ""  # Optional element object
+            duration = 100  # Duration of the swipe in ms
+            for row in data_set:
+                if row[1] == "input parameter":
+                    op = row[0].strip().lower()
+                    if op == "inset":
+                        inset = row[2].strip()
+                    elif op == "direction":
+                        direction = row[2].lower().strip()
+                    elif op == "exact":
+                        exact = row[2].lower().strip().replace(" ", "")
+                    elif op == "position":
+                        position = row[2].lower().strip()
+                    elif op == "duration":
+                        duration = int(row[2].lower().strip())
+                    elif op == "adjust pixel":
+                        adjust = row[2].strip()
+                elif row[1] == "element parameter" or row[1] == "unique parameter":
+                    Element = LocateElement.Get_Element(data_set, appium_driver)
+                    if Element == "failed":
+                        CommonUtil.ExecLog(
+                            sModuleInfo, "Unable to locate your element with given data.", 3
+                        )
+                        return "failed"
 
         # Verify we have what we need
         if (
@@ -1635,37 +1647,34 @@ def swipe_handler_android(data_set):
 
             # Calculate coordinates, based on element position and size
             x1, x2, y1, y2, inset, position = Calc_Swipe(
-                elementW, elementH, inset, direction, position, ""
+                elementW, elementH, inset, direction, position, "", adjust
             )
-            if x1 in failed_tag_list:
-                return "failed"
             # Using element calculations, now calculate to make relative to entire screen size
             if direction == "left":
                 x1 += elementX
+                x2 += elementX
                 y1 += elementY
                 y2 += elementY
             elif direction == "down":
                 y1 += elementY
-                y2 = h
+                y2 += elementY
                 x1 += elementX
                 x2 += elementX
             elif direction == "right":
                 x1 += elementX
-                x2 = w
+                x2 += elementX
                 y1 += elementY
                 y2 += elementY
             elif direction == "up":
+                y2 += elementY
                 y1 += elementY
                 x1 += elementX
                 x2 += elementX
         else:
             # No element, calculate swipe coordinates based on screen size
             x1, x2, y1, y2, inset, position = Calc_Swipe(
-                w, h, inset, direction, position, exact
+                w, h, inset, direction, position, exact, adjust
             )
-            if x1 in failed_tag_list:
-                return "failed"
-
     except Exception:
         errMsg = "Unable to parse data set"
         return CommonUtil.Exception_Handler(sys.exc_info(), None, errMsg)
@@ -1687,15 +1696,19 @@ def swipe_handler_android(data_set):
                 1,
             )
 
-        if full_screen_mode == True and (
-            y1 >= height_with_navbar or y2 >= height_with_navbar
-        ):  # Swipe in the navigation bar area if the device has one, when in full screen mode
+        if save_att_data_set and ADB:
+            # Use ADB forcely if ADB is set to True otherwise check y1,height_with_navbar as usual
+            result = Swipe(
+                x1, y1, x2, y2, duration, adb=True
+            )
+        elif full_screen_mode and (y1 >= height_with_navbar or y2 >= height_with_navbar):
+            # Swipe in the navigation bar area if the device has one, when in full screen mode
             result = Swipe(
                 x1, y1, x2, y2, duration, adb=True
             )  # Perform swipe using adb
         else:  # Swipe via appium by default
             result = Swipe(
-                x1, y1, x2, y2, duration, adb=True
+                x1, y1, x2, y2, duration, adb=False
             )  # Perform swipe !!!adb set True for testing
 
         if result in failed_tag_list:
@@ -3946,38 +3959,72 @@ def save_attribute_values_appium(step_data):
     to collect multiple objects.  Users can provide certain constrain to search their elements
     Sample data:
 
-    aria-label                       element parameter      Calendar
+    resource-id                      element parameter      android:id/list
 
-    attributes                       target parameter       data-automation="productItemName",
-                                                            class="S58f2saa25a3w1",
+    attributes                       target parameter       resource-id="com.whatsapp:id/conversations_row_contact_name",
                                                             return="text",
-                                                            return_contains="128GB",
-                                                            return_does_not_contain="Windows 10",
-                                                            return_does_not_contain="Linux"
+                                                            return_contains="J",
+                                                            return_contains="A",
+                                                            return_does_not_contain="John",
+                                                            return_does_not_contain="Abraham"
 
-    attributes                       target parameter       class="productPricingContainer_3gTS3",
+    attributes                       target parameter       class="com.whatsapp:id/conversations_row_date",
                                                             return="text",
-                                                            return_does_not_contain="99.99"
+                                                            return_does_not_contain="yesterday"
+
+    inset                            scroll parameter       15
+
+    duration                         scroll parameter       6.5
+
+    positon                          scroll parameter       60
+
+    direction                        scroll parameter       up
+
+    exact                            scroll parameter       360,1800,360,240
+
+    adb                              scroll parameter       True
+
+    max scroll                        scroll parameter       25
+
+    delay for loading                scroll parameter       2
+
+    adjust scroll                    scroll parameter       +65
+
+    adjust fluctuation               scroll parameter       6
+
+    text                             end parameter          No more suggestions
 
     save attribute values in list    selenium action        list_name
 
     """
     sModuleInfo = inspect.currentframe().f_code.co_name + " : " + MODULE_NAME
-    global selenium_driver
+    skip_or_not = filter_optional_action_and_step_data(step_data, sModuleInfo)
+    if not skip_or_not:
+        return "passed"
+    global appium_driver
     try:
-        # this is the parent object.  If the user wants to search the entire page, they can
-        # provide tag = html
-        Element = LocateElement.Get_Element([("resource-id","element parameter","android:id/list")], appium_driver)
+        Element = LocateElement.Get_Element(step_data, appium_driver)
         if Element == "failed":
-            CommonUtil.ExecLog(
-                sModuleInfo, "Unable to locate your element with given data.", 3
-            )
+            CommonUtil.ExecLog(sModuleInfo, "Unable to locate your element with given data.", 3)
             return "failed"
 
-        all_elements = []
         target_index = 0
         target = []
+        input_param = {"inset": "0", "direction": "up", "exact": "", "position": "50", "adb": False, "Element": Element, "adjust": ""}
+        elementH, elementW, elementX, elementY = Element.size["height"], Element.size["width"], Element.location["x"], Element.location["y"]
+        if input_param["direction"] == "up":
+            input_param["duration"] = elementH * 3.2  # Swipe 3.2 pixel per millisecond
+        elif input_param["direction"] == "down":
+            input_param["duration"] = elementH * 3.2
+        elif input_param["direction"] == "left":
+            input_param["duration"] = elementW * 3.2
+        elif input_param["direction"] == "right":
+            input_param["duration"] = elementW * 3.2
 
+        delay = 0.0
+        adjust_fluctuation = 5
+        end_parameter = []
+        max_swipe = float('inf')
         try:
             for left, mid, right in step_data:
                 left = left.strip().lower()
@@ -3993,8 +4040,7 @@ def save_attribute_values_appium(step_data):
                         for j in range(len(data[i])):
                             data[i][j] = data[i][j].strip()
                             if j == 1:
-                                data[i][j] = data[i][j].strip(
-                                    '"')  # do not add another strip here. dont need to strip inside cotation mark
+                                data[i][j] = data[i][j].strip('"')  # do not add another strip here. dont need to strip inside quotation mark
 
                     for Left, Right in data:
                         if Left == "return":
@@ -4008,62 +4054,184 @@ def save_attribute_values_appium(step_data):
 
                     target_index = target_index + 1
                 elif left == "save attribute values in list":
-                    variable_name = right
+                    variable_name = right.strip()
+                elif mid == "scroll parameter":
+                    if left == "inset":
+                        input_param["inset"] = right.strip()
+                    elif left == "direction":
+                        input_param["direction"] = right.lower().strip()
+                    elif left == "exact":
+                        input_param["exact"] = right.lower().strip().replace(" ", "")
+                    elif left == "position":
+                        input_param["position"] = right.lower().strip()
+                    elif left == "duration":
+                        input_param["duration"] = round(float(right.lower().strip()) * 1000)
+                    elif left == "adb":
+                        input_param["adb"] = True if right.strip().lower() in ("true", "yes", "ok") else False
+                    elif left == "delay for loading":
+                        delay = float(right.strip())
+                    elif left == "adjust pixel":
+                        input_param["adjust"] = right.strip()
+                    elif left == "adjust fluctuation":
+                        adjust_fluctuation = int(right.strip())
+                    elif left == "max scroll":
+                        max_swipe = int(right.strip())
+                elif mid == "end parameter":
+                    end_parameter.append((left, "element parameter", right))
+
         except:
             CommonUtil.ExecLog(
                 sModuleInfo, "Unable to parse data. Please write data in correct format", 3
             )
             return "failed"
 
-        for each in target:
-            all_elements.append(LocateElement.Get_Element(each[0], Element, return_all_elements=True))
-        # appium_driver.find_elements_by_android_uiautomator("new UiScrollable(new UiSelector().resourceId(\"com.android.contacts:id/cliv_name_textview\")).scrollIntoView();")
-        # appium_driver.findElement(MobileBy.AndroidUIAutomator("new UiScrollable(new UiSelector()).scrollIntoView();"))
+        ii = 0
+        final = []
+        init_once_only = True
+        first_swipe_done = False
 
-        variable_value_size = 0
-        for each in all_elements:
-            variable_value_size = max(variable_value_size, len(each))
+        while ii < max_swipe:
+            # start = time.time()
+            all_elements = []
+            for each in target:
+                all_elements.append(LocateElement.Get_Element(each[0], Element, return_all_elements=True))
+            # print("Capturing all_elements = ", time.time()-start, "sec")
+            # start = time.time()
+            variable_value_size = []
+            for each in all_elements:
+                variable_value_size.append(len(each))
 
-        variable_value = []
-        for i in range(variable_value_size):
-            variable_value.append([])
+            variable_value = []
+            for i in range(len(all_elements)):
+                variable_value.append([])
 
-        i = 0
-        for each in all_elements:
-            search_by_attribute = target[i][1]
-            j = 0
-            for elem in each:
-                # if search_by_attribute == "text":
-                #     Attribute_value = elem.text
-                # elif search_by_attribute == 'tag':
-                #     Attribute_value = elem.tag_name
-                if True:
-                    Attribute_value = elem.get_attribute(search_by_attribute)
-                try:
-                    for search_contain in target[i][2]:
-                        if not isinstance(search_contain, type(Attribute_value)) or\
-                                search_contain in Attribute_value or len(search_contain) == 0:
-                            pass
-                        else:
-                            Attribute_value = None
+            if init_once_only:  # Initiate these values once per scroll
+                init_once_only = False
+                del_range, temp_variable_value = [], []
+                
+                final = []
+                upper_bound_touched, lower_bound_touched = [], []
+                for i in range(len(all_elements)):
+                    final.append([])
+                    upper_bound_touched.append(False)
+                    lower_bound_touched.append(False)
+                    del_range.append([])
+                    temp_variable_value.append([])
 
-                    for search_doesnt_contain in target[i][3]:
-                        if isinstance(search_doesnt_contain, type(Attribute_value)) and \
-                                search_doesnt_contain in Attribute_value:
-                            Attribute_value = None
-                except:
-                    CommonUtil.ExecLog(
-                        sModuleInfo, "Couldn't search by return_contains and return_does_not_contain", 2
-                    )
-                variable_value[j].append(Attribute_value)
-                j = j + 1
-            i = i + 1
+            i = 0   # j->i because inserting values column by column
+            for branch in all_elements:
+                search_by_attribute = target[i][1]
+                for elem in branch:
+                    try:
+                        Attribute_value = elem.get_attribute(search_by_attribute)
+                    except:
+                        Attribute_value = None
+                    variable_value[i].append(Attribute_value)
+                i = i + 1
+            pre_values_temp = copy.deepcopy(variable_value)
 
-        if Shared_Resources.Set_Shared_Variables(variable_name, variable_value) == "passed":
-            return "passed"
-        else:
-            return "failed"
+            for T in range(len(all_elements)):
 
+                if first_swipe_done and variable_value == pre_values:   # Checking if end reached
+                    CommonUtil.ExecLog(sModuleInfo, "Reached to the end. Stopped scrolling", 1)
+                    break   # Stop scrolling. End reached!
+
+                if first_swipe_done and del_range[T]:   # If end is not reached dont delete anything. Add everything
+                    final[T] += temp_variable_value[T]
+                    del_range[T], temp_variable_value[T] = [], []
+
+                if input_param["direction"] == "up":    # Checking if the first element of current page touched the edge
+                    upper_bound_touched[T] = all_elements[T][0].location["y"] - Element.location["y"] < adjust_fluctuation
+                elif input_param["direction"] == "down":    # Need to fix
+                    lower_bound_touched[T] = Element.location["y"] + Element.size["height"] - all_elements[T][-1].location["y"] - all_elements[T][-1].size["height"] < adjust_fluctuation
+                elif input_param["direction"] == "left":
+                    upper_bound_touched[T] = all_elements[T][0].location["x"] - Element.location["x"] < adjust_fluctuation
+                elif input_param["direction"] == "right":   # Need to fix
+                    lower_bound_touched[T] = Element.location["x"] + Element.size["width"] - all_elements[T][-1].location["x"] - all_elements[T][-1].size["width"] < adjust_fluctuation
+
+                # If last element of previous page and first element of the current page touched the edge and they are same delete that item
+                if first_swipe_done and pre_values[T][len(pre_values[T])-1] == variable_value[T][0] and lower_bound_touched[T] and upper_bound_touched[T]:
+                    CommonUtil.ExecLog("", "Found '" + str(variable_value[T][0]) + "' in previous page. So deleting now", 2)
+                    del variable_value[T][0]
+
+                # on the last scroll many elements can be duplicated. putting them in a separate list than the main element
+                elif first_swipe_done:
+                    for i in range(len(pre_values[T])):
+                        if pre_values[T][i] == variable_value[T][0]:
+                            for j in range(len(pre_values[T])-i):
+                                if pre_values[T][i+j] != variable_value[T][j]:
+                                    break
+                            else:
+                                del_range[T] = [jj for jj in range(0, len(pre_values[T])-i)]
+                                temp_variable_value[T] = copy.deepcopy(variable_value[T])
+                            break
+
+                if input_param["direction"] == "up":    # Checking if the last element of previous page touched the edge
+                    lower_bound_touched[T] = Element.location["y"] + Element.size["height"] - all_elements[T][-1].location["y"] - all_elements[T][-1].size["height"] < adjust_fluctuation
+                elif input_param["direction"] == "down":    # Need to fix
+                    upper_bound_touched = all_elements[T][0].location["y"] - Element.location["y"] < adjust_fluctuation
+                elif input_param["direction"] == "left":
+                    lower_bound_touched[T] = Element.location["x"] + Element.size["width"] - all_elements[T][-1].location["x"] - all_elements[T][-1].size["width"] < adjust_fluctuation
+                elif input_param["direction"] == "right":   # Need to fix
+                    upper_bound_touched[T] = all_elements[T][0].location["x"] - Element.location["x"] < adjust_fluctuation
+
+                if not del_range[T]:
+                    final[T] += variable_value[T]
+            else:
+                pre_values = copy.deepcopy(pre_values_temp)
+                # print("Calculation = ", time.time() - start, "sec")
+                End_Elem = LocateElement.Get_Element(end_parameter, appium_driver) if end_parameter else "failed"
+                if End_Elem != "failed":
+                    CommonUtil.ExecLog("", "End Element found. Stopped scrolling", 1)
+                    break  # Stop scrolling. End reached!
+                swipe_handler_android(save_att_data_set=input_param)
+                CommonUtil.ExecLog("", "Delaying " + str(delay) + " sec after scroll", 1)
+                time.sleep(delay)
+                ii += 1
+                CommonUtil.ExecLog("", "Scrolled " + str(ii) + " times", 1)
+                first_swipe_done = True
+                continue
+            break
+        # start = time.time()
+        for T in range(len(all_elements)):  # Delete multiple duplicates created for last page scrolling
+            if first_swipe_done and variable_value == pre_values:
+                if del_range[T]:
+                    for i in del_range[T]:
+                        CommonUtil.ExecLog("", "Found '" + str(temp_variable_value[T][0]) + "' in previous page. So deleting now", 2)
+                        del temp_variable_value[T][0]
+                    final[T] += temp_variable_value[T]
+            else:
+                if del_range[T]:
+                    final[T] += temp_variable_value[T]
+
+        # Filtering the elements with return_contains and return_does_not_contain
+        final_size = 0
+        for i in final:
+            final_size = max(final_size, len(i))
+        for i in range(len(final)):
+            if len(final[i]) < final_size:
+                for j in range(final_size - len(final[i])):
+                    final[i].append(None)
+        final = list(map(list, zip(*final)))
+
+        for j in range(len(final[0])):
+            for i in range(len(final)):
+                for search_contain in target[j][2]:
+                    if not isinstance(search_contain, type(final[i][j])) or search_contain in final[i][j] or len(search_contain) == 0:
+                        break
+                else:
+                    if target[j][2]:
+                        final[i][j] = None
+                for search_doesnt_contain in target[j][3]:
+                    if isinstance(search_doesnt_contain, type(final[i][j])) and search_doesnt_contain in final[i][j] and len(search_doesnt_contain) != 0:
+                        final[i][j] = None
+                        break
+
+        # print("Searching =", time.time() - start, "sec")
+
+        return Shared_Resources.Set_Shared_Variables(variable_name, final)
+    # com.android.vending for play_store and com.android.contacts for contact
+    # com.whatsapp for whatsapp
     except Exception:
         return CommonUtil.Exception_Handler(sys.exc_info())
 
