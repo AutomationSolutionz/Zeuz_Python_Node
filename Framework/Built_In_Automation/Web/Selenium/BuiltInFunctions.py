@@ -2880,13 +2880,13 @@ def check_uncheck_all(data_set):
             elif "target parameter" == mid:
                 target.append((left, "element parameter", right))
             elif "check uncheck all" == left:
-                command = right.strip().lower()
+                command = "uncheck" if "uncheck" in right.lower() else "check"
     except Exception:
         return CommonUtil.Exception_Handler(sys.exc_info(), None, "Error parsing data set")
 
     Element = LocateElement.Get_Element(data_set, selenium_driver)
     if Element == "failed":
-        CommonUtil.ExecLog(sModuleInfo, "Could not find element", 3)
+        CommonUtil.ExecLog(sModuleInfo, "Could not find the parent element", 3)
         return "failed"
 
     all_elements = LocateElement.Get_Element(target, Element, return_all_elements=True)
@@ -2912,26 +2912,31 @@ def check_uncheck_all(data_set):
         try:
             if use_js:
                 selenium_driver.execute_script("arguments[0].click();", all_elements[i])
+                if command == "check":
+                    CommonUtil.ExecLog("", str(i + 1) + th + " target is checked successfully using Java Script", 1)
+                else:
+                    CommonUtil.ExecLog("", str(i + 1) + th + " target is unchecked successfully using Java Script", 1)
             else:
                 try:
                     all_elements[i].click()
+                    if command == "check":
+                        CommonUtil.ExecLog("", str(i + 1) + th + " target is checked successfully", 1)
+                    else:
+                        CommonUtil.ExecLog("", str(i + 1) + th + " target is unchecked successfully", 1)
+
                 except ElementClickInterceptedException:
                     try:
                         selenium_driver.execute_script("arguments[0].click();", all_elements[i])
                         CommonUtil.TakeScreenShot(sModuleInfo)
-                        CommonUtil.ExecLog("", str(i + 1) + th + " target checked successfully using Java Script", 1)
-                        continue
+                        if command == "check":
+                            CommonUtil.ExecLog("", str(i + 1) + th + " target is checked successfully using Java Script", 1)
+                        else:
+                            CommonUtil.ExecLog("", str(i + 1) + th + " target is unchecked successfully using Java Script", 1)
                     except:
                         if command == "check":
                             CommonUtil.ExecLog("", str(i + 1) + th + " target couldn't be checked so skipped it", 3)
                         else:
                             CommonUtil.ExecLog("", str(i + 1) + th + " target couldn't be unchecked so skipped it", 3)
-                        continue
-
-            if command == "check":
-                CommonUtil.ExecLog("", str(i + 1) + th + " target is checked successfully", 1)
-            else:
-                CommonUtil.ExecLog("", str(i + 1) + th + " target is unchecked successfully", 1)
         except:
             if command == "check":
                 CommonUtil.ExecLog("", str(i + 1) + th + " target couldn't be checked so skipped it", 3)
@@ -2942,7 +2947,73 @@ def check_uncheck_all(data_set):
 
 @logger
 def check_uncheck(data_set):
-    pass
+    """ Check or uncheck all elements of a common attribute """
+
+    sModuleInfo = inspect.currentframe().f_code.co_name + " : " + MODULE_NAME
+    global selenium_driver
+
+    use_js = False
+    command = "check"
+    try:
+        for left, mid, right in data_set:
+            left = left.lower().strip()
+            if "use js" == left:
+                use_js = right.strip().lower() in ("true", "yes", "ok")
+            elif "check uncheck" == left:
+                command = "uncheck" if "uncheck" in right.lower() else "check"
+    except Exception:
+        return CommonUtil.Exception_Handler(sys.exc_info(), None, "Error parsing data set")
+
+    Element = LocateElement.Get_Element(data_set, selenium_driver)
+    if Element == "failed":
+        CommonUtil.ExecLog(sModuleInfo, "Could not find the element", 3)
+        return "failed"
+
+    if command == "check" and Element.is_selected():
+        CommonUtil.ExecLog(sModuleInfo, "The element is already checked so skipped it", 1)
+        return "passed"
+    elif command == "uncheck" and not Element.is_selected():
+        CommonUtil.ExecLog(sModuleInfo, "The element is already unchecked so skipped it", 1)
+        return "passed"
+    try:
+        if use_js:
+            selenium_driver.execute_script("arguments[0].click();", Element)
+            if command == "check":
+                CommonUtil.ExecLog(sModuleInfo, "The element is checked successfully using Java Script", 1)
+            else:
+                CommonUtil.ExecLog(sModuleInfo, "The element is unchecked successfully using Java Script", 1)
+            return "passed"
+        else:
+            try:
+                Element.click()
+                if command == "check":
+                    CommonUtil.ExecLog(sModuleInfo, "The element is checked successfully", 1)
+                else:
+                    CommonUtil.ExecLog(sModuleInfo, "The element is unchecked successfully", 1)
+                return "passed"
+            except ElementClickInterceptedException:
+                try:
+                    selenium_driver.execute_script("arguments[0].click();", Element)
+                    CommonUtil.TakeScreenShot(sModuleInfo)
+                    if command == "check":
+                        CommonUtil.ExecLog(sModuleInfo, "The element is checked successfully using Java Script", 1)
+                    else:
+                        CommonUtil.ExecLog(sModuleInfo, "The element is unchecked successfully using Java Script", 1)
+                    return "passed"
+                except:
+                    if command == "check":
+                        CommonUtil.ExecLog(sModuleInfo, "The element couldn't be checked", 3)
+                    else:
+                        CommonUtil.ExecLog(sModuleInfo, "The element couldn't be unchecked", 3)
+                    return "failed"
+    except:
+        if command == "check":
+            CommonUtil.ExecLog(sModuleInfo, "The element couldn't be checked", 3)
+        else:
+            CommonUtil.ExecLog(sModuleInfo, "The element couldn't be unchecked", 3)
+        return "failed"
+
+
 
 
 @logger
@@ -2966,7 +3037,7 @@ def multiple_check_uncheck(data_set):
 
     Element = LocateElement.Get_Element(data_set, selenium_driver)
     if Element == "failed":
-        CommonUtil.ExecLog(sModuleInfo, "Could not find element", 3)
+        CommonUtil.ExecLog(sModuleInfo, "Could not find the parent element", 3)
         return "failed"
 
     element_params = []
@@ -2991,26 +3062,30 @@ def multiple_check_uncheck(data_set):
         try:
             if use_js:
                 selenium_driver.execute_script("arguments[0].click();", all_elements[i])
+                if targets[i][2] == "check":
+                    CommonUtil.ExecLog("", str(targets[i]) + " is checked successfully using Java Script", 1)
+                else:
+                    CommonUtil.ExecLog("", str(targets[i]) + " is unchecked successfully using Java Script", 1)
             else:
                 try:
                     all_elements[i].click()
+                    if targets[i][2] == "check":
+                        CommonUtil.ExecLog("", str(targets[i]) + " is checked successfully", 1)
+                    else:
+                        CommonUtil.ExecLog("", str(targets[i]) + " is unchecked successfully", 1)
                 except ElementClickInterceptedException:
                     try:
                         selenium_driver.execute_script("arguments[0].click();", all_elements[i])
                         CommonUtil.TakeScreenShot(sModuleInfo)
-                        CommonUtil.ExecLog("", str(targets[i]) + " checked successfully using Java Script", 1)
-                        continue
+                        if targets[i][2] == "check":
+                            CommonUtil.ExecLog("", str(targets[i]) + " is checked successfully using Java Script", 1)
+                        else:
+                            CommonUtil.ExecLog("", str(targets[i]) + " is unchecked successfully using Java Script", 1)
                     except:
                         if targets[i][2] == "check":
                             CommonUtil.ExecLog("", str(targets[i]) + " couldn't be checked so skipped it", 3)
                         else:
                             CommonUtil.ExecLog("", str(targets[i]) + " couldn't be unchecked so skipped it", 3)
-                        continue
-
-            if targets[i][2] == "check":
-                CommonUtil.ExecLog("", str(targets[i]) + " checked successfully", 1)
-            else:
-                CommonUtil.ExecLog("", str(targets[i]) + " unchecked successfully", 1)
         except:
             if targets[i][2] == "check":
                 CommonUtil.ExecLog("", str(targets[i]) + " couldn't be checked so skipped it", 3)
