@@ -789,6 +789,7 @@ def _get_xpath_or_css_element(element_query, css_xpath, index_number=False, Filt
         )
         return "failed"
 
+
 def filter_elements(all_matching_elements_visible_invisible, Filter):
     # visible, enable
     all_matching_elements = []
@@ -804,15 +805,16 @@ def filter_elements(all_matching_elements_visible_invisible, Filter):
                         all_matching_elements.append(each)
                 except:
                     pass
-            if len(all_matching_elements)==0: #we never want to return 0 matching elements 
-                return  all_matching_elements_visible_invisible
+            if len(all_matching_elements) == 0:    # we never want to return 0 matching elements
+                return all_matching_elements_visible_invisible
             else:
                 return all_matching_elements
         else:
-            all_matching_elements = all_matching_elements_visible_invisible
+            return all_matching_elements_visible_invisible
     except:
         all_matching_elements = []
         return all_matching_elements
+
 
 def _locate_index_number(step_data_set):
     """
