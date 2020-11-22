@@ -2863,8 +2863,82 @@ def if_element_exists(data_set):
 
 @logger
 def check_uncheck_all(data_set):
-    pass
+    """ Check or uncheck all elements of a common attribute """
 
+    sModuleInfo = inspect.currentframe().f_code.co_name + " : " + MODULE_NAME
+    global selenium_driver
+
+    use_js = False
+    target = []
+    command = "check"
+    try:
+        for left, mid, right in data_set:
+            left = left.lower().strip()
+            mid = mid.lower().strip()
+            if "use js" == left:
+                use_js = right.strip().lower() in ("true", "yes", "ok")
+            elif "target parameter" == mid:
+                target.append((left, "element parameter", right))
+            elif "check uncheck all" == left:
+                command = right.strip().lower()
+    except Exception:
+        return CommonUtil.Exception_Handler(sys.exc_info(), None, "Error parsing data set")
+
+    Element = LocateElement.Get_Element(data_set, selenium_driver)
+    if Element == "failed":
+        CommonUtil.ExecLog(sModuleInfo, "Could not find element", 3)
+        return "failed"
+
+    all_elements = LocateElement.Get_Element(target, Element, return_all_elements=True)
+    if not all_elements:
+        CommonUtil.ExecLog("", "No target was found", 3)
+        return "failed"
+
+    for i in range(len(all_elements)):
+        th = "th"
+        if i + 1 == 1:
+            th = "st"
+        elif i + 1 == 2:
+            th = "nd"
+        elif i + 1 == 3:
+            th = "rd"
+        if command == "check" and all_elements[i].is_selected():
+            CommonUtil.ExecLog("", str(i + 1) + th + " target is already checked so skipped it", 1)
+            continue
+        if command == "uncheck" and not all_elements[i].is_selected():
+            CommonUtil.ExecLog("", str(i + 1) + th + " target is already unchecked so skipped it", 1)
+            continue
+
+        try:
+            if use_js:
+                selenium_driver.execute_script("arguments[0].click();", all_elements[i])
+            else:
+                try:
+                    all_elements[i].click()
+                except ElementClickInterceptedException:
+                    try:
+                        selenium_driver.execute_script("arguments[0].click();", all_elements[i])
+                        CommonUtil.TakeScreenShot(sModuleInfo)
+                        CommonUtil.ExecLog("", str(i + 1) + th + " target checked successfully using Java Script", 1)
+                        continue
+                    except:
+                        if command == "check":
+                            CommonUtil.ExecLog("", str(i + 1) + th + " target couldn't be checked so skipped it", 3)
+                        else:
+                            CommonUtil.ExecLog("", str(i + 1) + th + " target couldn't be unchecked so skipped it", 3)
+                        continue
+
+            if command == "check":
+                CommonUtil.ExecLog("", str(i + 1) + th + " target is checked successfully", 1)
+            else:
+                CommonUtil.ExecLog("", str(i + 1) + th + " target is unchecked successfully", 1)
+        except:
+            if command == "check":
+                CommonUtil.ExecLog("", str(i + 1) + th + " target couldn't be checked so skipped it", 3)
+            else:
+                CommonUtil.ExecLog("", str(i + 1) + th + " target couldn't be unchecked so skipped it", 3)
+
+    return "passed"
 
 @logger
 def check_uncheck(data_set):
@@ -2873,12 +2947,12 @@ def check_uncheck(data_set):
 
 @logger
 def multiple_check_uncheck(data_set):
-    """ Click using element or location """
+    """ Check or uncheck multiple web elements """
 
     sModuleInfo = inspect.currentframe().f_code.co_name + " : " + MODULE_NAME
     global selenium_driver
 
-    use_js = False  # Use js to click on element?
+    use_js = False
     try:
         for left, mid, right in data_set:
             left = left.lower().strip()
@@ -2924,12 +2998,14 @@ def multiple_check_uncheck(data_set):
                     try:
                         selenium_driver.execute_script("arguments[0].click();", all_elements[i])
                         CommonUtil.TakeScreenShot(sModuleInfo)
-                        return "passed"
+                        CommonUtil.ExecLog("", str(targets[i]) + " checked successfully using Java Script", 1)
+                        continue
                     except:
                         if targets[i][2] == "check":
                             CommonUtil.ExecLog("", str(targets[i]) + " couldn't be checked so skipped it", 3)
                         else:
                             CommonUtil.ExecLog("", str(targets[i]) + " couldn't be unchecked so skipped it", 3)
+                        continue
 
             if targets[i][2] == "check":
                 CommonUtil.ExecLog("", str(targets[i]) + " checked successfully", 1)
