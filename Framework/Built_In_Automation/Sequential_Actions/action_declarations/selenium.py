@@ -41,11 +41,15 @@ declarations = (
     { "name": "scroll element to top",         "function": "scroll_element_to_top",         "screenshot": "web" },
     { "name": "switch window",                 "function": "switch_window",                 "screenshot": "web" },
     { "name": "switch window or frame",        "function": "switch_window_or_tab",          "screenshot": "web" },
+    { "name": "switch window/tab",             "function": "switch_window_or_tab",          "screenshot": "web" },  # For CS group
     { "name": "save attribute",                "function": "Save_Attribute",                "screenshot": "web" },
     { "name": "save attribute values in list", "function": "save_attribute_values_in_list", "screenshot": "web" },
     { "name": "take screenshot web",           "function": "take_screenshot_selenium",      "screenshot": "web" },
     { "name": "mouse click",                   "function": "Mouse_Click_Element",           "screenshot": "web" },
     { "name": "execute javascript",            "function": "execute_javascript",            "screenshot": "web" },
+    { "name": "check uncheck all",             "function": "check_uncheck_all",          "screenshot": "web" },
+    { "name": "check uncheck",                 "function": "check_uncheck",          "screenshot": "web" },
+    { "name": "multiple check uncheck",        "function": "multiple_check_uncheck",          "screenshot": "web" },
 )
 
 module_name = "selenium"
