@@ -804,6 +804,10 @@ def filter_elements(all_matching_elements_visible_invisible, Filter):
                         all_matching_elements.append(each)
                 except:
                     pass
+            if len(all_matching_elements)==0: #we never want to return 0 matching elements 
+                return  all_matching_elements_visible_invisible
+            else:
+                return all_matching_elements
         else:
             all_matching_elements = all_matching_elements_visible_invisible
     except:
