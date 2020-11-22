@@ -1433,8 +1433,7 @@ def save_attribute_values_in_list(step_data):
                         for j in range(len(data[i])):
                             data[i][j] = data[i][j].strip()
                             if j == 1:
-                                data[i][j] = data[i][j].strip(
-                                    '"')  # do not add another strip here. dont need to strip inside cotation mark
+                                data[i][j] = data[i][j].strip('"')  # do not add another strip here. dont need to strip inside quotation mark
 
                     for Left, Right in data:
                         if Left == "return":
@@ -3014,6 +3013,8 @@ def check_uncheck(data_set):
         return "failed"
 
 
+def insert(string, str_to_insert, index):
+    return string[:index] + str_to_insert + string[index:]
 
 
 @logger
@@ -3024,6 +3025,7 @@ def multiple_check_uncheck(data_set):
     global selenium_driver
 
     use_js = False
+    inside = False
     try:
         for left, mid, right in data_set:
             left = left.lower().strip()
@@ -3031,7 +3033,31 @@ def multiple_check_uncheck(data_set):
             if "use js" == left:
                 use_js = right.strip().lower() in ("true", "yes", "ok")
             elif "target parameter" == mid:
-                targets = CommonUtil.parse_value_into_object(right.strip())
+                targets = []
+                temp = right.strip()
+                i = 0
+                while True:
+                    if i >= len(temp):
+                        break
+                    if temp[i] == "(":
+                        inside = True
+                        temp = insert(temp, "\"", i+1)
+                    elif inside and temp[i] == ",":
+                        temp = insert(temp, "\"", i+1)
+                        temp = insert(temp, "\"", i)
+                        i += 1
+                    if temp[i] == ")":
+                        inside = False
+                        temp = insert(temp, "\"", i)
+                        i += 1
+                    i += 1
+                temp = insert(temp, "[", 0)
+                temp = insert(temp, "]", len(temp))
+                temp = CommonUtil.parse_value_into_object(temp)
+                for Left, Mid, Right in temp:
+                    targets.append((Left.strip().lower(), Mid.strip(), Right.strip().lower()))
+                    # Stripped Mid if any trailing spaces exists need to use asterisk
+
     except Exception:
         return CommonUtil.Exception_Handler(sys.exc_info(), None, "Error parsing data set")
 
