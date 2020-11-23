@@ -88,7 +88,7 @@ else:
 
 
 @logger
-def Open_Browser(dependency, window_size_X=None, window_size_Y=None, update_driver_on_fail = True):
+def Open_Browser(dependency, window_size_X=None, window_size_Y=None):
     """ Launch browser and create instance """
 
     global selenium_driver
@@ -122,7 +122,7 @@ def Open_Browser(dependency, window_size_X=None, window_size_Y=None, update_driv
                 options.add_argument(
                     "--headless"
                 )  # Enable headless operation if dependency set
-            selenium_driver = webdriver.Chrome(ChromeDriverManager().install(),chrome_options=options, desired_capabilities=d)
+            selenium_driver = webdriver.Chrome(ChromeDriverManager().install(), chrome_options=options, desired_capabilities=d)
             selenium_driver.implicitly_wait(WebDriver_Wait)
             if not window_size_X and not window_size_Y:
                 selenium_driver.maximize_window()
@@ -162,7 +162,7 @@ def Open_Browser(dependency, window_size_X=None, window_size_Y=None, update_driv
                         break
             capabilities = webdriver.DesiredCapabilities().FIREFOX
             capabilities['acceptSslCerts'] = True
-            selenium_driver = webdriver.Firefox(executable_path=GeckoDriverManager().install(),capabilities=capabilities,options=options)
+            selenium_driver = webdriver.Firefox(executable_path=GeckoDriverManager().install(), capabilities=capabilities, options=options)
             selenium_driver.implicitly_wait(WebDriver_Wait)
             if not window_size_X and not window_size_Y:
                 selenium_driver.maximize_window()
@@ -179,7 +179,7 @@ def Open_Browser(dependency, window_size_X=None, window_size_Y=None, update_driv
         elif "ie" in browser:
             capabilities = webdriver.DesiredCapabilities().INTERNETEXPLORER
             # capabilities['acceptSslCerts'] = True     # It does not work for internet explorer
-            selenium_driver = webdriver.Ie(IEDriverManager().install(),capabilities=capabilities)
+            selenium_driver = webdriver.Ie(IEDriverManager().install(), capabilities=capabilities)
             selenium_driver.implicitly_wait(WebDriver_Wait)
             if not window_size_X and not window_size_Y:
                 selenium_driver.maximize_window()
@@ -234,30 +234,6 @@ def Open_Browser(dependency, window_size_X=None, window_size_Y=None, update_driv
             )
             return "failed"
         # time.sleep(3)
-
-    except SessionNotCreatedException as exc:
-        if "This version" in exc.msg and "only supports" in exc.msg and update_driver_on_fail:
-            CommonUtil.ExecLog(
-                sModuleInfo,
-                "Couldn't open the browser because the webdriver is backdated. Trying again after updating webdrivers",
-                2
-            )
-            driver_updater.main()
-            Open_Browser(dependency, window_size_X, window_size_Y, update_driver_on_fail=False)
-        else:
-            return CommonUtil.Exception_Handler(sys.exc_info())
-
-    except WebDriverException as exc:
-        if "needs to be in PATH" in exc.msg and update_driver_on_fail:
-            CommonUtil.ExecLog(
-                sModuleInfo,
-                "Couldn't open the browser because the webdriver is not installed. Trying again after installing webdrivers",
-                2
-            )
-            driver_updater.main()
-            Open_Browser(dependency, window_size_X, window_size_Y, update_driver_on_fail=False)
-        else:
-            return CommonUtil.Exception_Handler(sys.exc_info())
 
     except Exception:
         return CommonUtil.Exception_Handler(sys.exc_info())
