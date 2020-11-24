@@ -88,7 +88,7 @@ else:
 
 
 @logger
-def Open_Browser(dependency, window_size_X=None, window_size_Y=None, update_driver_on_fail = True):
+def Open_Browser(dependency, window_size_X=None, window_size_Y=None):
     """ Launch browser and create instance """
 
     global selenium_driver
@@ -122,7 +122,7 @@ def Open_Browser(dependency, window_size_X=None, window_size_Y=None, update_driv
                 options.add_argument(
                     "--headless"
                 )  # Enable headless operation if dependency set
-            selenium_driver = webdriver.Chrome(ChromeDriverManager().install(),chrome_options=options, desired_capabilities=d)
+            selenium_driver = webdriver.Chrome(ChromeDriverManager().install(), chrome_options=options, desired_capabilities=d)
             selenium_driver.implicitly_wait(WebDriver_Wait)
             if not window_size_X and not window_size_Y:
                 selenium_driver.maximize_window()
@@ -162,7 +162,7 @@ def Open_Browser(dependency, window_size_X=None, window_size_Y=None, update_driv
                         break
             capabilities = webdriver.DesiredCapabilities().FIREFOX
             capabilities['acceptSslCerts'] = True
-            selenium_driver = webdriver.Firefox(executable_path=GeckoDriverManager().install(),capabilities=capabilities,options=options)
+            selenium_driver = webdriver.Firefox(executable_path=GeckoDriverManager().install(), capabilities=capabilities, options=options)
             selenium_driver.implicitly_wait(WebDriver_Wait)
             if not window_size_X and not window_size_Y:
                 selenium_driver.maximize_window()
@@ -176,10 +176,52 @@ def Open_Browser(dependency, window_size_X=None, window_size_Y=None, update_driv
             Shared_Resources.Set_Shared_Variables("selenium_driver", selenium_driver)
             CommonUtil.set_screenshot_vars(Shared_Resources.Shared_Variable_Export())
             return "passed"
+
+        elif "edge" in browser:
+            capabilities = webdriver.DesiredCapabilities().EDGE
+            capabilities['acceptSslCerts'] = True
+            selenium_driver = webdriver.Edge(executable_path=EdgeChromiumDriverManager().install(), capabilities=capabilities)
+            selenium_driver.implicitly_wait(WebDriver_Wait)
+            if not window_size_X and not window_size_Y:
+                selenium_driver.maximize_window()
+            else:
+                if window_size_X is None:
+                    window_size_X = 1000
+                if window_size_Y is None:
+                    window_size_Y = 1000
+                selenium_driver.set_window_size(window_size_X, window_size_Y)
+            CommonUtil.ExecLog(sModuleInfo, "Started Microsoft Edge Browser", 1)
+            Shared_Resources.Set_Shared_Variables("selenium_driver", selenium_driver)
+            CommonUtil.set_screenshot_vars(Shared_Resources.Shared_Variable_Export())
+            return "passed"
+
+        elif "opera" in browser:
+            capabilities = webdriver.DesiredCapabilities().OPERA
+            capabilities['acceptSslCerts'] = True
+
+            # from selenium.webdriver.opera.options import Options
+            # options = Options()
+            # options.binary_location = r'C:\Users\ASUS\AppData\Local\Programs\Opera\launcher.exe'  # This might be needed
+
+            selenium_driver = webdriver.Opera(executable_path=OperaDriverManager().install(), desired_capabilities=capabilities)
+            selenium_driver.implicitly_wait(WebDriver_Wait)
+            if not window_size_X and not window_size_Y:
+                selenium_driver.maximize_window()
+            else:
+                if window_size_X is None:
+                    window_size_X = 1000
+                if window_size_Y is None:
+                    window_size_Y = 1000
+                selenium_driver.set_window_size(window_size_X, window_size_Y)
+            CommonUtil.ExecLog(sModuleInfo, "Started Opera Browser", 1)
+            Shared_Resources.Set_Shared_Variables("selenium_driver", selenium_driver)
+            CommonUtil.set_screenshot_vars(Shared_Resources.Shared_Variable_Export())
+            return "passed"
+
         elif "ie" in browser:
             capabilities = webdriver.DesiredCapabilities().INTERNETEXPLORER
             # capabilities['acceptSslCerts'] = True     # It does not work for internet explorer
-            selenium_driver = webdriver.Ie(IEDriverManager().install(),capabilities=capabilities)
+            selenium_driver = webdriver.Ie(IEDriverManager().install(), capabilities=capabilities)
             selenium_driver.implicitly_wait(WebDriver_Wait)
             if not window_size_X and not window_size_Y:
                 selenium_driver.maximize_window()
@@ -234,30 +276,6 @@ def Open_Browser(dependency, window_size_X=None, window_size_Y=None, update_driv
             )
             return "failed"
         # time.sleep(3)
-
-    except SessionNotCreatedException as exc:
-        if "This version" in exc.msg and "only supports" in exc.msg and update_driver_on_fail:
-            CommonUtil.ExecLog(
-                sModuleInfo,
-                "Couldn't open the browser because the webdriver is backdated. Trying again after updating webdrivers",
-                2
-            )
-            driver_updater.main()
-            Open_Browser(dependency, window_size_X, window_size_Y, update_driver_on_fail=False)
-        else:
-            return CommonUtil.Exception_Handler(sys.exc_info())
-
-    except WebDriverException as exc:
-        if "needs to be in PATH" in exc.msg and update_driver_on_fail:
-            CommonUtil.ExecLog(
-                sModuleInfo,
-                "Couldn't open the browser because the webdriver is not installed. Trying again after installing webdrivers",
-                2
-            )
-            driver_updater.main()
-            Open_Browser(dependency, window_size_X, window_size_Y, update_driver_on_fail=False)
-        else:
-            return CommonUtil.Exception_Handler(sys.exc_info())
 
     except Exception:
         return CommonUtil.Exception_Handler(sys.exc_info())
@@ -1433,8 +1451,7 @@ def save_attribute_values_in_list(step_data):
                         for j in range(len(data[i])):
                             data[i][j] = data[i][j].strip()
                             if j == 1:
-                                data[i][j] = data[i][j].strip(
-                                    '"')  # do not add another strip here. dont need to strip inside cotation mark
+                                data[i][j] = data[i][j].strip('"')  # do not add another strip here. dont need to strip inside quotation mark
 
                     for Left, Right in data:
                         if Left == "return":
@@ -2863,22 +2880,14 @@ def if_element_exists(data_set):
 
 @logger
 def check_uncheck_all(data_set):
-    pass
-
-
-@logger
-def check_uncheck(data_set):
-    pass
-
-
-@logger
-def multiple_check_uncheck(data_set):
-    """ Click using element or location """
+    """ Check or uncheck all elements of a common attribute """
 
     sModuleInfo = inspect.currentframe().f_code.co_name + " : " + MODULE_NAME
     global selenium_driver
 
-    use_js = False  # Use js to click on element?
+    use_js = False
+    target = []
+    command = "check"
     try:
         for left, mid, right in data_set:
             left = left.lower().strip()
@@ -2886,13 +2895,193 @@ def multiple_check_uncheck(data_set):
             if "use js" == left:
                 use_js = right.strip().lower() in ("true", "yes", "ok")
             elif "target parameter" == mid:
-                targets = CommonUtil.parse_value_into_object(right.strip())
+                target.append((left, "element parameter", right))
+            elif "check uncheck all" == left:
+                command = "uncheck" if "uncheck" in right.lower() else "check"
     except Exception:
         return CommonUtil.Exception_Handler(sys.exc_info(), None, "Error parsing data set")
 
     Element = LocateElement.Get_Element(data_set, selenium_driver)
     if Element == "failed":
-        CommonUtil.ExecLog(sModuleInfo, "Could not find element", 3)
+        CommonUtil.ExecLog(sModuleInfo, "Could not find the parent element", 3)
+        return "failed"
+
+    all_elements = LocateElement.Get_Element(target, Element, return_all_elements=True)
+    if not all_elements:
+        CommonUtil.ExecLog("", "No target was found", 3)
+        return "failed"
+
+    for i in range(len(all_elements)):
+        th = "th"
+        if i + 1 == 1:
+            th = "st"
+        elif i + 1 == 2:
+            th = "nd"
+        elif i + 1 == 3:
+            th = "rd"
+        if command == "check" and all_elements[i].is_selected():
+            CommonUtil.ExecLog("", str(i + 1) + th + " target is already checked so skipped it", 1)
+            continue
+        if command == "uncheck" and not all_elements[i].is_selected():
+            CommonUtil.ExecLog("", str(i + 1) + th + " target is already unchecked so skipped it", 1)
+            continue
+
+        try:
+            if use_js:
+                selenium_driver.execute_script("arguments[0].click();", all_elements[i])
+                if command == "check":
+                    CommonUtil.ExecLog("", str(i + 1) + th + " target is checked successfully using Java Script", 1)
+                else:
+                    CommonUtil.ExecLog("", str(i + 1) + th + " target is unchecked successfully using Java Script", 1)
+            else:
+                try:
+                    all_elements[i].click()
+                    if command == "check":
+                        CommonUtil.ExecLog("", str(i + 1) + th + " target is checked successfully", 1)
+                    else:
+                        CommonUtil.ExecLog("", str(i + 1) + th + " target is unchecked successfully", 1)
+
+                except ElementClickInterceptedException:
+                    try:
+                        selenium_driver.execute_script("arguments[0].click();", all_elements[i])
+                        CommonUtil.TakeScreenShot(sModuleInfo)
+                        if command == "check":
+                            CommonUtil.ExecLog("", str(i + 1) + th + " target is checked successfully using Java Script", 1)
+                        else:
+                            CommonUtil.ExecLog("", str(i + 1) + th + " target is unchecked successfully using Java Script", 1)
+                    except:
+                        if command == "check":
+                            CommonUtil.ExecLog("", str(i + 1) + th + " target couldn't be checked so skipped it", 3)
+                        else:
+                            CommonUtil.ExecLog("", str(i + 1) + th + " target couldn't be unchecked so skipped it", 3)
+        except:
+            if command == "check":
+                CommonUtil.ExecLog("", str(i + 1) + th + " target couldn't be checked so skipped it", 3)
+            else:
+                CommonUtil.ExecLog("", str(i + 1) + th + " target couldn't be unchecked so skipped it", 3)
+
+    return "passed"
+
+@logger
+def check_uncheck(data_set):
+    """ Check or uncheck all elements of a common attribute """
+
+    sModuleInfo = inspect.currentframe().f_code.co_name + " : " + MODULE_NAME
+    global selenium_driver
+
+    use_js = False
+    command = "check"
+    try:
+        for left, mid, right in data_set:
+            left = left.lower().strip()
+            if "use js" == left:
+                use_js = right.strip().lower() in ("true", "yes", "ok")
+            elif "check uncheck" == left:
+                command = "uncheck" if "uncheck" in right.lower() else "check"
+    except Exception:
+        return CommonUtil.Exception_Handler(sys.exc_info(), None, "Error parsing data set")
+
+    Element = LocateElement.Get_Element(data_set, selenium_driver)
+    if Element == "failed":
+        CommonUtil.ExecLog(sModuleInfo, "Could not find the element", 3)
+        return "failed"
+
+    if command == "check" and Element.is_selected():
+        CommonUtil.ExecLog(sModuleInfo, "The element is already checked so skipped it", 1)
+        return "passed"
+    elif command == "uncheck" and not Element.is_selected():
+        CommonUtil.ExecLog(sModuleInfo, "The element is already unchecked so skipped it", 1)
+        return "passed"
+    try:
+        if use_js:
+            selenium_driver.execute_script("arguments[0].click();", Element)
+            if command == "check":
+                CommonUtil.ExecLog(sModuleInfo, "The element is checked successfully using Java Script", 1)
+            else:
+                CommonUtil.ExecLog(sModuleInfo, "The element is unchecked successfully using Java Script", 1)
+            return "passed"
+        else:
+            try:
+                Element.click()
+                if command == "check":
+                    CommonUtil.ExecLog(sModuleInfo, "The element is checked successfully", 1)
+                else:
+                    CommonUtil.ExecLog(sModuleInfo, "The element is unchecked successfully", 1)
+                return "passed"
+            except ElementClickInterceptedException:
+                try:
+                    selenium_driver.execute_script("arguments[0].click();", Element)
+                    CommonUtil.TakeScreenShot(sModuleInfo)
+                    if command == "check":
+                        CommonUtil.ExecLog(sModuleInfo, "The element is checked successfully using Java Script", 1)
+                    else:
+                        CommonUtil.ExecLog(sModuleInfo, "The element is unchecked successfully using Java Script", 1)
+                    return "passed"
+                except:
+                    if command == "check":
+                        CommonUtil.ExecLog(sModuleInfo, "The element couldn't be checked", 3)
+                    else:
+                        CommonUtil.ExecLog(sModuleInfo, "The element couldn't be unchecked", 3)
+                    return "failed"
+    except:
+        if command == "check":
+            CommonUtil.ExecLog(sModuleInfo, "The element couldn't be checked", 3)
+        else:
+            CommonUtil.ExecLog(sModuleInfo, "The element couldn't be unchecked", 3)
+        return "failed"
+
+
+def insert(string, str_to_insert, index):
+    return string[:index] + str_to_insert + string[index:]
+
+
+@logger
+def multiple_check_uncheck(data_set):
+    """ Check or uncheck multiple web elements """
+
+    sModuleInfo = inspect.currentframe().f_code.co_name + " : " + MODULE_NAME
+    global selenium_driver
+
+    use_js = False
+    inside = False
+    try:
+        for left, mid, right in data_set:
+            left = left.lower().strip()
+            mid = mid.lower().strip()
+            if "use js" == left:
+                use_js = right.strip().lower() in ("true", "yes", "ok")
+            elif "target parameter" == mid:
+                targets = []
+                temp = right.strip()
+                i = 0
+                while True:
+                    if i >= len(temp):
+                        break
+                    if temp[i] == "(":
+                        inside = True
+                        temp = insert(temp, "\"", i+1)
+                    elif inside and temp[i] == ",":
+                        temp = insert(temp, "\"", i+1)
+                        temp = insert(temp, "\"", i)
+                        i += 1
+                    if temp[i] == ")":
+                        inside = False
+                        temp = insert(temp, "\"", i)
+                        i += 1
+                    i += 1
+                temp = insert(temp, "[", 0)
+                temp = insert(temp, "]", len(temp))
+                temp = CommonUtil.parse_value_into_object(temp)
+                for Left, Mid, Right in temp:
+                    targets.append((Left.strip().lower(), Mid.strip(), Right.strip().lower()))
+                    # Stripped Mid if any trailing spaces exists need to use asterisk
+
+    except Exception:
+        return CommonUtil.Exception_Handler(sys.exc_info(), None, "Error parsing data set")
+
+    Element = LocateElement.Get_Element(data_set, selenium_driver)
+    if Element == "failed":
+        CommonUtil.ExecLog(sModuleInfo, "Could not find the parent element", 3)
         return "failed"
 
     element_params = []
@@ -2917,24 +3106,30 @@ def multiple_check_uncheck(data_set):
         try:
             if use_js:
                 selenium_driver.execute_script("arguments[0].click();", all_elements[i])
+                if targets[i][2] == "check":
+                    CommonUtil.ExecLog("", str(targets[i]) + " is checked successfully using Java Script", 1)
+                else:
+                    CommonUtil.ExecLog("", str(targets[i]) + " is unchecked successfully using Java Script", 1)
             else:
                 try:
                     all_elements[i].click()
+                    if targets[i][2] == "check":
+                        CommonUtil.ExecLog("", str(targets[i]) + " is checked successfully", 1)
+                    else:
+                        CommonUtil.ExecLog("", str(targets[i]) + " is unchecked successfully", 1)
                 except ElementClickInterceptedException:
                     try:
                         selenium_driver.execute_script("arguments[0].click();", all_elements[i])
                         CommonUtil.TakeScreenShot(sModuleInfo)
-                        return "passed"
+                        if targets[i][2] == "check":
+                            CommonUtil.ExecLog("", str(targets[i]) + " is checked successfully using Java Script", 1)
+                        else:
+                            CommonUtil.ExecLog("", str(targets[i]) + " is unchecked successfully using Java Script", 1)
                     except:
                         if targets[i][2] == "check":
                             CommonUtil.ExecLog("", str(targets[i]) + " couldn't be checked so skipped it", 3)
                         else:
                             CommonUtil.ExecLog("", str(targets[i]) + " couldn't be unchecked so skipped it", 3)
-
-            if targets[i][2] == "check":
-                CommonUtil.ExecLog("", str(targets[i]) + " checked successfully", 1)
-            else:
-                CommonUtil.ExecLog("", str(targets[i]) + " unchecked successfully", 1)
         except:
             if targets[i][2] == "check":
                 CommonUtil.ExecLog("", str(targets[i]) + " couldn't be checked so skipped it", 3)
