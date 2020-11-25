@@ -803,7 +803,7 @@ def Click_Element(data_set):
                 CommonUtil.TakeScreenShot(sModuleInfo)
                 CommonUtil.ExecLog(
                     sModuleInfo,
-                    "Your element is overlapped with another sibling element. Executing JavaScript for clicking the element",
+                    "Your element is overlapped with another sibling element. Clicked the element successfully by executing JavaScript",
                     2
                 )
                 return "passed"
