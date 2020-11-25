@@ -1,5 +1,5 @@
 declarations = (
-    { "name": "click",                         "function": "Click_Element",                 "screenshot": "desktop" },  # For cs group
+    { "name": "click",                         "function": "Click_Element",                 "screenshot": "web" },  # For cs group
     { "name": "click and hold",                "function": "Click_and_Hold_Element",        "screenshot": "web" },
     { "name": "context click",                 "function": "Context_Click_Element",         "screenshot": "web" },
     { "name": "double click",                  "function": "Double_Click_Element",          "screenshot": "web" },

@@ -577,7 +577,7 @@ def Handle_While_Loop_Action(step_data, data_set_no):
                 loop_this_data_sets = get_data_set_nums(row[2].strip())
                 outer_skip += loop_this_data_sets
             elif row[0].strip().lower() == "repeat":
-                max_no_of_loop = int(row[2].strip())
+                max_no_of_loop = int(sr.get_previous_response_variables_in_strings(row[2]).strip())
             elif row[0].strip().lower() == "exit loop":
                 value = row[2].strip()
                 if "pass" in value.lower():
