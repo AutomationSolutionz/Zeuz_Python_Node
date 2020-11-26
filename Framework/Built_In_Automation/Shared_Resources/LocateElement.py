@@ -794,21 +794,14 @@ def filter_elements(all_matching_elements_visible_invisible, Filter):
     # visible, enable
     all_matching_elements = []
     try:
-        if len(all_matching_elements_visible_invisible) == 1:
-            all_matching_elements = all_matching_elements_visible_invisible
-            return all_matching_elements
-            
-        elif Filter != "allow hidden":
+        if Filter != "allow hidden":
             for each in all_matching_elements_visible_invisible:
                 try:
                     if each.is_displayed():
                         all_matching_elements.append(each)
                 except:
                     pass
-            if len(all_matching_elements) == 0:    # we never want to return 0 matching elements
-                return all_matching_elements_visible_invisible
-            else:
-                return all_matching_elements
+            return all_matching_elements
         else:
             return all_matching_elements_visible_invisible
     except:
