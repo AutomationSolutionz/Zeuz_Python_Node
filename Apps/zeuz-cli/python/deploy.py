@@ -387,7 +387,7 @@ def main():
         # Retry after 1 minute
         time.sleep(SLEEP_TIMEOUT)
 
-    if run_id_status not in [RUN_COMPLETE]:
+    if run_id_status not in RUN_COMPLETE:
         # Deployment still in progress
         run_id_status = "in-progress"
 
