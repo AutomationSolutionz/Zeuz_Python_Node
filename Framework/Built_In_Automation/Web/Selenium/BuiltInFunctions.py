@@ -2898,6 +2898,9 @@ def check_uncheck_all(data_set):
                 target.append((left, "element parameter", right))
             elif "check uncheck all" == left:
                 command = "uncheck" if "uncheck" in right.lower() else "check"
+            elif "allow hidden" == left:
+                target.append((left,"option",right))
+                
     except Exception:
         return CommonUtil.Exception_Handler(sys.exc_info(), None, "Error parsing data set")
 
