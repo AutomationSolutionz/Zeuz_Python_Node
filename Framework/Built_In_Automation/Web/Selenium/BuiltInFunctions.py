@@ -2899,7 +2899,7 @@ def check_uncheck_all(data_set):
             elif "check uncheck all" == left:
                 command = "uncheck" if "uncheck" in right.lower() else "check"
             elif "allow hidden" == left:
-                target.append((left,"option",right))
+                target.append((left, "option", right))
                 
     except Exception:
         return CommonUtil.Exception_Handler(sys.exc_info(), None, "Error parsing data set")
@@ -2947,7 +2947,6 @@ def check_uncheck_all(data_set):
                 except ElementClickInterceptedException:
                     try:
                         selenium_driver.execute_script("arguments[0].click();", all_elements[i])
-                        CommonUtil.TakeScreenShot(sModuleInfo)
                         if command == "check":
                             CommonUtil.ExecLog("", str(i + 1) + th + " target is checked successfully using Java Script", 1)
                         else:
@@ -3014,7 +3013,6 @@ def check_uncheck(data_set):
             except ElementClickInterceptedException:
                 try:
                     selenium_driver.execute_script("arguments[0].click();", Element)
-                    CommonUtil.TakeScreenShot(sModuleInfo)
                     if command == "check":
                         CommonUtil.ExecLog(sModuleInfo, "The element is checked successfully using Java Script", 1)
                     else:
@@ -3047,12 +3045,15 @@ def multiple_check_uncheck(data_set):
 
     use_js = False
     inside = False
+    allow_hidden = ""
     try:
         for left, mid, right in data_set:
             left = left.lower().strip()
             mid = mid.lower().strip()
             if "use js" == left:
                 use_js = right.strip().lower() in ("true", "yes", "ok")
+            elif "allow hidden" == left:
+                allow_hidden = right
             elif "target parameter" == mid:
                 targets = []
                 temp = right.strip()
@@ -3089,7 +3090,10 @@ def multiple_check_uncheck(data_set):
 
     element_params = []
     for left, mid, right in targets:
-        element_params.append([(left, "element parameter", mid)])
+        if allow_hidden:
+            element_params.append([("allow hidden", "option", allow_hidden), (left, "element parameter", mid)])
+        else:
+            element_params.append([(left, "element parameter", mid)])
 
     all_elements = []
     for i in element_params:
@@ -3123,7 +3127,6 @@ def multiple_check_uncheck(data_set):
                 except ElementClickInterceptedException:
                     try:
                         selenium_driver.execute_script("arguments[0].click();", all_elements[i])
-                        CommonUtil.TakeScreenShot(sModuleInfo)
                         if targets[i][2] == "check":
                             CommonUtil.ExecLog("", str(targets[i]) + " is checked successfully using Java Script", 1)
                         else:
