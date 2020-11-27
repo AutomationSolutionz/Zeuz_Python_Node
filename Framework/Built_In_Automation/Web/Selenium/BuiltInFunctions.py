@@ -751,7 +751,7 @@ def execute_javascript(data_set):
 
 # Method to click on element; step data passed on by the user
 @logger
-def Click_Element(data_set):
+def Click_Element(data_set, retry=0):
     """ Click using element or location """
 
     sModuleInfo = inspect.currentframe().f_code.co_name + " : " + MODULE_NAME
@@ -815,27 +815,16 @@ def Click_Element(data_set):
                 errMsg = "Could not select/click your element."
                 return CommonUtil.Exception_Handler(sys.exc_info(), None, errMsg)
         except StaleElementReferenceException:
-            try:
+            if retry == 5:
                 CommonUtil.ExecLog(
-                    sModuleInfo,
-                    "javascript for the element is not fully loaded so trying again after 2 seconds",
-                    2
+                    sModuleInfo, "Could not perform click because javascript of the element is not fully loaded", 3
                 )
-                time.sleep(2.0)     # wait 2 sec and try again
-                if use_js:
-                    selenium_driver.execute_script("arguments[0].click();", Element)
-                else:
-                    Element.click()
-                CommonUtil.TakeScreenShot(sModuleInfo)
-                CommonUtil.ExecLog(sModuleInfo, "Successfully clicked the element", 1)
-                return "passed"
-            except:
-                element_attributes = Element.get_attribute("outerHTML")
-                CommonUtil.ExecLog(
-                    sModuleInfo, "Element Attributes: %s" % (element_attributes), 3
-                )
-                errMsg = "Could not select/click your element."
-                return CommonUtil.Exception_Handler(sys.exc_info(), None, errMsg)
+                return "failed"
+            CommonUtil.ExecLog(
+                "", "Javascript of the element is not fully loaded. Trying again after 1 second delay", 2
+            )
+            time.sleep(1)
+            return Click_Element(data_set, retry + 1)
 
         except Exception:
             element_attributes = Element.get_attribute("outerHTML")
