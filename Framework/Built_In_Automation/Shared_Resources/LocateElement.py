@@ -151,25 +151,11 @@ def Get_Element(step_data_set, driver, query_debug=False, wait_enable=True, retu
                 )
                 return "failed"
 
-        # wait_time = int(sr.Get_Shared_Variables("element_wait"))
-        # etime = time.time() + wait_time  # Default time to wait for an element
-        # while (
-        #     time.time() < etime
-        # ):  # Our own built in "wait" until True because sometimes elements do not appear fast enough
-        # If driver is pyautogui, perform specific get element function and exit
         if driver_type == "pyautogui":
             result = _pyautogui(step_data_set)
             if save_parameter != "":  # save element to a variable
                 sr.Set_Shared_Variables(save_parameter, result)
-            return result  # Return on pass
-            # if not wait_enable:
-            #     CommonUtil.ExecLog(
-            #         sModuleInfo,
-            #         "Element not found. Waiting is disabled, so returning",
-            #         3,
-            #     )
-            #     return result  # If asked not to loop, return the failure
-            # continue  # If fail, but instructed to loop, do so
+            return result
 
         # here we switch driver if we need to
         _switch(step_data_set)
@@ -198,7 +184,7 @@ def Get_Element(step_data_set, driver, query_debug=False, wait_enable=True, retu
         else:
             result = "failed"
 
-        # if user sends optional option check if element is displayed or not.    We may need to add more
+        # if user sends optional option check if element is displayed or not. We may need to add more
         # items here such as enabled, visible and such.
 
         try:
@@ -641,7 +627,7 @@ def _get_xpath_or_css_element(element_query, css_xpath, index_number=False, Filt
         start = time.time()
         #end = start + int(sr.Get_Shared_Variables("element_wait"))
         end = 10
-        x=0
+        x = 0
         #while time.time() < end:
         while x <end:
             x = x+1
@@ -724,60 +710,142 @@ def _get_xpath_or_css_element(element_query, css_xpath, index_number=False, Filt
                     By.CSS_SELECTOR, element_query
                 )
 
-            if all_matching_elements_visible_invisible != False:
+            if all_matching_elements_visible_invisible:
                 break
-
-        time.sleep(0.5)   
+            time.sleep(0.5)
         # end of while loop
 
-        
-        if exception_cnd == True:
-            return "failed"
+        if exception_cnd:
+            return False
 
         all_matching_elements = filter_elements(all_matching_elements_visible_invisible, Filter)
+        if Filter == "allow hidden":
+            displayed_len = len(filter_elements(all_matching_elements_visible_invisible, ""))
+            hidden_len = len(all_matching_elements_visible_invisible) - displayed_len
+        else:
+            displayed_len = len(all_matching_elements)
+            hidden_len = len(all_matching_elements_visible_invisible) - displayed_len
 
         if return_all_elements:
-            CommonUtil.ExecLog(
-                sModuleInfo,
-                "Found %s elements with given condition. Returning all of them" % len(all_matching_elements),
-                1,
-            )
+            if Filter == "allow hidden":
+                CommonUtil.ExecLog(
+                    "",
+                    "Found %s hidden elements and %s displayed elements. Returning all of them"
+                    % (hidden_len, displayed_len),
+                    1
+                )
+            else:
+                CommonUtil.ExecLog(
+                    "",
+                    "Found %s hidden elements and %s displayed elements. Returning %s displayed elements only"
+                    % (hidden_len, displayed_len, displayed_len),
+                    1
+                )
             return all_matching_elements
         elif len(all_matching_elements) == 0:
+            if hidden_len > 0 and Filter != "allow hidden":
+                CommonUtil.ExecLog(
+                    "",
+                    "Found %s hidden elements and no displayed elements. Nothing to return.\n" % hidden_len +
+                    "To get hidden elements add a row (\"allow hidden\", \"optional option\", \"yes\")",
+                    3
+                )
             return False
         elif len(all_matching_elements) == 1 and index_number == False:
+            if hidden_len > 0 and Filter != "allow hidden":
+                CommonUtil.ExecLog(
+                    "",
+                    "Found %s hidden elements and %s displayed elements. Returning the displayed element only\n" % (hidden_len, displayed_len) +
+                    "To get hidden elements add a row (\"allow hidden\", \"optional option\", \"yes\") and also consider providing index",
+                    2
+                )
+            elif Filter == "allow hidden":
+                CommonUtil.ExecLog("", "Found %s hidden element and %s displayed element" % (hidden_len, displayed_len), 1)
             return all_matching_elements[0]
         elif len(all_matching_elements) > 1 and index_number == False:
-            CommonUtil.ExecLog(
-                sModuleInfo,
-                "Warning: found %s elements with given condition. Returning first item. Consider providing index"
-                % len(all_matching_elements),
-                2,
-            )
+            if hidden_len > 0 and Filter != "allow hidden":
+                CommonUtil.ExecLog(
+                    "",
+                    "Found %s hidden elements and %s displayed elements. Returning the first displayed element only\n" % (hidden_len, displayed_len) +
+                    "To get hidden elements add a row (\"allow hidden\", \"optional option\", \"yes\") and also consider providing index",
+                    2
+                )
+            elif Filter != "allow hidden":
+                CommonUtil.ExecLog(
+                    "",
+                    "Found %s displayed elements. Returning the first displayed element only. Consider providing index" % displayed_len,
+                    2
+                )
+            else:
+                CommonUtil.ExecLog(
+                    "",
+                    "Found %s hidden elements and %s displayed elements. Returning the first element only. Consider providing index" % (hidden_len, displayed_len),
+                    2
+                )
             return all_matching_elements[0]
         elif len(all_matching_elements) == 1 and abs(index_number) > 0:
-            CommonUtil.ExecLog(
-                sModuleInfo,
-                "Warning: we only found single element but you provided an index number greater than 0. Returning the only element",
-                2,
-            )
+            if hidden_len > 0 and Filter != "allow hidden":
+                CommonUtil.ExecLog(
+                    sModuleInfo,
+                    "Found %s hidden elements and %s displayed elements but you provided an index number greater than 0. Returning the only displayed element\n" % (hidden_len, displayed_len) +
+                    "To get hidden elements add a row (\"allow hidden\", \"optional option\", \"yes\") and also consider providing correct index",
+                    2,
+                )
+            elif Filter != "allow hidden":
+                CommonUtil.ExecLog(
+                    sModuleInfo,
+                    "Found 0 hidden elements and %s displayed elements but you provided an index number greater than 0. Returning the only displayed element\n" % displayed_len,
+                    2,
+                )
+            elif Filter == "allow hidden":
+                CommonUtil.ExecLog(
+                    "",
+                    "Found %s hidden element and %s displayed element but you provided an index number greater than 0. Returning the only element" % (hidden_len, displayed_len),
+                    2
+                )
             return all_matching_elements[0]
         elif len(all_matching_elements) > 1 and index_number != False:
             if (len(all_matching_elements) - 1) < abs(index_number):
-                CommonUtil.ExecLog(
-                    sModuleInfo,
-                    "Error: your index: %s exceed the the number of elements found: %s"
-                    % (index_number, len(all_matching_elements) - 1),
-                    3,
-                )
+                if hidden_len > 0 and Filter != "allow hidden":
+                    CommonUtil.ExecLog(
+                        "",
+                        "Found %s hidden elements and %s displayed elements. Index exceeds the number of displayed elements found\n" % (hidden_len, displayed_len) +
+                        "To get hidden elements add a row (\"allow hidden\", \"optional option\", \"yes\") and also consider providing correct index",
+                        3
+                    )
+                elif Filter != "allow hidden":
+                    CommonUtil.ExecLog(
+                        "",
+                        "Found 0 hidden elements and %s displayed elements. Index exceeds the number of displayed elements found" % displayed_len,
+                        3
+                    )
+                else:
+                    CommonUtil.ExecLog(
+                        "",
+                        "Found %s hidden elements and %s displayed elements. Index exceeds the number of elements found" % (hidden_len, displayed_len),
+                        3
+                    )
                 return "failed"
             else:
-                CommonUtil.ExecLog(
-                    sModuleInfo,
-                    "Total elements found are: %s but returning element number: %s"
-                    % (len(all_matching_elements), index_number),
-                    2,
-                )
+                if hidden_len > 0 and Filter != "allow hidden":
+                    CommonUtil.ExecLog(
+                        "",
+                        "Found %s hidden elements and %s displayed elements. Returning the displayed element of index %s\n" % (hidden_len, displayed_len, index_number) +
+                        "To get hidden elements add a row (\"allow hidden\", \"optional option\", \"yes\")",
+                        1
+                    )
+                elif Filter != "allow hidden":
+                    CommonUtil.ExecLog(
+                        "",
+                        "Found 0 hidden elements and %s displayed elements. Returning the displayed element of index %s" % (displayed_len, index_number),
+                        1
+                    )
+                else:
+                    CommonUtil.ExecLog(
+                        "",
+                        "Found %s hidden elements and %s displayed elements. Returning the element of index %s" % (hidden_len, displayed_len, index_number),
+                        1
+                    )
                 return all_matching_elements[index_number]
         else:
             return "failed"
