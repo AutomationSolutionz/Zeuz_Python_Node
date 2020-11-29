@@ -25,7 +25,7 @@ declarations = (
     { "name": "navigate",                      "function": "Navigate",                      "screenshot": "web" },
     { "name": "get location",                  "function": "get_location_of_element",       "screenshot": "web" },
     { "name": "validate table",                "function": "validate_table",                "screenshot": "web" },
-    { "name": "handle alert",                  "function": "Handle_Browser_Alert",          "screenshot": "desktop" },
+    { "name": "handle alert",                  "function": "Handle_Browser_Alert",          "screenshot": "web" },
     { "name": "browser",                       "function": "Open_Browser_Wrapper",          "screenshot": "web" },
     { "name": "teardown",                      "function": "Tear_Down_Selenium",            "screenshot": "web" },
     { "name": "open new tab",                  "function": "open_new_tab",                  "screenshot": "web" },

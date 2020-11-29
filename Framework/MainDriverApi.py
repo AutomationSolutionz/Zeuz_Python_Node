@@ -1033,7 +1033,7 @@ def run_all_test_steps_in_a_test_case(
         auto_generated_image_name = ("_").join(
             current_step_name.split(" ")
         ) + "_started.png"
-        CommonUtil.TakeScreenShot(str(auto_generated_image_name))
+        # CommonUtil.TakeScreenShot(str(auto_generated_image_name))
 
         # check if machine failed
         is_failed_result = ""

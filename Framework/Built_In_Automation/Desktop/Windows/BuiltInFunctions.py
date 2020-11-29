@@ -77,7 +77,7 @@ def go_to_desktop(data_set):
         return "failed"
     try:
         result = Click_Element_None_Mouse(Element, None, True, None, None)
-        CommonUtil.TakeScreenShot(sModuleInfo)
+        # CommonUtil.TakeScreenShot(sModuleInfo)
         if result in failed_tag_list:
             CommonUtil.ExecLog(sModuleInfo, "Could not click element", 3)
             return "failed"
@@ -173,7 +173,7 @@ def Click_Element(data_set):
             sModuleInfo, "Element was located.  Performing action provided ", 1
         )
         result = Click_Element_None_Mouse(Element, expand, invoke, select, toggle)
-        CommonUtil.TakeScreenShot(sModuleInfo)
+        # CommonUtil.TakeScreenShot(sModuleInfo)
         if result in failed_tag_list:
             CommonUtil.ExecLog(sModuleInfo, "Could not click element", 3)
             return "failed"
@@ -1488,9 +1488,9 @@ def Keystroke_For_Element(data_set):
         try:
             if keystroke_char != False:
                 pyautogui.write(keystroke_char)
-                CommonUtil.TakeScreenShot(
-                    sModuleInfo
-                )  # Capture screenshot, if settings allow for it
+                # CommonUtil.TakeScreenShot(
+                #     sModuleInfo
+                # )  # Capture screenshot, if settings allow for it
 
                 CommonUtil.ExecLog(
                     sModuleInfo,
@@ -1515,9 +1515,9 @@ def Keystroke_For_Element(data_set):
         for i in range(count):
             gui.hotkey(*keys)  # Send keypress (as individual values using the asterisk)
 
-        CommonUtil.TakeScreenShot(
-            sModuleInfo
-        )  # Capture screenshot, if settings allow for it
+        # CommonUtil.TakeScreenShot(
+        #     sModuleInfo
+        # )  # Capture screenshot, if settings allow for it
 
         CommonUtil.ExecLog(sModuleInfo, "Successfully entered keystroke", 1)
         return "passed"

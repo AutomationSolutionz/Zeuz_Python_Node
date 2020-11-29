@@ -226,9 +226,9 @@ def Enter_Text(data_set):
                 0,
             )
 
-        CommonUtil.TakeScreenShot(
-            sModuleInfo
-        )  # Capture screenshot, if settings allow for it
+        # CommonUtil.TakeScreenShot(
+        #     sModuleInfo
+        # )  # Capture screenshot, if settings allow for it
 
         # Enter text
         gui.typewrite(text_value)
@@ -549,9 +549,9 @@ def close_program(data_set):
             )
             return "failed"
 
-        CommonUtil.TakeScreenShot(
-            sModuleInfo
-        )  # Capture screenshot, if settings allow for it
+        # CommonUtil.TakeScreenShot(
+        #     sModuleInfo
+        # )  # Capture screenshot, if settings allow for it
 
         # Check result
         if close_status in failed_tag_list:
@@ -645,9 +645,9 @@ def Click_Element(data_set):
         elif cmd == "doubleclick":
             result = gui.doubleClick(x, y)  # Double click
 
-        CommonUtil.TakeScreenShot(
-            sModuleInfo
-        )  # Capture screenshot, if settings allow for it
+        # CommonUtil.TakeScreenShot(
+        #     sModuleInfo
+        # )  # Capture screenshot, if settings allow for it
 
         # Check result and return
         if result in failed_tag_list:
@@ -698,9 +698,9 @@ def check_for_element(data_set):
         )
         element = LocateElement.Get_Element(data_set, gui)  # (x, y, w, h)
 
-        CommonUtil.TakeScreenShot(
-            sModuleInfo
-        )  # Capture screenshot, if settings allow for it
+        # CommonUtil.TakeScreenShot(
+        #     sModuleInfo
+        # )  # Capture screenshot, if settings allow for it
 
         if element in failed_tag_list:
             CommonUtil.ExecLog(sModuleInfo, "Element not found", 3)
@@ -796,9 +796,9 @@ def launch_program(data_set):
             )
             return "failed"
 
-        CommonUtil.TakeScreenShot(
-            sModuleInfo
-        )  # Capture screenshot, if settings allow for it
+        # CommonUtil.TakeScreenShot(
+        #     sModuleInfo
+        # )  # Capture screenshot, if settings allow for it
 
         # Check result and return
         if launch_status in failed_tag_list:
@@ -932,9 +932,9 @@ def Drag_Element(data_set):
             dst_x, dst_y, 2, button="left"
         )  # Click and drag to destination, taking two seconds, then release - the 2 seconds is important for some drags because without the time, it happens too fast and the drag command is missed by the window manager
 
-        CommonUtil.TakeScreenShot(
-            sModuleInfo
-        )  # Capture screenshot, if settings allow for it
+        # CommonUtil.TakeScreenShot(
+        #     sModuleInfo
+        # )  # Capture screenshot, if settings allow for it
 
         # Check result and return
         if result in failed_tag_list:
@@ -1035,9 +1035,9 @@ def navigate_listbox(data_set):
                 )
                 return "passed"
 
-        CommonUtil.TakeScreenShot(
-            sModuleInfo
-        )  # Capture screenshot, if settings allow for it
+        # CommonUtil.TakeScreenShot(
+        #     sModuleInfo
+        # )  # Capture screenshot, if settings allow for it
 
         CommonUtil.ExecLog(
             sModuleInfo, "Could not locate element after %d attempts" % max_tries, 3

@@ -361,7 +361,7 @@ def Go_To_Link(step_data, page_title=False):
         CommonUtil.ExecLog(
             sModuleInfo, "Successfully opened your link: %s" % web_link, 1
         )
-        CommonUtil.TakeScreenShot(sModuleInfo)
+        # CommonUtil.TakeScreenShot(sModuleInfo)
         return "passed"
     except Exception:
         ErrorMessage = "failed to open your link: %s" % (web_link)
@@ -591,7 +591,7 @@ def Enter_Text_In_Text_Box(step_data):
                 except:  # sometimes text field can be unclickable after entering text
                     pass
 
-            CommonUtil.TakeScreenShot(sModuleInfo)
+            # CommonUtil.TakeScreenShot(sModuleInfo)
             CommonUtil.ExecLog(
                 sModuleInfo,
                 "Successfully set the value of to text to: %s" % text_value,
@@ -793,14 +793,14 @@ def Click_Element(data_set, retry=0):
             else:
                 Element.click()
 
-            CommonUtil.TakeScreenShot(sModuleInfo)
+            # CommonUtil.TakeScreenShot(sModuleInfo)
             CommonUtil.ExecLog(sModuleInfo, "Successfully clicked the element", 1)
             return "passed"
 
         except ElementClickInterceptedException:
             try:
                 selenium_driver.execute_script("arguments[0].click();", Element)
-                CommonUtil.TakeScreenShot(sModuleInfo)
+                # CommonUtil.TakeScreenShot(sModuleInfo)
                 CommonUtil.ExecLog(
                     sModuleInfo,
                     "Your element is overlapped with another sibling element. Clicked the element successfully by executing JavaScript",
@@ -904,9 +904,9 @@ def Mouse_Click_Element(data_set):
     try:
         actions = ActionChains(selenium_driver)
         actions.move_to_element_with_offset(Element, width, height).click().perform()
-        CommonUtil.TakeScreenShot(
-            sModuleInfo
-        )  # Capture screenshot, if settings allow for it\
+        # CommonUtil.TakeScreenShot(
+        #     sModuleInfo
+        # )  # Capture screenshot, if settings allow for it\
         CommonUtil.ExecLog(sModuleInfo, "Successfully clicked the element", 1)
         return "passed"
     except Exception:
@@ -950,7 +950,7 @@ def Click_and_Hold_Element(step_data):
             try:
                 click_and_hold = ActionChains(selenium_driver).click_and_hold(Element)
                 click_and_hold.perform()
-                CommonUtil.TakeScreenShot(sModuleInfo)
+                # CommonUtil.TakeScreenShot(sModuleInfo)
                 CommonUtil.ExecLog(
                     sModuleInfo,
                     "Successfully clicked and held the element with given parameters and values",
@@ -984,7 +984,7 @@ def Context_Click_Element(step_data):
             try:
                 context_click = ActionChains(selenium_driver).context_click(Element)
                 context_click.perform()
-                CommonUtil.TakeScreenShot(sModuleInfo)
+                # CommonUtil.TakeScreenShot(sModuleInfo)
                 CommonUtil.ExecLog(
                     sModuleInfo,
                     "Successfully right clicked the element with given parameters and values",
@@ -1018,7 +1018,7 @@ def Double_Click_Element(step_data):
             try:
                 double_click = ActionChains(selenium_driver).double_click(Element)
                 double_click.perform()
-                CommonUtil.TakeScreenShot(sModuleInfo)
+                # CommonUtil.TakeScreenShot(sModuleInfo)
                 CommonUtil.ExecLog(
                     sModuleInfo,
                     "Successfully double clicked the element with given parameters and values",
@@ -1051,7 +1051,7 @@ def Move_To_Element(step_data):
         if Element != "failed":
             try:
                 move = ActionChains(selenium_driver).move_to_element(Element).perform()
-                CommonUtil.TakeScreenShot(sModuleInfo)
+                # CommonUtil.TakeScreenShot(sModuleInfo)
                 CommonUtil.ExecLog(
                     sModuleInfo,
                     "Successfully moved to the middle of the element with given parameters and values",
@@ -1085,7 +1085,7 @@ def Hover_Over_Element(step_data):
             try:
                 hov = ActionChains(selenium_driver).move_to_element(Element)
                 hov.perform()
-                CommonUtil.TakeScreenShot(sModuleInfo)
+                # CommonUtil.TakeScreenShot(sModuleInfo)
                 CommonUtil.ExecLog(
                     sModuleInfo,
                     "Successfully hovered over the element with given parameters and values",
