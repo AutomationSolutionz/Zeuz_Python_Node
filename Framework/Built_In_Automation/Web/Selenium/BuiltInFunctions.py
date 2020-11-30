@@ -361,7 +361,7 @@ def Go_To_Link(step_data, page_title=False):
         CommonUtil.ExecLog(
             sModuleInfo, "Successfully opened your link: %s" % web_link, 1
         )
-        CommonUtil.TakeScreenShot(sModuleInfo)
+        # CommonUtil.TakeScreenShot(sModuleInfo)
         return "passed"
     except Exception:
         ErrorMessage = "failed to open your link: %s" % (web_link)
@@ -591,7 +591,7 @@ def Enter_Text_In_Text_Box(step_data):
                 except:  # sometimes text field can be unclickable after entering text
                     pass
 
-            CommonUtil.TakeScreenShot(sModuleInfo)
+            # CommonUtil.TakeScreenShot(sModuleInfo)
             CommonUtil.ExecLog(
                 sModuleInfo,
                 "Successfully set the value of to text to: %s" % text_value,
@@ -751,7 +751,7 @@ def execute_javascript(data_set):
 
 # Method to click on element; step data passed on by the user
 @logger
-def Click_Element(data_set):
+def Click_Element(data_set, retry=0):
     """ Click using element or location """
 
     sModuleInfo = inspect.currentframe().f_code.co_name + " : " + MODULE_NAME
@@ -793,14 +793,14 @@ def Click_Element(data_set):
             else:
                 Element.click()
 
-            CommonUtil.TakeScreenShot(sModuleInfo)
+            # CommonUtil.TakeScreenShot(sModuleInfo)
             CommonUtil.ExecLog(sModuleInfo, "Successfully clicked the element", 1)
             return "passed"
 
         except ElementClickInterceptedException:
             try:
                 selenium_driver.execute_script("arguments[0].click();", Element)
-                CommonUtil.TakeScreenShot(sModuleInfo)
+                # CommonUtil.TakeScreenShot(sModuleInfo)
                 CommonUtil.ExecLog(
                     sModuleInfo,
                     "Your element is overlapped with another sibling element. Clicked the element successfully by executing JavaScript",
@@ -815,27 +815,16 @@ def Click_Element(data_set):
                 errMsg = "Could not select/click your element."
                 return CommonUtil.Exception_Handler(sys.exc_info(), None, errMsg)
         except StaleElementReferenceException:
-            try:
+            if retry == 5:
                 CommonUtil.ExecLog(
-                    sModuleInfo,
-                    "javascript for the element is not fully loaded so trying again after 2 seconds",
-                    2
+                    sModuleInfo, "Could not perform click because javascript of the element is not fully loaded", 3
                 )
-                time.sleep(2.0)     # wait 2 sec and try again
-                if use_js:
-                    selenium_driver.execute_script("arguments[0].click();", Element)
-                else:
-                    Element.click()
-                CommonUtil.TakeScreenShot(sModuleInfo)
-                CommonUtil.ExecLog(sModuleInfo, "Successfully clicked the element", 1)
-                return "passed"
-            except:
-                element_attributes = Element.get_attribute("outerHTML")
-                CommonUtil.ExecLog(
-                    sModuleInfo, "Element Attributes: %s" % (element_attributes), 3
-                )
-                errMsg = "Could not select/click your element."
-                return CommonUtil.Exception_Handler(sys.exc_info(), None, errMsg)
+                return "failed"
+            CommonUtil.ExecLog(
+                "", "Javascript of the element is not fully loaded. Trying again after 1 second delay", 2
+            )
+            time.sleep(1)
+            return Click_Element(data_set, retry + 1)
 
         except Exception:
             element_attributes = Element.get_attribute("outerHTML")
@@ -915,9 +904,9 @@ def Mouse_Click_Element(data_set):
     try:
         actions = ActionChains(selenium_driver)
         actions.move_to_element_with_offset(Element, width, height).click().perform()
-        CommonUtil.TakeScreenShot(
-            sModuleInfo
-        )  # Capture screenshot, if settings allow for it\
+        # CommonUtil.TakeScreenShot(
+        #     sModuleInfo
+        # )  # Capture screenshot, if settings allow for it\
         CommonUtil.ExecLog(sModuleInfo, "Successfully clicked the element", 1)
         return "passed"
     except Exception:
@@ -961,7 +950,7 @@ def Click_and_Hold_Element(step_data):
             try:
                 click_and_hold = ActionChains(selenium_driver).click_and_hold(Element)
                 click_and_hold.perform()
-                CommonUtil.TakeScreenShot(sModuleInfo)
+                # CommonUtil.TakeScreenShot(sModuleInfo)
                 CommonUtil.ExecLog(
                     sModuleInfo,
                     "Successfully clicked and held the element with given parameters and values",
@@ -995,7 +984,7 @@ def Context_Click_Element(step_data):
             try:
                 context_click = ActionChains(selenium_driver).context_click(Element)
                 context_click.perform()
-                CommonUtil.TakeScreenShot(sModuleInfo)
+                # CommonUtil.TakeScreenShot(sModuleInfo)
                 CommonUtil.ExecLog(
                     sModuleInfo,
                     "Successfully right clicked the element with given parameters and values",
@@ -1029,7 +1018,7 @@ def Double_Click_Element(step_data):
             try:
                 double_click = ActionChains(selenium_driver).double_click(Element)
                 double_click.perform()
-                CommonUtil.TakeScreenShot(sModuleInfo)
+                # CommonUtil.TakeScreenShot(sModuleInfo)
                 CommonUtil.ExecLog(
                     sModuleInfo,
                     "Successfully double clicked the element with given parameters and values",
@@ -1062,7 +1051,7 @@ def Move_To_Element(step_data):
         if Element != "failed":
             try:
                 move = ActionChains(selenium_driver).move_to_element(Element).perform()
-                CommonUtil.TakeScreenShot(sModuleInfo)
+                # CommonUtil.TakeScreenShot(sModuleInfo)
                 CommonUtil.ExecLog(
                     sModuleInfo,
                     "Successfully moved to the middle of the element with given parameters and values",
@@ -1096,7 +1085,7 @@ def Hover_Over_Element(step_data):
             try:
                 hov = ActionChains(selenium_driver).move_to_element(Element)
                 hov.perform()
-                CommonUtil.TakeScreenShot(sModuleInfo)
+                # CommonUtil.TakeScreenShot(sModuleInfo)
                 CommonUtil.ExecLog(
                     sModuleInfo,
                     "Successfully hovered over the element with given parameters and values",
@@ -2899,7 +2888,7 @@ def check_uncheck_all(data_set):
             elif "check uncheck all" == left:
                 command = "uncheck" if "uncheck" in right.lower() else "check"
             elif "allow hidden" == left:
-                target.append((left,"option",right))
+                target.append((left, "option", right))
                 
     except Exception:
         return CommonUtil.Exception_Handler(sys.exc_info(), None, "Error parsing data set")
@@ -2947,7 +2936,6 @@ def check_uncheck_all(data_set):
                 except ElementClickInterceptedException:
                     try:
                         selenium_driver.execute_script("arguments[0].click();", all_elements[i])
-                        CommonUtil.TakeScreenShot(sModuleInfo)
                         if command == "check":
                             CommonUtil.ExecLog("", str(i + 1) + th + " target is checked successfully using Java Script", 1)
                         else:
@@ -3014,7 +3002,6 @@ def check_uncheck(data_set):
             except ElementClickInterceptedException:
                 try:
                     selenium_driver.execute_script("arguments[0].click();", Element)
-                    CommonUtil.TakeScreenShot(sModuleInfo)
                     if command == "check":
                         CommonUtil.ExecLog(sModuleInfo, "The element is checked successfully using Java Script", 1)
                     else:
@@ -3047,12 +3034,15 @@ def multiple_check_uncheck(data_set):
 
     use_js = False
     inside = False
+    allow_hidden = ""
     try:
         for left, mid, right in data_set:
             left = left.lower().strip()
             mid = mid.lower().strip()
             if "use js" == left:
                 use_js = right.strip().lower() in ("true", "yes", "ok")
+            elif "allow hidden" == left:
+                allow_hidden = right
             elif "target parameter" == mid:
                 targets = []
                 temp = right.strip()
@@ -3089,7 +3079,10 @@ def multiple_check_uncheck(data_set):
 
     element_params = []
     for left, mid, right in targets:
-        element_params.append([(left, "element parameter", mid)])
+        if allow_hidden:
+            element_params.append([("allow hidden", "option", allow_hidden), (left, "element parameter", mid)])
+        else:
+            element_params.append([(left, "element parameter", mid)])
 
     all_elements = []
     for i in element_params:
@@ -3123,7 +3116,6 @@ def multiple_check_uncheck(data_set):
                 except ElementClickInterceptedException:
                     try:
                         selenium_driver.execute_script("arguments[0].click();", all_elements[i])
-                        CommonUtil.TakeScreenShot(sModuleInfo)
                         if targets[i][2] == "check":
                             CommonUtil.ExecLog("", str(targets[i]) + " is checked successfully using Java Script", 1)
                         else:

@@ -620,9 +620,9 @@ def launch_application(data_set):
         CommonUtil.ExecLog(sModuleInfo, "Launching %s" % package_name, 0)
         if launch_app:  # if ios simulator then no need to launch app again
             appium_driver.launch_app()  # Launch program configured in the Appium capabilities
-        CommonUtil.TakeScreenShot(
-            sModuleInfo
-        )  # Capture screenshot, if settings allow for it
+        # CommonUtil.TakeScreenShot(
+        #     sModuleInfo
+        # )  # Capture screenshot, if settings allow for it
         CommonUtil.ExecLog(sModuleInfo, "Launched the application successfully.", 1)
         return "passed"
     except Exception:
@@ -1309,9 +1309,9 @@ def Swipe(x_start, y_start, x_end, y_end, duration=1000, adb=False):
                 x_start, y_start, x_end, y_end, duration
             )  # Use Appium to swipe by default
 
-        CommonUtil.TakeScreenShot(
-            sModuleInfo
-        )  # Capture screenshot, if settings allow for it
+        # CommonUtil.TakeScreenShot(
+        #     sModuleInfo
+        # )  # Capture screenshot, if settings allow for it
         return "passed"
     except Exception:
         errMsg = "Unable to swipe."
@@ -2075,7 +2075,7 @@ def Click_Element_Appium(data_set):
                     return "passed"
 
                 except:
-                    CommonUtil.TakeScreenShot(sModuleInfo)
+                    # CommonUtil.TakeScreenShot(sModuleInfo)
                     CommonUtil.ExecLog(
                         sModuleInfo,
                         "Element is enabled. Unable to tap based on offset.",
@@ -2094,7 +2094,7 @@ def Click_Element_Appium(data_set):
             else:
                 try:
                     Element.click()
-                    CommonUtil.TakeScreenShot(sModuleInfo)
+                    # CommonUtil.TakeScreenShot(sModuleInfo)
                     CommonUtil.ExecLog(
                         sModuleInfo,
                         "Successfully clicked the element with given parameters and values",
@@ -2122,7 +2122,7 @@ def Click_Element_Appium(data_set):
                     return CommonUtil.Exception_Handler(sys.exc_info(), None, errMsg)
 
         else:
-            CommonUtil.TakeScreenShot(sModuleInfo)
+            # CommonUtil.TakeScreenShot(sModuleInfo)
             CommonUtil.ExecLog(sModuleInfo, "Element not enabled. Unable to click.", 3)
             if context_switched == True:
                 CommonUtil.ExecLog(
@@ -2224,7 +2224,7 @@ def Tap_Appium(data_set):
                             return "passed"
 
                         except:
-                            CommonUtil.TakeScreenShot(sModuleInfo)
+                            # CommonUtil.TakeScreenShot(sModuleInfo)
                             CommonUtil.ExecLog(
                                 sModuleInfo,
                                 "Element is enabled. Unable to tap based on offset.",
@@ -2240,7 +2240,7 @@ def Tap_Appium(data_set):
                         )
                         return "passed"
                 else:
-                    CommonUtil.TakeScreenShot(sModuleInfo)
+                    # CommonUtil.TakeScreenShot(sModuleInfo)
                     CommonUtil.ExecLog(
                         sModuleInfo, "Element not enabled. Unable to click.", 3
                     )
@@ -2284,7 +2284,7 @@ def Double_Tap_Appium(data_set):
                     )
                     return "passed"
                 else:
-                    CommonUtil.TakeScreenShot(sModuleInfo)
+                    # CommonUtil.TakeScreenShot(sModuleInfo)
                     CommonUtil.ExecLog(
                         sModuleInfo, "Element not enabled. Unable to click.", 3
                     )
@@ -2327,7 +2327,7 @@ def Long_Press_Appium(data_set):
                     )
                     return "passed"
                 else:
-                    CommonUtil.TakeScreenShot(sModuleInfo)
+                    # CommonUtil.TakeScreenShot(sModuleInfo)
                     CommonUtil.ExecLog(
                         sModuleInfo, "Element not enabled. Unable to click.", 3
                     )
@@ -2589,7 +2589,7 @@ def Pickerwheel_Appium(data_set):
             # Complete the action
             try:
                 # appium_driver.hide_keyboard() # Remove keyboard
-                CommonUtil.TakeScreenShot(sModuleInfo)  # Capture screen
+                # CommonUtil.TakeScreenShot(sModuleInfo)  # Capture screen
                 CommonUtil.ExecLog(
                     sModuleInfo,
                     "Successfully set the value of to text to: %s" % text_value,
@@ -2671,17 +2671,17 @@ def Clear_And_Enter_Text_ADB(data_set, serial=""):
             result = "failed"
 
         if result in passed_tag_list:
-            CommonUtil.TakeScreenShot(sModuleInfo)
+            # CommonUtil.TakeScreenShot(sModuleInfo)
             CommonUtil.ExecLog(
                 sModuleInfo, "Successfully entered text with adb shell", 1
             )
             appium_driver.hide_keyboard()  # Remove keyboard
-            CommonUtil.TakeScreenShot(sModuleInfo)  # Capture screen
+            # CommonUtil.TakeScreenShot(sModuleInfo)  # Capture screen
             CommonUtil.ExecLog(sModuleInfo, "Successfully hid keyboard", 1)
 
             return "passed"
         else:
-            CommonUtil.TakeScreenShot(sModuleInfo)
+            # CommonUtil.TakeScreenShot(sModuleInfo)
             CommonUtil.ExecLog(sModuleInfo, "Could not text with adb shell", 3)
             return "failed"
 
@@ -2755,7 +2755,7 @@ def Clear_And_Enter_Text_Appium(data_set):
             # Complete the action
             try:
                 # appium_driver.hide_keyboard() # Remove keyboard
-                CommonUtil.TakeScreenShot(sModuleInfo)  # Capture screen
+                # CommonUtil.TakeScreenShot(sModuleInfo)  # Capture screen
                 CommonUtil.ExecLog(
                     sModuleInfo,
                     "Successfully set the value of to text to: %s" % text_value,
@@ -2794,7 +2794,7 @@ def Hide_Keyboard(data_set):
     try:
         if appium_driver.is_keyboard_shown():
             appium_driver.hide_keyboard()  # Remove keyboard
-            CommonUtil.TakeScreenShot(sModuleInfo)  # Capture screen
+            # CommonUtil.TakeScreenShot(sModuleInfo)  # Capture screen
         return "passed"
     except Exception:
         errMsg = "Unable to hide your keyboard"
@@ -2967,7 +2967,7 @@ def Keystroke_Appium(data_set):
             result = "failed"
 
         if result in passed_tag_list:
-            CommonUtil.TakeScreenShot(sModuleInfo)
+            # CommonUtil.TakeScreenShot(sModuleInfo)
             CommonUtil.ExecLog(
                 sModuleInfo,
                 "Successfully entered keystroke for the element with given parameters and values",
@@ -2975,7 +2975,7 @@ def Keystroke_Appium(data_set):
             )
             return "passed"
         else:
-            CommonUtil.TakeScreenShot(sModuleInfo)
+            # CommonUtil.TakeScreenShot(sModuleInfo)
             CommonUtil.ExecLog(
                 sModuleInfo,
                 "Could not enter keystroke for the element with given parameters and values",

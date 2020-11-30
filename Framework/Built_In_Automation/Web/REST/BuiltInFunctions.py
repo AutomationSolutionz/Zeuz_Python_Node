@@ -239,35 +239,6 @@ def search_val(x, target, target_val, key=""):
     else:
         return False
 
-    # for key, value in list(x.items()):
-    #     if str(key) == target and str(value) == target_val:
-    #         return True
-    #
-    #     else:
-    #         if isinstance(value, dict):
-    #             result = search_val(value, target, target_val)
-    #             if not result:
-    #                 continue
-    #             else:
-    #                 return result
-    #         elif isinstance(value, list):
-    #             for each in value:
-    #                 if isinstance(each, str) or isinstance(each, str):
-    #                     if str(key) == target and str(each) == target_val:
-    #                         return True
-    #                     else:
-    #                         continue
-    #                 else:
-    #                     result = search_val(each, target, target_val)
-    #                     if not result:
-    #                         continue
-    #                     else:
-    #                         return result
-    #         else:
-    #             continue
-    #
-    # return False
-
 
 @logger
 def search_val_wrapper(x, target, target_val, equal=True):
