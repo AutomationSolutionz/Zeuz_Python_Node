@@ -36,11 +36,11 @@ declarations = (
     { "name": "voice command response",                      "function": "voice_command_response",                "screenshot": "none" },
     { "name": "compare partial variables",                   "function": "Compare_Partial_Variables",             "screenshot": "none" },
     { "name": "save variable by list difference",            "function": "save_variable_by_list_difference",      "screenshot": "none" },
-    { "name": "split string",                                "function": "split_string",                          "screenshot": "desktop" },
-    { "name": "create/append to list or dictionary",         "function": "save_into_variable",                    "screenshot": "desktop" },
-    { "name": "save into variable",                          "function": "save_into_variable",                    "screenshot": "desktop" },
-    { "name": "save length",                                 "function": "save_length",                           "screenshot": "desktop" },
-    { "name": "validate schema",                             "function": "validate_schema",                       "screenshot": "desktop" },
+    { "name": "split string",                                "function": "split_string",                          "screenshot": "none" },
+    { "name": "create/append to list or dictionary",         "function": "save_into_variable",                    "screenshot": "none" },
+    { "name": "save into variable",                          "function": "save_into_variable",                    "screenshot": "none" },
+    { "name": "save length",                                 "function": "save_length",                           "screenshot": "none" },
+    { "name": "validate schema",                             "function": "validate_schema",                       "screenshot": "none" },
 
     # Mail actions
     { "name": "send mail",                                   "function": "send_mail",                             "screenshot": "none" },
@@ -52,12 +52,12 @@ declarations = (
     { "name": "remove item from global list variable",       "function": "remove_item_from_global_list_variable", "screenshot": "none" },
 
     # Excel actions
-    { "name": "write into single cell in excel",             "function": "write_into_single_cell_in_excel",       "screenshot": "desktop" },
-    { "name": "run macro in excel",                          "function": "run_macro_in_excel",                    "screenshot": "desktop" },
-    { "name": "get excel table",                             "function": "get_excel_table",                       "screenshot": "desktop" },
-    { "name": "write into excel",                            "function": "excel_write",                           "screenshot": "desktop" },
-    { "name": "excel comparison",                            "function": "excel_comparison",                      "screenshot": "desktop" },
-    { "name": "read from excel",                             "function": "excel_read",                            "screenshot": "desktop" },
+    { "name": "write into single cell in excel",             "function": "write_into_single_cell_in_excel",       "screenshot": "none" },
+    { "name": "run macro in excel",                          "function": "run_macro_in_excel",                    "screenshot": "none" },
+    { "name": "get excel table",                             "function": "get_excel_table",                       "screenshot": "none" },
+    { "name": "write into excel",                            "function": "excel_write",                           "screenshot": "none" },
+    { "name": "excel comparison",                            "function": "excel_comparison",                      "screenshot": "none" },
+    { "name": "read from excel",                             "function": "excel_read",                            "screenshot": "none" },
 )
 
 module_name = "common"
