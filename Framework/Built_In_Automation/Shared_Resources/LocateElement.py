@@ -18,7 +18,7 @@ from selenium.webdriver.support import expected_conditions as EC
 from selenium.webdriver.common.by import By
 import selenium
 global WebDriver_Wait
-WebDriver_Wait = 1
+WebDriver_Wait = 2
 global generic_driver
 generic_driver = None
 # driver type will be set globally so we can use it anytime
@@ -626,7 +626,7 @@ def _get_xpath_or_css_element(element_query, css_xpath, index_number=False, Filt
         exception_cnd = False
         start = time.time()
         #end = start + int(sr.Get_Shared_Variables("element_wait"))
-        end = 10
+        end = 7
         x = 0
         #while time.time() < end:
         while x <end:
@@ -712,7 +712,7 @@ def _get_xpath_or_css_element(element_query, css_xpath, index_number=False, Filt
 
             if all_matching_elements_visible_invisible and len(filter_elements(all_matching_elements_visible_invisible, "")) > 0:
                 break
-            time.sleep(0.5)
+            time.sleep(1)
         # end of while loop
 
         if exception_cnd:
