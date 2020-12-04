@@ -357,7 +357,7 @@ def Go_To_Link(step_data, page_title=False):
     try:
         web_link = step_data[0][2]  # Save Value field (URL)
         selenium_driver.get(web_link)  # Open in browser
-        selenium_driver.implicitly_wait(20)  # Wait for page to load
+        selenium_driver.implicitly_wait(0.5)  # Wait for page to load
         CommonUtil.ExecLog(
             sModuleInfo, "Successfully opened your link: %s" % web_link, 1
         )
