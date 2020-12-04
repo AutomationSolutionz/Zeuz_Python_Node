@@ -2748,6 +2748,21 @@ def validate_list_order(data_set):
         elif left == "order type":
             order_type = right.lower()
 
+    if not isinstance(value, list):
+        CommonUtil.ExecLog(
+            sModuleInfo,
+            'This action works only for simple lists. Such as [1, 2.5, 3] or ["c","a","t"]',
+            3
+        )
+        return "failed"
+    i = 0
+    while True:
+        if i >= len(value):
+            break
+        if value[i] == None:
+            del value[i]
+            i -= 1
+        i += 1
     if isinstance(value[0], str) and not case_sensitivity:
         try:
             for i in range(len(value)):
