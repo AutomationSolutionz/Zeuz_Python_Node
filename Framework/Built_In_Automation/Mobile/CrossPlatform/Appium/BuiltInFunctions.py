@@ -503,92 +503,101 @@ def launch_application(data_set):
 
     # Parse data set
     try:
-        package_name = ""  # Name of application package
-        activity_name = ""  # Name of application activity
-        serial = (
-            ""  # Serial number (may also be random string like "launch", "na", etc)
-        )
-        platform_version = ""
-        device_name = ""
-        ios = ""
-        no_reset = False
-        work_profile = False
+        browserstack_run = False
+        for did in device_info:
+            if "browserstack" in did:
+                browserstack_run = True
+                break
+        if browserstack_run:
+            desiredcaps = device_info["browserstack device 1"]
 
-        for row in data_set:  # Find required data
-            if (
-                str(row[0]).strip().lower() in ("android package", "package")
-                and row[1] == "element parameter"
-            ):
-                package_name = row[2]
-            elif (
-                str(row[0]).strip().lower()
-                in ("app activity", "activity", "android activity")
-                and row[1] == "element parameter"
-            ):
-                activity_name = row[2]
-            elif (
-                str(row[0]).strip().lower() in ("ios", "ios simulator")
-                and row[1] == "element parameter"
-            ):
-                ios = row[2]
-            elif str(row[0]).strip().lower() == "work profile" and str(
-                row[2]
-            ).strip().lower() in ("yes", "true"):
-                work_profile = True
-            elif (
-                str(row[0]).strip().lower() in ("no reset", "no_reset", "noreset")
-                and row[1] == "element parameter"
-            ):
-                if str(row[2]).strip().lower() in ("yes", "true"):
-                    no_reset = True
-                else:
-                    no_reset = False
-            elif str(row[1]).strip().lower() == "action":
-                serial = row[2].lower().strip()
+        else:
+            package_name = ""  # Name of application package
+            activity_name = ""  # Name of application activity
+            serial = (
+                ""  # Serial number (may also be random string like "launch", "na", etc)
+            )
+            platform_version = ""
+            device_name = ""
+            ios = ""
+            no_reset = False
+            work_profile = False
 
-        # desired capabilities for specific platforms
-        desiredcaps = dict()
-        # Set the global variable for the preferred connected device
-        if find_correct_device_on_first_run(serial, device_info) in failed_tag_list:
-            return "failed"
+            for row in data_set:  # Find required data
+                if (
+                    str(row[0]).strip().lower() in ("android package", "package")
+                    and row[1] == "element parameter"
+                ):
+                    package_name = row[2]
+                elif (
+                    str(row[0]).strip().lower()
+                    in ("app activity", "activity", "android activity")
+                    and row[1] == "element parameter"
+                ):
+                    activity_name = row[2]
+                elif (
+                    str(row[0]).strip().lower() in ("ios", "ios simulator")
+                    and row[1] == "element parameter"
+                ):
+                    ios = row[2]
+                elif str(row[0]).strip().lower() == "work profile" and str(
+                    row[2]
+                ).strip().lower() in ("yes", "true"):
+                    work_profile = True
+                elif (
+                    str(row[0]).strip().lower() in ("no reset", "no_reset", "noreset")
+                    and row[1] == "element parameter"
+                ):
+                    if str(row[2]).strip().lower() in ("yes", "true"):
+                        no_reset = True
+                    else:
+                        no_reset = False
+                elif str(row[1]).strip().lower() == "action":
+                    serial = row[2].lower().strip()
 
-        device_type = appium_details[device_id]["type"].lower().strip()
-
-        for left, mid, right in data_set:
-            left, mid = left.strip().lower(), mid.strip().lower()
-
-            if "parameter" in mid and "=" in right:
-                # key, value
-                k, v = map(lambda x: x.strip(), right.split("="))
-
-                if left in (device_type, "multi"):
-                    desiredcaps[k] = v
-
-        # Send wake up command to avoid issues with devices ignoring appium when they are in lower power mode (android 6.0+), and unlock if passworded
-        if appium_details[device_id]["type"] == "android":
-            result = adbOptions.wake_android(device_serial)
-            if result in failed_tag_list:
+            # desired capabilities for specific platforms
+            desiredcaps = dict()
+            # Set the global variable for the preferred connected device
+            if find_correct_device_on_first_run(serial, device_info) in failed_tag_list:
                 return "failed"
 
-        # If android, then we will try to find the activity name, IOS doesn't need this
-        if activity_name == "":
-            if appium_details[device_id]["type"] == "android":
-                package_name, activity_name = get_program_names(
-                    package_name
-                )  # Android only to match a partial package name if provided by the user
-                Shared_Resources.Set_Shared_Variables("package_name", str(package_name))
+            device_type = appium_details[device_id]["type"].lower().strip()
 
-        # Verify data
-        if (
-            appium_details[device_id]["type"] == "android"
-            and package_name == ""
-            or package_name in failed_tag_list
-        ):
-            CommonUtil.ExecLog(sModuleInfo, "Could not find package name", 3)
-            return "failed"
-        elif appium_details[device_id]["type"] == "android" and activity_name == "":
-            CommonUtil.ExecLog(sModuleInfo, "Could not find activity name", 3)
-            return "failed"
+            for left, mid, right in data_set:
+                left, mid = left.strip().lower(), mid.strip().lower()
+
+                if "parameter" in mid and "=" in right:
+                    # key, value
+                    k, v = map(lambda x: x.strip(), right.split("="))
+
+                    if left in (device_type, "multi"):
+                        desiredcaps[k] = v
+
+            # Send wake up command to avoid issues with devices ignoring appium when they are in lower power mode (android 6.0+), and unlock if passworded
+            if appium_details[device_id]["type"] == "android":
+                result = adbOptions.wake_android(device_serial)
+                if result in failed_tag_list:
+                    return "failed"
+
+            # If android, then we will try to find the activity name, IOS doesn't need this
+            if activity_name == "":
+                if appium_details[device_id]["type"] == "android":
+                    package_name, activity_name = get_program_names(
+                        package_name
+                    )  # Android only to match a partial package name if provided by the user
+                    Shared_Resources.Set_Shared_Variables("package_name", str(package_name))
+
+            # Verify data
+            if (
+                appium_details[device_id]["type"] == "android"
+                and package_name == ""
+                or package_name in failed_tag_list
+            ):
+                CommonUtil.ExecLog(sModuleInfo, "Could not find package name", 3)
+                return "failed"
+            elif appium_details[device_id]["type"] == "android" and activity_name == "":
+                CommonUtil.ExecLog(sModuleInfo, "Could not find activity name", 3)
+                return "failed"
 
     except Exception:
         errMsg = "Unable to parse data set"
@@ -596,28 +605,33 @@ def launch_application(data_set):
 
     # Launch application
     try:
-        if "platform_version" in appium_details[device_id]:
-            platform_version = appium_details[device_id]["platform_version"]
-        if "device_name" in appium_details[device_id]:
-            device_name = appium_details[device_id]["device_name"]
         launch_app = True
-        if (
-            appium_details[device_id]["driver"] == None
-        ):  # Only create a new appium instance if we haven't already (may be done by install_and_start_driver())
+        if browserstack_run:
             result, launch_app = start_appium_driver(
-                package_name,
-                activity_name,
-                platform_version=platform_version,
-                device_name=device_name,
-                ios=ios,
-                no_reset=no_reset,
-                work_profile=work_profile,
                 desiredcaps=desiredcaps,
+                browserstack_run=browserstack_run,
             )
-            if result == "failed":
-                return "failed"
+        else:
+            if "platform_version" in appium_details[device_id]:
+                platform_version = appium_details[device_id]["platform_version"]
+            if "device_name" in appium_details[device_id]:
+                device_name = appium_details[device_id]["device_name"]
+            if (
+                appium_details[device_id]["driver"] == None
+            ):  # Only create a new appium instance if we haven't already (may be done by install_and_start_driver())
+                result, launch_app = start_appium_driver(
+                    package_name,
+                    activity_name,
+                    platform_version=platform_version,
+                    device_name=device_name,
+                    ios=ios,
+                    no_reset=no_reset,
+                    work_profile=work_profile,
+                    desiredcaps=desiredcaps,
+                )
+                if result == "failed":
+                    return "failed"
 
-        CommonUtil.ExecLog(sModuleInfo, "Launching %s" % package_name, 0)
         if launch_app:  # if ios simulator then no need to launch app again
             appium_driver.launch_app()  # Launch program configured in the Appium capabilities
         # CommonUtil.TakeScreenShot(
@@ -792,6 +806,7 @@ def start_appium_driver(
     no_reset=False,
     work_profile=False,
     desiredcaps=None,
+    browserstack_run=False,
 ):
     """ Creates appium instance using discovered and provided capabilities """
     # Does not execute application
@@ -801,6 +816,17 @@ def start_appium_driver(
     try:
         global appium_driver, appium_details, device_id, wdaLocalPort
         launch_app = True
+        if browserstack_run:
+            appium_driver = webdriver.Remote(
+                command_executor="http://hub-cloud.browserstack.com/wd/hub",
+                desired_capabilities=desiredcaps
+            )
+            appium_details["browserstack device 1"] = {"driver": appium_driver}
+            Shared_Resources.Set_Shared_Variables("appium_details", appium_details)
+            CommonUtil.set_screenshot_vars(Shared_Resources.Shared_Variable_Export())  # Get all the shared variables, and pass them to CommonUtil
+            CommonUtil.ExecLog(sModuleInfo, "Appium driver created successfully.", 1)
+            return "passed", launch_app
+
         if appium_details[device_id]["driver"] == None:
             # Start Appium server
             if start_appium_server() in failed_tag_list:

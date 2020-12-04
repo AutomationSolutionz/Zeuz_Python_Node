@@ -1647,6 +1647,8 @@ def run_test_case(
 
 
 def set_device_info_according_to_user_order(device_order, device_dict):
+    # Need to set device_info for browserstack here
+    global device_info
     for each in device_order:
         device_order_val = str(each[0])
         device_no_val = str(each[1])
@@ -1655,6 +1657,35 @@ def set_device_info_according_to_user_order(device_order, device_dict):
             "device " + device_no_val
         ]
 
+    # device_info = {
+    #     "browserstack device 1": {
+    #         "browserstack.user": "muntasibmuhibcho1",
+    #         "browserstack.key": "rCvN4JzEzZq43JG82tpe",
+    #         "app": "bs://9a8f7f31b32ae985239ac0d8a3b82bf4fbfc3ceb",
+    #         "device": "Google Pixel 3",
+    #         "os_version": "9.0",
+    #
+    #         "project": "First Python project",
+    #         "build": "Python Android",
+    #         "name": "first_test"
+    #     }
+    # }
+
+    # Device_info_from_api = {
+    #     "local": {[1,2],[2,1]} or "{blank dict} when browserstack run is executed",
+    #     "browserstack" : {
+    #         "device 1":{
+    #             "user":"muhib",
+    #             "key":"123",
+    #             "app":"bs://<app-id>",
+    #             "device" : "Google Pixel 3",
+    #             "os_version" : "9.0",
+    #             "project" : "First Python project",
+    #             "build" : "Python Android",
+    #             "name" : "first_test"},
+    #         "device 2": {"same keys as above":"value"} or "{blank dict} when local device run is executed"
+    #     }
+    # }
 
 def update_fail_reasons_of_test_cases(run_id, TestCaseID):
     try:
