@@ -1424,6 +1424,7 @@ def save_attribute_values_in_list(step_data):
         all_elements = []
         target_index = 0
         target = []
+        paired = True
 
         try:
             for left, mid, right in step_data:
@@ -1455,6 +1456,9 @@ def save_attribute_values_in_list(step_data):
                     target_index = target_index + 1
                 elif left == "save attribute values in list":
                     variable_name = right
+                elif left == "paired":
+                    paired = False if right.lower() == "no" else True
+
         except:
             CommonUtil.ExecLog(
                 sModuleInfo, "Unable to parse data. Please write data in correct format", 3
@@ -1501,11 +1505,12 @@ def save_attribute_values_in_list(step_data):
                 variable_value[j].append(Attribute_value)
                 j = j + 1
             i = i + 1
+        if target_index == 1:
+            variable_value = list(map(list, zip(*variable_value)))[0]
+        elif not paired:
+            variable_value = list(map(list, zip(*variable_value)))
 
-        if Shared_Resources.Set_Shared_Variables(variable_name, variable_value) == "passed":
-            return "passed"
-        else:
-            return "failed"
+        return Shared_Resources.Set_Shared_Variables(variable_name, variable_value)
 
     except Exception:
         return CommonUtil.Exception_Handler(sys.exc_info())
