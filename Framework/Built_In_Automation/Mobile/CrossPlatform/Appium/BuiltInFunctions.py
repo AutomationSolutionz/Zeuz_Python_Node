@@ -4051,6 +4051,7 @@ def save_attribute_values_appium(step_data):
         adjust_fluctuation = 5
         end_parameter = []
         max_swipe = float('inf')
+        paired = True
         try:
             for left, mid, right in step_data:
                 left = left.strip().lower()
@@ -4104,6 +4105,8 @@ def save_attribute_values_appium(step_data):
                         max_swipe = int(right.strip())
                 elif mid == "end parameter":
                     end_parameter.append((left, "element parameter", right))
+                elif left == "paired":
+                    paired = False if right.lower() == "no" else True
 
         except:
             CommonUtil.ExecLog(
@@ -4253,6 +4256,10 @@ def save_attribute_values_appium(step_data):
                         final[i][j] = None
                         break
 
+        if target_index == 1:
+            final = list(map(list, zip(*final)))[0]
+        elif not paired:
+            final = list(map(list, zip(*final)))
         # print("Searching =", time.time() - start, "sec")
 
         return Shared_Resources.Set_Shared_Variables(variable_name, final)
