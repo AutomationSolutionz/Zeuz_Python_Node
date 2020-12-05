@@ -2727,7 +2727,7 @@ def validate_list_order(data_set):
     """
     sModuleInfo = inspect.currentframe().f_code.co_name + " : " + MODULE_NAME
 
-    case_sensitivity = True
+    case_sensitivity = False
     order_type = ""
     for left, mid, right in data_set:
         left = left.strip().lower()
@@ -2744,7 +2744,7 @@ def validate_list_order(data_set):
                 )
                 return "failed"
         elif left == "case sensitivity":
-            case_sensitivity = False if right.lower() == "false" else True
+            case_sensitivity = True if right.lower() in ("true", "yes", "ok") else False
         elif left == "order type":
             order_type = right.lower()
 
@@ -2763,7 +2763,7 @@ def validate_list_order(data_set):
     if order_type not in ("ascending", "descending"):
         CommonUtil.ExecLog(
             sModuleInfo,
-            "Order type should be provided between 'ascending' or 'descending' Taking 'ascending' by default ",
+            "Order type should be provided between 'ascending' or 'descending'. Taking 'ascending' by default ",
             2
         )
         order_type = "ascending"
