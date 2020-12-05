@@ -2729,6 +2729,7 @@ def validate_list_order(data_set):
 
     case_sensitivity = True
     order_type = ""
+    ignore = []
     for left, mid, right in data_set:
         left = left.strip().lower()
         right = right.strip()
@@ -2747,6 +2748,12 @@ def validate_list_order(data_set):
             case_sensitivity = False if right.lower() == "false" else True
         elif left == "order type":
             order_type = right.lower()
+        elif left == "ignore items":
+            ign = CommonUtil.parse_value_into_object(right)
+            if isinstance(ign, list):
+                ignore += ign
+            else:
+                ignore.append(ign)
 
     if not isinstance(value, list):
         CommonUtil.ExecLog(
@@ -2755,14 +2762,20 @@ def validate_list_order(data_set):
             3
         )
         return "failed"
-    i = 0
-    while True:
-        if i >= len(value):
-            break
-        if value[i] == None:
-            del value[i]
-            i -= 1
-        i += 1
+    if ignore:
+        msg = 'Ignoring following items:'
+        for each in ignore:
+            msg += "\n" + str(each) + " " + str(type(each))
+            i = 0
+            while True:
+                if i >= len(value):
+                    break
+                if value[i] == each:
+                    del value[i]
+                    i -= 1
+                i += 1
+        CommonUtil.ExecLog("", msg, 1)
+
     if isinstance(value[0], str) and not case_sensitivity:
         try:
             for i in range(len(value)):
