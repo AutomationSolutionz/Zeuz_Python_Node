@@ -10,7 +10,7 @@ declarations = (
     { "name": "swipe",                    "function": "swipe_handler_wrapper",       "screenshot": "mobile" },
     { "name": "close",                    "function": "close_application",           "screenshot": "mobile" },
     { "name": "uninstall",                "function": "uninstall_application",       "screenshot": "mobile" },
-    { "name": "teardown",                 "function": "teardown_appium",             "screenshot": "mobile" },
+    { "name": "teardown",                 "function": "teardown_appium",             "screenshot": "none" },
     { "name": "keypress",                 "function": "Keystroke_Appium",            "screenshot": "mobile" },
     { "name": "long keypress",            "function": "Keystroke_Appium",            "screenshot": "mobile" },
     { "name": "reset",                    "function": "reset_application",           "screenshot": "mobile" },

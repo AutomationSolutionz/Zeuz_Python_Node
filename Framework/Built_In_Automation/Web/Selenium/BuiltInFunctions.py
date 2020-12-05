@@ -2420,6 +2420,7 @@ def Tear_Down_Selenium(step_data=[[[]]]):
         CommonUtil.ExecLog(
             sModuleInfo, "Trying to tear down the page and close the browser...", 0
         )
+        time.sleep(1)  # Let the capturing screenshot end in thread
         selenium_driver.quit()
         CommonUtil.ExecLog(sModuleInfo, "Closed the browser successfully.", 1)
         return "passed"

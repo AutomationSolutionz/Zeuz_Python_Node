@@ -39,6 +39,7 @@ from . import common_functions as common  # Functions that are common to all mod
 from Framework.Built_In_Automation.Shared_Resources import (
     BuiltInFunctionSharedResources as sr,
 )
+from Framework.Utilities import ConfigModule
 from Framework.Built_In_Automation.Shared_Resources import LocateElement
 from Framework.Utilities import CommonUtil
 from Framework.Utilities.CommonUtil import (
@@ -215,13 +216,13 @@ def Sequential_Actions(
             sr.Set_Shared_Variables("device_info", device_info, protected=True)
 
         # Set screen capture type (desktop/mobile) as shared variable, so TakeScreenShot() can read it
-        if screen_capture != None and screen_capture != "None":
-            sr.Set_Shared_Variables(
-                "screen_capture", screen_capture.lower().strip()
-            )  # Save the screen capture type
-            CommonUtil.set_screenshot_vars(
-                sr.Shared_Variable_Export()
-            )  # Get all the shared variables, and pass them to CommonUtil
+        # if screen_capture != None and screen_capture != "None":
+        #     sr.Set_Shared_Variables(
+        #         "screen_capture", screen_capture.lower().strip()
+        #     )  # Save the screen capture type
+        #     CommonUtil.set_screenshot_vars(
+        #         sr.Shared_Variable_Export()
+        #     )  # Get all the shared variables, and pass them to CommonUtil
 
         # Set default variables (Must be defined here in case anyone destroys all shared variables)
         sr.Set_Shared_Variables(
@@ -1857,36 +1858,6 @@ def Conditional_Action_Handler(step_data, dataset_cnt):
 
     CommonUtil.ExecLog(sModuleInfo, "Conditional action handled successfully", 1)
 
-    """ Below are the older version of code. Will be deleted soon after testing """
-
-    # for conditional_steps in logic_row:  # For each conditional action from the data set
-    #     CommonUtil.ExecLog(sModuleInfo, "Processing conditional action: %s" % str(conditional_steps), 1)
-    #     if logic_decision in conditional_steps:  # If we have a result from the element check above (true/false)
-    #         list_of_steps = conditional_steps[2].split(",")
-    #         # Get the data set numbers for this conditional action and put them in a list
-    #         for each_item in list_of_steps:  # For each data set number we need to process before finishing
-    #             if int(each_item) - 1 in skip_for_loop:
-    #                 continue
-    #             if CommonUtil.check_offline():  # Check if user initiated offline command from GUI
-    #                 CommonUtil.ExecLog(sModuleInfo, "User requested Zeuz Node to go Offline", 2)
-    #                 return "failed"
-    #
-    #             CommonUtil.ExecLog(sModuleInfo, "Processing conditional step %s" % str(each_item), 1)
-    #             data_set_index = (int(each_item.strip()) - 1)  # data set number, -1 to offset for data set numbering system
-    #             result, skip_for_loop = Run_Sequential_Actions(
-    #                 [data_set_index]
-    #             )  # new edit: full step data is passed. [step_data[data_set_index]]) # Recursively call this function until all called data sets are complete
-    #             if row[0].lower().strip() == "step exit":
-    #                 CommonUtil.ExecLog(sModuleInfo, "Step Exit called. Stopping Test Step.", 1)
-    #                 return result
-    #
-    #             if result in failed_tag_list:
-    #                 return result  # Return on any failure
-    #         return result  # Return only the last result of the last row of the last data set processed - This should generally be a "step result action" command
-    #
-    # # Shouldn't get here, but just in case
-    # return "passed"
-
     return "passed", outer_skip
 
 
@@ -1922,13 +1893,6 @@ def Action_Handler(_data_set, action_row):
         "Function identified as function: %s in module: %s" % (function, module),
         0,
     )
-
-    # sr.Set_Shared_Variables(
-    #     "screen_capture", screenshot.lower().strip()
-    # )  # Save the screen capture type
-    # CommonUtil.set_screenshot_vars(
-    #     sr.Shared_Variable_Export()
-    # )  # Get all the shared variables, and pass them to CommonUtil
 
     if (
         module in failed_tag_list or module == "" or function == ""
@@ -1975,6 +1939,16 @@ def Action_Handler(_data_set, action_row):
         if original_module != "" and original_module in row[1]:
             new_row[1] = new_row[1].replace(original_module, "").strip()
         data_set.append(tuple(new_row))
+
+    take_screenshot_settings = ConfigModule.get_config_value(
+        "RunDefinition", "take_screenshot"
+    )  # True/False to take screenshot from settings.conf
+
+    local_run = ConfigModule.get_config_value(
+        "RunDefinition", "local_run"
+    )
+    if take_screenshot_settings.lower() == "false" or local_run.lower() == "true":
+        screenshot = "none"
 
     sr.Set_Shared_Variables("screen_capture", screenshot.lower().strip())
     CommonUtil.set_screenshot_vars(sr.Shared_Variable_Export())
