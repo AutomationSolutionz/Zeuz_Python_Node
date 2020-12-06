@@ -7,7 +7,8 @@ from Framework.Utilities.All_Device_Info import get_all_connected_device_info
 from Framework.Utilities.CommonUtil import parse_value_into_object
 import json
 
-if __name__ == "__main__":
+
+def main():
     with open("TestCases.json", "r") as f:
         Test_Case = json.load(f)
         if isinstance(Test_Case, str):
@@ -39,3 +40,9 @@ if __name__ == "__main__":
         debug_actions=None,
         _device_info=device_info
     )
+
+    return result
+
+
+if __name__ == "__main__":
+    main()

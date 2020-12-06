@@ -1,4 +1,4 @@
 {
     "python.linting.enabled": true,
-    "python.formatting.provider": "black"
+    "python.formatting.provider": "yapf"
 }

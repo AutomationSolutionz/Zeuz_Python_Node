@@ -507,15 +507,15 @@ def Thread_ScreenShot(ImageName, local_run=False):
     sModuleInfo = inspect.currentframe().f_code.co_name + " : " + MODULE_NAME
     ExecLog(sModuleInfo, "Function start", 0)
     chars_to_remove = [
-        "?",
-        "*",
-        '"',
-        "<",
-        ">",
-        "|",
-        "\\",
-        "\/",
-        ":",
+        r"?",
+        r"*",
+        r'"',
+        r"<",
+        r">",
+        r"|",
+        r"\\",
+        r"\/",
+        r":",
     ]  # Symbols that can't be used in filename
     picture_quality = 20  # Quality of picture
     picture_size = 800, 600  # Size of image (for reduction in file size)
@@ -530,8 +530,12 @@ def Thread_ScreenShot(ImageName, local_run=False):
     image_folder = ConfigModule.get_config_value(
         "sectionOne", "screen_capture_folder", temp_config
     )  # Get screen capture directory from temporary config file that is dynamically created
-    if not os.path.exists(image_folder):
-        os.mkdir(image_folder)
+
+    try:
+        if not os.path.exists(image_folder):
+            os.mkdir(image_folder)
+    except:
+        pass
 
     # Decide if screenshot should be captured
     if (

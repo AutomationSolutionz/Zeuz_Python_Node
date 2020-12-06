@@ -5,7 +5,7 @@
     Caveat: Functions common to multiple Built In Functions must have action names that are unique, because we search the common functions first, regardless of the module name passed by the user 
 """
 
-import inspect, sys, time, collections, ftplib, os, PyPDF2, ast
+import inspect, sys, time, collections, ftplib, os, ast
 from pathlib import Path
 
 try:
@@ -2397,6 +2397,7 @@ def save_text_from_file_into_variable(data_set):
     sModuleInfo = inspect.currentframe().f_code.co_name + " : " + MODULE_NAME
 
     try:
+        import PyPDF2
         text_file_path = ""
         var_name = ""
         var_value = ""

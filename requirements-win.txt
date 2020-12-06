@@ -35,7 +35,6 @@ https://github.com/AutomationSolutionz/InstallerHelperFiles/raw/master/Windows/p
 wmi
 pyautoit
 winshell
-webdrivermanager
 webdriver_manager
 jsonschema
 webcolors
@@ -45,3 +44,4 @@ rfc3986-validator
 idna
 pyrsistent
 attrs
+pytest==6.1.2

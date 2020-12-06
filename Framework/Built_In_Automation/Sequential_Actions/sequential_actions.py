@@ -732,13 +732,13 @@ def Run_Sequential_Actions(
                 )
                 continue  # If this data set is in the skip list, do not process it
 
-            if (
-                CommonUtil.check_offline()
-            ):  # Check if user initiated offline command from GUI
-                CommonUtil.ExecLog(
-                    sModuleInfo, "User requested Zeuz Node to go offline.", 2
-                )
-                return "failed", skip_for_loop
+            # if (
+            #     CommonUtil.check_offline()
+            # ):  # Check if user initiated offline command from GUI
+            #     CommonUtil.ExecLog(
+            #         sModuleInfo, "User requested Zeuz Node to go offline.", 2
+            #     )
+            #     return "failed", skip_for_loop
 
             for row in data_set:  # For each row of the data set
                 action_name = row[1]  # Get Sub-Field
@@ -1424,13 +1424,13 @@ def Loop_Action_Handler(data, row, dataset_cnt):
                 for ndc in range(
                     len(new_step_data)
                 ):  # For each data set in the sub-set
-                    if (
-                        CommonUtil.check_offline()
-                    ):  # Check if user initiated offline command from GUI
-                        CommonUtil.ExecLog(
-                            sModuleInfo, "User requested Zeuz Node to go Offline", 2
-                        )
-                        return "failed", skip
+                    # if (
+                    #     CommonUtil.check_offline()
+                    # ):  # Check if user initiated offline command from GUI
+                    #     CommonUtil.ExecLog(
+                    #         sModuleInfo, "User requested Zeuz Node to go Offline", 2
+                    #     )
+                    #     return "failed", skip
 
                     # Build the sub-set and execute
                     result = build_subset([new_step_data[ndc]])
