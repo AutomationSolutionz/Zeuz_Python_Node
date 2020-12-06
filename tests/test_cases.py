@@ -11,16 +11,15 @@ import traceback
 
 class AppTest(unittest.TestCase):
     """Basis for all test cases"""
-    pass
-
 
     def test_5251(self):
         result = None
         try:
-            result = LocalRun()
+            result = LocalRun("AWS Local Run Android")
         except:
             print("Failed to run test case TEST-5251")
             traceback.print_exc()
+            result = "failed"
 
         assert result == "passed"
 
