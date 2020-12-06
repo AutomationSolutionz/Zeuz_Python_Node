@@ -11,7 +11,9 @@ import json
 def main(test_case_title=None):
     try:
         with open("TestCases.json", "r") as f:
-            Test_Case = json.loads(f.read())
+            Test_Case = json.load(f)
+            if isinstance(Test_Case, str):
+                Test_Case = json.loads(Test_Case)
 
             step_data = []
             final_dependency = {}
