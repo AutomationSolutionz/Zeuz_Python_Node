@@ -16,22 +16,19 @@ sys.path.append(os.path.join(os.path.dirname(os.path.abspath(__file__)), "Framew
 # kill any process that is running  from the same node folder
 pid = os.getpid()
 
-try:
-    #try to read to see if file exists 
-    pidfile = (os.path.abspath(__file__).split("node_cli.py")[0]+'pid.txt')
-except:
-    True
+pidfile = os.path.abspath(__file__).split("node_cli.py")[0] + 'pid.txt'
+
 try:
     import psutil
     pidfile_read = open(pidfile)
     pidNumber = pidfile_read.read()
     pidNumber = int("".join(pidNumber.split()))
-    print (pidNumber)
+    print("Process ID", pidNumber)
     p = psutil.Process(pidNumber)
     p.terminate() 
-    
 except:
     True
+
 try: 
     f = open(pidfile, "w")
     f.write(str(os.getpid()))
