@@ -821,10 +821,14 @@ def start_appium_driver(
                 command_executor="http://hub-cloud.browserstack.com/wd/hub",
                 desired_capabilities=desiredcaps
             )
-            appium_details["browserstack device 1"] = {"driver": appium_driver}
+            appium_details["browserstack device 1"] = {"driver": appium_driver, "serial": "0"}
             Shared_Resources.Set_Shared_Variables("appium_details", appium_details)
-            CommonUtil.set_screenshot_vars(Shared_Resources.Shared_Variable_Export())  # Get all the shared variables, and pass them to CommonUtil
-            CommonUtil.ExecLog(sModuleInfo, "Appium driver created successfully.", 1)
+            CommonUtil.set_screenshot_vars(Shared_Resources.Shared_Variable_Export())
+
+            device_id = "browserstack device 1"
+            Shared_Resources.Set_Shared_Variables("device_serial", device_serial, protected=True)
+            Shared_Resources.Set_Shared_Variables("device_id", device_id, protected=True)
+            CommonUtil.ExecLog(sModuleInfo, "Browserstack driver created successfully.", 1)
             return "passed", launch_app
 
         if appium_details[device_id]["driver"] == None:
