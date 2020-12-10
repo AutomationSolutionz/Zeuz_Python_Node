@@ -509,7 +509,7 @@ def launch_application(data_set):
                 browserstack_run = True
                 break
         if browserstack_run:
-            desiredcaps = device_info["browserstack device 1"]
+            desiredcaps = device_info["browserstack device 1"]["basic"]
 
         else:
             package_name = ""  # Name of application package
@@ -611,6 +611,10 @@ def launch_application(data_set):
                 desiredcaps=desiredcaps,
                 browserstack_run=browserstack_run,
             )
+            if launch_app:  # if ios simulator then no need to launch app again
+                pass
+                # appium_driver.launch_app()  # Launch program configured in the Appium capabilities
+            CommonUtil.ExecLog(sModuleInfo, "Launched the application successfully.", 1)
         else:
             if "platform_version" in appium_details[device_id]:
                 platform_version = appium_details[device_id]["platform_version"]
@@ -632,12 +636,9 @@ def launch_application(data_set):
                 if result == "failed":
                     return "failed"
 
-        if launch_app:  # if ios simulator then no need to launch app again
-            appium_driver.launch_app()  # Launch program configured in the Appium capabilities
-        # CommonUtil.TakeScreenShot(
-        #     sModuleInfo
-        # )  # Capture screenshot, if settings allow for it
-        CommonUtil.ExecLog(sModuleInfo, "Launched the application successfully.", 1)
+            if launch_app:  # if ios simulator then no need to launch app again
+                appium_driver.launch_app()  # Launch program configured in the Appium capabilities
+            CommonUtil.ExecLog(sModuleInfo, "Launched the application successfully.", 1)
         return "passed"
     except Exception:
         return CommonUtil.Exception_Handler(

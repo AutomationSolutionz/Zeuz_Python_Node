@@ -146,7 +146,8 @@ def get_all_run_ids(Userid, sModuleInfo):
 # returns all runids assigned to a machine, NEEDS IMPROVEMENT
 def get_device_order(Userid):
     return RequestFormatter.Get(
-        "get_machine_device_order_api", {"machine_name": Userid}
+        # "get_machine_device_order_api", {"machine_name": Userid}  # old one
+        "get_machine_device_info_api", {"machine_name": Userid}     # new one
     )
 
 
@@ -975,7 +976,7 @@ def run_all_test_steps_in_a_test_case(
         CommonUtil.ExecLog(sModuleInfo, log_line, 4)
         print("-"*len(log_line))
 
-        step_meta_data = get_step_meta_data_of_a_step(
+        step_meta_data = get_step_meta_data_of_a_step(      # Response= [[False, False, 59]]
             run_id, test_case, StepSeq
         )  # get meta data from server
 
@@ -1025,7 +1026,7 @@ def run_all_test_steps_in_a_test_case(
         )
 
         # get test step data
-        test_steps_data = get_test_step_data(
+        test_steps_data = get_test_step_data(   # Response= step[action[row[left,mid,right]]]
             run_id, test_case, current_step_sequence, sModuleInfo
         )
 
@@ -1441,6 +1442,7 @@ def run_test_case(
     send_log_file_only_for_fail=True,
     performance=False,
     browserDriver=None,
+    test_case_detail=[]
 ):
 
     # set shared variables for run id
@@ -1465,7 +1467,7 @@ def run_test_case(
             return
 
         # check if test case is copied
-        copy_status = check_if_test_case_is_copied(run_id, test_case)
+        copy_status = check_if_test_case_is_copied(run_id, test_case)   # Response: True (Dont know what)
         if copy_status:
             break
 
@@ -1473,12 +1475,12 @@ def run_test_case(
         retry += 1
 
     # download attachments for test case
-    file_specific_steps = download_attachments_for_test_case(
+    file_specific_steps = download_attachments_for_test_case(   # Response= {}
         sModuleInfo, run_id, test_case, temp_ini_file
     )  # downloads attachments
 
     # get test case details
-    test_case_detail = get_test_case_details(run_id, test_case)
+    # test_case_detail = get_test_case_details(run_id, test_case)     # Response= [['TEST-5181', 'Muhib validate order', 'Automated', '00:01:58']]
     TestCaseName = test_case_detail[0][1]
 
     # add log
@@ -1505,6 +1507,8 @@ def run_test_case(
 
     # get all steps of a test case
     TestStepsList = get_all_steps_of_a_test_case(run_id, test_case)
+    # Response= [[6279, 'muhib Sample Step', 1, 'Built_In_Driver', 'automated', False, True, 'Sequential Actions', 'Built_In_Driver', False],
+    # [6427, 'validate list with ignore items', 2, 'Built_In_Driver', 'automated', False, True, 'Sequential Actions', 'Built_In_Driver', False]]
 
     Stepscount = len(TestStepsList)  # no. of steps
 
@@ -1516,7 +1520,7 @@ def run_test_case(
 
     # debug steps
     if str(run_id).startswith("debug"):
-        debug_steps = get_debug_steps(run_id)  # get debug steps
+        debug_steps = get_debug_steps(run_id)  # get debug steps    Response: '{2}-NO-{1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18}'
         str_list = str(debug_steps).split("-")
         debug_steps = str_list[0]
         cleanup = str_list[1]
@@ -1646,30 +1650,60 @@ def run_test_case(
         return
 
 
-def set_device_info_according_to_user_order(device_order, device_dict):
+def set_device_info_according_to_user_order(device_order, device_dict, test_case_detail, user_info_object, Userid):
     # Need to set device_info for browserstack here
     global device_info
-    for each in device_order:
-        device_order_val = str(each[0])
-        device_no_val = str(each[1])
-        original_dict = device_dict
-        device_info["device " + device_order_val] = original_dict[
-            "device " + device_no_val
-        ]
+    if isinstance(device_order, list):
+        for each in device_order:
+            device_order_val = str(each[0])
+            device_no_val = str(each[1])
+            original_dict = device_dict
+            device_info["device " + device_order_val] = original_dict[
+                "device " + device_no_val
+                ]
+    elif "browser_stack" in device_order and device_order["browser_stack"]:
+        testcase_no = test_case_detail[0][0]
+        testcase_name = test_case_detail[0][1]
+        project = user_info_object["project"]
+        team = user_info_object["team"]
 
-    # device_info = {
-    #     "browserstack device 1": {
-    #         "browserstack.user": "muntasibmuhibcho1",
-    #         "browserstack.key": "rCvN4JzEzZq43JG82tpe",
-    #         "app": "bs://9a8f7f31b32ae985239ac0d8a3b82bf4fbfc3ceb",
-    #         "device": "Google Pixel 3",
-    #         "os_version": "9.0",
-    #
-    #         "project": "First Python project",
-    #         "build": "Python Android",
-    #         "name": "first_test"
-    #     }
-    # }
+        project = "PROJECT:'" + project + "'  TEAM:'" + team + "'"
+        build = testcase_no + " :: " + testcase_name
+        name = Userid + " :: " + datetime.now().strftime("%d %B %Y %A %H:%M:%S")
+        device_info = {
+            "browserstack device 1": {
+                "basic": {
+                    "browserstack.user": device_order["browser_stack"]["1"]["username"],
+                    "browserstack.key": device_order["browser_stack"]["1"]["access_key"],
+                    "app": "bs://227d1bd74c601618c44b1a10b36f80caf11e497a",
+                    # "app": "bs://" + device_order["browser_stack"]["1"]["app_id"],
+
+                    "device": device_order["browser_stack"]["1"]["device"],
+                    "os_version": device_order["browser_stack"]["1"]["os_version"],
+
+                    "project": project,  # zeuz project + team name
+                    "build": build,  # test case no + test case name
+                    "name": name  # Userid + datetime
+                },
+                "other": {
+                    # "app_name": device_order["browser_stack"]["1"]["app_name"],
+                    # "app_version": device_order["browser_stack"]["1"]["app_version"],
+                },
+
+            }
+        }
+    elif "local" in device_order:
+        device_order = device_order["local"]
+        for each in device_order:
+            device_order_val = str(each[0])
+            device_no_val = str(each[1])
+            original_dict = device_dict
+            device_info["device " + device_order_val] = original_dict[
+                "device " + device_no_val
+            ]
+
+
+
 
     # Device_info_from_api = {
     #     "local": {[1,2],[2,1]} or "{blank dict} when browserstack run is executed",
@@ -1784,7 +1818,7 @@ def upload_csv_file_info(run_id, test_case):
 
 
 # main function
-def main(device_dict):
+def main(device_dict, user_info_object):
 
     # get module info
     sModuleInfo = inspect.currentframe().f_code.co_name + " : " + MODULE_NAME
@@ -1811,21 +1845,21 @@ def main(device_dict):
     Userid = (CommonUtil.MachineInfo().getLocalUser()).lower()
 
     # check user permission to run test
-    user_permission = check_user_permission_to_run_test(sModuleInfo, Userid)
+    user_permission = check_user_permission_to_run_test(sModuleInfo, Userid)    # Response = "passed"/"failed"
     if user_permission not in passed_tag_list:
         return user_permission
 
     # get drivers list
-    driver_list = get_all_drivers_list()
+    driver_list = get_all_drivers_list()    # Response = ['Built_In_Selenium_Driver', 'Built_In_RestApi', 'Built_In_Appium_Driver', 'Built_In_Selenium', 'Built_In_Driver', 'deepak', 'Built_In_Appium', 'Built_In_NET_Win', 'Jarvis']
 
     # get all run ids
-    TestRunLists = get_all_run_ids(Userid, sModuleInfo)
+    TestRunLists = get_all_run_ids(Userid, sModuleInfo)     # Response = [['debugmuhib_bfa0de80-0', 'Test Case:TEST-5181|AND|', 'muhib_bfa0de80-0', 'PROJ-17', 2]]
 
     # get device order
-    device_order = get_device_order(Userid)
+    device_order = get_device_order(Userid)     # Response= [[1,2],[2,1]]
 
     # set device info according to user order
-    set_device_info_according_to_user_order(device_order, device_dict)
+    # set_device_info_according_to_user_order(device_order, device_dict)
 
     if len(TestRunLists) == 0:
         CommonUtil.ExecLog(
@@ -1842,45 +1876,43 @@ def main(device_dict):
         CommonUtil.clear_all_logs()
 
         # get run info
-        project_id = TestRunID[3]
-        team_id = int(TestRunID[4])
+        project_id = TestRunID[3]       # Example= PROJ-17
+        team_id = int(TestRunID[4])     # Example= 2
         try:
-            is_linked = TestRunID[5]
+            is_linked = TestRunID[5]    # Example= ""
         except:
             is_linked = ""
-        run_description = (TestRunID[1].replace("run_dependency", "")).replace(
-            "dependency_filter", ""
-        )
-        run_id = TestRunID[0]
+        run_description = (TestRunID[1].replace("run_dependency", "")).replace("dependency_filter", "")     # Example= Test Case:TEST-5181|AND|
+        run_id = TestRunID[0]           # Example= debugmuhib_bfa0de80-0
 
         # save run id in shared variable
 
-        final_dependency = get_all_dependencies(
+        final_dependency = get_all_dependencies(        # Response= {'Browser': 'Chrome', 'Mobile': 'Android'}
             project_id, team_id, run_description
         )  # get dependencies
 
-        final_run_params_from_server = get_all_runtime_parameters(
+        final_run_params_from_server = get_all_runtime_parameters(      # Response= [{'field': 'param1', 'name': 'val1_param1', 'value': 'subfield_val1_param1'}, {'field': 'param2', 'name': 'val1_param2', 'value': 'subfield_val1_param2'}, {'field': 'password', 'name': 'user1', 'value': 'testPassword'}, {'field': 'username', 'name': 'user1', 'value': 'testUser'}]
             run_id
         )  # get runtime params
 
-        final_run_params = {}
+        final_run_params = {}   # Example= {'param1': 'subfield_val1_param1', 'param2': 'subfield_val1_param2', 'password': 'testPassword', 'username': 'testUser'}
         for param in final_run_params_from_server:
             final_run_params[str(param["field"])] = str(param["value"])
 
-        update_run_id_info_on_server(run_id)  # update runid status
+        update_run_id_info_on_server(run_id)  # UPLOAD run_id status
 
         TestSetStartTime = time.time()  # test start time
 
-        TestCaseLists = get_all_automated_test_cases_in_run_id(
+        TestCaseLists = get_all_automated_test_cases_in_run_id(     # Response= [['TEST-5181', 'Automated', 1]]
             run_id, Userid
         )  # get all automated test cases of a runid
 
         # get all remote config
-        rem_config = get_all_remote_config(run_id)
+        rem_config = get_all_remote_config(run_id)      # Response= {'threading': False, 'local_run': False, 'take_screenshot': False, 'debug_mode': False, 'upload_log_file_only_for_fail': False, 'window_size_x': None, 'window_size_y': None}
         ConfigModule.remote_config = rem_config
 
         # get run definition config value
-        send_log_file_only_for_fail = ConfigModule.get_config_value(
+        send_log_file_only_for_fail = ConfigModule.get_config_value(    # Example= "false"
             "RunDefinition", "upload_log_file_only_for_fail"
         )
 
@@ -1912,6 +1944,8 @@ def main(device_dict):
         for TestCaseID in TestCaseLists:
 
             # check if performance test case
+            test_case_detail = get_test_case_details(run_id, str(TestCaseID[0]).replace("#", "no"))
+            set_device_info_according_to_user_order(device_order, device_dict, test_case_detail, user_info_object, Userid)
 
             performance_test_case = False
             if str(TestCaseID[1]).lower() == "performance":
@@ -2023,6 +2057,7 @@ def main(device_dict):
                     temp_ini_file,
                     is_linked,
                     send_log_file_only_for_fail=send_log_file_only_for_fail,
+                    test_case_detail=test_case_detail
                 )
 
                 # If we're in debug mode, don't send logs to server.

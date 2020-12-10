@@ -315,7 +315,7 @@ def Login(cli=False):
                                 "", "Time zone settings failed {}".format(e), 4, False
                             )
 
-                        run_again = RunProcess(tester_id)
+                        run_again = RunProcess(tester_id, user_info_object)
 
                         if not run_again:
                             break  # Exit login
@@ -394,7 +394,7 @@ def disconnect_from_server():
     CommonUtil.set_exit_mode(True)  # Tell Sequential Actions to exit
 
 
-def RunProcess(sTesterid):
+def RunProcess(sTesterid, user_info_object):
     etime = time.time() + (30 * 60)  # 30 minutes
     while 1:
         try:
@@ -415,7 +415,7 @@ def RunProcess(sTesterid):
                     False,
                 )
                 PreProcess()
-                value = MainDriverApi.main(device_dict)
+                value = MainDriverApi.main(device_dict, user_info_object)
                 if value == "pass":
                     if exit_script:
                         return False
