@@ -1,6 +1,8 @@
 # -*- coding: utf-8 -*-
 # -*- coding: cp1252 -*-
 
+import concurrent.futures
+import json
 import inspect
 import os
 import time
@@ -100,8 +102,11 @@ def send_email_report_after_exectution(run_id, project_id, team_id):
 
 # returns all drivers
 def get_all_drivers_list():
-    return RequestFormatter.Get("get_all_drivers_api")
-
+    # return RequestFormatter.Get("get_all_drivers_api")
+    T1 = time.perf_counter()
+    res = RequestFormatter.Get("get_all_drivers_api")
+    print("get_all_drivers_list = %f seconds" % (time.perf_counter() - T1))
+    return res
 
 # returns all latest versions
 def get_latest_zeuz_versions():
@@ -110,6 +115,8 @@ def get_latest_zeuz_versions():
 
 # returns all runids assigned to a machine, NEEDS IMPROVEMENT
 def get_all_run_ids(Userid, sModuleInfo):
+    T1 = time.perf_counter()
+
     all_run = []
     try:
         wait_time = 5
@@ -124,6 +131,7 @@ def get_all_run_ids(Userid, sModuleInfo):
                 CommonUtil.ExecLog(sModuleInfo, "Trying again to fetch test run", 1)
                 time.sleep(1)
             else:
+                print("get_all_run_ids = %f seconds" % (time.perf_counter() - T1))
                 return all_run
 
         CommonUtil.ExecLog(
@@ -131,6 +139,7 @@ def get_all_run_ids(Userid, sModuleInfo):
             "Couldn't get the test run deployed on this machine, please try again",
             3,
         )
+        print("get_all_run_ids = %f seconds" % (time.perf_counter() - T1))
         return all_run
 
     except Exception:
@@ -140,16 +149,39 @@ def get_all_run_ids(Userid, sModuleInfo):
             "Couldn't get the test run deployed on this machine, please try again",
             3,
         )
+        print("get_all_run_ids = %f seconds" % (time.perf_counter() - T1))
         return all_run
 
 
-# returns all runids assigned to a machine, NEEDS IMPROVEMENT
+# returns device serial set from server
 def get_device_order(Userid):
-    return RequestFormatter.Get(
+    # return RequestFormatter.Get(
+    #     "get_machine_device_order_api", {"machine_name": Userid}  # old one
+    #     # "get_machine_device_info_api", {"machine_name": Userid}     # new one
+    # )
+
+    T1 = time.perf_counter()
+    res = RequestFormatter.Get(
+        "get_machine_device_order_api", {"machine_name": Userid}  # old one
+        # "get_machine_device_info_api", {"machine_name": Userid}     # new one
+    )
+    print("get_device_order = %f seconds" % (time.perf_counter() - T1))
+    return res
+
+# returns device serial also browserstack info set from server
+def get_device_order_and_browserstack_info(Userid):
+    # return RequestFormatter.Get(
+    #     # "get_machine_device_order_api", {"machine_name": Userid}  # old one
+    #     "get_machine_device_info_api", {"machine_name": Userid}     # new one
+    # )
+
+    T1 = time.perf_counter()
+    res = RequestFormatter.Get(
         # "get_machine_device_order_api", {"machine_name": Userid}  # old one
         "get_machine_device_info_api", {"machine_name": Userid}     # new one
     )
-
+    print("get_device_order_and_browserstack_info = %f seconds" % (time.perf_counter() - T1))
+    return res
 
 # sets server variable
 def set_server_variable(run_id, key, value):
@@ -195,8 +227,11 @@ def get_all_server_variable(run_id):
 
 # get all server variable
 def get_all_remote_config(run_id):
-    return RequestFormatter.Get("get_all_remote_config_api", {"run_id": run_id})
-
+    # return RequestFormatter.Get("get_all_remote_config_api", {"run_id": run_id})
+    T1 = time.perf_counter()
+    res = RequestFormatter.Get("get_all_remote_config_api", {"run_id": run_id})
+    print("get_all_remote_config = %f seconds" % (time.perf_counter() - T1))
+    return res
 
 # get all server variable
 def delete_all_server_variable(run_id):
@@ -207,29 +242,39 @@ def delete_all_server_variable(run_id):
 
 # returns all dependencies of test cases of a run id
 def get_all_dependencies(project_id, team_id, run_description):
+    T1 = time.perf_counter()
     dependency_list = RequestFormatter.Get(
         "get_all_dependency_based_on_project_and_team_api",
         {"project_id": project_id, "team_id": team_id},
     )
     final_dependency = get_final_dependency_list(dependency_list, run_description)
+    print("get_all_dependencies = %f seconds" % (time.perf_counter() - T1))
     return final_dependency
 
 
 # returns all runtime parameters of test cases of a run id
 def get_all_runtime_parameters(run_id):
+    T1 = time.perf_counter()
     run_params_list = RequestFormatter.Get(
         "get_all_run_parameters_based_on_project_and_team_api", {"run_id": run_id}
     )
     final_run_params = get_run_params_list(run_params_list)
+    print("get_all_runtime_parameters = %f seconds" % (time.perf_counter() - T1))
     return final_run_params
 
 
-# updates current runid status on server database
-def update_run_id_info_on_server(run_id):
+def update_machine_info_on_server(run_id):
+    T1 = time.perf_counter()
     RequestFormatter.Get(
         "update_machine_info_based_on_run_id_api",
         {"run_id": run_id, "options": {"status": PROGRESS_TAG}},
     )
+    print("update_machine_info_on_server = %f seconds" % (time.perf_counter() - T1))
+# updates current runid status on server database
+
+
+def update_test_env_results_on_server(run_id):
+    T1 = time.perf_counter()
     sTestSetStartTime = datetime.fromtimestamp(time.time()).strftime(
         "%Y-%m-%d %H:%M:%S"
     )
@@ -243,14 +288,17 @@ def update_run_id_info_on_server(run_id):
             "run_id": run_id,
         },
     )
+    print("update_test_env_results_on_server = %f seconds" % (time.perf_counter() - T1))
 
 
 # returns all automated test cases of a runid
 def get_all_automated_test_cases_in_run_id(run_id, tester_id):
+    T1 = time.perf_counter()
     TestCaseLists = RequestFormatter.Get(
         "get_all_automated_test_cases_based_on_run_id_api",
         {"run_id": run_id, "tester_id": tester_id},
     )
+    print("get_all_automated_test_cases_in_run_id = %f seconds" % (time.perf_counter() - T1))
     return TestCaseLists
 
 
@@ -444,6 +492,7 @@ def update_test_step_results_on_server(
 
 # checks if the user has permission to run test or not
 def check_user_permission_to_run_test(sModuleInfo, Userid):
+    T1 = time.perf_counter()
     r = RequestFormatter.Get("get_valid_machine_name_api", {"machine_name": Userid})
     if not r:
         CommonUtil.ExecLog(
@@ -451,6 +500,7 @@ def check_user_permission_to_run_test(sModuleInfo, Userid):
         )
         return "You Don't Have Permission"
     else:
+        print("check_user_permission_to_run_test = %f seconds" % (time.perf_counter() - T1))
         return "passed"
 
 
@@ -970,6 +1020,14 @@ def run_all_test_steps_in_a_test_case(
         current_step_id = TestStepsList[StepSeq - 1][0]
         current_step_sequence = TestStepsList[StepSeq - 1][2]
 
+        # add config value
+        ConfigModule.add_config_value(
+            "sectionOne",
+            "sTestStepExecLogId",
+            run_id + "|" + test_case + "|" + str(current_step_id) + "|" + str(StepSeq),
+            temp_ini_file,
+        )
+
         # add log
         log_line = "STEP #%d: %s" % (StepSeq, current_step_name)
         print("-"*len(log_line))
@@ -991,14 +1049,6 @@ def run_all_test_steps_in_a_test_case(
         except:
             test_case_continue = False
             step_time = 59
-
-        # add config value
-        ConfigModule.add_config_value(
-            "sectionOne",
-            "sTestStepExecLogId",
-            run_id + "|" + test_case + "|" + str(current_step_id) + "|" + str(StepSeq),
-            temp_ini_file,
-        )
 
         # get step start time
         sTestStepStartTime = datetime.fromtimestamp(time.time()).strftime(
@@ -1621,14 +1671,6 @@ def run_test_case(
         shared.Clean_Up_Shared_Variables()  # clean up shared variables
 
     if debug:
-        """
-        Drivers shouldn't be teared down and variables shouldn't be cleared after debugging all steps though
-        "Cleanup Drivers and Variables" is set to YES in server
-        """
-        # if cleanup_drivers_during_debug:
-        #     cleanup_driver_instances()  # clean up drivers
-        #     shared.Clean_Up_Shared_Variables()  # clean up shared variables
-
         # start sending logs/results to server
         start_sending_log_to_server(run_id, temp_ini_file)  # send logs
         start_sending_shared_var_to_server(run_id)  # send shared variables
@@ -1675,8 +1717,8 @@ def set_device_info_according_to_user_order(device_order, device_dict, test_case
                 "basic": {
                     "browserstack.user": device_order["browser_stack"]["1"]["username"],
                     "browserstack.key": device_order["browser_stack"]["1"]["access_key"],
-                    "app": "bs://227d1bd74c601618c44b1a10b36f80caf11e497a",
-                    # "app": "bs://" + device_order["browser_stack"]["1"]["app_id"],
+                    # "app": "bs://227d1bd74c601618c44b1a10b36f80caf11e497a",
+                    "app": device_order["browser_stack"]["1"]["app_url"],
 
                     "device": device_order["browser_stack"]["1"]["device"],
                     "os_version": device_order["browser_stack"]["1"]["os_version"],
@@ -1686,8 +1728,7 @@ def set_device_info_according_to_user_order(device_order, device_dict, test_case
                     "name": name  # Userid + datetime
                 },
                 "other": {
-                    # "app_name": device_order["browser_stack"]["1"]["app_name"],
-                    # "app_version": device_order["browser_stack"]["1"]["app_version"],
+                    "app_name": device_order["browser_stack"]["1"]["app_name"],
                 },
 
             }
@@ -1845,19 +1886,48 @@ def main(device_dict, user_info_object):
     Userid = (CommonUtil.MachineInfo().getLocalUser()).lower()
 
     # check user permission to run test
-    user_permission = check_user_permission_to_run_test(sModuleInfo, Userid)    # Response = "passed"/"failed"
+    # user_permission = check_user_permission_to_run_test(sModuleInfo, Userid)    # Response = "passed"/"failed"
+    # if user_permission not in passed_tag_list:
+    #     return user_permission
+
+    # T = time.perf_counter()
+    # # get drivers list
+    # driver_list = get_all_drivers_list()    # Response = ['Built_In_Selenium_Driver', 'Built_In_RestApi', 'Built_In_Appium_Driver', 'Built_In_Selenium', 'Built_In_Driver', 'deepak', 'Built_In_Appium', 'Built_In_NET_Win', 'Jarvis']
+    #
+    # # get all run ids
+    # TestRunLists = get_all_run_ids(Userid, sModuleInfo)     # Response = [['debugmuhib_bfa0de80-0', 'Test Case:TEST-5181|AND|', 'muhib_bfa0de80-0', 'PROJ-17', 2]]
+    #
+    # # get device order
+    # device_order = get_device_order(Userid)     # Response= [[1,2],[2,1]]
+    # browserstack_info = get_device_order_and_browserstack_info(Userid)      # Response =
+    #
+    # print("All 4 api calls serially = %f seconds" % (time.perf_counter() - T))
+
+    T = time.perf_counter()
+    # with concurrent.futures.ThreadPoolExecutor() as executor:
+    executor = concurrent.futures.ThreadPoolExecutor()
+    t_driver_list = executor.submit(get_all_drivers_list)
+    t_TestRunLists = executor.submit(get_all_run_ids, Userid, sModuleInfo)
+    t_device_order = executor.submit(get_device_order, Userid)
+    t_browserstack_info = executor.submit(get_device_order_and_browserstack_info, Userid)
+
+    print("Before join All 4 api calls in concurrent = %f seconds" % (time.perf_counter() - T))
+    user_permission = check_user_permission_to_run_test(sModuleInfo, Userid)  # Response = "passed"/"failed"
     if user_permission not in passed_tag_list:
         return user_permission
+    # driver_list = get_all_drivers_list()
+    driver_list = t_driver_list.result()
+    TestRunLists = t_TestRunLists.result()
+    device_order = t_device_order.result()
+    browserstack_info = t_browserstack_info.result()
+    print("joined")
+    print("All 4 api calls in concurrent = %f seconds" % (time.perf_counter() - T))
 
-    # get drivers list
-    driver_list = get_all_drivers_list()    # Response = ['Built_In_Selenium_Driver', 'Built_In_RestApi', 'Built_In_Appium_Driver', 'Built_In_Selenium', 'Built_In_Driver', 'deepak', 'Built_In_Appium', 'Built_In_NET_Win', 'Jarvis']
 
-    # get all run ids
-    TestRunLists = get_all_run_ids(Userid, sModuleInfo)     # Response = [['debugmuhib_bfa0de80-0', 'Test Case:TEST-5181|AND|', 'muhib_bfa0de80-0', 'PROJ-17', 2]]
-
-    # get device order
-    device_order = get_device_order(Userid)     # Response= [[1,2],[2,1]]
-
+    if ("browser_stack" in browserstack_info and browserstack_info["browser_stack"]) or ("local" in browserstack_info and browserstack_info["local"]):
+        device_order = browserstack_info
+    else:
+        pass
     # set device info according to user order
     # set_device_info_according_to_user_order(device_order, device_dict)
 
@@ -1869,6 +1939,7 @@ def main(device_dict, user_info_object):
         )
         return False
 
+    CommonUtil.clear_all_logs(json=True)
     # for each test runid loop continues
     for TestRunID in TestRunLists:
 
@@ -1885,30 +1956,51 @@ def main(device_dict, user_info_object):
         run_description = (TestRunID[1].replace("run_dependency", "")).replace("dependency_filter", "")     # Example= Test Case:TEST-5181|AND|
         run_id = TestRunID[0]           # Example= debugmuhib_bfa0de80-0
 
-        # save run id in shared variable
+        # T = time.perf_counter()
+        # # save run id in shared variable
+        # final_dependency = get_all_dependencies(        # Response= {'Browser': 'Chrome', 'Mobile': 'Android'}
+        #     project_id, team_id, run_description
+        # )  # get dependencies
+        #
+        # final_run_params_from_server = get_all_runtime_parameters(      # Response= [{'field': 'param1', 'name': 'val1_param1', 'value': 'subfield_val1_param1'}, {'field': 'param2', 'name': 'val1_param2', 'value': 'subfield_val1_param2'}, {'field': 'password', 'name': 'user1', 'value': 'testPassword'}, {'field': 'username', 'name': 'user1', 'value': 'testUser'}]
+        #     run_id
+        # )  # get runtime params
+        #
+        # update_machine_info_on_server(run_id)     # UPLOAD machine_info status
+        # update_test_env_results_on_server(run_id) # UPLOAD test_environment_result
+        #
+        # TestCaseLists = get_all_automated_test_cases_in_run_id(     # Response= [['TEST-5181', 'Automated', 1]]
+        #     run_id, Userid
+        # )  # get all automated test cases of a runid
+        #
+        # # get all remote config
+        # rem_config = get_all_remote_config(run_id)      # Response= {'threading': False, 'local_run': False, 'take_screenshot': False, 'debug_mode': False, 'upload_log_file_only_for_fail': False, 'window_size_x': None, 'window_size_y': None}
+        # print("All 5 api calls in serial = %f seconds" % (time.perf_counter() - T))
 
-        final_dependency = get_all_dependencies(        # Response= {'Browser': 'Chrome', 'Mobile': 'Android'}
-            project_id, team_id, run_description
-        )  # get dependencies
+        T = time.perf_counter()
+        # with concurrent.futures.ThreadPoolExecutor() as executor:
+            # t_final_dependency = executor.submit(get_all_dependencies, project_id, team_id, run_description)
+        t_final_run_params_from_server = executor.submit(get_all_runtime_parameters, run_id)
+        executor.submit(update_machine_info_on_server, run_id)
+        executor.submit(update_test_env_results_on_server, run_id)
+        t_TestCaseLists = executor.submit(get_all_automated_test_cases_in_run_id, run_id, Userid)
+        t_rem_config = executor.submit(get_all_remote_config, run_id)
 
-        final_run_params_from_server = get_all_runtime_parameters(      # Response= [{'field': 'param1', 'name': 'val1_param1', 'value': 'subfield_val1_param1'}, {'field': 'param2', 'name': 'val1_param2', 'value': 'subfield_val1_param2'}, {'field': 'password', 'name': 'user1', 'value': 'testPassword'}, {'field': 'username', 'name': 'user1', 'value': 'testUser'}]
-            run_id
-        )  # get runtime params
+        print("Before join All 5 api calls in concurrent = %f seconds" % (time.perf_counter() - T))
+        final_dependency = get_all_dependencies(project_id, team_id, run_description)
 
+        # final_dependency = t_final_dependency.result()
+        final_run_params_from_server = t_final_run_params_from_server.result()
+        TestCaseLists = t_TestCaseLists.result()
+        rem_config = t_rem_config.result()
+        print("joined")
+        print("All 6 api calls in concurrent = %f seconds" % (time.perf_counter() - T))
         final_run_params = {}   # Example= {'param1': 'subfield_val1_param1', 'param2': 'subfield_val1_param2', 'password': 'testPassword', 'username': 'testUser'}
         for param in final_run_params_from_server:
             final_run_params[str(param["field"])] = str(param["value"])
 
-        update_run_id_info_on_server(run_id)  # UPLOAD run_id status
-
         TestSetStartTime = time.time()  # test start time
 
-        TestCaseLists = get_all_automated_test_cases_in_run_id(     # Response= [['TEST-5181', 'Automated', 1]]
-            run_id, Userid
-        )  # get all automated test cases of a runid
-
-        # get all remote config
-        rem_config = get_all_remote_config(run_id)      # Response= {'threading': False, 'local_run': False, 'take_screenshot': False, 'debug_mode': False, 'upload_log_file_only_for_fail': False, 'window_size_x': None, 'window_size_y': None}
         ConfigModule.remote_config = rem_config
 
         # get run definition config value
@@ -2075,6 +2167,10 @@ def main(device_dict, user_info_object):
         TimeDiff = TestSetEndTime - TestSetStartTime
         TimeInSec = int(TimeDiff)
         TestSetDuration = CommonUtil.FormatSeconds(TimeInSec)
+
+        filepath = os.path.join(os.path.abspath(__file__).split("Framework")[0])/Path("AutomationLog")/"execution_log.json"
+        with open(filepath, "w") as f:
+            json.dump(CommonUtil.get_all_logs(json=True), f, indent=2)
 
         run_cancelled = get_status_of_runid(run_id)  # check if run is cancelled
 

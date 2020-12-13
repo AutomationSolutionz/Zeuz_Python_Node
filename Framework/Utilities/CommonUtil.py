@@ -88,6 +88,7 @@ failed_tag_list = [
 skipped_tag_list = ["skip", "SKIP", "Skip", "skipped", "SKIPPED", "Skipped"]
 
 all_logs = {}
+all_logs_json, json_log_cond = [], False
 all_logs_count = 0
 all_logs_list = []
 load_testing = False
@@ -370,7 +371,7 @@ def ExecLog(
                 logger.removeHandler(browser_log_handler)
         else:
             # Except the browser logs
-            global all_logs, all_logs_count, all_logs_list
+            global all_logs, all_logs_count, all_logs_list, all_logs_json, json_log_cond
 
             log_id = ConfigModule.get_config_value(
                 "sectionOne", "sTestStepExecLogId", temp_config
@@ -379,8 +380,24 @@ def ExecLog(
             if not log_id:
                 return
 
-            if variable:
-                sDetails = "%s\nVariable value: %s" % (sDetails, variable["val"])
+            log_id_vals = log_id.split("|")
+            if len(log_id_vals) != 4:
+                all_logs_json.append(current_log_line)
+                json_log_cond = False
+            else:
+                _, testcase_name, _, step_no = log_id_vals
+                if not json_log_cond:
+                    all_logs_json.append({testcase_name: {step_no: []}})
+                    json_log_cond = True
+                if testcase_name in all_logs_json[-1]:
+                    if step_no in all_logs_json[-1][testcase_name]:
+                        all_logs_json[-1][testcase_name][step_no].append(current_log_line)
+                    else:
+                        all_logs_json[-1][testcase_name][step_no] = [current_log_line]
+                else:
+                    all_logs_json[-1][testcase_name] = {step_no: [current_log_line]}
+                if variable:
+                    sDetails = "%s\nVariable value: %s" % (sDetails, variable["val"])
 
             now = datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
             all_logs[all_logs_count] = {
@@ -425,7 +442,9 @@ def FormatSeconds(sec):
     return duration_formatted
 
 
-def get_all_logs():
+def get_all_logs(json=False):
+    if json:
+        return all_logs_json
     global all_logs_list, all_logs, all_logs_count
 
     if all_logs_count > 0:
@@ -434,8 +453,11 @@ def get_all_logs():
     return all_logs_list
 
 
-def clear_all_logs():
-    global all_logs, all_logs_count, all_logs_list
+def clear_all_logs(json=False):
+    global all_logs, all_logs_count, all_logs_list, all_logs_json
+    if json:
+        all_logs_json = []
+        return
     all_logs = {}
     all_logs_count = 0
     all_logs_list = []

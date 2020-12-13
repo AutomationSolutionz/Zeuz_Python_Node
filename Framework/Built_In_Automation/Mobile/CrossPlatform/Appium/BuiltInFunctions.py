@@ -283,17 +283,15 @@ def find_correct_device_on_first_run(serial_or_name, device_info):
         if serial_check == False:
             # At least one device sent by server
             if len(device_info) > 0:
-                for dname in device_info:
-                    did = dname
-                    serial = device_info[did]["id"]
-                    imei = device_info[did]["imei"]
-                    device_type = device_info[did]["type"].lower()
-                    device_name = all_device_info[device]["model"]
-                    product_version = all_device_info[device]["osver"]
-                    CommonUtil.ExecLog(
-                        sModuleInfo, "Found a device selected at Deploy: %s" % did, 0
-                    )
-                    break
+                did = "device 1"
+                serial = device_info[did]["id"]
+                imei = device_info[did]["imei"]
+                device_type = device_info[did]["type"].lower()
+                device_name = all_device_info[device]["model"]
+                product_version = all_device_info[device]["osver"]
+                CommonUtil.ExecLog(
+                    sModuleInfo, "Found a device selected at Deploy: %s" % did, 0
+                )
 
             # Lastly, if nothing above is set, the user did not specify anything, and we have no information from the server. Pick a connected device, and fail if there are none
             else:  # No devices sent, none specified
@@ -611,10 +609,8 @@ def launch_application(data_set):
                 desiredcaps=desiredcaps,
                 browserstack_run=browserstack_run,
             )
-            if launch_app:  # if ios simulator then no need to launch app again
-                pass
-                # appium_driver.launch_app()  # Launch program configured in the Appium capabilities
-            CommonUtil.ExecLog(sModuleInfo, "Launched the application successfully.", 1)
+            app_name = device_info["browserstack device 1"]["other"]["app_name"]
+            CommonUtil.ExecLog(sModuleInfo, "Launched '%s' app successfully in Browserstack" % app_name, 1)
         else:
             if "platform_version" in appium_details[device_id]:
                 platform_version = appium_details[device_id]["platform_version"]

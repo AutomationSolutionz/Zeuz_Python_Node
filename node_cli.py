@@ -424,7 +424,7 @@ def RunProcess(sTesterid, user_info_object):
                     "", "Successfully updated db with parameter", 4, False
                 )
             else:
-                time.sleep(3)
+                time.sleep(0.5)
                 if r and "update" in r and r["update"]:
                     _r = RequestFormatter.Get(
                         "update_machine_with_time_api", {"machine_name": sTesterid}
@@ -461,6 +461,7 @@ def PreProcess():
         str(temp_ini_file.parent),
         current_path_file,
     )
+    ConfigModule.add_config_value("sectionOne", "sTestStepExecLogId", "node_cli", temp_ini_file)
 
 
 def update_machine(dependency, default_team_and_project_dict):
