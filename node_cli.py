@@ -315,7 +315,7 @@ def Login(cli=False):
                                 "", "Time zone settings failed {}".format(e), 4, False
                             )
 
-                        run_again = RunProcess(tester_id)
+                        run_again = RunProcess(tester_id, user_info_object)
 
                         if not run_again:
                             break  # Exit login
@@ -394,7 +394,7 @@ def disconnect_from_server():
     CommonUtil.set_exit_mode(True)  # Tell Sequential Actions to exit
 
 
-def RunProcess(sTesterid):
+def RunProcess(sTesterid, user_info_object):
     etime = time.time() + (30 * 60)  # 30 minutes
     while 1:
         try:
@@ -415,7 +415,7 @@ def RunProcess(sTesterid):
                     False,
                 )
                 PreProcess()
-                value = MainDriverApi.main(device_dict)
+                value = MainDriverApi.main(device_dict, user_info_object)
                 if value == "pass":
                     if exit_script:
                         return False
@@ -424,7 +424,7 @@ def RunProcess(sTesterid):
                     "", "Successfully updated db with parameter", 4, False
                 )
             else:
-                time.sleep(3)
+                time.sleep(0.5)
                 if r and "update" in r and r["update"]:
                     _r = RequestFormatter.Get(
                         "update_machine_with_time_api", {"machine_name": sTesterid}
@@ -461,6 +461,7 @@ def PreProcess():
         str(temp_ini_file.parent),
         current_path_file,
     )
+    ConfigModule.add_config_value("sectionOne", "sTestStepExecLogId", "node_cli", temp_ini_file)
 
 
 def update_machine(dependency, default_team_and_project_dict):

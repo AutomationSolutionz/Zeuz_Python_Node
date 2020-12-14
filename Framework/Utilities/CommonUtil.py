@@ -88,6 +88,7 @@ failed_tag_list = [
 skipped_tag_list = ["skip", "SKIP", "Skip", "skipped", "SKIPPED", "Skipped"]
 
 all_logs = {}
+all_logs_json, json_log_cond = [], False
 all_logs_count = 0
 all_logs_list = []
 load_testing = False
@@ -370,7 +371,7 @@ def ExecLog(
                 logger.removeHandler(browser_log_handler)
         else:
             # Except the browser logs
-            global all_logs, all_logs_count, all_logs_list
+            global all_logs, all_logs_count, all_logs_list, all_logs_json, json_log_cond
 
             log_id = ConfigModule.get_config_value(
                 "sectionOne", "sTestStepExecLogId", temp_config
@@ -379,8 +380,24 @@ def ExecLog(
             if not log_id:
                 return
 
-            if variable:
-                sDetails = "%s\nVariable value: %s" % (sDetails, variable["val"])
+            log_id_vals = log_id.split("|")
+            if len(log_id_vals) != 4:
+                all_logs_json.append(current_log_line)
+                json_log_cond = False
+            else:
+                _, testcase_name, _, step_no = log_id_vals
+                if not json_log_cond:
+                    all_logs_json.append({testcase_name: {step_no: []}})
+                    json_log_cond = True
+                if testcase_name in all_logs_json[-1]:
+                    if step_no in all_logs_json[-1][testcase_name]:
+                        all_logs_json[-1][testcase_name][step_no].append(current_log_line)
+                    else:
+                        all_logs_json[-1][testcase_name][step_no] = [current_log_line]
+                else:
+                    all_logs_json[-1][testcase_name] = {step_no: [current_log_line]}
+                if variable:
+                    sDetails = "%s\nVariable value: %s" % (sDetails, variable["val"])
 
             now = datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
             all_logs[all_logs_count] = {
@@ -425,7 +442,9 @@ def FormatSeconds(sec):
     return duration_formatted
 
 
-def get_all_logs():
+def get_all_logs(json=False):
+    if json:
+        return all_logs_json
     global all_logs_list, all_logs, all_logs_count
 
     if all_logs_count > 0:
@@ -434,8 +453,11 @@ def get_all_logs():
     return all_logs_list
 
 
-def clear_all_logs():
-    global all_logs, all_logs_count, all_logs_list
+def clear_all_logs(json=False):
+    global all_logs, all_logs_count, all_logs_list, all_logs_json
+    if json:
+        all_logs_json = []
+        return
     all_logs = {}
     all_logs_count = 0
     all_logs_list = []
@@ -486,12 +508,49 @@ def set_screenshot_vars(shared_variables):
         ExecLog(sModuleInfo, "Error setting screenshot variables", 3)
 
 
-def TakeScreenShot(ImageName, local_run=False):
+def TakeScreenShot(function_name, local_run=False):
     """ Puts TakeScreenShot into a thread, so it doesn't block test case execution """
 
     try:
+        sModuleInfo = inspect.currentframe().f_code.co_name + " : " + MODULE_NAME
+
+        # Read values from config file
+        take_screenshot_settings = ConfigModule.get_config_value(
+            "RunDefinition", "take_screenshot"
+        )  # True/False to take screenshot from settings.conf
+        if not local_run:
+            local_run = ConfigModule.get_config_value(
+                "RunDefinition", "local_run"
+            )  # True/False to run only locally, in which case we do not take screenshot from settings.conf
+        image_folder = ConfigModule.get_config_value(
+            "sectionOne", "screen_capture_folder", temp_config
+        )  # Get screen capture directory from temporary config file that is dynamically created
+        try:
+            if not os.path.exists(image_folder):
+                os.mkdir(image_folder)
+        except:
+            pass
+
+        Method = screen_capture_type
+        Driver = screen_capture_driver
+
+        # Decide if screenshot should be captured
+        if (
+                take_screenshot_settings.lower() == "false"
+                or local_run.lower() == "true"
+                or Method == "none"
+                or Method == None
+        ):
+            ExecLog(
+                sModuleInfo, "Skipping screenshot due to screenshot or local_run setting", 0
+            )
+            return
+        print(
+            "********** Capturing Screenshot for Action: %s Method: %s **********" % (function_name, Method)
+        )
+
         t = threading.Thread(
-            target=Thread_ScreenShot, args=(ImageName, local_run)
+            target=Thread_ScreenShot, args=(function_name, image_folder, Method, Driver)
         )  # Create thread object
         t.daemon = True  # Run in background
         t.start()  # Start thread
@@ -499,13 +558,9 @@ def TakeScreenShot(ImageName, local_run=False):
         return Exception_Handler(sys.exc_info())
 
 
-def Thread_ScreenShot(ImageName, local_run=False):
+def Thread_ScreenShot(function_name, image_folder, Method, Driver):
     """ Capture screen of mobile or desktop """
-    # Do not include extension in ImageName, it will be added
-
-    # Define variables
     sModuleInfo = inspect.currentframe().f_code.co_name + " : " + MODULE_NAME
-    ExecLog(sModuleInfo, "Function start", 0)
     chars_to_remove = [
         r"?",
         r"*",
@@ -520,38 +575,6 @@ def Thread_ScreenShot(ImageName, local_run=False):
     picture_quality = 20  # Quality of picture
     picture_size = 800, 600  # Size of image (for reduction in file size)
 
-    # Read values from config file
-    take_screenshot_settings = ConfigModule.get_config_value(
-        "RunDefinition", "take_screenshot"
-    )  # True/False to take screenshot from settings.conf
-    local_run = ConfigModule.get_config_value(
-        "RunDefinition", "local_run"
-    )  # True/False to run only locally, in which case we do not take screenshot from settings.conf
-    image_folder = ConfigModule.get_config_value(
-        "sectionOne", "screen_capture_folder", temp_config
-    )  # Get screen capture directory from temporary config file that is dynamically created
-
-    try:
-        if not os.path.exists(image_folder):
-            os.mkdir(image_folder)
-    except:
-        pass
-
-    # Decide if screenshot should be captured
-    if (
-        take_screenshot_settings.lower() == "false"
-        or local_run.lower() == "true"
-        or screen_capture_type == "none"
-        or screen_capture_type == None
-    ):
-        ExecLog(
-            sModuleInfo, "Skipping screenshot due to screenshot or local_run setting", 0
-        )
-        return
-    print(
-        "*********** Screen captured in separate thread for Action: %s Method: %s ***********" % (ImageName, screen_capture_type)
-    )
-    image_name_log = ImageName
     # Adjust filename and create full path (remove invalid characters, convert spaces to underscore, remove leading and trailing spaces)
     trans_table = str.maketrans(
         dict.fromkeys("".join(chars_to_remove))
@@ -560,19 +583,19 @@ def Thread_ScreenShot(ImageName, local_run=False):
         image_folder,
         TimeStamp("utc")
         + "_"
-        + (ImageName.translate(trans_table)).strip().replace(" ", "_")
+        + (function_name.translate(trans_table)).strip().replace(" ", "_")
         + ".png",
     )
     ExecLog(
         sModuleInfo,
         "Capturing screen on %s, with driver: %s, and saving to %s"
-        % (str(screen_capture_type), str(screen_capture_driver), ImageName),
+        % (str(Method), str(Driver), ImageName),
         0,
     )
 
     try:
         # Capture screenshot of desktop
-        if screen_capture_type == "desktop":
+        if Method == "desktop":
             if sys.platform == "linux2":
                 image = ImageGrab_Linux.grab()
                 image.save(ImageName, format="PNG")  # Save to disk
@@ -581,36 +604,35 @@ def Thread_ScreenShot(ImageName, local_run=False):
                 image.save(ImageName, format="PNG")  # Save to disk
 
         # Exit if we don't have a driver yet (happens when Test Step is set to mobile/web, but we haven't setup the driver)
-        elif screen_capture_driver == None and (
-            screen_capture_type == "mobile" or screen_capture_type == "web"
+        elif Driver == None and (
+            Method == "mobile" or Method == "web"
         ):
             ExecLog(
                 sModuleInfo,
                 "Can't capture screen, driver not available for type: %s, or invalid driver: %s"
-                % (str(screen_capture_type), str(screen_capture_driver)),
+                % (str(Method), str(Driver)),
                 1,
             )
             return
 
         # Capture screenshot of web browser
-        elif screen_capture_type == "web":
-            screen_capture_driver.get_screenshot_as_file(
+        elif Method == "web":
+            Driver.get_screenshot_as_file(
                 ImageName
             )  # Must be .png, otherwise an exception occurs
 
         # Capture screenshot of mobile
-        elif screen_capture_type == "mobile":
-            screen_capture_driver.save_screenshot(
+        elif Method == "mobile":
+            Driver.save_screenshot(
                 ImageName
             )  # Must be .png, otherwise an exception occurs
         else:
             ExecLog(
                 sModuleInfo,
                 "Unknown capture type: %s, or invalid driver: %s"
-                % (str(screen_capture_type), str(screen_capture_driver)),
+                % (str(Method), str(Driver)),
                 3,
             )
-
         # Lower the picture quality
         if os.path.exists(ImageName):  # Make sure image was saved
             image = Image.open(ImageName)  # Re-open in standard format
@@ -621,16 +643,10 @@ def Thread_ScreenShot(ImageName, local_run=False):
                 ImageName, format="PNG", quality=picture_quality
             )  # Change quality to reduce file size
         else:
-            ExecLog(
-                sModuleInfo,
-                "Error saving %s screenshot to %s" % (screen_capture_type, ImageName),
-                3,
-            )
+            print("********** Screen couldn't be captured for Action: %s Method: %s **********" % (function_name, Method))
 
     except:
-        print(
-            "*********** Screen couldn't be captured for Action: %s Method: %s ***********" % (image_name_log, screen_capture_type)
-        )
+        print("********** Screen couldn't be captured for Action: %s Method: %s **********" % (function_name, Method))
 
 
 def TimeStamp(format):

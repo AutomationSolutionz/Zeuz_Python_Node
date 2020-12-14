@@ -283,17 +283,15 @@ def find_correct_device_on_first_run(serial_or_name, device_info):
         if serial_check == False:
             # At least one device sent by server
             if len(device_info) > 0:
-                for dname in device_info:
-                    did = dname
-                    serial = device_info[did]["id"]
-                    imei = device_info[did]["imei"]
-                    device_type = device_info[did]["type"].lower()
-                    device_name = all_device_info[device]["model"]
-                    product_version = all_device_info[device]["osver"]
-                    CommonUtil.ExecLog(
-                        sModuleInfo, "Found a device selected at Deploy: %s" % did, 0
-                    )
-                    break
+                did = "device 1"
+                serial = device_info[did]["id"]
+                imei = device_info[did]["imei"]
+                device_type = device_info[did]["type"].lower()
+                device_name = all_device_info[device]["model"]
+                product_version = all_device_info[device]["osver"]
+                CommonUtil.ExecLog(
+                    sModuleInfo, "Found a device selected at Deploy: %s" % did, 0
+                )
 
             # Lastly, if nothing above is set, the user did not specify anything, and we have no information from the server. Pick a connected device, and fail if there are none
             else:  # No devices sent, none specified
@@ -509,7 +507,7 @@ def launch_application(data_set):
                 browserstack_run = True
                 break
         if browserstack_run:
-            desiredcaps = device_info["browserstack device 1"]
+            desiredcaps = device_info["browserstack device 1"]["basic"]
 
         else:
             package_name = ""  # Name of application package
@@ -611,6 +609,8 @@ def launch_application(data_set):
                 desiredcaps=desiredcaps,
                 browserstack_run=browserstack_run,
             )
+            app_name = device_info["browserstack device 1"]["other"]["app_name"]
+            CommonUtil.ExecLog(sModuleInfo, "Launched '%s' app successfully in Browserstack" % app_name, 1)
         else:
             if "platform_version" in appium_details[device_id]:
                 platform_version = appium_details[device_id]["platform_version"]
@@ -632,12 +632,9 @@ def launch_application(data_set):
                 if result == "failed":
                     return "failed"
 
-        if launch_app:  # if ios simulator then no need to launch app again
-            appium_driver.launch_app()  # Launch program configured in the Appium capabilities
-        # CommonUtil.TakeScreenShot(
-        #     sModuleInfo
-        # )  # Capture screenshot, if settings allow for it
-        CommonUtil.ExecLog(sModuleInfo, "Launched the application successfully.", 1)
+            if launch_app:  # if ios simulator then no need to launch app again
+                appium_driver.launch_app()  # Launch program configured in the Appium capabilities
+            CommonUtil.ExecLog(sModuleInfo, "Launched the application successfully.", 1)
         return "passed"
     except Exception:
         return CommonUtil.Exception_Handler(
@@ -821,10 +818,14 @@ def start_appium_driver(
                 command_executor="http://hub-cloud.browserstack.com/wd/hub",
                 desired_capabilities=desiredcaps
             )
-            appium_details["browserstack device 1"] = {"driver": appium_driver}
+            appium_details["browserstack device 1"] = {"driver": appium_driver, "serial": "0"}
             Shared_Resources.Set_Shared_Variables("appium_details", appium_details)
-            CommonUtil.set_screenshot_vars(Shared_Resources.Shared_Variable_Export())  # Get all the shared variables, and pass them to CommonUtil
-            CommonUtil.ExecLog(sModuleInfo, "Appium driver created successfully.", 1)
+            CommonUtil.set_screenshot_vars(Shared_Resources.Shared_Variable_Export())
+
+            device_id = "browserstack device 1"
+            Shared_Resources.Set_Shared_Variables("device_serial", device_serial, protected=True)
+            Shared_Resources.Set_Shared_Variables("device_id", device_id, protected=True)
+            CommonUtil.ExecLog(sModuleInfo, "Browserstack driver created successfully.", 1)
             return "passed", launch_app
 
         if appium_details[device_id]["driver"] == None:
@@ -1091,6 +1092,7 @@ def teardown_appium(data_set):
         for name in appium_details:  # For each connected device
             try:
                 CommonUtil.ExecLog(sModuleInfo, "Teardown for: %s" % name, 0)
+                time.sleep(1)   # Let the capturing screenshot end in thread
                 try:
                     appium_details[name]["driver"].quit()  # Destroy driver
                 except:
@@ -4051,6 +4053,7 @@ def save_attribute_values_appium(step_data):
         adjust_fluctuation = 5
         end_parameter = []
         max_swipe = float('inf')
+        paired = True
         try:
             for left, mid, right in step_data:
                 left = left.strip().lower()
@@ -4104,6 +4107,8 @@ def save_attribute_values_appium(step_data):
                         max_swipe = int(right.strip())
                 elif mid == "end parameter":
                     end_parameter.append((left, "element parameter", right))
+                elif left == "paired":
+                    paired = False if right.lower() == "no" else True
 
         except:
             CommonUtil.ExecLog(
@@ -4253,6 +4258,10 @@ def save_attribute_values_appium(step_data):
                         final[i][j] = None
                         break
 
+        if target_index == 1:
+            final = list(map(list, zip(*final)))[0]
+        elif not paired:
+            final = list(map(list, zip(*final)))
         # print("Searching =", time.time() - start, "sec")
 
         return Shared_Resources.Set_Shared_Variables(variable_name, final)

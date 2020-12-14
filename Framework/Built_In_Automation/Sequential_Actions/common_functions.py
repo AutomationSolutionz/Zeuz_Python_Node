@@ -5,7 +5,7 @@
     Caveat: Functions common to multiple Built In Functions must have action names that are unique, because we search the common functions first, regardless of the module name passed by the user 
 """
 
-import inspect, sys, time, collections, ftplib, os, ast
+import inspect, sys, time, collections, ftplib, os, ast, copy
 from pathlib import Path
 
 try:
@@ -2730,6 +2730,7 @@ def validate_list_order(data_set):
 
     case_sensitivity = True
     order_type = ""
+    ignore = []
     for left, mid, right in data_set:
         left = left.strip().lower()
         right = right.strip()
@@ -2748,7 +2749,34 @@ def validate_list_order(data_set):
             case_sensitivity = False if right.lower() == "false" else True
         elif left == "order type":
             order_type = right.lower()
+        elif left == "ignore items":
+            ign = CommonUtil.parse_value_into_object(right)
+            if isinstance(ign, list):
+                ignore += ign
+            else:
+                ignore.append(ign)
 
+    if not isinstance(value, list):
+        CommonUtil.ExecLog(
+            sModuleInfo,
+            'This action works only for simple lists. Such as [1, 2.5, 3] or ["c","a","t"]',
+            3
+        )
+        return "failed"
+    if ignore:
+        msg = 'Ignoring following items:'
+        for each in ignore:
+            msg += "\n" + str(each) + " " + str(type(each))
+            i = 0
+            while True:
+                if i >= len(value):
+                    break
+                if value[i] == each:
+                    del value[i]
+                    i -= 1
+                i += 1
+        CommonUtil.ExecLog("", msg, 1)
+    actual_val = copy.deepcopy(value)
     if isinstance(value[0], str) and not case_sensitivity:
         try:
             for i in range(len(value)):
@@ -2771,7 +2799,9 @@ def validate_list_order(data_set):
 
     try:
         if order_type == "ascending":
-            if sorted(value, reverse=False) == value:
+            val_index = sorted(enumerate(value), key=lambda x: x[1], reverse=False)
+            sorted_value = [i[1] for i in val_index]
+            if sorted_value == value:
                 CommonUtil.ExecLog(
                     sModuleInfo,
                     'Your list is in ascending order',
@@ -2780,14 +2810,26 @@ def validate_list_order(data_set):
                 return "passed"
             else:
                 order = "descending" if sorted(value, reverse=True) == value else "random"
-                CommonUtil.ExecLog(
-                    sModuleInfo,
-                    'Your list is not in ascending order. Its in %s order' % order,
-                    3
-                )
+                if order == "descending":
+                    CommonUtil.ExecLog(
+                        sModuleInfo,
+                        'Your list is not in ascending order. Its in descending order',
+                        3
+                    )
+                else:
+                    Actual_sorted = [actual_val[i[0]] for i in val_index]
+                    CommonUtil.ExecLog(
+                        sModuleInfo,
+                        'Your list is not in ascending order. Its in random order\n' +
+                        'The following list will be in ascending order for case sensitivity = %s\n%s' % (case_sensitivity, Actual_sorted),
+                        3
+                    )
                 return "failed"
         elif order_type == "descending":
-            if sorted(value, reverse=True) == value:
+            val_index = sorted(enumerate(value), key=lambda x: x[1], reverse=True)
+            sorted_value = [i[1] for i in val_index]
+
+            if sorted_value == value:
                 CommonUtil.ExecLog(
                     sModuleInfo,
                     'Your list is in descending order',
@@ -2796,11 +2838,20 @@ def validate_list_order(data_set):
                 return "passed"
             else:
                 order = "ascending" if sorted(value, reverse=False) == value else "random"
-                CommonUtil.ExecLog(
-                    sModuleInfo,
-                    'Your list is not in descending order. Its in %s order' % order,
-                    3
-                )
+                if order == "ascending":
+                    CommonUtil.ExecLog(
+                        sModuleInfo,
+                        'Your list is not in descending order. Its in ascending order',
+                        3
+                    )
+                else:
+                    Actual_sorted = [actual_val[i[0]] for i in val_index]
+                    CommonUtil.ExecLog(
+                        sModuleInfo,
+                        'Your list is not in descending order. Its in random order\n' +
+                        'The following list will be in descending order for case sensitivity = %s\n%s' % (case_sensitivity, Actual_sorted),
+                        3
+                    )
                 return "failed"
     except:
         CommonUtil.ExecLog(
