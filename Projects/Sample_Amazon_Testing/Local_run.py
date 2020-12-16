@@ -3,64 +3,93 @@ from pathlib import Path
 import traceback
 sys.path.append(str(Path("../../")))
 
-from Framework.Built_In_Automation.Sequential_Actions.sequential_actions import Sequential_Actions
+from Framework.Utilities import ConfigModule
+from Framework import MainDriverApi
 from Framework.Utilities.All_Device_Info import get_all_connected_device_info
-import json
+import json, os
+top_path = os.path.dirname(os.getcwd())
+drivers_path = os.path.join(top_path, "Drivers")
+sys.path.append(drivers_path)
 
 
-def main(test_case_title=None):
+def main():
     try:
         with open("TestCases.json", "r") as f:
-            Test_Case = json.load(f)
-            if isinstance(Test_Case, str):
-                Test_Case = json.loads(Test_Case)
-
-            step_data = []
-            final_dependency = {}
-            run_time_params = {}
-
-            if len(Test_Case["TestCases"]) > 0:
-                test_case = Test_Case["TestCases"][0]
-            else:
-                print("No test cases present in TestCases.json file.")
-                return "failed"
-
-            if test_case_title is not None:
-                for cur_test_case in Test_Case["TestCases"]:
-                    if cur_test_case["Title"] == test_case_title:
-                        test_case = cur_test_case
-                        break
-                else:
-                    print("Failed to find the test case with title %s" % test_case_title)
-                    return "failed"
-
-            # Gather data about all the steps
-            for i in test_case["Steps"]:
-                all_actions = i["Step actions"]
-                for j in all_actions:
-                    step_data.append(j["Action data"])
-
-            # Gather dependency and other params
-            try: final_dependency = test_case["dependency"]
-            except: pass
-
-            try: run_time_params = test_case["run_time_params"]
-            except: pass
-
-            device_info = get_all_connected_device_info()
-
-            result = Sequential_Actions(
-                step_data=step_data,
-                _run_time_params=run_time_params,
-                _dependency=final_dependency,
-                debug_actions=None,
-                _device_info=device_info
-            )
-
-            return result
-
+            Json_data = json.load(f)
+            if isinstance(Json_data, str):
+                Json_data = json.loads(Json_data)
+        with open("TestCases.json", "w") as f:
+            json.dump(Json_data, f, indent=2)
     except:
         print("Failed to open TestCases.json file. Aborting.")
+        traceback.print_exc()
+        return "failed"
+
+    try:
+        ConfigModule.remote_config["local_run"] = True
+        ConfigModule.remote_config["threading"] = False
+        ConfigModule.remote_config["take_screenshot"] = False
+        if len(Json_data["TestCases"]) > 0:
+            pass
+        else:
+            print("No test cases present in TestCases.json file.")
+            return "failed"
+
+        local_run_dataset = {}
+        Set_dataset = []
+        TestCaseLists = []
+        Set_meta_data = []
+        all_test_case_detail = []
+        all_debug_steps = ["DN11", "DN11"]
+        all_file_specific_steps = [{}, {}]
+        all_test_case_result_index = ["DN12", "DN12"]
+        all_TestStepsList = []
+
+        # Gather data about all the test cases
+        i = 0
+        for test_case in Json_data["TestCases"]:
+            TestCaseLists.append(["TESTCASE %s" % (i+1), "automated", i + 1])
+            all_test_case_detail.append([['DN08', 'test_case name NEEDED', 'DN09', 'DN10']])
+            all_TestStepsList.append([])
+            Set_dataset.append([])
+            Set_meta_data.append([])
+            j = 0
+            for step in test_case["Steps"]:
+                Set_dataset[i].append([])
+                Set_meta_data[i].append([["DN06", False, 59]])
+                all_TestStepsList[i].append([6279, 'stepNAME NEEDED for log', 1, 'Built_In_Driver', 'automated', False, True, 'Sequential Actions', 'Built_In_Driver', False])
+                k = 0
+                for action in step["Step actions"]:
+                    Set_dataset[i][j].append([])
+                    for row in action["Action data"]:
+                        Set_dataset[i][j][k].append(row)
+                    k += 1
+                j += 1
+            i += 1
+
+        local_run_dataset["final_dependency"] = Json_data["TestCases"][0]["dependency"] if "dependency" in Json_data["TestCases"][0] else {}
+        local_run_dataset["final_run_params"] = Json_data["TestCases"][0]["run_time_params"] if "run_time_params" in Json_data["TestCases"][0] else {}
+        local_run_dataset["Set_dataset"] = Set_dataset
+        local_run_dataset["TestCaseLists"] = TestCaseLists
+        local_run_dataset["Set_meta_data"] = Set_meta_data
+        local_run_dataset["all_test_case_detail"] = all_test_case_detail
+
+        local_run_dataset["all_file_specific_steps"] = all_file_specific_steps
+        local_run_dataset["all_test_case_result_index"] = all_test_case_result_index
+        local_run_dataset["all_TestStepsList"] = all_TestStepsList
+
+        user_info_object = {"project": "DN", "team": "DN"}
+
+        device_info = get_all_connected_device_info()
+        result = MainDriverApi.main(
+            device_dict=device_info,
+            user_info_object=user_info_object,
+            local_run_dataset=local_run_dataset
+        )
+
+        return result
+    except:
+        print("Could not perform local run")
         traceback.print_exc()
         return "failed"
 

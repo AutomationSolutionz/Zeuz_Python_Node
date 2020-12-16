@@ -1,32 +1,25 @@
 {
   "TestCases": [
     {
-      "Title": "AWS Local Run Android",
-      "Folder": "Sample folder for zeuz zeuz",
-      "Feature": "Sample Feature/Sample REST API",
+      "Title": "muhib If element found",
+      "Folder": "Muhib Rough Tests",
+      "Feature": "testtest",
       "dependency": {
-        "Mobile": "Android",
-        "OS": "Linux"
+        "Browser": "Chrome"
       },
-      "run_time_params": {},
       "Steps": [
         {
-          "Step name": "sazid Sample Step",
-          "Step description": "sazid Sample Step",
-          "Step expected": "sazid Sample Step",
+          "Step name": "Zeuz demo ai",
+          "Step description": "Log in to demo app",
+          "Step expected": "Log in to demo app",
           "Step actions": [
             {
               "Action name": "None",
               "Action data": [
                 [
-                  "package",
-                  "element parameter",
-                  "com.experitest.ExperiBank"
-                ],
-                [
-                  "launch",
-                  "appium action",
-                  "launch"
+                  "go to link",
+                  "selenium action",
+                  "https://demo.zeuz.ai/web/level/one/scenerios/login"
                 ]
               ]
             },
@@ -34,13 +27,53 @@
               "Action name": "None",
               "Action data": [
                 [
-                  "text",
+                  "id",
                   "element parameter",
-                  "OK"
+                  "username_idd"
+                ],
+                [
+                  "true",
+                  "selenium conditional action",
+                  "3-6"
+                ],
+                [
+                  "false",
+                  "selenium conditional action",
+                  "5,6"
+                ]
+              ]
+            },
+            {
+              "Action name": "None",
+              "Action data": [
+                [
+                  "sleep",
+                  "common action",
+                  "5"
+                ]
+              ]
+            },
+            {
+              "Action name": "None",
+              "Action data": [
+                [
+                  "log 2",
+                  "utility action",
+                  "...... Paisi"
+                ]
+              ]
+            },
+            {
+              "Action name": "None",
+              "Action data": [
+                [
+                  "id",
+                  "element parameter",
+                  "username_id"
                 ],
                 [
                   "click",
-                  "appium action",
+                  "selenium action",
                   "click"
                 ]
               ]
@@ -49,14 +82,9 @@
               "Action name": "None",
               "Action data": [
                 [
-                  "text",
-                  "element parameter",
-                  "Username"
-                ],
-                [
-                  "text",
-                  "appium action",
-                  "company"
+                  "log 2",
+                  "utility action",
+                  "...... Pai nai"
                 ]
               ]
             },
@@ -64,39 +92,9 @@
               "Action name": "None",
               "Action data": [
                 [
-                  "text",
-                  "element parameter",
-                  "Password"
-                ],
-                [
-                  "text",
-                  "appium action",
-                  "company"
-                ]
-              ]
-            },
-            {
-              "Action name": "None",
-              "Action data": [
-                [
-                  "text",
-                  "element parameter",
-                  "Login"
-                ],
-                [
-                  "click",
-                  "appium action",
-                  "click"
-                ]
-              ]
-            },
-            {
-              "Action name": "None",
-              "Action data": [
-                [
-                  "teardown",
-                  "appium action",
-                  "teardown"
+                  "log 2",
+                  "utility action",
+                  "...... Action 6"
                 ]
               ]
             }
