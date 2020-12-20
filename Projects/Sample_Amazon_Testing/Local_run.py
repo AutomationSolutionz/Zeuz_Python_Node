@@ -49,7 +49,7 @@ def main():
         i = 0
         for test_case in Json_data["TestCases"]:
             TestCaseLists.append(["TESTCASE %s" % (i+1), "automated", i + 1])
-            all_test_case_detail.append([['DN08', 'test_case name NEEDED', 'DN09', 'DN10']])
+            all_test_case_detail.append([['DN08', test_case["Title"], 'DN09', 'DN10']])
             all_TestStepsList.append([])
             Set_dataset.append([])
             Set_meta_data.append([])
@@ -57,7 +57,7 @@ def main():
             for step in test_case["Steps"]:
                 Set_dataset[i].append([])
                 Set_meta_data[i].append([["DN06", False, 59]])
-                all_TestStepsList[i].append([6279, 'stepNAME NEEDED for log', 1, 'Built_In_Driver', 'automated', False, True, 'Sequential Actions', 'Built_In_Driver', False])
+                all_TestStepsList[i].append([6279, step["Step name"], 1, 'Built_In_Driver', 'automated', False, True, 'Sequential Actions', 'Built_In_Driver', False])
                 k = 0
                 for action in step["Step actions"]:
                     Set_dataset[i][j].append([])
