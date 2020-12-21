@@ -63,7 +63,7 @@ from Framework.Utilities import (
     All_Device_Info,
     self_updater
 )
-from Framework import MainDriverApi
+from Framework import New_MainDriverApi, MainDriverApi
 
 
 temp_ini_file = (
@@ -415,6 +415,7 @@ def RunProcess(sTesterid, user_info_object):
                     False,
                 )
                 PreProcess()
+                # value = New_MainDriverApi.main(device_dict, user_info_object)
                 value = MainDriverApi.main(device_dict, user_info_object)
                 if value == "pass":
                     if exit_script:
