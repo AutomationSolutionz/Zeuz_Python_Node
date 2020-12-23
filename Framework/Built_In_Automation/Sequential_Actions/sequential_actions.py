@@ -149,6 +149,7 @@ def write_browser_logs():
 
 def Sequential_Actions(
     step_data,
+    test_action_info,
     _dependency=None,
     _run_time_params=None,
     _file_attachment=None,
@@ -248,6 +249,9 @@ def Sequential_Actions(
     # save the full step data in share variables
 
     sr.Set_Shared_Variables("step_data", step_data, protected=True)
+    # sr.Set_Shared_Variables("test_action_info", test_action_info, protected=True, print_variable=False)
+    sr.test_action_info = test_action_info
+
     result, skip_for_loop = Run_Sequential_Actions(
         [], debug_actions
     )  # empty list means run all, instead of step data we want to send the dataset no's of the step data to run
@@ -704,7 +708,8 @@ def Run_Sequential_Actions(
         skip_for_loop = []
 
         step_data = sr.Get_Shared_Variables("step_data")
-
+        # test_action_info = sr.Get_Shared_Variables("test_action_info")
+        test_action_info = sr.test_action_info
         if step_data in failed_tag_list:
             CommonUtil.ExecLog(
                 sModuleInfo, "Internal Error: Step Data not set in shared variable", 3
@@ -719,27 +724,33 @@ def Run_Sequential_Actions(
                     data_set_list.append(i)
 
         for dataset_cnt in data_set_list:  # For each data set within step data
-            CommonUtil.ExecLog(
-                "",
-                "\n********** Starting Action #%d **********\n" % (dataset_cnt + 1),
-                4,
-            )  # Offset by one to make it look proper
-            data_set = step_data[dataset_cnt]  # Save data set to variable
-            if dataset_cnt in skip:
+            if test_action_info:
+                Action_name = ": '" + test_action_info[dataset_cnt]["Action name"] + "'"
+                Action_disabled = test_action_info[dataset_cnt]["Action disabled"]
+            else:
+                Action_name = ""
+                Action_disabled = False
+            if Action_disabled:
                 CommonUtil.ExecLog(
                     "",
-                    "Action %s is skipped" % (dataset_cnt + 1),
+                    "\n********** Disabling Action #%d%s **********\n" % (dataset_cnt + 1, Action_name),
+                    4,
+                )
+                continue
+            elif dataset_cnt in skip:
+                CommonUtil.ExecLog(
+                    "",
+                    "\n********** Skipping Action #%d%s **********\n" % (dataset_cnt + 1, Action_name),
                     4,
                 )
                 continue  # If this data set is in the skip list, do not process it
-
-            # if (
-            #     CommonUtil.check_offline()
-            # ):  # Check if user initiated offline command from GUI
-            #     CommonUtil.ExecLog(
-            #         sModuleInfo, "User requested Zeuz Node to go offline.", 2
-            #     )
-            #     return "failed", skip_for_loop
+            else:
+                CommonUtil.ExecLog(
+                    "",
+                    "\n********** Starting Action #%d%s **********\n" % (dataset_cnt + 1, Action_name),
+                    4,
+                )  # Offset by one to make it look proper
+            data_set = step_data[dataset_cnt]  # Save data set to variable
 
             for row in data_set:  # For each row of the data set
                 action_name = row[1]  # Get Sub-Field

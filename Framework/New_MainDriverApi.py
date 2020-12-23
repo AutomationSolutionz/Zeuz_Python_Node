@@ -794,6 +794,7 @@ def call_driver_function_of_test_step(
     final_dependency,
     final_run_params,
     test_steps_data,
+    test_action_info,
     file_specific_steps,
     debug_actions=None,
 ):
@@ -845,6 +846,7 @@ def call_driver_function_of_test_step(
                                 final_dependency,
                                 final_run_params,
                                 test_steps_data,
+                                test_action_info,
                                 file_specific_steps,
                                 simple_queue,
                                 screen_capture,     # No need of screen capture. Need to delete this
@@ -906,6 +908,7 @@ def call_driver_function_of_test_step(
                             final_dependency,
                             final_run_params,
                             test_steps_data,
+                            test_action_info,
                             file_specific_steps,
                             simple_queue,
                             screen_capture,     # No need of screen capture. Need to delete this
@@ -1009,12 +1012,9 @@ def run_all_test_steps_in_a_test_case(
             debug_actions = str(debug_actions[1:-1]).split(",")
         debug = True
 
-    # if normal run, then write log file and cleanup driver instances
-    if not debug or cleanup_drivers_during_debug:
-        cleanup_driver_instances()
-
-    # clean up shared variables
+    # clean up shared variables and teardown drivers
     if cleanup_drivers_during_debug:
+        cleanup_driver_instances()
         shared.Clean_Up_Shared_Variables()
     if not debug_steps:
         debug_steps = []
@@ -1029,15 +1029,20 @@ def run_all_test_steps_in_a_test_case(
 
     # all_step_meta_data = Response["step_meta_data"]
     all_step_info = testcase_info["Steps"]
-    all_step_dataset = []
+    all_step_dataset, all_action_info = [], []
     for step_info in all_step_info:
-        all_action_info = step_info["Step actions"]
-        all_action_data_set = []
-        for action_info in all_action_info:
+        all_Action_info = step_info["Step actions"]
+        all_action_data_set, all_action_Info = [], []
+        for action_info in all_Action_info:
             action_dataset = action_info["Action data"]
             all_action_data_set.append(action_dataset)
+            dict = {}
+            dict["Action disabled"] = action_info["Action disabled"]
+            dict["Action name"] = action_info["Action name"]
+            dict["Action_sequence"] = action_info["Action_sequence"]
+            all_action_Info.append(dict)
         all_step_dataset.append(all_action_data_set)
-
+        all_action_info.append(all_action_Info)
     # loop through the steps
     while StepSeq <= Stepscount:
 
@@ -1074,6 +1079,7 @@ def run_all_test_steps_in_a_test_case(
         print("-"*len(log_line))
 
         test_steps_data = all_step_dataset[StepSeq-1]
+        test_action_info = all_action_info[StepSeq-1]
         try:
             test_case_continue = all_step_info[StepSeq - 1]["Continue on fail"]
             step_time = all_step_info[StepSeq - 1]["Step time"]
@@ -1133,6 +1139,7 @@ def run_all_test_steps_in_a_test_case(
                 final_dependency,
                 final_run_params,
                 test_steps_data,
+                test_action_info,
                 file_specific_steps,
                 debug_actions,
             )
@@ -1518,11 +1525,11 @@ def cleanup_driver_instances():  # cleans up driver(selenium, appium) instances
         import Framework.Built_In_Automation.Web.Selenium.BuiltInFunctions as Selenium
         import Framework.Built_In_Automation.Mobile.CrossPlatform.Appium.BuiltInFunctions as Appium
 
-        if shared.Test_Shared_Variables("selenium_driver") not in failed_tag_list:
+        if shared.Test_Shared_Variables("selenium_driver"):
             driver = shared.Remove_From_Shared_Variables("selenium_driver")
             if driver not in failed_tag_list:
                 Selenium.Tear_Down_Selenium()
-        if shared.Test_Shared_Variables("appium_driver") not in failed_tag_list:
+        if shared.Test_Shared_Variables("appium_driver"):
             driver = shared.Remove_From_Shared_Variables("appium_driver")
             if driver not in failed_tag_list:
                 Appium.teardown_appium()
@@ -1833,7 +1840,7 @@ def main(device_dict, user_info_object, local_run_dataset={}):
     all_run_id_info = get_all_run_id_info(Userid)
     if len(all_run_id_info) == 0:
         CommonUtil.ExecLog(sModuleInfo, "No Test Run Schedule found for the current user : %s" % Userid, 2)
-    CommonUtil.clear_all_logs(json=True)
+    CommonUtil.clear_all_logs(json_cond=True)
 
     executor = concurrent.futures.ThreadPoolExecutor()
     for run_id in all_run_id_info:
