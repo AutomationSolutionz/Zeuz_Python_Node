@@ -259,6 +259,75 @@ def Result_Analyzer(sTestStepReturnStatus, temp_q):
         return Exception_Handler(sys.exc_info())
 
 
+def CreateJsonReport(logs=None, stepInfo=None, TCInfo=None, setInfo=None):
+    global all_logs_json
+    if logs or stepInfo or TCInfo or setInfo:
+        log_id = ConfigModule.get_config_value("sectionOne", "sTestStepExecLogId", temp_config)
+        if not log_id:
+            return
+        log_id_vals = log_id.split("|")
+        if logs:
+            _, status, sModuleInfo, sDetails = logs
+        if len(log_id_vals) != 4:
+            pass
+        else:
+            # these loops can be optimized by saving the previous log_id_vals and comparing it with current one
+            runID, testcase_name, step_id, step_no = log_id_vals
+            testcase_no = testcase_name[5:]
+            for run_id in all_logs_json:
+                if runID == run_id:
+                    run_id_info = all_logs_json[run_id]
+                    if setInfo:
+                        run_id_info["Execution_Detail"] = setInfo
+                        break
+                    all_testcases_info = run_id_info["TestCases"]
+                    for testcase_info in all_testcases_info:
+                        if testcase_no == testcase_info["TestCase no"]:
+                            if TCInfo:
+                                testcase_info["Execution_Detail"] = TCInfo
+                                break
+                            all_step_info = testcase_info["Steps"]
+                            for step_info in all_step_info:
+                                if step_id == step_info["Step id"]:
+                                    if stepInfo:
+                                        step_info["Execution_Detail"] = stepInfo
+                                        fail_reason_log = []
+                                        if stepInfo["status"].lower() == "failed":
+                                            count = 0
+                                            for each_log in reversed(step_info["log"]):
+                                                if count == 3:
+                                                    break
+                                                if each_log["status"].lower() == "error":
+                                                    fail_reason_log.append(each_log["sDetails"])
+                                                    count += 1
+                                            fail_reason_log.reverse()
+                                        step_info["Reason_of_failure"] = fail_reason_log
+                                        break
+                                    log_info = {
+                                        "status": status.upper(),
+                                        "sModuleInfo": sModuleInfo,
+                                        "sDetails": sDetails
+                                    }
+                                    if "log" in step_info:
+                                        step_info["log"].append(log_info)
+                                    else:
+                                        step_info["log"] = [log_info]
+                            else:
+                                continue
+                            break
+                    else:
+                        continue
+                    break
+    elif stepInfo:
+        pass
+    else:
+        with open("D:\\Zeuz Node\\ZeuzPythonNode\\Projects\\Sample_Amazon_Testing\\RequiredFormatOf_TestCase.json", "r") as f:
+            all_logs_json = json.load(f)
+            if isinstance(all_logs_json, str):
+                all_logs_json = json.loads(all_logs_json)
+
+
+
 def ExecLog(
     sModuleInfo, sDetails, iLogLevel=1, _local_run="", sStatus="", force_write=False, variable=None
 ):
@@ -371,7 +440,7 @@ def ExecLog(
                 logger.removeHandler(browser_log_handler)
         else:
             # Except the browser logs
-            global all_logs, all_logs_count, all_logs_list, all_logs_json, json_log_cond
+            global all_logs, all_logs_count, all_logs_list
 
             log_id = ConfigModule.get_config_value(
                 "sectionOne", "sTestStepExecLogId", temp_config
@@ -381,23 +450,10 @@ def ExecLog(
                 return
 
             log_id_vals = log_id.split("|")
-            if len(log_id_vals) != 4:
-                all_logs_json.append(current_log_line)
-                json_log_cond = False
-            else:
-                _, testcase_name, _, step_no = log_id_vals
-                if not json_log_cond:
-                    all_logs_json.append({testcase_name: {step_no: []}})
-                    json_log_cond = True
-                if testcase_name in all_logs_json[-1]:
-                    if step_no in all_logs_json[-1][testcase_name]:
-                        all_logs_json[-1][testcase_name][step_no].append(current_log_line)
-                    else:
-                        all_logs_json[-1][testcase_name][step_no] = [current_log_line]
-                else:
-                    all_logs_json[-1][testcase_name] = {step_no: [current_log_line]}
-                if variable:
-                    sDetails = "%s\nVariable value: %s" % (sDetails, variable["val"])
+            CreateJsonReport(logs=(log_id_vals, status, sModuleInfo, sDetails))
+
+            if variable:
+                sDetails = "%s\nVariable value: %s" % (sDetails, variable["val"])
 
             now = datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
             all_logs[all_logs_count] = {
@@ -453,11 +509,8 @@ def get_all_logs(json=False):
     return all_logs_list
 
 
-def clear_all_logs(json=False):
+def clear_all_logs():
     global all_logs, all_logs_count, all_logs_list, all_logs_json
-    if json:
-        all_logs_json = []
-        return
     all_logs = {}
     all_logs_count = 0
     all_logs_list = []

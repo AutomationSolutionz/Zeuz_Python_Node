@@ -1269,6 +1269,7 @@ def run_all_test_steps_in_a_test_case(
                     current_step_sequence,
                     after_execution_dict,
                 )
+                CommonUtil.CreateJsonReport(stepInfo=after_execution_dict)
                 # get run id status
                 # run_cancelled = get_status_of_runid(run_id)
                 if run_cancelled == "Cancelled":
@@ -1322,7 +1323,7 @@ def run_all_test_steps_in_a_test_case(
                 current_step_sequence,
                 after_execution_dict,
             )
-
+            CommonUtil.CreateJsonReport(stepInfo=after_execution_dict)
             # get run id status
             # run_cancelled = get_status_of_runid(run_id)     # Response = "In-Progress"
             if run_cancelled == "Cancelled":
@@ -1618,6 +1619,13 @@ def run_test_case(
     TimeInSec = int(TimeDiff)
     TestCaseDuration = CommonUtil.FormatSeconds(TimeInSec)
 
+    after_execution_dict = {
+        "testcaseendtime": sTestCaseEndTime,
+        "duration": TestCaseDuration,
+        "status": sTestCaseStatus
+    }
+    CommonUtil.CreateJsonReport(TCInfo=after_execution_dict)
+
     debug = False
     if str(run_id).startswith("debug"):
         debug = True
@@ -1840,11 +1848,11 @@ def main(device_dict, user_info_object, local_run_dataset={}):
     all_run_id_info = get_all_run_id_info(Userid)
     if len(all_run_id_info) == 0:
         CommonUtil.ExecLog(sModuleInfo, "No Test Run Schedule found for the current user : %s" % Userid, 2)
-    CommonUtil.clear_all_logs(json_cond=True)
+    CommonUtil.CreateJsonReport()
 
     executor = concurrent.futures.ThreadPoolExecutor()
     for run_id in all_run_id_info:
-        update_machine_info_on_server(run_id)   ########################## SHOULD BE DELETED ###########################
+        update_machine_info_on_server(run_id)   ########################## SHOULD BE DELETED ##########################
         run_cancelled = ""
         CommonUtil.clear_all_logs()
 
@@ -1916,13 +1924,13 @@ def main(device_dict, user_info_object, local_run_dataset={}):
 
                 # get locust file path
                 locust_file_path = (
-                        os.getcwd()
-                        + os.sep
-                        + "Built_In_Automation"
-                        + os.sep
-                        + "Performance_Testing"
-                        + os.sep
-                        + locustFile
+                    os.getcwd()
+                    + os.sep
+                    + "Built_In_Automation"
+                    + os.sep
+                    + "Performance_Testing"
+                    + os.sep
+                    + locustFile
                 )
 
                 # make locust query
@@ -1992,6 +2000,12 @@ def main(device_dict, user_info_object, local_run_dataset={}):
         TimeDiff = TestSetEndTime - TestSetStartTime
         TimeInSec = int(TimeDiff)
         TestSetDuration = CommonUtil.FormatSeconds(TimeInSec)
+
+        after_execution_dict = {
+            "setendtime": sTestSetEndTime,
+            "duration": TestSetDuration
+        }
+        CommonUtil.CreateJsonReport(setInfo=after_execution_dict)
 
         filepath = os.path.join(os.path.abspath(__file__).split("Framework")[0])/Path("AutomationLog")/"execution_log.json"
         with open(filepath, "w") as f:
