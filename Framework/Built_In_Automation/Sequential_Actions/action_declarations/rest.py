@@ -4,7 +4,7 @@ declarations = (
     { "name": "save response into list",       "function": "Insert_Into_List",                 "screenshot": "none" },
     { "name": "save response and cookie",      "function": "Get_Response_Wrapper_With_Cookie", "screenshot": "none" },
     { "name": "save response tuple into list", "function": "Insert_Tuple_Into_List",           "screenshot": "none" },
-)
+) # yapf: disable
 
 module_name = "rest"
 
