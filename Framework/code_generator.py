@@ -67,7 +67,8 @@ def write_test_case_data_to_files(run_id, common, test_cases, output_dir):
         steps = test_case["Steps"]
         del test_case["Steps"]
 
-        code = pretty(common)
+        code = f"run_id = '{run_id}'\n"
+        code += pretty(common)
         code += pretty(test_case) + "\n"
 
         for step in steps:
@@ -94,7 +95,7 @@ def test_{step_name}():
 
         # Save code to file
         filename = f"test_case_{test_case['TestCase no']}.py"
-        print(filename)
+        print(output_dir / filename)
         with open(output_dir / filename, "w") as f:
             f.write(code)
 
@@ -106,7 +107,8 @@ def main(path=None, output_dir=None):
     if output_dir is None:
         output_dir = Path.cwd() / "tests"
         # Create output folder if it does not exist (with parents)
-        output_dir.mkdir(parents=True, exist_ok=True)
+
+    output_dir.mkdir(parents=True, exist_ok=True)
 
     data = parse_json(Path(path))
 
