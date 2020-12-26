@@ -94,26 +94,16 @@ def write_all_logs_to_server(all_logs_list):
 
 # send_email_report_after_exectution
 def send_email_report_after_exectution(run_id, project_id, team_id):
-    # return RequestFormatter.Get(
-    #     "send_email_report_after_excecution_api",
-    #     {"run_id": run_id, "project_id": project_id, "team_id": team_id},
-    # )
-    T1 = time.perf_counter()
-    res = RequestFormatter.Get(
+    return RequestFormatter.Get(
         "send_email_report_after_excecution_api",
         {"run_id": run_id, "project_id": project_id, "team_id": team_id},
     )
-    print("send_email_report_after_exectution = %f seconds" % (time.perf_counter() - T1))
-    return res
 
 
 # returns all drivers
 def get_all_drivers_list():
-    # return RequestFormatter.Get("get_all_drivers_api")
-    T1 = time.perf_counter()
-    res = RequestFormatter.Get("get_all_drivers_api")
-    print("get_all_drivers_list = %f seconds" % (time.perf_counter() - T1))
-    return res
+    return RequestFormatter.Get("get_all_drivers_api")
+
 
 # returns all latest versions
 def get_latest_zeuz_versions():
@@ -122,7 +112,6 @@ def get_latest_zeuz_versions():
 
 # returns all runids assigned to a machine, NEEDS IMPROVEMENT
 def get_all_run_ids(Userid, sModuleInfo):
-    T1 = time.perf_counter()
 
     all_run = []
     try:
@@ -136,7 +125,6 @@ def get_all_run_ids(Userid, sModuleInfo):
                 CommonUtil.ExecLog(sModuleInfo, "Trying again to fetch test run", 1)
                 time.sleep(1)
             else:
-                print("get_all_run_ids = %f seconds" % (time.perf_counter() - T1))
                 return all_run
 
         CommonUtil.ExecLog(
@@ -144,7 +132,6 @@ def get_all_run_ids(Userid, sModuleInfo):
             "Couldn't get the test run deployed on this machine, please try again",
             3,
         )
-        print("get_all_run_ids = %f seconds" % (time.perf_counter() - T1))
         return all_run
 
     except Exception:
@@ -154,7 +141,6 @@ def get_all_run_ids(Userid, sModuleInfo):
             "Couldn't get the test run deployed on this machine, please try again",
             3,
         )
-        print("get_all_run_ids = %f seconds" % (time.perf_counter() - T1))
         return all_run
 
 
@@ -165,12 +151,10 @@ def get_device_order(Userid):
     #     # "get_machine_device_info_api", {"machine_name": Userid}     # new one
     # )
 
-    T1 = time.perf_counter()
     res = RequestFormatter.Get(
         "get_machine_device_order_api", {"machine_name": Userid}  # old one
         # "get_machine_device_info_api", {"machine_name": Userid}     # new one
     )
-    print("get_device_order = %f seconds" % (time.perf_counter() - T1))
     return res
 
 # returns device serial also browserstack info set from server
@@ -180,12 +164,10 @@ def get_device_order_and_browserstack_info(Userid):
     #     "get_machine_device_info_api", {"machine_name": Userid}     # new one
     # )
 
-    T1 = time.perf_counter()
     res = RequestFormatter.Get(
         # "get_machine_device_order_api", {"machine_name": Userid}  # old one
         "get_machine_device_info_api", {"machine_name": Userid}     # new one
     )
-    print("get_device_order_and_browserstack_info = %f seconds" % (time.perf_counter() - T1))
     return res
 
 # sets server variable
@@ -232,11 +214,8 @@ def get_all_server_variable(run_id):
 
 # get all server variable
 def get_all_remote_config(run_id):
-    # return RequestFormatter.Get("get_all_remote_config_api", {"run_id": run_id})
-    T1 = time.perf_counter()
-    res = RequestFormatter.Get("get_all_remote_config_api", {"run_id": run_id})
-    print("get_all_remote_config = %f seconds" % (time.perf_counter() - T1))
-    return res
+    return RequestFormatter.Get("get_all_remote_config_api", {"run_id": run_id})
+
 
 # get all server variable
 def delete_all_server_variable(run_id):
@@ -247,39 +226,32 @@ def delete_all_server_variable(run_id):
 
 # returns all dependencies of test cases of a run id
 def get_all_dependencies(project_id, team_id, run_description):
-    T1 = time.perf_counter()
     dependency_list = RequestFormatter.Get(
         "get_all_dependency_based_on_project_and_team_api",
         {"project_id": project_id, "team_id": team_id},
     )
     final_dependency = get_final_dependency_list(dependency_list, run_description)
-    print("get_all_dependencies = %f seconds" % (time.perf_counter() - T1))
     return final_dependency
 
 
 # returns all runtime parameters of test cases of a run id
 def get_all_runtime_parameters(run_id):
-    T1 = time.perf_counter()
     run_params_list = RequestFormatter.Get(
         "get_all_run_parameters_based_on_project_and_team_api", {"run_id": run_id}
     )
     final_run_params = get_run_params_list(run_params_list)
-    print("get_all_runtime_parameters = %f seconds" % (time.perf_counter() - T1))
     return final_run_params
 
 
 def update_machine_info_on_server(run_id):
-    T1 = time.perf_counter()
     RequestFormatter.Get(
         "update_machine_info_based_on_run_id_api",
         {"run_id": run_id, "options": {"status": PROGRESS_TAG}},
     )
-    print("update_machine_info_on_server = %f seconds" % (time.perf_counter() - T1))
 # updates current runid status on server database
 
 
 def update_test_env_results_on_server(run_id):
-    T1 = time.perf_counter()
     sTestSetStartTime = datetime.fromtimestamp(time.time()).strftime(
         "%Y-%m-%d %H:%M:%S"
     )
@@ -293,18 +265,14 @@ def update_test_env_results_on_server(run_id):
             "run_id": run_id,
         },
     )
-    print("update_test_env_results_on_server = %f seconds" % (time.perf_counter() - T1))
 
 
 # returns all automated test cases of a runid
 def get_all_automated_test_cases_in_run_id(run_id, tester_id):
-    T1 = time.perf_counter()
-    TestCaseLists = RequestFormatter.Get(
+    return RequestFormatter.Get(
         "get_all_automated_test_cases_based_on_run_id_api",
         {"run_id": run_id, "tester_id": tester_id},
     )
-    print("get_all_automated_test_cases_in_run_id = %f seconds" % (time.perf_counter() - T1))
-    return TestCaseLists
 
 
 # checks if a step of a test case is the verification point of that test case
@@ -317,9 +285,7 @@ def check_if_step_is_verification_point(run_id, tc_id, step_sequence):
 
 # if run is cancelled then it can be called, it cleans up the runid from database
 def cleanup_runid_from_server(run_id):
-    T1 = time.perf_counter()
     RequestFormatter.Get("clean_up_run_api", {"run_id": run_id})
-    print("cleanup_runid_from_server = %f seconds" % (time.perf_counter() - T1))
 
 
 # checks if this test case is a copy of another test case
@@ -334,15 +300,9 @@ def get_debug_steps(run_id):
 
 
 def send_debug_data(run_id, key, value):
-    # return RequestFormatter.Get(
-    #     "send_debug_data_api", {"run_id": run_id, "key": key, "value": value}
-    # )
-    T1 = time.perf_counter()
-    res = RequestFormatter.Get(
+    return RequestFormatter.Get(
         "send_debug_data_api", {"run_id": run_id, "key": key, "value": value}
     )
-    print("start_sending_step_result_to_server = %f seconds" % (time.perf_counter() - T1))
-    return res
 
 # returns test case details needed to run the test case
 def get_test_case_details(run_id, test_case):
@@ -457,7 +417,6 @@ def get_test_step_data(run_id, test_case, current_step_sequence, sModuleInfo):
         end_time = datetime.now() + timedelta(seconds=wait_time)
         global dbadfxb
         while datetime.now() <= end_time:
-            T1 = time.perf_counter()
             response = RequestFormatter.Get(
                 "get_test_step_data_based_on_test_case_run_id_api",
                 {
@@ -466,7 +425,6 @@ def get_test_step_data(run_id, test_case, current_step_sequence, sModuleInfo):
                     "step_sequence": current_step_sequence,
                 },
             )
-            print("get_test_step_data = %f seconds  i=%d" % ((time.perf_counter() - T1), dbadfxb))
             dbadfxb += 1
             if "status" not in response or response["status"] in failed_tag_list:
                 CommonUtil.ExecLog(
@@ -507,7 +465,6 @@ def update_test_step_results_on_server(
 
 # checks if the user has permission to run test or not
 def check_user_permission_to_run_test(sModuleInfo, Userid):
-    T1 = time.perf_counter()
     r = RequestFormatter.Get("get_valid_machine_name_api", {"machine_name": Userid})
     if not r:
         CommonUtil.ExecLog(
@@ -515,7 +472,6 @@ def check_user_permission_to_run_test(sModuleInfo, Userid):
         )
         return "You Don't Have Permission"
     else:
-        print("check_user_permission_to_run_test = %f seconds" % (time.perf_counter() - T1))
         return "passed"
 
 
@@ -1336,7 +1292,6 @@ def run_all_test_steps_in_a_test_case(
                 sTestStepResultList[len(sTestStepResultList) - 1] = CANCELLED_TAG
                 break
         StepSeq += 1
-    print("id of executor inside run_all_test_steps_in_a_test_case =", id(executor))
     return sTestStepResultList
 
 
@@ -1409,7 +1364,6 @@ def write_log_file_for_test_case(
         "testendtime": sTestCaseEndTime,
         "duration": TestCaseDuration,
     }
-    T1 = time.perf_counter()
     update_test_case_status_after_run_on_server(run_id, test_case, test_case_after_dict)
 
     # if settings checked, then send log file or screenshots, otherwise don't send
@@ -1470,7 +1424,6 @@ def write_log_file_for_test_case(
         test_case_after_dict = {"logid": TCLogFile}
 
     update_test_case_status_after_run_on_server(run_id, test_case, test_case_after_dict)
-    print("write_log_file_for_test_case = %f seconds" % (time.perf_counter() - T1))
 
 
 # run a test case of a runid
@@ -1493,7 +1446,6 @@ def start_sending_log_to_server(run_id, temp_ini_file):
 
 def start_sending_shared_var_to_server(run_id):
     try:
-        T1 = time.perf_counter()
         shared_resource = shared.Shared_Variable_Export()
         for key in shared_resource:
             if key == "selenium_driver":
@@ -1506,17 +1458,14 @@ def start_sending_shared_var_to_server(run_id):
                 send_debug_data(run_id, "var-" + key, value)
             except:
                 continue
-        print("start_sending_shared_var_to_server = %f seconds" % (time.perf_counter() - T1))
     except:
         return True
 
 
 def start_sending_step_result_to_server(run_id, debug_steps, sTestStepResultList):
     try:
-        T1 = time.perf_counter()
         for i in range(0, len(debug_steps)):
             send_debug_data(run_id, "result-" + debug_steps[i], sTestStepResultList[i])
-        print("start_sending_step_result_to_server = %f seconds" % (time.perf_counter() - T1))
     except:
         return True
 
@@ -1660,7 +1609,6 @@ def run_test_case(
 
     if sTestStepResultList[-1] == CANCELLED_TAG:
         return CANCELLED_TAG
-    print("id of executor inside run_test_case =", id(executor))
     return "passed"
 
 
@@ -1715,7 +1663,6 @@ def set_device_info_according_to_user_order(device_order, device_dict,  test_cas
 
 def update_fail_reasons_of_test_cases(run_id, TestCaseID):
     try:
-        T1 = time.perf_counter()
         for test_case in TestCaseID:
             try:
                 FailReason = get_fail_reason_of_a_test_case(run_id, test_case[0])
@@ -1726,7 +1673,6 @@ def update_fail_reasons_of_test_cases(run_id, TestCaseID):
             update_test_case_status_after_run_on_server(
                 run_id, test_case[0], test_case_after_dict
             )
-        print("update_fail_reasons_of_test_cases = %f seconds" % (time.perf_counter() - T1))
     except:
         pass
 
@@ -2023,11 +1969,10 @@ def main(device_dict, user_info_object, local_run_dataset={}):
         CommonUtil.ExecLog(sModuleInfo, "Test Set Completed", 4, False)
         if ConfigModule.get_config_value("RunDefinition", "local_run") == "False":
             """ Need to know what to do with the below functions """
-            # executor.submit(send_email_report_after_exectution, run_id, project_id, team_id)
-            # executor.submit(update_fail_reasons_of_test_cases, run_id, TestCaseLists)
+            executor.submit(send_email_report_after_exectution, run_id, project_id, team_id)
+            executor.submit(update_fail_reasons_of_test_cases, run_id, TestCaseLists)
 
     executor.shutdown()
-    print("*** executor shut down ***")
     return "pass"
 
 
