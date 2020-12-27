@@ -1,0 +1,124 @@
+import json
+import websocket
+from threading import Thread
+import ssl
+import json
+from Framework.Utilities import ConfigModule
+from urllib.parse import urlparse
+from pathlib import Path
+import os
+
+
+# Find node id file
+node_id_file_path = Path(
+    os.path.abspath(__file__).split("Framework")[0]
+) / Path("node_id.conf")
+
+# Websocket connection object that runs on a different thread.
+ws = None
+
+
+def get_url():
+    unique_id = ConfigModule.get_config_value(
+        "UniqueID", "id", node_id_file_path
+    )
+
+    node_id = (
+        ConfigModule.get_config_value("Authentication", "username")
+        + "_"
+        + str(unique_id)
+    )
+
+    server_url = urlparse(ConfigModule.get_config_value("Authentication", "server_address"))
+
+    path = f"v1/ws/live_log/send/{node_id}"
+
+    if server_url.scheme == "https":
+        protocol = "wss"
+    else:
+        protocol = "ws"
+
+    if server_url.hostname in ("localhost", "127.0.0.1"):
+        # Development URL (as websocket server runs on a different port)
+        ws_url = f"{protocol}://{server_url.hostname}:8080/{path}"
+    else:
+        # Production URL (path prefixed with `faster`)
+        ws_url = f"{protocol}://{server_url.netloc}/faster/{path}"
+
+    return ws_url
+
+
+def send(msg, ws):
+    try:
+        if ws is None:
+            return
+
+        if not isinstance(msg, str):
+            msg = json.dumps(msg)
+
+        ws.send(msg)
+    except:
+        pass
+
+
+def log(module_info, log_level, description):
+    msg = {
+        "type": "log",
+        "msg": {
+            "module_info": module_info,
+            "log_level": log_level,
+            "msg": description,
+        },
+    }
+    global ws
+    send(msg, ws)
+
+
+def close():
+    global ws
+    if ws != None:
+        try:
+            ws.close(status=1000, reason="Test Set run complete")
+        except:
+            pass
+
+
+def on_message(ws, message):
+    print("[ws] Message:\n", message)
+
+
+def on_error(ws, error):
+    if isinstance(error, AttributeError):
+        return
+    print("[ws] Error:\n", error)
+
+
+def on_close(ws):
+    print("[ws] Connection closed.")
+
+
+def on_open(ws):
+    print("[ws] Live Log Connection established.")
+
+def run_ws_thread(ws):
+    ws.run_forever(sslopt={"cert_reqs": ssl.CERT_NONE}, )
+
+
+def connect():
+    global ws
+    # Uncomment next line for debugging.
+    # websocket.enableTrace(True)
+    ws = websocket.WebSocketApp(get_url(),
+                                on_message=on_message,
+                                on_error=on_error,
+                                on_close=on_close)
+    ws.on_open = on_open
+
+    t = Thread(target=run_ws_thread, args=(ws,))
+    t.start()
+
+
+ws = websocket.WebSocketApp(get_url(),
+                                on_message=on_message,
+                                on_error=on_error,
+                                on_close=on_close)
