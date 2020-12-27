@@ -945,6 +945,35 @@ def start_appium_driver(
                             "noReset"
                         ] = "true"  # Do not clear application cache when complete
                 else:  # for real ios device, not developed yet
+                    # We're trying to launch an application using .app file
+                    if Shared_Resources.Test_Shared_Variables(
+                        "ios_simulator_folder_path"
+                    ):  # if simulator path already exists
+                        app = Shared_Resources.Get_Shared_Variables(
+                            "ios_simulator_folder_path"
+                        )
+                        app = os.path.normpath(app)
+                    else:
+                        app = os.path.normpath(os.getcwd() + os.sep + os.pardir)
+                        app = os.path.join(app, "iosSimulator")
+                        # saving simulator path for future use
+                        Shared_Resources.Set_Shared_Variables(
+                            "ios_simulator_folder_path", str(app)
+                        )
+
+                    app = os.path.join(app, ios)
+                    encoding = "utf-8"
+                    bundle_id = str(
+                        subprocess.check_output(
+                            ["osascript", "-e", 'id of app "%s"' % str(app)]
+                        ),
+                        encoding=encoding,
+                    ).strip()
+
+                    desired_caps["platformName"] = "iOS"
+
+                    desired_caps["automationName"] = "XCUITest"
+
                     desired_caps[
                         "sendKeyStrategy"
                     ] = "setValue"  # Use set_value() for writing to element
