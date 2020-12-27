@@ -14,7 +14,7 @@ declarations = (
     { "name": "move mouse cursor",    "function": "move_mouse_cursor",          "screenshot": "desktop" },
     { "name": "wait gui",             "function": "Wait_For_Element_Pyautogui", "screenshot": "desktop" },
     { "name": "wait disable gui",     "function": "Wait_For_Element_Pyautogui", "screenshot": "desktop" },
-)
+) # yapf: disable
 
 module_name = "desktop"
 

@@ -58,7 +58,7 @@ declarations = (
     { "name": "write into excel",                            "function": "excel_write",                           "screenshot": "none" },
     { "name": "excel comparison",                            "function": "excel_comparison",                      "screenshot": "none" },
     { "name": "read from excel",                             "function": "excel_read",                            "screenshot": "none" },
-)
+) # yapf: disable
 
 module_name = "common"
 

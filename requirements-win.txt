@@ -45,3 +45,4 @@ idna
 pyrsistent
 attrs
 pytest==6.1.2
+yapf

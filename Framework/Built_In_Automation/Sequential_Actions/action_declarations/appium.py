@@ -47,7 +47,7 @@ declarations = (
     { "name": "save attribute",           "function": "Save_Attribute_appium",        "screenshot": "mobile" },
     { "name": "go to webpage",            "function": "go_to_webpage",               "screenshot": "mobile" },
     {"name": "save attribute values in list", "function": "save_attribute_values_appium", "screenshot": "mobile"},
-)
+) # yapf: disable
 
 module_name = "appium"
 
