@@ -25,6 +25,7 @@ from .Utilities import ConfigModule, FileUtilities as FL, CommonUtil, RequestFor
 from Framework.Built_In_Automation.Shared_Resources import (
     BuiltInFunctionSharedResources as shared,
 )
+from Framework.Utilities import ws
 
 top_path = os.path.dirname(os.getcwd())
 drivers_path = os.path.join(top_path, "Drivers")
@@ -1922,7 +1923,7 @@ def main(device_dict, user_info_object, local_run_dataset={}):
         )
         return False
 
-    CommonUtil.clear_all_logs(json=True)
+    CommonUtil.clear_all_logs()
     # for each test runid loop continues
     for TestRunID in TestRunLists:
 
@@ -1939,6 +1940,10 @@ def main(device_dict, user_info_object, local_run_dataset={}):
         run_description = (TestRunID[1].replace("run_dependency", "")).replace("dependency_filter", "")     # Example= Test Case:TEST-5181|AND|
         run_id = TestRunID[0]           # Example= debugmuhib_bfa0de80-0
         run_cancelled = ""
+
+        # Start websocket server if we're in debug mode.
+        if run_id.lower().startswith("debug"):
+            ws.connect()
 
         # T = time.perf_counter()
         # # save run id in shared variable
@@ -2237,6 +2242,10 @@ def main(device_dict, user_info_object, local_run_dataset={}):
 
         # for testing, will be done for only main TC in linked test cases
         # delete_all_server_variable(run_id)
+
+        # Close websocket connection.
+        if run_id.lower().startswith("debug"):
+            ws.close()
 
     return "pass"
 

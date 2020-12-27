@@ -15,6 +15,8 @@ from Framework.Utilities import RequestFormatter
 import subprocess
 from pathlib import Path
 
+from Framework.Utilities import ws
+
 
 # For TakeScreenShot()
 from concurrent.futures import ThreadPoolExecutor
@@ -399,6 +401,8 @@ def ExecLog(
 
     # Set current log as the next previous log
     previous_log_line = current_log_line
+
+    ws.log(sModuleInfo, iLogLevel, sDetails)
 
     if iLogLevel > 0:
         if iLogLevel == 6:
