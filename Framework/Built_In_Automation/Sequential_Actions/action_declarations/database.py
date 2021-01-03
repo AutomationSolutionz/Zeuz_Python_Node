@@ -7,7 +7,7 @@ declarations = (
     { "name": "insert into db", "function": "insert_into_db",  "screenshot": "none" },
     { "name": "delete from db", "function": "delete_from_db",  "screenshot": "none" },
     { "name": "update into db", "function": "update_into_db",  "screenshot": "none" },
-)
+) # yapf: disable
 
 module_name = "database"
 

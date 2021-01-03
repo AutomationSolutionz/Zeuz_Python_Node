@@ -13,6 +13,7 @@ def sequential_actions(
     dependency,
     run_time_params,
     step_data,
+    test_action_info,
     file_attachment,
     temp_q,
     screen_capture,
@@ -22,6 +23,7 @@ def sequential_actions(
     try:
         sTestStepReturnStatus = sa.Sequential_Actions(
             step_data,
+            test_action_info,
             dependency,
             run_time_params,
             file_attachment,

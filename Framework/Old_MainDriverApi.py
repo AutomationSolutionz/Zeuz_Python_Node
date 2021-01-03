@@ -112,7 +112,6 @@ def get_latest_zeuz_versions():
 
 # returns all runids assigned to a machine, NEEDS IMPROVEMENT
 def get_all_run_ids(Userid, sModuleInfo):
-
     all_run = []
     try:
         wait_time = 5
@@ -146,29 +145,19 @@ def get_all_run_ids(Userid, sModuleInfo):
 
 # returns device serial set from server
 def get_device_order(Userid):
-    # return RequestFormatter.Get(
-    #     "get_machine_device_order_api", {"machine_name": Userid}  # old one
-    #     # "get_machine_device_info_api", {"machine_name": Userid}     # new one
-    # )
-
-    res = RequestFormatter.Get(
+    return RequestFormatter.Get(
         "get_machine_device_order_api", {"machine_name": Userid}  # old one
         # "get_machine_device_info_api", {"machine_name": Userid}     # new one
     )
-    return res
+
 
 # returns device serial also browserstack info set from server
 def get_device_order_and_browserstack_info(Userid):
-    # return RequestFormatter.Get(
-    #     # "get_machine_device_order_api", {"machine_name": Userid}  # old one
-    #     "get_machine_device_info_api", {"machine_name": Userid}     # new one
-    # )
-
-    res = RequestFormatter.Get(
+    return RequestFormatter.Get(
         # "get_machine_device_order_api", {"machine_name": Userid}  # old one
         "get_machine_device_info_api", {"machine_name": Userid}     # new one
     )
-    return res
+
 
 # sets server variable
 def set_server_variable(run_id, key, value):
@@ -269,10 +258,11 @@ def update_test_env_results_on_server(run_id):
 
 # returns all automated test cases of a runid
 def get_all_automated_test_cases_in_run_id(run_id, tester_id):
-    return RequestFormatter.Get(
+    TestCaseLists = RequestFormatter.Get(
         "get_all_automated_test_cases_based_on_run_id_api",
         {"run_id": run_id, "tester_id": tester_id},
     )
+    return TestCaseLists
 
 
 # checks if a step of a test case is the verification point of that test case
@@ -303,6 +293,7 @@ def send_debug_data(run_id, key, value):
     return RequestFormatter.Get(
         "send_debug_data_api", {"run_id": run_id, "key": key, "value": value}
     )
+
 
 # returns test case details needed to run the test case
 def get_test_case_details(run_id, test_case):
@@ -409,13 +400,12 @@ def update_test_case_result_on_server(run_id, sTestSetEndTime, TestSetDuration):
         {"run_id": run_id, "options": {"status": COMPLETE_TAG, "email_flag": True}},
     )
 
-dbadfxb = 1
+
 # returns step data of a test step in a test case
 def get_test_step_data(run_id, test_case, current_step_sequence, sModuleInfo):
     try:
         wait_time = 5
         end_time = datetime.now() + timedelta(seconds=wait_time)
-        global dbadfxb
         while datetime.now() <= end_time:
             response = RequestFormatter.Get(
                 "get_test_step_data_based_on_test_case_run_id_api",
@@ -425,7 +415,7 @@ def get_test_step_data(run_id, test_case, current_step_sequence, sModuleInfo):
                     "step_sequence": current_step_sequence,
                 },
             )
-            dbadfxb += 1
+
             if "status" not in response or response["status"] in failed_tag_list:
                 CommonUtil.ExecLog(
                     sModuleInfo,
@@ -480,7 +470,6 @@ def check_if_other_machines_failed_in_linked_run():
     sModuleInfo = inspect.currentframe().f_code.co_name + " : " + MODULE_NAME
     try:
         run_id = shared.Get_Shared_Variables("run_id")
-
         dict = get_all_server_variable(run_id)
         try:
             if (
@@ -564,12 +553,12 @@ def upload_zip(server_id, port_id, temp_folder, run_id, file_name, base_path=Fal
             }
             r = requests.post(url_link, files=file_list, data=data_list, verify=False)
             if r.status_code == 200:
-                CommonUtil.ExecLog(
-                    "",
-                    "Uploaded logs and screenshots as zip file to server",
-                    4,
-                    False,
-                )
+                # CommonUtil.ExecLog(
+                #     sModuleInfo,
+                #     "Uploaded logs and screenshots as zip file to server.",
+                #     4,
+                #     False,
+                # )
                 break
             else:
                 # CommonUtil.ExecLog(
@@ -608,14 +597,14 @@ def get_final_dependency_list(dependency_list, run_description):
 
 
 # downloads attachments for a test step
-def download_attachments_for_test_case(sModuleInfo, run_id, test_case, temp_ini_file, test_case_attachments, test_step_attachments):
+def download_attachments_for_test_case(sModuleInfo, run_id, test_case, temp_ini_file):
     try:
         log_file_path = ConfigModule.get_config_value(
             "sectionOne", "temp_run_file_path", temp_ini_file
         )
     except Exception:
         CommonUtil.Exception_Handler(sys.exc_info())
-    test_step_attachments = []
+
     test_case_folder = (
         log_file_path
         + os.sep
@@ -661,14 +650,14 @@ def download_attachments_for_test_case(sModuleInfo, run_id, test_case, temp_ini_
         "sectionOne", "download_folder", temp_ini_file
     )
 
-    # # test case attachements
-    # test_case_attachments = RequestFormatter.Get(
-    #     "get_test_case_attachments_api", {"run_id": run_id, "test_case": test_case}
-    # )
-    # test_step_attachments = RequestFormatter.Get(
-    #     "get_test_step_attachments_for_test_case_api",
-    #     {"run_id": run_id, "test_case": test_case},
-    # )
+    # test case attachements
+    test_case_attachments = RequestFormatter.Get(
+        "get_test_case_attachments_api", {"run_id": run_id, "test_case": test_case}
+    )
+    test_step_attachments = RequestFormatter.Get(
+        "get_test_step_attachments_for_test_case_api",
+        {"run_id": run_id, "test_case": test_case},
+    )
     FL.DeleteFolder(
         ConfigModule.get_config_value("sectionOne", "download_folder", temp_ini_file)
     )
@@ -742,14 +731,14 @@ def download_attachments_for_test_case(sModuleInfo, run_id, test_case, temp_ini_
 # call the function of a test step that is in its driver file
 def call_driver_function_of_test_step(
     sModuleInfo,
-    all_step_info,
+    TestStepsList,
     StepSeq,
     step_time,
+    driver_list,
     current_step_name,
     final_dependency,
     final_run_params,
     test_steps_data,
-    test_action_info,
     file_specific_steps,
     debug_actions=None,
 ):
@@ -757,205 +746,213 @@ def call_driver_function_of_test_step(
         q = queue.Queue()  # define queue
 
         # get step driver
-        current_driver = all_step_info[StepSeq-1]["step_driver_type"]
+        if TestStepsList[StepSeq - 1][8] != None:
+            current_driver = TestStepsList[StepSeq - 1][8]
+        else:
+            current_driver = TestStepsList[StepSeq - 1][3]
+
         print("DRIVER: {}".format(current_driver))
 
-        try:
-            current_driver = "Drivers." + current_driver
-            module_name = importlib.import_module(current_driver)  # get module
-            print("STEP DATA and VARIABLES")
-            # get step name
-            if all_step_info[StepSeq-1]["step_function"]:
-                step_name = all_step_info[StepSeq-1]["step_function"].strip()
-            else:
-                step_name = current_step_name
-
-            step_name = step_name.lower().replace(" ", "_")
-
+        if current_driver in driver_list:
             try:
-                # importing functions from driver
-                functionTocall = getattr(module_name, step_name)
-            except Exception as e:
-                CommonUtil.Exception_Handler(
-                    sys.exc_info(),
-                    None,
-                    "Could not find function name: %s in Driver/%s.py. Perhaps you need to add a custom driver or add an alias step to the Test Step."
-                    % (step_name, current_driver),
-                )
-                return "Failed"
+                current_driver = "Drivers." + current_driver
+                module_name = importlib.import_module(current_driver)  # get module
+                print("STEP DATA and VARIABLES")
+                # get step name
+                if TestStepsList[StepSeq - 1][8] != None:
+                    step_name = (TestStepsList[StepSeq - 1][7]).strip()
+                else:
+                    step_name = current_step_name
 
-            try:
-                simple_queue = queue.Queue()
-                screen_capture = "Desktop"      # No need of screen capture. Need to delete this
+                # step_id = get_step_id_of_a_test_step(step_name)
+                # step_id = step_id[0]
+                # will search in the original step not in the alias step for screen capture settings
+                step_id = TestStepsList[StepSeq - 1][0]
+                step_name = step_name.lower().replace(" ", "_")
 
-                # run in thread
-                if (
-                    ConfigModule.get_config_value("RunDefinition", "threading")
-                    in passed_tag_list
-                ):
-                    stepThread = threading.Thread(
-                        target=functionTocall,
-                        args=(
+                try:
+                    # importing functions from driver
+                    functionTocall = getattr(module_name, step_name)
+                except Exception as e:
+                    CommonUtil.Exception_Handler(
+                        sys.exc_info(),
+                        None,
+                        "Could not find function name: %s in Driver/%s.py. Perhaps you need to add a custom driver or add an alias step to the Test Step."
+                        % (step_name, current_driver),
+                    )
+                    sStepResult = "Failed"
+
+                try:
+                    simple_queue = queue.Queue()  # another queue (?)
+
+                    # try:
+                    #     # get screen capture settings
+                    #     screen_capture = get_screen_capture_settings_of_a_test_step(    # Response = ["Desktop"]
+                    #         step_id
+                    #     )
+                    #     if len(screen_capture) > 0:
+                    #         screen_capture = screen_capture[0]
+                    #     else:
+                    #         screen_capture = "Desktop"
+                    # except Exception as e:
+                    #     screen_capture = "Desktop"
+                    screen_capture = "Desktop"      # No need of screen capture. Need to delete this
+
+                    # run in thread
+                    if (
+                        ConfigModule.get_config_value("RunDefinition", "threading")
+                        in passed_tag_list
+                    ):
+                        stepThread = threading.Thread(
+                            target=functionTocall,
+                            args=(
+                                final_dependency,
+                                final_run_params,
+                                test_steps_data,
+                                file_specific_steps,
+                                simple_queue,
+                                screen_capture,     # No need of screen capture. Need to delete this
+                                device_info,
+                            ),
+                        )  # start step thread
+
+                        CommonUtil.ExecLog(
+                            sModuleInfo, "Starting Test Step Thread..", 1
+                        )  # add log
+
+                        # start thread
+                        stepThread.start()
+
+                        # Wait for the Thread to finish or until timeout
+                        CommonUtil.ExecLog(
+                            sModuleInfo,
+                            "Waiting for Test Step Thread to finish..for (seconds) :%d"
+                            % step_time,
+                            1,
+                        )
+                        stepThread.join(float(step_time))
+
+                        try:
+                            sStepResult = simple_queue.get_nowait()
+                            # Get the return value from the ExecuteTestStep
+                            # fn via Queue
+                            q.put(sStepResult)
+                            CommonUtil.ExecLog(
+                                sModuleInfo, "Test Step Thread Ended..", 1
+                            )
+                        except queue.Empty:
+                            # Global.DefaultTestStepTimeout
+                            ErrorMessage = (
+                                "Test Step didn't return after %d seconds" % step_time
+                            )
+                            CommonUtil.Exception_Handler(
+                                sys.exc_info(), None, ErrorMessage
+                            )
+                            sStepResult = "Failed"
+                            q.put(sStepResult)
+
+                            # Clean up
+                            if stepThread.isAlive():
+                                CommonUtil.ExecLog(sModuleInfo, "Timeout Error", 3)
+                                # stepThread.__stop()
+                                try:
+                                    stepThread._Thread__stop()
+                                    while stepThread.isAlive():
+                                        time.sleep(1)
+                                        CommonUtil.ExecLog(
+                                            sModuleInfo, "Thread is still alive", 3
+                                        )
+                                except:
+                                    CommonUtil.Exception_Handler(sys.exc_info())
+                    else:
+                        # run sequentially
+                        sStepResult = functionTocall(
                             final_dependency,
                             final_run_params,
                             test_steps_data,
-                            test_action_info,
+                            None,
                             file_specific_steps,
                             simple_queue,
                             screen_capture,     # No need of screen capture. Need to delete this
                             device_info,
-                        ),
-                    )  # start step thread
+                            debug_actions,
+                        )
+                except:
+                    CommonUtil.Exception_Handler(sys.exc_info())  # handle exceptions
+                    sStepResult = "Failed"
 
+                # get step result
+                if sStepResult in passed_tag_list:
+                    sStepResult = "PASSED"
+                elif sStepResult in failed_tag_list:
+                    sStepResult = "FAILED"
+                elif sStepResult in skipped_tag_list:
+                    sStepResult = "SKIPPED"
+                elif sStepResult.upper() == CANCELLED_TAG.upper():
+                    sStepResult = "CANCELLED"
+                else:
                     CommonUtil.ExecLog(
-                        sModuleInfo, "Starting Test Step Thread..", 1
-                    )  # add log
-
-                    # start thread
-                    stepThread.start()
-
-                    # Wait for the Thread to finish or until timeout
+                        sModuleInfo, "sStepResult not an acceptable type", 3
+                    )
                     CommonUtil.ExecLog(
                         sModuleInfo,
-                        "Waiting for Test Step Thread to finish..for (seconds) :%d"
-                        % step_time,
-                        1,
+                        "Acceptable pass string(s): %s" % passed_tag_list,
+                        3,
                     )
-                    stepThread.join(float(step_time))
-
-                    try:
-                        sStepResult = simple_queue.get_nowait()
-                        # Get the return value from the ExecuteTestStep
-                        # fn via Queue
-                        q.put(sStepResult)
-                        CommonUtil.ExecLog(
-                            sModuleInfo, "Test Step Thread Ended..", 1
-                        )
-                    except queue.Empty:
-                        # Global.DefaultTestStepTimeout
-                        ErrorMessage = (
-                            "Test Step didn't return after %d seconds" % step_time
-                        )
-                        CommonUtil.Exception_Handler(
-                            sys.exc_info(), None, ErrorMessage
-                        )
-                        sStepResult = "Failed"
-                        q.put(sStepResult)
-
-                        # Clean up
-                        if stepThread.isAlive():
-                            CommonUtil.ExecLog(sModuleInfo, "Timeout Error", 3)
-                            # stepThread.__stop()
-                            try:
-                                stepThread._Thread__stop()
-                                while stepThread.isAlive():
-                                    time.sleep(1)
-                                    CommonUtil.ExecLog(
-                                        sModuleInfo, "Thread is still alive", 3
-                                    )
-                            except:
-                                CommonUtil.Exception_Handler(sys.exc_info())
-                else:
-                    # run sequentially
-                    sStepResult = functionTocall(
-                        final_dependency,
-                        final_run_params,
-                        test_steps_data,
-                        test_action_info,
-                        file_specific_steps,
-                        simple_queue,
-                        screen_capture,     # No need of screen capture. Need to delete this
-                        device_info,
-                        debug_actions,
+                    CommonUtil.ExecLog(
+                        sModuleInfo,
+                        "Acceptable fail string(s): %s" % failed_tag_list,
+                        3,
                     )
-            except:
-                CommonUtil.Exception_Handler(sys.exc_info())  # handle exceptions
+                    sStepResult = "FAILED"
+                q.put(sStepResult)
+            except Exception as e:
+                print("### Exception : {}".format(e))
+                CommonUtil.Exception_Handler(sys.exc_info())
                 sStepResult = "Failed"
-
-            # get step result
-            if sStepResult in passed_tag_list:
-                sStepResult = "PASSED"
-            elif sStepResult in failed_tag_list:
-                sStepResult = "FAILED"
-            elif sStepResult in skipped_tag_list:
-                sStepResult = "SKIPPED"
-            elif sStepResult.upper() == CANCELLED_TAG.upper():
-                sStepResult = "CANCELLED"
-            else:
-                CommonUtil.ExecLog(
-                    sModuleInfo, "sStepResult not an acceptable type", 3
-                )
-                CommonUtil.ExecLog(
-                    sModuleInfo,
-                    "Acceptable pass string(s): %s" % passed_tag_list,
-                    3,
-                )
-                CommonUtil.ExecLog(
-                    sModuleInfo,
-                    "Acceptable fail string(s): %s" % failed_tag_list,
-                    3,
-                )
-                sStepResult = "FAILED"
-            q.put(sStepResult)
-        except Exception as e:
-            print("### Exception : {}".format(e))
-            CommonUtil.Exception_Handler(sys.exc_info())
-            sStepResult = "Failed"
+        else:
+            CommonUtil.ExecLog(
+                sModuleInfo,
+                "Driver %s is not found. Execution of test step failed"
+                % current_driver,
+                3,
+            )
+            sStepResult = "FAILED"
 
         return sStepResult
     except Exception:
         CommonUtil.Exception_Handler(sys.exc_info())
-        return "Failed"
+        sStepResult = "Failed"
 
 
 # runs all test steps of a test case
 def run_all_test_steps_in_a_test_case(
-    testcase_info,
+    Stepscount,
     test_case,
     sModuleInfo,
     run_id,
+    TestStepsList,
     file_specific_steps,
+    driver_list,
     final_dependency,
     final_run_params,
+    test_case_result_index,
     temp_ini_file,
+    Response,
     executor,
+    debug=False,
+    debug_steps="",
     is_linked="",
-    performance=False
+    performance=False,
+    debug_actions="",
 ):
 
+    # define variables
     StepSeq = 1
     sTestStepResultList = []
     already_failed = False
 
-    Stepscount = len(testcase_info["steps"])  # no. of steps
-    debug_steps = ""
-    debug = False
-    cleanup_drivers_during_debug = False
-    debug_actions = ""
-
-    if str(run_id).startswith("debug"):
-        debug_steps = testcase_info["debug_steps"]
-        str_list = str(debug_steps).split("-")
-        debug_steps = str_list[0]
-        cleanup = str_list[1]
-
-        try:
-            debug_actions = str_list[2]
-        except:
-            pass
-
-        if cleanup == "YES":
-            cleanup_drivers_during_debug = True
-
-        debug_steps = str(debug_steps[1:-1]).split(",")
-        if debug_actions:
-            debug_actions = str(debug_actions[1:-1]).split(",")
-        debug = True
-
-    # clean up shared variables and teardown drivers
-    if cleanup_drivers_during_debug:
-        cleanup_driver_instances()
-        shared.Clean_Up_Shared_Variables()
+    # Removing mutable default argument problem
     if not debug_steps:
         debug_steps = []
 
@@ -967,21 +964,9 @@ def run_all_test_steps_in_a_test_case(
         StepSeq = 2
         sTestStepResultList.append("PASSED")
 
-    # all_step_meta_data = Response["step_meta_data"]
-    all_step_info = testcase_info["steps"]
-    all_step_dataset, all_action_info = [], []
-    for step_info in all_step_info:
-        all_Action_info = step_info["actions"]
-        all_action_data_set, all_action_Info = [], []
-        for action_info in all_Action_info:
-            action_dataset = action_info["step_actions"]
-            all_action_data_set.append(action_dataset)
-            dict = {}
-            dict["Action disabled"] = not action_info["action_disabled"]
-            dict["Action name"] = action_info["action_name"]
-            all_action_Info.append(dict)
-        all_step_dataset.append(all_action_data_set)
-        all_action_info.append(all_action_Info)
+    all_step_meta_data = Response["step_meta_data"]
+    all_test_steps_data = Response["test_steps_data"]
+
     # loop through the steps
     while StepSeq <= Stepscount:
 
@@ -992,22 +977,22 @@ def run_all_test_steps_in_a_test_case(
                 continue
 
         # check if already failed
-        if already_failed:
-            always_run = all_step_info[StepSeq - 1]["always_run"]  # get always run info
-            if not always_run:  # check if always run is false
+        if already_failed is True:
+            always_run = TestStepsList[StepSeq - 1][9]  # get always run info
+            if always_run != True:  # check if always run is false
                 StepSeq += 1
                 continue
 
         # get step info
-        current_step_name = all_step_info[StepSeq - 1]["step_name"]
-        current_step_id = all_step_info[StepSeq - 1]["step_id"]
-        current_step_sequence = all_step_info[StepSeq - 1]["step_sequence"]
+        current_step_name = TestStepsList[StepSeq - 1][1]
+        current_step_id = TestStepsList[StepSeq - 1][0]
+        current_step_sequence = TestStepsList[StepSeq - 1][2]
 
         # add config value
         ConfigModule.add_config_value(
             "sectionOne",
             "sTestStepExecLogId",
-            run_id + "|" + test_case + "|" + str(current_step_id) + "|" + str(current_step_sequence),
+            run_id + "|" + test_case + "|" + str(current_step_id) + "|" + str(StepSeq),
             temp_ini_file,
         )
 
@@ -1017,11 +1002,20 @@ def run_all_test_steps_in_a_test_case(
         CommonUtil.ExecLog(sModuleInfo, log_line, 4)
         print("-"*len(log_line))
 
-        test_steps_data = all_step_dataset[StepSeq-1]
-        test_action_info = all_action_info[StepSeq-1]
+        # # get meta data from server
+        # step_meta_data = get_step_meta_data_of_a_step(      # Response= [[False, False, 59]]
+        #     run_id, test_case, StepSeq
+        # )
+        # # get test step data
+        # test_steps_data = get_test_step_data(  # Response= step[action[row[left,mid,right]]]
+        #     run_id, test_case, current_step_sequence, sModuleInfo
+        # )
+        step_meta_data = all_step_meta_data[StepSeq-1]
+        test_steps_data = all_test_steps_data[StepSeq-1]
+        # handle meta data
         try:
-            test_case_continue = all_step_info[StepSeq - 1]["continue_on_fail"]
-            step_time = all_step_info[StepSeq - 1]["step_time"]
+            test_case_continue = step_meta_data[0][1]
+            step_time = step_meta_data[0][2]
             if str(step_time) != "" and step_time != None:
                 step_time = int(step_time)
             else:
@@ -1031,8 +1025,11 @@ def run_all_test_steps_in_a_test_case(
             step_time = 59
 
         # get step start time
+        sTestStepStartTime = datetime.fromtimestamp(time.time()).strftime(
+            "%Y-%m-%d %H:%M:%S"
+        )
         TestStepStartTime = time.time()
-        sTestStepStartTime = datetime.fromtimestamp(TestStepStartTime).strftime("%Y-%m-%d %H:%M:%S")
+
         WinMemBegin = CommonUtil.PhysicalAvailableMemory()  # get available memory
 
         if ConfigModule.get_config_value("RunDefinition", "local_run") == "False":
@@ -1045,9 +1042,22 @@ def run_all_test_steps_in_a_test_case(
                     "sectionOne", "sTestStepExecLogId", temp_ini_file
                 ),
                 "start_memory": WinMemBegin,
-                "testcaseresulttindex": "Dont NEED",
+                "testcaseresulttindex": test_case_result_index,
             }
-            # executor.submit(update_test_step_status, run_id, test_case, current_step_id, current_step_sequence, Dict)
+
+            # # update test step status
+            # update_test_step_status(    # Upload
+            #     run_id, test_case, current_step_id, current_step_sequence, Dict
+            # )
+            # run_cancelled = get_status_of_runid(run_id)
+
+            t_run_cancelled = executor.submit(get_status_of_runid, run_id)
+            executor.submit(update_test_step_status, run_id, test_case, current_step_id, current_step_sequence, Dict)
+        # take screen-shot
+        # auto_generated_image_name = ("_").join(
+        #     current_step_name.split(" ")
+        # ) + "_started.png"
+        # CommonUtil.TakeScreenShot(str(auto_generated_image_name))
 
         # check if machine failed
         is_failed_result = ""
@@ -1061,32 +1071,42 @@ def run_all_test_steps_in_a_test_case(
             # run driver for step and get result
             sStepResult = call_driver_function_of_test_step(
                 sModuleInfo,
-                all_step_info,
+                TestStepsList,
                 StepSeq,
                 step_time,
+                driver_list,
                 current_step_name,
                 final_dependency,
                 final_run_params,
                 test_steps_data,
-                test_action_info,
                 file_specific_steps,
                 debug_actions,
             )
-        TestStepEndTime = time.time()
-        sTestStepEndTime = datetime.fromtimestamp(TestStepEndTime).strftime("%Y-%m-%d %H:%M:%S")
-        WinMemEnd = CommonUtil.PhysicalAvailableMemory()  # get available memory
-        TestStepDuration = CommonUtil.FormatSeconds(int(TestStepEndTime - TestStepStartTime))
-        TestStepMemConsumed = WinMemBegin - WinMemEnd  # get memory consumed
 
-        """ Run cancelled feature is disabled for now. maybe implement it later"""
-        run_cancelled = ""
-        # if ConfigModule.get_config_value("RunDefinition", "local_run") == "False":
-        #     run_cancelled = get_status_of_runid(run_id)
+        # get step end time
+        sTestStepEndTime = datetime.fromtimestamp(time.time()).strftime(
+            "%Y-%m-%d %H:%M:%S"
+        )
+        TestStepEndTime = time.time()
+
+        WinMemEnd = CommonUtil.PhysicalAvailableMemory()  # get available memory
+
+        # Time it took to run the test step
+        TimeDiff = TestStepEndTime - TestStepStartTime
+
+        # TimeInSec = TimeDiff.seconds
+        TimeInSec = int(TimeDiff)
+        TestStepDuration = CommonUtil.FormatSeconds(TimeInSec)
+
+        TestStepMemConsumed = WinMemBegin - WinMemEnd  # get memory consumed
 
         # add result of each step to a list;
         # for a test case to pass all steps should pass;
         # at least one Failed makes it 'Fail' else 'Warning' or 'Blocked';
-
+        run_cancelled = ""
+        if ConfigModule.get_config_value("RunDefinition", "local_run") == "False":
+            # run_cancelled = get_status_of_runid(run_id)
+            run_cancelled = t_run_cancelled.result()
         # append step result
         if sStepResult:
             sTestStepResultList.append(sStepResult.upper())
@@ -1099,12 +1119,10 @@ def run_all_test_steps_in_a_test_case(
 
         # step dictionary after execution
         after_execution_dict = {
-            "stepstarttime": sTestStepStartTime,
             "stependtime": sTestStepEndTime,
             "end_memory": WinMemEnd,
             "duration": TestStepDuration,
             "memory_consumed": TestStepMemConsumed,
-            "logid": ConfigModule.get_config_value("sectionOne", "sTestStepExecLogId", temp_ini_file)
         }
 
         # add/print logs for step result
@@ -1132,7 +1150,6 @@ def run_all_test_steps_in_a_test_case(
             if not test_case_continue:
                 already_failed = True
                 StepSeq += 1
-                CommonUtil.CreateJsonReport(stepInfo=after_execution_dict)
                 continue
 
         elif sStepResult.upper() == NOT_RUN_TAG.upper():
@@ -1167,13 +1184,31 @@ def run_all_test_steps_in_a_test_case(
             # Step has a Critical failure, fail the test step and test case. go to next test case
 
             CommonUtil.ExecLog(
-                sModuleInfo, "%s%s" % (current_step_name, CommonUtil.to_dlt_from_fail_reason), 3
+                sModuleInfo, "%s : Test Step Failed Failure" % current_step_name, 3
             )  # add log
 
             after_execution_dict.update({"status": FAILED_TAG})  # dictionary update
 
             # check if set for continue
             if not test_case_continue and ConfigModule.get_config_value("RunDefinition", "local_run") == "False":
+
+                # update step result
+                # update_test_step_results_on_server(
+                #     run_id,
+                #     test_case,
+                #     current_step_id,
+                #     current_step_sequence,
+                #     after_execution_dict,
+                # )
+                executor.submit(
+                    update_test_step_results_on_server,
+                    run_id,
+                    test_case,
+                    current_step_id,
+                    current_step_sequence,
+                    after_execution_dict,
+                )
+                # get run id status
                 # run_cancelled = get_status_of_runid(run_id)
                 if run_cancelled == "Cancelled":
                     CommonUtil.ExecLog(
@@ -1184,7 +1219,6 @@ def run_all_test_steps_in_a_test_case(
                     )  # add log
                 already_failed = True
                 StepSeq += 1
-                CommonUtil.CreateJsonReport(stepInfo=after_execution_dict)
                 continue
 
         elif sStepResult.upper() == BLOCKED_TAG.upper():
@@ -1200,7 +1234,6 @@ def run_all_test_steps_in_a_test_case(
             )
             after_execution_dict.update({"status": CANCELLED_TAG})
             cleanup_runid_from_server(run_id)
-            CommonUtil.CreateJsonReport(stepInfo=after_execution_dict)
             return "pass"
 
         else:
@@ -1209,11 +1242,27 @@ def run_all_test_steps_in_a_test_case(
             )
             after_execution_dict.update({"status": CANCELLED_TAG})
             cleanup_runid_from_server(run_id)
-            CommonUtil.CreateJsonReport(stepInfo=after_execution_dict)
             return "pass"
 
-        CommonUtil.CreateJsonReport(stepInfo=after_execution_dict)
         if ConfigModule.get_config_value("RunDefinition", "local_run") == "False":
+            # update step results on server
+            # update_test_step_results_on_server(     # Upload
+            #     run_id,
+            #     test_case,
+            #     current_step_id,
+            #     current_step_sequence,
+            #     after_execution_dict,
+            # )
+            executor.submit(
+                update_test_step_results_on_server,
+                run_id,
+                test_case,
+                current_step_id,
+                current_step_sequence,
+                after_execution_dict,
+            )
+
+            # get run id status
             # run_cancelled = get_status_of_runid(run_id)     # Response = "In-Progress"
             if run_cancelled == "Cancelled":
                 CommonUtil.ExecLog(
@@ -1229,7 +1278,7 @@ def run_all_test_steps_in_a_test_case(
 
 
 # from the returned step results, it finds out the test case result
-def calculate_test_case_result(sModuleInfo, TestCaseID, run_id, sTestStepResultList, testcase_info):
+def calculate_test_case_result(sModuleInfo, TestCaseID, run_id, sTestStepResultList):
     if "BLOCKED" in sTestStepResultList:
         CommonUtil.ExecLog(sModuleInfo, "Test Case Blocked", 3)
         sTestCaseStatus = "Blocked"
@@ -1237,17 +1286,21 @@ def calculate_test_case_result(sModuleInfo, TestCaseID, run_id, sTestStepResultL
         CommonUtil.ExecLog(sModuleInfo, "Test Case Cancelled", 3)
         sTestCaseStatus = "Cancelled"
     elif "FAILED" in sTestStepResultList:
-        step_index = 0
+        CommonUtil.ExecLog(sModuleInfo, "Test Case Failed", 3)
+        step_index = 1
         for each in sTestStepResultList:
             if each == "FAILED":
-                if testcase_info["steps"][step_index]["verify_point"]:
-                    sTestCaseStatus = "Failed"
-                    break
-            step_index += 1
+                break
+            else:
+                step_index += 1
+
+        status = check_if_step_is_verification_point(run_id, TestCaseID, step_index)
+
+        if status:
+            sTestCaseStatus = "Failed"
         else:
             sTestCaseStatus = "Blocked"
         CommonUtil.ExecLog(sModuleInfo, "Test Case " + sTestCaseStatus, 3)
-
     elif "WARNING" in sTestStepResultList:
         CommonUtil.ExecLog(sModuleInfo, "Test Case Contain Warning(s)", 2)
         sTestCaseStatus = "Failed"
@@ -1322,9 +1375,12 @@ def write_log_file_for_test_case(
             upload_zip(
                 ConfigModule.get_config_value("Authentication", "server_address"),
                 ConfigModule.get_config_value("Authentication", "server_port"),
-                ConfigModule.get_config_value("sectionOne", "temp_run_file_path", temp_ini_file),
+                ConfigModule.get_config_value(
+                    "sectionOne", "temp_run_file_path", temp_ini_file
+                ),
                 run_id,
-                ConfigModule.get_config_value("sectionOne", "test_case", temp_ini_file) + ".zip",
+                ConfigModule.get_config_value("sectionOne", "test_case", temp_ini_file)
+                + ".zip",
                 ConfigModule.get_config_value("Advanced Options", "_file_upload_path"),
             )
             TCLogFile = (
@@ -1348,8 +1404,8 @@ def write_log_file_for_test_case(
             TCLogFile = ""
         # upload the log file ID
         test_case_after_dict = {"logid": TCLogFile}
-    executor = CommonUtil.GetExecutor()
-    executor.submit(update_test_case_status_after_run_on_server, run_id, test_case, test_case_after_dict)
+
+    update_test_case_status_after_run_on_server(run_id, test_case, test_case_after_dict)
 
 
 # run a test case of a runid
@@ -1401,11 +1457,11 @@ def cleanup_driver_instances():  # cleans up driver(selenium, appium) instances
         import Framework.Built_In_Automation.Web.Selenium.BuiltInFunctions as Selenium
         import Framework.Built_In_Automation.Mobile.CrossPlatform.Appium.BuiltInFunctions as Appium
 
-        if shared.Test_Shared_Variables("selenium_driver"):
+        if shared.Test_Shared_Variables("selenium_driver") not in failed_tag_list:
             driver = shared.Remove_From_Shared_Variables("selenium_driver")
             if driver not in failed_tag_list:
                 Selenium.Tear_Down_Selenium()
-        if shared.Test_Shared_Variables("appium_driver"):
+        if shared.Test_Shared_Variables("appium_driver") not in failed_tag_list:
             driver = shared.Remove_From_Shared_Variables("appium_driver")
             if driver not in failed_tag_list:
                 Appium.teardown_appium()
@@ -1418,55 +1474,122 @@ def run_test_case(
     TestCaseID,
     sModuleInfo,
     run_id,
+    driver_list,
     final_dependency,
     final_run_params,
     temp_ini_file,
     is_linked,
-    testcase_info,
+    Response,
     executor,
     send_log_file_only_for_fail=True,
     performance=False,
     browserDriver=None,
 ):
+
+    # set shared variables for run id
     shared.Set_Shared_Variables("run_id", run_id)
+
+    # test case
     test_case = str(TestCaseID).replace("#", "no")
-    ConfigModule.add_config_value("sectionOne", "sTestStepExecLogId", "MainDriver", temp_ini_file)
-    file_specific_steps = download_attachments_for_test_case(
-        sModuleInfo, run_id, test_case, temp_ini_file,
-        testcase_info["testcase_attachments_links"], testcase_info["step_attachments"]
+
+    # copy_status = False
+
+    # add config value
+    ConfigModule.add_config_value(
+        "sectionOne", "sTestStepExecLogId", "MainDriver", temp_ini_file
     )
-    TestCaseName = testcase_info["title"]
+
+    file_specific_steps = Response["file_specific_steps"]
+
+    TestCaseName = Response["test_case_detail"][0][1]
+
+    # add log
     log_line = "# EXECUTING TEST CASE : %s :: %s #" % (test_case, TestCaseName)
     print("#"*(len(log_line)))
-    CommonUtil.ExecLog("", log_line, 4, False)
+    CommonUtil.ExecLog(
+        "",
+        log_line,
+        4,
+        False,
+    )
     print("#"*(len(log_line)))
 
     # get test case start time
     TestCaseStartTime = time.time()
+
+    test_case_result_index = Response["test_case_result_index"]
+    TestStepsList = Response["TestStepsList"]
+
+    Stepscount = len(TestStepsList)  # no. of steps
+
+    # set parameters
+    debug_steps = ""
+    debug = False
+    cleanup_drivers_during_debug = False
+    debug_actions = ""
+
+    # debug steps
+    if str(run_id).startswith("debug"):
+        debug_steps = Response["debug_steps"]
+        str_list = str(debug_steps).split("-")
+        debug_steps = str_list[0]
+        cleanup = str_list[1]
+
+        try:
+            debug_actions = str_list[2]
+        except Exception as e:
+            pass
+
+        if cleanup == "YES":
+            cleanup_drivers_during_debug = True
+
+        debug_steps = str(debug_steps[1:-1]).split(",")
+        if debug_actions:
+            debug_actions = str(debug_actions[1:-1]).split(",")
+        debug = True
+
+    # if normal run, then write log file and cleanup driver instances
+    if not debug or cleanup_drivers_during_debug:
+        cleanup_driver_instances()
+
+    # clean up shared variables
+    if cleanup_drivers_during_debug:
+        shared.Clean_Up_Shared_Variables()
+
+    # set selenium driver shared variables for browser
     if performance and browserDriver:
         shared.Set_Shared_Variables("selenium_driver", browserDriver)
 
     # runs all test steps in the test case, all test step result is stored in the list named sTestStepResultList
     sTestStepResultList = run_all_test_steps_in_a_test_case(
-        testcase_info,
+        Stepscount,
         test_case,
         sModuleInfo,
         run_id,
+        TestStepsList,
         file_specific_steps,
+        driver_list,
         final_dependency,
         final_run_params,
+        test_case_result_index,
         temp_ini_file,
+        Response,
         executor,
+        debug,
+        debug_steps,
         is_linked,
-        performance
+        performance,
+        debug_actions,
     )
 
     # get test case end time
+    sTestCaseEndTime = datetime.fromtimestamp(time.time()).strftime("%Y-%m-%d %H:%M:%S")
     TestCaseEndTime = time.time()
-    sTestCaseEndTime = datetime.fromtimestamp(TestCaseEndTime).strftime("%Y-%m-%d %H:%M:%S")
 
     # Decide if Test Case Pass/Failed
-    sTestCaseStatus = calculate_test_case_result(sModuleInfo, test_case, run_id, sTestStepResultList, testcase_info)
+    sTestCaseStatus = calculate_test_case_result(
+        sModuleInfo, test_case, run_id, sTestStepResultList
+    )
 
     # write locust file for performance testing
     if performance:
@@ -1488,46 +1611,34 @@ def run_test_case(
     TimeInSec = int(TimeDiff)
     TestCaseDuration = CommonUtil.FormatSeconds(TimeInSec)
 
-    TCLogFile = (
-            os.sep
-            + ConfigModule.get_config_value("Advanced Options", "_file_upload_path")
-            + os.sep
-            + run_id.replace(":", "-")
-            + "/"
-            + ConfigModule.get_config_value("sectionOne", "test_case", temp_ini_file)
-            + ".zip"
-    )
-    after_execution_dict = {
-        "teststarttime": datetime.fromtimestamp(TestCaseStartTime).strftime("%Y-%m-%d %H:%M:%S"),
-        "logid": TCLogFile,
-        "testendtime": sTestCaseEndTime,
-        "duration": TestCaseDuration,
-        "status": sTestCaseStatus,
-        "failreason": ""
-    }
-    CommonUtil.CreateJsonReport(TCInfo=after_execution_dict)
-
-    debug = False
-    if str(run_id).startswith("debug"):
-        debug = True
-        debug_steps = testcase_info["debug_steps"]
-        str_list = str(debug_steps).split("-")
-        debug_steps = str_list[0]
-        debug_steps = str(debug_steps[1:-1]).split(",")
-
     if debug and ConfigModule.get_config_value("RunDefinition", "local_run") == "False":
-        CommonUtil.Join_Thread_and_Return_Result("screenshot")  # Let the capturing screenshot end in thread
-        executor.submit(cleanup_runid_from_server, run_id)
-        executor.submit(start_sending_log_to_server, run_id, temp_ini_file)
-        executor.submit(start_sending_shared_var_to_server, run_id)
-        executor.submit(start_sending_step_result_to_server, run_id, debug_steps, sTestStepResultList)
-        executor.submit(send_debug_data, run_id, "finished", "yes")
+        cleanup_runid_from_server(run_id)  # clean run id for debug
+        # start sending logs/results to server
+        start_sending_log_to_server(run_id, temp_ini_file)  # send logs
+        start_sending_shared_var_to_server(run_id)  # send shared variables
+        start_sending_step_result_to_server(
+            run_id, debug_steps, sTestStepResultList
+        )  # send step result
+        send_debug_data(run_id, "finished", "yes")  # send debug data
+
+        # executor.submit(cleanup_runid_from_server, run_id)
+        # executor.submit(start_sending_log_to_server, run_id, temp_ini_file)
+        # executor.submit(start_sending_shared_var_to_server, run_id)
+        # executor.submit(start_sending_step_result_to_server, run_id, debug_steps, sTestStepResultList)
+        # executor.submit(send_debug_data, run_id, "finished", "yes")
 
     if not debug:  # if normal run, then write log file and cleanup driver instances
-        CommonUtil.Join_Thread_and_Return_Result("screenshot")  # Let the capturing screenshot end in thread
-        cleanup_driver_instances()  # clean up drivers
-        shared.Clean_Up_Shared_Variables()  # clean up shared variables
         if ConfigModule.get_config_value("RunDefinition", "local_run") == "False":
+            write_log_file_for_test_case(
+                sTestCaseStatus,
+                test_case,
+                run_id,
+                sTestCaseEndTime,
+                TestCaseDuration,
+                temp_ini_file,
+                send_log_file_only_for_fail=send_log_file_only_for_fail,
+            )
+            CommonUtil.ExecLog(sModuleInfo, "Uploading logs and screenshots as zip file to server...", 4, False)
             # executor.submit(
             #     write_log_file_for_test_case,
             #     sTestCaseStatus,
@@ -1538,22 +1649,28 @@ def run_test_case(
             #     temp_ini_file,
             #     send_log_file_only_for_fail,
             # )
-            write_log_file_for_test_case(
-                sTestCaseStatus,
-                test_case,
-                run_id,
-                sTestCaseEndTime,
-                TestCaseDuration,
-                temp_ini_file,
-                send_log_file_only_for_fail,
-            )
+        cleanup_driver_instances()  # clean up drivers
+        shared.Clean_Up_Shared_Variables()  # clean up shared variables
 
     if sTestStepResultList[-1] == CANCELLED_TAG:
         return CANCELLED_TAG
     return "passed"
 
+    """ Dont need run below run cancel as its already called from main_driver"""
+    # # Update test case result
+    # run_cancelled = RequestFormatter.Get(
+    #     "get_status_of_a_run_api", {"run_id": run_id}
+    # )  # check if run is cancelled
+    # if run_cancelled == "Cancelled":  # add log
+    #     CommonUtil.ExecLog(
+    #         sModuleInfo,
+    #         "Test Run status is Cancelled. Exiting the current Test Set...%s" % run_id,
+    #         2,
+    #     )
+    #     return
 
-def set_device_info_according_to_user_order(device_order, device_dict,  test_case_no, test_case_name, user_info_object, Userid):
+
+def set_device_info_according_to_user_order(device_order, device_dict, test_case_detail, user_info_object, Userid):
     # Need to set device_info for browserstack here
     global device_info
     if isinstance(device_order, list):
@@ -1565,11 +1682,13 @@ def set_device_info_according_to_user_order(device_order, device_dict,  test_cas
                 "device " + device_no_val
                 ]
     elif "browser_stack" in device_order and device_order["browser_stack"]:
+        testcase_no = test_case_detail[0][0]
+        testcase_name = test_case_detail[0][1]
         project = user_info_object["project"]
         team = user_info_object["team"]
 
         project = "PROJECT:'" + project + "'  TEAM:'" + team + "'"
-        build = test_case_no + " :: " + test_case_name
+        build = testcase_no + " :: " + testcase_name
         name = Userid + " :: " + datetime.now().strftime("%d %B %Y %A %H:%M:%S")
         device_info = {
             "browserstack device 1": {
@@ -1601,8 +1720,23 @@ def set_device_info_according_to_user_order(device_order, device_dict,  test_cas
             device_info["device " + device_order_val] = original_dict[
                 "device " + device_no_val
             ]
-    else:
-        device_info = {}
+
+    # Device_info_from_api = {
+    #     "local": {[1,2],[2,1]} or "{blank dict} when browserstack run is executed",
+    #     "browserstack" : {
+    #         "device 1":{
+    #             "user":"muhib",
+    #             "key":"123",
+    #             "app":"bs://<app-id>",
+    #             "device" : "Google Pixel 3",
+    #             "os_version" : "9.0",
+    #             "project" : "First Python project",
+    #             "build" : "Python Android",
+    #             "name" : "first_test"},
+    #         "device 2": {"same keys as above":"value"} or "{blank dict} when local device run is executed"
+    #     }
+    # }
+
 
 def update_fail_reasons_of_test_cases(run_id, TestCaseID):
     try:
@@ -1700,49 +1834,14 @@ def upload_csv_file_info(run_id, test_case):
         pass
 
 
-def get_all_run_id_info(Userid, sModuleInfo):
-    response = requests.get(RequestFormatter.form_uri("getting_json_data_api"), {"machine_name": "muhib_bfa0de80-0"}).json()
-    # response = RequestFormatter.Get("getting_json_data_api", {"machine_name": Userid})
-    for _ in range(100):
-        if response["found"]:
-            break
-        else:
-            time.sleep(0.5)
-            response = requests.get(RequestFormatter.form_uri("getting_json_data_api"), {"machine_name": "muhib_bfa0de80-0"}).json()
-    else:
-        CommonUtil.ExecLog(sModuleInfo, "Could not get run information", 3)
-        return False
-
-    # with open("D:\\Zeuz Node\\ZeuzPythonNode\\Projects\\Sample_Amazon_Testing\\RequiredFormatOf_TestCase.json", "r") as f:
-    #     Json_data = json.load(f)
-    #     if isinstance(Json_data, str):
-    #         Json_data = json.loads(Json_data)
-    #     return Json_data
-
-    path = os.path.abspath(__file__).split("Framework")[0]/Path("tests")/Path("test_cases_data.json")
-    with open(path, "w") as f:
-        json.dump(response["json"], f, indent=2)
-    return response["json"]
-
-
-def upload_json_report():
-    path = os.path.join(os.path.abspath(__file__).split("Framework")[0])/Path("AutomationLog")/Path("execution_log.json")
-    json_report = CommonUtil.get_all_logs(json=True)
-    with open(path, "w") as f:
-        json.dump(json_report, f, indent=2)
-    for i in range(5):
-        res = requests.post(RequestFormatter.form_uri("create_report_log_api") + "/", {'json_data': json.dumps(json_report)})
-        if res.status_code == 200:
-            CommonUtil.ExecLog("", "Successfully Uploaded json report to server", 4)
-            break
-        time.sleep(1)
-
-
 # main function
 def main(device_dict, user_info_object, local_run_dataset={}):
 
     # get module info
     sModuleInfo = inspect.currentframe().f_code.co_name + " : " + MODULE_NAME
+
+    # get temp file
+    # temp_ini_file = os.path.join(os.path.join(FL.get_home_folder(), os.path.join('Desktop',os.path.join('AutomationLog',ConfigModule.get_config_value('Advanced Options', '_file')))))
 
     temp_ini_file = os.path.join(
         os.path.join(
@@ -1753,6 +1852,7 @@ def main(device_dict, user_info_object, local_run_dataset={}):
             ),
         )
     )
+
     # add temp file to config values
     ConfigModule.add_config_value(
         "sectionOne", "sTestStepExecLogId", sModuleInfo, temp_ini_file
@@ -1761,81 +1861,242 @@ def main(device_dict, user_info_object, local_run_dataset={}):
     # get local machine user id
     Userid = (CommonUtil.MachineInfo().getLocalUser()).lower()
 
-    # Get all run_id, set, test case, step, action info together with the new api
-    all_run_id_info = get_all_run_id_info(Userid, sModuleInfo)
-    if not all_run_id_info:
-        return "failed"
+    # check user permission to run test
+    # user_permission = check_user_permission_to_run_test(sModuleInfo, Userid)    # Response = "passed"/"failed"
+    # if user_permission not in passed_tag_list:
+    #     return user_permission
 
-    if len(all_run_id_info) == 0:
-        CommonUtil.ExecLog("", "No Test Run Schedule found for the current user : %s" % Userid, 2)
-        return False
+    # T = time.perf_counter()
+    # # get drivers list
+    # driver_list = get_all_drivers_list()    # Response = ['Built_In_Selenium_Driver', 'Built_In_RestApi', 'Built_In_Appium_Driver', 'Built_In_Selenium', 'Built_In_Driver', 'deepak', 'Built_In_Appium', 'Built_In_NET_Win', 'Jarvis']
+    #
+    # # get all run ids
+    # TestRunLists = get_all_run_ids(Userid, sModuleInfo)     # Response = [['debugmuhib_bfa0de80-0', 'Test Case:TEST-5181|AND|', 'muhib_bfa0de80-0', 'PROJ-17', 2]]
+    #
+    # # get device order
+    # device_order = get_device_order(Userid)     # Response= [[1,2],[2,1]]
+    # browserstack_info = get_device_order_and_browserstack_info(Userid)      # Response =
+    #
+    # print("All 4 api calls serially = %f seconds" % (time.perf_counter() - T))
 
     executor = CommonUtil.GetExecutor()
-    for run_id_info in all_run_id_info:
-        run_id = run_id_info["run_id"]
-        run_cancelled = ""
+    if ConfigModule.get_config_value("RunDefinition", "local_run") == "False":
+        # with concurrent.futures.ThreadPoolExecutor() as executor:
+
+        t_driver_list = executor.submit(get_all_drivers_list)
+        t_TestRunLists = executor.submit(get_all_run_ids, Userid, sModuleInfo)
+        t_device_order = executor.submit(get_device_order, Userid)
+        t_browserstack_info = executor.submit(get_device_order_and_browserstack_info, Userid)
+
+        user_permission = check_user_permission_to_run_test(sModuleInfo, Userid)  # Response = "passed"/"failed"
+        if user_permission not in passed_tag_list:
+            return user_permission
+        # driver_list = get_all_drivers_list()
+        driver_list = t_driver_list.result()
+        TestRunLists = t_TestRunLists.result()
+        device_order = t_device_order.result()
+        browserstack_info = t_browserstack_info.result()
+
+        if ("browser_stack" in browserstack_info and browserstack_info["browser_stack"]) or ("local" in browserstack_info and browserstack_info["local"]):
+            device_order = browserstack_info
+    else:
+        TestRunLists = [["DN01", "DN02", "DN03", "DN04", "0"]]
+        driver_list = ['Built_In_Driver']
+
+    if len(TestRunLists) == 0:
+        CommonUtil.ExecLog(
+            sModuleInfo,
+            "No Test Run Schedule found for the current user : %s" % Userid,
+            2,
+        )
+        return False
+
+    # for each test runid loop continues
+    for TestRunID in TestRunLists:
+
+        # clear all logs
         CommonUtil.clear_all_logs()
 
-        device_order = run_id_info["device_info"]
-        final_dependency = run_id_info["dependency_list"]
-        is_linked = run_id_info["is_linked"]
-        final_run_params_from_server = run_id_info["run_time"]
-        rem_config = {
-            "threading": run_id_info["threading"],
-            "local_run": run_id_info["local_run"],
-            "take_screenshot": run_id_info["take_screenshot"],
-            "debug_mode": run_id_info["threading"],
-            "upload_log_file_only_for_fail": run_id_info["upload_log_file_only_for_fail"],
-            "window_size_x": run_id_info["window_size_x"],
-            "window_size_y": run_id_info["window_size_y"],
+        # get run info
+        project_id = TestRunID[3]       # Example= PROJ-17
+        team_id = int(TestRunID[4])     # Example= 2
+        try:
+            is_linked = TestRunID[5]    # Example= ""
+        except:
+            is_linked = ""
+        run_description = (TestRunID[1].replace("run_dependency", "")).replace("dependency_filter", "")     # Example= Test Case:TEST-5181|AND|
+        run_id = TestRunID[0]           # Example= debugmuhib_bfa0de80-0
+        run_cancelled = ""
 
-        }
-        driver_list = ['Built_In_Selenium_Driver', 'Built_In_RestApi', 'Built_In_Appium_Driver', 'Built_In_Selenium',
-                       'Built_In_Driver', 'deepak', 'Built_In_Appium', 'Built_In_NET_Win', 'Jarvis']
-        final_run_params = {}
-        for param in final_run_params_from_server:
-            final_run_params[param] = CommonUtil.parse_value_into_object(list(final_run_params_from_server[param].items())[0][1])
-        ConfigModule.remote_config = rem_config
-        send_log_file_only_for_fail = ConfigModule.get_config_value("RunDefinition", "upload_log_file_only_for_fail")
-        send_log_file_only_for_fail = False if send_log_file_only_for_fail.lower() == "false" else True
+        # T = time.perf_counter()
+        # # save run id in shared variable
+        # final_dependency = get_all_dependencies(        # Response= {'Browser': 'Chrome', 'Mobile': 'Android'}
+        #     project_id, team_id, run_description
+        # )  # get dependencies
+        #
+        # final_run_params_from_server = get_all_runtime_parameters(      # Response= [{'field': 'param1', 'name': 'val1_param1', 'value': 'subfield_val1_param1'}, {'field': 'param2', 'name': 'val1_param2', 'value': 'subfield_val1_param2'}, {'field': 'password', 'name': 'user1', 'value': 'testPassword'}, {'field': 'username', 'name': 'user1', 'value': 'testUser'}]
+        #     run_id
+        # )  # get runtime params
+        #
+        # update_machine_info_on_server(run_id)     # UPLOAD machine_info status
+        # update_test_env_results_on_server(run_id) # UPLOAD test_environment_result
+        #
+        # TestCaseLists = get_all_automated_test_cases_in_run_id(     # Response= [['TEST-5181', 'Automated', 1]]
+        #     run_id, Userid
+        # )  # get all automated test cases of a runid
+        #
+        # # get all remote config
+        # rem_config = get_all_remote_config(run_id)      # Response= {'threading': False, 'local_run': False, 'take_screenshot': False, 'debug_mode': False, 'upload_log_file_only_for_fail': False, 'window_size_x': None, 'window_size_y': None}
+        # print("All 5 api calls in serial = %f seconds" % (time.perf_counter() - T))
 
-        all_testcases_info = run_id_info["test_cases"]
-        TestSetStartTime = time.time()
-        i = 0
-        while i < len(all_testcases_info):
-            if all_testcases_info[i]["automatability"] != "Automated":
-                CommonUtil.ExecLog("", all_testcases_info[i]["testcase_no"] + " is not automated so skipping", 2)
-                # print(all_testcases_info[i]["testcase_no"] + " is not automated so skipping")
-                del all_testcases_info[i]
-                i -= 1
-            i += 1
-        if len(all_testcases_info) > 0:
-            CommonUtil.ExecLog("", "Total number of Automated test cases %s" % len(all_testcases_info), 4, False)
+        if ConfigModule.get_config_value("RunDefinition", "local_run") == "False":
+            # t_final_dependency = executor.submit(get_all_dependencies, project_id, team_id, run_description)
+            t_final_run_params_from_server = executor.submit(get_all_runtime_parameters, run_id)
+            executor.submit(update_machine_info_on_server, run_id)
+            executor.submit(update_test_env_results_on_server, run_id)
+            t_TestCaseLists = executor.submit(get_all_automated_test_cases_in_run_id, run_id, Userid)
+            t_rem_config = executor.submit(get_all_remote_config, run_id)
+
+            final_dependency = get_all_dependencies(project_id, team_id, run_description)
+
+            # final_dependency = t_final_dependency.result()
+            final_run_params_from_server = t_final_run_params_from_server.result()
+            TestCaseLists = t_TestCaseLists.result()
+            rem_config = t_rem_config.result()
+
+            final_run_params = {}   # Example= {'param1': 'subfield_val1_param1', 'param2': 'subfield_val1_param2', 'password': 'testPassword', 'username': 'testUser'}
+            for param in final_run_params_from_server:
+                final_run_params[str(param["field"])] = str(param["value"])
+
+            ConfigModule.remote_config = rem_config
+            # get run definition config value
+            send_log_file_only_for_fail = ConfigModule.get_config_value(  # Example= "false"
+                "RunDefinition", "upload_log_file_only_for_fail"
+            )
+
+            # check whether to send log file only for fail
+            if send_log_file_only_for_fail == "" or send_log_file_only_for_fail == None:
+                send_log_file_only_for_fail = True
+            elif send_log_file_only_for_fail.lower() == "true":
+                send_log_file_only_for_fail = True
+            elif send_log_file_only_for_fail.lower() == "false":
+                send_log_file_only_for_fail = False
+            else:
+                send_log_file_only_for_fail = True
+
         else:
-            CommonUtil.ExecLog("", "No Automated test cases found for the current user : %s" % Userid, 2)
-            return "pass"
+            final_dependency = local_run_dataset["final_dependency"]
+            final_run_params = local_run_dataset["final_run_params"]
+            TestCaseLists = local_run_dataset["TestCaseLists"]      # [["TESTCASE number NEEDED", "automated/performance/manual NEEDED", 1]]
+            send_log_file_only_for_fail = True
 
-        CommonUtil.all_logs_json = all_run_id_info
-        for testcase_info in all_testcases_info:
+        TestSetStartTime = time.time()  # test start time
+
+        # add log
+        if len(TestCaseLists) > 0:
+            CommonUtil.ExecLog(sModuleInfo, "Total number of test cases %s" % len(TestCaseLists), 4, False)
+        else:
+            CommonUtil.ExecLog(sModuleInfo, "No test cases found for the current user : %s" % Userid, 2)
+            return False
+
+        if ConfigModule.get_config_value("RunDefinition", "local_run") == "False":
+            Set_meta_data, Set_dataset, all_test_case_detail, all_debug_steps = [], [], [], []
+            all_TestStepsList, all_test_case_result_index, all_file_specific_steps = [], [], []
+            for TestCaseID in TestCaseLists:
+                # check if performance test case
+                test_case = str(TestCaseID[0]).replace("#", "no")
+                retry, copy_status = 1, False
+                while retry < 100:
+                    # check if test case is copied
+                    copy_status = check_if_test_case_is_copied(run_id, test_case)  # Response: True (Dont know what)
+                    if copy_status:
+                        break
+                    time.sleep(0.1)
+                    retry += 1
+                else:
+                    CommonUtil.ExecLog(sModuleInfo, "Failed to gather data for test case %s" % test_case, 3)
+                    continue
+
+                test_case_detail = get_test_case_details(run_id, str(TestCaseID[0]).replace("#", "no"))     # Response = [['TEST-5255', 'muhib appium save_attribute_values', 'Automated', '00:01:58']]
+                debug_steps = ""
+                if str(run_id).startswith("debug"):
+                    debug_steps = get_debug_steps(run_id)  # get debug steps    Response: '{2}-NO-{1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18}'
+                # download attachments for test case
+                file_specific_steps = download_attachments_for_test_case(  # Response= {}
+                    sModuleInfo, run_id, test_case, temp_ini_file
+                )  # downloads attachments
+
+                # get all steps of a test case
+                TestStepsList = get_all_steps_of_a_test_case(run_id, test_case)
+                # Response= [[6279, 'muhib Sample Step', 1, 'Built_In_Driver', 'automated', False, True, 'Sequential Actions', 'Built_In_Driver', False],
+                # [6427, 'validate list with ignore items', 2, 'Built_In_Driver', 'automated', False, True, 'Sequential Actions', 'Built_In_Driver', False]]
+
+                # update test case progress on server
+                sTestCaseStartTime = datetime.fromtimestamp(time.time()).strftime("%Y-%m-%d %H:%M:%S")
+                test_case_result_index = update_test_case_progress_on_server(run_id, test_case, sTestCaseStartTime)     # Response= 17734
+
+                StepSeq = 1
+                Stepscount = len(TestStepsList)
+                test_meta_data, test_case_data = [], []
+                while StepSeq <= Stepscount:
+                    current_step_sequence = TestStepsList[StepSeq - 1][2]
+                    # get meta data from server
+                    test_meta_data.append(get_step_meta_data_of_a_step(run_id, test_case, StepSeq))
+                    # Response= [[False, False, 59]]
+                    # get test step data
+                    test_case_data.append(get_test_step_data(run_id, test_case, current_step_sequence, sModuleInfo))
+                    # Response= step[action[row[left,mid,right]]]
+                    StepSeq += 1
+
+                set_device_info_according_to_user_order(device_order, device_dict, test_case_detail, user_info_object, Userid)
+
+                all_test_case_detail.append(test_case_detail)
+                all_debug_steps.append(debug_steps)
+                all_file_specific_steps.append(file_specific_steps)
+                all_TestStepsList.append(TestStepsList)
+                all_test_case_result_index.append(test_case_result_index)
+                Set_meta_data.append(test_meta_data)
+                Set_dataset.append(test_case_data)
+        else:
+            Set_meta_data = local_run_dataset["Set_meta_data"]      # [[[["DN06", False, 59 DN07]], [["DN06", False, 59 DN07]]], [[["DN06", False, 59 DN07]]]]
+            Set_dataset = local_run_dataset["Set_dataset"]
+            all_test_case_detail = local_run_dataset["all_test_case_detail"]        # [[['DN08', 'Muhib validate order test_case name NEEDED', 'DN09', 'DN10']], [['DN08', 'muhib random string', 'DN09', 'DN10']]]
+            all_debug_steps = ["DN11", "DN11"]
+            all_file_specific_steps = local_run_dataset["all_file_specific_steps"]      # [{}, {}]
+            all_test_case_result_index = local_run_dataset["all_test_case_result_index"]       # ["DN12","DN12"]
+            all_TestStepsList = local_run_dataset["all_TestStepsList"]  # [[[6279, 'muhib Sample Step', 1, 'Built_In_Driver', 'automated', False, True, 'Sequential Actions', 'Built_In_Driver', False], [6427, 'validate list with ignore items', 2, 'Built_In_Driver', 'automated', False, True, 'Sequential Actions', 'Built_In_Driver', False]], [[6279, 'muhib Sample Step', 1, 'Built_In_Driver', 'automated', False, True, 'Sequential Actions', 'Built_In_Driver', False]]]
+            # ["stepID NEEDED for log", "stepNAME NEEDED for log", "stepseq DN13", "Built_In_Driver", "DN14", DN15, DN16, 'Sequential Actions', 'Built_In_Driver', False/True NEEDED]
+        for i in range(len(Set_dataset)):
+            Response = {
+                "test_case_detail": all_test_case_detail[i],
+                "debug_steps": all_debug_steps[i],
+                "file_specific_steps": all_file_specific_steps[i],
+                "TestStepsList": all_TestStepsList[i],
+                "test_case_result_index": all_test_case_result_index[i],
+                "step_meta_data": Set_meta_data[i],
+                "test_steps_data": Set_dataset[i]
+            }
+
             performance_test_case = False
-            if testcase_info["automatability"].lower() == "performance":
+            if str(TestCaseLists[i][1]).lower() == "performance":
                 performance_test_case = True
-            test_case_no = testcase_info["testcase_no"]
-            test_case_name = testcase_info["title"]
-            set_device_info_according_to_user_order(device_order, device_dict, test_case_no, test_case_name, user_info_object, Userid)
 
             if performance_test_case:
+
                 # get performance test info
-                perf_data = testcase_info["performance data"]
+                perf_data = get_performance_testing_data_for_test_case(
+                    run_id, TestCaseLists[i][0]
+                )
                 hatch_rate = perf_data["hatch_rate"]
                 no_of_users = perf_data["no_of_users"]
                 time_period = perf_data["time_period"]
 
                 # write locust input file
+
                 write_locust_input_file(
                     time_period,
                     perf_data,
-                    test_case_no,
+                    TestCaseLists[i][0],
                     sModuleInfo,
                     run_id,
                     driver_list,
@@ -1869,21 +2130,20 @@ def main(device_dict, user_info_object, local_run_dataset={}):
 
                 # make locust query
                 locustQuery = (
-                        "locust -f %s --csv=csvForZeuz --no-web --host=http://example.com -c %d -r %d"
-                        % (locust_file_path, no_of_users, hatch_rate)
+                    "locust -f %s --csv=csvForZeuz --no-web --host=http://example.com -c %d -r %d"
+                    % (locust_file_path, no_of_users, hatch_rate)
                 )
 
                 # add log
                 CommonUtil.ExecLog(
                     sModuleInfo,
                     "Running Performance Test Case %s with total %d users, in a rate %s new users/second and each user will run for %s seconds"
-                    % (test_case_no, no_of_users, hatch_rate, time_period),
+                    % (TestCaseLists[i][0], no_of_users, hatch_rate, time_period),
                     1,
                 )
                 try:
                     def kill(process):
                         return process.kill()  # kill process function
-
                     process = subprocess.Popen(locustQuery, shell=True)  # locust query process
                     my_timer = Timer(no_of_users * time_period, kill, [process])  # set timer
                     try:
@@ -1898,7 +2158,7 @@ def main(device_dict, user_info_object, local_run_dataset={}):
                 CommonUtil.ExecLog(sModuleInfo, "Uploading Performance Test Results", 1)
                 if ConfigModule.get_config_value("RunDefinition", "local_run") == "False":
                     # upload info
-                    upload_csv_file_info(run_id, test_case_no)
+                    upload_csv_file_info(run_id, TestCaseLists[i][0])
                 # add log
                 CommonUtil.ExecLog(
                     sModuleInfo, "Performance Test Results Uploaded Successfully", 1
@@ -1906,17 +2166,24 @@ def main(device_dict, user_info_object, local_run_dataset={}):
             else:
                 # run test case (not performance)
                 run_cancelled = run_test_case(
-                    test_case_no,
+                    TestCaseLists[i][0],
                     sModuleInfo,
                     run_id,
+                    driver_list,
                     final_dependency,
                     final_run_params,
                     temp_ini_file,
                     is_linked,
-                    testcase_info,
+                    Response,
                     executor,
                     send_log_file_only_for_fail,
                 )
+                # If we're in debug mode, don't send logs to server.
+                if not str(run_id).lower().startswith("debug") and ConfigModule.get_config_value("RunDefinition", "local_run") == "False":
+                    all_logs_list = CommonUtil.get_all_logs()  # get all logs
+                    # write_all_logs_to_server(all_logs_list)  # write logs to server
+                    executor.submit(write_all_logs_to_server, all_logs_list)
+
                 CommonUtil.clear_all_logs()  # clear logs
                 if run_cancelled == CANCELLED_TAG:
                     break
@@ -1928,27 +2195,36 @@ def main(device_dict, user_info_object, local_run_dataset={}):
         TimeInSec = int(TimeDiff)
         TestSetDuration = CommonUtil.FormatSeconds(TimeInSec)
 
-        after_execution_dict = {
-            "setendtime": sTestSetEndTime,
-            "duration": TestSetDuration
-        }
-        CommonUtil.CreateJsonReport(setInfo=after_execution_dict)
-        CommonUtil.ExecLog("", "Test Set Completed", 4, False)
+        filepath = os.path.join(os.path.abspath(__file__).split("Framework")[0])/Path("AutomationLog")/"execution_log.json"
+        with open(filepath, "w") as f:
+            json.dump(CommonUtil.get_all_logs(json=True), f, indent=2)
 
-        ConfigModule.add_config_value("sectionOne", "sTestStepExecLogId", "MainDriver", temp_ini_file)
-        path = os.path.abspath(__file__).split("Framework")[0] / Path("tests") / Path("test_cases_data.json")
-        if os.path.isfile(path):
-            os.remove(path)
+        # run_cancelled = get_status_of_runid(run_id)  # check if run is cancelled
 
         if run_cancelled == CANCELLED_TAG:
             CommonUtil.ExecLog(sModuleInfo, "Test Set Cancelled by the User", 1)  # add log
         elif ConfigModule.get_config_value("RunDefinition", "local_run") == "False":
-            upload_json_report()
-            """ Need to know what to do with the below functions """
-            # executor.submit(update_test_case_result_on_server, run_id, sTestSetEndTime, TestSetDuration)
-            # executor.submit(send_email_report_after_exectution, run_id, project_id, team_id)
-            # executor.submit(update_fail_reasons_of_test_cases, run_id, TestCaseLists)
+            # update runid status on server
+            # update_test_case_result_on_server(run_id, sTestSetEndTime, TestSetDuration)
+            executor.submit(update_test_case_result_on_server, run_id, sTestSetEndTime, TestSetDuration)
 
+        # add config value
+        ConfigModule.add_config_value("sectionOne", "sTestStepExecLogId", "MainDriver", temp_ini_file)
+
+        # add log
+        CommonUtil.ExecLog(sModuleInfo, "Test Set Completed", 4, False)
+        if ConfigModule.get_config_value("RunDefinition", "local_run") == "False":
+            # send email report
+            # send_email_report_after_exectution(run_id, project_id, team_id)
+            executor.submit(send_email_report_after_exectution, run_id, project_id, team_id)
+
+            # update fail reasons
+            # update_fail_reasons_of_test_cases(run_id, TestCaseLists)
+            executor.submit(update_fail_reasons_of_test_cases, run_id, TestCaseLists)
+
+        # for testing, will be done for only main TC in linked test cases
+        # delete_all_server_variable(run_id)
+    CommonUtil.ShutdownExecutor()
     return "pass"
 
 

@@ -20,7 +20,7 @@ imutils
 datefinder
 regex
 pyttsx3
-webdriver_manager
+webdriver-manager
 jsonschema
 jsonpointer
 rfc3339-validator
@@ -29,3 +29,4 @@ idna
 pyrsistent
 attrs
 pytest==6.1.2
+yapf

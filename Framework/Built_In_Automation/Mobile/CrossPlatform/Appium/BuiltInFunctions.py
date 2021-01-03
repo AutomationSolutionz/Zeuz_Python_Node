@@ -1121,7 +1121,7 @@ def teardown_appium(data_set):
         for name in appium_details:  # For each connected device
             try:
                 CommonUtil.ExecLog(sModuleInfo, "Teardown for: %s" % name, 0)
-                time.sleep(1)   # Let the capturing screenshot end in thread
+                CommonUtil.Join_Thread_and_Return_Result("screenshot")   # Let the capturing screenshot end in thread
                 try:
                     appium_details[name]["driver"].quit()  # Destroy driver
                 except:

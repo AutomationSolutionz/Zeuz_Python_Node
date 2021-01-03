@@ -17,6 +17,7 @@ from .data_collector import DataCollector
 
 
 global shared_variables
+test_action_info = []
 shared_variables = {}
 protected_variables = (
     []
