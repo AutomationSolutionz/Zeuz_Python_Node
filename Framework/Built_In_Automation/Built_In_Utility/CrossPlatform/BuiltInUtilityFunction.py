@@ -1663,7 +1663,7 @@ def run_command(data_set):
                 }
             )
         CommonUtil.ExecLog(sModuleInfo, "Running Command: '%s'" % (command), 1)    
-        proc = subprocess.Popen([command], **args)
+        proc = subprocess.Popen(command, **args)
 
         if not run_in_background:
             proc.wait()
