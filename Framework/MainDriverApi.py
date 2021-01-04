@@ -1701,14 +1701,14 @@ def upload_csv_file_info(run_id, test_case):
 
 
 def get_all_run_id_info(Userid, sModuleInfo):
-    response = requests.get(RequestFormatter.form_uri("getting_json_data_api"), {"machine_name": "muhib_bfa0de80-0"}).json()
+    response = requests.get(RequestFormatter.form_uri("getting_json_data_api"), {"machine_name": Userid}).json()
     # response = RequestFormatter.Get("getting_json_data_api", {"machine_name": Userid})
-    for _ in range(100):
+    for _ in range(15):
         if response["found"]:
             break
         else:
-            time.sleep(0.5)
-            response = requests.get(RequestFormatter.form_uri("getting_json_data_api"), {"machine_name": "muhib_bfa0de80-0"}).json()
+            time.sleep(2)
+            response = requests.get(RequestFormatter.form_uri("getting_json_data_api"), {"machine_name": Userid}).json()
     else:
         CommonUtil.ExecLog(sModuleInfo, "Could not get run information", 3)
         return False
@@ -1944,6 +1944,7 @@ def main(device_dict, user_info_object, local_run_dataset={}):
             CommonUtil.ExecLog(sModuleInfo, "Test Set Cancelled by the User", 1)  # add log
         elif ConfigModule.get_config_value("RunDefinition", "local_run") == "False":
             upload_json_report()
+            # executor.submit(upload_json_report)
             """ Need to know what to do with the below functions """
             # executor.submit(update_test_case_result_on_server, run_id, sTestSetEndTime, TestSetDuration)
             # executor.submit(send_email_report_after_exectution, run_id, project_id, team_id)
