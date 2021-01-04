@@ -31,7 +31,7 @@ def get_url():
 
     server_url = urlparse(ConfigModule.get_config_value("Authentication", "server_address"))
 
-    path = f"v1/ws/live_log/send/{node_id}"
+    path = f"faster/v1/ws/live_log/send/{node_id}"
 
     if server_url.scheme == "https":
         protocol = "wss"
@@ -43,7 +43,7 @@ def get_url():
         ws_url = f"{protocol}://{server_url.hostname}:8080/{path}"
     else:
         # Production URL (path prefixed with `faster`)
-        ws_url = f"{protocol}://{server_url.netloc}/faster/{path}"
+        ws_url = f"{protocol}://{server_url.netloc}/{path}"
 
     return ws_url
 
