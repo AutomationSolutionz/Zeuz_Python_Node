@@ -1782,7 +1782,9 @@ def main(device_dict, user_info_object, local_run_dataset={}):
 
         # Start websocket server if we're in debug mode.
         if run_id.lower().startswith("debug"):
+            print("[LIVE LOG] Connecting to Live Log service")
             ws.connect()
+            print("[LIVE LOG] Connected to Live Log service")
 
         device_order = run_id_info["device_info"]
         final_dependency = run_id_info["dependency_list"]
@@ -1960,6 +1962,7 @@ def main(device_dict, user_info_object, local_run_dataset={}):
         # Close websocket connection.
         if run_id.lower().startswith("debug"):
             ws.close()
+            print("[LIVE LOG] Disconnected from Live Log service")
 
     return "pass"
 

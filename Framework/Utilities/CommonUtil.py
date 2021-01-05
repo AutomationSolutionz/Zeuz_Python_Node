@@ -11,8 +11,6 @@ from Framework.Utilities import ConfigModule
 import datetime
 from Framework.Utilities import FileUtilities as FL
 import uuid
-from Framework.Utilities import RequestFormatter
-import subprocess
 from pathlib import Path
 import io
 
@@ -736,6 +734,7 @@ def Thread_ScreenShot(function_name, image_folder, Method, Driver):
                 ImageName, format="PNG", quality=picture_quality
             )  # Change quality to reduce file size
 
+            # Convert image to bytearray and send it to ws for streaming.
             image_byte_array = pil_image_to_bytearray(image)
             ws.binary(image_byte_array)
         else:
