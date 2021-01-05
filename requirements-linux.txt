@@ -20,7 +20,7 @@ imutils
 datefinder
 regex
 pyttsx3
-webdriver_manager
+webdriver-manager
 jsonschema
 jsonpointer
 rfc3339-validator

@@ -63,7 +63,7 @@ from Framework.Utilities import (
     All_Device_Info,
     self_updater
 )
-from Framework import New_MainDriverApi, MainDriverApi
+from Framework import MainDriverApi
 
 
 temp_ini_file = (
@@ -281,7 +281,7 @@ def Login(cli=False):
                 )
 
                 if api_flag:
-                    r = RequestFormatter.Get("login_api", user_info_object)
+                    r = RequestFormatter.Post("login_api", user_info_object)
 
                 if r or (isinstance(r,dict) and r['status']==200):
                     CommonUtil.ExecLog(
@@ -306,9 +306,9 @@ def Login(cli=False):
                                 "time_zone": local_tz,
                                 "machine": tester_id,
                             }
-                            RequestFormatter.Get(
-                                "send_machine_time_zone_api", time_zone_object
-                            )
+                            executor = CommonUtil.GetExecutor()
+                            executor.submit(RequestFormatter.Get, "send_machine_time_zone_api", time_zone_object)
+                            # RequestFormatter.Get("send_machine_time_zone_api", time_zone_object)
                             # end
                         except Exception as e:
                             CommonUtil.ExecLog(
@@ -417,6 +417,7 @@ def RunProcess(sTesterid, user_info_object):
                 PreProcess()
                 # value = New_MainDriverApi.main(device_dict, user_info_object)
                 value = MainDriverApi.main(device_dict, user_info_object)
+                # value = Old_MainDriverApi.main(device_dict, user_info_object)
                 if value == "pass":
                     if exit_script:
                         return False
@@ -425,7 +426,7 @@ def RunProcess(sTesterid, user_info_object):
                     "", "Successfully updated db with parameter", 4, False
                 )
             else:
-                time.sleep(0.5)
+                time.sleep(3)
                 if r and "update" in r and r["update"]:
                     _r = RequestFormatter.Get(
                         "update_machine_with_time_api", {"machine_name": sTesterid}
@@ -542,69 +543,71 @@ def update_machine(dependency, default_team_and_project_dict):
 
 
 def dependency_collection(default_team_and_project):
-    try:
-        dependency_tag = "Dependency"
-        dependency_option = ConfigModule.get_all_option(dependency_tag)
-        project = default_team_and_project["project_name"]
-        team = default_team_and_project["team_name"]
-        r = RequestFormatter.Get(
-            "get_all_dependency_name_api", {"project": project, "team": team}
-        )
-        obtained_list = [x.lower() for x in r]
-        # print "Dependency: ",dependency_list
-        missing_list = list(set(obtained_list) - set(dependency_option))
-        # print missing_list
-        if missing_list:
-            # CommonUtil.ExecLog(
-            #     "",
-            #     ",".join(missing_list)
-            #     + " missing from the configuration file - settings.conf",
-            #     4,
-            #     False,
-            # )
-            return False
-        else:
-            CommonUtil.ExecLog(
-                "",
-                "All the dependency present in the configuration file - settings.conf",
-                4,
-                False,
-            )
-            final_dependency = []
-            for each in r:
-                temp = []
-                each_dep_list = ConfigModule.get_config_value(
-                    dependency_tag, each
-                ).split(",")
-                # print each_dep_list
-                for each_item in each_dep_list:
-                    if each_item.count(":") == 2:
-                        name, bit, version = each_item.split(":")
-
-                    else:
-                        name = each_item.split(":")[0]
-                        bit = 0
-                        version = ""
-                        # print name,bit,version
-                    temp.append((name, bit, version))
-                final_dependency.append((each, temp))
-            return final_dependency
-    except Exception as e:
-        exc_type, exc_obj, exc_tb = sys.exc_info()
-        fname = os.path.split(exc_tb.tb_frame.f_code.co_filename)[1]
-        Error_Detail = (
-            (str(exc_type).replace("type ", "Error Type: "))
-            + ";"
-            + "Error Message: "
-            + str(exc_obj)
-            + ";"
-            + "File Name: "
-            + fname
-            + ";"
-            + "Line: "
-            + str(exc_tb.tb_lineno)
-        )
-        CommonUtil.ExecLog("", Error_Detail, 4, False)
+    """ In future we will again fetch this feature of validating dependencies with server and local """
+    return False
+    # try:
+    #     dependency_tag = "Dependency"
+    #     dependency_option = ConfigModule.get_all_option(dependency_tag)
+    #     project = default_team_and_project["project_name"]
+    #     team = default_team_and_project["team_name"]
+    #     r = RequestFormatter.Get(
+    #         "get_all_dependency_name_api", {"project": project, "team": team}
+    #     )
+    #     obtained_list = [x.lower() for x in r]
+    #     # print "Dependency: ",dependency_list
+    #     missing_list = list(set(obtained_list) - set(dependency_option))
+    #     # print missing_list
+    #     if missing_list:
+    #         # CommonUtil.ExecLog(
+    #         #     "",
+    #         #     ",".join(missing_list)
+    #         #     + " missing from the configuration file - settings.conf",
+    #         #     4,
+    #         #     False,
+    #         # )
+    #         return False
+    #     else:
+    #         CommonUtil.ExecLog(
+    #             "",
+    #             "All the dependency present in the configuration file - settings.conf",
+    #             4,
+    #             False,
+    #         )
+    #         final_dependency = []
+    #         for each in r:
+    #             temp = []
+    #             each_dep_list = ConfigModule.get_config_value(
+    #                 dependency_tag, each
+    #             ).split(",")
+    #             # print each_dep_list
+    #             for each_item in each_dep_list:
+    #                 if each_item.count(":") == 2:
+    #                     name, bit, version = each_item.split(":")
+    #
+    #                 else:
+    #                     name = each_item.split(":")[0]
+    #                     bit = 0
+    #                     version = ""
+    #                     # print name,bit,version
+    #                 temp.append((name, bit, version))
+    #             final_dependency.append((each, temp))
+    #         return final_dependency
+    # except Exception as e:
+    #     exc_type, exc_obj, exc_tb = sys.exc_info()
+    #     fname = os.path.split(exc_tb.tb_frame.f_code.co_filename)[1]
+    #     Error_Detail = (
+    #         (str(exc_type).replace("type ", "Error Type: "))
+    #         + ";"
+    #         + "Error Message: "
+    #         + str(exc_obj)
+    #         + ";"
+    #         + "File Name: "
+    #         + fname
+    #         + ";"
+    #         + "Line: "
+    #         + str(exc_tb.tb_lineno)
+    #     )
+    #     CommonUtil.ExecLog("", Error_Detail, 4, False)
 
 
 def check_server_online():

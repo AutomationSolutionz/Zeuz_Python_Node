@@ -17,6 +17,7 @@ from pathlib import Path
 import io
 
 from Framework.Utilities import ws
+import concurrent.futures
 
 
 # For TakeScreenShot()
@@ -95,9 +96,35 @@ all_logs_json, json_log_cond = [], False
 all_logs_count = 0
 all_logs_list = []
 load_testing = False
+to_dlt_from_fail_reason = " : Test Step Failed"
 
 # Holds the previously logged message (used for prevention of duplicate logs simultaneously)
 previous_log_line = None
+
+executor = concurrent.futures.ThreadPoolExecutor()
+all_threads = {}
+
+def GetExecutor():
+    return executor
+
+
+def ShutdownExecutor():
+    executor.shutdown()
+
+
+def SaveThread(key, thread):
+    if key in all_threads:
+        all_threads[key].append(thread)
+    else:
+        all_threads[key] = [thread]
+
+
+def Join_Thread_and_Return_Result(key):
+    result = []
+    if key in all_threads:
+        for t in all_threads[key]:
+            result.append(t.result())
+    return result
 
 
 def to_unicode(obj, encoding="utf-8"):
@@ -243,9 +270,7 @@ def Result_Analyzer(sTestStepReturnStatus, temp_q):
         elif sTestStepReturnStatus in skipped_tag_list:
             temp_q.put("skipped")
             return "skipped"
-        elif (
-            sTestStepReturnStatus.lower() == "cancelled"
-        ):  # Special use to stop a scheduled run without failing it
+        elif sTestStepReturnStatus.lower() == "cancelled":
             temp_q.put("cancelled")
             return "cancelled"
         else:
@@ -270,46 +295,56 @@ def CreateJsonReport(logs=None, stepInfo=None, TCInfo=None, setInfo=None):
             return
         log_id_vals = log_id.split("|")
         if logs:
-            _, status, sModuleInfo, sDetails = logs
+            log_id, now, iLogLevel, status, sModuleInfo, sDetails = logs
         if len(log_id_vals) != 4:
             pass
         else:
             # these loops can be optimized by saving the previous log_id_vals and comparing it with current one
-            runID, testcase_name, step_id, step_no = log_id_vals
-            testcase_no = testcase_name[5:]
-            for run_id in all_logs_json:
+            runID, testcase_no, step_id, step_no = log_id_vals
+            for run_id_info in all_logs_json:
+                run_id = run_id_info["run_id"]
                 if runID == run_id:
-                    run_id_info = all_logs_json[run_id]
                     if setInfo:
-                        run_id_info["Execution_Detail"] = setInfo
+                        run_id_info["execution_detail"] = setInfo
                         break
-                    all_testcases_info = run_id_info["TestCases"]
+                    all_testcases_info = run_id_info["test_cases"]
                     for testcase_info in all_testcases_info:
-                        if testcase_no == testcase_info["TestCase no"]:
+                        if testcase_no == testcase_info["testcase_no"].replace("#", "no"):
                             if TCInfo:
-                                testcase_info["Execution_Detail"] = TCInfo
+                                testcase_info["execution_detail"] = TCInfo
                                 break
-                            all_step_info = testcase_info["Steps"]
+                            all_step_info = testcase_info["steps"]
                             for step_info in all_step_info:
-                                if step_id == step_info["Step id"]:
+                                if step_no == str(step_info["step_sequence"]) and step_id == str(step_info["step_id"]):
                                     if stepInfo:
-                                        step_info["Execution_Detail"] = stepInfo
+                                        step_info["execution_detail"] = stepInfo
                                         fail_reason_log = []
+                                        fail_reason_str = ""
                                         if stepInfo["status"].lower() == "failed":
                                             count = 0
                                             for each_log in reversed(step_info["log"]):
-                                                if count == 3:
+                                                if count == 4:
                                                     break
                                                 if each_log["status"].lower() == "error":
-                                                    fail_reason_log.append(each_log["sDetails"])
+                                                    fail_reason_log.append(each_log["details"])
                                                     count += 1
                                             fail_reason_log.reverse()
-                                        step_info["Reason_of_failure"] = fail_reason_log
+                                            if fail_reason_log[-1].endswith(to_dlt_from_fail_reason):
+                                                del fail_reason_log[-1]
+                                            if len(fail_reason_log) > 3:
+                                                del fail_reason_log[0]
+                                            for i in fail_reason_log:
+                                                fail_reason_str += i + "\n"
+                                            fail_reason_str = fail_reason_str[:-1]
+                                        step_info["failreason"] = fail_reason_str
                                         break
                                     log_info = {
                                         "status": status.upper(),
-                                        "sModuleInfo": sModuleInfo,
-                                        "sDetails": sDetails
+                                        "modulename": sModuleInfo,
+                                        "details": sDetails,
+                                        "tstamp": now,
+                                        "loglevel": iLogLevel,
+                                        "logid": log_id
                                     }
                                     if "log" in step_info:
                                         step_info["log"].append(log_info)
@@ -323,12 +358,6 @@ def CreateJsonReport(logs=None, stepInfo=None, TCInfo=None, setInfo=None):
                     break
     elif stepInfo:
         pass
-    else:
-        with open("D:\\Zeuz Node\\ZeuzPythonNode\\Projects\\Sample_Amazon_Testing\\RequiredFormatOf_TestCase.json", "r") as f:
-            all_logs_json = json.load(f)
-            if isinstance(all_logs_json, str):
-                all_logs_json = json.loads(all_logs_json)
-
 
 
 def ExecLog(
@@ -455,12 +484,12 @@ def ExecLog(
                 return
 
             log_id_vals = log_id.split("|")
-            CreateJsonReport(logs=(log_id_vals, status, sModuleInfo, sDetails))
+            now = datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+            CreateJsonReport(logs=(log_id, now, iLogLevel, status, sModuleInfo, sDetails))
 
             if variable:
                 sDetails = "%s\nVariable value: %s" % (sDetails, variable["val"])
 
-            now = datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
             all_logs[all_logs_count] = {
                 "logid": log_id,
                 "modulename": sModuleInfo,
@@ -603,15 +632,14 @@ def TakeScreenShot(function_name, local_run=False):
                 sModuleInfo, "Skipping screenshot due to screenshot or local_run setting", 0
             )
             return
-        print(
-            "********** Capturing Screenshot for Action: %s Method: %s **********" % (function_name, Method)
+        ExecLog(
+            "",
+            "********** Capturing Screenshot for Action: %s Method: %s **********" % (function_name, Method),
+            4,
         )
+        thread = executor.submit(Thread_ScreenShot, function_name, image_folder, Method, Driver)
+        SaveThread("screenshot", thread)
 
-        t = threading.Thread(
-            target=Thread_ScreenShot, args=(function_name, image_folder, Method, Driver)
-        )  # Create thread object
-        t.daemon = True  # Run in background
-        t.start()  # Start thread
     except:
         return Exception_Handler(sys.exc_info())
 
@@ -676,7 +704,7 @@ def Thread_ScreenShot(function_name, image_folder, Method, Driver):
                 sModuleInfo,
                 "Can't capture screen, driver not available for type: %s, or invalid driver: %s"
                 % (str(Method), str(Driver)),
-                1,
+                3,
             )
             return
 
@@ -711,11 +739,18 @@ def Thread_ScreenShot(function_name, image_folder, Method, Driver):
             image_byte_array = pil_image_to_bytearray(image)
             ws.binary(image_byte_array)
         else:
-            print("********** Screen couldn't be captured for Action: %s Method: %s **********" % (function_name, Method))
+            ExecLog(
+                "",
+                "********** Screen couldn't be captured for Action: %s Method: %s **********" % (function_name, Method),
+                4,
+            )
 
     except:
-        print("********** Screen couldn't be captured for Action: %s Method: %s **********" % (function_name, Method))
-
+        ExecLog(
+            "",
+            "********** Screen couldn't be captured for Action: %s Method: %s **********" % (function_name, Method),
+            4,
+        )
 
 def TimeStamp(format):
     """

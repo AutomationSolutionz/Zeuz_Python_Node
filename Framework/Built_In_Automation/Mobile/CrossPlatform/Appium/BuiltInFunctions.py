@@ -945,6 +945,35 @@ def start_appium_driver(
                             "noReset"
                         ] = "true"  # Do not clear application cache when complete
                 else:  # for real ios device, not developed yet
+                    # We're trying to launch an application using .app file
+                    if Shared_Resources.Test_Shared_Variables(
+                        "ios_simulator_folder_path"
+                    ):  # if simulator path already exists
+                        app = Shared_Resources.Get_Shared_Variables(
+                            "ios_simulator_folder_path"
+                        )
+                        app = os.path.normpath(app)
+                    else:
+                        app = os.path.normpath(os.getcwd() + os.sep + os.pardir)
+                        app = os.path.join(app, "iosSimulator")
+                        # saving simulator path for future use
+                        Shared_Resources.Set_Shared_Variables(
+                            "ios_simulator_folder_path", str(app)
+                        )
+
+                    app = os.path.join(app, ios)
+                    encoding = "utf-8"
+                    bundle_id = str(
+                        subprocess.check_output(
+                            ["osascript", "-e", 'id of app "%s"' % str(app)]
+                        ),
+                        encoding=encoding,
+                    ).strip()
+
+                    desired_caps["platformName"] = "iOS"
+
+                    desired_caps["automationName"] = "XCUITest"
+
                     desired_caps[
                         "sendKeyStrategy"
                     ] = "setValue"  # Use set_value() for writing to element
@@ -1092,7 +1121,7 @@ def teardown_appium(data_set):
         for name in appium_details:  # For each connected device
             try:
                 CommonUtil.ExecLog(sModuleInfo, "Teardown for: %s" % name, 0)
-                time.sleep(1)   # Let the capturing screenshot end in thread
+                CommonUtil.Join_Thread_and_Return_Result("screenshot")   # Let the capturing screenshot end in thread
                 try:
                     appium_details[name]["driver"].quit()  # Destroy driver
                 except:

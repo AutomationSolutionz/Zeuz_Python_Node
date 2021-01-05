@@ -29,7 +29,7 @@ pyaudio
 imutils
 https://github.com/AutomationSolutionz/PyGetWindow-0.0.5/archive/master.zip
 appscript
-webdriver_manager
+webdriver-manager
 jsonschema
 webcolors
 jsonpointer
