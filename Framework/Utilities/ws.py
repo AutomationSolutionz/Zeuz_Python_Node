@@ -48,7 +48,21 @@ def get_url():
     return ws_url
 
 
+def send_file(data, ws):
+    """Send binary data through websocket."""
+
+    try:
+        if ws is None:
+            return
+
+        ws.send(data, websocket.ABNF.OPCODE_BINARY)
+    except:
+        pass
+
+
 def send(msg, ws):
+    """Send plain text through websocket."""
+
     try:
         if ws is None:
             return
@@ -72,6 +86,11 @@ def log(module_info, log_level, description):
     }
     global ws
     send(msg, ws)
+
+
+def binary(data):
+    global ws
+    send_file(data)
 
 
 def close():
@@ -99,6 +118,7 @@ def on_close(ws):
 
 def on_open(ws):
     print("[ws] Live Log Connection established.")
+
 
 def run_ws_thread(ws):
     ws.run_forever(sslopt={"cert_reqs": ssl.CERT_NONE}, )
