@@ -919,6 +919,7 @@ def run_all_test_steps_in_a_test_case(
     final_run_params,
     temp_ini_file,
     executor,
+    debug_info,
     is_linked="",
     performance=False
 ):
@@ -933,24 +934,13 @@ def run_all_test_steps_in_a_test_case(
     cleanup_drivers_during_debug = False
     debug_actions = ""
 
-    if str(run_id).startswith("debug"):
-        debug_steps = testcase_info["debug_steps"]
-        str_list = str(debug_steps).split("-")
-        debug_steps = str_list[0]
-        cleanup = str_list[1]
-
-        try:
-            debug_actions = str_list[2]
-        except:
-            pass
-
-        if cleanup == "YES":
-            cleanup_drivers_during_debug = True
-
-        debug_steps = str(debug_steps[1:-1]).split(",")
-        if debug_actions:
-            debug_actions = str(debug_actions[1:-1]).split(",")
+    if run_id.startswith("debug"):
         debug = True
+        debug_steps = debug_info["debug_steps"]
+        if "debug_step_actions" in debug_info:
+            debug_actions = debug_info["debug_step_actions"]
+        if debug_info["debug_clean"] == "YES":
+            cleanup_drivers_during_debug = True
 
     # clean up shared variables and teardown drivers
     if cleanup_drivers_during_debug:
@@ -1424,6 +1414,7 @@ def run_test_case(
     is_linked,
     testcase_info,
     executor,
+    debug_info,
     send_log_file_only_for_fail=True,
     performance=False,
     browserDriver=None,
@@ -1457,6 +1448,7 @@ def run_test_case(
         final_run_params,
         temp_ini_file,
         executor,
+        debug_info,
         is_linked,
         performance
     )
@@ -1507,21 +1499,21 @@ def run_test_case(
     }
     CommonUtil.CreateJsonReport(TCInfo=after_execution_dict)
 
-    debug = False
-    if str(run_id).startswith("debug"):
-        debug = True
-        debug_steps = testcase_info["debug_steps"]
-        str_list = str(debug_steps).split("-")
-        debug_steps = str_list[0]
-        debug_steps = str(debug_steps[1:-1]).split(",")
-
-    if debug and ConfigModule.get_config_value("RunDefinition", "local_run") == "False":
-        CommonUtil.Join_Thread_and_Return_Result("screenshot")  # Let the capturing screenshot end in thread
-        executor.submit(cleanup_runid_from_server, run_id)
-        executor.submit(start_sending_log_to_server, run_id, temp_ini_file)
-        executor.submit(start_sending_shared_var_to_server, run_id)
-        executor.submit(start_sending_step_result_to_server, run_id, debug_steps, sTestStepResultList)
-        executor.submit(send_debug_data, run_id, "finished", "yes")
+    debug = True if run_id.startswith("debug") else False
+    # if str(run_id).startswith("debug"):
+    #     debug = True
+    #     debug_steps = debug_info["debug_steps"]
+    #     str_list = str(debug_steps).split("-")
+    #     debug_steps = str_list[0]
+    #     debug_steps = str(debug_steps[1:-1]).split(",")
+    #
+    # if debug and ConfigModule.get_config_value("RunDefinition", "local_run") == "False":
+    #     CommonUtil.Join_Thread_and_Return_Result("screenshot")  # Let the capturing screenshot end in thread
+    #     executor.submit(cleanup_runid_from_server, run_id)
+    #     executor.submit(start_sending_log_to_server, run_id, temp_ini_file)
+    #     executor.submit(start_sending_shared_var_to_server, run_id)
+    #     executor.submit(start_sending_step_result_to_server, run_id, debug_steps, sTestStepResultList)
+    #     executor.submit(send_debug_data, run_id, "finished", "yes")
 
     if not debug:  # if normal run, then write log file and cleanup driver instances
         CommonUtil.Join_Thread_and_Return_Result("screenshot")  # Let the capturing screenshot end in thread
@@ -1739,7 +1731,7 @@ def upload_json_report(Userid):
 
 
 # main function
-def main(device_dict, user_info_object, local_run_dataset={}):
+def main(device_dict, user_info_object, all_run_id_info):
 
     # get module info
     sModuleInfo = inspect.currentframe().f_code.co_name + " : " + MODULE_NAME
@@ -1754,17 +1746,15 @@ def main(device_dict, user_info_object, local_run_dataset={}):
         )
     )
     # add temp file to config values
-    ConfigModule.add_config_value(
-        "sectionOne", "sTestStepExecLogId", sModuleInfo, temp_ini_file
-    )
+    ConfigModule.add_config_value("sectionOne", "sTestStepExecLogId", sModuleInfo, temp_ini_file)
 
     # get local machine user id
     Userid = (CommonUtil.MachineInfo().getLocalUser()).lower()
 
     # Get all run_id, set, test case, step, action info together with the new api
-    all_run_id_info = get_all_run_id_info(Userid, sModuleInfo)
-    if not all_run_id_info:
-        return "failed"
+    # all_run_id_info = get_all_run_id_info(Userid, sModuleInfo)
+    # if not all_run_id_info:
+    #     return "failed"
 
     if len(all_run_id_info) == 0:
         CommonUtil.ExecLog("", "No Test Run Schedule found for the current user : %s" % Userid, 2)
@@ -1774,28 +1764,34 @@ def main(device_dict, user_info_object, local_run_dataset={}):
     for run_id_info in all_run_id_info:
         run_id = run_id_info["run_id"]
         run_cancelled = ""
+        debug_info = ""
         CommonUtil.clear_all_logs()
 
         device_order = run_id_info["device_info"]
         final_dependency = run_id_info["dependency_list"]
         is_linked = run_id_info["is_linked"]
         final_run_params_from_server = run_id_info["run_time"]
-        rem_config = {
-            "threading": run_id_info["threading"],
-            "local_run": run_id_info["local_run"],
-            "take_screenshot": run_id_info["take_screenshot"],
-            "debug_mode": run_id_info["threading"],
-            "upload_log_file_only_for_fail": run_id_info["upload_log_file_only_for_fail"],
-            "window_size_x": run_id_info["window_size_x"],
-            "window_size_y": run_id_info["window_size_y"],
+        if not run_id.startswith("debug"):
+            rem_config = {
+                "threading": run_id_info["threading"],
+                "local_run": run_id_info["local_run"],
+                "take_screenshot": run_id_info["take_screenshot"],
+                "debug_mode": run_id_info["threading"],
+                "upload_log_file_only_for_fail": run_id_info["upload_log_file_only_for_fail"],
+                "window_size_x": run_id_info["window_size_x"],
+                "window_size_y": run_id_info["window_size_y"],
 
-        }
+            }
+            ConfigModule.remote_config = rem_config
+        else:
+            debug_info = {"debug_clean": run_id_info["debug_clean"], "debug_steps": run_id_info["debug_steps"]}
+            if "debug_step_actions" in run_id_info:
+                debug_info["debug_step_actions"] = run_id_info["debug_step_actions"]
         driver_list = ['Built_In_Selenium_Driver', 'Built_In_RestApi', 'Built_In_Appium_Driver', 'Built_In_Selenium',
                        'Built_In_Driver', 'deepak', 'Built_In_Appium', 'Built_In_NET_Win', 'Jarvis']
         final_run_params = {}
         for param in final_run_params_from_server:
             final_run_params[param] = CommonUtil.parse_value_into_object(list(final_run_params_from_server[param].items())[0][1])
-        ConfigModule.remote_config = rem_config
         send_log_file_only_for_fail = ConfigModule.get_config_value("RunDefinition", "upload_log_file_only_for_fail")
         send_log_file_only_for_fail = False if send_log_file_only_for_fail.lower() == "false" else True
 
@@ -1915,6 +1911,7 @@ def main(device_dict, user_info_object, local_run_dataset={}):
                     is_linked,
                     testcase_info,
                     executor,
+                    debug_info,
                     send_log_file_only_for_fail,
                 )
                 CommonUtil.clear_all_logs()  # clear logs
@@ -1942,7 +1939,7 @@ def main(device_dict, user_info_object, local_run_dataset={}):
 
         if run_cancelled == CANCELLED_TAG:
             CommonUtil.ExecLog(sModuleInfo, "Test Set Cancelled by the User", 1)  # add log
-        elif ConfigModule.get_config_value("RunDefinition", "local_run") == "False":
+        elif ConfigModule.get_config_value("RunDefinition", "local_run") == "False" and not run_id.startswith("debug"):
             upload_json_report(Userid)
             # executor.submit(upload_json_report)
             """ Need to know what to do with the below functions """

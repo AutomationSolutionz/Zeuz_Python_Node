@@ -101,6 +101,7 @@ previous_log_line = None
 executor = concurrent.futures.ThreadPoolExecutor()
 all_threads = {}
 
+
 def GetExecutor():
     return executor
 
@@ -121,6 +122,7 @@ def Join_Thread_and_Return_Result(key):
     if key in all_threads:
         for t in all_threads[key]:
             result.append(t.result())
+        del all_threads[key]
     return result
 
 

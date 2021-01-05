@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 # -*- coding: cp1252 -*-
 
-import os, sys, time, os.path, base64, signal, argparse
+import os, sys, time, os.path, base64, signal, argparse, requests
 from pathlib import Path
 from getpass import getpass
 
@@ -403,10 +403,12 @@ def RunProcess(sTesterid, user_info_object):
             if time.time() > etime:
                 return True  # Timeout reached, re-login. We do this because after about 3-4 hours this function will hang, and thus not be available for deployment
 
-            r = RequestFormatter.Get(
-                "is_run_submitted_api", {"machine_name": sTesterid}
-            )
-            if r and "run_submit" in r and r["run_submit"]:
+            # r = RequestFormatter.Get("is_run_submitted_api", {"machine_name": sTesterid})
+            Userid = (CommonUtil.MachineInfo().getLocalUser()).lower()
+            r = requests.get(RequestFormatter.form_uri("getting_json_data_api"), {"machine_name": Userid}).json()
+            # if r and "run_submit" in r and r["run_submit"]:
+            if r["found"]:
+                all_run_id_info = r["json"]
                 processing_test_case = True
                 CommonUtil.ExecLog(
                     "",
@@ -415,7 +417,7 @@ def RunProcess(sTesterid, user_info_object):
                     False,
                 )
                 PreProcess()
-                value = MainDriverApi.main(device_dict, user_info_object)
+                value = MainDriverApi.main(device_dict, user_info_object, all_run_id_info)
                 # value = Old_MainDriverApi.main(device_dict, user_info_object)
                 if value == "pass":
                     if exit_script:
@@ -426,10 +428,12 @@ def RunProcess(sTesterid, user_info_object):
                 )
             else:
                 time.sleep(3)
-                if r and "update" in r and r["update"]:
-                    _r = RequestFormatter.Get(
-                        "update_machine_with_time_api", {"machine_name": sTesterid}
-                    )
+                executor = CommonUtil.GetExecutor()
+                executor.submit(RequestFormatter.Get, "update_machine_with_time_api", {"machine_name": sTesterid})
+                # if r and "update" in r and r["update"]:
+                    # _r = RequestFormatter.Get(
+                    #     "update_machine_with_time_api", {"machine_name": sTesterid}
+                    # )
         except Exception as e:
             exc_type, exc_obj, exc_tb = sys.exc_info()
             fname = os.path.split(exc_tb.tb_frame.f_code.co_filename)[1]
