@@ -1725,13 +1725,13 @@ def get_all_run_id_info(Userid, sModuleInfo):
     return response["json"]
 
 
-def upload_json_report():
+def upload_json_report(Userid):
     path = os.path.join(os.path.abspath(__file__).split("Framework")[0])/Path("AutomationLog")/Path("execution_log.json")
     json_report = CommonUtil.get_all_logs(json=True)
     with open(path, "w") as f:
         json.dump(json_report, f, indent=2)
     for i in range(5):
-        res = requests.post(RequestFormatter.form_uri("create_report_log_api") + "/", {'json_data': json.dumps(json_report)})
+        res = requests.post(RequestFormatter.form_uri("create_report_log_api/"), {"machine_name": Userid, 'json_data': json.dumps(json_report)})
         if res.status_code == 200:
             CommonUtil.ExecLog("", "Successfully Uploaded json report to server", 4)
             break
@@ -1943,7 +1943,7 @@ def main(device_dict, user_info_object, local_run_dataset={}):
         if run_cancelled == CANCELLED_TAG:
             CommonUtil.ExecLog(sModuleInfo, "Test Set Cancelled by the User", 1)  # add log
         elif ConfigModule.get_config_value("RunDefinition", "local_run") == "False":
-            upload_json_report()
+            upload_json_report(Userid)
             # executor.submit(upload_json_report)
             """ Need to know what to do with the below functions """
             # executor.submit(update_test_case_result_on_server, run_id, sTestSetEndTime, TestSetDuration)
