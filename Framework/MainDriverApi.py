@@ -1784,6 +1784,12 @@ def main(device_dict, user_info_object, all_run_id_info):
             }
             ConfigModule.remote_config = rem_config
         else:
+            rem_config = {
+                "threading": False,
+                "local_run": False,
+                "take_screenshot": False,
+            }
+            ConfigModule.remote_config = rem_config
             debug_info = {"debug_clean": run_id_info["debug_clean"], "debug_steps": run_id_info["debug_steps"]}
             if "debug_step_actions" in run_id_info:
                 debug_info["debug_step_actions"] = run_id_info["debug_step_actions"]
