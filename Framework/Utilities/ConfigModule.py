@@ -8,7 +8,7 @@ from . import FileUtilities as FL
 file_name = "settings.conf"
 
 remote_config = {
-    "threading": True,
+    "threading": False,
     "local_run": False,
     "take_screenshot": True,
     "debug_mode": False,
