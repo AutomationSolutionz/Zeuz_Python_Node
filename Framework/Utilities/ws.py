@@ -90,7 +90,7 @@ def log(module_info, log_level, description):
 
 def binary(data):
     global ws
-    send_file(data)
+    send_file(data, ws)
 
 
 def close():

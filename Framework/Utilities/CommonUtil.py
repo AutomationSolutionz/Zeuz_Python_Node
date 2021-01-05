@@ -13,6 +13,7 @@ from Framework.Utilities import FileUtilities as FL
 import uuid
 from pathlib import Path
 import io
+import traceback
 
 from Framework.Utilities import ws
 import concurrent.futures
@@ -747,6 +748,7 @@ def Thread_ScreenShot(function_name, image_folder, Method, Driver):
             )
 
     except:
+        traceback.print_exc()
         ExecLog(
             "",
             "********** Screen couldn't be captured for Action: %s Method: %s **********" % (function_name, Method),
