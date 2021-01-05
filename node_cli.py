@@ -63,7 +63,7 @@ from Framework.Utilities import (
     All_Device_Info,
     self_updater
 )
-from Framework import MainDriverApi, Old_MainDriverApi
+from Framework import MainDriverApi
 
 
 temp_ini_file = (

@@ -11,9 +11,11 @@ from Framework.Utilities import ConfigModule
 import datetime
 from Framework.Utilities import FileUtilities as FL
 import uuid
-from Framework.Utilities import RequestFormatter
-import subprocess
 from pathlib import Path
+import io
+import traceback
+
+from Framework.Utilities import ws
 import concurrent.futures
 
 
@@ -431,6 +433,8 @@ def ExecLog(
     # Set current log as the next previous log
     previous_log_line = current_log_line
 
+    ws.log(sModuleInfo, iLogLevel, sDetails)
+
     if iLogLevel > 0:
         if iLogLevel == 6:
             FWLogFolder = ConfigModule.get_config_value(
@@ -641,6 +645,13 @@ def TakeScreenShot(function_name, local_run=False):
         return Exception_Handler(sys.exc_info())
 
 
+def pil_image_to_bytearray(img):
+    img_byte_array = io.BytesIO()
+    img.save(img_byte_array, format="PNG")
+    img_byte_array = img_byte_array.getvalue()
+    return img_byte_array
+
+
 def Thread_ScreenShot(function_name, image_folder, Method, Driver):
     """ Capture screen of mobile or desktop """
     sModuleInfo = inspect.currentframe().f_code.co_name + " : " + MODULE_NAME
@@ -725,6 +736,10 @@ def Thread_ScreenShot(function_name, image_folder, Method, Driver):
             image.save(
                 ImageName, format="PNG", quality=picture_quality
             )  # Change quality to reduce file size
+
+            # Convert image to bytearray and send it to ws for streaming.
+            image_byte_array = pil_image_to_bytearray(image)
+            ws.binary(image_byte_array)
         else:
             ExecLog(
                 "",
@@ -733,6 +748,7 @@ def Thread_ScreenShot(function_name, image_folder, Method, Driver):
             )
 
     except:
+        traceback.print_exc()
         ExecLog(
             "",
             "********** Screen couldn't be captured for Action: %s Method: %s **********" % (function_name, Method),

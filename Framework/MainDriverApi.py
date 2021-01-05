@@ -25,6 +25,7 @@ from .Utilities import ConfigModule, FileUtilities as FL, CommonUtil, RequestFor
 from Framework.Built_In_Automation.Shared_Resources import (
     BuiltInFunctionSharedResources as shared,
 )
+from Framework.Utilities import ws
 
 top_path = os.path.dirname(os.getcwd())
 drivers_path = os.path.join(top_path, "Drivers")
@@ -1076,6 +1077,9 @@ def run_all_test_steps_in_a_test_case(
         # add result of each step to a list;
         # for a test case to pass all steps should pass;
         # at least one Failed makes it 'Fail' else 'Warning' or 'Blocked';
+        run_cancelled = ""
+        if ConfigModule.get_config_value("RunDefinition", "local_run") == "False":
+            run_cancelled = get_status_of_runid(run_id)
 
         # append step result
         if sStepResult:
@@ -1767,6 +1771,12 @@ def main(device_dict, user_info_object, all_run_id_info):
         debug_info = ""
         CommonUtil.clear_all_logs()
 
+        # Start websocket server if we're in debug mode.
+        if run_id.lower().startswith("debug"):
+            print("[LIVE LOG] Connecting to Live Log service")
+            ws.connect()
+            print("[LIVE LOG] Connected to Live Log service")
+
         device_order = run_id_info["device_info"]
         final_dependency = run_id_info["dependency_list"]
         is_linked = run_id_info["is_linked"]
@@ -1885,7 +1895,6 @@ def main(device_dict, user_info_object, all_run_id_info):
                 try:
                     def kill(process):
                         return process.kill()  # kill process function
-
                     process = subprocess.Popen(locustQuery, shell=True)  # locust query process
                     my_timer = Timer(no_of_users * time_period, kill, [process])  # set timer
                     try:
@@ -1952,6 +1961,11 @@ def main(device_dict, user_info_object, all_run_id_info):
             # executor.submit(update_test_case_result_on_server, run_id, sTestSetEndTime, TestSetDuration)
             # executor.submit(send_email_report_after_exectution, run_id, project_id, team_id)
             # executor.submit(update_fail_reasons_of_test_cases, run_id, TestCaseLists)
+
+        # Close websocket connection.
+        if run_id.lower().startswith("debug"):
+            ws.close()
+            print("[LIVE LOG] Disconnected from Live Log service")
 
     return "pass"
 
