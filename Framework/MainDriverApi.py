@@ -1797,7 +1797,7 @@ def main(device_dict, user_info_object, all_run_id_info):
             rem_config = {
                 "threading": False,
                 "local_run": False,
-                "take_screenshot": False,
+                "take_screenshot": True,
             }
             ConfigModule.remote_config = rem_config
             debug_info = {"debug_clean": run_id_info["debug_clean"], "debug_steps": run_id_info["debug_steps"]}
