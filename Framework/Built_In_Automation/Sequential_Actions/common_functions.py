@@ -2874,7 +2874,7 @@ def execute_python_code(data_set):
             out_var = right.strip()
         elif left == "main function":
             main_function = right.strip()
-        elif left == "execute function":
+        elif left == "execute python code":
             Code = right
 
     try: exec(Code, globals())
