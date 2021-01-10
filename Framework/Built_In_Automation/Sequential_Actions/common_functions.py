@@ -2873,7 +2873,7 @@ def execute_python_code(data_set):
         elif left == "output variables":
             out_var = right.strip()
         elif left == "main function":
-            main_function = right.strip()
+            main_function = right.strip().split("(")[0]
         elif left == "execute python code":
             Code = right
 
