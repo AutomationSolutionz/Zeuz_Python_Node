@@ -315,10 +315,10 @@ def main():
             time.sleep(SLEEP_TIMEOUT)
         else:
             if machine_name == "any":
-                machine = machine_list[0]["id"]
+                machine = machine_list[0]["name"]
             else:
                 machine = next(
-                    (m["id"] for m in machine_list if m["name"] == machine_name),
+                    (m["name"] for m in machine_list if m["name"] == machine_name),
                     None
                 )
             break
@@ -338,7 +338,10 @@ def main():
             "project_id": project,
             "team_id": team,
             "run_time_params": runtime_parameters,
-            "machine": machine,
+            "all_machine": [machine],
+            "device_info": {
+                "local_device": [],
+            },
             "loop": "1",
             "run_time_settings": {
                 "threading": False,
@@ -371,7 +374,7 @@ def main():
     run_url = host + "/Home/RunID/" + deploy_info["run_id"]
 
     # Status for complete runs
-    RUN_COMPLETE = ["complete", "cancelled"]
+    RUN_COMPLETE = ["complete", "cancelled", "passed"]
 
     run_id_status = None
     report = None
