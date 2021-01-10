@@ -1049,6 +1049,7 @@ def Compare_Lists_or_Dicts(step_data):
         both_list = False
         match_by_index = False
         check_exclusion = False
+        check_subset = False
 
         for each_step_data_item in step_data[0]:
             if (
@@ -1066,6 +1067,8 @@ def Compare_Lists_or_Dicts(step_data):
                     match_by_index = True
                 if action_type.startswith("excludes"):
                     check_exclusion = True
+                if action_type.startswith("subset"):
+                    check_subset = True
 
         if list1_name == "" or list2_name == "":
             CommonUtil.ExecLog(
@@ -1074,6 +1077,22 @@ def Compare_Lists_or_Dicts(step_data):
                 3,
             )
             return "failed"
+
+        if check_subset:
+            list1 = CommonUtil.parse_value_into_object(list1_name)
+            list2 = CommonUtil.parse_value_into_object(list2_name)
+            if not isinstance(list1, list) or not isinstance(list2, list):
+                CommonUtil.ExecLog(sModuleInfo, "To check subset both the variable should be list", 3)
+                return "failed"
+            if list1 == list2:
+                CommonUtil.ExecLog(sModuleInfo, "2nd list is equal to the 1st list", 1)
+                return "passed"
+            if all(x in list1 for x in list2):
+                CommonUtil.ExecLog(sModuleInfo, "2nd list is a subset of 1st list", 1)
+                return "passed"
+            else:
+                CommonUtil.ExecLog(sModuleInfo, "2nd list is not a subset of 1st list", 1)
+                return "failed"
 
         list1 = Get_List_from_Shared_Variables(list1_name)
         list2 = Get_List_from_Shared_Variables(list2_name)

@@ -376,8 +376,6 @@ def Handle_Conditional_Action(step_data, data_set_no):
                 for i in operators:
                     if i in left:
                         operators[i] += 1
-                operators[" |<| "] -= operators[" |<=| "]
-                operators[" |>| "] -= operators[" |>=| "]
 
                 if sum(operators.values()) == 0:
                     for i in operators:

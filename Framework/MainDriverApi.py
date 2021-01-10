@@ -1078,8 +1078,8 @@ def run_all_test_steps_in_a_test_case(
         # for a test case to pass all steps should pass;
         # at least one Failed makes it 'Fail' else 'Warning' or 'Blocked';
         run_cancelled = ""
-        if ConfigModule.get_config_value("RunDefinition", "local_run") == "False":
-            run_cancelled = get_status_of_runid(run_id)
+        # if ConfigModule.get_config_value("RunDefinition", "local_run") == "False":
+        #     run_cancelled = get_status_of_runid(run_id)
 
         # append step result
         if sStepResult:
@@ -1392,14 +1392,14 @@ def start_sending_step_result_to_server(run_id, debug_steps, sTestStepResultList
 
 def cleanup_driver_instances():  # cleans up driver(selenium, appium) instances
     try:  # if error happens. we don't care, main driver should not stop, pass in exception
-        import Framework.Built_In_Automation.Web.Selenium.BuiltInFunctions as Selenium
-        import Framework.Built_In_Automation.Mobile.CrossPlatform.Appium.BuiltInFunctions as Appium
 
         if shared.Test_Shared_Variables("selenium_driver"):
+            import Framework.Built_In_Automation.Web.Selenium.BuiltInFunctions as Selenium
             driver = shared.Remove_From_Shared_Variables("selenium_driver")
             if driver not in failed_tag_list:
                 Selenium.Tear_Down_Selenium()
         if shared.Test_Shared_Variables("appium_driver"):
+            import Framework.Built_In_Automation.Mobile.CrossPlatform.Appium.BuiltInFunctions as Appium
             driver = shared.Remove_From_Shared_Variables("appium_driver")
             if driver not in failed_tag_list:
                 Appium.teardown_appium()
@@ -1697,28 +1697,31 @@ def upload_csv_file_info(run_id, test_case):
 
 
 def get_all_run_id_info(Userid, sModuleInfo):
-    response = requests.get(RequestFormatter.form_uri("getting_json_data_api"), {"machine_name": Userid}).json()
-    # response = RequestFormatter.Get("getting_json_data_api", {"machine_name": Userid})
-    for _ in range(15):
-        if response["found"]:
-            break
-        else:
-            time.sleep(2)
-            response = requests.get(RequestFormatter.form_uri("getting_json_data_api"), {"machine_name": Userid}).json()
-    else:
-        CommonUtil.ExecLog(sModuleInfo, "Could not get run information", 3)
-        return False
+    # response = requests.get(RequestFormatter.form_uri("getting_json_data_api"), {"machine_name": Userid}).json()
+    # # response = RequestFormatter.Get("getting_json_data_api", {"machine_name": Userid})
+    # for _ in range(15):
+    #     if response["found"]:
+    #         break
+    #     else:
+    #         time.sleep(2)
+    #         response = requests.get(RequestFormatter.form_uri("getting_json_data_api"), {"machine_name": Userid}).json()
+    # else:
+    #     CommonUtil.ExecLog(sModuleInfo, "Could not get run information", 3)
+    #     return False
 
-    # with open("D:\\Zeuz Node\\ZeuzPythonNode\\Projects\\Sample_Amazon_Testing\\RequiredFormatOf_TestCase.json", "r") as f:
-    #     Json_data = json.load(f)
-    #     if isinstance(Json_data, str):
-    #         Json_data = json.loads(Json_data)
-    #     return Json_data
-
-    path = os.path.abspath(__file__).split("Framework")[0]/Path("tests")/Path("test_cases_data.json")
+    path = "D:\\Zeuz Node\\ZeuzPythonNode\\Projects\\Sample_Amazon_Testing\\RequiredFormatOf_TestCase.json"
+    with open(path, "r") as f:
+        Json_data = json.load(f)
+        if isinstance(Json_data, str):
+            Json_data = json.loads(Json_data)
     with open(path, "w") as f:
-        json.dump(response["json"], f, indent=2)
-    return response["json"]
+        json.dump(Json_data, f, indent=2)
+    return Json_data
+
+    # path = os.path.abspath(__file__).split("Framework")[0]/Path("tests")/Path("test_cases_data.json")
+    # with open(path, "w") as f:
+    #     json.dump(response["json"], f, indent=2)
+    # return response["json"]
 
 
 def upload_json_report(Userid):
@@ -1783,13 +1786,12 @@ def main(device_dict, user_info_object, all_run_id_info):
         final_run_params_from_server = run_id_info["run_time"]
         if not run_id.startswith("debug"):
             rem_config = {
-                "threading": run_id_info["threading"],
-                "local_run": run_id_info["local_run"],
-                "take_screenshot": run_id_info["take_screenshot"],
-                "debug_mode": run_id_info["threading"],
-                "upload_log_file_only_for_fail": run_id_info["upload_log_file_only_for_fail"],
-                "window_size_x": run_id_info["window_size_x"],
-                "window_size_y": run_id_info["window_size_y"],
+                "threading": run_id_info["threading"] if "threading" in run_id_info else False,
+                "local_run": run_id_info["local_run"] if "local_run" in run_id_info else False,
+                "take_screenshot": run_id_info["take_screenshot"] if "take_screenshot" in run_id_info else True,
+                "upload_log_file_only_for_fail": run_id_info["upload_log_file_only_for_fail"] if "upload_log_file_only_for_fail" in run_id_info else False,
+                "window_size_x": run_id_info["window_size_x"] if "window_size_x" in run_id_info else "",
+                "window_size_y": run_id_info["window_size_y"] if "window_size_y" in run_id_info else "",
 
             }
             ConfigModule.remote_config = rem_config

@@ -199,7 +199,6 @@ def zeuz_authentication_prompts_for_cli():
 
 
 def Login(cli=False):
-    install_missing_modules()
     username = ConfigModule.get_config_value(AUTHENTICATION_TAG, USERNAME_TAG)
     password = ConfigModule.get_config_value(AUTHENTICATION_TAG, PASSWORD_TAG)
     server_name = ConfigModule.get_config_value(AUTHENTICATION_TAG, "server_address")
@@ -871,6 +870,6 @@ if __name__ == "__main__":
     """We can use this condition to skip command_line_args() when "python node_cli.py" or "node_cli.py" is executed"""
     # if (len(sys.argv)) > 1:
     command_line_args()
-
+    install_missing_modules()
     Login(cli=True)
 
