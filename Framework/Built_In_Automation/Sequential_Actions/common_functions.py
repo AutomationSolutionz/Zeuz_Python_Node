@@ -2861,3 +2861,34 @@ def validate_list_order(data_set):
         )
         return "failed"
 
+@logger
+def execute_python_code(data_set):
+    sModuleInfo = inspect.currentframe().f_code.co_name + " : " + MODULE_NAME
+    inp, out_var, main_function, Code = "", "", "", ""
+
+    for left, mid, right in data_set:
+        left = left.strip().lower()
+        if left == "input variables":
+            inp = right
+        elif left == "output variables":
+            out_var = right.strip()
+        elif left == "main function":
+            main_function = right.strip()
+        elif left == "execute function":
+            Code = right
+
+    try: exec(Code, globals())
+    except: return CommonUtil.Exception_Handler(sys.exc_info())
+
+    if main_function:
+        code = main_function + "(" + inp + ")"
+        try: out_val = eval(code)
+        except: return CommonUtil.Exception_Handler(sys.exc_info())
+        if out_var:
+            CommonUtil.ExecLog(sModuleInfo, "Executed '%s' function and captured the return value into '%s' variable" % (main_function, out_var), 1)
+            return sr.Set_Shared_Variables(out_var, out_val)
+        CommonUtil.ExecLog(sModuleInfo, "Executed '%s' function and did not capture any return value" % main_function, 1)
+    else:
+        CommonUtil.ExecLog(sModuleInfo, "Executed the python code which was provided", 1)
+
+    return "passed"
