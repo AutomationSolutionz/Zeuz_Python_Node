@@ -1,7 +1,6 @@
 # -*- coding: utf-8 -*-
 # -*- coding: cp1252 -*-
 
-import concurrent.futures
 import json
 import inspect
 import os
@@ -12,9 +11,11 @@ import queue
 import shutil
 import importlib
 import requests
+from urllib3.exceptions import InsecureRequestWarning
+# Suppress the InsecureRequestWarning since we use verify=False parameter.
+requests.packages.urllib3.disable_warnings(category=InsecureRequestWarning)
 import threading
 import subprocess
-import signal
 from pathlib import Path
 from sys import platform as _platform
 from datetime import datetime
@@ -1730,7 +1731,7 @@ def upload_json_report(Userid):
     with open(path, "w") as f:
         json.dump(json_report, f, indent=2)
     for i in range(5):
-        res = requests.post(RequestFormatter.form_uri("create_report_log_api/"), {"machine_name": Userid, 'json_data': json.dumps(json_report)})
+        res = requests.post(RequestFormatter.form_uri("create_report_log_api/"), {"machine_name": Userid, 'json_data': json.dumps(json_report)}, verify=False)
         if res.status_code == 200:
             CommonUtil.ExecLog("", "Successfully Uploaded json report to server", 4)
             break

@@ -4,6 +4,10 @@
 import os, sys, time, os.path, base64, signal, argparse, requests
 from pathlib import Path
 from getpass import getpass
+from urllib3.exceptions import InsecureRequestWarning
+
+# Suppress the InsecureRequestWarning since we use verify=False parameter.
+requests.packages.urllib3.disable_warnings(category=InsecureRequestWarning)
 
 from Framework.module_installer import install_missing_modules
 from Framework.Utilities import ConfigModule
@@ -404,7 +408,7 @@ def RunProcess(sTesterid, user_info_object):
 
             # r = RequestFormatter.Get("is_run_submitted_api", {"machine_name": sTesterid})
             Userid = (CommonUtil.MachineInfo().getLocalUser()).lower()
-            r = requests.get(RequestFormatter.form_uri("getting_json_data_api"), {"machine_name": Userid}).json()
+            r = requests.get(RequestFormatter.form_uri("getting_json_data_api"), {"machine_name": Userid}, verify=False).json()
             # if r and "run_submit" in r and r["run_submit"]:
             if r["found"]:
                 all_run_id_info = r["json"]
