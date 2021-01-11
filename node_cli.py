@@ -10,6 +10,8 @@ from urllib3.exceptions import InsecureRequestWarning
 requests.packages.urllib3.disable_warnings(category=InsecureRequestWarning)
 
 from Framework.module_installer import install_missing_modules
+install_missing_modules()
+
 from Framework.Utilities import ConfigModule
 
 PROJECT_ROOT = os.path.abspath(os.curdir)
@@ -874,6 +876,5 @@ if __name__ == "__main__":
     """We can use this condition to skip command_line_args() when "python node_cli.py" or "node_cli.py" is executed"""
     # if (len(sys.argv)) > 1:
     command_line_args()
-    install_missing_modules()
     Login(cli=True)
 

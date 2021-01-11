@@ -3,9 +3,6 @@ import subprocess
 import sys
 import traceback
 
-from Framework.Utilities import CommonUtil
-
-
 # NULL output device for disabling print output of pip installs
 try:
     from subprocess import DEVNULL # py3k
