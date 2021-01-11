@@ -1725,15 +1725,26 @@ def get_all_run_id_info(Userid, sModuleInfo):
     # return response["json"]
 
 
-def upload_json_report(Userid):
-    path = os.path.join(os.path.abspath(__file__).split("Framework")[0])/Path("AutomationLog")/Path("execution_log.json")
+def upload_json_report(Userid, temp_ini_file, run_id):
+    # path = os.path.join(os.path.abspath(__file__).split("Framework")[0])/Path("AutomationLog")/Path("execution_log.json")
+    path = ConfigModule.get_config_value("sectionOne", "temp_run_file_path", temp_ini_file) / Path(run_id.replace(":", "-")) / Path("execution_log.json")
     json_report = CommonUtil.get_all_logs(json=True)
     with open(path, "w") as f:
         json.dump(json_report, f, indent=2)
+    for i in range(720):    # 1 hour
+        res = requests.get(RequestFormatter.form_uri("is_copied_api/"), {"runid": run_id}, verify=False)
+        r = res.json()
+        if r["flag"]:
+            break
+        time.sleep(5)
+    else:
+        print("Run history was not created in server so couldn't upload the report for run_id '%s'." % run_id +
+              "Get the report from below path-\n" + path)
+        return
     for i in range(5):
         res = requests.post(RequestFormatter.form_uri("create_report_log_api/"), {"machine_name": Userid, 'json_data': json.dumps(json_report)}, verify=False)
         if res.status_code == 200:
-            CommonUtil.ExecLog("", "Successfully Uploaded json report to server", 4)
+            print("Successfully Uploaded json report to server")
             break
         time.sleep(1)
 
@@ -1958,7 +1969,7 @@ def main(device_dict, user_info_object, all_run_id_info):
         if run_cancelled == CANCELLED_TAG:
             CommonUtil.ExecLog(sModuleInfo, "Test Set Cancelled by the User", 1)  # add log
         elif ConfigModule.get_config_value("RunDefinition", "local_run") == "False" and not run_id.startswith("debug"):
-            upload_json_report(Userid)
+            upload_json_report(Userid, temp_ini_file, run_id)
             # executor.submit(upload_json_report)
             """ Need to know what to do with the below functions """
             # executor.submit(update_test_case_result_on_server, run_id, sTestSetEndTime, TestSetDuration)
