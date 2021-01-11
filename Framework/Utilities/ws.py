@@ -1,12 +1,13 @@
 import json
 import websocket
-from threading import Thread
+import traceback
 import ssl
 import json
+import os
+from threading import Thread
 from Framework.Utilities import ConfigModule
 from urllib.parse import urlparse
 from pathlib import Path
-import os
 
 
 # Find node id file
@@ -109,7 +110,10 @@ def on_message(ws, message):
 def on_error(ws, error):
     if isinstance(error, AttributeError):
         return
-    print("[ws] Error:\n", error)
+    elif isinstance(error, OSError):
+        # Prevent bad file descriptor error from showing
+        return
+    print("[ws] Error:\n", traceback.format_exc())
 
 
 def on_close(ws):
@@ -121,7 +125,10 @@ def on_open(ws):
 
 
 def run_ws_thread(ws):
-    ws.run_forever(sslopt={"cert_reqs": ssl.CERT_NONE}, )
+    try:
+        ws.run_forever(sslopt={"cert_reqs": ssl.CERT_NONE}, )
+    except:
+        pass
 
 
 def connect():
@@ -137,8 +144,5 @@ def connect():
     t = Thread(target=run_ws_thread, args=(ws,))
     t.start()
 
+connect()
 
-ws = websocket.WebSocketApp(get_url(),
-                                on_message=on_message,
-                                on_error=on_error,
-                                on_close=on_close)
