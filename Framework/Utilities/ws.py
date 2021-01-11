@@ -144,5 +144,4 @@ def connect():
     t = Thread(target=run_ws_thread, args=(ws,))
     t.start()
 
-connect()
 

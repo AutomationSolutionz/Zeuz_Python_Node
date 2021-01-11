@@ -15,7 +15,7 @@ install_missing_modules()
 from Framework.Utilities import ConfigModule
 
 PROJECT_ROOT = os.path.abspath(os.curdir)
-
+connect_once = True
 # Append correct paths so that it can find the configuration files and other modules
 sys.path.append(os.path.join(os.path.dirname(os.path.abspath(__file__)), "Framework"))
 
@@ -410,6 +410,10 @@ def RunProcess(sTesterid, user_info_object):
 
             # r = RequestFormatter.Get("is_run_submitted_api", {"machine_name": sTesterid})
             Userid = (CommonUtil.MachineInfo().getLocalUser()).lower()
+            if connect_once:
+                from Framework.Utilities import ws
+                ws.connect()
+                connect_once = False
             r = requests.get(RequestFormatter.form_uri("getting_json_data_api"), {"machine_name": Userid}, verify=False).json()
             # if r and "run_submit" in r and r["run_submit"]:
             if r["found"]:
