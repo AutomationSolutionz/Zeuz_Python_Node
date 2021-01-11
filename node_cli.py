@@ -410,6 +410,7 @@ def RunProcess(sTesterid, user_info_object):
 
             # r = RequestFormatter.Get("is_run_submitted_api", {"machine_name": sTesterid})
             Userid = (CommonUtil.MachineInfo().getLocalUser()).lower()
+            global connect_once
             if connect_once:
                 from Framework.Utilities import ws
                 ws.connect()
