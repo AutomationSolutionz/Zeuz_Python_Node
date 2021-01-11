@@ -126,9 +126,9 @@ def Open_Browser(dependency, window_size_X=None, window_size_Y=None):
             if not window_size_X and not window_size_Y:
                 selenium_driver.maximize_window()
             else:
-                if window_size_X is None:
+                if not window_size_X:
                     window_size_X = 1000
-                if window_size_Y is None:
+                if not window_size_Y:
                     window_size_Y = 1000
                 selenium_driver.set_window_size(window_size_X, window_size_Y)
             CommonUtil.ExecLog(sModuleInfo, "Started Chrome Browser", 1)
@@ -184,9 +184,9 @@ def Open_Browser(dependency, window_size_X=None, window_size_Y=None):
             if not window_size_X and not window_size_Y:
                 selenium_driver.maximize_window()
             else:
-                if window_size_X is None:
+                if not window_size_X:
                     window_size_X = 1000
-                if window_size_Y is None:
+                if not window_size_Y:
                     window_size_Y = 1000
                 selenium_driver.set_window_size(window_size_X, window_size_Y)
             CommonUtil.ExecLog(sModuleInfo, "Started Microsoft Edge Browser", 1)
@@ -207,9 +207,9 @@ def Open_Browser(dependency, window_size_X=None, window_size_Y=None):
             if not window_size_X and not window_size_Y:
                 selenium_driver.maximize_window()
             else:
-                if window_size_X is None:
+                if not window_size_X:
                     window_size_X = 1000
-                if window_size_Y is None:
+                if not window_size_Y:
                     window_size_Y = 1000
                 selenium_driver.set_window_size(window_size_X, window_size_Y)
             CommonUtil.ExecLog(sModuleInfo, "Started Opera Browser", 1)
@@ -225,9 +225,9 @@ def Open_Browser(dependency, window_size_X=None, window_size_Y=None):
             if not window_size_X and not window_size_Y:
                 selenium_driver.maximize_window()
             else:
-                if window_size_X is None:
+                if not window_size_X:
                     window_size_X = 1000
-                if window_size_Y is None:
+                if not window_size_Y:
                     window_size_Y = 1000
                 selenium_driver.set_window_size(window_size_X, window_size_Y)
             CommonUtil.ExecLog(sModuleInfo, "Started Internet Explorer Browser", 1)
@@ -259,9 +259,9 @@ def Open_Browser(dependency, window_size_X=None, window_size_Y=None):
             if not window_size_X and not window_size_Y:
                 selenium_driver.maximize_window()
             else:
-                if window_size_X is None:
+                if not window_size_X:
                     window_size_X = 1000
-                if window_size_Y is None:
+                if not window_size_Y:
                     window_size_Y = 1000
                 selenium_driver.set_window_size(window_size_X, window_size_Y)
             CommonUtil.ExecLog(sModuleInfo, "Started Safari Browser", 1)
