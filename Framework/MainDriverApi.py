@@ -609,6 +609,20 @@ def get_final_dependency_list(dependency_list, run_description):
     return dependency_list_final
 
 
+def download_single_attachment(sModuleInfo, download_url, f, retry):
+    try:
+        if retry == 4:
+            CommonUtil.ExecLog(sModuleInfo, "An attachment couldn't be downloaded. Downloading the remaining ones", 3)
+            return False
+        with requests.get(download_url, stream=True, verify=False) as r:
+            shutil.copyfileobj(r.raw, f)
+        time.sleep(0.5)
+        return True
+    except:
+        time.sleep(0.5)
+        return download_single_attachment(download_url, f, retry+1)
+
+
 # downloads attachments for a test step
 def download_attachments_for_test_case(sModuleInfo, run_id, test_case, temp_ini_file, test_case_attachments, test_step_attachments):
     try:
@@ -616,7 +630,7 @@ def download_attachments_for_test_case(sModuleInfo, run_id, test_case, temp_ini_
             "sectionOne", "temp_run_file_path", temp_ini_file
         )
     except Exception:
-        CommonUtil.Exception_Handler(sys.exc_info())
+        return CommonUtil.Exception_Handler(sys.exc_info())
     test_step_attachments = []
     test_case_folder = (
         log_file_path
@@ -624,15 +638,11 @@ def download_attachments_for_test_case(sModuleInfo, run_id, test_case, temp_ini_
         + (run_id.replace(":", "-") + os.sep + test_case.replace(":", "-"))
     )
     ConfigModule.add_config_value("sectionOne", "test_case", test_case, temp_ini_file)
-    ConfigModule.add_config_value(
-        "sectionOne", "test_case_folder", test_case_folder, temp_ini_file
-    )
+    ConfigModule.add_config_value("sectionOne", "test_case_folder", test_case_folder, temp_ini_file)
     log_folder = test_case_folder + os.sep + "Log"
     ConfigModule.add_config_value("sectionOne", "log_folder", log_folder, temp_ini_file)
     screenshot_folder = test_case_folder + os.sep + "screenshots"
-    ConfigModule.add_config_value(
-        "sectionOne", "screen_capture_folder", screenshot_folder, temp_ini_file
-    )
+    ConfigModule.add_config_value("sectionOne", "screen_capture_folder", screenshot_folder, temp_ini_file)
 
     # Store the attachments for each test case separately inside
     # AutomationLog/attachments/TEST-XYZ
@@ -640,46 +650,26 @@ def download_attachments_for_test_case(sModuleInfo, run_id, test_case, temp_ini_
     ConfigModule.add_config_value("sectionOne", "download_folder", home, temp_ini_file)
 
     # create_test_case_folder
-    test_case_folder = ConfigModule.get_config_value(
-        "sectionOne", "test_case_folder", temp_ini_file
-    )
+    test_case_folder = ConfigModule.get_config_value("sectionOne", "test_case_folder", temp_ini_file)
     FL.CreateFolder(test_case_folder)
 
     # FL.CreateFolder(Global.TCLogFolder + os.sep + "ProductLog")
-    log_folder = ConfigModule.get_config_value(
-        "sectionOne", "log_folder", temp_ini_file
-    )
+    log_folder = ConfigModule.get_config_value("sectionOne", "log_folder", temp_ini_file)
     FL.CreateFolder(log_folder)
 
     # FL.CreateFolder(Global.TCLogFolder + os.sep + "Screenshots")
     # creating ScreenShot File
-    screen_capture_folder = ConfigModule.get_config_value(
-        "sectionOne", "screen_capture_folder", temp_ini_file
-    )
+    screen_capture_folder = ConfigModule.get_config_value("sectionOne", "screen_capture_folder", temp_ini_file)
     FL.CreateFolder(screen_capture_folder)
 
     # creating the download folder
-    download_folder = ConfigModule.get_config_value(
-        "sectionOne", "download_folder", temp_ini_file
-    )
+    download_folder = ConfigModule.get_config_value("sectionOne", "download_folder", temp_ini_file)
 
-    # # test case attachements
-    # test_case_attachments = RequestFormatter.Get(
-    #     "get_test_case_attachments_api", {"run_id": run_id, "test_case": test_case}
-    # )
-    # test_step_attachments = RequestFormatter.Get(
-    #     "get_test_step_attachments_for_test_case_api",
-    #     {"run_id": run_id, "test_case": test_case},
-    # )
-    FL.DeleteFolder(
-        ConfigModule.get_config_value("sectionOne", "download_folder", temp_ini_file)
-    )
+    FL.DeleteFolder(ConfigModule.get_config_value("sectionOne", "download_folder", temp_ini_file))
     FL.CreateFolder(download_folder)
     file_specific_steps = {}
     for each in test_case_attachments:
-        CommonUtil.ExecLog(
-            sModuleInfo, "Attachment download for test case %s started" % test_case, 1
-        )
+        CommonUtil.ExecLog(sModuleInfo, "Attachment download for test case %s started" % test_case, 1)
         m = each[1] + "." + each[2]  # file name
         f = open(download_folder + "/" + m, "wb")
 
@@ -695,8 +685,7 @@ def download_attachments_for_test_case(sModuleInfo, run_id, test_case, temp_ini_
         download_url += "/static" + each[0]
 
         # Use request streaming to efficiently download files
-        with requests.get(download_url, stream=True, verify=False) as r:
-            shutil.copyfileobj(r.raw, f)
+        download_single_attachment(sModuleInfo, download_url, f, 1)
 
         # f.write(urllib.request.urlopen(download_url).read())
         file_specific_steps.update({m: download_folder + "/" + m})
