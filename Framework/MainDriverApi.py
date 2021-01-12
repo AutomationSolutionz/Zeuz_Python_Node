@@ -767,8 +767,8 @@ def call_driver_function_of_test_step(
         q = queue.Queue()  # define queue
 
         # get step driver
-        current_driver = all_step_info[StepSeq-1]["step_driver_type"]
-        # current_driver = "Built_In_Driver"
+        # current_driver = all_step_info[StepSeq-1]["step_driver_type"]
+        current_driver = "Built_In_Driver"
         print("DRIVER: {}".format(current_driver))
 
         try:
@@ -781,8 +781,8 @@ def call_driver_function_of_test_step(
             else:
                 step_name = current_step_name
 
-            step_name = step_name.lower().replace(" ", "_")
-            # step_name = "sequential_actions"
+            # step_name = step_name.lower().replace(" ", "_")
+            step_name = "sequential_actions"
             try:
                 # importing functions from driver
                 functionTocall = getattr(module_name, step_name)
@@ -1796,6 +1796,13 @@ def main(device_dict, user_info_object, all_run_id_info):
         debug_info = ""
         CommonUtil.clear_all_logs()
 
+        # Write testcase json
+        path = ConfigModule.get_config_value("sectionOne", "temp_run_file_path", temp_ini_file) / Path(run_id.replace(":", "-"))
+        FL.CreateFolder(path)
+        path = path / Path("test_cases_data.json")
+        with open(path, "w") as f:
+            json.dump(all_run_id_info, f, indent=2)
+
         # Start websocket server if we're in debug mode.
         if run_id.lower().startswith("debug"):
             print("[LIVE LOG] Connecting to Live Log service")
@@ -1814,7 +1821,6 @@ def main(device_dict, user_info_object, all_run_id_info):
                 "upload_log_file_only_for_fail": run_id_info["upload_log_file_only_for_fail"] if "upload_log_file_only_for_fail" in run_id_info else False,
                 "window_size_x": run_id_info["window_size_x"] if "window_size_x" in run_id_info else "",
                 "window_size_y": run_id_info["window_size_y"] if "window_size_y" in run_id_info else "",
-
             }
             ConfigModule.remote_config = rem_config
         else:
