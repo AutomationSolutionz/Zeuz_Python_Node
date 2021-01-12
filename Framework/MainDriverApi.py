@@ -740,6 +740,25 @@ def download_attachments_for_test_case(sModuleInfo, run_id, test_case, temp_ini_
 
     return file_specific_steps
 
+import ctypes
+def terminate_thread(thread):   # To kill running thread
+    """Terminates a python thread from another thread.
+
+    :param thread: a threading.Thread instance
+    """
+    if not thread.is_alive():
+        return
+
+    exc = ctypes.py_object(SystemExit)
+    res = ctypes.pythonapi.PyThreadState_SetAsyncExc(
+        ctypes.c_long(thread.ident), exc)
+    if res == 0:
+        raise ValueError("nonexistent thread id")
+    elif res > 1:
+        # """if it returns a number greater than one, you're in trouble,
+        # and you should call it again with exc=NULL to revert the effect"""
+        ctypes.pythonapi.PyThreadState_SetAsyncExc(thread.ident, None)
+        raise SystemError("PyThreadState_SetAsyncExc failed")
 
 # call the function of a test step that is in its driver file
 def call_driver_function_of_test_step(
@@ -760,6 +779,7 @@ def call_driver_function_of_test_step(
 
         # get step driver
         current_driver = all_step_info[StepSeq-1]["step_driver_type"]
+        # current_driver = "Built_In_Driver"
         print("DRIVER: {}".format(current_driver))
 
         try:
@@ -773,7 +793,7 @@ def call_driver_function_of_test_step(
                 step_name = current_step_name
 
             step_name = step_name.lower().replace(" ", "_")
-
+            # step_name = "sequential_actions"
             try:
                 # importing functions from driver
                 functionTocall = getattr(module_name, step_name)
@@ -845,15 +865,16 @@ def call_driver_function_of_test_step(
                         q.put(sStepResult)
 
                         # Clean up
-                        if stepThread.isAlive():
+                        if stepThread.is_alive():
                             CommonUtil.ExecLog(sModuleInfo, "Timeout Error", 3)
                             # stepThread.__stop()
                             try:
-                                stepThread._Thread__stop()
-                                while stepThread.isAlive():
+                                # stepThread._Thread__stop()
+                                terminate_thread(stepThread)
+                                while stepThread.is_alive():
                                     time.sleep(1)
                                     CommonUtil.ExecLog(
-                                        sModuleInfo, "Thread is still alive", 3
+                                        sModuleInfo, "Thread is still alive", 2
                                     )
                             except:
                                 CommonUtil.Exception_Handler(sys.exc_info())
@@ -969,7 +990,7 @@ def run_all_test_steps_in_a_test_case(
             action_dataset = action_info["step_actions"]
             all_action_data_set.append(action_dataset)
             dict = {}
-            dict["Action disabled"] = not action_info["action_disabled"]
+            dict["Action disabled"] = True if action_info["action_disabled"] == False else False
             dict["Action name"] = action_info["action_name"]
             all_action_Info.append(dict)
         all_step_dataset.append(all_action_data_set)
@@ -1283,12 +1304,12 @@ def write_log_file_for_test_case(
     send_log_file_only_for_fail=True,
 ):
     # upload the test case status before uploading log file, because there can be error while uploading log file, so we dont want to lose the important test case status
-    test_case_after_dict = {
-        "status": sTestCaseStatus,
-        "testendtime": sTestCaseEndTime,
-        "duration": TestCaseDuration,
-    }
-    update_test_case_status_after_run_on_server(run_id, test_case, test_case_after_dict)
+    # test_case_after_dict = {
+    #     "status": sTestCaseStatus,
+    #     "testendtime": sTestCaseEndTime,
+    #     "duration": TestCaseDuration,
+    # }
+    # update_test_case_status_after_run_on_server(run_id, test_case, test_case_after_dict)
 
     # if settings checked, then send log file or screenshots, otherwise don't send
     if sTestCaseStatus not in passed_tag_list or (
@@ -1342,9 +1363,9 @@ def write_log_file_for_test_case(
         else:
             TCLogFile = ""
         # upload the log file ID
-        test_case_after_dict = {"logid": TCLogFile}
-    executor = CommonUtil.GetExecutor()
-    executor.submit(update_test_case_status_after_run_on_server, run_id, test_case, test_case_after_dict)
+    #     test_case_after_dict = {"logid": TCLogFile}
+    # executor = CommonUtil.GetExecutor()
+    # executor.submit(update_test_case_status_after_run_on_server, run_id, test_case, test_case_after_dict)
 
 
 # run a test case of a runid
