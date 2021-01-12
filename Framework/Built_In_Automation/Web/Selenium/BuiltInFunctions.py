@@ -2424,8 +2424,10 @@ def Tear_Down_Selenium(step_data=[[[]]]):
         CommonUtil.ExecLog(sModuleInfo, "Closed the browser successfully.", 1)
         return "passed"
     except Exception:
-        errMsg = "Unable to tear down selenium browsers"
-        return CommonUtil.Exception_Handler(sys.exc_info(), None, errMsg)
+        errMsg = "Unable to tear down selenium browsers. may already be killed"
+        # return CommonUtil.Exception_Handler(sys.exc_info(), None, errMsg)
+        CommonUtil.ExecLog(sModuleInfo, errMsg, 2)
+        return "passed"
 
 
 ##@Riz and @Sreejoy: More work is needed here. Please investigate further.
