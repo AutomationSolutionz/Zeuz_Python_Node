@@ -606,10 +606,6 @@ def TakeScreenShot(function_name, local_run=False):
         take_screenshot_settings = ConfigModule.get_config_value(
             "RunDefinition", "take_screenshot"
         )  # True/False to take screenshot from settings.conf
-        if not local_run:
-            local_run = ConfigModule.get_config_value(
-                "RunDefinition", "local_run"
-            )  # True/False to run only locally, in which case we do not take screenshot from settings.conf
         image_folder = ConfigModule.get_config_value(
             "sectionOne", "screen_capture_folder", temp_config
         )  # Get screen capture directory from temporary config file that is dynamically created
@@ -625,7 +621,6 @@ def TakeScreenShot(function_name, local_run=False):
         # Decide if screenshot should be captured
         if (
                 take_screenshot_settings.lower() == "false"
-                or local_run.lower() == "true"
                 or Method == "none"
                 or Method == None
         ):
