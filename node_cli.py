@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 # -*- coding: cp1252 -*-
 
-import os, sys, time, os.path, base64, signal, argparse, requests
+import os, sys, time, os.path, base64, signal, argparse, requests, json
 from pathlib import Path
 from getpass import getpass
 from urllib3.exceptions import InsecureRequestWarning
@@ -55,7 +55,7 @@ if not os.path.exists(
             os.path.join("AutomationLog"),
         )
     )
-
+local_run = False
 
 # Move to Framework directory, so all modules can be seen
 os.chdir(os.path.join(os.path.dirname(os.path.abspath(__file__)), "Framework"))
@@ -295,6 +295,8 @@ def Login(cli=False):
                         4,
                         False,
                     )
+                    ConfigModule.add_config_value("sectionOne", PROJECT_TAG, user_info_object['project'], temp_ini_file)
+                    ConfigModule.add_config_value("sectionOne", TEAM_TAG, user_info_object['team'], temp_ini_file)
                     global device_dict
                     device_dict = All_Device_Info.get_all_connected_device_info()
                     machine_object = update_machine(
@@ -760,6 +762,42 @@ def check_for_updates():
     except Exception as e:
         print("Exception in CheckUpdates")
 
+
+def Local_run():
+    try:
+        user_info_object = {}
+        user_info_object['project'] = ConfigModule.get_config_value("sectionOne", PROJECT_TAG, temp_ini_file)
+        user_info_object['team'] = ConfigModule.get_config_value("sectionOne", TEAM_TAG, temp_ini_file)
+        device_dict = All_Device_Info.get_all_connected_device_info()
+        rem_config = {"local_run": True}
+        ConfigModule.remote_config = rem_config
+
+        path = os.path.abspath(__file__).split("node_cli.py")[0] / Path("Projects") / Path("Local_run.json")
+        with open(path, "r") as f:
+            Json_data = json.load(f)
+            if isinstance(Json_data, str):
+                Json_data = json.loads(Json_data)
+        all_run_id_info = Json_data if isinstance(Json_data, list) else Json_data["json"]
+        with open(path, "w") as f:
+            json.dump(all_run_id_info, f, indent=2)
+        MainDriverApi.main(device_dict, user_info_object, all_run_id_info)
+    except Exception as e:
+        exc_type, exc_obj, exc_tb = sys.exc_info()
+        fname = os.path.split(exc_tb.tb_frame.f_code.co_filename)[1]
+        Error_Detail = (
+            (str(exc_type).replace("type ", "Error Type: "))
+            + ";"
+            + "Error Message: "
+            + str(exc_obj)
+            + ";"
+            + "File Name: "
+            + fname
+            + ";"
+            + "Line: "
+            + str(exc_tb.tb_lineno)
+        )
+        CommonUtil.ExecLog("", Error_Detail, 4, False)
+
 def command_line_args():
     """
     This function handles command line scripts with given arguments
@@ -821,15 +859,19 @@ def command_line_args():
     parser_object.add_argument(
         "-a", "--auto_update", action="store_true", help="Updates your Zeuz Node"
     )
-
+    parser_object.add_argument(
+        "-r", "--local_run", action="store_true", help="Performs a local run"
+    )
     all_arguments = parser_object.parse_args()
 
     username = all_arguments.username
     password = all_arguments.password
     server = all_arguments.server
-    api=all_arguments.api_key
+    api = all_arguments.api_key
     logout = all_arguments.logout
     auto_update = all_arguments.auto_update
+    global local_run
+    local_run = all_arguments.local_run
 
     if server and server[-1] == "/":
         server = server[:-1]
@@ -875,6 +917,9 @@ if __name__ == "__main__":
     """We can use this condition to skip command_line_args() when "python node_cli.py" or "node_cli.py" is executed"""
     # if (len(sys.argv)) > 1:
     command_line_args()
-    Login(cli=True)
+    if local_run:
+        Local_run()
+    else:
+        Login(cli=True)
     CommonUtil.ShutdownExecutor()
 

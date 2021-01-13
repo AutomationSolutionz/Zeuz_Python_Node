@@ -585,7 +585,7 @@ def upload_zip(server_id, port_id, temp_folder, run_id, file_name, base_path=Fal
         except:
             CommonUtil.ExecLog(
                 sModuleInfo,
-                "Failed to upload zip file to server... retrying %d." % i+1,
+                "Failed to upload zip file to server... retrying %s." % str(i+1),
                 4,
                 False,
             )
@@ -668,6 +668,8 @@ def download_attachments_for_test_case(sModuleInfo, run_id, test_case, temp_ini_
     FL.DeleteFolder(ConfigModule.get_config_value("sectionOne", "download_folder", temp_ini_file))
     FL.CreateFolder(download_folder)
     file_specific_steps = {}
+    if ConfigModule.get_config_value("RunDefinition", "local_run") == "True":
+        return {}
     for each in test_case_attachments:
         CommonUtil.ExecLog(sModuleInfo, "Attachment download for test case %s started" % test_case, 1)
         m = each[1] + "." + each[2]  # file name
@@ -1822,6 +1824,8 @@ def main(device_dict, user_info_object, all_run_id_info):
                 "window_size_x": run_id_info["window_size_x"] if "window_size_x" in run_id_info else "",
                 "window_size_y": run_id_info["window_size_y"] if "window_size_y" in run_id_info else "",
             }
+            if ConfigModule.get_config_value("RunDefinition", "local_run") == "True":
+                rem_config["local_run"] = True
             ConfigModule.remote_config = rem_config
         else:
             rem_config = {
@@ -1829,6 +1833,8 @@ def main(device_dict, user_info_object, all_run_id_info):
                 "local_run": False,
                 "take_screenshot": True,
             }
+            if ConfigModule.get_config_value("RunDefinition", "local_run") == "True":
+                rem_config["local_run"] = True
             ConfigModule.remote_config = rem_config
             debug_info = {"debug_clean": run_id_info["debug_clean"], "debug_steps": run_id_info["debug_steps"]}
             if "debug_step_actions" in run_id_info:
@@ -1858,6 +1864,7 @@ def main(device_dict, user_info_object, all_run_id_info):
             return "pass"
 
         CommonUtil.all_logs_json = all_run_id_info
+        cnt = 1
         for testcase_info in all_testcases_info:
             performance_test_case = False
             if testcase_info["automatability"].lower() == "performance":
@@ -1963,6 +1970,8 @@ def main(device_dict, user_info_object, all_run_id_info):
                 if run_cancelled == CANCELLED_TAG:
                     break
 
+                print("Executed %s test cases" % cnt)
+                cnt += 1
         # calculate elapsed time of runid
         sTestSetEndTime = datetime.fromtimestamp(time.time()).strftime("%Y-%m-%d %H:%M:%S")
         TestSetEndTime = time.time()
@@ -1978,9 +1987,6 @@ def main(device_dict, user_info_object, all_run_id_info):
         CommonUtil.ExecLog("", "Test Set Completed", 4, False)
 
         ConfigModule.add_config_value("sectionOne", "sTestStepExecLogId", "MainDriver", temp_ini_file)
-        path = os.path.abspath(__file__).split("Framework")[0] / Path("tests") / Path("test_cases_data.json")
-        if os.path.isfile(path):
-            os.remove(path)
 
         if run_cancelled == CANCELLED_TAG:
             CommonUtil.ExecLog(sModuleInfo, "Test Set Cancelled by the User", 1)  # add log
