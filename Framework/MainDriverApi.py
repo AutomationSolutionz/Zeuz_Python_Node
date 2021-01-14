@@ -1747,8 +1747,7 @@ def upload_json_report(Userid, temp_ini_file, run_id):
     with open(path, "w") as f:
         json.dump(json_report, f, indent=2)
 
-    with zipfile.ZipFile(zip_path, 'w') as zipf:
-        zipf.write(path, arcname="execution_log.json")
+    FL.ZipFile(path, zip_path)
     FL.DeleteFile(path)
 
     if ConfigModule.get_config_value("RunDefinition", "local_run") == "False":
@@ -1771,7 +1770,11 @@ def upload_json_report(Userid, temp_ini_file, run_id):
                     data={"machine_name": Userid},
                     verify=False)
                 if res.status_code == 200:
-                    res_json = res.json()
+                    try:
+                        res_json = res.json()
+                    except:
+                        print("Could not Upload json report to server")
+                        return
                     if isinstance(res_json, dict) and 'message' in res_json and res_json["message"]:
                         print("Successfully Uploaded json report to server")
                     else:
