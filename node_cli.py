@@ -772,7 +772,7 @@ def Local_run():
         rem_config = {"local_run": True}
         ConfigModule.remote_config = rem_config
 
-        path = os.path.abspath(__file__).split("node_cli.py")[0] / Path("Projects") / Path("Local_run.json")
+        path = Path.cwd().parent / Path("Projects") / Path("Local_run.json")
         with open(path, "r") as f:
             Json_data = json.load(f)
             if isinstance(Json_data, str):
