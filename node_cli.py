@@ -415,6 +415,9 @@ def RunProcess(sTesterid, user_info_object):
             # if r and "run_submit" in r and r["run_submit"]:
             if r["found"]:
                 all_run_id_info = r["json"]
+                # Auto save the json data for local run.
+                with open(Path.cwd().parent / "Projects" / "Local_run.json", "w") as f:
+                    f.write(json.dumps(all_run_id_info))
                 processing_test_case = True
                 CommonUtil.ExecLog(
                     "",
@@ -772,7 +775,7 @@ def Local_run():
         rem_config = {"local_run": True}
         ConfigModule.remote_config = rem_config
 
-        path = Path.cwd().parent / Path("Projects") / Path("Local_run.json")
+        path = Path.cwd().parent / "Projects" / "Local_run.json"
         with open(path, "r") as f:
             Json_data = json.load(f)
             if isinstance(Json_data, str):
