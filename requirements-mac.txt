@@ -7,7 +7,6 @@ simplejson
 urllib3
 selenium
 python-dateutil
-pyodbc
 requests
 wheel
 pyautogui
@@ -25,7 +24,6 @@ pyshortcuts
 datefinder
 regex
 pyttsx3
-pyaudio
 imutils
 https://github.com/AutomationSolutionz/PyGetWindow-0.0.5/archive/master.zip
 appscript
