@@ -99,6 +99,7 @@ to_dlt_from_fail_reason = " : Test Step Failed"
 
 # Holds the previously logged message (used for prevention of duplicate logs simultaneously)
 previous_log_line = None
+teardown = True
 
 executor = concurrent.futures.ThreadPoolExecutor()
 all_threads = {}

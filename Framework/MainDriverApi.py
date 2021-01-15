@@ -770,8 +770,8 @@ def call_driver_function_of_test_step(
         q = queue.Queue()  # define queue
 
         # get step driver
-        # current_driver = all_step_info[StepSeq-1]["step_driver_type"]
-        current_driver = "Built_In_Driver"
+        current_driver = all_step_info[StepSeq-1]["step_driver_type"]
+        # current_driver = "Built_In_Driver"
         print("DRIVER: {}".format(current_driver))
 
         try:
@@ -784,8 +784,8 @@ def call_driver_function_of_test_step(
             else:
                 step_name = current_step_name
 
-            # step_name = step_name.lower().replace(" ", "_")
-            step_name = "sequential_actions"
+            step_name = step_name.lower().replace(" ", "_")
+            # step_name = "sequential_actions"
             try:
                 # importing functions from driver
                 functionTocall = getattr(module_name, step_name)
@@ -1407,7 +1407,7 @@ def start_sending_step_result_to_server(run_id, debug_steps, sTestStepResultList
 def cleanup_driver_instances():  # cleans up driver(selenium, appium) instances
     try:  # if error happens. we don't care, main driver should not stop, pass in exception
 
-        if shared.Test_Shared_Variables("selenium_driver"):
+        if CommonUtil.teardown and shared.Test_Shared_Variables("selenium_driver"):
             import Framework.Built_In_Automation.Web.Selenium.BuiltInFunctions as Selenium
             driver = shared.Remove_From_Shared_Variables("selenium_driver")
             if driver not in failed_tag_list:

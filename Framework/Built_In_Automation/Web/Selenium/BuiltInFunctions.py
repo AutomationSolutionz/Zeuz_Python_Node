@@ -105,6 +105,7 @@ def Open_Browser(dependency, window_size_X=None, window_size_Y=None):
     except:
         True
     try:
+        CommonUtil.teardown = True
         browser = browser.lower()
         if "chrome" in browser or "chromeheadless" in browser:
 
@@ -277,6 +278,7 @@ def Open_Browser(dependency, window_size_X=None, window_size_Y=None):
         # time.sleep(3)
 
     except Exception:
+        CommonUtil.teardown = False
         return CommonUtil.Exception_Handler(sys.exc_info())
 
 
@@ -2416,12 +2418,15 @@ def Tear_Down_Selenium(step_data=[[[]]]):
     sModuleInfo = inspect.currentframe().f_code.co_name + " : " + MODULE_NAME
     global selenium_driver
     try:
-        CommonUtil.ExecLog(
-            sModuleInfo, "Trying to tear down the page and close the browser...", 0
-        )
+        if not CommonUtil.teardown:
+            CommonUtil.ExecLog(sModuleInfo, "Browser is already closed", 1)
+            return "passed"
+        CommonUtil.ExecLog(sModuleInfo, "Trying to tear down the page and close the browser...", 0)
         CommonUtil.Join_Thread_and_Return_Result("screenshot")   # Let the capturing screenshot end in thread
         selenium_driver.quit()
+        Shared_Resources.Remove_From_Shared_Variables("selenium_driver")
         CommonUtil.ExecLog(sModuleInfo, "Closed the browser successfully.", 1)
+        CommonUtil.teardown = False
         return "passed"
     except Exception:
         errMsg = "Unable to tear down selenium browsers. may already be killed"
