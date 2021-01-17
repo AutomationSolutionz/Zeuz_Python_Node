@@ -1497,24 +1497,24 @@ def run_test_case(
     TimeDiff = TestCaseEndTime - TestCaseStartTime
     TimeInSec = int(TimeDiff)
     TestCaseDuration = CommonUtil.FormatSeconds(TimeInSec)
-
-    TCLogFile = (
-            os.sep
-            + ConfigModule.get_config_value("Advanced Options", "_file_upload_path")
-            + os.sep
-            + run_id.replace(":", "-")
-            + "/"
-            + ConfigModule.get_config_value("sectionOne", "test_case", temp_ini_file)
-            + ".zip"
-    )
     after_execution_dict = {
         "teststarttime": datetime.fromtimestamp(TestCaseStartTime).strftime("%Y-%m-%d %H:%M:%S"),
-        "logid": TCLogFile,
         "testendtime": sTestCaseEndTime,
         "duration": TestCaseDuration,
         "status": sTestCaseStatus,
         "failreason": ""
     }
+    if sTestCaseStatus not in passed_tag_list or sTestCaseStatus in passed_tag_list and not send_log_file_only_for_fail:
+        TCLogFile = (
+                os.sep
+                + ConfigModule.get_config_value("Advanced Options", "_file_upload_path")
+                + os.sep
+                + run_id.replace(":", "-")
+                + "/"
+                + ConfigModule.get_config_value("sectionOne", "test_case", temp_ini_file)
+                + ".zip"
+        )
+        after_execution_dict["logid"] = TCLogFile
     CommonUtil.CreateJsonReport(TCInfo=after_execution_dict)
 
     debug = True if run_id.startswith("debug") else False

@@ -341,7 +341,7 @@ def CreateJsonReport(logs=None, stepInfo=None, TCInfo=None, setInfo=None):
                                         step_info["failreason"] = fail_reason_str
                                         break
                                     log_info = {
-                                        "status": status.upper(),
+                                        "status": status,
                                         "modulename": sModuleInfo,
                                         "details": sDetails,
                                         "tstamp": now,
