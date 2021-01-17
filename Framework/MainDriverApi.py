@@ -2003,7 +2003,7 @@ def main(device_dict, user_info_object, all_run_id_info):
         after_execution_dict = {
             "status": "Complete",
             "teststarttime": datetime.fromtimestamp(TestSetStartTime).strftime("%Y-%m-%d %H:%M:%S"),
-            "setendtime": sTestSetEndTime,
+            "testendtime": sTestSetEndTime,
             "duration": TestSetDuration
         }
         CommonUtil.CreateJsonReport(setInfo=after_execution_dict)
