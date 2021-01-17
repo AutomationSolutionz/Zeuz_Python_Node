@@ -1806,10 +1806,7 @@ def main(device_dict, user_info_object, all_run_id_info):
     # get local machine user id
     Userid = (CommonUtil.MachineInfo().getLocalUser()).lower()
 
-    # Get all run_id, set, test case, step, action info together with the new api
     # all_run_id_info = get_all_run_id_info(Userid, sModuleInfo)
-    # if not all_run_id_info:
-    #     return "failed"
 
     if len(all_run_id_info) == 0:
         CommonUtil.ExecLog("", "No Test Run Schedule found for the current user : %s" % Userid, 2)
@@ -2004,7 +2001,9 @@ def main(device_dict, user_info_object, all_run_id_info):
         TestSetDuration = CommonUtil.FormatSeconds(TimeInSec)
 
         after_execution_dict = {
-            "setendtime": sTestSetEndTime,
+            "status": "Complete",
+            "teststarttime": datetime.fromtimestamp(TestSetStartTime).strftime("%Y-%m-%d %H:%M:%S"),
+            "testendtime": sTestSetEndTime,
             "duration": TestSetDuration
         }
         CommonUtil.CreateJsonReport(setInfo=after_execution_dict)
@@ -2017,10 +2016,6 @@ def main(device_dict, user_info_object, all_run_id_info):
         elif not run_id.startswith("debug"):
             upload_json_report(Userid, temp_ini_file, run_id)
             # executor.submit(upload_json_report)
-            """ Need to know what to do with the below functions """
-            # executor.submit(update_test_case_result_on_server, run_id, sTestSetEndTime, TestSetDuration)
-            # executor.submit(send_email_report_after_exectution, run_id, project_id, team_id)
-            # executor.submit(update_fail_reasons_of_test_cases, run_id, TestCaseLists)
 
         # Close websocket connection.
         if run_id.lower().startswith("debug"):
