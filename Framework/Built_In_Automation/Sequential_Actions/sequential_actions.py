@@ -1956,7 +1956,7 @@ def Action_Handler(_data_set, action_row):
     local_run = ConfigModule.get_config_value(
         "RunDefinition", "local_run"
     )
-    if take_screenshot_settings.lower() == "false" or local_run.lower() == "true":
+    if take_screenshot_settings.lower() == "false":
         screenshot = "none"
 
     sr.Set_Shared_Variables("screen_capture", screenshot.lower().strip())

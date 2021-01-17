@@ -11,6 +11,7 @@ import queue
 import shutil
 import importlib
 import requests
+import zipfile
 from urllib3.exceptions import InsecureRequestWarning
 # Suppress the InsecureRequestWarning since we use verify=False parameter.
 requests.packages.urllib3.disable_warnings(category=InsecureRequestWarning)
@@ -585,7 +586,7 @@ def upload_zip(server_id, port_id, temp_folder, run_id, file_name, base_path=Fal
         except:
             CommonUtil.ExecLog(
                 sModuleInfo,
-                "Failed to upload zip file to server... retrying %d." % i+1,
+                "Failed to upload zip file to server... retrying %s." % str(i+1),
                 4,
                 False,
             )
@@ -609,6 +610,20 @@ def get_final_dependency_list(dependency_list, run_description):
     return dependency_list_final
 
 
+def download_single_attachment(sModuleInfo, download_url, f, retry):
+    try:
+        if retry == 4:
+            CommonUtil.ExecLog(sModuleInfo, "An attachment couldn't be downloaded. Downloading the remaining ones", 3)
+            return False
+        with requests.get(download_url, stream=True, verify=False) as r:
+            shutil.copyfileobj(r.raw, f)
+        time.sleep(0.5)
+        return True
+    except:
+        time.sleep(0.5)
+        return download_single_attachment(download_url, f, retry+1)
+
+
 # downloads attachments for a test step
 def download_attachments_for_test_case(sModuleInfo, run_id, test_case, temp_ini_file, test_case_attachments, test_step_attachments):
     try:
@@ -616,7 +631,7 @@ def download_attachments_for_test_case(sModuleInfo, run_id, test_case, temp_ini_
             "sectionOne", "temp_run_file_path", temp_ini_file
         )
     except Exception:
-        CommonUtil.Exception_Handler(sys.exc_info())
+        return CommonUtil.Exception_Handler(sys.exc_info())
     test_step_attachments = []
     test_case_folder = (
         log_file_path
@@ -624,15 +639,11 @@ def download_attachments_for_test_case(sModuleInfo, run_id, test_case, temp_ini_
         + (run_id.replace(":", "-") + os.sep + test_case.replace(":", "-"))
     )
     ConfigModule.add_config_value("sectionOne", "test_case", test_case, temp_ini_file)
-    ConfigModule.add_config_value(
-        "sectionOne", "test_case_folder", test_case_folder, temp_ini_file
-    )
+    ConfigModule.add_config_value("sectionOne", "test_case_folder", test_case_folder, temp_ini_file)
     log_folder = test_case_folder + os.sep + "Log"
     ConfigModule.add_config_value("sectionOne", "log_folder", log_folder, temp_ini_file)
     screenshot_folder = test_case_folder + os.sep + "screenshots"
-    ConfigModule.add_config_value(
-        "sectionOne", "screen_capture_folder", screenshot_folder, temp_ini_file
-    )
+    ConfigModule.add_config_value("sectionOne", "screen_capture_folder", screenshot_folder, temp_ini_file)
 
     # Store the attachments for each test case separately inside
     # AutomationLog/attachments/TEST-XYZ
@@ -640,46 +651,28 @@ def download_attachments_for_test_case(sModuleInfo, run_id, test_case, temp_ini_
     ConfigModule.add_config_value("sectionOne", "download_folder", home, temp_ini_file)
 
     # create_test_case_folder
-    test_case_folder = ConfigModule.get_config_value(
-        "sectionOne", "test_case_folder", temp_ini_file
-    )
+    test_case_folder = ConfigModule.get_config_value("sectionOne", "test_case_folder", temp_ini_file)
     FL.CreateFolder(test_case_folder)
 
     # FL.CreateFolder(Global.TCLogFolder + os.sep + "ProductLog")
-    log_folder = ConfigModule.get_config_value(
-        "sectionOne", "log_folder", temp_ini_file
-    )
+    log_folder = ConfigModule.get_config_value("sectionOne", "log_folder", temp_ini_file)
     FL.CreateFolder(log_folder)
 
     # FL.CreateFolder(Global.TCLogFolder + os.sep + "Screenshots")
     # creating ScreenShot File
-    screen_capture_folder = ConfigModule.get_config_value(
-        "sectionOne", "screen_capture_folder", temp_ini_file
-    )
+    screen_capture_folder = ConfigModule.get_config_value("sectionOne", "screen_capture_folder", temp_ini_file)
     FL.CreateFolder(screen_capture_folder)
 
     # creating the download folder
-    download_folder = ConfigModule.get_config_value(
-        "sectionOne", "download_folder", temp_ini_file
-    )
+    download_folder = ConfigModule.get_config_value("sectionOne", "download_folder", temp_ini_file)
 
-    # # test case attachements
-    # test_case_attachments = RequestFormatter.Get(
-    #     "get_test_case_attachments_api", {"run_id": run_id, "test_case": test_case}
-    # )
-    # test_step_attachments = RequestFormatter.Get(
-    #     "get_test_step_attachments_for_test_case_api",
-    #     {"run_id": run_id, "test_case": test_case},
-    # )
-    FL.DeleteFolder(
-        ConfigModule.get_config_value("sectionOne", "download_folder", temp_ini_file)
-    )
+    FL.DeleteFolder(ConfigModule.get_config_value("sectionOne", "download_folder", temp_ini_file))
     FL.CreateFolder(download_folder)
     file_specific_steps = {}
+    if ConfigModule.get_config_value("RunDefinition", "local_run") == "True":
+        return {}
     for each in test_case_attachments:
-        CommonUtil.ExecLog(
-            sModuleInfo, "Attachment download for test case %s started" % test_case, 1
-        )
+        CommonUtil.ExecLog(sModuleInfo, "Attachment download for test case %s started" % test_case, 1)
         m = each[1] + "." + each[2]  # file name
         f = open(download_folder + "/" + m, "wb")
 
@@ -695,8 +688,7 @@ def download_attachments_for_test_case(sModuleInfo, run_id, test_case, temp_ini_
         download_url += "/static" + each[0]
 
         # Use request streaming to efficiently download files
-        with requests.get(download_url, stream=True, verify=False) as r:
-            shutil.copyfileobj(r.raw, f)
+        download_single_attachment(sModuleInfo, download_url, f, 1)
 
         # f.write(urllib.request.urlopen(download_url).read())
         file_specific_steps.update({m: download_folder + "/" + m})
@@ -740,6 +732,25 @@ def download_attachments_for_test_case(sModuleInfo, run_id, test_case, temp_ini_
 
     return file_specific_steps
 
+import ctypes
+def terminate_thread(thread):   # To kill running thread
+    """Terminates a python thread from another thread.
+
+    :param thread: a threading.Thread instance
+    """
+    if not thread.is_alive():
+        return
+
+    exc = ctypes.py_object(SystemExit)
+    res = ctypes.pythonapi.PyThreadState_SetAsyncExc(
+        ctypes.c_long(thread.ident), exc)
+    if res == 0:
+        raise ValueError("nonexistent thread id")
+    elif res > 1:
+        # """if it returns a number greater than one, you're in trouble,
+        # and you should call it again with exc=NULL to revert the effect"""
+        ctypes.pythonapi.PyThreadState_SetAsyncExc(thread.ident, None)
+        raise SystemError("PyThreadState_SetAsyncExc failed")
 
 # call the function of a test step that is in its driver file
 def call_driver_function_of_test_step(
@@ -760,6 +771,7 @@ def call_driver_function_of_test_step(
 
         # get step driver
         current_driver = all_step_info[StepSeq-1]["step_driver_type"]
+        # current_driver = "Built_In_Driver"
         print("DRIVER: {}".format(current_driver))
 
         try:
@@ -773,7 +785,7 @@ def call_driver_function_of_test_step(
                 step_name = current_step_name
 
             step_name = step_name.lower().replace(" ", "_")
-
+            # step_name = "sequential_actions"
             try:
                 # importing functions from driver
                 functionTocall = getattr(module_name, step_name)
@@ -845,15 +857,16 @@ def call_driver_function_of_test_step(
                         q.put(sStepResult)
 
                         # Clean up
-                        if stepThread.isAlive():
+                        if stepThread.is_alive():
                             CommonUtil.ExecLog(sModuleInfo, "Timeout Error", 3)
                             # stepThread.__stop()
                             try:
-                                stepThread._Thread__stop()
-                                while stepThread.isAlive():
+                                # stepThread._Thread__stop()
+                                terminate_thread(stepThread)
+                                while stepThread.is_alive():
                                     time.sleep(1)
                                     CommonUtil.ExecLog(
-                                        sModuleInfo, "Thread is still alive", 3
+                                        sModuleInfo, "Thread is still alive", 2
                                     )
                             except:
                                 CommonUtil.Exception_Handler(sys.exc_info())
@@ -969,7 +982,7 @@ def run_all_test_steps_in_a_test_case(
             action_dataset = action_info["step_actions"]
             all_action_data_set.append(action_dataset)
             dict = {}
-            dict["Action disabled"] = not action_info["action_disabled"]
+            dict["Action disabled"] = True if action_info["action_disabled"] == False else False
             dict["Action name"] = action_info["action_name"]
             all_action_Info.append(dict)
         all_step_dataset.append(all_action_data_set)
@@ -1283,12 +1296,12 @@ def write_log_file_for_test_case(
     send_log_file_only_for_fail=True,
 ):
     # upload the test case status before uploading log file, because there can be error while uploading log file, so we dont want to lose the important test case status
-    test_case_after_dict = {
-        "status": sTestCaseStatus,
-        "testendtime": sTestCaseEndTime,
-        "duration": TestCaseDuration,
-    }
-    update_test_case_status_after_run_on_server(run_id, test_case, test_case_after_dict)
+    # test_case_after_dict = {
+    #     "status": sTestCaseStatus,
+    #     "testendtime": sTestCaseEndTime,
+    #     "duration": TestCaseDuration,
+    # }
+    # update_test_case_status_after_run_on_server(run_id, test_case, test_case_after_dict)
 
     # if settings checked, then send log file or screenshots, otherwise don't send
     if sTestCaseStatus not in passed_tag_list or (
@@ -1342,9 +1355,9 @@ def write_log_file_for_test_case(
         else:
             TCLogFile = ""
         # upload the log file ID
-        test_case_after_dict = {"logid": TCLogFile}
-    executor = CommonUtil.GetExecutor()
-    executor.submit(update_test_case_status_after_run_on_server, run_id, test_case, test_case_after_dict)
+    #     test_case_after_dict = {"logid": TCLogFile}
+    # executor = CommonUtil.GetExecutor()
+    # executor.submit(update_test_case_status_after_run_on_server, run_id, test_case, test_case_after_dict)
 
 
 # run a test case of a runid
@@ -1394,7 +1407,7 @@ def start_sending_step_result_to_server(run_id, debug_steps, sTestStepResultList
 def cleanup_driver_instances():  # cleans up driver(selenium, appium) instances
     try:  # if error happens. we don't care, main driver should not stop, pass in exception
 
-        if shared.Test_Shared_Variables("selenium_driver"):
+        if CommonUtil.teardown and shared.Test_Shared_Variables("selenium_driver"):
             import Framework.Built_In_Automation.Web.Selenium.BuiltInFunctions as Selenium
             driver = shared.Remove_From_Shared_Variables("selenium_driver")
             if driver not in failed_tag_list:
@@ -1727,26 +1740,49 @@ def get_all_run_id_info(Userid, sModuleInfo):
 
 def upload_json_report(Userid, temp_ini_file, run_id):
     # path = os.path.join(os.path.abspath(__file__).split("Framework")[0])/Path("AutomationLog")/Path("execution_log.json")
-    path = ConfigModule.get_config_value("sectionOne", "temp_run_file_path", temp_ini_file) / Path(run_id.replace(":", "-")) / Path("execution_log.json")
+    path = ConfigModule.get_config_value("sectionOne", "temp_run_file_path", temp_ini_file) / Path(run_id.replace(":", "-"))
+    zip_path = path / Path("execution_log.zip")
+    path = path / Path("execution_log.json")
     json_report = CommonUtil.get_all_logs(json=True)
     with open(path, "w") as f:
         json.dump(json_report, f, indent=2)
-    for i in range(720):    # 1 hour
-        res = requests.get(RequestFormatter.form_uri("is_copied_api/"), {"runid": run_id}, verify=False)
-        r = res.json()
-        if r["flag"]:
-            break
-        time.sleep(5)
-    else:
-        print("Run history was not created in server so couldn't upload the report for run_id '%s'." % run_id +
-              "Get the report from below path-\n" + path)
-        return
-    for i in range(5):
-        res = requests.post(RequestFormatter.form_uri("create_report_log_api/"), {"machine_name": Userid, 'json_data': json.dumps(json_report)}, verify=False)
-        if res.status_code == 200:
-            print("Successfully Uploaded json report to server")
-            break
-        time.sleep(1)
+
+    FL.ZipFile(path, zip_path)
+    FL.DeleteFile(path)
+
+    if ConfigModule.get_config_value("RunDefinition", "local_run") == "False":
+        for i in range(720):    # 1 hour
+            res = requests.get(RequestFormatter.form_uri("is_copied_api/"), {"runid": run_id}, verify=False)
+            r = res.json()
+            if r["flag"]:
+                break
+            time.sleep(5)
+        else:
+            print("Run history was not created in server so couldn't upload the report for run_id '%s'." % run_id +
+                  "Get the report from below path-\n" + path)
+            return
+
+        with open(zip_path, "rb") as fzip:
+            for i in range(5):
+                res = requests.post(
+                    RequestFormatter.form_uri("create_report_log_api/"),
+                    files={"file": fzip},
+                    data={"machine_name": Userid},
+                    verify=False)
+                if res.status_code == 200:
+                    try:
+                        res_json = res.json()
+                    except:
+                        print("Could not Upload json report to server")
+                        return
+                    if isinstance(res_json, dict) and 'message' in res_json and res_json["message"]:
+                        print("Successfully Uploaded json report to server")
+                    else:
+                        print("Could not Upload json report to server")
+                    break
+                time.sleep(1)
+            else:
+                print("Could not Upload json report to server")
 
 
 # main function
@@ -1786,6 +1822,13 @@ def main(device_dict, user_info_object, all_run_id_info):
         debug_info = ""
         CommonUtil.clear_all_logs()
 
+        # Write testcase json
+        path = ConfigModule.get_config_value("sectionOne", "temp_run_file_path", temp_ini_file) / Path(run_id.replace(":", "-"))
+        FL.CreateFolder(path)
+        path = path / Path("test_cases_data.json")
+        with open(path, "w") as f:
+            json.dump(all_run_id_info, f, indent=2)
+
         # Start websocket server if we're in debug mode.
         if run_id.lower().startswith("debug"):
             print("[LIVE LOG] Connecting to Live Log service")
@@ -1804,8 +1847,9 @@ def main(device_dict, user_info_object, all_run_id_info):
                 "upload_log_file_only_for_fail": run_id_info["upload_log_file_only_for_fail"] if "upload_log_file_only_for_fail" in run_id_info else False,
                 "window_size_x": run_id_info["window_size_x"] if "window_size_x" in run_id_info else "",
                 "window_size_y": run_id_info["window_size_y"] if "window_size_y" in run_id_info else "",
-
             }
+            if ConfigModule.get_config_value("RunDefinition", "local_run") == "True":
+                rem_config["local_run"] = True
             ConfigModule.remote_config = rem_config
         else:
             rem_config = {
@@ -1813,6 +1857,8 @@ def main(device_dict, user_info_object, all_run_id_info):
                 "local_run": False,
                 "take_screenshot": True,
             }
+            if ConfigModule.get_config_value("RunDefinition", "local_run") == "True":
+                rem_config["local_run"] = True
             ConfigModule.remote_config = rem_config
             debug_info = {"debug_clean": run_id_info["debug_clean"], "debug_steps": run_id_info["debug_steps"]}
             if "debug_step_actions" in run_id_info:
@@ -1842,6 +1888,7 @@ def main(device_dict, user_info_object, all_run_id_info):
             return "pass"
 
         CommonUtil.all_logs_json = all_run_id_info
+        cnt = 1
         for testcase_info in all_testcases_info:
             performance_test_case = False
             if testcase_info["automatability"].lower() == "performance":
@@ -1947,6 +1994,8 @@ def main(device_dict, user_info_object, all_run_id_info):
                 if run_cancelled == CANCELLED_TAG:
                     break
 
+                print("Executed %s test cases" % cnt)
+                cnt += 1
         # calculate elapsed time of runid
         sTestSetEndTime = datetime.fromtimestamp(time.time()).strftime("%Y-%m-%d %H:%M:%S")
         TestSetEndTime = time.time()
@@ -1962,13 +2011,10 @@ def main(device_dict, user_info_object, all_run_id_info):
         CommonUtil.ExecLog("", "Test Set Completed", 4, False)
 
         ConfigModule.add_config_value("sectionOne", "sTestStepExecLogId", "MainDriver", temp_ini_file)
-        path = os.path.abspath(__file__).split("Framework")[0] / Path("tests") / Path("test_cases_data.json")
-        if os.path.isfile(path):
-            os.remove(path)
 
         if run_cancelled == CANCELLED_TAG:
             CommonUtil.ExecLog(sModuleInfo, "Test Set Cancelled by the User", 1)  # add log
-        elif ConfigModule.get_config_value("RunDefinition", "local_run") == "False" and not run_id.startswith("debug"):
+        elif not run_id.startswith("debug"):
             upload_json_report(Userid, temp_ini_file, run_id)
             # executor.submit(upload_json_report)
             """ Need to know what to do with the below functions """

@@ -1,0 +1,185 @@
+[
+  {
+    "run_id": "WED_LOCAL_RUN",
+    "is_linked": "",
+    "device_info": {
+      "browser_stack": {}
+    },
+    "test_cases": [
+      {
+        "testcase_no": "TEST-5311",
+        "title": "muhib If element found - 2021-01-11 20:31:31.508629",
+        "automatability": "Automated",
+        "debug_steps": "",
+        "testcase_attachments_links": [],
+        "step_attachments": [],
+        "steps": [
+          {
+            "step_id": 6500,
+            "step_name": "Zeuz demo ai",
+            "step_sequence": 1,
+            "step_driver_type": "Built_In_Driver",
+            "automatablity": "automated",
+            "step_function": "Sequential Actions",
+            "step_driver": "Built_In_Driver",
+            "always_run": false,
+            "verify_point": true,
+            "continue_on_fail": true,
+            "step_time": 59,
+            "actions": [
+              {
+                "action_name": "None",
+                "action_disabled": true,
+                "step_actions": [
+                  [
+                    "go to link",
+                    "selenium action",
+                    "https://demo.zeuz.ai/web/level/one/scenerios/login"
+                  ]
+                ]
+              },
+              {
+                "action_name": "None",
+                "action_disabled": true,
+                "step_actions": [
+                  [
+                    "id",
+                    "element parameter",
+                    "username_id"
+                  ],
+                  [
+                    "true",
+                    "selenium conditional action",
+                    "3-6"
+                  ],
+                  [
+                    "false",
+                    "selenium conditional action",
+                    "5,6"
+                  ]
+                ]
+              },
+              {
+                "action_name": "None",
+                "action_disabled": true,
+                "step_actions": [
+                  [
+                    "sleep",
+                    "common action",
+                    "5"
+                  ]
+                ]
+              },
+              {
+                "action_name": "None",
+                "action_disabled": true,
+                "step_actions": [
+                  [
+                    "log 2",
+                    "utility action",
+                    "...... Paisi"
+                  ]
+                ]
+              },
+              {
+                "action_name": "None",
+                "action_disabled": true,
+                "step_actions": [
+                  [
+                    "id",
+                    "element parameter",
+                    "username_id"
+                  ],
+                  [
+                    "click",
+                    "selenium action",
+                    "click"
+                  ]
+                ]
+              },
+              {
+                "action_name": "None",
+                "action_disabled": true,
+                "step_actions": [
+                  [
+                    "log 2",
+                    "utility action",
+                    "...... Pai nai"
+                  ]
+                ]
+              },
+              {
+                "action_name": "None",
+                "action_disabled": true,
+                "step_actions": [
+                  [
+                    "log 2",
+                    "utility action",
+                    "...... Action 6"
+                  ]
+                ]
+              },
+              {
+                "action_name": "None",
+                "action_disabled": true,
+                "step_actions": [
+                  [
+                    "tear down browser",
+                    "selenium action",
+                    "***this field you can ignore , Example \"teardown\" ***"
+                  ]
+                ]
+              }
+            ]
+          }
+        ]
+      }
+    ],
+    "dependency_list": {
+      "Browser": "Chrome",
+      "Mobile": "Android"
+    },
+    "username": "muhib",
+    "user_id": 890,
+    "RunTestQuery": [
+      "TEST-5311",
+      "ChromeHeadless",
+      "Android",
+      "muhib_a65f1ae9-9"
+    ],
+    "url": "https://qa.zeuz.ai/Home/ManageMachine/",
+    "dataAttr": [
+      "Test Case",
+      "run_dependencyBrowser",
+      "run_dependencyMobile"
+    ],
+    "filterArray": [
+      "AND",
+      "AND"
+    ],
+    "TesterIds": [
+      "890"
+    ],
+    "EmailIds": [
+      "890"
+    ],
+    "TestObjective": "Bug-204\u00a0",
+    "TestMileStone": "Bug Cleanup March 2019 ",
+    "project_id": "PROJ-17",
+    "team_id": 2,
+    "run_time": {},
+    "start_date": "2021-01-13",
+    "end_date": "2021-01-13",
+    "start": "",
+    "end": "",
+    "loop": 1,
+    "dependency_filter": "",
+    "branch_version": "",
+    "threading": false,
+    "local_run": false,
+    "take_screenshot": true,
+    "upload_log_file_only_for_fail": false,
+    "window_size_x": "",
+    "window_size_y": ""
+  }
+]
