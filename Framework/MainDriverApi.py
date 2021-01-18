@@ -621,7 +621,7 @@ def download_single_attachment(sModuleInfo, download_url, f, retry):
         return True
     except:
         time.sleep(0.5)
-        return download_single_attachment(download_url, f, retry+1)
+        return download_single_attachment(sModuleInfo, download_url, f, retry+1)
 
 
 # downloads attachments for a test step

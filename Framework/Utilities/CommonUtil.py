@@ -1,6 +1,7 @@
 # -*- coding: utf-8 -*-
 # -*- coding: cp1252 -*-
 
+import selenium
 import sys
 import inspect
 import os, os.path, threading
@@ -742,14 +743,20 @@ def Thread_ScreenShot(function_name, image_folder, Method, Driver):
                 "********** Screen couldn't be captured for Action: %s Method: %s **********" % (function_name, Method),
                 4,
             )
-
-    except:
+    except selenium.common.exceptions.WebDriverException:
+        ExecLog(
+            "",
+            "********** Screen couldn't be captured for Action: %s Method: %s because webdriver not found or started **********" % (function_name, Method),
+            4,
+        )
+    except Exception:
         traceback.print_exc()
         ExecLog(
             "",
             "********** Screen couldn't be captured for Action: %s Method: %s **********" % (function_name, Method),
             4,
         )
+
 
 def TimeStamp(format):
     """
