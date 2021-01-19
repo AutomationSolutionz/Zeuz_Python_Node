@@ -2868,9 +2868,9 @@ def execute_python_code(data_set):
 
     for left, mid, right in data_set:
         left = left.strip().lower()
-        if left == "input variables":
+        if left == "input data":
             inp = right
-        elif left == "output variables":
+        elif left == "output variable":
             out_var = right.strip()
         elif left == "main function":
             main_function = right.strip().split("(")[0]
