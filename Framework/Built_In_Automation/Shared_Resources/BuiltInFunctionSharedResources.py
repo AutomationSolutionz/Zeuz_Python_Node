@@ -7,7 +7,6 @@ import inspect, sys, time, collections
 import string
 import random
 import re
-import json
 from Framework.Utilities import CommonUtil
 from Framework.Utilities.CommonUtil import passed_tag_list, failed_tag_list
 from datetime import datetime
@@ -101,7 +100,13 @@ def Set_List_Shared_Variables(list_name, key, value, protected=False):
 
                 # Try to get a pretty print.
                 CommonUtil.prettify(key, value)
-
+                CommonUtil.ExecLog(
+                    sModuleInfo, "Saved variable: %s" % key, 1,
+                    variable={
+                        "key": key,
+                        "val": CommonUtil.parse_value_into_object(value)
+                    }
+                )
                 CommonUtil.ExecLog(
                     sModuleInfo, "Saved variable:\n%s = %s" % (key, value), 0
                 )

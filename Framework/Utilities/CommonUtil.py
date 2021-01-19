@@ -482,16 +482,13 @@ def ExecLog(
             log_id = ConfigModule.get_config_value(
                 "sectionOne", "sTestStepExecLogId", temp_config
             )
-
             if not log_id:
                 return
 
-            log_id_vals = log_id.split("|")
             now = datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
-            CreateJsonReport(logs=(log_id, now, iLogLevel, status, sModuleInfo, sDetails))
-
             if variable:
                 sDetails = "%s\nVariable value: %s" % (sDetails, variable["val"])
+            CreateJsonReport(logs=(log_id, now, iLogLevel, status, sModuleInfo, sDetails))
 
             all_logs[all_logs_count] = {
                 "logid": log_id,
