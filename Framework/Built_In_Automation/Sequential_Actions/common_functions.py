@@ -1258,7 +1258,7 @@ def insert_list_into_another_list(data_set):
         tmp = data_set[0][
             2
         ].strip()  # Get key and value from Value field and clean them
-        tmp = tmp.split("=")  # Get variable name
+        tmp = tmp.split("=",1)  # Get variable name
         parent_list_name = tmp[0].strip()
         if ";" in str(tmp[1]):  # direct initialization parent_list = [[a,b,c],[x,y,z]]
             parent_separator = ";"
@@ -1610,7 +1610,7 @@ def create_3d_list(data_set):
         tmp = data_set[0][
             2
         ].strip()  # Get key and value from Value field and clean them
-        tmp = tmp.split("=")  # Get variable name
+        tmp = tmp.split("=",1)  # Get variable name
         parent_list_name = tmp[0].strip()
         if ";;" in str(tmp[1]):
             major_parent_separator = ";;"
