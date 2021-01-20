@@ -3,6 +3,7 @@
 
 # shared_variables
 
+import json
 import inspect, sys, time, collections
 import string
 import random
@@ -56,7 +57,7 @@ def Set_Shared_Variables(key, value, protected=False, allowEmpty=False, print_va
                     sModuleInfo, "Saved variable: %s" % key, 1,
                     variable={
                         "key": key,
-                        "val": CommonUtil.parse_value_into_object(value)
+                        "val": json.dumps(CommonUtil.parse_value_into_object(value), indent=2, sort_keys=True)
                     }
                 )
 
@@ -104,7 +105,7 @@ def Set_List_Shared_Variables(list_name, key, value, protected=False):
                     sModuleInfo, "Saved variable: %s" % key, 1,
                     variable={
                         "key": key,
-                        "val": CommonUtil.parse_value_into_object(value)
+                        "val": json.dumps(CommonUtil.parse_value_into_object(value), indent=2, sort_keys=True)
                     }
                 )
                 CommonUtil.ExecLog(

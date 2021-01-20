@@ -95,6 +95,7 @@ all_logs = {}
 all_logs_json, json_log_cond = [], False
 all_logs_count = 0
 all_logs_list = []
+skip_list = ["step_data"]
 load_testing = False
 to_dlt_from_fail_reason = " : Test Step Failed"
 
@@ -486,7 +487,7 @@ def ExecLog(
                 return
 
             now = datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
-            if variable:
+            if variable and variable["key"] not in skip_list:
                 sDetails = "%s\nVariable value: %s" % (sDetails, variable["val"])
             CreateJsonReport(logs=(log_id, now, iLogLevel, status, sModuleInfo, sDetails))
 
