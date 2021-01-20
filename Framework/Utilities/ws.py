@@ -10,16 +10,16 @@ from urllib.parse import urlparse
 from pathlib import Path
 
 
-# Find node id file
-node_id_file_path = Path(
-    os.path.abspath(__file__).split("Framework")[0]
-) / Path("node_id.conf")
-
 # Websocket connection object that runs on a different thread.
 ws = None
 
 
 def get_url():
+    # Find node id file
+    node_id_file_path = Path(
+        os.path.abspath(__file__).split("Framework")[0]
+    ) / Path("node_id.conf")
+
     unique_id = ConfigModule.get_config_value(
         "UniqueID", "id", node_id_file_path
     )
