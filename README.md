@@ -1,17 +1,32 @@
 # Zeuz Node
----
 
-[![Code style: black](https://img.shields.io/badge/code%20style-black-000000.svg)](https://github.com/psf/black)
+An open source cross-platform automation tool + framework that can automate
+web, mobile, desktop, rest api & databases.
 
-We follow and use the [black](https://github.com/psf/black) (PEP8 compliant, from Python Software Foudndation) code formatter. Please format your code before submitting them to the repository.
+## Minimum requirements
 
-```bash
-$ pip install black
-$ black /path/to/ZeuzPythonNode
-```
+- Python 3.7+ is recommended.
+- For Windows, we recommend 32-bit Python (required for windows
+  desktop automation).
 
-## Description
+## Usage
 
-Client side application for running automated testing.
+1. Install the initial requirements if not already installed. After first
+  installation, newly added modules in the future will be auto installed.
 
-To run Zeuz Node in daemon mode (as a background process), execute the `daemon.sh` script.
+  ```shell
+  $ pip install -r requiremenets-win.txt
+  ```
+
+  - `requirements-win.txt` for Windows.
+  - `requiremenets-mac.txt` for Mac.
+  - `requiremenets-linux.txt` for Linux.
+
+2. Run Zeuz Node.
+  ```shell
+  $ python node_cli.py
+  ```
+
+## Docs
+
+https://automationsolutionz.github.io
