@@ -115,7 +115,8 @@ def Open_Browser(dependency, window_size_X=None, window_size_Y=None):
             options = Options()
             options.add_argument("--no-sandbox")
             options.add_argument("--disable-extensions")
-            options.add_argument('ignore-certificate-errors')
+            options.add_argument('--ignore-certificate-errors')
+            options.add_argument('--ignore-ssl-errors')
             options.add_experimental_option("useAutomationExtension", False)
             d = DesiredCapabilities.CHROME
             d["loggingPrefs"] = {"browser": "ALL"}
@@ -164,7 +165,14 @@ def Open_Browser(dependency, window_size_X=None, window_size_Y=None):
                         break
             capabilities = webdriver.DesiredCapabilities().FIREFOX
             capabilities['acceptSslCerts'] = True
-            selenium_driver = webdriver.Firefox(executable_path=GeckoDriverManager().install(), capabilities=capabilities, options=options)
+            profile = webdriver.FirefoxProfile()
+            profile.accept_untrusted_certs = True
+            selenium_driver = webdriver.Firefox(
+                executable_path=GeckoDriverManager().install(),
+                capabilities=capabilities,
+                options=options,
+                firefox_profile=profile
+            )
             selenium_driver.implicitly_wait(WebDriver_Wait)
             if not window_size_X and not window_size_Y:
                 selenium_driver.set_window_size(default_x, default_y)
