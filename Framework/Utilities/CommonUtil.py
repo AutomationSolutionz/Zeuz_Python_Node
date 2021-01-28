@@ -93,6 +93,7 @@ skipped_tag_list = ["skip", "SKIP", "Skip", "skipped", "SKIPPED", "Skipped"]
 
 all_logs = {}
 all_logs_json, json_log_cond = [], False
+tc_error_logs = []
 all_logs_count = 0
 all_logs_list = []
 skip_list = ["step_data"]
@@ -290,9 +291,13 @@ def Result_Analyzer(sTestStepReturnStatus, temp_q):
     except Exception as e:
         return Exception_Handler(sys.exc_info())
 
+report_json_time = 0.0
+import time
+
 
 def CreateJsonReport(logs=None, stepInfo=None, TCInfo=None, setInfo=None):
-    global all_logs_json
+    global all_logs_json, report_json_time, tc_error_logs
+    start = time.perf_counter()
     if logs or stepInfo or TCInfo or setInfo:
         log_id = ConfigModule.get_config_value("sectionOne", "sTestStepExecLogId", temp_config)
         if not log_id:
@@ -300,9 +305,7 @@ def CreateJsonReport(logs=None, stepInfo=None, TCInfo=None, setInfo=None):
         log_id_vals = log_id.split("|")
         if logs:
             log_id, now, iLogLevel, status, sModuleInfo, sDetails = logs
-        if len(log_id_vals) != 4:
-            pass
-        else:
+        if len(log_id_vals) == 4:
             # these loops can be optimized by saving the previous log_id_vals and comparing it with current one
             runID, testcase_no, step_id, step_no = log_id_vals
             for run_id_info in all_logs_json:
@@ -316,31 +319,35 @@ def CreateJsonReport(logs=None, stepInfo=None, TCInfo=None, setInfo=None):
                         if testcase_no == testcase_info["testcase_no"].replace("#", "no"):
                             if TCInfo:
                                 testcase_info["execution_detail"] = TCInfo
+                                fail_reason_str = ""
+                                if TCInfo["status"] in ("Failed", "Blocked"):
+                                    count = -min(len(tc_error_logs), 3)
+                                    while count <= -1:
+                                        fail_reason_str += tc_error_logs[count]
+                                        if count != -1:
+                                            fail_reason_str += "\n---------------------------------------------\n"
+                                        count += 1
+                                testcase_info["execution_detail"]["failreason"] = fail_reason_str
+                                break
+                            if step_id == "none":
                                 break
                             all_step_info = testcase_info["steps"]
                             for step_info in all_step_info:
                                 if step_no == str(step_info["step_sequence"]) and step_id == str(step_info["step_id"]):
                                     if stepInfo:
                                         step_info["execution_detail"] = stepInfo
-                                        fail_reason_log = []
-                                        fail_reason_str = ""
+                                        step_error_logs = []
                                         if stepInfo["status"].lower() == "failed":
-                                            count = 0
-                                            for each_log in reversed(step_info["log"]):
-                                                if count == 4:
-                                                    break
-                                                if each_log["status"].lower() == "error":
-                                                    fail_reason_log.append(each_log["details"])
-                                                    count += 1
-                                            fail_reason_log.reverse()
-                                            if fail_reason_log[-1].endswith(to_dlt_from_fail_reason):
-                                                del fail_reason_log[-1]
-                                            if len(fail_reason_log) > 3:
-                                                del fail_reason_log[0]
-                                            for i in fail_reason_log:
-                                                fail_reason_str += i + "\n"
-                                            fail_reason_str = fail_reason_str[:-1]
-                                        step_info["failreason"] = fail_reason_str
+                                            count, err_count, max_count = -1, 0, -len(step_info["log"])
+                                            # Can be optimized by taking error when occurs and append it if the step fails only
+                                            while count >= max_count and err_count < 3:
+                                                each_log = step_info["log"][count]
+                                                if each_log["status"].lower() == "error" and not each_log["details"].endswith(to_dlt_from_fail_reason):
+                                                    step_error_logs.append(each_log["details"])
+                                                    err_count += 1
+                                                count -= 1
+                                            step_error_logs.reverse()
+                                            tc_error_logs += step_error_logs
                                         break
                                     log_info = {
                                         "status": status,
@@ -362,6 +369,7 @@ def CreateJsonReport(logs=None, stepInfo=None, TCInfo=None, setInfo=None):
                     break
     elif stepInfo:
         pass
+    report_json_time += (time.perf_counter() - start)
 
 
 def ExecLog(

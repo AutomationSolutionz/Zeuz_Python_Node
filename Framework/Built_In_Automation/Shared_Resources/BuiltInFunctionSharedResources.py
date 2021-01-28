@@ -53,11 +53,13 @@ def Set_Shared_Variables(key, value, protected=False, allowEmpty=False, print_va
             shared_variables[key] = value
 
             if print_variable:
+                try: val = json.dumps(CommonUtil.parse_value_into_object(value), indent=2, sort_keys=True)
+                except: val = str(value)
                 CommonUtil.ExecLog(
                     sModuleInfo, "Saved variable: %s" % key, 1,
                     variable={
                         "key": key,
-                        "val": json.dumps(CommonUtil.parse_value_into_object(value), indent=2, sort_keys=True)
+                        "val": val
                     }
                 )
 

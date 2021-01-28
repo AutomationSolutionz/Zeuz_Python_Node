@@ -1327,31 +1327,31 @@ def write_log_file_for_test_case(
             )
 
             # upload will go here.
-            upload_zip(
-                ConfigModule.get_config_value("Authentication", "server_address"),
-                ConfigModule.get_config_value("Authentication", "server_port"),
-                ConfigModule.get_config_value("sectionOne", "temp_run_file_path", temp_ini_file),
-                run_id,
-                ConfigModule.get_config_value("sectionOne", "test_case", temp_ini_file) + ".zip",
-                ConfigModule.get_config_value("Advanced Options", "_file_upload_path"),
-            )
-            TCLogFile = (
-                os.sep
-                + ConfigModule.get_config_value("Advanced Options", "_file_upload_path")
-                + os.sep
-                + run_id.replace(":", "-")
-                + "/"
-                + ConfigModule.get_config_value(
-                    "sectionOne", "test_case", temp_ini_file
-                )
-                + ".zip"
-            )
-            FL.DeleteFile(
-                ConfigModule.get_config_value(
-                    "sectionOne", "test_case_folder", temp_ini_file
-                )
-                + ".zip"
-            )
+            # upload_zip(
+            #     ConfigModule.get_config_value("Authentication", "server_address"),
+            #     ConfigModule.get_config_value("Authentication", "server_port"),
+            #     ConfigModule.get_config_value("sectionOne", "temp_run_file_path", temp_ini_file),
+            #     run_id,
+            #     ConfigModule.get_config_value("sectionOne", "test_case", temp_ini_file) + ".zip",
+            #     ConfigModule.get_config_value("Advanced Options", "_file_upload_path"),
+            # )
+            # TCLogFile = (
+            #     os.sep
+            #     + ConfigModule.get_config_value("Advanced Options", "_file_upload_path")
+            #     + os.sep
+            #     + run_id.replace(":", "-")
+            #     + "/"
+            #     + ConfigModule.get_config_value(
+            #         "sectionOne", "test_case", temp_ini_file
+            #     )
+            #     + ".zip"
+            # )
+            # FL.DeleteFile(
+            #     ConfigModule.get_config_value(
+            #         "sectionOne", "test_case_folder", temp_ini_file
+            #     )
+            #     + ".zip"
+            # )
         else:
             TCLogFile = ""
         # upload the log file ID
@@ -1433,17 +1433,19 @@ def run_test_case(
     testcase_info,
     executor,
     debug_info,
+    all_file_specific_steps,
     send_log_file_only_for_fail=True,
     performance=False,
     browserDriver=None,
 ):
     shared.Set_Shared_Variables("run_id", run_id)
     test_case = str(TestCaseID).replace("#", "no")
-    ConfigModule.add_config_value("sectionOne", "sTestStepExecLogId", "MainDriver", temp_ini_file)
-    file_specific_steps = download_attachments_for_test_case(
+    ConfigModule.add_config_value("sectionOne", "sTestStepExecLogId", sModuleInfo, temp_ini_file)
+    download_attachments_for_test_case(
         sModuleInfo, run_id, test_case, temp_ini_file,
-        testcase_info["testcase_attachments_links"], testcase_info["step_attachments"]
+        [],[]
     )
+    file_specific_steps = all_file_specific_steps[TestCaseID] if TestCaseID in all_file_specific_steps else {}
     TestCaseName = testcase_info["title"]
     log_line = "# EXECUTING TEST CASE : %s :: %s #" % (test_case, TestCaseName)
     print("#"*(len(log_line)))
@@ -1469,6 +1471,13 @@ def run_test_case(
         debug_info,
         is_linked,
         performance
+    )
+
+    ConfigModule.add_config_value(
+        "sectionOne",
+        "sTestStepExecLogId",
+        run_id + "|" + test_case + "|" + "none" + "|" + "none",
+        temp_ini_file,
     )
 
     # get test case end time
@@ -1738,19 +1747,15 @@ def get_all_run_id_info(Userid, sModuleInfo):
     # return response["json"]
 
 
-def upload_json_report(Userid, temp_ini_file, run_id):
-    # path = os.path.join(os.path.abspath(__file__).split("Framework")[0])/Path("AutomationLog")/Path("execution_log.json")
-    path = ConfigModule.get_config_value("sectionOne", "temp_run_file_path", temp_ini_file) / Path(run_id.replace(":", "-"))
-    zip_path = path / Path("execution_log.zip")
-    path = path / Path("execution_log.json")
+def upload_json_report(Userid, temp_ini_file, run_id, all_run_id_info):
+    zip_path = ConfigModule.get_config_value("sectionOne", "temp_run_file_path", temp_ini_file) / Path(run_id.replace(":", "-"))
+    path = zip_path / Path("execution_log.json")
     json_report = CommonUtil.get_all_logs(json=True)
     with open(path, "w") as f:
-        json.dump(json_report, f, indent=2)
-
-    FL.ZipFile(path, zip_path)
-    FL.DeleteFile(path)
+        json.dump(json_report, f)
 
     if ConfigModule.get_config_value("RunDefinition", "local_run") == "False":
+        FL.ZipFolder(str(zip_path), str(zip_path) + ".zip")
         for i in range(720):    # 1 hour
             res = requests.get(RequestFormatter.form_uri("is_copied_api/"), {"runid": run_id}, verify=False)
             r = res.json()
@@ -1762,7 +1767,8 @@ def upload_json_report(Userid, temp_ini_file, run_id):
                   "Get the report from below path-\n" + path)
             return
 
-        with open(zip_path, "rb") as fzip:
+        with open(str(zip_path) + ".zip", "rb") as fzip:
+            print("Uploading report of %s KB. Please wait" % (os.stat(str(zip_path) + ".zip").st_size / 1000))
             for i in range(5):
                 res = requests.post(
                     RequestFormatter.form_uri("create_report_log_api/"),
@@ -1776,17 +1782,22 @@ def upload_json_report(Userid, temp_ini_file, run_id):
                         print("Could not Upload json report to server")
                         return
                     if isinstance(res_json, dict) and 'message' in res_json and res_json["message"]:
-                        print("Successfully Uploaded json report to server")
+                        print("Successfully Uploaded the report to server of run_id '%s'" % run_id)
                     else:
-                        print("Could not Upload json report to server")
+                        print("Could not Upload the report to server of run_id '%s'" % run_id)
                     break
                 time.sleep(1)
             else:
                 print("Could not Upload json report to server")
-
+        os.unlink(str(zip_path) + ".zip")
+    with open(path, "w") as f:
+        json.dump(json_report, f, indent=2)
+    path = zip_path / Path("test_cases_data.json")
+    with open(path, "w") as f:
+        json.dump(all_run_id_info, f, indent=2)
 
 # main function
-def main(device_dict, user_info_object, all_run_id_info):
+def main(device_dict, user_info_object):
 
     # get module info
     sModuleInfo = inspect.currentframe().f_code.co_name + " : " + MODULE_NAME
@@ -1807,13 +1818,31 @@ def main(device_dict, user_info_object, all_run_id_info):
     Userid = (CommonUtil.MachineInfo().getLocalUser()).lower()
 
     # all_run_id_info = get_all_run_id_info(Userid, sModuleInfo)
-
+    get_json, all_file_specific_steps = True, {}
+    save_path = Path(ConfigModule.get_config_value("sectionOne", "temp_run_file_path", temp_ini_file)) / "attachments"
+    cnt = 0
+    for i in os.walk(save_path):
+        if get_json:
+            get_json = False
+            json_path = Path(i[0]) / i[2][0]
+            folder_list = i[1]
+            for j in folder_list:
+                all_file_specific_steps[j] = {}
+        else:
+            for j in i[2]:
+                all_file_specific_steps[folder_list[cnt]][j] = str(Path(i[0]) / j)
+            cnt += 1
+    with open(json_path, "r") as f:
+        all_run_id_info = json.loads(f.read())
+    with open(Path.cwd().parent / "Projects" / "Local_run.json", "w") as f:
+        f.write(json.dumps(all_run_id_info))
     if len(all_run_id_info) == 0:
         CommonUtil.ExecLog("", "No Test Run Schedule found for the current user : %s" % Userid, 2)
         return False
 
     executor = CommonUtil.GetExecutor()
     for run_id_info in all_run_id_info:
+        run_id_info["base_path"] = ConfigModule.get_config_value("Advanced Options", "_file_upload_path")
         run_id = run_id_info["run_id"]
         run_cancelled = ""
         debug_info = ""
@@ -1822,9 +1851,7 @@ def main(device_dict, user_info_object, all_run_id_info):
         # Write testcase json
         path = ConfigModule.get_config_value("sectionOne", "temp_run_file_path", temp_ini_file) / Path(run_id.replace(":", "-"))
         FL.CreateFolder(path)
-        path = path / Path("test_cases_data.json")
-        with open(path, "w") as f:
-            json.dump(all_run_id_info, f, indent=2)
+
 
         # Start websocket server if we're in debug mode.
         if run_id.lower().startswith("debug"):
@@ -1884,7 +1911,7 @@ def main(device_dict, user_info_object, all_run_id_info):
         else:
             CommonUtil.ExecLog("", "No Automated test cases found for the current user : %s" % Userid, 2)
             return "pass"
-
+        num_of_tc = len(all_testcases_info)
         CommonUtil.all_logs_json = all_run_id_info
         cnt = 1
         for testcase_info in all_testcases_info:
@@ -1986,6 +2013,7 @@ def main(device_dict, user_info_object, all_run_id_info):
                     testcase_info,
                     executor,
                     debug_info,
+                    all_file_specific_steps,
                     send_log_file_only_for_fail,
                 )
                 CommonUtil.clear_all_logs()  # clear logs
@@ -2008,6 +2036,7 @@ def main(device_dict, user_info_object, all_run_id_info):
             "duration": TestSetDuration
         }
         CommonUtil.CreateJsonReport(setInfo=after_execution_dict)
+        print("Report creation time = %s sec for %s testcases" % (CommonUtil.report_json_time, num_of_tc))
         CommonUtil.ExecLog("", "Test Set Completed", 4, False)
 
         ConfigModule.add_config_value("sectionOne", "sTestStepExecLogId", "MainDriver", temp_ini_file)
@@ -2015,7 +2044,7 @@ def main(device_dict, user_info_object, all_run_id_info):
         if run_cancelled == CANCELLED_TAG:
             CommonUtil.ExecLog(sModuleInfo, "Test Set Cancelled by the User", 1)  # add log
         elif not run_id.startswith("debug"):
-            upload_json_report(Userid, temp_ini_file, run_id)
+            upload_json_report(Userid, temp_ini_file, run_id, all_run_id_info)
             # executor.submit(upload_json_report)
 
         # Close websocket connection.
