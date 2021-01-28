@@ -411,18 +411,19 @@ def RunProcess(sTesterid, user_info_object):
                 print("30 minutes over, logging in again")
                 return True  # Timeout reached, re-login. We do this because after about 3-4 hours this function will hang, and thus not be available for deployment
 
-            r = RequestFormatter.Get("is_run_submitted_api", {"machine_name": sTesterid})
+            # r = RequestFormatter.Get("is_run_submitted_api", {"machine_name": sTesterid})
+            r = requests.get(RequestFormatter.form_uri("is_submitted_api"), {"machine_name": sTesterid}, verify=False).json()
             Userid = (CommonUtil.MachineInfo().getLocalUser()).lower()
-            if r and "run_submit" in r and r["run_submit"]:
+            if r and "found" in r and r["found"]:
                 CommonUtil.ExecLog("", "Downloading dataset and attachments. Please wait", 4)
                 save_path = temp_ini_file.parent/"attachments"
                 FL.CreateFolder(save_path)
                 response = requests.get(RequestFormatter.form_uri("getting_json_data_api"), {"machine_name": Userid}, stream=True, verify=False)
-                total_size_in_bytes = int(response.headers.get('content-length', 0))
+                # total_size_in_bytes = int(response.headers.get('content-length', 0))
+                # print(r["file_size"], len(response.content))
                 chunk_size = 4096
-                progress_bar = tqdm(total=total_size_in_bytes, unit='B', mininterval=0, unit_scale=True, miniters=1, leave=True)
+                progress_bar = tqdm(total=r["file_size"], unit='B', mininterval=0, unit_scale=True, miniters=1, leave=True)
                 with open(save_path/"input.zip", 'wb') as file:
-                    first = True
                     for data in response.iter_content(chunk_size):
                         progress_bar.update(len(data))
                         file.write(data)
