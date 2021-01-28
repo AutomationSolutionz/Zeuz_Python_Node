@@ -1,6 +1,9 @@
 # -*- coding: utf-8 -*-
 # -*- coding: cp1252 -*-
 
+from Framework.module_installer import install_missing_modules
+install_missing_modules()
+
 import os, sys, time, os.path, base64, signal, argparse, requests, json, io, zipfile, shutil
 from pathlib import Path
 from getpass import getpass
@@ -9,9 +12,6 @@ from tqdm import tqdm
 
 # Suppress the InsecureRequestWarning since we use verify=False parameter.
 requests.packages.urllib3.disable_warnings(category=InsecureRequestWarning)
-
-from Framework.module_installer import install_missing_modules
-install_missing_modules()
 
 from Framework.Utilities import ConfigModule
 
