@@ -148,7 +148,7 @@ def extract_runtime_parameters(param_str: str):
         result = {}
 
         for key in data:
-            result[key] = {"field": key, "subfield": data[key]}
+            result[key] = {key: data[key]}
 
         return result
     except Exception as e:
@@ -355,6 +355,7 @@ def main():
             "domain": host,
         }
     )
+    print(payload_data)
 
     deploy_info = None
     for _ in range(2 * machine_timeout):
@@ -371,6 +372,7 @@ def main():
         print("The specified machine is not available")
         return EXIT_CODE_ERR_NO_MACHINES
 
+    print(deploy_info)
     run_url = host + "/Home/RunID/" + deploy_info["run_id"]
 
     # Status for complete runs
