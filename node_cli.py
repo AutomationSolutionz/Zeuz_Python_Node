@@ -417,7 +417,7 @@ def RunProcess(sTesterid, user_info_object):
                 CommonUtil.ExecLog("", "Downloading dataset and attachments. Please wait", 4)
                 save_path = temp_ini_file.parent/"attachments"
                 FL.CreateFolder(save_path)
-                response = requests.get(RequestFormatter.form_uri("getting_json_data_api"), {"machine_name": Userid}, stream=True)
+                response = requests.get(RequestFormatter.form_uri("getting_json_data_api"), {"machine_name": Userid}, stream=True, verify=False)
                 total_size_in_bytes = int(response.headers.get('content-length', 0))
                 chunk_size = 4096
                 progress_bar = tqdm(total=total_size_in_bytes, unit='B', mininterval=0, unit_scale=True, miniters=1, leave=True)
