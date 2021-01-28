@@ -1768,7 +1768,12 @@ def upload_json_report(Userid, temp_ini_file, run_id, all_run_id_info):
             return
 
         with open(str(zip_path) + ".zip", "rb") as fzip:
-            print("Uploading report of %s KB. Please wait" % (os.stat(str(zip_path) + ".zip").st_size / 1000))
+            size = round(os.stat(str(zip_path) + ".zip").st_size / 1024, 2)
+            if size > 1024:
+                size = str(round(size/1024, 2)) + " MB"
+            else:
+                size = str(size) + " KB"
+            print("Uploading report of %s. Please wait" % size)
             for i in range(5):
                 res = requests.post(
                     RequestFormatter.form_uri("create_report_log_api/"),
@@ -2036,7 +2041,7 @@ def main(device_dict, user_info_object):
             "duration": TestSetDuration
         }
         CommonUtil.CreateJsonReport(setInfo=after_execution_dict)
-        print("Report creation time = %s sec for %s testcases" % (CommonUtil.report_json_time, num_of_tc))
+        print("Report creation time = %s sec for %s testcases" % (round(CommonUtil.report_json_time, 3), num_of_tc))
         CommonUtil.ExecLog("", "Test Set Completed", 4, False)
 
         ConfigModule.add_config_value("sectionOne", "sTestStepExecLogId", "MainDriver", temp_ini_file)

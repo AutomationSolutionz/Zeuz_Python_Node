@@ -415,7 +415,12 @@ def RunProcess(sTesterid, user_info_object):
             r = requests.get(RequestFormatter.form_uri("is_submitted_api"), {"machine_name": sTesterid}, verify=False).json()
             Userid = (CommonUtil.MachineInfo().getLocalUser()).lower()
             if r and "found" in r and r["found"]:
-                CommonUtil.ExecLog("", "Downloading dataset and attachments of %s KB. Please wait" % (int(r["file_size"])/1000), 4)
+                size = round(int(r["file_size"]) / 1024, 2)
+                if size > 1024:
+                    size = str(round(size / 1024, 2)) + " MB"
+                else:
+                    size = str(size) + " KB"
+                CommonUtil.ExecLog("", "Downloading dataset and attachments of %s. Please wait" % size, 4)
                 save_path = temp_ini_file.parent/"attachments"
                 FL.CreateFolder(save_path)
                 response = requests.get(RequestFormatter.form_uri("getting_json_data_api"), {"machine_name": Userid}, stream=True, verify=False)
