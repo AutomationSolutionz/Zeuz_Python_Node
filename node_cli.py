@@ -1,16 +1,17 @@
 # -*- coding: utf-8 -*-
 # -*- coding: cp1252 -*-
 
-import os, sys, time, os.path, base64, signal, argparse, requests, json
+from Framework.module_installer import install_missing_modules
+install_missing_modules()
+
+import os, sys, time, os.path, base64, signal, argparse, requests, json, io, zipfile, shutil
 from pathlib import Path
 from getpass import getpass
 from urllib3.exceptions import InsecureRequestWarning
+from tqdm import tqdm
 
 # Suppress the InsecureRequestWarning since we use verify=False parameter.
 requests.packages.urllib3.disable_warnings(category=InsecureRequestWarning)
-
-from Framework.module_installer import install_missing_modules
-install_missing_modules()
 
 from Framework.Utilities import ConfigModule
 
@@ -64,7 +65,7 @@ sys.path.append("..")
 from Framework.Utilities import (
     RequestFormatter,
     CommonUtil,
-    FileUtilities,
+    FileUtilities as FL,
     All_Device_Info,
     self_updater
 )
@@ -407,27 +408,36 @@ def RunProcess(sTesterid, user_info_object):
             if exit_script:
                 return False
             if time.time() > etime:
+                print("30 minutes over, logging in again")
                 return True  # Timeout reached, re-login. We do this because after about 3-4 hours this function will hang, and thus not be available for deployment
 
-            # r = RequestFormatter.Get("is_run_submitted_api", {"machine_name": sTesterid})
+            r = RequestFormatter.Get("is_run_submitted_api", {"machine_name": sTesterid})
             Userid = (CommonUtil.MachineInfo().getLocalUser()).lower()
-            r = requests.get(RequestFormatter.form_uri("getting_json_data_api"), {"machine_name": Userid}, verify=False).json()
-            # if r and "run_submit" in r and r["run_submit"]:
-            if r["found"]:
-                all_run_id_info = r["json"]
-                # Auto save the json data for local run.
-                with open(Path.cwd().parent / "Projects" / "Local_run.json", "w") as f:
-                    f.write(json.dumps(all_run_id_info))
-                processing_test_case = True
+            if r and "run_submit" in r and r["run_submit"]:
+                CommonUtil.ExecLog("", "Downloading dataset and attachments. Please wait", 4)
+                save_path = temp_ini_file.parent/"attachments"
+                FL.CreateFolder(save_path)
+                response = requests.get(RequestFormatter.form_uri("getting_json_data_api"), {"machine_name": Userid}, stream=True)
+                total_size_in_bytes = int(response.headers.get('content-length', 0))
+                chunk_size = 4096
+                progress_bar = tqdm(total=total_size_in_bytes, unit='B', mininterval=0, unit_scale=True, miniters=1, leave=True)
+                with open(save_path/"input.zip", 'wb') as file:
+                    first = True
+                    for data in response.iter_content(chunk_size):
+                        progress_bar.update(len(data))
+                        file.write(data)
+                z = zipfile.ZipFile(save_path/"input.zip")
+                z.extractall(save_path)
+                z.close()
+                os.unlink(save_path/"input.zip")
                 CommonUtil.ExecLog(
                     "",
-                    "**************************\n*    STARTING SESSION    *\n**************************",
+                    "\n**************************\n*    STARTING SESSION    *\n**************************",
                     4,
                     False,
                 )
                 PreProcess()
-                value = MainDriverApi.main(device_dict, user_info_object, all_run_id_info)
-                # value = Old_MainDriverApi.main(device_dict, user_info_object)
+                value = MainDriverApi.main(device_dict, user_info_object)
                 if value == "pass":
                     if exit_script:
                         return False
