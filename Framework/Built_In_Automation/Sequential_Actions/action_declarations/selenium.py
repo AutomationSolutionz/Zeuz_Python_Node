@@ -44,6 +44,7 @@ declarations = (
     { "name": "switch window/tab",             "function": "switch_window_or_tab",          "screenshot": "web" },  # For CS group
     { "name": "save attribute",                "function": "Save_Attribute",                "screenshot": "web" },
     { "name": "save attribute values in list", "function": "save_attribute_values_in_list", "screenshot": "web" },
+    { "name": "save web elements in list",     "function": "save_web_elements_in_list",    "screenshot": "web" },
     { "name": "take screenshot web",           "function": "take_screenshot_selenium",      "screenshot": "web" },
     { "name": "mouse click",                   "function": "Mouse_Click_Element",           "screenshot": "web" },
     { "name": "execute javascript",            "function": "execute_javascript",            "screenshot": "web" },
