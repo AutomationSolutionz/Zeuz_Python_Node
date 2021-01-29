@@ -1457,7 +1457,7 @@ def save_attribute_values_in_list(step_data):
                         for j in range(len(data[i])):
                             data[i][j] = data[i][j].strip()
                             if j == 1:
-                                data[i][j] = data[i][j].strip('"')  # do not add another strip here. dont need to strip inside quotation mark
+                                data[i][j] = data[i][j].strip('"')  # dont add another strip here. dont need to strip inside quotation mark
 
                     for Left, Right in data:
                         if Left == "return":
@@ -1527,6 +1527,79 @@ def save_attribute_values_in_list(step_data):
             variable_value = list(map(list, zip(*variable_value)))
 
         return Shared_Resources.Set_Shared_Variables(variable_name, variable_value)
+
+    except Exception:
+        return CommonUtil.Exception_Handler(sys.exc_info())
+
+
+@logger
+def save_web_elements_in_list(step_data):
+    sModuleInfo = inspect.currentframe().f_code.co_name + " : " + MODULE_NAME
+    global selenium_driver
+    try:
+        has_element = False
+        all_elements = []
+        target_index = 0
+        target = []
+        paired = True
+
+        try:
+            for left, mid, right in step_data:
+                left = left.strip().lower()
+                mid = mid.strip().lower()
+                right = right.strip()
+                if not has_element or mid in ("element parameter", "parent parameter", "unique parameter", "child parameter", "sibling parameter"):
+                    has_element = True
+                elif "target parameter" in mid:
+                    target.append([[], [], [], []])
+                    temp = right.strip(",").split(",")
+                    data = []
+                    for each in temp:
+                        data.append(each.strip().split("="))
+                    for i in range(len(data)):
+                        for j in range(len(data[i])):
+                            data[i][j] = data[i][j].strip()
+                            if j == 1:
+                                data[i][j] = data[i][j].strip('"')  # dont add another strip here. dont need to strip inside quotation mark
+
+                    for Left, Right in data:
+                        if Left == "return":
+                            target[target_index][1] = Right
+                        elif Left == "return_contains":
+                            target[target_index][2].append(Right)
+                        elif Left == "return_does_not_contain":
+                            target[target_index][3].append(Right)
+                        else:
+                            target[target_index][0].append((Left, 'element parameter', Right))
+
+                    target_index = target_index + 1
+                elif left == "save web elements in list":
+                    variable_name = right
+                elif left == "paired":
+                    paired = False if right.lower() == "no" else True
+
+            if has_element:
+                Element = LocateElement.Get_Element(step_data, selenium_driver)
+                if Element == "failed":
+                    CommonUtil.ExecLog(
+                        sModuleInfo, "Unable to locate your element with given data.", 3
+                    )
+                    return "failed"
+            else:
+                Element = selenium_driver
+        except:
+            CommonUtil.ExecLog(
+                sModuleInfo, "Unable to parse data. Please write data in correct format", 3
+            )
+            return "failed"
+
+        for each in target:
+            all_elements.append(LocateElement.Get_Element(each[0], Element, return_all_elements=True))
+
+        if target_index == 1:
+            return Shared_Resources.Set_Shared_Variables(variable_name, all_elements[0])
+        else:
+            return Shared_Resources.Set_Shared_Variables(variable_name, all_elements)
 
     except Exception:
         return CommonUtil.Exception_Handler(sys.exc_info())
