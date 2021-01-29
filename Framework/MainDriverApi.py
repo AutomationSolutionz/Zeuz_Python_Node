@@ -624,15 +624,14 @@ def download_single_attachment(sModuleInfo, download_url, f, retry):
         return download_single_attachment(sModuleInfo, download_url, f, retry+1)
 
 
-# downloads attachments for a test step
-def download_attachments_for_test_case(sModuleInfo, run_id, test_case, temp_ini_file, test_case_attachments, test_step_attachments):
+# downloads attachments for a test case
+def download_attachments_for_test_case(run_id, test_case, temp_ini_file):
     try:
         log_file_path = ConfigModule.get_config_value(
             "sectionOne", "temp_run_file_path", temp_ini_file
         )
     except Exception:
         return CommonUtil.Exception_Handler(sys.exc_info())
-    test_step_attachments = []
     test_case_folder = (
         log_file_path
         + os.sep
@@ -647,8 +646,8 @@ def download_attachments_for_test_case(sModuleInfo, run_id, test_case, temp_ini_
 
     # Store the attachments for each test case separately inside
     # AutomationLog/attachments/TEST-XYZ
-    home = str(Path(log_file_path) / "attachments" / test_case.replace(":", "-"))
-    ConfigModule.add_config_value("sectionOne", "download_folder", home, temp_ini_file)
+    download_folder = str(Path(log_file_path) / "attachments" / test_case.replace(":", "-"))
+    ConfigModule.add_config_value("sectionOne", "download_folder", download_folder, temp_ini_file)
 
     # create_test_case_folder
     test_case_folder = ConfigModule.get_config_value("sectionOne", "test_case_folder", temp_ini_file)
@@ -663,74 +662,6 @@ def download_attachments_for_test_case(sModuleInfo, run_id, test_case, temp_ini_
     screen_capture_folder = ConfigModule.get_config_value("sectionOne", "screen_capture_folder", temp_ini_file)
     FL.CreateFolder(screen_capture_folder)
 
-    # creating the download folder
-    download_folder = ConfigModule.get_config_value("sectionOne", "download_folder", temp_ini_file)
-
-    FL.DeleteFolder(ConfigModule.get_config_value("sectionOne", "download_folder", temp_ini_file))
-    FL.CreateFolder(download_folder)
-    file_specific_steps = {}
-    if ConfigModule.get_config_value("RunDefinition", "local_run") == "True":
-        return {}
-    for each in test_case_attachments:
-        CommonUtil.ExecLog(sModuleInfo, "Attachment download for test case %s started" % test_case, 1)
-        m = each[1] + "." + each[2]  # file name
-        f = open(download_folder + "/" + m, "wb")
-
-        download_url = (
-            ConfigModule.get_config_value("Authentication", "server_address")
-            + ":"
-            + str(ConfigModule.get_config_value("Authentication", "server_port"))
-        )
-
-        if not download_url.startswith("http") or not download_url.startswith("https"):
-            download_url = "https://" + download_url
-
-        download_url += "/static" + each[0]
-
-        # Use request streaming to efficiently download files
-        download_single_attachment(sModuleInfo, download_url, f, 1)
-
-        # f.write(urllib.request.urlopen(download_url).read())
-        file_specific_steps.update({m: download_folder + "/" + m})
-        f.close()
-    if test_case_attachments:
-        CommonUtil.ExecLog(
-            sModuleInfo, "Attachment download for test case %s finished" % test_case, 1
-        )
-    for each in test_step_attachments:
-        CommonUtil.ExecLog(
-            sModuleInfo,
-            "Attachment download for steps in test case %s started" % test_case,
-            1,
-        )
-        m = each[1] + "." + each[2]  # file name
-        if _platform == "win32":
-            sep = "\\"
-        else:
-            sep = "/"
-        if not os.path.exists(download_folder + sep + str(each[3])):
-            FL.CreateFolder(download_folder + sep + str(each[3]))
-        f = open(download_folder + sep + str(each[3]) + sep + m, "wb")
-        f.write(
-            urllib.request.urlopen(
-                "http://"
-                + ConfigModule.get_config_value("Authentication", "server_address")
-                + ":"
-                + str(ConfigModule.get_config_value("Authentication", "server_port"))
-                + "/static"
-                + each[0]
-            ).read()
-        )
-        file_specific_steps.update({m: download_folder + sep + str(each[3]) + sep + m})
-        f.close()
-    if test_step_attachments:
-        CommonUtil.ExecLog(
-            sModuleInfo,
-            "Attachment download for steps in test case %s finished" % test_case,
-            1,
-        )
-
-    return file_specific_steps
 
 import ctypes
 def terminate_thread(thread):   # To kill running thread
@@ -1441,10 +1372,7 @@ def run_test_case(
     shared.Set_Shared_Variables("run_id", run_id)
     test_case = str(TestCaseID).replace("#", "no")
     ConfigModule.add_config_value("sectionOne", "sTestStepExecLogId", sModuleInfo, temp_ini_file)
-    download_attachments_for_test_case(
-        sModuleInfo, run_id, test_case, temp_ini_file,
-        [],[]
-    )
+    download_attachments_for_test_case(run_id, test_case, temp_ini_file)
     file_specific_steps = all_file_specific_steps[TestCaseID] if TestCaseID in all_file_specific_steps else {}
     TestCaseName = testcase_info["title"]
     log_line = "# EXECUTING TEST CASE : %s :: %s #" % (test_case, TestCaseName)
@@ -2051,6 +1979,9 @@ def main(device_dict, user_info_object):
         elif not run_id.startswith("debug"):
             upload_json_report(Userid, temp_ini_file, run_id, all_run_id_info)
             # executor.submit(upload_json_report)
+
+        # Delete downloaded attachments
+        FL.DeleteFolder(ConfigModule.get_config_value("sectionOne", "download_folder", temp_ini_file))
 
         # Close websocket connection.
         if run_id.lower().startswith("debug"):

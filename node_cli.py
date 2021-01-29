@@ -421,18 +421,17 @@ def RunProcess(sTesterid, user_info_object):
                 else:
                     size = str(size) + " KB"
                 CommonUtil.ExecLog("", "Downloading dataset and attachments of %s. Please wait" % size, 4)
-                save_path = temp_ini_file.parent/"attachments"
+                save_path = temp_ini_file.parent / "attachments"
                 FL.CreateFolder(save_path)
                 response = requests.get(RequestFormatter.form_uri("getting_json_data_api"), {"machine_name": Userid}, stream=True, verify=False)
-                # total_size_in_bytes = int(response.headers.get('content-length', 0))
-                # print(r["file_size"], len(response.content))
                 chunk_size = 4096
-                progress_bar = tqdm(total=r["file_size"], unit='B', mininterval=0, unit_scale=True, unit_divisor=1024, leave=True)
+                progress_bar = tqdm(total=r["file_size"], unit='B', mininterval=0, unit_scale=True, unit_divisor=1024, leave=False)
                 with open(save_path/"input.zip", 'wb') as file:
                     for data in response.iter_content(chunk_size):
                         progress_bar.update(len(data))
                         file.write(data)
                     progress_bar.refresh()
+                progress_bar.close()
                 z = zipfile.ZipFile(save_path/"input.zip")
                 z.extractall(save_path)
                 z.close()

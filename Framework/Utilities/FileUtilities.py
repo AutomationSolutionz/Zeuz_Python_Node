@@ -33,7 +33,6 @@ def CreateFolder(folderPath, forced=True):
 
 def DeleteFolder(sFolderPath):
     """
-
     :param sFolderPath: name of the path to delete
     :return: True if success,False if failed
     """
