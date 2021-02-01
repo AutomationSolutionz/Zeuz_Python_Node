@@ -1539,6 +1539,10 @@ def set_device_info_according_to_user_order(device_order, device_dict,  test_cas
 
             }
         }
+    elif "aws" in device_order:
+        device_info = {
+            "aws device 1": {}
+        }
     elif "local" in device_order:
         device_order = device_order["local"]
         for each in device_order:

@@ -501,13 +501,25 @@ def launch_application(data_set):
 
     # Parse data set
     try:
+        desiredcaps = {}
+
         browserstack_run = False
+        aws_run = False
+
         for did in device_info:
             if "browserstack" in did:
                 browserstack_run = True
                 break
         if browserstack_run:
             desiredcaps = device_info["browserstack device 1"]["basic"]
+        elif aws_run:
+            desiredcaps = {
+                # New iOS devices may have a '-' (hyphen) in their UDID
+                # which do not work with carthage (the tool that appium
+                # uses to build packages).
+                # TODO: Fix for Android here later on.
+                "appium:udid": os.environ["DEVICEFARM_DEVICE_UDID"].replace("-", "")
+            }
 
         else:
             package_name = ""  # Name of application package
@@ -610,7 +622,13 @@ def launch_application(data_set):
                 browserstack_run=browserstack_run,
             )
             app_name = device_info["browserstack device 1"]["other"]["app_name"]
-            CommonUtil.ExecLog(sModuleInfo, "Launched '%s' app successfully in Browserstack" % app_name, 1)
+            CommonUtil.ExecLog(sModuleInfo, "Launched '%s' app successfully in Browserstack." % app_name, 1)
+        if aws_run:
+            result, launch_app = start_appium_driver(
+                desiredcaps=desiredcaps,
+                aws_run=aws_run,
+            )
+            CommonUtil.ExecLog(sModuleInfo, "Launched app successfully in AWS.", 1)
         else:
             if "platform_version" in appium_details[device_id]:
                 platform_version = appium_details[device_id]["platform_version"]
@@ -804,6 +822,7 @@ def start_appium_driver(
     work_profile=False,
     desiredcaps=None,
     browserstack_run=False,
+    aws_run=False,
 ):
     """ Creates appium instance using discovered and provided capabilities """
     # Does not execute application
@@ -826,6 +845,21 @@ def start_appium_driver(
             Shared_Resources.Set_Shared_Variables("device_serial", device_serial, protected=True)
             Shared_Resources.Set_Shared_Variables("device_id", device_id, protected=True)
             CommonUtil.ExecLog(sModuleInfo, "Browserstack driver created successfully.", 1)
+            return "passed", launch_app
+
+        if aws_run:
+            appium_driver = webdriver.Remote(
+                command_executor="http://127.0.0.1:4723/wd/hub",
+                desired_capabilities = desiredcaps
+            )
+            appium_details["aws device 1"] = {"driver": appium_driver, "serial": "0"}
+            Shared_Resources.Set_Shared_Variables("appium_details", appium_details)
+            CommonUtil.set_screenshot_vars(Shared_Resources.Shared_Variable_Export())
+
+            device_id = "aws device 1"
+            Shared_Resources.Set_Shared_Variables("device_serial", device_serial, protected=True)
+            Shared_Resources.Set_Shared_Variables("device_id", device_id, protected=True)
+            CommonUtil.ExecLog(sModuleInfo, "AWS driver created successfully.", 1)
             return "passed", launch_app
 
         if appium_details[device_id]["driver"] == None:
@@ -2020,15 +2054,15 @@ def get_window_size(read_type=False):
 
 @logger
 def Click_Element_Appium(data_set):
-    """ Execute "click" for an element 
-    
+    """ Execute "click" for an element
+
       if optional parameter is provided for offset, we will take it from the center of the object and % center of the bound
-      
+
       Example:
       below example will offset by 25% to the right off the center of the element.  If we select 100% it will go to the right edge of the bound.  If you want to go left prove -25.
-            
+
       x_offset:y_offset             optional option           25:0
-    
+
     """
 
     sModuleInfo = inspect.currentframe().f_code.co_name + " : " + MODULE_NAME
@@ -2204,14 +2238,14 @@ def Click_Element_Appium(data_set):
 
 @logger
 def Tap_Appium(data_set):
-    """ Execute "Tap" for an element 
+    """ Execute "Tap" for an element
       if optional parameter is provided for offset, we will take it from the center of the object and % center of the bound
-      
+
       Example:
       below example will offset by 25% to the right off the center of the element.  If we select 100% it will go to the right edge of the bound.  If you want to go left prove -25.
-            
+
       x_offset:y_offset             optional parameter           25:0
-    
+
     """
 
     sModuleInfo = inspect.currentframe().f_code.co_name + " : " + MODULE_NAME
@@ -2829,7 +2863,7 @@ def Clear_And_Enter_Text_Appium(data_set):
 
 @logger
 def Hide_Keyboard(data_set):
-    """ 
+    """
     This action is used to hide keyboard:
     hide keyboard             appium action           hide
 
@@ -3050,7 +3084,7 @@ def Keystroke_Appium(data_set):
 def Validate_Text_Appium(data_set):
     """
 
-    @sreejoy, this will need your review 
+    @sreejoy, this will need your review
 
     This needs more time to fix.
     Should be a lot more simple design
@@ -3758,12 +3792,12 @@ def Handle_Mobile_Alert(data_set):
     # accepts browser alert
     """
     this works for both ios and Android
-    handle alert   appium action     get text = my_variable 
-    handle alert   appium action     send text = my text to send to alert   
+    handle alert   appium action     get text = my_variable
+    handle alert   appium action     send text = my text to send to alert
     handle alert   appium action     accept, pass, yes, ok (any of these would work)
     handle alert   appium action     reject, fail, no, cancel (any of these would work)
-     
-      
+
+
     """
 
     sModuleInfo = inspect.currentframe().f_code.co_name + " : " + MODULE_NAME
@@ -3866,12 +3900,12 @@ def Switch_Context(data_set):
     """
     this works for both ios and Android
     switch context   appium action     native
-    or 
+    or
     switch context   appium action     webview  (it will get the first webview)
-    or 
+    or
     switch context    appium action    name_of_context
 
-     
+
     """
     sModuleInfo = inspect.currentframe().f_code.co_name + " : " + MODULE_NAME
     skip_or_not = filter_optional_action_and_step_data(data_set, sModuleInfo)
@@ -3946,7 +3980,7 @@ def Save_Attribute_appium(step_data):
     this works for both ios and Android
     *** Enter attribute of element that you are trying to locate.  Example, class, ID ****    element parameter     *** Enter the value of the attribute that you are trying to locate. ***
      *** Attribute name that you are trying to save.  Example "value"***                      save parameter    *** Your variable.  please do not use spaces.  To recall your variable in other action use   %|your_variable|%   ****
-    save attribute                                                                            appium action    save attribute   
+    save attribute                                                                            appium action    save attribute
     """
     sModuleInfo = inspect.currentframe().f_code.co_name + " : " + MODULE_NAME
     skip_or_not = filter_optional_action_and_step_data(step_data, sModuleInfo)
@@ -4168,7 +4202,7 @@ def save_attribute_values_appium(step_data):
             if init_once_only:  # Initiate these values once per scroll
                 init_once_only = False
                 del_range, temp_variable_value = [], []
-                
+
                 final = []
                 upper_bound_touched, lower_bound_touched = [], []
                 for i in range(len(all_elements)):
