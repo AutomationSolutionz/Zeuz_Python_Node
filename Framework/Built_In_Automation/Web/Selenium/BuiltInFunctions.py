@@ -545,6 +545,7 @@ def Enter_Text_In_Text_Box(step_data):
         text_value = ""
         use_js = False
         without_click = False
+        clear=True #by default it will clear the text field.  If a user profile optional option with clear False.  It will no clear
 
         global selenium_driver
         Element = LocateElement.Get_Element(step_data, selenium_driver)
@@ -558,6 +559,8 @@ def Enter_Text_In_Text_Box(step_data):
                     delay = float(right.strip())
                 elif "use js" in left:
                     use_js = right.strip().lower() in ("true", "yes", "1")
+                elif "clear" in left:
+                    clear= False
 
             if use_js:
                 try:
@@ -576,7 +579,8 @@ def Enter_Text_In_Text_Box(step_data):
 
                 # Soemtimes text field becomes unclickable after entering text?
                 selenium_driver.execute_script("arguments[0].click();", Element)
-            else:
+            
+            elif clear==True: #By default clear the text field
                 try:
                     Element.click()
                 except:
@@ -596,16 +600,18 @@ def Enter_Text_In_Text_Box(step_data):
                         Element.clear() #some cases it works .. so adding it here just incase
                     except:
                         True
-                if delay == 0:
-                    Element.send_keys(text_value)
-                else:
-                    for c in text_value:
-                        Element.send_keys(c)
-                        time.sleep(delay)
-                try:
-                    Element.click()
-                except:  # sometimes text field can be unclickable after entering text
-                    pass
+  
+            
+            if delay == 0:
+                Element.send_keys(text_value)
+            else:
+                for c in text_value:
+                    Element.send_keys(c)
+                    time.sleep(delay)
+            try:
+                Element.click()
+            except:  # sometimes text field can be unclickable after entering text
+                pass
 
             # CommonUtil.TakeScreenShot(sModuleInfo)
             CommonUtil.ExecLog(
