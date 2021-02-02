@@ -816,6 +816,8 @@ def check_offline():
 
 def Delete_from_list(List, to_del):
     """ This function can delete multiple elements from list with O(N) complexity """
+    if not to_del:
+        return List
     to_del.sort()
     cnt, del_cnt, new_list, check = 0, 0, [], True
     for i in List:
