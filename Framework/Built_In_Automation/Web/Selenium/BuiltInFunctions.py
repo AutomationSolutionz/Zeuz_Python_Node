@@ -545,7 +545,7 @@ def Enter_Text_In_Text_Box(step_data):
         text_value = ""
         use_js = False
         without_click = False
-        clear=True #by default it will clear the text field.  If a user profile optional option with clear False.  It will no clear
+        clear=True #by default it will clear the text field.  If a user provides optional option with clear = False.  It will not clear
 
         global selenium_driver
         Element = LocateElement.Get_Element(step_data, selenium_driver)
@@ -577,7 +577,7 @@ def Enter_Text_In_Text_Box(step_data):
                     f"arguments[0].value = `{text_value}`;", Element
                 )
 
-                # Soemtimes text field becomes unclickable after entering text?
+                # Sometimes text field becomes unclickable after entering text?
                 selenium_driver.execute_script("arguments[0].click();", Element)
             
             elif clear==True: #By default clear the text field
