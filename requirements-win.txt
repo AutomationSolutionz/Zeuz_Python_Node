@@ -48,3 +48,5 @@ pytest==6.1.2
 yapf
 websocket-client
 tqdm
+pyscreenshot
+psutil
