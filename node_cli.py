@@ -403,6 +403,7 @@ def disconnect_from_server():
 
 def RunProcess(sTesterid, user_info_object):
     etime = time.time() + (30 * 60)  # 30 minutes
+    executor = CommonUtil.GetExecutor()
     while 1:
         try:
             if exit_script:
@@ -410,7 +411,7 @@ def RunProcess(sTesterid, user_info_object):
             if time.time() > etime:
                 print("30 minutes over, logging in again")
                 return True  # Timeout reached, re-login. We do this because after about 3-4 hours this function will hang, and thus not be available for deployment
-
+            executor.submit(RequestFormatter.Get, "update_machine_with_time_api", {"machine_name": sTesterid})
             # r = RequestFormatter.Get("is_run_submitted_api", {"machine_name": sTesterid})
             r = requests.get(RequestFormatter.form_uri("is_submitted_api"), {"machine_name": sTesterid}, verify=False).json()
             Userid = (CommonUtil.MachineInfo().getLocalUser()).lower()
@@ -453,12 +454,7 @@ def RunProcess(sTesterid, user_info_object):
                 )
             else:
                 time.sleep(3)
-                executor = CommonUtil.GetExecutor()
-                executor.submit(RequestFormatter.Get, "update_machine_with_time_api", {"machine_name": sTesterid})
-                # if r and "update" in r and r["update"]:
-                    # _r = RequestFormatter.Get(
-                    #     "update_machine_with_time_api", {"machine_name": sTesterid}
-                    # )
+
         except Exception as e:
             exc_type, exc_obj, exc_tb = sys.exc_info()
             fname = os.path.split(exc_tb.tb_frame.f_code.co_filename)[1]

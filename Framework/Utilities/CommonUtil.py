@@ -342,7 +342,7 @@ def CreateJsonReport(logs=None, stepInfo=None, TCInfo=None, setInfo=None):
                                             # Can be optimized by taking error when occurs and append it if the step fails only
                                             while count >= max_count and err_count < 3:
                                                 each_log = step_info["log"][count]
-                                                if each_log["status"].lower() == "error" and not each_log["details"].endswith(to_dlt_from_fail_reason):
+                                                if each_log["status"].lower() == "error":
                                                     step_error_logs.append(each_log["details"])
                                                     err_count += 1
                                                 count -= 1
@@ -812,6 +812,23 @@ def check_offline():
         return True
     else:
         return False
+
+
+def Delete_from_list(List, to_del):
+    """ This function can delete multiple elements from list with O(N) complexity """
+    if not to_del:
+        return List
+    to_del.sort()
+    cnt, del_cnt, new_list, check = 0, 0, [], True
+    for i in List:
+        if check and cnt == to_del[del_cnt]:
+            del_cnt += 1
+            if del_cnt == len(to_del):
+                check = False
+        else:
+            new_list.append(i)
+        cnt += 1
+    return new_list
 
 
 class MachineInfo:

@@ -1547,31 +1547,37 @@ def save_web_elements_in_list(step_data):
         all_elements = []
         target_index = 0
         target = []
-        paired = True
-
+        # paired = True
         try:
             for left, mid, right in step_data:
                 left = left.strip().lower()
                 mid = mid.strip().lower()
                 right = right.strip()
-                if not has_element or mid in ("element parameter", "parent parameter", "unique parameter", "child parameter", "sibling parameter"):
+                if not has_element and mid in ("element parameter", "parent parameter", "unique parameter", "child parameter", "sibling parameter"):
                     has_element = True
                 elif "target parameter" in mid:
                     target.append([[], [], [], []])
                     temp = right.strip(",").split(",")
                     data = []
                     for each in temp:
-                        data.append(each.strip().split("="))
+                        if each.strip("\n").startswith("return_contains"):
+                            data.append(["return_contains", each.split("return_contains")[1].strip()[1:-1].split("=")])
+                        elif each.strip("\n").startswith("return_does_not_contain"):
+                            data.append(["return_does_not_contain", each.split("return_does_not_contain")[1].strip()[1:-1].split("=")])
+                        else:
+                            data.append(each.strip().split("="))
                     for i in range(len(data)):
                         for j in range(len(data[i])):
-                            data[i][j] = data[i][j].strip()
+                            if isinstance(data[i][j], str):
+                                data[i][j] = data[i][j].strip()
                             if j == 1:
-                                data[i][j] = data[i][j].strip('"')  # dont add another strip here. dont need to strip inside quotation mark
+                                if isinstance(data[i][j], list):
+                                    data[i][j][0], data[i][j][1] = data[i][j][0].strip().strip('"'), data[i][j][1].strip().strip('"')
+                                elif isinstance(data[i][j], str):
+                                    data[i][j] = data[i][j].strip('"')  # dont add another strip here. dont need to strip inside quotation mark
 
                     for Left, Right in data:
-                        if Left == "return":
-                            target[target_index][1] = Right
-                        elif Left == "return_contains":
+                        if Left == "return_contains":
                             target[target_index][2].append(Right)
                         elif Left == "return_does_not_contain":
                             target[target_index][3].append(Right)
@@ -1581,26 +1587,75 @@ def save_web_elements_in_list(step_data):
                     target_index = target_index + 1
                 elif left == "save web elements in list":
                     variable_name = right
-                elif left == "paired":
-                    paired = False if right.lower() == "no" else True
+                # elif left == "paired":
+                #     paired = False if right.lower() == "no" else True
 
             if has_element:
                 Element = LocateElement.Get_Element(step_data, selenium_driver)
                 if Element == "failed":
-                    CommonUtil.ExecLog(
-                        sModuleInfo, "Unable to locate your element with given data.", 3
-                    )
+                    CommonUtil.ExecLog(sModuleInfo, "Unable to locate your element with given data.", 3)
                     return "failed"
             else:
                 Element = selenium_driver
         except:
-            CommonUtil.ExecLog(
-                sModuleInfo, "Unable to parse data. Please write data in correct format", 3
-            )
+            CommonUtil.ExecLog(sModuleInfo, "Unable to parse data. Please write data in correct format", 3)
             return "failed"
 
         for each in target:
             all_elements.append(LocateElement.Get_Element(each[0], Element, return_all_elements=True))
+
+        cnt = 0
+        while cnt < target_index:
+            if target[cnt][2]:
+                count, to_del = 0, []
+                for elem in all_elements[cnt]:
+                    for each in target[cnt][2]:
+                        if each[0] == "text" and each[1] in elem.text:
+                            break
+                    else:
+                        for each in target[cnt][2]:
+                            if each[0] == "tag" and each[1] in elem.tag_name:
+                                break
+                        else:
+                            for each in target[cnt][2]:
+                                if each[0] not in ("text", "tag") and elem.get_attribute(each[0]) is None:
+                                    break
+                            else:
+                                for each in target[cnt][2]:
+                                    if each[0] not in ("text", "tag") and each[1] in elem.get_attribute(each[0]):
+                                        break
+                                else:
+                                    to_del.append(count)
+                    count += 1
+                all_elements[cnt] = CommonUtil.Delete_from_list(all_elements[cnt], to_del)
+                # Using this function to delete in O(N) complexity
+            if target[cnt][3]:
+                count, to_del = 0, []
+                for elem in all_elements[cnt]:
+                    for each in target[cnt][3]:
+                        if each[0] == "text" and each[1] in elem.text:
+                            to_del.append(count)
+                            break
+                    else:
+                        for each in target[cnt][3]:
+                            if each[0] == "tag" and each[1] in elem.tag_name:
+                                to_del.append(count)
+                                break
+                        else:
+                            for each in target[cnt][3]:
+                                if each[0] not in ("text", "tag") and elem.get_attribute(each[0]) is None:
+                                    to_del.append(count)
+                                    break
+                            else:
+                                for each in target[cnt][3]:
+                                    if each[0] not in ("text", "tag") and each[1] in elem.get_attribute(each[0]):
+                                        to_del.append(count)
+                                        break
+
+                    count += 1
+                all_elements[cnt] = CommonUtil.Delete_from_list(all_elements[cnt], to_del)
+
+            cnt += 1
 
         if target_index == 1:
             return Shared_Resources.Set_Shared_Variables(variable_name, all_elements[0])
