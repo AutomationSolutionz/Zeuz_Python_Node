@@ -946,7 +946,7 @@ def run_all_test_steps_in_a_test_case(
             run_id + "|" + test_case + "|" + str(current_step_id) + "|" + str(current_step_sequence),
             temp_ini_file,
         )
-
+        CommonUtil.current_step_no = str(current_step_sequence)
         # add log
         log_line = "STEP #%d: %s" % (StepSeq, current_step_name)
         print("-"*len(log_line))
