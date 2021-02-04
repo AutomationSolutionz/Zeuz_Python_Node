@@ -2940,9 +2940,7 @@ def csv_read(data_set):
         with open(filepath, "r") as csv_file:
             if structure == "list of dictionaries":
                 csv_read_data = csv.DictReader(csv_file, delimiter=delimiter)
-                data_to_save = []
-                for line in csv_read_data:
-                    data_to_save.append(line)
+                data_to_save = [line for line in csv_read_data]
 
         CommonUtil.ExecLog(sModuleInfo, "Extracted CSV data with '%s' delimiter and saved data as %s format" % (delimiter, structure), 1)
         sr.Set_Shared_Variables(var_name, data_to_save)
