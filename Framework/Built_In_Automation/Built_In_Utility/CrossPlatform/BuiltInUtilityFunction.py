@@ -3599,7 +3599,6 @@ def datatype_conversion(data_set):
             index = 0
 
     except:
-        errMsg = ""
         return CommonUtil.Exception_Handler(sys.exc_info())
 
     try:
@@ -3607,37 +3606,35 @@ def datatype_conversion(data_set):
             out_variable_value = str_to_int(
                 sModuleInfo, in_variable_value, ceil_floor_round
             )
-            Shared_Resources.Set_Shared_Variables(out_variable_name, out_variable_value)
-            return "passed"
+            return Shared_Resources.Set_Shared_Variables(out_variable_name, out_variable_value)
 
         elif "str to float" == conversion_type:
             out_variable_value = str_to_float(
                 sModuleInfo, in_variable_value, decimal_point, decimal_condition
             )
-            Shared_Resources.Set_Shared_Variables(out_variable_name, out_variable_value)
-            return "passed"
+            return Shared_Resources.Set_Shared_Variables(out_variable_name, out_variable_value)
 
         elif "int to float" == conversion_type:
             out_variable_value = int_to_float(
                 sModuleInfo, in_variable_value, decimal_point, decimal_condition
             )
-            Shared_Resources.Set_Shared_Variables(out_variable_name, out_variable_value)
-            return "passed"
+            return Shared_Resources.Set_Shared_Variables(out_variable_name, out_variable_value)
 
         elif "float to int" == conversion_type:
             out_variable_value = float_to_int(
                 sModuleInfo, in_variable_value, ceil_floor_round
             )
-            Shared_Resources.Set_Shared_Variables(out_variable_name, out_variable_value)
-            return "passed"
+            return Shared_Resources.Set_Shared_Variables(out_variable_name, out_variable_value)
 
         elif "extract number from str" == conversion_type:
             out_variable_value = extract_num_from_str(
                 sModuleInfo, in_variable_value, decimal_point, decimal_condition, index
             )
-            Shared_Resources.Set_Shared_Variables(out_variable_name, out_variable_value)
-            return "passed"
+            return Shared_Resources.Set_Shared_Variables(out_variable_name, out_variable_value)
 
+        elif "float to float" == conversion_type:
+            out_variable_value = float_to_float(sModuleInfo, in_variable_value, decimal_point, decimal_condition)
+            return Shared_Resources.Set_Shared_Variables(out_variable_name, out_variable_value)
         else:
             CommonUtil.ExecLog(
                 sModuleInfo,
@@ -4000,6 +3997,32 @@ def int_to_float(sModuleInfo, in_variable_value, decimal_point, decimal_conditio
 
             else:
                 out_variable_value.append(i)
+
+    else:
+        out_variable_value = in_variable_value
+
+    return out_variable_value
+
+
+def float_to_float(sModuleInfo, in_variable_value, decimal_point, decimal_condition):
+    """
+    Field	                Sub Field	        Value
+    input variable name	    input parameter	    inp
+    output variable name    output parameter    out
+    datatype conversion     utility action      int to float
+
+    Action: 368 >> 368.0
+    """
+    if isinstance(in_variable_value, float):
+        if decimal_condition:
+            out_variable_value = round(float(in_variable_value), decimal_point)
+        else:
+            out_variable_value = float(in_variable_value)
+
+    elif isinstance(in_variable_value, list):
+        out_variable_value = []
+        for i in in_variable_value:
+            out_variable_value.append(float_to_float(sModuleInfo, i, decimal_point, decimal_condition))
 
     else:
         out_variable_value = in_variable_value
