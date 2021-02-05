@@ -5,7 +5,7 @@
     Caveat: Functions common to multiple Built In Functions must have action names that are unique, because we search the common functions first, regardless of the module name passed by the user 
 """
 
-import inspect, sys, time, collections, ftplib, os, ast, copy
+import inspect, sys, time, collections, ftplib, os, ast, copy, csv
 from pathlib import Path
 
 try:
@@ -2894,3 +2894,58 @@ def execute_python_code(data_set):
         CommonUtil.ExecLog(sModuleInfo, "Executed the python code which was provided", 1)
 
     return "passed"
+
+
+@logger
+def csv_read(data_set):
+    sModuleInfo = inspect.currentframe().f_code.co_name + " : " + MODULE_NAME
+    try:
+        filepath = None
+        delimiter = ","
+        delimiter_support = {
+            "comma": ",",
+            "semicolon": ";",
+            "dot": ".",
+            "colon": ":",
+            "dash": "-",
+            "space": " ",
+            "tab": "\t",
+            "pipe": "|",
+            "asterisk": "*",
+            "plus": "+",
+            "slash": "/",
+            "backslash": "\\",
+        }
+        var_name = ""
+        structure = "list of dictionaries"
+        for left, mid, right in data_set:
+            left = left.lower().strip()
+            if "file path" in left:
+                filepath = right.strip()
+                # Expand ~ (home directory of user) to absolute path.
+                if "~" in filepath:
+                    filepath = Path(os.path.expanduser(filepath))
+                filepath = Path(filepath)
+            elif "delimiter" in left:
+                right = right.strip()
+                if right in delimiter_support:
+                    delimiter = delimiter_support[right]
+                else:
+                    delimiter = right
+            elif "structure of the variable" in left:
+                pass
+            if "read from csv" in left:
+                var_name = right.strip()
+
+        with open(filepath, "r") as csv_file:
+            if structure == "list of dictionaries":
+                csv_read_data = csv.DictReader(csv_file, delimiter=delimiter)
+                data_to_save = [line for line in csv_read_data]
+
+        CommonUtil.ExecLog(sModuleInfo, "Extracted CSV data with '%s' delimiter and saved data as %s format" % (delimiter, structure), 1)
+        sr.Set_Shared_Variables(var_name, data_to_save)
+        return "passed"
+
+    except:
+        return CommonUtil.Exception_Handler(sys.exc_info())
+

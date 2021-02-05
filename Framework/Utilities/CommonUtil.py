@@ -104,6 +104,11 @@ to_dlt_from_fail_reason = " : Test Step Failed"
 previous_log_line = None
 teardown = True
 
+current_action_no = ""
+current_action_name = ""
+current_step_no = ""
+current_step_name = ""
+
 executor = concurrent.futures.ThreadPoolExecutor()
 all_threads = {}
 
@@ -641,7 +646,9 @@ def TakeScreenShot(function_name, local_run=False):
             "********** Capturing Screenshot for Action: %s Method: %s **********" % (function_name, Method),
             4,
         )
-        thread = executor.submit(Thread_ScreenShot, function_name, image_folder, Method, Driver)
+        image_name = "Step#" + current_step_no + "_Action#" + current_action_no + "_" + str(function_name)
+        print(image_name)
+        thread = executor.submit(Thread_ScreenShot, function_name, image_folder, Method, Driver, image_name)
         SaveThread("screenshot", thread)
 
     except:
@@ -655,7 +662,7 @@ def pil_image_to_bytearray(img):
     return img_byte_array
 
 
-def Thread_ScreenShot(function_name, image_folder, Method, Driver):
+def Thread_ScreenShot(function_name, image_folder, Method, Driver, image_name):
     """ Capture screen of mobile or desktop """
     sModuleInfo = inspect.currentframe().f_code.co_name + " : " + MODULE_NAME
     chars_to_remove = [
@@ -676,20 +683,8 @@ def Thread_ScreenShot(function_name, image_folder, Method, Driver):
     trans_table = str.maketrans(
         dict.fromkeys("".join(chars_to_remove))
     )  # python3 version of translate
-    ImageName = os.path.join(
-        image_folder,
-        TimeStamp("utc")
-        + "_"
-        + (function_name.translate(trans_table)).strip().replace(" ", "_")
-        + ".png",
-    )
-    ExecLog(
-        sModuleInfo,
-        "Capturing screen on %s, with driver: %s, and saving to %s"
-        % (str(Method), str(Driver), ImageName),
-        0,
-    )
-
+    ImageName = os.path.join(image_folder, (image_name.translate(trans_table)).strip().replace(" ", "_") + ".png")
+    ExecLog(sModuleInfo, "Capturing screen on %s, with driver: %s, and saving to %s" % (str(Method), str(Driver), ImageName), 0)
     try:
         # Capture screenshot of desktop
         if Method == "desktop":
