@@ -2918,30 +2918,90 @@ def csv_read(data_set):
         }
         var_name = ""
         structure = "list of dictionaries"
+        conv, Integer, Float, Bool = False, [], [], []
         for left, mid, right in data_set:
             left = left.lower().strip()
-            if "file path" in left:
+            if "file path" == left:
                 filepath = right.strip()
                 # Expand ~ (home directory of user) to absolute path.
                 if "~" in filepath:
                     filepath = Path(os.path.expanduser(filepath))
                 filepath = Path(filepath)
-            elif "delimiter" in left:
+            elif "delimiter" == left:
                 right = right.strip()
                 if right in delimiter_support:
                     delimiter = delimiter_support[right]
                 else:
                     delimiter = right
-            elif "structure of the variable" in left:
-                pass
-            if "read from csv" in left:
+            elif "structure of the variable" == left:
+                pass    # "list of dictionaries" for now. Will implement more structures in future
+            elif "convert" in left:
+                conv = True
+                fields = CommonUtil.parse_value_into_object(right.strip())
+                if "int" in left:
+                    if isinstance(fields, str):
+                        Integer.append(fields)
+                    elif isinstance(fields, list):
+                        Integer += fields
+                elif "float" in left:
+                    if isinstance(fields, str):
+                        Float.append(fields)
+                    elif isinstance(fields, list):
+                        Float += fields
+                elif "bool" in left:
+                    if isinstance(fields, str):
+                        Bool.append(fields)
+                    elif isinstance(fields, list):
+                        Bool += fields
+                elif "str" in left:
+                    pass    # every field is already in string in csv
+            elif "read from csv" in left:
                 var_name = right.strip()
 
         with open(filepath, "r") as csv_file:
             if structure == "list of dictionaries":
                 csv_read_data = csv.DictReader(csv_file, delimiter=delimiter)
-                data_to_save = [line for line in csv_read_data]
-
+                # data_to_save = [line for line in csv_read_data]
+                data_to_save = []
+                not_exist = []
+                for line in csv_read_data:
+                    if Integer:
+                        for i in Integer:
+                            if i in line:
+                                try:
+                                    line[i] = int(line[i])
+                                except:
+                                    CommonUtil.ExecLog("", "Could not convert '%s' into integer of '%s' key. Keeping as it is" % (line[i], i), 2)
+                            elif i not in not_exist:
+                                not_exist.append(i)
+                                CommonUtil.ExecLog("", "'%s' key does not exist for converting to integer", 2)
+                    if Float:
+                        for i in Float:
+                            if i in line:
+                                try:
+                                    line[i] = float(line[i])
+                                except:
+                                    CommonUtil.ExecLog("", "Could not convert '%s' into float of '%s' key. Keeping as it is" % (line[i], i), 2)
+                            elif i not in not_exist:
+                                not_exist.append(i)
+                                CommonUtil.ExecLog("", "'%s' key does not exist for converting to float" % i, 2)
+                    if Bool:
+                        for i in Bool:
+                            if i in line:
+                                try:
+                                    val = line[i].strip().lower()
+                                    if val == "true":
+                                        line[i] = True
+                                    elif val == "false":
+                                        line[i] = False
+                                    else:
+                                        CommonUtil.ExecLog("", "Could not convert '%s' into boolean of '%s' key. Keeping as it is" % (line[i], i), 2)
+                                except:
+                                    CommonUtil.ExecLog("", "Could not convert '%s' into boolean of '%s' key. Keeping as it is" % (line[i], i), 2)
+                            elif i not in not_exist:
+                                not_exist.append(i)
+                                CommonUtil.ExecLog("", "'%s' key does not exist for converting to boolean" % i, 2)
+                    data_to_save.append(line)
         CommonUtil.ExecLog(sModuleInfo, "Extracted CSV data with '%s' delimiter and saved data as %s format" % (delimiter, structure), 1)
         sr.Set_Shared_Variables(var_name, data_to_save)
         return "passed"
