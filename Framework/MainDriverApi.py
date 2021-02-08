@@ -1771,8 +1771,7 @@ def main(device_dict, user_info_object):
             cnt += 1
     with open(json_path, "r") as f:
         all_run_id_info = json.loads(f.read())
-    with open(Path.cwd().parent / "Projects" / "Local_run.json", "w") as f:
-        f.write(json.dumps(all_run_id_info))
+
     if len(all_run_id_info) == 0:
         CommonUtil.ExecLog("", "No Test Run Schedule found for the current user : %s" % Userid, 2)
         return False
@@ -1788,7 +1787,6 @@ def main(device_dict, user_info_object):
         # Write testcase json
         path = ConfigModule.get_config_value("sectionOne", "temp_run_file_path", temp_ini_file) / Path(run_id.replace(":", "-"))
         FL.CreateFolder(path)
-
 
         # Start websocket server if we're in debug mode.
         if run_id.lower().startswith("debug"):
@@ -1983,9 +1981,6 @@ def main(device_dict, user_info_object):
         elif not run_id.startswith("debug"):
             upload_json_report(Userid, temp_ini_file, run_id, all_run_id_info)
             # executor.submit(upload_json_report)
-
-        # Delete downloaded attachments
-        FL.DeleteFolder(ConfigModule.get_config_value("sectionOne", "download_folder", temp_ini_file))
 
         # Close websocket connection.
         if run_id.lower().startswith("debug"):

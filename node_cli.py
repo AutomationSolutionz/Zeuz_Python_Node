@@ -786,16 +786,7 @@ def Local_run():
         device_dict = All_Device_Info.get_all_connected_device_info()
         rem_config = {"local_run": True}
         ConfigModule.remote_config = rem_config
-
-        path = Path.cwd().parent / "Projects" / "Local_run.json"
-        with open(path, "r") as f:
-            Json_data = json.load(f)
-            if isinstance(Json_data, str):
-                Json_data = json.loads(Json_data)
-        all_run_id_info = Json_data if isinstance(Json_data, list) else Json_data["json"]
-        with open(path, "w") as f:
-            json.dump(all_run_id_info, f, indent=2)
-        MainDriverApi.main(device_dict, user_info_object, all_run_id_info)
+        MainDriverApi.main(device_dict, user_info_object)
     except Exception as e:
         exc_type, exc_obj, exc_tb = sys.exc_info()
         fname = os.path.split(exc_tb.tb_frame.f_code.co_filename)[1]
