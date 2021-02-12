@@ -970,9 +970,9 @@ def sanitize_step_data(
                 if (
                     str(new_row[i])[:1] == '"' and str(new_row[i])[-1:] == '"'
                 ):  # String is within double quotes, indicating it should not be changed
-                    new_row[i] = str(new_row[i])[
-                        1 : len(new_row[i]) - 1
-                    ]  # Remove surrounding quotes
+                    # new_row[i] = str(new_row[i])[
+                    #     1 : len(new_row[i]) - 1
+                    # ]  # Remove surrounding quotes
                     continue  # Do not change string
 
                 # Sanitize the column for this row
