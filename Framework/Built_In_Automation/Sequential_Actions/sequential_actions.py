@@ -1884,12 +1884,15 @@ def Action_Handler(_data_set, action_row):
     action_subfield = action_row[1]
 
     if str(action_name).startswith("%|"):  # if shared variable
-        action_name = str(action_name).split("%|")[1][:-2]
-        action_name = sr.Get_Shared_Variables(action_name)
+        # action_name = str(action_name).split("%|")[1][:-2]
+        # action_name = sr.Get_Shared_Variables(action_name)
+        action_name = sr.get_previous_response_variables_in_strings(action_name)
 
     if str(action_subfield).startswith("%|"):  # if shared variable
-        action_subfield = str(action_subfield).split("%|")[0][:-2]
-        action_subfield = sr.Get_Shared_Variables(action_subfield)
+        # action_subfield = str(action_subfield).split("%|")[0][:-2]
+        # action_subfield = sr.Get_Shared_Variables(action_subfield)
+        action_subfield = sr.get_previous_response_variables_in_strings(action_subfield)
+
 
     # Get module and function for this action
     module = ""
