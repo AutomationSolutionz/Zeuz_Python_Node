@@ -33,7 +33,7 @@ def Set_Shared_Variables(key, value, protected=False, allowEmpty=False, print_va
         sModuleInfo = inspect.currentframe().f_code.co_name + " : " + MODULE_NAME
         global shared_variables, protected_variables
         if not allowEmpty and (
-            key == "" or key == None or value == "" or value == None
+            key == "" or key == None
         ):  # if input is invalid
             return "failed"
         else:  # Valid input
