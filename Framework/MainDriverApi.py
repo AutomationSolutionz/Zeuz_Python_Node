@@ -1711,7 +1711,7 @@ def upload_json_report(Userid, temp_ini_file, run_id, all_run_id_info):
         json.dump(all_run_id_info, f, indent=2)
 
     # Create a standard report format to be consumed by other tools.
-    junit_report_path = zip_path / "report.xml"
+    junit_report_path = zip_path / "junitreport.xml"
     junit_report.process(all_run_id_info, str(junit_report_path))
 
 
@@ -1963,6 +1963,17 @@ def main(device_dict, user_info_object):
             CommonUtil.ExecLog(sModuleInfo, "Test Set Cancelled by the User", 1)  # add log
         elif not run_id.startswith("debug"):
             upload_json_report(Userid, temp_ini_file, run_id, all_run_id_info)
+            
+            # If node is running in device farm, copy the logs and reports to
+            # the expected directory.
+            if "DEVICEFARM_LOG_DIR" in os.environ:
+                log_dir = Path(os.environ["DEVICEFARM_LOG_DIR"])
+                zeuz_log_dir = Path(ConfigModule.get_config_value(
+                    "sectionOne", "test_case_folder", temp_ini_file
+                )).parent
+
+                shutil.copytree(str(zeuz_log_dir), str(log_dir))
+            
             # executor.submit(upload_json_report)
 
         # Close websocket connection.
