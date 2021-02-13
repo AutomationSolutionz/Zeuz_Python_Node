@@ -28,6 +28,7 @@ from Framework.Built_In_Automation.Shared_Resources import (
     BuiltInFunctionSharedResources as shared,
 )
 from Framework.Utilities import ws
+from reporting import junit_report
 
 top_path = os.path.dirname(os.getcwd())
 drivers_path = os.path.join(top_path, "Drivers")
@@ -1655,15 +1656,15 @@ def get_all_run_id_info(Userid, sModuleInfo):
 
 
 def upload_json_report(Userid, temp_ini_file, run_id, all_run_id_info):
-    zip_path = ConfigModule.get_config_value("sectionOne", "temp_run_file_path", temp_ini_file) / Path(run_id.replace(":", "-"))
-    path = zip_path / Path("execution_log.json")
+    zip_path = Path(ConfigModule.get_config_value("sectionOne", "temp_run_file_path", temp_ini_file)) / run_id.replace(":", "-")
+    path = zip_path / "execution_log.json"
     json_report = CommonUtil.get_all_logs(json=True)
     with open(path, "w") as f:
         json.dump(json_report, f)
 
     if ConfigModule.get_config_value("RunDefinition", "local_run") == "False":
         FL.ZipFolder(str(zip_path), str(zip_path) + ".zip")
-        for i in range(720):    # 1 hour
+        for _ in range(720):    # 1 hour
             res = requests.get(RequestFormatter.form_uri("is_copied_api/"), {"runid": run_id}, verify=False)
             r = res.json()
             if r["flag"]:
@@ -1671,7 +1672,7 @@ def upload_json_report(Userid, temp_ini_file, run_id, all_run_id_info):
             time.sleep(5)
         else:
             print("Run history was not created in server so couldn't upload the report for run_id '%s'." % run_id +
-                  "Get the report from below path-\n" + path)
+                "Get the report from below path-\n" + path)
             return
 
         with open(str(zip_path) + ".zip", "rb") as fzip:
@@ -1702,11 +1703,17 @@ def upload_json_report(Userid, temp_ini_file, run_id, all_run_id_info):
             else:
                 print("Could not Upload the report to server of run_id '%s'" % run_id)
         os.unlink(str(zip_path) + ".zip")
+        
     with open(path, "w") as f:
         json.dump(json_report, f, indent=2)
-    path = zip_path / Path("test_cases_data.json")
+    path = zip_path / "test_cases_data.json"
     with open(path, "w") as f:
         json.dump(all_run_id_info, f, indent=2)
+
+    # Create a standard report format to be consumed by other tools.
+    junit_report_path = zip_path / "report.xml"
+    junit_report.process(all_run_id_info, str(junit_report_path))
+
 
 # main function
 def main(device_dict, user_info_object):
@@ -1798,7 +1805,7 @@ def main(device_dict, user_info_object):
             if "debug_step_actions" in run_id_info:
                 debug_info["debug_step_actions"] = run_id_info["debug_step_actions"]
         driver_list = ['Built_In_Selenium_Driver', 'Built_In_RestApi', 'Built_In_Appium_Driver', 'Built_In_Selenium',
-                       'Built_In_Driver', 'deepak', 'Built_In_Appium', 'Built_In_NET_Win', 'Jarvis']
+                    'Built_In_Driver', 'deepak', 'Built_In_Appium', 'Built_In_NET_Win', 'Jarvis']
         final_run_params = {}
         for param in final_run_params_from_server:
             final_run_params[param] = CommonUtil.parse_value_into_object(list(final_run_params_from_server[param].items())[1][1])
