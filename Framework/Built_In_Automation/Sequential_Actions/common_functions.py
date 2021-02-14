@@ -499,12 +499,12 @@ def shared_variable_to_value(data_set):
     ]
 
     try:
-        for row in data_set:
-            if row[1] == "action":
-                if (
-                    row[0] == "compare variable"
-                ):  # for compare variable don't replace.. we will need the variable name
-                    return data_set
+        # for row in data_set:
+        #     if row[1] == "action":
+        #         if (
+        #             row[0] == "compare variable"
+        #         ):  # for compare variable don't replace.. we will need the variable name
+        #             return data_set
         for row in data_set:  # For each row of the data set
             if (
                 str(row[0]).strip().lower()
@@ -1084,7 +1084,7 @@ def New_Compare_Variables(step_data):
                     return "passed"
                 elif isinstance(results, tuple):
                     found_list, not_found_list1, not_found_list2, pass_count, fail_count = results
-        else:  # if both are dict
+        elif isinstance(list1, dict) and isinstance(list2, dict):  # if both are dict
             for key in list1:
                 if key in list2:
                     if key not in taken:
@@ -1138,6 +1138,13 @@ def New_Compare_Variables(step_data):
                         extra_count += 1
                         result.append("extra")
                         taken.append(key)
+        else:
+            if str(list1) == str(list2):
+                CommonUtil.ExecLog(sModuleInfo, "Left and right value matched", 1)
+                return "passed"
+            else:
+                CommonUtil.ExecLog(sModuleInfo, "Left and right value did not match", 3)
+                return "failed"
 
         if nested:
             pass
