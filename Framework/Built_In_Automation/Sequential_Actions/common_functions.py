@@ -950,10 +950,399 @@ def Initialize_Dict(data_set):
 
 
 @logger
+@deprecated
 def Compare_Lists_or_Dicts(data_set):
     """ Compare two lists stored in shared variables """
     sModuleInfo = inspect.currentframe().f_code.co_name + " : " + MODULE_NAME
     return sr.Compare_Lists_or_Dicts([data_set])
+
+
+nested = False
+
+
+# Validating text from an element given information regarding the expected text
+def New_Compare_Variables(step_data):
+    sModuleInfo = inspect.currentframe().f_code.co_name + " : " + MODULE_NAME
+    CommonUtil.ExecLog(sModuleInfo, "Function: Compare_Lists", 0)
+    try:
+        pass_count = 0
+        fail_count = 0
+        extra_count = 0
+        variable_list1 = []
+        variable_list2 = []
+        result = []
+        taken = []
+        list1_name = ""
+        list2_name = ""
+        ignore_extra = True
+        both_list = False
+        match_by_index = False
+        check_exclusion = False
+        check_subset = False
+        global nested
+        nested = False
+
+        for each_step_data_item in step_data:
+            if (
+                each_step_data_item[1] == "compare"
+                or each_step_data_item[1] == "element parameter"
+                or "parameter" in each_step_data_item[1]
+            ):
+                list1_name = each_step_data_item[0]
+                list2_name = each_step_data_item[2]
+            if each_step_data_item[1] == "action":
+                action_type = str(each_step_data_item[2]).lower().strip()
+                if action_type.startswith("exact match"):
+                    ignore_extra = False
+                if action_type.startswith("match by index"):
+                    match_by_index = True
+                if action_type.startswith("ignore extra items"):
+                    check_exclusion = True
+                if action_type.startswith("subset"):
+                    check_subset = True
+
+        if list1_name == "" or list2_name == "":
+            CommonUtil.ExecLog(
+                sModuleInfo,
+                "Error parsing data set. Expected Field and Value fields to be set",
+                3,
+            )
+            return "failed"
+
+        if check_subset:
+            list1 = CommonUtil.parse_value_into_object(list1_name)
+            list2 = CommonUtil.parse_value_into_object(list2_name)
+            if not isinstance(list1, list) or not isinstance(list2, list):
+                CommonUtil.ExecLog(sModuleInfo, "To check subset both the variable should be list", 3)
+                return "failed"
+            if list1 == list2:
+                CommonUtil.ExecLog(sModuleInfo, "2nd list is equal to the 1st list", 1)
+                return "passed"
+            if all(x in list1 for x in list2):
+                CommonUtil.ExecLog(sModuleInfo, "2nd list is a subset of 1st list", 1)
+                return "passed"
+            else:
+                CommonUtil.ExecLog(sModuleInfo, "2nd list is not a subset of 1st list", 1)
+                return "failed"
+
+        list1 = CommonUtil.parse_value_into_object(list1_name)
+        list2 = CommonUtil.parse_value_into_object(list2_name)
+
+        if list1 in failed_tag_list or list2 in failed_tag_list:
+            CommonUtil.ExecLog(
+                sModuleInfo,
+                "Error converting Shared Variable in Field or Value fields to strings",
+                3,
+            )
+            return "failed"
+
+        found_list = []
+        not_found_list1 = []
+        not_found_list2 = []
+
+        if (isinstance(list1, list) or isinstance(list1, tuple)) and (isinstance(list2, list) or isinstance(list2, tuple)):
+            both_list = True
+            variable_list1 = list1
+            variable_list2 = list2
+
+            # found_list, not_found_list1, not_found_list2 = compare_list_tuple(list1, list2, check_exclusion, match_by_index)
+            results = compare_list_tuple(list1, list2, check_exclusion, match_by_index)
+            if check_exclusion:
+                if nested and results == "not found":
+                    CommonUtil.ExecLog(sModuleInfo, "All items of 2nd list is not found in the 1st list", 3)
+                    return "failed"
+                elif nested and results == "all found":
+                    CommonUtil.ExecLog(sModuleInfo, "All items of 2nd list is found in the 1st list", 1)
+                    return "passed"
+                elif isinstance(results, list):
+                    found_list = results
+                else:
+                    print("invalid from check exclusion")
+            elif not match_by_index:
+                if nested and results == "not found":
+                    CommonUtil.ExecLog(sModuleInfo, "All items of 1st list and 2nd list did not match", 3)
+                    return "failed"
+                elif nested and results == "all found":
+                    CommonUtil.ExecLog(sModuleInfo, "All items of 1st list and 2nd list matched", 1)
+                    return "passed"
+                elif nested and results == "2nd list larger":
+                    CommonUtil.ExecLog(sModuleInfo, "Somewhere inside 2nd list has more items than 1st list", 3)
+                    return "failed"
+                elif nested and results == "1st list larger":
+                    CommonUtil.ExecLog(sModuleInfo, "Somewhere inside 1st list has more items than 2nd list", 3)
+                    return "failed"
+                elif isinstance(results, tuple):
+                    found_list, not_found_list1, not_found_list2 = results
+                else:
+                    print("invalid from not match by index")
+            else:
+                if results == "not matched":
+                    CommonUtil.ExecLog(sModuleInfo, "Somewhere inside 1st list has more items than 2nd list", 3)
+                    return "failed"
+                elif results == "all matched":
+                    CommonUtil.ExecLog(sModuleInfo, "All items of 1st list and 2nd list did matched", 1)
+                    return "passed"
+                elif isinstance(results, tuple):
+                    found_list, not_found_list1, not_found_list2, pass_count, fail_count = results
+        else:  # if both are dict
+            for key in list1:
+                if key in list2:
+                    if key not in taken:
+                        new_tuple = (key, list1[key])
+                        variable_list1.append(new_tuple)
+                        new_tuple = (key, list2[key])
+                        variable_list2.append(new_tuple)
+                        taken.append(key)
+                        if (
+                            str(list1[key]).lower().strip()
+                            == str(list2[key]).lower().strip()
+                        ):
+                            pass_count += 1
+                            result.append("pass")
+                        else:
+                            fail_count += 1
+                            result.append("fail")
+                else:
+                    if key not in taken:
+                        new_tuple = (key, list1[key])
+                        variable_list1.append(new_tuple)
+                        new_tuple = (key, "N/A")
+                        variable_list2.append(new_tuple)
+                        extra_count += 1
+                        result.append("extra")
+                        taken.append(key)
+
+            for key in list2:
+                if key in list1:
+                    if key not in taken:
+                        new_tuple = (key, list1[key])
+                        variable_list1.append(new_tuple)
+                        new_tuple = (key, list2[key])
+                        variable_list2.append(new_tuple)
+                        taken.append(key)
+                        if (
+                            str(list1[key]).lower().strip()
+                            == str(list2[key]).lower().strip()
+                        ):
+                            pass_count += 1
+                            result.append("pass")
+                        else:
+                            fail_count += 1
+                            result.append("fail")
+                else:
+                    if key not in taken:
+                        new_tuple = (key, "N/A")
+                        variable_list1.append(new_tuple)
+                        new_tuple = (key, list2[key])
+                        variable_list2.append(new_tuple)
+                        extra_count += 1
+                        result.append("extra")
+                        taken.append(key)
+
+        if nested:
+            pass
+        else:
+            if check_exclusion:
+                if len(found_list) > 0:
+                    CommonUtil.ExecLog(
+                        sModuleInfo, "Match found for items: %s" % found_list, 3
+                    )
+                    return "failed"
+                else:
+                    CommonUtil.ExecLog(sModuleInfo, "No match found", 1)
+                    return "passed"
+
+            CommonUtil.ExecLog(
+                sModuleInfo,
+                "###Comparison Results of List '%s' and List '%s'###"
+                % (list1_name, list2_name),
+                1,
+            )
+            CommonUtil.ExecLog(sModuleInfo, "Matched Variables: %d" % pass_count, 1)
+            CommonUtil.ExecLog(sModuleInfo, "Not Matched Variables: %d" % fail_count, 1)
+            CommonUtil.ExecLog(sModuleInfo, "Extra Variables: %d" % extra_count, 1)
+
+            if not both_list:
+                for i in range(0, len(variable_list1)):
+                    if result[i] == "pass":
+                        CommonUtil.ExecLog(
+                            sModuleInfo,
+                            "Item %d. Variable Name : %s :: %s - %s : Matched"
+                            % (
+                                i + 1,
+                                variable_list1[i][0],
+                                variable_list1[i][1],
+                                variable_list2[i][1],
+                            ),
+                            1,
+                        )
+                    elif result[i] == "fail":
+                        CommonUtil.ExecLog(
+                            sModuleInfo,
+                            "Item %d. Variable Name : %s :: %s - %s : Not Matched"
+                            % (
+                                i + 1,
+                                variable_list1[i][0],
+                                variable_list1[i][1],
+                                variable_list2[i][1],
+                            ),
+                            3,
+                        )
+                    else:
+                        CommonUtil.ExecLog(
+                            sModuleInfo,
+                            "Item %d. Variable Name : %s :: %s - %s : Extra"
+                            % (
+                                i + 1,
+                                variable_list1[i][0],
+                                variable_list1[i][1],
+                                variable_list2[i][1],
+                            ),
+                            2,
+                        )
+            else:
+                count = len(found_list)
+                for i in range(0, len(found_list)):
+                    CommonUtil.ExecLog(
+                        sModuleInfo,
+                        "Item %d. Matched Element: '%s' found in both list '%s' and list '%s'"
+                        % (i + 1, found_list[i], list1_name, list2_name),
+                        1,
+                    )
+                for i in range(0, len(not_found_list1)):
+                    CommonUtil.ExecLog(
+                        sModuleInfo,
+                        "Item %d. Not Matched Element: '%s' found in list '%s' but not in list '%s'"
+                        % (count + i + 1, not_found_list1[i], list1_name, list2_name),
+                        3,
+                    )
+                count += len(not_found_list1)
+                for i in range(0, len(not_found_list2)):
+                    CommonUtil.ExecLog(
+                        sModuleInfo,
+                        "Item %d. Not Matched Element: '%s' found in list '%s' but not in list '%s'"
+                        % (count + i + 1, not_found_list2[i], list2_name, list1_name),
+                        3,
+                    )
+            if fail_count > 0:
+                CommonUtil.ExecLog(
+                    sModuleInfo, "Error: %d item(s) did not match" % fail_count, 3
+                )
+                return "failed"
+            else:
+                if extra_count > 0 and ignore_extra == False:
+                    CommonUtil.ExecLog(
+                        sModuleInfo, "Error: %d item(s) extra found" % extra_count, 3
+                    )
+                    return "failed"
+                else:
+                    return "passed"
+    except Exception:
+        return CommonUtil.Exception_Handler(sys.exc_info())
+
+
+def compare_list_tuple(list1, list2, check_exclusion, match_by_index):
+    found_list, not_found_list1, not_found_list2, pass_count, fail_count = [], [], [], 0, 0
+    global nested
+    if check_exclusion:
+        if nested and len(list1) != len(list2):
+            pass
+        for each2 in list2:
+            if isinstance(each2, list) or isinstance(each2, tuple):
+                nested = True
+                for each1 in list1:
+                    found_status = compare_list_tuple(each1, each2, check_exclusion, match_by_index)
+                    if found_status == "not found":
+                        return "not found"
+                    elif found_status == "all found":
+                        return "all found"
+            elif nested and each2 not in list1:
+                return "not found"
+            elif not nested and each2 in list1:
+                found_list.append(each2)
+        if nested:
+            return "all found"
+        else:
+            return found_list
+
+    elif not match_by_index:
+        if nested and len(list1) != len(list2):
+            if len(list2) > len(list1):
+                return "2nd list larger"
+            elif len(list1) > len(list2):
+                return "1st list larger"
+        for each1 in list1:
+            if isinstance(each1, list) or isinstance(each1, tuple):
+                nested = True
+                for each2 in list2:
+                    found_status = compare_list_tuple(each1, each2, check_exclusion, match_by_index)
+                    if found_status == "not found":
+                        return "not found"
+                    if found_status == "all found":
+                        return "all found"
+                    if found_status == "2nd list larger":
+                        return "2nd list larger"
+                    if found_status == "1st list larger":
+                        return "1st list larger"
+            elif nested and each1 not in list2:
+                return "not found"
+            elif not nested and each1 in list2:
+                found_list.append(each1)
+                pass_count += 1
+            elif not nested:
+                not_found_list1.append(each1)
+                fail_count += 1
+        for each2 in list2:
+            if isinstance(each2, list) or isinstance(each2, tuple):
+                nested = True
+                for each1 in list1:
+                    found_status = compare_list_tuple(each2, each1, check_exclusion, match_by_index)
+                    if found_status == "not found":
+                        return "not found"
+                    if found_status == "all found":
+                        return "all found"
+                    if found_status == "2nd list larger":
+                        return "2nd list larger"
+                    if found_status == "1st list larger":
+                        return "1st list larger"
+            elif nested and each2 not in list1:
+                return "not found"
+            elif not nested and each2 not in list1:
+                not_found_list2.append(each2)
+        if nested:
+            return "all found"
+        else:
+            return found_list, not_found_list1, not_found_list2
+
+    else:
+        if isinstance(list1[0], list) or isinstance(list1[0], list):
+            nested = True
+            list1 = get_list(list1)
+            list2 = get_list(list2)
+            if list1 == list2:
+                return "all matched"
+            else:
+                return "not matched"
+
+        for cnt in range(len(list1)):
+            if list1[cnt] == list2[cnt]:
+                found_list.append(list1[cnt])
+                pass_count += 1
+            else:
+                not_found_list2.append(list1[cnt])
+                not_found_list1.append(list2[cnt])
+                fail_count += 1
+        return found_list, not_found_list1, not_found_list2, pass_count, fail_count
+
+
+def get_list(value):
+    if isinstance(value, tuple) or isinstance(value, list):
+        for cnt in range(len(value)):
+            if isinstance(value[cnt], tuple) or isinstance(value[cnt], list):
+                value[cnt] = get_list(value[cnt])
+            if isinstance(value[cnt], tuple):
+                value[cnt] = list(value[cnt])
+    return value
 
 
 @logger

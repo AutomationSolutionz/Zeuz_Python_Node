@@ -5,6 +5,7 @@ declarations = (
     { "name": "wait disable",                                "function": "Wait_For_Element",                      "screenshot": "none" },
     { "name": "save text",                                   "function": "Save_Text",                             "screenshot": "none" },
     { "name": "compare variable",                            "function": "Compare_Variables",                     "screenshot": "none" },
+    { "name": "compare variables",                           "function": "New_Compare_Variables",                 "screenshot": "none" },
     { "name": "compare list",                                "function": "Compare_Lists_or_Dicts",                "screenshot": "none" },
     { "name": "compare dictionary",                          "function": "Compare_Lists_or_Dicts",                "screenshot": "none" },
     { "name": "save variable",                               "function": "Save_Variable",                         "screenshot": "none" },
