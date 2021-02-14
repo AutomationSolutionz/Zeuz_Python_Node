@@ -1456,36 +1456,11 @@ def run_test_case(
     CommonUtil.CreateJsonReport(TCInfo=after_execution_dict)
 
     debug = True if run_id.startswith("debug") else False
-    # if str(run_id).startswith("debug"):
-    #     debug = True
-    #     debug_steps = debug_info["debug_steps"]
-    #     str_list = str(debug_steps).split("-")
-    #     debug_steps = str_list[0]
-    #     debug_steps = str(debug_steps[1:-1]).split(",")
-    #
-    # if debug and ConfigModule.get_config_value("RunDefinition", "local_run") == "False":
-    #     CommonUtil.Join_Thread_and_Return_Result("screenshot")  # Let the capturing screenshot end in thread
-    #     executor.submit(cleanup_runid_from_server, run_id)
-    #     executor.submit(start_sending_log_to_server, run_id, temp_ini_file)
-    #     executor.submit(start_sending_shared_var_to_server, run_id)
-    #     executor.submit(start_sending_step_result_to_server, run_id, debug_steps, sTestStepResultList)
-    #     executor.submit(send_debug_data, run_id, "finished", "yes")
-
     if not debug:  # if normal run, then write log file and cleanup driver instances
         CommonUtil.Join_Thread_and_Return_Result("screenshot")  # Let the capturing screenshot end in thread
         cleanup_driver_instances()  # clean up drivers
         shared.Clean_Up_Shared_Variables()  # clean up shared variables
         if ConfigModule.get_config_value("RunDefinition", "local_run") == "False":
-            # executor.submit(
-            #     write_log_file_for_test_case,
-            #     sTestCaseStatus,
-            #     test_case,
-            #     run_id,
-            #     sTestCaseEndTime,
-            #     TestCaseDuration,
-            #     temp_ini_file,
-            #     send_log_file_only_for_fail,
-            # )
             write_log_file_for_test_case(
                 sTestCaseStatus,
                 test_case,
@@ -1726,7 +1701,7 @@ def upload_json_report(Userid, temp_ini_file, run_id, all_run_id_info):
                     break
                 time.sleep(1)
             else:
-                print("Could not Upload json report to server")
+                print("Could not Upload the report to server of run_id '%s'" % run_id)
         os.unlink(str(zip_path) + ".zip")
         
     with open(path, "w") as f:
@@ -1833,7 +1808,8 @@ def main(device_dict, user_info_object):
                     'Built_In_Driver', 'deepak', 'Built_In_Appium', 'Built_In_NET_Win', 'Jarvis']
         final_run_params = {}
         for param in final_run_params_from_server:
-            final_run_params[param] = CommonUtil.parse_value_into_object(list(final_run_params_from_server[param].items())[0][1])
+            final_run_params[param] = CommonUtil.parse_value_into_object(list(final_run_params_from_server[param].items())[1][1])
+            # final_run_params[param] = CommonUtil.parse_value_into_object(list(final_run_params_from_server[param].items())[0][1])
             # final_run_params[param] = CommonUtil.parse_value_into_object(final_run_params_from_server[param]["subfield"])
         send_log_file_only_for_fail = ConfigModule.get_config_value("RunDefinition", "upload_log_file_only_for_fail")
         send_log_file_only_for_fail = False if send_log_file_only_for_fail.lower() == "false" else True
