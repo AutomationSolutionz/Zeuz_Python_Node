@@ -105,7 +105,7 @@ def check_exist(filepath):
             return "Passed"
         else:
             CommonUtil.ExecLog(sModuleInfo, "%s file is not found." % filepath, 3)
-            return "Failed"
+            return "zeuz_failed"
 
     except Exception:
         errMsg = "%s file existence is not checked." % filepath

@@ -77,13 +77,13 @@ def update_element(step_data):
                 "The information in the data-set(s) are incorrect. Please provide accurate data set(s) information.",
                 3,
             )
-            return "Failed"
+            return "zeuz_failed"
 
         else:
             # Function to collect the user provided step data elements
             element_step_data = get_element_step_data(step_data)
             if (element_step_data == []) or (element_step_data in failed_tag_list):
-                return "Failed"
+                return "zeuz_failed"
 
             else:
                 # Function to update the target element(s) as per 'action'
@@ -105,7 +105,7 @@ def update_element(step_data):
                         % element_step_data[0],
                         3,
                     )
-                    return "Failed"
+                    return "zeuz_failed"
 
                 elif (
                     returned_element in default_tag_list
@@ -146,7 +146,7 @@ def read_element(step_data):
                 "The information in the data-set(s) are incorrect. Please provide accurate data set(s) information.",
                 3,
             )
-            return "Failed"
+            return "zeuz_failed"
 
         else:
             # Function to collect the user provided step data elements
@@ -157,7 +157,7 @@ def read_element(step_data):
                     "Unable to get the file path of: '%s'" % element_step_data[0],
                     3,
                 )
-                return "Failed"
+                return "zeuz_failed"
 
             else:
                 # Function to get the XML file tree
@@ -190,13 +190,13 @@ def delete_element(step_data, action_name, action_value):
                 "The information in the data-set(s) are incorrect. Please provide accurate data set(s) information.",
                 3,
             )
-            return "Failed"
+            return "zeuz_failed"
 
         else:
             # Function to collect the user provided step data elements
             element_step_data = get_element_step_data(step_data)
             if (element_step_data == []) or (element_step_data in failed_tag_list):
-                return "Failed"
+                return "zeuz_failed"
 
             else:
                 # Function to update the target element(s) as per 'action'
@@ -218,7 +218,7 @@ def delete_element(step_data, action_name, action_value):
                         % element_step_data[0],
                         3,
                     )
-                    return "Failed"
+                    return "zeuz_failed"
 
                 elif (
                     returned_element in default_tag_list
@@ -292,7 +292,7 @@ def get_element_step_data(step_data):
                 "Data set incorrect. Please provide accurate data set(s) information.",
                 3,
             )
-            return "Failed"
+            return "zeuz_failed"
 
         returned_data = (
             file_path,

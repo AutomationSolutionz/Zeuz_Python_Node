@@ -41,7 +41,7 @@ PROGRESS_TAG = "In-Progress"
 PASSED_TAG = "Passed"
 SKIPPED_TAG = "Skipped"
 WARNING_TAG = "Warning"
-FAILED_TAG = "Failed"
+FAILED_TAG = "zeuz_failed"
 NOT_RUN_TAG = "Not Run"
 BLOCKED_TAG = "Blocked"
 CANCELLED_TAG = "Cancelled"
@@ -65,9 +65,9 @@ failed_tag_list = [
     "Fail",
     "fail",
     "FAIL",
-    "Failed",
-    "failed",
-    "FAILED",
+    "zeuz_failed",
+    "zeuz_failed",
+    "zeuz_failed",
     "false",
     "False",
     "FALSE",
@@ -444,11 +444,11 @@ def get_test_step_data(run_id, test_case, current_step_sequence, sModuleInfo):
             time.sleep(1)
 
         CommonUtil.ExecLog(sModuleInfo, "Couldn't get step data, returning failed", 3)
-        return "failed"
+        return "zeuz_failed"
     except Exception:
         CommonUtil.Exception_Handler(sys.exc_info())
         CommonUtil.ExecLog(sModuleInfo, "Couldn't get step data, returning failed", 3)
-        return "failed"
+        return "zeuz_failed"
 
 
 # updates current test step result(like pass/fail etc.) on server database
@@ -512,7 +512,7 @@ def check_if_other_machines_failed_in_linked_run():
                     % (failed_test_case, failed_machine),
                     3,
                 )
-                return "failed"
+                return "zeuz_failed"
             else:
                 time.sleep(1)
         except:
@@ -728,7 +728,7 @@ def call_driver_function_of_test_step(
                     "Could not find function name: %s in Driver/%s.py. Perhaps you need to add a custom driver or add an alias step to the Test Step."
                     % (step_name, current_driver),
                 )
-                return "Failed"
+                return "zeuz_failed"
 
             try:
                 simple_queue = queue.Queue()
@@ -785,7 +785,7 @@ def call_driver_function_of_test_step(
                         CommonUtil.Exception_Handler(
                             sys.exc_info(), None, ErrorMessage
                         )
-                        sStepResult = "Failed"
+                        sStepResult = "zeuz_failed"
                         q.put(sStepResult)
 
                         # Clean up
@@ -817,13 +817,13 @@ def call_driver_function_of_test_step(
                     )
             except:
                 CommonUtil.Exception_Handler(sys.exc_info())  # handle exceptions
-                sStepResult = "Failed"
+                sStepResult = "zeuz_failed"
 
             # get step result
             if sStepResult in passed_tag_list:
                 sStepResult = "PASSED"
             elif sStepResult in failed_tag_list:
-                sStepResult = "FAILED"
+                sStepResult = "zeuz_failed"
             elif sStepResult in skipped_tag_list:
                 sStepResult = "SKIPPED"
             elif sStepResult.upper() == CANCELLED_TAG.upper():
@@ -842,17 +842,17 @@ def call_driver_function_of_test_step(
                     "Acceptable fail string(s): %s" % failed_tag_list,
                     3,
                 )
-                sStepResult = "FAILED"
+                sStepResult = "zeuz_failed"
             q.put(sStepResult)
         except Exception as e:
             print("### Exception : {}".format(e))
             CommonUtil.Exception_Handler(sys.exc_info())
-            sStepResult = "Failed"
+            sStepResult = "zeuz_failed"
 
         return sStepResult
     except Exception:
         CommonUtil.Exception_Handler(sys.exc_info())
-        return "Failed"
+        return "zeuz_failed"
 
 
 # runs all test steps of a test case
@@ -993,7 +993,7 @@ def run_all_test_steps_in_a_test_case(
 
         # check step result
         if is_failed_result in failed_tag_list or test_steps_data in failed_tag_list:
-            sStepResult = "Failed"
+            sStepResult = "zeuz_failed"
         else:
             # run driver for step and get result
             sStepResult = call_driver_function_of_test_step(
@@ -1031,11 +1031,11 @@ def run_all_test_steps_in_a_test_case(
         if sStepResult:
             sTestStepResultList.append(sStepResult.upper())
         else:
-            sTestStepResultList.append("FAILED")
+            sTestStepResultList.append("zeuz_failed")
             CommonUtil.ExecLog(
                 sModuleInfo, "sStepResult : %s" % sStepResult, 1
             )  # add log
-            sStepResult = "Failed"
+            sStepResult = "zeuz_failed"
 
         # step dictionary after execution
         after_execution_dict = {
@@ -1176,12 +1176,12 @@ def calculate_test_case_result(sModuleInfo, TestCaseID, run_id, sTestStepResultL
     elif "CANCELLED" in sTestStepResultList or "Cancelled" in sTestStepResultList:
         CommonUtil.ExecLog(sModuleInfo, "Test Case Cancelled", 3)
         sTestCaseStatus = "Cancelled"
-    elif "FAILED" in sTestStepResultList:
+    elif "zeuz_failed" in sTestStepResultList:
         step_index = 0
         for each in sTestStepResultList:
-            if each == "FAILED":
+            if each == "zeuz_failed":
                 if testcase_info["steps"][step_index]["verify_point"]:
-                    sTestCaseStatus = "Failed"
+                    sTestCaseStatus = "zeuz_failed"
                     break
             step_index += 1
         else:
@@ -1190,10 +1190,10 @@ def calculate_test_case_result(sModuleInfo, TestCaseID, run_id, sTestStepResultL
 
     elif "WARNING" in sTestStepResultList:
         CommonUtil.ExecLog(sModuleInfo, "Test Case Contain Warning(s)", 2)
-        sTestCaseStatus = "Failed"
+        sTestCaseStatus = "zeuz_failed"
     elif "NOT RUN" in sTestStepResultList:
         CommonUtil.ExecLog(sModuleInfo, "Test Case Contain Not Run Steps", 2)
-        sTestCaseStatus = "Failed"
+        sTestCaseStatus = "zeuz_failed"
     elif "SKIPPED" in sTestStepResultList:
         CommonUtil.ExecLog(sModuleInfo, "Test Case Contain Skipped Step(s)", 1)
         skipped = True

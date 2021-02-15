@@ -31,7 +31,7 @@ def rest_API_Helper(
             CommonUtil.ExecLog(
                 sModuleInfo, "Please enter a valid REST call type and a valid URL!", 3
             )
-            return "failed"
+            return "zeuz_failed"
         else:
             # For GET calls
             if rest_call_type == "GET":
@@ -129,7 +129,7 @@ def _response_Validation(payload_type, response, extraction_data=False):
             results = response.json()
             return results
             # CommonUtil.ExecLog(sModuleInfo, "Validation not yet implemented. Failing validation step.", 2)
-            # return "failed"
+            # return "zeuz_failed"
 
     except Exception:
         errMsg = "Unable to validate response."
@@ -153,4 +153,4 @@ def Exception_Info(sModuleInfo, errMsg):
         + str(exc_tb.tb_lineno)
     )
     CommonUtil.ExecLog(sModuleInfo, errMsg + ".  Error: %s" % (Error_Detail), 3)
-    return "failed"
+    return "zeuz_failed"

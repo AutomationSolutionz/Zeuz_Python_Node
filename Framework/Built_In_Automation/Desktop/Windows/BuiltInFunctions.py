@@ -74,13 +74,13 @@ def go_to_desktop(data_set):
     Element = get_element("", "Show desktop", "TrayShowDesktopButtonWClass")
     if Element in failed_tag_list:
         CommonUtil.ExecLog(sModuleInfo, "Could not find element", 3)
-        return "failed"
+        return "zeuz_failed"
     try:
         result = Click_Element_None_Mouse(Element, None, True, None, None)
         # CommonUtil.TakeScreenShot(sModuleInfo)
         if result in failed_tag_list:
             CommonUtil.ExecLog(sModuleInfo, "Could not click element", 3)
-            return "failed"
+            return "zeuz_failed"
         else:
             CommonUtil.ExecLog(sModuleInfo, "Successfully clicked the element", 1)
             return "passed"
@@ -137,7 +137,7 @@ def Click_Element(data_set):
             None,
             "You have provided an invalid Click data.  Please refer to help",
         )
-        return "failed"
+        return "zeuz_failed"
 
     # Click using element
     CommonUtil.ExecLog(sModuleInfo, "Looking for element", 0)
@@ -164,7 +164,7 @@ def Click_Element(data_set):
         i = i + 1
     if Element in failed_tag_list:
         CommonUtil.ExecLog(sModuleInfo, "Could not find element", 3)
-        return "failed"
+        return "zeuz_failed"
 
     # If found Click element
 
@@ -176,7 +176,7 @@ def Click_Element(data_set):
         # CommonUtil.TakeScreenShot(sModuleInfo)
         if result in failed_tag_list:
             CommonUtil.ExecLog(sModuleInfo, "Could not click element", 3)
-            return "failed"
+            return "zeuz_failed"
         else:
             CommonUtil.ExecLog(sModuleInfo, "Successfully clicked the element", 1)
             return "passed"
@@ -212,7 +212,7 @@ def Right_Click_Element(data_set):
             i = i + 1
         if Element in failed_tag_list:
             CommonUtil.ExecLog(sModuleInfo, "Could not find element", 3)
-            return "failed"
+            return "zeuz_failed"
 
         x = (int)(
             Element.Current.BoundingRectangle.Right
@@ -278,7 +278,7 @@ def get_element(
             if isinstance(MainWindowName_OR_ParentElement, str) == True:
                 ParentElement = _get_main_window(MainWindowName_OR_ParentElement)
                 if ParentElement == None:
-                    return "failed"
+                    return "zeuz_failed"
                 else:
 
                     ChildElement = _child_search(
@@ -292,7 +292,7 @@ def get_element(
                     if ChildElement != None:
                         return ChildElement
                     else:
-                        return "failed"
+                        return "zeuz_failed"
             else:
                 ChildElement = _child_search(
                     ParentElement,
@@ -305,10 +305,10 @@ def get_element(
                 if ChildElement != None:
                     return ChildElement
                 else:
-                    return "failed"
+                    return "zeuz_failed"
 
         except:
-            return "failed"
+            return "zeuz_failed"
 
     except Exception as e:
         exc_type, exc_obj, exc_tb = sys.exc_info()
@@ -634,7 +634,7 @@ def _child_search(
                 + str(exc_tb.tb_lineno)
             )
         )
-        return "failed"
+        return "zeuz_failed"
 
 
 @logger
@@ -786,7 +786,7 @@ def Click_Element_None_Mouse(
                     return "passed"
 
         CommonUtil.ExecLog(sModuleInfo, "Unable to perform the action on the object", 3)
-        return "failed"
+        return "zeuz_failed"
     except Exception as e:
         exc_type, exc_obj, exc_tb = sys.exc_info()
         fname = os.path.split(exc_tb.tb_frame.f_code.co_filename)[1]
@@ -805,7 +805,7 @@ def Click_Element_None_Mouse(
             )
         )
 
-        return "failed"
+        return "zeuz_failed"
 
 
 @logger
@@ -846,7 +846,7 @@ def Drag_and_Drop_Element(data_set):
             i = i + 1
         if Element1 in failed_tag_list:
             CommonUtil.ExecLog(sModuleInfo, "Could not find element", 3)
-            return "failed"
+            return "zeuz_failed"
 
         # Get element object
         # try for 10 seconds with 2 seconds delay
@@ -870,12 +870,12 @@ def Drag_and_Drop_Element(data_set):
             i = i + 1
         if Element2 in failed_tag_list:
             CommonUtil.ExecLog(sModuleInfo, "Could not find element", 3)
-            return "failed"
+            return "zeuz_failed"
 
         result = Drag_Object(Element1, Element2)
         if result in failed_tag_list:
             CommonUtil.ExecLog(sModuleInfo, "Could not Drag element", 3)
-            return "failed"
+            return "zeuz_failed"
         else:
             CommonUtil.ExecLog(
                 sModuleInfo, "Successfully dragged and dropped the element", 1
@@ -933,7 +933,7 @@ def Drag_Object(Element1_source, Element2_destination):
                 + str(exc_tb.tb_lineno)
             )
         )
-        return "failed"
+        return "zeuz_failed"
 
 
 @logger
@@ -962,7 +962,7 @@ def Double_Click_Element(data_set):
             i = i + 1
         if Element in failed_tag_list:
             CommonUtil.ExecLog(sModuleInfo, "Could not find element", 3)
-            return "failed"
+            return "zeuz_failed"
         x = (int)(
             Element.Current.BoundingRectangle.Right
             - Element.Current.BoundingRectangle.Width / 2
@@ -1010,7 +1010,7 @@ def Hover_Over_Element(data_set):
             i = i + 1
         if Element in failed_tag_list:
             CommonUtil.ExecLog(sModuleInfo, "Could not find element", 3)
-            return "failed"
+            return "zeuz_failed"
         x = (int)(
             Element.Current.BoundingRectangle.Right
             - Element.Current.BoundingRectangle.Width / 2
@@ -1061,7 +1061,7 @@ def Validate_Text(data_set):
             i = i + 1
         if Element in failed_tag_list:
             CommonUtil.ExecLog(sModuleInfo, "Could not find element", 3)
-            return "failed"
+            return "zeuz_failed"
 
         actual_text = (
             str(Element.GetCurrentPattern(ValuePattern.Pattern).Current.Value)
@@ -1078,7 +1078,7 @@ def Validate_Text(data_set):
             CommonUtil.ExecLog(
                 sModuleInfo, "Couldn't find text '%s' in any element" % expected_text, 3
             )
-            return "failed"
+            return "zeuz_failed"
 
     except Exception:
         return CommonUtil.Exception_Handler(
@@ -1123,7 +1123,7 @@ def Save_Text(data_set):
             i = i + 1
         if Element in failed_tag_list:
             CommonUtil.ExecLog(sModuleInfo, "Could not find element", 3)
-            return "failed"
+            return "zeuz_failed"
 
         actual_text = ""
         if field == "value":
@@ -1181,7 +1181,7 @@ def getCoordinates(element, position):
             CommonUtil.ExecLog(
                 sModuleInfo, "Position must be one of: %s" % positions, 3
             )
-            return "failed"
+            return "zeuz_failed"
     except Exception:
         return CommonUtil.Exception_Handler(
             sys.exc_info(), None, "Error parsing coordinates"
@@ -1199,7 +1199,7 @@ def getCoordinates(element, position):
             result_y = y + (h / 2)
 
         if result_x in failed_tag_list or result_x == "" or result_x == None:
-            return "failed", ""
+            return "zeuz_failed", ""
         return int(result_x), int(result_y)
     except Exception:
         return CommonUtil.Exception_Handler(
@@ -1248,7 +1248,7 @@ def Enter_Text_In_Text_Box(data_set):
 
         if Element in failed_tag_list:
             CommonUtil.ExecLog(sModuleInfo, "Could not find element to enter text", 3)
-            return "failed"
+            return "zeuz_failed"
 
         if keystroke:
 
@@ -1279,7 +1279,7 @@ def Enter_Text_In_Text_Box(data_set):
                 CommonUtil.ExecLog(
                     sModuleInfo, "Please try 'keystroke' as method instead", 3
                 )
-                return "failed"
+                return "zeuz_failed"
 
         return "passed"
     except Exception:
@@ -1312,7 +1312,7 @@ def Scroll(data_set):
             i = i + 1
         if Element in failed_tag_list:
             CommonUtil.ExecLog(sModuleInfo, "Could not find element", 3)
-            return "failed"
+            return "zeuz_failed"
         x = (int)(
             Element.Current.BoundingRectangle.Right
             - Element.Current.BoundingRectangle.Width / 2
@@ -1377,7 +1377,7 @@ def Get_Element(data_set):
             wait_time,
         )
         if Element == None:
-            return "failed"
+            return "zeuz_failed"
 
         patter_list = 0
         try:
@@ -1429,7 +1429,7 @@ def Run_Application(data_set):
         return "passed"
     except:
         CommonUtil.ExecLog(sModuleInfo, "Unable to start your app %s" % Desktop_app, 3)
-        return "failed"
+        return "zeuz_failed"
 
 
 @logger
@@ -1451,7 +1451,7 @@ def Close_Application(data_set):
         return "passed"
     except:
         CommonUtil.ExecLog(sModuleInfo, "Unable to start your app %s" % Desktop_app, 3)
-        return "failed"
+        return "zeuz_failed"
 
 
 @logger
@@ -1476,7 +1476,7 @@ def Keystroke_For_Element(data_set):
 
         if keystroke_value == "" and keystroke_char == "":
             CommonUtil.ExecLog(sModuleInfo, "Invalid action found", 3)
-            return "failed"
+            return "zeuz_failed"
 
     except Exception:
         errMsg = "Error parsing data set"

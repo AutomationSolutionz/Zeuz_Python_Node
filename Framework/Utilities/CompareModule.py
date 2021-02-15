@@ -164,7 +164,7 @@ class CompareModule:
                 or len(missing_datasets) > 0
                 or len(extra_datasets) > 0
             ):
-                return "Failed"
+                return "zeuz_failed"
             else:
                 tag = True
                 for each in status:
@@ -175,7 +175,7 @@ class CompareModule:
                 if tag:
                     return "Passed"
                 else:
-                    return "Failed"
+                    return "zeuz_failed"
 
 
 def log_to_db(sModuleInfo, datasets, tag, status):
@@ -534,7 +534,7 @@ def single_dataset_compare(expected_copy, actual_copy):
     if status == 1:
         return "Passed"
     else:
-        return "Failed"
+        return "zeuz_failed"
 
 
 def find_keylist(list_element):

@@ -31,7 +31,7 @@ MODULE_NAME = inspect.getmodulename(__file__)
 
 def Get_Element(step_data_set, driver, query_debug=False, wait_enable=True, return_all_elements=False):
     """
-    This funciton will return "Failed" if something went wrong, else it will always return a single element
+    This funciton will return "zeuz_failed" if something went wrong, else it will always return a single element
     if you are trying to produce a query from a step dataset, make sure you provide query_debug =True.  This is
     good when you are just trying to see how your step data would be converted to a query for testing local runs
     """
@@ -53,7 +53,7 @@ def Get_Element(step_data_set, driver, query_debug=False, wait_enable=True, retu
             CommonUtil.ExecLog(
                 sModuleInfo, "Incorrect driver. Please validate driver", 3
             )
-            return "failed"
+            return "zeuz_failed"
 
         # We need to switch to default content just in case previous action switched to something else
         try:
@@ -149,7 +149,7 @@ def Get_Element(step_data_set, driver, query_debug=False, wait_enable=True, retu
                     "Element named '%s' not found in shared variables" % get_parameter,
                     3,
                 )
-                return "failed"
+                return "zeuz_failed"
 
         if driver_type == "pyautogui":
             result = _pyautogui(step_data_set)
@@ -174,7 +174,7 @@ def Get_Element(step_data_set, driver, query_debug=False, wait_enable=True, retu
             print("Your query type is: %s" % query_type)
             result = "passed"
         if element_query == False:
-            result = "failed"
+            result = "zeuz_failed"
         elif query_type == "xpath" and element_query != False:
             result = _get_xpath_or_css_element(element_query, "xpath", index_number, Filter, return_all_elements)
         elif query_type == "css" and element_query != False:
@@ -182,7 +182,7 @@ def Get_Element(step_data_set, driver, query_debug=False, wait_enable=True, retu
         elif query_type == "unique" and element_query != False:
             result = _get_xpath_or_css_element(element_query, "unique", index_number, Filter)
         else:
-            result = "failed"
+            result = "zeuz_failed"
 
         # if user sends optional option check if element is displayed or not. We may need to add more
         # items here such as enabled, visible and such.
@@ -204,7 +204,7 @@ def Get_Element(step_data_set, driver, query_debug=False, wait_enable=True, retu
                                         "Element was found, however, it was not displayed or enabled. Returning failed",
                                         2,
                                     )
-                                    result = "failed"
+                                    result = "zeuz_failed"
                                     break
                                 else:
                                     break
@@ -218,7 +218,7 @@ def Get_Element(step_data_set, driver, query_debug=False, wait_enable=True, retu
                                             "%s no element was not displayed or enabled. Returning failed" % i,
                                             2,
                                         )
-                                        result = "failed"
+                                        result = "zeuz_failed"
                                         break
                                 break
         except:
@@ -236,7 +236,7 @@ def Get_Element(step_data_set, driver, query_debug=False, wait_enable=True, retu
             )
             return result  # If asked not to loop, return the failure
             # If fail, but instructed to loop, do so
-        return "failed"
+        return "zeuz_failed"
 
     except Exception:
         return CommonUtil.Exception_Handler(sys.exc_info())
@@ -825,7 +825,7 @@ def _get_xpath_or_css_element(element_query, css_xpath, index_number=False, Filt
                         "Found %s hidden elements and %s displayed elements. Index exceeds the number of elements found" % (hidden_len, displayed_len),
                         3
                     )
-                return "failed"
+                return "zeuz_failed"
             else:
                 if hidden_len > 0 and Filter != "allow hidden":
                     CommonUtil.ExecLog(
@@ -848,14 +848,14 @@ def _get_xpath_or_css_element(element_query, css_xpath, index_number=False, Filt
                     )
                 return all_matching_elements[index_number]
         else:
-            return "failed"
+            return "zeuz_failed"
     except Exception:
         # return CommonUtil.Exception_Handler(sys.exc_info())
         # Don't want to show error messages from here, especially for wait_for_element()
         CommonUtil.ExecLog(
             sModuleInfo, "Exception caught - %s" % str(sys.exc_info()), 0
         )
-        return "failed"
+        return "zeuz_failed"
 
 
 def filter_elements(all_matching_elements_visible_invisible, Filter):
@@ -957,7 +957,7 @@ def _pyautogui(step_data_set):
 
         # Check that we have some value
         if file_name == "":
-            return "failed"
+            return "zeuz_failed"
 
         # Try to find the image file
         if file_name not in file_attachment and os.path.exists(file_name) == False:
@@ -967,7 +967,7 @@ def _pyautogui(step_data_set):
                 % file_name,
                 3,
             )
-            return "failed"
+            return "zeuz_failed"
         if file_name in file_attachment:
             file_name = file_attachment[
                 file_name
@@ -984,7 +984,7 @@ def _pyautogui(step_data_set):
                     % file_name_parent,
                     3,
                 )
-                return "failed"
+                return "zeuz_failed"
             if file_name_parent in file_attachment:
                 file_name_parent = file_attachment[
                     file_name_parent
@@ -1080,7 +1080,7 @@ def _pyautogui(step_data_set):
         #         if len(tuple(tmp)) == 0: # !!! This should work, but accessing the generator causes it to lose one or more of it's results, thus causing an error when we  try to use it with a single image
         #             print ">>>>IN", element
         #             CommonUtil.ExecLog(sModuleInfo, "Image element not found", 0)
-        #             return 'failed'
+        #             return "zeuz_failed"
 
         ################################################################################
         ######################### ALL PIECES SET - FIND ELEMENT ########################
@@ -1107,7 +1107,7 @@ def _pyautogui(step_data_set):
                 time.sleep(0.1)
             if element_parent == None:
                 CommonUtil.ExecLog(sModuleInfo, "Reference image not found", 0)
-                return "failed"
+                return "zeuz_failed"
 
             # Initialize variables
             parent_centre = (
@@ -1209,13 +1209,13 @@ def _pyautogui(step_data_set):
 
         # Check result
         if element == None or element in failed_tag_list or element == "":
-            return "failed"
+            return "zeuz_failed"
         else:
             return element
 
     except:
         traceback.print_exc()
-        return "failed"
+        return "zeuz_failed"
 
 
 def _scale_image(file_name, size_w, size_h):

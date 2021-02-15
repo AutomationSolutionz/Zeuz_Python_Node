@@ -80,9 +80,9 @@ failed_tag_list = [
     "Fail",
     "fail",
     "FAIL",
-    "Failed",
-    "failed",
-    "FAILED",
+    "zeuz_failed",
+    "zeuz_failed",
+    "zeuz_failed",
     "false",
     "False",
     "FALSE",
@@ -240,9 +240,9 @@ def Exception_Handler(exec_info, temp_q=None, UserMessage=None):
                 sModuleInfo, "Following error message is custom: %s" % (UserMessage), 3
             )
         if temp_q != None:
-            temp_q.put("failed")
+            temp_q.put("zeuz_failed")
 
-        return "failed"
+        return "zeuz_failed"
 
     except Exception:
         exc_type_local, exc_obj_local, exc_tb_local = sys.exc_info()
@@ -264,7 +264,7 @@ def Exception_Handler(exec_info, temp_q=None, UserMessage=None):
             "Following exception occurred: %s" % (Error_Detail_Local),
             3,
         )
-        return "failed"
+        return "zeuz_failed"
 
 
 def Result_Analyzer(sTestStepReturnStatus, temp_q):
@@ -275,8 +275,8 @@ def Result_Analyzer(sTestStepReturnStatus, temp_q):
             temp_q.put("passed")
             return "passed"
         elif sTestStepReturnStatus in failed_tag_list:
-            temp_q.put("failed")
-            return "failed"
+            temp_q.put("zeuz_failed")
+            return "zeuz_failed"
         elif sTestStepReturnStatus in skipped_tag_list:
             temp_q.put("skipped")
             return "skipped"
@@ -290,8 +290,8 @@ def Result_Analyzer(sTestStepReturnStatus, temp_q):
                 % (sTestStepReturnStatus),
                 3,
             )
-            temp_q.put("failed")
-            return "failed"
+            temp_q.put("zeuz_failed")
+            return "zeuz_failed"
 
     except Exception as e:
         return Exception_Handler(sys.exc_info())
@@ -325,7 +325,7 @@ def CreateJsonReport(logs=None, stepInfo=None, TCInfo=None, setInfo=None):
                             if TCInfo:
                                 testcase_info["execution_detail"] = TCInfo
                                 fail_reason_str = ""
-                                if TCInfo["status"] in ("Failed", "Blocked"):
+                                if TCInfo["status"] in ("zeuz_failed", "Blocked"):
                                     count = -min(len(tc_error_logs), 3)
                                     while count <= -1:
                                         fail_reason_str += tc_error_logs[count]
@@ -342,7 +342,7 @@ def CreateJsonReport(logs=None, stepInfo=None, TCInfo=None, setInfo=None):
                                     if stepInfo:
                                         step_info["execution_detail"] = stepInfo
                                         step_error_logs = []
-                                        if stepInfo["status"].lower() == "failed":
+                                        if stepInfo["status"].lower() == "zeuz_failed":
                                             count, err_count, max_count = -1, 0, -len(step_info["log"])
                                             # Can be optimized by taking error when occurs and append it if the step fails only
                                             while count >= max_count and err_count < 3:

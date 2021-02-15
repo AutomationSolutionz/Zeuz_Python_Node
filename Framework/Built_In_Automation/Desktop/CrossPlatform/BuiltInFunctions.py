@@ -92,7 +92,7 @@ def getCoordinates(element, position):
             CommonUtil.ExecLog(
                 sModuleInfo, "Position must be one of: %s" % positions, 3
             )
-            return "failed"
+            return "zeuz_failed"
     except Exception:
         return CommonUtil.Exception_Handler(
             sys.exc_info(), None, "Error parsing coordinates"
@@ -110,7 +110,7 @@ def getCoordinates(element, position):
             result_y = y + (h / 2)
 
         if result_x in failed_tag_list or result_x == "" or result_x == None:
-            return "failed", ""
+            return "zeuz_failed", ""
         return int(result_x), int(result_y)
     except Exception:
         return CommonUtil.Exception_Handler(
@@ -137,7 +137,7 @@ def get_exec_from_icon(file_name):
                 ].strip()  # Save execution line without the Exec= part
 
         if result == "":
-            return "failed"
+            return "zeuz_failed"
         return result
 
     except Exception:
@@ -172,7 +172,7 @@ def Enter_Text(data_set):
 
         if text_value == "":
             CommonUtil.ExecLog(sModuleInfo, "Could not find value for this action", 3)
-            return "failed"
+            return "zeuz_failed"
     except:
         return CommonUtil.Exception_Handler(
             sys.exc_info(), None, "Error parsing data set"
@@ -208,13 +208,13 @@ def Enter_Text(data_set):
                 i = i + 1
             if Element in failed_tag_list:
                 CommonUtil.ExecLog(sModuleInfo, "Could not find element", 3)
-                return "failed"
+                return "zeuz_failed"
 
             # Get coordinates for position user specified
             x, y = getCoordinates(Element, "centre")  # Find coordinates (x,y)
             if x in failed_tag_list:  # Error reason logged by Get_Element
                 CommonUtil.ExecLog(sModuleInfo, "Error calculating coordinates", 3)
-                return "failed"
+                return "zeuz_failed"
             CommonUtil.ExecLog(
                 sModuleInfo, "Image coordinates on screen %d x %d" % (x, y), 0
             )
@@ -268,7 +268,7 @@ def execute_hotkey(data_set) -> str:
     
     Returns:
         "passed" if successful.
-        "failed" otherwise.
+        "zeuz_failed" otherwise.
     """
 
     sModuleInfo = inspect.currentframe().f_code.co_name + " : " + MODULE_NAME
@@ -291,7 +291,7 @@ def execute_hotkey(data_set) -> str:
         CommonUtil.ExecLog(
             sModuleInfo, "Couldn't  parse data_set", 3,
         )
-        return "failed"
+        return "zeuz_failed"
 
     try:
         for i in range(count):
@@ -330,7 +330,7 @@ def move_mouse_cursor(data_set) -> str:
     
     Returns:
         "passed" if successful.
-        "failed" otherwise.
+        "zeuz_failed" otherwise.
     """
 
     sModuleInfo = inspect.currentframe().f_code.co_name + " : " + MODULE_NAME
@@ -480,7 +480,7 @@ def Wait_For_Element_Pyautogui(data_set):
 
         # Element status not changed after time elapsed, to exit with failure
         CommonUtil.ExecLog(sModuleInfo, "Wait for element failed", 3)
-        return "failed"
+        return "zeuz_failed"
 
     except Exception:
         return CommonUtil.Exception_Handler(sys.exc_info())
@@ -501,7 +501,7 @@ def close_program(data_set):
 
         if program_name == "":
             CommonUtil.ExecLog(sModuleInfo, "Expected a program name in Value", 3)
-            return "failed"
+            return "zeuz_failed"
     except Exception:
         errMsg = "Error parsing data set"
         return CommonUtil.Exception_Handler(sys.exc_info(), None, errMsg)
@@ -537,7 +537,7 @@ def close_program(data_set):
                         "kill -9 %s" % output
                     )  # Send the terminate signal to this PID
                 else:
-                    close_status = "failed"  # No PID received - error occurred or program doesn't exist
+                    close_status = "zeuz_failed"  # No PID received - error occurred or program doesn't exist
 
         elif dependency["PC"].lower() == "windows":
             command = "taskkill /F /IM " + program_name + ".exe"
@@ -547,7 +547,7 @@ def close_program(data_set):
             CommonUtil.ExecLog(
                 sModuleInfo, "Uknown dependency %s" % dependency["PC"], 3
             )
-            return "failed"
+            return "zeuz_failed"
 
         # CommonUtil.TakeScreenShot(
         #     sModuleInfo
@@ -558,7 +558,7 @@ def close_program(data_set):
             CommonUtil.ExecLog(
                 sModuleInfo, "Could not send signal to close program.", 3
             )
-            return "failed"
+            return "zeuz_failed"
         else:
             CommonUtil.ExecLog(sModuleInfo, "Sent signal to close program.", 1)
             return "passed"
@@ -597,7 +597,7 @@ def Click_Element(data_set):
                 % str(positions),
                 3,
             )
-            return "failed"
+            return "zeuz_failed"
         if position not in positions:
             CommonUtil.ExecLog(
                 sModuleInfo,
@@ -613,7 +613,7 @@ def Click_Element(data_set):
                 "Valid element not found. Expected Sub-Field to be 'element parameter', and Value to be a filename",
                 3,
             )
-            return "failed"
+            return "zeuz_failed"
 
     except Exception:
         errMsg = "Error parsing data set"
@@ -628,13 +628,13 @@ def Click_Element(data_set):
         element = LocateElement.Get_Element(data_set, gui)  # (x, y, w, h)
         if element in failed_tag_list:  # Error reason logged by Get_Element
             CommonUtil.ExecLog(sModuleInfo, "Could not locate element", 3)
-            return "failed"
+            return "zeuz_failed"
 
         # Get coordinates for position user specified
         x, y = getCoordinates(element, position)  # Find coordinates (x,y)
         if x in failed_tag_list:  # Error reason logged by Get_Element
             CommonUtil.ExecLog(sModuleInfo, "Error calculating coordinates", 3)
-            return "failed"
+            return "zeuz_failed"
         CommonUtil.ExecLog(
             sModuleInfo, "Image coordinates on screen %d x %d" % (x, y), 0
         )
@@ -654,7 +654,7 @@ def Click_Element(data_set):
             CommonUtil.ExecLog(
                 sModuleInfo, "Couldn't click on element with given images", 3
             )
-            return "failed"
+            return "zeuz_failed"
         else:
             CommonUtil.ExecLog(
                 sModuleInfo, "Successfully clicked on element with given images", 1
@@ -685,7 +685,7 @@ def check_for_element(data_set):
                 "Valid element not found. Expected Sub-Field to be 'element parameter', and Value to be a filename",
                 3,
             )
-            return "failed"
+            return "zeuz_failed"
 
     except Exception:
         errMsg = "Error parsing data set"
@@ -704,7 +704,7 @@ def check_for_element(data_set):
 
         if element in failed_tag_list:
             CommonUtil.ExecLog(sModuleInfo, "Element not found", 3)
-            return "failed"
+            return "zeuz_failed"
         else:
             CommonUtil.ExecLog(sModuleInfo, "Found element", 1)
             return "passed"
@@ -730,7 +730,7 @@ def launch_program(data_set):
             CommonUtil.ExecLog(
                 sModuleInfo, "Value field empty. Expected filename or full file path", 3
             )
-            return "failed"
+            return "zeuz_failed"
     except:
         errMsg = "Error parsing data set"
         return CommonUtil.Exception_Handler(sys.exc_info(), None, errMsg)
@@ -765,7 +765,7 @@ def launch_program(data_set):
                 % file_name,
                 3,
             )
-            return "failed"
+            return "zeuz_failed"
         if file_name in file_attachment:
             Command = file_attachment[
                 file_name
@@ -794,7 +794,7 @@ def launch_program(data_set):
             CommonUtil.ExecLog(
                 sModuleInfo, "Unknown dependency %s" % dependency["PC"], 3
             )
-            return "failed"
+            return "zeuz_failed"
 
         # CommonUtil.TakeScreenShot(
         #     sModuleInfo
@@ -803,7 +803,7 @@ def launch_program(data_set):
         # Check result and return
         if launch_status in failed_tag_list:
             CommonUtil.ExecLog(sModuleInfo, "Could not launch the program", 3)
-            return "failed"
+            return "zeuz_failed"
         else:
             CommonUtil.ExecLog(sModuleInfo, "Program launched successfully.", 1)
             return "passed"
@@ -871,7 +871,7 @@ def Drag_Element(data_set):
                 % str(positions),
                 3,
             )
-            return "failed"
+            return "zeuz_failed"
         if position not in positions:
             CommonUtil.ExecLog(
                 sModuleInfo,
@@ -887,7 +887,7 @@ def Drag_Element(data_set):
                 "Valid element not found. Expected Sub-Field to be 'source parameter', and Value to be a filename",
                 3,
             )
-            return "failed"
+            return "zeuz_failed"
 
     except Exception:
         errMsg = "Error parsing data set"
@@ -909,13 +909,13 @@ def Drag_Element(data_set):
                 CommonUtil.ExecLog(
                     sModuleInfo, "Could not locate element: %s" % filename, 3
                 )
-                return "failed"
+                return "zeuz_failed"
 
             # DESTINATION  Get coordinates for position user specified
             x, y = getCoordinates(element, position)  # Find coordinates (x,y)
             if x in failed_tag_list:  # Error reason logged by Get_Element
                 CommonUtil.ExecLog(sModuleInfo, "Error calculating coordinates", 3)
-                return "failed"
+                return "zeuz_failed"
             CommonUtil.ExecLog(
                 sModuleInfo, "Image coordinates on screen %d x %d" % (x, y), 0
             )
@@ -941,7 +941,7 @@ def Drag_Element(data_set):
             CommonUtil.ExecLog(
                 sModuleInfo, "Couldn't dragged element with given images", 3
             )
-            return "failed"
+            return "zeuz_failed"
         elif Drag_Element_to_a_coordinate:
 
             max_x, max_y = gui.size()
@@ -1010,7 +1010,7 @@ def navigate_listbox(data_set):
                 "Valid element not found. Expected Sub-Field to be 'element parameter', and Value to be a filename",
                 3,
             )
-            return "failed"
+            return "zeuz_failed"
     except Exception:
         errMsg = "Error parsing data set"
         return CommonUtil.Exception_Handler(sys.exc_info(), None, errMsg)
@@ -1042,7 +1042,7 @@ def navigate_listbox(data_set):
         CommonUtil.ExecLog(
             sModuleInfo, "Could not locate element after %d attempts" % max_tries, 3
         )
-        return "failed"
+        return "zeuz_failed"
 
     except Exception:
         errMsg = "Error while trying to perform drag action"

@@ -143,7 +143,7 @@ def Data_By_GET_Method(url):
             CommonUtil.ExecLog(
                 sModuleInfo, "Received Wrong Data your link: %s" % url, 1
             )
-            return "failed"
+            return "zeuz_failed"
 
     except Exception, e:
         CommonUtil.ExecLog(sModuleInfo, "Exception :%s" % e, 3)
@@ -167,7 +167,7 @@ def Data_By_GET_Method(url):
             3,
         )
         CommonUtil.TakeScreenShot(sModuleInfo)
-        return "failed"
+        return "zeuz_failed"
 
 
 def Data_By_POST_Method(url, param, statuscode):
@@ -186,7 +186,7 @@ def Data_By_POST_Method(url, param, statuscode):
             CommonUtil.ExecLog(
                 sModuleInfo, "Received Wrong Data your link: %s" % url, 1
             )
-            return "failed"
+            return "zeuz_failed"
 
     except Exception, e:
         CommonUtil.ExecLog(sModuleInfo, "Exception :%s" % e, 3)
@@ -210,4 +210,4 @@ def Data_By_POST_Method(url, param, statuscode):
             3,
         )
         CommonUtil.TakeScreenShot(sModuleInfo)
-        return "failed"
+        return "zeuz_failed"
