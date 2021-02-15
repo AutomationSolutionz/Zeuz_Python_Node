@@ -35,7 +35,7 @@ def Set_Shared_Variables(key, value, protected=False, allowEmpty=False, print_va
         if not allowEmpty and (
             key == "" or key == None
         ):  # if input is invalid
-            return "failed"
+            return "zeuz_failed"
         else:  # Valid input
             if protected:
                 protected_variables.append(key)  # Add to list of protected variables
@@ -47,7 +47,7 @@ def Set_Shared_Variables(key, value, protected=False, allowEmpty=False, print_va
                         % key,
                         3,
                     )
-                    return "failed"
+                    return "zeuz_failed"
 
             # Good to proceed
             shared_variables[key] = value
@@ -83,7 +83,7 @@ def Set_List_Shared_Variables(list_name, key, value, protected=False):
             or list_name == ""
             or list_name == None
         ):  # if input is invalid
-            return "failed"
+            return "zeuz_failed"
         else:  # Valid input
             if protected:
                 protected_variables.append(key)  # Add to list of protected variables
@@ -95,7 +95,7 @@ def Set_List_Shared_Variables(list_name, key, value, protected=False):
                         % key,
                         3,
                     )
-                    return "failed"
+                    return "zeuz_failed"
 
             # Good to proceed
             if list_name in shared_variables:
@@ -141,7 +141,7 @@ def Append_List_Shared_Variables(key, value, protected=False, value_as_list=Fals
         if not value_as_list:
             value = value.strip()
         if key == "":  # value can be empty
-            return "failed"
+            return "zeuz_failed"
 
         # Check if protected
         if protected:
@@ -154,7 +154,7 @@ def Append_List_Shared_Variables(key, value, protected=False, value_as_list=Fals
                     % key,
                     3,
                 )
-                return "failed"
+                return "zeuz_failed"
 
         # Create list if non-existent
         if not key in shared_variables:
@@ -191,7 +191,7 @@ def Append_Dict_Shared_Variables(key, value, protected=False, parent_dict=""):
         # Verify input
         key = key.strip()
         if key == "":
-            return "failed"
+            return "zeuz_failed"
 
         # Check if protected
         if protected:
@@ -204,7 +204,7 @@ def Append_Dict_Shared_Variables(key, value, protected=False, parent_dict=""):
                     % key,
                     3,
                 )
-                return "failed"
+                return "zeuz_failed"
 
         if parent_dict == "":
             # Create list if non-existent
@@ -232,7 +232,7 @@ def Get_Shared_Variables(key, log=True):
         sModuleInfo = inspect.currentframe().f_code.co_name + " : " + MODULE_NAME
         global shared_variables
         if key == "" or key == None:  # if input is invalid
-            return "failed"
+            return "zeuz_failed"
         else:
             if key in shared_variables:
                 value = shared_variables[key]
@@ -251,7 +251,7 @@ def Get_Shared_Variables(key, log=True):
                         "No Such variable named '%s' found in shared variables" % key,
                         3,
                     )
-                return "failed"
+                return "zeuz_failed"
     except:
         CommonUtil.Exception_Handler(sys.exc_info())
 
@@ -261,7 +261,7 @@ def Get_List_from_Shared_Variables(list_name):
         sModuleInfo = inspect.currentframe().f_code.co_name + " : " + MODULE_NAME
         global shared_variables
         if list_name == "" or list_name == None:  # if input is invalid
-            return "failed"
+            return "zeuz_failed"
         else:
             if list_name in shared_variables:
                 value = shared_variables[list_name]
@@ -279,7 +279,7 @@ def Get_List_from_Shared_Variables(list_name):
                     "List named %s does not exist on shared variables" % list_name,
                     3,
                 )
-                return "failed"
+                return "zeuz_failed"
     except:
         CommonUtil.Exception_Handler(sys.exc_info())
 
@@ -291,9 +291,9 @@ def Remove_From_Shared_Variables(key):
         sModuleInfo = inspect.currentframe().f_code.co_name + " : " + MODULE_NAME
         global shared_variables
         if key == "" or key == None:  # if input is invalid
-            return "failed"
+            return "zeuz_failed"
         else:  # Valid input
-            return shared_variables.pop(key, "failed")
+            return shared_variables.pop(key, "zeuz_failed")
     except:
         CommonUtil.Exception_Handler(sys.exc_info())
 
@@ -305,7 +305,7 @@ def Test_Shared_Variables(key):
         sModuleInfo = inspect.currentframe().f_code.co_name + " : " + MODULE_NAME
         global shared_variables
         if key == "" or key == None:  # if input is invalid
-            return "failed"
+            return "zeuz_failed"
         else:  # Valid input
             if key in shared_variables:  # Test if key/variable exists
                 CommonUtil.ExecLog(sModuleInfo, "Variable %s exists" % key, 0)
@@ -355,7 +355,7 @@ def Handle_Step_Data_Variables(step_data):
                                 CommonUtil.ExecLog(
                                     sModuleInfo, "Step Data Format Not Appropriate", 3
                                 )
-                                return "failed"
+                                return "zeuz_failed"
                             else:
                                 changed_row.append(replaced_value)
                         else:
@@ -383,18 +383,18 @@ def handle_nested_rest_json(result, string):
                     except ValueError:
                         indexes.append(str(index))
                 else:
-                    return "failed"
+                    return "zeuz_failed"
 
         ans = result
         for each in indexes:
             try:
                 ans = ans[each]
             except ValueError as e:
-                return "failed"
+                return "zeuz_failed"
         return ans
 
     else:
-        return "failed"
+        return "zeuz_failed"
 
 
 class VariableParser:
@@ -431,7 +431,7 @@ class VariableParser:
                 try: right = int(right)
                 except: right = Get_Shared_Variables(right, log=False)
 
-                if "failed" in (left, right):
+                if "zeuz_failed" in (left, right):
                     return None
                 else:
                     left = int(left)
@@ -446,7 +446,7 @@ class VariableParser:
     @staticmethod
     def get_variable(idx):
         val = Get_Shared_Variables(idx, log=False)
-        return val if val != "failed" else None
+        return val if val != "zeuz_failed" else None
 
 
 def parse_variable(name):
@@ -555,6 +555,9 @@ def parse_variable(name):
 
             # Get the root of the variable.
             val = Get_Shared_Variables(name, log=False)
+            
+            if val == "zeuz_failed":
+                return "zeuz_failed"
 
             if isinstance(val, str):
                 val = CommonUtil.parse_value_into_object(val)
@@ -580,7 +583,7 @@ def parse_variable(name):
             return val
     except:
         print("Failed to parse variable")
-        return "failed"
+        return "zeuz_failed"
 
 
 def get_previous_response_variables_in_strings(step_data_string_input):
@@ -625,7 +628,7 @@ def get_previous_response_variables_in_strings(step_data_string_input):
                             '%|random_data( [False , "a", True] )|%\n%|random_string(100-200)|%',
                             3,
                         )
-                        return "failed"
+                        return "zeuz_failed"
 
                     output += random_string
                     CommonUtil.ExecLog(
@@ -657,10 +660,10 @@ def get_previous_response_variables_in_strings(step_data_string_input):
                             else:
                                 random_string = random_string_generator(params.strip())
                     else:
-                        return "failed"
+                        return "zeuz_failed"
 
                     if random_string in failed_tag_list:
-                        return "failed"
+                        return "zeuz_failed"
 
                     output += random_string
                     CommonUtil.ExecLog(
@@ -678,7 +681,7 @@ def get_previous_response_variables_in_strings(step_data_string_input):
                             "No such variable named 'rest_response' in shared variables list",
                             3,
                         )
-                        return "failed"
+                        return "zeuz_failed"
                     rest_json_output = handle_nested_rest_json(
                         result_json, str(parts[0])
                     )
@@ -688,7 +691,7 @@ def get_previous_response_variables_in_strings(step_data_string_input):
                             "Json indexes are not provided correctly for run_response",
                             3,
                         )
-                        return "failed"
+                        return "zeuz_failed"
                     output += str(rest_json_output)
                     CommonUtil.ExecLog(
                         sModuleInfo,
@@ -707,7 +710,7 @@ def get_previous_response_variables_in_strings(step_data_string_input):
                             % parts[0],
                             3,
                         )
-                        return "failed"
+                        return "zeuz_failed"
                     output += str(save_built_in_time_variable(str(parts[0])))
                     CommonUtil.ExecLog(
                         sModuleInfo,
@@ -724,7 +727,7 @@ def get_previous_response_variables_in_strings(step_data_string_input):
                         if "," in params:
                             list_of_params = params.split(",")
                         if len(list_of_params) > 2:
-                            return "failed"
+                            return "zeuz_failed"
                         else:
                             random_string = str(
                                 random.randint(
@@ -732,7 +735,7 @@ def get_previous_response_variables_in_strings(step_data_string_input):
                                 )
                             )
                     else:
-                        return "failed"
+                        return "zeuz_failed"
 
                     output += random_string
                     CommonUtil.ExecLog(
@@ -756,9 +759,9 @@ def get_previous_response_variables_in_strings(step_data_string_input):
                             rand_str = params
 
                     else:
-                        return "failed"
+                        return "zeuz_failed"
                     if len(params) == 0:
-                        return "failed"
+                        return "zeuz_failed"
 
                     output += rand_str
                     CommonUtil.ExecLog(
@@ -770,14 +773,14 @@ def get_previous_response_variables_in_strings(step_data_string_input):
 
                 else:
                     var_value = parse_variable(parts[0])
-                    if var_value == "failed":
+                    if var_value == "zeuz_failed":
                         CommonUtil.ExecLog(
                             sModuleInfo,
                             "No such variable named '%s' in shared variables list"
                             % parts[0],
                             3,
                         )
-                        return "failed"
+                        return "zeuz_failed"
                     else:
                         output += str(var_value)
                         CommonUtil.ExecLog(
@@ -820,7 +823,7 @@ def random_string_generator(pattern="nluc", size=10):
                 chars += punctuation
 
         if chars == "":
-            return "failed"
+            return "zeuz_failed"
         else:
             return "".join(random.choice(chars) for _ in range(size))
     except Exception:
@@ -931,7 +934,7 @@ def Compare_Variables(step_data):
             CommonUtil.ExecLog(
                 sModuleInfo, "Error: %d item(s) did not match" % fail_count, 3
             )
-            return "failed"
+            return "zeuz_failed"
         else:
             return "passed"
     except Exception:
@@ -1032,7 +1035,7 @@ def Compare_Partial_Variables(step_data):
             CommonUtil.ExecLog(
                 sModuleInfo, "Error: %d item(s) did not match" % fail_count, 3
             )
-            return "failed"
+            return "zeuz_failed"
         else:
             return "passed"
     except Exception:
@@ -1084,14 +1087,14 @@ def Compare_Lists_or_Dicts(step_data):
                 "Error parsing data set. Expected Field and Value fields to be set",
                 3,
             )
-            return "failed"
+            return "zeuz_failed"
 
         if check_subset:
             list1 = CommonUtil.parse_value_into_object(list1_name)
             list2 = CommonUtil.parse_value_into_object(list2_name)
             if not isinstance(list1, list) or not isinstance(list2, list):
                 CommonUtil.ExecLog(sModuleInfo, "To check subset both the variable should be list", 3)
-                return "failed"
+                return "zeuz_failed"
             if list1 == list2:
                 CommonUtil.ExecLog(sModuleInfo, "2nd list is equal to the 1st list", 1)
                 return "passed"
@@ -1100,7 +1103,7 @@ def Compare_Lists_or_Dicts(step_data):
                 return "passed"
             else:
                 CommonUtil.ExecLog(sModuleInfo, "2nd list is not a subset of 1st list", 1)
-                return "failed"
+                return "zeuz_failed"
 
         list1 = Get_List_from_Shared_Variables(list1_name)
         list2 = Get_List_from_Shared_Variables(list2_name)
@@ -1111,7 +1114,7 @@ def Compare_Lists_or_Dicts(step_data):
                 "Error converting Shared Variable in Field or Value fields to strings",
                 3,
             )
-            return "failed"
+            return "zeuz_failed"
 
         found_list = []
         not_found_list1 = []
@@ -1210,7 +1213,7 @@ def Compare_Lists_or_Dicts(step_data):
                 CommonUtil.ExecLog(
                     sModuleInfo, "Match found for items: %s" % found_list, 3
                 )
-                return "failed"
+                return "zeuz_failed"
             else:
                 CommonUtil.ExecLog(sModuleInfo, "No match found", 1)
                 return "passed"
@@ -1291,13 +1294,13 @@ def Compare_Lists_or_Dicts(step_data):
             CommonUtil.ExecLog(
                 sModuleInfo, "Error: %d item(s) did not match" % fail_count, 3
             )
-            return "failed"
+            return "zeuz_failed"
         else:
             if extra_count > 0 and ignore_extra == False:
                 CommonUtil.ExecLog(
                     sModuleInfo, "Error: %d item(s) extra found" % extra_count, 3
                 )
-                return "failed"
+                return "zeuz_failed"
             else:
                 return "passed"
     except Exception:
@@ -1315,7 +1318,7 @@ def Initialize_List(step_data):
                 "Error parsing data set. Too many rows. Expected only the action row.",
                 3,
             )
-            return "failed"
+            return "zeuz_failed"
         else:
             list_name = str(step_data[0][0][2]).lower().strip()
             new_list = []
@@ -1326,7 +1329,7 @@ def Initialize_List(step_data):
                     "Could not initialize empty list named %s" % list_name,
                     3,
                 )
-                return "failed"
+                return "zeuz_failed"
             else:
                 CommonUtil.ExecLog(
                     sModuleInfo,
@@ -1349,7 +1352,7 @@ def Randomize_List(step_data):
                 "Error parsing data set. Too many rows. Expected only the action row.",
                 3,
             )
-            return "failed"
+            return "zeuz_failed"
         else:
             original_list_name = str(step_data[0][0][2]).lower().strip()
             if not Test_Shared_Variables(original_list_name):
@@ -1366,7 +1369,7 @@ def Randomize_List(step_data):
                 CommonUtil.ExecLog(
                     sModuleInfo, "Could not randomize list named %s" % original_list, 3
                 )
-                return "failed"
+                return "zeuz_failed"
             else:
                 CommonUtil.ExecLog(
                     sModuleInfo,
@@ -1389,7 +1392,7 @@ def Initialize_Dict(step_data):
                 "Error parsing data set. Too many rows. Expected only the action row.",
                 3,
             )
-            return "failed"
+            return "zeuz_failed"
         else:
             list_name = str(step_data[0][0][2]).lower().strip()
             new_list = collections.OrderedDict()
@@ -1400,7 +1403,7 @@ def Initialize_Dict(step_data):
                     "Could not initialize empty dict named %s" % list_name,
                     3,
                 )
-                return "failed"
+                return "zeuz_failed"
             else:
                 CommonUtil.ExecLog(
                     sModuleInfo,
@@ -1454,7 +1457,7 @@ def save_built_in_time_variable(string):
             elif "+" in input:
                 l = input.split("+")
                 if len(l) > 2:  # problem with input
-                    return "failed"
+                    return "zeuz_failed"
                 else:
                     sign = "plus"
                     st = str(l[1]).strip()
@@ -1463,14 +1466,14 @@ def save_built_in_time_variable(string):
             elif "-" in input:
                 l = input.split("-")
                 if len(l) > 2:  # problem with input
-                    return "failed"
+                    return "zeuz_failed"
                 else:
                     sign = "minus"
                     st = str(l[1]).strip()
                     parameter = st[-1]
                     number = int(st[:-1])
             else:
-                return "failed"
+                return "zeuz_failed"
 
             if sign != "" and parameter != "":
                 if sign == "minus":
@@ -1492,7 +1495,7 @@ def save_built_in_time_variable(string):
                         datetime_format
                     )
                 else:
-                    return "failed"
+                    return "zeuz_failed"
     except Exception as e:
         return CommonUtil.Exception_Handler(
             sys.exc_info(),

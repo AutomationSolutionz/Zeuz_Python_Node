@@ -111,7 +111,7 @@ def get_work_profile():
         )
 
         users = str(adb_output).split("UserInfo")
-        work_profile = "failed"
+        work_profile = "zeuz_failed"
 
         for user in users:
             if "Work profile" in user:
@@ -122,7 +122,7 @@ def get_work_profile():
 
     except Exception:
         errMsg = "Unable to get work profile"
-        return "failed"
+        return "zeuz_failed"
 
 
 @logger
@@ -257,7 +257,7 @@ def get_device_imei_info(serial=""):
             CommonUtil.ExecLog(
                 sModuleInfo, "Could not read the IMEI from the device", 3
             )
-            return "failed"
+            return "zeuz_failed"
 
         CommonUtil.ExecLog(sModuleInfo, "%s" % output, 0)
         return output
@@ -565,8 +565,8 @@ def wake_android(serial=""):
         # output = detect_foreground_android(serial.replace('-s ', ''))  # Check if we are on the password screen
         # if output == 'Bouncer':
         #     output = unlock_android(serial.replace('-s ', ''))
-        #     if output == 'failed':
-        #         return 'failed'
+        #     if output == "zeuz_failed":
+        #         return "zeuz_failed"
 
         return "passed"
 
@@ -605,7 +605,7 @@ def unlock_android(serial=""):
             CommonUtil.ExecLog(
                 sModuleInfo, "Can't unlock phone - no password specified.", 3
             )
-            return "failed"
+            return "zeuz_failed"
         password = sr.Get_Shared_Variables(
             "device_password"
         )  # Read device password from shared variables
@@ -666,7 +666,7 @@ def unlock_android(serial=""):
                 return "passed"
 
             CommonUtil.ExecLog(sModuleInfo, "We could not unlock your device", 3)
-            return "failed"
+            return "zeuz_failed"
 
     except Exception:
         errMsg = "Unable to unlock device"
@@ -739,7 +739,7 @@ def unlock_android_app(serial=""):
             CommonUtil.ExecLog(
                 sModuleInfo, "Can't unlock phone - no password specified.", 3
             )
-            return "failed"
+            return "zeuz_failed"
         password = sr.Get_Shared_Variables(
             "device_password"
         )  # Read device password from shared variables

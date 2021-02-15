@@ -60,7 +60,7 @@ def get_home_folder():
         #     path = os.getenv('USERPROFILE')
         #
         # if path in failed_tag_list:
-        #     return 'failed'
+        #     return "zeuz_failed"
         return path
     except Exception:
         return CommonUtil.Exception_Handler(sys.exc_info())
@@ -95,7 +95,7 @@ def CreateFolder(folderPath, forced=True):
             return "passed"
         else:
             CommonUtil.ExecLog(sModuleInfo, "Could not create folder", 3)
-            return "failed"
+            return "zeuz_failed"
     except Exception:
         return CommonUtil.Exception_Handler(
             sys.exc_info(), None, "Error creating folder"
@@ -165,7 +165,7 @@ def MoveFile(file_to_be_moved, new_directory_of_the_file):
             return "passed"
         else:
             CommonUtil.ExecLog(sModuleInfo, "File failed to move", 3)
-            return "failed"
+            return "zeuz_failed"
 
     except Exception:
         return CommonUtil.Exception_Handler(sys.exc_info(), None, "Error moving file")
@@ -212,7 +212,7 @@ def MoveFolder(folder_to_be_moved, new_directory_of_the_folder):
             return "passed"
         else:
             CommonUtil.ExecLog(sModuleInfo, "Folder failed to move", 3)
-            return "failed"
+            return "zeuz_failed"
 
     except Exception:
         return CommonUtil.Exception_Handler(
@@ -258,19 +258,19 @@ def UnZip(file_to_be_unzipped, location_where_to_unzip):
                     CommonUtil.ExecLog(
                         sModuleInfo, "Couldn't create directory, so can't unzip", 3
                     )
-                    return "failed"
+                    return "zeuz_failed"
 
             # Unzip file
             zip_ref = zipfile.ZipFile(file_to_be_unzipped, "r")
             zip_ref.extractall(location_where_to_unzip)
             result = zip_ref.close()
             if result in failed_tag_list:
-                return "failed"
+                return "zeuz_failed"
             else:
                 return "passed"
         else:
             CommonUtil.ExecLog(sModuleInfo, "Zip file doesn't exist", 3)
-            return "failed"
+            return "zeuz_failed"
     except Exception:
         return CommonUtil.Exception_Handler(
             sys.exc_info(), None, "Error unzipping file"
@@ -292,7 +292,7 @@ def md5(fname):
                 hash_md5.update(chunk)
         return hash_md5.hexdigest()
     except Exception:
-        return "failed"
+        return "zeuz_failed"
 
 
 # function to compare two files
@@ -315,7 +315,7 @@ def CompareFile(file_to_be_compared1, file_to_be_compared2):
         if md5(file_to_be_compared1) == md5(file_to_be_compared2):
             return "passed"
         else:
-            return "failed"
+            return "zeuz_failed"
     except Exception:
         return CommonUtil.Exception_Handler(
             sys.exc_info(), None, "Error comparing files"
@@ -365,10 +365,10 @@ def ZipFile(source, destination):
                 return "passed"
             else:
                 CommonUtil.ExecLog(sModuleInfo, "Could not create Zip archive", 0)
-                return "failed"
+                return "zeuz_failed"
         else:
             CommonUtil.ExecLog(sModuleInfo, "%s does not exist" % source, 3)
-            return "failed"
+            return "zeuz_failed"
     except Exception:
         return CommonUtil.Exception_Handler(
             sys.exc_info(), None, "Error creating Zip archive"
@@ -398,7 +398,7 @@ def DeleteFile(sFilePath):
                     "file exists... delete function is not done properly",
                     3,
                 )
-                return "failed"
+                return "zeuz_failed"
             else:
                 CommonUtil.ExecLog(
                     sModuleInfo,
@@ -442,7 +442,7 @@ def DeleteFolder(
                     "folder exists... delete function is not done properly",
                     3,
                 )
-                return "failed"
+                return "zeuz_failed"
             else:
                 CommonUtil.ExecLog(
                     sModuleInfo,
@@ -540,7 +540,7 @@ def empty_trash(
 
         else:
             CommonUtil.ExecLog(sModuleInfo, "------Trash is empty already------", 1)
-            return "passed"  # return "failed" if trash is already cleared
+            return "passed"  # return "zeuz_failed" if trash is already cleared
 
         CommonUtil.ExecLog(sModuleInfo, "Emptying trash %s is complete" % trash_path, 1)
 
@@ -576,7 +576,7 @@ def copy_folder(src, dest):
                 "folder doesn't exist... copy function is not done properly",
                 3,
             )
-            return "failed"
+            return "zeuz_failed"
 
     except Exception:
         return CommonUtil.Exception_Handler(sys.exc_info())
@@ -612,7 +612,7 @@ def copy_file(
                 "file doesn't exist... copy function is not done properly",
                 3,
             )
-            return "failed"
+            return "zeuz_failed"
     except Exception:
         return CommonUtil.Exception_Handler(sys.exc_info())
 
@@ -646,7 +646,7 @@ def empty_recycle_bin():
             CommonUtil.ExecLog(
                 sModuleInfo, "------Recycle Bin is empty already------", 1
             )
-            return "passed"  # return "failed" if trash is already cleared
+            return "passed"  # return "zeuz_failed" if trash is already cleared
 
         CommonUtil.ExecLog(sModuleInfo, "Emptying recycle bin is complete", 1)
         return result
@@ -712,7 +712,7 @@ def empty_recycle_bin():
 #
 #     '''Begin Constants'''
 #     Passed = "Passed" # !!!remove this nad use passed_tag_list,e tc
-#     Failed = "Failed"
+#     Failed = "zeuz_failed"
 #     Running = 'running'
 #     '''End Constants'''
 #
@@ -757,7 +757,7 @@ def empty_recycle_bin():
 #
 #     '''Begin Constants'''
 #     Passed = "Passed" # !!!remove this nad use passed_tag_list,e tc
-#     Failed = "Failed"
+#     Failed = "zeuz_failed"
 #     Running = 'running'
 #     '''End Constants'''
 #
@@ -815,7 +815,7 @@ def random_string_generator(pattern="nluc", size=10):
                 chars += punctuation
 
         if chars == "":
-            return "failed"
+            return "zeuz_failed"
         else:
             return "".join(random.choice(chars) for _ in range(size))
     except Exception:
@@ -861,7 +861,7 @@ def download_file_using_url(file_url, location_of_file, headers=dict()):
         if os.path.isfile(file_name):
             return file_name
         else:
-            return "failed"
+            return "zeuz_failed"
 
     except Exception:
         return CommonUtil.Exception_Handler(
@@ -897,18 +897,18 @@ def download_file_using_url(file_url, location_of_file, headers=dict()):
 #             CommonUtil.ExecLog(sModuleInfo, "file exists... downloading file using url function is done properly", 0)
 #         else:
 #             CommonUtil.ExecLog(sModuleInfo, "file doesn't exist... downloading file using url function is not done properly", 3)
-#             return "failed"
+#             return "zeuz_failed"
 #         unzip_location = os.path.join(location_of_file,"latest_directory" )
 #         CommonUtil.ExecLog(sModuleInfo, "Creating the directory '%s' " % unzip_location, 0)
 #         result1 = CreateFolder(unzip_location)
 #         if result1 in failed_tag_list:
 #             CommonUtil.ExecLog(sModuleInfo, "Can't not create folder '%s' " % unzip_location, 3)
-#             return "failed"
+#             return "zeuz_failed"
 #         CommonUtil.ExecLog(sModuleInfo, "Folder '%s' is created " % unzip_location, 1)
 #         result = UnZip(file_name,unzip_location)
 #         if result in failed_tag_list:
 #             CommonUtil.ExecLog(sModuleInfo, "Can't not unzip file '%s' to '%s'" % (file_name, unzip_location), 3)
-#             return "failed"
+#             return "zeuz_failed"
 #         CommonUtil.ExecLog(sModuleInfo, "Unzipping file '%s' to '%s' is complete" % (file_name, unzip_location), 0)
 #         CommonUtil.ExecLog(sModuleInfo, "Saving directory location to shared resources" , 1)
 #         #Shared_Resources.Set_Shared_Variables("latest_directory", unzip_location)
@@ -1120,7 +1120,7 @@ def Copy_File_or_Folder(step_data):
                 % from_path,
                 3,
             )
-            return "failed"
+            return "zeuz_failed"
         if from_path in file_attachment:
             from_path = file_attachment[
                 from_path
@@ -1138,7 +1138,7 @@ def Copy_File_or_Folder(step_data):
                     % (from_path, to_path),
                     3,
                 )
-                return "failed"
+                return "zeuz_failed"
             else:
                 CommonUtil.ExecLog(
                     sModuleInfo,
@@ -1157,7 +1157,7 @@ def Copy_File_or_Folder(step_data):
                     % (from_path, to_path),
                     3,
                 )
-                return "failed"
+                return "zeuz_failed"
             else:
                 CommonUtil.ExecLog(
                     sModuleInfo,
@@ -1172,7 +1172,7 @@ def Copy_File_or_Folder(step_data):
                 "The information in the data-set(s) are incorrect. Please provide accurate data set(s) information.",
                 3,
             )
-            return "failed"
+            return "zeuz_failed"
 
     except Exception:
         return CommonUtil.Exception_Handler(sys.exc_info())
@@ -1212,7 +1212,7 @@ def Unzip_File_or_Folder(step_data):
                 % from_path,
                 3,
             )
-            return "failed"
+            return "zeuz_failed"
         if from_path not in file_attachment:
             from_path = os.path.join(get_home_folder(), from_path)
             if _platform == "linux" or _platform == "linux2" or _platform == "darwin":
@@ -1239,7 +1239,7 @@ def Unzip_File_or_Folder(step_data):
             CommonUtil.ExecLog(
                 sModuleInfo, "Can't not unzip '%s' to '%s'" % (from_path, to_path), 3
             )
-            return "failed"
+            return "zeuz_failed"
         else:
             Shared_Resources.Set_Shared_Variables(Save_in_variable, to_path)
             CommonUtil.ExecLog(
@@ -1274,7 +1274,7 @@ def Get_Attachment_Path(step_data):
             CommonUtil.ExecLog(
                 sModuleInfo, "Could not find file attachment called %s, " % from_path, 3
             )
-            return "failed"
+            return "zeuz_failed"
         if from_path in file_attachment:
             from_path = file_attachment[
                 from_path
@@ -1313,7 +1313,7 @@ def Delete_File_or_Folder(data_set):
                 "Could not find filename or path to file in Value field of action line",
                 3,
             )
-            return "failed"
+            return "zeuz_failed"
 
     except Exception:
         return CommonUtil.Exception_Handler(
@@ -1340,7 +1340,7 @@ def Delete_File_or_Folder(data_set):
                     % filename,
                     3,
                 )
-                return "failed"
+                return "zeuz_failed"
             else:
                 filename = tmp  # Save the constructed path
         # Should now have a full path to the filename
@@ -1356,14 +1356,14 @@ def Delete_File_or_Folder(data_set):
                 "File/directory specified does exist, but is neither a file nor a directory. It could not be deleted",
                 3,
             )
-            return "failed"
+            return "zeuz_failed"
 
         # Verify result
         if result in failed_tag_list:
             CommonUtil.ExecLog(
                 sModuleInfo, "Could not delete file '%s'" % (filename), 3
             )
-            return "failed"
+            return "zeuz_failed"
         else:
             CommonUtil.ExecLog(
                 sModuleInfo, "File '%s' deleted successfully" % (filename), 1
@@ -1401,7 +1401,7 @@ def Create_File_or_Folder(step_data):
                 CommonUtil.ExecLog(
                     sModuleInfo, "Could not create file '%s'" % (path), 3
                 )
-                return "failed"
+                return "zeuz_failed"
             else:
                 CommonUtil.ExecLog(
                     sModuleInfo, "File '%s' created successfully" % (path), 1
@@ -1414,7 +1414,7 @@ def Create_File_or_Folder(step_data):
                 CommonUtil.ExecLog(
                     sModuleInfo, "Could not create folder '%s'" % (path), 3
                 )
-                return "failed"
+                return "zeuz_failed"
             else:
                 CommonUtil.ExecLog(
                     sModuleInfo, "Folder '%s' created successfully" % (path), 1
@@ -1426,7 +1426,7 @@ def Create_File_or_Folder(step_data):
                 "The information in the data-set(s) are incorrect. Please provide accurate data set(s) information.",
                 3,
             )
-            return "failed"
+            return "zeuz_failed"
 
     except Exception:
         return CommonUtil.Exception_Handler(sys.exc_info())
@@ -1455,7 +1455,7 @@ def Find_File_Or_Folder(step_data):
                 CommonUtil.ExecLog(
                     sModuleInfo, "Could not find file '%s'" % (file_or_folder_path), 3
                 )
-                return "failed"
+                return "zeuz_failed"
             else:
                 CommonUtil.ExecLog(
                     sModuleInfo, "File '%s' is found" % (file_or_folder_path), 1
@@ -1469,7 +1469,7 @@ def Find_File_Or_Folder(step_data):
                 CommonUtil.ExecLog(
                     sModuleInfo, "Could not find folder '%s'" % (file_or_folder_path), 3
                 )
-                return "failed"
+                return "zeuz_failed"
             else:
                 CommonUtil.ExecLog(
                     sModuleInfo, "Folder '%s' is found" % (file_or_folder_path), 1
@@ -1482,7 +1482,7 @@ def Find_File_Or_Folder(step_data):
                 "The information in the data-set(s) are incorrect. Please provide accurate data set(s) information.",
                 3,
             )
-            return "failed"
+            return "zeuz_failed"
 
     except Exception:
         return CommonUtil.Exception_Handler(sys.exc_info())
@@ -1506,7 +1506,7 @@ def Empty_Trash(step_data):
                 CommonUtil.ExecLog(
                     sModuleInfo, "Could not empty trash '%s'" % (path), 3
                 )
-                return "failed"
+                return "zeuz_failed"
             else:
                 CommonUtil.ExecLog(sModuleInfo, "trash is cleared '%s'" % (path), 1)
                 return "passed"
@@ -1516,7 +1516,7 @@ def Empty_Trash(step_data):
             result = empty_recycle_bin()  # location of the recycle bin
             if result in failed_tag_list:
                 CommonUtil.ExecLog(sModuleInfo, "Could not empty recycle bin ", 3)
-                return "failed"
+                return "zeuz_failed"
             else:
                 CommonUtil.ExecLog(sModuleInfo, "recycle bin is cleared ", 1)
                 return "passed"
@@ -1540,7 +1540,7 @@ def Get_User_Name(step_data):
                 CommonUtil.ExecLog(
                     sModuleInfo, "Could not find user name '%s'" % (name), 3
                 )
-                return "failed"
+                return "zeuz_failed"
             else:
                 CommonUtil.ExecLog(sModuleInfo, "user name is '%s'" % (name), 1)
                 return "passed"
@@ -1550,7 +1550,7 @@ def Get_User_Name(step_data):
             CommonUtil.ExecLog(
                 sModuleInfo, "Could not find user name as it is windows", 3
             )
-            return "failed"
+            return "zeuz_failed"
 
     except Exception:
         return CommonUtil.Exception_Handler(sys.exc_info())
@@ -1624,7 +1624,7 @@ def run_command(data_set):
         }
 
         "passed" if successful.
-        "failed" otherwise.
+        "zeuz_failed" otherwise.
     
     """
 
@@ -1651,7 +1651,7 @@ def run_command(data_set):
             CommonUtil.ExecLog(
                 sModuleInfo, "Variable name and command must be provided.", 3
             )
-            return "failed"
+            return "zeuz_failed"
 
         args = {"shell": True, "stdin": None, "stdout": None, "stderr": None}
 
@@ -1713,7 +1713,7 @@ def Get_Home_Directory(data_set):
             CommonUtil.ExecLog(
                 sModuleInfo, "Could not find home directory: '%s'" % str(path), 3
             )
-            return "failed"
+            return "zeuz_failed"
         CommonUtil.ExecLog(sModuleInfo, "Home Directory Path is '%s'" % (path), 1)
 
         Shared_Resources.Set_Shared_Variables(
@@ -1735,7 +1735,7 @@ def Get_Current_Desktop(step_data):
 
         if path in failed_tag_list:
             CommonUtil.ExecLog(sModuleInfo, "Could not find desktop '%s'" % (path), 3)
-            return "failed"
+            return "zeuz_failed"
 
         CommonUtil.ExecLog(sModuleInfo, "desktop path is '%s'" % (path), 1)
         Shared_Resources.Set_Shared_Variables("Desktop", path)
@@ -1758,7 +1758,7 @@ def Get_Current_Documents(step_data):
             CommonUtil.ExecLog(
                 sModuleInfo, "Could not find Documents path '%s'" % (path), 3
             )
-            return "failed"
+            return "zeuz_failed"
 
         CommonUtil.ExecLog(sModuleInfo, "Documents path is '%s'" % (path), 1)
         Shared_Resources.Set_Shared_Variables("Documents", path)
@@ -1781,7 +1781,7 @@ def Create_File(step_data):  #!!!why is this here
                 CommonUtil.ExecLog(
                     sModuleInfo, "Could not create file '%s'" % (path), 3
                 )
-                return "failed"
+                return "zeuz_failed"
             else:
                 CommonUtil.ExecLog(sModuleInfo, "File '%s' created" % (path), 1)
                 return "passed"
@@ -1792,7 +1792,7 @@ def Create_File(step_data):  #!!!why is this here
                 "The information in the data-set(s) are incorrect. Please provide accurate data set(s) information.",
                 3,
             )
-            return "failed"
+            return "zeuz_failed"
 
     except Exception:
         return CommonUtil.Exception_Handler(sys.exc_info())
@@ -1836,7 +1836,7 @@ def Compare_File(step_data):
                 % from_path,
                 3,
             )
-            return "failed"
+            return "zeuz_failed"
         if from_path in file_attachment:
             from_path = file_attachment[
                 from_path
@@ -1856,7 +1856,7 @@ def Compare_File(step_data):
                 % to_path,
                 3,
             )
-            return "failed"
+            return "zeuz_failed"
         if to_path in file_attachment:
             to_path = file_attachment[
                 to_path
@@ -1875,7 +1875,7 @@ def Compare_File(step_data):
                     "Files %s and %s are not equal" % (to_path, from_path),
                     3,
                 )
-                return "failed"
+                return "zeuz_failed"
             else:
                 CommonUtil.ExecLog(
                     sModuleInfo, "File '%s' and %s are equal " % (to_path, from_path), 1
@@ -1888,7 +1888,7 @@ def Compare_File(step_data):
                 "The information in the data-set(s) are incorrect. Please provide accurate data set(s) information.",
                 3,
             )
-            return "failed"
+            return "zeuz_failed"
 
     except Exception:
         return CommonUtil.Exception_Handler(sys.exc_info())
@@ -1927,7 +1927,7 @@ def Rename_File_or_Folder(step_data):
                     "Could not rename file '%s' to '%s'" % (from_path, to_path),
                     3,
                 )
-                return "failed"
+                return "zeuz_failed"
             else:
                 CommonUtil.ExecLog(
                     sModuleInfo,
@@ -1944,7 +1944,7 @@ def Rename_File_or_Folder(step_data):
                     "Could not rename folder '%s' to '%s'" % (from_path, to_path),
                     3,
                 )
-                return "failed"
+                return "zeuz_failed"
             else:
                 CommonUtil.ExecLog(
                     sModuleInfo,
@@ -1958,7 +1958,7 @@ def Rename_File_or_Folder(step_data):
                 "The information in the data-set(s) are incorrect. Please provide accurate data set(s) information.",
                 3,
             )
-            return "failed"
+            return "zeuz_failed"
 
     except Exception:
         return CommonUtil.Exception_Handler(sys.exc_info())
@@ -1984,7 +1984,7 @@ def Zip_File_or_Folder(data_set):
             CommonUtil.ExecLog(
                 sModuleInfo, "Either 'source' or 'destination' information missing", 3
             )
-            return "failed"
+            return "zeuz_failed"
 
     except Exception:
         return CommonUtil.Exception_Handler(
@@ -2009,7 +2009,7 @@ def Zip_File_or_Folder(data_set):
             CommonUtil.ExecLog(
                 sModuleInfo, "Cannot zip file '%s' to '%s'" % (source, destination), 3
             )
-            return "failed"
+            return "zeuz_failed"
         else:
             CommonUtil.ExecLog(
                 sModuleInfo,
@@ -2080,7 +2080,7 @@ def Move_File_or_Folder(step_data):
                 % from_path,
                 3,
             )
-            return "failed"
+            return "zeuz_failed"
 
         if file_or_folder.lower() == "file":
             # move file "from_path to "to_path"
@@ -2091,7 +2091,7 @@ def Move_File_or_Folder(step_data):
                     "Could not move file '%s' to '%s'" % (from_path, to_path),
                     3,
                 )
-                return "failed"
+                return "zeuz_failed"
             else:
                 CommonUtil.ExecLog(
                     sModuleInfo,
@@ -2108,7 +2108,7 @@ def Move_File_or_Folder(step_data):
                     "Could not move folder '%s' to '%s'" % (from_path, to_path),
                     3,
                 )
-                return "failed"
+                return "zeuz_failed"
             else:
                 CommonUtil.ExecLog(
                     sModuleInfo,
@@ -2122,7 +2122,7 @@ def Move_File_or_Folder(step_data):
                 "The information in the data-set(s) are incorrect. Please provide accurate data set(s) information.",
                 3,
             )
-            return "failed"
+            return "zeuz_failed"
 
     except Exception:
         traceback.print_exc()
@@ -2232,7 +2232,7 @@ def Upload(step_data):
                 % (from_path, to_path),
                 3,
             )
-            return "failed"
+            return "zeuz_failed"
         else:
             CommonUtil.ExecLog(
                 sModuleInfo,
@@ -2471,11 +2471,11 @@ def compare_images(data_set):
             return "passed"
         else:
             CommonUtil.ExecLog(sModuleInfo, "Images do not match", 3)
-            return "failed"
+            return "zeuz_failed"
 
     except:
         CommonUtil.ExecLog(sModuleInfo, "Couldn't compare images", 3)
-        return "failed"
+        return "zeuz_failed"
 
 
 # Method to sleep for a particular duration
@@ -2489,7 +2489,7 @@ def Sleep(step_data):
                 "The information in the data-set(s) are incorrect. Please provide accurate data set(s) information.",
                 3,
             )
-            return "failed"
+            return "zeuz_failed"
         else:
             tuple = step_data[0]
             seconds = int(tuple[2])
@@ -2518,7 +2518,7 @@ def Save_Text(step_data):
             CommonUtil.ExecLog(
                 sModuleInfo, "Value of Variable '%s' could not be saved!!!", 3
             )
-            return "failed"
+            return "zeuz_failed"
         else:
             CommonUtil.ExecLog(sModuleInfo, "Showing saved variables", 1)
             Shared_Resources.Show_All_Shared_Variables()
@@ -2586,7 +2586,7 @@ def Download_file(data_set):
                 "Expected Field to contain 'url' and Value to contain a valid URL to a file",
                 3,
             )
-            return "failed"
+            return "zeuz_failed"
     except:
         return CommonUtil.Exception_Handler(
             sys.exc_info(), None, "Error parsing data set"
@@ -2603,7 +2603,7 @@ def Download_file(data_set):
                 "Failed to save file from (%s) to disk (%s)" % (url, file_location),
                 3,
             )
-            return "failed"
+            return "zeuz_failed"
         else:
             CommonUtil.ExecLog(
                 sModuleInfo, "File downloaded successfully to %s" % full_file_path, 1
@@ -2653,7 +2653,7 @@ def Download_File_and_Unzip(data_set):
                 "Expected Field to contain 'url' and Value to contain a valid URL to a file",
                 3,
             )
-            return "failed"
+            return "zeuz_failed"
         if unzip_location == "":
             unzip_location = (
                 file_location  # Set unzip location to Downloads by default if omited
@@ -2675,7 +2675,7 @@ def Download_File_and_Unzip(data_set):
                 "Failed to save file from (%s) to disk (%s)" % (url, file_location),
                 3,
             )
-            return "failed"
+            return "zeuz_failed"
         else:
             CommonUtil.ExecLog(
                 sModuleInfo, "File downloaded successfully to %s" % file_name, 1
@@ -2693,7 +2693,7 @@ def Download_File_and_Unzip(data_set):
             CommonUtil.ExecLog(
                 sModuleInfo, "Failed to unzip %s to %s" % (file_name, unzip_location), 3
             )
-            return "failed"
+            return "zeuz_failed"
         else:
             CommonUtil.ExecLog(
                 sModuleInfo, "Successfully unzipped to %s" % unzip_location, 1
@@ -2753,7 +2753,7 @@ def replace_Substring(data_set):
                             "Unknown Value for element parameter 'replace_all'. Should be true or false.",
                             3,
                         )
-                        return "failed"
+                        return "zeuz_failed"
 
                 elif row[0] == "case sensitive":
                     # User should be able to specify case sensitivity (default is to be case sensitive)
@@ -2773,7 +2773,7 @@ def replace_Substring(data_set):
                             "Unknown Value for element parameter 'case_sensitive'. Should be true or false.",
                             3,
                         )
-                        return "failed"
+                        return "zeuz_failed"
 
                 elif row[0] == "dictionary":
                     if row[2] != "":
@@ -2785,14 +2785,14 @@ def replace_Substring(data_set):
                                 "Unknown Value for element parameter 'dictionary'. Should be a string representation of python dictionary.",
                                 3,
                             )
-                            return "failed"
+                            return "zeuz_failed"
                     else:
                         CommonUtil.ExecLog(
                             sModuleInfo,
                             "Unknown Value for element parameter 'dictionary'. Should be a string representation of python dictionary.",
                             3,
                         )
-                        return "failed"
+                        return "zeuz_failed"
 
                 elif row[0] == "find":
                     find_value = str(row[2])
@@ -2831,7 +2831,7 @@ def replace_Substring(data_set):
                 CommonUtil.ExecLog(
                     sModuleInfo, "Couldn't replace text in variable '%s'" % var_name, 3
                 )
-                return "failed"
+                return "zeuz_failed"
 
         # Try to find the file
         if (
@@ -2844,7 +2844,7 @@ def replace_Substring(data_set):
                 % file_name,
                 3,
             )
-            return "failed"
+            return "zeuz_failed"
         if file_name in file_attachment:
             file_name = file_attachment[
                 file_name
@@ -2871,12 +2871,12 @@ def replace_Substring(data_set):
                 CommonUtil.ExecLog(
                     sModuleInfo, "Could not find substring for this action", 3
                 )
-                return "failed"
+                return "zeuz_failed"
             if new_string == "":
                 CommonUtil.ExecLog(
                     sModuleInfo, "Could not find new_string for this action", 3
                 )
-                return "failed"
+                return "zeuz_failed"
             if case_sensitive == False:  # case insensitive
                 newTxt = newTxt.lower()
                 substring = substring.lower()
@@ -2935,7 +2935,7 @@ def Change_Value_ini(data_set):
                 % file_name,
                 3,
             )
-            return "failed"
+            return "zeuz_failed"
         if file_name in file_attachment:
             file_name = file_attachment[
                 file_name
@@ -2948,17 +2948,17 @@ def Change_Value_ini(data_set):
             CommonUtil.ExecLog(
                 sModuleInfo, "Could not find ini file section name for this action", 3
             )
-            return "failed"
+            return "zeuz_failed"
         if line_name == "":
             CommonUtil.ExecLog(
                 sModuleInfo, "Could not find ini file line name for this action", 3
             )
-            return "failed"
+            return "zeuz_failed"
         if new_expected_value_of_line == "":
             CommonUtil.ExecLog(
                 sModuleInfo, "Could not find new expected value for this action", 3
             )
-            return "failed"
+            return "zeuz_failed"
     except:
         return CommonUtil.Exception_Handler(
             sys.exc_info(), None, "Error parsing data set"
@@ -2980,7 +2980,7 @@ def Change_Value_ini(data_set):
                 % (line_name, new_expected_value_of_line, section_name),
                 3,
             )
-        return "failed"
+        return "zeuz_failed"
 
     except Exception:
         return CommonUtil.Exception_Handler(
@@ -3025,7 +3025,7 @@ def Add_line_ini(data_set):
                 % file_name,
                 3,
             )
-            return "failed"
+            return "zeuz_failed"
         if file_name in file_attachment:
             file_name = file_attachment[
                 file_name
@@ -3038,17 +3038,17 @@ def Add_line_ini(data_set):
             CommonUtil.ExecLog(
                 sModuleInfo, "Could not find ini file section name for this action", 3
             )
-            return "failed"
+            return "zeuz_failed"
         if line_name == "":
             CommonUtil.ExecLog(
                 sModuleInfo, "Could not find ini file line name for this action", 3
             )
-            return "failed"
+            return "zeuz_failed"
         if value_of_line == "":
             CommonUtil.ExecLog(
                 sModuleInfo, "Could not find new expected value for this action", 3
             )
-            return "failed"
+            return "zeuz_failed"
     except:
         return CommonUtil.Exception_Handler(
             sys.exc_info(), None, "Error parsing data set"
@@ -3070,7 +3070,7 @@ def Add_line_ini(data_set):
                 % (line_name, value_of_line, section_name),
                 3,
             )
-        return "failed"
+        return "zeuz_failed"
 
     except Exception:
         return CommonUtil.Exception_Handler(sys.exc_info())
@@ -3110,7 +3110,7 @@ def Delete_line_ini(data_set):
                 % file_name,
                 3,
             )
-            return "failed"
+            return "zeuz_failed"
         if file_name in file_attachment:
             file_name = file_attachment[
                 file_name
@@ -3123,12 +3123,12 @@ def Delete_line_ini(data_set):
             CommonUtil.ExecLog(
                 sModuleInfo, "Could not find ini file section name for this action", 3
             )
-            return "failed"
+            return "zeuz_failed"
         if line_name == "":
             CommonUtil.ExecLog(
                 sModuleInfo, "Could not find ini file line name for this action", 3
             )
-            return "failed"
+            return "zeuz_failed"
     except:
         return CommonUtil.Exception_Handler(
             sys.exc_info(), None, "Error parsing data set"
@@ -3150,7 +3150,7 @@ def Delete_line_ini(data_set):
                 % (line_name, section_name, file_name),
                 3,
             )
-        return "failed"
+        return "zeuz_failed"
 
     except Exception:
         return CommonUtil.Exception_Handler(sys.exc_info())
@@ -3177,14 +3177,14 @@ def Read_line_name_and_value(data_set):
             CommonUtil.ExecLog(
                 sModuleInfo, "Could not find ini file name for this action", 3
             )
-            return "failed"
+            return "zeuz_failed"
         if save_line_name_value == "":
             CommonUtil.ExecLog(
                 sModuleInfo,
                 "Could not find the name where to save line name and value in shared variables for this action",
                 3,
             )
-            return "failed"
+            return "zeuz_failed"
     except:
         return CommonUtil.Exception_Handler(
             sys.exc_info(), None, "Error parsing data set"
@@ -3196,7 +3196,7 @@ def Read_line_name_and_value(data_set):
 
         else:
             CommonUtil.ExecLog(sModuleInfo, "Couldn't find the config file", 1)
-            return "failed"
+            return "zeuz_failed"
     except Exception:
         return CommonUtil.Exception_Handler(sys.exc_info())
 
@@ -3256,7 +3256,7 @@ def Validate_Path_Step_Data(step_data):
             % (Error_Detail),
             3,
         )
-        return "failed"
+        return "zeuz_failed"
 
 
 # return no of files(sub directory included) in a directory
@@ -3310,7 +3310,7 @@ def pattern_matching(dataset):
         m = p.findall(strg)
         if m == [] or m == None:
             CommonUtil.ExecLog(sModuleInfo, "Pattern did not produce a match", 3)
-            return "failed"
+            return "zeuz_failed"
         else:
             Shared_Resources.Set_Shared_Variables(
                 shared_var, m[0]
@@ -3356,7 +3356,7 @@ def save_substring(data_set):
             CommonUtil.ExecLog(
                 sModuleInfo, "Could not find the variable named '%s'" % from_var, 3
             )
-            return "failed"
+            return "zeuz_failed"
 
         # process index_string
         if "," in index_string:
@@ -3370,7 +3370,7 @@ def save_substring(data_set):
             CommonUtil.ExecLog(
                 sModuleInfo, "From Index for getting substing can't be negative", 3
             )
-            return "failed"
+            return "zeuz_failed"
         else:
             if to_index == -1:
                 try:
@@ -3382,7 +3382,7 @@ def save_substring(data_set):
                         % from_var,
                         3,
                     )
-                    return "failed"
+                    return "zeuz_failed"
             else:
                 try:
                     substring = from_var[from_index:to_index]
@@ -3393,7 +3393,7 @@ def save_substring(data_set):
                         % from_var,
                         3,
                     )
-                    return "failed"
+                    return "zeuz_failed"
 
         # now save the substing to new variable
         return Shared_Resources.Set_Shared_Variables(to_var, substring)
@@ -3456,13 +3456,13 @@ def extract_number(data_set):
             CommonUtil.ExecLog(
                 sModuleInfo, "Could not find the variable named '%s'" % from_var, 3
             )
-            return "failed"
+            return "zeuz_failed"
 
         if index < 0:
             CommonUtil.ExecLog(
                 sModuleInfo, "Index for extracting number can't be negative", 3
             )
-            return "failed"
+            return "zeuz_failed"
         else:
             try:
                 all_digit = [s for s in re.findall(r"-?\d+\.?\d*", from_var)]
@@ -3499,7 +3499,7 @@ def extract_number(data_set):
                             "Can't round number. Incorrect digit '%s' given" % digit,
                             3,
                         )
-                        return "failed"
+                        return "zeuz_failed"
                     rounded_number = round(float(extracted_number), c)
 
             except:
@@ -3509,7 +3509,7 @@ def extract_number(data_set):
                     % from_var,
                     3,
                 )
-                return "failed"
+                return "zeuz_failed"
 
         # now save the substing to new variable
         CommonUtil.ExecLog(
@@ -3574,7 +3574,7 @@ def datatype_conversion(data_set):
             CommonUtil.ExecLog(
                 sModuleInfo, "Output variable name was not set", 3,
             )
-            return "failed"
+            return "zeuz_failed"
 
         if (
             re.match("^[-+]?[0-9]+$", decimal_point)
@@ -3653,7 +3653,7 @@ def datatype_conversion(data_set):
         CommonUtil.ExecLog(
             sModuleInfo, "Could not convert the data type of the given variable", 3,
         )
-        return "failed"
+        return "zeuz_failed"
 
 
 def str_to_int(sModuleInfo, in_variable_value, ceil_floor_round):
@@ -3866,7 +3866,7 @@ def extract_num_from_str(
             CommonUtil.ExecLog(
                 sModuleInfo, "Index is out of range", 3,
             )
-            return "failed"
+            return "zeuz_failed"
 
         if no_numbers_found:
             CommonUtil.ExecLog(

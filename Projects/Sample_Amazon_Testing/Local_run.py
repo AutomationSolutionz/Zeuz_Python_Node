@@ -23,7 +23,7 @@ def main():
     except:
         print("Failed to open TestCases.json file. Aborting.")
         traceback.print_exc()
-        return "failed"
+        return "zeuz_failed"
 
     try:
         ConfigModule.remote_config["local_run"] = True
@@ -33,7 +33,7 @@ def main():
             pass
         else:
             print("No test cases present in TestCases.json file.")
-            return "failed"
+            return "zeuz_failed"
 
         local_run_dataset = {}
         Set_dataset = []
@@ -91,7 +91,7 @@ def main():
     except:
         print("Could not perform local run")
         traceback.print_exc()
-        return "failed"
+        return "zeuz_failed"
 
 
 if __name__ == "__main__":

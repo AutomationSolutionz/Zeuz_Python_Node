@@ -37,7 +37,7 @@ def Item_Search(search_text):
         # Finding the search button
         search_button = BuiltInFunctions.Get_Element("value", "Go")
 
-        if search_button != "failed":  # if search button found
+        if search_button != "zeuz_failed":  # if search button found
             # Clicking on the search button
             BuiltInFunctions.Click_Element_StandAlone(search_button)
             time.sleep(10)
@@ -51,7 +51,7 @@ def Item_Search(search_text):
             CommonUtil.TakeScreenShot(sModuleInfo)
             CommonUtil.ExecLog(sModuleInfo, "Failed to clicked your element", 3)
             CommonUtil.ExecLog(sModuleInfo, "Searching was not successful", 3)
-            return "failed"
+            return "zeuz_failed"
 
     except Exception as e:
         exc_type, exc_obj, exc_tb = sys.exc_info()
@@ -73,7 +73,7 @@ def Item_Search(search_text):
             "Could not search item: %s.  Error: %s" % (search_text, Error_Detail),
             3,
         )
-        return "failed"
+        return "zeuz_failed"
 
 
 def Add_to_Cart(search_text):
@@ -94,7 +94,7 @@ def Add_to_Cart(search_text):
         # Finding the search button
         search_button = BuiltInFunctions.Get_Element("value", "Go")
 
-        if search_button != "failed":  # if search button found
+        if search_button != "zeuz_failed":  # if search button found
             # Clicking on the search button
             BuiltInFunctions.Click_Element_StandAlone(search_button)
             time.sleep(10)
@@ -107,14 +107,14 @@ def Add_to_Cart(search_text):
             CommonUtil.TakeScreenShot(sModuleInfo)
             CommonUtil.ExecLog(sModuleInfo, "Failed to clicked your element", 3)
             CommonUtil.ExecLog(sModuleInfo, "Searching was not successful", 3)
-            return "failed"
+            return "zeuz_failed"
 
         # clicking the first search result
         CommonUtil.ExecLog(sModuleInfo, "Trying to click on the first search result", 1)
         first_element = BuiltInFunctions.Get_Element(
             "tag", "a", "class", "s-item-container", "parent"
         )
-        if first_element != "failed":
+        if first_element != "zeuz_failed":
             CommonUtil.ExecLog(sModuleInfo, "Found first search result element", 1)
             CommonUtil.ExecLog(
                 sModuleInfo, "Clicking on the first search result element", 1
@@ -133,13 +133,13 @@ def Add_to_Cart(search_text):
             CommonUtil.ExecLog(
                 sModuleInfo, "Failed to find the first search result element", 3
             )
-            return "failed"
+            return "zeuz_failed"
 
         # add this item to cart
         CommonUtil.ExecLog(sModuleInfo, "Trying to add this item to cart", 1)
         CommonUtil.ExecLog(sModuleInfo, "Trying to click on Add to Cart button", 1)
         add_to_cart_button = BuiltInFunctions.Get_Element("id", "add-to-cart-button")
-        if add_to_cart_button != "failed":
+        if add_to_cart_button != "zeuz_failed":
             CommonUtil.ExecLog(sModuleInfo, "Found Add to Cart button", 1)
             CommonUtil.TakeScreenShot(sModuleInfo)
             CommonUtil.ExecLog(sModuleInfo, "Clicking on the Add to Cart button", 1)
@@ -155,7 +155,7 @@ def Add_to_Cart(search_text):
             CommonUtil.ExecLog(
                 sModuleInfo, "Failed to click on the Add to Cart Button", 3
             )
-            return "failed"
+            return "zeuz_failed"
 
     except Exception as e:
         exc_type, exc_obj, exc_tb = sys.exc_info()
@@ -177,7 +177,7 @@ def Add_to_Cart(search_text):
             "Could not add the item to cart.  Error: %s" % (search_text, Error_Detail),
             3,
         )
-        return "failed"
+        return "zeuz_failed"
 
 
 def Add_to_Cart_Using_Selenium(step_data, file_attachment):
@@ -216,7 +216,7 @@ def Add_to_Cart_Using_Selenium(step_data, file_attachment):
             '//*[@id="nav-search"]/form/div[2]/div/input'
         )
 
-        if search_button != "failed":  # if search button found
+        if search_button != "zeuz_failed":  # if search button found
             # Clicking on the search button
             search_button.click()
             # BuiltInFunctions.Click_Element_StandAlone(search_button)
@@ -230,7 +230,7 @@ def Add_to_Cart_Using_Selenium(step_data, file_attachment):
             CommonUtil.TakeScreenShot(sModuleInfo)
             CommonUtil.ExecLog(sModuleInfo, "Failed to clicked your element", 3)
             CommonUtil.ExecLog(sModuleInfo, "Searching was not successful", 3)
-            return "failed"
+            return "zeuz_failed"
 
         # clicking the first search result
         CommonUtil.ExecLog(sModuleInfo, "Trying to click on the first search result", 1)
@@ -238,7 +238,7 @@ def Add_to_Cart_Using_Selenium(step_data, file_attachment):
         first_element = selenium_driver.find_element_by_xpath(
             '//*[@id="result_0"]/div/div[3]/div[1]/a/h2'
         )
-        if first_element != "failed":
+        if first_element != "zeuz_failed":
             CommonUtil.ExecLog(sModuleInfo, "Found first search result element", 1)
             CommonUtil.ExecLog(
                 sModuleInfo, "Clicking on the first search result element", 1
@@ -255,14 +255,14 @@ def Add_to_Cart_Using_Selenium(step_data, file_attachment):
             CommonUtil.ExecLog(
                 sModuleInfo, "Failed to find the first search result element", 3
             )
-            return "failed"
+            return "zeuz_failed"
 
         # add this item to cart
         CommonUtil.ExecLog(sModuleInfo, "Trying to add this item to cart", 1)
         CommonUtil.ExecLog(sModuleInfo, "Trying to click on Add to Cart button", 1)
         # add_to_cart_button = BuiltInFunctions.Get_Element('id','add-to-cart-button')
         add_to_cart_button = selenium_driver.find_element_by_id("add-to-cart-button")
-        if add_to_cart_button != "failed":
+        if add_to_cart_button != "zeuz_failed":
             CommonUtil.ExecLog(sModuleInfo, "Found Add to Cart button", 1)
             CommonUtil.TakeScreenShot(sModuleInfo)
             CommonUtil.ExecLog(sModuleInfo, "Clicking on the Add to Cart button", 1)
@@ -278,7 +278,7 @@ def Add_to_Cart_Using_Selenium(step_data, file_attachment):
             CommonUtil.ExecLog(
                 sModuleInfo, "Failed to click on the Add to Cart Button", 3
             )
-            return "failed"
+            return "zeuz_failed"
 
     except Exception as e:
         exc_type, exc_obj, exc_tb = sys.exc_info()
@@ -301,4 +301,4 @@ def Add_to_Cart_Using_Selenium(step_data, file_attachment):
             % (search_text, Error_Detail),
             3,
         )
-        return "failed"
+        return "zeuz_failed"
