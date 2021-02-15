@@ -1028,13 +1028,13 @@ def New_Compare_Variables(step_data):
         list1 = CommonUtil.parse_value_into_object(list1_name)
         list2 = CommonUtil.parse_value_into_object(list2_name)
 
-        if list1 in failed_tag_list or list2 in failed_tag_list:
-            CommonUtil.ExecLog(
-                sModuleInfo,
-                "Error converting Shared Variable in Field or Value fields to strings",
-                3,
-            )
-            return "failed"
+#         if list1 in failed_tag_list or list2 in failed_tag_list:
+#             CommonUtil.ExecLog(
+#                 sModuleInfo,
+#                 "Error converting Shared Variable in Field or Value fields to strings",
+#                 3,
+#             )
+#             return "failed"
 
         found_list = []
         not_found_list1 = []
