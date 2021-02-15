@@ -516,6 +516,10 @@ def parse_variable(name):
 
             name = name[: name.find("{")]
             val = Get_Shared_Variables(name, log=False)
+
+            if val == "zeuz_failed":
+                return "zeuz_failed"
+
             result = []
 
             for idx in indices:
@@ -536,6 +540,10 @@ def parse_variable(name):
 
             name = name[: name.find("(")]
             val = Get_Shared_Variables(name, log=False)
+
+            if val == "zeuz_failed":
+                return "zeuz_failed"
+
             result = []
 
             for idx in indices:
