@@ -780,6 +780,7 @@ def check_for_updates():
 
 def Local_run():
     try:
+        PreProcess()
         user_info_object = {}
         user_info_object['project'] = ConfigModule.get_config_value("sectionOne", PROJECT_TAG, temp_ini_file)
         user_info_object['team'] = ConfigModule.get_config_value("sectionOne", TEAM_TAG, temp_ini_file)
