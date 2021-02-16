@@ -81,8 +81,6 @@ failed_tag_list = [
     "fail",
     "FAIL",
     "zeuz_failed",
-    "zeuz_failed",
-    "zeuz_failed",
     "false",
     "False",
     "FALSE",
@@ -325,7 +323,7 @@ def CreateJsonReport(logs=None, stepInfo=None, TCInfo=None, setInfo=None):
                             if TCInfo:
                                 testcase_info["execution_detail"] = TCInfo
                                 fail_reason_str = ""
-                                if TCInfo["status"] in ("zeuz_failed", "Blocked"):
+                                if TCInfo["status"] in ("Failed", "Blocked"):
                                     count = -min(len(tc_error_logs), 3)
                                     while count <= -1:
                                         fail_reason_str += tc_error_logs[count]
@@ -342,7 +340,7 @@ def CreateJsonReport(logs=None, stepInfo=None, TCInfo=None, setInfo=None):
                                     if stepInfo:
                                         step_info["execution_detail"] = stepInfo
                                         step_error_logs = []
-                                        if stepInfo["status"].lower() == "zeuz_failed":
+                                        if stepInfo["status"].lower() == "failed":
                                             count, err_count, max_count = -1, 0, -len(step_info["log"])
                                             # Can be optimized by taking error when occurs and append it if the step fails only
                                             while count >= max_count and err_count < 3:

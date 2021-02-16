@@ -823,7 +823,7 @@ def call_driver_function_of_test_step(
             if sStepResult in passed_tag_list:
                 sStepResult = "PASSED"
             elif sStepResult in failed_tag_list:
-                sStepResult = "zeuz_failed"
+                sStepResult = "zeuz_failed".upper()
             elif sStepResult in skipped_tag_list:
                 sStepResult = "SKIPPED"
             elif sStepResult.upper() == CANCELLED_TAG.upper():
@@ -1110,7 +1110,7 @@ def run_all_test_steps_in_a_test_case(
                 sModuleInfo, "%s%s" % (current_step_name, CommonUtil.to_dlt_from_fail_reason), 3
             )  # add log
 
-            after_execution_dict.update({"status": FAILED_TAG})  # dictionary update
+            after_execution_dict.update({"status": "Failed"})  # dictionary update
 
             # check if set for continue
             if not test_case_continue and ConfigModule.get_config_value("RunDefinition", "local_run") == "False":
@@ -1176,12 +1176,12 @@ def calculate_test_case_result(sModuleInfo, TestCaseID, run_id, sTestStepResultL
     elif "CANCELLED" in sTestStepResultList or "Cancelled" in sTestStepResultList:
         CommonUtil.ExecLog(sModuleInfo, "Test Case Cancelled", 3)
         sTestCaseStatus = "Cancelled"
-    elif "zeuz_failed" in sTestStepResultList:
+    elif "zeuz_failed".upper() in sTestStepResultList:
         step_index = 0
         for each in sTestStepResultList:
-            if each == "zeuz_failed":
+            if each == "zeuz_failed".upper():
                 if testcase_info["steps"][step_index]["verify_point"]:
-                    sTestCaseStatus = "zeuz_failed"
+                    sTestCaseStatus = "Failed"
                     break
             step_index += 1
         else:
@@ -1190,10 +1190,10 @@ def calculate_test_case_result(sModuleInfo, TestCaseID, run_id, sTestStepResultL
 
     elif "WARNING" in sTestStepResultList:
         CommonUtil.ExecLog(sModuleInfo, "Test Case Contain Warning(s)", 2)
-        sTestCaseStatus = "zeuz_failed"
+        sTestCaseStatus = "Failed"
     elif "NOT RUN" in sTestStepResultList:
         CommonUtil.ExecLog(sModuleInfo, "Test Case Contain Not Run Steps", 2)
-        sTestCaseStatus = "zeuz_failed"
+        sTestCaseStatus = "Failed"
     elif "SKIPPED" in sTestStepResultList:
         CommonUtil.ExecLog(sModuleInfo, "Test Case Contain Skipped Step(s)", 1)
         skipped = True

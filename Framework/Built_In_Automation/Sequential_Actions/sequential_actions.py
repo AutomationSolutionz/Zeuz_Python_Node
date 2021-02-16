@@ -129,7 +129,7 @@ def load_sa_modules(
             CommonUtil.ExecLog(
                 sModuleInfo, "Invalid sequential actions module: %s" % module, 3
             )
-            return "failed"
+            return "zeuz_failed"
     except:
         return CommonUtil.Exception_Handler(sys.exc_info())
     return "passed"
@@ -237,9 +237,9 @@ def Sequential_Actions(
             step_data, supported_platforms
         )  # Parse any mobile platform related fields
         if step_data in failed_tag_list:
-            return "failed"
+            return "zeuz_failed"
         if common.verify_step_data(step_data) in failed_tag_list:
-            return "failed"  # Verify step data is in correct format
+            return "zeuz_failed"  # Verify step data is in correct format
     except:
         return CommonUtil.Exception_Handler(
             sys.exc_info(), None, "Error during Sequential Actions startup"
@@ -352,7 +352,7 @@ def Handle_Conditional_Action(step_data, data_set_no):
         global deprecateLog
         deprecateLog = True
         if data_set in failed_tag_list:
-            return "failed"
+            return "zeuz_failed"
 
         for left, _, right in data_set:
             statement = ""
@@ -370,7 +370,7 @@ def Handle_Conditional_Action(step_data, data_set_no):
                     "Specify a statement among (if, else if, else) and add a <single space> after that",
                     3,
                 )
-                return "failed"
+                return "zeuz_failed"
 
             if statement != "else":
                 for i in operators:
@@ -390,7 +390,7 @@ def Handle_Conditional_Action(step_data, data_set_no):
                             "Specify an operator among |==|, |!=|, |<|, |>|, |<=|, |>=|, |in| and add a <single space> before and after the operator",
                             3,
                         )
-                        return "failed"
+                        return "zeuz_failed"
                 if sum(operators.values()) == 1:
                     for i in operators:
                         if operators[i] == 1:
@@ -416,7 +416,7 @@ def Handle_Conditional_Action(step_data, data_set_no):
                     "Couldn't parse Left and Right values",
                     3,
                 )
-                return "failed"
+                return "zeuz_failed"
 
             def check_operators():
                 nonlocal outer_skip, next_level_step_data, condition_matched
@@ -496,7 +496,7 @@ def Handle_Conditional_Action(step_data, data_set_no):
             elif statement == "else if":
                 if not if_exists:
                     CommonUtil.ExecLog(sModuleInfo, "No 'if' statement found. Please define a 'if' statement first", 3)
-                    return "failed", []
+                    return "zeuz_failed", []
                 else_if_log = True if not condition_matched else False
                 check_operators()
                 if condition_matched and else_if_log:
@@ -505,7 +505,7 @@ def Handle_Conditional_Action(step_data, data_set_no):
             elif statement == "else":
                 if not if_exists:
                     CommonUtil.ExecLog(sModuleInfo, "No 'if' statement found. Please define a 'if' statement first", 3)
-                    return "failed", []
+                    return "zeuz_failed", []
                 else_log = True if not condition_matched else False
                 check_operators()
                 if condition_matched and else_log:
@@ -527,7 +527,7 @@ def Handle_Conditional_Action(step_data, data_set_no):
             if data_set_index in ("p", "f"):
                 outer_skip = [i for i in range(len(step_data))]
                 CommonUtil.ExecLog(sModuleInfo, "Step Exit called. Stopping Test Step.", 1)
-                return "passed" if data_set_index == "p" else "failed", outer_skip
+                return "passed" if data_set_index == "p" else "zeuz_failed", outer_skip
             elif data_set_index >= len(step_data):
                 CommonUtil.ExecLog(
                     sModuleInfo,
@@ -573,7 +573,7 @@ def Handle_While_Loop_Action(step_data, data_set_no):
         deprecateLog = True
         data_set = common.shared_variable_to_value(data_set)
         if data_set in failed_tag_list:
-            return "failed", []
+            return "zeuz_failed", []
 
         for row in data_set:
             if row[0].strip().lower() == "run actions":
@@ -606,7 +606,7 @@ def Handle_While_Loop_Action(step_data, data_set_no):
                 "Loop action step data is invalid, please see action help for more info",
                 3,
             )
-            return "failed", []
+            return "zeuz_failed", []
 
         i = 0
         while i < max_no_of_loop:
@@ -628,7 +628,7 @@ def Handle_While_Loop_Action(step_data, data_set_no):
                             "You are running an Loop action within the same Loop action. It will create infinite recursion",
                             3
                         )
-                        return "failed", outer_skip
+                        return "zeuz_failed", outer_skip
                     result, skip = Run_Sequential_Actions(
                         [data_set_index]
                     )  # new edit: full step data is passed. [step_data[data_set_index]])
@@ -687,7 +687,7 @@ def Handle_While_Loop_Action(step_data, data_set_no):
         return "passed", outer_skip
     except:
         CommonUtil.ExecLog(sModuleInfo, "Error while handling loop action", 3)
-        return "failed", []
+        return "zeuz_failed", []
 
 
 def Run_Sequential_Actions(
@@ -697,7 +697,7 @@ def Run_Sequential_Actions(
         data_set_list = []
     sModuleInfo = inspect.currentframe().f_code.co_name + " : " + MODULE_NAME
     try:
-        result = "failed"  # Initialize result
+        result = "zeuz_failed"  # Initialize result
         skip = (
             []
         )  # List of data set numbers that have been processed, and need to be skipped, so they are not processed again
@@ -712,7 +712,7 @@ def Run_Sequential_Actions(
             CommonUtil.ExecLog(
                 sModuleInfo, "Internal Error: Step Data not set in shared variable", 3
             )
-            return "failed", skip_for_loop
+            return "zeuz_failed", skip_for_loop
         if data_set_list == []:  # run the full step data
             for i in range(len(step_data)):
                 if debug_actions:
@@ -786,7 +786,7 @@ def Run_Sequential_Actions(
                     result = Action_Handler(
                         data_set, row
                     )  # Pass data set, and action_name to action handler
-                    if result == "failed":
+                    if result == "zeuz_failed":
                         CommonUtil.ExecLog(
                             sModuleInfo,
                             "Optional action failed. Returning pass anyway",
@@ -887,7 +887,7 @@ def Run_Sequential_Actions(
                         """
 
                         if result in failed_tag_list:
-                            return "failed", skip_for_loop
+                            return "zeuz_failed", skip_for_loop
                 elif "loop" in action_name:
                     if "while" in action_name.lower():
                         result, skip_for_loop = Handle_While_Loop_Action(
@@ -895,7 +895,7 @@ def Run_Sequential_Actions(
                         )
                     skip = list(set(skip + skip_for_loop))
                     if result in failed_tag_list:
-                        return "failed", skip_for_loop
+                        return "zeuz_failed", skip_for_loop
                     break
 
                 # Special custom functions can be executed in a specified file
@@ -916,7 +916,7 @@ def Run_Sequential_Actions(
                                 % custom_file_name,
                                 3,
                             )
-                            return "failed", skip_for_loop
+                            return "zeuz_failed", skip_for_loop
                         if custom_file_name in file_attachment:
                             custom_file_name = file_attachment[
                                 custom_file_name
@@ -953,7 +953,7 @@ def Run_Sequential_Actions(
                                 % custom_file_name,
                                 3,
                             )
-                            return "failed", skip_for_loop
+                            return "zeuz_failed", skip_for_loop
 
                     elif (
                         custom_module != ""
@@ -1000,7 +1000,7 @@ def Run_Sequential_Actions(
                                 % (custom_module, e),
                                 3,
                             )
-                            return "failed", skip_for_loop
+                            return "zeuz_failed", skip_for_loop
 
                     else:  # Function executed but user didn't specify the file to import
                         CommonUtil.ExecLog(
@@ -1008,7 +1008,7 @@ def Run_Sequential_Actions(
                             "No Python file specified for custom function execution. Expected a Data Set in the format of: 'file', 'custom', 'directory/filename'",
                             3,
                         )
-                        return "failed", skip_for_loop
+                        return "zeuz_failed", skip_for_loop
 
                 # If middle column = action, call action handler
                 elif (
@@ -1095,15 +1095,15 @@ def Run_Sequential_Actions(
                                     if (
                                         result in failed_tag_list
                                     ):  # Still a failure, give up
-                                        return "failed", skip_for_loop
+                                        return "zeuz_failed", skip_for_loop
                                     break  # No need to process more bypasses
                             if result in failed_tag_list:  # All bypass actions failed
                                 CommonUtil.ExecLog(
                                     sModuleInfo, "All bypass actions failed", 3
                                 )
-                                return "failed", skip_for_loop
+                                return "zeuz_failed", skip_for_loop
                         else:  # Yup, it's a failure, and no bypass specified
-                            return "failed", skip_for_loop
+                            return "zeuz_failed", skip_for_loop
 
                 # Middle column not listed above, so data set is wrong
                 else:
@@ -1112,7 +1112,7 @@ def Run_Sequential_Actions(
                         "The sub-field information is incorrect. Please provide accurate information on the data set(s).",
                         3,
                     )
-                    return "failed", skip_for_loop
+                    return "zeuz_failed", skip_for_loop
 
         # No failures, return result
         return result, skip_for_loop
@@ -1157,7 +1157,7 @@ def Loop_Action_Handler(data, row, dataset_cnt):
                 "Loop format incorrect in Value field. Expected list of data sets. Eg: '2,3,4'",
                 3,
             )
-            return "failed", skip
+            return "zeuz_failed", skip
 
         ### Determine loop type
         # Current types: Loop N times || Loop until Data_set #N = true/false
@@ -1174,14 +1174,14 @@ def Loop_Action_Handler(data, row, dataset_cnt):
             if loop_type in passed_tag_list:
                 loop_type = "passed"
             elif loop_type in failed_tag_list:
-                loop_type = "failed"
+                loop_type = "zeuz_failed"
             else:
                 CommonUtil.ExecLog(
                     sModuleInfo,
                     "Loop format incorrect in Field field. Expected Field to contain 'true/false number'. Eg: true 2",
                     3,
                 )
-                return "failed", skip
+                return "zeuz_failed", skip
             loop_len = 0  # Not used
             loop_method = "exit_on_dataset"
         except:
@@ -1231,14 +1231,14 @@ def Loop_Action_Handler(data, row, dataset_cnt):
                                 "Shared Variable found for Loop action, but is not in list/str format, which is required.",
                                 3,
                             )
-                            return "failed"
+                            return "zeuz_failed"
                     else:
                         CommonUtil.ExecLog(
                             sModuleInfo,
                             "Could not find a valid loop format in the Field field. Valid formats: 'true/false number', 'number', 'shared variable name'",
                             3,
                         )
-                        return "failed"
+                        return "zeuz_failed"
                 except:
                     try:
                         true_or_false = (
@@ -1268,7 +1268,7 @@ def Loop_Action_Handler(data, row, dataset_cnt):
                                 "Could not find a valid loop format in the Field field. Valid formats: 'true/false number', 'number', 'shared variable name'",
                                 3,
                             )
-                            return "failed", skip
+                            return "zeuz_failed", skip
                     except:
                         CommonUtil.ExecLog(
                             sModuleInfo,
@@ -1288,7 +1288,7 @@ def Loop_Action_Handler(data, row, dataset_cnt):
                 global load_testing
                 if load_testing:
                     loop_result_for_load_testing = False
-                result = "failed"
+                result = "zeuz_failed"
             return result
 
         ### Send sub-set to SA until we get our desired value or number of loops
@@ -1332,7 +1332,7 @@ def Loop_Action_Handler(data, row, dataset_cnt):
                                 3,
                                 force_write=True,
                             )
-                            return "failed"
+                            return "zeuz_failed"
 
                         if start > total_time or end > total_time:
                             CommonUtil.ExecLog(
@@ -1341,7 +1341,7 @@ def Loop_Action_Handler(data, row, dataset_cnt):
                                 3,
                                 force_write=True,
                             )
-                            return "failed"
+                            return "zeuz_failed"
 
                         distribution.append([start, end, percentage])
 
@@ -1355,7 +1355,7 @@ def Loop_Action_Handler(data, row, dataset_cnt):
                         3,
                         force_write=True,
                     )
-                    return "failed"
+                    return "zeuz_failed"
 
                 # initialize thread pool
                 if total_thread > 10:
@@ -1365,7 +1365,7 @@ def Loop_Action_Handler(data, row, dataset_cnt):
                         3,
                         force_write=True,
                     )
-                    return "failed"
+                    return "zeuz_failed"
 
                 global thread_pool
                 thread_pool = ThreadPoolExecutor(max_workers=total_thread)
@@ -1421,7 +1421,7 @@ def Loop_Action_Handler(data, row, dataset_cnt):
                     3,
                     force_write=True,
                 )
-                return "failed"
+                return "zeuz_failed"
 
         inside_interval = False
         load_testing_count = -1
@@ -1441,7 +1441,7 @@ def Loop_Action_Handler(data, row, dataset_cnt):
                     #     CommonUtil.ExecLog(
                     #         sModuleInfo, "User requested Zeuz Node to go Offline", 2
                     #     )
-                    #     return "failed", skip
+                    #     return "zeuz_failed", skip
 
                     # Build the sub-set and execute
                     result = build_subset([new_step_data[ndc]])
@@ -1623,7 +1623,7 @@ def Conditional_Action_Handler(step_data, dataset_cnt):
     data_set = step_data[dataset_cnt]
     data_set = common.shared_variable_to_value(data_set)
     if data_set in failed_tag_list:
-        return "failed"
+        return "zeuz_failed"
 
     # Test if data set contains the recall line, and if so, get the saved result from the previous action
     try:
@@ -1678,7 +1678,7 @@ def Conditional_Action_Handler(step_data, dataset_cnt):
             while True:
                 Element = LocateElement.Get_Element(
                     data_set, eval(module).get_driver()
-                )  # Get the element object or 'failed'
+                )  # Get the element object or "zeuz_failed"
                 if (Element not in failed_tag_list) or (time.time() >= end_time):
                     break
 
@@ -1708,7 +1708,7 @@ def Conditional_Action_Handler(step_data, dataset_cnt):
                 2)
             result = common.Compare_Variables(
                 data_set
-            )  # Get the element object or 'failed'
+            )  # Get the element object or "zeuz_failed"
             if result in failed_tag_list:
                 result = common.Compare_Lists_or_Dicts(data_set)
                 if result in failed_tag_list:
@@ -1742,17 +1742,17 @@ def Conditional_Action_Handler(step_data, dataset_cnt):
         returned_step_data_list = Validate_Step_Data(
             element_step_data[0]
         )  # Make sure the element step data we got back from above is good
-        if (returned_step_data_list == []) or (returned_step_data_list == "failed"):  # Element step data is bad, so fail
+        if (returned_step_data_list == []) or (returned_step_data_list == "zeuz_failed"):  # Element step data is bad, so fail
             CommonUtil.ExecLog(
                 sModuleInfo, "Element data is bad: %s" % str(element_step_data), 3
             )
-            return "failed"
+            return "zeuz_failed"
         else:  # Element step data is good, so continue
             # Check if element from data set exists on device
             try:
                 Get_Response = getattr(eval(module), "Get_Response")
                 Element = Get_Response(element_step_data[0])
-                if Element == "failed":  # Element doesn't exist, proceed with the step data following the fail/false path
+                if Element == "zeuz_failed":  # Element doesn't exist, proceed with the step data following the fail/false path
                     logic_decision = "false"
                 else:  # Any other return means we found the element, proceed with the step data following the pass/true pass
                     logic_decision = "true"
@@ -1776,12 +1776,12 @@ def Conditional_Action_Handler(step_data, dataset_cnt):
             [element_step_data[0]]
         )  # Make sure the element step data we got back from above is good
         if (returned_step_data_list == []) or (
-            returned_step_data_list == "failed"
+            returned_step_data_list == "zeuz_failed"
         ):  # Element step data is bad, so fail
             CommonUtil.ExecLog(
                 sModuleInfo, "Element data is bad: %s" % str(element_step_data), 3
             )
-            return "failed"
+            return "zeuz_failed"
         else:  # Element step data is good, so continue
             # Check if element from data set exists on device
             try:
@@ -1806,7 +1806,7 @@ def Conditional_Action_Handler(step_data, dataset_cnt):
             "Either no module was specified in the Conditional Action line, or it is incorrect",
             3,
         )
-        return "failed"
+        return "zeuz_failed"
 
     # Process the path as defined above (pass/fail)
 
@@ -1843,7 +1843,7 @@ def Conditional_Action_Handler(step_data, dataset_cnt):
         if data_set_index in ("p", "f"):
             outer_skip = [i for i in range(len(step_data))]
             CommonUtil.ExecLog(sModuleInfo, "Step Exit called. Stopping Test Step.", 1)
-            return "passed" if data_set_index == "p" else "failed", outer_skip
+            return "passed" if data_set_index == "p" else "zeuz_failed", outer_skip
         elif data_set_index >= len(step_data):
             CommonUtil.ExecLog(
                 sModuleInfo,
@@ -1915,7 +1915,7 @@ def Action_Handler(_data_set, action_row):
             "You probably didn't add the module as part of the action. Eg: appium action",
             3,
         )
-        return "failed"
+        return "zeuz_failed"
 
     # If this is a common function, try to get the webdriver for it, if there is one, and save it to shared variables. This will allow common functions to work with whichever webdriver they need
     if original_module != "":  # This was identified as a common module
@@ -1923,11 +1923,11 @@ def Action_Handler(_data_set, action_row):
             result = load_sa_modules(
                 original_module
             )  # Load the appropriate module (in case its never been run before this common action has started)
-            if result == "failed":
+            if result == "zeuz_failed":
                 CommonUtil.ExecLog(
                     sModuleInfo, "Can't find module for %s" % original_module, 3
                 )
-                return "failed"
+                return "zeuz_failed"
 
             common_driver = eval(original_module).get_driver()  # Get webdriver object
             sr.Set_Shared_Variables(
@@ -1970,14 +1970,14 @@ def Action_Handler(_data_set, action_row):
     if action_name not in skip_conversion_of_shared_variable_for_actions:
         data_set = common.shared_variable_to_value(data_set)
         if data_set in failed_tag_list:
-            return "failed"
+            return "zeuz_failed"
 
     # Execute the action's function
     try:
         result = load_sa_modules(module)  # Load the appropriate module
-        if result == "failed":
+        if result == "zeuz_failed":
             CommonUtil.ExecLog(sModuleInfo, "Can't find module for %s" % module, 3)
-            return "failed"
+            return "zeuz_failed"
 
         run_function = getattr(
             eval(module), function
