@@ -959,7 +959,7 @@ def Compare_Lists_or_Dicts(data_set):
     return sr.Compare_Lists_or_Dicts([data_set])
 
 
-nested = False
+nested, datatype1, datatype2 = False, "", ""
 
 
 # Validating text from an element given information regarding the expected text
@@ -981,8 +981,8 @@ def New_Compare_Variables(step_data):
         match_by_index = False
         check_exclusion = False
         check_subset = False
-        global nested
-        nested = False
+        global nested, datatype1, datatype2
+        nested, datatype1, datatype2 = False, "", ""
 
         for each_step_data_item in step_data:
             if (
@@ -1030,13 +1030,10 @@ def New_Compare_Variables(step_data):
         list1 = CommonUtil.parse_value_into_object(list1_name)
         list2 = CommonUtil.parse_value_into_object(list2_name)
 
-#         if list1 in failed_tag_list or list2 in failed_tag_list:
-#             CommonUtil.ExecLog(
-#                 sModuleInfo,
-#                 "Error converting Shared Variable in Field or Value fields to strings",
-#                 3,
-#             )
-#             return "zeuz_failed"
+        try: list1_str = json.dumps(CommonUtil.parse_value_into_object(list1), indent=2, sort_keys=True)
+        except: list1_str = str(list1)
+        try: list2_str = json.dumps(CommonUtil.parse_value_into_object(list2), indent=2, sort_keys=True)
+        except: list2_str = str(list2)
 
         found_list = []
         not_found_list1 = []
@@ -1051,10 +1048,12 @@ def New_Compare_Variables(step_data):
             results = compare_list_tuple(list1, list2, check_exclusion, match_by_index)
             if check_exclusion:
                 if nested and results == "not found":
-                    CommonUtil.ExecLog(sModuleInfo, "All items of 2nd list is not found in the 1st list", 3)
+                    CommonUtil.ExecLog(sModuleInfo, "LEFT (%s):\n%s\n\nRIGHT (%s):\n%s" % (datatype1[:-4], list1_str, datatype2[:-4], list2_str), 3)
+                    CommonUtil.ExecLog(sModuleInfo, "All items of RIGHT list is not found in the LEFT list", 3)
                     return "zeuz_failed"
                 elif nested and results == "all found":
-                    CommonUtil.ExecLog(sModuleInfo, "All items of 2nd list is found in the 1st list", 1)
+                    CommonUtil.ExecLog(sModuleInfo, "LEFT (%s):\n%s\n\nRIGHT (%s):\n%s" % (datatype1[:-4], list1_str, datatype2[:-4], list2_str), 1)
+                    CommonUtil.ExecLog(sModuleInfo, "All items of RIGHT list is found in the LEFT list", 1)
                     return "passed"
                 elif isinstance(results, list):
                     found_list = results
@@ -1062,16 +1061,20 @@ def New_Compare_Variables(step_data):
                     print("invalid from check exclusion")
             elif not match_by_index:
                 if nested and results == "not found":
-                    CommonUtil.ExecLog(sModuleInfo, "All items of 1st list and 2nd list did not match", 3)
+                    CommonUtil.ExecLog(sModuleInfo, "LEFT (%s):\n%s\n\nRIGHT (%s):\n%s" % (datatype1[:-4], list1_str, datatype2[:-4], list2_str), 3)
+                    CommonUtil.ExecLog(sModuleInfo, "All items of LEFT list and RIGHT list did not match", 3)
                     return "zeuz_failed"
                 elif nested and results == "all found":
-                    CommonUtil.ExecLog(sModuleInfo, "All items of 1st list and 2nd list matched", 1)
+                    CommonUtil.ExecLog(sModuleInfo, "LEFT (%s):\n%s\n\nRIGHT (%s):\n%s" % (datatype1[:-4], list1_str, datatype2[:-4], list2_str), 1)
+                    CommonUtil.ExecLog(sModuleInfo, "All items of LEFT list and RIGHT list matched", 1)
                     return "passed"
                 elif nested and results == "2nd list larger":
-                    CommonUtil.ExecLog(sModuleInfo, "Somewhere inside 2nd list has more items than 1st list", 3)
+                    CommonUtil.ExecLog(sModuleInfo, "LEFT (%s):\n%s\n\nRIGHT (%s):\n%s" % (datatype1[:-4], list1_str, datatype2[:-4], list2_str), 3)
+                    CommonUtil.ExecLog(sModuleInfo, "Somewhere inside RIGHT list has more items than LEFT list", 3)
                     return "zeuz_failed"
                 elif nested and results == "1st list larger":
-                    CommonUtil.ExecLog(sModuleInfo, "Somewhere inside 1st list has more items than 2nd list", 3)
+                    CommonUtil.ExecLog(sModuleInfo, "LEFT (%s):\n%s\n\nRIGHT (%s):\n%s" % (datatype1[:-4], list1_str, datatype2[:-4], list2_str), 3)
+                    CommonUtil.ExecLog(sModuleInfo, "Somewhere inside LEFT list has more items than RIGHT list", 3)
                     return "zeuz_failed"
                 elif isinstance(results, tuple):
                     found_list, not_found_list1, not_found_list2 = results
@@ -1079,10 +1082,12 @@ def New_Compare_Variables(step_data):
                     print("invalid from not match by index")
             else:
                 if results == "not matched":
-                    CommonUtil.ExecLog(sModuleInfo, "Somewhere inside 1st list has more items than 2nd list", 3)
+                    CommonUtil.ExecLog(sModuleInfo, "LEFT (%s):\n%s\n\nRIGHT (%s):\n%s" % (datatype1, list1_str, datatype2, list2_str), 3)
+                    CommonUtil.ExecLog(sModuleInfo, "Somewhere inside RIGHT list has more items than LEFT list", 3)
                     return "zeuz_failed"
                 elif results == "all matched":
-                    CommonUtil.ExecLog(sModuleInfo, "All items of 1st list and 2nd list did matched", 1)
+                    CommonUtil.ExecLog(sModuleInfo, "LEFT (%s):\n%s\n\nRIGHT (%s):\n%s" % (datatype1, list1_str, datatype2, list2_str), 1)
+                    CommonUtil.ExecLog(sModuleInfo, "All items of LEFT list and RIGHT list did matched", 1)
                     return "passed"
                 elif isinstance(results, tuple):
                     found_list, not_found_list1, not_found_list2, pass_count, fail_count = results
@@ -1141,15 +1146,14 @@ def New_Compare_Variables(step_data):
                         result.append("extra")
                         taken.append(key)
         else:
+            datatype1, datatype2 = type(list1).__name__, type(list2).__name__
             if str(list1) == str(list2):
+                CommonUtil.ExecLog(sModuleInfo, "LEFT (%s):\n%s\n\nRIGHT (%s):\n%s" % (datatype1[:-4], list1, datatype2, list2), 1)
                 CommonUtil.ExecLog(sModuleInfo, "Left and right value matched", 1)
-                CommonUtil.ExecLog(sModuleInfo, "LEFT:\n%s" % list1, 1)
-                CommonUtil.ExecLog(sModuleInfo, "RIGHT:\n%s" % list2, 1)
                 return "passed"
             else:
+                CommonUtil.ExecLog(sModuleInfo, "LEFT (%s):\n%s\n\nRIGHT (%s):\n%s" % (datatype1[:-4], list1, datatype2, list2), 3)
                 CommonUtil.ExecLog(sModuleInfo, "Left and right value did not match", 3)
-                CommonUtil.ExecLog(sModuleInfo, "LEFT:\n%s" % list1, 3)
-                CommonUtil.ExecLog(sModuleInfo, "RIGHT:\n%s" % list2, 3)
                 return "zeuz_failed"
 
         if nested:
@@ -1256,7 +1260,9 @@ def New_Compare_Variables(step_data):
 
 def compare_list_tuple(list1, list2, check_exclusion, match_by_index):
     found_list, not_found_list1, not_found_list2, pass_count, fail_count = [], [], [], 0, 0
-    global nested
+    global nested, datatype1, datatype2
+    datatype1 += type(list1).__name__ + " of "
+    datatype2 += type(list2).__name__ + " of "
     if check_exclusion:
         if nested and len(list1) != len(list2):
             pass
@@ -1290,14 +1296,16 @@ def compare_list_tuple(list1, list2, check_exclusion, match_by_index):
                 for each2 in list2:
                     found_status = compare_list_tuple(each1, each2, check_exclusion, match_by_index)
                     if found_status == "not found":
-                        return "not found"
+                        continue
                     if found_status == "all found":
                         return "all found"
                     if found_status == "2nd list larger":
                         return "2nd list larger"
                     if found_status == "1st list larger":
                         return "1st list larger"
-            elif nested and each1 not in list2:
+                else:
+                    return "not found"
+            elif nested and str(each1) not in [str(i) for i in list2]:
                 return "not found"
             elif not nested and each1 in list2:
                 found_list.append(each1)
@@ -1308,17 +1316,19 @@ def compare_list_tuple(list1, list2, check_exclusion, match_by_index):
         for each2 in list2:
             if isinstance(each2, list) or isinstance(each2, tuple):
                 nested = True
-                for each1 in list1:
+                for each1 in [str(i) for i in list1]:
                     found_status = compare_list_tuple(each2, each1, check_exclusion, match_by_index)
                     if found_status == "not found":
-                        return "not found"
+                        continue
                     if found_status == "all found":
                         return "all found"
                     if found_status == "2nd list larger":
                         return "2nd list larger"
                     if found_status == "1st list larger":
                         return "1st list larger"
-            elif nested and each2 not in list1:
+                else:
+                    return "not found"
+            elif nested and str(each2) not in [str(i) for i in list1]:
                 return "not found"
             elif not nested and each2 not in list1:
                 not_found_list2.append(each2)
