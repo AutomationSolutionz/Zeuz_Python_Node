@@ -510,6 +510,9 @@ def launch_application(data_set):
             if "browserstack" in did:
                 browserstack_run = True
                 break
+            elif "aws" in did:
+                aws_run = True
+                break
         if browserstack_run:
             desiredcaps = device_info["browserstack device 1"]["basic"]
         elif aws_run:
