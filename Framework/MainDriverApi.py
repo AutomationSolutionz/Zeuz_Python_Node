@@ -1703,7 +1703,7 @@ def upload_json_report(Userid, temp_ini_file, run_id, all_run_id_info):
             else:
                 print("Could not Upload the report to server of run_id '%s'" % run_id)
         os.unlink(str(zip_path) + ".zip")
-        
+
     with open(path, "w") as f:
         json.dump(json_report, f, indent=2)
     path = zip_path / "test_cases_data.json"
@@ -1963,7 +1963,9 @@ def main(device_dict, user_info_object):
             CommonUtil.ExecLog(sModuleInfo, "Test Set Cancelled by the User", 1)  # add log
         elif not run_id.startswith("debug"):
             upload_json_report(Userid, temp_ini_file, run_id, all_run_id_info)
-            
+
+            from distutils.dir_util import copy_tree
+
             # If node is running in device farm, copy the logs and reports to
             # the expected directory.
             if "DEVICEFARM_LOG_DIR" in os.environ:
@@ -1972,8 +1974,8 @@ def main(device_dict, user_info_object):
                     "sectionOne", "test_case_folder", temp_ini_file
                 )).parent
 
-                shutil.copytree(str(zeuz_log_dir), str(log_dir))
-            
+                copy_tree(str(zeuz_log_dir), str(log_dir))
+
             # executor.submit(upload_json_report)
 
         # Close websocket connection.

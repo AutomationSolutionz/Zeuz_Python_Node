@@ -30,6 +30,14 @@
             "request": "launch",
             "program": "${workspaceFolder}/node_gui.py",
             "console": "integratedTerminal"
+        },
+        {
+            "name": "Python: local_run",
+            "type": "python",
+            "request": "launch",
+            "program": "${workspaceFolder}/node_cli.py",
+            "args": ["--local_run"],
+            "console": "integratedTerminal"
         }
     ]
 }
