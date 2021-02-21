@@ -170,8 +170,8 @@ def Open_Browser(dependency, window_size_X=None, window_size_Y=None):
                 for i in range(num_values):
                     path = winreg.EnumValue(handle, i)
                     if path != False:
-                        firefox_path = path[1]
-                        binary = FirefoxBinary(firefox_path)
+                        Firefox_path = path[1]
+                        binary = FirefoxBinary(Firefox_path)
                         break
             capabilities = webdriver.DesiredCapabilities().FIREFOX
             capabilities['acceptSslCerts'] = True
