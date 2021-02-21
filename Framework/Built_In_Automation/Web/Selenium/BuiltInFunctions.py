@@ -108,10 +108,12 @@ def Open_Browser(dependency, window_size_X=None, window_size_Y=None):
     try:
         CommonUtil.teardown = True
         browser = browser.lower()
-        if "chrome" in browser or "chromeheadless" in browser:
-
+        if browser in ("chrome", "chromeheadless"):
             from selenium.webdriver.chrome.options import Options
-
+            chrome_path = ConfigModule.get_config_value("Selenium_driver_paths", "chrome_path")
+            if not chrome_path:
+                chrome_path = ChromeDriverManager().install()
+                ConfigModule.add_config_value("Selenium_driver_paths", "chrome_path", chrome_path)
             options = Options()
             options.add_argument("--no-sandbox")
             options.add_argument("--disable-extensions")
@@ -124,7 +126,11 @@ def Open_Browser(dependency, window_size_X=None, window_size_Y=None):
                 options.add_argument(
                     "--headless"
                 )  # Enable headless operation if dependency set
-            selenium_driver = webdriver.Chrome(ChromeDriverManager().install(), chrome_options=options, desired_capabilities=d)
+            selenium_driver = webdriver.Chrome(
+                executable_path=chrome_path,
+                chrome_options=options,
+                desired_capabilities=d
+            )
             selenium_driver.implicitly_wait(WebDriver_Wait)
             if not window_size_X and not window_size_Y:
                 selenium_driver.set_window_size(default_x, default_y)
@@ -140,7 +146,11 @@ def Open_Browser(dependency, window_size_X=None, window_size_Y=None):
             CommonUtil.set_screenshot_vars(Shared_Resources.Shared_Variable_Export())
             return "passed"
 
-        elif "firefox" in browser or "firefoxheadless" in browser:
+        elif browser in ("firefox", "firefoxheadless"):
+            firefox_path = ConfigModule.get_config_value("Selenium_driver_paths", "firefox_path")
+            if not firefox_path:
+                firefox_path = GeckoDriverManager().install()
+                ConfigModule.add_config_value("Selenium_driver_paths", "firefox_path", firefox_path)
             from sys import platform as _platform
             from selenium.webdriver.firefox.options import Options
             options = Options()
@@ -168,7 +178,7 @@ def Open_Browser(dependency, window_size_X=None, window_size_Y=None):
             profile = webdriver.FirefoxProfile()
             profile.accept_untrusted_certs = True
             selenium_driver = webdriver.Firefox(
-                executable_path=GeckoDriverManager().install(),
+                executable_path=firefox_path,
                 capabilities=capabilities,
                 options=options,
                 firefox_profile=profile
@@ -188,10 +198,14 @@ def Open_Browser(dependency, window_size_X=None, window_size_Y=None):
             CommonUtil.set_screenshot_vars(Shared_Resources.Shared_Variable_Export())
             return "passed"
 
-        elif "edge" in browser:
+        elif browser == "edge":
+            edge_path = ConfigModule.get_config_value("Selenium_driver_paths", "edge_path")
+            if not edge_path:
+                edge_path = EdgeChromiumDriverManager().install()
+                ConfigModule.add_config_value("Selenium_driver_paths", "edge_path", edge_path)
             capabilities = webdriver.DesiredCapabilities().EDGE
             capabilities['acceptSslCerts'] = True
-            selenium_driver = webdriver.Edge(executable_path=EdgeChromiumDriverManager().install(), capabilities=capabilities)
+            selenium_driver = webdriver.Edge(executable_path=edge_path, capabilities=capabilities)
             selenium_driver.implicitly_wait(WebDriver_Wait)
             if not window_size_X and not window_size_Y:
                 selenium_driver.set_window_size(default_x, default_y)
@@ -207,7 +221,11 @@ def Open_Browser(dependency, window_size_X=None, window_size_Y=None):
             CommonUtil.set_screenshot_vars(Shared_Resources.Shared_Variable_Export())
             return "passed"
 
-        elif "opera" in browser:
+        elif browser == "opera":
+            opera_path = ConfigModule.get_config_value("Selenium_driver_paths", "opera_path")
+            if not opera_path:
+                opera_path = OperaDriverManager().install()
+                ConfigModule.add_config_value("Selenium_driver_paths", "opera_path", opera_path)
             capabilities = webdriver.DesiredCapabilities().OPERA
             capabilities['acceptSslCerts'] = True
 
@@ -215,7 +233,7 @@ def Open_Browser(dependency, window_size_X=None, window_size_Y=None):
             # options = Options()
             # options.binary_location = r'C:\Users\ASUS\AppData\Local\Programs\Opera\launcher.exe'  # This might be needed
 
-            selenium_driver = webdriver.Opera(executable_path=OperaDriverManager().install(), desired_capabilities=capabilities)
+            selenium_driver = webdriver.Opera(executable_path=opera_path, desired_capabilities=capabilities)
             selenium_driver.implicitly_wait(WebDriver_Wait)
             if not window_size_X and not window_size_Y:
                 selenium_driver.set_window_size(default_x, default_y)
@@ -231,10 +249,14 @@ def Open_Browser(dependency, window_size_X=None, window_size_Y=None):
             CommonUtil.set_screenshot_vars(Shared_Resources.Shared_Variable_Export())
             return "passed"
 
-        elif "ie" in browser:
+        elif browser == "ie":
+            ie_path = ConfigModule.get_config_value("Selenium_driver_paths", "ie_path")
+            if not ie_path:
+                ie_path = IEDriverManager().install()
+                ConfigModule.add_config_value("Selenium_driver_paths", "ie_path", ie_path)
             capabilities = webdriver.DesiredCapabilities().INTERNETEXPLORER
             # capabilities['acceptSslCerts'] = True     # It does not work for internet explorer
-            selenium_driver = webdriver.Ie(IEDriverManager().install(), capabilities=capabilities)
+            selenium_driver = webdriver.Ie(executable_path=ie_path, capabilities=capabilities)
             selenium_driver.implicitly_wait(WebDriver_Wait)
             if not window_size_X and not window_size_Y:
                 selenium_driver.set_window_size(default_x, default_y)
@@ -291,6 +313,48 @@ def Open_Browser(dependency, window_size_X=None, window_size_Y=None):
             )
             return "zeuz_failed"
         # time.sleep(3)
+
+    except SessionNotCreatedException as exc:
+        if "This version" in exc.msg and "only supports" in exc.msg:
+            CommonUtil.ExecLog(
+                sModuleInfo,
+                "Couldn't open the browser because the webdriver is backdated. Trying again after updating webdriver",
+                2
+            )
+            if browser in ("chrome", "chromeheadless"):
+                ConfigModule.add_config_value("Selenium_driver_paths", "chrome_path", ChromeDriverManager().install())
+            elif browser in ("firefox", "firefoxheadless"):
+                ConfigModule.add_config_value("Selenium_driver_paths", "firefox_path", GeckoDriverManager().install())
+            elif browser == "edge":
+                ConfigModule.add_config_value("Selenium_driver_paths", "edge_path", EdgeChromiumDriverManager().install())
+            elif browser == "opera":
+                ConfigModule.add_config_value("Selenium_driver_paths", "opera_path", OperaDriverManager().install())
+            elif browser == "ie":
+                ConfigModule.add_config_value("Selenium_driver_paths", "ie_path", IEDriverManager().install())
+            Open_Browser(dependency, window_size_X, window_size_Y)
+        else:
+            return CommonUtil.Exception_Handler(sys.exc_info())
+
+    except WebDriverException as exc:
+        if "needs to be in PATH" in exc.msg:
+            CommonUtil.ExecLog(
+                sModuleInfo,
+                "Couldn't open the browser because the webdriver is not installed. Trying again after installing webdriver",
+                2
+            )
+            if browser in ("chrome", "chromeheadless"):
+                ConfigModule.add_config_value("Selenium_driver_paths", "chrome_path", ChromeDriverManager().install())
+            elif browser in ("firefox", "firefoxheadless"):
+                ConfigModule.add_config_value("Selenium_driver_paths", "firefox_path", GeckoDriverManager().install())
+            elif browser == "edge":
+                ConfigModule.add_config_value("Selenium_driver_paths", "edge_path", EdgeChromiumDriverManager().install())
+            elif browser == "opera":
+                ConfigModule.add_config_value("Selenium_driver_paths", "opera_path", OperaDriverManager().install())
+            elif browser == "ie":
+                ConfigModule.add_config_value("Selenium_driver_paths", "ie_path", IEDriverManager().install())
+            Open_Browser(dependency, window_size_X, window_size_Y)
+        else:
+            return CommonUtil.Exception_Handler(sys.exc_info())
 
     except Exception:
         CommonUtil.teardown = False
