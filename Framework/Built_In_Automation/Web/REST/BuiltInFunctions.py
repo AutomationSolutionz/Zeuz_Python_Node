@@ -631,6 +631,7 @@ def handle_rest_call(
     apply_condition=False,
     save_cookie=False,
     wait_for_response_code=0,
+    timeout=None,
 ):
     sModuleInfo = inspect.currentframe().f_code.co_name + " : " + MODULE_NAME
     try:
@@ -676,6 +677,7 @@ def handle_rest_call(
                             json=body,
                             headers=headers,
                             verify=False,
+                            timeout=timeout,
                         )
                     elif content_header == "multipart/form-data":
                         # delete the header itself before making the request, as you also need to
@@ -687,6 +689,7 @@ def handle_rest_call(
                             files=body,
                             headers=headers,
                             verify=False,
+                            timeout=timeout,
                         )
                     elif content_header == "application/x-www-form-urlencoded":
                         result = requests.request(
@@ -695,6 +698,7 @@ def handle_rest_call(
                             data=body,
                             headers=headers,
                             verify=False,
+                            timeout=timeout,
                         )
                     else:
                         result = requests.request(
@@ -704,6 +708,7 @@ def handle_rest_call(
                             data=payload,
                             headers=headers,
                             verify=False,
+                            timeout=timeout,
                         )
                 else:
                     result = requests.request(
@@ -713,14 +718,24 @@ def handle_rest_call(
                         data=payload,
                         headers=headers,
                         verify=False,
+                        timeout=timeout,
                     )
             elif method in ("get", "head"):
                 result = requests.request(
-                    method=method, url=url, headers=headers, verify=False
+                    method=method,
+                    url=url,
+                    headers=headers,
+                    verify=False,
+                    timeout=timeout,
                 )
             elif method == "delete":
                 result = requests.request(
-                    method=method, url=url, json=body, headers=headers, verify=False
+                    method=method,
+                    url=url,
+                    json=body,
+                    headers=headers,
+                    verify=False,
+                    timeout=timeout,
                 )
             else:
                 return "zeuz_failed"
@@ -920,6 +935,9 @@ def handle_rest_call(
                     1,
                 )
             return "passed"
+    except requests.Timeout:
+        CommonUtil.ExecLog(sModuleInfo, f"Request '{url}' timed out after {timeout} seconds.", 3)
+        return "zeuz_failed"
     except Exception:
         return CommonUtil.Exception_Handler(sys.exc_info())
 
@@ -948,11 +966,14 @@ def Get_Response(step_data, save_cookie=False):
     try:
         wait_for_response_code = 0
         fields_to_be_saved = ""
+        timeout = None
         for row in step_data:
             if row[1] == "action":
                 fields_to_be_saved = row[2]
             elif row[0] == "wait for status code":
                 wait_for_response_code = int(row[2])
+            elif "timeout" in row[0].lower():
+                timeout = float(row[2].strip())
 
         element_step_data = Get_Element_Step_Data(step_data)
 
@@ -967,6 +988,7 @@ def Get_Response(step_data, save_cookie=False):
                     fields_to_be_saved,
                     save_cookie=save_cookie,
                     wait_for_response_code=wait_for_response_code,
+                    timeout=timeout,
                 )
                 return return_result
             except Exception:
