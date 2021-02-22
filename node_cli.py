@@ -481,6 +481,13 @@ def PreProcess():
     current_path_file = temp_ini_file
     ConfigModule.clean_config_file(current_path_file)
     ConfigModule.add_section("sectionOne", current_path_file)
+    if not ConfigModule.has_section("Selenium_driver_paths"):
+        ConfigModule.add_section("Selenium_driver_paths")
+        ConfigModule.add_config_value("Selenium_driver_paths", "chrome_path", "")
+        ConfigModule.add_config_value("Selenium_driver_paths", "firefox_path", "")
+        ConfigModule.add_config_value("Selenium_driver_paths", "edge_path", "")
+        ConfigModule.add_config_value("Selenium_driver_paths", "opera_path", "")
+        ConfigModule.add_config_value("Selenium_driver_paths", "ie_path", "")
     ConfigModule.add_config_value(
         "sectionOne",
         "temp_run_file_path",

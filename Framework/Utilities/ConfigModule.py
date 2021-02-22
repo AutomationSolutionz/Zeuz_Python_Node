@@ -206,3 +206,24 @@ def get_all_sections(location=False):
     except configparser.NoOptionError as e:
         print("found no options")
         return []
+
+def has_section(section_name, location=False):
+    try:
+        config = configparser.ConfigParser()
+        config.optionxform = str  # Retain text case (default is to change to lowercase without this line)
+        if not location:
+            _file_name = os.getcwd() + os.sep + file_name
+        else:
+            _file_name = location
+        try:
+            config.read(_file_name)  # Read current configuration, if the file exists
+        except:
+            FL.DeleteFile(location)
+            config.read(_file_name)
+        return config.has_section(section_name)
+    except configparser.NoSectionError as e:
+        print("found no sections")
+        return []
+    except configparser.NoOptionError as e:
+        print("found no options")
+        return []
