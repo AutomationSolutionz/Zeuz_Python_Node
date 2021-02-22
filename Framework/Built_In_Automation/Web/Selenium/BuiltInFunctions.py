@@ -603,57 +603,42 @@ def take_screenshot_selenium(data_set):
 @logger
 def Enter_Text_In_Text_Box(step_data):
     sModuleInfo = inspect.currentframe().f_code.co_name + " : " + MODULE_NAME
-
     try:
         delay = 0
         text_value = ""
         use_js = False
-        without_click = False
-        clear=True #by default it will clear the text field.  If a user provides optional option with clear = False.  It will not clear
-
+        clear = True
         global selenium_driver
         Element = LocateElement.Get_Element(step_data, selenium_driver)
-        if Element != "zeuz_failed":
-            for left, mid, right in step_data:
-                mid = mid.strip().lower()
-                left = left.lower()
-                if "action" in mid:
-                    text_value = right
-                elif "delay" in left:
-                    delay = float(right.strip())
-                elif "use js" in left:
-                    use_js = right.strip().lower() in ("true", "yes", "1")
-                elif "clear" in left:
-                    clear= False
-
-            if use_js:
-                try:
-                    selenium_driver.execute_script("arguments[0].click();", Element)
-                except:
-                    CommonUtil.ExecLog(
-                        sModuleInfo,
-                        "Entering text without clicking the element",
-                        2,
-                    )
-
-                # Fill up the value.
-                selenium_driver.execute_script(
-                    f"arguments[0].value = `{text_value}`;", Element
-                )
-
-                # Sometimes text field becomes unclickable after entering text?
+        if Element == "zeuz_failed":
+            CommonUtil.ExecLog(sModuleInfo, "Unable to locate your element with given data.", 3)
+            return "zeuz_failed"
+        for left, mid, right in step_data:
+            mid = mid.strip().lower()
+            left = left.strip().lower()
+            if mid == "action":
+                text_value = right
+            elif left == "delay":
+                delay = float(right.strip())
+            elif left == "use js":
+                use_js = right.strip().lower() in ("true", "yes", "1")
+            elif left == "clear":
+                clear = False if right.strip().lower() in ("no", "false") else True
+        if use_js:  # Use js will automatically clear the field and then enter text
+            try:
                 selenium_driver.execute_script("arguments[0].click();", Element)
-            
-            elif clear==True: #By default clear the text field
-                try:
-                    Element.click()
-                except:
-                    CommonUtil.ExecLog(
-                        sModuleInfo,
-                        "Entering text without clicking the element",
-                        2,
-                    )
-
+            except:
+                CommonUtil.ExecLog(sModuleInfo, "Entering text without clicking the element", 2)
+            # Fill up the value.
+            selenium_driver.execute_script(f"arguments[0].value = `{text_value}`;", Element)
+            # Sometimes text field becomes unclickable after entering text?
+            selenium_driver.execute_script("arguments[0].click();", Element)
+        else:
+            try:
+                Element.click()
+            except:
+                CommonUtil.ExecLog(sModuleInfo, "Entering text without clicking the element", 2)
+            if clear:
                 # Element.clear()
                 # Safari Keys are extremely slow and not working
                 if selenium_driver.desired_capabilities['browserName'] == "Safari":
@@ -663,9 +648,7 @@ def Enter_Text_In_Text_Box(step_data):
                     try:
                         Element.clear() #some cases it works .. so adding it here just incase
                     except:
-                        True
-  
-            
+                        pass
             if delay == 0:
                 Element.send_keys(text_value)
             else:
@@ -676,19 +659,9 @@ def Enter_Text_In_Text_Box(step_data):
                 Element.click()
             except:  # sometimes text field can be unclickable after entering text
                 pass
-
-            # CommonUtil.TakeScreenShot(sModuleInfo)
-            CommonUtil.ExecLog(
-                sModuleInfo,
-                "Successfully set the value of to text to: %s" % text_value,
-                1,
-            )
-            return "passed"
-        else:
-            CommonUtil.ExecLog(
-                sModuleInfo, "Unable to locate your element with given data.", 3
-            )
-            return "zeuz_failed"
+        # CommonUtil.TakeScreenShot(sModuleInfo)
+        CommonUtil.ExecLog(sModuleInfo, "Successfully set the value of to text to: %s" % text_value, 1)
+        return "passed"
     except Exception:
         errMsg = "Could not select/click your element."
         return CommonUtil.Exception_Handler(sys.exc_info(), None, errMsg)
