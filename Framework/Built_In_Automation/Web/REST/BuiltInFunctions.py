@@ -632,6 +632,7 @@ def handle_rest_call(
     save_cookie=False,
     wait_for_response_code=0,
     timeout=None,
+    files=None,
 ):
     sModuleInfo = inspect.currentframe().f_code.co_name + " : " + MODULE_NAME
     try:
@@ -668,6 +669,9 @@ def handle_rest_call(
         while count < request_count:
             method = method.lower().strip()
             if method in ("post", "put"):
+                if files is not None:
+                    headers["Content-Type"] = "multipart/form-data"
+
                 if "Content-Type" in headers:
                     content_header = headers["Content-Type"]
                     if content_header == "application/json":
@@ -690,6 +694,7 @@ def handle_rest_call(
                             headers=headers,
                             verify=False,
                             timeout=timeout,
+                            files=files,
                         )
                     elif content_header == "application/x-www-form-urlencoded":
                         result = requests.request(
@@ -967,6 +972,7 @@ def Get_Response(step_data, save_cookie=False):
         wait_for_response_code = 0
         fields_to_be_saved = ""
         timeout = None
+        files = None
         for row in step_data:
             if row[1] == "action":
                 fields_to_be_saved = row[2]
@@ -974,6 +980,8 @@ def Get_Response(step_data, save_cookie=False):
                 wait_for_response_code = int(row[2])
             elif "timeout" in row[0].lower():
                 timeout = float(row[2].strip())
+            elif "file" in row[0].lower():
+                files = CommonUtil.parse_value_into_object(row[2])
 
         element_step_data = Get_Element_Step_Data(step_data)
 
@@ -989,6 +997,7 @@ def Get_Response(step_data, save_cookie=False):
                     save_cookie=save_cookie,
                     wait_for_response_code=wait_for_response_code,
                     timeout=timeout,
+                    files=files,
                 )
                 return return_result
             except Exception:
