@@ -645,7 +645,6 @@ def TakeScreenShot(function_name, local_run=False):
             4,
         )
         image_name = "Step#" + current_step_no + "_Action#" + current_action_no + "_" + str(function_name)
-        print(image_name)
         thread = executor.submit(Thread_ScreenShot, function_name, image_folder, Method, Driver, image_name)
         SaveThread("screenshot", thread)
 

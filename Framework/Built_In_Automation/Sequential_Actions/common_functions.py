@@ -3330,6 +3330,8 @@ def csv_read(data_set):
         }
         var_name = ""
         structure = "list of dictionaries"
+        allowed_list = None
+        map_key_names = None
         conv, Integer, Float, Bool = False, [], [], []
         for left, mid, right in data_set:
             left = left.lower().strip()
@@ -3347,6 +3349,18 @@ def csv_read(data_set):
                     delimiter = right
             elif "structure of the variable" == left:
                 pass    # "list of dictionaries" for now. Will implement more structures in future
+            elif "allowed list" == left:
+                allowed_list = CommonUtil.parse_value_into_object(right.strip())
+                if isinstance(allowed_list, str):
+                    allowed_list = [allowed_list]
+                if not isinstance(allowed_list, list):
+                    allowed_list = None
+                    CommonUtil.ExecLog(sModuleInfo, "Did not get 'Allowed list' as a list. Ignoring this parameter", 2)
+            elif "map key names" == left:
+                map_key_names = CommonUtil.parse_value_into_object(right.strip())
+                if not isinstance(map_key_names, dict):
+                    map_key_names = None
+                    CommonUtil.ExecLog(sModuleInfo, "Did not get 'Map key names' as a dictionary. Ignoring this parameter", 2)
             elif "convert" in left:
                 conv = True
                 fields = CommonUtil.parse_value_into_object(right.strip())
@@ -3377,6 +3391,16 @@ def csv_read(data_set):
                 data_to_save = []
                 not_exist = []
                 for line in csv_read_data:
+                    if allowed_list is not None:
+                        temp = {}
+                        for i in line:
+                            if i in allowed_list:
+                                temp[i] = line[i]
+                        line = temp
+                    if map_key_names is not None:
+                        for i in map_key_names:
+                            if i in line:
+                                line[map_key_names[i]] = line.pop(i)
                     if Integer:
                         for i in Integer:
                             if i in line:
