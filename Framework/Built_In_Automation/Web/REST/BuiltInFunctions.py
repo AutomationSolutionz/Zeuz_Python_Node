@@ -687,15 +687,24 @@ def handle_rest_call(
                         # delete the header itself before making the request, as you also need to
                         # set a boundary
                         del headers["Content-Type"]
-                        result = requests.request(
-                            method=method,
-                            url=url,
-                            files=body,
-                            headers=headers,
-                            verify=False,
-                            timeout=timeout,
-                            files=files,
-                        )
+                        if files:
+                            result = requests.request(
+                                method=method,
+                                url=url,
+                                files=files,
+                                headers=headers,
+                                verify=False,
+                                timeout=timeout,
+                            )
+                        else:
+                            result = requests.request(
+                                method=method,
+                                url=url,
+                                files=body,
+                                headers=headers,
+                                verify=False,
+                                timeout=timeout,
+                            )
                     elif content_header == "application/x-www-form-urlencoded":
                         result = requests.request(
                             method=method,
