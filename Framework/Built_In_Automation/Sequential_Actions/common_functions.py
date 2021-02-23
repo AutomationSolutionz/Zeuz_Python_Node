@@ -1000,14 +1000,6 @@ def New_Compare_Variables(step_data):
                 if action_type.startswith("subset"):
                     check_subset = True
 
-        # if list1_name == "" or list2_name == "":
-        #     CommonUtil.ExecLog(
-        #         sModuleInfo,
-        #         "Error parsing data set. Expected Field and Value fields to be set",
-        #         3,
-        #     )
-        #     return "zeuz_failed"
-
         if check_subset:
             list1 = CommonUtil.parse_value_into_object(list1_name)
             list2 = CommonUtil.parse_value_into_object(list2_name)
@@ -1026,6 +1018,8 @@ def New_Compare_Variables(step_data):
 
         list1 = CommonUtil.parse_value_into_object(list1_name)
         list2 = CommonUtil.parse_value_into_object(list2_name)
+        datatype1 = get_datatype(list1)
+        datatype2 = get_datatype(list2)
 
         try: list1_str = json.dumps(CommonUtil.parse_value_into_object(list1), indent=2, sort_keys=True)
         except: list1_str = str(list1)
@@ -1046,11 +1040,11 @@ def New_Compare_Variables(step_data):
             results = compare_list_tuple(list1, list2, check_exclusion, match_by_index)
             if check_exclusion:  # Check exclusion is turned off. will turn on in future if needed
                 if nested and results == "not found":
-                    CommonUtil.ExecLog(sModuleInfo, "LEFT (%s):\n%s\n\nRIGHT (%s):\n%s" % (datatype1[:-4], list1_str, datatype2[:-4], list2_str), 3)
+                    CommonUtil.ExecLog(sModuleInfo, "LEFT (%s):\n%s\n\nRIGHT (%s):\n%s" % (datatype1, list1_str, datatype2, list2_str), 3)
                     CommonUtil.ExecLog(sModuleInfo, "All items of RIGHT list is not found in the LEFT list", 3)
                     return "zeuz_failed"
                 elif nested and results == "all found":
-                    CommonUtil.ExecLog(sModuleInfo, "LEFT (%s):\n%s\n\nRIGHT (%s):\n%s" % (datatype1[:-4], list1_str, datatype2[:-4], list2_str), 1)
+                    CommonUtil.ExecLog(sModuleInfo, "LEFT (%s):\n%s\n\nRIGHT (%s):\n%s" % (datatype1, list1_str, datatype2, list2_str), 1)
                     CommonUtil.ExecLog(sModuleInfo, "All items of RIGHT list is found in the LEFT list", 1)
                     return "passed"
                 elif isinstance(results, list):
@@ -1059,19 +1053,19 @@ def New_Compare_Variables(step_data):
                     print("invalid from check exclusion")
             elif not match_by_index:
                 if nested and results == "not found":
-                    CommonUtil.ExecLog(sModuleInfo, "LEFT (%s):\n%s\n\nRIGHT (%s):\n%s" % (datatype1[:-4], list1_str, datatype2[:-4], list2_str), 3)
+                    CommonUtil.ExecLog(sModuleInfo, "LEFT (%s):\n%s\n\nRIGHT (%s):\n%s" % (datatype1, list1_str, datatype2, list2_str), 3)
                     CommonUtil.ExecLog(sModuleInfo, "All items of LEFT list and RIGHT list did not match", 3)
                     return "zeuz_failed"
                 elif nested and results == "all found":
-                    CommonUtil.ExecLog(sModuleInfo, "LEFT (%s):\n%s\n\nRIGHT (%s):\n%s" % (datatype1[:-4], list1_str, datatype2[:-4], list2_str), 1)
+                    CommonUtil.ExecLog(sModuleInfo, "LEFT (%s):\n%s\n\nRIGHT (%s):\n%s" % (datatype1, list1_str, datatype2, list2_str), 1)
                     CommonUtil.ExecLog(sModuleInfo, "All items of LEFT list and RIGHT list matched", 1)
                     return "passed"
                 elif nested and results == "2nd list larger":
-                    CommonUtil.ExecLog(sModuleInfo, "LEFT (%s):\n%s\n\nRIGHT (%s):\n%s" % (datatype1[:-4], list1_str, datatype2[:-4], list2_str), 3)
+                    CommonUtil.ExecLog(sModuleInfo, "LEFT (%s):\n%s\n\nRIGHT (%s):\n%s" % (datatype1, list1_str, datatype2, list2_str), 3)
                     CommonUtil.ExecLog(sModuleInfo, "Somewhere inside RIGHT list has more items than LEFT list", 3)
                     return "zeuz_failed"
                 elif nested and results == "1st list larger":
-                    CommonUtil.ExecLog(sModuleInfo, "LEFT (%s):\n%s\n\nRIGHT (%s):\n%s" % (datatype1[:-4], list1_str, datatype2[:-4], list2_str), 3)
+                    CommonUtil.ExecLog(sModuleInfo, "LEFT (%s):\n%s\n\nRIGHT (%s):\n%s" % (datatype1, list1_str, datatype2, list2_str), 3)
                     CommonUtil.ExecLog(sModuleInfo, "Somewhere inside LEFT list has more items than RIGHT list", 3)
                     return "zeuz_failed"
                 elif isinstance(results, tuple):
@@ -1144,16 +1138,24 @@ def New_Compare_Variables(step_data):
                         result.append("extra")
                         taken.append(key)
         else:
-            datatype1, datatype2 = type(list1).__name__, type(list2).__name__
-            if str(list1) == str(list2):
-                CommonUtil.ExecLog(sModuleInfo, "LEFT (%s):\n%s\n\nRIGHT (%s):\n%s" % (datatype1[:-4], list1, datatype2, list2), 1)
-                CommonUtil.ExecLog(sModuleInfo, "Left and right value matched", 1)
-                return "passed"
+            if not match_by_index:
+                if str(list1) == str(list2):
+                    CommonUtil.ExecLog(sModuleInfo, "LEFT (%s):\n%s\n\nRIGHT (%s):\n%s" % (datatype1, list1, datatype2, list2), 1)
+                    CommonUtil.ExecLog(sModuleInfo, "LEFT and RIGHT value matched", 1)
+                    return "passed"
+                else:
+                    CommonUtil.ExecLog(sModuleInfo, "LEFT (%s):\n%s\n\nRIGHT (%s):\n%s" % (datatype1, list1, datatype2, list2), 3)
+                    CommonUtil.ExecLog(sModuleInfo, "LEFT and RIGHT value did not match", 3)
+                    return "zeuz_failed"
             else:
-                CommonUtil.ExecLog(sModuleInfo, "LEFT (%s):\n%s\n\nRIGHT (%s):\n%s" % (datatype1[:-4], list1, datatype2, list2), 3)
-                CommonUtil.ExecLog(sModuleInfo, "Left and right value did not match", 3)
-                return "zeuz_failed"
-
+                if list1 == list2:
+                    CommonUtil.ExecLog(sModuleInfo, "LEFT (%s):\n%s\n\nRIGHT (%s):\n%s" % (datatype1, list1, datatype2, list2), 1)
+                    CommonUtil.ExecLog(sModuleInfo, "LEFT and RIGHT value matched", 1)
+                    return "passed"
+                else:
+                    CommonUtil.ExecLog(sModuleInfo, "LEFT (%s):\n%s\n\nRIGHT (%s):\n%s" % (datatype1, list1, datatype2, list2), 3)
+                    CommonUtil.ExecLog(sModuleInfo, "LEFT and RIGHT value did not match", 3)
+                    return "zeuz_failed"
         if nested:
             pass
         else:
@@ -1228,9 +1230,7 @@ def New_Compare_Variables(step_data):
 
 def compare_list_tuple(list1, list2, check_exclusion, match_by_index):
     found_list, not_found_list1, not_found_list2, pass_count, fail_count = [], [], [], 0, 0
-    global nested, datatype1, datatype2
-    datatype1 += type(list1).__name__ + " of "
-    datatype2 += type(list2).__name__ + " of "
+    global nested
     if check_exclusion: # Check exclusion is turned off. will turn on in future if needed
         if nested and len(list1) != len(list2):
             pass
@@ -1334,6 +1334,25 @@ def get_list(value):
             if isinstance(value[cnt], tuple):
                 value[cnt] = list(value[cnt])
     return value
+
+
+def get_datatype(value):
+    datatype = ""
+    # each = type(value).__name__
+    # if each in ("list", "tuple"):
+    #     datatype += each + " of "
+    #     datatype += get_datatype(value[0])
+    each = type(value).__name__
+    if each not in ("list", "tuple"):
+        return each
+    while True:
+        each = type(value).__name__
+        if each in ("list", "tuple"):
+            datatype += each + " of "
+            value = value[0]
+        else:
+            return datatype[:-4]
+
 
 
 @logger
@@ -2301,7 +2320,7 @@ def check_latest_mail(data_set):
 @logger
 def validate_schema(data_set):
     """Validates a given JSON/Python object against a given JSON schema."""
-    
+
     from jsonschema import validate, draft7_format_checker
 
     try:
@@ -2588,7 +2607,7 @@ def excel_read(data_set):
 def excel_comparison(data_set):
     """Compares the given range of data from an excel sheet with another
       data source.
-    
+
     Args:
         data_set: List[List[str]]
 
@@ -2731,7 +2750,7 @@ def split_string(data_set):
 
     Args:
         data_set: List[List[str]]
-        
+
           index                     input parameter         0 or 1
           split expression          input parameter         abc
           source string             input parameter         hello abc world
@@ -2839,22 +2858,22 @@ def save_text_from_file_into_variable(data_set):
 @logger
 def voice_command_response(step_data):
     """
-    this action is used to communicate with voice activated device such as Alex.  the computer will speak out the wakeup word(s) such as 
-    (example: Alexa) followed by some commands (example: what is today's date).  
-    
+    this action is used to communicate with voice activated device such as Alex.  the computer will speak out the wakeup word(s) such as
+    (example: Alexa) followed by some commands (example: what is today's date).
+
     It will then listen for Alexa device to say something, and convert the sound to text
-    
+
     voice command response        common action         <variable of  output text>
     wakeup command                input parameter        Alexa
     voice command                 input parameter        What is today's date
-    voice name                    optional parameter     default 
+    voice name                    optional parameter     default
     voice speed                   optional parameter     140
     voice language                optional parameter     EN
     microphone number             optional parameter     1
-    
-    
+
+
     voice_command, voice_wakeup_command, voice_speed = '140', voice_name = 'default', microphone_number = '1'
-    ****** This action needs more work to set voice name and language  
+    ****** This action needs more work to set voice name and language
     """
 
     sModuleInfo = inspect.currentframe().f_code.co_name + " : " + MODULE_NAME
