@@ -108,10 +108,12 @@ def Open_Browser(dependency, window_size_X=None, window_size_Y=None):
     try:
         CommonUtil.teardown = True
         browser = browser.lower()
-        if "chrome" in browser or "chromeheadless" in browser:
-
+        if browser in ("chrome", "chromeheadless"):
             from selenium.webdriver.chrome.options import Options
-
+            chrome_path = ConfigModule.get_config_value("Selenium_driver_paths", "chrome_path")
+            if not chrome_path:
+                chrome_path = ChromeDriverManager().install()
+                ConfigModule.add_config_value("Selenium_driver_paths", "chrome_path", chrome_path)
             options = Options()
             options.add_argument("--no-sandbox")
             options.add_argument("--disable-extensions")
@@ -124,7 +126,11 @@ def Open_Browser(dependency, window_size_X=None, window_size_Y=None):
                 options.add_argument(
                     "--headless"
                 )  # Enable headless operation if dependency set
-            selenium_driver = webdriver.Chrome(ChromeDriverManager().install(), chrome_options=options, desired_capabilities=d)
+            selenium_driver = webdriver.Chrome(
+                executable_path=chrome_path,
+                chrome_options=options,
+                desired_capabilities=d
+            )
             selenium_driver.implicitly_wait(WebDriver_Wait)
             if not window_size_X and not window_size_Y:
                 selenium_driver.set_window_size(default_x, default_y)
@@ -140,7 +146,11 @@ def Open_Browser(dependency, window_size_X=None, window_size_Y=None):
             CommonUtil.set_screenshot_vars(Shared_Resources.Shared_Variable_Export())
             return "passed"
 
-        elif "firefox" in browser or "firefoxheadless" in browser:
+        elif browser in ("firefox", "firefoxheadless"):
+            firefox_path = ConfigModule.get_config_value("Selenium_driver_paths", "firefox_path")
+            if not firefox_path:
+                firefox_path = GeckoDriverManager().install()
+                ConfigModule.add_config_value("Selenium_driver_paths", "firefox_path", firefox_path)
             from sys import platform as _platform
             from selenium.webdriver.firefox.options import Options
             options = Options()
@@ -160,15 +170,15 @@ def Open_Browser(dependency, window_size_X=None, window_size_Y=None):
                 for i in range(num_values):
                     path = winreg.EnumValue(handle, i)
                     if path != False:
-                        firefox_path = path[1]
-                        binary = FirefoxBinary(firefox_path)
+                        Firefox_path = path[1]
+                        binary = FirefoxBinary(Firefox_path)
                         break
             capabilities = webdriver.DesiredCapabilities().FIREFOX
             capabilities['acceptSslCerts'] = True
             profile = webdriver.FirefoxProfile()
             profile.accept_untrusted_certs = True
             selenium_driver = webdriver.Firefox(
-                executable_path=GeckoDriverManager().install(),
+                executable_path=firefox_path,
                 capabilities=capabilities,
                 options=options,
                 firefox_profile=profile
@@ -188,10 +198,14 @@ def Open_Browser(dependency, window_size_X=None, window_size_Y=None):
             CommonUtil.set_screenshot_vars(Shared_Resources.Shared_Variable_Export())
             return "passed"
 
-        elif "edge" in browser:
+        elif browser == "edge":
+            edge_path = ConfigModule.get_config_value("Selenium_driver_paths", "edge_path")
+            if not edge_path:
+                edge_path = EdgeChromiumDriverManager().install()
+                ConfigModule.add_config_value("Selenium_driver_paths", "edge_path", edge_path)
             capabilities = webdriver.DesiredCapabilities().EDGE
             capabilities['acceptSslCerts'] = True
-            selenium_driver = webdriver.Edge(executable_path=EdgeChromiumDriverManager().install(), capabilities=capabilities)
+            selenium_driver = webdriver.Edge(executable_path=edge_path, capabilities=capabilities)
             selenium_driver.implicitly_wait(WebDriver_Wait)
             if not window_size_X and not window_size_Y:
                 selenium_driver.set_window_size(default_x, default_y)
@@ -207,7 +221,11 @@ def Open_Browser(dependency, window_size_X=None, window_size_Y=None):
             CommonUtil.set_screenshot_vars(Shared_Resources.Shared_Variable_Export())
             return "passed"
 
-        elif "opera" in browser:
+        elif browser == "opera":
+            opera_path = ConfigModule.get_config_value("Selenium_driver_paths", "opera_path")
+            if not opera_path:
+                opera_path = OperaDriverManager().install()
+                ConfigModule.add_config_value("Selenium_driver_paths", "opera_path", opera_path)
             capabilities = webdriver.DesiredCapabilities().OPERA
             capabilities['acceptSslCerts'] = True
 
@@ -215,7 +233,7 @@ def Open_Browser(dependency, window_size_X=None, window_size_Y=None):
             # options = Options()
             # options.binary_location = r'C:\Users\ASUS\AppData\Local\Programs\Opera\launcher.exe'  # This might be needed
 
-            selenium_driver = webdriver.Opera(executable_path=OperaDriverManager().install(), desired_capabilities=capabilities)
+            selenium_driver = webdriver.Opera(executable_path=opera_path, desired_capabilities=capabilities)
             selenium_driver.implicitly_wait(WebDriver_Wait)
             if not window_size_X and not window_size_Y:
                 selenium_driver.set_window_size(default_x, default_y)
@@ -231,10 +249,14 @@ def Open_Browser(dependency, window_size_X=None, window_size_Y=None):
             CommonUtil.set_screenshot_vars(Shared_Resources.Shared_Variable_Export())
             return "passed"
 
-        elif "ie" in browser:
+        elif browser == "ie":
+            ie_path = ConfigModule.get_config_value("Selenium_driver_paths", "ie_path")
+            if not ie_path:
+                ie_path = IEDriverManager().install()
+                ConfigModule.add_config_value("Selenium_driver_paths", "ie_path", ie_path)
             capabilities = webdriver.DesiredCapabilities().INTERNETEXPLORER
             # capabilities['acceptSslCerts'] = True     # It does not work for internet explorer
-            selenium_driver = webdriver.Ie(IEDriverManager().install(), capabilities=capabilities)
+            selenium_driver = webdriver.Ie(executable_path=ie_path, capabilities=capabilities)
             selenium_driver.implicitly_wait(WebDriver_Wait)
             if not window_size_X and not window_size_Y:
                 selenium_driver.set_window_size(default_x, default_y)
@@ -289,8 +311,50 @@ def Open_Browser(dependency, window_size_X=None, window_size_Y=None):
             CommonUtil.ExecLog(
                 sModuleInfo, "You did not select a valid browser: %s" % browser, 3
             )
-            return "failed"
+            return "zeuz_failed"
         # time.sleep(3)
+
+    except SessionNotCreatedException as exc:
+        if "This version" in exc.msg and "only supports" in exc.msg:
+            CommonUtil.ExecLog(
+                sModuleInfo,
+                "Couldn't open the browser because the webdriver is backdated. Trying again after updating webdriver",
+                2
+            )
+            if browser in ("chrome", "chromeheadless"):
+                ConfigModule.add_config_value("Selenium_driver_paths", "chrome_path", ChromeDriverManager().install())
+            elif browser in ("firefox", "firefoxheadless"):
+                ConfigModule.add_config_value("Selenium_driver_paths", "firefox_path", GeckoDriverManager().install())
+            elif browser == "edge":
+                ConfigModule.add_config_value("Selenium_driver_paths", "edge_path", EdgeChromiumDriverManager().install())
+            elif browser == "opera":
+                ConfigModule.add_config_value("Selenium_driver_paths", "opera_path", OperaDriverManager().install())
+            elif browser == "ie":
+                ConfigModule.add_config_value("Selenium_driver_paths", "ie_path", IEDriverManager().install())
+            Open_Browser(dependency, window_size_X, window_size_Y)
+        else:
+            return CommonUtil.Exception_Handler(sys.exc_info())
+
+    except WebDriverException as exc:
+        if "needs to be in PATH" in exc.msg:
+            CommonUtil.ExecLog(
+                sModuleInfo,
+                "Couldn't open the browser because the webdriver is not installed. Trying again after installing webdriver",
+                2
+            )
+            if browser in ("chrome", "chromeheadless"):
+                ConfigModule.add_config_value("Selenium_driver_paths", "chrome_path", ChromeDriverManager().install())
+            elif browser in ("firefox", "firefoxheadless"):
+                ConfigModule.add_config_value("Selenium_driver_paths", "firefox_path", GeckoDriverManager().install())
+            elif browser == "edge":
+                ConfigModule.add_config_value("Selenium_driver_paths", "edge_path", EdgeChromiumDriverManager().install())
+            elif browser == "opera":
+                ConfigModule.add_config_value("Selenium_driver_paths", "opera_path", OperaDriverManager().install())
+            elif browser == "ie":
+                ConfigModule.add_config_value("Selenium_driver_paths", "ie_path", IEDriverManager().install())
+            Open_Browser(dependency, window_size_X, window_size_Y)
+        else:
+            return CommonUtil.Exception_Handler(sys.exc_info())
 
     except Exception:
         CommonUtil.teardown = False
@@ -362,7 +426,7 @@ def Go_To_Link(step_data, page_title=False):
                 result = Open_Browser(dependency, window_size_X, window_size_Y)
 
             if result in failed_tag_list:
-                return "failed"
+                return "zeuz_failed"
         else:
             selenium_driver = Shared_Resources.Get_Shared_Variables("selenium_driver")
     except Exception:
@@ -409,7 +473,7 @@ def Handle_Browser_Alert(step_data):
 
     except Exception:
         CommonUtil.ExecLog(sModuleInfo, "Failed to parse data", 3)
-        return "failed"
+        return "zeuz_failed"
 
     try:
         CommonUtil.ExecLog("", "Waiting %s seconds max for the alert box to appear" % str(wait), 1)
@@ -417,7 +481,7 @@ def Handle_Browser_Alert(step_data):
         time.sleep(2)
     except TimeoutException:
         CommonUtil.ExecLog(sModuleInfo, "Waited %s seconds but no alert box appeared" % str(wait), 3)
-        return "failed"
+        return "zeuz_failed"
 
     try:
         if choice_lower in ("accept", "pass", "yes", "ok"):
@@ -443,7 +507,7 @@ def Handle_Browser_Alert(step_data):
                     "Value of Variable '%s' could not be saved!!!" % variable_name,
                     3,
                 )
-                return "failed"
+                return "zeuz_failed"
             else:
                 return "passed"
 
@@ -459,7 +523,7 @@ def Handle_Browser_Alert(step_data):
                 "Wrong Step Data.  Please review the action help document",
                 3,
             )
-            return "failed"
+            return "zeuz_failed"
 
     except Exception:
         ErrorMessage = "Failed to handle alert"
@@ -539,57 +603,42 @@ def take_screenshot_selenium(data_set):
 @logger
 def Enter_Text_In_Text_Box(step_data):
     sModuleInfo = inspect.currentframe().f_code.co_name + " : " + MODULE_NAME
-
     try:
         delay = 0
         text_value = ""
         use_js = False
-        without_click = False
-        clear=True #by default it will clear the text field.  If a user provides optional option with clear = False.  It will not clear
-
+        clear = True
         global selenium_driver
         Element = LocateElement.Get_Element(step_data, selenium_driver)
-        if Element != "failed":
-            for left, mid, right in step_data:
-                mid = mid.strip().lower()
-                left = left.lower()
-                if "action" in mid:
-                    text_value = right
-                elif "delay" in left:
-                    delay = float(right.strip())
-                elif "use js" in left:
-                    use_js = right.strip().lower() in ("true", "yes", "1")
-                elif "clear" in left:
-                    clear= False
-
-            if use_js:
-                try:
-                    selenium_driver.execute_script("arguments[0].click();", Element)
-                except:
-                    CommonUtil.ExecLog(
-                        sModuleInfo,
-                        "Entering text without clicking the element",
-                        2,
-                    )
-
-                # Fill up the value.
-                selenium_driver.execute_script(
-                    f"arguments[0].value = `{text_value}`;", Element
-                )
-
-                # Sometimes text field becomes unclickable after entering text?
+        if Element == "zeuz_failed":
+            CommonUtil.ExecLog(sModuleInfo, "Unable to locate your element with given data.", 3)
+            return "zeuz_failed"
+        for left, mid, right in step_data:
+            mid = mid.strip().lower()
+            left = left.strip().lower()
+            if mid == "action":
+                text_value = right
+            elif left == "delay":
+                delay = float(right.strip())
+            elif left == "use js":
+                use_js = right.strip().lower() in ("true", "yes", "1")
+            elif left == "clear":
+                clear = False if right.strip().lower() in ("no", "false") else True
+        if use_js:  # Use js will automatically clear the field and then enter text
+            try:
                 selenium_driver.execute_script("arguments[0].click();", Element)
-            
-            elif clear==True: #By default clear the text field
-                try:
-                    Element.click()
-                except:
-                    CommonUtil.ExecLog(
-                        sModuleInfo,
-                        "Entering text without clicking the element",
-                        2,
-                    )
-
+            except:
+                CommonUtil.ExecLog(sModuleInfo, "Entering text without clicking the element", 2)
+            # Fill up the value.
+            selenium_driver.execute_script(f"arguments[0].value = `{text_value}`;", Element)
+            # Sometimes text field becomes unclickable after entering text?
+            selenium_driver.execute_script("arguments[0].click();", Element)
+        else:
+            try:
+                Element.click()
+            except:
+                CommonUtil.ExecLog(sModuleInfo, "Entering text without clicking the element", 2)
+            if clear:
                 # Element.clear()
                 # Safari Keys are extremely slow and not working
                 if selenium_driver.desired_capabilities['browserName'] == "Safari":
@@ -599,9 +648,7 @@ def Enter_Text_In_Text_Box(step_data):
                     try:
                         Element.clear() #some cases it works .. so adding it here just incase
                     except:
-                        True
-  
-            
+                        pass
             if delay == 0:
                 Element.send_keys(text_value)
             else:
@@ -612,19 +659,9 @@ def Enter_Text_In_Text_Box(step_data):
                 Element.click()
             except:  # sometimes text field can be unclickable after entering text
                 pass
-
-            # CommonUtil.TakeScreenShot(sModuleInfo)
-            CommonUtil.ExecLog(
-                sModuleInfo,
-                "Successfully set the value of to text to: %s" % text_value,
-                1,
-            )
-            return "passed"
-        else:
-            CommonUtil.ExecLog(
-                sModuleInfo, "Unable to locate your element with given data.", 3
-            )
-            return "failed"
+        # CommonUtil.TakeScreenShot(sModuleInfo)
+        CommonUtil.ExecLog(sModuleInfo, "Successfully set the value of to text to: %s" % text_value, 1)
+        return "passed"
     except Exception:
         errMsg = "Could not select/click your element."
         return CommonUtil.Exception_Handler(sys.exc_info(), None, errMsg)
@@ -663,7 +700,7 @@ def Keystroke_For_Element(data_set):
 
         if stype == "":
             CommonUtil.ExecLog(sModuleInfo, "Field contains incorrect data", 3)
-            return "failed"
+            return "zeuz_failed"
 
     except:
         return CommonUtil.Exception_Handler(
@@ -675,7 +712,7 @@ def Keystroke_For_Element(data_set):
         Element = LocateElement.Get_Element(data_set, selenium_driver)
         if Element in failed_tag_list:
             CommonUtil.ExecLog(sModuleInfo, "Failed to locate element", 3)
-            return "failed"
+            return "zeuz_failed"
     else:
         Element = ActionChains(selenium_driver)
 
@@ -717,7 +754,7 @@ def Keystroke_For_Element(data_set):
             % (stype, keystroke_value, key_count),
             3,
         )
-        return "failed"
+        return "zeuz_failed"
 
 
 @logger
@@ -732,7 +769,7 @@ def execute_javascript(data_set):
 
     Returns:
         "passed" if the given script execution is successful.
-        "failed" otherwise.
+        "zeuz_failed" otherwise.
     """
 
     try:
@@ -805,7 +842,7 @@ def Click_Element(data_set, retry=0):
         Element = LocateElement.Get_Element(data_set, selenium_driver)
         if Element in failed_tag_list:
             CommonUtil.ExecLog(sModuleInfo, "Could not find element", 3)
-            return "failed"
+            return "zeuz_failed"
 
         # Click element
         try:
@@ -841,7 +878,7 @@ def Click_Element(data_set, retry=0):
                 CommonUtil.ExecLog(
                     sModuleInfo, "Could not perform click because javascript of the element is not fully loaded", 3
                 )
-                return "failed"
+                return "zeuz_failed"
             CommonUtil.ExecLog(
                 "", "Javascript of the element is not fully loaded. Trying again after 1 second delay", 2
             )
@@ -905,7 +942,7 @@ def Mouse_Click_Element(data_set):
     Element = LocateElement.Get_Element(data_set, selenium_driver)
     if Element in failed_tag_list:
         CommonUtil.ExecLog(sModuleInfo, "Could not find element", 3)
-        return "failed"
+        return "zeuz_failed"
     # Get element location
 
     # Get element size
@@ -915,7 +952,7 @@ def Mouse_Click_Element(data_set):
         )  # Retreive the dictionary containing the x,y location coordinates
         if size_ele in failed_tag_list:
             CommonUtil.ExecLog(sModuleInfo, "Could not get element location", 3)
-            return "failed"
+            return "zeuz_failed"
         # Find center of the element. We will use offset
         width = (size_ele["width"]) / 2
         height = (size_ele["height"]) / 2
@@ -968,7 +1005,7 @@ def Click_and_Hold_Element(step_data):
     global selenium_driver
     try:
         Element = LocateElement.Get_Element(step_data, selenium_driver)
-        if Element != "failed":
+        if Element != "zeuz_failed":
             try:
                 click_and_hold = ActionChains(selenium_driver).click_and_hold(Element)
                 click_and_hold.perform()
@@ -990,7 +1027,7 @@ def Click_and_Hold_Element(step_data):
             CommonUtil.ExecLog(
                 sModuleInfo, "Unable to locate your element with given data.", 3
             )
-            return "failed"
+            return "zeuz_failed"
     except Exception:
         return CommonUtil.Exception_Handler(sys.exc_info())
 
@@ -1002,7 +1039,7 @@ def Context_Click_Element(step_data):
     global selenium_driver
     try:
         Element = LocateElement.Get_Element(step_data, selenium_driver)
-        if Element != "failed":
+        if Element != "zeuz_failed":
             try:
                 context_click = ActionChains(selenium_driver).context_click(Element)
                 context_click.perform()
@@ -1024,7 +1061,7 @@ def Context_Click_Element(step_data):
             CommonUtil.ExecLog(
                 sModuleInfo, "Unable to locate your element with given data.", 3
             )
-            return "failed"
+            return "zeuz_failed"
     except Exception:
         return CommonUtil.Exception_Handler(sys.exc_info())
 
@@ -1036,7 +1073,7 @@ def Double_Click_Element(step_data):
     global selenium_driver
     try:
         Element = LocateElement.Get_Element(step_data, selenium_driver)
-        if Element != "failed":
+        if Element != "zeuz_failed":
             try:
                 double_click = ActionChains(selenium_driver).double_click(Element)
                 double_click.perform()
@@ -1058,7 +1095,7 @@ def Double_Click_Element(step_data):
             CommonUtil.ExecLog(
                 sModuleInfo, "Unable to locate your element with given data.", 3
             )
-            return "failed"
+            return "zeuz_failed"
     except Exception:
         return CommonUtil.Exception_Handler(sys.exc_info())
 
@@ -1070,7 +1107,7 @@ def Move_To_Element(step_data):
     global selenium_driver
     try:
         Element = LocateElement.Get_Element(step_data, selenium_driver)
-        if Element != "failed":
+        if Element != "zeuz_failed":
             try:
                 move = ActionChains(selenium_driver).move_to_element(Element).perform()
                 # CommonUtil.TakeScreenShot(sModuleInfo)
@@ -1091,7 +1128,7 @@ def Move_To_Element(step_data):
             CommonUtil.ExecLog(
                 sModuleInfo, "Unable to locate your element with given data.", 3
             )
-            return "failed"
+            return "zeuz_failed"
     except Exception:
         return CommonUtil.Exception_Handler(sys.exc_info())
 
@@ -1103,7 +1140,7 @@ def Hover_Over_Element(step_data):
     global selenium_driver
     try:
         Element = LocateElement.Get_Element(step_data, selenium_driver)
-        if Element != "failed":
+        if Element != "zeuz_failed":
             try:
                 hov = ActionChains(selenium_driver).move_to_element(Element)
                 hov.perform()
@@ -1125,7 +1162,7 @@ def Hover_Over_Element(step_data):
             CommonUtil.ExecLog(
                 sModuleInfo, "Unable to locate your element with given data.", 3
             )
-            return "failed"
+            return "zeuz_failed"
     except Exception:
         return CommonUtil.Exception_Handler(sys.exc_info())
 
@@ -1147,7 +1184,7 @@ def get_location_of_element(data_set):
             CommonUtil.ExecLog(
                 sModuleInfo, "Shared variable name missing from Value on action row", 3
             )
-            return "failed"
+            return "zeuz_failed"
     except Exception:
         return CommonUtil.Exception_Handler(
             sys.exc_info(), None, "Error parsing data set"
@@ -1157,7 +1194,7 @@ def get_location_of_element(data_set):
     Element = LocateElement.Get_Element(data_set, selenium_driver)
     if Element in failed_tag_list:
         CommonUtil.ExecLog(sModuleInfo, "Could not find element", 3)
-        return "failed"
+        return "zeuz_failed"
 
     # Get element location
     try:
@@ -1166,7 +1203,7 @@ def get_location_of_element(data_set):
         )  # Retreive the dictionary containing the x,y location coordinates
         if location in failed_tag_list:
             CommonUtil.ExecLog(sModuleInfo, "Could not get element location", 3)
-            return "failed"
+            return "zeuz_failed"
 
         # Save location as string, in preparation for the shared variable
         x = str(location["x"])
@@ -1187,11 +1224,11 @@ def Save_Attribute(step_data):
     global selenium_driver
     try:
         Element = LocateElement.Get_Element(step_data, selenium_driver)
-        if Element == "failed":
+        if Element == "zeuz_failed":
             CommonUtil.ExecLog(
                 sModuleInfo, "Unable to locate your element with given data.", 3
             )
-            return "failed"
+            return "zeuz_failed"
         for each_step_data_item in step_data:
             if "parameter" in each_step_data_item[1]:
                 variable_name = each_step_data_item[2]
@@ -1211,7 +1248,7 @@ def Save_Attribute(step_data):
                 "Value of Variable '%s' could not be saved!!!" % variable_name,
                 3,
             )
-            return "failed"
+            return "zeuz_failed"
         else:
             return "passed"
     except Exception:
@@ -1237,12 +1274,12 @@ def Wait_For_New_Element(step_data):
             time.sleep(time.time() + i * interval - start_time)
             Element = LocateElement.Get_Element(step_data, selenium_driver)
             if wait_for_element_to_disappear == False:
-                if Element == "failed":
+                if Element == "zeuz_failed":
                     continue
                 else:
                     return "passed"
             else:
-                if Element == "failed":
+                if Element == "zeuz_failed":
                     return "passed"
                 else:
                     continue
@@ -1254,7 +1291,7 @@ def Wait_For_New_Element(step_data):
             CommonUtil.ExecLog(
                 sModuleInfo, "Waited for %s seconds but your element still exists", 3
             )
-        return "failed"
+        return "zeuz_failed"
     except Exception:
         return CommonUtil.Exception_Handler(sys.exc_info())
 
@@ -1301,7 +1338,7 @@ def Insert_Into_List(step_data):
                     "Value must contain more than one item, and must be comma separated",
                     3,
                 )
-                return "failed"
+                return "zeuz_failed"
             else:
                 list_name = temp_list[0].split(":")[1].strip()
                 key = temp_list[1].split(":")[1].strip()
@@ -1315,18 +1352,18 @@ def Insert_Into_List(step_data):
                     % (list_name, key),
                     3,
                 )
-                return "failed"
+                return "zeuz_failed"
             else:
                 Shared_Resources.Show_All_Shared_Variables()
                 return "passed"
 
         else:
             Element = LocateElement.Get_Element(step_data, selenium_driver)
-            if Element == "failed":
+            if Element == "zeuz_failed":
                 CommonUtil.ExecLog(
                     sModuleInfo, "Unable to locate your element with given data.", 3
                 )
-                return "failed"
+                return "zeuz_failed"
             list_name = ""
             key = ""
             for each_step_data_item in step_data:
@@ -1340,7 +1377,7 @@ def Insert_Into_List(step_data):
                     "Value must contain more than one item, and must be comma separated",
                     3,
                 )
-                return "failed"
+                return "zeuz_failed"
             else:
                 list_name = str(temp_list[0]).split(":")[1].strip()
                 key = str(temp_list[1]).strip()
@@ -1362,7 +1399,7 @@ def Insert_Into_List(step_data):
                     % (list_name, key),
                     3,
                 )
-                return "failed"
+                return "zeuz_failed"
             else:
                 Shared_Resources.Show_All_Shared_Variables()
                 return "passed"
@@ -1378,11 +1415,11 @@ def Save_Text(step_data):
     global selenium_driver
     try:
         Element = LocateElement.Get_Element(step_data, selenium_driver)
-        if Element == "failed":
+        if Element == "zeuz_failed":
             CommonUtil.ExecLog(
                 sModuleInfo, "Unable to locate your element with given data.", 3
             )
-            return "failed"
+            return "zeuz_failed"
         for each_step_data_item in step_data:
             if each_step_data_item[1] == "action":
                 variable_name = each_step_data_item[2]
@@ -1400,7 +1437,7 @@ def Save_Text(step_data):
                 "Value of Variable '%s' could not be saved!!!" % variable_name,
                 3,
             )
-            return "failed"
+            return "zeuz_failed"
         else:
             Shared_Resources.Show_All_Shared_Variables()
             return "passed"
@@ -1437,11 +1474,11 @@ def save_attribute_values_in_list(step_data):
         # this is the parent object.  If the user wants to search the entire page, they can
         # provide tag = html
         Element = LocateElement.Get_Element(step_data, selenium_driver)
-        if Element == "failed":
+        if Element == "zeuz_failed":
             CommonUtil.ExecLog(
                 sModuleInfo, "Unable to locate your element with given data.", 3
             )
-            return "failed"
+            return "zeuz_failed"
 
         all_elements = []
         target_index = 0
@@ -1485,7 +1522,7 @@ def save_attribute_values_in_list(step_data):
             CommonUtil.ExecLog(
                 sModuleInfo, "Unable to parse data. Please write data in correct format", 3
             )
-            return "failed"
+            return "zeuz_failed"
 
         for each in target:
             all_elements.append(LocateElement.Get_Element(each[0], Element, return_all_elements=True))
@@ -1592,14 +1629,14 @@ def save_web_elements_in_list(step_data):
 
             if has_element:
                 Element = LocateElement.Get_Element(step_data, selenium_driver)
-                if Element == "failed":
+                if Element == "zeuz_failed":
                     CommonUtil.ExecLog(sModuleInfo, "Unable to locate your element with given data.", 3)
-                    return "failed"
+                    return "zeuz_failed"
             else:
                 Element = selenium_driver
         except:
             CommonUtil.ExecLog(sModuleInfo, "Unable to parse data. Please write data in correct format", 3)
-            return "failed"
+            return "zeuz_failed"
 
         for each in target:
             all_elements.append(LocateElement.Get_Element(each[0], Element, return_all_elements=True))
@@ -1673,11 +1710,11 @@ def Validate_Text(step_data):
     global selenium_driver
     try:
         Element = LocateElement.Get_Element(step_data, selenium_driver)
-        if Element == "failed":
+        if Element == "zeuz_failed":
             CommonUtil.ExecLog(
                 sModuleInfo, "Unable to locate your element with given data.", 3
             )
-            return "failed"
+            return "zeuz_failed"
         for each_step_data_item in step_data:
             if each_step_data_item[1] == "action":
                 expected_text_data = each_step_data_item[2]
@@ -1707,7 +1744,7 @@ def Validate_Text(step_data):
             CommonUtil.ExecLog(
                 sModuleInfo, "Unable to validate using partial match.", 3
             )
-            return "failed"
+            return "zeuz_failed"
         # if step_data[0][len(step_data[0])-1][0] == "validate full text":
         if validation_type == "validate full text":
             actual_text_data = visible_list_of_element_text
@@ -1724,13 +1761,13 @@ def Validate_Text(step_data):
                 CommonUtil.ExecLog(
                     sModuleInfo, "Unable to validate using complete match.", 3
                 )
-                return "failed"
+                return "zeuz_failed"
 
         else:
             CommonUtil.ExecLog(
                 sModuleInfo, "Incorrect validation type. Please check step data", 3
             )
-            return "failed"
+            return "zeuz_failed"
 
     except Exception:
         return CommonUtil.Exception_Handler(sys.exc_info())
@@ -1757,14 +1794,14 @@ def Validate_Url(step_data):
                 CommonUtil.ExecLog(
                     sModuleInfo, "Expected URL didn't match partially", 3
                 )
-                return "failed"
+                return "zeuz_failed"
         else:
             if expected == url:
                 CommonUtil.ExecLog(sModuleInfo, "Expected URL matched", 1)
                 return "passed"
             else:
                 CommonUtil.ExecLog(sModuleInfo, "Expected URL didn't match", 3)
-                return "failed"
+                return "zeuz_failed"
 
     except Exception:
         return CommonUtil.Exception_Handler(sys.exc_info())
@@ -1782,7 +1819,7 @@ def Sleep(step_data):
                 "Please provide single row of data for only sleep. Consider using wait instead",
                 3,
             )
-            return "failed"
+            return "zeuz_failed"
         else:
             tuple = step_data[0]
             seconds = int(tuple[2])
@@ -1813,7 +1850,7 @@ def Scroll(step_data):
 
         if not action_row:
             CommonUtil.ExecLog(sModuleInfo, "No action row defined", 3)
-            return "failed"
+            return "zeuz_failed"
 
         if (
                 len(step_data) > 1
@@ -1829,7 +1866,7 @@ def Scroll(step_data):
                     "Element through which instructed to scroll not found",
                     3,
                 )
-                return "failed"
+                return "zeuz_failed"
 
             CommonUtil.ExecLog(
                 sModuleInfo,
@@ -1874,7 +1911,7 @@ def Scroll(step_data):
                 "Value invalid. Only 'up', 'down', 'right' and 'left' allowed",
                 3,
             )
-            result = "failed"
+            result = "zeuz_failed"
             return result
 
     except Exception:
@@ -1892,7 +1929,7 @@ def scroll_to_element(step_data):
             CommonUtil.ExecLog(
                 sModuleInfo, "Element to which instructed to scroll not found", 3
             )
-            return "failed"
+            return "zeuz_failed"
 
         CommonUtil.ExecLog(
             sModuleInfo,
@@ -1919,7 +1956,7 @@ def scroll_element_to_top(step_data):
             CommonUtil.ExecLog(
                 sModuleInfo, "Element to which instructed to scroll not found", 3
             )
-            return "failed"
+            return "zeuz_failed"
         CommonUtil.ExecLog(
             sModuleInfo,
             "Element to which instructed to scroll to top of the page has been found. Scrolling to view it at the top",
@@ -1940,7 +1977,7 @@ def Navigate(step_data):
     try:
         if 1 < len(step_data) >= 2:
             CommonUtil.ExecLog(sModuleInfo, "Please provide only single row of data", 3)
-            return "failed"
+            return "zeuz_failed"
         else:
             navigate = step_data[0][2]
             if navigate == "back":
@@ -1958,7 +1995,7 @@ def Navigate(step_data):
                     "Value invalid. Only 'back', 'forward', 'refresh' allowed",
                     3,
                 )
-                return "failed"
+                return "zeuz_failed"
             return "passed"
     except Exception:
         return CommonUtil.Exception_Handler(sys.exc_info())
@@ -1970,11 +2007,11 @@ def Select_Deselect(step_data):
     global selenium_driver
     try:
         Element = LocateElement.Get_Element(step_data, selenium_driver)
-        if Element == "failed":
+        if Element == "zeuz_failed":
             CommonUtil.ExecLog(
                 sModuleInfo, "Unable to locate your element with given data.", 3
             )
-            return "failed"
+            return "zeuz_failed"
 
         for each in step_data:
             if each[1] == "action":
@@ -2025,7 +2062,7 @@ def Select_Deselect(step_data):
                         "Value invalid. Only 'deselect all', 'deselect by visible text', etc allowed",
                         3,
                     )
-                    result = "failed"
+                    result = "zeuz_failed"
 
             else:
                 continue
@@ -2076,7 +2113,7 @@ def validate_table(data_set):
                         "Invalid table type in Value on Action line. Should be 'html' or 'css'",
                         3,
                     )
-                    return "failed"
+                    return "zeuz_failed"
             elif (
                     subfield == "table parameter"
             ):  # Inspect the table parameters (element parameters go to a different section)
@@ -2134,7 +2171,7 @@ def validate_table(data_set):
                             "Unknown Value for table parameter 'exact'. Should be true or false.",
                             3,
                         )
-                        return "failed"
+                        return "zeuz_failed"
 
                 # Create user-defined table
                 else:
@@ -2160,7 +2197,7 @@ def validate_table(data_set):
                             CommonUtil.ExecLog(
                                 sModuleInfo, "Unknown Field for table parameter", 3
                             )
-                            return "failed"
+                            return "zeuz_failed"
                     except:  # Row may have been blank, or some other issue
                         return CommonUtil.Exception_Handler(
                             sys.exc_info(), None, "Unknown Field for table parameter"
@@ -2173,7 +2210,7 @@ def validate_table(data_set):
                 "No table values found, or they were not entered in the format of row,column (Eg: 1,2). Please create a table as defined in the documentation",
                 3,
             )
-            return "failed"
+            return "zeuz_failed"
         CommonUtil.ExecLog(
             sModuleInfo,
             "Table parameters - Case Sensitive: %s - ignore_rows: %s - ignore_cols: %s - exact: %s"
@@ -2205,7 +2242,7 @@ def validate_table(data_set):
         CommonUtil.ExecLog(
             sModuleInfo, "Unable to locate your element with given data.", 3
         )
-        return "failed"
+        return "zeuz_failed"
 
     # If user did not specify any rows or columns to ignore, we will infer that rows and columns NOT defined are meant to be ignored
     # We do this by modifying the webpage table to remove rows and columns that don't match
@@ -2250,7 +2287,7 @@ def validate_table(data_set):
                 "Not all elements exist in webpage table - %s" % str(unmatched_cells),
                 3,
             )
-            return "failed"
+            return "zeuz_failed"
         else:
             CommonUtil.ExecLog(sModuleInfo, "Elements exist in webpage table", 1)
             return "passed"
@@ -2284,7 +2321,7 @@ def validate_table(data_set):
         CommonUtil.ExecLog(
             sModuleInfo, "Tables do not match - %s" % str(failed_matches), 3
         )
-        return "failed"
+        return "zeuz_failed"
 
     CommonUtil.ExecLog(sModuleInfo, "Tables match", 1)
     return "passed"
@@ -2319,7 +2356,7 @@ def validate_table_row_size(data_set):
                 "No table type or expected row is given.. table type should be html or css, expected row is a number which is the expected row size",
                 3,
             )
-            return "failed"
+            return "zeuz_failed"
 
         # Get table from web page
         table = LocateElement.Get_Element(data_set, selenium_driver)
@@ -2328,7 +2365,7 @@ def validate_table_row_size(data_set):
             CommonUtil.ExecLog(
                 sModuleInfo, "Unable to locate your table with given data.", 3
             )
-            return "failed"
+            return "zeuz_failed"
 
         all_rows = []
         if table_type == "html":  # HTML type table
@@ -2347,7 +2384,7 @@ def validate_table_row_size(data_set):
 
         if int(row_size) != int(expected_row):
             CommonUtil.ExecLog(sModuleInfo, "Row sizes don't match", 3)
-            return "failed"
+            return "zeuz_failed"
 
         CommonUtil.ExecLog(sModuleInfo, "Row sizes match", 1)
         return "passed"
@@ -2383,7 +2420,7 @@ def validate_table_column_size(data_set):
                 "No table type or expected column is given.. table type should be html or css, expected column is a number which is the expected row size",
                 3,
             )
-            return "failed"
+            return "zeuz_failed"
 
         # Get table from web page
         table = LocateElement.Get_Element(data_set, selenium_driver)
@@ -2392,7 +2429,7 @@ def validate_table_column_size(data_set):
             CommonUtil.ExecLog(
                 sModuleInfo, "Unable to locate your table with given data.", 3
             )
-            return "failed"
+            return "zeuz_failed"
 
         all_rows = []
         all_cols = []
@@ -2431,7 +2468,7 @@ def validate_table_column_size(data_set):
 
         if int(col_size) != int(expected_col):
             CommonUtil.ExecLog(sModuleInfo, "Column sizes don't match", 3)
-            return "failed"
+            return "zeuz_failed"
 
         CommonUtil.ExecLog(sModuleInfo, "Column sizes match", 1)
         return "passed"
@@ -2456,7 +2493,7 @@ def get_webpage_table_html(data_set, ignore_rows=[], ignore_cols=[], retain_case
             CommonUtil.ExecLog(
                 sModuleInfo, "Unable to locate your element with given data.", 3
             )
-            return "failed"
+            return "zeuz_failed"
 
         master_text_table = {}
         table_row = 0
@@ -2508,7 +2545,7 @@ def get_webpage_table_css(data_set, ignore_rows=[], ignore_cols=[], retain_case=
             CommonUtil.ExecLog(
                 sModuleInfo, "Unable to locate your element with given data.", 3
             )
-            return "failed"
+            return "zeuz_failed"
 
         # Get element for all rows
         all_rows = WebDriverWait(table, WebDriver_Wait).until(
@@ -2632,7 +2669,7 @@ def Get_Plain_Text_Element(element_parameter, element_value, parent=False):
                 "Value invalid. Only 'plain_text', 'partial_plain_text' allowed",
                 3,
             )
-            return "failed"
+            return "zeuz_failed"
 
         return return_element
 
@@ -2822,7 +2859,7 @@ def switch_window_or_tab(step_data):
 
     except Exception:
         CommonUtil.ExecLog(sModuleInfo, "Unable to parse data. Maintain correct format writen in document", 3)
-        return "failed"
+        return "zeuz_failed"
 
     try:
         if window_title_condition:
@@ -2920,19 +2957,19 @@ def upload_file(step_data):
 
         if file_name == "":
             CommonUtil.ExecLog(sModuleInfo, "File name can't be empty!", 3)
-            return "failed"
+            return "zeuz_failed"
         elif not os.path.exists(file_name):
             CommonUtil.ExecLog(
                 sModuleInfo,
                 "File '%s' can't be found.. please give a valid file path" % file_name,
                 3,
             )
-            return "failed"
+            return "zeuz_failed"
 
         upload_button = LocateElement.Get_Element(step_data, selenium_driver)
         if upload_button in failed_tag_list:
             CommonUtil.ExecLog(sModuleInfo, "Could not find the element with given data", 3)
-            return "failed"
+            return "zeuz_failed"
 
         upload_button.send_keys(file_name)
         CommonUtil.ExecLog(sModuleInfo, "Uploaded the file: %s successfully."%file_name, 1)
@@ -2960,12 +2997,12 @@ def drag_and_drop(step_data):
             CommonUtil.ExecLog(
                 sModuleInfo, "No source element specified for drag and drop", 3
             )
-            return "failed"
+            return "zeuz_failed"
         elif destination == "":
             CommonUtil.ExecLog(
                 sModuleInfo, "No destination element specified for drag and drop", 3
             )
-            return "failed"
+            return "zeuz_failed"
 
         source_element = Shared_Resources.Get_Shared_Variables(source)
         if source_element in failed_tag_list:
@@ -3055,14 +3092,14 @@ def check_uncheck_all(data_set):
         return CommonUtil.Exception_Handler(sys.exc_info(), None, "Error parsing data set")
 
     Element = LocateElement.Get_Element(data_set, selenium_driver)
-    if Element == "failed":
+    if Element == "zeuz_failed":
         CommonUtil.ExecLog(sModuleInfo, "Could not find the parent element", 3)
-        return "failed"
+        return "zeuz_failed"
 
     all_elements = LocateElement.Get_Element(target, Element, return_all_elements=True)
     if not all_elements:
         CommonUtil.ExecLog("", "No target was found", 3)
-        return "failed"
+        return "zeuz_failed"
 
     for i in range(len(all_elements)):
         th = "th"
@@ -3134,9 +3171,9 @@ def check_uncheck(data_set):
         return CommonUtil.Exception_Handler(sys.exc_info(), None, "Error parsing data set")
 
     Element = LocateElement.Get_Element(data_set, selenium_driver)
-    if Element == "failed":
+    if Element == "zeuz_failed":
         CommonUtil.ExecLog(sModuleInfo, "Could not find the element", 3)
-        return "failed"
+        return "zeuz_failed"
 
     if command == "check" and Element.is_selected():
         CommonUtil.ExecLog(sModuleInfo, "The element is already checked so skipped it", 1)
@@ -3173,13 +3210,13 @@ def check_uncheck(data_set):
                         CommonUtil.ExecLog(sModuleInfo, "The element couldn't be checked", 3)
                     else:
                         CommonUtil.ExecLog(sModuleInfo, "The element couldn't be unchecked", 3)
-                    return "failed"
+                    return "zeuz_failed"
     except:
         if command == "check":
             CommonUtil.ExecLog(sModuleInfo, "The element couldn't be checked", 3)
         else:
             CommonUtil.ExecLog(sModuleInfo, "The element couldn't be unchecked", 3)
-        return "failed"
+        return "zeuz_failed"
 
 
 def insert(string, str_to_insert, index):
@@ -3234,9 +3271,9 @@ def multiple_check_uncheck(data_set):
         return CommonUtil.Exception_Handler(sys.exc_info(), None, "Error parsing data set")
 
     Element = LocateElement.Get_Element(data_set, selenium_driver)
-    if Element == "failed":
+    if Element == "zeuz_failed":
         CommonUtil.ExecLog(sModuleInfo, "Could not find the parent element", 3)
-        return "failed"
+        return "zeuz_failed"
 
     element_params = []
     for left, mid, right in targets:
@@ -3250,7 +3287,7 @@ def multiple_check_uncheck(data_set):
         all_elements.append(LocateElement.Get_Element(i, Element))
 
     for i in range(len(all_elements)):
-        if all_elements[i] == "failed":
+        if all_elements[i] == "zeuz_failed":
             CommonUtil.ExecLog("", str(targets[i]) + " was not found so skipped it", 3)
             continue
         if targets[i][2] == "check" and all_elements[i].is_selected():

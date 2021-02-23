@@ -51,7 +51,7 @@ def find_odbc_driver(db_type="postgresql"):
     selected_driver = sr.Get_Shared_Variables(DB_ODBC_DRIVER, log=False)
 
     # If no ODBC driver is specified
-    if selected_driver == "failed":
+    if selected_driver == "zeuz_failed":
         # Driver list for pyodbc to connect through the ODBC standard
         pyodbc_drivers = pyodbc.drivers()
 
@@ -228,7 +228,7 @@ def connect_to_db(data_set):
     connect to db   database action         Connect to a database
 
     :param data_set: Action data set
-    :return: string: "passed" or "failed" depending on the outcome
+    :return: string: "passed" or "zeuz_failed" depending on the outcome
     """
 
     try:
@@ -265,7 +265,7 @@ def db_select(data_set):
     select query        database action         <var_name: name of the variable to store the result of the query>
 
     :param data_set: Action data set
-    :return: string: "passed" or "failed" depending on the outcome
+    :return: string: "passed" or "zeuz_failed" depending on the outcome
     """
 
     sModuleInfo = inspect.currentframe().f_code.co_name + " : " + MODULE_NAME
@@ -284,11 +284,11 @@ def db_select(data_set):
 
         if variable_name is None:
             CommonUtil.ExecLog(sModuleInfo, "Variable name must be provided.", 3)
-            return "failed"
+            return "zeuz_failed"
         
         if query is None:
             CommonUtil.ExecLog(sModuleInfo, "SQL query must be provided.", 3)
-            return "failed"
+            return "zeuz_failed"
 
         # Get db_cursor and execute
         db_con = db_get_connection()
@@ -329,7 +329,7 @@ def select_from_db(data_set):
     select from db        database action         <var_name: name of the variable to store the result of the query>
 
     :param data_set: Action data set
-    :return: string: "passed" or "failed" depending on the outcome
+    :return: string: "passed" or "zeuz_failed" depending on the outcome
     """
 
     sModuleInfo = inspect.currentframe().f_code.co_name + " : " + MODULE_NAME
@@ -364,7 +364,7 @@ def select_from_db(data_set):
 
         if variable_name is None:
             CommonUtil.ExecLog(sModuleInfo, "Variable name must be provided.", 3)
-            return "failed"
+            return "zeuz_failed"
 
         query="select "
         for index in range(len(columns)):
@@ -433,7 +433,7 @@ def insert_into_db(data_set):
     insert into db        database action         <var_name: name of the variable to store the result of the query>
 
     :param data_set: Action data set
-    :return: string: "passed" or "failed" depending on the outcome
+    :return: string: "passed" or "zeuz_failed" depending on the outcome
     """
 
     sModuleInfo = inspect.currentframe().f_code.co_name + " : " + MODULE_NAME
@@ -458,7 +458,7 @@ def insert_into_db(data_set):
 
         if variable_name is None:
             CommonUtil.ExecLog(sModuleInfo, "Variable name must be provided.", 3)
-            return "failed"
+            return "zeuz_failed"
 
         query="insert into  "+table_name+' ( '
         for index in range(len(columns)):
@@ -507,7 +507,7 @@ def delete_from_db(data_set):
     delete from db        database action         <var_name: name of the variable to store the result of the query>
 
     :param data_set: Action data set
-    :return: string: "passed" or "failed" depending on the outcome
+    :return: string: "passed" or "zeuz_failed" depending on the outcome
     """
 
 
@@ -530,7 +530,7 @@ def delete_from_db(data_set):
 
         if variable_name is None:
             CommonUtil.ExecLog(sModuleInfo, "Variable name must be provided.", 3)
-            return "failed"
+            return "zeuz_failed"
 
         query = "delete from "+ table_name
         if where is not None:
@@ -574,7 +574,7 @@ def update_into_db(data_set):
     update into db        database action         <var_name: name of the variable to store the result of the query>
 
     :param data_set: Action data set
-    :return: string: "passed" or "failed" depending on the outcome
+    :return: string: "passed" or "zeuz_failed" depending on the outcome
     """
 
     sModuleInfo = inspect.currentframe().f_code.co_name + " : " + MODULE_NAME
@@ -602,7 +602,7 @@ def update_into_db(data_set):
 
         if variable_name is None:
             CommonUtil.ExecLog(sModuleInfo, "Variable name must be provided.", 3)
-            return "failed"
+            return "zeuz_failed"
 
         query="update "+table_name+" set "
         for index in range(len(columns)):
@@ -646,7 +646,7 @@ def db_non_query(data_set):
     insert update delete query       database action    <var_name: name of the variable to store the no of rows affected>
 
     :param data_set: Action data set
-    :return: string: "passed" or "failed" depending on the outcome
+    :return: string: "passed" or "zeuz_failed" depending on the outcome
     """
 
     sModuleInfo = inspect.currentframe().f_code.co_name + " : " + MODULE_NAME
@@ -665,11 +665,11 @@ def db_non_query(data_set):
         
         if variable_name is None:
             CommonUtil.ExecLog(sModuleInfo, "Variable name must be provided.", 3)
-            return "failed"
+            return "zeuz_failed"
         
         if query is None:
             CommonUtil.ExecLog(sModuleInfo, "SQL query must be provided.", 3)
-            return "failed"
+            return "zeuz_failed"
 
         # Get db_cursor and execute
         db_con = db_get_connection()

@@ -19,7 +19,7 @@ class AppTest(unittest.TestCase):
         except:
             print("Failed to run test case TEST-5251")
             traceback.print_exc()
-            result = "failed"
+            result = "zeuz_failed"
 
         assert result == "passed"
 

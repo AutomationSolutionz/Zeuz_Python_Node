@@ -182,7 +182,7 @@ def get_ios_imei(UDID=""):
             CommonUtil.ExecLog(
                 sModuleInfo, "Could not read the IMEI from the device", 3
             )
-            return "failed"
+            return "zeuz_failed"
 
         CommonUtil.ExecLog(sModuleInfo, "%s" % output, 0)
         return output
@@ -212,7 +212,7 @@ def get_ios_version(UDID=""):
             CommonUtil.ExecLog(
                 sModuleInfo, "Could not read the iOS version from the device", 3
             )
-            return "failed"
+            return "zeuz_failed"
 
         CommonUtil.ExecLog(sModuleInfo, "%s" % version, 0)
         return version
@@ -242,7 +242,7 @@ def get_phone_name(UDID=""):
             CommonUtil.ExecLog(
                 sModuleInfo, "Could not read the iOS phone name the device", 3
             )
-            return "failed"
+            return "zeuz_failed"
 
         CommonUtil.ExecLog(sModuleInfo, "%s" % phone_name, 0)
         return phone_name
@@ -272,7 +272,7 @@ def get_product_name(UDID=""):
             CommonUtil.ExecLog(
                 sModuleInfo, "Could not read the iOS product name the device", 3
             )
-            return "failed"
+            return "zeuz_failed"
 
         CommonUtil.ExecLog(sModuleInfo, "%s" % product_name, 0)
         return product_name

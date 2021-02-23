@@ -143,7 +143,7 @@ def find_appium():
         CommonUtil.ExecLog(sModuleInfo, "Searching PATH for appium", 0)
         for exe in ("appium", "appium.exe", "appium.bat", "appium.cmd"):
             result = find_exe_in_path(exe)  # Get path and search for executable with in
-            if result != "failed":
+            if result != "zeuz_failed":
                 appium_binary = result
                 break
 
@@ -182,7 +182,7 @@ def find_exe_in_path(exe):
         elif ":" in path:  # Linux delimiter
             dirs = path.split(":")
         else:
-            return "failed"
+            return "zeuz_failed"
 
         for directory in dirs:  # Try each directory
             filename = os.path.join(directory, exe)  # Create full path
@@ -190,7 +190,7 @@ def find_exe_in_path(exe):
                 return filename
 
         # No matches
-        return "failed"
+        return "zeuz_failed"
 
     except Exception:
         errMsg = "Error searching PATH"
@@ -232,7 +232,7 @@ def find_correct_device_on_first_run(serial_or_name, device_info):
                 "Could not detect any connected devices. Ensure at least one is attached via USB, and that it is authorized - Trusted / USB Debugging enabled",
                 3,
             )
-            return "failed"
+            return "zeuz_failed"
 
         imei = ""
         device_name = ""
@@ -331,7 +331,7 @@ def find_correct_device_on_first_run(serial_or_name, device_info):
                     % (did, serial),
                     3,
                 )
-                return "failed"
+                return "zeuz_failed"
 
             # Global variables for quick access to currently selected device
             device_serial = serial
@@ -370,7 +370,7 @@ def find_correct_device_on_first_run(serial_or_name, device_info):
                 % (str(devices), str(device_info)),
                 3,
             )
-            return "failed"
+            return "zeuz_failed"
 
     except:
         return CommonUtil.Exception_Handler(
@@ -406,14 +406,14 @@ def unlock_android_device(data_set):
 
         # Set the global variable for the preferred connected device
         if find_correct_device_on_first_run(serial, device_info) in failed_tag_list:
-            return "failed"
+            return "zeuz_failed"
 
         if appium_details[device_id]["type"] == "android":
             Shared_Resources.Set_Shared_Variables("device_password", password)
             result = adbOptions.unlock_android(device_serial)
             if result in failed_tag_list:
                 CommonUtil.ExecLog(sModuleInfo, "Couldn't unlock the android device", 3)
-                return "failed"
+                return "zeuz_failed"
             else:
                 CommonUtil.ExecLog(
                     sModuleInfo, "Unlocked android device successfully", 1
@@ -421,7 +421,7 @@ def unlock_android_device(data_set):
                 return "passed"
         else:
             CommonUtil.ExecLog(sModuleInfo, "The device type is not android", 3)
-            return "failed"
+            return "zeuz_failed"
 
         CommonUtil.ExecLog(sModuleInfo, "Unlocked android device successfully", 1)
         return "passed"
@@ -461,20 +461,20 @@ def unlock_android_app(data_set):
 
         # Set the global variable for the preferred connected device
         if find_correct_device_on_first_run(serial, device_info) in failed_tag_list:
-            return "failed"
+            return "zeuz_failed"
 
         if appium_details[device_id]["type"] == "android":
             Shared_Resources.Set_Shared_Variables("device_password", password)
             result = adbOptions.unlock_android_app(device_serial)
             if result in failed_tag_list:
                 CommonUtil.ExecLog(sModuleInfo, "Couldn't unlock your app", 3)
-                return "failed"
+                return "zeuz_failed"
             else:
                 CommonUtil.ExecLog(sModuleInfo, "Unlocked your app successfully", 1)
                 return "passed"
         else:
             CommonUtil.ExecLog(sModuleInfo, "The device type is not android", 3)
-            return "failed"
+            return "zeuz_failed"
 
     except Exception:
         return CommonUtil.Exception_Handler(
@@ -509,6 +509,9 @@ def launch_application(data_set):
         for did in device_info:
             if "browserstack" in did:
                 browserstack_run = True
+                break
+            elif "aws" in did:
+                aws_run = True
                 break
         if browserstack_run:
             desiredcaps = device_info["browserstack device 1"]["basic"]
@@ -569,7 +572,7 @@ def launch_application(data_set):
             desiredcaps = dict()
             # Set the global variable for the preferred connected device
             if find_correct_device_on_first_run(serial, device_info) in failed_tag_list:
-                return "failed"
+                return "zeuz_failed"
 
             device_type = appium_details[device_id]["type"].lower().strip()
 
@@ -587,7 +590,7 @@ def launch_application(data_set):
             if appium_details[device_id]["type"] == "android":
                 result = adbOptions.wake_android(device_serial)
                 if result in failed_tag_list:
-                    return "failed"
+                    return "zeuz_failed"
 
             # If android, then we will try to find the activity name, IOS doesn't need this
             if activity_name == "":
@@ -604,10 +607,10 @@ def launch_application(data_set):
                 or package_name in failed_tag_list
             ):
                 CommonUtil.ExecLog(sModuleInfo, "Could not find package name", 3)
-                return "failed"
+                return "zeuz_failed"
             elif appium_details[device_id]["type"] == "android" and activity_name == "":
                 CommonUtil.ExecLog(sModuleInfo, "Could not find activity name", 3)
-                return "failed"
+                return "zeuz_failed"
 
     except Exception:
         errMsg = "Unable to parse data set"
@@ -647,8 +650,8 @@ def launch_application(data_set):
                     work_profile=work_profile,
                     desiredcaps=desiredcaps,
                 )
-                if result == "failed":
-                    return "failed"
+                if result == "zeuz_failed":
+                    return "zeuz_failed"
 
             if launch_app:  # if ios simulator then no need to launch app again
                 appium_driver.launch_app()  # Launch program configured in the Appium capabilities
@@ -720,7 +723,7 @@ def start_appium_server():
                 "Failed to find a free port for running appium after 20 tries.",
                 1,
             )
-            return "failed"
+            return "zeuz_failed"
 
         try:
             appium_server = None
@@ -803,7 +806,7 @@ def start_appium_server():
             return "passed"
         else:
             CommonUtil.ExecLog(sModuleInfo, "Server failed to start", 3)
-            return "failed"
+            return "zeuz_failed"
     except Exception:
         return CommonUtil.Exception_Handler(
             sys.exc_info(), None, "Error starting Appium server"
@@ -865,7 +868,7 @@ def start_appium_driver(
         if appium_details[device_id]["driver"] == None:
             # Start Appium server
             if start_appium_server() in failed_tag_list:
-                return "failed", launch_app
+                return "zeuz_failed", launch_app
 
             # Create Appium driver
             # Setup capabilities
@@ -894,7 +897,7 @@ def start_appium_driver(
                     CommonUtil.ExecLog(
                         sModuleInfo, "Could not detect any connected Android devices", 3
                     )
-                    return "failed", launch_app
+                    return "zeuz_failed", launch_app
 
                 if work_profile:
                     work_profile_from_adb = adbOptions.get_work_profile()
@@ -902,7 +905,7 @@ def start_appium_driver(
                         CommonUtil.ExecLog(
                             sModuleInfo, "Couldn't get the work profile", 3
                         )
-                        return "failed"
+                        return "zeuz_failed"
                     desired_caps[
                         "userProfile"
                     ] = work_profile_from_adb  # Command timeout before appium destroys instance
@@ -1027,7 +1030,7 @@ def start_appium_driver(
                     "Invalid device type: %s" % str(appium_details[device_id]["type"]),
                     3,
                 )
-                return "failed", launch_app
+                return "zeuz_failed", launch_app
             CommonUtil.ExecLog(sModuleInfo, "Capabilities: %s" % str(desired_caps), 1)
 
             # Create Appium instance with capabilities
@@ -1071,7 +1074,7 @@ def start_appium_driver(
                 else:  # Error during setup, reset
                     appium_driver = None
                     CommonUtil.ExecLog(sModuleInfo, "Error during Appium setup", 3)
-                    return "failed", launch_app
+                    return "zeuz_failed", launch_app
             except Exception as e:
                 print(e)
                 return (
@@ -1282,7 +1285,7 @@ def install_application(data_set):
                 % file_name,
                 3,
             )
-            return "failed"
+            return "zeuz_failed"
         if file_name in file_attachment:
             file_name = file_attachment[
                 file_name
@@ -1293,7 +1296,7 @@ def install_application(data_set):
                 "File not specified or there was a problem reading the file attachments",
                 3,
             )
-            return "failed"
+            return "zeuz_failed"
 
         # Try to determine device serial
         if serial != "":
@@ -1310,7 +1313,7 @@ def install_application(data_set):
             CommonUtil.ExecLog(
                 sModuleInfo, "Could not install application (%s)" % file_name, 3
             )
-            return "failed"
+            return "zeuz_failed"
         CommonUtil.ExecLog(
             sModuleInfo, "Installed %s to device %s" % (file_name, serial), 1
         )
@@ -1370,7 +1373,7 @@ def uninstall_application(data_set):
             CommonUtil.ExecLog(
                 sModuleInfo, "Could not uninstall application (%s)" % package, 3
             )
-            return "failed"
+            return "zeuz_failed"
         CommonUtil.ExecLog(
             sModuleInfo, "Uninstalled %s from device %s" % (package, serial), 1
         )
@@ -1525,7 +1528,7 @@ def swipe_handler_ios(data_set):
 
             if element_given:
                 Element = LocateElement.Get_Element(data_set, appium_driver)
-                if Element == "failed":
+                if Element == "zeuz_failed":
                     CommonUtil.ExecLog(
                         sModuleInfo, "Unable to locate the element, performing swipe without element.", 2
                     )
@@ -1636,9 +1639,9 @@ def swipe_handler_android(data_set=[], save_att_data_set={}):
         full_screen_mode = False  # Use appium swipe instead of adb swipe (which is used when there's a vitual navigation bar that we need to swipe under)
         window_size1 = get_window_size()  # get_size method (standard)
         window_size2 = get_window_size(True)  # xpath() method
-        if window_size1 == "failed":
+        if window_size1 == "zeuz_failed":
             CommonUtil.ExecLog(sModuleInfo, "Couldn't read screen size", 3)
-            return "failed"
+            return "zeuz_failed"
         height_with_navbar = int(
             window_size1["height"]
         )  # Read standard height (on devices with a nav bar, this is not the actual height of the screen)
@@ -1701,11 +1704,11 @@ def swipe_handler_android(data_set=[], save_att_data_set={}):
                         adjust = row[2].strip()
                 elif row[1] == "element parameter" or row[1] == "unique parameter":
                     Element = LocateElement.Get_Element(data_set, appium_driver)
-                    if Element == "failed":
+                    if Element == "zeuz_failed":
                         CommonUtil.ExecLog(
                             sModuleInfo, "Unable to locate your element with given data.", 3
                         )
-                        return "failed"
+                        return "zeuz_failed"
 
         # Verify we have what we need
         if (
@@ -1721,7 +1724,7 @@ def swipe_handler_android(data_set=[], save_att_data_set={}):
                     "Missing critical swipe values. Either 'inset' (optional), 'direction' (required), or 'position' (optional) are missing, wrong or blank",
                     3,
                 )
-                return "failed"
+                return "zeuz_failed"
 
         # If an element parameter was provided, get it's x, y, w, h
         if Element:
@@ -1804,7 +1807,7 @@ def swipe_handler_android(data_set=[], save_att_data_set={}):
 
         if result in failed_tag_list:
             CommonUtil.ExecLog(sModuleInfo, "Could not swipe the screen", 1)
-            return "failed"
+            return "zeuz_failed"
         else:
             CommonUtil.ExecLog(sModuleInfo, "Swiped the screen successfully", 1)
             return "passed"
@@ -2002,18 +2005,18 @@ def get_element_location_by_id(data_set):
                 action_value = row[2]
         if _id == "" or action_value == "":
             CommonUtil.ExecLog(sModuleInfo, "Could not find element parameter", 3)
-            return "failed"
+            return "zeuz_failed"
     except Exception:
         errMsg = "Unable to parse data set"
         return CommonUtil.Exception_Handler(sys.exc_info(), None, errMsg)
 
     try:
         Element = LocateElement.Get_Element(data_set, appium_driver)
-        if Element == "failed":
+        if Element == "zeuz_failed":
             CommonUtil.ExecLog(
                 sModuleInfo, "Unable to locate your element with given data.", 3
             )
-            return "failed"
+            return "zeuz_failed"
         location = Element.location  # Get element x,y coordinates
         positions = "%s,%s" % (
             location["x"],
@@ -2088,7 +2091,7 @@ def Click_Element_Appium(data_set):
 
         Element = LocateElement.Get_Element(data_set, appium_driver)
 
-        if Element == "failed":
+        if Element == "zeuz_failed":
 
             CommonUtil.ExecLog(
                 sModuleInfo, "Unable to locate your element with given data.", 3
@@ -2096,17 +2099,17 @@ def Click_Element_Appium(data_set):
             CommonUtil.ExecLog(sModuleInfo, "Trying to see if there are contexts", 1)
 
             context_result = auto_switch_context_and_try("webview")
-            if context_result == "failed":
+            if context_result == "zeuz_failed":
                 CommonUtil.ExecLog(
                     sModuleInfo,
                     "Unable to locate your element with different contexts.",
                     3,
                 )
-                return "failed"
+                return "zeuz_failed"
             else:
                 context_switched = True
             Element = LocateElement.Get_Element(data_set, appium_driver)
-            if Element == "failed":
+            if Element == "zeuz_failed":
                 CommonUtil.ExecLog(
                     sModuleInfo,
                     "Unable to locate your element with different contexts.",
@@ -2119,7 +2122,7 @@ def Click_Element_Appium(data_set):
                         1,
                     )
                     context_result = auto_switch_context_and_try("native")
-                return "failed"
+                return "zeuz_failed"
             else:
                 CommonUtil.ExecLog(
                     sModuleInfo, "Found your element with different context", 1
@@ -2180,7 +2183,7 @@ def Click_Element_Appium(data_set):
                         )
                         context_result = auto_switch_context_and_try("native")
 
-                    return "failed"
+                    return "zeuz_failed"
 
             else:
                 try:
@@ -2222,7 +2225,7 @@ def Click_Element_Appium(data_set):
                     1,
                 )
                 context_result = auto_switch_context_and_try("native")
-            return "failed"
+            return "zeuz_failed"
 
     except Exception:
         if context_switched == True:
@@ -2270,11 +2273,11 @@ def Tap_Appium(data_set):
                 y_offset = ((str(row[2]).lower().strip()).split(":")[1]).strip()
 
         Element = LocateElement.Get_Element(data_set, appium_driver)
-        if Element == "failed":
+        if Element == "zeuz_failed":
             CommonUtil.ExecLog(
                 sModuleInfo, "Unable to locate your element with given data.", 3
             )
-            return "failed"
+            return "zeuz_failed"
         else:
             try:
                 if Element.is_enabled():
@@ -2321,7 +2324,7 @@ def Tap_Appium(data_set):
                                 "Element is enabled. Unable to tap based on offset.",
                                 3,
                             )
-                            return "failed"
+                            return "zeuz_failed"
                     else:
 
                         action = TouchAction(appium_driver)
@@ -2335,7 +2338,7 @@ def Tap_Appium(data_set):
                     CommonUtil.ExecLog(
                         sModuleInfo, "Element not enabled. Unable to click.", 3
                     )
-                    return "failed"
+                    return "zeuz_failed"
             except Exception:
                 errMsg = "Could not select/click your element."
                 return CommonUtil.Exception_Handler(sys.exc_info(), None, errMsg)
@@ -2356,11 +2359,11 @@ def Double_Tap_Appium(data_set):
 
     try:
         Element = LocateElement.Get_Element(data_set, appium_driver)
-        if Element == "failed":
+        if Element == "zeuz_failed":
             CommonUtil.ExecLog(
                 sModuleInfo, "Unable to locate your element with given data.", 3
             )
-            return "failed"
+            return "zeuz_failed"
         else:
             try:
                 if Element.is_enabled():
@@ -2379,7 +2382,7 @@ def Double_Tap_Appium(data_set):
                     CommonUtil.ExecLog(
                         sModuleInfo, "Element not enabled. Unable to click.", 3
                     )
-                    return "failed"
+                    return "zeuz_failed"
             except Exception:
                 errMsg = "Could not select/click your element."
                 return CommonUtil.Exception_Handler(sys.exc_info(), None, errMsg)
@@ -2401,11 +2404,11 @@ def Long_Press_Appium(data_set):
 
     try:
         Element = LocateElement.Get_Element(data_set, appium_driver)
-        if Element == "failed":
+        if Element == "zeuz_failed":
             CommonUtil.ExecLog(
                 sModuleInfo, "Unable to locate your element with given data.", 3
             )
-            return "failed"
+            return "zeuz_failed"
         else:
             try:
                 if Element.is_enabled():
@@ -2422,7 +2425,7 @@ def Long_Press_Appium(data_set):
                     CommonUtil.ExecLog(
                         sModuleInfo, "Element not enabled. Unable to click.", 3
                     )
-                    return "failed"
+                    return "zeuz_failed"
             except Exception:
                 errMsg = "Could not select/click your element."
                 return CommonUtil.Exception_Handler(sys.exc_info(), None, errMsg)
@@ -2460,7 +2463,7 @@ def Enter_Text_Appium(data_set):
     # Enter text into element
     try:
         Element = LocateElement.Get_Element(data_set, appium_driver)
-        if Element == "failed":
+        if Element == "zeuz_failed":
 
             CommonUtil.ExecLog(
                 sModuleInfo, "Unable to locate your element with given data.", 3
@@ -2468,17 +2471,17 @@ def Enter_Text_Appium(data_set):
             CommonUtil.ExecLog(sModuleInfo, "Trying to see if there are contexts", 1)
 
             context_result = auto_switch_context_and_try("webview")
-            if context_result == "failed":
+            if context_result == "zeuz_failed":
                 CommonUtil.ExecLog(
                     sModuleInfo,
                     "Unable to locate your element with different contexts.",
                     3,
                 )
-                return "failed"
+                return "zeuz_failed"
             else:
                 context_switched = True
             Element = LocateElement.Get_Element(data_set, appium_driver)
-            if Element == "failed":
+            if Element == "zeuz_failed":
                 CommonUtil.ExecLog(
                     sModuleInfo,
                     "Unable to locate your element with different contexts.",
@@ -2496,7 +2499,7 @@ def Enter_Text_Appium(data_set):
                     "Unable to locate your element with different contexts.",
                     3,
                 )
-                return "failed"
+                return "zeuz_failed"
             else:
                 CommonUtil.ExecLog(
                     sModuleInfo, "Found your element with different context", 1
@@ -2511,7 +2514,7 @@ def Enter_Text_Appium(data_set):
             CommonUtil.ExecLog(sModuleInfo, "Clicking and clearing the text field", 1)
             Element.click()  # Set focus to textbox
             Element = LocateElement.Get_Element(data_set, appium_driver)
-            if Element == "failed":
+            if Element == "zeuz_failed":
                 CommonUtil.ExecLog(
                     sModuleInfo, "Unable to locate your element with given data.", 3
                 )
@@ -2519,17 +2522,17 @@ def Enter_Text_Appium(data_set):
                     sModuleInfo, "Trying to see if there are contexts", 1
                 )
                 context_result = auto_switch_context_and_try("webview")
-                if context_result == "failed":
+                if context_result == "zeuz_failed":
                     CommonUtil.ExecLog(
                         sModuleInfo,
                         "Unable to locate your element with different contexts.",
                         3,
                     )
-                    return "failed"
+                    return "zeuz_failed"
                 else:
                     context_switched = True
                 Element = LocateElement.Get_Element(data_set, appium_driver)
-                if Element == "failed":
+                if Element == "zeuz_failed":
                     CommonUtil.ExecLog(
                         sModuleInfo,
                         "Unable to locate your element with different contexts.",
@@ -2547,7 +2550,7 @@ def Enter_Text_Appium(data_set):
                         "Unable to locate your element with different contexts.",
                         3,
                     )
-                    return "failed"
+                    return "zeuz_failed"
                 else:
                     CommonUtil.ExecLog(
                         sModuleInfo, "Found your element with different context", 1
@@ -2660,11 +2663,11 @@ def Pickerwheel_Appium(data_set):
     # Enter text into element
     try:
         Element = LocateElement.Get_Element(data_set, appium_driver)
-        if Element == "failed":
+        if Element == "zeuz_failed":
             CommonUtil.ExecLog(
                 sModuleInfo, "Unable to locate your element with given data.", 3
             )
-            return "failed"
+            return "zeuz_failed"
         else:
 
             # This is wrapped in it's own try block because we sometimes get an error from send_keys stating "Parameters were incorrect". However, most devices work only with send_keys
@@ -2717,7 +2720,7 @@ def Clear_And_Enter_Text_ADB(data_set, serial=""):
 
         if text_to_enter == "":
             CommonUtil.ExecLog(sModuleInfo, "Could not find string value", 3)
-            return "failed"
+            return "zeuz_failed"
 
     except Exception:
         errMsg = "Unable to parse data set"
@@ -2759,7 +2762,7 @@ def Clear_And_Enter_Text_ADB(data_set, serial=""):
             CommonUtil.ExecLog(
                 sModuleInfo, "Did not find any android device connected", 3
             )
-            result = "failed"
+            result = "zeuz_failed"
 
         if result in passed_tag_list:
             # CommonUtil.TakeScreenShot(sModuleInfo)
@@ -2774,7 +2777,7 @@ def Clear_And_Enter_Text_ADB(data_set, serial=""):
         else:
             # CommonUtil.TakeScreenShot(sModuleInfo)
             CommonUtil.ExecLog(sModuleInfo, "Could not text with adb shell", 3)
-            return "failed"
+            return "zeuz_failed"
 
     except Exception:
         errMsg = "Could not enter string via adb."
@@ -2808,11 +2811,11 @@ def Clear_And_Enter_Text_Appium(data_set):
     # Enter text into element
     try:
         Element = LocateElement.Get_Element(data_set, appium_driver)
-        if Element == "failed":
+        if Element == "zeuz_failed":
             CommonUtil.ExecLog(
                 sModuleInfo, "Unable to locate your element with given data.", 3
             )
-            return "failed"
+            return "zeuz_failed"
         else:
             try:
                 # Enter text into element
@@ -2946,7 +2949,7 @@ def Android_Keystroke_Key_Mapping(keystroke, hold_key=False):
             key = int(keystroke.split("=")[1])
         else:
             CommonUtil.ExecLog(sModuleInfo, "Unsupported key event: %s" % keystroke, 3)
-            return "failed"
+            return "zeuz_failed"
 
         if hold_key:
             appium_driver.long_press_keycode(key)  # About 0.5s hold, not configurable
@@ -2963,7 +2966,7 @@ def iOS_Keystroke_Key_Mapping(keystroke):
     sModuleInfo = inspect.currentframe().f_code.co_name + " : " + MODULE_NAME
 
     CommonUtil.ExecLog(sModuleInfo, "IOS key events not yet supported" % keystroke, 3)
-    return "failed"
+    return "zeuz_failed"
 
     try:
         if keystroke == "return" or keystroke == "enter":
@@ -3042,7 +3045,7 @@ def Keystroke_Appium(data_set):
 
         if keystroke_value == "":
             CommonUtil.ExecLog(sModuleInfo, "Could not find keystroke value", 3)
-            return "failed"
+            return "zeuz_failed"
 
     except Exception:
         errMsg = "Unable to parse data set"
@@ -3055,7 +3058,7 @@ def Keystroke_Appium(data_set):
         elif appium_details[device_id]["type"] == "ios":
             result = iOS_Keystroke_Key_Mapping(keystroke_value)
         else:
-            result = "failed"
+            result = "zeuz_failed"
 
         if result in passed_tag_list:
             # CommonUtil.TakeScreenShot(sModuleInfo)
@@ -3072,7 +3075,7 @@ def Keystroke_Appium(data_set):
                 "Could not enter keystroke for the element with given parameters and values",
                 3,
             )
-            return "failed"
+            return "zeuz_failed"
 
     except Exception:
         errMsg = "Could not enter keystroke."
@@ -3112,11 +3115,11 @@ def Validate_Text_Appium(data_set):
                 Element = LocateElement.Get_Element(data_set[0], appium_driver)
                 Element = [Element]
 
-        if Element == "failed":
+        if Element == "zeuz_failed":
             CommonUtil.ExecLog(
                 sModuleInfo, "Unable to locate your element with given data.", 3
             )
-            return "failed"
+            return "zeuz_failed"
 
         # Get the 'action' parameter and 'value' from step data
         for each_step_data_item in data_set[0]:
@@ -3142,7 +3145,7 @@ def Validate_Text_Appium(data_set):
                 )  # Extract the text elements
                 list_of_element_text.append(list_of_element[0])
         else:
-            return "failed"
+            return "zeuz_failed"
 
         # Extract only the visible element(s)
         visible_list_of_element_text = []
@@ -3179,7 +3182,7 @@ def Validate_Text_Appium(data_set):
                         % visible_list_of_element_text,
                         3,
                     )
-                    return "failed"
+                    return "zeuz_failed"
 
         # Validate the full text/string provided in the step data with the text obtained from the device
         if validation_type == "validate full text":
@@ -3209,7 +3212,7 @@ def Validate_Text_Appium(data_set):
                     % visible_list_of_element_text,
                     3,
                 )
-                return "failed"
+                return "zeuz_failed"
 
         # Validate all the text/string provided in the step data with the text obtained from the device
         if validation_type == "validate screen text":
@@ -3257,7 +3260,7 @@ def Validate_Text_Appium(data_set):
                                 % elem,
                                 1,
                             )
-                            return "failed"
+                            return "zeuz_failed"
                     if visible_elem[0] in expected_elem:
                         i += 1
 
@@ -3265,7 +3268,7 @@ def Validate_Text_Appium(data_set):
             CommonUtil.ExecLog(
                 sModuleInfo, "Incorrect validation type. Please check step data", 3
             )
-            return "failed"
+            return "zeuz_failed"
 
     except Exception:
         errMsg = "Could not compare text as requested."
@@ -3438,14 +3441,14 @@ def device_information(data_set):
             CommonUtil.ExecLog(
                 sModuleInfo, "Action's Field contains incorrect information", 3
             )
-            return "failed"
+            return "zeuz_failed"
         if shared_var == "":
             CommonUtil.ExecLog(
                 sModuleInfo,
                 "Action's Value contains incorrect information. Expected Shared Variable, or string",
                 3,
             )
-            return "failed"
+            return "zeuz_failed"
     except Exception:
         return CommonUtil.Exception_Handler(
             sys.exc_info(),
@@ -3460,7 +3463,7 @@ def device_information(data_set):
             CommonUtil.ExecLog(
                 sModuleInfo, "Could not detect any connected Android devices", 3
             )
-            return "failed"
+            return "zeuz_failed"
 
     # Get device information
     try:
@@ -3514,7 +3517,7 @@ def device_information(data_set):
             shared_var = ""  # Unset this, so we don't create a shared variable with it
             if output in failed_tag_list:
                 CommonUtil.ExecLog(sModuleInfo, "Failed to reboot device", 3)
-                return "failed"
+                return "zeuz_failed"
 
         elif cmd == "wake":
             if dep == "android":
@@ -3534,18 +3537,18 @@ def device_information(data_set):
 
             if output in failed_tag_list:
                 CommonUtil.ExecLog(sModuleInfo, "Failed to wake device", 3)
-                return "failed"
+                return "zeuz_failed"
         else:
             CommonUtil.ExecLog(
                 sModuleInfo, "Action's Field contains incorrect information", 3
             )
-            return "failed"
+            return "zeuz_failed"
 
         if output in failed_tag_list or output == "":
             CommonUtil.ExecLog(
                 sModuleInfo, "Could not find the device info about '%s'" % (cmd), 3
             )
-            return "failed"
+            return "zeuz_failed"
 
         # Save the output to the user specified shared variable
         if shared_var != "":
@@ -3584,7 +3587,7 @@ def set_device_password(data_set):
                 "Password cannot be blank. Expected Value field of action row to be a PIN or PASSWORD",
                 3,
             )
-            return "failed"
+            return "zeuz_failed"
 
     except Exception:
         return CommonUtil.Exception_Handler(
@@ -3631,7 +3634,7 @@ def switch_device(data_set):
                 "Serial number cannot be blank. Expected Value field of action row to be a serial number or UUID of the device connected via USB",
                 3,
             )
-            return "failed"
+            return "zeuz_failed"
 
     except Exception:
         return CommonUtil.Exception_Handler(
@@ -3670,7 +3673,7 @@ def package_information(data_set):
                 "Full or partial package name missing. Expected Value field to contain it",
                 3,
             )
-            return "failed"
+            return "zeuz_failed"
 
     except Exception:
         return CommonUtil.Exception_Handler(
@@ -3682,8 +3685,8 @@ def package_information(data_set):
         package_name, activity_name = get_program_names(
             package_name
         )  # Get package name
-        if package_name in ("", "failed"):
-            return "failed"  # get_program_names() logs the error
+        if package_name in ("", "zeuz_failed"):
+            return "zeuz_failed"  # get_program_names() logs the error
     except Exception:
         return CommonUtil.Exception_Handler(
             sys.exc_info(), None, "Error trying to get package name"
@@ -3698,7 +3701,7 @@ def package_information(data_set):
                     "Shared Variable name expected in Value field on action row",
                     3,
                 )
-                return "failed"
+                return "zeuz_failed"
             value = adbOptions.get_package_version(package_name, device_serial)
             result = Shared_Resources.Set_Shared_Variables(shared_var, value)
         elif cmd == "package installed":
@@ -3714,7 +3717,7 @@ def package_information(data_set):
         # Check result
         if result in failed_tag_list or result == "":
             CommonUtil.ExecLog(sModuleInfo, "Error trying to execute mobile program", 3)
-            return "failed"
+            return "zeuz_failed"
 
         CommonUtil.ExecLog(sModuleInfo, "%s was successful" % cmd, 1)
         if shared_var != "":
@@ -3857,7 +3860,7 @@ def Handle_Mobile_Alert(data_set):
                         "Value of Variable '%s' could not be saved!!!" % variable_name,
                         3,
                     )
-                    return "failed"
+                    return "zeuz_failed"
                 else:
                     Shared_Resources.Show_All_Shared_Variables()
                     return "passed"
@@ -3866,7 +3869,7 @@ def Handle_Mobile_Alert(data_set):
                 CommonUtil.ExecLog(
                     sModuleInfo, "Mobile alert not found.  Unable to collect text", 3
                 )
-                return "failed"
+                return "zeuz_failed"
 
         elif "send text" in choice:
             try:
@@ -3879,7 +3882,7 @@ def Handle_Mobile_Alert(data_set):
                 CommonUtil.ExecLog(
                     sModuleInfo, "Unable to send text to alert pop up", 3
                 )
-                return "failed"
+                return "zeuz_failed"
 
         else:
             CommonUtil.ExecLog(
@@ -3887,7 +3890,7 @@ def Handle_Mobile_Alert(data_set):
                 "Wrong Step Data.  Please review the action help document",
                 3,
             )
-            return "failed"
+            return "zeuz_failed"
 
     except Exception:
         ErrorMessage = "Failed to handle alert"
@@ -3957,7 +3960,7 @@ def Switch_Context(data_set):
                     )
                     return "passed"
             CommonUtil.ExecLog(sModuleInfo, "Could not switch to any other context", 3)
-            return "failed"
+            return "zeuz_failed"
 
         except Exception:
             CommonUtil.ExecLog(
@@ -3966,7 +3969,7 @@ def Switch_Context(data_set):
                 % choice,
                 3,
             )
-            return "failed"
+            return "zeuz_failed"
 
     except Exception:
         ErrorMessage = "Failed to handle alert"
@@ -3989,11 +3992,11 @@ def Save_Attribute_appium(step_data):
 
     try:
         Element = LocateElement.Get_Element(step_data, appium_driver)
-        if Element == "failed":
+        if Element == "zeuz_failed":
             CommonUtil.ExecLog(
                 sModuleInfo, "Unable to locate your element with given data.", 3
             )
-            return "failed"
+            return "zeuz_failed"
         else:
             CommonUtil.ExecLog(
                 sModuleInfo,
@@ -4022,7 +4025,7 @@ def Save_Attribute_appium(step_data):
             CommonUtil.ExecLog(
                 sModuleInfo, "Unable to save attribute value as it is empty", 3
             )
-            return "failed"
+            return "zeuz_failed"
 
         result = Shared_Resources.Set_Shared_Variables(variable_name, attribute_value)
 
@@ -4032,7 +4035,7 @@ def Save_Attribute_appium(step_data):
                 "Value of Variable '%s' could not be saved!!!" % variable_name,
                 3,
             )
-            return "failed"
+            return "zeuz_failed"
         else:
             Shared_Resources.Show_All_Shared_Variables()
             CommonUtil.ExecLog(
@@ -4095,9 +4098,9 @@ def save_attribute_values_appium(step_data):
     global appium_driver
     try:
         Element = LocateElement.Get_Element(step_data, appium_driver)
-        if Element == "failed":
+        if Element == "zeuz_failed":
             CommonUtil.ExecLog(sModuleInfo, "Unable to locate your element with given data.", 3)
-            return "failed"
+            return "zeuz_failed"
 
         target_index = 0
         target = []
@@ -4177,7 +4180,7 @@ def save_attribute_values_appium(step_data):
             CommonUtil.ExecLog(
                 sModuleInfo, "Unable to parse data. Please write data in correct format", 3
             )
-            return "failed"
+            return "zeuz_failed"
 
         ii = 0
         final = []
@@ -4274,8 +4277,8 @@ def save_attribute_values_appium(step_data):
             else:
                 pre_values = copy.deepcopy(pre_values_temp)
                 # print("Calculation = ", time.time() - start, "sec")
-                End_Elem = LocateElement.Get_Element(end_parameter, appium_driver) if end_parameter else "failed"
-                if End_Elem != "failed":
+                End_Elem = LocateElement.Get_Element(end_parameter, appium_driver) if end_parameter else "zeuz_failed"
+                if End_Elem != "zeuz_failed":
                     CommonUtil.ExecLog("", "End Element found. Stopped scrolling", 1)
                     break  # Stop scrolling. End reached!
                 swipe_handler_android(save_att_data_set=input_param)
@@ -4413,7 +4416,7 @@ def auto_switch_context_and_try(native_web):
         )
         if len(all_contexts) == 1:
             CommonUtil.ExecLog(sModuleInfo, "There is only one context", 2)
-            return "failed"
+            return "zeuz_failed"
 
         for each in all_contexts:
 
@@ -4438,7 +4441,7 @@ def auto_switch_context_and_try(native_web):
                 return "passed"
 
         CommonUtil.ExecLog(sModuleInfo, "Could not switch to any other context", 2)
-        return "failed"
+        return "zeuz_failed"
 
     except Exception:
         CommonUtil.ExecLog(
@@ -4447,4 +4450,4 @@ def auto_switch_context_and_try(native_web):
             % choice,
             3,
         )
-        return "failed"
+        return "zeuz_failed"

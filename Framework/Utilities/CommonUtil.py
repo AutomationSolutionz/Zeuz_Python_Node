@@ -80,9 +80,7 @@ failed_tag_list = [
     "Fail",
     "fail",
     "FAIL",
-    "Failed",
-    "failed",
-    "FAILED",
+    "zeuz_failed",
     "false",
     "False",
     "FALSE",
@@ -240,9 +238,9 @@ def Exception_Handler(exec_info, temp_q=None, UserMessage=None):
                 sModuleInfo, "Following error message is custom: %s" % (UserMessage), 3
             )
         if temp_q != None:
-            temp_q.put("failed")
+            temp_q.put("zeuz_failed")
 
-        return "failed"
+        return "zeuz_failed"
 
     except Exception:
         exc_type_local, exc_obj_local, exc_tb_local = sys.exc_info()
@@ -264,7 +262,7 @@ def Exception_Handler(exec_info, temp_q=None, UserMessage=None):
             "Following exception occurred: %s" % (Error_Detail_Local),
             3,
         )
-        return "failed"
+        return "zeuz_failed"
 
 
 def Result_Analyzer(sTestStepReturnStatus, temp_q):
@@ -275,8 +273,8 @@ def Result_Analyzer(sTestStepReturnStatus, temp_q):
             temp_q.put("passed")
             return "passed"
         elif sTestStepReturnStatus in failed_tag_list:
-            temp_q.put("failed")
-            return "failed"
+            temp_q.put("zeuz_failed")
+            return "zeuz_failed"
         elif sTestStepReturnStatus in skipped_tag_list:
             temp_q.put("skipped")
             return "skipped"
@@ -290,8 +288,8 @@ def Result_Analyzer(sTestStepReturnStatus, temp_q):
                 % (sTestStepReturnStatus),
                 3,
             )
-            temp_q.put("failed")
-            return "failed"
+            temp_q.put("zeuz_failed")
+            return "zeuz_failed"
 
     except Exception as e:
         return Exception_Handler(sys.exc_info())
@@ -647,7 +645,6 @@ def TakeScreenShot(function_name, local_run=False):
             4,
         )
         image_name = "Step#" + current_step_no + "_Action#" + current_action_no + "_" + str(function_name)
-        print(image_name)
         thread = executor.submit(Thread_ScreenShot, function_name, image_folder, Method, Driver, image_name)
         SaveThread("screenshot", thread)
 

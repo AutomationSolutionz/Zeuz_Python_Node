@@ -69,45 +69,45 @@ def Action_Handler(action_step_data, action_row):
         action_name = action_row[0]
         if action_name == "save response":
             result = Get_Response(action_step_data)
-            if result == "failed":
-                return "failed"
+            if result == "zeuz_failed":
+                return "zeuz_failed"
         elif action_name == "compare variable":
             result = Compare_Variables(action_step_data)
-            if result == "failed":
-                return "failed"
+            if result == "zeuz_failed":
+                return "zeuz_failed"
         elif action_name == "compare list":
             result = Compare_Lists(action_step_data)
-            if result == "failed":
-                return "failed"
+            if result == "zeuz_failed":
+                return "zeuz_failed"
         elif action_name == "sleep":
             result = Sleep(action_step_data)
-            if result == "failed":
-                return "failed"
+            if result == "zeuz_failed":
+                return "zeuz_failed"
         elif action_name == "initialize list":
             result = Initialize_List(action_step_data)
-            if result == "failed":
-                return "failed"
+            if result == "zeuz_failed":
+                return "zeuz_failed"
         elif action_name == "step result":
             result = Step_Result(action_step_data)
             if (
                 result in failed_tag_list
             ):  # Convert user specified pass/fail into standard result
-                return "failed"
+                return "zeuz_failed"
             elif result in passed_tag_list:
                 return "passed"
             elif result in skipped_tag_list:
                 return "skipped"
         elif action_name == "insert into list":
             result = Insert_Into_List(action_step_data)
-            if result == "failed":
-                return "failed"
+            if result == "zeuz_failed":
+                return "zeuz_failed"
         else:
             CommonUtil.ExecLog(
                 sModuleInfo,
                 "The action you entered is incorrect. Please provide accurate information on the data set(s).",
                 3,
             )
-            return "failed"
+            return "zeuz_failed"
 
     except Exception:
         return CommonUtil.Exception_Handler(sys.exc_info())
@@ -126,8 +126,8 @@ def Compare_Lists(step_data):
     sModuleInfo = inspect.currentframe().f_code.co_name + " : " + MODULE_NAME
     try:
         element_step_data = Get_Element_Step_Data(step_data)
-        if (element_step_data == []) or (element_step_data == "failed"):
-            return "failed"
+        if (element_step_data == []) or (element_step_data == "zeuz_failed"):
+            return "zeuz_failed"
         else:
             return Shared_Resources.Compare_Lists([step_data])
     except:
@@ -140,8 +140,8 @@ def Compare_Variables(step_data):
     sModuleInfo = inspect.currentframe().f_code.co_name + " : " + MODULE_NAME
     try:
         element_step_data = Get_Element_Step_Data(step_data)
-        if (element_step_data == []) or (element_step_data == "failed"):
-            return "failed"
+        if (element_step_data == []) or (element_step_data == "zeuz_failed"):
+            return "zeuz_failed"
         else:
             return Shared_Resources.Compare_Variables([step_data])
     except:
@@ -429,7 +429,7 @@ def Insert_Into_List(step_data):
                     "The information in the data-set(s) are incorrect. Please provide accurate data set(s) information.",
                     3,
                 )
-                return "failed"
+                return "zeuz_failed"
             else:
                 list_name = temp_list[0].split(":")[1].strip()
                 key = temp_list[1].split(":")[1].strip()
@@ -443,7 +443,7 @@ def Insert_Into_List(step_data):
                     % (list_name, key),
                     3,
                 )
-                return "failed"
+                return "zeuz_failed"
             else:
                 # Shared_Resources.Show_All_Shared_Variables()
                 return "passed"
@@ -453,8 +453,8 @@ def Insert_Into_List(step_data):
 
             returned_step_data_list = Validate_Step_Data(element_step_data)
 
-            if (returned_step_data_list == []) or (returned_step_data_list == "failed"):
-                return "failed"
+            if (returned_step_data_list == []) or (returned_step_data_list == "zeuz_failed"):
+                return "zeuz_failed"
             else:
                 try:
 
@@ -473,7 +473,7 @@ def Insert_Into_List(step_data):
                             "The information in the data-set(s) are incorrect. Please provide accurate data set(s) information.",
                             3,
                         )
-                        return "failed"
+                        return "zeuz_failed"
                     else:
                         list_name = str(temp_list[0]).split(":")[1].strip()
 
@@ -510,7 +510,7 @@ def search_condition_wrapper(data, condition_string):
                 "The information in the data-set(s) are incorrect. Please provide accurate data set(s) information.",
                 3,
             )
-            return "failed"
+            return "zeuz_failed"
         list_name = parse_list[0].strip()
         parse_list = parse_list[1].strip().split(")")
         all_condition = parse_list[0].strip()
@@ -529,7 +529,7 @@ def search_condition_wrapper(data, condition_string):
                 search_area = search_area[each]
             else:
                 CommonUtil.ExecLog(sModuleInfo, "%s not found in response" % each, 3)
-                return "failed"
+                return "zeuz_failed"
 
         for each in condition_string_list:
             equal = True
@@ -544,7 +544,7 @@ def search_condition_wrapper(data, condition_string):
                 CommonUtil.ExecLog(
                     sModuleInfo, "== or != pattern not found in condition", 3
                 )
-                return "failed"
+                return "zeuz_failed"
 
             key = key_val_list[0].strip()
             value = key_val_list[1].strip()
@@ -553,7 +553,7 @@ def search_condition_wrapper(data, condition_string):
         result = True
         if len(conditions) == 0:
             CommonUtil.ExecLog(sModuleInfo, "No condition is provived in step data", 3)
-            return "failed"
+            return "zeuz_failed"
         else:
             if isinstance(search_area, dict):
                 for each in conditions:
@@ -569,7 +569,7 @@ def search_condition_wrapper(data, condition_string):
                         CommonUtil.ExecLog(
                             sModuleInfo, "%s not found in response" % key, 3
                         )
-                        return "failed"
+                        return "zeuz_failed"
             elif isinstance(search_area, list):
                 for data in search_area:
                     list_result = True
@@ -592,14 +592,14 @@ def search_condition_wrapper(data, condition_string):
                                 CommonUtil.ExecLog(
                                     sModuleInfo, "%s not found in response" % key, 3
                                 )
-                                return "failed"
+                                return "zeuz_failed"
                         else:
                             CommonUtil.ExecLog(
                                 sModuleInfo,
                                 "The information in the data-set(s) are incorrect. Please provide accurate data set(s) information.",
                                 3,
                             )
-                            return "failed"
+                            return "zeuz_failed"
                     result = list_result
                     if result:
                         break
@@ -609,7 +609,7 @@ def search_condition_wrapper(data, condition_string):
                     "The information in the data-set(s) are incorrect. Please provide accurate data set(s) information.",
                     3,
                 )
-                return "failed"
+                return "zeuz_failed"
 
         return result
 
@@ -723,7 +723,7 @@ def handle_rest_call(
                     method=method, url=url, json=body, headers=headers, verify=False
                 )
             else:
-                return "failed"
+                return "zeuz_failed"
             status_code = int(result.status_code)
 
             if request_count > 1:
@@ -752,7 +752,7 @@ def handle_rest_call(
                 % (status_code, wait_for_response_code),
                 3,
             )
-            return "failed"
+            return "zeuz_failed"
 
         Shared_Resources.Set_Shared_Variables("status_code", result.status_code)
         try:
@@ -787,7 +787,7 @@ def handle_rest_call(
                                 'Condition "%s" is FALSE in response' % (condition),
                                 3,
                             )
-                            return "failed"
+                            return "zeuz_failed"
                     else:
                         search_result = search_val_wrapper(
                             result.json(), search_key, search_value, equal
@@ -808,7 +808,7 @@ def handle_rest_call(
                                     % (search_key, search_value),
                                     3,
                                 )
-                                return "failed"
+                                return "zeuz_failed"
                         else:
                             if search_result in passed_tag_list:
                                 CommonUtil.ExecLog(
@@ -825,14 +825,14 @@ def handle_rest_call(
                                     % (search_key, search_value),
                                     3,
                                 )
-                                return "failed"
+                                return "zeuz_failed"
                 else:
                     if not save_into_list:
                         save_fields_from_rest_call(result.json(), fields_to_be_saved)
                     else:
                         if list_name == "":
                             CommonUtil.ExecLog(sModuleInfo, "List name not defined!", 3)
-                            return "failed"
+                            return "zeuz_failed"
                         insert_fields_from_rest_call_into_list(
                             result.json(), fields_to_be_saved, list_name
                         )
@@ -958,8 +958,8 @@ def Get_Response(step_data, save_cookie=False):
 
         returned_step_data_list = Validate_Step_Data(element_step_data)
 
-        if (returned_step_data_list == []) or (returned_step_data_list == "failed"):
-            return "failed"
+        if (returned_step_data_list == []) or (returned_step_data_list == "zeuz_failed"):
+            return "zeuz_failed"
         else:
             try:
                 return_result = handle_rest_call(
@@ -1004,7 +1004,7 @@ def Search_Response(step_data):
                                 "Error in key value step data for search response.. Try 'key == value' format...",
                                 3,
                             )
-                            return "failed"
+                            return "zeuz_failed"
                     else:
                         l = str(key_value_pair).split("!=")
                         if len(l) == 2:
@@ -1017,21 +1017,21 @@ def Search_Response(step_data):
                                     "Error in key value step data for search response.. Try 'key != value' format...",
                                     3,
                                 )
-                                return "failed"
+                                return "zeuz_failed"
                         else:
                             CommonUtil.ExecLog(
                                 sModuleInfo,
                                 "Error in key value step data for search response.. Try 'key == value' format...",
                                 3,
                             )
-                            return "failed"
+                            return "zeuz_failed"
 
         element_step_data = Get_Element_Step_Data(step_data)
 
         returned_step_data_list = Validate_Step_Data(element_step_data)
 
-        if (returned_step_data_list == []) or (returned_step_data_list == "failed"):
-            return "failed"
+        if (returned_step_data_list == []) or (returned_step_data_list == "zeuz_failed"):
+            return "zeuz_failed"
         else:
             try:
                 return_result = handle_rest_call(
@@ -1087,7 +1087,7 @@ def Step_Result(step_data):
                 "The information in the data-set(s) are incorrect. Please provide accurate data set(s) information.",
                 3,
             )
-            result = "failed"
+            result = "zeuz_failed"
         else:
             step_result = step_data[0][2]
             if step_result == "pass":
@@ -1095,7 +1095,7 @@ def Step_Result(step_data):
             elif step_result == "skip":
                 result = "skipped"
             elif step_result == "fail":
-                result = "failed"
+                result = "zeuz_failed"
 
         return result
     except Exception:
@@ -1130,10 +1130,10 @@ def Sequential_Actions(step_data):
                             [each]
                         )
                         if new_data_set in failed_tag_list:
-                            return "failed"
+                            return "zeuz_failed"
                         result = Action_Handler(new_data_set[0], row)
                     if result in failed_tag_list:
-                        return "failed"
+                        return "zeuz_failed"
                     elif result in skipped_tag_list:
                         return "skipped"
 
@@ -1148,7 +1148,7 @@ def Sequential_Actions(step_data):
                     result = Action_Handler(
                         each, row[0]
                     )  # Pass data set, and action_name to action handler
-                    if result == "failed":
+                    if result == "zeuz_failed":
                         CommonUtil.ExecLog(
                             sModuleInfo,
                             "Optional action failed. Returning pass anyway",
@@ -1174,13 +1174,13 @@ def Sequential_Actions(step_data):
                         element_step_data = Get_Element_Step_Data(element_step_data[0])
                         returned_step_data_list = Validate_Step_Data(element_step_data)
                         if (returned_step_data_list == []) or (
-                            returned_step_data_list == "failed"
+                            returned_step_data_list == "zeuz_failed"
                         ):
-                            return "failed"
+                            return "zeuz_failed"
                         else:
                             try:
                                 Element = Get_Element(returned_step_data_list, "all")
-                                if Element == "failed":
+                                if Element == "zeuz_failed":
                                     logic_decision = "false"
                                 else:
                                     logic_decision = "true"
@@ -1203,8 +1203,8 @@ def Sequential_Actions(step_data):
                                 cond_result = Sequential_Actions(
                                     [step_data[data_set_index]]
                                 )
-                                if cond_result == "failed":
-                                    return "failed"
+                                if cond_result == "zeuz_failed":
+                                    return "zeuz_failed"
                                 elif cond_result == "skipped":
                                     return "skipped"
                             return "passed"
@@ -1214,7 +1214,7 @@ def Sequential_Actions(step_data):
                         "The sub-field information is incorrect. Please provide accurate information on the data set(s).",
                         3,
                     )
-                    return "failed"
+                    return "zeuz_failed"
 
         return "passed"
 

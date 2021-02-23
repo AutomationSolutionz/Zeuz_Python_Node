@@ -41,9 +41,9 @@ def search_an_item_on_amazon(
             CommonUtil.ExecLog(
                 sModuleInfo, "Step return type unknown: %s" % (sTestStepReturnStatus), 3
             )
-            temp_q.put("failed")
+            temp_q.put("zeuz_failed")
             CommonUtil.ExecLog(sModuleInfo, "Exit: Step - Search an item on Amazon", 1)
-            return "failed"
+            return "zeuz_failed"
 
     except Exception:
         return CommonUtil.Exception_Handler(sys.exc_info())
@@ -88,7 +88,7 @@ def add_an_item_to_cart_on_amazon(
             CommonUtil.ExecLog(
                 sModuleInfo, "Step return type unknown: %s" % (sTestStepReturnStatus), 3
             )
-            temp_q.put("failed")
+            temp_q.put("zeuz_failed")
             CommonUtil.ExecLog(
                 sModuleInfo, "Exit: Step - Add an item to cart on Amazon", 1
             )
@@ -142,7 +142,7 @@ def add_an_item_to_cart_on_amazon_using_selenium(
             CommonUtil.ExecLog(
                 sModuleInfo, "Step return type unknown: %s" % (sTestStepReturnStatus), 3
             )
-            temp_q.put("failed")
+            temp_q.put("zeuz_failed")
             CommonUtil.ExecLog(
                 sModuleInfo,
                 "Exit: Step - Add an item to cart on Amazon using selenium",
