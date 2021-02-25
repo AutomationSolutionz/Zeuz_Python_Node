@@ -197,7 +197,7 @@ def zeuz_authentication_prompts_for_cli():
             )
         else:
             display_text = prompt.replace("_", " ").capitalize()
-            value = input(f"{display_text} : ")
+            value = input(f"{display_text}: ")
             if prompt == "server_address":
                 if value[-1] == "/":
                     value = value[:-1]
