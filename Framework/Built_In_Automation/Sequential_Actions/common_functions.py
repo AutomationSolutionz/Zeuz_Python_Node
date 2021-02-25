@@ -1,8 +1,8 @@
 """
     Common Functions
     Function: Contains functions common to all modules, and helper functions for Sequential Actions
-    
-    Caveat: Functions common to multiple Built In Functions must have action names that are unique, because we search the common functions first, regardless of the module name passed by the user 
+
+    Caveat: Functions common to multiple Built In Functions must have action names that are unique, because we search the common functions first, regardless of the module name passed by the user
 """
 
 import inspect, sys, time, collections, ftplib, os, ast, copy, csv
@@ -3319,8 +3319,8 @@ def csv_read(data_set):
         structure = "list of dictionaries"
         allowed_list = None
         map_key_names = None
-        conv, Integer, Float, Bool = False, [], [], []
-        for left, mid, right in data_set:
+        Integer, Float, Bool = False, [], [], []
+        for left, _, right in data_set:
             left = left.lower().strip()
             if "file path" == left:
                 filepath = right.strip()
@@ -3349,7 +3349,6 @@ def csv_read(data_set):
                     map_key_names = None
                     CommonUtil.ExecLog(sModuleInfo, "Did not get 'Map key names' as a dictionary. Ignoring this parameter", 2)
             elif "convert" in left:
-                conv = True
                 fields = CommonUtil.parse_value_into_object(right.strip())
                 if "int" in left:
                     if isinstance(fields, str):
@@ -3432,3 +3431,90 @@ def csv_read(data_set):
     except:
         return CommonUtil.Exception_Handler(sys.exc_info())
 
+
+@logger
+def modify_datetime(data_set):
+    """
+    This action allows you to modify the date and time of a given datetime 
+    object or today's date.
+    """
+    
+    sModuleInfo = inspect.currentframe().f_code.co_name + " : " + MODULE_NAME
+
+    from datetime import datetime, timedelta
+    from dateutil import parser
+
+    data = None
+    var_name = None
+    date_format = None
+
+    fields = ["years", "months", "days", "hours", "minutes", "seconds"]
+
+    def perform_mod(op, val, t):
+        """
+        op: one of the "fields" values.
+        t: datetime object
+        val: value to set.
+        """
+
+        try:
+            converted_val = int(val)
+
+            if val[0] in ("+", "-",):
+                # Convert years and months to days, since timedelta does not
+                # support them.
+                # WARNING: This does not take into account the differences
+                # of days in different months (28, 29, 30, 31). It also does
+                # not take into account whether the year is a leap year.
+                if op == "months":
+                    converted_val *= 30
+                    op = "days"
+                elif op == "years":
+                    converted_val *= 365
+                    op = "days"
+
+                # A relative change of datetime is requested
+                delta = timedelta(**{op: converted_val})
+                t += delta
+            else:
+                # A fixed change of datetime is requested
+                t = t.replace(**{op[:-1]: converted_val})
+
+        except:
+            CommonUtil.ExecLog(
+                sModuleInfo,
+                "Failed to modify the '%s' of the given datetime: '%s'\n"
+                "Invalid value: %s" % (t, t, val),
+                3
+            )
+            traceback.print_exc()
+
+        return t
+
+    for left, mid, right in data_set:
+        left = left.strip().lower()
+
+        if "data" in left:
+            if right.strip().lower() == "today":
+                data = datetime.today()
+            else:
+                data = parser.parse(right.strip())
+            continue
+        if "action" in mid:
+            var_name = right.strip()
+            continue
+        if "format" in left:
+            date_format = right
+            continue
+
+        right = right.strip()
+        if left in fields:
+            data = perform_mod(left, right, data)
+
+    if date_format:
+        data = data.strftime(date_format)
+    else:
+        data = str(data)
+
+    CommonUtil.ExecLog(sModuleInfo, "Modified datetime. New value: %s" % data, 1)
+    return sr.Set_Shared_Variables(var_name, data)
