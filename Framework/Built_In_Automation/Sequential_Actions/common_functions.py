@@ -3505,6 +3505,7 @@ def modify_datetime(data_set):
             continue
         if "format" in left:
             date_format = right
+            continue
 
         right = right.strip()
         if left in fields:
