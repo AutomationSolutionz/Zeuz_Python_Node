@@ -997,23 +997,23 @@ def New_Compare_Variables(step_data):
                     match_by_index = False
                 # if action_type.startswith("ignore extra items"):  # Check exclusion is turned off. will turn on in future if needed
                 #     check_exclusion = True
-                if action_type.startswith("subset"):
+                if action_type == "subset":
                     check_subset = True
 
         if check_subset:
             list1 = CommonUtil.parse_value_into_object(list1_name)
             list2 = CommonUtil.parse_value_into_object(list2_name)
-            if not isinstance(list1, list) or not isinstance(list2, list):
-                CommonUtil.ExecLog(sModuleInfo, "To check subset both the variable should be list", 3)
+            if not (type(list1).__name__ in ("list", "tuple") and type(list2).__name__ in ("list", "tuple")):
+                CommonUtil.ExecLog(sModuleInfo, "To check subset both the variable should be list or tuple", 3)
                 return "zeuz_failed"
             if list1 == list2:
-                CommonUtil.ExecLog(sModuleInfo, "2nd list is equal to the 1st list", 1)
+                CommonUtil.ExecLog(sModuleInfo, "RIGHT list is equal to the LEFT list", 1)
                 return "passed"
             if all(x in list1 for x in list2):
-                CommonUtil.ExecLog(sModuleInfo, "2nd list is a subset of 1st list", 1)
+                CommonUtil.ExecLog(sModuleInfo, "RIGHT list is a subset of LEFT list", 1)
                 return "passed"
             else:
-                CommonUtil.ExecLog(sModuleInfo, "2nd list is not a subset of 1st list", 1)
+                CommonUtil.ExecLog(sModuleInfo, "RIGHT list is not a subset of LEFT list", 3)
                 return "zeuz_failed"
 
         list1 = CommonUtil.parse_value_into_object(list1_name)
@@ -1092,10 +1092,7 @@ def New_Compare_Variables(step_data):
                         new_tuple = (key, list2[key])
                         variable_list2.append(new_tuple)
                         taken.append(key)
-                        if (
-                            str(list1[key]).lower().strip()
-                            == str(list2[key]).lower().strip()
-                        ):
+                        if str(list1[key]).lower().strip() == str(list2[key]).lower().strip():
                             pass_count += 1
                             result.append("pass")
                         else:
@@ -1119,10 +1116,7 @@ def New_Compare_Variables(step_data):
                         new_tuple = (key, list2[key])
                         variable_list2.append(new_tuple)
                         taken.append(key)
-                        if (
-                            str(list1[key]).lower().strip()
-                            == str(list2[key]).lower().strip()
-                        ):
+                        if str(list1[key]).lower().strip() == str(list2[key]).lower().strip():
                             pass_count += 1
                             result.append("pass")
                         else:
@@ -1338,10 +1332,6 @@ def get_list(value):
 
 def get_datatype(value):
     datatype = ""
-    # each = type(value).__name__
-    # if each in ("list", "tuple"):
-    #     datatype += each + " of "
-    #     datatype += get_datatype(value[0])
     each = type(value).__name__
     if each not in ("list", "tuple"):
         return each
