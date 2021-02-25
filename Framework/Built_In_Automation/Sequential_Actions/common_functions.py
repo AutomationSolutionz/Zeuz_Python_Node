@@ -3454,8 +3454,7 @@ def modify_datetime(data_set):
         """
         op: one of the "fields" values.
         t: datetime object
-        delta: delta fields (relative change to t)
-        fixed: fixed fields (fixed change to t)
+        val: value to set.
         """
 
         try:
@@ -3474,7 +3473,7 @@ def modify_datetime(data_set):
                     converted_val *= 365
                     op = "days"
 
-                # A relative change is of datetime requested
+                # A relative change of datetime is requested
                 delta = timedelta(**{op: converted_val})
                 t += delta
             else:
