@@ -259,6 +259,11 @@ def call_driver_function_of_test_step(
 
         try:
             current_driver = "Drivers." + current_driver
+            # if CommonUtil.step_module_name is None:
+            #     module_name = importlib.import_module(current_driver)  # get module
+            #     CommonUtil.step_module_name = module_name
+            # else:
+            #     module_name = CommonUtil.step_module_name
             module_name = importlib.import_module(current_driver)  # get module
             print("STEP DATA and VARIABLES")
             # get step name
@@ -423,6 +428,7 @@ def run_all_test_steps_in_a_test_case(
 ):
 
     StepSeq = 1
+    CommonUtil.step_index = 0
     sTestStepResultList = []
     already_failed = False
 
@@ -453,6 +459,7 @@ def run_all_test_steps_in_a_test_case(
     # performance testing
     if performance:
         StepSeq = 2
+        CommonUtil.step_index = 1
         sTestStepResultList.append("PASSED")
 
     # all_step_meta_data = Response["step_meta_data"]
@@ -477,6 +484,7 @@ def run_all_test_steps_in_a_test_case(
         if debug and debug_steps:
             if str(StepSeq) not in debug_steps:
                 StepSeq += 1
+                CommonUtil.step_index += 1
                 continue
 
         # check if already failed
@@ -484,6 +492,7 @@ def run_all_test_steps_in_a_test_case(
             always_run = all_step_info[StepSeq - 1]["always_run"]  # get always run info
             if not always_run:  # check if always run is false
                 StepSeq += 1
+                CommonUtil.step_index += 1
                 continue
 
         # get step info
@@ -622,6 +631,7 @@ def run_all_test_steps_in_a_test_case(
             if not test_case_continue:
                 already_failed = True
                 StepSeq += 1
+                CommonUtil.step_index += 1
                 CommonUtil.CreateJsonReport(stepInfo=after_execution_dict)
                 continue
 
@@ -674,6 +684,7 @@ def run_all_test_steps_in_a_test_case(
                     )  # add log
                 already_failed = True
                 StepSeq += 1
+                CommonUtil.step_index += 1
                 CommonUtil.CreateJsonReport(stepInfo=after_execution_dict)
                 continue
 
@@ -715,6 +726,7 @@ def run_all_test_steps_in_a_test_case(
                 sTestStepResultList[len(sTestStepResultList) - 1] = CANCELLED_TAG
                 break
         StepSeq += 1
+        CommonUtil.step_index += 1
     return sTestStepResultList
 
 
@@ -814,6 +826,7 @@ def run_test_case(
     executor,
     debug_info,
     all_file_specific_steps,
+    rerun_on_fail,
     send_log_file_only_for_fail=True,
     performance=False,
     browserDriver=None,
@@ -1188,6 +1201,7 @@ def main(device_dict, user_info_object):
         return False
 
     executor = CommonUtil.GetExecutor()
+    CommonUtil.runid_index = 0
     for run_id_info in all_run_id_info:
         run_id_info["base_path"] = ConfigModule.get_config_value("Advanced Options", "_file_upload_path")
         run_id = run_id_info["run_id"]
@@ -1215,6 +1229,7 @@ def main(device_dict, user_info_object):
                 "local_run": run_id_info["local_run"] if "local_run" in run_id_info else False,
                 "take_screenshot": run_id_info["take_screenshot"] if "take_screenshot" in run_id_info else True,
                 "upload_log_file_only_for_fail": run_id_info["upload_log_file_only_for_fail"] if "upload_log_file_only_for_fail" in run_id_info else False,
+                "rerun_on_fail": run_id_info["rerun_on_fail"] if "rerun_on_fail" in run_id_info else False,
                 "window_size_x": run_id_info["window_size_x"] if "window_size_x" in run_id_info else "",
                 "window_size_y": run_id_info["window_size_y"] if "window_size_y" in run_id_info else "",
             }
@@ -1240,8 +1255,12 @@ def main(device_dict, user_info_object):
             final_run_params[param] = CommonUtil.parse_value_into_object(list(final_run_params_from_server[param].items())[1][1])
             # final_run_params[param] = CommonUtil.parse_value_into_object(list(final_run_params_from_server[param].items())[0][1])
             # final_run_params[param] = CommonUtil.parse_value_into_object(final_run_params_from_server[param]["subfield"])
+
         send_log_file_only_for_fail = ConfigModule.get_config_value("RunDefinition", "upload_log_file_only_for_fail")
         send_log_file_only_for_fail = False if send_log_file_only_for_fail.lower() == "false" else True
+        rerun_on_fail = ConfigModule.get_config_value("RunDefinition", "rerun_on_fail")
+        rerun_on_fail = False if rerun_on_fail.lower() == "false" else True
+        CommonUtil.upload_on_fail, CommonUtil.rerun_on_fail = send_log_file_only_for_fail, rerun_on_fail
 
         all_testcases_info = run_id_info["test_cases"]
         TestSetStartTime = time.time()
@@ -1257,10 +1276,12 @@ def main(device_dict, user_info_object):
             CommonUtil.ExecLog("", "Total number of Automated test cases %s" % len(all_testcases_info), 4, False)
         else:
             CommonUtil.ExecLog("", "No Automated test cases found for the current user : %s" % Userid, 2)
+            CommonUtil.runid_index += 1
             return "pass"
         num_of_tc = len(all_testcases_info)
         CommonUtil.all_logs_json = all_run_id_info
         cnt = 1
+        CommonUtil.tc_index = 0
         for testcase_info in all_testcases_info:
             performance_test_case = False
             if testcase_info["automatability"].lower() == "performance":
@@ -1361,6 +1382,7 @@ def main(device_dict, user_info_object):
                     executor,
                     debug_info,
                     all_file_specific_steps,
+                    rerun_on_fail,
                     send_log_file_only_for_fail,
                 )
                 CommonUtil.clear_all_logs()  # clear logs
@@ -1369,6 +1391,7 @@ def main(device_dict, user_info_object):
 
                 print("Executed %s test cases" % cnt)
                 cnt += 1
+            CommonUtil.tc_index += 1
         # calculate elapsed time of runid
         sTestSetEndTime = datetime.fromtimestamp(time.time()).strftime("%Y-%m-%d %H:%M:%S")
         TestSetEndTime = time.time()
@@ -1383,13 +1406,14 @@ def main(device_dict, user_info_object):
             "duration": TestSetDuration
         }
         CommonUtil.CreateJsonReport(setInfo=after_execution_dict)
+        print("Test set execution time = %s sec for %s testcases" % (round(TimeDiff, 3), num_of_tc))
         print("Report creation time = %s sec for %s testcases" % (round(CommonUtil.report_json_time, 3), num_of_tc))
-        CommonUtil.ExecLog("", "Test Set Completed", 4, False)
+        print("Test Set Completed")
 
         ConfigModule.add_config_value("sectionOne", "sTestStepExecLogId", "MainDriver", temp_ini_file)
 
         if run_cancelled == CANCELLED_TAG:
-            CommonUtil.ExecLog(sModuleInfo, "Test Set Cancelled by the User", 1)  # add log
+            print("Test Set Cancelled by the User")
         elif not run_id.startswith("debug"):
             upload_json_report(Userid, temp_ini_file, run_id, all_run_id_info)
 
@@ -1411,6 +1435,7 @@ def main(device_dict, user_info_object):
         if run_id.lower().startswith("debug"):
             ws.close()
             print("[LIVE LOG] Disconnected from Live Log service")
+        CommonUtil.runid_index += 1
 
     return "pass"
 
