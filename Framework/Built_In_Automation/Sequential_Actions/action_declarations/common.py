@@ -34,6 +34,7 @@ declarations = (
     { "name": "save value from dictionary by key",           "function": "save_dict_value_by_key",                "screenshot": "none" },
     { "name": "save key value from dict list",               "function": "save_key_value_from_dict_list",         "screenshot": "none" },
     { "name": "extract date",                                "function": "extract_date",                          "screenshot": "none" },
+    { "name": "modify datetime",                             "function": "modify_datetime",                       "screenshot": "none" },
     { "name": "voice command response",                      "function": "voice_command_response",                "screenshot": "none" },
     { "name": "compare partial variables",                   "function": "Compare_Partial_Variables",             "screenshot": "none" },
     { "name": "save variable by list difference",            "function": "save_variable_by_list_difference",      "screenshot": "none" },
