@@ -130,6 +130,13 @@ def handle_db_exception(sModuleInfo, e):
         return CommonUtil.Exception_Handler(e)
     else:
         CommonUtil.ExecLog(sModuleInfo, "Database exception:\n%s" % e, 3)
+        CommonUtil.ExecLog(
+            sModuleInfo,
+            "---------------------------------------"
+            "If you're using IP address to connect,"
+            "make sure the only IP address is provided (without http/https)."
+            "Example: 127.0.0.1",
+            3)
         return CommonUtil.Exception_Handler(sys.exc_info())
 
 
@@ -231,6 +238,8 @@ def connect_to_db(data_set):
     :return: string: "passed" or "zeuz_failed" depending on the outcome
     """
 
+    sModuleInfo = inspect.currentframe().f_code.co_name + " : " + MODULE_NAME
+
     try:
         for left, _, right in data_set:
             if left == DB_TYPE:
@@ -247,6 +256,9 @@ def connect_to_db(data_set):
                 sr.Set_Shared_Variables(DB_PORT, right)
             if left == DB_ODBC_DRIVER:
                 sr.Set_Shared_Variables(DB_ODBC_DRIVER, right)
+
+        CommonUtil.ExecLog(sModuleInfo, "Trying to establish connection to the database.", 1)
+        db_get_connection()
 
         return "passed"
     except Exception:
@@ -289,6 +301,8 @@ def db_select(data_set):
         if query is None:
             CommonUtil.ExecLog(sModuleInfo, "SQL query must be provided.", 3)
             return "zeuz_failed"
+
+        CommonUtil.ExecLog(sModuleInfo, "Executing query:\n%s." % query, 1)
 
         # Get db_cursor and execute
         db_con = db_get_connection()
@@ -390,6 +404,8 @@ def select_from_db(data_set):
                 if (index != (len(order_by) - 1)):
                     query += ","
 
+        CommonUtil.ExecLog(sModuleInfo, "Executing query:\n%s." % query, 1)
+
         # Get db_cursor and execute
         db_con = db_get_connection()
         db_cursor = db_con.cursor()
@@ -472,6 +488,9 @@ def insert_into_db(data_set):
             if (index != (len(values) - 1)):
                 query += ","
         query+=" ) "
+
+        CommonUtil.ExecLog(sModuleInfo, "Executing query:\n%s." % query, 1)
+
         db_con = db_get_connection()
         db_cursor = db_con.cursor()
         db_cursor.execute(query)
@@ -535,6 +554,9 @@ def delete_from_db(data_set):
         query = "delete from "+ table_name
         if where is not None:
             query +=" where "+where
+
+        CommonUtil.ExecLog(sModuleInfo, "Executing query:\n%s." % query, 1)
+
         # Get db_cursor and execute
         db_con = db_get_connection()
         db_cursor = db_con.cursor()
@@ -612,6 +634,9 @@ def update_into_db(data_set):
                 query+=","
         if where is not None:
             query+=" where "+where
+
+        CommonUtil.ExecLog(sModuleInfo, "Executing query:\n%s." % query, 1)
+
         # Get db_cursor and execute
         db_con = db_get_connection()
         db_cursor = db_con.cursor()
@@ -670,6 +695,8 @@ def db_non_query(data_set):
         if query is None:
             CommonUtil.ExecLog(sModuleInfo, "SQL query must be provided.", 3)
             return "zeuz_failed"
+
+        CommonUtil.ExecLog(sModuleInfo, "Executing query:\n%s." % query, 1)
 
         # Get db_cursor and execute
         db_con = db_get_connection()
