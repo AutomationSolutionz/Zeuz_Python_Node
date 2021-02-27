@@ -177,7 +177,7 @@ def check_if_other_machines_failed_in_linked_run():
 
 
 # downloads attachments for a test case
-def download_attachments_for_test_case(run_id, test_case, temp_ini_file):
+def create_tc_log_ss_folder(run_id, test_case, temp_ini_file):
     try:
         log_file_path = ConfigModule.get_config_value(
             "sectionOne", "temp_run_file_path", temp_ini_file
@@ -631,8 +631,8 @@ def run_all_test_steps_in_a_test_case(
             if not test_case_continue:
                 already_failed = True
                 StepSeq += 1
-                CommonUtil.step_index += 1
                 CommonUtil.CreateJsonReport(stepInfo=after_execution_dict)
+                CommonUtil.step_index += 1
                 continue
 
         elif sStepResult.upper() == NOT_RUN_TAG.upper():
@@ -684,8 +684,8 @@ def run_all_test_steps_in_a_test_case(
                     )  # add log
                 already_failed = True
                 StepSeq += 1
-                CommonUtil.step_index += 1
                 CommonUtil.CreateJsonReport(stepInfo=after_execution_dict)
+                CommonUtil.step_index += 1
                 continue
 
         elif sStepResult.upper() == BLOCKED_TAG.upper():
@@ -834,7 +834,7 @@ def run_test_case(
     shared.Set_Shared_Variables("run_id", run_id)
     test_case = str(TestCaseID).replace("#", "no")
     ConfigModule.add_config_value("sectionOne", "sTestStepExecLogId", sModuleInfo, temp_ini_file)
-    download_attachments_for_test_case(run_id, test_case, temp_ini_file)
+    create_tc_log_ss_folder(run_id, test_case, temp_ini_file)
     file_specific_steps = all_file_specific_steps[TestCaseID] if TestCaseID in all_file_specific_steps else {}
     TestCaseName = testcase_info["title"]
     log_line = "# EXECUTING TEST CASE : %s :: %s #" % (test_case, TestCaseName)
@@ -905,22 +905,40 @@ def run_test_case(
     }
     if sTestCaseStatus not in passed_tag_list or sTestCaseStatus in passed_tag_list and not send_log_file_only_for_fail:
         TCLogFile = (
-                os.sep
-                + ConfigModule.get_config_value("Advanced Options", "_file_upload_path")
-                + os.sep
-                + run_id.replace(":", "-")
-                + "/"
-                + ConfigModule.get_config_value("sectionOne", "test_case", temp_ini_file)
-                + ".zip"
+            os.sep
+            + ConfigModule.get_config_value("Advanced Options", "_file_upload_path")
+            + os.sep
+            + run_id.replace(":", "-")
+            + "/"
+            + ConfigModule.get_config_value("sectionOne", "test_case", temp_ini_file)
+            + ".zip"
         )
         after_execution_dict["logid"] = TCLogFile
     CommonUtil.CreateJsonReport(TCInfo=after_execution_dict)
-
-    debug = True if run_id.startswith("debug") else False
-    if not debug:  # if normal run, then write log file and cleanup driver instances
+    if send_log_file_only_for_fail and not rerun_on_fail and sTestCaseStatus == "Passed":
+        CommonUtil.clear_logs_from_report()
+    if not CommonUtil.debug_status:  # if normal run, then write log file and cleanup driver instances
         CommonUtil.Join_Thread_and_Return_Result("screenshot")  # Let the capturing screenshot end in thread
         cleanup_driver_instances()  # clean up drivers
         shared.Clean_Up_Shared_Variables()  # clean up shared variables
+        sTestCaseStatus = rerun_testcase(
+            sTestCaseStatus,
+            TestCaseID,
+            sModuleInfo,
+            run_id,
+            final_dependency,
+            final_run_params,
+            temp_ini_file,
+            is_linked,
+            testcase_info,
+            executor,
+            debug_info,
+            all_file_specific_steps,
+            rerun_on_fail,
+            send_log_file_only_for_fail,
+            performance,
+            browserDriver,
+        )
         if ConfigModule.get_config_value("RunDefinition", "local_run") == "False":
             zip_and_delete_tc_folder(
                 sTestCaseStatus,
@@ -931,6 +949,117 @@ def run_test_case(
     if sTestStepResultList[-1] == CANCELLED_TAG:
         return CANCELLED_TAG
     return "passed"
+
+
+def rerun_testcase(
+    sTestCaseStatus,
+    TestCaseID,
+    sModuleInfo,
+    run_id,
+    final_dependency,
+    final_run_params,
+    temp_ini_file,
+    is_linked,
+    testcase_info,
+    executor,
+    debug_info,
+    all_file_specific_steps,
+    rerun_on_fail,
+    send_log_file_only_for_fail,
+    performance,
+    browserDriver,
+):
+    if not (rerun_on_fail and send_log_file_only_for_fail and sTestCaseStatus in ("Failed", "Blocked")):
+        return
+    CommonUtil.rerunning_on_fail = True
+    test_case = str(TestCaseID).replace("#", "no")
+    ConfigModule.add_config_value("sectionOne", "sTestStepExecLogId", sModuleInfo, temp_ini_file)
+    file_specific_steps = all_file_specific_steps[TestCaseID] if TestCaseID in all_file_specific_steps else {}
+    TestCaseName = testcase_info["title"]
+    log_line = "# RE-EXECUTING TEST CASE : %s :: %s #" % (test_case, TestCaseName)
+    print("#" * (len(log_line)))
+    CommonUtil.ExecLog("", log_line, 4, False)
+    print("#" * (len(log_line)))
+    TestCaseStartTime = time.time()
+    if performance and browserDriver:
+        shared.Set_Shared_Variables("selenium_driver", browserDriver)
+
+    # runs all test steps in the test case, all test step result is stored in the list named sTestStepResultList
+    sTestStepResultList = run_all_test_steps_in_a_test_case(
+        testcase_info,
+        test_case,
+        sModuleInfo,
+        run_id,
+        file_specific_steps,
+        final_dependency,
+        final_run_params,
+        temp_ini_file,
+        executor,
+        debug_info,
+        is_linked,
+        performance
+    )
+
+    ConfigModule.add_config_value(
+        "sectionOne",
+        "sTestStepExecLogId",
+        run_id + "|" + test_case + "|" + "none" + "|" + "none",
+        temp_ini_file,
+    )
+
+    # get test case end time
+    TestCaseEndTime = time.time()
+    sTestCaseEndTime = datetime.fromtimestamp(TestCaseEndTime).strftime("%Y-%m-%d %H:%M:%S")
+    # Decide if Test Case Pass/Failed
+    sTestCaseStatus = calculate_test_case_result(sModuleInfo, test_case, run_id, sTestStepResultList, testcase_info)
+    if sTestCaseStatus == "Passed":
+        CommonUtil.clear_logs_from_report()
+    # write locust file for performance testing
+    if performance:
+        locust_output_file_path = (
+            os.getcwd()
+            + os.sep
+            + "Built_In_Automation"
+            + os.sep
+            + "Performance_Testing"
+            + os.sep
+            + "locustFileOutput.txt"
+        )
+        file = open(locust_output_file_path, "a+")
+        file.write(sTestCaseStatus + "-" + str(",".join(sTestStepResultList)) + "\n")
+        file.close()
+
+    # Time it took to run the test case
+    TimeDiff = TestCaseEndTime - TestCaseStartTime
+    TimeInSec = int(TimeDiff)
+    TestCaseDuration = CommonUtil.FormatSeconds(TimeInSec)
+    after_execution_dict = {
+        "teststarttime": datetime.fromtimestamp(TestCaseStartTime).strftime("%Y-%m-%d %H:%M:%S"),
+        "testendtime": sTestCaseEndTime,
+        "duration": TestCaseDuration,
+        "status": sTestCaseStatus,
+        "failreason": ""
+    }
+    if sTestCaseStatus in ("Failed", "Blocked"):
+        TCLogFile = (
+            os.sep
+            + ConfigModule.get_config_value("Advanced Options", "_file_upload_path")
+            + os.sep
+            + run_id.replace(":", "-")
+            + "/"
+            + ConfigModule.get_config_value("sectionOne", "test_case", temp_ini_file)
+            + ".zip"
+        )
+        after_execution_dict["logid"] = TCLogFile
+    if sTestCaseStatus == "Passed":
+        CommonUtil.passed_after_rerun = True
+    CommonUtil.CreateJsonReport(TCInfo=after_execution_dict)
+    CommonUtil.Join_Thread_and_Return_Result("screenshot")  # Let the capturing screenshot end in thread
+    cleanup_driver_instances()  # clean up drivers
+    shared.Clean_Up_Shared_Variables()  # clean up shared variables
+
+    CommonUtil.rerunning_on_fail = False
+    return sTestCaseStatus
 
 
 def set_device_info_according_to_user_order(device_order, device_dict,  test_case_no, test_case_name, user_info_object, Userid):
@@ -1215,10 +1344,14 @@ def main(device_dict, user_info_object):
 
         # Start websocket server if we're in debug mode.
         if run_id.lower().startswith("debug"):
+            CommonUtil.debug_status = True
             print("[LIVE LOG] Connecting to Live Log service")
             ws.connect()
             print("[LIVE LOG] Connected to Live Log service")
-
+        else:
+            CommonUtil.debug_status = False
+            cleanup_driver_instances()  # clean up drivers
+            shared.Clean_Up_Shared_Variables()  # clean up shared variables
         device_order = run_id_info["device_info"]
         final_dependency = run_id_info["dependency_list"]
         is_linked = run_id_info["is_linked"]
@@ -1228,8 +1361,8 @@ def main(device_dict, user_info_object):
                 "threading": run_id_info["threading"] if "threading" in run_id_info else False,
                 "local_run": run_id_info["local_run"] if "local_run" in run_id_info else False,
                 "take_screenshot": run_id_info["take_screenshot"] if "take_screenshot" in run_id_info else True,
-                "upload_log_file_only_for_fail": run_id_info["upload_log_file_only_for_fail"] if "upload_log_file_only_for_fail" in run_id_info else False,
-                "rerun_on_fail": run_id_info["rerun_on_fail"] if "rerun_on_fail" in run_id_info else False,
+                "upload_log_file_only_for_fail": run_id_info["upload_log_file_only_for_fail"] if "upload_log_file_only_for_fail" in run_id_info else True,
+                "rerun_on_fail": run_id_info["rerun_on_fail"] if "rerun_on_fail" in run_id_info else True,
                 "window_size_x": run_id_info["window_size_x"] if "window_size_x" in run_id_info else "",
                 "window_size_y": run_id_info["window_size_y"] if "window_size_y" in run_id_info else "",
             }
@@ -1369,7 +1502,6 @@ def main(device_dict, user_info_object):
                     sModuleInfo, "Performance Test Results Uploaded Successfully", 1
                 )
             else:
-                # run test case (not performance)
                 run_cancelled = run_test_case(
                     test_case_no,
                     sModuleInfo,

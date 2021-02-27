@@ -104,9 +104,11 @@ teardown = True
 
 step_module_name = None
 
+debug_status = False
 rerunning_on_fail = False
 upload_on_fail = True
 rerun_on_fail = True
+passed_after_rerun = False
 
 runid_index = 0
 tc_index = 0
@@ -308,7 +310,11 @@ import time
 
 
 def CreateJsonReport(logs=None, stepInfo=None, TCInfo=None, setInfo=None):
-    global all_logs_json, report_json_time, tc_error_logs
+    if debug_status:
+        return
+    elif upload_on_fail and rerun_on_fail and not rerunning_on_fail and logs:
+        return
+    global all_logs_json, report_json_time, tc_error_logs, passed_after_rerun
     start = time.perf_counter()
     if logs or stepInfo or TCInfo or setInfo:
         log_id = ConfigModule.get_config_value("sectionOne", "sTestStepExecLogId", temp_config)
@@ -336,6 +342,9 @@ def CreateJsonReport(logs=None, stepInfo=None, TCInfo=None, setInfo=None):
                         if count != -1:
                             fail_reason_str += "\n---------------------------------------------\n"
                         count += 1
+                elif passed_after_rerun:
+                    fail_reason_str = "** Test case Failed on first run but Passed when Rerun **"
+                    passed_after_rerun = False
                 testcase_info["execution_detail"]["failreason"] = fail_reason_str
                 return
             if step_id == "none":
@@ -345,7 +354,7 @@ def CreateJsonReport(logs=None, stepInfo=None, TCInfo=None, setInfo=None):
             if stepInfo:
                 step_info["execution_detail"] = stepInfo
                 step_error_logs = []
-                if stepInfo["status"].lower() == "failed":
+                if stepInfo["status"].lower() == "failed" and "log" in step_info:
                     count, err_count, max_count = -1, 0, -len(step_info["log"])
                     # Can be optimized by taking error when occurs and append it if the step fails only
                     while count >= max_count and err_count < 3:
@@ -372,6 +381,17 @@ def CreateJsonReport(logs=None, stepInfo=None, TCInfo=None, setInfo=None):
     elif stepInfo:
         pass
     report_json_time += (time.perf_counter() - start)
+
+
+def clear_logs_from_report():
+    global all_logs_json
+    run_id_info = all_logs_json[runid_index]
+    all_tc = run_id_info["test_cases"]
+    tc = all_tc[tc_index]
+    all_steps = tc["steps"]
+    for step in all_steps:
+        if "log" in step:
+            del step["log"]
 
 
 def ExecLog(
@@ -613,8 +633,9 @@ def TakeScreenShot(function_name, local_run=False):
     """ Puts TakeScreenShot into a thread, so it doesn't block test case execution """
 
     try:
+        if upload_on_fail and rerun_on_fail and not rerunning_on_fail:
+            return
         sModuleInfo = inspect.currentframe().f_code.co_name + " : " + MODULE_NAME
-
         # Read values from config file
         take_screenshot_settings = ConfigModule.get_config_value("RunDefinition", "take_screenshot")
         image_folder = ConfigModule.get_config_value("sectionOne", "screen_capture_folder", temp_config)
