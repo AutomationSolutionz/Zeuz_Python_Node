@@ -997,34 +997,39 @@ def New_Compare_Variables(step_data):
                     match_by_index = False
                 # if action_type.startswith("ignore extra items"):  # Check exclusion is turned off. will turn on in future if needed
                 #     check_exclusion = True
-                if action_type.startswith("subset"):
+                if action_type == "subset":
                     check_subset = True
-
-        if check_subset:
-            list1 = CommonUtil.parse_value_into_object(list1_name)
-            list2 = CommonUtil.parse_value_into_object(list2_name)
-            if not isinstance(list1, list) or not isinstance(list2, list):
-                CommonUtil.ExecLog(sModuleInfo, "To check subset both the variable should be list", 3)
-                return "zeuz_failed"
-            if list1 == list2:
-                CommonUtil.ExecLog(sModuleInfo, "2nd list is equal to the 1st list", 1)
-                return "passed"
-            if all(x in list1 for x in list2):
-                CommonUtil.ExecLog(sModuleInfo, "2nd list is a subset of 1st list", 1)
-                return "passed"
-            else:
-                CommonUtil.ExecLog(sModuleInfo, "2nd list is not a subset of 1st list", 1)
-                return "zeuz_failed"
 
         list1 = CommonUtil.parse_value_into_object(list1_name)
         list2 = CommonUtil.parse_value_into_object(list2_name)
-        datatype1 = get_datatype(list1)
-        datatype2 = get_datatype(list2)
 
         try: list1_str = json.dumps(CommonUtil.parse_value_into_object(list1), indent=2, sort_keys=True)
         except: list1_str = str(list1)
         try: list2_str = json.dumps(CommonUtil.parse_value_into_object(list2), indent=2, sort_keys=True)
         except: list2_str = str(list2)
+
+        datatype1 = get_datatype(list1)
+        datatype2 = get_datatype(list2)
+
+        if check_subset:
+            list1 = CommonUtil.parse_value_into_object(list1_name)
+            list2 = CommonUtil.parse_value_into_object(list2_name)
+            if not (type(list1).__name__ in ("list", "tuple") and type(list2).__name__ in ("list", "tuple")):
+                CommonUtil.ExecLog(sModuleInfo, "LEFT (%s):\n%s\n\nRIGHT (%s):\n%s" % (datatype1, list1_str, datatype2, list2_str), 3)
+                CommonUtil.ExecLog(sModuleInfo, "To check subset both the variable should be list or tuple", 3)
+                return "zeuz_failed"
+            elif list1 == list2:
+                CommonUtil.ExecLog(sModuleInfo, "LEFT (%s):\n%s\n\nRIGHT (%s):\n%s" % (datatype1, list1_str, datatype2, list2_str), 1)
+                CommonUtil.ExecLog(sModuleInfo, "RIGHT list is equal to the LEFT list", 1)
+                return "passed"
+            elif all(x in list1 for x in list2):
+                CommonUtil.ExecLog(sModuleInfo, "LEFT (%s):\n%s\n\nRIGHT (%s):\n%s" % (datatype1, list1_str, datatype2, list2_str), 1)
+                CommonUtil.ExecLog(sModuleInfo, "RIGHT list is a subset of LEFT list", 1)
+                return "passed"
+            else:
+                CommonUtil.ExecLog(sModuleInfo, "LEFT (%s):\n%s\n\nRIGHT (%s):\n%s" % (datatype1, list1_str, datatype2, list2_str), 3)
+                CommonUtil.ExecLog(sModuleInfo, "RIGHT list is not a subset of LEFT list", 3)
+                return "zeuz_failed"
 
         found_list = []
         not_found_list1 = []
@@ -1034,7 +1039,7 @@ def New_Compare_Variables(step_data):
             both_list = True
             variable_list1 = list1
             variable_list2 = list2
-            if (isinstance(list1[0], list) or isinstance(list1[0], tuple)) or (isinstance(list2[0], list) or isinstance(list2[0], tuple)):
+            if (len(list1) and type(list1[0]).__name__ in ("list", "tuple")) or (len(list2) and type(list2[0]).__name__ in ("list", "tuple")):
                 nested = True
 
             results = compare_list_tuple(list1, list2, check_exclusion, match_by_index)
@@ -1092,10 +1097,7 @@ def New_Compare_Variables(step_data):
                         new_tuple = (key, list2[key])
                         variable_list2.append(new_tuple)
                         taken.append(key)
-                        if (
-                            str(list1[key]).lower().strip()
-                            == str(list2[key]).lower().strip()
-                        ):
+                        if str(list1[key]).lower().strip() == str(list2[key]).lower().strip():
                             pass_count += 1
                             result.append("pass")
                         else:
@@ -1119,10 +1121,7 @@ def New_Compare_Variables(step_data):
                         new_tuple = (key, list2[key])
                         variable_list2.append(new_tuple)
                         taken.append(key)
-                        if (
-                            str(list1[key]).lower().strip()
-                            == str(list2[key]).lower().strip()
-                        ):
+                        if str(list1[key]).lower().strip() == str(list2[key]).lower().strip():
                             pass_count += 1
                             result.append("pass")
                         else:
@@ -1306,7 +1305,7 @@ def compare_list_tuple(list1, list2, check_exclusion, match_by_index):
             return found_list, not_found_list1, not_found_list2
 
     else:
-        if isinstance(list1[0], list) or isinstance(list1[0], list):
+        if (len(list1) and type(list1[0]).__name__ in ("list", "tuple")) or (len(list2) and type(list2[0]).__name__ in ("list", "tuple")):
             nested = True
             list1 = get_list(list1)
             list2 = get_list(list2)
@@ -1338,10 +1337,6 @@ def get_list(value):
 
 def get_datatype(value):
     datatype = ""
-    # each = type(value).__name__
-    # if each in ("list", "tuple"):
-    #     datatype += each + " of "
-    #     datatype += get_datatype(value[0])
     each = type(value).__name__
     if each not in ("list", "tuple"):
         return each
@@ -1349,7 +1344,8 @@ def get_datatype(value):
         each = type(value).__name__
         if each in ("list", "tuple"):
             datatype += each + " of "
-            value = value[0]
+            try: value = value[0]
+            except: return datatype[:-4]
         else:
             return datatype[:-4]
 
