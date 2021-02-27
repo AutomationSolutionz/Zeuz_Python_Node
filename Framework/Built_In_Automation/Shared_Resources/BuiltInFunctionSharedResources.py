@@ -431,16 +431,20 @@ class VariableParser:
                 try: right = int(right)
                 except: right = Get_Shared_Variables(right, log=False)
 
-                if "zeuz_failed" in (left, right):
-                    return None
+                if "zeuz_failed" == left:
+                    left = None
                 else:
                     left = int(left)
+
+                if "zeuz_failed" == right:
+                    right = None
+                else:
                     right = int(right)
 
-                return (left, right)
+                return left, right
 
         except: pass
-        return None
+        return None, None
 
 
     @staticmethod
@@ -584,13 +588,30 @@ def parse_variable(name):
                     val = val[_variable]
                 elif _slice is not None:
                     left, right = _slice
-                    val = val[left:right]
+                    if left is None and right:
+                        val = val[:right]
+                    elif right is None and left:
+                        val = val[left:]
+                    if left is None and right is None:
+                        CommonUtil.ExecLog(
+                            sModuleInfo,
+                            "Invalid left and right index for ranged variable access.",
+                            3,
+                        )
+                        return "zeuz_failed"
+                    else:
+                        val = val[left:right]
 
             # Print to console.
             CommonUtil.prettify(copy_of_name, val)
             return val
     except:
-        print("Failed to parse variable")
+        CommonUtil.ExecLog(
+            sModuleInfo,
+            "Failed to parse variable",
+            3,
+        )
+        print("")
         return "zeuz_failed"
 
 

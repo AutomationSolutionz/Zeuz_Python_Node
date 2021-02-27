@@ -1283,7 +1283,7 @@ def Validate_Step_Data(step_data):
 
         for each in step_data:
             if "graphql" in each[1]:
-                graphql_dict[each[0].strip()] = each[2]
+                graphql_dict[each[0].strip()] = CommonUtil.parse_value_into_object(each[2])
             elif each[1].lower().strip() == "element parameter":
                 element_parameter = each[0].lower().strip()
                 if element_parameter == "method":
