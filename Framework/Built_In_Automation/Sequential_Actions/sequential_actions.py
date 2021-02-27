@@ -732,21 +732,24 @@ def Run_Sequential_Actions(
             if Action_disabled:
                 CommonUtil.ExecLog(
                     "",
-                    "\n********** Disabling Action #%d%s **********\n" % (dataset_cnt + 1, Action_name),
+                    "\n********** Disabling %s, STEP-%s, ACTION-%d%s **********\n"
+                    % (CommonUtil.current_tc_no, CommonUtil.current_step_no, dataset_cnt + 1, Action_name),
                     4,
                 )
                 continue
             elif dataset_cnt in skip:
                 CommonUtil.ExecLog(
                     "",
-                    "\n********** Skipping Action #%d%s **********\n" % (dataset_cnt + 1, Action_name),
+                    "\n********** Skipping %s, STEP-%s, ACTION-%d%s **********\n"
+                    % (CommonUtil.current_tc_no, CommonUtil.current_step_no, dataset_cnt + 1, Action_name),
                     4,
                 )
                 continue  # If this data set is in the skip list, do not process it
             else:
                 CommonUtil.ExecLog(
                     "",
-                    "\n********** Starting Action #%d%s **********\n" % (dataset_cnt + 1, Action_name),
+                    "\n********** Starting %s, STEP-%s, ACTION-%d%s **********\n"
+                    % (CommonUtil.current_tc_no, CommonUtil.current_step_no, dataset_cnt + 1, Action_name),
                     4,
                 )  # Offset by one to make it look proper
             data_set = step_data[dataset_cnt]  # Save data set to variable

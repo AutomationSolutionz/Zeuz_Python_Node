@@ -106,6 +106,7 @@ current_action_no = ""
 current_action_name = ""
 current_step_no = ""
 current_step_name = ""
+current_tc_no = ""
 
 executor = concurrent.futures.ThreadPoolExecutor()
 all_threads = {}
