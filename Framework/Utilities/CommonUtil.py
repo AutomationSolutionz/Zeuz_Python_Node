@@ -634,7 +634,7 @@ def TakeScreenShot(function_name, local_run=False):
     """ Puts TakeScreenShot into a thread, so it doesn't block test case execution """
 
     try:
-        if upload_on_fail and rerun_on_fail and not rerunning_on_fail:
+        if upload_on_fail and rerun_on_fail and not rerunning_on_fail and not debug_status:
             return
         sModuleInfo = inspect.currentframe().f_code.co_name + " : " + MODULE_NAME
         # Read values from config file
@@ -655,7 +655,6 @@ def TakeScreenShot(function_name, local_run=False):
             take_screenshot_settings.lower() == "false"
             or Method == "none"
             or Method is None
-            or (upload_on_fail and rerun_on_fail and not rerunning_on_fail)
         ):
             ExecLog(
                 sModuleInfo, "Skipping screenshot due to screenshot or local_run setting", 0
