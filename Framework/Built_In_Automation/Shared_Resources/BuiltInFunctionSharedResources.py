@@ -500,6 +500,7 @@ def parse_variable(name):
 
         Value of the variable at the given index (if specified).
     """
+    sModuleInfo = inspect.currentframe().f_code.co_name + " : " + MODULE_NAME
 
     try:
         # Pattern to match [] {} () brackets.
