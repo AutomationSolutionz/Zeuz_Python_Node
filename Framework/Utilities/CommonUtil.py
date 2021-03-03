@@ -102,6 +102,17 @@ to_dlt_from_fail_reason = " : Test Step Failed"
 previous_log_line = None
 teardown = True
 
+step_module_name = None
+
+debug_status = False
+rerunning_on_fail = False
+upload_on_fail = True
+rerun_on_fail = True
+passed_after_rerun = False
+
+runid_index = 0
+tc_index = 0
+step_index = 0
 current_action_no = ""
 current_action_name = ""
 current_step_no = ""
@@ -300,7 +311,11 @@ import time
 
 
 def CreateJsonReport(logs=None, stepInfo=None, TCInfo=None, setInfo=None):
-    global all_logs_json, report_json_time, tc_error_logs
+    if debug_status:
+        return
+    elif upload_on_fail and rerun_on_fail and not rerunning_on_fail and logs:
+        return
+    global all_logs_json, report_json_time, tc_error_logs, passed_after_rerun
     start = time.perf_counter()
     if logs or stepInfo or TCInfo or setInfo:
         log_id = ConfigModule.get_config_value("sectionOne", "sTestStepExecLogId", temp_config)
@@ -312,68 +327,72 @@ def CreateJsonReport(logs=None, stepInfo=None, TCInfo=None, setInfo=None):
         if len(log_id_vals) == 4:
             # these loops can be optimized by saving the previous log_id_vals and comparing it with current one
             runID, testcase_no, step_id, step_no = log_id_vals
-            for run_id_info in all_logs_json:
-                run_id = run_id_info["run_id"]
-                if runID == run_id:
-                    if setInfo:
-                        run_id_info["execution_detail"] = setInfo
-                        break
-                    all_testcases_info = run_id_info["test_cases"]
-                    for testcase_info in all_testcases_info:
-                        if testcase_no == testcase_info["testcase_no"].replace("#", "no"):
-                            if TCInfo:
-                                testcase_info["execution_detail"] = TCInfo
-                                fail_reason_str = ""
-                                if TCInfo["status"] in ("Failed", "Blocked"):
-                                    count = -min(len(tc_error_logs), 3)
-                                    while count <= -1:
-                                        fail_reason_str += tc_error_logs[count]
-                                        if count != -1:
-                                            fail_reason_str += "\n---------------------------------------------\n"
-                                        count += 1
-                                testcase_info["execution_detail"]["failreason"] = fail_reason_str
-                                break
-                            if step_id == "none":
-                                break
-                            all_step_info = testcase_info["steps"]
-                            for step_info in all_step_info:
-                                if step_no == str(step_info["step_sequence"]) and step_id == str(step_info["step_id"]):
-                                    if stepInfo:
-                                        step_info["execution_detail"] = stepInfo
-                                        step_error_logs = []
-                                        if stepInfo["status"].lower() == "failed":
-                                            count, err_count, max_count = -1, 0, -len(step_info["log"])
-                                            # Can be optimized by taking error when occurs and append it if the step fails only
-                                            while count >= max_count and err_count < 3:
-                                                each_log = step_info["log"][count]
-                                                if each_log["status"].lower() == "error":
-                                                    step_error_logs.append(each_log["details"])
-                                                    err_count += 1
-                                                count -= 1
-                                            step_error_logs.reverse()
-                                            tc_error_logs += step_error_logs
-                                        break
-                                    log_info = {
-                                        "status": status,
-                                        "modulename": sModuleInfo,
-                                        "details": sDetails,
-                                        "tstamp": now,
-                                        "loglevel": iLogLevel,
-                                        "logid": log_id
-                                    }
-                                    if "log" in step_info:
-                                        step_info["log"].append(log_info)
-                                    else:
-                                        step_info["log"] = [log_info]
-                            else:
-                                continue
-                            break
-                    else:
-                        continue
-                    break
+            run_id_info = all_logs_json[runid_index]
+            if setInfo:
+                run_id_info["execution_detail"] = setInfo
+                return
+            all_testcases_info = run_id_info["test_cases"]
+            testcase_info = all_testcases_info[tc_index]
+            if TCInfo:
+                testcase_info["execution_detail"] = TCInfo
+                fail_reason_str = ""
+                if TCInfo["status"] in ("Failed", "Blocked"):
+                    count = -min(len(tc_error_logs), 3)
+                    while count <= -1:
+                        fail_reason_str += tc_error_logs[count]
+                        if count != -1:
+                            fail_reason_str += "\n---------------------------------------------\n"
+                        count += 1
+                elif passed_after_rerun:
+                    fail_reason_str = "** Test case Failed on first run but Passed when Rerun **"
+                    passed_after_rerun = False
+                testcase_info["execution_detail"]["failreason"] = fail_reason_str
+                return
+            if step_id == "none":
+                return
+            all_step_info = testcase_info["steps"]
+            step_info = all_step_info[step_index]
+            if stepInfo:
+                step_info["execution_detail"] = stepInfo
+                step_error_logs = []
+                if stepInfo["status"].lower() == "failed" and "log" in step_info:
+                    count, err_count, max_count = -1, 0, -len(step_info["log"])
+                    # Can be optimized by taking error when occurs and append it if the step fails only
+                    while count >= max_count and err_count < 3:
+                        each_log = step_info["log"][count]
+                        if each_log["status"].lower() == "error":
+                            step_error_logs.append(each_log["details"])
+                            err_count += 1
+                        count -= 1
+                    step_error_logs.reverse()
+                    tc_error_logs += step_error_logs
+                return
+            log_info = {
+                "status": status,
+                "modulename": sModuleInfo,
+                "details": sDetails,
+                "tstamp": now,
+                "loglevel": iLogLevel,
+                "logid": log_id
+            }
+            if "log" in step_info:
+                step_info["log"].append(log_info)
+            else:
+                step_info["log"] = [log_info]
     elif stepInfo:
         pass
     report_json_time += (time.perf_counter() - start)
+
+
+def clear_logs_from_report():
+    global all_logs_json
+    run_id_info = all_logs_json[runid_index]
+    all_tc = run_id_info["test_cases"]
+    tc = all_tc[tc_index]
+    all_steps = tc["steps"]
+    for step in all_steps:
+        if "log" in step:
+            del step["log"]
 
 
 def ExecLog(
@@ -501,7 +520,10 @@ def ExecLog(
             now = datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
             if variable and variable["key"] not in skip_list:
                 sDetails = "%s\nVariable value: %s" % (sDetails, variable["val"])
-            CreateJsonReport(logs=(log_id, now, iLogLevel, status, sModuleInfo, sDetails))
+            if upload_on_fail and rerun_on_fail and not rerunning_on_fail:
+                pass
+            else:
+                CreateJsonReport(logs=(log_id, now, iLogLevel, status, sModuleInfo, sDetails))
 
             all_logs[all_logs_count] = {
                 "logid": log_id,
@@ -612,15 +634,13 @@ def TakeScreenShot(function_name, local_run=False):
     """ Puts TakeScreenShot into a thread, so it doesn't block test case execution """
 
     try:
+        if upload_on_fail and rerun_on_fail and not rerunning_on_fail:
+            return
         sModuleInfo = inspect.currentframe().f_code.co_name + " : " + MODULE_NAME
-
         # Read values from config file
-        take_screenshot_settings = ConfigModule.get_config_value(
-            "RunDefinition", "take_screenshot"
-        )  # True/False to take screenshot from settings.conf
-        image_folder = ConfigModule.get_config_value(
-            "sectionOne", "screen_capture_folder", temp_config
-        )  # Get screen capture directory from temporary config file that is dynamically created
+        take_screenshot_settings = ConfigModule.get_config_value("RunDefinition", "take_screenshot")
+        image_folder = ConfigModule.get_config_value("sectionOne", "screen_capture_folder", temp_config)
+
         try:
             if not os.path.exists(image_folder):
                 os.mkdir(image_folder)
@@ -632,9 +652,10 @@ def TakeScreenShot(function_name, local_run=False):
 
         # Decide if screenshot should be captured
         if (
-                take_screenshot_settings.lower() == "false"
-                or Method == "none"
-                or Method == None
+            take_screenshot_settings.lower() == "false"
+            or Method == "none"
+            or Method is None
+            or (upload_on_fail and rerun_on_fail and not rerunning_on_fail)
         ):
             ExecLog(
                 sModuleInfo, "Skipping screenshot due to screenshot or local_run setting", 0
