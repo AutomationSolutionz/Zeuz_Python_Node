@@ -64,6 +64,7 @@ loaded_modules = []
 load_testing = False
 loop_result_for_load_testing = True
 thread_pool = None
+step_exit_fail_called = False
 
 # Get node ID and set as a Shared Variable
 machineInfo = CommonUtil.MachineInfo()  # Create instance
@@ -303,10 +304,10 @@ def get_data_set_nums(action_value):
                         start, end = each.replace(" ","").split("-")
                         for i in range(int(start), int(end)+1):
                             data_set_nums.append(i-1)
-                    elif each.strip().lower() in ("pass", "passed"):
+                    elif each.strip().lower() in ("pass", "passed", "passes"):
                         data_set_nums.append("p")
                         break
-                    elif each.strip().lower() in ("fail", "failed"):
+                    elif each.strip().lower() in ("fail", "failed", "fails"):
                         data_set_nums.append("f")
                         break
                     else:
@@ -349,7 +350,8 @@ def Handle_Conditional_Action(step_data, data_set_no):
         if_exists = False
         data_set_for_log, row_index = data_set, 0
         data_set = common.shared_variable_to_value(data_set)
-        global deprecateLog
+        global deprecateLog, step_exit_fail_called
+        step_exit_fail_called = False
         deprecateLog = True
         if data_set in failed_tag_list:
             return "zeuz_failed"
@@ -527,7 +529,12 @@ def Handle_Conditional_Action(step_data, data_set_no):
             if data_set_index in ("p", "f"):
                 outer_skip = [i for i in range(len(step_data))]
                 CommonUtil.ExecLog(sModuleInfo, "Step Exit called. Stopping Test Step.", 1)
-                return "passed" if data_set_index == "p" else "zeuz_failed", outer_skip
+                if data_set_index == "p":
+                    step_exit_fail_called = False   # Actually its already false. just adding for precaution
+                    return "passed"
+                else:
+                    step_exit_fail_called = True
+                    return "zeuz_failed", outer_skip
             elif data_set_index >= len(step_data):
                 CommonUtil.ExecLog(
                     sModuleInfo,
@@ -569,7 +576,8 @@ def Handle_While_Loop_Action(step_data, data_set_no):
         operand_matching = ""
         var_name, var_value = "", ""
         deprecate_log = True
-        global deprecateLog
+        global deprecateLog, step_exit_fail_called
+        step_exit_fail_called = False
         deprecateLog = True
         data_set = common.shared_variable_to_value(data_set)
         if data_set in failed_tag_list:
@@ -580,7 +588,7 @@ def Handle_While_Loop_Action(step_data, data_set_no):
                 loop_this_data_sets = get_data_set_nums(row[2].strip())
                 outer_skip += loop_this_data_sets
             elif row[0].strip().lower() == "repeat":
-                max_no_of_loop = int(sr.get_previous_response_variables_in_strings(row[2]).strip())
+                max_no_of_loop = int(sr.get_previous_response_variables_in_strings(row[2].strip()))
             elif row[0].strip().lower() == "exit loop":
                 value = row[2].strip()
                 if "pass" in value.lower():
@@ -679,12 +687,18 @@ def Handle_While_Loop_Action(step_data, data_set_no):
                         )
                         die = True
                         break
+                if step_exit_fail_called:
+                    die = True
+                    break
             if die:
                 break
             i += 1
 
         CommonUtil.ExecLog(sModuleInfo, "Loop action handled successfully", 1)
-        return "passed", outer_skip
+        if step_exit_fail_called:
+            return "zeuz_failed", outer_skip
+        else:
+            return "passed", outer_skip
     except:
         CommonUtil.ExecLog(sModuleInfo, "Error while handling loop action", 3)
         return "zeuz_failed", []
@@ -1628,6 +1642,9 @@ def Conditional_Action_Handler(step_data, dataset_cnt):
     if data_set in failed_tag_list:
         return "zeuz_failed"
 
+    global step_exit_fail_called
+    step_exit_fail_called = False
+
     # Test if data set contains the recall line, and if so, get the saved result from the previous action
     try:
         stored = False
@@ -1846,7 +1863,12 @@ def Conditional_Action_Handler(step_data, dataset_cnt):
         if data_set_index in ("p", "f"):
             outer_skip = [i for i in range(len(step_data))]
             CommonUtil.ExecLog(sModuleInfo, "Step Exit called. Stopping Test Step.", 1)
-            return "passed" if data_set_index == "p" else "zeuz_failed", outer_skip
+            if data_set_index == "p":
+                step_exit_fail_called = False   # Actually its already false. just adding for precaution
+                return "passed"
+            else:
+                step_exit_fail_called = True
+                return "zeuz_failed", outer_skip
         elif data_set_index >= len(step_data):
             CommonUtil.ExecLog(
                 sModuleInfo,
@@ -1880,7 +1902,7 @@ def Action_Handler(_data_set, action_row):
     sModuleInfo = inspect.currentframe().f_code.co_name + " : " + MODULE_NAME
     CommonUtil.ExecLog(sModuleInfo, "Function Start", 0)
 
-    skip_conversion_of_shared_variable_for_actions = ["run actions", "loop settings"]
+    skip_conversion_of_shared_variable_for_actions = ["loop settings"]
 
     # Split data set row into the usable parts
     action_name = action_row[0]
