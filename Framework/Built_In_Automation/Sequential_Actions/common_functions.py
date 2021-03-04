@@ -494,17 +494,12 @@ def shared_variable_to_value(data_set):
     skip_conversion_of_shared_variable_for_actions = [
         "if element exists",
         "optional loop settings",   # Dont delete this. this parameter should be dynamically captured with new data
-        "loop settings"     # Dont delete this. this is older dataset. let it perform how it was designed
+        "loop settings",            # Dont delete this. this is older dataset. let it perform how it was designed
+        "get parameter"             # This is selenium/appium object, need to retrieve in its non-string actual datatype
     ]
 
     try:
-        # for row in data_set:
-        #     if row[1] == "action":
-        #         if (
-        #             row[0] == "compare variable"
-        #         ):  # for compare variable don't replace.. we will need the variable name
-        #             return data_set
-        for row in data_set:  # For each row of the data set
+        for row in data_set:
             if (
                 str(row[0]).strip().lower()
                 in skip_conversion_of_shared_variable_for_actions
@@ -513,26 +508,15 @@ def shared_variable_to_value(data_set):
             ):
                 new_data.append(row)
                 continue
-            data_row = list(
-                row
-            )  # Convert row which is a tuple to a list, so we can update it if we need to
-            for i in range(0, 3):  # For each field (Field, Sub-Field, Value)
-                if row[i] != False:  # !!!! Probbly not needed
-                    while (
-                        "%|" in data_row[i] and "|%" in data_row[i]
-                    ):  # If string contains these characters, it's a shared variable
-                        CommonUtil.ExecLog(
-                            sModuleInfo, "Shared Variable: %s" % row[i], 0
-                        )
-                        data_row[i] = sr.get_previous_response_variables_in_strings(
-                            data_row[i]
-                        )  # replace just the variable name with it's value (has to be in string format)
-                        if data_row[i] == "zeuz_failed":
-                            return "zeuz_failed"
-            new_data.append(
-                tuple(data_row)
-            )  # Convert row from list to tuple, and append to new data_set
-        return new_data  # Return parsed data_set
+            data_row = list(row)
+            for i in range(3):  # For each field (Field, Sub-Field, Value)
+                while "%|" in data_row[i] and "|%" in data_row[i]:
+                    CommonUtil.ExecLog(sModuleInfo, "Shared Variable: %s" % row[i], 0)
+                    data_row[i] = sr.get_previous_response_variables_in_strings(data_row[i])
+                    if data_row[i] == "zeuz_failed":
+                        return "zeuz_failed"
+            new_data.append(tuple(data_row))
+        return new_data
     except Exception:
         return CommonUtil.Exception_Handler(sys.exc_info())
 
