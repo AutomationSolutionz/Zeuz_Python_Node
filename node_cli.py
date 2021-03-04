@@ -868,6 +868,12 @@ def command_line_args():
         "-k", "--api_key", action="store", help="Enter api key", metavar=""
     )
     parser_object.add_argument(
+        "-n", "--node_id", action="store", help="Enter custom node_id", metavar=""
+    )
+    parser_object.add_argument(
+        "-m", "--max_run_history", action="store", help="How many latest histories do you want to keep", metavar=""
+    )
+    parser_object.add_argument(
         "-l", "--logout", action="store_true", help="Logout from the server"
     )
     parser_object.add_argument(
@@ -882,6 +888,8 @@ def command_line_args():
     password = all_arguments.password
     server = all_arguments.server
     api = all_arguments.api_key
+    node_id = all_arguments.node_id
+    max_run_history = all_arguments.max_run_history
     logout = all_arguments.logout
     auto_update = all_arguments.auto_update
     global local_run
@@ -916,6 +924,10 @@ def command_line_args():
                 3,
             )
             sys.exit()  # exit and let the user try again from command line
+    if node_id:
+        CommonUtil.MachineInfo().setLocalUser(node_id)
+    if max_run_history:
+        pass
 
     """argparse module automatically shows exceptions of corresponding wrong arguments
      and executes sys.exit(). So we don't need to use try except"""
