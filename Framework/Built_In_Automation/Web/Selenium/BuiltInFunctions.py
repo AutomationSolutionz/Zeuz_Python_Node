@@ -1232,12 +1232,14 @@ def Save_Attribute(step_data):
         for each_step_data_item in step_data:
             if "parameter" in each_step_data_item[1]:
                 variable_name = each_step_data_item[2]
-                attribute_name = each_step_data_item[0]
+                attribute_name = each_step_data_item[0].strip().lower()
 
         if attribute_name == "text":
             attribute_value = Element.text
         elif attribute_name == "tag":
             attribute_value = Element.tag_name
+        elif attribute_name == "checked":
+            attribute_value = Element.is_selected()
         else:
             attribute_value = Element.get_attribute(attribute_name)
 
@@ -1544,6 +1546,8 @@ def save_attribute_values_in_list(step_data):
                     Attribute_value = elem.text
                 elif search_by_attribute == 'tag':
                     Attribute_value = elem.tag_name
+                elif search_by_attribute == "checked":
+                    Attribute_value = str(elem.is_selected())
                 else:
                     Attribute_value = elem.get_attribute(search_by_attribute)
                 try:
