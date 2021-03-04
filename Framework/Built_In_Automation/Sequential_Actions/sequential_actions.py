@@ -1679,6 +1679,7 @@ def Conditional_Action_Handler(step_data, dataset_cnt):
                 Element = LocateElement.Get_Element(
                     data_set, eval(module).get_driver()
                 )  # Get the element object or "zeuz_failed"
+                time.sleep(wait/10)
                 if (Element not in failed_tag_list) or (time.time() >= end_time):
                     break
 
