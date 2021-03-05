@@ -645,6 +645,7 @@ def Enter_Text_In_Text_Box(step_data):
                     Element.clear()
                 else:
                     Element.send_keys(Keys.CONTROL, "a")
+                    Element.send_keys(Keys.DELETE)
                     try:
                         Element.clear() #some cases it works .. so adding it here just incase
                     except:
