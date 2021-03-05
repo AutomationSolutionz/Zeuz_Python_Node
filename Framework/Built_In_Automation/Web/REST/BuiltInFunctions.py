@@ -763,6 +763,12 @@ def handle_rest_call(
                         % (status_code, wait_for_response_code),
                         2,
                     )
+
+                    CommonUtil.ExecLog(
+                        sModuleInfo,
+                        "HTTP Response:\n%s" % result.text,
+                        2,
+                    )
                     time.sleep(2)
                 else:
                     CommonUtil.ExecLog(
@@ -779,6 +785,11 @@ def handle_rest_call(
                 sModuleInfo,
                 "'Response' HTTP status code %d did not match with 'Expected' HTTP status code %d."
                 % (status_code, wait_for_response_code),
+                3,
+            )
+            CommonUtil.ExecLog(
+                sModuleInfo,
+                "HTTP Response:\n%s" % result.text,
                 3,
             )
             return "zeuz_failed"
