@@ -44,20 +44,22 @@ class DataCollector:
                     else:
                         filters[k] = [v,]
 
-                allowed = True
+                # Boolean list of whether a particular filter matched or not
+                matched_list = []
                 for k in filters:
-                    temp_allowed = False
                     for v in filters[k]:
-                        if k in data and data[k] == v:
-                            temp_allowed = True
+                        matched_list.append(k in data and data[k] == v)
 
-                    if allowed:
-                        allowed = temp_allowed
+                # Decide whether we should accept this match list.
+                should_allow = False
+                if len(filters) == 1:
+                    should_allow = any(matched_list)
+                elif len(filters) > 1 and all(matched_list):
+                    should_allow = True
 
-                name = data[_pattern[:_pattern.find("|")]]
-
-                if allowed:
-                    self._collect_pattern(collector, pattern, pos + 1, name)
+                if should_allow:
+                    val = data[_pattern[:_pattern.find("|")]]
+                    self._collect_pattern(collector, pattern, pos + 1, val)
             elif _pattern == "_all_":
                 for key in data:
                     self._collect_pattern(collector, pattern, pos + 1, data[key])
@@ -139,6 +141,7 @@ def main():
                 "filterGroups": [
                     {
                     "groupName": "Strength",
+                    "searchTerm": "abc",
                     "filters": [
                         {
                         "name": "BROKEN",
@@ -156,6 +159,7 @@ def main():
                     },
                     {
                     "groupName": "Protocol",
+                    "searchTerm": "xyz",
                     "filters": [
                         {
                         "name": "TLS 1.2",
@@ -177,7 +181,7 @@ def main():
     collector = []
 
     collector_patterns = (
-        '''data,filteredDevices,filterCategories,_all_,filterGroups,_all_,filters|groupName:Protocol|,_all_,name''',
+        '''data,filteredDevices,filterCategories,_all_,filterGroups,_all_,filters|groupName:Protocol||searchTerm:xyz|,_all_,name''',
     )
 
     key_patterns = (
