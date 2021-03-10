@@ -1,5 +1,7 @@
 # Author: Mohammed Sazid Al Rashid <sazidozon@gmail.com>
 
+import re
+
 
 class DataCollector:
     def __init__(self):
@@ -30,7 +32,33 @@ class DataCollector:
                         self._collect_pattern(collector, pattern, pos + 1, item)
                 return
         elif _type in self.dict_classes:
-            if _pattern == "_all_":
+            filter_pattern = r"\|(.*?)\|"
+            filters = re.findall(filter_pattern, _pattern)
+
+            if len(filters) > 0:
+                split_filters = [x.split(":") for x in filters]
+                filters = dict()
+                for k, v in split_filters:
+                    if k in filters:
+                        filters[k].append(v)
+                    else:
+                        filters[k] = [v,]
+
+                allowed = True
+                for k in filters:
+                    temp_allowed = False
+                    for v in filters[k]:
+                        if k in data and data[k] == v:
+                            temp_allowed = True
+
+                    if allowed:
+                        allowed = temp_allowed
+
+                name = data[_pattern[:_pattern.find("|")]]
+
+                if allowed:
+                    self._collect_pattern(collector, pattern, pos + 1, name)
+            elif _pattern == "_all_":
                 for key in data:
                     self._collect_pattern(collector, pattern, pos + 1, data[key])
             elif _pattern[-1] == "*":
@@ -92,14 +120,67 @@ def main():
     # This function is for testing.
 
     # Put data here.
-    ref_data = {}
+    ref_data = {
+        "data": {
+            "filteredDevices": {
+            "deviceSummaries": [
+                {
+                "id": 5,
+                "cryptoPrimitives": []
+                },
+                {
+                "id": 96,
+                "cryptoPrimitives": []
+                }
+            ],
+            "filterCategories": [
+                {
+                "categoryName": "Crypto",
+                "filterGroups": [
+                    {
+                    "groupName": "Strength",
+                    "filters": [
+                        {
+                        "name": "BROKEN",
+                        "value": 10
+                        },
+                        {
+                        "name": "MISUSED",
+                        "value": 0
+                        },
+                        {
+                        "name": "STANDARDIZED_QSC",
+                        "value": 0
+                        }
+                    ]
+                    },
+                    {
+                    "groupName": "Protocol",
+                    "filters": [
+                        {
+                        "name": "TLS 1.2",
+                        "value": 3
+                        },
+                        {
+                        "name": "TLS 1.3",
+                        "value": 4
+                        }
+                    ]
+                    }
+                ]
+                }
+            ]
+            }
+        }
+        }
 
     collector = []
 
-    collector_patterns = ("error, errors, _, locations, _, line",)
+    collector_patterns = (
+        '''data,filteredDevices,filterCategories,_all_,filterGroups,_all_,filters|groupName:Protocol|,_all_,name''',
+    )
 
     key_patterns = (
-        "line, code, message",
     )
 
     data_collector = DataCollector()
