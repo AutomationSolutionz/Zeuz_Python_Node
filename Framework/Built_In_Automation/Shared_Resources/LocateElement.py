@@ -127,14 +127,18 @@ def Get_Element(step_data_set, driver, query_debug=False, wait_enable=True, retu
             if row[1] == "save parameter":
                 if row[2] != "ignore":
                     save_parameter = row[0]
-            elif row[1] == "get parameter":
-                get_parameter = row[0]
+            elif row[1].strip().lower() == "get parameter":
+                if row[0].strip().startswith("%|") and row[0].strip().endswith("|%"):
+                    get_parameter = row[0].strip().strip("%").strip("|")
+                else:
+                    CommonUtil.ExecLog(sModuleInfo, "Use '%| |%' sign to get variable value", 3)
+                    return "zeuz_failed"
             elif row[1].strip().lower() == "option":
                 Filter = row[0].strip().lower() if row[2].strip().lower() in ("yes", "true", "ok") else Filter
 
         if get_parameter != "":
 
-            result = sr.Get_Shared_Variables(get_parameter)
+            result = sr.parse_variable(get_parameter)
             if result not in failed_tag_list:
                 CommonUtil.ExecLog(
                     sModuleInfo,
