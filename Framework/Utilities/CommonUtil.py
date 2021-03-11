@@ -861,14 +861,35 @@ class MachineInfo:
         except Exception as e:
             return Exception_Handler(sys.exc_info())
 
+    def setLocalUser(self, custom_id):
+        """
+        Set node_id from node_cli Command Line Interface and returns local userid
+        """
+        try:
+            node_id_file_path = Path(os.path.abspath(__file__).split("Framework")[0]) / "node_id.conf"
+            if os.path.isfile(node_id_file_path):
+                ConfigModule.clean_config_file(node_id_file_path)
+                ConfigModule.add_section("UniqueID", node_id_file_path)
+                custom_id = custom_id.lower()[:10]
+                ConfigModule.add_config_value("UniqueID", "id", custom_id, node_id_file_path)
+            else:
+                f = open(node_id_file_path, "w")
+                f.close()
+                ConfigModule.add_section("UniqueID", node_id_file_path)
+                custom_id = custom_id.lower()[:10]
+                ConfigModule.add_config_value("UniqueID", "id", custom_id, node_id_file_path)
+        except Exception:
+            ErrorMessage = "Unable to set create a Node key.  Please check class MachineInfo() in commonutil"
+            return Exception_Handler(sys.exc_info(), None, ErrorMessage)
+
     def getLocalUser(self):
         """
         :return: returns the local pc name
         """
         try:
             # node_id_file_path = os.path.join(FL.get_home_folder(), os.path.join('Desktop', 'node_id.conf'))
-
             # node_id_file_path = os.path.join (os.path.realpath(__file__).split("Framework")[0] , os.path.join ('node_id.conf'))
+
             node_id_file_path = Path(
                 os.path.abspath(__file__).split("Framework")[0]
             ) / Path("node_id.conf")
@@ -901,7 +922,7 @@ class MachineInfo:
                 f = open(node_id_file_path, "w")
                 f.close()
                 unique_id = uuid.uuid4()
-                unique_id = str(unique_id)[:10]
+                unique_id = str(unique_id).lower()[:10]
                 ConfigModule.add_section("UniqueID", node_id_file_path)
                 ConfigModule.add_config_value(
                     "UniqueID", "id", unique_id, node_id_file_path
@@ -919,6 +940,7 @@ class MachineInfo:
 
     def getUniqueId(self):
         """
+        This function is not used any more
         :return: returns the local pc unique ID
         """
         try:
