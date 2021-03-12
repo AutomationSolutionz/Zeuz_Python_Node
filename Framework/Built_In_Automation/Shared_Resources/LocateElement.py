@@ -615,7 +615,7 @@ def _switch(step_data_set):
         return CommonUtil.Exception_Handler(sys.exc_info())
 
 
-def _get_xpath_or_css_element(element_query, css_xpath, index_number=False, Filter="", return_all_elements= False):
+def _get_xpath_or_css_element(element_query, css_xpath, index_number=None, Filter="", return_all_elements=False):
     """
     Here, we actually execute the query based on css/xpath and then analyze if there are multiple.
     If we find multiple we give warning and send the first one we found.
@@ -755,7 +755,7 @@ def _get_xpath_or_css_element(element_query, css_xpath, index_number=False, Filt
                     3
                 )
             return False
-        elif len(all_matching_elements) == 1 and index_number == False:
+        elif len(all_matching_elements) == 1 and index_number is None:
             if hidden_len > 0 and Filter != "allow hidden":
                 CommonUtil.ExecLog(
                     "",
@@ -766,7 +766,7 @@ def _get_xpath_or_css_element(element_query, css_xpath, index_number=False, Filt
             elif Filter == "allow hidden":
                 CommonUtil.ExecLog("", "Found %s hidden element and %s displayed element" % (hidden_len, displayed_len), 1)
             return all_matching_elements[0]
-        elif len(all_matching_elements) > 1 and index_number == False:
+        elif len(all_matching_elements) > 1 and index_number is None:
             if hidden_len > 0 and Filter != "allow hidden":
                 CommonUtil.ExecLog(
                     "",
@@ -808,7 +808,7 @@ def _get_xpath_or_css_element(element_query, css_xpath, index_number=False, Filt
                     2
                 )
             return all_matching_elements[0]
-        elif len(all_matching_elements) > 1 and index_number != False:
+        elif len(all_matching_elements) > 1 and index_number is not None:
             if (len(all_matching_elements) - 1) < abs(index_number):
                 if hidden_len > 0 and Filter != "allow hidden":
                     CommonUtil.ExecLog(
@@ -884,7 +884,7 @@ def filter_elements(all_matching_elements_visible_invisible, Filter):
 def _locate_index_number(step_data_set):
     """
     Check if index exists, if it does, get the index value.
-    if we cannot convert index to integer, set it to False
+    if we cannot convert index to integer, set it to None
     """
     try:
         if "index" in [x[0] for x in step_data_set]:
@@ -892,9 +892,9 @@ def _locate_index_number(step_data_set):
             try:
                 index_number = int(index_number)
             except:
-                index_number = False
+                index_number = None
         else:
-            index_number = False
+            index_number = None
         return index_number
     except Exception:
         return CommonUtil.Exception_Handler(sys.exc_info())
