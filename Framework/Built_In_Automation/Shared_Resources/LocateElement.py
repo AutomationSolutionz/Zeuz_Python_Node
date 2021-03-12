@@ -809,28 +809,8 @@ def _get_xpath_or_css_element(element_query, css_xpath, index_number=None, Filte
                 )
             return all_matching_elements[0]
         elif len(all_matching_elements) > 1 and index_number is not None:
-            if (len(all_matching_elements) - 1) < abs(index_number):
-                if hidden_len > 0 and Filter != "allow hidden":
-                    CommonUtil.ExecLog(
-                        "",
-                        "Found %s hidden elements and %s displayed elements. Index exceeds the number of displayed elements found\n" % (hidden_len, displayed_len) +
-                        "To get hidden elements add a row (\"allow hidden\", \"optional option\", \"yes\") and also consider providing correct index",
-                        3
-                    )
-                elif Filter != "allow hidden":
-                    CommonUtil.ExecLog(
-                        "",
-                        "Found 0 hidden elements and %s displayed elements. Index exceeds the number of displayed elements found" % displayed_len,
-                        3
-                    )
-                else:
-                    CommonUtil.ExecLog(
-                        "",
-                        "Found %s hidden elements and %s displayed elements. Index exceeds the number of elements found" % (hidden_len, displayed_len),
-                        3
-                    )
-                return "zeuz_failed"
-            else:
+            # if (len(all_matching_elements) - 1) < abs(index_number):
+            if -len(all_matching_elements) <= index_number < len(all_matching_elements):
                 if hidden_len > 0 and Filter != "allow hidden":
                     CommonUtil.ExecLog(
                         "",
@@ -851,6 +831,27 @@ def _get_xpath_or_css_element(element_query, css_xpath, index_number=None, Filte
                         1
                     )
                 return all_matching_elements[index_number]
+            else:
+                if hidden_len > 0 and Filter != "allow hidden":
+                    CommonUtil.ExecLog(
+                        "",
+                        "Found %s hidden elements and %s displayed elements. Index exceeds the number of displayed elements found\n" % (hidden_len, displayed_len) +
+                        "To get hidden elements add a row (\"allow hidden\", \"optional option\", \"yes\") and also consider providing correct index",
+                        3
+                    )
+                elif Filter != "allow hidden":
+                    CommonUtil.ExecLog(
+                        "",
+                        "Found 0 hidden elements and %s displayed elements. Index exceeds the number of displayed elements found" % displayed_len,
+                        3
+                    )
+                else:
+                    CommonUtil.ExecLog(
+                        "",
+                        "Found %s hidden elements and %s displayed elements. Index exceeds the number of elements found" % (hidden_len, displayed_len),
+                        3
+                    )
+                return "zeuz_failed"
         else:
             return "zeuz_failed"
     except Exception:
