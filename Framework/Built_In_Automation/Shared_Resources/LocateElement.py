@@ -791,20 +791,20 @@ def _get_xpath_or_css_element(element_query, css_xpath, index_number=None, Filte
             if hidden_len > 0 and Filter != "allow hidden":
                 CommonUtil.ExecLog(
                     sModuleInfo,
-                    "Found %s hidden elements and %s displayed elements but you provided an index number greater than 0. Returning the only displayed element\n" % (hidden_len, displayed_len) +
+                    "Found %s hidden elements and %s displayed elements but you provided a wrong index number. Returning the only displayed element\n" % (hidden_len, displayed_len) +
                     "To get hidden elements add a row (\"allow hidden\", \"optional option\", \"yes\") and also consider providing correct index",
                     2,
                 )
             elif Filter != "allow hidden":
                 CommonUtil.ExecLog(
                     sModuleInfo,
-                    "Found 0 hidden elements and %s displayed elements but you provided an index number greater than 0. Returning the only displayed element\n" % displayed_len,
+                    "Found 0 hidden elements and %s displayed elements but you provided a wrong index number. Returning the only displayed element\n" % displayed_len,
                     2,
                 )
             elif Filter == "allow hidden":
                 CommonUtil.ExecLog(
                     "",
-                    "Found %s hidden element and %s displayed element but you provided an index number greater than 0. Returning the only element" % (hidden_len, displayed_len),
+                    "Found %s hidden element and %s displayed element but you provided a wrong index number. Returning the only element" % (hidden_len, displayed_len),
                     2
                 )
             return all_matching_elements[0]
