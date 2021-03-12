@@ -3298,7 +3298,7 @@ def csv_read(data_set):
         structure = "list of dictionaries"
         allowed_list = None
         map_key_names = None
-        Integer, Float, Bool = False, [], [], []
+        Integer, Float, Bool = False, [], []
         for left, _, right in data_set:
             left = left.lower().strip()
             if "file path" == left:
