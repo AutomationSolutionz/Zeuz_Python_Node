@@ -3298,7 +3298,7 @@ def csv_read(data_set):
         structure = "list of dictionaries"
         allowed_list = None
         map_key_names = None
-        Integer, Float, Bool = False, [], []
+        Integer, Float, Bool = [], [], []
         for left, _, right in data_set:
             left = left.lower().strip()
             if "file path" == left:
@@ -3353,6 +3353,8 @@ def csv_read(data_set):
             if structure == "list of dictionaries":
                 csv_read_data = csv.DictReader(csv_file, delimiter=delimiter)
                 # data_to_save = [line for line in csv_read_data]
+                if csv_read_data.fieldnames[0].startswith("\u00ef\u00bb\u00bf"):
+                    csv_read_data.fieldnames[0] = csv_read_data.fieldnames[0][3:]
                 data_to_save = []
                 not_exist = []
                 for line in csv_read_data:
