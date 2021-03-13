@@ -787,7 +787,7 @@ def _get_xpath_or_css_element(element_query, css_xpath, index_number=None, Filte
                     2
                 )
             return all_matching_elements[0]
-        elif len(all_matching_elements) == 1 and abs(index_number) > 0:
+        elif len(all_matching_elements) == 1 and index_number not in (-1, 0):
             if hidden_len > 0 and Filter != "allow hidden":
                 CommonUtil.ExecLog(
                     sModuleInfo,
@@ -806,6 +806,27 @@ def _get_xpath_or_css_element(element_query, css_xpath, index_number=None, Filte
                     "",
                     "Found %s hidden element and %s displayed element but you provided a wrong index number. Returning the only element" % (hidden_len, displayed_len),
                     2
+                )
+            return all_matching_elements[0]
+        elif len(all_matching_elements) == 1 and index_number in (-1, 0):
+            if hidden_len > 0 and Filter != "allow hidden":
+                CommonUtil.ExecLog(
+                    "",
+                    "Found %s hidden elements and %s displayed elements. Returning the displayed element of index %s\n" % (hidden_len, displayed_len, index_number) +
+                    "To get hidden elements add a row (\"allow hidden\", \"optional option\", \"yes\")",
+                    1
+                )
+            elif Filter != "allow hidden":
+                CommonUtil.ExecLog(
+                    "",
+                    "Found 0 hidden elements and %s displayed elements. Returning the displayed element of index %s" % (displayed_len, index_number),
+                    1
+                )
+            elif Filter == "allow hidden":
+                CommonUtil.ExecLog(
+                    "",
+                    "Found %s hidden elements and %s displayed elements. Returning the element of index %s" % (hidden_len, displayed_len, index_number),
+                    1
                 )
             return all_matching_elements[0]
         elif len(all_matching_elements) > 1 and index_number is not None:
