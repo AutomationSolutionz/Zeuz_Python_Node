@@ -126,6 +126,14 @@ def Open_Browser(dependency, window_size_X=None, window_size_Y=None):
                 options.add_argument(
                     "--headless"
                 )  # Enable headless operation if dependency set
+            download_dir = ConfigModule.get_config_value("sectionOne", "test_case_folder", temp_config)
+            prefs = {
+                "profile.default_content_settings.popups": 0,
+                "download.default_directory": download_dir,
+                "download.prompt_for_download": False,
+                "download.directory_upgrade": True
+            }
+            options.add_experimental_option('prefs', prefs)
             selenium_driver = webdriver.Chrome(
                 executable_path=chrome_path,
                 chrome_options=options,
@@ -176,6 +184,11 @@ def Open_Browser(dependency, window_size_X=None, window_size_Y=None):
             capabilities = webdriver.DesiredCapabilities().FIREFOX
             capabilities['acceptSslCerts'] = True
             profile = webdriver.FirefoxProfile()
+            # download_dir = ConfigModule.get_config_value("sectionOne", "test_case_folder", temp_config)
+            # profile.set_preference("browser.download.folderList", 2)
+            # profile.set_preference("browser.download.manager.showWhenStarting", False)
+            # profile.set_preference("browser.download.dir", download_dir)
+            # profile.set_preference("browser.helperApps.neverAsk.saveToDisk", "application/x-gzip")
             profile.accept_untrusted_certs = True
             selenium_driver = webdriver.Firefox(
                 executable_path=firefox_path,
