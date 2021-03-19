@@ -13,7 +13,7 @@
 #        Modules        #
 #                       #
 #########################
-import sys, os, time, inspect
+import sys, os, time, inspect, shutil
 
 sys.path.append("..")
 from selenium import webdriver
@@ -126,7 +126,7 @@ def Open_Browser(dependency, window_size_X=None, window_size_Y=None):
                 options.add_argument(
                     "--headless"
                 )  # Enable headless operation if dependency set
-            download_dir = ConfigModule.get_config_value("sectionOne", "test_case_folder", temp_config)
+            download_dir = ConfigModule.get_config_value("sectionOne", "initial_download_folder", temp_config)
             prefs = {
                 "profile.default_content_settings.popups": 0,
                 "download.default_directory": download_dir,
@@ -935,6 +935,122 @@ def Click_Element(data_set, retry=0):
             return CommonUtil.Exception_Handler(
                 sys.exc_info(), None, "Error clicking location"
             )
+
+@logger
+def Click_and_Download(data_set, retry=0):
+    """ Click and download attachments from web and save it to specific destinations"""
+
+    sModuleInfo = inspect.currentframe().f_code.co_name + " : " + MODULE_NAME
+    global selenium_driver
+
+    use_js = False  # Use js to click on element?
+    try:
+        bodyElement = ""
+        filepath = ""
+        for left, mid, right in data_set:
+            if left == "location" and mid == "element parameter":
+                bodyElement = LocateElement.Get_Element(
+                    [("tag", "element parameter", "body")], selenium_driver
+                )  # Get element object of webpage body, so we can have a reference to the 0,0 coordinates
+                shared_var = right
+            elif "use js" in left.lower():
+                use_js = right.strip().lower() in ("true", "yes", "1")
+            elif left.strip().lower() == "folder path" and mid.strip().lower() == "parameter":
+                filepath = right.strip()
+
+            # On next improvement user will have option to tell the filename and only that filename will be copied from
+            # the initial download directory
+    except Exception:
+        return CommonUtil.Exception_Handler(
+            sys.exc_info(), None, "Error parsing data set"
+        )
+    if bodyElement == "":
+        Element = LocateElement.Get_Element(data_set, selenium_driver)
+        if Element in failed_tag_list:
+            CommonUtil.ExecLog(sModuleInfo, "Could not find element", 3)
+            return "zeuz_failed"
+        try:
+            if use_js:
+                selenium_driver.execute_script("arguments[0].click();", Element)
+            else:
+                Element.click()
+            CommonUtil.ExecLog(sModuleInfo, "Successfully clicked the element", 1)
+        except ElementClickInterceptedException:
+            try:
+                selenium_driver.execute_script("arguments[0].click();", Element)
+                CommonUtil.ExecLog(
+                    sModuleInfo,
+                    "Your element is overlapped with another sibling element. Clicked the element successfully by executing JavaScript",
+                    2
+                )
+            except Exception:
+                element_attributes = Element.get_attribute("outerHTML")
+                CommonUtil.ExecLog(sModuleInfo, "Element Attributes: %s" % (element_attributes), 3)
+                errMsg = "Could not select/click your element."
+                return CommonUtil.Exception_Handler(sys.exc_info(), None, errMsg)
+        except StaleElementReferenceException:
+            if retry == 5:
+                CommonUtil.ExecLog(sModuleInfo, "Could not perform click because javascript of the element is not fully loaded", 3)
+                return "zeuz_failed"
+            CommonUtil.ExecLog("", "Javascript of the element is not fully loaded. Trying again after 1 second delay", 2)
+            time.sleep(1)
+            return Click_Element(data_set, retry + 1)
+
+        except Exception:
+            element_attributes = Element.get_attribute("outerHTML")
+            CommonUtil.ExecLog(sModuleInfo, "Element Attributes: %s" % (element_attributes), 3)
+            errMsg = "Could not select/click your element."
+            return CommonUtil.Exception_Handler(sys.exc_info(), None, errMsg)
+
+    # Click using location
+    else:
+        CommonUtil.ExecLog(sModuleInfo, "Using provided location", 0)
+        try:
+            # Get coordinates
+            if "," in shared_var:  # These are coordinates, use directly
+                location = shared_var
+            else:  # Shared variable name was provided
+                location = Shared_Resources.Get_List_from_Shared_Variables(shared_var)
+            location = location.replace(" ", "")
+            location = location.split(",")
+            x = float(location[0])
+            y = float(location[1])
+
+            # Click coordinates
+            actions = ActionChains(selenium_driver)  # Create actions object
+            actions.move_to_element_with_offset(
+                bodyElement, x, y
+            )  # Move to coordinates (referrenced by body at 0,0)
+            actions.click()  # Click action
+            actions.perform()  # Perform all actions
+
+            CommonUtil.ExecLog(sModuleInfo, "Click on location successful", 1)
+        except Exception:
+            return CommonUtil.Exception_Handler(sys.exc_info(), None, "Error clicking location")
+
+    if filepath:
+        from pathlib import Path
+        # filepath = Shared_Resources.Get_Shared_Variables("zeuz_download_folder")
+        source_folder = ConfigModule.get_config_value("sectionOne", "initial_download_folder", temp_config)
+        all_source_dir = [os.path.join(source_folder, f) for f in os.listdir(source_folder) if os.path.isfile(os.path.join(source_folder, f))]
+        new_directory_of_the_file = filepath
+        for file_to_be_moved in all_source_dir:
+            file_name = Path(file_to_be_moved).name
+            if not os.path.exists(new_directory_of_the_file):
+                Path(new_directory_of_the_file).mkdir(parents=True, exist_ok=True)
+            shutil.move(file_to_be_moved, new_directory_of_the_file)
+
+            # after performing shutil.move() we have to check that if the file with new name exists in correct location.
+            # if the file exists in correct position then return passed
+            # if the file doesn't exist in correct position then return failed
+            file_path_for_check_after_move = os.path.join(new_directory_of_the_file, file_name)
+            if os.path.isfile(file_path_for_check_after_move):
+                CommonUtil.ExecLog(sModuleInfo, "File '%s' is moved to '%s'" % (file_name, new_directory_of_the_file), 1)
+            else:
+                CommonUtil.ExecLog(sModuleInfo, "File failed to move", 3)
+                return "zeuz_failed"
+    return "passed"
+
 
 
 @logger
