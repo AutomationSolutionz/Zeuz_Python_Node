@@ -198,6 +198,23 @@ def db_get_connection():
                 host=db_host,
                 port=db_port
             )
+        elif "oracle" in db_type:
+            import cx_Oracle
+
+            # https://cx-oracle.readthedocs.io/en/latest/api_manual/module.html#cx_Oracle.makedsn
+            dsn = cx_Oracle.makedsn(
+                host=db_host,
+                port=db_port,
+                sid=db_host,
+            )
+
+            # Connect to db
+            # https://cx-oracle.readthedocs.io/en/latest/api_manual/module.html#cx_Oracle.connect
+            db_con = cx_Oracle.connect(
+                user=db_user_id,
+                password=db_password,
+                dsn=dsn,
+            )
         else:
             # Get the driver for the ODBC connection
             odbc_driver = find_odbc_driver(db_type)
@@ -476,18 +493,17 @@ def insert_into_db(data_set):
             CommonUtil.ExecLog(sModuleInfo, "Variable name must be provided.", 3)
             return "zeuz_failed"
 
-        query="insert into  "+table_name+' ( '
+        query = "insert into " + table_name + " ( "
         for index in range(len(columns)):
-            query+=columns[index]+" "
-            if(index!=(len(columns)-1)):
-                query+=","
-                # Get db_cursor and execute
-        query+=") values ("
+            query += columns[index]+" "
+            if index != len(columns)-1:
+                query += ","
+        query += ") values ("
         for index in range(len(values)):
             query += values[index] + " "
             if (index != (len(values) - 1)):
                 query += ","
-        query+=" ) "
+        query += " ) "
 
         CommonUtil.ExecLog(sModuleInfo, "Executing query:\n%s." % query, 1)
 
