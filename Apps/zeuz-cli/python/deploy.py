@@ -112,26 +112,26 @@ def get_token_from_api(api_key, host):
 
 def extract_runtime_parameters(param_str: str):
     """Extracts the JSON from the given string or file path and converts it
-      into suitable a data object.
+        into suitable a data object.
 
     Args:
         param_str: Either a file path containing a JSON string
-          or a plain JSON string.
+        or a plain JSON string.
 
     Returns:
         A dictionary of the following format:
 
-          {
-              "key1": {
-                  "field": "key1",
-                  "subfield": "value1"
-              },
-              "key2": {
-                  "field": "key2",
-                  "subfield": "value2"
-              },
-              ...
-          }
+        {
+            "key1": {
+                "field": "key1",
+                "subfield": "value1"
+            },
+            "key2": {
+                "field": "key2",
+                "subfield": "value2"
+            },
+            ...
+        }
     """
 
     try:
@@ -148,10 +148,10 @@ def extract_runtime_parameters(param_str: str):
         result = {}
 
         for key in data:
-            result[key] = {key: data[key]}
+            result[key] = {"field": key, "subfield": data[key]}
 
         return result
-    except Exception as e:
+    except Exception:
         return None
 
 
