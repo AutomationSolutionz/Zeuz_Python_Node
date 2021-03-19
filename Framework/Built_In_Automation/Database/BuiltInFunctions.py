@@ -205,7 +205,7 @@ def db_get_connection():
             dsn = cx_Oracle.makedsn(
                 host=db_host,
                 port=db_port,
-                sid=db_host,
+                sid=db_name,
             )
 
             # Connect to db
