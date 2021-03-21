@@ -615,7 +615,7 @@ def _switch(step_data_set):
         return CommonUtil.Exception_Handler(sys.exc_info())
 
 
-def _get_xpath_or_css_element(element_query, css_xpath, index_number=False, Filter="", return_all_elements= False):
+def _get_xpath_or_css_element(element_query, css_xpath, index_number=None, Filter="", return_all_elements=False):
     """
     Here, we actually execute the query based on css/xpath and then analyze if there are multiple.
     If we find multiple we give warning and send the first one we found.
@@ -755,7 +755,7 @@ def _get_xpath_or_css_element(element_query, css_xpath, index_number=False, Filt
                     3
                 )
             return False
-        elif len(all_matching_elements) == 1 and index_number == False:
+        elif len(all_matching_elements) == 1 and index_number is None:
             if hidden_len > 0 and Filter != "allow hidden":
                 CommonUtil.ExecLog(
                     "",
@@ -766,7 +766,7 @@ def _get_xpath_or_css_element(element_query, css_xpath, index_number=False, Filt
             elif Filter == "allow hidden":
                 CommonUtil.ExecLog("", "Found %s hidden element and %s displayed element" % (hidden_len, displayed_len), 1)
             return all_matching_elements[0]
-        elif len(all_matching_elements) > 1 and index_number == False:
+        elif len(all_matching_elements) > 1 and index_number is None:
             if hidden_len > 0 and Filter != "allow hidden":
                 CommonUtil.ExecLog(
                     "",
@@ -787,50 +787,51 @@ def _get_xpath_or_css_element(element_query, css_xpath, index_number=False, Filt
                     2
                 )
             return all_matching_elements[0]
-        elif len(all_matching_elements) == 1 and abs(index_number) > 0:
+        elif len(all_matching_elements) == 1 and index_number not in (-1, 0):
             if hidden_len > 0 and Filter != "allow hidden":
                 CommonUtil.ExecLog(
                     sModuleInfo,
-                    "Found %s hidden elements and %s displayed elements but you provided an index number greater than 0. Returning the only displayed element\n" % (hidden_len, displayed_len) +
+                    "Found %s hidden elements and %s displayed elements but you provided a wrong index number. Returning the only displayed element\n" % (hidden_len, displayed_len) +
                     "To get hidden elements add a row (\"allow hidden\", \"optional option\", \"yes\") and also consider providing correct index",
                     2,
                 )
             elif Filter != "allow hidden":
                 CommonUtil.ExecLog(
                     sModuleInfo,
-                    "Found 0 hidden elements and %s displayed elements but you provided an index number greater than 0. Returning the only displayed element\n" % displayed_len,
+                    "Found 0 hidden elements and %s displayed elements but you provided a wrong index number. Returning the only displayed element\n" % displayed_len,
                     2,
                 )
             elif Filter == "allow hidden":
                 CommonUtil.ExecLog(
                     "",
-                    "Found %s hidden element and %s displayed element but you provided an index number greater than 0. Returning the only element" % (hidden_len, displayed_len),
+                    "Found %s hidden element and %s displayed element but you provided a wrong index number. Returning the only element" % (hidden_len, displayed_len),
                     2
                 )
             return all_matching_elements[0]
-        elif len(all_matching_elements) > 1 and index_number != False:
-            if (len(all_matching_elements) - 1) < abs(index_number):
-                if hidden_len > 0 and Filter != "allow hidden":
-                    CommonUtil.ExecLog(
-                        "",
-                        "Found %s hidden elements and %s displayed elements. Index exceeds the number of displayed elements found\n" % (hidden_len, displayed_len) +
-                        "To get hidden elements add a row (\"allow hidden\", \"optional option\", \"yes\") and also consider providing correct index",
-                        3
-                    )
-                elif Filter != "allow hidden":
-                    CommonUtil.ExecLog(
-                        "",
-                        "Found 0 hidden elements and %s displayed elements. Index exceeds the number of displayed elements found" % displayed_len,
-                        3
-                    )
-                else:
-                    CommonUtil.ExecLog(
-                        "",
-                        "Found %s hidden elements and %s displayed elements. Index exceeds the number of elements found" % (hidden_len, displayed_len),
-                        3
-                    )
-                return "zeuz_failed"
-            else:
+        elif len(all_matching_elements) == 1 and index_number in (-1, 0):
+            if hidden_len > 0 and Filter != "allow hidden":
+                CommonUtil.ExecLog(
+                    "",
+                    "Found %s hidden elements and %s displayed elements. Returning the displayed element of index %s\n" % (hidden_len, displayed_len, index_number) +
+                    "To get hidden elements add a row (\"allow hidden\", \"optional option\", \"yes\")",
+                    1
+                )
+            elif Filter != "allow hidden":
+                CommonUtil.ExecLog(
+                    "",
+                    "Found 0 hidden elements and %s displayed elements. Returning the displayed element of index %s" % (displayed_len, index_number),
+                    1
+                )
+            elif Filter == "allow hidden":
+                CommonUtil.ExecLog(
+                    "",
+                    "Found %s hidden elements and %s displayed elements. Returning the element of index %s" % (hidden_len, displayed_len, index_number),
+                    1
+                )
+            return all_matching_elements[0]
+        elif len(all_matching_elements) > 1 and index_number is not None:
+            # if (len(all_matching_elements) - 1) < abs(index_number):
+            if -len(all_matching_elements) <= index_number < len(all_matching_elements):
                 if hidden_len > 0 and Filter != "allow hidden":
                     CommonUtil.ExecLog(
                         "",
@@ -851,6 +852,27 @@ def _get_xpath_or_css_element(element_query, css_xpath, index_number=False, Filt
                         1
                     )
                 return all_matching_elements[index_number]
+            else:
+                if hidden_len > 0 and Filter != "allow hidden":
+                    CommonUtil.ExecLog(
+                        "",
+                        "Found %s hidden elements and %s displayed elements. Index exceeds the number of displayed elements found\n" % (hidden_len, displayed_len) +
+                        "To get hidden elements add a row (\"allow hidden\", \"optional option\", \"yes\") and also consider providing correct index",
+                        3
+                    )
+                elif Filter != "allow hidden":
+                    CommonUtil.ExecLog(
+                        "",
+                        "Found 0 hidden elements and %s displayed elements. Index exceeds the number of displayed elements found" % displayed_len,
+                        3
+                    )
+                else:
+                    CommonUtil.ExecLog(
+                        "",
+                        "Found %s hidden elements and %s displayed elements. Index exceeds the number of elements found" % (hidden_len, displayed_len),
+                        3
+                    )
+                return "zeuz_failed"
         else:
             return "zeuz_failed"
     except Exception:
@@ -884,7 +906,7 @@ def filter_elements(all_matching_elements_visible_invisible, Filter):
 def _locate_index_number(step_data_set):
     """
     Check if index exists, if it does, get the index value.
-    if we cannot convert index to integer, set it to False
+    if we cannot convert index to integer, set it to None
     """
     try:
         if "index" in [x[0] for x in step_data_set]:
@@ -892,9 +914,9 @@ def _locate_index_number(step_data_set):
             try:
                 index_number = int(index_number)
             except:
-                index_number = False
+                index_number = None
         else:
-            index_number = False
+            index_number = None
         return index_number
     except Exception:
         return CommonUtil.Exception_Handler(sys.exc_info())

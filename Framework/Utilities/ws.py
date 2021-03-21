@@ -113,7 +113,7 @@ def on_error(ws, error):
     elif isinstance(error, OSError):
         # Prevent bad file descriptor error from showing
         return
-    print("[ws] Error:\n", traceback.format_exc())
+    print("[ws] Error. Connection closed\n")
 
 
 def on_close(ws):

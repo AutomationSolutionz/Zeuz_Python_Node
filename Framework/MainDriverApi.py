@@ -189,30 +189,33 @@ def create_tc_log_ss_folder(run_id, test_case, temp_ini_file):
         + os.sep
         + (run_id.replace(":", "-") + os.sep + test_case.replace(":", "-"))
     )
+    # create test_case_folder
     ConfigModule.add_config_value("sectionOne", "test_case", test_case, temp_ini_file)
     ConfigModule.add_config_value("sectionOne", "test_case_folder", test_case_folder, temp_ini_file)
+    FL.CreateFolder(test_case_folder)
+
+    # create log_folder
     log_folder = test_case_folder + os.sep + "Log"
     ConfigModule.add_config_value("sectionOne", "log_folder", log_folder, temp_ini_file)
+    FL.CreateFolder(log_folder)
+
+    # create screenshot_folder
     screenshot_folder = test_case_folder + os.sep + "screenshots"
     ConfigModule.add_config_value("sectionOne", "screen_capture_folder", screenshot_folder, temp_ini_file)
+    FL.CreateFolder(screenshot_folder)
+
+    # create where attachments from selenium browser will be downloaded
+    zeuz_download_folder = test_case_folder + os.sep + "zeuz_download_folder"
+    FL.CreateFolder(zeuz_download_folder)
+    initial_download_folder = zeuz_download_folder + os.sep + "initial_download_folder"
+    FL.CreateFolder(initial_download_folder)
+    ConfigModule.add_config_value("sectionOne", "initial_download_folder", initial_download_folder, temp_ini_file)
+    shared.Set_Shared_Variables("zeuz_download_folder", zeuz_download_folder)
 
     # Store the attachments for each test case separately inside
     # AutomationLog/attachments/TEST-XYZ
     download_folder = str(Path(log_file_path) / "attachments" / test_case.replace(":", "-"))
     ConfigModule.add_config_value("sectionOne", "download_folder", download_folder, temp_ini_file)
-
-    # create_test_case_folder
-    test_case_folder = ConfigModule.get_config_value("sectionOne", "test_case_folder", temp_ini_file)
-    FL.CreateFolder(test_case_folder)
-
-    # FL.CreateFolder(Global.TCLogFolder + os.sep + "ProductLog")
-    log_folder = ConfigModule.get_config_value("sectionOne", "log_folder", temp_ini_file)
-    FL.CreateFolder(log_folder)
-
-    # FL.CreateFolder(Global.TCLogFolder + os.sep + "Screenshots")
-    # creating ScreenShot File
-    screen_capture_folder = ConfigModule.get_config_value("sectionOne", "screen_capture_folder", temp_ini_file)
-    FL.CreateFolder(screen_capture_folder)
 
 
 import ctypes

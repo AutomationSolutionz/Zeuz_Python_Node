@@ -1,6 +1,7 @@
 declarations = (
-    { "name": "click",                         "function": "Click_Element",                 "screenshot": "web" },  # For cs group
+    { "name": "click",                         "function": "Click_Element",                 "screenshot": "web" },
     { "name": "click and hold",                "function": "Click_and_Hold_Element",        "screenshot": "web" },
+    { "name": "click and download",            "function": "Click_and_Download",            "screenshot": "web" },
     { "name": "context click",                 "function": "Context_Click_Element",         "screenshot": "web" },
     { "name": "double click",                  "function": "Double_Click_Element",          "screenshot": "web" },
     { "name": "move to element",               "function": "Move_To_Element",               "screenshot": "web" },
@@ -44,7 +45,7 @@ declarations = (
     { "name": "switch window/tab",             "function": "switch_window_or_tab",          "screenshot": "web" },  # For CS group
     { "name": "save attribute",                "function": "Save_Attribute",                "screenshot": "web" },
     { "name": "save attribute values in list", "function": "save_attribute_values_in_list", "screenshot": "web" },
-    { "name": "save web elements in list",     "function": "save_web_elements_in_list",    "screenshot": "web" },
+    { "name": "save web elements in list",     "function": "save_web_elements_in_list",     "screenshot": "web" },
     { "name": "take screenshot web",           "function": "take_screenshot_selenium",      "screenshot": "web" },
     { "name": "mouse click",                   "function": "Mouse_Click_Element",           "screenshot": "web" },
     { "name": "execute javascript",            "function": "execute_javascript",            "screenshot": "web" },
