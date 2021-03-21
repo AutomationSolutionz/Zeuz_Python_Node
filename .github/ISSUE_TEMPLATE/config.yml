@@ -1,0 +1,11 @@
+blank_issues_enabled: true
+contact_links:
+  - name: Discussions
+    url: https://github.com/AutomationSolutionz/Zeuz_Python_Node/discussions
+    about: Zeuz Node Q&A
+  - name: Docs
+    url: https://automationsolutionz.github.io
+    about: Zeuz Node & Server docs
+  - name: Course
+    url: https://automationsolutionz.github.io/docs/course-info
+    about: Step by step introduction to Zeuz softwares
