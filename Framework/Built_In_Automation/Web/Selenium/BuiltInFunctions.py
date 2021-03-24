@@ -1832,6 +1832,7 @@ def Validate_Text(step_data):
     global selenium_driver
     try:
         Element = LocateElement.Get_Element(step_data, selenium_driver)
+        ignore_case = False
         if Element == "zeuz_failed":
             CommonUtil.ExecLog(
                 sModuleInfo, "Unable to locate your element with given data.", 3
@@ -1841,8 +1842,14 @@ def Validate_Text(step_data):
             if each_step_data_item[1] == "action":
                 expected_text_data = each_step_data_item[2]
                 validation_type = each_step_data_item[0]
+            elif each_step_data_item[1] == "parameter" and each_step_data_item[0] == "ignore case":
+                ignore_case = True if each_step_data_item[2].strip().lower() in ("yes", "true", "ok") else False
         # expected_text_data = step_data[0][len(step_data[0]) - 1][2]
-        list_of_element_text = Element.text.split("\n")
+        if ignore_case:
+            expected_text_data = expected_text_data.lower()
+            list_of_element_text = Element.text.lower().split("\n")
+        else:
+            list_of_element_text = Element.text.split("\n")
         visible_list_of_element_text = []
         for each_text_item in list_of_element_text:
             if each_text_item != "":
@@ -1851,10 +1858,8 @@ def Validate_Text(step_data):
         # if step_data[0][len(step_data[0])-1][0] == "validate partial text":
         if validation_type == "validate partial text":
             actual_text_data = visible_list_of_element_text
-            CommonUtil.ExecLog(
-                sModuleInfo, "Expected Text: " + expected_text_data,
-            )
-            CommonUtil.ExecLog(sModuleInfo, "Actual Text: " + str(actual_text_data), 0)
+            CommonUtil.ExecLog(sModuleInfo, "Expected Text: " + expected_text_data, 1)
+            CommonUtil.ExecLog(sModuleInfo, "Actual Text: " + str(actual_text_data), 1)
             for each_actual_text_data_item in actual_text_data:
                 if expected_text_data in each_actual_text_data_item:
                     CommonUtil.ExecLog(
@@ -1870,8 +1875,8 @@ def Validate_Text(step_data):
         # if step_data[0][len(step_data[0])-1][0] == "validate full text":
         if validation_type == "validate full text":
             actual_text_data = visible_list_of_element_text
-            CommonUtil.ExecLog(sModuleInfo, "Expected Text: " + expected_text_data, 0)
-            CommonUtil.ExecLog(sModuleInfo, "Actual Text: " + str(actual_text_data), 0)
+            CommonUtil.ExecLog(sModuleInfo, "Expected Text: " + expected_text_data, 1)
+            CommonUtil.ExecLog(sModuleInfo, "Actual Text: " + str(actual_text_data), 1)
             if expected_text_data in actual_text_data:
                 CommonUtil.ExecLog(
                     sModuleInfo,
