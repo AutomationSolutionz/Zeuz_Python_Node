@@ -638,7 +638,7 @@ def handle_rest_call(
     try:
         global index, count
         Shared_Resources.Set_Shared_Variables(
-            "status_code", 0, print_variable=False
+            "status_code", 0, print_variable=False, pretty=False
         )  # Reset this shared variable, so we do not get confused with any previous run
         url = data[0]
         method = data[1]
