@@ -454,7 +454,6 @@ def Go_To_Link(step_data, page_title=False):
         CommonUtil.ExecLog(
             sModuleInfo, "Successfully opened your link: %s" % web_link, 1
         )
-        # CommonUtil.TakeScreenShot(sModuleInfo)
         return "passed"
     except Exception:
         ErrorMessage = "failed to open your link: %s" % (web_link)
@@ -673,7 +672,6 @@ def Enter_Text_In_Text_Box(step_data):
                 Element.click()
             except:  # sometimes text field can be unclickable after entering text
                 pass
-        # CommonUtil.TakeScreenShot(sModuleInfo)
         CommonUtil.ExecLog(sModuleInfo, "Successfully set the value of to text to: %s" % text_value, 1)
         return "passed"
     except Exception:
@@ -866,14 +864,12 @@ def Click_Element(data_set, retry=0):
             else:
                 Element.click()
 
-            # CommonUtil.TakeScreenShot(sModuleInfo)
             CommonUtil.ExecLog(sModuleInfo, "Successfully clicked the element", 1)
             return "passed"
 
         except ElementClickInterceptedException:
             try:
                 selenium_driver.execute_script("arguments[0].click();", Element)
-                # CommonUtil.TakeScreenShot(sModuleInfo)
                 CommonUtil.ExecLog(
                     sModuleInfo,
                     "Your element is overlapped with another sibling element. Clicked the element successfully by executing JavaScript",
@@ -1093,9 +1089,6 @@ def Mouse_Click_Element(data_set):
     try:
         actions = ActionChains(selenium_driver)
         actions.move_to_element_with_offset(Element, width, height).click().perform()
-        # CommonUtil.TakeScreenShot(
-        #     sModuleInfo
-        # )  # Capture screenshot, if settings allow for it\
         CommonUtil.ExecLog(sModuleInfo, "Successfully clicked the element", 1)
         return "passed"
     except Exception:
@@ -1139,7 +1132,6 @@ def Click_and_Hold_Element(step_data):
             try:
                 click_and_hold = ActionChains(selenium_driver).click_and_hold(Element)
                 click_and_hold.perform()
-                # CommonUtil.TakeScreenShot(sModuleInfo)
                 CommonUtil.ExecLog(
                     sModuleInfo,
                     "Successfully clicked and held the element with given parameters and values",
@@ -1173,7 +1165,6 @@ def Context_Click_Element(step_data):
             try:
                 context_click = ActionChains(selenium_driver).context_click(Element)
                 context_click.perform()
-                # CommonUtil.TakeScreenShot(sModuleInfo)
                 CommonUtil.ExecLog(
                     sModuleInfo,
                     "Successfully right clicked the element with given parameters and values",
@@ -1207,7 +1198,6 @@ def Double_Click_Element(step_data):
             try:
                 double_click = ActionChains(selenium_driver).double_click(Element)
                 double_click.perform()
-                # CommonUtil.TakeScreenShot(sModuleInfo)
                 CommonUtil.ExecLog(
                     sModuleInfo,
                     "Successfully double clicked the element with given parameters and values",
@@ -1240,7 +1230,6 @@ def Move_To_Element(step_data):
         if Element != "zeuz_failed":
             try:
                 move = ActionChains(selenium_driver).move_to_element(Element).perform()
-                # CommonUtil.TakeScreenShot(sModuleInfo)
                 CommonUtil.ExecLog(
                     sModuleInfo,
                     "Successfully moved to the middle of the element with given parameters and values",
@@ -1274,7 +1263,6 @@ def Hover_Over_Element(step_data):
             try:
                 hov = ActionChains(selenium_driver).move_to_element(Element)
                 hov.perform()
-                # CommonUtil.TakeScreenShot(sModuleInfo)
                 CommonUtil.ExecLog(
                     sModuleInfo,
                     "Successfully hovered over the element with given parameters and values",
@@ -1844,6 +1832,7 @@ def Validate_Text(step_data):
     global selenium_driver
     try:
         Element = LocateElement.Get_Element(step_data, selenium_driver)
+        ignore_case = False
         if Element == "zeuz_failed":
             CommonUtil.ExecLog(
                 sModuleInfo, "Unable to locate your element with given data.", 3
@@ -1853,8 +1842,14 @@ def Validate_Text(step_data):
             if each_step_data_item[1] == "action":
                 expected_text_data = each_step_data_item[2]
                 validation_type = each_step_data_item[0]
+            elif each_step_data_item[1] == "parameter" and each_step_data_item[0] == "ignore case":
+                ignore_case = True if each_step_data_item[2].strip().lower() in ("yes", "true", "ok") else False
         # expected_text_data = step_data[0][len(step_data[0]) - 1][2]
-        list_of_element_text = Element.text.split("\n")
+        if ignore_case:
+            expected_text_data = expected_text_data.lower()
+            list_of_element_text = Element.text.lower().split("\n")
+        else:
+            list_of_element_text = Element.text.split("\n")
         visible_list_of_element_text = []
         for each_text_item in list_of_element_text:
             if each_text_item != "":
@@ -1863,10 +1858,8 @@ def Validate_Text(step_data):
         # if step_data[0][len(step_data[0])-1][0] == "validate partial text":
         if validation_type == "validate partial text":
             actual_text_data = visible_list_of_element_text
-            CommonUtil.ExecLog(
-                sModuleInfo, "Expected Text: " + expected_text_data,
-            )
-            CommonUtil.ExecLog(sModuleInfo, "Actual Text: " + str(actual_text_data), 0)
+            CommonUtil.ExecLog(sModuleInfo, "Expected Text: " + expected_text_data, 1)
+            CommonUtil.ExecLog(sModuleInfo, "Actual Text: " + str(actual_text_data), 1)
             for each_actual_text_data_item in actual_text_data:
                 if expected_text_data in each_actual_text_data_item:
                     CommonUtil.ExecLog(
@@ -1882,8 +1875,8 @@ def Validate_Text(step_data):
         # if step_data[0][len(step_data[0])-1][0] == "validate full text":
         if validation_type == "validate full text":
             actual_text_data = visible_list_of_element_text
-            CommonUtil.ExecLog(sModuleInfo, "Expected Text: " + expected_text_data, 0)
-            CommonUtil.ExecLog(sModuleInfo, "Actual Text: " + str(actual_text_data), 0)
+            CommonUtil.ExecLog(sModuleInfo, "Expected Text: " + expected_text_data, 1)
+            CommonUtil.ExecLog(sModuleInfo, "Actual Text: " + str(actual_text_data), 1)
             if expected_text_data in actual_text_data:
                 CommonUtil.ExecLog(
                     sModuleInfo,

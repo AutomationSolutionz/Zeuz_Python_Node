@@ -249,14 +249,13 @@ if __name__ == "__main__":
     sheet = wb.sheets["Sheet1"]
     expand = "table"
     cell_range = "A1:A3"
-    if expand:
-        # expand can be 'table', 'down' and 'right'
+    while True:
         cell_data = sheet.range(cell_range).expand(expand).value
-    else:
-        cell_data = sheet.range(cell_range).value
-    # print(cell_data)
-    # wb.save()
-    data = cell_data[1:] if cell_data[0][1].strip().lower() == "middle" else cell_data
-    result = _construct_query(data)[0]
-    print(result)
-    # wb.close()
+        # print(cell_data)
+        # wb.save()
+        data = cell_data[1:] if cell_data[0][1].strip().lower() == "middle" else cell_data
+        result = _construct_query(data)[0]
+        print(result)
+        print("[To get new Xpath change and save the exel file and press ENTER]")
+        input()
+        # wb.close()
