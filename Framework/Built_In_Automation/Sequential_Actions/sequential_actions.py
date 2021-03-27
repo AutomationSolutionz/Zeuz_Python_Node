@@ -1734,8 +1734,7 @@ def Loop_Action_Handler(data, row, dataset_cnt):
 
         if load_testing:
             thread_pool.shutdown()
-            print('status_counts =', CommonUtil.performance_report['status_counts'])
-            print('data_len =', len(CommonUtil.performance_report['data']))
+
             performance_end_time = datetime.fromtimestamp(time.time()).strftime("%Y-%m-%d %H:%M:%S")
             performance_end_counter = time.perf_counter()
             performance_duration = round(performance_end_counter-performance_start_counter, 6)
@@ -1750,7 +1749,7 @@ def Loop_Action_Handler(data, row, dataset_cnt):
                 total_runtime += each_data["runtime"]
 
             CommonUtil.performance_report["individual_stats"]["average"] = total_runtime/loop_len
-            CommonUtil.performance_report["individual_stats"]["requests/sec"] = loop_len/total_runtime
+            CommonUtil.performance_report["requests/sec"] = loop_len/performance_duration
 
             CommonUtil.ExecLog(sModuleInfo, "Loop iterated %d times successfully" % sub_set_cnt, 1, force_write=True)
 
@@ -1761,7 +1760,7 @@ def Loop_Action_Handler(data, row, dataset_cnt):
         )
         with open(report_path, "w") as f:
             json.dump(CommonUtil.performance_report, f, indent=2)
-        CommonUtil.prettify("Performance_report", CommonUtil.performance_report, color="green")
+        sr.Set_Shared_Variables("performance_report", CommonUtil.performance_report)
         return result, skip
     except Exception as e:
         CommonUtil.load_testing = False
