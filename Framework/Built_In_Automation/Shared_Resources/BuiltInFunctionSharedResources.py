@@ -28,7 +28,7 @@ MODULE_NAME = inspect.getmodulename(__file__)
 data_collector = DataCollector()
 
 
-def Set_Shared_Variables(key, value, protected=False, allowEmpty=False, print_variable=True):
+def Set_Shared_Variables(key, value, protected=False, allowEmpty=False, print_variable=True, pretty=True):
     try:
         sModuleInfo = inspect.currentframe().f_code.co_name + " : " + MODULE_NAME
         global shared_variables, protected_variables
@@ -62,9 +62,9 @@ def Set_Shared_Variables(key, value, protected=False, allowEmpty=False, print_va
                         "val": val
                     }
                 )
-
-            # Try to get a pretty print.
-            CommonUtil.prettify(key, value)
+            if pretty:
+                # Try to get a pretty print.
+                CommonUtil.prettify(key, value)
 
             return "passed"
     except:
