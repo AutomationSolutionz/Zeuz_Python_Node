@@ -95,8 +95,10 @@ tc_error_logs = []
 all_logs_count = 0
 all_logs_list = []
 skip_list = ["step_data"]
-load_testing = False
 to_dlt_from_fail_reason = " : Test Step Failed"
+
+load_testing = False
+performance_report = {"data": [], "individual_stats": {"slowest": 0, "fastest": float("inf")}, "status_counts": {}}
 
 # Holds the previously logged message (used for prevention of duplicate logs simultaneously)
 previous_log_line = None
@@ -174,11 +176,14 @@ def parse_value_into_object(val):
     return val
 
 
-def prettify(key, val):
+def prettify(key, val, color=None):
     """Tries to pretty print the given value."""
-
-    color = Fore.MAGENTA
-
+    if color is None:
+        color = Fore.MAGENTA
+    elif color.lower().strip() == "cyan":
+        color = Fore.CYAN
+    elif color.lower().strip() == "green":
+        color = Fore.GREEN
     try:
         if type(val) == str:
             val = parse_value_into_object(val)

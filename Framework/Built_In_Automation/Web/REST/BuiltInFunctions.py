@@ -666,6 +666,8 @@ def handle_rest_call(
 
         result = None
         status_code = 1  # dummy value
+        if CommonUtil.load_testing:
+            start_counter = time.perf_counter()
         while count < request_count:
             method = method.lower().strip()
             if method in ("post", "put"):
@@ -779,6 +781,25 @@ def handle_rest_call(
                     )
                     break
             count += 1
+        if CommonUtil.load_testing:
+            end_counter = time.perf_counter()
+            runtime = round(end_counter-start_counter, 6)
+            CommonUtil.performance_report["endpoint"] = result.url
+            CommonUtil.performance_report["data"].append(
+                {
+                    "status": status_code,
+                    "message": result.text,
+                    "runtime": runtime
+                }
+            )
+            CommonUtil.performance_report["individual_stats"] = {
+                "slowest": max(runtime, CommonUtil.performance_report["individual_stats"]["slowest"]),
+                "fastest": min(runtime, CommonUtil.performance_report["individual_stats"]["fastest"]),
+            }
+            if str(status_code) in CommonUtil.performance_report["status_counts"]:
+                CommonUtil.performance_report["status_counts"][str(status_code)] += 1
+            else:
+                CommonUtil.performance_report["status_counts"][str(status_code)] = 1
 
         if wait_for_response_code != 0 and status_code != wait_for_response_code:
             CommonUtil.ExecLog(
@@ -799,9 +820,7 @@ def handle_rest_call(
             if result.json():
                 Shared_Resources.Set_Shared_Variables("rest_response", result.json(), print_variable=False)
                 Shared_Resources.Set_Shared_Variables("http_response", result.json())
-                CommonUtil.ExecLog(
-                    sModuleInfo, "HTTP Request successful.", 1
-                )
+                CommonUtil.ExecLog(sModuleInfo, "HTTP Request successful.", 1)
 
                 # if save cookie option enabled then push cookie into shared variables, if cookie var name is 'id' then you can reference it later with %|id|%
                 if save_cookie:
@@ -878,13 +897,9 @@ def handle_rest_call(
                         )
                 return "passed"
             else:
-                CommonUtil.ExecLog(
-                    sModuleInfo, "HTTP Request did not respond in json format", 1
-                )
+                CommonUtil.ExecLog(sModuleInfo, "HTTP Request did not respond in json format", 1)
                 response_text = result.json()
-                CommonUtil.ExecLog(
-                    sModuleInfo, "Received Response", 1
-                )
+                CommonUtil.ExecLog(sModuleInfo, "Received Response", 1)
                 try:
                     # try to save as dict
                     CommonUtil.ExecLog(

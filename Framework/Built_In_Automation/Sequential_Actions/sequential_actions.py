@@ -28,12 +28,13 @@
 from .action_declarations.info import actions, action_support, supported_platforms
 
 # Import modules
-import inspect, subprocess
+import inspect
 import os
 import sys
 import time
+import json
 from concurrent.futures import ThreadPoolExecutor
-from datetime import datetime, timedelta
+from datetime import datetime
 
 from . import common_functions as common  # Functions that are common to all modules
 from Framework.Built_In_Automation.Shared_Resources import (
@@ -49,7 +50,15 @@ from Framework.Utilities.CommonUtil import (
 
 
 MODULE_NAME = inspect.getmodulename(__file__)
-
+temp_ini_file = os.path.join(
+        os.path.join(
+            os.path.abspath(__file__).split("Framework")[0],
+            os.path.join(
+                "AutomationLog",
+                ConfigModule.get_config_value("Advanced Options", "_file"),
+            ),
+        )
+    )
 # Recall dependency, if not already set
 dependency = None
 if sr.Test_Shared_Variables(
@@ -259,10 +268,10 @@ def Sequential_Actions(
     )  # empty list means run all, instead of step data we want to send the dataset no's of the step data to run
     write_browser_logs()
 
-    global load_testing, thread_pool
-    # finish all thread for load tetsing
-    if load_testing:
-        thread_pool.shutdown(wait=True)
+    # global load_testing, thread_pool
+    # # finish all thread for load tetsing
+    # if load_testing:
+    #     thread_pool.shutdown(wait=True)
 
     return result
 
@@ -1274,7 +1283,7 @@ def Loop_Action_Handler(data, row, dataset_cnt):
         result = True
         nested_loop = False
         nested_double = False
-        max_retry = 50  # wil search for any elemnt this amount of time in while loop
+        max_retry = 50  # wil search for any element this amount of time in while loop
         loop_method = None
         ### Create sub-set of step data that we will send to SA for processing
         try:
@@ -1450,6 +1459,7 @@ def Loop_Action_Handler(data, row, dataset_cnt):
             try:
                 load_testing = True
                 CommonUtil.load_testing = True
+                CommonUtil.performance_report = {"data": [], "individual_stats": {"slowest": 0, "fastest": float("inf")}, "status_counts": {}}
                 total_range = 0
                 total_percentage = 0
                 for r in data:
@@ -1568,32 +1578,21 @@ def Loop_Action_Handler(data, row, dataset_cnt):
         inside_interval = False
         load_testing_count = -1
 
-        while (
-            True
-        ):  # We control the new sub-set of the step data, so we can examine the output
+        performance_start_time = datetime.fromtimestamp(time.time()).strftime("%Y-%m-%d %H:%M:%S")
+        performance_start_counter = time.perf_counter()
+        while True:  # We control the new sub-set of the step data, so we can examine the output
             CommonUtil.ExecLog(sModuleInfo, "Loop action #%d" % sub_set_cnt, 1)
 
             if loop_method == "exit_on_dataset":
-                for ndc in range(
-                    len(new_step_data)
-                ):  # For each data set in the sub-set
-                    # if (
-                    #     CommonUtil.check_offline()
-                    # ):  # Check if user initiated offline command from GUI
-                    #     CommonUtil.ExecLog(
-                    #         sModuleInfo, "User requested Zeuz Node to go Offline", 2
-                    #     )
-                    #     return "zeuz_failed", skip
-
+                for ndc in range(len(new_step_data)):
                     # Build the sub-set and execute
                     result = build_subset([new_step_data[ndc]])
                     if result in failed_tag_list:
                         return result, skip
 
                     # Check if we should exit now or keep going
-                    if (
-                        ndc == action_result and result == loop_type
-                    ):  # If this data set that just returned is the one that we are watching AND it returned the result we want, then exit the loop
+                    if ndc == action_result and result == loop_type:
+                        # If this data set that just returned is the one that we are watching AND it returned the result we want, then exit the loop
                         skip = sets  # Tell SA to skip these data sets that were in the loop once it picks up processing normally
                         die = True  # Exit while loop
                         break  # Stop processing sub-sets
@@ -1601,23 +1600,22 @@ def Loop_Action_Handler(data, row, dataset_cnt):
                     break  # Stop processing this while loop, and go back to regular SA
 
             elif loop_method == "exact":
-                for ndc in range(
-                    len(new_step_data)
-                ):  # For each data set in the sub-set
+                for ndc in range(len(new_step_data)):  # For each data set in the sub-set
                     # Build the sub-set and execute
                     if load_testing:
                         thread_pool.submit(build_subset, [new_step_data[ndc]])
                         if not loop_result_for_load_testing:
+                            CommonUtil.load_testing = False
                             return result, skip
                     else:
                         result = build_subset([new_step_data[ndc]])
                         if result in failed_tag_list:
+                            CommonUtil.load_testing = False
                             return result, skip
 
                 # Check if we hit our set number of loops
-                if (
-                    sub_set_cnt >= loop_len
-                ):  # If we hit out desired number of loops for this loop type, then exit
+                if sub_set_cnt >= loop_len:
+                    # If we hit out desired number of loops for this loop type, then exit
                     skip = sets  # Tell SA to skip these data sets that were in the loop once it picks up processing normally
                     break  # Stop processing sub-sets and exit while loop
 
@@ -1677,9 +1675,8 @@ def Loop_Action_Handler(data, row, dataset_cnt):
             elif loop_method == "boolean":
                 die = False
                 combined_result = True
-                for ndc in range(
-                    len(new_step_data)
-                ):  # For each data set in the sub-set
+                for ndc in range(len(new_step_data)):
+                    # For each data set in the sub-set
                     # Build the sub-set and execute
                     result = build_subset([new_step_data[ndc]])
 
@@ -1715,9 +1712,7 @@ def Loop_Action_Handler(data, row, dataset_cnt):
             if load_testing:
                 load_testing_count += 1
                 if inside_interval:
-                    if (
-                        load_testing_count < distribution[load_testing_interval][1]
-                    ):  # current interval running
+                    if load_testing_count < distribution[load_testing_interval][1]:  # current interval running
                         time.sleep(distribution[load_testing_interval][2])
                         # print "sleeping %f"%distribution[load_testing_interval][2]
                         continue
@@ -1738,15 +1733,38 @@ def Loop_Action_Handler(data, row, dataset_cnt):
                     # print "sleeping %f" % distribution[load_testing_interval][2]
 
         if load_testing:
-            CommonUtil.ExecLog(
-                sModuleInfo,
-                "Loop iterated %d times successfully" % sub_set_cnt,
-                1,
-                force_write=True,
-            )
+            thread_pool.shutdown()
+            print('status_counts =', CommonUtil.performance_report['status_counts'])
+            print('data_len =', len(CommonUtil.performance_report['data']))
+            performance_end_time = datetime.fromtimestamp(time.time()).strftime("%Y-%m-%d %H:%M:%S")
+            performance_end_counter = time.perf_counter()
+            performance_duration = round(performance_end_counter-performance_start_counter, 6)
 
+            CommonUtil.performance_report["loops"] = loop_len
+            CommonUtil.performance_report["start_time"] = performance_start_time
+            CommonUtil.performance_report["end_time"] = performance_end_time
+            CommonUtil.performance_report["runtime_in_sec"] = performance_duration
+
+            total_runtime = 0.0
+            for each_data in CommonUtil.performance_report["data"]:
+                total_runtime += each_data["runtime"]
+
+            CommonUtil.performance_report["individual_stats"]["average"] = total_runtime/loop_len
+            CommonUtil.performance_report["individual_stats"]["requests/sec"] = loop_len/total_runtime
+
+            CommonUtil.ExecLog(sModuleInfo, "Loop iterated %d times successfully" % sub_set_cnt, 1, force_write=True)
+
+        CommonUtil.load_testing = False
+        report_path = os.path.join(
+            ConfigModule.get_config_value("sectionOne", "performance_report", temp_ini_file),
+            "Action_" + str(dataset_cnt+1) + ".json"
+        )
+        with open(report_path, "w") as f:
+            json.dump(CommonUtil.performance_report, f, indent=2)
+        CommonUtil.prettify("Performance_report", CommonUtil.performance_report, color="green")
         return result, skip
     except Exception as e:
+        CommonUtil.load_testing = False
         return CommonUtil.Exception_Handler(sys.exc_info())
 
 
