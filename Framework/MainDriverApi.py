@@ -204,6 +204,11 @@ def create_tc_log_ss_folder(run_id, test_case, temp_ini_file):
     ConfigModule.add_config_value("sectionOne", "screen_capture_folder", screenshot_folder, temp_ini_file)
     FL.CreateFolder(screenshot_folder)
 
+    # performance report folder
+    performance_report = test_case_folder + os.sep + "performance_report"
+    ConfigModule.add_config_value("sectionOne", "performance_report", performance_report, temp_ini_file)
+    FL.CreateFolder(performance_report)
+
     # create where attachments from selenium browser will be downloaded
     zeuz_download_folder = test_case_folder + os.sep + "zeuz_download_folder"
     FL.CreateFolder(zeuz_download_folder)
@@ -837,6 +842,7 @@ def run_test_case(
     shared.Set_Shared_Variables("run_id", run_id)
     test_case = str(TestCaseID).replace("#", "no")
     CommonUtil.current_tc_no = test_case
+    CommonUtil.load_testing = False
     ConfigModule.add_config_value("sectionOne", "sTestStepExecLogId", sModuleInfo, temp_ini_file)
     create_tc_log_ss_folder(run_id, test_case, temp_ini_file)
     file_specific_steps = all_file_specific_steps[TestCaseID] if TestCaseID in all_file_specific_steps else {}

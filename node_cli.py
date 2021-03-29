@@ -1,11 +1,14 @@
 # -*- coding: utf-8 -*-
 # -*- coding: cp1252 -*-
-
+import os
+from pathlib import Path
+version_path = Path(os.getcwd())/"Framework"/"Version.txt"
+with open(version_path, "r"):
+    print(version_path.read_text())
 from Framework.module_installer import install_missing_modules
 install_missing_modules()
 
-import os, sys, time, os.path, base64, signal, argparse, requests, json, io, zipfile, shutil
-from pathlib import Path
+import sys, time, os.path, base64, signal, argparse, requests, json, io, zipfile, shutil
 from getpass import getpass
 from urllib3.exceptions import InsecureRequestWarning
 from tqdm import tqdm

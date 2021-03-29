@@ -3631,7 +3631,7 @@ def datatype_conversion(data_set):
 
         elif "extract number from str" == conversion_type:
             out_variable_value = extract_num_from_str(
-                sModuleInfo, in_variable_value, decimal_point, decimal_condition, index
+                sModuleInfo, in_variable_value, decimal_point, decimal_condition, index, ceil_floor_round
             )
             return Shared_Resources.Set_Shared_Variables(out_variable_name, out_variable_value)
 
@@ -3841,7 +3841,7 @@ def float_to_float(sModuleInfo, in_variable_value, decimal_point, decimal_condit
 
 
 def extract_num_from_str(
-    sModuleInfo, in_variable_value, decimal_point, decimal_condition, index
+    sModuleInfo, in_variable_value, decimal_point, decimal_condition, index, ceil_floor_round
 ):
     """
     Field	                Sub Field	        Value
@@ -3863,22 +3863,22 @@ def extract_num_from_str(
             else:
                 extracted_number = all_nums[index]
         except:
-            CommonUtil.ExecLog(
-                sModuleInfo, "Index is out of range", 3,
-            )
+            CommonUtil.ExecLog(sModuleInfo, "Index is out of range", 3,)
             return "zeuz_failed"
 
         if no_numbers_found:
-            CommonUtil.ExecLog(
-                sModuleInfo,
-                "Your string has no number to be extracted so returning the string as it is",
-                0,
-            )
+            CommonUtil.ExecLog(sModuleInfo, "Your string has no number to be extracted so returning the string as it is", 1)
             out_variable_value = in_variable_value
         elif (
             re.match("^[-+]?\d+?\.\d+?$", extracted_number)
         ):  # Checking if the extracted num has float number
-            if decimal_condition:
+            if ceil_floor_round == "ceil":
+                out_variable_value = ceil(float(extracted_number))
+            elif ceil_floor_round == "floor":
+                out_variable_value = floor(float(extracted_number))
+            elif ceil_floor_round == "round":
+                out_variable_value = round(float(extracted_number))
+            elif decimal_condition:
                 out_variable_value = round(float(extracted_number), decimal_point)
             else:
                 out_variable_value = float(extracted_number)
@@ -3905,7 +3905,7 @@ def extract_num_from_str(
 
         out_variable_value = []
         for i in in_variable_value:
-            out_variable_value.append(extract_num_from_str(sModuleInfo, i, decimal_point, decimal_condition, index))
+            out_variable_value.append(extract_num_from_str(sModuleInfo, i, decimal_point, decimal_condition, index, ceil_floor_round))
 
     else:
         out_variable_value = in_variable_value
