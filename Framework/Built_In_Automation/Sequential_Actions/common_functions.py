@@ -969,7 +969,7 @@ def New_Compare_Variables(step_data):
 
         for left, mid, right in step_data:
             mid = mid.strip().lower()
-            if mid == "compare":
+            if mid in ("compare", "element parameter"):
                 list1_name = left
                 list2_name = right
             elif "action" in mid:

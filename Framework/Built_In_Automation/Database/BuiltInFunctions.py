@@ -29,6 +29,8 @@ DB_USER_ID = "db_user_id"
 DB_PASSWORD = "db_password"
 DB_HOST = "db_host"
 DB_PORT = "db_port"
+DB_SID = "db_sid"
+DB_SERVICE_NAME = "db_service_name"
 DB_ODBC_DRIVER = "odbc_driver"
 
 
@@ -164,6 +166,8 @@ def db_get_connection():
         db_password = g(DB_PASSWORD)
         db_host = g(DB_HOST)
         db_port = int(g(DB_PORT))
+        db_sid = g(DB_SID)
+        db_service_name = g(DB_SERVICE_NAME)
 
         if "postgres" in db_type:
             import psycopg2
@@ -202,12 +206,24 @@ def db_get_connection():
             import cx_Oracle
 
             # https://cx-oracle.readthedocs.io/en/latest/api_manual/module.html#cx_Oracle.makedsn
-            dsn = cx_Oracle.makedsn(
-                host=db_host,
-                port=db_port,
-                sid=db_name,
-            )
-
+            if db_service_name=='zeuz_failed' and db_sid!='zeuz_failed':
+                dsn = cx_Oracle.makedsn(
+                    host=db_host,
+                    port=db_port,
+                    sid=db_sid
+                )
+            elif db_service_name!='zeuz_failed' and db_sid=='zeuz_failed':
+                dsn = cx_Oracle.makedsn(
+                    host=db_host,
+                    port=db_port,
+                    service_name=db_service_name
+                )
+            elif db_service_name!='zeuz_failed' and db_sid!='zeuz_failed':
+                CommonUtil.ExecLog(sModuleInfo, "you have to choose one between db_sid and db_service_name.", 3)
+                return "zeuz_failed"
+            else:
+                CommonUtil.ExecLog(sModuleInfo, "db_sid or db_service must need to provide.", 3)
+                return "zeuz_failed"
             # Connect to db
             # https://cx-oracle.readthedocs.io/en/latest/api_manual/module.html#cx_Oracle.connect
             db_con = cx_Oracle.connect(
@@ -248,6 +264,8 @@ def connect_to_db(data_set):
     db_password     input parameter         <password of db, ex: mydbpass-mY1-t23z>
     db_host         input parameter         <host of db, ex: localhost, 127.0.0.1>
     db_port         input parameter         <port of db, ex: 5432 for postgres by default>
+    sid         optional parameter         <sid of db, ex: 15321 for oracle by default>
+    service_name         optional parameter         <service_name of db, ex: 'somename' for oracle by default>
     odbc_driver     optional parameter      <specify the odbc driver, optional, can be found from pyodbc.drivers()>
     connect to db   database action         Connect to a database
 
@@ -271,6 +289,10 @@ def connect_to_db(data_set):
                 sr.Set_Shared_Variables(DB_HOST, right)
             if left == DB_PORT:
                 sr.Set_Shared_Variables(DB_PORT, right)
+            if left == DB_SID:
+                sr.Set_Shared_Variables(DB_SID, right)
+            if left == DB_SERVICE_NAME:
+                sr.Set_Shared_Variables(DB_SERVICE_NAME, right)
             if left == DB_ODBC_DRIVER:
                 sr.Set_Shared_Variables(DB_ODBC_DRIVER, right)
 
