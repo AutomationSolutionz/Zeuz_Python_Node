@@ -5,7 +5,7 @@
     Caveat: Functions common to multiple Built In Functions must have action names that are unique, because we search the common functions first, regardless of the module name passed by the user
 """
 
-import inspect, sys, time, collections, ftplib, os, ast, copy, csv
+import inspect, sys, time, collections, ftplib, os, ast, copy, csv, yaml
 from pathlib import Path
 
 try:
@@ -3346,7 +3346,7 @@ def csv_read(data_set):
                         Bool += fields
                 elif "str" in left:
                     pass    # every field is already in string in csv
-            elif "read from csv" in left:
+            elif "read from csv" == left:
                 var_name = right.strip()
 
         with open(filepath, "r") as csv_file:
@@ -3407,6 +3407,60 @@ def csv_read(data_set):
                     data_to_save.append(line)
         CommonUtil.ExecLog(sModuleInfo, "Extracted CSV data with '%s' delimiter and saved data as %s format" % (delimiter, structure), 1)
         sr.Set_Shared_Variables(var_name, data_to_save)
+        return "passed"
+
+    except:
+        return CommonUtil.Exception_Handler(sys.exc_info())
+
+
+@logger
+def yaml_read(data_set):
+    sModuleInfo = inspect.currentframe().f_code.co_name + " : " + MODULE_NAME
+    try:
+        filepath = None
+        var_name = ""
+        for left, _, right in data_set:
+            left = left.lower().strip()
+            if "file path" == left:
+                filepath = right.strip()
+                # Expand ~ (home directory of user) to absolute path.
+                if "~" in filepath:
+                    filepath = Path(os.path.expanduser(filepath))
+                filepath = Path(filepath)
+            elif "read from yaml" == left:
+                var_name = right.strip()
+
+        with open(filepath) as yaml_file:
+            data_to_save = yaml.load(yaml_file, Loader=yaml.FullLoader)
+
+        CommonUtil.ExecLog(sModuleInfo, "Extracted yaml data successfully", 1)
+        return sr.Set_Shared_Variables(var_name, data_to_save)
+
+    except:
+        return CommonUtil.Exception_Handler(sys.exc_info())
+
+
+@logger
+def yaml_write(data_set):
+    sModuleInfo = inspect.currentframe().f_code.co_name + " : " + MODULE_NAME
+    try:
+        filepath = None
+        value = ""
+        for left, _, right in data_set:
+            left = left.lower().strip()
+            if "file path" == left:
+                filepath = right.strip()
+                # Expand ~ (home directory of user) to absolute path.
+                if "~" in filepath:
+                    filepath = Path(os.path.expanduser(filepath))
+                filepath = Path(filepath)
+            elif "write into yaml" == left:
+                value = CommonUtil.parse_value_into_object(right)
+
+        with open(filepath, 'w') as yaml_file:
+            yaml.dump(value, yaml_file)
+
+        CommonUtil.ExecLog(sModuleInfo, "yaml data was written successfully", 1)
         return "passed"
 
     except:
