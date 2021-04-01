@@ -1,9 +1,19 @@
 # Changelog
 
 
+## Version 13.3.x
+
+- [Apr 01, 2021] Add support for automating desktop web browser test cases on
+  mobile browsers.
+- [Apr 01, 2021] Fix a bug where node was checking if appium started up for 10
+  seconds without any delay in between. This is unreliable and increases CPU
+  load unnecessarily.
+
 ## Version: 12.00
 
-Release date: **16th July, 2020**
+> NOTE: This is the old changelog format.
+
+Release date: **July 16, 2020**
 
 - [NEW] Webdriver auto updater script (double click to run the script and it'll
   automatically download all the available drivers and place them in PATH properly)
