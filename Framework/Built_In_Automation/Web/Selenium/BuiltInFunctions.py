@@ -308,38 +308,43 @@ def Open_Browser(dependency, window_size_X=None, window_size_Y=None):
     except:
         pass
 
-    # TODO: Remove this before pushing to remote.
-    browser = "Android"
-    # browser = "iOS"
-
     try:
         CommonUtil.teardown = True
-        browser = browser.lower()
-        if "android" in browser:
+        browser = browser.lower().strip()
+
+        if browser in ("android", "ios"):
             # Finds the appium binary and starts the server.
             appium_port = start_appium_server()
 
             if appium_port == "zeuz_failed":
                 return "zeuz_failed"
 
-            capabilities = {
-                "platformName": "Android",
-                "automationName": "UIAutomator2",
-                "browserName": "Chrome"
+            if browser == "android":
+                capabilities = {
+                    "platformName": "Android",
+                    "automationName": "UIAutomator2",
+                    "browserName": "Chrome"
 
-                # Platform specific details may later be fetched from the device
-                # list sent by zeuz server.
-                # "platformVersion": "9.0",
-                # "deviceName": "Android Emulator",
-            }
+                    # Platform specific details may later be fetched from the device
+                    # list sent by zeuz server.
+                    # "platformVersion": "9.0",
+                    # "deviceName": "Android Emulator",
+                }
+            elif browser == "ios":
+                capabilities = {
+                    "platformName": "iOS",
+                    "automationName": "XCUITest",
+                    "browserName": "Safari"
+
+                    # Platform specific details may later be fetched from the device
+                    # list sent by zeuz server.
+                }
 
             from appium import webdriver as appiumdriver
 
             selenium_driver = appiumdriver.Remote("http://localhost:%d/wd/hub" % appium_port, capabilities)
             selenium_driver.implicitly_wait(WebDriver_Wait)
-        elif "ios" in browser:
-            # TODO: Initialize Appium driver for iOS.
-            pass
+
         elif browser in ("chrome", "chromeheadless"):
             from selenium.webdriver.chrome.options import Options
             chrome_path = ConfigModule.get_config_value("Selenium_driver_paths", "chrome_path")
