@@ -943,6 +943,7 @@ def Click_and_Download(data_set, retry=0):
     try:
         bodyElement = ""
         filepath = ""
+        file_to_be_moved = ""
         for left, mid, right in data_set:
             if left == "location" and mid == "element parameter":
                 bodyElement = LocateElement.Get_Element(
@@ -1024,28 +1025,32 @@ def Click_and_Download(data_set, retry=0):
         except Exception:
             return CommonUtil.Exception_Handler(sys.exc_info(), None, "Error clicking location")
 
-    if filepath:
-        from pathlib import Path
-        # filepath = Shared_Resources.Get_Shared_Variables("zeuz_download_folder")
-        source_folder = ConfigModule.get_config_value("sectionOne", "initial_download_folder", temp_config)
-        all_source_dir = [os.path.join(source_folder, f) for f in os.listdir(source_folder) if os.path.isfile(os.path.join(source_folder, f))]
-        new_directory_of_the_file = filepath
-        for file_to_be_moved in all_source_dir:
-            file_name = Path(file_to_be_moved).name
-            if not os.path.exists(new_directory_of_the_file):
-                Path(new_directory_of_the_file).mkdir(parents=True, exist_ok=True)
-            shutil.move(file_to_be_moved, new_directory_of_the_file)
+    try:
+        if filepath:
+            from pathlib import Path
+            # filepath = Shared_Resources.Get_Shared_Variables("zeuz_download_folder")
+            time.sleep(3)   # Sleep is needed here so that downloaded
+            source_folder = ConfigModule.get_config_value("sectionOne", "initial_download_folder", temp_config)
+            all_source_dir = [os.path.join(source_folder, f) for f in os.listdir(source_folder) if os.path.isfile(os.path.join(source_folder, f))]
+            new_directory_of_the_file = filepath
+            for file_to_be_moved in all_source_dir:
+                file_name = Path(file_to_be_moved).name
+                if not os.path.exists(new_directory_of_the_file):
+                    Path(new_directory_of_the_file).mkdir(parents=True, exist_ok=True)
+                shutil.move(file_to_be_moved, new_directory_of_the_file)
 
-            # after performing shutil.move() we have to check that if the file with new name exists in correct location.
-            # if the file exists in correct position then return passed
-            # if the file doesn't exist in correct position then return failed
-            file_path_for_check_after_move = os.path.join(new_directory_of_the_file, file_name)
-            if os.path.isfile(file_path_for_check_after_move):
-                CommonUtil.ExecLog(sModuleInfo, "File '%s' is moved to '%s'" % (file_name, new_directory_of_the_file), 1)
-            else:
-                CommonUtil.ExecLog(sModuleInfo, "File failed to move", 3)
-                return "zeuz_failed"
-    return "passed"
+                # after performing shutil.move() we have to check that if the file with new name exists in correct location.
+                # if the file exists in correct position then return passed
+                # if the file doesn't exist in correct position then return failed
+                file_path_for_check_after_move = os.path.join(new_directory_of_the_file, file_name)
+                if os.path.isfile(file_path_for_check_after_move):
+                    CommonUtil.ExecLog(sModuleInfo, "File '%s' is moved to '%s'" % (file_name, new_directory_of_the_file), 1)
+                else:
+                    CommonUtil.ExecLog(sModuleInfo, "File failed to move", 3)
+                    return "zeuz_failed"
+        return "passed"
+    except Exception:
+        return CommonUtil.Exception_Handler(sys.exc_info(), None, "Error downloading file \nfrom %s\nto %s" % (file_to_be_moved, filepath))
 
 
 

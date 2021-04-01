@@ -640,7 +640,7 @@ def for_loop_action(step_data, data_set_no):
                     elif data_set_index == data_set_no:
                         CommonUtil.ExecLog(
                             sModuleInfo,
-                            "You are running an Loop action within the same Loop action. It will create infinite recursion",
+                            "You are running a Loop action within the same Loop action. It will create infinite recursion",
                             3
                         )
                         return "zeuz_failed", outer_skip
@@ -767,7 +767,7 @@ def Handle_While_Loop_Action(step_data, data_set_no):
                     elif data_set_index == data_set_no:
                         CommonUtil.ExecLog(
                             sModuleInfo,
-                            "You are running an Loop action within the same Loop action. It will create infinite recursion",
+                            "You are running a Loop action within the same Loop action. It will create infinite recursion",
                             3
                         )
                         return "zeuz_failed", outer_skip

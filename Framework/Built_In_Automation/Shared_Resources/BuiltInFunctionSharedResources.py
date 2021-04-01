@@ -1450,7 +1450,9 @@ def Clean_Up_Shared_Variables():
     CommonUtil.ExecLog(sModuleInfo, "Function: clean up shared variables", 0)
     try:
         global shared_variables
-        shared_variables = {}
+        if "zeuz_download_folder" in shared_variables:
+            temp = shared_variables["zeuz_download_folder"]
+        shared_variables = {"zeuz_download_folder": temp}
         return "passed"
     except Exception:
         return CommonUtil.Exception_Handler(sys.exc_info())
