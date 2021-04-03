@@ -13,7 +13,9 @@
 #        Modules        #
 #                       #
 #########################
-import sys, os, time, inspect, shutil
+import sys, os, time, inspect, shutil, subprocess
+import socket
+import requests
 
 sys.path.append("..")
 from selenium import webdriver
@@ -88,6 +90,206 @@ else:
 
 
 @logger
+def find_exe_in_path(exe):
+    """ Search the path for an executable """
+
+    try:
+        path = os.getenv("PATH")  # Linux/Windows path
+
+        if ";" in path:  # Windows delimiter
+            dirs = path.split(";")
+        elif ":" in path:  # Linux delimiter
+            dirs = path.split(":")
+        else:
+            return "zeuz_failed"
+
+        for directory in dirs:  # Try each directory
+            filename = os.path.join(directory, exe)  # Create full path
+            if os.path.isfile(filename):  # If it exists, return it and stop
+                return filename
+
+        # No matches
+        return "zeuz_failed"
+
+    except Exception:
+        errMsg = "Error searching PATH"
+        return CommonUtil.Exception_Handler(sys.exc_info(), None, errMsg)
+
+
+@logger
+def find_appium():
+    """ Do our very best to find the appium executable """
+
+    sModuleInfo = inspect.currentframe().f_code.co_name + " : " + MODULE_NAME
+
+    # Expected locations
+    appium_list = [
+        "/usr/bin/appium",
+        os.path.join(str(os.getenv("HOME")), ".linuxbrew/bin/appium"),
+        os.path.join(str(os.getenv("ProgramFiles")), "APPIUM", "Appium.exe"),
+        os.path.join(
+            str(os.getenv("USERPROFILE")), "AppData", "Roaming", "npm", "appium.cmd"
+        ),
+        os.path.join(str(os.getenv("ProgramFiles(x86)")), "APPIUM", "Appium.exe"),
+    ]  # getenv() must be wrapped in str(), so it doesn't fail on other platforms
+
+    # Try to find the appium executable
+    appium_binary = ""
+
+    for binary in appium_list:
+        if os.path.exists(binary):
+            appium_binary = binary
+            break
+
+    # Try to find the appium executable in the PATH variable
+    if appium_binary == "":  # Didn't find where appium was installed
+        CommonUtil.ExecLog(sModuleInfo, "Searching PATH for appium", 0)
+        for exe in ("appium", "appium.exe", "appium.bat", "appium.cmd"):
+            result = find_exe_in_path(exe)  # Get path and search for executable with in
+            if result != "zeuz_failed":
+                appium_binary = result
+                break
+
+    # Verify if we have the binary location
+    if appium_binary == "":  # Didn't find where appium was installed
+        CommonUtil.ExecLog(
+            sModuleInfo, "Appium not found. Trying to locate via which", 0
+        )
+        try:
+            appium_binary = subprocess.check_output(
+                "which appium", encoding="utf-8", shell=True
+            ).strip()
+        except:
+            pass
+
+        if appium_binary == "":  # Didn't find where appium was installed
+            appium_binary = "appium"  # Default filename of appium, assume in the PATH
+            CommonUtil.ExecLog(
+                sModuleInfo, "Appium still not found. Assuming it's in the PATH.", 2
+            )
+        else:
+            CommonUtil.ExecLog(sModuleInfo, "Found appium: %s" % appium_binary, 1)
+    else:  # Found appium's path
+        CommonUtil.ExecLog(sModuleInfo, "Found appium: %s" % appium_binary, 1)
+
+    return appium_binary
+
+
+@logger
+def start_appium_server():
+    """Starts the external Appium server.
+
+    Returns appium_port on success.
+    """
+    sModuleInfo = inspect.currentframe().f_code.co_name + " : " + MODULE_NAME
+
+    appium_binary = find_appium()
+
+    def is_port_in_use(port):
+        with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
+            return s.connect_ex(("localhost", port)) == 0
+
+    try:
+        appium_port = 4723
+        tries = 0
+        while is_port_in_use(appium_port) and tries < 20:
+            appium_port += 2
+
+        if tries >= 20:
+            CommonUtil.ExecLog(
+                sModuleInfo,
+                "Failed to find a free port for running appium after 20 tries.",
+                1,
+            )
+            return "zeuz_failed"
+
+        try:
+            appium_server = None
+            if (
+                sys.platform == "win32"
+            ):  # We need to open appium in it's own command dos box on Windows
+                cmd = (
+                    'start "Appium Server" /wait /min cmd /c %s --allow-insecure chromedriver_autodownload -p %d'
+                    % (appium_binary, appium_port)
+                )  # Use start to execute and minimize, then cmd /c will remove the dos box when appium is killed
+                appium_server = subprocess.Popen(
+                    cmd, shell=True
+                )  # Needs to run in a shell due to the execution command
+            elif sys.platform == "darwin":
+                appium_server = subprocess.Popen(
+                    "%s --allow-insecure chromedriver_autodownload -p %s"
+                    % (appium_binary, str(appium_port)),
+                    shell=True,
+                )
+            elif sys.platform == "linux" or sys.platform == "linux2":
+                appium_server = subprocess.Popen(
+                    "%s --allow-insecure chromedriver_autodownload -p %s"
+                    % (appium_binary, str(appium_port)),
+                    shell=True,
+                )
+            else:
+                try:
+
+                    appium_binary_path = os.path.normpath(appium_binary)
+                    appium_binary_path = os.path.abspath(
+                        os.path.join(appium_binary_path, os.pardir)
+                    )
+                    env = {"PATH": str(appium_binary_path)}
+                    appium_server = subprocess.Popen(
+                        subprocess.Popen(
+                            "%s --allow-insecure chromedriver_autodownload -p %s"
+                            % (appium_binary, str(appium_port)),
+                            shell=True,
+                        ),
+                        env=env,
+                    )
+                except:
+                    CommonUtil.ExecLog(
+                        sModuleInfo,
+                        "Couldn't launch appium server, please do it manually by typing 'appium &' in the terminal",
+                        2,
+                    )
+        except Exception as returncode:  # Couldn't run server
+            return CommonUtil.Exception_Handler(
+                sys.exc_info(),
+                None,
+                "Couldn't start Appium server. May not be installed, or not in your PATH: %s"
+                % returncode,
+            )
+
+        # Wait for server to startup and return
+        CommonUtil.ExecLog(
+            sModuleInfo,
+            "Waiting for server to start on port %d: %s" % (appium_port, appium_binary),
+            0,
+        )
+        maxtime = time.time() + 10  # Maximum time to wait for appium server
+        while True:  # Dynamically wait for appium to start by polling it
+            if time.time() > maxtime:
+                break  # Give up if max time was hit
+            try:  # If this works, then stop waiting for appium
+                r = requests.get(
+                    "http://localhost:%d/wd/hub/sessions" % appium_port
+                )  # Poll appium server
+                if r.status_code:
+                    break
+            except:
+                time.sleep(0.1) # sleep for 0.1 sec before retrying.
+
+        if appium_server:
+            CommonUtil.ExecLog(sModuleInfo, "Server started", 1)
+            return appium_port
+        else:
+            CommonUtil.ExecLog(sModuleInfo, "Server failed to start", 3)
+            return "zeuz_failed"
+    except Exception:
+        return CommonUtil.Exception_Handler(
+            sys.exc_info(), None, "Error starting Appium server"
+        )
+
+
+
+@logger
 def Open_Browser(dependency, window_size_X=None, window_size_Y=None):
     """ Launch browser and create instance """
 
@@ -104,11 +306,46 @@ def Open_Browser(dependency, window_size_X=None, window_size_Y=None):
     try:
         selenium_driver.close()
     except:
-        True
+        pass
+
     try:
         CommonUtil.teardown = True
-        browser = browser.lower()
-        if browser in ("chrome", "chromeheadless"):
+        browser = browser.lower().strip()
+
+        if browser in ("android", "ios"):
+            # Finds the appium binary and starts the server.
+            appium_port = start_appium_server()
+
+            if appium_port == "zeuz_failed":
+                return "zeuz_failed"
+
+            if browser == "android":
+                capabilities = {
+                    "platformName": "Android",
+                    "automationName": "UIAutomator2",
+                    "browserName": "Chrome"
+
+                    # Platform specific details may later be fetched from the device
+                    # list sent by zeuz server.
+                    # "platformVersion": "9.0",
+                    # "deviceName": "Android Emulator",
+                }
+            elif browser == "ios":
+                capabilities = {
+                    "platformName": "iOS",
+                    "automationName": "XCUITest",
+                    "browserName": "Safari"
+
+                    # Platform specific details may later be fetched from the device
+                    # list sent by zeuz server.
+                }
+
+            from appium import webdriver as appiumdriver
+
+            selenium_driver = appiumdriver.Remote("http://localhost:%d/wd/hub" % appium_port, capabilities)
+            selenium_driver.implicitly_wait(WebDriver_Wait)
+
+        elif browser in ("chrome", "chromeheadless"):
             from selenium.webdriver.chrome.options import Options
             chrome_path = ConfigModule.get_config_value("Selenium_driver_paths", "chrome_path")
             if not chrome_path:
@@ -295,7 +532,7 @@ def Open_Browser(dependency, window_size_X=None, window_size_Y=None):
                     + os.sep
                     + "selenium-server-standalone-2.45.0.jar"
             )'''
-            
+
             desired_capabilities = DesiredCapabilities.SAFARI
 
             if "ios" in browser:
@@ -3063,7 +3300,7 @@ def switch_window_or_tab(step_data):
 # Method to upload file
 @logger
 def upload_file(step_data):
-    
+
     """
     This action will use normal element search parameters to locate the upload button
     You can upload the attachment to your test case and use the name as a variable for reference
@@ -3072,7 +3309,7 @@ def upload_file(step_data):
     Field                        Sub Field            Value
     id                           element parameter    fileUPload
     upload file                  selenium action      %|log.rtf|%
-    
+
     """
     sModuleInfo = inspect.currentframe().f_code.co_name + " : " + MODULE_NAME
     global selenium_driver
@@ -3214,7 +3451,7 @@ def check_uncheck_all(data_set):
                 command = "uncheck" if "uncheck" in right.lower() else "check"
             elif "allow hidden" == left:
                 target.append((left, "option", right))
-                
+
     except Exception:
         return CommonUtil.Exception_Handler(sys.exc_info(), None, "Error parsing data set")
 
