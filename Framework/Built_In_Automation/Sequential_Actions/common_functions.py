@@ -3580,3 +3580,32 @@ def modify_datetime(data_set):
 
     CommonUtil.ExecLog(sModuleInfo, "Modified datetime. New value: %s" % data, 1)
     return sr.Set_Shared_Variables(var_name, data)
+
+
+@logger
+def replace_string(data_set):
+    sModuleInfo = inspect.currentframe().f_code.co_name + " : " + MODULE_NAME
+    try:
+        src_str = ""
+        old_value = ""
+        new_value = ""
+        var_name = None
+
+        for left, _, right in data_set:
+            left = left.lower().strip()
+            if "source" in left:
+                src_str = right
+            elif "old value" in left:
+                old_value = right
+            elif "new value" in left:
+                new_value = right
+            elif "variable" in left:
+                var_name = right
+
+        result_str = src_str.replace(old_value, new_value)
+
+        CommonUtil.ExecLog(sModuleInfo, "Replaced '%s' with '%s'" % (old_value, new_value), 1)
+        return sr.Set_Shared_Variables(var_name, result_str)
+
+    except:
+        return CommonUtil.Exception_Handler(sys.exc_info())
