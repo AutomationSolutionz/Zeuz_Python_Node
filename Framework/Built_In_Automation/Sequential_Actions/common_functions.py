@@ -3591,15 +3591,15 @@ def replace_string(data_set):
         new_value = ""
         var_name = None
 
-        for left, _, right in data_set:
+        for left, mid, right in data_set:
             left = left.lower().strip()
             if "source" in left:
                 src_str = right
             elif "old value" in left:
-                old_value = right
+                old_value = CommonUtil.parse_value_into_object(right)
             elif "new value" in left:
-                new_value = right
-            elif "variable" in left:
+                new_value = CommonUtil.parse_value_into_object(right)
+            elif "action" in mid:
                 var_name = right
 
         result_str = src_str.replace(old_value, new_value)
