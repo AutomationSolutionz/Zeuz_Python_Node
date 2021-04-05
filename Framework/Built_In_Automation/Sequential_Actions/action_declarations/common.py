@@ -64,6 +64,7 @@ declarations = (
     { "name": "read from csv",                               "function": "csv_read",                              "screenshot": "none" },
     { "name": "read from yaml",                              "function": "yaml_read",                             "screenshot": "none" },
     { "name": "write into yaml",                             "function": "yaml_write",                            "screenshot": "none" },
+    { "name": "write into text file",                        "function": "text_write",                            "screenshot": "none" }
 ) # yapf: disable
 
 module_name = "common"

@@ -123,21 +123,17 @@ def sanitize(step_data):
             new_data_set = []  # Create empty list that will have new data appended
             for row in data_set:  # For each row of the data set
                 new_row = list(row)  # Copy tuple of row as list, so we can change it
-                for i in column:  # Sanitize the specified columns
-                    if (
-                        str(new_row[i])[:1] == '"' and str(new_row[i])[-1:] == '"'
-                    ):  # String is within double quotes, indicating it should not be changed
-                        # new_row[i] = str(new_row[i])[
-                        #     1 : len(new_row[i]) - 1
-                        # ]  # Remove surrounding quotes
-                        continue  # Do not change string
+                # for i in column:  # Sanitize the specified columns
+                #     if (
+                #         str(new_row[i])[:1] == '"' and str(new_row[i])[-1:] == '"'
+                #     ):  # String is within double quotes, indicating it should not be changed
+                #         # new_row[i] = str(new_row[i])[
+                #         #     1 : len(new_row[i]) - 1
+                #         # ]  # Remove surrounding quotes
+                #         continue  # Do not change string
 
-                    new_row[i] = new_row[i].replace(
-                        "  ", " "
-                    )  # Double space to single space
-                    new_row[i] = new_row[
-                        i
-                    ].strip()  # Remove leading and trailing whitespace
+                    # new_row[i] = new_row[i].replace("  ", " ")  # Double space to single space
+                    # new_row[i] = new_row[i].strip()  # Remove leading and trailing whitespace
                 new_data_set.append(
                     tuple(new_row)
                 )  # Append list as tuple to data set list
@@ -3466,6 +3462,37 @@ def yaml_write(data_set):
     except:
         return CommonUtil.Exception_Handler(sys.exc_info())
 
+@logger
+def text_write(data_set):
+    sModuleInfo = inspect.currentframe().f_code.co_name + " : " + MODULE_NAME
+    try:
+        filepath = None
+        value = ""
+        index = 0
+        for left, _, right in data_set:
+            left = left.lower().strip()
+            if "file path" == left:
+                filepath = right.strip()
+                # Expand ~ (home directory of user) to absolute path.
+                if "~" in filepath:
+                    filepath = Path(os.path.expanduser(filepath))
+                filepath = Path(filepath)
+            elif "line no" == left:
+                index = CommonUtil.parse_value_into_object(right.strip())
+            elif "write into text file" == left:
+                value = right
+
+        with open(filepath) as text_file:
+            lines = text_file.readlines()
+        lines[index] = value
+        with open(filepath, "w") as text_file:
+            text_file.writelines(lines)
+
+        CommonUtil.ExecLog(sModuleInfo, "%s no line of %s was changed with the given text successfully" % (str(index), str(filepath)), 1)
+        return "passed"
+
+    except:
+        return CommonUtil.Exception_Handler(sys.exc_info())
 
 @logger
 def modify_datetime(data_set):
