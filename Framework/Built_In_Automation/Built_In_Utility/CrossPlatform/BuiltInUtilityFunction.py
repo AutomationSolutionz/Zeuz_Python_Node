@@ -177,9 +177,13 @@ def RenameFile(file_to_be_renamed, new_name_of_the_file):
         Wrapper for MoveFile
     """
 
-    result = MoveFile(file_to_be_renamed, new_name_of_the_file)
-    return result
-
+    # result = MoveFile(file_to_be_renamed, new_name_of_the_file)
+    # return result
+    try:
+        os.rename(file_to_be_renamed, new_name_of_the_file)
+        return "passed"
+    except:
+        return "zeuz_failed"
 
 @logger
 def MoveFolder(folder_to_be_moved, new_directory_of_the_folder):
