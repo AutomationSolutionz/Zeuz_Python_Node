@@ -1615,10 +1615,14 @@ def run_command(data_set):
 
     Args:
         data_set:
-          command           | value              | command to run
-          run in background | optional parameter | true/false
-          strip whitespaces | optional parameter | true/false
-          run command       | utility action     | variable_name
+        --------
+        command           | value              | command 1 to run
+        command           | value              | command 2 to run
+        command           | value              | command 3 to run
+        command           | value              | command n to run
+        run in background | optional parameter | true/false
+        strip whitespaces | optional parameter | true/false
+        run command       | utility action     | variable_name
     
     Returns:
         The result is stored in a shared variable as a dictionary.
@@ -1629,13 +1633,12 @@ def run_command(data_set):
 
         "passed" if successful.
         "zeuz_failed" otherwise.
-    
     """
 
     sModuleInfo = inspect.currentframe().f_code.co_name + " : " + MODULE_NAME
 
     try:
-        command = None
+        commands = []
         run_in_background = False
         strip_whitespaces = True
         variable_name = None
@@ -1649,13 +1652,21 @@ def run_command(data_set):
             elif "strip whitespaces" in left:
                 strip_whitespaces = right.strip().lower() in ("true", "yes")
             elif "command" in left:
-                command = right
+                commands.append(right)
 
-        if None in (command, variable_name):
+        if None in (commands, variable_name):
             CommonUtil.ExecLog(
-                sModuleInfo, "Variable name and command must be provided.", 3
+                sModuleInfo, "Variable name and commands must be provided.", 3
             )
             return "zeuz_failed"
+
+        # Add && before every other command except the first one
+        for i, cmd in enumerate(commands):
+            if i > 0:
+                commands[i] = "&& %s" % cmd
+
+        # Convert to a string
+        commands = " ".join(commands)
 
         args = {"shell": True, "stdin": None, "stdout": None, "stderr": None}
 
@@ -1667,8 +1678,8 @@ def run_command(data_set):
                     "stderr": subprocess.STDOUT,
                 }
             )
-        CommonUtil.ExecLog(sModuleInfo, "Running Command: '%s'" % (command), 1)    
-        proc = subprocess.Popen(command, **args)
+        CommonUtil.ExecLog(sModuleInfo, "Running Command: '%s'" % (commands), 1)    
+        proc = subprocess.Popen(commands, **args)
 
         if not run_in_background:
             proc.wait()
