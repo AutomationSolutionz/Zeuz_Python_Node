@@ -3484,6 +3484,8 @@ def text_write(data_set):
 
         with open(filepath) as text_file:
             lines = text_file.readlines()
+        if not value.endswith("\n"):
+            value = value + "\n"
         lines[index] = value
         with open(filepath, "w") as text_file:
             text_file.writelines(lines)
