@@ -1642,6 +1642,7 @@ def run_command(data_set):
         run_in_background = False
         strip_whitespaces = True
         variable_name = None
+        command_separator = "&&"
 
         for left, mid, right in data_set:
             left = left.lower()
@@ -1653,6 +1654,8 @@ def run_command(data_set):
                 strip_whitespaces = right.strip().lower() in ("true", "yes")
             elif "command" in left:
                 commands.append(right)
+            elif "command separator" in left:
+                command_separator = right
 
         if None in (commands, variable_name):
             CommonUtil.ExecLog(
@@ -1663,7 +1666,7 @@ def run_command(data_set):
         # Add && before every other command except the first one
         for i, cmd in enumerate(commands):
             if i > 0:
-                commands[i] = "&& %s" % cmd
+                commands[i] = "%s %s" % (command_separator, cmd)
 
         # Convert to a string
         commands = " ".join(commands)
