@@ -595,7 +595,8 @@ def for_loop_action(step_data, data_set_no):
 
         for row in data_set:
             if row[1].strip().lower() == "for loop action":
-                loop_this_data_sets = get_data_set_nums(row[2].strip())
+                right = sr.get_previous_response_variables_in_strings(row[2].strip())
+                loop_this_data_sets = get_data_set_nums(right)
                 outer_skip += loop_this_data_sets
                 left = row[0].strip().lower()
                 if left[:4] != "for " or left[4:][left[4:].find(" ")+1:][:3] != "in ":
@@ -608,8 +609,8 @@ def for_loop_action(step_data, data_set_no):
                     return "zeuz_failed", []
                 else:
                     left = row[0].strip()[4:]
-                    eache_varname, left = left[:left.find(" ")], left[left.find(" "):].strip()[3:]
-                    iterable = CommonUtil.parse_value_into_object(left.strip())
+                    each_varname, left = left[:left.find(" ")], left[left.find(" "):].strip()[3:]
+                    iterable = sr.Get_Shared_Variables(left.strip().strip("%").strip("|"))
                     CommonUtil.ExecLog(sModuleInfo, "Looping through a %s: %s" % (type(iterable).__name__, str(iterable)), 1)
             elif row[0 ].strip().lower() == "exit loop":
                 value = row[2].strip()
@@ -625,7 +626,7 @@ def for_loop_action(step_data, data_set_no):
 
         for each_val in iterable:
             die = False
-            sr.Set_Shared_Variables(eache_varname, each_val)
+            sr.Set_Shared_Variables(each_varname, each_val)
             for data_set_index in loop_this_data_sets:
                 if data_set_index not in inner_skip:
                     if data_set_index >= len(step_data):

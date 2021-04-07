@@ -491,7 +491,8 @@ def shared_variable_to_value(data_set):
         "if element exists",
         "optional loop settings",   # Dont delete this. this parameter should be dynamically captured with new data
         "loop settings",            # Dont delete this. this is older dataset. let it perform how it was designed
-        "get parameter"             # This is selenium/appium object, need to retrieve in its non-string actual datatype
+        "get parameter",            # This is selenium/appium object, need to retrieve in its non-string actual datatype
+        "for loop action"
     ]
 
     try:
