@@ -1647,18 +1647,18 @@ def run_command(data_set):
         ssh_mode = False
 
         for left, mid, right in data_set:
-            left = left.lower()
-            if "action" in mid:
+            left = left.strip().lower()
+            if "run command" == left:
                 variable_name = right.strip()
-            elif "run in background" in left:
+            elif "run in background" == left:
                 run_in_background = right.strip().lower() in ("true", "yes")
-            elif "strip whitespaces" in left:
+            elif "strip whitespaces" == left:
                 strip_whitespaces = right.strip().lower() in ("true", "yes")
-            elif "command" in left:
+            elif "command" == left:
                 commands.append(right)
-            elif "command separator" in left:
+            elif "command separator" == left:
                 command_separator = right
-            elif "ssh" in left:
+            elif "ssh" == left:
                 if right.lower().strip() in ("true", "yes",):
                     ssh_mode = True
 
