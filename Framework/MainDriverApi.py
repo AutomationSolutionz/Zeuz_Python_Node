@@ -1394,10 +1394,15 @@ def main(device_dict, user_info_object):
         driver_list = ['Built_In_Selenium_Driver', 'Built_In_RestApi', 'Built_In_Appium_Driver', 'Built_In_Selenium',
                     'Built_In_Driver', 'deepak', 'Built_In_Appium', 'Built_In_NET_Win', 'Jarvis']
         final_run_params = {}
+        print("\n----------------------------------------------\n")
+        print(final_run_params_from_server)
+        print("\n----------------------------------------------\n")
+        CommonUtil.prettify("final_run_params_from_server", final_run_params_from_server)
+        print("\n----------------------------------------------\n")
         for param in final_run_params_from_server:
-            # final_run_params[param] = CommonUtil.parse_value_into_object(list(final_run_params_from_server[param].items())[1][1])
+            final_run_params[param] = CommonUtil.parse_value_into_object(list(final_run_params_from_server[param].items())[1][1])
             # final_run_params[param] = CommonUtil.parse_value_into_object(list(final_run_params_from_server[param].items())[0][1])
-            final_run_params[param] = CommonUtil.parse_value_into_object(final_run_params_from_server[param]["subfield"])
+            # final_run_params[param] = CommonUtil.parse_value_into_object(final_run_params_from_server[param]["subfield"])
 
         send_log_file_only_for_fail = ConfigModule.get_config_value("RunDefinition", "upload_log_file_only_for_fail")
         send_log_file_only_for_fail = False if send_log_file_only_for_fail.lower() == "false" else True
