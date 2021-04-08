@@ -3411,6 +3411,44 @@ def csv_read(data_set):
 
 
 @logger
+def csv_write(data_set):
+    sModuleInfo = inspect.currentframe().f_code.co_name + " : " + MODULE_NAME
+    try:
+        filepath = None
+        value = ""
+        structure = "list of lists"
+        for left, _, right in data_set:
+            left = left.lower().strip()
+            if "file path" == left:
+                filepath = right.strip()
+                # Expand ~ (home directory of user) to absolute path.
+                if "~" in filepath:
+                    filepath = Path(os.path.expanduser(filepath))
+                filepath = Path(filepath)
+            elif "structure of the variable" == left:
+                pass    # "list of dictionaries" for now. Will implement more structures in future
+            elif "write into csv" == left:
+                value = right.strip()
+
+        with open(filepath, "w", newline='') as csv_file:
+            if structure == "list of lists":
+                value = CommonUtil.parse_value_into_object(value)
+                if not (type(value) == list and type(value[0]) == list):
+                    CommonUtil.ExecLog(sModuleInfo, "The structure of the value is not 'list of lists'", 3)
+                    return "zeuz_failed"
+                writer = csv.writer(csv_file)
+                writer.writerows(value)
+                # for each in value:
+                #     writer.writerow(each)
+
+        CommonUtil.ExecLog(sModuleInfo, "Data successfully writen in CSV file", 1)
+        return "passed"
+
+    except:
+        return CommonUtil.Exception_Handler(sys.exc_info())
+
+
+@logger
 def yaml_read(data_set):
     sModuleInfo = inspect.currentframe().f_code.co_name + " : " + MODULE_NAME
     try:
@@ -3455,7 +3493,7 @@ def yaml_write(data_set):
                 value = CommonUtil.parse_value_into_object(right)
 
         with open(filepath, 'w') as yaml_file:
-            yaml.dump(value, yaml_file)
+            yaml.dump(value, yaml_file, sort_keys=False)
 
         CommonUtil.ExecLog(sModuleInfo, "yaml data was written successfully", 1)
         return "passed"

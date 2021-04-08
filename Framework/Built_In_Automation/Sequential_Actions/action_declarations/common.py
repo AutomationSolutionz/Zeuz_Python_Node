@@ -63,6 +63,7 @@ declarations = (
     { "name": "excel comparison",                            "function": "excel_comparison",                      "screenshot": "none" },
     { "name": "read from excel",                             "function": "excel_read",                            "screenshot": "none" },
     { "name": "read from csv",                               "function": "csv_read",                              "screenshot": "none" },
+    { "name": "write into csv",                              "function": "csv_write",                             "screenshot": "none" },
     { "name": "read from yaml",                              "function": "yaml_read",                             "screenshot": "none" },
     { "name": "write into yaml",                             "function": "yaml_write",                            "screenshot": "none" },
     { "name": "write into text file",                        "function": "text_write",                            "screenshot": "none" }
