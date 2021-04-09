@@ -1452,7 +1452,9 @@ def Clean_Up_Shared_Variables():
         global shared_variables
         if "zeuz_download_folder" in shared_variables:
             temp = shared_variables["zeuz_download_folder"]
-        shared_variables = {"zeuz_download_folder": temp}
+            shared_variables = {"zeuz_download_folder": temp}
+        else:
+            shared_variables = {}
         return "passed"
     except Exception:
         return CommonUtil.Exception_Handler(sys.exc_info())
