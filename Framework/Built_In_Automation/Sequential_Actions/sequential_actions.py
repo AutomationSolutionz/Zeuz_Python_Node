@@ -1753,15 +1753,15 @@ def Loop_Action_Handler(data, row, dataset_cnt):
             CommonUtil.performance_report["requests/sec"] = loop_len/performance_duration
 
             CommonUtil.ExecLog(sModuleInfo, "Loop iterated %d times successfully" % sub_set_cnt, 1, force_write=True)
+            report_path = os.path.join(
+                ConfigModule.get_config_value("sectionOne", "performance_report", temp_ini_file),
+                "Action_" + str(dataset_cnt+1) + ".json"
+            )
+            with open(report_path, "w") as f:
+                json.dump(CommonUtil.performance_report, f, indent=2)
+            sr.Set_Shared_Variables("performance_report", CommonUtil.performance_report)
 
         CommonUtil.load_testing = False
-        report_path = os.path.join(
-            ConfigModule.get_config_value("sectionOne", "performance_report", temp_ini_file),
-            "Action_" + str(dataset_cnt+1) + ".json"
-        )
-        with open(report_path, "w") as f:
-            json.dump(CommonUtil.performance_report, f, indent=2)
-        sr.Set_Shared_Variables("performance_report", CommonUtil.performance_report)
         return result, skip
     except Exception as e:
         CommonUtil.load_testing = False
