@@ -8,6 +8,8 @@
 - [Apr 01, 2021] Fix a bug where node was checking if appium started up for 10
   seconds without any delay in between. This is unreliable and increases CPU
   load unnecessarily.
+- [Apr 07, 2021] Improved 'For loop' to loop though selenium objects and perform 
+  web actions on them
 
 ## Version: 12.00
 
