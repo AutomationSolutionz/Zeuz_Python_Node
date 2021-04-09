@@ -799,6 +799,7 @@ def start_appium_server():
                 if r.status_code:
                     break
             except:
+                time.sleep(0.1) # sleep for 0.1 sec before retrying.
                 pass  # Keep waiting for appium to start
 
         if appium_server:
