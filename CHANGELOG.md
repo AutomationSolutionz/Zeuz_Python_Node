@@ -10,6 +10,10 @@
   load unnecessarily.
 - [Apr 07, 2021] Improved 'For loop' to loop though selenium objects and perform 
   web actions on them
+- [Apr 12, 2021] Fix junit reporting issue where the objective was fetched
+  from a missing key.
+- [Apr 12, 2021] Remove `node_gui.py` which is redundant now and introduces
+  buggy behavior.
 
 ## Version: 12.00
 
