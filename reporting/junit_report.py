@@ -11,7 +11,7 @@ def process(data, save_path="report.xml"):
 
     testsuite = ET.Element("testsuite")
     testsuite.set("id", data["run_id"])
-    testsuite.set("name", data["TestObjective"])
+    testsuite.set("name", data["objective"])
     testsuite.set("tests", str(len(data["test_cases"])))
     testsuite.set("duration", data["execution_detail"]["duration"])
     testsuite.set("timestamp", data["execution_detail"]["teststarttime"])
@@ -56,7 +56,7 @@ def main():
     data = None
     with open("reporting/sample.json", "r") as f:
         data = json.loads(f.read())
-    
+
     #print(data)
     process(data, "reporting/report.xml")
 

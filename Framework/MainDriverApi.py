@@ -1293,7 +1293,9 @@ def upload_json_report(Userid, temp_ini_file, run_id, all_run_id_info):
 
     # Create a standard report format to be consumed by other tools.
     junit_report_path = zip_path / "junitreport.xml"
+    print("Generating junit4 compatible report.")
     junit_report.process(all_run_id_info, str(junit_report_path))
+    print("DONE. Generated junit report at %s" % junit_report_path)
 
 
 # main function
