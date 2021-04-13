@@ -50,3 +50,4 @@ websocket-client
 tqdm
 pyscreenshot
 psutil
+pyyaml

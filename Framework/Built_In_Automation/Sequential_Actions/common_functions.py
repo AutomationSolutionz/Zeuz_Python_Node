@@ -5,7 +5,7 @@
     Caveat: Functions common to multiple Built In Functions must have action names that are unique, because we search the common functions first, regardless of the module name passed by the user
 """
 
-import inspect, sys, time, collections, ftplib, os, ast, copy, csv
+import inspect, sys, time, collections, ftplib, os, ast, copy, csv, yaml
 from pathlib import Path
 
 try:
@@ -123,21 +123,17 @@ def sanitize(step_data):
             new_data_set = []  # Create empty list that will have new data appended
             for row in data_set:  # For each row of the data set
                 new_row = list(row)  # Copy tuple of row as list, so we can change it
-                for i in column:  # Sanitize the specified columns
-                    if (
-                        str(new_row[i])[:1] == '"' and str(new_row[i])[-1:] == '"'
-                    ):  # String is within double quotes, indicating it should not be changed
-                        # new_row[i] = str(new_row[i])[
-                        #     1 : len(new_row[i]) - 1
-                        # ]  # Remove surrounding quotes
-                        continue  # Do not change string
+                # for i in column:  # Sanitize the specified columns
+                #     if (
+                #         str(new_row[i])[:1] == '"' and str(new_row[i])[-1:] == '"'
+                #     ):  # String is within double quotes, indicating it should not be changed
+                #         # new_row[i] = str(new_row[i])[
+                #         #     1 : len(new_row[i]) - 1
+                #         # ]  # Remove surrounding quotes
+                #         continue  # Do not change string
 
-                    new_row[i] = new_row[i].replace(
-                        "  ", " "
-                    )  # Double space to single space
-                    new_row[i] = new_row[
-                        i
-                    ].strip()  # Remove leading and trailing whitespace
+                    # new_row[i] = new_row[i].replace("  ", " ")  # Double space to single space
+                    # new_row[i] = new_row[i].strip()  # Remove leading and trailing whitespace
                 new_data_set.append(
                     tuple(new_row)
                 )  # Append list as tuple to data set list
@@ -495,7 +491,8 @@ def shared_variable_to_value(data_set):
         "if element exists",
         "optional loop settings",   # Dont delete this. this parameter should be dynamically captured with new data
         "loop settings",            # Dont delete this. this is older dataset. let it perform how it was designed
-        "get parameter"             # This is selenium/appium object, need to retrieve in its non-string actual datatype
+        "get parameter",            # This is selenium/appium object, need to retrieve in its non-string actual datatype
+        "for loop action"
     ]
 
     try:
@@ -3346,7 +3343,7 @@ def csv_read(data_set):
                         Bool += fields
                 elif "str" in left:
                     pass    # every field is already in string in csv
-            elif "read from csv" in left:
+            elif "read from csv" == left:
                 var_name = right.strip()
 
         with open(filepath, "r") as csv_file:
@@ -3412,6 +3409,131 @@ def csv_read(data_set):
     except:
         return CommonUtil.Exception_Handler(sys.exc_info())
 
+
+@logger
+def csv_write(data_set):
+    sModuleInfo = inspect.currentframe().f_code.co_name + " : " + MODULE_NAME
+    try:
+        filepath = None
+        value = ""
+        structure = "list of lists"
+        for left, _, right in data_set:
+            left = left.lower().strip()
+            if "file path" == left:
+                filepath = right.strip()
+                # Expand ~ (home directory of user) to absolute path.
+                if "~" in filepath:
+                    filepath = Path(os.path.expanduser(filepath))
+                filepath = Path(filepath)
+            elif "structure of the variable" == left:
+                pass    # "list of dictionaries" for now. Will implement more structures in future
+            elif "write into csv" == left:
+                value = right.strip()
+
+        with open(filepath, "w", newline='') as csv_file:
+            if structure == "list of lists":
+                value = CommonUtil.parse_value_into_object(value)
+                if not (type(value) == list and type(value[0]) == list):
+                    CommonUtil.ExecLog(sModuleInfo, "The structure of the value is not 'list of lists'", 3)
+                    return "zeuz_failed"
+                writer = csv.writer(csv_file)
+                writer.writerows(value)
+                # for each in value:
+                #     writer.writerow(each)
+
+        CommonUtil.ExecLog(sModuleInfo, "Data successfully writen in CSV file", 1)
+        return "passed"
+
+    except:
+        return CommonUtil.Exception_Handler(sys.exc_info())
+
+
+@logger
+def yaml_read(data_set):
+    sModuleInfo = inspect.currentframe().f_code.co_name + " : " + MODULE_NAME
+    try:
+        filepath = None
+        var_name = ""
+        for left, _, right in data_set:
+            left = left.lower().strip()
+            if "file path" == left:
+                filepath = right.strip()
+                # Expand ~ (home directory of user) to absolute path.
+                if "~" in filepath:
+                    filepath = Path(os.path.expanduser(filepath))
+                filepath = Path(filepath)
+            elif "read from yaml" == left:
+                var_name = right.strip()
+
+        with open(filepath) as yaml_file:
+            data_to_save = yaml.load(yaml_file, Loader=yaml.FullLoader)
+
+        CommonUtil.ExecLog(sModuleInfo, "Extracted yaml data successfully", 1)
+        return sr.Set_Shared_Variables(var_name, data_to_save)
+
+    except:
+        return CommonUtil.Exception_Handler(sys.exc_info())
+
+
+@logger
+def yaml_write(data_set):
+    sModuleInfo = inspect.currentframe().f_code.co_name + " : " + MODULE_NAME
+    try:
+        filepath = None
+        value = ""
+        for left, _, right in data_set:
+            left = left.lower().strip()
+            if "file path" == left:
+                filepath = right.strip()
+                # Expand ~ (home directory of user) to absolute path.
+                if "~" in filepath:
+                    filepath = Path(os.path.expanduser(filepath))
+                filepath = Path(filepath)
+            elif "write into yaml" == left:
+                value = CommonUtil.parse_value_into_object(right)
+
+        with open(filepath, 'w') as yaml_file:
+            yaml.dump(value, yaml_file, sort_keys=False)
+
+        CommonUtil.ExecLog(sModuleInfo, "yaml data was written successfully", 1)
+        return "passed"
+
+    except:
+        return CommonUtil.Exception_Handler(sys.exc_info())
+
+@logger
+def text_write(data_set):
+    sModuleInfo = inspect.currentframe().f_code.co_name + " : " + MODULE_NAME
+    try:
+        filepath = None
+        value = ""
+        index = 0
+        for left, _, right in data_set:
+            left = left.lower().strip()
+            if "file path" == left:
+                filepath = right.strip()
+                # Expand ~ (home directory of user) to absolute path.
+                if "~" in filepath:
+                    filepath = Path(os.path.expanduser(filepath))
+                filepath = Path(filepath)
+            elif "line no" == left:
+                index = CommonUtil.parse_value_into_object(right.strip())
+            elif "write into text file" == left:
+                value = right
+
+        with open(filepath) as text_file:
+            lines = text_file.readlines()
+        if not value.endswith("\n"):
+            value = value + "\n"
+        lines[index] = value
+        with open(filepath, "w") as text_file:
+            text_file.writelines(lines)
+
+        CommonUtil.ExecLog(sModuleInfo, "%s no line of %s was changed with the given text successfully" % (str(index), str(filepath)), 1)
+        return "passed"
+
+    except:
+        return CommonUtil.Exception_Handler(sys.exc_info())
 
 @logger
 def modify_datetime(data_set):
@@ -3499,3 +3621,32 @@ def modify_datetime(data_set):
 
     CommonUtil.ExecLog(sModuleInfo, "Modified datetime. New value: %s" % data, 1)
     return sr.Set_Shared_Variables(var_name, data)
+
+
+@logger
+def replace_string(data_set):
+    sModuleInfo = inspect.currentframe().f_code.co_name + " : " + MODULE_NAME
+    try:
+        src_str = ""
+        old_value = ""
+        new_value = ""
+        var_name = None
+
+        for left, mid, right in data_set:
+            left = left.lower().strip()
+            if "source" in left:
+                src_str = right
+            elif "old value" in left:
+                old_value = CommonUtil.parse_value_into_object(right)
+            elif "new value" in left:
+                new_value = CommonUtil.parse_value_into_object(right)
+            elif "action" in mid:
+                var_name = right
+
+        result_str = src_str.replace(old_value, new_value)
+
+        CommonUtil.ExecLog(sModuleInfo, "Replaced '%s' with '%s'" % (old_value, new_value), 1)
+        return sr.Set_Shared_Variables(var_name, result_str)
+
+    except:
+        return CommonUtil.Exception_Handler(sys.exc_info())

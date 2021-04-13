@@ -8,6 +8,8 @@
 - [Apr 01, 2021] Fix a bug where node was checking if appium started up for 10
   seconds without any delay in between. This is unreliable and increases CPU
   load unnecessarily.
+- [Apr 07, 2021] Improved 'For loop' to loop though selenium objects and perform 
+  web actions on them
 - [Apr 12, 2021] Fix junit reporting issue where the objective was fetched
   from a missing key.
 - [Apr 12, 2021] Remove `node_gui.py` which is redundant now and introduces

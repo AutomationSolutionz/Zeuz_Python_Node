@@ -15,6 +15,7 @@
 
 
 import sys, datetime, time, inspect, zipfile, string, filecmp, random, requests, math, re, os, subprocess, shutil, ast, hashlib
+import platform
 
 sys.path.append("..")
 
@@ -138,7 +139,7 @@ def MoveFile(file_to_be_moved, new_directory_of_the_file):
     """
         :param file_to_be_moved: location of source file to be moved(not renamed)
         :param new_name_of_the_file: location of destination file
-        :return: Exception if Exception occurs otherwise return result  
+        :return: Exception if Exception occurs otherwise return result
     """
 
     sModuleInfo = inspect.currentframe().f_code.co_name + " : " + MODULE_NAME
@@ -177,9 +178,13 @@ def RenameFile(file_to_be_renamed, new_name_of_the_file):
         Wrapper for MoveFile
     """
 
-    result = MoveFile(file_to_be_renamed, new_name_of_the_file)
-    return result
-
+    # result = MoveFile(file_to_be_renamed, new_name_of_the_file)
+    # return result
+    try:
+        os.rename(file_to_be_renamed, new_name_of_the_file)
+        return "passed"
+    except:
+        return "zeuz_failed"
 
 @logger
 def MoveFolder(folder_to_be_moved, new_directory_of_the_folder):
@@ -187,7 +192,7 @@ def MoveFolder(folder_to_be_moved, new_directory_of_the_folder):
         Moves folder a to b.
         :param folder_to_be_moved: location of source folder to be moved(not renamed)
         :param new_name_of_the_folder: full location of destination folder
-        :return: Exception if Exception occurs otherwise return result  
+        :return: Exception if Exception occurs otherwise return result
     """
 
     sModuleInfo = inspect.currentframe().f_code.co_name + " : " + MODULE_NAME
@@ -235,8 +240,8 @@ def RenameFolder(folder_to_be_renamed, new_name_of_the_folder):
 def UnZip(file_to_be_unzipped, location_where_to_unzip):
     """
         :param file_to_be_unzipped: location of source file to be unzipped
-        :param location_where_to_unzip: location of destination 
-        :return: Exception if Exception occurs or False if file doesn't exist otherwise return result  
+        :param location_where_to_unzip: location of destination
+        :return: Exception if Exception occurs or False if file doesn't exist otherwise return result
     """
 
     sModuleInfo = inspect.currentframe().f_code.co_name + " : " + MODULE_NAME
@@ -301,7 +306,7 @@ def CompareFile(file_to_be_compared1, file_to_be_compared2):
     """
         :param file_to_be_compared1: location of file to be compared
         :param file_to_be_compared2: location of file to be compared
-        :return: Exception if Exception occurs otherwise return result  
+        :return: Exception if Exception occurs otherwise return result
     """
 
     sModuleInfo = inspect.currentframe().f_code.co_name + " : " + MODULE_NAME
@@ -467,7 +472,7 @@ def find_file(
 ):  #!!!Needs to be updated to either return true/false or actually try to find a file in a file system
     """
         :param sFilePath: location of source file to be found
-        :return: Exception if Exception occurs otherwise return result  
+        :return: Exception if Exception occurs otherwise return result
     """
 
     sModuleInfo = inspect.currentframe().f_code.co_name + " : " + MODULE_NAME
@@ -590,7 +595,7 @@ def copy_file(
     """
         :param src: source of the file to be copied
         :param dest: destination where to be copied
-        :return:  Exception if Exception occurs otherwise return result  
+        :return:  Exception if Exception occurs otherwise return result
     """
 
     sModuleInfo = inspect.currentframe().f_code.co_name + " : " + MODULE_NAME
@@ -1611,11 +1616,15 @@ def run_command(data_set):
 
     Args:
         data_set:
-          command           | value              | command to run
-          run in background | optional parameter | true/false
-          strip whitespaces | optional parameter | true/false
-          run command       | utility action     | variable_name
-    
+        --------
+        command           | value              | command 1 to run
+        command           | value              | command 2 to run
+        command           | value              | command 3 to run
+        command           | value              | command n to run
+        run in background | optional parameter | true/false
+        strip whitespaces | optional parameter | true/false
+        run command       | utility action     | variable_name
+
     Returns:
         The result is stored in a shared variable as a dictionary.
         {
@@ -1625,33 +1634,53 @@ def run_command(data_set):
 
         "passed" if successful.
         "zeuz_failed" otherwise.
-    
     """
 
     sModuleInfo = inspect.currentframe().f_code.co_name + " : " + MODULE_NAME
 
     try:
-        command = None
+        commands = []
         run_in_background = False
         strip_whitespaces = True
         variable_name = None
+        command_separator = "&&"
+        ssh_mode = False
 
         for left, mid, right in data_set:
-            left = left.lower()
-            if "action" in mid:
+            left = left.strip().lower()
+            if "run command" == left:
                 variable_name = right.strip()
-            elif "run in background" in left:
+            elif "run in background" == left:
                 run_in_background = right.strip().lower() in ("true", "yes")
-            elif "strip whitespaces" in left:
+            elif "strip whitespaces" == left:
                 strip_whitespaces = right.strip().lower() in ("true", "yes")
-            elif "command" in left:
-                command = right
+            elif "command" == left:
+                commands.append(right)
+            elif "command separator" == left:
+                command_separator = right
+            elif "ssh" == left:
+                if right.lower().strip() in ("true", "yes",):
+                    ssh_mode = True
 
-        if None in (command, variable_name):
+        if None in (commands, variable_name):
             CommonUtil.ExecLog(
-                sModuleInfo, "Variable name and command must be provided.", 3
+                sModuleInfo, "Variable name and commands must be provided.", 3
             )
             return "zeuz_failed"
+
+        # Join the multiple commands together with the given separator
+        commands = (" %s " % command_separator).join(commands)
+
+        if ssh_mode:
+            # NOTE: If we're on Windows 64 bit and running 32-bit Python, subprocess
+            # cannot find ssh for some reason. Need to investigate more. This is a
+            # quick patch to resolve the issue and should be resolved to a more
+            # general approach if found later on.
+            ssh_path = "ssh"
+            if sys.platform == "win32":
+                system32 = os.path.join(os.environ['SystemRoot'], 'SysNative' if platform.architecture()[0] == '32bit' else 'System32')
+                ssh_path = os.path.join(system32, 'openSSH', 'ssh.exe')
+            commands = "%s %s" % (ssh_path, commands)
 
         args = {"shell": True, "stdin": None, "stdout": None, "stderr": None}
 
@@ -1663,8 +1692,8 @@ def run_command(data_set):
                     "stderr": subprocess.STDOUT,
                 }
             )
-        CommonUtil.ExecLog(sModuleInfo, "Running Command: '%s'" % (command), 1)    
-        proc = subprocess.Popen(command, **args)
+        CommonUtil.ExecLog(sModuleInfo, "Running Command: '%s'" % (commands), 1)
+        proc = subprocess.Popen(commands, **args)
 
         if not run_in_background:
             proc.wait()

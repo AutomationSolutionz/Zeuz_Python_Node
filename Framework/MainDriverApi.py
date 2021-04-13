@@ -1374,7 +1374,8 @@ def main(device_dict, user_info_object):
                 "local_run": run_id_info["local_run"] if "local_run" in run_id_info else False,
                 "take_screenshot": run_id_info["take_screenshot"] if "take_screenshot" in run_id_info else True,
                 "upload_log_file_only_for_fail": run_id_info["upload_log_file_only_for_fail"] if "upload_log_file_only_for_fail" in run_id_info else True,
-                "rerun_on_fail": run_id_info["rerun_on_fail"] if "rerun_on_fail" in run_id_info else True,
+                "rerun_on_fail": run_id_info["rerun_on_fail"] if "rerun_on_fail" in run_id_info else False,
+                # "rerun_on_fail": False,     # Turning off rerun until its completed
                 "window_size_x": run_id_info["window_size_x"] if "window_size_x" in run_id_info else "",
                 "window_size_y": run_id_info["window_size_y"] if "window_size_y" in run_id_info else "",
             }
@@ -1395,11 +1396,13 @@ def main(device_dict, user_info_object):
                 debug_info["debug_step_actions"] = run_id_info["debug_step_actions"]
         driver_list = ['Built_In_Selenium_Driver', 'Built_In_RestApi', 'Built_In_Appium_Driver', 'Built_In_Selenium',
                     'Built_In_Driver', 'deepak', 'Built_In_Appium', 'Built_In_NET_Win', 'Jarvis']
+
         final_run_params = {}
         for param in final_run_params_from_server:
             final_run_params[param] = CommonUtil.parse_value_into_object(list(final_run_params_from_server[param].items())[1][1])
             # final_run_params[param] = CommonUtil.parse_value_into_object(list(final_run_params_from_server[param].items())[0][1])
             # final_run_params[param] = CommonUtil.parse_value_into_object(final_run_params_from_server[param]["subfield"])
+            # final_run_params[param] = final_run_params_from_server[param].split(":", 1)[1].strip()  # For TD
 
         send_log_file_only_for_fail = ConfigModule.get_config_value("RunDefinition", "upload_log_file_only_for_fail")
         send_log_file_only_for_fail = False if send_log_file_only_for_fail.lower() == "false" else True

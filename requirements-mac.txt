@@ -41,3 +41,4 @@ yapf
 websocket-client
 tqdm
 pyscreenshot
+pyyaml
