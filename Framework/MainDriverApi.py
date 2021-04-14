@@ -1374,8 +1374,8 @@ def main(device_dict, user_info_object):
                 "local_run": run_id_info["local_run"] if "local_run" in run_id_info else False,
                 "take_screenshot": run_id_info["take_screenshot"] if "take_screenshot" in run_id_info else True,
                 "upload_log_file_only_for_fail": run_id_info["upload_log_file_only_for_fail"] if "upload_log_file_only_for_fail" in run_id_info else True,
-                "rerun_on_fail": run_id_info["rerun_on_fail"] if "rerun_on_fail" in run_id_info else False,
-                # "rerun_on_fail": False,     # Turning off rerun until its completed
+                # "rerun_on_fail": run_id_info["rerun_on_fail"] if "rerun_on_fail" in run_id_info else False,
+                "rerun_on_fail": False,     # Turning off rerun until its completed
                 "window_size_x": run_id_info["window_size_x"] if "window_size_x" in run_id_info else "",
                 "window_size_y": run_id_info["window_size_y"] if "window_size_y" in run_id_info else "",
             }
