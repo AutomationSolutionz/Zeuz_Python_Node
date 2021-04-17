@@ -167,8 +167,8 @@ def Get_Element(step_data_set, driver, query_debug=False, wait_enable=True, retu
         element_query, query_type = _construct_query(step_data_set, web_element_object)
         CommonUtil.ExecLog(
             sModuleInfo,
-            "Element query used to locate the element: %s. Query method used: %s "
-            % (element_query, query_type),
+            "To locate the Element we used Method: %s and Query:\n%s"
+            % (query_type, element_query),
             1,
         )
 
