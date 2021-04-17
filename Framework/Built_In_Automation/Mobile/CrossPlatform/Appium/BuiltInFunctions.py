@@ -16,7 +16,7 @@ import traceback
 import socket
 import os, sys, datetime, time, inspect, subprocess, re, signal, _thread, requests, copy
 from Framework.Utilities import CommonUtil
-from Framework.Utilities.decorators import logger
+from Framework.Utilities.decorators import logger, deprecated
 from Framework.Built_In_Automation.Built_In_Utility.CrossPlatform import (
     BuiltInUtilityFunction as Utility_Functions,
 )
@@ -1396,89 +1396,12 @@ def Swipe(x_start, y_start, x_end, y_end, duration=1000, adb=False):
         CommonUtil.ExecLog(sModuleInfo, "Starting to swipe the screen...", 0)
         if adb:
             CommonUtil.ExecLog(sModuleInfo, "Using ADB swipe method", 0)
-            adbOptions.swipe_android(
-                x_start, y_start, x_end, y_end, duration, device_serial
-            )  # Use adb if specifically asked for it
+            adbOptions.swipe_android(x_start, y_start, x_end, y_end, duration, device_serial)  # Use adb if specifically asked for it
         else:
-            appium_driver.swipe(
-                x_start, y_start, x_end, y_end, duration
-            )  # Use Appium to swipe by default
+            appium_driver.swipe(x_start, y_start, x_end, y_end, duration)  # Use Appium to swipe by default
 
-        # CommonUtil.TakeScreenShot(
-        #     sModuleInfo
-        # )  # Capture screenshot, if settings allow for it
         return "passed"
     except Exception:
-        errMsg = "Unable to swipe."
-        return CommonUtil.Exception_Handler(sys.exc_info(), None, errMsg)
-
-
-@logger
-def swipe_in_direction(data_set):
-    sModuleInfo = inspect.currentframe().f_code.co_name + " : " + MODULE_NAME
-
-    skip_or_not = filter_optional_action_and_step_data(data_set, sModuleInfo)
-    if skip_or_not == False:
-        return "passed"
-
-    try:
-        id = ""
-        class_name = ""
-        index = ""
-        horizontal_scrolling = False
-        direction = "scrollForward()"
-        try:
-            for each in data_set:
-                if str(each[0]).strip().lower() == "resource-id":
-                    id = str(each[2]).strip()
-                elif str(each[0]).strip().lower() == "class":
-                    class_name = str(each[2]).strip()
-                elif str(each[0]).strip().lower() == "index":
-                    index = str(each[2]).strip()
-                elif str(each[0]).strip().lower() == "direction":
-                    if str(each[0]).strip().lower() in ("down", "right"):
-                        direction = "scrollForward()"
-                    else:
-                        direction = "scrollBackward()"
-                elif str(each[0]).strip().lower() == "horizontal scrolling" and str(
-                    each[2]
-                ).strip().lower() in ("yes", "true"):
-                    horizontal_scrolling = True
-        except:
-            errMsg = "Error while looking for action line"
-            return CommonUtil.Exception_Handler(sys.exc_info(), None, errMsg)
-
-        parent_string = "new UiScrollable(new UiSelector()"
-        horizontal_string = ""
-        child_string = ""
-        index_string = ")"
-
-        if id != "":
-            child_string = 'resourceId("%s")' % id
-        elif class_name != "":
-            child_string = 'className("%s")' % class_name
-
-        if horizontal_scrolling:
-            horizontal_string = "setAsHorizontalList()."
-
-        if index != "":
-            index_string = ".instance(%s))" % index
-
-        final_search_string = "%s.%s%s.%s%s" % (
-            parent_string,
-            child_string,
-            index_string,
-            horizontal_string,
-            direction,
-        )
-        try:
-            appium_driver.find_element_by_android_uiautomator(final_search_string)
-        except:
-            pass
-        CommonUtil.ExecLog(sModuleInfo, "Swiped to the element successfully", 1)
-
-        return "passed"
-    except:
         errMsg = "Unable to swipe."
         return CommonUtil.Exception_Handler(sys.exc_info(), None, errMsg)
 
@@ -1816,6 +1739,195 @@ def swipe_handler_android(data_set=[], save_att_data_set={}):
         return CommonUtil.Exception_Handler(
             sys.exc_info(), None, "Error performing swipe gesture"
         )
+
+
+@logger
+@deprecated
+def scroll_to_an_element(data_set):
+    sModuleInfo = inspect.currentframe().f_code.co_name + " : " + MODULE_NAME
+    skip_or_not = filter_optional_action_and_step_data(data_set, sModuleInfo)
+    if skip_or_not == False:
+        return "passed"
+    try:
+        final_string = "new UiScrollable(new UiSelector().scrollable(true))"
+        search_string = ""
+        direction = ""
+        element_dataset = []
+        element_search = False
+        varname = ""
+        max_scroll = ""
+        scroll_to = ""
+        try:
+            for left, mid, right in data_set:
+                mid = mid.strip().lower()
+                left = left.strip().lower()
+                if "search element parameter" != mid:
+                    element_dataset.append((left, mid, right))
+                else:
+                    if left == "*resource-id":
+                        search_string += '.resourceIdMatches(".*' + right + '.*")'
+                    elif left == "resource-id":
+                        search_string += '.resourceIdMatches("' + right + '")'
+                    elif left == "*text":
+                        search_string += '.textContains("' + right + '")'
+                    elif left == "text":
+                        search_string += '.text("' + right + '")'
+                    elif left == "class":
+                        search_string += '.className("' + right + '")'
+                    elif left == "*class":
+                        CommonUtil.ExecLog(
+                            sModuleInfo,
+                            "Partial matching does not work for class. It works for resource-id and text.\n" +
+                            "The following 6 Attributes will work for search element parameter:\n" +
+                            "resource-id\n*resource-id\ntext\n*text\nclass\nindex",
+                            3)
+                        return "zeuz_failed"
+                    elif left == "index":
+                        search_string += '.instance("' + right + '")'
+                    else:
+                        CommonUtil.ExecLog(
+                            sModuleInfo,
+                            "Only the following 6 Attributes will work for search element parameter:\n" +
+                            "resource-id\n*resource-id\ntext\n*text\nclass\nindex",
+                            3)
+                        return "zeuz_failed"
+                if "element parameter" == mid:
+                    element_search = True
+                elif "direction" == left:
+                    r = right.strip().lower()
+                    if r == "up": direction = ".setAsVerticalList().scrollForward()"
+                    elif r == "down": direction = ".setAsVerticalList().scrollBackward()"
+                    elif r == "left": direction = ".setAsHorizontalList().scrollForward()"
+                    elif r == "right": direction = ".setAsHorizontalList().scrollBackward()"
+                    else: direction = ""
+                elif "save search element" == left:
+                    varname = right.strip()
+                elif "max scroll" == left:
+                    if right.strip().isdigit():
+                        max_scroll = right.strip().lower()
+                    else:
+                        CommonUtil.ExecLog(sModuleInfo, "Max scroll should be an integer", 3)
+                        return "zeuz_failed"
+                elif "scroll to an element" == left:
+                    if right.strip().lower() == "scroll to end":
+                        scroll_to = "end"
+                    elif right.strip().lower() == "scroll to beginning":
+                        scroll_to = "beginning"
+
+            if scroll_to == "end":
+                if max_scroll == "":
+                    CommonUtil.ExecLog(sModuleInfo, "Max scroll is not set. Setting it to 20", 3)
+                    max_scroll = "20"
+                final_string += ".scrollToEnd(" + max_scroll + ")"
+            elif scroll_to == "beginning":
+                if max_scroll == "":
+                    CommonUtil.ExecLog(sModuleInfo, "Max scroll is not set. Setting it to 20", 3)
+                    max_scroll = "20"
+                final_string += ".scrollToBeginning(" + max_scroll + ")"
+            else:
+                if not search_string:
+                    CommonUtil.ExecLog(sModuleInfo, "You have not provided any 'Search element parameter'", 3)
+                    return "zeuz_failed"
+                max_scroll = ".setMaxSearchSwipes(" + max_scroll + ")"
+                final_string += direction + max_scroll + ".scrollIntoView(new UiSelector()" + search_string + ")"
+
+            CommonUtil.ExecLog(sModuleInfo, "Search string used for UI Automator:\n" + final_string, 1)
+        except:
+            errMsg = "Error parsing data"
+            return CommonUtil.Exception_Handler(sys.exc_info(), None, errMsg)
+
+        try:
+            if element_search:
+                Element = LocateElement.Get_Element(element_dataset, appium_driver)
+                if Element == "zeuz_failed":
+                    CommonUtil.ExecLog(sModuleInfo, "Could not find the Parent element. Searching for the scrollable parent element automatically", 2)
+                    Element = appium_driver
+            else:
+                Element = appium_driver
+
+            elem = Element.find_element_by_android_uiautomator(final_string)
+            # Not sure what element its returning. So not adding variable in the control server for now
+            if varname:
+                Shared_Resources.Set_Shared_Variables(varname, elem)
+        except:
+            return CommonUtil.Exception_Handler(sys.exc_info())
+
+        CommonUtil.ExecLog(sModuleInfo, "Swiped to the element successfully", 1)
+        return "passed"
+    except:
+        errMsg = "Unable to swipe"
+        return CommonUtil.Exception_Handler(sys.exc_info(), None, errMsg)
+
+
+@logger
+@deprecated
+def swipe_in_direction(data_set):
+    sModuleInfo = inspect.currentframe().f_code.co_name + " : " + MODULE_NAME
+
+    skip_or_not = filter_optional_action_and_step_data(data_set, sModuleInfo)
+    if skip_or_not == False:
+        return "passed"
+
+    try:
+        id = ""
+        class_name = ""
+        index = ""
+        horizontal_scrolling = False
+        direction = "scrollForward()"
+        try:
+            for each in data_set:
+                if str(each[0]).strip().lower() == "resource-id":
+                    id = str(each[2]).strip()
+                elif str(each[0]).strip().lower() == "class":
+                    class_name = str(each[2]).strip()
+                elif str(each[0]).strip().lower() == "index":
+                    index = str(each[2]).strip()
+                elif str(each[0]).strip().lower() == "direction":
+                    if str(each[0]).strip().lower() in ("down", "right"):
+                        direction = "scrollForward()"
+                    else:
+                        direction = "scrollBackward()"
+                elif str(each[0]).strip().lower() == "horizontal scrolling" and str(
+                    each[2]
+                ).strip().lower() in ("yes", "true"):
+                    horizontal_scrolling = True
+        except:
+            errMsg = "Error while looking for action line"
+            return CommonUtil.Exception_Handler(sys.exc_info(), None, errMsg)
+
+        parent_string = "new UiScrollable(new UiSelector()"
+        horizontal_string = ""
+        child_string = ""
+        index_string = ")"
+
+        if id != "":
+            child_string = 'resourceId("%s")' % id
+        elif class_name != "":
+            child_string = 'className("%s")' % class_name
+
+        if horizontal_scrolling:
+            horizontal_string = "setAsHorizontalList()."
+
+        if index != "":
+            index_string = ".instance(%s))" % index
+
+        final_search_string = "%s.%s%s.%s%s" % (
+            parent_string,
+            child_string,
+            index_string,
+            horizontal_string,
+            direction,
+        )
+        try:
+            appium_driver.find_element_by_android_uiautomator(final_search_string)
+        except:
+            pass
+        CommonUtil.ExecLog(sModuleInfo, "Swiped to the element successfully", 1)
+
+        return "passed"
+    except:
+        errMsg = "Unable to swipe."
+        return CommonUtil.Exception_Handler(sys.exc_info(), None, errMsg)
 
 
 @logger
