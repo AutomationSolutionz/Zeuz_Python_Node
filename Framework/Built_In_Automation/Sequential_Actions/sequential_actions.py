@@ -225,7 +225,7 @@ def Sequential_Actions(
             _device_info != {}
         ):  # If any devices and their details were sent by the server, save to shared variable
             device_info = _device_info
-            sr.Set_Shared_Variables("device_info", device_info, protected=False)
+            sr.Set_Shared_Variables("device_info", device_info, protected=True)
 
         # Set screen capture type (desktop/mobile) as shared variable, so TakeScreenShot() can read it
         # if screen_capture != None and screen_capture != "None":

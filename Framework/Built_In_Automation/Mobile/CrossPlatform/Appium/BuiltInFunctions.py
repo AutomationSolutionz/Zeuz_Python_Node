@@ -336,7 +336,7 @@ def find_correct_device_on_first_run(serial_or_name, device_info):
 
             # Store in shared variable, so it doens't get forgotten
             Shared_Resources.Set_Shared_Variables("device_serial", device_serial, protected=True)
-            Shared_Resources.Set_Shared_Variables("device_id", device_id, protected=False)  # Save device id, because functions outside this file may require it
+            Shared_Resources.Set_Shared_Variables("device_id", device_id, protected=True)  # Save device id, because functions outside this file may require it
 
             CommonUtil.ExecLog(
                 sModuleInfo,
@@ -1156,8 +1156,8 @@ def teardown_appium(data_set):
         # wdaLocalPort = 8100
         appium_server, device_id, device_serial = "", "", ""
         Shared_Resources.Set_Shared_Variables("appium_details", "")
-        Shared_Resources.Set_Shared_Variables("device_info", "")
-        Shared_Resources.Set_Shared_Variables("device_id", "")
+        Shared_Resources.Set_Shared_Variables("device_info", {}, protected=True)
+        Shared_Resources.Set_Shared_Variables("device_id", "", protected=True)
     except:
         CommonUtil.ExecLog(
             sModuleInfo,
@@ -3395,9 +3395,7 @@ def get_program_names(search_name):
             return "", ""  # Failure handling in calling function
 
         cmd = "adb %s shell pm list packages" % serial
-        res = subprocess.check_output(
-            cmd, shell=True, encoding="utf-8"
-        )  # Get list of installed packages on device
+        res = subprocess.check_output(cmd, shell=True, encoding="utf-8")  # Get list of installed packages on device
         res = str(res).replace("\\r", "")  # Remove \r text if any
         res = str(res).replace("\\n", "\n")  # replace \n text with line feed
         res = str(res).replace("\r", "")  # Remove \r carriage return if any
@@ -3506,9 +3504,7 @@ def device_information(data_set):
                 break
 
         if cmd == "":
-            CommonUtil.ExecLog(
-                sModuleInfo, "Action's Field contains incorrect information", 3
-            )
+            CommonUtil.ExecLog(sModuleInfo, "Action's Field contains incorrect information", 3)
             return "zeuz_failed"
         if shared_var == "":
             CommonUtil.ExecLog(
@@ -3528,9 +3524,7 @@ def device_information(data_set):
     # Ensure device is connected
     if dep == "android":
         if adbOptions.is_android_connected(device_serial) == False:
-            CommonUtil.ExecLog(
-                sModuleInfo, "Could not detect any connected Android devices", 3
-            )
+            CommonUtil.ExecLog(sModuleInfo, "Could not detect any connected Android devices", 3)
             return "zeuz_failed"
 
     # Get device information
@@ -3567,13 +3561,9 @@ def device_information(data_set):
 
             # Anything else, try to figure out what it is
             else:
-                if (
-                    shared_var in appium_details
-                ):  # If user provided device name, get the associated serial number
+                if shared_var in appium_details:  # If user provided device name, get the associated serial number
                     shared_var = appium_details[shared_var]["serial"]
-                elif adbOptions.is_android_connected(
-                    shared_var
-                ):  # Check if the specified device is connected via serial
+                elif adbOptions.is_android_connected(shared_var):  # Check if the specified device is connected via serial
                     pass
                 else:  # No serial or name provided, and the string provided is not a connected device, just try to connect to the first device and reset it
                     shared_var = ""
@@ -3607,15 +3597,11 @@ def device_information(data_set):
                 CommonUtil.ExecLog(sModuleInfo, "Failed to wake device", 3)
                 return "zeuz_failed"
         else:
-            CommonUtil.ExecLog(
-                sModuleInfo, "Action's Field contains incorrect information", 3
-            )
+            CommonUtil.ExecLog(sModuleInfo, "Action's Field contains incorrect information", 3)
             return "zeuz_failed"
 
         if output in failed_tag_list or output == "":
-            CommonUtil.ExecLog(
-                sModuleInfo, "Could not find the device info about '%s'" % (cmd), 3
-            )
+            CommonUtil.ExecLog(sModuleInfo, "Could not find the device info about '%s'" % (cmd), 3)
             return "zeuz_failed"
 
         # Save the output to the user specified shared variable
@@ -3645,9 +3631,7 @@ def set_device_password(data_set):
         password = data_set[0][2].strip()  # Read password from Value field
         if password != "":
             Shared_Resources.Set_Shared_Variables("device_password", password)
-            CommonUtil.ExecLog(
-                sModuleInfo, "Device password saved as: %s" % password, 1
-            )
+            CommonUtil.ExecLog(sModuleInfo, "Device password saved as: %s" % password, 1)
             return "passed"
         else:
             CommonUtil.ExecLog(
@@ -3687,12 +3671,8 @@ def switch_device(data_set):
             device_id = ID
 
             # Update shared variables, for anything that requires accessing that information
-            Shared_Resources.Set_Shared_Variables(
-                "device_id", device_id, protected=False
-            )  # Save device id, because functions outside this file may require it
-            CommonUtil.set_screenshot_vars(
-                Shared_Resources.Shared_Variable_Export()
-            )  # Get all the shared variables, and pass them to CommonUtil
+            Shared_Resources.Set_Shared_Variables("device_id", device_id, protected=True)  # Save device id, because functions outside this file may require it
+            CommonUtil.set_screenshot_vars(Shared_Resources.Shared_Variable_Export())  # Get all the shared variables, and pass them to CommonUtil
 
             CommonUtil.ExecLog(sModuleInfo, "Switched focus to: %s" % ID, 1)
             return "passed"
@@ -3705,9 +3685,7 @@ def switch_device(data_set):
             return "zeuz_failed"
 
     except Exception:
-        return CommonUtil.Exception_Handler(
-            sys.exc_info(), None, "Error when trying to read Field and Value for action"
-        )
+        return CommonUtil.Exception_Handler(sys.exc_info(), None, "Error when trying to read Field and Value for action")
 
 
 @logger

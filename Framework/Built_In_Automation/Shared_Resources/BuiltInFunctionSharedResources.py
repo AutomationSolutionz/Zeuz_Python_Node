@@ -39,6 +39,7 @@ def Set_Shared_Variables(key, value, protected=False, allowEmpty=False, print_va
         else:  # Valid input
             if protected:
                 protected_variables.append(key)  # Add to list of protected variables
+                protected_variables = list(set(protected_variables))
             else:  # Check if user is trying to overwrite a protected variable
                 if key in protected_variables:  # If we find a match, exit with failure
                     CommonUtil.ExecLog(
