@@ -1783,7 +1783,7 @@ def scroll_to_an_element(data_set):
                 if not search_string:
                     CommonUtil.ExecLog(sModuleInfo, "You have not provided any 'Search element parameter'", 3)
                     return "zeuz_failed"
-                max_scroll = ".setMaxSearchSwipes(" + max_scroll + ")"
+                max_scroll = ".setMaxSearchSwipes(" + max_scroll + ")" if max_scroll else ""
                 final_string += direction + max_scroll + ".scrollIntoView(new UiSelector()" + search_string + ")"
 
             CommonUtil.ExecLog(sModuleInfo, "Search string used for UI Automator:\n" + final_string, 1)
