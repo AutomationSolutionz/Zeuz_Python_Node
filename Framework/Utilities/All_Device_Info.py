@@ -41,7 +41,7 @@ def get_all_connected_android_info():
 
         if len(android_list) == 0:
             # if adb server is not started on first time it cannot get online devices so trying once again
-            time.sleep(2)
+            time.sleep(0.5)
             result = subprocess.check_output("adb devices", shell=True, encoding="utf-8")
             result = result.replace("List of devices attached", "")
             result = result.replace("\r", "")
