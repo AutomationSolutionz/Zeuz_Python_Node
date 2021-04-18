@@ -3,7 +3,7 @@
 # -*- coding: cp1252 -*-
 
 
-import sys, subprocess
+import sys, subprocess, time
 from Framework.Utilities import CommonUtil
 import json
 
@@ -26,9 +26,7 @@ def get_all_connected_android_info():
         android_cmd_name = "shell getprop ro.product.name"
         android_cmd_mfg = "shell getprop ro.product.manufacturer"
         android_cmd_imei = "shell dumpsys iphonesubinfo"
-        android_cmd_alt_imei = (
-            "shell service call iphonesubinfo 1"  # Usually needed for CDMA phones
-        )
+        android_cmd_alt_imei = "shell service call iphonesubinfo 1"  # Usually needed for CDMA phones
 
         # Get list of devices
         # One report of this blocking the next line, so disabled: result = subprocess.check_output('adb kill-server', shell=True) # Stop adb server, to ensure this works properly
@@ -37,13 +35,24 @@ def get_all_connected_android_info():
         result = result.replace("\r", "")
         result = result.replace("\t", " ")
         result = result.split("\n")
-
         for device in result:
             if "device" in device:
                 android_list.append(str(device.split(" ")[0]).strip())
+
+        if len(android_list) == 0:
+            # if adb server is not started on first time it cannot get online devices so trying once again
+            time.sleep(2)
+            result = subprocess.check_output("adb devices", shell=True, encoding="utf-8")
+            result = result.replace("List of devices attached", "")
+            result = result.replace("\r", "")
+            result = result.replace("\t", " ")
+            result = result.split("\n")
+            for device in result:
+                if "device" in device:
+                    android_list.append(str(device.split(" ")[0]).strip())
+
         if len(android_list) == 0:
             return False
-
         # Get device information
         for serial in android_list:
             # Execute commands
