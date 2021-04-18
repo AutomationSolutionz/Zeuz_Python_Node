@@ -216,9 +216,7 @@ def find_correct_device_on_first_run(serial_or_name, device_info):
 
     sModuleInfo = inspect.currentframe().f_code.co_name + " : " + MODULE_NAME
     global device_id, device_serial, appium_details
-    CommonUtil.ExecLog(
-        sModuleInfo, "List of devices provided by server: %s" % str(device_info), 1
-    )
+    CommonUtil.ExecLog(sModuleInfo, "List of devices provided by server: %s" % str(device_info), 1)
 
     try:
         # Get list of connected devices
@@ -246,9 +244,7 @@ def find_correct_device_on_first_run(serial_or_name, device_info):
         for device in all_device_info:  # For each device serial number
             if serial_or_name.lower() == device.lower():
                 serial = all_device_info[device]["id"]  # Save serial number
-                device_type = all_device_info[device][
-                    "type"
-                ].lower()  # Save device type android/ios
+                device_type = all_device_info[device]["type"].lower()  # Save device type android/ios
                 imei = all_device_info[device]["imei"]
                 device_name = all_device_info[device]["model"]
                 product_version = all_device_info[device]["osver"]
@@ -265,9 +261,7 @@ def find_correct_device_on_first_run(serial_or_name, device_info):
                 if serial_or_name.lower() == dname.lower():
                     did = dname  # Save device name
                     serial = device_info[did]["id"]  # Save serial number
-                    device_type = device_info[did][
-                        "type"
-                    ].lower()  # Save device type android/ios
+                    device_type = device_info[did]["type"].lower()  # Save device type android/ios
                     imei = device_info[did]["imei"]
                     device_name = all_device_info[device]["model"]
                     product_version = all_device_info[device]["osver"]
@@ -289,9 +283,7 @@ def find_correct_device_on_first_run(serial_or_name, device_info):
                 device_type = device_info[did]["type"].lower()
                 device_name = all_device_info[device]["model"]
                 product_version = all_device_info[device]["osver"]
-                CommonUtil.ExecLog(
-                    sModuleInfo, "Found a device selected at Deploy: %s" % did, 0
-                )
+                CommonUtil.ExecLog(sModuleInfo, "Found a device selected at Deploy: %s" % did, 1)
 
             # Lastly, if nothing above is set, the user did not specify anything, and we have no information from the server. Pick a connected device, and fail if there are none
             else:  # No devices sent, none specified
@@ -299,12 +291,7 @@ def find_correct_device_on_first_run(serial_or_name, device_info):
                     did = "default"
                     serial = device  # Get Serial
                     device_type = devices[device]  # Get type
-                    CommonUtil.ExecLog(
-                        sModuleInfo,
-                        "No device information found. Picked one that is connected: %s"
-                        % serial,
-                        0,
-                    )
+                    CommonUtil.ExecLog(sModuleInfo, "No device information found. Picked one that is connected: %s" % serial, 2)
                     break  # Only take the first device'''
 
         # At the end, we should have at least one device
@@ -340,9 +327,7 @@ def find_correct_device_on_first_run(serial_or_name, device_info):
             # Global variable that holds data required by appium
             appium_details[device_id] = {}
             if "driver" not in appium_details[device_id]:
-                appium_details[device_id][
-                    "driver"
-                ] = None  # Initialize appium driver object
+                appium_details[device_id]["driver"] = None  # Initialize appium driver object
             appium_details[device_id]["serial"] = serial
             appium_details[device_id]["type"] = device_type
             appium_details[device_id]["imei"] = imei
@@ -350,12 +335,8 @@ def find_correct_device_on_first_run(serial_or_name, device_info):
             appium_details[device_id]["device_name"] = device_name
 
             # Store in shared variable, so it doens't get forgotten
-            Shared_Resources.Set_Shared_Variables(
-                "device_serial", device_serial, protected=True
-            )
-            Shared_Resources.Set_Shared_Variables(
-                "device_id", device_id, protected=True
-            )  # Save device id, because functions outside this file may require it
+            Shared_Resources.Set_Shared_Variables("device_serial", device_serial, protected=True)
+            Shared_Resources.Set_Shared_Variables("device_id", device_id, protected=False)  # Save device id, because functions outside this file may require it
 
             CommonUtil.ExecLog(
                 sModuleInfo,
@@ -492,12 +473,8 @@ def launch_application(data_set):
 
     global device_serial, appium_details, appium_driver, device_id, device_info
     # Recall appium details
-    if Shared_Resources.Test_Shared_Variables(
-        "device_info"
-    ):  # Check if device_info is already set in shared variables
-        device_info = Shared_Resources.Get_Shared_Variables(
-            "device_info"
-        )  # Retreive device_info
+    if Shared_Resources.Test_Shared_Variables("device_info"):  # Check if device_info is already set in shared variables
+        device_info = Shared_Resources.Get_Shared_Variables("device_info")  # Retrieve device_info
 
     # Parse data set
     try:
@@ -536,37 +513,24 @@ def launch_application(data_set):
             no_reset = False
             work_profile = False
 
-            for row in data_set:  # Find required data
-                if (
-                    str(row[0]).strip().lower() in ("android package", "package")
-                    and row[1] == "element parameter"
-                ):
-                    package_name = row[2]
-                elif (
-                    str(row[0]).strip().lower()
-                    in ("app activity", "activity", "android activity")
-                    and row[1] == "element parameter"
-                ):
-                    activity_name = row[2]
-                elif (
-                    str(row[0]).strip().lower() in ("ios", "ios simulator")
-                    and row[1] == "element parameter"
-                ):
-                    ios = row[2]
-                elif str(row[0]).strip().lower() == "work profile" and str(
-                    row[2]
-                ).strip().lower() in ("yes", "true"):
+            for left, mid, right in data_set:
+                left = left.strip().lower()
+                mid = mid.strip().lower()
+                if left in ("android package", "package") and mid == "element parameter":
+                    package_name = right
+                elif left in ("app activity", "activity", "android activity") and mid == "element parameter":
+                    activity_name = right
+                elif left in ("ios", "ios simulator") and mid == "element parameter":
+                    ios = right
+                elif left == "work profile" and right.strip().lower() in ("yes", "true"):
                     work_profile = True
-                elif (
-                    str(row[0]).strip().lower() in ("no reset", "no_reset", "noreset")
-                    and row[1] == "element parameter"
-                ):
-                    if str(row[2]).strip().lower() in ("yes", "true"):
+                elif left in ("no reset", "no_reset", "noreset") and mid == "element parameter":
+                    if right.strip().lower() in ("yes", "true"):
                         no_reset = True
                     else:
                         no_reset = False
-                elif str(row[1]).strip().lower() == "action":
-                    serial = row[2].lower().strip()
+                elif mid == "action":
+                    serial = right.lower().strip()
 
             # desired capabilities for specific platforms
             desiredcaps = dict()
@@ -578,11 +542,9 @@ def launch_application(data_set):
 
             for left, mid, right in data_set:
                 left, mid = left.strip().lower(), mid.strip().lower()
-
                 if "parameter" in mid and "=" in right:
                     # key, value
                     k, v = map(lambda x: x.strip(), right.split("="))
-
                     if left in (device_type, "multi"):
                         desiredcaps[k] = v
 
@@ -1164,16 +1126,9 @@ def teardown_appium(data_set):
                     appium_details[name]["driver"].quit()  # Destroy driver
                 except:
                     pass
-                # if (
-                #     sys.platform == "win32"
-                # ):  # Special kill for appium children on Windows
-                #     kill_appium_on_windows(appium_details[name]["server"])
-                try:
-                    appium_details[name]["server"].kill()  # Terminate server
-                except:
-                    pass
-
-                # kill_node()
+                if sys.platform == "win32":  # Special kill for appium children only on Windows
+                    kill_appium_on_windows(appium_details[name]["server"])
+                appium_details[name]["server"].kill()  # Terminate server
             except:
                 CommonUtil.ExecLog(
                     sModuleInfo,
@@ -1181,19 +1136,19 @@ def teardown_appium(data_set):
                     % name,
                     2,
                 )
-
+        """Commenting out kill adb server on 18 April,2021. For now no clients need to restart adb server"""
         # Kill adb server to ensure it doesn't hang
-        try:
-
-            for proc in psutil.process_iter():
-                # check whether the process name matches
-                try:
-                    if "name='adb" in str(proc.name):
-                        adbOptions.kill_adb_server()
-                except:
-                    pass
-        except:
-            pass
+        # try:
+        #
+        #     for proc in psutil.process_iter():
+        #         # check whether the process name matches
+        #         try:
+        #             if "name='adb" in str(proc.name):
+        #                 adbOptions.kill_adb_server()
+        #         except:
+        #             pass
+        # except:
+        #     pass
         # Delete variables
         appium_details = {}
         device_info = {}
@@ -3621,7 +3576,7 @@ def switch_device(data_set):
 
             # Update shared variables, for anything that requires accessing that information
             Shared_Resources.Set_Shared_Variables(
-                "device_id", device_id, protected=True
+                "device_id", device_id, protected=False
             )  # Save device id, because functions outside this file may require it
             CommonUtil.set_screenshot_vars(
                 Shared_Resources.Shared_Variable_Export()
