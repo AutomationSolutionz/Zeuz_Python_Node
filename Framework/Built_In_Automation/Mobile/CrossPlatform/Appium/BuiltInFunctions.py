@@ -16,7 +16,7 @@ import traceback
 import socket
 import os, sys, datetime, time, inspect, subprocess, re, signal, _thread, requests, copy
 from Framework.Utilities import CommonUtil
-from Framework.Utilities.decorators import logger
+from Framework.Utilities.decorators import logger, deprecated
 from Framework.Built_In_Automation.Built_In_Utility.CrossPlatform import (
     BuiltInUtilityFunction as Utility_Functions,
 )
@@ -216,9 +216,7 @@ def find_correct_device_on_first_run(serial_or_name, device_info):
 
     sModuleInfo = inspect.currentframe().f_code.co_name + " : " + MODULE_NAME
     global device_id, device_serial, appium_details
-    CommonUtil.ExecLog(
-        sModuleInfo, "List of devices provided by server: %s" % str(device_info), 1
-    )
+    CommonUtil.ExecLog(sModuleInfo, "List of devices provided by server: %s" % str(device_info), 1)
 
     try:
         # Get list of connected devices
@@ -246,9 +244,7 @@ def find_correct_device_on_first_run(serial_or_name, device_info):
         for device in all_device_info:  # For each device serial number
             if serial_or_name.lower() == device.lower():
                 serial = all_device_info[device]["id"]  # Save serial number
-                device_type = all_device_info[device][
-                    "type"
-                ].lower()  # Save device type android/ios
+                device_type = all_device_info[device]["type"].lower()  # Save device type android/ios
                 imei = all_device_info[device]["imei"]
                 device_name = all_device_info[device]["model"]
                 product_version = all_device_info[device]["osver"]
@@ -265,9 +261,7 @@ def find_correct_device_on_first_run(serial_or_name, device_info):
                 if serial_or_name.lower() == dname.lower():
                     did = dname  # Save device name
                     serial = device_info[did]["id"]  # Save serial number
-                    device_type = device_info[did][
-                        "type"
-                    ].lower()  # Save device type android/ios
+                    device_type = device_info[did]["type"].lower()  # Save device type android/ios
                     imei = device_info[did]["imei"]
                     device_name = all_device_info[device]["model"]
                     product_version = all_device_info[device]["osver"]
@@ -289,9 +283,7 @@ def find_correct_device_on_first_run(serial_or_name, device_info):
                 device_type = device_info[did]["type"].lower()
                 device_name = all_device_info[device]["model"]
                 product_version = all_device_info[device]["osver"]
-                CommonUtil.ExecLog(
-                    sModuleInfo, "Found a device selected at Deploy: %s" % did, 0
-                )
+                CommonUtil.ExecLog(sModuleInfo, "Found a device selected at Deploy: %s" % did, 1)
 
             # Lastly, if nothing above is set, the user did not specify anything, and we have no information from the server. Pick a connected device, and fail if there are none
             else:  # No devices sent, none specified
@@ -299,12 +291,7 @@ def find_correct_device_on_first_run(serial_or_name, device_info):
                     did = "default"
                     serial = device  # Get Serial
                     device_type = devices[device]  # Get type
-                    CommonUtil.ExecLog(
-                        sModuleInfo,
-                        "No device information found. Picked one that is connected: %s"
-                        % serial,
-                        0,
-                    )
+                    CommonUtil.ExecLog(sModuleInfo, "No device information found. Picked one that is connected: %s" % serial, 2)
                     break  # Only take the first device'''
 
         # At the end, we should have at least one device
@@ -340,9 +327,7 @@ def find_correct_device_on_first_run(serial_or_name, device_info):
             # Global variable that holds data required by appium
             appium_details[device_id] = {}
             if "driver" not in appium_details[device_id]:
-                appium_details[device_id][
-                    "driver"
-                ] = None  # Initialize appium driver object
+                appium_details[device_id]["driver"] = None  # Initialize appium driver object
             appium_details[device_id]["serial"] = serial
             appium_details[device_id]["type"] = device_type
             appium_details[device_id]["imei"] = imei
@@ -350,12 +335,8 @@ def find_correct_device_on_first_run(serial_or_name, device_info):
             appium_details[device_id]["device_name"] = device_name
 
             # Store in shared variable, so it doens't get forgotten
-            Shared_Resources.Set_Shared_Variables(
-                "device_serial", device_serial, protected=True
-            )
-            Shared_Resources.Set_Shared_Variables(
-                "device_id", device_id, protected=True
-            )  # Save device id, because functions outside this file may require it
+            Shared_Resources.Set_Shared_Variables("device_serial", device_serial, protected=True)
+            Shared_Resources.Set_Shared_Variables("device_id", device_id, protected=True)  # Save device id, because functions outside this file may require it
 
             CommonUtil.ExecLog(
                 sModuleInfo,
@@ -492,12 +473,8 @@ def launch_application(data_set):
 
     global device_serial, appium_details, appium_driver, device_id, device_info
     # Recall appium details
-    if Shared_Resources.Test_Shared_Variables(
-        "device_info"
-    ):  # Check if device_info is already set in shared variables
-        device_info = Shared_Resources.Get_Shared_Variables(
-            "device_info"
-        )  # Retreive device_info
+    if Shared_Resources.Test_Shared_Variables("device_info"):  # Check if device_info is already set in shared variables
+        device_info = Shared_Resources.Get_Shared_Variables("device_info")  # Retrieve device_info
 
     # Parse data set
     try:
@@ -536,37 +513,24 @@ def launch_application(data_set):
             no_reset = False
             work_profile = False
 
-            for row in data_set:  # Find required data
-                if (
-                    str(row[0]).strip().lower() in ("android package", "package")
-                    and row[1] == "element parameter"
-                ):
-                    package_name = row[2]
-                elif (
-                    str(row[0]).strip().lower()
-                    in ("app activity", "activity", "android activity")
-                    and row[1] == "element parameter"
-                ):
-                    activity_name = row[2]
-                elif (
-                    str(row[0]).strip().lower() in ("ios", "ios simulator")
-                    and row[1] == "element parameter"
-                ):
-                    ios = row[2]
-                elif str(row[0]).strip().lower() == "work profile" and str(
-                    row[2]
-                ).strip().lower() in ("yes", "true"):
+            for left, mid, right in data_set:
+                left = left.strip().lower()
+                mid = mid.strip().lower()
+                if left in ("android package", "package") and mid == "element parameter":
+                    package_name = right
+                elif left in ("app activity", "activity", "android activity") and mid == "element parameter":
+                    activity_name = right
+                elif left in ("ios", "ios simulator") and mid == "element parameter":
+                    ios = right
+                elif left == "work profile" and right.strip().lower() in ("yes", "true"):
                     work_profile = True
-                elif (
-                    str(row[0]).strip().lower() in ("no reset", "no_reset", "noreset")
-                    and row[1] == "element parameter"
-                ):
-                    if str(row[2]).strip().lower() in ("yes", "true"):
+                elif left in ("no reset", "no_reset", "noreset") and mid == "element parameter":
+                    if right.strip().lower() in ("yes", "true"):
                         no_reset = True
                     else:
                         no_reset = False
-                elif str(row[1]).strip().lower() == "action":
-                    serial = row[2].lower().strip()
+                elif mid == "action":
+                    serial = right.lower().strip()
 
             # desired capabilities for specific platforms
             desiredcaps = dict()
@@ -578,11 +542,9 @@ def launch_application(data_set):
 
             for left, mid, right in data_set:
                 left, mid = left.strip().lower(), mid.strip().lower()
-
                 if "parameter" in mid and "=" in right:
                     # key, value
                     k, v = map(lambda x: x.strip(), right.split("="))
-
                     if left in (device_type, "multi"):
                         desiredcaps[k] = v
 
@@ -1164,16 +1126,9 @@ def teardown_appium(data_set):
                     appium_details[name]["driver"].quit()  # Destroy driver
                 except:
                     pass
-                # if (
-                #     sys.platform == "win32"
-                # ):  # Special kill for appium children on Windows
-                #     kill_appium_on_windows(appium_details[name]["server"])
-                try:
-                    appium_details[name]["server"].kill()  # Terminate server
-                except:
-                    pass
-
-                # kill_node()
+                if sys.platform == "win32":  # Special kill for appium children only on Windows
+                    kill_appium_on_windows(appium_details[name]["server"])
+                appium_details[name]["server"].kill()  # Terminate server
             except:
                 CommonUtil.ExecLog(
                     sModuleInfo,
@@ -1181,19 +1136,19 @@ def teardown_appium(data_set):
                     % name,
                     2,
                 )
-
+        """Commenting out kill adb server on 18 April,2021. For now no clients need to restart adb server"""
         # Kill adb server to ensure it doesn't hang
-        try:
-
-            for proc in psutil.process_iter():
-                # check whether the process name matches
-                try:
-                    if "name='adb" in str(proc.name):
-                        adbOptions.kill_adb_server()
-                except:
-                    pass
-        except:
-            pass
+        # try:
+        #
+        #     for proc in psutil.process_iter():
+        #         # check whether the process name matches
+        #         try:
+        #             if "name='adb" in str(proc.name):
+        #                 adbOptions.kill_adb_server()
+        #         except:
+        #             pass
+        # except:
+        #     pass
         # Delete variables
         appium_details = {}
         device_info = {}
@@ -1201,8 +1156,8 @@ def teardown_appium(data_set):
         # wdaLocalPort = 8100
         appium_server, device_id, device_serial = "", "", ""
         Shared_Resources.Set_Shared_Variables("appium_details", "")
-        Shared_Resources.Set_Shared_Variables("device_info", "")
-        Shared_Resources.Set_Shared_Variables("device_id", "")
+        Shared_Resources.Set_Shared_Variables("device_info", {}, protected=True)
+        Shared_Resources.Set_Shared_Variables("device_id", "", protected=True)
     except:
         CommonUtil.ExecLog(
             sModuleInfo,
@@ -1396,89 +1351,12 @@ def Swipe(x_start, y_start, x_end, y_end, duration=1000, adb=False):
         CommonUtil.ExecLog(sModuleInfo, "Starting to swipe the screen...", 0)
         if adb:
             CommonUtil.ExecLog(sModuleInfo, "Using ADB swipe method", 0)
-            adbOptions.swipe_android(
-                x_start, y_start, x_end, y_end, duration, device_serial
-            )  # Use adb if specifically asked for it
+            adbOptions.swipe_android(x_start, y_start, x_end, y_end, duration, device_serial)  # Use adb if specifically asked for it
         else:
-            appium_driver.swipe(
-                x_start, y_start, x_end, y_end, duration
-            )  # Use Appium to swipe by default
+            appium_driver.swipe(x_start, y_start, x_end, y_end, duration)  # Use Appium to swipe by default
 
-        # CommonUtil.TakeScreenShot(
-        #     sModuleInfo
-        # )  # Capture screenshot, if settings allow for it
         return "passed"
     except Exception:
-        errMsg = "Unable to swipe."
-        return CommonUtil.Exception_Handler(sys.exc_info(), None, errMsg)
-
-
-@logger
-def swipe_in_direction(data_set):
-    sModuleInfo = inspect.currentframe().f_code.co_name + " : " + MODULE_NAME
-
-    skip_or_not = filter_optional_action_and_step_data(data_set, sModuleInfo)
-    if skip_or_not == False:
-        return "passed"
-
-    try:
-        id = ""
-        class_name = ""
-        index = ""
-        horizontal_scrolling = False
-        direction = "scrollForward()"
-        try:
-            for each in data_set:
-                if str(each[0]).strip().lower() == "resource-id":
-                    id = str(each[2]).strip()
-                elif str(each[0]).strip().lower() == "class":
-                    class_name = str(each[2]).strip()
-                elif str(each[0]).strip().lower() == "index":
-                    index = str(each[2]).strip()
-                elif str(each[0]).strip().lower() == "direction":
-                    if str(each[0]).strip().lower() in ("down", "right"):
-                        direction = "scrollForward()"
-                    else:
-                        direction = "scrollBackward()"
-                elif str(each[0]).strip().lower() == "horizontal scrolling" and str(
-                    each[2]
-                ).strip().lower() in ("yes", "true"):
-                    horizontal_scrolling = True
-        except:
-            errMsg = "Error while looking for action line"
-            return CommonUtil.Exception_Handler(sys.exc_info(), None, errMsg)
-
-        parent_string = "new UiScrollable(new UiSelector()"
-        horizontal_string = ""
-        child_string = ""
-        index_string = ")"
-
-        if id != "":
-            child_string = 'resourceId("%s")' % id
-        elif class_name != "":
-            child_string = 'className("%s")' % class_name
-
-        if horizontal_scrolling:
-            horizontal_string = "setAsHorizontalList()."
-
-        if index != "":
-            index_string = ".instance(%s))" % index
-
-        final_search_string = "%s.%s%s.%s%s" % (
-            parent_string,
-            child_string,
-            index_string,
-            horizontal_string,
-            direction,
-        )
-        try:
-            appium_driver.find_element_by_android_uiautomator(final_search_string)
-        except:
-            pass
-        CommonUtil.ExecLog(sModuleInfo, "Swiped to the element successfully", 1)
-
-        return "passed"
-    except:
         errMsg = "Unable to swipe."
         return CommonUtil.Exception_Handler(sys.exc_info(), None, errMsg)
 
@@ -1816,6 +1694,195 @@ def swipe_handler_android(data_set=[], save_att_data_set={}):
         return CommonUtil.Exception_Handler(
             sys.exc_info(), None, "Error performing swipe gesture"
         )
+
+
+@logger
+@deprecated
+def scroll_to_an_element(data_set):
+    sModuleInfo = inspect.currentframe().f_code.co_name + " : " + MODULE_NAME
+    skip_or_not = filter_optional_action_and_step_data(data_set, sModuleInfo)
+    if skip_or_not == False:
+        return "passed"
+    try:
+        final_string = "new UiScrollable(new UiSelector().scrollable(true))"
+        search_string = ""
+        direction = ""
+        element_dataset = []
+        element_search = False
+        varname = ""
+        max_scroll = ""
+        scroll_to = ""
+        try:
+            for left, mid, right in data_set:
+                mid = mid.strip().lower()
+                left = left.strip().lower()
+                if "search element parameter" != mid:
+                    element_dataset.append((left, mid, right))
+                else:
+                    if left == "*resource-id":
+                        search_string += '.resourceIdMatches(".*' + right + '.*")'
+                    elif left == "resource-id":
+                        search_string += '.resourceIdMatches("' + right + '")'
+                    elif left == "*text":
+                        search_string += '.textContains("' + right + '")'
+                    elif left == "text":
+                        search_string += '.text("' + right + '")'
+                    elif left == "class":
+                        search_string += '.className("' + right + '")'
+                    elif left == "*class":
+                        CommonUtil.ExecLog(
+                            sModuleInfo,
+                            "Partial matching does not work for class. It works for resource-id and text.\n" +
+                            "The following 6 Attributes will work for search element parameter:\n" +
+                            "resource-id\n*resource-id\ntext\n*text\nclass\nindex",
+                            3)
+                        return "zeuz_failed"
+                    elif left == "index":
+                        search_string += '.instance("' + right + '")'
+                    else:
+                        CommonUtil.ExecLog(
+                            sModuleInfo,
+                            "Only the following 6 Attributes will work for search element parameter:\n" +
+                            "resource-id\n*resource-id\ntext\n*text\nclass\nindex",
+                            3)
+                        return "zeuz_failed"
+                if "element parameter" == mid:
+                    element_search = True
+                elif "direction" == left:
+                    r = right.strip().lower()
+                    if r == "up": direction = ".setAsVerticalList().scrollForward()"
+                    elif r == "down": direction = ".setAsVerticalList().scrollBackward()"
+                    elif r == "left": direction = ".setAsHorizontalList().scrollForward()"
+                    elif r == "right": direction = ".setAsHorizontalList().scrollBackward()"
+                    else: direction = ""
+                elif "save search element" == left:
+                    varname = right.strip()
+                elif "max scroll" == left:
+                    if right.strip().isdigit():
+                        max_scroll = right.strip().lower()
+                    else:
+                        CommonUtil.ExecLog(sModuleInfo, "Max scroll should be an integer", 3)
+                        return "zeuz_failed"
+                elif "scroll to an element" == left:
+                    if right.strip().lower() == "scroll to end":
+                        scroll_to = "end"
+                    elif right.strip().lower() == "scroll to beginning":
+                        scroll_to = "beginning"
+
+            if scroll_to == "end":
+                if max_scroll == "":
+                    CommonUtil.ExecLog(sModuleInfo, "Max scroll is not set. Setting it to 20", 3)
+                    max_scroll = "20"
+                final_string += ".scrollToEnd(" + max_scroll + ")"
+            elif scroll_to == "beginning":
+                if max_scroll == "":
+                    CommonUtil.ExecLog(sModuleInfo, "Max scroll is not set. Setting it to 20", 3)
+                    max_scroll = "20"
+                final_string += ".scrollToBeginning(" + max_scroll + ")"
+            else:
+                if not search_string:
+                    CommonUtil.ExecLog(sModuleInfo, "You have not provided any 'Search element parameter'", 3)
+                    return "zeuz_failed"
+                max_scroll = ".setMaxSearchSwipes(" + max_scroll + ")" if max_scroll else ""
+                final_string += direction + max_scroll + ".scrollIntoView(new UiSelector()" + search_string + ")"
+
+            CommonUtil.ExecLog(sModuleInfo, "Search string used for UI Automator:\n" + final_string, 1)
+        except:
+            errMsg = "Error parsing data"
+            return CommonUtil.Exception_Handler(sys.exc_info(), None, errMsg)
+
+        try:
+            if element_search:
+                Element = LocateElement.Get_Element(element_dataset, appium_driver)
+                if Element == "zeuz_failed":
+                    CommonUtil.ExecLog(sModuleInfo, "Could not find the Parent element. Searching for the scrollable parent element automatically", 2)
+                    Element = appium_driver
+            else:
+                Element = appium_driver
+
+            elem = Element.find_element_by_android_uiautomator(final_string)
+            # Not sure what element its returning. So not adding variable in the control server for now
+            if varname:
+                Shared_Resources.Set_Shared_Variables(varname, elem)
+        except:
+            return CommonUtil.Exception_Handler(sys.exc_info())
+
+        CommonUtil.ExecLog(sModuleInfo, "Swiped to the element successfully", 1)
+        return "passed"
+    except:
+        errMsg = "Unable to swipe"
+        return CommonUtil.Exception_Handler(sys.exc_info(), None, errMsg)
+
+
+@logger
+@deprecated
+def swipe_in_direction(data_set):
+    sModuleInfo = inspect.currentframe().f_code.co_name + " : " + MODULE_NAME
+
+    skip_or_not = filter_optional_action_and_step_data(data_set, sModuleInfo)
+    if skip_or_not == False:
+        return "passed"
+
+    try:
+        id = ""
+        class_name = ""
+        index = ""
+        horizontal_scrolling = False
+        direction = "scrollForward()"
+        try:
+            for each in data_set:
+                if str(each[0]).strip().lower() == "resource-id":
+                    id = str(each[2]).strip()
+                elif str(each[0]).strip().lower() == "class":
+                    class_name = str(each[2]).strip()
+                elif str(each[0]).strip().lower() == "index":
+                    index = str(each[2]).strip()
+                elif str(each[0]).strip().lower() == "direction":
+                    if str(each[0]).strip().lower() in ("down", "right"):
+                        direction = "scrollForward()"
+                    else:
+                        direction = "scrollBackward()"
+                elif str(each[0]).strip().lower() == "horizontal scrolling" and str(
+                    each[2]
+                ).strip().lower() in ("yes", "true"):
+                    horizontal_scrolling = True
+        except:
+            errMsg = "Error while looking for action line"
+            return CommonUtil.Exception_Handler(sys.exc_info(), None, errMsg)
+
+        parent_string = "new UiScrollable(new UiSelector()"
+        horizontal_string = ""
+        child_string = ""
+        index_string = ")"
+
+        if id != "":
+            child_string = 'resourceId("%s")' % id
+        elif class_name != "":
+            child_string = 'className("%s")' % class_name
+
+        if horizontal_scrolling:
+            horizontal_string = "setAsHorizontalList()."
+
+        if index != "":
+            index_string = ".instance(%s))" % index
+
+        final_search_string = "%s.%s%s.%s%s" % (
+            parent_string,
+            child_string,
+            index_string,
+            horizontal_string,
+            direction,
+        )
+        try:
+            appium_driver.find_element_by_android_uiautomator(final_search_string)
+        except:
+            pass
+        CommonUtil.ExecLog(sModuleInfo, "Swiped to the element successfully", 1)
+
+        return "passed"
+    except:
+        errMsg = "Unable to swipe."
+        return CommonUtil.Exception_Handler(sys.exc_info(), None, errMsg)
 
 
 @logger
@@ -3328,9 +3395,7 @@ def get_program_names(search_name):
             return "", ""  # Failure handling in calling function
 
         cmd = "adb %s shell pm list packages" % serial
-        res = subprocess.check_output(
-            cmd, shell=True, encoding="utf-8"
-        )  # Get list of installed packages on device
+        res = subprocess.check_output(cmd, shell=True, encoding="utf-8")  # Get list of installed packages on device
         res = str(res).replace("\\r", "")  # Remove \r text if any
         res = str(res).replace("\\n", "\n")  # replace \n text with line feed
         res = str(res).replace("\r", "")  # Remove \r carriage return if any
@@ -3439,9 +3504,7 @@ def device_information(data_set):
                 break
 
         if cmd == "":
-            CommonUtil.ExecLog(
-                sModuleInfo, "Action's Field contains incorrect information", 3
-            )
+            CommonUtil.ExecLog(sModuleInfo, "Action's Field contains incorrect information", 3)
             return "zeuz_failed"
         if shared_var == "":
             CommonUtil.ExecLog(
@@ -3461,9 +3524,7 @@ def device_information(data_set):
     # Ensure device is connected
     if dep == "android":
         if adbOptions.is_android_connected(device_serial) == False:
-            CommonUtil.ExecLog(
-                sModuleInfo, "Could not detect any connected Android devices", 3
-            )
+            CommonUtil.ExecLog(sModuleInfo, "Could not detect any connected Android devices", 3)
             return "zeuz_failed"
 
     # Get device information
@@ -3500,13 +3561,9 @@ def device_information(data_set):
 
             # Anything else, try to figure out what it is
             else:
-                if (
-                    shared_var in appium_details
-                ):  # If user provided device name, get the associated serial number
+                if shared_var in appium_details:  # If user provided device name, get the associated serial number
                     shared_var = appium_details[shared_var]["serial"]
-                elif adbOptions.is_android_connected(
-                    shared_var
-                ):  # Check if the specified device is connected via serial
+                elif adbOptions.is_android_connected(shared_var):  # Check if the specified device is connected via serial
                     pass
                 else:  # No serial or name provided, and the string provided is not a connected device, just try to connect to the first device and reset it
                     shared_var = ""
@@ -3540,15 +3597,11 @@ def device_information(data_set):
                 CommonUtil.ExecLog(sModuleInfo, "Failed to wake device", 3)
                 return "zeuz_failed"
         else:
-            CommonUtil.ExecLog(
-                sModuleInfo, "Action's Field contains incorrect information", 3
-            )
+            CommonUtil.ExecLog(sModuleInfo, "Action's Field contains incorrect information", 3)
             return "zeuz_failed"
 
         if output in failed_tag_list or output == "":
-            CommonUtil.ExecLog(
-                sModuleInfo, "Could not find the device info about '%s'" % (cmd), 3
-            )
+            CommonUtil.ExecLog(sModuleInfo, "Could not find the device info about '%s'" % (cmd), 3)
             return "zeuz_failed"
 
         # Save the output to the user specified shared variable
@@ -3578,9 +3631,7 @@ def set_device_password(data_set):
         password = data_set[0][2].strip()  # Read password from Value field
         if password != "":
             Shared_Resources.Set_Shared_Variables("device_password", password)
-            CommonUtil.ExecLog(
-                sModuleInfo, "Device password saved as: %s" % password, 1
-            )
+            CommonUtil.ExecLog(sModuleInfo, "Device password saved as: %s" % password, 1)
             return "passed"
         else:
             CommonUtil.ExecLog(
@@ -3620,12 +3671,8 @@ def switch_device(data_set):
             device_id = ID
 
             # Update shared variables, for anything that requires accessing that information
-            Shared_Resources.Set_Shared_Variables(
-                "device_id", device_id, protected=True
-            )  # Save device id, because functions outside this file may require it
-            CommonUtil.set_screenshot_vars(
-                Shared_Resources.Shared_Variable_Export()
-            )  # Get all the shared variables, and pass them to CommonUtil
+            Shared_Resources.Set_Shared_Variables("device_id", device_id, protected=True)  # Save device id, because functions outside this file may require it
+            CommonUtil.set_screenshot_vars(Shared_Resources.Shared_Variable_Export())  # Get all the shared variables, and pass them to CommonUtil
 
             CommonUtil.ExecLog(sModuleInfo, "Switched focus to: %s" % ID, 1)
             return "passed"
@@ -3638,9 +3685,7 @@ def switch_device(data_set):
             return "zeuz_failed"
 
     except Exception:
-        return CommonUtil.Exception_Handler(
-            sys.exc_info(), None, "Error when trying to read Field and Value for action"
-        )
+        return CommonUtil.Exception_Handler(sys.exc_info(), None, "Error when trying to read Field and Value for action")
 
 
 @logger

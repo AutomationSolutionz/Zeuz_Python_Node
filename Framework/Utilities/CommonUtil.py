@@ -774,7 +774,7 @@ def Thread_ScreenShot(function_name, image_folder, Method, Driver, image_name):
             4,
         )
     except Exception:
-        traceback.print_exc()
+        # traceback.print_exc()
         ExecLog(
             "",
             "********** Screen couldn't be captured for Action: %s Method: %s **********" % (function_name, Method),
