@@ -2123,6 +2123,9 @@ def get_window_size(read_type=False):
         return CommonUtil.Exception_Handler(sys.exc_info(), None, errMsg)
 
 
+
+
+
 @logger
 def Click_Element_Appium(data_set):
     """ Execute "click" for an element
@@ -2220,9 +2223,7 @@ def Click_Element_Appium(data_set):
 
                     x_cord_to_tap = center_x + total_x_offset
                     y_cord_to_tap = center_y + total_y_offset
-                    TouchAction(appium_driver).tap(
-                        None, x_cord_to_tap, y_cord_to_tap, 1
-                    ).perform()
+                    TouchAction(appium_driver).tap(None, x_cord_to_tap, y_cord_to_tap, 1).perform()
                     CommonUtil.ExecLog(
                         sModuleInfo, "Tapped on element by offset successfully", 1
                     )
@@ -2414,6 +2415,97 @@ def Tap_Appium(data_set):
     except Exception:
         errMsg = "Unable to tap."
         return CommonUtil.Exception_Handler(sys.exc_info(), None, errMsg)
+
+
+
+
+
+@logger
+def Seek_Progress_Bar(data_set):
+    """ This Function will set the progress bar of an element
+    Example: 
+    
+    seek_value    appium action     10  ==> this will take the progress bar to 10%
+
+    """
+    sModuleInfo = inspect.currentframe().f_code.co_name + " : " + MODULE_NAME
+
+    skip_or_not = filter_optional_action_and_step_data(data_set, sModuleInfo)
+    if skip_or_not == False:
+        return "passed"
+
+    try:
+        seek_value = False
+        for each in data_set:
+            if each[1] == "action":
+                seek_value = int(each[2])
+            else:
+                continue
+        
+        if seek_value not in range (0,100):
+            raise Exception
+            
+    except:
+        errMsg = "Error while looking for action line.  You must provide a number between 0 to 100"
+        return CommonUtil.Exception_Handler(sys.exc_info(), None, errMsg)
+    try:
+        current_window_size_x_y = appium_driver.get_window_rect()
+        win_x_middle = int((current_window_size_x_y)["width"]) / 2 
+        win_y_middle = int((current_window_size_x_y)["height"]) / 2 
+        
+        TouchAction(appium_driver).tap(None, win_x_middle, win_y_middle, 1).perform()   
+
+        Element = LocateElement.Get_Element(data_set, appium_driver)
+        if Element == "zeuz_failed":
+            CommonUtil.ExecLog(
+                sModuleInfo, "Unable to locate your element with given data.", 3
+            )
+            return "zeuz_failed"
+        else:
+            try:
+                if Element.is_enabled():
+                    
+                    try:
+                        CommonUtil.ExecLog(
+                            sModuleInfo,
+                            "Seeking to given location ",
+                            1,
+                        )
+                        start_loc = Element.location
+                        height_width = Element.size
+                        start_x = int((start_loc)["x"])
+                        start_y = int((start_loc)["y"])
+                        ele_width = int((height_width)["width"])
+                        ele_height = int((height_width)["height"])
+                        x_cord_to_tap = start_x + ((seek_value/100) * ele_width)
+                        y_cord_to_tap = start_y + (ele_height/2)
+
+                        TouchAction(appium_driver).tap(None, win_x_middle, win_y_middle, 1).perform()   
+                        TouchAction(appium_driver).tap(None, x_cord_to_tap, y_cord_to_tap, 1).perform()
+
+                        CommonUtil.ExecLog(
+                            sModuleInfo,
+                            "Tapped on element by offset successfully",
+                            1,
+                        )
+                        return "passed"
+    
+                    except:
+                        # CommonUtil.TakeScreenShot(sModuleInfo)
+                        CommonUtil.ExecLog(
+                            sModuleInfo,
+                            "Element is enabled. Unable to tap based on offset.",
+                            3,
+                        )
+                        return "zeuz_failed"
+            except Exception:
+                errMsg = "Could not select/click your element."
+                return CommonUtil.Exception_Handler(sys.exc_info(), None, errMsg)
+
+    except Exception:
+        errMsg = "Unable to tap."
+        return CommonUtil.Exception_Handler(sys.exc_info(), None, errMsg)
+
 
 
 @logger
