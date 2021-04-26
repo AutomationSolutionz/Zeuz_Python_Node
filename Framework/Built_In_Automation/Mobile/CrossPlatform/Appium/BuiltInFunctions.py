@@ -1771,12 +1771,12 @@ def scroll_to_an_element(data_set):
 
             if scroll_to == "end":
                 if max_scroll == "":
-                    CommonUtil.ExecLog(sModuleInfo, "Max scroll is not set. Setting it to 20", 3)
+                    CommonUtil.ExecLog(sModuleInfo, "Max scroll is not set. Setting it to 20", 2)
                     max_scroll = "20"
                 final_string += ".scrollToEnd(" + max_scroll + ")"
             elif scroll_to == "beginning":
                 if max_scroll == "":
-                    CommonUtil.ExecLog(sModuleInfo, "Max scroll is not set. Setting it to 20", 3)
+                    CommonUtil.ExecLog(sModuleInfo, "Max scroll is not set. Setting it to 20", 2)
                     max_scroll = "20"
                 final_string += ".scrollToBeginning(" + max_scroll + ")"
             else:
