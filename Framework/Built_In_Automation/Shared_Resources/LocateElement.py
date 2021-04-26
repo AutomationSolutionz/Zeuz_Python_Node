@@ -876,12 +876,10 @@ def _get_xpath_or_css_element(element_query, css_xpath, index_number=None, Filte
         else:
             return "zeuz_failed"
     except Exception:
-        # return CommonUtil.Exception_Handler(sys.exc_info())
+        return CommonUtil.Exception_Handler(sys.exc_info())
         # Don't want to show error messages from here, especially for wait_for_element()
-        CommonUtil.ExecLog(
-            sModuleInfo, "Exception caught - %s" % str(sys.exc_info()), 0
-        )
-        return "zeuz_failed"
+        # CommonUtil.ExecLog(sModuleInfo, "Exception caught - %s" % str(sys.exc_info()), 0)
+        # return "zeuz_failed"
 
 
 def filter_elements(all_matching_elements_visible_invisible, Filter):
