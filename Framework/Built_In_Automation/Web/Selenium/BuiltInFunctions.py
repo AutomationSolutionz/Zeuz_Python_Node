@@ -3592,6 +3592,48 @@ def insert(string, str_to_insert, index):
     return string[:index] + str_to_insert + string[index:]
 
 
+
+@logger
+def slider_bar(data_set):
+    """Set certain value to a slider bar 
+    you must provide a number between 0 - 100
+     """
+
+    sModuleInfo = inspect.currentframe().f_code.co_name + " : " + MODULE_NAME
+    global selenium_driver
+    try:
+        value = ""
+
+        for left, mid, right in data_set:
+            if "action" in mid:
+                value = int(right.strip())
+        if value not in range (0,100):
+            raise Exception
+
+        Element = LocateElement.Get_Element(data_set, selenium_driver)
+        if Element == "zeuz_failed":
+            CommonUtil.ExecLog(sModuleInfo, "Could not find the element", 3)
+            return "zeuz_failed"
+        else:
+            CommonUtil.ExecLog(sModuleInfo, f"Moving the slider by %{value} ", 1)
+            move = ActionChains(selenium_driver)
+            height_width = Element.size
+            ele_width = int((height_width)["width"])
+            ele_height = int((height_width)["height"])
+            x_cord_to_tap = ((value/100) * ele_width)
+            y_cord_to_tap = (ele_height/2)
+            
+            move.move_to_element_with_offset(Element, x_cord_to_tap, y_cord_to_tap).click().perform()
+            CommonUtil.ExecLog(sModuleInfo, f"Successfully set the slider to %{value}", 1)
+                    
+        return "passed"
+    except Exception:
+        errMsg = (
+            "Failed to parse data/locate element. You must provide a number between 0-100"
+        )
+        return CommonUtil.Exception_Handler(sys.exc_info(), None, errMsg)
+
+
 @logger
 def multiple_check_uncheck(data_set):
     """ Check or uncheck multiple web elements """
