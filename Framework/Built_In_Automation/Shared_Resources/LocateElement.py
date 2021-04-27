@@ -139,6 +139,7 @@ def Get_Element(step_data_set, driver, query_debug=False, wait_enable=True, retu
         if get_parameter != "":
 
             result = sr.parse_variable(get_parameter)
+            result = CommonUtil.ZeuZ_map_code_decoder(result)   # Decode if this is a ZeuZ_map_code
             if result not in failed_tag_list:
                 CommonUtil.ExecLog(
                     sModuleInfo,

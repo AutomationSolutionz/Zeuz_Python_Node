@@ -454,6 +454,19 @@ class VariableParser:
         return val if val != "zeuz_failed" else None
 
 
+def generate_zeuz_code_if_not_json_obj(val):
+    try:
+        json.dumps(val)
+        return val
+    except:
+        while True:
+            code = "#ZeuZ_map_code#" + ''.join(random.choices(string.ascii_letters + string.digits + string.punctuation, k=15))
+            if code not in CommonUtil.ZeuZ_map_code:
+                break
+        CommonUtil.ZeuZ_map_code[code] = val
+        return code
+
+
 def parse_variable(name):
     """Parses a given variable and returns its value.
 
@@ -513,7 +526,7 @@ def parse_variable(name):
 
         if len(indices) == 0:
             # If there are no [ ] style indexing.
-            return Get_Shared_Variables(name)
+            return generate_zeuz_code_if_not_json_obj(Get_Shared_Variables(name))
 
         if "{" in name:
             # Data collector with pattern.
@@ -606,7 +619,7 @@ def parse_variable(name):
 
             # Print to console.
             CommonUtil.prettify(copy_of_name, val)
-            return val
+            return generate_zeuz_code_if_not_json_obj(val)
     except:
         CommonUtil.ExecLog(
             sModuleInfo,
@@ -730,9 +743,7 @@ def get_previous_response_variables_in_strings(step_data_string_input):
                         % (parts[0], rest_json_output),
                         0,
                     )
-                elif str(parts[0]).lower().startswith("today") or str(
-                    parts[0]
-                ).startswith("currentEpochTime"):
+                elif str(parts[0]).lower().startswith("today") or str(parts[0]).startswith("currentEpochTime"):
                     replaced_string = save_built_in_time_variable(str(parts[0]))
                     if replaced_string in failed_tag_list:
                         CommonUtil.ExecLog(
@@ -824,9 +835,7 @@ def get_previous_response_variables_in_strings(step_data_string_input):
             else:
                 output += each
         if changed == True:
-            CommonUtil.ExecLog(
-                sModuleInfo, "Input string is changed by variable substitution", 0
-            )
+            CommonUtil.ExecLog(sModuleInfo, "Input string is changed by variable substitution", 0)
             CommonUtil.ExecLog(sModuleInfo, "Input string before change: %s" % input, 0)
             CommonUtil.ExecLog(sModuleInfo, "Input string after change: %s" % output, 0)
 
