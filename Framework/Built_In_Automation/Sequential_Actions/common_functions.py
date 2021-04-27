@@ -328,12 +328,8 @@ def adjust_element_parameters(step_data, platforms):
             return step_data  # Return unmodified
     else:  # Have dependency
         dependency = sr.Get_Shared_Variables("dependency")  # Save locally
-        if (
-            "Mobile" not in dependency
-        ):  # We have a dependency, but not a mobile, so we don't need to do anything
-            if (
-                check_action_types("Mobile", step_data) == False
-            ):  # No mobile actions in step data
+        if "Mobile" not in dependency:  # We have a dependency, but not a mobile, so we don't need to do anything
+            if check_action_types("Mobile", step_data) == False:  # No mobile actions in step data
                 CommonUtil.ExecLog(sModuleInfo, "Not a mobile Test Case", 0)
                 return step_data
             else:  # Mobile actions in step data
@@ -353,54 +349,32 @@ def adjust_element_parameters(step_data, platforms):
             # Special handling of "id"
             for id_adj_row in data_set:  # Find if this is an appium test step
                 if "appium" in id_adj_row[1]:  # Yes, so adjust
-                    if (
-                        new_row[0] == "id" and dependency["Mobile"].lower() == "android"
-                    ):  # If user specifies id, they likely mean "resource-id"
+                    if new_row[0] == "id" and dependency["Mobile"].lower() == "android":  # If user specifies id, they likely mean "resource-id"
                         new_row[0] = "resource-id"
                         new_row[2] = "*" + new_row[2]
                     elif new_row[0] == "id" and dependency["Mobile"].lower() == "ios":
-                        new_row[
-                            0
-                        ] = "accessibility id"  # If user specifies id, they likely mean "resource-id"
-                    elif (
-                        new_row[0] == "text or name"
-                        and dependency["Mobile"].lower() == "android"
-                    ):  # If user specifies id, they likely mean "resource-id"
+                        new_row[0] = "accessibility id"  # If user specifies id, they likely mean "resource-id"
+                    elif new_row[0] == "text or name" and dependency["Mobile"].lower() == "android":  # If user specifies id, they likely mean "resource-id"
                         new_row[0] = "text"
-                    elif (
-                        new_row[0] == "text or name"
-                        and dependency["Mobile"].lower() == "ios"
-                    ):
-                        new_row[
-                            0
-                        ] = "name"  # If user specifies id, they likely mean "resource-id"
+                    elif new_row[0] == "text or name" and dependency["Mobile"].lower() == "ios":
+                        new_row[0] = "name"  # If user specifies id, they likely mean "resource-id"
 
             # Remove any element parameter that doesn't match the dependency
-            if (
-                dependency["Mobile"].lower() in new_row[1]
-            ):  # If dependency matches this Sub-Field, then save it
+            if dependency["Mobile"].lower() in new_row[1]:  # If dependency matches this Sub-Field, then save it
                 new_row[1] = (
                     new_row[1]
                     .replace(dependency["Mobile"].lower(), "")
                     .replace("  ", " ")
                     .strip()
                 )  # Remove word and clean up spaces
-                new_data_set.append(
-                    tuple(new_row)
-                )  # Append list as tuple to data set list
+                new_data_set.append(tuple(new_row))  # Append list as tuple to data set list
             else:  # This dependency doesn't match. Figure out if this is an element parameter we don't want, or any other row we do want
                 b = False
                 for p in platforms:  # For each platform
-                    if (
-                        p in new_row[1]
-                    ):  # If one of the platforms matches (we already found the one we want above, so this is for anything we don't want), then we don't want it
+                    if p in new_row[1]:  # If one of the platforms matches (we already found the one we want above, so this is for anything we don't want), then we don't want it
                         b = True
-                if (
-                    b == False
-                ):  # This row did not match unwanted platforms, so we keep it
-                    new_data_set.append(
-                        tuple(new_row)
-                    )  # Append list as tuple to data set list
+                if b == False:  # This row did not match unwanted platforms, so we keep it
+                    new_data_set.append(tuple(new_row))  # Append list as tuple to data set list
 
         new_step_data.append(new_data_set)  # Append data set to step data
 
@@ -431,37 +405,35 @@ def get_module_and_function(action_name, action_sub_field):
 
             # Check if this action is a common action, so we can modify the module accordingly
             for i in actions:
-                for j in actions[i]:  # For each entry in the sub-dictionary
-                    if (
-                        actions[i]["module"] == "common"
-                        and actions[i]["name"] == action_name
-                    ):
-                        # Now we'll overwrite the module with the common module, and continue as normal
-                        original_module = module
-                        module = "common"  # Set module as common
-                        function = actions[i]["function"]  # Save function
-                        screenshot = actions[i]["screenshot"]  # Save screenshot
-                        return (
-                            module,
-                            function,
-                            original_module,
-                            screenshot,
-                        )  # Return module and function name
+                if (
+                    actions[i]["module"] == "common"
+                    and actions[i]["name"] == action_name
+                ):
+                    # Now we'll overwrite the module with the common module, and continue as normal
+                    original_module = module
+                    module = "common"  # Set module as common
+                    function = actions[i]["function"]  # Save function
+                    screenshot = actions[i]["screenshot"]  # Save screenshot
+                    return (
+                        module,
+                        function,
+                        original_module,
+                        screenshot,
+                    )  # Return module and function name
 
             for i in actions:  # For each dictionary in the dictionary
-                for j in actions[i]:  # For each entry in the sub-dictionary
-                    if (
-                        actions[i]["module"] == module
-                        and actions[i]["name"] == action_name
-                    ):  # Module and action name match
-                        function = actions[i]["function"]  # Save function
-                        screenshot = actions[i]["screenshot"]  # Save screenshot
-                        return (
-                            module,
-                            function,
-                            "",
-                            screenshot,
-                        )  # Return module and function name
+                if (
+                    actions[i]["module"] == module
+                    and actions[i]["name"] == action_name
+                ):  # Module and action name match
+                    function = actions[i]["function"]  # Save function
+                    screenshot = actions[i]["screenshot"]  # Save screenshot
+                    return (
+                        module,
+                        function,
+                        "",
+                        screenshot,
+                    )  # Return module and function name
 
             CommonUtil.ExecLog(
                 sModuleInfo, "Could not find module or action_name is invalid", 3
@@ -483,9 +455,7 @@ def shared_variable_to_value(data_set):
     """ Look for any Shared Variable strings in step data, convert them into their values, and return """
 
     sModuleInfo = inspect.currentframe().f_code.co_name + " : " + MODULE_NAME
-    new_data = (
-        []
-    )  # Rebuild the data_set with the new variable (because it's a list of tuples which we can't update)
+    new_data = []  # Rebuild the data_set with the new variable (because it's a list of tuples which we can't update)
 
     skip_conversion_of_shared_variable_for_actions = [
         "if element exists",
@@ -497,12 +467,7 @@ def shared_variable_to_value(data_set):
 
     try:
         for row in data_set:
-            if (
-                str(row[0]).strip().lower()
-                in skip_conversion_of_shared_variable_for_actions
-                or str(row[1]).strip().lower()
-                in skip_conversion_of_shared_variable_for_actions
-            ):
+            if str(row[1]).strip().lower() in skip_conversion_of_shared_variable_for_actions:
                 new_data.append(row)
                 continue
             data_row = list(row)
