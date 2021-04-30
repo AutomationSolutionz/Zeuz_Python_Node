@@ -1,5 +1,10 @@
 # Changelog
 
+## Version 13.4.x
+
+- [Apr 17, 2021] Appium new powerful "Scroll to an element" action is added
+- [Apr 18, 2021] Appium device, teardown and Windows terminal closing issue fixed
+- [Apr 21, 2021] Appium seek progress bar action added
 
 ## Version 13.3.x
 
