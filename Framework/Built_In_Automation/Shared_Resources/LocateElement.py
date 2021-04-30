@@ -139,6 +139,7 @@ def Get_Element(step_data_set, driver, query_debug=False, wait_enable=True, retu
         if get_parameter != "":
 
             result = sr.parse_variable(get_parameter)
+            result = CommonUtil.ZeuZ_map_code_decoder(result)   # Decode if this is a ZeuZ_map_code
             if result not in failed_tag_list:
                 CommonUtil.ExecLog(
                     sModuleInfo,
@@ -876,12 +877,10 @@ def _get_xpath_or_css_element(element_query, css_xpath, index_number=None, Filte
         else:
             return "zeuz_failed"
     except Exception:
-        # return CommonUtil.Exception_Handler(sys.exc_info())
+        return CommonUtil.Exception_Handler(sys.exc_info())
         # Don't want to show error messages from here, especially for wait_for_element()
-        CommonUtil.ExecLog(
-            sModuleInfo, "Exception caught - %s" % str(sys.exc_info()), 0
-        )
-        return "zeuz_failed"
+        # CommonUtil.ExecLog(sModuleInfo, "Exception caught - %s" % str(sys.exc_info()), 0)
+        # return "zeuz_failed"
 
 
 def filter_elements(all_matching_elements_visible_invisible, Filter):

@@ -37,9 +37,7 @@ from concurrent.futures import ThreadPoolExecutor
 from datetime import datetime
 
 from . import common_functions as common  # Functions that are common to all modules
-from Framework.Built_In_Automation.Shared_Resources import (
-    BuiltInFunctionSharedResources as sr,
-)
+from Framework.Built_In_Automation.Shared_Resources import BuiltInFunctionSharedResources as sr
 from Framework.Utilities import ConfigModule
 from Framework.Built_In_Automation.Shared_Resources import LocateElement
 from Framework.Utilities import CommonUtil
@@ -189,41 +187,21 @@ def Sequential_Actions(
         dependency, file_attachment, device_details, run_time_params = {}, {}, {}, {}
         if _dependency != {}:
             dependency = _dependency  # Save to global variable
-            sr.Set_Shared_Variables(
-                "dependency", _dependency, protected=True
-            )  # Save in Shared Variables
+            sr.Set_Shared_Variables("dependency", _dependency, protected=True)  # Save in Shared Variables
 
         if _file_attachment != {}:  # If a file attachment was passed
             file_attachment = _file_attachment  # Save as a global variable
-            sr.Set_Shared_Variables(
-                "file_attachment", _file_attachment, protected=True
-            )  # Add entire file attachment dictionary to Shared Variables
-            for (
-                file_attachment_name
-            ) in (
-                _file_attachment
-            ):  # Add each attachment as it's own Shared Variable, so the user can easily refer to it
-                sr.Set_Shared_Variables(
-                    file_attachment_name, _file_attachment[file_attachment_name]
-                )
+            sr.Set_Shared_Variables("file_attachment", _file_attachment, protected=True)  # Add entire file attachment dictionary to Shared Variables
+            for file_attachment_name in _file_attachment:  # Add each attachment as it's own Shared Variable, so the user can easily refer to it
+                sr.Set_Shared_Variables(file_attachment_name, _file_attachment[file_attachment_name])
 
         if _run_time_params != {}:
             run_time_params = _run_time_params  # Save to global variable
-            sr.Set_Shared_Variables(
-                "run_time_params", _run_time_params, protected=True
-            )  # Save in Shared Variables
-            for (
-                run_time_params_name
-            ) in (
-                run_time_params
-            ):  # Add each parameter as it's own Shared Variable, so the user can easily refer to it
-                sr.Set_Shared_Variables(
-                    run_time_params_name, run_time_params[run_time_params_name]
-                )
+            sr.Set_Shared_Variables("run_time_params", _run_time_params, protected=True)  # Save in Shared Variables
+            for run_time_params_name in run_time_params:  # Add each parameter as it's own Shared Variable, so the user can easily refer to it
+                sr.Set_Shared_Variables(run_time_params_name, run_time_params[run_time_params_name])
 
-        if (
-            _device_info != {}
-        ):  # If any devices and their details were sent by the server, save to shared variable
+        if _device_info != {}:  # If any devices and their details were sent by the server, save to shared variable
             device_info = _device_info
             sr.Set_Shared_Variables("device_info", device_info, protected=True)
 
@@ -237,16 +215,12 @@ def Sequential_Actions(
         #     )  # Get all the shared variables, and pass them to CommonUtil
 
         # Set default variables (Must be defined here in case anyone destroys all shared variables)
-        sr.Set_Shared_Variables(
-            "element_wait", 10
-        )  # Default time for get_element() to find the element
+        sr.Set_Shared_Variables("element_wait", 10)  # Default time for get_element() to find the element
 
         # Prepare step data for processing
         step_data = common.unmask_step_data(step_data)
-        step_data = common.sanitize(step_data)  # Sanitize Sub-Field
-        step_data = common.adjust_element_parameters(
-            step_data, supported_platforms
-        )  # Parse any mobile platform related fields
+        # step_data = common.sanitize(step_data)  # Sanitize Sub-Field
+        step_data = common.adjust_element_parameters(step_data, supported_platforms)  # Parse any mobile platform related fields
         if step_data in failed_tag_list:
             return "zeuz_failed"
         if common.verify_step_data(step_data) in failed_tag_list:
@@ -610,7 +584,8 @@ def for_loop_action(step_data, data_set_no):
                 else:
                     left = row[0].strip()[4:]
                     each_varname, left = left[:left.find(" ")], left[left.find(" "):].strip()[3:]
-                    iterable = sr.Get_Shared_Variables(left.strip().strip("%").strip("|"))
+                    iterable = sr.parse_variable(left.strip().strip("%").strip("|"))
+                    iterable = CommonUtil.ZeuZ_map_code_decoder(iterable)   # Decode if this is a ZeuZ_map_code
                     CommonUtil.ExecLog(sModuleInfo, "Looping through a %s: %s" % (type(iterable).__name__, str(iterable)), 1)
             elif row[0 ].strip().lower() == "exit loop":
                 value = row[2].strip()
@@ -694,8 +669,7 @@ def for_loop_action(step_data, data_set_no):
         else:
             return "passed", outer_skip
     except:
-        CommonUtil.ExecLog(sModuleInfo, "Error while handling loop action", 3)
-        return "zeuz_failed", []
+        return CommonUtil.Exception_Handler(sys.exc_info()), []
 
 
 def Handle_While_Loop_Action(step_data, data_set_no):
@@ -835,8 +809,7 @@ def Handle_While_Loop_Action(step_data, data_set_no):
         else:
             return "passed", outer_skip
     except:
-        CommonUtil.ExecLog(sModuleInfo, "Error while handling loop action", 3)
-        return "zeuz_failed", []
+        return CommonUtil.Exception_Handler(sys.exc_info()), []
 
 
 def Run_Sequential_Actions(
@@ -2070,18 +2043,14 @@ def Action_Handler(_data_set, action_row):
     module = ""
     function = ""
     original_module = ""
-    module, function, original_module, screenshot = common.get_module_and_function(
-        action_name, action_subfield
-    )  # New, get the module to execute
+    module, function, original_module, screenshot = common.get_module_and_function(action_name, action_subfield)  # New, get the module to execute
     CommonUtil.ExecLog(
         sModuleInfo,
         "Function identified as function: %s in module: %s" % (function, module),
         0,
     )
 
-    if (
-        module in failed_tag_list or module == "" or function == ""
-    ):  # New, make sure we have a function
+    if module in failed_tag_list or module == "" or function == "":  # New, make sure we have a function
         CommonUtil.ExecLog(
             sModuleInfo,
             "You probably didn't add the module as part of the action. Eg: appium action",
@@ -2092,9 +2061,7 @@ def Action_Handler(_data_set, action_row):
     # If this is a common function, try to get the webdriver for it, if there is one, and save it to shared variables. This will allow common functions to work with whichever webdriver they need
     if original_module != "":  # This was identified as a common module
         try:
-            result = load_sa_modules(
-                original_module
-            )  # Load the appropriate module (in case its never been run before this common action has started)
+            result = load_sa_modules(original_module)  # Load the appropriate module (in case its never been run before this common action has started)
             if result == "zeuz_failed":
                 CommonUtil.ExecLog(
                     sModuleInfo, "Can't find module for %s" % original_module, 3
@@ -2102,9 +2069,7 @@ def Action_Handler(_data_set, action_row):
                 return "zeuz_failed"
 
             common_driver = eval(original_module).get_driver()  # Get webdriver object
-            sr.Set_Shared_Variables(
-                "common_driver", common_driver
-            )  # Save in shared variable
+            sr.Set_Shared_Variables("common_driver", common_driver)  # Save in shared variable
         except:
             pass  # Not all modules have get_driver, so don't worry if this crashes
 
@@ -2125,13 +2090,9 @@ def Action_Handler(_data_set, action_row):
             new_row[1] = new_row[1].replace(original_module, "").strip()
         data_set.append(tuple(new_row))
 
-    take_screenshot_settings = ConfigModule.get_config_value(
-        "RunDefinition", "take_screenshot"
-    )  # True/False to take screenshot from settings.conf
+    take_screenshot_settings = ConfigModule.get_config_value("RunDefinition", "take_screenshot")  # True/False to take screenshot from settings.conf
 
-    local_run = ConfigModule.get_config_value(
-        "RunDefinition", "local_run"
-    )
+    local_run = ConfigModule.get_config_value("RunDefinition", "local_run")
     if take_screenshot_settings.lower() == "false":
         screenshot = "none"
 
@@ -2151,12 +2112,8 @@ def Action_Handler(_data_set, action_row):
             CommonUtil.ExecLog(sModuleInfo, "Can't find module for %s" % module, 3)
             return "zeuz_failed"
 
-        run_function = getattr(
-            eval(module), function
-        )  # create a reference to the function
-        result = run_function(
-            data_set
-        )  # Execute function, providing all rows in the data set
+        run_function = getattr(eval(module), function)  # create a reference to the function
+        result = run_function(data_set)  # Execute function, providing all rows in the data set
         CommonUtil.TakeScreenShot(function)
         return result  # Return result to sequential_actions()
 

@@ -156,6 +156,15 @@ def to_unicode(obj, encoding="utf-8"):
         return obj
 
 
+ZeuZ_map_code = {}
+
+
+def ZeuZ_map_code_decoder(val):
+    if type(val) == str and val.startswith("#ZeuZ_map_code#") and val in ZeuZ_map_code:
+        return ZeuZ_map_code[val]
+    return val
+
+
 def parse_value_into_object(val):
     """Parses the given value into a Python object: int, str, list, dict."""
 
@@ -169,7 +178,10 @@ def parse_value_into_object(val):
             val = json.loads(val)
         except:
             try:
-                val = ast.literal_eval(f'"{val}"')
+                if val.startswith("#ZeuZ_map_code#") and val in ZeuZ_map_code:
+                    val = ZeuZ_map_code[val]
+                else:
+                    val = ast.literal_eval(f'"{val}"')
             except:
                 pass
 

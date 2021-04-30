@@ -1,5 +1,9 @@
 # Changelog
 
+## Version 13.5.x
+
+- [Apr 27, 2021] Variable parsing improved for non json type objects
+
 ## Version 13.4.x
 
 - [Apr 17, 2021] Appium new powerful "Scroll to an element" action is added
