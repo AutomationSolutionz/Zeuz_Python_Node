@@ -5,6 +5,9 @@ import os
 from pathlib import Path
 version_path = Path(os.getcwd())/"Framework"/"Version.txt"
 with open(version_path, "r"):
+    text = version_path.read_text()
+    text = text[text.find("=")+1:].split("\n")[0].strip()
+    os.system("title " + "ZeuZ Scriptless Automation tool -- " + text)
     print(version_path.read_text())
 from Framework.module_installer import install_missing_modules
 install_missing_modules()
