@@ -30,6 +30,7 @@ def get_all_connected_android_info():
 
         # Get list of devices
         # One report of this blocking the next line, so disabled: result = subprocess.check_output('adb kill-server', shell=True) # Stop adb server, to ensure this works properly
+        subprocess.check_output("adb start-server", shell=True, encoding="utf-8")
         result = subprocess.check_output("adb devices", shell=True, encoding="utf-8")
         result = result.replace("List of devices attached", "")
         result = result.replace("\r", "")
@@ -38,18 +39,6 @@ def get_all_connected_android_info():
         for device in result:
             if "device" in device:
                 android_list.append(str(device.split(" ")[0]).strip())
-
-        if len(android_list) == 0:
-            # if adb server is not started on first time it cannot get online devices so trying once again
-            time.sleep(0.5)
-            result = subprocess.check_output("adb devices", shell=True, encoding="utf-8")
-            result = result.replace("List of devices attached", "")
-            result = result.replace("\r", "")
-            result = result.replace("\t", " ")
-            result = result.split("\n")
-            for device in result:
-                if "device" in device:
-                    android_list.append(str(device.split(" ")[0]).strip())
 
         if len(android_list) == 0:
             return False
