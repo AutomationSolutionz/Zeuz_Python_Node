@@ -325,6 +325,7 @@ def if_else_log_for_actions(left, next_level_step_data, statement="if"):
 
 
 def Handle_Conditional_Action(step_data, data_set_no):
+    #TODO: Rename this action to "If_else_action"
     sModuleInfo = inspect.currentframe().f_code.co_name + " : " + MODULE_NAME
     try:
         data_set = step_data[data_set_no]
@@ -368,10 +369,11 @@ def Handle_Conditional_Action(step_data, data_set_no):
                     for i in operators:
                         if i.strip() in left:
                             operators[i] += 1
+                    #TODO: Check these 2 lines, should not be needed anymore
                     operators[" |<| "] -= operators[" |<=| "]
                     operators[" |>| "] -= operators[" |>=| "]
 
-                    if sum(operators.values()) ==0:
+                    if sum(operators.values()) == 0:
                         CommonUtil.ExecLog(
                             sModuleInfo,
                             "Specify an operator among |==|, |!=|, |<|, |>|, |<=|, |>=|, |in| and add a <single space> before and after the operator",
@@ -563,6 +565,8 @@ def for_loop_action(step_data, data_set_no):
         global step_exit_fail_called, step_exit_pass_called
         step_exit_fail_called = False
         step_exit_pass_called = False
+        exit_loop_and_fail = []
+        exit_loop_nd_fail = False
         data_set = common.shared_variable_to_value(data_set)
         if data_set in failed_tag_list:
             return "zeuz_failed", []
@@ -573,7 +577,7 @@ def for_loop_action(step_data, data_set_no):
                 loop_this_data_sets = get_data_set_nums(right)
                 outer_skip += loop_this_data_sets
                 left = row[0].strip().lower()
-                if left[:4] != "for " or left[4:][left[4:].find(" ")+1:][:3] != "in ":
+                if not left.strip().startswith("for ") or not left.strip()[4:].strip()[left[4:].strip().find(" ")+1:].strip().startswith("in "):
                     CommonUtil.ExecLog(
                         sModuleInfo,
                         "You provided a wrong dataset. Please follow the following format:\n" +
@@ -582,19 +586,34 @@ def for_loop_action(step_data, data_set_no):
                     )
                     return "zeuz_failed", []
                 else:
-                    left = row[0].strip()[4:]
-                    each_varname, left = left[:left.find(" ")], left[left.find(" "):].strip()[3:]
-                    iterable = sr.parse_variable(left.strip().strip("%").strip("|"))
-                    iterable = CommonUtil.ZeuZ_map_code_decoder(iterable)   # Decode if this is a ZeuZ_map_code
+                    left = row[0].strip()[4:].strip()
+                    each_varname, left = left[:left.find(" ")], left[left.find(" "):].strip()[3:].strip()
+                    var_name = left.strip("%").strip("|")
+                    if sr.Test_Shared_Variables(var_name):
+                        iterable = sr.parse_variable(var_name)
+                        iterable = CommonUtil.ZeuZ_map_code_decoder(iterable)   # Decode if this is a ZeuZ_map_code
+                    else:
+                        iterable = CommonUtil.parse_value_into_object(left)
                     CommonUtil.ExecLog(sModuleInfo, "Looping through a %s: %s" % (type(iterable).__name__, str(iterable)), 1)
-            elif row[0 ].strip().lower() == "exit loop":
+            elif row[0].strip().lower().startswith("exit loop"):
                 value = row[2].strip()
                 if "pass" in value.lower() and "==" not in value:
-                    passing_data_sets += get_data_set_nums(value)
+                    if "any" in value.lower(): passing_data_sets += loop_this_data_sets
+                    else: passing_data_sets += get_data_set_nums(value)
+                    if row[0].strip().lower() == "exit loop and fail":
+                        if "any" in value.lower(): exit_loop_and_fail += loop_this_data_sets
+                        else: exit_loop_and_fail += get_data_set_nums(value)
                 elif "fail" in value.lower() and "==" not in value:
-                    failing_data_sets += get_data_set_nums(value)
+                    if "any" in value.lower(): failing_data_sets += loop_this_data_sets
+                    else: failing_data_sets += get_data_set_nums(value)
+                    if row[0].strip().lower() == "exit loop and fail":
+                        if "any" in value.lower(): exit_loop_and_fail += loop_this_data_sets
+                        else: exit_loop_and_fail += get_data_set_nums(value)
                 elif "==" in value and "optional loop settings" in row[1].strip().lower():
                     operand_matching = row
+                    if row[0].strip().lower() == "exit loop and fail":
+                        exit_loop_nd_fail = True
+
         if loop_this_data_sets == []:
             CommonUtil.ExecLog(sModuleInfo, "Loop action step data is invalid, please see action help for more info", 3)
             return "zeuz_failed", []
@@ -631,6 +650,10 @@ def for_loop_action(step_data, data_set_no):
                         "Loop exit condition satisfied. Action %s passed. Exiting loop" % str(data_set_index + 1),
                         1
                     )
+                    if data_set_index in exit_loop_and_fail:
+                        CommonUtil.ExecLog(sModuleInfo, 'Step Exit called. So failing the testcase. If you dont want to fail the testcase use "exit loop and continue" instead of "exit loop and fail"', 2)
+                        step_exit_fail_called = True
+                        step_exit_pass_called = False
                     die = True
                     break
                 elif result in failed_tag_list and data_set_index in failing_data_sets:
@@ -639,8 +662,22 @@ def for_loop_action(step_data, data_set_no):
                         "Loop exit condition satisfied. Action %s failed. Exiting loop" % str(data_set_index + 1),
                         1
                     )
+                    if data_set_index in exit_loop_and_fail:
+                        CommonUtil.ExecLog(sModuleInfo, "Step Exit called. Stopping Test Step.", 1)
+                        step_exit_fail_called = True
+                        step_exit_pass_called = False
                     die = True
                     break
+                elif result in failed_tag_list and not step_exit_fail_called and not step_exit_pass_called:
+                    CommonUtil.ExecLog(
+                        sModuleInfo,
+                        "Action %s failed. As the action is inside the loop we are continuing the test case.\n" % str(data_set_index + 1) +
+                        "If you want to fail the test case when any action fails inside the loop then mention it in the \"exit loop and fail\" row. For example:\n" +
+                        "(exit loop and fail, optional loop settings, if any fails)\n" +
+                        "Or, for any particular action,\n" +
+                        "(exit loop and fail, optional loop settings, if %s fails)" % str(data_set_index + 1),
+                        2
+                    )
                 elif operand_matching != "":
                     operand_matching_2 = operand_matching[2][3:] if operand_matching[2][2] == " " else operand_matching[2][2:]
                     data = [(operand_matching[0], "optional parameter", operand_matching_2)]
@@ -655,6 +692,10 @@ def for_loop_action(step_data, data_set_no):
                             "Loop exit condition satisfied. Left and Right operands matched. Exiting loop",
                             1,
                         )
+                        if exit_loop_nd_fail:
+                            CommonUtil.ExecLog(sModuleInfo, 'Step Exit called. So failing the testcase. If you dont want to fail the testcase use "exit loop and continue" instead of "exit loop and fail"', 2)
+                            step_exit_fail_called = True
+                            step_exit_pass_called = False
                         die = True
                         break
                 if step_exit_fail_called or step_exit_pass_called:
@@ -688,6 +729,8 @@ def Handle_While_Loop_Action(step_data, data_set_no):
         step_exit_fail_called = False
         step_exit_pass_called = False
         deprecateLog = True
+        exit_loop_and_fail = []
+        exit_loop_nd_fail = False
         data_set = common.shared_variable_to_value(data_set)
         if data_set in failed_tag_list:
             return "zeuz_failed", []
@@ -698,14 +741,24 @@ def Handle_While_Loop_Action(step_data, data_set_no):
                 outer_skip += loop_this_data_sets
             elif row[0].strip().lower() == "repeat":
                 max_no_of_loop = int(sr.get_previous_response_variables_in_strings(row[2].strip()))
-            elif row[0].strip().lower() == "exit loop":
+            elif row[0].strip().lower().startswith("exit loop"):
                 value = row[2].strip()
                 if "pass" in value.lower() and "==" not in value:
-                    passing_data_sets += get_data_set_nums(value)
+                    if "any" in value.lower(): passing_data_sets += loop_this_data_sets
+                    else: passing_data_sets += get_data_set_nums(value)
+                    if row[0].strip().lower() == "exit loop and fail":
+                        if "any" in value.lower(): exit_loop_and_fail += loop_this_data_sets
+                        else: exit_loop_and_fail += get_data_set_nums(value)
                 elif "fail" in value.lower() and "==" not in value:
-                    failing_data_sets += get_data_set_nums(value)
+                    if "any" in value.lower(): failing_data_sets += loop_this_data_sets
+                    else: failing_data_sets += get_data_set_nums(value)
+                    if row[0].strip().lower() == "exit loop and fail":
+                        if "any" in value.lower(): exit_loop_and_fail += loop_this_data_sets
+                        else: exit_loop_and_fail += get_data_set_nums(value)
                 elif "==" in value and "optional loop settings" in row[1].strip().lower():
                     operand_matching = row
+                    if row[0].strip().lower() == "exit loop and fail":
+                        exit_loop_nd_fail = True
                 elif "==" in value:
                     boolean_data_list = value.split("==")
                     var_name = boolean_data_list[0].split("%|")[1].split("|%")[0]
@@ -760,6 +813,10 @@ def Handle_While_Loop_Action(step_data, data_set_no):
                         "Loop exit condition satisfied. Action %s passed. Exiting loop" % str(data_set_index+1),
                         1
                     )
+                    if data_set_index in exit_loop_and_fail:
+                        CommonUtil.ExecLog(sModuleInfo, 'Step Exit called. So failing the testcase. If you dont want to fail the testcase use "exit loop and continue" instead of "exit loop and fail"', 2)
+                        step_exit_fail_called = True
+                        step_exit_pass_called = False
                     die = True
                     break
                 elif result in failed_tag_list and data_set_index in failing_data_sets:
@@ -768,8 +825,22 @@ def Handle_While_Loop_Action(step_data, data_set_no):
                         "Loop exit condition satisfied. Action %s failed. Exiting loop" % str(data_set_index+1),
                         1
                     )
+                    if data_set_index in exit_loop_and_fail:
+                        CommonUtil.ExecLog(sModuleInfo, "Step Exit called. Stopping Test Step.", 1)
+                        step_exit_fail_called = True
+                        step_exit_pass_called = False
                     die = True
                     break
+                elif result in failed_tag_list and not step_exit_fail_called and not step_exit_pass_called:
+                    CommonUtil.ExecLog(
+                        sModuleInfo,
+                        "Action %s failed. As the action is inside the loop we are continuing the test case.\n" % str(data_set_index + 1) +
+                        "If you want to fail the test case when any action fails inside the loop then mention it in the \"exit loop and fail\" row. For example:\n" +
+                        "(exit loop and fail, optional loop settings, if any fails)\n" +
+                        "Or, for any particular action,\n" +
+                        "(exit loop and fail, optional loop settings, if %s fails)" % str(data_set_index + 1),
+                        2
+                    )
                 elif operand_matching != "":
                     operand_matching_2 = operand_matching[2][3:] if operand_matching[2][2] == " " else operand_matching[2][2:]
                     data = [(operand_matching[0], "optional parameter", operand_matching_2)]
@@ -784,6 +855,10 @@ def Handle_While_Loop_Action(step_data, data_set_no):
                             "Loop exit condition satisfied. Left and Right operands matched. Exiting loop",
                             1,
                         )
+                        if exit_loop_nd_fail:
+                            CommonUtil.ExecLog(sModuleInfo, 'Step Exit called. So failing the testcase. If you dont want to fail the testcase use "exit loop and continue" instead of "exit loop and fail"', 2)
+                            step_exit_fail_called = True
+                            step_exit_pass_called = False
                         die = True
                         break
                 elif var_name != "" and sr.Test_Shared_Variables(var_name):
