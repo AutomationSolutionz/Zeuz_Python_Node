@@ -179,6 +179,7 @@ def parse_value_into_object(val):
         except:
             try:
                 if val.startswith("#ZeuZ_map_code#") and val in ZeuZ_map_code:
+                    #ToDo: find a way to convert the datatype to str or list
                     val = ZeuZ_map_code[val]
                 else:
                     val = ast.literal_eval(f'"{val}"')

@@ -325,6 +325,7 @@ def if_else_log_for_actions(left, next_level_step_data, statement="if"):
 
 
 def Handle_Conditional_Action(step_data, data_set_no):
+    #TODO: Rename this action to "If_else_action"
     sModuleInfo = inspect.currentframe().f_code.co_name + " : " + MODULE_NAME
     try:
         data_set = step_data[data_set_no]
@@ -368,6 +369,7 @@ def Handle_Conditional_Action(step_data, data_set_no):
                     for i in operators:
                         if i.strip() in left:
                             operators[i] += 1
+                    #TODO: Check these 2 lines, should not be needed anymore
                     operators[" |<| "] -= operators[" |<=| "]
                     operators[" |>| "] -= operators[" |>=| "]
 
