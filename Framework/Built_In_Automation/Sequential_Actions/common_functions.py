@@ -2705,9 +2705,9 @@ def split_string(data_set):
     sModuleInfo = inspect.currentframe().f_code.co_name + " : " + MODULE_NAME
 
     try:
-        var_name = None
-        split_expression = None
-        source_string = None
+        var_name = ""
+        split_expression = ""
+        source_string = ""
 
         for left, _, right in data_set:
             left = left.lower()
@@ -2720,15 +2720,22 @@ def split_string(data_set):
                 split_expression = right
 
         # Validate data format.
-        if None in (var_name, split_expression, source_string):
+        if "" in (var_name, split_expression, source_string):
             CommonUtil.ExecLog(sModuleInfo, "Invalid/missing data format.", 3)
             return "zeuz_failed"
-
+        source_string = CommonUtil.parse_value_into_object(source_string)
+        if type(source_string) != str:
+            CommonUtil.ExecLog(sModuleInfo, "Got a %s object to split. Converting it to string before splitting" % type(source_string).__name__, 2)
+            source_string = str(source_string)
         result = source_string.split(split_expression)
 
         # Save into shared variables.
         sr.Set_Shared_Variables(var_name, result)
 
+        CommonUtil.ExecLog(
+            sModuleInfo,
+            "Split successfully\nString: \"%s\"\nSplit expression: \"%s\"" % (source_string, split_expression),
+            1)
         return "passed"
     except:
         return CommonUtil.Exception_Handler(sys.exc_info())
