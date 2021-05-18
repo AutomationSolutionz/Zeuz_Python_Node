@@ -233,7 +233,7 @@ def Sequential_Actions(
     # Process step data
     # save the full step data in share variables
 
-    sr.Set_Shared_Variables("step_data", step_data, protected=True)
+    sr.Set_Shared_Variables(CommonUtil.dont_prettify_on_server[0], step_data, protected=True)
     # sr.Set_Shared_Variables("test_action_info", test_action_info, protected=True, print_variable=False)
     sr.test_action_info = test_action_info
 
