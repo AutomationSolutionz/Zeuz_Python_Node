@@ -3,7 +3,10 @@
 ## Version 13.6.x
 
 - [13.6.0] [May 12, 2021] For Loop and While Loop can now fail the step when exit condition is met. Also introduced "any" parameter
-
+- [13.6.1] [May 13, 2021]
+  1. Str without first brackets are restricted to be converted into tuple
+  2. New Replace string action added
+  
 ## Version 13.5.x
 
 - [13.5.0] [Apr 27, 2021] Variable parsing improved for non json type objects

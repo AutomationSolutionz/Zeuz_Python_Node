@@ -172,7 +172,12 @@ def parse_value_into_object(val):
         return val
 
     try:
-        val = ast.literal_eval(val)
+        val2 = ast.literal_eval(val)
+        if not (val.startswith("(") and val.endswith(")")) and isinstance(val2, tuple):
+            # We are preventing "1,2" >> (1,2) (str to tuple conversion without first brackets)
+            pass
+        else:
+            val = val2
     except:
         try:
             val = json.loads(val)
