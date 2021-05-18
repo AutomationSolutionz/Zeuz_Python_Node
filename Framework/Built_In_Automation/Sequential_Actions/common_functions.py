@@ -780,7 +780,9 @@ def save_into_variable(data_set):
             pass
         elif operation == "append":
             var = sr.Get_Shared_Variables(variable_name)
-            if type(var) in (list, str):
+            if (type(var), type(variable_value)) == (list, str):
+                var += [variable_value]
+            elif type(var) in (list, str):
                 var += variable_value
             elif type(var) == dict:
                 var.update(variable_value)
