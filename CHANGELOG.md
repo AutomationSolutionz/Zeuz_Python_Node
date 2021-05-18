@@ -6,7 +6,8 @@
 - [13.6.1] [May 13, 2021]
   1. Str without first brackets are restricted to be converted into tuple
   2. New Replace string action added
-  
+- [13.6.2] [May 18, 2021] "String" append to [List] is handled in "Save variable - number string list dictionary" action
+
 ## Version 13.5.x
 
 - [13.5.0] [Apr 27, 2021] Variable parsing improved for non json type objects
