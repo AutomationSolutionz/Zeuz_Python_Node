@@ -200,10 +200,13 @@ def prettify(key, val, color=None):
     try:
         if type(val) == str:
             val = parse_value_into_object(val)
-
-        print(color + "%s = %s" % (key, json.dumps(val, indent=2, sort_keys=True)))
+        expression = "%s = %s" % (key, json.dumps(val, indent=2, sort_keys=True))
+        print(color + expression)
+        ws.log("", 4, expression)   # 4 means console log which is Magenta color in server console
     except:
-        return print(color + "%s = %s" % (key, val))
+        expression = "%s = %s" % (key, val)
+        print(color + expression)
+        ws.log("", 4, expression)
 
 
 def Add_Folder_To_Current_Test_Case_Log(src):
