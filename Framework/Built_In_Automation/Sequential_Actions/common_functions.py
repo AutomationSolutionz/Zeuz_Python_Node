@@ -780,7 +780,9 @@ def save_into_variable(data_set):
             pass
         elif operation == "append":
             var = sr.Get_Shared_Variables(variable_name)
-            if type(var) in (list, str):
+            if (type(var), type(variable_value)) == (list, str):
+                var += [variable_value]
+            elif type(var) in (list, str):
                 var += variable_value
             elif type(var) == dict:
                 var.update(variable_value)
@@ -3607,10 +3609,16 @@ def replace_string(data_set):
         for left, mid, right in data_set:
             left = left.lower().strip()
             if "source" in left:
-                src_str = right
-            elif "old value" in left:
+                src_str = CommonUtil.parse_value_into_object(right)
+                if type(src_str) != str:
+                    CommonUtil.ExecLog(
+                        sModuleInfo,
+                        "Got a %s object to split. Converting it to string before splitting" % type(src_str).__name__,
+                        2)
+                    src_str = str(src_str)
+            elif "find" in left:
                 old_value = CommonUtil.parse_value_into_object(right)
-            elif "new value" in left:
+            elif "replace with" in left:
                 new_value = CommonUtil.parse_value_into_object(right)
             elif "action" in mid:
                 var_name = right

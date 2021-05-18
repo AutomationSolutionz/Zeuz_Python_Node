@@ -172,7 +172,12 @@ def parse_value_into_object(val):
         return val
 
     try:
-        val = ast.literal_eval(val)
+        val2 = ast.literal_eval(val)
+        if not (val.startswith("(") and val.endswith(")")) and isinstance(val2, tuple):
+            # We are preventing "1,2" >> (1,2) (str to tuple conversion without first brackets)
+            pass
+        else:
+            val = val2
     except:
         try:
             val = json.loads(val)
@@ -189,6 +194,9 @@ def parse_value_into_object(val):
     return val
 
 
+dont_prettify_on_server = ["step_data"]
+
+
 def prettify(key, val, color=None):
     """Tries to pretty print the given value."""
     if color is None:
@@ -200,10 +208,16 @@ def prettify(key, val, color=None):
     try:
         if type(val) == str:
             val = parse_value_into_object(val)
-
-        print(color + "%s = %s" % (key, json.dumps(val, indent=2, sort_keys=True)))
+        expression = "%s = %s" % (key, json.dumps(val, indent=2, sort_keys=True))
+        print(color + expression)
+        if key not in dont_prettify_on_server:
+            ws.log("VARIABLE", 4, expression.replace("\n", "<br>").replace(" ", "&nbsp;"))
+            # 4 means console log which is Magenta color in server console
     except:
-        return print(color + "%s = %s" % (key, val))
+        expression = "%s = %s" % (key, val)
+        print(color + expression)
+        if key not in dont_prettify_on_server:
+            ws.log("VARIABLE", 4, expression.replace("\n", "<br>").replace(" ", "&nbsp;"))
 
 
 def Add_Folder_To_Current_Test_Case_Log(src):

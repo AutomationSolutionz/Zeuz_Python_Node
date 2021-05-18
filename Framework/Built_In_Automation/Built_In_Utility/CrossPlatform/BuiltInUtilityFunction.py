@@ -2738,10 +2738,15 @@ def Download_File_and_Unzip(data_set):
         )
 
 
+@deprecated
 @logger
 def replace_Substring(data_set):
     sModuleInfo = inspect.currentframe().f_code.co_name + " : " + MODULE_NAME
-
+    CommonUtil.ExecLog(
+        sModuleInfo,
+        'Use our new improved action "Replace String"',
+        2,
+    )
     # Recall file attachment, if not already set
     file_attachment = []
     if Shared_Resources.Test_Shared_Variables("file_attachment"):
