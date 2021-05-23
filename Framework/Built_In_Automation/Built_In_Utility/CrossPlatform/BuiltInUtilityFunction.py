@@ -3362,9 +3362,11 @@ def pattern_matching(dataset):
         )
 
 
+@deprecated
 @logger
 def save_substring(data_set):
     sModuleInfo = inspect.currentframe().f_code.co_name + " : " + MODULE_NAME
+    CommonUtil.ExecLog(sModuleInfo, "Use our data collector method. Read- https://automationsolutionz.github.io/docs/data-collector", 2)
     # Parse data set
     try:
         from_var = ""  # the varibale from which string will be copied
