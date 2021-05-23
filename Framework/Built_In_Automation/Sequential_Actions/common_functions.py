@@ -722,6 +722,7 @@ def Compare_Variables(data_set):
     return sr.Compare_Variables([data_set])
 
 
+@deprecated
 @logger
 def Compare_Partial_Variables(data_set):
     """ Compare shared variables / strings to eachother """
@@ -903,6 +904,7 @@ def Initialize_Dict(data_set):
 def Compare_Lists_or_Dicts(data_set):
     """ Compare two lists stored in shared variables """
     sModuleInfo = inspect.currentframe().f_code.co_name + " : " + MODULE_NAME
+    CommonUtil.ExecLog(sModuleInfo, 'Use our new improved action "Compare Data"', 2)
     return sr.Compare_Lists_or_Dicts([data_set])
 
 

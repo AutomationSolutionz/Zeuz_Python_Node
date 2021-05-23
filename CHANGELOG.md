@@ -2,38 +2,79 @@
 
 ## Version 13.6.x
 
-- [13.6.0] [May 12, 2021] For Loop and While Loop can now fail the step when exit condition is met. Also introduced "any" parameter
-- [13.6.1] [May 13, 2021]
-  1. Str without first brackets are restricted to be converted into tuple
-  2. New Replace string action added
-- [13.6.2] [May 18, 2021] "String" append to [List] is handled in "Save variable - number string list dictionary" action
+### [13.6.0] [May 12, 2021] 
+- **[Add]** For Loop and While Loop can now fail the step when exit condition is met. Also introduced "any" parameter
+### [13.6.1] [May 13, 2021]
+- **[Change]** Str without first brackets are restricted to be converted into tuple
+- **[Add]** New Replace string action added
+### [13.6.2] [May 18, 2021]
+- **[Add]** "String" append to [List] is handled in "Save variable - number string list dictionary" action
 
 ## Version 13.5.x
 
-- [13.5.0] [Apr 27, 2021] Variable parsing improved for non json type objects
-- [13.5.1] [May 12, 2021] Split action improved to convert json and non json objects to string then split
+### [13.5.0] [Apr 27, 2021] 
+- **[Improve]** Variable parsing improved for non json type objects
+### [13.5.1] [May 12, 2021] 
+- **[Improve]** Split action improved to convert json and non json objects to string then split
 
 ## Version 13.4.x
 
-- [Apr 17, 2021] Appium new powerful "Scroll to an element" action is added
-- [Apr 18, 2021] Appium device, teardown and Windows terminal closing issue fixed
-- [Apr 21, 2021] Appium seek progress bar action added
+### [13.4.0] [Apr 21, 2021] 
+- **[Add]** Appium new powerful "Scroll to an element" action is added
+- **[Fix]** Appium device, teardown and Windows terminal closing issue fixed
+- **[Add]** Appium seek progress bar action added
 
 ## Version 13.3.x
 
-- [Apr 01, 2021] Add support for automating desktop web browser test cases on
+### [13.3.0] [Apr 07, 2021]
+- **[Add]** Added support for automating desktop web browser test cases on
   mobile browsers.
-- [Apr 01, 2021] Fix a bug where node was checking if appium started up for 10
+- **[Fix]** Fixed a bug where node was checking if appium started up for 10
   seconds without any delay in between. This is unreliable and increases CPU
   load unnecessarily.
-- [Apr 07, 2021] Improved 'For loop' to loop though selenium objects and perform 
+- **[Improve]** Improved 'For loop' to loop though selenium objects and perform 
   web actions on them
-- [Apr 12, 2021] Fix junit reporting issue where the objective was fetched
-  from a missing key.
-- [Apr 12, 2021] Remove `node_gui.py` which is redundant now and introduces
-  buggy behavior.
+### [13.3.1] [Apr 12, 2021] 
+- **[Fix]** Fixed junit reporting issue where the objective was fetched from a missing key.
+- **[Remove]** Removed `node_gui.py` which is redundant now and introduces buggy behavior.
+### [13.3.2] [Apr 15, 2021] 
+- **[Remove]** Disabled `Rerun on fail` for now
+### [13.3.2] [Apr 15, 2021]
+- **[Add]** json report is added to zip file of report page for Performance action
 
-## Version: 12.00
+## Version 13.2.x
+
+### [13.2.0] [Mar 27, 2021]
+- **[Add]** json report is added to zip file of report page for Performance action
+### [13.2.1] [Mar 29, 2021]
+- **[Add]** sid and service name options were added for oracle user
+### [13.2.2] [Mar 30, 2021]
+- **[Add]** YAML read and write action created
+### [13.2.3] [Apr 01, 2021]
+- **[Fix]** Fixed the "Click and download" action issue
+### [13.2.4] [Apr 05, 2021]
+- **[Improve]** Run command upgraded
+- **[Add]** change nth line of text document action added
+### [13.2.5] [Apr 06, 2021]
+- **[Add]** Added a new line manually for write into text file
+### [13.2.6] [Apr 07, 2021]
+- **[Improve]** For loop improved for handling selenium elements
+### [13.2.7] [Apr 07, 2021]
+- **[Fix]** Bug fix of "Command separator" in run_command action
+
+## Version 13.1.x
+
+### [13.1.0] [Mar 23, 2021]
+- **[Add]** New improved for loop action is added with complex nested logics handling capabilities
+
+## Version 13.0.x
+
+### [13.0.0] [Jan 1, 2021]
+- Implemented new well optimized ZeuZ Architecture which downloads all testcases at once before starting and upload
+  report after all test cases are executed
+
+<br><br><br><br><br>
+## Version: 12.0.0
 
 > NOTE: This is the old changelog format.
 
