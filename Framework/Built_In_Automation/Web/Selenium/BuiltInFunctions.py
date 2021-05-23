@@ -3254,7 +3254,7 @@ def switch_window_or_tab(step_data):
                     sModuleInfo,
                     "unable to find the title among the windows. If you want to match partially please use '*windows title'",
                     3)
-                return False
+                return "zeuz_failed"
             # else:
             #     return True
 
@@ -3267,7 +3267,7 @@ def switch_window_or_tab(step_data):
 
         elif not frame_condition:
             CommonUtil.ExecLog(sModuleInfo, "Wrong data set provided. Choose between window title, window index, frame title or frame index", 3)
-            return False
+            return "zeuz_failed"
 
     except Exception:
         CommonUtil.ExecLog(sModuleInfo, "Unable to switch your window", 3)
