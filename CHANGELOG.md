@@ -2,8 +2,6 @@
 
 ## Version 13.6.x
 
-### [13.6.3] [May 12, 2021] 
-- **[Fix]** Selenium "Enter text" action: on mac, `Command + a` must be used to select all text in a text field.
 ### [13.6.0] [May 12, 2021] 
 - **[Add]** For Loop and While Loop can now fail the step when exit condition is met. Also introduced "any" parameter
 ### [13.6.1] [May 13, 2021]
@@ -11,6 +9,8 @@
 - **[Add]** New Replace string action added
 ### [13.6.2] [May 18, 2021]
 - **[Add]** "String" append to [List] is handled in "Save variable - number string list dictionary" action
+### [13.6.3] [May 12, 2021] 
+- **[Fix]** Selenium "Enter text" action: on mac, `Command + a` must be used to select all text in a text field.
 
 ## Version 13.5.x
 
