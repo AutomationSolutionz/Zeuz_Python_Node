@@ -9,6 +9,8 @@
 - **[Add]** New Replace string action added
 ### [13.6.2] [May 18, 2021]
 - **[Add]** "String" append to [List] is handled in "Save variable - number string list dictionary" action
+### [13.6.3] [May 12, 2021] 
+- **[Fix]** Selenium "Enter text" action: on mac, `Command + a` must be used to select all text in a text field.
 
 ## Version 13.5.x
 
@@ -28,7 +30,7 @@
 
 ### [13.3.0] [Apr 07, 2021]
 - **[Add]** Added support for automating desktop web browser test cases on
-  mobile browsers.
+mobile browsers.
 - **[Fix]** Fixed a bug where node was checking if appium started up for 10
   seconds without any delay in between. This is unreliable and increases CPU
   load unnecessarily.
