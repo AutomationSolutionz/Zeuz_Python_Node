@@ -893,7 +893,10 @@ def Enter_Text_In_Text_Box(step_data):
                 if selenium_driver.desired_capabilities['browserName'] == "Safari":
                     Element.clear()
                 else:
-                    Element.send_keys(Keys.CONTROL, "a")
+                    if sys.platform == "darwin":
+                        Element.send_keys(Keys.COMMAND, "a")
+                    else:
+                        Element.send_keys(Keys.CONTROL, "a")
                     Element.send_keys(Keys.DELETE)
                     try:
                         Element.clear() #some cases it works .. so adding it here just incase

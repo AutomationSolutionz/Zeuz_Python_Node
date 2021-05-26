@@ -2,6 +2,8 @@
 
 ## Version 13.6.x
 
+### [13.6.3] [May 12, 2021] 
+- **[Fix]** Selenium "Enter text" action: on mac, `Command + a` must be used to select all text in a text field.
 ### [13.6.0] [May 12, 2021] 
 - **[Add]** For Loop and While Loop can now fail the step when exit condition is met. Also introduced "any" parameter
 ### [13.6.1] [May 13, 2021]
@@ -28,7 +30,7 @@
 
 ### [13.3.0] [Apr 07, 2021]
 - **[Add]** Added support for automating desktop web browser test cases on
-  mobile browsers.
+mobile browsers.
 - **[Fix]** Fixed a bug where node was checking if appium started up for 10
   seconds without any delay in between. This is unreliable and increases CPU
   load unnecessarily.
