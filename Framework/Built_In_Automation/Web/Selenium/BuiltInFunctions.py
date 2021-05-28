@@ -3316,13 +3316,17 @@ def switch_iframe(step_data):
                 pass
             elif left == "index" and "default" in right.lower():
                 selenium_driver.switch_to.default_content()
+                CommonUtil.ExecLog(sModuleInfo, "Exited all iframes and switched to default content", 1)
+            elif left == "index":
+                selenium_driver.switch_to.frame(int(right.strip()))
+                CommonUtil.ExecLog(sModuleInfo, "Iframe switched to index %s" % right.strip(), 1)
             elif "default" in right.lower():
                 try:
                     Element = LocateElement.Get_Element([(left, "element parameter", right)], selenium_driver)
                     selenium_driver.switch_to.frame(Element)
                     CommonUtil.ExecLog(sModuleInfo, "Iframe switched using above Xpath", 1)
                 except:
-                    CommonUtil.ExecLog(sModuleInfo, "No such iframe found. Switching to default content exiting from all frames.", 2)
+                    CommonUtil.ExecLog(sModuleInfo, "No such iframe found. Exited all iframes and switched to default content", 2)
                     selenium_driver.switch_to.default_content()
             else:
                 try:
