@@ -44,6 +44,7 @@ action_support = (
     "target parameter",
     "end parameter",
     "optional parameter",
+    "iframe parameter",
     "method",
     "url",
     "body",

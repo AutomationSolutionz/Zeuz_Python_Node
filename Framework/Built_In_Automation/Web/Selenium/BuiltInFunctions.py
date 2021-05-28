@@ -3305,6 +3305,38 @@ def switch_window_or_tab(step_data):
         return CommonUtil.Exception_Handler(sys.exc_info())
 
 
+@logger
+def switch_iframe(step_data):
+    sModuleInfo = inspect.currentframe().f_code.co_name + " : " + MODULE_NAME
+    global selenium_driver
+    try:
+        for left, mid, right in step_data:
+            left = left.lower().strip()
+            if "action" in mid.lower() and left == "switch iframe":
+                pass
+            elif left == "index" and "default" in right.lower():
+                selenium_driver.switch_to.default_content()
+            elif "default" in right.lower():
+                try:
+                    Element = LocateElement.Get_Element([(left, "element parameter", right)], selenium_driver)
+                    selenium_driver.switch_to.frame(Element)
+                    CommonUtil.ExecLog(sModuleInfo, "Iframe switched using above Xpath", 1)
+                except:
+                    CommonUtil.ExecLog(sModuleInfo, "No such iframe found. Switching to default content exiting from all frames.", 2)
+                    selenium_driver.switch_to.default_content()
+            else:
+                try:
+                    Element = LocateElement.Get_Element([(left, "element parameter", right)], selenium_driver)
+                    selenium_driver.switch_to.frame(Element)
+                    CommonUtil.ExecLog(sModuleInfo, "Iframe switched using above Xpath", 1)
+                except:
+                    CommonUtil.ExecLog(sModuleInfo, "No such iframe found using above Xpath", 3)
+        return "passed"
+    except Exception:
+        CommonUtil.ExecLog(sModuleInfo, "Unable to switch iframe", 3)
+        return "zeuz_failed"
+
+
 # Method to upload file
 @logger
 def upload_file(step_data):

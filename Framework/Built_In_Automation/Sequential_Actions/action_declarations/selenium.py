@@ -42,7 +42,8 @@ declarations = (
     { "name": "scroll element to top",         "function": "scroll_element_to_top",         "screenshot": "web" },
     { "name": "switch window",                 "function": "switch_window",                 "screenshot": "web" },
     { "name": "switch window or frame",        "function": "switch_window_or_tab",          "screenshot": "web" },
-    { "name": "switch window/tab",             "function": "switch_window_or_tab",          "screenshot": "web" },  # For CS group
+    { "name": "switch window/tab",             "function": "switch_window_or_tab",          "screenshot": "web" },
+    { "name": "switch iframe",                 "function": "switch_iframe",                 "screenshot": "web" },
     { "name": "save attribute",                "function": "Save_Attribute",                "screenshot": "web" },
     { "name": "save attribute values in list", "function": "save_attribute_values_in_list", "screenshot": "web" },
     { "name": "save web elements in list",     "function": "save_web_elements_in_list",     "screenshot": "web" },
