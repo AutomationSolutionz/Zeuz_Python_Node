@@ -1356,11 +1356,23 @@ def main(device_dict, user_info_object):
 
         # Start websocket server if we're in debug mode.
         if run_id.lower().startswith("debug"):
+            CommonUtil.ExecLog(
+                "",
+                "\n********************************\n*    STARTING DEBUG SESSION    *\n********************************",
+                4,
+                False,
+            )
             CommonUtil.debug_status = True
             print("[LIVE LOG] Connecting to Live Log service")
             ws.connect()
             print("[LIVE LOG] Connected to Live Log service")
         else:
+            CommonUtil.ExecLog(
+                "",
+                "\n******************************\n*    STARTING RUN SESSION    *\n******************************",
+                4,
+                False,
+            )
             CommonUtil.debug_status = False
             cleanup_driver_instances()  # clean up drivers
             shared.Clean_Up_Shared_Variables()  # clean up shared variables

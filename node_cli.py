@@ -444,12 +444,6 @@ def RunProcess(sTesterid, user_info_object):
                 z.extractall(save_path)
                 z.close()
                 os.unlink(save_path/"input.zip")
-                CommonUtil.ExecLog(
-                    "",
-                    "\n**************************\n*    STARTING SESSION    *\n**************************",
-                    4,
-                    False,
-                )
                 PreProcess()
                 value = MainDriverApi.main(device_dict, user_info_object)
                 if value == "pass":
