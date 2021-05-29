@@ -2,7 +2,9 @@
 
 ## Version 13.6.x
 
-### [13.6.3] [May 12, 2021] 
+### [13.6.4] [May 30, 2021] 
+- **[Add]** Added new action for iframe switching in web
+### [13.6.3] [May 27, 2021] 
 - **[Fix]** Selenium "Enter text" action: on mac, `Command + a` must be used to select all text in a text field.
 ### [13.6.2] [May 18, 2021]
 - **[Add]** "String" append to [List] is handled in "Save variable - number string list dictionary" action
