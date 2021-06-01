@@ -1,5 +1,10 @@
 # Changelog
 
+## Version 13.7.x
+
+### [13.7.0] [June 02, 2021] 
+- **[Add]** Partial case-insensitive search for web and mobile is added as **attribute = attribute_value
+
 ## Version 13.6.x
 
 ### [13.6.4] [May 30, 2021] 
