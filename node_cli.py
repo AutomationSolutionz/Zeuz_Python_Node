@@ -428,8 +428,8 @@ def RunProcess(sTesterid, user_info_object):
                     size = str(round(size / 1024, 2)) + " MB"
                 else:
                     size = str(size) + " KB"
-                CommonUtil.ExecLog("", "Downloading dataset and attachments of %s. Please wait" % size, 4)
                 save_path = temp_ini_file.parent / "attachments"
+                CommonUtil.ExecLog("", "Downloading dataset and attachments of %s into:\n%s" % (size, str(save_path/"input.zip")), 4)
                 FL.CreateFolder(save_path)
                 response = requests.get(RequestFormatter.form_uri("getting_json_data_api"), {"machine_name": Userid}, stream=True, verify=False)
                 chunk_size = 4096

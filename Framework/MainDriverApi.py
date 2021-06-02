@@ -1262,7 +1262,7 @@ def upload_json_report(Userid, temp_ini_file, run_id, all_run_id_info):
                 size = str(round(size/1024, 2)) + " MB"
             else:
                 size = str(size) + " KB"
-            print("Uploading report of %s. Please wait" % size)
+            print("Uploading report of %s from:\n%s" % (size, str(zip_path) + ".zip"))
             for i in range(5):
                 res = requests.post(
                     RequestFormatter.form_uri("create_report_log_api/"),
