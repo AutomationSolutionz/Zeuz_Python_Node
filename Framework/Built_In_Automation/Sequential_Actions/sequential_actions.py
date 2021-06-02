@@ -161,7 +161,6 @@ def Sequential_Actions(
     test_action_info,
     _dependency=None,
     _run_time_params=None,
-    _file_attachment=None,
     _temp_q="",
     screen_capture="Desktop",
     _device_info=None,
@@ -171,8 +170,6 @@ def Sequential_Actions(
 
     if _device_info is None:
         _device_info = {}
-    if _file_attachment is None:
-        _file_attachment = {}
     if _run_time_params is None:
         _run_time_params = {}
     if _dependency is None:
@@ -189,12 +186,6 @@ def Sequential_Actions(
             dependency = _dependency  # Save to global variable
             sr.Set_Shared_Variables("dependency", _dependency, protected=True)  # Save in Shared Variables
 
-        if _file_attachment != {}:  # If a file attachment was passed
-            file_attachment = _file_attachment  # Save as a global variable
-            sr.Set_Shared_Variables("file_attachment", _file_attachment, protected=True)  # Add entire file attachment dictionary to Shared Variables
-            for file_attachment_name in _file_attachment:  # Add each attachment as it's own Shared Variable, so the user can easily refer to it
-                sr.Set_Shared_Variables(file_attachment_name, _file_attachment[file_attachment_name])
-
         if _run_time_params != {}:
             run_time_params = _run_time_params  # Save to global variable
             sr.Set_Shared_Variables("run_time_params", _run_time_params, protected=True)  # Save in Shared Variables
@@ -204,15 +195,6 @@ def Sequential_Actions(
         if _device_info != {}:  # If any devices and their details were sent by the server, save to shared variable
             device_info = _device_info
             sr.Set_Shared_Variables("device_info", device_info, protected=True)
-
-        # Set screen capture type (desktop/mobile) as shared variable, so TakeScreenShot() can read it
-        # if screen_capture != None and screen_capture != "None":
-        #     sr.Set_Shared_Variables(
-        #         "screen_capture", screen_capture.lower().strip()
-        #     )  # Save the screen capture type
-        #     CommonUtil.set_screenshot_vars(
-        #         sr.Shared_Variable_Export()
-        #     )  # Get all the shared variables, and pass them to CommonUtil
 
         # Set default variables (Must be defined here in case anyone destroys all shared variables)
         sr.Set_Shared_Variables("element_wait", 10)  # Default time for get_element() to find the element
@@ -241,12 +223,6 @@ def Sequential_Actions(
         [], debug_actions
     )  # empty list means run all, instead of step data we want to send the dataset no's of the step data to run
     write_browser_logs()
-
-    # global load_testing, thread_pool
-    # # finish all thread for load tetsing
-    # if load_testing:
-    #     thread_pool.shutdown(wait=True)
-
     return result
 
 deprecateLog = True
