@@ -2790,18 +2790,6 @@ def save_text_from_file_into_variable(data_set):
                 var_value += data
 
         sr.Set_Shared_Variables(var_name, var_value)
-        CommonUtil.ExecLog(
-            sModuleInfo,
-            "Text %s is found inside text file %s"
-            % (var_value.strip(), text_file_path),
-            1,
-        )
-        CommonUtil.ExecLog(
-            sModuleInfo,
-            "Saving text %s into variable named %s" % (var_value.strip(), var_name),
-            1,
-        )
-
         return "passed"
     except Exception:
         return CommonUtil.Exception_Handler(sys.exc_info())

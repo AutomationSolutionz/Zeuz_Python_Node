@@ -470,7 +470,15 @@ def run_all_test_steps_in_a_test_case(
         CommonUtil.step_index = 1
         sTestStepResultList.append("PASSED")
 
-    # all_step_meta_data = Response["step_meta_data"]
+    # Creating Testcase attachment variables
+    attachment_path = str(Path(ConfigModule.get_config_value("sectionOne", "temp_run_file_path", temp_ini_file)) / "attachments")
+    tc_attachment_list = []
+    for tc_attachment in testcase_info['testcase_attachments_links']:
+        path = str(Path(attachment_path + tc_attachment[0][10:]))
+        var_name = tc_attachment[1] + "." + tc_attachment[2] if tc_attachment[2] else tc_attachment[1]
+        tc_attachment_list.append(var_name)
+        shared.Set_Shared_Variables(var_name, path)
+
     all_step_info = testcase_info["steps"]
     all_step_dataset, all_action_info = [], []
     for step_info in all_step_info:
@@ -508,6 +516,14 @@ def run_all_test_steps_in_a_test_case(
         current_step_id = all_step_info[StepSeq - 1]["step_id"]
         current_step_sequence = all_step_info[StepSeq - 1]["step_sequence"]
 
+        step_attachments = all_step_info[StepSeq - 1]['step_attachments']
+        step_attachment_list = []
+        for attachment in step_attachments:
+            path = str(Path(attachment_path + attachment[1][12:]))
+            var_name = attachment[2] + "." + attachment[3] if attachment[3] else attachment[2]
+            step_attachment_list.append(var_name)
+            shared.Set_Shared_Variables(var_name, path)
+
         # add config value
         ConfigModule.add_config_value(
             "sectionOne",
@@ -527,7 +543,7 @@ def run_all_test_steps_in_a_test_case(
         try:
             test_case_continue = all_step_info[StepSeq - 1]["continue_on_fail"]
             step_time = all_step_info[StepSeq - 1]["step_time"]
-            if str(step_time) != "" and step_time != None:
+            if str(step_time) != "" and step_time is not None:
                 step_time = int(step_time)
             else:
                 step_time = 59
@@ -581,6 +597,7 @@ def run_all_test_steps_in_a_test_case(
         WinMemEnd = CommonUtil.PhysicalAvailableMemory()  # get available memory
         TestStepDuration = CommonUtil.FormatSeconds(int(TestStepEndTime - TestStepStartTime))
         TestStepMemConsumed = WinMemBegin - WinMemEnd  # get memory consumed
+        for i in step_attachment_list: shared.Remove_From_Shared_Variables(i)  # Cleanup step_attachment variables
 
         """ Run cancelled feature is disabled for now. maybe implement it later"""
         run_cancelled = ""
@@ -710,6 +727,7 @@ def run_all_test_steps_in_a_test_case(
             after_execution_dict.update({"status": CANCELLED_TAG})
             cleanup_runid_from_server(run_id)   # This is an api call. What to do with this in new maindriver system?
             CommonUtil.CreateJsonReport(stepInfo=after_execution_dict)
+            for i in tc_attachment_list: shared.Remove_From_Shared_Variables(i)   # Cleanup tc_attachment variables
             return "pass"
 
         else:
@@ -719,6 +737,7 @@ def run_all_test_steps_in_a_test_case(
             after_execution_dict.update({"status": CANCELLED_TAG})
             cleanup_runid_from_server(run_id)   # This is an api call. What to do with this in new maindriver system?
             CommonUtil.CreateJsonReport(stepInfo=after_execution_dict)
+            for i in tc_attachment_list: shared.Remove_From_Shared_Variables(i)   # Cleanup tc_attachment variables
             return "pass"
 
         CommonUtil.CreateJsonReport(stepInfo=after_execution_dict)
@@ -735,6 +754,8 @@ def run_all_test_steps_in_a_test_case(
                 break
         StepSeq += 1
         CommonUtil.step_index += 1
+
+    for i in tc_attachment_list: shared.Remove_From_Shared_Variables(i)   # Cleanup tc_attachment variables
     return sTestStepResultList
 
 
@@ -1208,34 +1229,6 @@ def upload_csv_file_info(run_id, test_case):
         pass
 
 
-def get_all_run_id_info(Userid, sModuleInfo):
-    # response = requests.get(RequestFormatter.form_uri("getting_json_data_api"), {"machine_name": Userid}).json()
-    # # response = RequestFormatter.Get("getting_json_data_api", {"machine_name": Userid})
-    # for _ in range(15):
-    #     if response["found"]:
-    #         break
-    #     else:
-    #         time.sleep(2)
-    #         response = requests.get(RequestFormatter.form_uri("getting_json_data_api"), {"machine_name": Userid}).json()
-    # else:
-    #     CommonUtil.ExecLog(sModuleInfo, "Could not get run information", 3)
-    #     return False
-
-    path = "D:\\Zeuz Node\\ZeuzPythonNode\\Projects\\Sample_Amazon_Testing\\RequiredFormatOf_TestCase.json"
-    with open(path, "r") as f:
-        Json_data = json.load(f)
-        if isinstance(Json_data, str):
-            Json_data = json.loads(Json_data)
-    with open(path, "w") as f:
-        json.dump(Json_data, f, indent=2)
-    return Json_data
-
-    # path = os.path.abspath(__file__).split("Framework")[0]/Path("tests")/Path("test_cases_data.json")
-    # with open(path, "w") as f:
-    #     json.dump(response["json"], f, indent=2)
-    # return response["json"]
-
-
 def upload_json_report(Userid, temp_ini_file, run_id, all_run_id_info):
     zip_path = Path(ConfigModule.get_config_value("sectionOne", "temp_run_file_path", temp_ini_file)) / run_id.replace(":", "-")
     path = zip_path / "execution_log.json"
@@ -1319,7 +1312,6 @@ def main(device_dict, user_info_object):
     # get local machine user id
     Userid = (CommonUtil.MachineInfo().getLocalUser()).lower()
 
-    # all_run_id_info = get_all_run_id_info(Userid, sModuleInfo)
     get_json, all_file_specific_steps = True, {}
     save_path = Path(ConfigModule.get_config_value("sectionOne", "temp_run_file_path", temp_ini_file)) / "attachments"
     cnt = 0
@@ -1334,6 +1326,7 @@ def main(device_dict, user_info_object):
             for j in i[2]:
                 all_file_specific_steps[folder_list[cnt]][j] = str(Path(i[0]) / j)
             cnt += 1
+    # TODO: Remove all_file_specific_steps at a later period. keeping this only for custom driver purpose
     with open(json_path, "r") as f:
         all_run_id_info = json.loads(f.read())
 
