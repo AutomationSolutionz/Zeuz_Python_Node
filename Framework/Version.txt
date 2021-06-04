@@ -1,4 +1,4 @@
 [ZeuZ Python Version]
-version = 13.7.0
+version = 14.0.0
 [Release Date]
-date = June 02, 2021
+date = June 04, 2021

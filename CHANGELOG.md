@@ -1,5 +1,11 @@
 # Changelog
 
+## Version 14.0.x
+
+### [14.0.0] [June 04, 2021]
+- **[Change]** Changed attachment variable parsing
+- **[Add]** Added file path option in execute python code action
+
 ## Version 13.7.x
 
 ### [13.7.0] [June 02, 2021] 
@@ -76,7 +82,7 @@ mobile browsers.
 
 ## Version 13.0.x
 
-### [13.0.0] [Jan 1, 2021]
+### [13.0.0] [Jan 01, 2021]
 - Implemented new well optimized ZeuZ Architecture which downloads all testcases at once before starting and upload
   report after all test cases are executed
 
