@@ -2790,18 +2790,6 @@ def save_text_from_file_into_variable(data_set):
                 var_value += data
 
         sr.Set_Shared_Variables(var_name, var_value)
-        CommonUtil.ExecLog(
-            sModuleInfo,
-            "Text %s is found inside text file %s"
-            % (var_value.strip(), text_file_path),
-            1,
-        )
-        CommonUtil.ExecLog(
-            sModuleInfo,
-            "Saving text %s into variable named %s" % (var_value.strip(), var_name),
-            1,
-        )
-
         return "passed"
     except Exception:
         return CommonUtil.Exception_Handler(sys.exc_info())
@@ -3217,11 +3205,19 @@ def validate_list_order(data_set):
 @logger
 def execute_python_code(data_set):
     sModuleInfo = inspect.currentframe().f_code.co_name + " : " + MODULE_NAME
-    inp, out_var, main_function, Code = "", "", "", ""
+    inp, out_var, main_function, Code, filepath_code = "", "", "", "", ""
 
     for left, mid, right in data_set:
         left = left.strip().lower()
-        if left == "input data":
+        if left == "file path":
+            filepath = right.strip()
+            # Expand ~ (home directory of user) to absolute path.
+            if "~" in filepath:
+                filepath = Path(os.path.expanduser(filepath))
+            filepath = Path(filepath)
+            with open(filepath, "r") as file:
+                filepath_code = file.read()
+        elif left == "input data":
             inp = right
         elif left == "output variable":
             out_var = right.strip()
@@ -3230,6 +3226,7 @@ def execute_python_code(data_set):
         elif left == "execute python code":
             Code = right
 
+    Code = filepath_code if filepath_code else Code
     try: exec(Code, globals())
     except: return CommonUtil.Exception_Handler(sys.exc_info())
 

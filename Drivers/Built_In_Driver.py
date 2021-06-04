@@ -26,7 +26,6 @@ def sequential_actions(
             test_action_info,
             dependency,
             run_time_params,
-            file_attachment,
             temp_q,
             screen_capture,
             device_info,
