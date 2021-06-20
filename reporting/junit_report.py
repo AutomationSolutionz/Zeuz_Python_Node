@@ -11,7 +11,12 @@ def process(data, save_path="report.xml"):
 
     testsuite = ET.Element("testsuite")
     testsuite.set("id", data["run_id"])
-    testsuite.set("name", data["objective"])
+
+    if "objective" in data:
+        testsuite.set("name", data["objective"])
+    else:
+        testsuite.set("name", data["TestObjective"])
+
     testsuite.set("tests", str(len(data["test_cases"])))
     testsuite.set("duration", data["execution_detail"]["duration"])
     testsuite.set("timestamp", data["execution_detail"]["teststarttime"])

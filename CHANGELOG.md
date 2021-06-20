@@ -2,6 +2,13 @@
 
 ## Version 14.0.x
 
+### [14.0.3] [June 20, 2021]
+- **[Fix]** [internal] Node's main driver crashes/exceptions should not bubble
+  up to top level.
+- **[Fix]** jUnit report generation error.
+- **[Add]** Add `-o`, `--once` flag for running only a single session and then
+  quit node automatically. Useful for daemons, cron jobs & CI/CD.
+
 ### [14.0.0] [June 04, 2021]
 - **[Change]** Changed attachment variable parsing
 - **[Add]** Added file path option in execute python code action

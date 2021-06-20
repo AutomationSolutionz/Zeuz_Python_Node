@@ -453,7 +453,11 @@ def RunProcess(sTesterid, user_info_object, run_once=False):
                 z.close()
                 os.unlink(save_path/"input.zip")
                 PreProcess()
-                value = MainDriverApi.main(device_dict, user_info_object)
+
+                try:
+                    value = MainDriverApi.main(device_dict, user_info_object)
+                except:
+                    value = None
 
                 if run_once:
                     return False
