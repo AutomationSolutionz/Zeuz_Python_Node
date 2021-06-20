@@ -331,7 +331,16 @@ def Login(cli=False, run_once=False):
                             CommonUtil.ExecLog(
                                 "", "Time zone settings failed {}".format(e), 4, False
                             )
-
+                        # Telling the node_manager that the node is ready to deploy
+                        CommonUtil.node_manager_json(
+                            {
+                                "state": "idle",
+                                "report": {
+                                    "zip": None,
+                                    "directory": None,
+                                }
+                            }
+                        )
                         run_again = RunProcess(tester_id, user_info_object, run_once=run_once)
 
                         if not run_again:
@@ -398,7 +407,7 @@ def Login(cli=False, run_once=False):
             time.sleep(60)
 
     if run_once:
-        CommonUtil.ExecLog(
+        print(
             "[OFFLINE]", "Zeuz Node is going offline after running one session, since `--once` or `-o` flag is specified.", 4
         )
     else:
@@ -453,7 +462,16 @@ def RunProcess(sTesterid, user_info_object, run_once=False):
                 z.close()
                 os.unlink(save_path/"input.zip")
                 PreProcess()
-
+                # Telling the node_manager that a run_id is deployed
+                CommonUtil.node_manager_json(
+                    {
+                        "state": "in_progress",
+                        "report": {
+                            "zip": None,
+                            "directory": None,
+                        }
+                    }
+                )
                 try:
                     value = MainDriverApi.main(device_dict, user_info_object)
                 except:

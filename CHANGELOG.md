@@ -1,7 +1,8 @@
 # Changelog
 
 ## Version 14.0.x
-
+### [14.0.4] [June 20, 2021]
+- **[Add]** [internal] Node_state.json is generated to communicate between nodes and node_manager
 ### [14.0.3] [June 20, 2021]
 - **[Fix]** [internal] Node's main driver crashes/exceptions should not bubble
   up to top level.

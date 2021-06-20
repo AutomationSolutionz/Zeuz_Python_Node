@@ -6,7 +6,7 @@ import sys
 import inspect
 import os, os.path, threading
 import ast
-import json
+import json, time
 import logging
 from Framework.Utilities import ConfigModule
 import datetime
@@ -338,8 +338,23 @@ def Result_Analyzer(sTestStepReturnStatus, temp_q):
     except Exception as e:
         return Exception_Handler(sys.exc_info())
 
+
+def node_manager_json(data):
+    """ Generates a json file to communicate with node_manager"""
+    json_path = Path(os.path.abspath(__file__)).parent.parent.parent / "node_state.json"
+    with open(json_path, "w") as f:
+        json.dump(data, f)
+
+node_manager_json(
+    {
+        "state": "starting",
+        "report": {
+            "zip": None,
+            "directory": None,
+        }
+    }
+)
 report_json_time = 0.0
-import time
 
 
 def CreateJsonReport(logs=None, stepInfo=None, TCInfo=None, setInfo=None):

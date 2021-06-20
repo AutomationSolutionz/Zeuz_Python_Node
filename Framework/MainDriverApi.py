@@ -1276,7 +1276,7 @@ def upload_json_report(Userid, temp_ini_file, run_id, all_run_id_info):
                 time.sleep(1)
             else:
                 print("Could not Upload the report to server of run_id '%s'" % run_id)
-        os.unlink(str(zip_path) + ".zip")
+        # os.unlink(str(zip_path) + ".zip")     # Removing the zip is skipped because node_manager needs the zip
 
     with open(path, "w") as f:
         json.dump(json_report, f, indent=2)
@@ -1289,7 +1289,7 @@ def upload_json_report(Userid, temp_ini_file, run_id, all_run_id_info):
     print("Generating junit4 compatible report.")
     junit_report.process(all_run_id_info, str(junit_report_path))
     print("DONE. Generated junit report at %s" % junit_report_path)
-
+    return zip_path
 
 # main function
 def main(device_dict, user_info_object):
@@ -1566,8 +1566,8 @@ def main(device_dict, user_info_object):
 
         if run_cancelled == CANCELLED_TAG:
             print("Test Set Cancelled by the User")
-        elif not run_id.startswith("debug"):
-            upload_json_report(Userid, temp_ini_file, run_id, all_run_id_info)
+        elif not run_id.lower().startswith("debug"):
+            zip_path = upload_json_report(Userid, temp_ini_file, run_id, all_run_id_info)
 
             from distutils.dir_util import copy_tree
 
@@ -1581,10 +1581,21 @@ def main(device_dict, user_info_object):
 
                 copy_tree(str(zeuz_log_dir), str(log_dir))
 
+            # Telling the node_manager that a run_id is finished
+            CommonUtil.node_manager_json(
+                {
+                    "state": "complete",
+                    "report": {
+                        "zip": str(zip_path) + ".zip",
+                        "directory": str(zip_path),
+                    }
+                }
+            )
+
             # executor.submit(upload_json_report)
 
         # Close websocket connection.
-        if run_id.lower().startswith("debug"):
+        elif run_id.lower().startswith("debug"):
             ws.close()
             print("[LIVE LOG] Disconnected from Live Log service")
         CommonUtil.runid_index += 1
