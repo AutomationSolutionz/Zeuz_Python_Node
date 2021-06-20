@@ -38,15 +38,15 @@ try:
     pidNumber = int("".join(pidNumber.split()))
     print("Process ID", pidNumber)
     p = psutil.Process(pidNumber)
-    p.terminate() 
+    p.terminate()
 except:
     True
 
-try: 
+try:
     f = open(pidfile, "w")
     f.write(str(os.getpid()))
     f.close()
-except: 
+except:
     True
 
 
@@ -63,6 +63,9 @@ if not os.path.exists(
             os.path.join("AutomationLog"),
         )
     )
+
+# Tells node whether it should run a test set/deployment only once and quit.
+RUN_ONCE = False
 local_run = False
 
 # Move to Framework directory, so all modules can be seen
@@ -211,7 +214,7 @@ def zeuz_authentication_prompts_for_cli():
             ConfigModule.add_config_value(AUTHENTICATION_TAG, prompt, str(value))
 
 
-def Login(cli=False):
+def Login(cli=False, run_once=False):
     username = ConfigModule.get_config_value(AUTHENTICATION_TAG, USERNAME_TAG)
     password = ConfigModule.get_config_value(AUTHENTICATION_TAG, PASSWORD_TAG)
     server_name = ConfigModule.get_config_value(AUTHENTICATION_TAG, "server_address")
@@ -329,7 +332,7 @@ def Login(cli=False):
                                 "", "Time zone settings failed {}".format(e), 4, False
                             )
 
-                        run_again = RunProcess(tester_id, user_info_object)
+                        run_again = RunProcess(tester_id, user_info_object, run_once=run_once)
 
                         if not run_again:
                             break  # Exit login
@@ -394,9 +397,14 @@ def Login(cli=False):
 
             time.sleep(60)
 
-    CommonUtil.ExecLog(
-        "OFFLINE", "Zeuz Node Offline", 3
-    )  # GUI relies on this exact text. GUI must be updated if this is changed
+    if run_once:
+        CommonUtil.ExecLog(
+            "[OFFLINE]", "Zeuz Node is going offline after running one session, since `--once` or `-o` flag is specified.", 4
+        )
+    else:
+        CommonUtil.ExecLog(
+            "[OFFLINE]", "Zeuz Node Offline", 3
+        )  # GUI relies on this exact text. GUI must be updated if this is changed
 
     processing_test_case = False
 
@@ -408,10 +416,10 @@ def disconnect_from_server():
     CommonUtil.set_exit_mode(True)  # Tell Sequential Actions to exit
 
 
-def RunProcess(sTesterid, user_info_object):
+def RunProcess(sTesterid, user_info_object, run_once=False):
     etime = time.time() + (30 * 60)  # 30 minutes
     executor = CommonUtil.GetExecutor()
-    while 1:
+    while True:
         try:
             if exit_script:
                 return False
@@ -446,6 +454,10 @@ def RunProcess(sTesterid, user_info_object):
                 os.unlink(save_path/"input.zip")
                 PreProcess()
                 value = MainDriverApi.main(device_dict, user_info_object)
+
+                if run_once:
+                    return False
+
                 if value == "pass":
                     if exit_script:
                         return False
@@ -883,6 +895,9 @@ def command_line_args():
     parser_object.add_argument(
         "-r", "--local_run", action="store_true", help="Performs a local run"
     )
+    parser_object.add_argument(
+        "-o", "--once", action="store_true", help="If specified, this flag tells node to run only one session (test set/deployment) and then quit immediately"
+    )
     all_arguments = parser_object.parse_args()
 
     username = all_arguments.username
@@ -895,6 +910,8 @@ def command_line_args():
     auto_update = all_arguments.auto_update
     global local_run
     local_run = all_arguments.local_run
+    global RUN_ONCE
+    RUN_ONCE = all_arguments.once
 
     if server and server[-1] == "/":
         server = server[:-1]
@@ -944,9 +961,9 @@ if __name__ == "__main__":
     """We can use this condition to skip command_line_args() when "python node_cli.py" or "node_cli.py" is executed"""
     # if (len(sys.argv)) > 1:
     command_line_args()
+
     if local_run:
         Local_run()
     else:
-        Login(cli=True)
+        Login(cli=True, run_once=RUN_ONCE)
     CommonUtil.ShutdownExecutor()
-
