@@ -120,6 +120,7 @@ current_action_name = ""
 current_step_no = ""
 current_step_name = ""
 current_tc_no = ""
+current_session_name = ""
 
 executor = concurrent.futures.ThreadPoolExecutor()
 all_threads = {}
@@ -1028,3 +1029,21 @@ class MachineInfo:
         except Exception:
             ErrorMessage = "Unable to set create a Node key.  Please check class MachineInfo() in commonutil"
             return Exception_Handler(sys.exc_info(), None, ErrorMessage)
+
+
+def debug_code_error(exc_info):
+    exc_type, exc_obj, exc_tb = exc_info
+    fname = os.path.split(exc_tb.tb_frame.f_code.co_filename)[1]
+    Error_Detail = (
+            (str(exc_type).replace("type ", "Error Type: "))
+            + ";"
+            + "Error Message: "
+            + str(exc_obj)
+            + ";"
+            + "File Name: "
+            + fname
+            + ";"
+            + "Line: "
+            + str(exc_tb.tb_lineno)
+    )
+    print(Error_Detail)
