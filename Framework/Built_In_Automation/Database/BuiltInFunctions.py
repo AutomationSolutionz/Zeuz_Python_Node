@@ -360,13 +360,14 @@ def db_select(data_set):
                 # Set the rows as a shared variable
                 sr.Set_Shared_Variables(variable_name, db_rows)
 
-                CommonUtil.ExecLog(
-                    sModuleInfo,
-                    "Fetched %d rows and stored into variable: %s"
-                    % (len(db_rows), variable_name),
-                    0,
-                )
-                return "passed"
+        db_con.close()
+        CommonUtil.ExecLog(
+            sModuleInfo,
+            "Fetched %d rows and stored into variable: %s"
+            % (len(db_rows), variable_name),
+            0,
+        )
+        return "passed"
     except Exception as e:
         return handle_db_exception(sModuleInfo, e)
 
@@ -464,13 +465,14 @@ def select_from_db(data_set):
                 # Set the rows as a shared variable
                 sr.Set_Shared_Variables(variable_name, db_rows)
 
-                CommonUtil.ExecLog(
-                    sModuleInfo,
-                    "Fetched %d rows and stored into variable: %s"
-                    % (len(db_rows), variable_name),
-                    0,
-                )
-                return "passed"
+        db_con.close()
+        CommonUtil.ExecLog(
+            sModuleInfo,
+            "Fetched %d rows and stored into variable: %s"
+            % (len(db_rows), variable_name),
+            0,
+        )
+        return "passed"
     except Exception as e:
         return handle_db_exception(sModuleInfo, e)
 
@@ -544,10 +546,11 @@ def insert_into_db(data_set):
                 # Set the rows as a shared variable
                 sr.Set_Shared_Variables(variable_name, db_rows_affected)
 
-                CommonUtil.ExecLog(
-                    sModuleInfo, "Number of rows affected: %d" % db_rows_affected, 0
-                )
-                return "passed"
+        db_con.close()
+        CommonUtil.ExecLog(
+            sModuleInfo, "Number of rows affected: %d" % db_rows_affected, 0
+        )
+        return "passed"
 
     except Exception as e:
         return handle_db_exception(sModuleInfo, e)
@@ -613,10 +616,11 @@ def delete_from_db(data_set):
                 # Set the rows as a shared variable
                 sr.Set_Shared_Variables(variable_name, db_rows_affected)
 
-                CommonUtil.ExecLog(
-                    sModuleInfo, "Number of rows affected: %d" % db_rows_affected, 0
-                )
-                return "passed"
+        db_con.close()
+        CommonUtil.ExecLog(
+            sModuleInfo, "Number of rows affected: %d" % db_rows_affected, 0
+        )
+        return "passed"
 
     except Exception as e:
         return handle_db_exception(sModuleInfo, e)
@@ -692,10 +696,11 @@ def update_into_db(data_set):
                 # Set the rows as a shared variable
                 sr.Set_Shared_Variables(variable_name, db_rows_affected)
 
-                CommonUtil.ExecLog(
-                    sModuleInfo, "Number of rows affected: %d" % db_rows_affected, 0
-                )
-                return "passed"
+        db_con.close()
+        CommonUtil.ExecLog(
+            sModuleInfo, "Number of rows affected: %d" % db_rows_affected, 0
+        )
+        return "passed"
 
     except Exception as e:
         return handle_db_exception(sModuleInfo, e)
@@ -756,9 +761,10 @@ def db_non_query(data_set):
                 # Set the rows as a shared variable
                 sr.Set_Shared_Variables(variable_name, db_rows_affected)
 
-                CommonUtil.ExecLog(
-                    sModuleInfo, "Number of rows affected: %d" % db_rows_affected, 0
-                )
-                return "passed"
+        db_con.close()
+        CommonUtil.ExecLog(
+            sModuleInfo, "Number of rows affected: %d" % db_rows_affected, 0
+        )
+        return "passed"
     except Exception as e:
         return handle_db_exception(sModuleInfo, e)
