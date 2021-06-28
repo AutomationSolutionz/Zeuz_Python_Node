@@ -345,27 +345,28 @@ def db_select(data_set):
 
         # Get db_cursor and execute
         db_con = db_get_connection()
-        db_cursor = db_con.cursor()
-        db_cursor.execute(query)
+        with db_con:
+            with db_con.cursor() as db_cursor:
+                db_cursor.execute(query)
 
-        # Fetch all rows and convert into list
-        db_rows = []
-        while True:
-            db_row = db_cursor.fetchone()
-            if not db_row:
-                break
-            db_rows.append(list(db_row))
+                # Fetch all rows and convert into list
+                db_rows = []
+                while True:
+                    db_row = db_cursor.fetchone()
+                    if not db_row:
+                        break
+                    db_rows.append(list(db_row))
 
-        # Set the rows as a shared variable
-        sr.Set_Shared_Variables(variable_name, db_rows)
+                # Set the rows as a shared variable
+                sr.Set_Shared_Variables(variable_name, db_rows)
 
-        CommonUtil.ExecLog(
-            sModuleInfo,
-            "Fetched %d rows and stored into variable: %s"
-            % (len(db_rows), variable_name),
-            0,
-        )
-        return "passed"
+                CommonUtil.ExecLog(
+                    sModuleInfo,
+                    "Fetched %d rows and stored into variable: %s"
+                    % (len(db_rows), variable_name),
+                    0,
+                )
+                return "passed"
     except Exception as e:
         return handle_db_exception(sModuleInfo, e)
 
@@ -447,28 +448,29 @@ def select_from_db(data_set):
 
         # Get db_cursor and execute
         db_con = db_get_connection()
-        db_cursor = db_con.cursor()
-        db_cursor.execute(query)
-        # Commit the changes
-        db_con.commit()
-        # Fetch all rows and convert into list
-        db_rows = []
-        while True:
-            db_row = db_cursor.fetchone()
-            if not db_row:
-                break
-            db_rows.append(list(db_row))
+        with db_con:
+            with db_con.cursor() as db_cursor:
+                db_cursor.execute(query)
+                # Commit the changes
+                db_con.commit()
+                # Fetch all rows and convert into list
+                db_rows = []
+                while True:
+                    db_row = db_cursor.fetchone()
+                    if not db_row:
+                        break
+                    db_rows.append(list(db_row))
 
-        # Set the rows as a shared variable
-        sr.Set_Shared_Variables(variable_name, db_rows)
+                # Set the rows as a shared variable
+                sr.Set_Shared_Variables(variable_name, db_rows)
 
-        CommonUtil.ExecLog(
-            sModuleInfo,
-            "Fetched %d rows and stored into variable: %s"
-            % (len(db_rows), variable_name),
-            0,
-        )
-        return "passed"
+                CommonUtil.ExecLog(
+                    sModuleInfo,
+                    "Fetched %d rows and stored into variable: %s"
+                    % (len(db_rows), variable_name),
+                    0,
+                )
+                return "passed"
     except Exception as e:
         return handle_db_exception(sModuleInfo, e)
 
@@ -530,21 +532,22 @@ def insert_into_db(data_set):
         CommonUtil.ExecLog(sModuleInfo, "Executing query:\n%s." % query, 1)
 
         db_con = db_get_connection()
-        db_cursor = db_con.cursor()
-        db_cursor.execute(query)
-        # Commit the changes
-        db_con.commit()
+        with db_con:
+            with db_con.cursor() as db_cursor:
+                db_cursor.execute(query)
+                # Commit the changes
+                db_con.commit()
 
-        # Fetch the number of rows affected
-        db_rows_affected = db_cursor.rowcount
+                # Fetch the number of rows affected
+                db_rows_affected = db_cursor.rowcount
 
-        # Set the rows as a shared variable
-        sr.Set_Shared_Variables(variable_name, db_rows_affected)
+                # Set the rows as a shared variable
+                sr.Set_Shared_Variables(variable_name, db_rows_affected)
 
-        CommonUtil.ExecLog(
-            sModuleInfo, "Number of rows affected: %d" % db_rows_affected, 0
-        )
-        return "passed"
+                CommonUtil.ExecLog(
+                    sModuleInfo, "Number of rows affected: %d" % db_rows_affected, 0
+                )
+                return "passed"
 
     except Exception as e:
         return handle_db_exception(sModuleInfo, e)
@@ -597,22 +600,23 @@ def delete_from_db(data_set):
 
         # Get db_cursor and execute
         db_con = db_get_connection()
-        db_cursor = db_con.cursor()
-        db_cursor.execute(query)
+        with db_con:
+            with db_con.cursor() as db_cursor:
+                db_cursor.execute(query)
 
-        # Commit the changes
-        db_con.commit()
+                # Commit the changes
+                db_con.commit()
 
-        # Fetch the number of rows affected
-        db_rows_affected = db_cursor.rowcount
+                # Fetch the number of rows affected
+                db_rows_affected = db_cursor.rowcount
 
-        # Set the rows as a shared variable
-        sr.Set_Shared_Variables(variable_name, db_rows_affected)
+                # Set the rows as a shared variable
+                sr.Set_Shared_Variables(variable_name, db_rows_affected)
 
-        CommonUtil.ExecLog(
-            sModuleInfo, "Number of rows affected: %d" % db_rows_affected, 0
-        )
-        return "passed"
+                CommonUtil.ExecLog(
+                    sModuleInfo, "Number of rows affected: %d" % db_rows_affected, 0
+                )
+                return "passed"
 
     except Exception as e:
         return handle_db_exception(sModuleInfo, e)
@@ -677,20 +681,21 @@ def update_into_db(data_set):
 
         # Get db_cursor and execute
         db_con = db_get_connection()
-        db_cursor = db_con.cursor()
-        db_cursor.execute(query)
-        db_con.commit()
+        with db_con:
+            with db_con.cursor() as db_cursor:
+                db_cursor.execute(query)
+                db_con.commit()
 
-        # Fetch the number of rows affected
-        db_rows_affected = db_cursor.rowcount
+                # Fetch the number of rows affected
+                db_rows_affected = db_cursor.rowcount
 
-        # Set the rows as a shared variable
-        sr.Set_Shared_Variables(variable_name, db_rows_affected)
+                # Set the rows as a shared variable
+                sr.Set_Shared_Variables(variable_name, db_rows_affected)
 
-        CommonUtil.ExecLog(
-            sModuleInfo, "Number of rows affected: %d" % db_rows_affected, 0
-        )
-        return "passed"
+                CommonUtil.ExecLog(
+                    sModuleInfo, "Number of rows affected: %d" % db_rows_affected, 0
+                )
+                return "passed"
 
     except Exception as e:
         return handle_db_exception(sModuleInfo, e)
@@ -738,21 +743,22 @@ def db_non_query(data_set):
 
         # Get db_cursor and execute
         db_con = db_get_connection()
-        db_cursor = db_con.cursor()
-        db_cursor.execute(query)
+        with db_con:
+            with db_con.cursor() as db_cursor:
+                db_cursor.execute(query)
 
-        # Commit the changes
-        db_con.commit()
+                # Commit the changes
+                db_con.commit()
 
-        # Fetch the number of rows affected
-        db_rows_affected = db_cursor.rowcount
+                # Fetch the number of rows affected
+                db_rows_affected = db_cursor.rowcount
 
-        # Set the rows as a shared variable
-        sr.Set_Shared_Variables(variable_name, db_rows_affected)
+                # Set the rows as a shared variable
+                sr.Set_Shared_Variables(variable_name, db_rows_affected)
 
-        CommonUtil.ExecLog(
-            sModuleInfo, "Number of rows affected: %d" % db_rows_affected, 0
-        )
-        return "passed"
+                CommonUtil.ExecLog(
+                    sModuleInfo, "Number of rows affected: %d" % db_rows_affected, 0
+                )
+                return "passed"
     except Exception as e:
         return handle_db_exception(sModuleInfo, e)
