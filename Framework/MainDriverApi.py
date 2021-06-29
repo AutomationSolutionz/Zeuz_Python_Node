@@ -1233,7 +1233,7 @@ def upload_csv_file_info(run_id, test_case):
         pass
 
 
-def upload_json_report(Userid, temp_ini_file, run_id, all_run_id_info):
+def upload_json_report(Userid, temp_ini_file, run_id):
     if CommonUtil.debug_status: return
     zip_path = Path(ConfigModule.get_config_value("sectionOne", "temp_run_file_path", temp_ini_file))/run_id.replace(":", "-")/CommonUtil.current_session_name
     path = zip_path / "execution_log.json"
@@ -1260,7 +1260,8 @@ def upload_json_report(Userid, temp_ini_file, run_id, all_run_id_info):
                 size = str(round(size/1024, 2)) + " MB"
             else:
                 size = str(size) + " KB"
-            print("Uploading report of %s from:\n%s" % (size, str(zip_path) + ".zip"))
+            print("Uploading %s report of %s testcases of %s from:\n%s"
+                  % (CommonUtil.current_session_name, len(json_report[0]["test_cases"]), size, str(zip_path) + ".zip"))
             for i in range(5):
                 res = requests.post(
                     RequestFormatter.form_uri("create_report_log_api/"),
@@ -1285,36 +1286,33 @@ def upload_json_report(Userid, temp_ini_file, run_id, all_run_id_info):
 
     with open(path, "w") as f:
         json.dump(json_report, f, indent=2)
-    path = zip_path / "test_cases_data.json"
-    with open(path, "w") as f:
-        json.dump(all_run_id_info, f, indent=2)
 
     # Create a standard report format to be consumed by other tools.
     junit_report_path = zip_path / "junitreport.xml"
     print("Generating junit4 compatible report.")
-    junit_report.process(all_run_id_info, str(junit_report_path))
+    junit_report.process(CommonUtil.all_logs_json, str(junit_report_path))
     print("DONE. Generated junit report at %s" % junit_report_path)
     return zip_path
 
 
-def split_testcases(all_run_id_info, max_tc_in_single_session):
+def split_testcases(run_id_info, max_tc_in_single_session):
     import copy
-    from math import ceil
-    testcases = all_run_id_info[0]["test_cases"]
+    from math import ceil, floor
+    testcases = run_id_info["test_cases"]
     session_num = (len(testcases)-1)//max_tc_in_single_session + 1
     len_list = []
-    higher_num = len(testcases) % max_tc_in_single_session
+    higher_num = len(testcases) % session_num
     lower_num = session_num - higher_num
     for _ in range(higher_num):
         len_list.append(ceil(len(testcases)/session_num))
     for _ in range(lower_num):
-        len_list.append(ceil(len(testcases)/session_num)-1)
-    print("We have split %d test cases into %d sessions: %s", len(testcases), session_num, str(len_list))
+        len_list.append(floor(len(testcases)/session_num))
+    print("We have split %d test cases into %d sessions: %s" % (len(testcases), session_num, str(len_list)))
     all_sessions = []
     start = 0
     for i in range(session_num):
-        temp = copy.deepcopy(all_run_id_info)
-        temp[0]["test_cases"] = testcases[start:start+len_list[i]]
+        temp = copy.deepcopy(run_id_info)
+        temp["test_cases"] = testcases[start:start+len_list[i]]
         all_sessions.append(temp)
         start += len_list[i]
     return all_sessions
@@ -1462,13 +1460,15 @@ def main(device_dict, user_info_object):
             num_of_tc = len(all_testcases_info)
             cnt = 1
 
-            max_tc_in_single_session = 25
-            all_sessions = split_testcases(all_run_id_info, max_tc_in_single_session)
+            max_tc_in_single_session = 25    # Todo: make it 25
+            all_sessions = split_testcases(run_id_info, max_tc_in_single_session)
             session_cnt = 1
-            for all_run_id_info in all_sessions:
-                CommonUtil.current_session_name = "session" + str(session_cnt)
-                CommonUtil.all_logs_json = all_run_id_info
+            for each_session in all_sessions:
+                CommonUtil.current_session_name = "session_" + str(session_cnt)
+                CommonUtil.all_logs_json = [each_session]
                 CommonUtil.tc_index = 0
+                all_testcases_info = each_session["test_cases"]
+                print("Starting %s with %s testcases" % (CommonUtil.current_session_name, len(all_testcases_info)))
                 for testcase_info in all_testcases_info:
                     performance_test_case = False
                     if testcase_info["automatability"].lower() == "performance":
@@ -1592,7 +1592,7 @@ def main(device_dict, user_info_object):
                     "duration": TestSetDuration
                 }
                 CommonUtil.CreateJsonReport(setInfo=after_execution_dict)
-                upload_json_report(Userid, temp_ini_file, run_id, all_run_id_info)
+                upload_json_report(Userid, temp_ini_file, run_id)
                 session_cnt += 1
 
             print("Test set execution time = %s sec for %s testcases" % (round(TimeDiff, 3), num_of_tc))
