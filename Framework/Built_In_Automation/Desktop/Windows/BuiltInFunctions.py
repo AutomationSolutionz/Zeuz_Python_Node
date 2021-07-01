@@ -65,7 +65,7 @@ if Shared_Resources.Test_Shared_Variables(
 
 global recur_count
 recur_count = 0  # To be deleted
-
+common_sleep = 0
 
 @logger
 def go_to_desktop(data_set):
@@ -260,7 +260,6 @@ local_run = False
 """
 
 
-@logger
 def get_element(
     MainWindowName_OR_ParentElement,
     Element_Name,
@@ -329,7 +328,6 @@ def get_element(
         )
 
 
-@logger
 def _child_search(
     ParentElement,
     Element_Name,
@@ -637,7 +635,6 @@ def _child_search(
         return "zeuz_failed"
 
 
-@logger
 def _get_main_window(WindowName):
     try:
         MainWindowsList = AutomationElement.RootElement.FindAll(
@@ -1273,13 +1270,16 @@ def Enter_Text_In_Text_Box(data_set):
                 CommonUtil.ExecLog(
                     sModuleInfo, "Trying to set the value by ValuePattern", 1
                 )
-                time.sleep(3)
+                time.sleep(common_sleep)
                 Element.GetCurrentPattern(ValuePattern.Pattern).SetValue(text)
             except:
+                time.sleep(common_sleep)
+                autoit.send("^a")
+                autoit.send(text)
                 CommonUtil.ExecLog(
-                    sModuleInfo, "Please try 'keystroke' as method instead", 3
+                    sModuleInfo, "Retrying with autoit. Yet if it does not work please try 'keystroke' as method instead", 2
                 )
-                return "zeuz_failed"
+                # return "zeuz_failed"
 
         return "passed"
     except Exception:
@@ -1466,11 +1466,14 @@ def Keystroke_For_Element(data_set):
     try:
         time.sleep(2)
         keystroke_value = ""
-        keystroke_char = False
+        keystroke_char = ""
         for row in data_set:
+            if row[0].strip().lower() == "autoit":  # Todo: organize this one
+                autoit.send(row[2])
+                return "passed"
             if "action" in row[1]:
                 if row[0] == "keystroke keys":
-                    keystroke_value = str(row[2]).lower()  # Store keystrok
+                    keystroke_value = str(row[2]).lower()  # Store keystroke
                 elif row[0] == "keystroke chars":
                     keystroke_char = str(row[2])
 
@@ -1486,7 +1489,7 @@ def Keystroke_For_Element(data_set):
     try:
 
         try:
-            if keystroke_char != False:
+            if keystroke_char != "":
                 pyautogui.write(keystroke_char)
                 # CommonUtil.TakeScreenShot(
                 #     sModuleInfo
