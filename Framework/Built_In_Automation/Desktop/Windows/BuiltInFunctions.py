@@ -71,7 +71,7 @@ common_sleep = 0
 def go_to_desktop(data_set):
     sModuleInfo = inspect.currentframe().f_code.co_name + " : " + MODULE_NAME
     invoke = "true"
-    Element = get_element("", "Show desktop", "TrayShowDesktopButtonWClass")
+    Element = get_element("", "Show desktop", "TrayShowDesktopButtonWClass")    # Todo: This line should generate bug so fix it.
     if Element in failed_tag_list:
         CommonUtil.ExecLog(sModuleInfo, "Could not find element", 3)
         return "zeuz_failed"
@@ -253,7 +253,7 @@ from System.Windows.Automation import *
 
 """
 global recur_count
-recur_count = 0 
+recur_count = 0
 #if local_run is True, no logging will be recorded to the web server.  Only local print will be displayed
 #local_run = True
 local_run = False
@@ -274,25 +274,27 @@ def get_element(
     try:
 
         try:
-            if isinstance(MainWindowName_OR_ParentElement, str) == True:
+            if isinstance(MainWindowName_OR_ParentElement, str):
                 ParentElement = _get_main_window(MainWindowName_OR_ParentElement)
                 if ParentElement == None:
                     return "zeuz_failed"
                 else:
-
-                    ChildElement = _child_search(
+                    all_elements = []
+                    all_elements += _child_search(
                         ParentElement,
                         Element_Name,
                         Element_Class,
                         Element_AutomationID,
-                        Element_LocalizedControlType,
+                        Element_LocalizedControlType
                     )
 
-                    if ChildElement != None:
-                        return ChildElement
+
+                    if all_elements:
+                        return all_elements
                     else:
                         return "zeuz_failed"
             else:
+                # Todo: dont know what to do here and what code is written below. Where is the ParentElement ??
                 ChildElement = _child_search(
                     ParentElement,
                     Element_Name,
@@ -364,7 +366,7 @@ def _child_search(
                     and LocalizedControlTypeE == Element_LocalizedControlType
                 ):
 
-                    return ParentElement
+                    return [ParentElement]
         except:
             None
 
@@ -380,7 +382,7 @@ def _child_search(
                 ClassE = ParentElement.Current.ClassName
 
                 if NameE == Element_Name and ClassE == Element_Class:
-                    return ParentElement
+                    return [ParentElement]
         except:
             None
 
@@ -395,7 +397,7 @@ def _child_search(
                 NameE = ParentElement.Current.Name
                 AutomationE = ParentElement.Current.AutomationId
                 if NameE == Element_Name and AutomationE == Element_AutomationID:
-                    return ParentElement
+                    return [ParentElement]
         except:
             None
 
@@ -415,7 +417,7 @@ def _child_search(
                     NameE == Element_Name
                     and LocalizedControlTypeE == Element_LocalizedControlType
                 ):
-                    return ParentElement
+                    return [ParentElement]
         except:
             None
 
@@ -435,7 +437,7 @@ def _child_search(
                     and AutomationE == Element_AutomationID
                     and LocalizedControlTypeE == Element_LocalizedControlType
                 ):
-                    return ParentElement
+                    return [ParentElement]
         except:
             None
 
@@ -452,7 +454,7 @@ def _child_search(
                 AutomationE = ParentElement.Current.AutomationId
                 if ClassE == Element_Class and AutomationE == Element_AutomationID:
 
-                    return ParentElement
+                    return [ParentElement]
         except:
             None
 
@@ -471,7 +473,7 @@ def _child_search(
                     ClassE == Element_Class
                     and LocalizedControlTypeE == Element_LocalizedControlType
                 ):
-                    return ParentElement
+                    return [ParentElement]
         except:
             None
 
@@ -486,7 +488,7 @@ def _child_search(
                 ClassE = ParentElement.Current.ClassName
                 if ClassE == Element_Class:
 
-                    return ParentElement
+                    return [ParentElement]
         except:
             None
 
@@ -505,7 +507,7 @@ def _child_search(
                     and LocalizedControlTypeE == Element_LocalizedControlType
                 ):
 
-                    return ParentElement
+                    return [ParentElement]
         except:
             None
 
@@ -520,7 +522,7 @@ def _child_search(
                 AutomationE = ParentElement.Current.AutomationId
                 if AutomationE == Element_AutomationID:
 
-                    return ParentElement
+                    return [ParentElement]
         except:
             None
 
@@ -536,7 +538,7 @@ def _child_search(
                 LocalizedControlTypeE = ParentElement.Current.LocalizedControlType
                 if LocalizedControlTypeE == Element_LocalizedControlType:
 
-                    return ParentElement
+                    return [ParentElement]
         except:
             None
         # Name, Class, AutomationID
@@ -555,7 +557,7 @@ def _child_search(
                     and ClassE == Element_Class
                     and AutomationE == Element_AutomationID
                 ):
-                    return ParentElement
+                    return [ParentElement]
         except:
             None
 
@@ -571,7 +573,7 @@ def _child_search(
                 ClassE = ParentElement.Current.ClassName
                 if NameE == Element_Name and ClassE == Element_Class:
 
-                    return ParentElement
+                    return [ParentElement]
         except:
             None
         # Name
@@ -587,7 +589,7 @@ def _child_search(
 
                 if NameE == Element_Name:
 
-                    return ParentElement
+                    return [ParentElement]
         except:
             None
 
@@ -597,23 +599,21 @@ def _child_search(
             )
 
             if child_elements.Count == 0:
-                return None
+                return []
 
+            all_elements = []
             for each_child in child_elements:
-
-                child = _child_search(
+                all_elements += _child_search(
                     each_child,
                     Element_Name,
                     Element_Class,
                     Element_AutomationID,
                     Element_LocalizedControlType,
                 )
-                if child:
-                    return child
 
-            return None
+            return all_elements
         except:
-            return None
+            return []
 
     except Exception as e:
         exc_type, exc_obj, exc_tb = sys.exc_info()
@@ -1343,7 +1343,7 @@ def Get_Element(data_set):
     automationid = None
     control_type = None
     wait_time = 15
-
+    index = 0
     # parse dataset and read data
     try:
         for row in data_set:
@@ -1360,6 +1360,8 @@ def Get_Element(data_set):
                     control_type = row[2]
                 elif str(row[0]).strip().lower() == "wait time":
                     wait_time = int(str(row[2]))
+                elif str(row[0]).strip().lower() == "index":
+                    index = int(str(row[2]).strip())
 
         if element_name == "":
             element_name = None  # element name can be empty if user want the full window as an element
@@ -1368,7 +1370,7 @@ def Get_Element(data_set):
         CommonUtil.ExecLog(sModuleInfo, "Looking for element", 0)
 
         # Get element object
-        Element = get_element(
+        all_elements = get_element(
             window_name,
             element_name,
             element_class,
@@ -1376,9 +1378,23 @@ def Get_Element(data_set):
             control_type,
             wait_time,
         )
-        if Element == None:
+        if all_elements == []:
+            CommonUtil.ExecLog(
+                sModuleInfo,
+                "No element found",
+                2,
+            )
             return "zeuz_failed"
-
+        if -len(all_elements) <= index < len(all_elements):
+            # Todo: we need more logs here. check Locate Element
+            pass
+        else:
+            CommonUtil.ExecLog(
+                sModuleInfo,
+                "index out of range",
+                2,
+            )
+            return "zeuz_failed"
         patter_list = 0
         try:
             patter_list = Element.GetSupportedPatterns()
@@ -1404,7 +1420,7 @@ def Get_Element(data_set):
         except:
             True
 
-        return Element
+        return all_elements[index]
     except Exception:
         errMsg = "Could not get your element."
         return CommonUtil.Exception_Handler(sys.exc_info(), None, errMsg)
