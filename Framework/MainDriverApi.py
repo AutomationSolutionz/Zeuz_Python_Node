@@ -185,16 +185,20 @@ def create_tc_log_ss_folder(run_id, test_case, temp_ini_file):
     except Exception:
         return CommonUtil.Exception_Handler(sys.exc_info())
     test_case_folder = (
-        log_file_path
-        + os.sep
-        + (run_id.replace(":", "-") + os.sep + test_case.replace(":", "-"))
+        log_file_path +
+        os.sep +
+        (run_id.replace(":", "-") +
+        os.sep +
+        CommonUtil.current_session_name +
+        os.sep +
+        test_case.replace(":", "-"))
     )
     # create test_case_folder
     ConfigModule.add_config_value("sectionOne", "test_case", test_case, temp_ini_file)
     ConfigModule.add_config_value("sectionOne", "test_case_folder", test_case_folder, temp_ini_file)
     FL.CreateFolder(test_case_folder)
 
-    # create log_folder
+    # create log_folder for browser console error logs
     log_folder = test_case_folder + os.sep + "Log"
     ConfigModule.add_config_value("sectionOne", "log_folder", log_folder, temp_ini_file)
     FL.CreateFolder(log_folder)
@@ -1229,8 +1233,9 @@ def upload_csv_file_info(run_id, test_case):
         pass
 
 
-def upload_json_report(Userid, temp_ini_file, run_id, all_run_id_info):
-    zip_path = Path(ConfigModule.get_config_value("sectionOne", "temp_run_file_path", temp_ini_file)) / run_id.replace(":", "-")
+def upload_json_report(Userid, temp_ini_file, run_id):
+    if CommonUtil.debug_status: return
+    zip_path = Path(ConfigModule.get_config_value("sectionOne", "temp_run_file_path", temp_ini_file))/run_id.replace(":", "-")/CommonUtil.current_session_name
     path = zip_path / "execution_log.json"
     json_report = CommonUtil.get_all_logs(json=True)
     with open(path, "w") as f:
@@ -1255,7 +1260,8 @@ def upload_json_report(Userid, temp_ini_file, run_id, all_run_id_info):
                 size = str(round(size/1024, 2)) + " MB"
             else:
                 size = str(size) + " KB"
-            print("Uploading report of %s from:\n%s" % (size, str(zip_path) + ".zip"))
+            print("Uploading %s report of %s testcases of %s from:\n%s"
+                  % (CommonUtil.current_session_name, len(json_report[0]["test_cases"]), size, str(zip_path) + ".zip"))
             for i in range(5):
                 res = requests.post(
                     RequestFormatter.form_uri("create_report_log_api/"),
@@ -1276,320 +1282,364 @@ def upload_json_report(Userid, temp_ini_file, run_id, all_run_id_info):
                 time.sleep(1)
             else:
                 print("Could not Upload the report to server of run_id '%s'" % run_id)
-        os.unlink(str(zip_path) + ".zip")
+        # os.unlink(str(zip_path) + ".zip")     # Removing the zip is skipped because node_manager needs the zip
 
     with open(path, "w") as f:
         json.dump(json_report, f, indent=2)
-    path = zip_path / "test_cases_data.json"
-    with open(path, "w") as f:
-        json.dump(all_run_id_info, f, indent=2)
 
     # Create a standard report format to be consumed by other tools.
     junit_report_path = zip_path / "junitreport.xml"
     print("Generating junit4 compatible report.")
-    junit_report.process(all_run_id_info, str(junit_report_path))
+    junit_report.process(CommonUtil.all_logs_json, str(junit_report_path))
     print("DONE. Generated junit report at %s" % junit_report_path)
+    return zip_path
+
+
+def split_testcases(run_id_info, max_tc_in_single_session):
+    import copy
+    from math import ceil, floor
+    testcases = run_id_info["test_cases"]
+    session_num = (len(testcases)-1)//max_tc_in_single_session + 1
+    len_list = []
+    higher_num = len(testcases) % session_num
+    lower_num = session_num - higher_num
+    for _ in range(higher_num):
+        len_list.append(ceil(len(testcases)/session_num))
+    for _ in range(lower_num):
+        len_list.append(floor(len(testcases)/session_num))
+    print("We have split %d test cases into %d sessions: %s" % (len(testcases), session_num, str(len_list)))
+    all_sessions = []
+    start = 0
+    for i in range(session_num):
+        temp = copy.deepcopy(run_id_info)
+        temp["test_cases"] = testcases[start:start+len_list[i]]
+        all_sessions.append(temp)
+        start += len_list[i]
+    return all_sessions
 
 
 # main function
 def main(device_dict, user_info_object):
+    try:
+        # get module info
+        sModuleInfo = inspect.currentframe().f_code.co_name + " : " + MODULE_NAME
 
-    # get module info
-    sModuleInfo = inspect.currentframe().f_code.co_name + " : " + MODULE_NAME
-
-    temp_ini_file = os.path.join(
-        os.path.join(
-            os.path.abspath(__file__).split("Framework")[0],
+        temp_ini_file = os.path.join(
             os.path.join(
-                "AutomationLog",
-                ConfigModule.get_config_value("Advanced Options", "_file"),
-            ),
+                os.path.abspath(__file__).split("Framework")[0],
+                os.path.join(
+                    "AutomationLog",
+                    ConfigModule.get_config_value("Advanced Options", "_file"),
+                ),
+            )
         )
-    )
-    # add temp file to config values
-    ConfigModule.add_config_value("sectionOne", "sTestStepExecLogId", sModuleInfo, temp_ini_file)
+        # add temp file to config values
+        ConfigModule.add_config_value("sectionOne", "sTestStepExecLogId", sModuleInfo, temp_ini_file)
 
-    # get local machine user id
-    Userid = (CommonUtil.MachineInfo().getLocalUser()).lower()
+        # get local machine user id
+        Userid = (CommonUtil.MachineInfo().getLocalUser()).lower()
 
-    get_json, all_file_specific_steps = True, {}
-    save_path = Path(ConfigModule.get_config_value("sectionOne", "temp_run_file_path", temp_ini_file)) / "attachments"
-    cnt = 0
-    for i in os.walk(save_path):
-        if get_json:
-            get_json = False
-            json_path = Path(i[0]) / i[2][0]
-            folder_list = i[1]
-            for j in folder_list:
-                all_file_specific_steps[j] = {}
-        else:
-            for j in i[2]:
-                all_file_specific_steps[folder_list[cnt]][j] = str(Path(i[0]) / j)
-            cnt += 1
-    # TODO: Remove all_file_specific_steps at a later period. keeping this only for custom driver purpose
-    with open(json_path, "r") as f:
-        all_run_id_info = json.loads(f.read())
-
-    if len(all_run_id_info) == 0:
-        CommonUtil.ExecLog("", "No Test Run Schedule found for the current user : %s" % Userid, 2)
-        return False
-
-    executor = CommonUtil.GetExecutor()
-    CommonUtil.runid_index = 0
-    for run_id_info in all_run_id_info:
-        run_id_info["base_path"] = ConfigModule.get_config_value("Advanced Options", "_file_upload_path")
-        run_id = run_id_info["run_id"]
-        run_cancelled = ""
-        debug_info = ""
-        CommonUtil.clear_all_logs()
-
-        # Write testcase json
-        path = ConfigModule.get_config_value("sectionOne", "temp_run_file_path", temp_ini_file) / Path(run_id.replace(":", "-"))
-        FL.CreateFolder(path)
-
-        # Start websocket server if we're in debug mode.
-        if run_id.lower().startswith("debug"):
-            CommonUtil.ExecLog(
-                "",
-                "\n********************************\n*    STARTING DEBUG SESSION    *\n********************************",
-                4,
-                False,
-            )
-            CommonUtil.debug_status = True
-            print("[LIVE LOG] Connecting to Live Log service")
-            ws.connect()
-            print("[LIVE LOG] Connected to Live Log service")
-        else:
-            CommonUtil.ExecLog(
-                "",
-                "\n******************************\n*    STARTING RUN SESSION    *\n******************************",
-                4,
-                False,
-            )
-            CommonUtil.debug_status = False
-            cleanup_driver_instances()  # clean up drivers
-            shared.Clean_Up_Shared_Variables()  # clean up shared variables
-        device_order = run_id_info["device_info"]
-        final_dependency = run_id_info["dependency_list"]
-        is_linked = run_id_info["is_linked"]
-        final_run_params_from_server = run_id_info["run_time"]
-        if not run_id.startswith("debug"):
-            rem_config = {
-                "threading": run_id_info["threading"] if "threading" in run_id_info else False,
-                "local_run": run_id_info["local_run"] if "local_run" in run_id_info else False,
-                "take_screenshot": run_id_info["take_screenshot"] if "take_screenshot" in run_id_info else True,
-                "upload_log_file_only_for_fail": run_id_info["upload_log_file_only_for_fail"] if "upload_log_file_only_for_fail" in run_id_info else True,
-                # "rerun_on_fail": run_id_info["rerun_on_fail"] if "rerun_on_fail" in run_id_info else False,
-                "rerun_on_fail": False,     # Turning off rerun until its completed
-                "window_size_x": run_id_info["window_size_x"] if "window_size_x" in run_id_info else "",
-                "window_size_y": run_id_info["window_size_y"] if "window_size_y" in run_id_info else "",
-            }
-            if ConfigModule.get_config_value("RunDefinition", "local_run") == "True":
-                rem_config["local_run"] = True
-            ConfigModule.remote_config = rem_config
-        else:
-            rem_config = {
-                "threading": False,
-                "local_run": False,
-                "take_screenshot": True,
-            }
-            if ConfigModule.get_config_value("RunDefinition", "local_run") == "True":
-                rem_config["local_run"] = True
-            ConfigModule.remote_config = rem_config
-            debug_info = {"debug_clean": run_id_info["debug_clean"], "debug_steps": run_id_info["debug_steps"]}
-            if "debug_step_actions" in run_id_info:
-                debug_info["debug_step_actions"] = run_id_info["debug_step_actions"]
-        driver_list = ['Built_In_Selenium_Driver', 'Built_In_RestApi', 'Built_In_Appium_Driver', 'Built_In_Selenium',
-                    'Built_In_Driver', 'deepak', 'Built_In_Appium', 'Built_In_NET_Win', 'Jarvis']
-
-        final_run_params = {}
-        for param in final_run_params_from_server:
-            final_run_params[param] = CommonUtil.parse_value_into_object(list(final_run_params_from_server[param].items())[1][1])
-            # final_run_params[param] = CommonUtil.parse_value_into_object(list(final_run_params_from_server[param].items())[0][1])
-            # final_run_params[param] = CommonUtil.parse_value_into_object(final_run_params_from_server[param]["subfield"])
-            # final_run_params[param] = final_run_params_from_server[param].split(":", 1)[1].strip()  # For TD
-
-        send_log_file_only_for_fail = ConfigModule.get_config_value("RunDefinition", "upload_log_file_only_for_fail")
-        send_log_file_only_for_fail = False if send_log_file_only_for_fail.lower() == "false" else True
-        rerun_on_fail = ConfigModule.get_config_value("RunDefinition", "rerun_on_fail")
-        rerun_on_fail = False if rerun_on_fail.lower() == "false" else True
-        CommonUtil.upload_on_fail, CommonUtil.rerun_on_fail = send_log_file_only_for_fail, rerun_on_fail
-
-        all_testcases_info = run_id_info["test_cases"]
-        TestSetStartTime = time.time()
-        i = 0
-        while i < len(all_testcases_info):
-            if all_testcases_info[i]["automatability"] != "Automated":
-                CommonUtil.ExecLog("", all_testcases_info[i]["testcase_no"] + " is not automated so skipping", 2)
-                # print(all_testcases_info[i]["testcase_no"] + " is not automated so skipping")
-                del all_testcases_info[i]
-                i -= 1
-            i += 1
-        if len(all_testcases_info) > 0:
-            CommonUtil.ExecLog("", "Total number of Automated test cases %s" % len(all_testcases_info), 4, False)
-        else:
-            CommonUtil.ExecLog("", "No Automated test cases found for the current user : %s" % Userid, 2)
-            CommonUtil.runid_index += 1
-            return "pass"
-        num_of_tc = len(all_testcases_info)
-        CommonUtil.all_logs_json = all_run_id_info
-        cnt = 1
-        CommonUtil.tc_index = 0
-        for testcase_info in all_testcases_info:
-            performance_test_case = False
-            if testcase_info["automatability"].lower() == "performance":
-                performance_test_case = True
-            test_case_no = testcase_info["testcase_no"]
-            test_case_name = testcase_info["title"]
-            set_device_info_according_to_user_order(device_order, device_dict, test_case_no, test_case_name, user_info_object, Userid)
-
-            if performance_test_case:
-                # get performance test info
-                perf_data = testcase_info["performance data"]
-                hatch_rate = perf_data["hatch_rate"]
-                no_of_users = perf_data["no_of_users"]
-                time_period = perf_data["time_period"]
-
-                # write locust input file
-                write_locust_input_file(
-                    time_period,
-                    perf_data,
-                    test_case_no,
-                    sModuleInfo,
-                    run_id,
-                    driver_list,
-                    final_dependency,
-                    final_run_params,
-                    temp_ini_file,
-                    is_linked,
-                    send_log_file_only_for_fail=send_log_file_only_for_fail,
-                )
-
-                # check locust file name
-                locustFile = "chromeLocustFile.py"
-                if "Browser" in final_dependency:
-                    if final_dependency["Browser"].lower() == "chrome":
-                        locustFile = "chromeLocustFile.py"
-                    else:
-                        locustFile = "firefoxLocustFile.py"
-                else:
-                    locustFile = "restLocustFile.py"
-
-                # get locust file path
-                locust_file_path = (
-                    os.getcwd()
-                    + os.sep
-                    + "Built_In_Automation"
-                    + os.sep
-                    + "Performance_Testing"
-                    + os.sep
-                    + locustFile
-                )
-
-                # make locust query
-                locustQuery = (
-                        "locust -f %s --csv=csvForZeuz --no-web --host=http://example.com -c %d -r %d"
-                        % (locust_file_path, no_of_users, hatch_rate)
-                )
-
-                # add log
-                CommonUtil.ExecLog(
-                    sModuleInfo,
-                    "Running Performance Test Case %s with total %d users, in a rate %s new users/second and each user will run for %s seconds"
-                    % (test_case_no, no_of_users, hatch_rate, time_period),
-                    1,
-                )
-                try:
-                    def kill(process):
-                        return process.kill()  # kill process function
-                    process = subprocess.Popen(locustQuery, shell=True)  # locust query process
-                    my_timer = Timer(no_of_users * time_period, kill, [process])  # set timer
-                    try:
-                        my_timer.start()  # start timer
-                        stdout, stderr = process.communicate()  # process communicate
-                    finally:
-                        my_timer.cancel()  # cancel timer
-                except Exception as e:
-                    print("exception")
-                    pass
-                # add log
-                CommonUtil.ExecLog(sModuleInfo, "Uploading Performance Test Results", 1)
-                if ConfigModule.get_config_value("RunDefinition", "local_run") == "False":
-                    # upload info
-                    upload_csv_file_info(run_id, test_case_no)
-                # add log
-                CommonUtil.ExecLog(
-                    sModuleInfo, "Performance Test Results Uploaded Successfully", 1
-                )
+        get_json, all_file_specific_steps = True, {}
+        save_path = Path(ConfigModule.get_config_value("sectionOne", "temp_run_file_path", temp_ini_file)) / "attachments"
+        cnt = 0
+        for i in os.walk(save_path):
+            if get_json:
+                get_json = False
+                json_path = Path(i[0]) / i[2][0]
+                folder_list = i[1]
+                for j in folder_list:
+                    all_file_specific_steps[j] = {}
             else:
-                run_cancelled = run_test_case(
-                    test_case_no,
-                    sModuleInfo,
-                    run_id,
-                    final_dependency,
-                    final_run_params,
-                    temp_ini_file,
-                    is_linked,
-                    testcase_info,
-                    executor,
-                    debug_info,
-                    all_file_specific_steps,
-                    rerun_on_fail,
-                    send_log_file_only_for_fail,
-                )
-                CommonUtil.clear_all_logs()  # clear logs
-                if run_cancelled == CANCELLED_TAG:
-                    break
-
-                print("Executed %s test cases" % cnt)
+                for j in i[2]:
+                    all_file_specific_steps[folder_list[cnt]][j] = str(Path(i[0]) / j)
                 cnt += 1
-            CommonUtil.tc_index += 1
-        # calculate elapsed time of runid
-        sTestSetEndTime = datetime.fromtimestamp(time.time()).strftime("%Y-%m-%d %H:%M:%S")
-        TestSetEndTime = time.time()
-        TimeDiff = TestSetEndTime - TestSetStartTime
-        TimeInSec = int(TimeDiff)
-        TestSetDuration = CommonUtil.FormatSeconds(TimeInSec)
+        # TODO: Remove all_file_specific_steps at a later period. keeping this only for custom driver purpose
+        with open(json_path, "r") as f:
+            all_run_id_info = json.loads(f.read())
 
-        after_execution_dict = {
-            "status": "Complete",
-            "teststarttime": datetime.fromtimestamp(TestSetStartTime).strftime("%Y-%m-%d %H:%M:%S"),
-            "testendtime": sTestSetEndTime,
-            "duration": TestSetDuration
-        }
-        CommonUtil.CreateJsonReport(setInfo=after_execution_dict)
-        print("Test set execution time = %s sec for %s testcases" % (round(TimeDiff, 3), num_of_tc))
-        print("Report creation time = %s sec for %s testcases" % (round(CommonUtil.report_json_time, 3), num_of_tc))
-        print("Test Set Completed")
+        if len(all_run_id_info) == 0:
+            CommonUtil.ExecLog("", "No Test Run Schedule found for the current user : %s" % Userid, 2)
+            return False
 
-        ConfigModule.add_config_value("sectionOne", "sTestStepExecLogId", "MainDriver", temp_ini_file)
+        executor = CommonUtil.GetExecutor()
+        CommonUtil.runid_index = 0
+        for run_id_info in all_run_id_info:
+            run_id_info["base_path"] = ConfigModule.get_config_value("Advanced Options", "_file_upload_path")
+            run_id = run_id_info["run_id"]
+            run_cancelled = ""
+            debug_info = ""
+            CommonUtil.clear_all_logs()
 
-        if run_cancelled == CANCELLED_TAG:
-            print("Test Set Cancelled by the User")
-        elif not run_id.startswith("debug"):
-            upload_json_report(Userid, temp_ini_file, run_id, all_run_id_info)
+            # Write testcase json
+            path = ConfigModule.get_config_value("sectionOne", "temp_run_file_path", temp_ini_file) / Path(run_id.replace(":", "-"))
+            FL.CreateFolder(path)
 
-            from distutils.dir_util import copy_tree
+            # Start websocket server if we're in debug mode.
+            if run_id.lower().startswith("debug"):
+                CommonUtil.ExecLog(
+                    "",
+                    "\n********************************\n*    STARTING DEBUG SESSION    *\n********************************",
+                    4,
+                    False,
+                )
+                CommonUtil.debug_status = True
+                print("[LIVE LOG] Connecting to Live Log service")
+                ws.connect()
+                print("[LIVE LOG] Connected to Live Log service")
+            else:
+                CommonUtil.ExecLog(
+                    "",
+                    "\n******************************\n*    STARTING RUN SESSION    *\n******************************",
+                    4,
+                    False,
+                )
+                CommonUtil.debug_status = False
+                cleanup_driver_instances()  # clean up drivers
+                shared.Clean_Up_Shared_Variables()  # clean up shared variables
+            device_order = run_id_info["device_info"]
+            final_dependency = run_id_info["dependency_list"]
+            is_linked = run_id_info["is_linked"]
+            final_run_params_from_server = run_id_info["run_time"]
+            if not CommonUtil.debug_status:
+                rem_config = {
+                    "threading": run_id_info["threading"] if "threading" in run_id_info else False,
+                    "local_run": run_id_info["local_run"] if "local_run" in run_id_info else False,
+                    "take_screenshot": run_id_info["take_screenshot"] if "take_screenshot" in run_id_info else True,
+                    "upload_log_file_only_for_fail": run_id_info["upload_log_file_only_for_fail"] if "upload_log_file_only_for_fail" in run_id_info else True,
+                    # "rerun_on_fail": run_id_info["rerun_on_fail"] if "rerun_on_fail" in run_id_info else False,
+                    "rerun_on_fail": False,     # Turning off rerun until its completed
+                    "window_size_x": run_id_info["window_size_x"] if "window_size_x" in run_id_info else "",
+                    "window_size_y": run_id_info["window_size_y"] if "window_size_y" in run_id_info else "",
+                }
+                if ConfigModule.get_config_value("RunDefinition", "local_run") == "True":
+                    rem_config["local_run"] = True
+                ConfigModule.remote_config = rem_config
+            else:
+                rem_config = {
+                    "threading": False,
+                    "local_run": False,
+                    "take_screenshot": True,
+                }
+                if ConfigModule.get_config_value("RunDefinition", "local_run") == "True":
+                    rem_config["local_run"] = True
+                ConfigModule.remote_config = rem_config
+                debug_info = {"debug_clean": run_id_info["debug_clean"], "debug_steps": run_id_info["debug_steps"]}
+                if "debug_step_actions" in run_id_info:
+                    debug_info["debug_step_actions"] = run_id_info["debug_step_actions"]
+            driver_list = ["Not needed currently"]
 
-            # If node is running in device farm, copy the logs and reports to
-            # the expected directory.
-            if "DEVICEFARM_LOG_DIR" in os.environ:
-                log_dir = Path(os.environ["DEVICEFARM_LOG_DIR"])
-                zeuz_log_dir = Path(ConfigModule.get_config_value(
-                    "sectionOne", "test_case_folder", temp_ini_file
-                )).parent
+            final_run_params = {}
+            for param in final_run_params_from_server:
+                final_run_params[param] = CommonUtil.parse_value_into_object(list(final_run_params_from_server[param].items())[1][1])
+                # final_run_params[param] = CommonUtil.parse_value_into_object(list(final_run_params_from_server[param].items())[0][1])
+                # final_run_params[param] = CommonUtil.parse_value_into_object(final_run_params_from_server[param]["subfield"])
+                # final_run_params[param] = final_run_params_from_server[param].split(":", 1)[1].strip()  # For TD
 
-                copy_tree(str(zeuz_log_dir), str(log_dir))
+            send_log_file_only_for_fail = ConfigModule.get_config_value("RunDefinition", "upload_log_file_only_for_fail")
+            send_log_file_only_for_fail = False if send_log_file_only_for_fail.lower() == "false" else True
+            rerun_on_fail = ConfigModule.get_config_value("RunDefinition", "rerun_on_fail")
+            rerun_on_fail = False if rerun_on_fail.lower() == "false" else True
+            CommonUtil.upload_on_fail, CommonUtil.rerun_on_fail = send_log_file_only_for_fail, rerun_on_fail
 
-            # executor.submit(upload_json_report)
+            all_testcases_info = run_id_info["test_cases"]
+            TestSetStartTime = time.time()
+            i = 0
+            while i < len(all_testcases_info):
+                if all_testcases_info[i]["automatability"] != "Automated":
+                    CommonUtil.ExecLog("", all_testcases_info[i]["testcase_no"] + " is not automated so skipping", 2)
+                    # print(all_testcases_info[i]["testcase_no"] + " is not automated so skipping")
+                    del all_testcases_info[i]
+                    i -= 1
+                i += 1
+            if len(all_testcases_info) > 0:
+                CommonUtil.ExecLog("", "Total number of Automated test cases %s" % len(all_testcases_info), 4, False)
+            else:
+                CommonUtil.ExecLog("", "No Automated test cases found for the current user : %s" % Userid, 2)
+                CommonUtil.runid_index += 1
+                return "pass"
+            num_of_tc = len(all_testcases_info)
+            cnt = 1
 
-        # Close websocket connection.
-        if run_id.lower().startswith("debug"):
-            ws.close()
-            print("[LIVE LOG] Disconnected from Live Log service")
-        CommonUtil.runid_index += 1
+            max_tc_in_single_session = 25    # Todo: make it 25
+            all_sessions = split_testcases(run_id_info, max_tc_in_single_session)
+            session_cnt = 1
+            for each_session in all_sessions:
+                CommonUtil.current_session_name = "session_" + str(session_cnt)
+                CommonUtil.all_logs_json = [each_session]
+                CommonUtil.tc_index = 0
+                all_testcases_info = each_session["test_cases"]
+                print("Starting %s with %s testcases" % (CommonUtil.current_session_name, len(all_testcases_info)))
+                for testcase_info in all_testcases_info:
+                    performance_test_case = False
+                    if testcase_info["automatability"].lower() == "performance":
+                        performance_test_case = True
+                    test_case_no = testcase_info["testcase_no"]
+                    test_case_name = testcase_info["title"]
+                    set_device_info_according_to_user_order(device_order, device_dict, test_case_no, test_case_name, user_info_object, Userid)
 
-    return "pass"
+                    if performance_test_case:
+                        # get performance test info
+                        perf_data = testcase_info["performance data"]
+                        hatch_rate = perf_data["hatch_rate"]
+                        no_of_users = perf_data["no_of_users"]
+                        time_period = perf_data["time_period"]
+
+                        # write locust input file
+                        write_locust_input_file(
+                            time_period,
+                            perf_data,
+                            test_case_no,
+                            sModuleInfo,
+                            run_id,
+                            driver_list,
+                            final_dependency,
+                            final_run_params,
+                            temp_ini_file,
+                            is_linked,
+                            send_log_file_only_for_fail=send_log_file_only_for_fail,
+                        )
+
+                        # check locust file name
+                        locustFile = "chromeLocustFile.py"
+                        if "Browser" in final_dependency:
+                            if final_dependency["Browser"].lower() == "chrome":
+                                locustFile = "chromeLocustFile.py"
+                            else:
+                                locustFile = "firefoxLocustFile.py"
+                        else:
+                            locustFile = "restLocustFile.py"
+
+                        # get locust file path
+                        locust_file_path = (
+                            os.getcwd()
+                            + os.sep
+                            + "Built_In_Automation"
+                            + os.sep
+                            + "Performance_Testing"
+                            + os.sep
+                            + locustFile
+                        )
+
+                        # make locust query
+                        locustQuery = (
+                                "locust -f %s --csv=csvForZeuz --no-web --host=http://example.com -c %d -r %d"
+                                % (locust_file_path, no_of_users, hatch_rate)
+                        )
+
+                        # add log
+                        CommonUtil.ExecLog(
+                            sModuleInfo,
+                            "Running Performance Test Case %s with total %d users, in a rate %s new users/second and each user will run for %s seconds"
+                            % (test_case_no, no_of_users, hatch_rate, time_period),
+                            1,
+                        )
+                        try:
+                            def kill(process):
+                                return process.kill()  # kill process function
+                            process = subprocess.Popen(locustQuery, shell=True)  # locust query process
+                            my_timer = Timer(no_of_users * time_period, kill, [process])  # set timer
+                            try:
+                                my_timer.start()  # start timer
+                                stdout, stderr = process.communicate()  # process communicate
+                            finally:
+                                my_timer.cancel()  # cancel timer
+                        except Exception as e:
+                            print("exception")
+                            pass
+                        # add log
+                        CommonUtil.ExecLog(sModuleInfo, "Uploading Performance Test Results", 1)
+                        if ConfigModule.get_config_value("RunDefinition", "local_run") == "False":
+                            # upload info
+                            upload_csv_file_info(run_id, test_case_no)
+                        # add log
+                        CommonUtil.ExecLog(
+                            sModuleInfo, "Performance Test Results Uploaded Successfully", 1
+                        )
+                    else:
+                        run_cancelled = run_test_case(
+                            test_case_no,
+                            sModuleInfo,
+                            run_id,
+                            final_dependency,
+                            final_run_params,
+                            temp_ini_file,
+                            is_linked,
+                            testcase_info,
+                            executor,
+                            debug_info,
+                            all_file_specific_steps,
+                            rerun_on_fail,
+                            send_log_file_only_for_fail,
+                        )
+                        CommonUtil.clear_all_logs()  # clear logs
+                        if run_cancelled == CANCELLED_TAG:
+                            break
+                        print("Executed %s test cases" % cnt)
+                        cnt += 1
+                    CommonUtil.tc_index += 1
+
+                # calculate elapsed time of runid
+                sTestSetEndTime = datetime.fromtimestamp(time.time()).strftime("%Y-%m-%d %H:%M:%S")
+                TestSetEndTime = time.time()
+                TimeDiff = TestSetEndTime - TestSetStartTime
+                TimeInSec = int(TimeDiff)
+                TestSetDuration = CommonUtil.FormatSeconds(TimeInSec)
+
+                after_execution_dict = {
+                    "status": "Complete",
+                    "teststarttime": datetime.fromtimestamp(TestSetStartTime).strftime("%Y-%m-%d %H:%M:%S"),
+                    "testendtime": sTestSetEndTime,
+                    "duration": TestSetDuration
+                }
+                CommonUtil.CreateJsonReport(setInfo=after_execution_dict)
+                upload_json_report(Userid, temp_ini_file, run_id)
+                session_cnt += 1
+
+            print("Test set execution time = %s sec for %s testcases" % (round(TimeDiff, 3), num_of_tc))
+            print("Report creation time = %s sec for %s testcases" % (round(CommonUtil.report_json_time, 3), num_of_tc))
+            print("Test Set Completed")
+
+            ConfigModule.add_config_value("sectionOne", "sTestStepExecLogId", "MainDriver", temp_ini_file)
+
+            if run_cancelled == CANCELLED_TAG:
+                print("Test Set Cancelled by the User")
+            elif not CommonUtil.debug_status:
+
+                from distutils.dir_util import copy_tree
+
+                # If node is running in device farm, copy the logs and reports to the expected directory.
+                if "DEVICEFARM_LOG_DIR" in os.environ:
+                    log_dir = Path(os.environ["DEVICEFARM_LOG_DIR"])
+                    zeuz_log_dir = Path(ConfigModule.get_config_value(
+                        "sectionOne", "test_case_folder", temp_ini_file
+                    )).parent
+
+                    copy_tree(str(zeuz_log_dir), str(log_dir))
+
+                # Telling the node_manager that a run_id is finished
+                CommonUtil.node_manager_json(
+                    {
+                        "state": "complete",
+                        "report": {
+                            "zip": "Will do later" + ".zip",
+                            "directory": "Will do later",
+                        }
+                    }
+                )
+
+                # executor.submit(upload_json_report)
+
+            # Close websocket connection.
+            elif CommonUtil.debug_status:
+                ws.close()
+                print("[LIVE LOG] Disconnected from Live Log service")
+            CommonUtil.runid_index += 1
+
+        return "pass"
+    except:
+        CommonUtil.debug_code_error(sys.exc_info())  # For system debugging purpose.
+        return None
+
 
 
 if __name__ == "__main__":

@@ -1,6 +1,16 @@
 # Changelog
 
 ## Version 14.0.x
+### [14.1.0] [June 29, 2021]
+- **[Add]** [internal] Large sets will be uploaded in several sessions with maximum 25 testcases each
+### [14.0.4] [June 20, 2021]
+- **[Add]** [internal] Node_state.json is generated to communicate between nodes and node_manager
+### [14.0.3] [June 20, 2021]
+- **[Fix]** [internal] Node's main driver crashes/exceptions should not bubble
+  up to top level.
+- **[Fix]** jUnit report generation error.
+- **[Add]** Add `-o`, `--once` flag for running only a single session and then
+  quit node automatically. Useful for daemons, cron jobs & CI/CD.
 
 ### [14.0.0] [June 04, 2021]
 - **[Change]** Changed attachment variable parsing

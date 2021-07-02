@@ -6,7 +6,7 @@ import sys
 import inspect
 import os, os.path, threading
 import ast
-import json
+import json, time
 import logging
 from Framework.Utilities import ConfigModule
 import datetime
@@ -120,6 +120,7 @@ current_action_name = ""
 current_step_no = ""
 current_step_name = ""
 current_tc_no = ""
+current_session_name = ""
 
 executor = concurrent.futures.ThreadPoolExecutor()
 all_threads = {}
@@ -338,8 +339,23 @@ def Result_Analyzer(sTestStepReturnStatus, temp_q):
     except Exception as e:
         return Exception_Handler(sys.exc_info())
 
+
+def node_manager_json(data):
+    """ Generates a json file to communicate with node_manager"""
+    json_path = Path(os.path.abspath(__file__)).parent.parent.parent / "node_state.json"
+    with open(json_path, "w") as f:
+        json.dump(data, f)
+
+node_manager_json(
+    {
+        "state": "starting",
+        "report": {
+            "zip": None,
+            "directory": None,
+        }
+    }
+)
 report_json_time = 0.0
-import time
 
 
 def CreateJsonReport(logs=None, stepInfo=None, TCInfo=None, setInfo=None):
@@ -1013,3 +1029,21 @@ class MachineInfo:
         except Exception:
             ErrorMessage = "Unable to set create a Node key.  Please check class MachineInfo() in commonutil"
             return Exception_Handler(sys.exc_info(), None, ErrorMessage)
+
+
+def debug_code_error(exc_info):
+    exc_type, exc_obj, exc_tb = exc_info
+    fname = os.path.split(exc_tb.tb_frame.f_code.co_filename)[1]
+    Error_Detail = (
+            (str(exc_type).replace("type ", "Error Type: "))
+            + ";"
+            + "Error Message: "
+            + str(exc_obj)
+            + ";"
+            + "File Name: "
+            + fname
+            + ";"
+            + "Line: "
+            + str(exc_tb.tb_lineno)
+    )
+    print(Error_Detail)
