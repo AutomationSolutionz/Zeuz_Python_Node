@@ -950,8 +950,8 @@ def run_test_case(
         )
         after_execution_dict["logid"] = TCLogFile
     CommonUtil.CreateJsonReport(TCInfo=after_execution_dict)
-    if send_log_file_only_for_fail and not rerun_on_fail and sTestCaseStatus == "Passed":
-        CommonUtil.clear_logs_from_report()
+    CommonUtil.clear_logs_from_report(send_log_file_only_for_fail, rerun_on_fail, sTestCaseStatus)
+
     if not CommonUtil.debug_status:  # if normal run, then write log file and cleanup driver instances
         CommonUtil.Join_Thread_and_Return_Result("screenshot")  # Let the capturing screenshot end in thread
         cleanup_driver_instances()  # clean up drivers
@@ -1243,16 +1243,6 @@ def upload_json_report(Userid, temp_ini_file, run_id):
 
     if ConfigModule.get_config_value("RunDefinition", "local_run") == "False":
         FL.ZipFolder(str(zip_path), str(zip_path) + ".zip")
-        for _ in range(720):    # 1 hour
-            res = requests.get(RequestFormatter.form_uri("is_copied_api/"), {"runid": run_id}, verify=False)
-            r = res.json()
-            if r["flag"]:
-                break
-            time.sleep(5)
-        else:
-            print("Run history was not created in server so couldn't upload the report for run_id '%s'." % run_id +
-                "Get the report from below path-\n" + path)
-            return
 
         with open(str(zip_path) + ".zip", "rb") as fzip:
             size = round(os.stat(str(zip_path) + ".zip").st_size / 1024, 2)
@@ -1266,7 +1256,7 @@ def upload_json_report(Userid, temp_ini_file, run_id):
                 res = requests.post(
                     RequestFormatter.form_uri("create_report_log_api/"),
                     files={"file": fzip},
-                    data={"machine_name": Userid},
+                    data={"machine_name": Userid, "file_name": json_report[CommonUtil.runid_index]["file_name"]},
                     verify=False)
                 if res.status_code == 200:
                     try:
@@ -1634,6 +1624,7 @@ def main(device_dict, user_info_object):
                 ws.close()
                 print("[LIVE LOG] Disconnected from Live Log service")
             CommonUtil.runid_index += 1
+            break   # Todo: remove this after server side multiple run-id problem is fixed
 
         return "pass"
     except:
