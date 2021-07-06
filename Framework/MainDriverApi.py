@@ -1248,10 +1248,9 @@ def upload_json_report(Userid, temp_ini_file, run_id):
             r = res.json()
             if r["flag"]:
                 break
-            print("Waiting for the result table to be created in server")
             time.sleep(5)
         else:
-            print("Result table was not created in server so couldn't upload the report for run_id '%s'." % run_id +
+            print("Run history was not created in server so couldn't upload the report for run_id '%s'." % run_id +
                 "Get the report from below path-\n" + path)
             return
 
@@ -1635,7 +1634,6 @@ def main(device_dict, user_info_object):
                 ws.close()
                 print("[LIVE LOG] Disconnected from Live Log service")
             CommonUtil.runid_index += 1
-            break   # Todo: remove this after server side multiple run-id problem is fixed
 
         return "pass"
     except:
