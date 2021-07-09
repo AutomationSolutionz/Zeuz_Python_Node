@@ -233,8 +233,8 @@ def Login(cli=False, run_once=False):
                 token = r['token']
                 res = RequestFormatter.Get("/api/user", headers={'Authorization': "Bearer %s" % token})
                 info = res[0]
-                username=info['username']
-                api_flag=False
+                username = info['username']
+                api_flag = False
                 ConfigModule.add_config_value(AUTHENTICATION_TAG, "username", username)
             except:
                 print("Incorrect API key...")
@@ -303,8 +303,7 @@ def Login(cli=False, run_once=False):
                         "",
                         f"Authentication successful: USER='{username}', "
                         f"PROJECT='{user_info_object['project']}', TEAM='{user_info_object['team']}', SERVER='{server_name}'",
-                        4,
-                        False,
+                        4
                     )
                     ConfigModule.add_config_value("sectionOne", PROJECT_TAG, user_info_object['project'], temp_ini_file)
                     ConfigModule.add_config_value("sectionOne", TEAM_TAG, user_info_object['team'], temp_ini_file)
@@ -946,8 +945,6 @@ def command_line_args():
             ConfigModule.add_config_value(AUTHENTICATION_TAG, "api-key", api)
             ConfigModule.remove_config_value(AUTHENTICATION_TAG, "server_address")
             ConfigModule.add_config_value(AUTHENTICATION_TAG, "server_address", server)
-
-
         elif username and password and server:
             ConfigModule.remove_config_value(AUTHENTICATION_TAG, "server_address")
             ConfigModule.add_config_value(AUTHENTICATION_TAG, "username", username)
