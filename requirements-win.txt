@@ -27,11 +27,6 @@ pyshortcuts
 datefinder
 regex
 pyttsx3==2.71
-https://github.com/AutomationSolutionz/InstallerHelperFiles/raw/master/Windows/PyAudio-0.2.11-cp38-cp38-win32.whl
-https://github.com/AutomationSolutionz/PyGetWindow-0.0.5/archive/master.zip
-https://github.com/AutomationSolutionz/InstallerHelperFiles/raw/master/Windows/psutil-5.6.3-cp38-cp38-win32.whl
-https://github.com/AutomationSolutionz/InstallerHelperFiles/raw/master/Windows/pythonnet-2.4.1.dev0-cp38-cp38-win32.whl
-https://github.com/AutomationSolutionz/InstallerHelperFiles/raw/master/Windows/pywin32-225-cp38-cp38-win32.whl
 wmi
 pyautoit
 winshell
@@ -41,7 +36,6 @@ webcolors
 jsonpointer
 rfc3339-validator
 rfc3986-validator
-idna
 pyrsistent
 attrs
 pytest==6.1.2
@@ -50,3 +44,6 @@ websocket-client
 tqdm
 pyscreenshot
 pyyaml
+psutil
+pywin32
+pythonnet
