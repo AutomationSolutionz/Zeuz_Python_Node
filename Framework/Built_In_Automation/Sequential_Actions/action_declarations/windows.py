@@ -11,7 +11,7 @@ declarations = (
     { "name": "open app",        "function": "Run_Application",        "screenshot": "desktop" },
     { "name": "close app",       "function": "Close_Application",      "screenshot": "desktop" },
     { "name": "validate text",   "function": "Validate_Text",          "screenshot": "desktop" },
-    { "name": "save text",       "function": "Save_Text",              "screenshot": "desktop" },
+    { "name": "save attribute",  "function": "Save_Attribute",         "screenshot": "desktop" },
 ) # yapf: disable
 
 module_name = "windows"
