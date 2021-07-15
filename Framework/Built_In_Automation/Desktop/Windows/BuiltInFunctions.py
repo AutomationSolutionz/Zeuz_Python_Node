@@ -57,10 +57,11 @@ dependency = None
 if Shared_Resources.Test_Shared_Variables("dependency"):  # Check if driver is already set in shared variables
     dependency = Shared_Resources.Get_Shared_Variables("dependency")  # Retreive appium driver
 
-global recur_count
 recur_count = 0  # To be deleted
 common_sleep = 0
 
+element_index = 0
+element_count = -1
 
 @logger
 def go_to_desktop(data_set):
@@ -207,15 +208,14 @@ def get_element(
         Element_Name,
         Element_Class,
         Element_AutomationID,
-        Element_LocalizedControlType,
-        max_try=1,
+        Element_LocalizedControlType
 ):
     # max_time is built in wait function.  It will try every seconds 15 times.
-
-    recur_count = 0
     try:
 
         try:
+            global element_count
+            element_count = -1
             if isinstance(MainWindowName_OR_ParentElement, str):
                 ParentElement = _get_main_window(MainWindowName_OR_ParentElement)
                 if ParentElement is None:
@@ -270,11 +270,11 @@ def get_element(
 
 
 def _child_search(
-        ParentElement,
-        Element_Name,
-        Element_Class,
-        Element_AutomationID,
-        Element_LocalizedControlType,
+    ParentElement,
+    Element_Name,
+    Element_Class,
+    Element_AutomationID,
+    Element_LocalizedControlType,
 ):
     try:
         """
@@ -284,29 +284,41 @@ def _child_search(
         
         if recur_count is 100:
             time.sleep(5)
-            """
+        """
         # Name, Class, AutomationID, LocalizedControlType
         try:
             if (Element_Name, Element_Class, Element_AutomationID, Element_LocalizedControlType) == (None, None, None, None):
                 return []
+            global element_count
             NameE = ParentElement.Current.Name
             ClassE = ParentElement.Current.ClassName
             AutomationE = ParentElement.Current.AutomationId
             LocalizedControlTypeE = ParentElement.Current.LocalizedControlType
 
+            all_elements = []
             found = True
             if found and Element_Name is not None and NameE != Element_Name: found = False
             if found and Element_Class is not None and ClassE != Element_Class: found = False
             if found and Element_AutomationID is not None and AutomationE != Element_AutomationID: found = False
             if found and Element_LocalizedControlType is not None and LocalizedControlTypeE != Element_LocalizedControlType: found = False
-            if found: return [ParentElement]
+            """
+            Below are 2 methods. 
+            1st one is: if an element is found yet enter its child elements to find more (requires more time but safe)
+            2nd one is: if an element is found dont need to go deeper anymore, search its siblings (requires less time)
+            Assuming 1st method is better
+            """
+            if found:   # 1st method
+                all_elements += [ParentElement]
+                element_count += 1
+                if element_count == element_index:
+                    return all_elements
+            # if found: return [ParentElement]          # 2nd method
 
             child_elements = ParentElement.FindAll(TreeScope.Children, Condition.TrueCondition)
 
             if child_elements.Count == 0:
-                return []
+                return all_elements
 
-            all_elements = []
             for each_child in child_elements:
                 all_elements += _child_search(
                     each_child,
@@ -315,6 +327,8 @@ def _child_search(
                     Element_AutomationID,
                     Element_LocalizedControlType,
                 )
+                if element_count == element_index:
+                    return all_elements
 
             return all_elements
         except:
@@ -926,7 +940,8 @@ def Get_Element(data_set):
     automationid = None
     control_type = None
     wait_time = 15
-    index = 0
+    global element_index
+    element_index = 0
     # parse dataset and read data
     try:
         for left, mid, right in data_set:
@@ -944,7 +959,7 @@ def Get_Element(data_set):
                 elif left.strip().lower() == "wait time":
                     wait_time = int(right)
                 elif left.strip().lower() == "index":
-                    index = int(right.strip())
+                    element_index = int(right.strip())
 
         if (element_name, element_class, automationid, control_type) == (None, None, None, None):
             CommonUtil.ExecLog(sModuleInfo, "No element info is given", 3)
@@ -956,12 +971,11 @@ def Get_Element(data_set):
             element_class,
             automationid,
             control_type,
-            wait_time,
         )
         if all_elements == "zeuz_failed":
             CommonUtil.ExecLog(sModuleInfo, "No element found", 3)
             return "zeuz_failed"
-        if -len(all_elements) <= index < len(all_elements):
+        if -len(all_elements) <= element_index < len(all_elements):
             # Todo: we need more logs here. check Locate Element
             pass
         else:
@@ -990,7 +1004,7 @@ def Get_Element(data_set):
         except:
             pass
 
-        return all_elements[index]
+        return all_elements[element_index]
     except Exception:
         errMsg = "Could not get your element."
         return CommonUtil.Exception_Handler(sys.exc_info(), None, errMsg)
