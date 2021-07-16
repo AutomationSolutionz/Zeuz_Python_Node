@@ -1,8 +1,13 @@
 # Changelog
 
-## Version 14.0.x
+# Version 14.x.x
+## Version 14.2.x
+### [14.2.0] [July 10, 2021]
+- **[Change]** Changed Report API to handle both server version
+## Version 14.1.x
 ### [14.1.0] [June 29, 2021]
 - **[Add]** [internal] Large sets will be uploaded in several sessions with maximum 25 testcases each
+## Version 14.0.x
 ### [14.0.4] [June 20, 2021]
 - **[Add]** [internal] Node_state.json is generated to communicate between nodes and node_manager
 ### [14.0.3] [June 20, 2021]
@@ -15,6 +20,8 @@
 ### [14.0.0] [June 04, 2021]
 - **[Change]** Changed attachment variable parsing
 - **[Add]** Added file path option in execute python code action
+
+# Version 13.x.x
 
 ## Version 13.7.x
 
