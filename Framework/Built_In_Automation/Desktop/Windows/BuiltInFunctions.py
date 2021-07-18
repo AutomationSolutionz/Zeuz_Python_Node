@@ -5,29 +5,33 @@
 #                       #
 #########################
 
-import sys, os, time, inspect
-import glob
+import sys, os
 
 sys.path.append(os.path.dirname(__file__))
-from Framework.Utilities import CommonUtil
 import pyautogui as gui  # https://pyautogui.readthedocs.io/en/latest/
 from Framework.Built_In_Automation.Shared_Resources import (
     BuiltInFunctionSharedResources as Shared_Resources,
 )
-from Framework.Built_In_Automation.Shared_Resources import LocateElement
-from Framework.Utilities.CommonUtil import (
-    passed_tag_list,
-    failed_tag_list,
-    skipped_tag_list,
-)
-
 import inspect, time, datetime, os, sys
-from os import system
-from _elementtree import Element  # What is this for?
 from Framework.Utilities import CommonUtil
 from Framework.Utilities.decorators import logger
 
 MODULE_NAME = inspect.getmodulename(__file__)
+
+
+import clr, inspect
+from _elementtree import Element
+
+clr.AddReference("UIAutomationClient")
+clr.AddReference("UIAutomationTypes")
+clr.AddReference("UIAutomationProvider")
+clr.AddReference("System.Windows.Forms")
+
+import win32api
+import win32con
+
+from System.Windows.Automation import *
+
 
 # this needs to be here on top, otherwise will return error
 import clr, System
@@ -37,14 +41,7 @@ clr.AddReference("UIAutomationTypes")
 clr.AddReference("UIAutomationProvider")
 clr.AddReference("System.Windows.Forms")
 
-# Do these need to be here?
-from System.Windows.Automation import *
-from System.Threading import Thread
-from System.Windows.Forms import SendKeys
-
-import win32api, win32con  # What is this for?
 import pyautogui  # Should be removed after we complete sequential actions
-import win32gui  # Needed?
 import autoit  # The likely method we'll use
 
 #########################
@@ -66,7 +63,7 @@ element_count = -1
 @logger
 def go_to_desktop(data_set):
     sModuleInfo = inspect.currentframe().f_code.co_name + " : " + MODULE_NAME
-    Element = get_element("", "Show desktop", "TrayShowDesktopButtonWClass")  # Todo: This line should generate bug so fix it.
+    Element = Element_only_search("", "Show desktop", "TrayShowDesktopButtonWClass")  # Todo: This line should generate bug so fix it.
     if Element == "zeuz_failed":
         CommonUtil.ExecLog(sModuleInfo, "Could not find element", 3)
         return "zeuz_failed"
@@ -97,7 +94,7 @@ def Click_Element(data_set):
         for left, mid, right in data_set:
             right = right.strip().lower()
             left = left.strip().lower()
-            expand = not (left == "method" and mid == "element parameter" and right == "collapse")
+            expand = not (left == "method" and right == "collapse")
 
     except Exception:
         CommonUtil.ExecLog(sModuleInfo, "You have provided an invalid Click data.  Please refer to help", 3)
@@ -176,24 +173,6 @@ def Right_Click_Element(data_set):
         return CommonUtil.Exception_Handler(sys.exc_info(), None, "Error parsing data set")
 
 
-import clr, inspect, System
-import os, sys
-from _elementtree import Element
-
-clr.AddReference("UIAutomationClient")
-clr.AddReference("UIAutomationTypes")
-clr.AddReference("UIAutomationProvider")
-clr.AddReference("System.Windows.Forms")
-
-import time, datetime
-import win32api, win32con
-import win32gui
-import random
-import string
-import autoit
-
-from System.Windows.Automation import *
-
 """
 global recur_count
 recur_count = 0
@@ -203,70 +182,52 @@ local_run = False
 """
 
 
-def get_element(
-        MainWindowName_OR_ParentElement,
-        Element_Name,
-        Element_Class,
-        Element_AutomationID,
-        Element_LocalizedControlType
+def _found(dataset_val, object_val):
+    try:
+        if dataset_val[1] == "**":
+            return dataset_val[0].lower() in object_val.lower()
+        elif dataset_val[1] == "*":
+            return dataset_val[0] in object_val
+        else:
+            return dataset_val[0] == object_val
+    except Exception:
+        CommonUtil.Exception_Handler(sys.exc_info())
+        return False
+
+
+@logger
+def Element_only_search(
+    MainWindowName_OR_ParentElement,
+    Element_Name,
+    Element_Class,
+    Element_AutomationID,
+    Element_LocalizedControlType
 ):
     # max_time is built in wait function.  It will try every seconds 15 times.
     try:
-
-        try:
-            global element_count
-            element_count = -1
-            if isinstance(MainWindowName_OR_ParentElement, str):
-                ParentElement = _get_main_window(MainWindowName_OR_ParentElement)
-                if ParentElement is None:
-                    return "zeuz_failed"
-                else:
-                    all_elements = []
-                    all_elements += _child_search(
-                        ParentElement,
-                        Element_Name,
-                        Element_Class,
-                        Element_AutomationID,
-                        Element_LocalizedControlType
-                    )
-
-                    if all_elements:
-                        return all_elements
-                    else:
-                        return "zeuz_failed"
-            else:
-                # Todo: dont know what to do here and what code is written below. Where is the ParentElement ??
-                ChildElement = _child_search(
-                    ParentElement,
-                    Element_Name,
-                    Element_Class,
-                    Element_AutomationID,
-                    Element_LocalizedControlType,
-                )
-
-                if ChildElement is not None:
-                    return ChildElement
-                else:
-                    return "zeuz_failed"
-
-        except:
+        global element_count
+        element_count = -1
+        ParentElement = _get_main_window(MainWindowName_OR_ParentElement)
+        if ParentElement is None:
             return "zeuz_failed"
 
-    except Exception as e:
-        exc_type, exc_obj, exc_tb = sys.exc_info()
-        fname = os.path.split(exc_tb.tb_frame.f_code.co_filename)[1]
-        print(
-            (str(exc_type).replace("type ", "Error Type: "))
-            + ";"
-            + "Error Message: "
-            + str(exc_obj)
-            + ";"
-            + "File Name: "
-            + fname
-            + ";"
-            + "Line: "
-            + str(exc_tb.tb_lineno)
+        all_elements = []
+        all_elements += _child_search(
+            ParentElement,
+            Element_Name,
+            Element_Class,
+            Element_AutomationID,
+            Element_LocalizedControlType
         )
+
+        if all_elements:
+            return all_elements
+        else:
+            return "zeuz_failed"
+
+    except:
+        return CommonUtil.Exception_Handler(sys.exc_info())
+
 
 
 def _child_search(
@@ -297,13 +258,13 @@ def _child_search(
 
             all_elements = []
             found = True
-            if found and Element_Name is not None and NameE != Element_Name: found = False
-            if found and Element_Class is not None and ClassE != Element_Class: found = False
-            if found and Element_AutomationID is not None and AutomationE != Element_AutomationID: found = False
-            if found and Element_LocalizedControlType is not None and LocalizedControlTypeE != Element_LocalizedControlType: found = False
+            if found and Element_Name is not None and not _found(Element_Name, NameE): found = False
+            if found and Element_Class is not None and not _found(Element_Class, ClassE): found = False
+            if found and Element_AutomationID is not None and not _found(Element_AutomationID, AutomationE): found = False
+            if found and Element_LocalizedControlType is not None and not _found(Element_LocalizedControlType, LocalizedControlTypeE): found = False
             """
             Below are 2 methods. 
-            1st one is: if an element is found yet enter its child elements to find more (requires more time but safe)
+            1st one is: if an element is found yet enter its descendants to find more (requires more time but safe)
             2nd one is: if an element is found dont need to go deeper anymore, search its siblings (requires less time)
             Assuming 1st method is better
             """
@@ -334,56 +295,32 @@ def _child_search(
         except:
             return []
 
-    except Exception as e:
-        exc_type, exc_obj, exc_tb = sys.exc_info()
-        fname = os.path.split(exc_tb.tb_frame.f_code.co_filename)[1]
-        print(
-            (str(exc_type).replace("type ", "Error Type: "))
-            + ";"
-            + "Error Message: "
-            + str(exc_obj)
-            + ";"
-            + "File Name: "
-            + fname
-            + ";"
-            + "Line: "
-            + str(exc_tb.tb_lineno)
-        )
+    except Exception:
+        CommonUtil.Exception_Handler(sys.exc_info())
         return []
 
 
 def _get_main_window(WindowName):
     try:
+        if WindowName is None:  # if window name is not specified in dataset
+            return AutomationElement.RootElement
+
         MainWindowsList = AutomationElement.RootElement.FindAll(
             TreeScope.Children, Condition.TrueCondition
         )
-        UnicodeWinName = WindowName
         for MainWindowElement in MainWindowsList:
             try:
                 NameS = MainWindowElement.Current.Name
-                if UnicodeWinName in NameS:
+                if _found(WindowName, NameS):
                     autoit.win_activate(NameS)
                     return MainWindowElement
             except:
-                NameS = None
+                pass
 
         return None
-    except Exception as e:
-        exc_type, exc_obj, exc_tb = sys.exc_info()
-        fname = os.path.split(exc_tb.tb_frame.f_code.co_filename)[1]
-        print(
-                (str(exc_type).replace("type ", "Error Type: "))
-                + ";"
-                + "Error Message: "
-                + str(exc_obj)
-                + ";"
-                + "File Name: "
-                + fname
-                + ";"
-                + "Line: "
-                + str(exc_tb.tb_lineno)
-        )
-
+    except Exception:
+        CommonUtil.Exception_Handler(sys.exc_info())
+        return None
 
 @logger
 def Click_Element_None_Mouse(Element, Expand=True):
@@ -393,9 +330,7 @@ def Click_Element_None_Mouse(Element, Expand=True):
         if len(patter_list) == 0:
             # x = int (Element.Current.BoundingRectangle.X)
             # y = int (Element.Current.BoundingRectangle.Y)
-            CommonUtil.ExecLog(sModuleInfo,
-                               "We did not find any pattern for this object, so we will click by mouse with location",
-                               1)
+            CommonUtil.ExecLog(sModuleInfo, "We did not find any pattern for this object, so we will click by mouse with location", 1)
             x = (int)(
                 Element.Current.BoundingRectangle.Right
                 - Element.Current.BoundingRectangle.Width / 2
@@ -412,8 +347,7 @@ def Click_Element_None_Mouse(Element, Expand=True):
         else:
             for each in patter_list:
                 pattern_name = Automation.PatternName(each)
-                CommonUtil.ExecLog(sModuleInfo, "Pattern name attached to the current element is: %s " % pattern_name,
-                                   1)
+                CommonUtil.ExecLog(sModuleInfo, "Pattern name attached to the current element is: %s " % pattern_name, 1)
 
                 # Expand and collapse actions
                 if pattern_name == "ExpandCollapse":
@@ -490,23 +424,8 @@ def Click_Element_None_Mouse(Element, Expand=True):
 
         CommonUtil.ExecLog(sModuleInfo, "Unable to perform the action on the object", 3)
         return "zeuz_failed"
-    except Exception as e:
-        exc_type, exc_obj, exc_tb = sys.exc_info()
-        fname = os.path.split(exc_tb.tb_frame.f_code.co_filename)[1]
-        print(
-            (str(exc_type).replace("type ", "Error Type: "))
-            + ";"
-            + "Error Message: "
-            + str(exc_obj)
-            + ";"
-            + "File Name: "
-            + fname
-            + ";"
-            + "Line: "
-            + str(exc_tb.tb_lineno)
-        )
-        print(Element)
-        return "zeuz_failed"
+    except Exception:
+        return CommonUtil.Exception_Handler(sys.exc_info())
 
 
 @logger
@@ -601,22 +520,8 @@ def Drag_Object(Element1_source, Element2_destination):
         )
         return "passed"
 
-    except Exception as e:
-        exc_type, exc_obj, exc_tb = sys.exc_info()
-        fname = os.path.split(exc_tb.tb_frame.f_code.co_filename)[1]
-        print(
-            (str(exc_type).replace("type ", "Error Type: "))
-            + ";"
-            + "Error Message: "
-            + str(exc_obj)
-            + ";"
-            + "File Name: "
-            + fname
-            + ";"
-            + "Line: "
-            + str(exc_tb.tb_lineno)
-        )
-        return "zeuz_failed"
+    except Exception:
+        return CommonUtil.Exception_Handler(sys.exc_info())
 
 
 @logger
@@ -928,6 +833,15 @@ def Scroll(data_set):
         return CommonUtil.Exception_Handler(sys.exc_info(), None, "Error parsing data set")
 
 
+def _count_star(value):
+    count = 0
+    for i in value.replace(" ", ""):
+        if i == "*":
+            count += 1
+        else:
+            return "*"*count
+
+
 @logger
 def Get_Element(data_set):
     """ Insert text """
@@ -945,27 +859,29 @@ def Get_Element(data_set):
     # parse dataset and read data
     try:
         for left, mid, right in data_set:
+            left = left.strip().lower()
             if mid == "element parameter":
-                if left.strip().lower() == "name":
-                    element_name = right
-                elif left.strip().lower() == "window":
-                    window_name = right
-                elif left.strip().lower() == "classname":
-                    element_class = right
-                elif left.strip().lower() == "automationid":
-                    automationid = right
-                elif left.strip().lower() == "localizedcontroltype":
-                    control_type = right
-                elif left.strip().lower() == "wait time":
+                if "classname" in left:
+                    element_class = [right, _count_star(left)]
+                elif "window" in left:
+                    window_name = [right, _count_star(left)]
+                elif "name" in left:
+                    element_name = [right, _count_star(left)]
+                elif "automation" in left:  # automationid
+                    automationid = [right, _count_star(left)]
+                elif "control" in left:    # localizedcontroltype
+                    control_type = [right, _count_star(left)]
+
+                elif left == "wait time":
                     wait_time = int(right)
-                elif left.strip().lower() == "index":
+                elif left == "index":
                     element_index = int(right.strip())
 
         if (element_name, element_class, automationid, control_type) == (None, None, None, None):
             CommonUtil.ExecLog(sModuleInfo, "No element info is given", 3)
             return "zeuz_failed"
         # Get element object
-        all_elements = get_element(
+        all_elements = Element_only_search(
             window_name,
             element_name,
             element_class,
