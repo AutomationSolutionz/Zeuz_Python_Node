@@ -510,7 +510,13 @@ def run_all_test_steps_in_a_test_case(
         # check if already failed
         if already_failed:
             always_run = all_step_info[StepSeq - 1]["always_run"]  # get always run info
-            if not always_run:  # check if always run is false
+            if always_run:
+                CommonUtil.ExecLog(
+                    sModuleInfo,
+                    "Step-%s is set as 'Always run' so executing this step" % (CommonUtil.step_index + 1),
+                    2,
+                )
+            else:
                 StepSeq += 1
                 CommonUtil.step_index += 1
                 continue
@@ -716,6 +722,12 @@ def run_all_test_steps_in_a_test_case(
                 CommonUtil.CreateJsonReport(stepInfo=after_execution_dict)
                 CommonUtil.step_index += 1
                 continue
+            elif test_case_continue and CommonUtil.step_index + 1 < len(all_step_info):
+                CommonUtil.ExecLog(
+                    sModuleInfo,
+                    "Step-%s is set as 'Continue on fail' so continuing to next step" % (CommonUtil.step_index + 1),
+                    2
+                )
 
         elif sStepResult.upper() == BLOCKED_TAG.upper():
             # Step is Blocked, Block the test step and test case. go to next test case
