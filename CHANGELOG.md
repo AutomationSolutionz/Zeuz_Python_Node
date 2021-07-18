@@ -1,12 +1,9 @@
 # Changelog
 
-## Version 15.x.x
-
-## Version 15.0.x
-### [15.0.0] [July 10, 2021]
-- **[Change]** Changed Report API
-
 # Version 14.x.x
+## Version 14.2.x
+### [14.2.0] [July 10, 2021]
+- **[Change]** Changed Report API to handle both server version
 ## Version 14.1.x
 ### [14.1.0] [June 29, 2021]
 - **[Add]** [internal] Large sets will be uploaded in several sessions with maximum 25 testcases each
