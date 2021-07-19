@@ -57,8 +57,6 @@ if Shared_Resources.Test_Shared_Variables("dependency"):  # Check if driver is a
 recur_count = 0  # To be deleted
 common_sleep = 0
 
-element_index = 0
-element_count = -1
 
 @logger
 def go_to_desktop(data_set):
@@ -197,27 +195,30 @@ def _found(dataset_val, object_val):
 
 @logger
 def Element_only_search(
-    MainWindowName_OR_ParentElement,
-    Element_Name,
-    Element_Class,
-    Element_AutomationID,
-    Element_LocalizedControlType
+    window_name,
+    element_name,
+    element_class,
+    element_automation,
+    element_control,
+    element_index
 ):
     # max_time is built in wait function.  It will try every seconds 15 times.
     try:
         global element_count
         element_count = -1
-        ParentElement = _get_main_window(MainWindowName_OR_ParentElement)
+        ParentElement = _get_main_window(window_name)
         if ParentElement is None:
             return "zeuz_failed"
 
         all_elements = []
         all_elements += _child_search(
             ParentElement,
-            Element_Name,
-            Element_Class,
-            Element_AutomationID,
-            Element_LocalizedControlType
+            element_name,
+            element_class,
+            element_automation,
+            element_control,
+            element_index,
+            -1
         )
 
         if all_elements:
@@ -232,10 +233,11 @@ def Element_only_search(
 
 def _child_search(
     ParentElement,
-    Element_Name,
-    Element_Class,
-    Element_AutomationID,
-    Element_LocalizedControlType,
+    element_name,
+    element_class,
+    element_automation,
+    element_control,
+    element_index, element_count,
 ):
     try:
         """
@@ -247,53 +249,50 @@ def _child_search(
             time.sleep(5)
         """
         # Name, Class, AutomationID, LocalizedControlType
-        try:
-            if (Element_Name, Element_Class, Element_AutomationID, Element_LocalizedControlType) == (None, None, None, None):
-                return []
-            global element_count
-            NameE = ParentElement.Current.Name
-            ClassE = ParentElement.Current.ClassName
-            AutomationE = ParentElement.Current.AutomationId
-            LocalizedControlTypeE = ParentElement.Current.LocalizedControlType
+        if (element_name, element_class, element_automation, element_control) == (None, None, None, None):
+            return []
+        NameE = ParentElement.Current.Name
+        ClassE = ParentElement.Current.ClassName
+        AutomationE = ParentElement.Current.AutomationId
+        LocalizedControlTypeE = ParentElement.Current.LocalizedControlType
 
-            all_elements = []
-            found = True
-            if found and Element_Name is not None and not _found(Element_Name, NameE): found = False
-            if found and Element_Class is not None and not _found(Element_Class, ClassE): found = False
-            if found and Element_AutomationID is not None and not _found(Element_AutomationID, AutomationE): found = False
-            if found and Element_LocalizedControlType is not None and not _found(Element_LocalizedControlType, LocalizedControlTypeE): found = False
-            """
-            Below are 2 methods. 
-            1st one is: if an element is found yet enter its descendants to find more (requires more time but safe)
-            2nd one is: if an element is found dont need to go deeper anymore, search its siblings (requires less time)
-            Assuming 1st method is better
-            """
-            if found:   # 1st method
-                all_elements += [ParentElement]
-                element_count += 1
-                if element_count == element_index:
-                    return all_elements
-            # if found: return [ParentElement]          # 2nd method
+        all_elements = []
+        found = True
+        if found and element_name is not None and not _found(element_name, NameE): found = False
+        if found and element_class is not None and not _found(element_class, ClassE): found = False
+        if found and element_automation is not None and not _found(element_automation, AutomationE): found = False
+        if found and element_control is not None and not _found(element_control, LocalizedControlTypeE): found = False
+        """
+        Below are 2 methods. 
+        1st one is: if an element is found yet enter its descendants to find more (requires more time but safe)
+        2nd one is: if an element is found dont need to go deeper anymore, search its siblings (requires less time)
+        Assuming 1st method is better
+        """
+        if found:   # 1st method
+            all_elements += [ParentElement]
+            element_count += 1
+            if element_count == element_index:
+                return all_elements
+        # if found: return [ParentElement]          # 2nd method
 
-            child_elements = ParentElement.FindAll(TreeScope.Children, Condition.TrueCondition)
+        child_elements = ParentElement.FindAll(TreeScope.Children, Condition.TrueCondition)
 
-            if child_elements.Count == 0:
+        if child_elements.Count == 0:
+            return all_elements
+
+        for each_child in child_elements:
+            all_elements += _child_search(
+                each_child,
+                element_name,
+                element_class,
+                element_automation,
+                element_control,
+                element_index, element_count
+            )
+            if 0 <= element_index == element_count:
                 return all_elements
 
-            for each_child in child_elements:
-                all_elements += _child_search(
-                    each_child,
-                    Element_Name,
-                    Element_Class,
-                    Element_AutomationID,
-                    Element_LocalizedControlType,
-                )
-                if element_count == element_index:
-                    return all_elements
-
-            return all_elements
-        except:
-            return []
+        return all_elements
 
     except Exception:
         CommonUtil.Exception_Handler(sys.exc_info())
@@ -301,69 +300,101 @@ def _child_search(
 
 
 @logger
+def Sibling_search(data_set):
+    pass
+
+
+@logger
+def Parent_search(data_set):
+    pass
+
+
+@logger
 def Get_Element(data_set):
-    """ Insert text """
+    """ Top function for searching an element """
 
     sModuleInfo = inspect.currentframe().f_code.co_name + " : " + MODULE_NAME
 
-    element_name = None
-    window_name = None
-    element_class = None
-    automationid = None
-    control_type = None
+    element_name, window_name, element_class, element_automation, element_control, elem = None, None, None, None, None, False
+    parent_name, parent_class, parent_automation, parent_control, parent = None, None, None, None, False
+    sibling_name, sibling_class, sibling_automation, sibling_control, sibling = None, None, None, None, False
     wait_time = 15
-    global element_index
     element_index = 0
     # parse dataset and read data
     try:
         for left, mid, right in data_set:
             left = left.strip().lower()
+
+            mid = mid.strip().lower()
+            if left == "wait time": wait_time = int(right)  # Todo: this will be max retry
+            elif left == "index": element_index = int(right.strip())
+            elif "window" in left: window_name = [right, _count_star(left)]
+
             if mid == "element parameter":
-                if "classname" in left:
-                    element_class = [right, _count_star(left)]
-                elif "window" in left:
-                    window_name = [right, _count_star(left)]
-                elif "name" in left:
-                    element_name = [right, _count_star(left)]
-                elif "automation" in left:  # automationid
-                    automationid = [right, _count_star(left)]
-                elif "control" in left:    # localizedcontroltype
-                    control_type = [right, _count_star(left)]
+                elem = True
+                if "classname" in left: element_class = [right, _count_star(left)]
+                elif "name" in left: element_name = [right, _count_star(left)]
+                elif "automation" in left: element_automation = [right, _count_star(left)]  # automationid
+                elif "control" in left: element_control = [right, _count_star(left)]    # localizedcontroltype
 
-                elif left == "wait time":
-                    wait_time = int(right)
-                elif left == "index":
-                    element_index = int(right.strip())
+            elif mid == "parent parameter":
+                parent = True
+                if "classname" in left: parent_class = [right, _count_star(left)]
+                elif "name" in left: parent_name = [right, _count_star(left)]
+                elif "automation" in left: parent_automation = [right, _count_star(left)]  # automationid
+                elif "control" in left: parent_control = [right, _count_star(left)]    # localizedcontroltype
 
-        if (element_name, element_class, automationid, control_type) == (None, None, None, None):
+            elif mid == "sibling parameter":
+                sibling = True
+                if "classname" in left: sibling_class = [right, _count_star(left)]
+                elif "name" in left: sibling_name = [right, _count_star(left)]
+                elif "automation" in left: sibling_automation = [right, _count_star(left)]  # automationid
+                elif "control" in left: sibling_control = [right, _count_star(left)]    # localizedcontroltype
+
+        if not elem:
             CommonUtil.ExecLog(sModuleInfo, "No element info is given", 3)
             return "zeuz_failed"
-        # Get element object
-        all_elements = Element_only_search(
-            window_name,
-            element_name,
-            element_class,
-            automationid,
-            control_type,
-        )
+        if elem and (element_name, element_class, element_automation, element_control) == (None, None, None, None):
+            CommonUtil.ExecLog(sModuleInfo, "We support only 'Window', 'Name', 'ClassName', 'LocalizedControlType', 'AutomationId'", 3)
+            return "zeuz_failed"
+        if sibling and not parent:
+            CommonUtil.ExecLog(sModuleInfo, "A common PARENT of both ELEMENT and SIBLING should be provided", 3)
+            return "zeuz_failed"
+        if parent and (parent_name, parent_class, parent_automation, parent_control) == (None, None, None, None):
+            CommonUtil.ExecLog(sModuleInfo, "We support only 'Window', 'Name', 'ClassName', 'LocalizedControlType', 'AutomationId'", 3)
+            return "zeuz_failed"
+        if sibling and (sibling_name, sibling_class, sibling_automation, sibling_control) == (None, None, None, None):
+            CommonUtil.ExecLog(sModuleInfo, "We support only 'Window', 'Name', 'ClassName', 'LocalizedControlType', 'AutomationId'", 3)
+            return "zeuz_failed"
+
+        if parent and sibling:
+            all_elements = Sibling_search(
+                element_name, window_name, element_class, element_automation, element_control, element_index,
+                parent_name, parent_class, parent_automation, parent_control,
+                sibling_name, sibling_class, sibling_automation, sibling_control,
+            )
+        elif parent:
+            all_elements = Parent_search(
+                element_name, window_name, element_class, element_automation, element_control, element_index,
+                parent_name, parent_class, parent_automation, parent_control,
+            )
+        else:
+            all_elements = Element_only_search(
+                window_name, element_name, element_class, element_automation, element_control, element_index
+            )
         if all_elements == "zeuz_failed":
             CommonUtil.ExecLog(sModuleInfo, "No element found", 3)
             return "zeuz_failed"
         if -len(all_elements) <= element_index < len(all_elements):
-            # Todo: we need more logs here. check Locate Element
-            pass
+            CommonUtil.ExecLog(sModuleInfo, "Returning the element of index = %d" % element_index, 1)
         else:
             CommonUtil.ExecLog(sModuleInfo, "index out of range", 2)
             return "zeuz_failed"
-        patter_list = 0
+
         try:
             patter_list = Element.GetSupportedPatterns()
             if len(patter_list) == 0:
-                CommonUtil.ExecLog(
-                    sModuleInfo,
-                    "No Pattern was detected for this element.  However we did find the element",
-                    2,
-                )
+                CommonUtil.ExecLog(sModuleInfo, "No Pattern was detected for this element. However we did find the element", 2)
 
             else:
                 pattern_found = []
@@ -521,7 +552,7 @@ def Drag_and_Drop_Element(data_set):
 
     try:
         for left, mid, right in data_set:
-            if mid == "element parameter":
+            if mid.strip().lower() == "element parameter":
                 if left.strip().lower() == "name":
                     element_name.append(right)
 
@@ -988,7 +1019,7 @@ def Keystroke_For_Element(data_set):
             if left == "autoit":  # Todo: organize this one
                 autoit.send(right)
                 return "passed"
-            if "action" in mid:
+            if "action" in mid.lower():
                 if left == "keystroke keys":
                     keystroke_value = right.lower()  # Store keystroke
                 elif left == "keystroke chars":
