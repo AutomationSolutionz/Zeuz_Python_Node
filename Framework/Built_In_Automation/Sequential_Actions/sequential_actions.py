@@ -208,9 +208,7 @@ def Sequential_Actions(
         if common.verify_step_data(step_data) in failed_tag_list:
             return "zeuz_failed"  # Verify step data is in correct format
     except:
-        return CommonUtil.Exception_Handler(
-            sys.exc_info(), None, "Error during Sequential Actions startup"
-        )
+        return CommonUtil.Exception_Handler(sys.exc_info(), None, "Error during Sequential Actions startup")
 
     # Process step data
     # save the full step data in share variables
@@ -870,7 +868,7 @@ def Run_Sequential_Actions(
         data_set_list = []
     sModuleInfo = inspect.currentframe().f_code.co_name + " : " + MODULE_NAME
     try:
-        result = "zeuz_failed"  # Initialize result
+        result = "passed"  # Initialize result = passed so if all actions are disabled it passes
         skip = []  # List of data set numbers that have been processed, and need to be skipped, so they are not processed again
         skip_for_loop = []
 
@@ -878,9 +876,7 @@ def Run_Sequential_Actions(
         # test_action_info = sr.Get_Shared_Variables("test_action_info")
         test_action_info = sr.test_action_info
         if step_data in failed_tag_list:
-            CommonUtil.ExecLog(
-                sModuleInfo, "Internal Error: Step Data not set in shared variable", 3
-            )
+            CommonUtil.ExecLog(sModuleInfo, "Internal Error: Step Data not set in shared variable", 3)
             return "zeuz_failed", skip_for_loop
         if data_set_list == []:  # run the full step data
             for i in range(len(step_data)):
@@ -907,12 +903,6 @@ def Run_Sequential_Actions(
                 )
                 continue
             elif dataset_cnt in skip:
-                # CommonUtil.ExecLog(
-                #     "",
-                #     "\n********** Skipping %s, STEP-%s, ACTION-%d%s **********\n"
-                #     % (CommonUtil.current_tc_no, CommonUtil.current_step_no, dataset_cnt + 1, Action_name),
-                #     4,
-                # )
                 continue  # If this data set is in the skip list, do not process it
             else:
                 CommonUtil.ExecLog(
@@ -927,79 +917,42 @@ def Run_Sequential_Actions(
                 action_name = row[1]  # Get Sub-Field
 
                 # Don't process these suport items right now, but also don't fail
-                if (
-                    action_name.lower().strip() in action_support
-                    and "custom" not in action_name
-                ):
+                if action_name.lower().strip() in action_support and "custom" not in action_name:
                     continue
 
                 # If middle column == bypass action, store the data set for later use if needed
                 elif "bypass action" in action_name:
-                    CommonUtil.ExecLog(
-                        sModuleInfo,
-                        "Bypass action found, storing data set for later use",
-                        1,
-                    )
+                    CommonUtil.ExecLog(sModuleInfo, "Bypass action found, storing data set for later use", 1)
                     global bypass_data_set, bypass_row
-                    bypass_data_set.append(
-                        data_set
-                    )  # Save this data set - see "action" if block below for further processing
+                    bypass_data_set.append(data_set)  # Save this data set - see "action" if block below for further processing
                     bypass_row.append(row)
                     result = "passed"
 
                 # If middle column = action, call action handler, but always return a pass
                 elif "optional action" in action_name:
-                    CommonUtil.ExecLog(
-                        sModuleInfo,
-                        "Checking the optional action to be performed in the action row: %s"
-                        % str(row),
-                        0,
-                    )
-                    result = Action_Handler(
-                        data_set, row
-                    )  # Pass data set, and action_name to action handler
+                    result = Action_Handler(data_set, row)  # Pass data set, and action_name to action handler
                     if result == "zeuz_failed":
-                        CommonUtil.ExecLog(
-                            sModuleInfo,
-                            "Optional action failed. Returning pass anyway",
-                            2,
-                        )
+                        CommonUtil.ExecLog(sModuleInfo, "Optional action failed. Returning pass anyway", 2)
                     result = "passed"
 
                 # If middle column = conditional action, evaluate data set
                 elif "conditional action" in action_name or "if else" in action_name:
-                    if (
-                        action_name.lower().strip() != "conditional action"
-                        and action_name.lower().strip() != "if else"
-                    ):  # old style conditional action
-                        # CommonUtil.ExecLog(sModuleInfo,"Old style conditional action found", 1)
-
-                        result, to_skip = Conditional_Action_Handler(
-                            step_data, dataset_cnt
-                        )
+                    if action_name.lower().strip() != "conditional action" and action_name.lower().strip() != "if else":
+                        # old style conditional action
+                        result, to_skip = Conditional_Action_Handler(step_data, dataset_cnt)
                         skip += to_skip
                         skip_for_loop += to_skip
                         if result in failed_tag_list:
-                            CommonUtil.ExecLog(
-                                sModuleInfo,
-                                "Returned result from Conditional Action Failed",
-                                3,
-                            )
+                            CommonUtil.ExecLog(sModuleInfo, "Returned result from Conditional Action Failed", 3)
                             return result, skip_for_loop
                         break
 
                     else:
-                        result, to_skip = Handle_Conditional_Action(
-                            step_data, dataset_cnt
-                        )
+                        result, to_skip = Handle_Conditional_Action(step_data, dataset_cnt)
                         skip += to_skip
                         skip_for_loop += to_skip
                         if result in failed_tag_list:
-                            CommonUtil.ExecLog(
-                                sModuleInfo,
-                                "Returned result from Conditional Action Failed",
-                                3,
-                            )
+                            CommonUtil.ExecLog(sModuleInfo, "Returned result from Conditional Action Failed", 3)
                             return result, skip_for_loop
                         break
 
@@ -1018,36 +971,16 @@ def Run_Sequential_Actions(
                         skip = skip_for_loop
 
                         position_of_loop_action = dataset_cnt
-                        set_of_actions_after_loop = range(
-                            position_of_loop_action + 1, len(step_data)
-                        )  # Collecting actions following the first loop action
+                        set_of_actions_after_loop = range(position_of_loop_action + 1, len(step_data))  # Collecting actions following the first loop action
                         for follow_cnt in set_of_actions_after_loop:
                             for follow_row in step_data[follow_cnt]:
-                                if (
-                                    "loop action" in follow_row[1]
-                                ):  # Check if the action following the first loop in the set is a loop action
-                                    if (
-                                        str(follow_cnt + 1) in row[2]
-                                    ):  # Check if this loop is being called by the first loop. Done to avoid skipping actions of loops in the step that are located after and outside of the first loop.
-                                        for a in (
-                                            follow_row[2]
-                                            .strip(" nested ")
-                                            .strip(" - ")
-                                            .split(",")
-                                        ):
+                                if "loop action" in follow_row[1]:  # Check if the action following the first loop in the set is a loop action
+                                    if str(follow_cnt + 1) in row[2]:  # Check if this loop is being called by the first loop. Done to avoid skipping actions of loops in the step that are located after and outside of the first loop.
+                                        for a in follow_row[2].strip(" nested ").strip(" - ").split(","):
                                             skip.append(int(a) - 1)
-                                elif (
-                                    "conditional action" in follow_row[1]
-                                ):  # Check if the action following the first loop in the set is a conditional action
-                                    if (
-                                        str(follow_cnt + 1) in row[2]
-                                    ):  # Check if this conditional is being called by the first loop. Done to avoid skipping actions of conditional actions in the step that are located after and outside of the first loop.
-                                        for a in (
-                                            follow_row[2]
-                                            .strip(" nested ")
-                                            .strip(" - ")
-                                            .split(",")
-                                        ):
+                                elif "conditional action" in follow_row[1]:  # Check if the action following the first loop in the set is a conditional action
+                                    if str(follow_cnt + 1) in row[2]:  # Check if this conditional is being called by the first loop. Done to avoid skipping actions of conditional actions in the step that are located after and outside of the first loop.
+                                        for a in follow_row[2].strip(" nested ").strip(" - ").split(","):
                                             skip.append(int(a) - 1)
 
                         """
@@ -1073,15 +1006,10 @@ def Run_Sequential_Actions(
                 # Special custom functions can be executed in a specified file
                 elif "custom" in action_name:
                     CommonUtil.ExecLog(sModuleInfo, "Custom Action Start", 2)
-                    if (
-                        row[0].lower().strip() == "file"
-                    ):  # User specified file to run from (only needed once)
+                    if row[0].lower().strip() == "file":  # User specified file to run from (only needed once)
                         # Try to find the image file
                         custom_file_name = row[2].strip()
-                        if (
-                            custom_file_name not in file_attachment
-                            and os.path.exists(custom_file_name) == False
-                        ):
+                        if custom_file_name not in file_attachment and os.path.exists(custom_file_name) == False:
                             CommonUtil.ExecLog(
                                 sModuleInfo,
                                 "Could not find file attachment called %s, and could not find it locally"
@@ -1090,32 +1018,15 @@ def Run_Sequential_Actions(
                             )
                             return "zeuz_failed", skip_for_loop
                         if custom_file_name in file_attachment:
-                            custom_file_name = file_attachment[
-                                custom_file_name
-                            ]  # In file is an attachment, get the full path
-                        CommonUtil.ExecLog(
-                            sModuleInfo, "Custom file set to %s" % custom_file_name, 0
-                        )
+                            custom_file_name = file_attachment[custom_file_name]  # In file is an attachment, get the full path
 
                         # Import the module
                         from imp import load_source
 
                         try:
                             global custom_module  # Need to remember this value between Test Steps
-                            custom_mod_name = os.path.splitext(
-                                os.path.basename(custom_file_name)
-                            )[
-                                0
-                            ]  # Get module name by removing path and extension
-                            CommonUtil.ExecLog(
-                                sModuleInfo,
-                                "Importing %s from %s"
-                                % (custom_mod_name, custom_file_name),
-                                0,
-                            )
-                            custom_module = load_source(
-                                custom_mod_name, custom_file_name
-                            )  # Load module user specified
+                            custom_mod_name = os.path.splitext(os.path.basename(custom_file_name))[0]
+                            custom_module = load_source(custom_mod_name, custom_file_name)  # Load module user specified
                             CommonUtil.ExecLog(sModuleInfo, "Import successful", 1)
                             result = "passed"
                         except:
@@ -1127,51 +1038,23 @@ def Run_Sequential_Actions(
                             )
                             return "zeuz_failed", skip_for_loop
 
-                    elif (
-                        custom_module != ""
-                    ):  # If custom module is set, then we are good to use it
+                    elif custom_module != "":
+                        # If custom module is set, then we are good to use it
                         # User specified filename already and it's imported, so we can move ahead with executing functions
                         custom_var = ""
-                        custom_function = (
-                            row[0].strip().replace("()", "").replace(" ", "")
-                        )  # Function name, can't have brackets
+                        custom_function = row[0].strip().replace("()", "").replace(" ", "")  # Function name, can't have brackets
                         if "=" in custom_function:
-                            custom_var, custom_function = custom_function.split(
-                                "="
-                            )  # If shared variable name included with function, separate them
-                        custom_params = (
-                            row[2].strip().replace("'", "'")
-                        )  # Escape single quotes in the parameters
-                        CommonUtil.ExecLog(
-                            sModuleInfo,
-                            "Executing function: %s with parameters: %s"
-                            % (custom_function, custom_params),
-                            0,
-                        )
+                            custom_var, custom_function = custom_function.split("=")  # If shared variable name included with function, separate them
+                        custom_params = row[2].strip().replace("'", "'")   # Escape single quotes in the parameters
                         try:
                             custom_output = ""
-                            exec(
-                                "custom_output = custom_module.%s(%s)"
-                                % (custom_function, custom_params)
-                            )  # Execute the function from the custom module
+                            exec("custom_output = custom_module.%s(%s)" % (custom_function, custom_params))   # Execute the function from the custom module
                             if custom_output != "":
-                                sr.Set_Shared_Variables(
-                                    custom_var, custom_output
-                                )  # Save output to user specified shared variable name
-                            CommonUtil.ExecLog(
-                                sModuleInfo,
-                                "Function executed successfully: %s"
-                                % str(custom_output),
-                                1,
-                            )
+                                sr.Set_Shared_Variables(custom_var, custom_output)  # Save output to user specified shared variable name
+                            CommonUtil.ExecLog(sModuleInfo, "Function executed successfully: %s" % str(custom_output), 1)
                             result = "passed"
                         except Exception as e:
-                            CommonUtil.ExecLog(
-                                sModuleInfo,
-                                "Failed to execute function %s from the custom module: %s"
-                                % (custom_module, e),
-                                3,
-                            )
+                            CommonUtil.ExecLog(sModuleInfo, "Failed to execute function %s from the custom module: %s" % (custom_module, e), 3)
                             return "zeuz_failed", skip_for_loop
 
                     else:  # Function executed but user didn't specify the file to import
@@ -1183,96 +1066,43 @@ def Run_Sequential_Actions(
                         return "zeuz_failed", skip_for_loop
 
                 # If middle column = action, call action handler
-                elif (
-                    "action" in action_name
-                ):  # Must be last, since it's a single word that also exists in other action types
-                    CommonUtil.ExecLog(
-                        sModuleInfo,
-                        "Checking the action to be performed in the action row: %s"
-                        % str(row),
-                        0,
-                    )
-                    result = Action_Handler(
-                        data_set, row
-                    )  # Pass data set, and action_name to action handler
+                elif "action" in action_name:  # Must be last, since it's a single word that also exists in other action types
+                    result = Action_Handler(data_set, row)  # Pass data set, and action_name to action handler
                     if row[0].lower().strip() == "step exit":
-                        CommonUtil.ExecLog(
-                            sModuleInfo, "Step Exit called. Stopping Test Step.", 1
-                        )
+                        CommonUtil.ExecLog(sModuleInfo, "Step Exit called. Stopping Test Step.", 1)
                         skip_all = [i for i in range(len(step_data))]
                         return result, skip_all
 
                     # Check if user wants to store the result for later use
                     stored = False
                     for r in data_set:
-                        if (
-                            r[0].lower().strip() == "store"
-                            and r[1].lower().strip() == "result"
-                        ):  # If Field = store and Sub-Field = result
-                            CommonUtil.ExecLog(
-                                sModuleInfo,
-                                "Storing result for later use. Will not exit if action failed: %s"
-                                % result,
-                                1,
-                            )
-                            sr.Set_Shared_Variables(
-                                r[2].strip(), result
-                            )  # Use the Value as the shared variable name, and save the result
+                        if r[0].lower().strip() == "store" and r[1].lower().strip() == "result":  # If Field = store and Sub-Field = result
+                            CommonUtil.ExecLog(sModuleInfo, "Storing result for later use. Will not exit if action failed: %s" % result, 1)
+                            sr.Set_Shared_Variables(r[2].strip(), result)  # Use the Value as the shared variable name, and save the result
                             stored = True  # In the case of a failed result, skip the return that comes after this
 
                     # Check result of action handler and use bypass action if specified
                     if stored == False and result in failed_tag_list:
-                        if (
-                            bypass_data_set != []
-                        ):  # User specified a bypass action, so let's try it before we fail
-                            action_module = [
-                                x for x in loaded_modules if str(x) in str(row[1])
-                            ]  # Save module for the original action
+                        if (bypass_data_set != []):  # User specified a bypass action, so let's try it before we fail
+                            action_module = [x for x in loaded_modules if str(x) in str(row[1])]  # Save module for the original action
                             for i in range(len(bypass_data_set)):
-                                bypass_module = [
-                                    x
-                                    for x in loaded_modules
-                                    if str(x) in str(bypass_row[i][1])
-                                ]  # Save module for the bypass action
+                                bypass_module = [x for x in loaded_modules if str(x) in str(bypass_row[i][1])]  # Save module for the bypass action
                                 if action_module != bypass_module:
-                                    CommonUtil.ExecLog(
-                                        sModuleInfo,
-                                        "Skipping bypass #%d because it's not the same module"
-                                        % (i + 1),
-                                        1,
-                                    )
+                                    CommonUtil.ExecLog(sModuleInfo, "Skipping bypass #%d because it's not the same module" % (i + 1), 1)
                                     continue
 
-                                CommonUtil.ExecLog(
-                                    sModuleInfo,
-                                    "Action failed. Trying bypass #%d" % (i + 1),
-                                    1,
-                                )
-                                result = Action_Handler(
-                                    bypass_data_set[i], bypass_row[i]
-                                )
-                                if (
-                                    result in failed_tag_list
-                                ):  # This also failed, so chances are first failure was real
+                                CommonUtil.ExecLog(sModuleInfo, "Action failed. Trying bypass #%d" % (i + 1), 1)
+                                result = Action_Handler(bypass_data_set[i], bypass_row[i])
+                                if result in failed_tag_list:  # This also failed, so chances are first failure was real
                                     continue  # Try the next bypass, if any
                                 else:  # Bypass passed, which indicates there was something blocking the element in the first place
-                                    CommonUtil.ExecLog(
-                                        sModuleInfo,
-                                        "Bypass passed. Retrying original action",
-                                        1,
-                                    )
-                                    result = Action_Handler(
-                                        data_set, row
-                                    )  # Retry failed original data set
-                                    if (
-                                        result in failed_tag_list
-                                    ):  # Still a failure, give up
+                                    CommonUtil.ExecLog(sModuleInfo, "Bypass passed. Retrying original action", 1)
+                                    result = Action_Handler(data_set, row)  # Retry failed original data set
+                                    if result in failed_tag_list:  # Still a failure, give up
                                         return "zeuz_failed", skip_for_loop
                                     break  # No need to process more bypasses
                             if result in failed_tag_list:  # All bypass actions failed
-                                CommonUtil.ExecLog(
-                                    sModuleInfo, "All bypass actions failed", 3
-                                )
+                                CommonUtil.ExecLog(sModuleInfo, "All bypass actions failed", 3)
                                 return "zeuz_failed", skip_for_loop
                         else:  # Yup, it's a failure, and no bypass specified
                             return "zeuz_failed", skip_for_loop
