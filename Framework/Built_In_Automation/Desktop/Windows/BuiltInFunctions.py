@@ -156,11 +156,11 @@ def Right_Click_Element(data_set):
             CommonUtil.ExecLog(sModuleInfo, "Could not find element", 3)
             return "zeuz_failed"
 
-        x = (int)(
+        x = int(
             Element.Current.BoundingRectangle.Right
             - Element.Current.BoundingRectangle.Width / 2
         )
-        y = (int)(
+        y = int(
             Element.Current.BoundingRectangle.Bottom
             - Element.Current.BoundingRectangle.Height / 2
         )
@@ -300,6 +300,90 @@ def _child_search(
         return []
 
 
+@logger
+def Get_Element(data_set):
+    """ Insert text """
+
+    sModuleInfo = inspect.currentframe().f_code.co_name + " : " + MODULE_NAME
+
+    element_name = None
+    window_name = None
+    element_class = None
+    automationid = None
+    control_type = None
+    wait_time = 15
+    global element_index
+    element_index = 0
+    # parse dataset and read data
+    try:
+        for left, mid, right in data_set:
+            left = left.strip().lower()
+            if mid == "element parameter":
+                if "classname" in left:
+                    element_class = [right, _count_star(left)]
+                elif "window" in left:
+                    window_name = [right, _count_star(left)]
+                elif "name" in left:
+                    element_name = [right, _count_star(left)]
+                elif "automation" in left:  # automationid
+                    automationid = [right, _count_star(left)]
+                elif "control" in left:    # localizedcontroltype
+                    control_type = [right, _count_star(left)]
+
+                elif left == "wait time":
+                    wait_time = int(right)
+                elif left == "index":
+                    element_index = int(right.strip())
+
+        if (element_name, element_class, automationid, control_type) == (None, None, None, None):
+            CommonUtil.ExecLog(sModuleInfo, "No element info is given", 3)
+            return "zeuz_failed"
+        # Get element object
+        all_elements = Element_only_search(
+            window_name,
+            element_name,
+            element_class,
+            automationid,
+            control_type,
+        )
+        if all_elements == "zeuz_failed":
+            CommonUtil.ExecLog(sModuleInfo, "No element found", 3)
+            return "zeuz_failed"
+        if -len(all_elements) <= element_index < len(all_elements):
+            # Todo: we need more logs here. check Locate Element
+            pass
+        else:
+            CommonUtil.ExecLog(sModuleInfo, "index out of range", 2)
+            return "zeuz_failed"
+        patter_list = 0
+        try:
+            patter_list = Element.GetSupportedPatterns()
+            if len(patter_list) == 0:
+                CommonUtil.ExecLog(
+                    sModuleInfo,
+                    "No Pattern was detected for this element.  However we did find the element",
+                    2,
+                )
+
+            else:
+                pattern_found = []
+                for each in patter_list:
+                    try:
+                        pattern_name = Automation.PatternName(each)
+                        pattern_found.append(pattern_name)
+                    except:
+                        pass
+
+                CommonUtil.ExecLog(sModuleInfo, "Following patterns were found: %s" % pattern_found, 1)
+        except:
+            pass
+
+        return all_elements[element_index]
+    except Exception:
+        errMsg = "Could not get your element."
+        return CommonUtil.Exception_Handler(sys.exc_info(), None, errMsg)
+
+
 def _get_main_window(WindowName):
     try:
         if WindowName is None:  # if window name is not specified in dataset
@@ -331,11 +415,11 @@ def Click_Element_None_Mouse(Element, Expand=True):
             # x = int (Element.Current.BoundingRectangle.X)
             # y = int (Element.Current.BoundingRectangle.Y)
             CommonUtil.ExecLog(sModuleInfo, "We did not find any pattern for this object, so we will click by mouse with location", 1)
-            x = (int)(
+            x = int(
                 Element.Current.BoundingRectangle.Right
                 - Element.Current.BoundingRectangle.Width / 2
             )
-            y = (int)(
+            y = int(
                 Element.Current.BoundingRectangle.Bottom
                 - Element.Current.BoundingRectangle.Height / 2
             )
@@ -407,11 +491,11 @@ def Click_Element_None_Mouse(Element, Expand=True):
                         "We did not find any pattern for this object, so we will click by mouse with location",
                         1,
                     )
-                    x = (int)(
+                    x = int(
                         Element.Current.BoundingRectangle.Right
                         - Element.Current.BoundingRectangle.Width / 2
                     )
-                    y = (int)(
+                    y = int(
                         Element.Current.BoundingRectangle.Bottom
                         - Element.Current.BoundingRectangle.Height / 2
                     )
@@ -498,20 +582,20 @@ def Drag_Object(Element1_source, Element2_destination):
         print("clicking your element")
         print(Element1_source, Element2_destination)
 
-        x_source = (int)(
+        x_source = int(
             Element1_source.Current.BoundingRectangle.Right
             - Element1_source.Current.BoundingRectangle.Width / 2
         )
-        y_source = (int)(
+        y_source = int(
             Element1_source.Current.BoundingRectangle.Bottom
             - Element1_source.Current.BoundingRectangle.Height / 2
         )
 
-        x_destination = (int)(
+        x_destination = int(
             Element2_destination.Current.BoundingRectangle.Right
             - Element2_destination.Current.BoundingRectangle.Width / 2
         )
-        y_destination = (int)(
+        y_destination = int(
             Element2_destination.Current.BoundingRectangle.Bottom
             - Element2_destination.Current.BoundingRectangle.Height / 2
         )
@@ -548,11 +632,11 @@ def Double_Click_Element(data_set):
         if Element == "zeuz_failed":
             CommonUtil.ExecLog(sModuleInfo, "Could not find element", 3)
             return "zeuz_failed"
-        x = (int)(
+        x = int(
             Element.Current.BoundingRectangle.Right
             - Element.Current.BoundingRectangle.Width / 2
         )
-        y = (int)(
+        y = int(
             Element.Current.BoundingRectangle.Bottom
             - Element.Current.BoundingRectangle.Height / 2
         )
@@ -587,11 +671,11 @@ def Hover_Over_Element(data_set):
         if Element == "zeuz_failed":
             CommonUtil.ExecLog(sModuleInfo, "Could not find element", 3)
             return "zeuz_failed"
-        x = (int)(
+        x = int(
             Element.Current.BoundingRectangle.Right
             - Element.Current.BoundingRectangle.Width / 2
         )
-        y = (int)(
+        y = int(
             Element.Current.BoundingRectangle.Bottom
             - Element.Current.BoundingRectangle.Height / 2
         )
@@ -763,11 +847,11 @@ def Enter_Text_In_Text_Box(data_set):
             return "zeuz_failed"
 
         if keystroke:
-            x = (int)(
+            x = int(
                 Element.Current.BoundingRectangle.Right
                 - Element.Current.BoundingRectangle.Width / 2
             )
-            y = (int)(
+            y = int(
                 Element.Current.BoundingRectangle.Bottom
                 - Element.Current.BoundingRectangle.Height / 2
             )
@@ -817,11 +901,11 @@ def Scroll(data_set):
         if Element == "zeuz_failed":
             CommonUtil.ExecLog(sModuleInfo, "Could not find element", 3)
             return "zeuz_failed"
-        x = (int)(
+        x = int(
             Element.Current.BoundingRectangle.Right
             - Element.Current.BoundingRectangle.Width / 2
         )
-        y = (int)(
+        y = int(
             Element.Current.BoundingRectangle.Bottom
             - Element.Current.BoundingRectangle.Height / 2
         )
@@ -840,90 +924,6 @@ def _count_star(value):
             count += 1
         else:
             return "*"*count
-
-
-@logger
-def Get_Element(data_set):
-    """ Insert text """
-
-    sModuleInfo = inspect.currentframe().f_code.co_name + " : " + MODULE_NAME
-
-    element_name = None
-    window_name = None
-    element_class = None
-    automationid = None
-    control_type = None
-    wait_time = 15
-    global element_index
-    element_index = 0
-    # parse dataset and read data
-    try:
-        for left, mid, right in data_set:
-            left = left.strip().lower()
-            if mid == "element parameter":
-                if "classname" in left:
-                    element_class = [right, _count_star(left)]
-                elif "window" in left:
-                    window_name = [right, _count_star(left)]
-                elif "name" in left:
-                    element_name = [right, _count_star(left)]
-                elif "automation" in left:  # automationid
-                    automationid = [right, _count_star(left)]
-                elif "control" in left:    # localizedcontroltype
-                    control_type = [right, _count_star(left)]
-
-                elif left == "wait time":
-                    wait_time = int(right)
-                elif left == "index":
-                    element_index = int(right.strip())
-
-        if (element_name, element_class, automationid, control_type) == (None, None, None, None):
-            CommonUtil.ExecLog(sModuleInfo, "No element info is given", 3)
-            return "zeuz_failed"
-        # Get element object
-        all_elements = Element_only_search(
-            window_name,
-            element_name,
-            element_class,
-            automationid,
-            control_type,
-        )
-        if all_elements == "zeuz_failed":
-            CommonUtil.ExecLog(sModuleInfo, "No element found", 3)
-            return "zeuz_failed"
-        if -len(all_elements) <= element_index < len(all_elements):
-            # Todo: we need more logs here. check Locate Element
-            pass
-        else:
-            CommonUtil.ExecLog(sModuleInfo, "index out of range", 2)
-            return "zeuz_failed"
-        patter_list = 0
-        try:
-            patter_list = Element.GetSupportedPatterns()
-            if len(patter_list) == 0:
-                CommonUtil.ExecLog(
-                    sModuleInfo,
-                    "No Pattern was detected for this element.  However we did find the element",
-                    2,
-                )
-
-            else:
-                pattern_found = []
-                for each in patter_list:
-                    try:
-                        pattern_name = Automation.PatternName(each)
-                        pattern_found.append(pattern_name)
-                    except:
-                        pass
-
-                CommonUtil.ExecLog(sModuleInfo, "Following patterns were found: %s" % pattern_found, 1)
-        except:
-            pass
-
-        return all_elements[element_index]
-    except Exception:
-        errMsg = "Could not get your element."
-        return CommonUtil.Exception_Handler(sys.exc_info(), None, errMsg)
 
 
 @logger
