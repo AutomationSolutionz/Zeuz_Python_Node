@@ -204,8 +204,6 @@ def Element_only_search(
 ):
     # max_time is built in wait function.  It will try every seconds 15 times.
     try:
-        global element_count
-        element_count = -1
         ParentElement = _get_main_window(window_name)
         if ParentElement is None:
             return "zeuz_failed"
@@ -303,8 +301,6 @@ def Parent_search(
     parent_name, parent_class, parent_automation, parent_control,
 ):
     try:
-        global element_count
-        element_count = -1
         ParentElement = _get_main_window(window_name)
         if ParentElement is None:
             return "zeuz_failed"
@@ -374,12 +370,38 @@ def _child_search_with_parent(
 
 
 @logger
-def Sibling_search(data_set):
-    pass
+def Sibling_search(
+    element_name, window_name, element_class, element_automation, element_control, element_index,
+    parent_name, parent_class, parent_automation, parent_control,
+    sibling_name, sibling_class, sibling_automation, sibling_control,
+):
+    try:
+        ParentElement = _get_main_window(window_name)
+        if ParentElement is None:
+            return "zeuz_failed"
 
-def _child_search_with_parent(
+        all_elements = []
+        all_elements += _child_search_with_parent_sibling(
+            ParentElement, element_name, element_class, element_automation, element_control, element_index,
+            parent_name, parent_class, parent_automation, parent_control,
+            sibling_name, sibling_class, sibling_automation, sibling_control, False
+        )
+
+        if all_elements:
+            return all_elements
+        else:
+            return "zeuz_failed"
+
+    except:
+        return CommonUtil.Exception_Handler(sys.exc_info())
+
+
+sibling_found = False
+@logger
+def _child_search_with_parent_sibling(
     ParentElement, element_name, element_class, element_automation, element_control, element_index,
-    parent_name, parent_class, parent_automation, parent_control, parent_found
+    parent_name, parent_class, parent_automation, parent_control,
+    sibling_name, sibling_class, sibling_automation, sibling_control, parent_found
 ):
     try:
         NameE = ParentElement.Current.Name
@@ -388,6 +410,8 @@ def _child_search_with_parent(
         LocalizedControlTypeE = ParentElement.Current.LocalizedControlType
 
         all_elements = []
+        parent_level = False
+        global sibling_found
         if not parent_found:
             found = True
             if found and element_name is not None and not _found(parent_name, NameE): found = False
@@ -395,8 +419,16 @@ def _child_search_with_parent(
             if found and element_automation is not None and not _found(parent_automation, AutomationE): found = False
             if found and element_control is not None and not _found(parent_control, LocalizedControlTypeE): found = False
             parent_found = found
+            parent_level = found
 
         else:
+            found = True
+            if found and element_name is not None and not _found(sibling_name, NameE): found = False
+            if found and element_class is not None and not _found(sibling_class, ClassE): found = False
+            if found and element_automation is not None and not _found(sibling_automation, AutomationE): found = False
+            if found and element_control is not None and not _found(sibling_control, LocalizedControlTypeE): found = False
+            sibling_found = True if sibling_found else found
+
             found = True
             if found and element_name is not None and not _found(element_name, NameE): found = False
             if found and element_class is not None and not _found(element_class, ClassE): found = False
@@ -412,12 +444,19 @@ def _child_search_with_parent(
             return all_elements
 
         for each_child in child_elements:
-            all_elements += _child_search_with_parent(
+            temp = _child_search_with_parent_sibling(
                 each_child, element_name, element_class, element_automation, element_control, element_index,
-                parent_name, parent_class, parent_automation, parent_control, parent_found
+                parent_name, parent_class, parent_automation, parent_control,
+                sibling_name, sibling_class, sibling_automation, sibling_control, parent_found
             )
+            if not parent_level:
+                all_elements += temp
+            elif parent_level and sibling_found:
+                all_elements += temp
             if 0 <= element_index == len(all_elements) - 1:
                 return all_elements
+        if parent_level:
+            sibling_found = False
 
         return all_elements
 
