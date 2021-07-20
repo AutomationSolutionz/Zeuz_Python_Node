@@ -487,21 +487,21 @@ def Get_Element(data_set):
 
             if mid == "element parameter":
                 elem = True
-                if "classname" in left: element_class = [right, _count_star(left)]
+                if "class" in left: element_class = [right, _count_star(left)]
                 elif "name" in left: element_name = [right, _count_star(left)]
                 elif "automation" in left: element_automation = [right, _count_star(left)]  # automationid
                 elif "control" in left: element_control = [right, _count_star(left)]    # localizedcontroltype
 
             elif mid == "parent parameter":
                 parent = True
-                if "classname" in left: parent_class = [right, _count_star(left)]
+                if "class" in left: parent_class = [right, _count_star(left)]
                 elif "name" in left: parent_name = [right, _count_star(left)]
                 elif "automation" in left: parent_automation = [right, _count_star(left)]  # automationid
                 elif "control" in left: parent_control = [right, _count_star(left)]    # localizedcontroltype
 
             elif mid == "sibling parameter":
                 sibling = True
-                if "classname" in left: sibling_class = [right, _count_star(left)]
+                if "class" in left: sibling_class = [right, _count_star(left)]
                 elif "name" in left: sibling_name = [right, _count_star(left)]
                 elif "automation" in left: sibling_automation = [right, _count_star(left)]  # automationid
                 elif "control" in left: sibling_control = [right, _count_star(left)]    # localizedcontroltype
