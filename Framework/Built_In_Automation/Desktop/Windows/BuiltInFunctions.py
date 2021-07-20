@@ -397,7 +397,6 @@ def Sibling_search(
 
 
 sibling_found = False
-@logger
 def _child_search_with_parent_sibling(
     ParentElement, element_name, element_class, element_automation, element_control, element_index,
     parent_name, parent_class, parent_automation, parent_control,
