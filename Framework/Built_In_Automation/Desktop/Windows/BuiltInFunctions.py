@@ -61,12 +61,12 @@ common_sleep = 0
 @logger
 def go_to_desktop(data_set):
     sModuleInfo = inspect.currentframe().f_code.co_name + " : " + MODULE_NAME
-    Element = Element_only_search("", "Show desktop", "TrayShowDesktopButtonWClass")  # Todo: This line should generate bug so fix it.
+    Element = Element_only_search(None, ["Show desktop", ""], ["TrayShowDesktopButtonWClass", ""], None, None, 0)[0]
     if Element == "zeuz_failed":
         CommonUtil.ExecLog(sModuleInfo, "Could not find element", 3)
         return "zeuz_failed"
     try:
-        result = Click_Element_None_Mouse(Element, None, True, None, None)
+        result = Click_Element_None_Mouse(Element)
         if result == "zeuz_failed":
             CommonUtil.ExecLog(sModuleInfo, "Could not click element", 3)
             return "zeuz_failed"
