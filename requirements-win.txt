@@ -10,6 +10,7 @@ uiautomator
 requests
 wheel
 pyautogui
+opencv-python
 lxml
 SpeechRecognition
 colorama
