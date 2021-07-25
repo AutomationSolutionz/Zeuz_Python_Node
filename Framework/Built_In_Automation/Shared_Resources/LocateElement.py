@@ -941,7 +941,6 @@ def _pyautogui(step_data_set):
     import pyautogui, os.path, re
 
     sModuleInfo = inspect.currentframe().f_code.co_name + " : " + MODULE_NAME
-    CommonUtil.ExecLog(sModuleInfo, "Function Start", 0)
 
     # Recall file attachment, if not already set
     file_attachment = []
@@ -958,20 +957,11 @@ def _pyautogui(step_data_set):
         for row in step_data_set:
             if row[1] == "element parameter":  # Find element line
                 file_name = row[2]  # Save Value as the filename
-                resolution = row[
-                    0
-                ]  # Save the resolution of the source of the image, if provided
-            if row[1] in (
-                "child parameter",
-                "parent parameter",
-            ):  # Find a related image, that we'll use as a reference point
+                resolution = row[0]  # Save the resolution of the source of the image, if provided
+            if row[1] in ("child parameter", "parent parameter"):  # Find a related image, that we'll use as a reference point
                 file_name_parent = row[2]  # Save Value as the filename
-                direction = (
-                    row[0].lower().strip()
-                )  # Save Field as a possible distance or index
-            elif (
-                row[1] == "action" and file_name == ""
-            ):  # Alternative method, there is no element parameter, so filename is expected on the action line
+                direction = row[0].lower().strip()  # Save Field as a possible distance or index
+            elif row[1] == "action" and file_name == "":  # Alternative method, there is no element parameter, so filename is expected on the action line
                 file_name = Path(row[2])  # Save Value as the filename
 
         # Check that we have some value
@@ -979,35 +969,26 @@ def _pyautogui(step_data_set):
             return "zeuz_failed"
 
         # Try to find the image file
-        if file_name not in file_attachment and os.path.exists(file_name) == False:
+        if file_name not in file_attachment and not os.path.exists(file_name):
             CommonUtil.ExecLog(
                 sModuleInfo,
-                "Could not find file attachment called %s, and could not find it locally"
-                % file_name,
+                "Could not find file attachment called %s, and could not find it locally" % file_name,
                 3,
             )
             return "zeuz_failed"
         if file_name in file_attachment:
-            file_name = file_attachment[
-                file_name
-            ]  # In file is an attachment, get the full path
+            file_name = file_attachment[file_name]  # In file is an attachment, get the full path
 
         if file_name_parent != "":
-            if (
-                file_name_parent not in file_attachment
-                and os.path.exists(file_name_parent) == False
-            ):
+            if file_name_parent not in file_attachment and not os.path.exists(file_name_parent):
                 CommonUtil.ExecLog(
                     sModuleInfo,
-                    "Could not find file attachment called %s, and could not find it locally"
-                    % file_name_parent,
+                    "Could not find file attachment called %s, and could not find it locally" % file_name_parent,
                     3,
                 )
                 return "zeuz_failed"
             if file_name_parent in file_attachment:
-                file_name_parent = file_attachment[
-                    file_name_parent
-                ]  # In file is an attachment, get the full path
+                file_name_parent = file_attachment[file_name_parent]  # In file is an attachment, get the full path
 
         # Now file_name should have a directory/file pointing to the correct image
 
@@ -1017,62 +998,32 @@ def _pyautogui(step_data_set):
             file_name_parent = file_name_parent.encode("ascii")
 
     except:
-        return CommonUtil.Exception_Handler(
-            sys.exc_info(), None, "Error parsing data set"
-        )
+        return CommonUtil.Exception_Handler(sys.exc_info(), None, "Error parsing data set")
 
     # Parse direction (physical direction, index or nothing)
-    if (
-        direction != "all"
-    ):  # If a reference image was specified (direction would be set to a different value)
+    if direction != "all":  # If a reference image was specified (direction would be set to a different value)
         try:
-            if direction in (
-                "left",
-                "right",
-                "up",
-                "down",
-            ):  # User specified a direction to look for the element
-                CommonUtil.ExecLog(
-                    sModuleInfo, "Reference provided direction is %s" % direction, 0
-                )
+            if direction in ("left", "right", "up", "down"):  # User specified a direction to look for the element
                 pass
             else:
                 try:
-                    direction = int(
-                        direction
-                    )  # Test if it's a number, if so, format it properly
+                    direction = int(direction)  # Test if it's a number, if so, format it properly
                     index = True
-                    CommonUtil.ExecLog(
-                        sModuleInfo, "Reference provided index is %d" % direction, 0
-                    )
                     direction -= 1  #  Offset by one, because user will set first element as one, but in the array it's element zero
                 except:  # Not a number
                     direction = "all"  # Default to search all directions equally (find the closest image alement to the reference)
-                    CommonUtil.ExecLog(
-                        sModuleInfo, "Reference provided direction is %s" % direction, 0
-                    )
         except:
-            return CommonUtil.Exception_Handler(
-                sys.exc_info(), None, "Error parsing direction"
-            )
+            return CommonUtil.Exception_Handler(sys.exc_info(), None, "Error parsing direction")
 
     # Find element information
     try:
         # Scale image if required
-        regex = re.compile(
-            r"(\d+)\s*x\s*(\d+)", re.IGNORECASE
-        )  # Create regex object with expression
-        match = regex.search(
-            file_name
-        )  # Search for resolution within filename (this is the resolution of the screen the image was captured on)
-        if (
-            match == None and resolution != ""
-        ):  # If resolution not in filename, try to find it in the step data
-            match = regex.search(
-                resolution
-            )  # Search for resolution within the Field of the element paramter row (this is the resolution of the screen the image was captured on)
+        regex = re.compile(r"(\d+)\s*x\s*(\d+)", re.IGNORECASE)  # Create regex object with expression
+        match = regex.search(file_name)  # Search for resolution within filename (this is the resolution of the screen the image was captured on)
+        if match is None and resolution != "":  # If resolution not in filename, try to find it in the step data
+            match = regex.search(resolution)  # Search for resolution within the Field of the element paramter row (this is the resolution of the screen the image was captured on)
 
-        if match != None:  # Match found, so scale
+        if match is not None:  # Match found, so scale
             CommonUtil.ExecLog(sModuleInfo, "Scaling image (%s)" % match.group(0), 0)
             size_w, size_h = (
                 int(match.group(1)),
@@ -1080,11 +1031,7 @@ def _pyautogui(step_data_set):
             )  # Extract width, height from match (is screen resolution of desktop image was taken on)
             file_name = _scale_image(file_name, size_w, size_h)  # Scale image element
             if file_name_parent != "":
-                file_name_parent = _scale_image(
-                    file_name_parent, size_w, size_h
-                )  # Scale parent image element
-        else:
-            CommonUtil.ExecLog(sModuleInfo, "Not scaling image", 0)
+                file_name_parent = _scale_image(file_name_parent, size_w, size_h)  # Scale parent image element
 
         # Find image on screen (file_name here is either an actual directory/file or a PIL image object after scaling)
         start = time.time()
@@ -1144,9 +1091,7 @@ def _pyautogui(step_data_set):
                 try:
                     element = tuple(element)[direction]
                 except:
-                    return CommonUtil.Exception_Handler(
-                        sys.exc_info(), None, "Provided index number is invalid"
-                    )
+                    return CommonUtil.Exception_Handler(sys.exc_info(), None, "Provided index number is invalid")
 
             # User provided a direction, or no indication, so try to find the element based on that
             else:
@@ -1158,76 +1103,41 @@ def _pyautogui(step_data_set):
 
                     # Remove negavite values, depending on direction. This allows us to favour a certain direction by keeping the original number
                     if direction == "all":
-                        distance_new[0] = abs(
-                            distance_new[0]
-                        )  # Remove negative sign for x
-                        distance_new[1] = abs(
-                            distance_new[1]
-                        )  # Remove negative sign for y
+                        distance_new[0] = abs(distance_new[0])  # Remove negative sign for x
+                        distance_new[1] = abs(distance_new[1])  # Remove negative sign for y
                     elif direction in ("up", "down"):
-                        distance_new[0] = abs(
-                            distance_new[0]
-                        )  # Remove negative sign for x - we don't care about that direction
+                        distance_new[0] = abs(distance_new[0])  # Remove negative sign for x - we don't care about that direction
                     elif direction in ("left", "right"):
-                        distance_new[1] = abs(
-                            distance_new[1]
-                        )  # Remove negative sign for y - we don't care about that direction
+                        distance_new[1] = abs(distance_new[1])  # Remove negative sign for y - we don't care about that direction
 
                     # Compare distances
-                    if (
-                        element_result == []
-                    ):  # First run, just save this as the closest match
+                    if element_result == []:  # First run, just save this as the closest match
                         element_result = e
-                        distance_best = list(
-                            distance_new
-                        )  # Very important! - this must be saved with the list(), because python will make distance_best a pointer to distance_new without it, thus screwing up what we are trying to do. Thanks Python.
+                        distance_best = list(distance_new)  # Very important! - this must be saved with the list(), because python will make distance_best a pointer to distance_new without it, thus screwing up what we are trying to do. Thanks Python.
                     else:  # Subsequent runs, compare distances
-                        if direction == "all" and (
-                            distance_new[0] < distance_best[0]
-                            or distance_new[1] < distance_best[1]
-                        ):  # If horozontal or vertical is closer than our best/closest distance that we've found thus far
+                        if direction == "all" and (distance_new[0] < distance_best[0] or distance_new[1] < distance_best[1]):  # If horozontal or vertical is closer than our best/closest distance that we've found thus far
+                            element_result = e  # Save this element as the best match
+                            distance_best = list(distance_new)  # Save the distance for further comparison
+                        elif direction == "up" and (distance_new[0] < distance_best[0] or distance_new[1] > distance_best[1]):  # Favour Y direction up
                             element_result = e  # Save this element as the best match
                             distance_best = list(
                                 distance_new
                             )  # Save the distance for further comparison
-                        elif direction == "up" and (
-                            distance_new[0] < distance_best[0]
-                            or distance_new[1] > distance_best[1]
-                        ):  # Favour Y direction up
+                        elif direction == "down" and (distance_new[0] < distance_best[0] or distance_new[1] < distance_best[1]):  # Favour Y direction down
                             element_result = e  # Save this element as the best match
-                            distance_best = list(
-                                distance_new
-                            )  # Save the distance for further comparison
-                        elif direction == "down" and (
-                            distance_new[0] < distance_best[0]
-                            or distance_new[1] < distance_best[1]
-                        ):  # Favour Y direction down
+                            distance_best = list(distance_new)  # Save the distance for further comparison
+                        elif direction == "left" and (distance_new[0] > distance_best[0] or distance_new[1] < distance_best[1]):  # Favour X direction left
                             element_result = e  # Save this element as the best match
-                            distance_best = list(
-                                distance_new
-                            )  # Save the distance for further comparison
-                        elif direction == "left" and (
-                            distance_new[0] > distance_best[0]
-                            or distance_new[1] < distance_best[1]
-                        ):  # Favour X direction left
+                            distance_best = list(distance_new)  # Save the distance for further comparison
+                        elif direction == "right" and (distance_new[0] < distance_best[0] or distance_new[1] < distance_best[1]):  # Favour X direction right
                             element_result = e  # Save this element as the best match
-                            distance_best = list(
-                                distance_new
-                            )  # Save the distance for further comparison
-                        elif direction == "right" and (
-                            distance_new[0] < distance_best[0]
-                            or distance_new[1] < distance_best[1]
-                        ):  # Favour X direction right
-                            element_result = e  # Save this element as the best match
-                            distance_best = list(
-                                distance_new
-                            )  # Save the distance for further comparison
+                            distance_best = list(distance_new)  # Save the distance for further comparison
 
                 # Whether there is one or more matches, we now have the closest image to our reference, so save the result in the common variable
                 element = element_result
 
         # Check result
-        if element == None or element in failed_tag_list or element == "":
+        if element is None or element in failed_tag_list or element == "":
             return "zeuz_failed"
         else:
             return element
@@ -1257,21 +1167,11 @@ def _scale_image(file_name, size_w, size_h):
         image_w, image_h = file_name.size  # Read the image element's actual size
 
         # Calculate new image size
-        if (
-            size_w > screen_w
-        ):  # Make sure we create the scaling ratio in the proper direction
-            ratio = Decimal(size_w) / Decimal(
-                screen_w
-            )  # Get ratio (assume same for height)
+        if size_w > screen_w:  # Make sure we create the scaling ratio in the proper direction
+            ratio = Decimal(size_w) / Decimal(screen_w)  # Get ratio (assume same for height)
         else:
-            ratio = Decimal(screen_w) / Decimal(
-                size_w
-            )  # Get ratio (assume same for height)
-        CommonUtil.ExecLog(sModuleInfo, "Scaling ratio %s" % ratio, 0)
-        size = (
-            int(image_w * ratio),
-            int(image_h * ratio),
-        )  # Calculate new resolution of image element
+            ratio = Decimal(screen_w) / Decimal(size_w)  # Get ratio (assume same for height)
+        size = (int(image_w * ratio), int(image_h * ratio))  # Calculate new resolution of image element
 
         # Scale image
         file_name.thumbnail(size, Image.ANTIALIAS)  # Resize image per calculation above
