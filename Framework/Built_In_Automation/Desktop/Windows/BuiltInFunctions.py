@@ -6,6 +6,8 @@
 #########################
 
 import sys, os
+import re
+from collections import deque
 
 sys.path.append(os.path.dirname(__file__))
 import pyautogui as gui  # https://pyautogui.readthedocs.io/en/latest/
@@ -180,6 +182,28 @@ local_run = False
 """
 
 
+def _count_star(value):
+    count = 0
+    for i in value.replace(" ", ""):
+        if i == "*":
+            count += 1
+        else:
+            return "*"*count
+
+
+def _not_found_log(element_name, element_class, element_automation, element_control):
+    msg = "The following element is not found\n"
+    if element_name is not None:
+        msg += '%sName="%s"' % (element_name[1], element_name[0])
+    if element_control is not None:
+        msg += ', %sControlType="%s"' % (element_control[1], element_control[0])
+    if element_class is not None:
+        msg += ', %sClass="%s"' % (element_class[1], element_class[0])
+    if element_automation is not None:
+        msg += ', %sAutomationId="%s"' % (element_automation[1], element_automation[0])
+    return msg
+
+
 def _found(dataset_val, object_val):
     try:
         if dataset_val[1] == "**":
@@ -227,6 +251,49 @@ def Element_only_search(
         return CommonUtil.Exception_Handler(sys.exc_info())
 
 
+def _child_bfs_search(
+    ParentElement,
+    element_name,
+    element_class,
+    element_automation,
+    element_control,
+    element_index
+):
+    try:
+        q = deque()
+        child_elements = ParentElement.FindAll(TreeScope.Children, Condition.TrueCondition)
+        if child_elements.Count == 0:
+            return []
+        for each_child in child_elements:
+            q.append(each_child)
+        all_elements = []
+        while q:
+            child = q.popleft()
+            NameE = child.Current.Name
+            ClassE = child.Current.ClassName
+            AutomationE = child.Current.AutomationId
+            LocalizedControlTypeE = child.Current.LocalizedControlType
+            found = True
+            if found and element_name is not None and not _found(element_name, NameE): found = False
+            if found and element_class is not None and not _found(element_class, ClassE): found = False
+            if found and element_automation is not None and not _found(element_automation, AutomationE): found = False
+            if found and element_control is not None and not _found(element_control, LocalizedControlTypeE): found = False
+            if found:
+                all_elements.append(child)
+            if element_index == len(all_elements) - 1:
+                return all_elements[element_index]
+            child_elements = child.FindAll(TreeScope.Children, Condition.TrueCondition)
+            if child_elements.Count != 0:
+                for each in child_elements:
+                    q.append(each)
+
+        if -len(all_elements) <= element_index < len(all_elements):
+            return all_elements[element_index]  # in case of, negative index
+        else:
+            return []
+    except:
+        CommonUtil.Exception_Handler(sys.exc_info())
+        return []
 
 def _child_search(
     ParentElement,
@@ -268,6 +335,7 @@ def _child_search(
         if found:   # 1st method
             all_elements += [ParentElement]
             if len(all_elements) - 1 == element_index:
+                # print(NameE, LocalizedControlTypeE, AutomationE, ClassE)
                 return all_elements
         # if found: return [ParentElement]          # 2nd method
 
@@ -286,8 +354,10 @@ def _child_search(
                 element_index
             )
             if 0 <= element_index == len(all_elements) - 1:
+                # print(NameE, LocalizedControlTypeE, AutomationE, ClassE)
                 return all_elements
 
+        # print(NameE, LocalizedControlTypeE, AutomationE, ClassE)
         return all_elements
 
     except Exception:
@@ -464,13 +534,149 @@ def _child_search_with_parent_sibling(
         return []
 
 
+def _element_path_parser(element_path: str):
+    try:
+        element_name, element_control, element_automation, element_class, element_index = None, None, None, None, 0
+        element_path = element_path.strip()
+        if element_path.startswith(".."):
+            exact = False
+            element_path = element_path[element_path.find(">") + 1:].strip()
+        else:
+            exact = True
+
+        while True:
+            attribute = element_path[:element_path.find("=")].strip().lower()
+            element_path = element_path[element_path.find("=") + 1:].strip()
+            att_value = re.findall('\d+', element_path)[0].strip() if "index" in attribute else re.findall('(\'[^\']*\'|"[^"]*")', element_path)[0].strip()
+            # regex meaning = inside single quotation zero or more not(single_quote) OR inside double quotation zero or more not(double_quote)
+
+            if "index" in attribute and element_path[element_path.find(att_value) - 1] in ("'", '"'):
+                element_path = element_path[len(att_value) + 2:].strip()
+            else:
+                element_path = element_path[len(att_value):].strip()
+            if "index" not in attribute: att_value = att_value[1:-1]
+
+            if "class" in attribute: element_class = [att_value, _count_star(attribute)]
+            elif "name" in attribute: element_name = [att_value, _count_star(attribute)]
+            elif "automation" in attribute: element_automation = [att_value, _count_star(attribute)]  # automationid
+            elif "control" in attribute: element_control = [att_value, _count_star(attribute)]  # localizedcontroltype
+            elif "index" in attribute: element_index = int(att_value)
+
+            if element_path[0] == ",": element_path = element_path[1:]
+            elif element_path[0] == ">": element_path = element_path[1:]; break
+
+        return element_path, exact, element_name, element_control, element_automation, element_class, element_index
+    except:
+        CommonUtil.Exception_Handler(sys.exc_info())
+        return "", "error", None, None, None, None, 0
+
+
+@logger
+def Element_path_search(window_name, element_path):
+    try:
+        sModuleInfo = inspect.currentframe().f_code.co_name + " : " + MODULE_NAME
+        ParentElement = _get_main_window(window_name)
+        if ParentElement is None:
+            return "zeuz_failed"
+        """
+        ...>*Name='panel',**control="screen">**name='message',index=5>...> *Name='submit',**control='button'>
+        """
+        CommonUtil.ExecLog(sModuleInfo, 'Window="%s" is selected. We are stepping inside the Window and will search for:\n%s'
+            % (ParentElement.Current.Name, element_path[:-1]), 1)
+        temp = _child_search_by_path(
+            ParentElement,
+            element_path,
+            sModuleInfo
+        )
+        if temp == []: temp = "zeuz_failed"
+        return temp
+
+    except:
+        return CommonUtil.Exception_Handler(sys.exc_info())
+
+
+def _child_search_by_path(
+    ParentElement,
+    element_path,
+    sModuleInfo
+):
+    element_name, element_class, element_automation, element_control = None, None, None, None
+    try:
+        element_path, exact, element_name, element_control, element_automation, element_class, element_index = _element_path_parser(element_path)
+        if exact == "error":
+            return []
+        if (element_name, element_class, element_automation, element_control) == (None, None, None, None):
+            CommonUtil.ExecLog(sModuleInfo, "Element information is missing in a potion of Element Path", 3)
+            return []
+        if element_index < 0:
+            CommonUtil.ExecLog(sModuleInfo, "Please provide positive index in case of Element Path search", 2)
+        if exact:
+            child_elements = ParentElement.FindAll(TreeScope.Children, Condition.TrueCondition)
+            if child_elements.Count == 0:
+                CommonUtil.ExecLog(sModuleInfo, "The following element has no child:\n" + 'Name="%s", ControlType="%s", Class="%s", AutomationId="%s"' %
+                (ParentElement.Current.Name, ParentElement.Current.LocalizedControlType, ParentElement.Current.ClassName, ParentElement.Current.AutomationId), 3)
+                return []
+            all_elements = []
+            for each_child in child_elements:
+                NameE = each_child.Current.Name
+                ClassE = each_child.Current.ClassName
+                AutomationE = each_child.Current.AutomationId
+                LocalizedControlTypeE = each_child.Current.LocalizedControlType
+                # print(NameE, LocalizedControlTypeE, AutomationE, ClassE)
+
+                found = True
+                if found and element_name is not None and not _found(element_name, NameE): found = False
+                if found and element_class is not None and not _found(element_class, ClassE): found = False
+                if found and element_automation is not None and not _found(element_automation, AutomationE): found = False
+                if found and element_control is not None and not _found(element_control, LocalizedControlTypeE): found = False
+
+                if found: all_elements.append(each_child)
+                if 0 <= element_index == len(all_elements) - 1: break
+
+            if not (-len(all_elements) <= element_index < len(all_elements)):
+                CommonUtil.ExecLog(sModuleInfo, _not_found_log(element_name, element_class, element_automation, element_control), 3)
+                return []
+            if element_path:
+                return _child_search_by_path(
+                    all_elements[element_index],
+                    element_path,
+                    sModuleInfo
+                )
+            else:
+                return [all_elements[element_index]]
+
+        else:
+            temp = _child_bfs_search(
+                ParentElement,
+                element_name,
+                element_class,
+                element_automation,
+                element_control,
+                element_index
+            )
+            if temp == []:
+                CommonUtil.ExecLog(sModuleInfo, _not_found_log(element_name, element_class, element_automation, element_control), 3)
+                return []
+            if element_path:
+                return _child_search_by_path(
+                    temp,
+                    element_path,
+                    sModuleInfo
+                )
+            else:
+                return [temp]
+
+    except:
+        CommonUtil.Exception_Handler(sys.exc_info(), None, _not_found_log(element_name, element_class, element_automation, element_control))
+        return []
+
 @logger
 def Get_Element(data_set):
     """ Top function for searching an element """
 
     sModuleInfo = inspect.currentframe().f_code.co_name + " : " + MODULE_NAME
 
-    element_name, window_name, element_class, element_automation, element_control, elem = None, None, None, None, None, False
+    element_name, window_name, element_class, element_automation, element_control, element_path, elem = None, None, None, None, None, "", False
     parent_name, parent_class, parent_automation, parent_control, parent = None, None, None, None, False
     sibling_name, sibling_class, sibling_automation, sibling_control, sibling = None, None, None, None, False
     wait_time = 15
@@ -479,8 +685,8 @@ def Get_Element(data_set):
     try:
         for left, mid, right in data_set:
             left = left.strip().lower()
-
             mid = mid.strip().lower()
+
             if left == "wait time": wait_time = int(right)  # Todo: this will be max retry
             elif left == "index": element_index = int(right.strip())
             elif "window" in left: window_name = [right, _count_star(left)]
@@ -491,6 +697,7 @@ def Get_Element(data_set):
                 elif "name" in left: element_name = [right, _count_star(left)]
                 elif "automation" in left: element_automation = [right, _count_star(left)]  # automationid
                 elif "control" in left: element_control = [right, _count_star(left)]    # localizedcontroltype
+                elif "path" in left: element_path = right.strip()
 
             elif mid == "parent parameter":
                 parent = True
@@ -509,8 +716,8 @@ def Get_Element(data_set):
         if not elem:
             CommonUtil.ExecLog(sModuleInfo, "No element info is given", 3)
             return "zeuz_failed"
-        if elem and (element_name, element_class, element_automation, element_control) == (None, None, None, None):
-            CommonUtil.ExecLog(sModuleInfo, "We support only 'Window', 'Name', 'ClassName', 'LocalizedControlType', 'AutomationId'", 3)
+        if elem and (element_name, element_class, element_automation, element_control, element_path) == (None, None, None, None, ""):
+            CommonUtil.ExecLog(sModuleInfo, "We support only 'Window', 'Name', 'ClassName', 'LocalizedControlType', 'AutomationId', 'element path'", 3)
             return "zeuz_failed"
         if sibling and not parent:
             CommonUtil.ExecLog(sModuleInfo, "A common PARENT of both ELEMENT and SIBLING should be provided", 3)
@@ -521,8 +728,17 @@ def Get_Element(data_set):
         if sibling and (sibling_name, sibling_class, sibling_automation, sibling_control) == (None, None, None, None):
             CommonUtil.ExecLog(sModuleInfo, "We support only 'Window', 'Name', 'ClassName', 'LocalizedControlType', 'AutomationId'", 3)
             return "zeuz_failed"
+        if window_name is None:
+            CommonUtil.ExecLog(sModuleInfo, "You should provide 'Window' otherwise the search won't be efficient", 2)
 
-        if parent and sibling:
+        if element_path:
+            if element_path[-1] != ">": element_path = element_path.strip() + ">"
+            if element_path[0] == ">": element_path = element_path[1:]
+            if element_index != 0:
+                CommonUtil.ExecLog(sModuleInfo, "Index is not allowed other than 0 for 'element path' search. Setting index = 0", 2)
+            all_elements = Element_path_search(window_name, element_path)
+
+        elif parent and sibling:
             all_elements = Sibling_search(
                 element_name, window_name, element_class, element_automation, element_control, element_index,
                 parent_name, parent_class, parent_automation, parent_control,
@@ -1101,15 +1317,6 @@ def Scroll(data_set):
         time.sleep(1)
     except Exception:
         return CommonUtil.Exception_Handler(sys.exc_info(), None, "Error parsing data set")
-
-
-def _count_star(value):
-    count = 0
-    for i in value.replace(" ", ""):
-        if i == "*":
-            count += 1
-        else:
-            return "*"*count
 
 
 @logger
