@@ -1057,7 +1057,7 @@ def execute_javascript(data_set):
         if var_name:
             Shared_Resources.Set_Shared_Variables(var_name, result)
     except Exception:
-        errMsg = "Failed to execute javascript."
+        errMsg = "Make sure element parameter is provided in the action."
         return CommonUtil.Exception_Handler(sys.exc_info(), None, errMsg)
 
 
