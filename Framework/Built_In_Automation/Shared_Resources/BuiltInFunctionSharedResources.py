@@ -710,12 +710,6 @@ def get_previous_response_variables_in_strings(step_data_string_input):
                         return "zeuz_failed"
 
                     output += random_string
-                    CommonUtil.ExecLog(
-                        sModuleInfo,
-                        'Replacing variable "%s" with its value "%s"'
-                        % (parts[0], random_string),
-                        0,
-                    )
                 elif str(parts[0]).startswith("rest_response"):
                     full_string = str(parts[0])
                     result_json = Get_Shared_Variables("rest_response")
@@ -737,12 +731,6 @@ def get_previous_response_variables_in_strings(step_data_string_input):
                         )
                         return "zeuz_failed"
                     output += str(rest_json_output)
-                    CommonUtil.ExecLog(
-                        sModuleInfo,
-                        'Replacing variable "%s" with its value "%s"'
-                        % (parts[0], rest_json_output),
-                        0,
-                    )
                 elif str(parts[0]).lower().startswith("today") or str(parts[0]).startswith("currentEpochTime"):
                     replaced_string = save_built_in_time_variable(str(parts[0]))
                     if replaced_string in failed_tag_list:
@@ -754,12 +742,6 @@ def get_previous_response_variables_in_strings(step_data_string_input):
                         )
                         return "zeuz_failed"
                     output += str(save_built_in_time_variable(str(parts[0])))
-                    CommonUtil.ExecLog(
-                        sModuleInfo,
-                        'Replacing variable "%s" with its value "%s"'
-                        % (parts[0], replaced_string),
-                        0,
-                    )
 
                 elif str(parts[0]).startswith("random_number_in_range"):
                     full_string = str(parts[0])
@@ -780,12 +762,6 @@ def get_previous_response_variables_in_strings(step_data_string_input):
                         return "zeuz_failed"
 
                     output += random_string
-                    CommonUtil.ExecLog(
-                        sModuleInfo,
-                        'Replacing variable "%s" with its value "%s"'
-                        % (parts[0], random_string),
-                        0,
-                    )
 
                 elif str(parts[0]).startswith("pick_random_element"):
                     full_string = str(parts[0])
@@ -804,14 +780,15 @@ def get_previous_response_variables_in_strings(step_data_string_input):
                         return "zeuz_failed"
                     if len(params) == 0:
                         return "zeuz_failed"
-
                     output += rand_str
-                    CommonUtil.ExecLog(
-                        sModuleInfo,
-                        'Replacing variable "%s" with its value "%s"'
-                        % (parts[0], rand_str),
-                        0,
-                    )
+
+                elif str(parts[0]).startswith("os_name"):
+                    import platform
+                    p = platform.system().lower()
+                    if p.startswith("windows"): output += "windows"
+                    elif p.startswith("linux"): output += "linux"
+                    elif p.startswith("darwin"): output += "darwin"
+                    else: output += p
 
                 else:
                     var_value = parse_variable(parts[0])
@@ -825,12 +802,6 @@ def get_previous_response_variables_in_strings(step_data_string_input):
                         return "zeuz_failed"
                     else:
                         output += str(var_value)
-                        CommonUtil.ExecLog(
-                            sModuleInfo,
-                            'Replacing variable "%s" with its value "%s"'
-                            % (parts[0], var_value),
-                            0,
-                        )
                 output += parts[1]
             else:
                 output += each
