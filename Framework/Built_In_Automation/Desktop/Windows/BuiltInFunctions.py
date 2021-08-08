@@ -4,7 +4,7 @@
 #        Modules        #
 #                       #
 #########################
-code_debug = True
+code_debug = False
 tabs = 0
 import sys, os
 import re
@@ -923,49 +923,23 @@ def Drag_and_Drop_Element(data_set):
     element_name = []
     window_name = []
 
+    source = []
+    destination = []
     try:
         for left, mid, right in data_set:
-            if mid.strip().lower() == "element parameter":
-                if left.strip().lower() == "name":
-                    element_name.append(right)
+            if "src" in left or "source" in left:
+                source.append((left.replace("src", "").replace("source", ""), mid, right))
+            elif "dst" in left or "destination" in left:
+                destination.append((left.replace("dst", "").replace("destination", ""), mid, right))
 
-                elif left.strip().lower() == "window":
-                    window_name.append(right)
-
-        # Get element object
-        # try for 10 seconds with 2 seconds delay
-        max_try = 5
-        sleep_in_sec = 2
-        i = 0
-        while i != max_try:
-            # Todo: there should be a bug here
-            Element1 = Get_Element(data_set)
-            if Element == "zeuz_failed":
-                CommonUtil.ExecLog(sModuleInfo, "Could not find element.  Waiting and Trying again .... ", 2)
-            else:
-                break
-            time.sleep(sleep_in_sec)
-            i = i + 1
+        Element1 = Get_Element(source)
         if Element1 == "zeuz_failed":
-            CommonUtil.ExecLog(sModuleInfo, "Could not find element", 3)
+            CommonUtil.ExecLog(sModuleInfo, "Could not find source element", 3)
             return "zeuz_failed"
 
-        # Get element object
-        # try for 10 seconds with 2 seconds delay
-        max_try = 5
-        sleep_in_sec = 2
-        i = 0
-        while i != max_try:
-            # Todo: there should be a bug here
-            Element2 = Get_Element(data_set)
-            if Element == "zeuz_failed":
-                CommonUtil.ExecLog(sModuleInfo, "Could not find element.  Waiting and Trying again .... ", 2)
-            else:
-                break
-            time.sleep(sleep_in_sec)
-            i = i + 1
+        Element2 = Get_Element(destination)
         if Element2 == "zeuz_failed":
-            CommonUtil.ExecLog(sModuleInfo, "Could not find element", 3)
+            CommonUtil.ExecLog(sModuleInfo, "Could not find destination element", 3)
             return "zeuz_failed"
 
         result = Drag_Object(Element1, Element2)
@@ -983,8 +957,6 @@ def Drag_and_Drop_Element(data_set):
 @logger
 def Drag_Object(Element1_source, Element2_destination):
     try:
-        print("clicking your element")
-        print(Element1_source, Element2_destination)
 
         x_source = int(
             Element1_source.Current.BoundingRectangle.Right
