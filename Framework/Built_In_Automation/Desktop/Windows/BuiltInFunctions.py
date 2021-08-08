@@ -4,7 +4,8 @@
 #        Modules        #
 #                       #
 #########################
-
+code_debug = True
+tabs = 0
 import sys, os
 import re
 from collections import deque
@@ -24,25 +25,20 @@ MODULE_NAME = inspect.getmodulename(__file__)
 import clr, inspect
 from _elementtree import Element
 
-clr.AddReference("UIAutomationClient")
-clr.AddReference("UIAutomationTypes")
-clr.AddReference("UIAutomationProvider")
-clr.AddReference("System.Windows.Forms")
-
 import win32api
 import win32con
 
-from System.Windows.Automation import *
 
 
 # this needs to be here on top, otherwise will return error
 import clr, System
-
+dll_path = os.getcwd().split("Framework")[0] + "Framework" + os.sep + "windows_dll_files" + os.sep
 clr.AddReference("UIAutomationClient")
 clr.AddReference("UIAutomationTypes")
 clr.AddReference("UIAutomationProvider")
 clr.AddReference("System.Windows.Forms")
 
+from System.Windows.Automation import *
 import pyautogui  # Should be removed after we complete sequential actions
 import autoit  # The likely method we'll use
 
@@ -335,7 +331,7 @@ def _child_search(
         if found:   # 1st method
             all_elements += [ParentElement]
             if len(all_elements) - 1 == element_index:
-                # print(NameE, LocalizedControlTypeE, AutomationE, ClassE)
+                if code_debug: print('name="%s", controlType="%s", automationId="%s", class="%s"' % (NameE, LocalizedControlTypeE, AutomationE, ClassE))
                 return all_elements
         # if found: return [ParentElement]          # 2nd method
 
@@ -354,10 +350,11 @@ def _child_search(
                 element_index
             )
             if 0 <= element_index == len(all_elements) - 1:
-                # print(NameE, LocalizedControlTypeE, AutomationE, ClassE)
+                if code_debug: print('name="%s", controlType="%s", automationId="%s", class="%s"' % (NameE, LocalizedControlTypeE, AutomationE, ClassE))
                 return all_elements
+        if all_elements:
+            if code_debug: print('name="%s", controlType="%s", automationId="%s", class="%s"' % (NameE, LocalizedControlTypeE, AutomationE, ClassE))
 
-        # print(NameE, LocalizedControlTypeE, AutomationE, ClassE)
         return all_elements
 
     except Exception:
@@ -403,10 +400,10 @@ def _child_search_with_parent(
         all_elements = []
         if not parent_found:
             found = True
-            if found and element_name is not None and not _found(parent_name, NameE): found = False
-            if found and element_class is not None and not _found(parent_class, ClassE): found = False
-            if found and element_automation is not None and not _found(parent_automation, AutomationE): found = False
-            if found and element_control is not None and not _found(parent_control, LocalizedControlTypeE): found = False
+            if found and parent_name is not None and not _found(parent_name, NameE): found = False
+            if found and parent_class is not None and not _found(parent_class, ClassE): found = False
+            if found and parent_automation is not None and not _found(parent_automation, AutomationE): found = False
+            if found and parent_control is not None and not _found(parent_control, LocalizedControlTypeE): found = False
             parent_found = found
 
         else:
@@ -449,7 +446,8 @@ def Sibling_search(
         ParentElement = _get_main_window(window_name)
         if ParentElement is None:
             return "zeuz_failed"
-
+        global sibling_found
+        sibling_found = False
         all_elements = []
         all_elements += _child_search_with_parent_sibling(
             ParentElement, element_name, element_class, element_automation, element_control, element_index,
@@ -483,19 +481,19 @@ def _child_search_with_parent_sibling(
         global sibling_found
         if not parent_found:
             found = True
-            if found and element_name is not None and not _found(parent_name, NameE): found = False
-            if found and element_class is not None and not _found(parent_class, ClassE): found = False
-            if found and element_automation is not None and not _found(parent_automation, AutomationE): found = False
-            if found and element_control is not None and not _found(parent_control, LocalizedControlTypeE): found = False
+            if found and parent_name is not None and not _found(parent_name, NameE): found = False
+            if found and parent_class is not None and not _found(parent_class, ClassE): found = False
+            if found and parent_automation is not None and not _found(parent_automation, AutomationE): found = False
+            if found and parent_control is not None and not _found(parent_control, LocalizedControlTypeE): found = False
             parent_found = found
             parent_level = found
 
         else:
             found = True
-            if found and element_name is not None and not _found(sibling_name, NameE): found = False
-            if found and element_class is not None and not _found(sibling_class, ClassE): found = False
-            if found and element_automation is not None and not _found(sibling_automation, AutomationE): found = False
-            if found and element_control is not None and not _found(sibling_control, LocalizedControlTypeE): found = False
+            if found and sibling_name is not None and not _found(sibling_name, NameE): found = False
+            if found and sibling_class is not None and not _found(sibling_class, ClassE): found = False
+            if found and sibling_automation is not None and not _found(sibling_automation, AutomationE): found = False
+            if found and sibling_control is not None and not _found(sibling_control, LocalizedControlTypeE): found = False
             sibling_found = True if sibling_found else found
 
             found = True
@@ -518,14 +516,14 @@ def _child_search_with_parent_sibling(
                 parent_name, parent_class, parent_automation, parent_control,
                 sibling_name, sibling_class, sibling_automation, sibling_control, parent_found
             )
-            if not parent_level:
-                all_elements += temp
-            elif parent_level and sibling_found:
-                all_elements += temp
-            if 0 <= element_index == len(all_elements) - 1:
-                return all_elements
+            all_elements += temp
         if parent_level:
-            sibling_found = False
+            if sibling_found and 0 <= element_index == len(all_elements) - 1:
+                sibling_found = False
+                return all_elements
+            else:
+                sibling_found = False
+                return []
 
         return all_elements
 
@@ -583,6 +581,8 @@ def Element_path_search(window_name, element_path):
         """
         CommonUtil.ExecLog(sModuleInfo, 'Window="%s" is selected. We are stepping inside the Window and will search for:\n%s'
             % (ParentElement.Current.Name, element_path[:-1]), 1)
+        global tabs
+        tabs = 0
         temp = _child_search_by_path(
             ParentElement,
             element_path,
@@ -601,6 +601,7 @@ def _child_search_by_path(
     sModuleInfo
 ):
     element_name, element_class, element_automation, element_control = None, None, None, None
+    global tabs
     try:
         element_path, exact, element_name, element_control, element_automation, element_class, element_index = _element_path_parser(element_path)
         if exact == "error":
@@ -622,7 +623,7 @@ def _child_search_by_path(
                 ClassE = each_child.Current.ClassName
                 AutomationE = each_child.Current.AutomationId
                 LocalizedControlTypeE = each_child.Current.LocalizedControlType
-                # print(NameE, LocalizedControlTypeE, AutomationE, ClassE)
+                if code_debug: print("  " * tabs + 'name="%s", controlType="%s", automationId="%s", class="%s"' % (NameE, LocalizedControlTypeE, AutomationE, ClassE))
 
                 found = True
                 if found and element_name is not None and not _found(element_name, NameE): found = False
@@ -633,6 +634,7 @@ def _child_search_by_path(
                 if found: all_elements.append(each_child)
                 if 0 <= element_index == len(all_elements) - 1: break
 
+            if code_debug: tabs += 1
             if not (-len(all_elements) <= element_index < len(all_elements)):
                 CommonUtil.ExecLog(sModuleInfo, _not_found_log(element_name, element_class, element_automation, element_control), 3)
                 return []
