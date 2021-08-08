@@ -75,11 +75,11 @@ def create_path(index_trace: dict, element):
 
     if NameE and s in index_trace:
         return s_name + ">" + ',index="%s">' % (index_trace[s_name] + 1) + "\n" if new_line else ""
-    if s_class and s in index_trace:
+    if ClassE and s in index_trace:
         return s_class + ">" + ',index="%s">' % (index_trace[s_class] + 1) + "\n" if new_line else ""
 
-    if s_name not in index_trace:
-        return s_name + ">" + "\n" if new_line else ""
+    # if s_name not in index_trace:
+    #     return s_name + ">" + "\n" if new_line else ""
     if s_name_control not in index_trace:
         return s_name_control + ">" + "\n" if new_line else ""
     return s_name_control + ',index="%s">' % (index_trace[s_name_control] + 1) + "\n" if new_line else ""
@@ -98,7 +98,8 @@ def _child_search(ParentElement):
                 path += create_path(index_trace, each_child)
                 # path += 'name="%s",control="%s",automationid="%s",class="%s">\n' % (NameE, LocalizedControlTypeE, AutomationE, ClassE)
                 temp = _child_search(each_child)
-                return path + temp
+                if temp:
+                    return path + temp
             create_index(index_trace, each_child)
 
         return path
@@ -111,11 +112,12 @@ def _child_search(ParentElement):
 def main():
     try:
         global x, y
+        print("Hover over the desired element and press control")
         while True:
             keyboard.wait("ctrl")
             x, y = pyautogui.position()
             # print(x, y)
-            res = _child_search(AutomationElement.RootElement)[:-1] + "\n"
+            res = _child_search(AutomationElement.RootElement)[:-2] + "\n"
             print(res)
     except:
         print(sys.exc_info())
