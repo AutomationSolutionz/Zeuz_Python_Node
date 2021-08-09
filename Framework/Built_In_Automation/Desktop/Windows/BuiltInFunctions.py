@@ -33,9 +33,9 @@ import win32con
 # this needs to be here on top, otherwise will return error
 import clr, System
 dll_path = os.getcwd().split("Framework")[0] + "Framework" + os.sep + "windows_dll_files" + os.sep
-clr.AddReference("UIAutomationClient")
-clr.AddReference("UIAutomationTypes")
-clr.AddReference("UIAutomationProvider")
+clr.AddReference(dll_path+"UIAutomationClient")
+clr.AddReference(dll_path+"UIAutomationTypes")
+clr.AddReference(dll_path+"UIAutomationProvider")
 clr.AddReference("System.Windows.Forms")
 
 from System.Windows.Automation import *
