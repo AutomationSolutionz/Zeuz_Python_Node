@@ -1304,13 +1304,16 @@ def wait_for_element(data_set):
                     appear_condition = False
                 timeout_duration = int(right.strip())
 
-        Element = Get_Element(data_set, timeout_duration)
-        if appear_condition and Element != "zeuz_failed":  # Element found
-            CommonUtil.ExecLog(sModuleInfo, "Found element", 1)
-            return "passed"
-        elif not appear_condition and Element == "zeuz_failed":  # Element removed
-            CommonUtil.ExecLog(sModuleInfo, "Element disappeared", 1)
-            return "passed"
+        end_time = time.time() + timeout_duration
+        while time.time() <= end_time:
+            Element = Get_Element(data_set, 0)
+            if appear_condition and Element != "zeuz_failed":  # Element found
+                CommonUtil.ExecLog(sModuleInfo, "Found element", 1)
+                return "passed"
+            elif not appear_condition and Element == "zeuz_failed":  # Element removed
+                CommonUtil.ExecLog(sModuleInfo, "Element disappeared", 1)
+                return "passed"
+            time.sleep(1)
 
         CommonUtil.ExecLog(sModuleInfo, "Wait for element failed", 3)
         return "zeuz_failed"
