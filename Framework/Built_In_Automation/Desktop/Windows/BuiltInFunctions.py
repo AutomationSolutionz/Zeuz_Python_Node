@@ -1396,3 +1396,34 @@ def Keystroke_For_Element(data_set):
     except Exception:
         errMsg = "Could not enter keystroke for your element."
         return CommonUtil.Exception_Handler(sys.exc_info(), None, errMsg)
+
+
+@logger
+def wait_for_element(data_set):
+    sModuleInfo = inspect.currentframe().f_code.co_name + " : " + MODULE_NAME
+    try:
+        timeout_duration = 10
+        appear_condition = True
+        for left, mid, right in data_set:
+            if mid.strip().lower() == "action":
+                if left.strip().lower() == "wait to disappear":
+                    appear_condition = False
+                timeout_duration = int(right.strip())
+
+        end_time = time.time() + timeout_duration
+        while time.time() <= end_time:
+            Element = Get_Element(data_set)
+            if appear_condition and Element != "zeuz_failed":  # Element found
+                CommonUtil.ExecLog(sModuleInfo, "Found element", 1)
+                return "passed"
+            elif not appear_condition and Element == "zeuz_failed":  # Element removed
+                CommonUtil.ExecLog(sModuleInfo, "Element disappeared", 1)
+                return "passed"
+            time.sleep(1)
+
+        CommonUtil.ExecLog(sModuleInfo, "Wait for element failed", 3)
+        return "zeuz_failed"
+
+    except Exception:
+        return CommonUtil.Exception_Handler(sys.exc_info())
+

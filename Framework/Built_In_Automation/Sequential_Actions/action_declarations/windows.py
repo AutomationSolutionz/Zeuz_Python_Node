@@ -12,6 +12,8 @@ declarations = (
     { "name": "close app",       "function": "Close_Application",      "screenshot": "desktop" },
     { "name": "validate text",   "function": "Validate_Text",          "screenshot": "desktop" },
     { "name": "save attribute",  "function": "Save_Attribute",         "screenshot": "desktop" },
+    { "name": "wait to appear",  "function": "wait_for_element",       "screenshot": "desktop" },
+    { "name": "wait to disappear","function": "wait_for_element",      "screenshot": "desktop" },
 ) # yapf: disable
 
 module_name = "windows"
