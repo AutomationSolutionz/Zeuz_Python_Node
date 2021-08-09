@@ -97,21 +97,8 @@ def Click_Element(data_set):
         CommonUtil.Exception_Handler(sys.exc_info(), None, "You have provided an invalid Click data.  Please refer to help")
         return "zeuz_failed"
 
-    # Get element object
-    # try for 10 seconds with 2 seconds delay
-    max_try = 5
-    sleep_in_sec = 2
-    i = 0
-    while i != max_try:
-        Element = Get_Element(data_set)
-        if Element == "zeuz_failed":
-            CommonUtil.ExecLog(sModuleInfo, "Could not find element.  Waiting and Trying again .... ", 2)
-        else:
-            break
-        time.sleep(sleep_in_sec)
-        i = i + 1
+    Element = Get_Element(data_set)
     if Element == "zeuz_failed":
-        CommonUtil.ExecLog(sModuleInfo, "Could not find element", 3)
         return "zeuz_failed"
 
     # If found Click element
@@ -135,21 +122,8 @@ def Click_Element(data_set):
 def Right_Click_Element(data_set):
     sModuleInfo = inspect.currentframe().f_code.co_name + " : " + MODULE_NAME
     try:
-        # Get element object
-        # try for 10 seconds with 2 seconds delay
-        max_try = 5
-        sleep_in_sec = 2
-        i = 0
-        while i != max_try:
-            Element = Get_Element(data_set)
-            if Element == "zeuz_failed":
-                CommonUtil.ExecLog(sModuleInfo, "Could not find element.  Waiting and Trying again .... ", 2)
-            else:
-                break
-            time.sleep(sleep_in_sec)
-            i = i + 1
+        Element = Get_Element(data_set)
         if Element == "zeuz_failed":
-            CommonUtil.ExecLog(sModuleInfo, "Could not find element", 3)
             return "zeuz_failed"
 
         x = int(
@@ -673,7 +647,7 @@ def _child_search_by_path(
         return []
 
 @logger
-def Get_Element(data_set):
+def Get_Element(data_set, wait_time=10):
     """ Top function for searching an element """
 
     sModuleInfo = inspect.currentframe().f_code.co_name + " : " + MODULE_NAME
@@ -681,7 +655,6 @@ def Get_Element(data_set):
     element_name, window_name, element_class, element_automation, element_control, element_path, elem = None, None, None, None, None, "", False
     parent_name, parent_class, parent_automation, parent_control, parent = None, None, None, None, False
     sibling_name, sibling_class, sibling_automation, sibling_control, sibling = None, None, None, None, False
-    wait_time = 15
     element_index = 0
     # parse dataset and read data
     try:
@@ -689,7 +662,7 @@ def Get_Element(data_set):
             left = left.strip().lower()
             mid = mid.strip().lower()
 
-            if left == "wait time": wait_time = int(right)  # Todo: this will be max retry
+            if left == "wait time": wait_time = int(right)
             elif left == "index": element_index = int(right.strip())
             elif "window" in left: window_name = [right, _count_star(left)]
 
@@ -733,35 +706,41 @@ def Get_Element(data_set):
         if window_name is None:
             CommonUtil.ExecLog(sModuleInfo, "You should provide 'Window' otherwise the search won't be efficient", 2)
 
-        if element_path:
-            if element_path[-1] != ">": element_path = element_path.strip() + ">"
-            if element_path[0] == ">": element_path = element_path[1:]
-            if element_index != 0:
-                CommonUtil.ExecLog(sModuleInfo, "Index is not allowed other than 0 for 'element path' search. Setting index = 0", 2)
-            all_elements = Element_path_search(window_name, element_path)
+        s = time.time()
+        while True:
+            if element_path:
+                if element_path[-1] != ">": element_path = element_path.strip() + ">"
+                if element_path[0] == ">": element_path = element_path[1:]
+                if element_index != 0:
+                    CommonUtil.ExecLog(sModuleInfo, "Index is not allowed other than 0 for 'element path' search. Setting index = 0", 2)
+                all_elements = Element_path_search(window_name, element_path)
 
-        elif parent and sibling:
-            all_elements = Sibling_search(
-                element_name, window_name, element_class, element_automation, element_control, element_index,
-                parent_name, parent_class, parent_automation, parent_control,
-                sibling_name, sibling_class, sibling_automation, sibling_control,
-            )
-        elif parent:
-            all_elements = Parent_search(
-                element_name, window_name, element_class, element_automation, element_control, element_index,
-                parent_name, parent_class, parent_automation, parent_control,
-            )
-        else:
-            all_elements = Element_only_search(
-                window_name, element_name, element_class, element_automation, element_control, element_index
-            )
+            elif parent and sibling:
+                all_elements = Sibling_search(
+                    element_name, window_name, element_class, element_automation, element_control, element_index,
+                    parent_name, parent_class, parent_automation, parent_control,
+                    sibling_name, sibling_class, sibling_automation, sibling_control,
+                )
+            elif parent:
+                all_elements = Parent_search(
+                    element_name, window_name, element_class, element_automation, element_control, element_index,
+                    parent_name, parent_class, parent_automation, parent_control,
+                )
+            else:
+                all_elements = Element_only_search(
+                    window_name, element_name, element_class, element_automation, element_control, element_index
+                )
+
+            if -len(all_elements) <= element_index < len(all_elements) or time.time() > s + wait_time:
+                break
+
         if all_elements == "zeuz_failed":
-            CommonUtil.ExecLog(sModuleInfo, "No element found", 3)
+            CommonUtil.ExecLog(sModuleInfo, "Could not find the element", 3)
             return "zeuz_failed"
         if -len(all_elements) <= element_index < len(all_elements):
             CommonUtil.ExecLog(sModuleInfo, "Returning the element of index = %d" % element_index, 1)
         else:
-            CommonUtil.ExecLog(sModuleInfo, "index out of range", 2)
+            CommonUtil.ExecLog(sModuleInfo, "Index out of range", 3)
             return "zeuz_failed"
 
         try:
@@ -934,12 +913,10 @@ def Drag_and_Drop_Element(data_set):
 
         Element1 = Get_Element(source)
         if Element1 == "zeuz_failed":
-            CommonUtil.ExecLog(sModuleInfo, "Could not find source element", 3)
             return "zeuz_failed"
 
         Element2 = Get_Element(destination)
         if Element2 == "zeuz_failed":
-            CommonUtil.ExecLog(sModuleInfo, "Could not find destination element", 3)
             return "zeuz_failed"
 
         result = Drag_Object(Element1, Element2)
@@ -988,25 +965,8 @@ def Drag_Object(Element1_source, Element2_destination):
 def Double_Click_Element(data_set):
     sModuleInfo = inspect.currentframe().f_code.co_name + " : " + MODULE_NAME
     try:
-        # Get element object
-        # try for 10 seconds with 2 seconds delay
-        max_try = 5
-        sleep_in_sec = 2
-        i = 0
-        while i != max_try:
-            Element = Get_Element(data_set)
-            if Element == "zeuz_failed":
-                CommonUtil.ExecLog(
-                    sModuleInfo,
-                    "Could not find element.  Waiting and Trying again .... ",
-                    2,
-                )
-            else:
-                break
-            time.sleep(sleep_in_sec)
-            i = i + 1
+        Element = Get_Element(data_set)
         if Element == "zeuz_failed":
-            CommonUtil.ExecLog(sModuleInfo, "Could not find element", 3)
             return "zeuz_failed"
         x = int(
             Element.Current.BoundingRectangle.Right
@@ -1031,21 +991,8 @@ def Double_Click_Element(data_set):
 def Hover_Over_Element(data_set):
     sModuleInfo = inspect.currentframe().f_code.co_name + " : " + MODULE_NAME
     try:
-        # Get element object
-        # try for 10 seconds with 2 seconds delay
-        max_try = 5
-        sleep_in_sec = 2
-        i = 0
-        while i != max_try:
-            Element = Get_Element(data_set)
-            if Element == "zeuz_failed":
-                CommonUtil.ExecLog(sModuleInfo, "Could not find element.  Waiting and Trying again .... ", 2)
-            else:
-                break
-            time.sleep(sleep_in_sec)
-            i = i + 1
+        Element = Get_Element(data_set)
         if Element == "zeuz_failed":
-            CommonUtil.ExecLog(sModuleInfo, "Could not find element", 3)
             return "zeuz_failed"
         x = int(
             Element.Current.BoundingRectangle.Right
@@ -1073,21 +1020,8 @@ def Validate_Text(data_set):
             if mid.strip().lower() == "action":
                 expected_text = right
 
-        # Get element object
-        # try for 10 seconds with 2 seconds delay
-        max_try = 5
-        sleep_in_sec = 2
-        i = 0
-        while i != max_try:
-            Element = Get_Element(data_set)
-            if Element == "zeuz_failed":
-                CommonUtil.ExecLog(sModuleInfo, "Could not find element.  Waiting and Trying again .... ", 2)
-            else:
-                break
-            time.sleep(sleep_in_sec)
-            i = i + 1
+        Element = Get_Element(data_set)
         if Element == "zeuz_failed":
-            CommonUtil.ExecLog(sModuleInfo, "Could not find element", 3)
             return "zeuz_failed"
 
         actual_text = str(Element.GetCurrentPattern(ValuePattern.Pattern).Current.Value).strip().lower()
@@ -1114,21 +1048,8 @@ def Save_Attribute(data_set):
                 field = left.lower().strip()
                 variable_name = right.strip()
 
-        # Get element object
-        # try for 10 seconds with 2 seconds delay
-        max_try = 5
-        sleep_in_sec = 2
-        i = 0
-        while i != max_try:
-            Element = Get_Element(data_set)
-            if Element == "zeuz_failed":
-                CommonUtil.ExecLog(sModuleInfo, "Could not find element.  Waiting and Trying again .... ", 2)
-            else:
-                break
-            time.sleep(sleep_in_sec)
-            i = i + 1
+        Element = Get_Element(data_set)
         if Element == "zeuz_failed":
-            CommonUtil.ExecLog(sModuleInfo, "Could not find element", 3)
             return "zeuz_failed"
 
         actual_text = ""
@@ -1204,22 +1125,8 @@ def Enter_Text_In_Text_Box(data_set):
             elif left.lower().strip() == "method" and right.lower().strip() == "set value":
                 keystroke = False
 
-        # Get element object
-        # try for 10 seconds with 2 seconds delay
-        max_try = 5
-        sleep_in_sec = 2
-        i = 0
-        while i != max_try:
-            Element = Get_Element(data_set)
-            if Element == "zeuz_failed":
-                CommonUtil.ExecLog(sModuleInfo, "Could not find element.  Waiting and Trying again .... ", 2)
-            else:
-                break
-            time.sleep(sleep_in_sec)
-            i = i + 1
-
+        Element = Get_Element(data_set)
         if Element == "zeuz_failed":
-            CommonUtil.ExecLog(sModuleInfo, "Could not find element to enter text", 3)
             return "zeuz_failed"
 
         if keystroke:
@@ -1261,21 +1168,8 @@ def Enter_Text_In_Text_Box(data_set):
 def Scroll(data_set):
     try:
         sModuleInfo = inspect.currentframe().f_code.co_name + " : " + MODULE_NAME
-        # Get element object
-        # try for 10 seconds with 2 seconds delay
-        max_try = 5
-        sleep_in_sec = 2
-        i = 0
-        while i != max_try:
-            Element = Get_Element(data_set)
-            if Element == "zeuz_failed":
-                CommonUtil.ExecLog(sModuleInfo, "Could not find element.  Waiting and Trying again .... ", 2)
-            else:
-                break
-            time.sleep(sleep_in_sec)
-            i = i + 1
+        Element = Get_Element(data_set)
         if Element == "zeuz_failed":
-            CommonUtil.ExecLog(sModuleInfo, "Could not find element", 3)
             return "zeuz_failed"
         x = int(
             Element.Current.BoundingRectangle.Right
@@ -1410,16 +1304,13 @@ def wait_for_element(data_set):
                     appear_condition = False
                 timeout_duration = int(right.strip())
 
-        end_time = time.time() + timeout_duration
-        while time.time() <= end_time:
-            Element = Get_Element(data_set)
-            if appear_condition and Element != "zeuz_failed":  # Element found
-                CommonUtil.ExecLog(sModuleInfo, "Found element", 1)
-                return "passed"
-            elif not appear_condition and Element == "zeuz_failed":  # Element removed
-                CommonUtil.ExecLog(sModuleInfo, "Element disappeared", 1)
-                return "passed"
-            time.sleep(1)
+        Element = Get_Element(data_set, timeout_duration)
+        if appear_condition and Element != "zeuz_failed":  # Element found
+            CommonUtil.ExecLog(sModuleInfo, "Found element", 1)
+            return "passed"
+        elif not appear_condition and Element == "zeuz_failed":  # Element removed
+            CommonUtil.ExecLog(sModuleInfo, "Element disappeared", 1)
+            return "passed"
 
         CommonUtil.ExecLog(sModuleInfo, "Wait for element failed", 3)
         return "zeuz_failed"
