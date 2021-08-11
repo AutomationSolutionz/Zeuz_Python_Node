@@ -1244,7 +1244,7 @@ def Keystroke_For_Element(data_set):
         time.sleep(2)
         keystroke_value = ""
         keystroke_char = ""
-        method_name="True"
+        method_name=""
         for left, mid, right in data_set:
             left = left.strip().lower()
             if "action" in mid.lower():
@@ -1252,7 +1252,8 @@ def Keystroke_For_Element(data_set):
                     keystroke_value = right.lower()  # Store keystroke
                 elif left == "keystroke chars":
                     keystroke_char = right
-                elif left == "method name":
+            if "parameter" in mid.lower():
+                if left == "method":
                     method_name= right.lower()
 
         if keystroke_value == "" and keystroke_char == "":
@@ -1265,7 +1266,7 @@ def Keystroke_For_Element(data_set):
 
     # Perform action
     try:
-        if method_name=='pyautogui' or method_name=="True":
+        if method_name=='pyautogui' or method_name=="":
             try:
                 if keystroke_char != "":
                     pyautogui.write(keystroke_char)
@@ -1291,8 +1292,7 @@ def Keystroke_For_Element(data_set):
         elif method_name=='autoit':
             try:
                 if keystroke_char != "":
-                    char='{'+keystroke_char+'}'
-                    autoit.send(char)
+                    autoit.send(keystroke_char)
                     CommonUtil.ExecLog(sModuleInfo, "Successfully entered character %s" % keystroke_char, 1)
                     return "passed"
             except:
@@ -1306,7 +1306,7 @@ def Keystroke_For_Element(data_set):
                 count = int(count.strip())
             keys = keystroke_value.split("+")  # Split string into array
             keys = [x.strip() for x in keys]  # Clean it up
-            print(keys)
+
             if len(keys)==1:
                 send_key ='{' + keys[0] + ' ' + str(count) + '}'
                 print(send_key)
@@ -1321,7 +1321,7 @@ def Keystroke_For_Element(data_set):
                 key0 = '#'
             if len(keys)==2:
                 send_key = key0 + '{' + keys[1] + ' ' + str(count) + '}'
-                print(send_key)
+
 
             elif len(keys)==3:
                 if keys[1] == 'SHIFT':
@@ -1333,7 +1333,7 @@ def Keystroke_For_Element(data_set):
                 elif keys[1] == 'WIN':
                     key1 = '#'
                 send_key = key0 +key1+ '{' + keys[2] + ' ' + str(count) + '}'
-                print(send_key)
+
 
             autoit.send(send_key)
             CommonUtil.ExecLog(sModuleInfo, "Successfully entered the keystroke", 1)
