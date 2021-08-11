@@ -1350,6 +1350,7 @@ def save_attribute_values_in_list(data_set):
         target_index = 0
         target = []
         paired = True
+        p = False
         try:
             for left, mid, right in data_set:
                 left = left.strip().lower()
@@ -1382,52 +1383,82 @@ def save_attribute_values_in_list(data_set):
                     variable_name = right
                 elif left == "paired":
                     paired = False if right.lower() == "no" else True
+                    p = True
 
         except:
             CommonUtil.Exception_Handler(sys.exc_info())
             CommonUtil.ExecLog(sModuleInfo, "Unable to parse data. Please write data in correct format", 3)
             return "zeuz_failed"
 
+        if not p and len(target) == 1:
+            paired = False
+
         for each in target:
             all_elements.append(Get_Element(each[0], Parent_Element=Element))
 
-        variable_value_size = 0
-        for each in all_elements:
-            variable_value_size = max(variable_value_size, len(each))
-
-        variable_value = []
-        for i in range(variable_value_size):
-            variable_value.append([])
-
-        i = 0
-        for each in all_elements:
-            search_by_attribute = target[i][1] if target[i][1] else "Value"
-            j = 0
-            for elem in each:
-                if search_by_attribute.strip().lower() == "value":
-                    Attribute_value = eval("elem.GetCurrentPattern(ValuePattern.Pattern).Current.Value" + search_by_attribute)
-                else:
-                    Attribute_value = eval("elem.Current." + search_by_attribute)
-                try:
-                    for search_contain in target[i][2]:
-                        if not isinstance(search_contain, type(Attribute_value)) or search_contain in Attribute_value or len(search_contain) == 0:
-                            break
+        if paired:
+            variable_value_size = 0
+            variable_value = []
+            for each in all_elements:
+                variable_value_size = max(variable_value_size, len(each))
+            for i in range(variable_value_size):
+                variable_value.append([])
+            i = 0
+            for each in all_elements:
+                search_by_attribute = target[i][1] if target[i][1] else "Value"
+                j = 0
+                for elem in each:
+                    if search_by_attribute.strip().lower() == "value":
+                        Attribute_value = eval("elem.GetCurrentPattern(ValuePattern.Pattern).Current.Value" + search_by_attribute)
                     else:
-                        if target[i][2]:
-                            Attribute_value = None
+                        Attribute_value = eval("elem.Current." + search_by_attribute)
+                    try:
+                        for search_contain in target[i][2]:
+                            if not isinstance(search_contain, type(Attribute_value)) or search_contain in Attribute_value or len(search_contain) == 0:
+                                break
+                        else:
+                            if target[i][2]:
+                                Attribute_value = None
 
-                    for search_doesnt_contain in target[i][3]:
-                        if isinstance(search_doesnt_contain, type(Attribute_value)) and search_doesnt_contain in Attribute_value and len(search_doesnt_contain) != 0:
-                            Attribute_value = None
-                except:
-                    CommonUtil.ExecLog(sModuleInfo, "Couldn't search by return_contains and return_does_not_contain", 2)
-                variable_value[j].append(Attribute_value)
-                j = j + 1
-            i = i + 1
-        if target_index == 1:
-            variable_value = list(map(list, zip(*variable_value)))[0]
-        elif not paired:
-            variable_value = list(map(list, zip(*variable_value)))
+                        for search_doesnt_contain in target[i][3]:
+                            if isinstance(search_doesnt_contain, type(Attribute_value)) and search_doesnt_contain in Attribute_value and len(search_doesnt_contain) != 0:
+                                Attribute_value = None
+                    except:
+                        CommonUtil.ExecLog(sModuleInfo, "Couldn't search by return_contains and return_does_not_contain", 2)
+                    variable_value[j].append(Attribute_value)
+                    j = j + 1
+                i = i + 1
+        elif not paired or len(target) == 1:
+            variable_value = []
+            for i in range(len(all_elements)):
+                variable_value.append([])
+            i = 0
+            for each in all_elements:
+                search_by_attribute = target[i][1] if target[i][1] else "Value"
+                j = 0
+                for elem in each:
+                    if search_by_attribute.strip().lower() == "value":
+                        Attribute_value = eval("elem.GetCurrentPattern(ValuePattern.Pattern).Current.Value" + search_by_attribute)
+                    else:
+                        Attribute_value = eval("elem.Current." + search_by_attribute)
+                    try:
+                        for search_contain in target[i][2]:
+                            if not isinstance(search_contain, type(Attribute_value)) or search_contain in Attribute_value or len(search_contain) == 0:
+                                break
+                        else:
+                            if target[i][2]:
+                                Attribute_value = None
+
+                        for search_doesnt_contain in target[i][3]:
+                            if isinstance(search_doesnt_contain, type(Attribute_value)) and search_doesnt_contain in Attribute_value and len(search_doesnt_contain) != 0:
+                                Attribute_value = None
+                    except:
+                        CommonUtil.ExecLog(sModuleInfo, "Couldn't search by return_contains and return_does_not_contain", 2)
+                    variable_value[i].append(Attribute_value)
+                    j = j + 1
+                i = i + 1
+            if len(target) == 1:
+                variable_value = variable_value[0]
 
         return Shared_Resources.Set_Shared_Variables(variable_name, variable_value)
 
