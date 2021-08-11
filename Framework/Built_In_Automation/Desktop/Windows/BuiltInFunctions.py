@@ -1254,12 +1254,11 @@ def Keystroke_For_Element(data_set):
 
     sModuleInfo = inspect.currentframe().f_code.co_name + " : " + MODULE_NAME
 
-    # Parse dataset
     try:
         time.sleep(2)
         keystroke_value = ""
         keystroke_char = ""
-        method_name=""
+        method_name = "pyautogui"
         for left, mid, right in data_set:
             left = left.strip().lower()
             if "action" in mid.lower():
@@ -1279,25 +1278,24 @@ def Keystroke_For_Element(data_set):
         errMsg = "Error parsing data set"
         return CommonUtil.Exception_Handler(sys.exc_info(), None, errMsg)
 
-    # Perform action
     try:
-        if method_name=='pyautogui' or method_name=="":
+        if method_name == 'pyautogui':
             try:
                 if keystroke_char != "":
                     pyautogui.write(keystroke_char)
-                    CommonUtil.ExecLog(sModuleInfo, "Successfully entered characters %s" % keystroke_char, 1)
+                    CommonUtil.ExecLog(sModuleInfo, "Successfully entered characters with pyautogui:\n%s" % keystroke_char, 1)
                     return "passed"
 
             except:
-                errMsg = "Could not enter characters for your element."
+                errMsg = "Could not enter characters with pyautogui"
                 return CommonUtil.Exception_Handler(sys.exc_info(), None, errMsg)
 
             count = 1
-            if "," in keystroke_value:  # Check for delimiter indicating multiple keystrokes
-                keystroke_value, count = keystroke_value.split(",")  # Separate keystroke and count
+            if "," in keystroke_value:
+                keystroke_value, count = keystroke_value.split(",")
                 count = int(count.strip())
-            keys = keystroke_value.split("+")  # Split string into array
-            keys = [x.strip() for x in keys]  # Clean it up
+            keys = keystroke_value.split("+")
+            keys = [x.strip() for x in keys]
 
             for i in range(count):
                 gui.hotkey(*keys)  # Send keypress (as individual values using the asterisk)
@@ -1308,47 +1306,35 @@ def Keystroke_For_Element(data_set):
             try:
                 if keystroke_char != "":
                     autoit.send(keystroke_char)
-                    CommonUtil.ExecLog(sModuleInfo, "Successfully entered character %s" % keystroke_char, 1)
+                    CommonUtil.ExecLog(sModuleInfo, "Successfully entered character with autoit:\n%s" % keystroke_char, 1)
                     return "passed"
             except:
-                errMsg = "Could not enter characters for your element."
+                errMsg = "Could not enter characters with autoit"
                 return CommonUtil.Exception_Handler(sys.exc_info(), None, errMsg)
 
             count = 1
-            keystroke_value=keystroke_value.upper()
-            if "," in keystroke_value:  # Check for delimiter indicating multiple keystrokes
-                keystroke_value, count = keystroke_value.split(",")  # Separate keystroke and count
+            keystroke_value = keystroke_value
+            if "," in keystroke_value:
+                keystroke_value, count = keystroke_value.split(",")
                 count = int(count.strip())
-            keys = keystroke_value.split("+")  # Split string into array
-            keys = [x.strip() for x in keys]  # Clean it up
-            print(keys)
-            if len(keys)==1:
-                send_key ='{' + keys[0] + ' ' + str(count) + '}'
+            keys = keystroke_value.split("+")
+            keys = [x.strip() for x in keys]
 
-
-            if keys[0] == 'SHIFT':
-                key0 = '+'
-            elif keys[0] == 'CTRL':
-                key0 = '^'
-            elif keys[0] == 'ALT':
-                key0 = '!'
-            elif keys[0] == 'WIN':
-                key0 = '#'
-            if len(keys)==2:
-                send_key = key0 + '{' + keys[1] + ' ' + str(count) + '}'
-
-
-            elif len(keys)==3:
-                if keys[1] == 'SHIFT':
-                    key1 = '+'
-                elif keys[1] == 'CTRL':
-                    key1 = '^'
-                elif keys[1] == 'ALT':
-                    key1 = '!'
-                elif keys[1] == 'WIN':
-                    key1 = '#'
-                send_key = key0 +key1+ '{' + keys[2] + ' ' + str(count) + '}'
-
+            send_key = ""
+            for i in range(len(keys)):
+                if i == len(keys)-1:
+                    send_key += '{' + keys[i] + ' ' + str(count) + '}'
+                else:
+                    upper = keys[i].upper()
+                    if upper == 'SHIFT':
+                        send_key += '+'
+                    elif upper == 'CTRL':
+                        send_key += '^'
+                    elif upper == 'ALT':
+                        send_key += '!'
+                    elif upper == 'WIN':
+                        send_key += '#'
+            # print(send_key)
             autoit.send(send_key)
             CommonUtil.ExecLog(sModuleInfo, "Successfully entered the keystroke", 1)
             return "passed"
