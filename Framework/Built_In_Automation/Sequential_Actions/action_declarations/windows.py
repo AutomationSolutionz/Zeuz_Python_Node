@@ -14,6 +14,7 @@ declarations = (
     { "name": "save attribute",  "function": "Save_Attribute",         "screenshot": "desktop" },
     { "name": "wait to appear",  "function": "wait_for_element",       "screenshot": "desktop" },
     { "name": "wait to disappear","function": "wait_for_element",      "screenshot": "desktop" },
+    { "name": "save attribute values in list","function": "save_attribute_values_in_list","screenshot": "desktop" },
 ) # yapf: disable
 
 module_name = "windows"

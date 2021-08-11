@@ -189,6 +189,7 @@ def _found(dataset_val, object_val):
 
 @logger
 def Element_only_search(
+    Parent_Element,
     window_name,
     element_name,
     element_class,
@@ -198,7 +199,11 @@ def Element_only_search(
 ):
     # max_time is built in wait function.  It will try every seconds 15 times.
     try:
-        ParentElement = _get_main_window(window_name)
+        if Parent_Element is not None:
+            ParentElement = Parent_Element
+            element_index = -1
+        else:
+            ParentElement = _get_main_window(window_name)
         if ParentElement is None:
             return "zeuz_failed"
 
@@ -338,11 +343,15 @@ def _child_search(
 
 @logger
 def Parent_search(
-    element_name, window_name, element_class, element_automation, element_control, element_index,
+    Parent_Element, element_name, window_name, element_class, element_automation, element_control, element_index,
     parent_name, parent_class, parent_automation, parent_control,
 ):
     try:
-        ParentElement = _get_main_window(window_name)
+        if Parent_Element is not None:
+            ParentElement = Parent_Element
+            element_index = -1
+        else:
+            ParentElement = _get_main_window(window_name)
         if ParentElement is None:
             return "zeuz_failed"
 
@@ -412,12 +421,16 @@ def _child_search_with_parent(
 
 @logger
 def Sibling_search(
-    element_name, window_name, element_class, element_automation, element_control, element_index,
+    Parent_Element, element_name, window_name, element_class, element_automation, element_control, element_index,
     parent_name, parent_class, parent_automation, parent_control,
     sibling_name, sibling_class, sibling_automation, sibling_control,
 ):
     try:
-        ParentElement = _get_main_window(window_name)
+        if Parent_Element is not None:
+            ParentElement = Parent_Element
+            element_index = -1
+        else:
+            ParentElement = _get_main_window(window_name)
         if ParentElement is None:
             return "zeuz_failed"
         global sibling_found
@@ -647,7 +660,7 @@ def _child_search_by_path(
         return []
 
 @logger
-def Get_Element(data_set, wait_time=10):
+def Get_Element(data_set, wait_time=10, Parent_Element=None):
     """ Top function for searching an element """
 
     sModuleInfo = inspect.currentframe().f_code.co_name + " : " + MODULE_NAME
@@ -703,7 +716,7 @@ def Get_Element(data_set, wait_time=10):
         if sibling and (sibling_name, sibling_class, sibling_automation, sibling_control) == (None, None, None, None):
             CommonUtil.ExecLog(sModuleInfo, "We support only 'Window', 'Name', 'ClassName', 'LocalizedControlType', 'AutomationId'", 3)
             return "zeuz_failed"
-        if window_name is None:
+        if window_name is None and Parent_Element is None:
             CommonUtil.ExecLog(sModuleInfo, "You should provide 'Window' otherwise the search won't be efficient", 2)
 
         s = time.time()
@@ -717,18 +730,18 @@ def Get_Element(data_set, wait_time=10):
 
             elif parent and sibling:
                 all_elements = Sibling_search(
-                    element_name, window_name, element_class, element_automation, element_control, element_index,
+                    Parent_Element, element_name, window_name, element_class, element_automation, element_control, element_index,
                     parent_name, parent_class, parent_automation, parent_control,
                     sibling_name, sibling_class, sibling_automation, sibling_control,
                 )
             elif parent:
                 all_elements = Parent_search(
-                    element_name, window_name, element_class, element_automation, element_control, element_index,
+                    Parent_Element, element_name, window_name, element_class, element_automation, element_control, element_index,
                     parent_name, parent_class, parent_automation, parent_control,
                 )
             else:
                 all_elements = Element_only_search(
-                    window_name, element_name, element_class, element_automation, element_control, element_index
+                    Parent_Element, window_name, element_name, element_class, element_automation, element_control, element_index
                 )
 
             if -len(all_elements) <= element_index < len(all_elements) or time.time() > s + wait_time:
@@ -737,6 +750,8 @@ def Get_Element(data_set, wait_time=10):
         if all_elements == "zeuz_failed":
             CommonUtil.ExecLog(sModuleInfo, "Could not find the element", 3)
             return "zeuz_failed"
+        if Parent_Element is not None:
+            return all_elements
         if -len(all_elements) <= element_index < len(all_elements):
             CommonUtil.ExecLog(sModuleInfo, "Returning the element of index = %d" % element_index, 1)
         else:
@@ -1317,6 +1332,104 @@ def wait_for_element(data_set):
 
         CommonUtil.ExecLog(sModuleInfo, "Wait for element failed", 3)
         return "zeuz_failed"
+
+    except Exception:
+        return CommonUtil.Exception_Handler(sys.exc_info())
+
+
+@logger
+def save_attribute_values_in_list(data_set):
+    sModuleInfo = inspect.currentframe().f_code.co_name + " : " + MODULE_NAME
+    try:
+        Element = Get_Element(data_set)
+        if Element == "zeuz_failed":
+            CommonUtil.ExecLog(sModuleInfo, "Could not find the main Element. We are searching for targets through out the whole desktop", 2)
+            Element = AutomationElement.RootElement
+
+        all_elements = []
+        target_index = 0
+        target = []
+        paired = True
+        try:
+            for left, mid, right in data_set:
+                left = left.strip().lower()
+                mid = mid.strip().lower()
+                right = right.strip()
+                if "target parameter" in mid:
+                    target.append([[], "", [], []])
+                    temp = right.strip(",").split(",")
+                    data = []
+                    for each in temp:
+                        data.append(each.strip().split("="))
+                    for i in range(len(data)):
+                        for j in range(len(data[i])):
+                            data[i][j] = data[i][j].strip()
+                            if j == 1:
+                                data[i][j] = data[i][j].strip('"')  # dont add another strip here. dont need to strip inside quotation mark
+
+                    for Left, Right in data:
+                        if Left == "return":
+                            target[target_index][1] = Right
+                        elif Left == "return_contains":
+                            target[target_index][2].append(Right)
+                        elif Left == "return_does_not_contain":
+                            target[target_index][3].append(Right)
+                        else:
+                            target[target_index][0].append((Left, 'element parameter', Right))
+
+                    target_index = target_index + 1
+                elif left == "save attribute values in list":
+                    variable_name = right
+                elif left == "paired":
+                    paired = False if right.lower() == "no" else True
+
+        except:
+            CommonUtil.Exception_Handler(sys.exc_info())
+            CommonUtil.ExecLog(sModuleInfo, "Unable to parse data. Please write data in correct format", 3)
+            return "zeuz_failed"
+
+        for each in target:
+            all_elements.append(Get_Element(each[0], Parent_Element=Element))
+
+        variable_value_size = 0
+        for each in all_elements:
+            variable_value_size = max(variable_value_size, len(each))
+
+        variable_value = []
+        for i in range(variable_value_size):
+            variable_value.append([])
+
+        i = 0
+        for each in all_elements:
+            search_by_attribute = target[i][1] if target[i][1] else "Value"
+            j = 0
+            for elem in each:
+                if search_by_attribute.strip().lower() == "value":
+                    Attribute_value = eval("elem.GetCurrentPattern(ValuePattern.Pattern).Current.Value" + search_by_attribute)
+                else:
+                    Attribute_value = eval("elem.Current." + search_by_attribute)
+                try:
+                    for search_contain in target[i][2]:
+                        if not isinstance(search_contain, type(Attribute_value)) or search_contain in Attribute_value or len(search_contain) == 0:
+                            break
+                    else:
+                        if target[i][2]:
+                            Attribute_value = None
+
+                    for search_doesnt_contain in target[i][3]:
+                        if isinstance(search_doesnt_contain, type(Attribute_value)) and search_doesnt_contain in Attribute_value and len(search_doesnt_contain) != 0:
+                            Attribute_value = None
+                except:
+                    CommonUtil.ExecLog(sModuleInfo, "Couldn't search by return_contains and return_does_not_contain", 2)
+                variable_value[j].append(Attribute_value)
+                j = j + 1
+            i = i + 1
+        if target_index == 1:
+            variable_value = list(map(list, zip(*variable_value)))[0]
+        elif not paired:
+            variable_value = list(map(list, zip(*variable_value)))
+
+        return Shared_Resources.Set_Shared_Variables(variable_name, variable_value)
 
     except Exception:
         return CommonUtil.Exception_Handler(sys.exc_info())
