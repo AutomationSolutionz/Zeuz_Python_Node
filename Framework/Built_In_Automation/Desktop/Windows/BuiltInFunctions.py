@@ -53,7 +53,8 @@ if Shared_Resources.Test_Shared_Variables("dependency"):  # Check if driver is a
     dependency = Shared_Resources.Get_Shared_Variables("dependency")  # Retreive appium driver
 
 recur_count = 0  # To be deleted
-common_sleep = 0
+unnecessary_sleep = 0
+gui_action_sleep = 2
 
 
 @logger
@@ -867,21 +868,21 @@ def Click_Element_None_Mouse(Element, Expand=True):
                 # Invoking actions
                 elif pattern_name == "Invoke":
                     CommonUtil.ExecLog(sModuleInfo, "Invoking the object", 1)
-                    time.sleep(1)
+                    time.sleep(unnecessary_sleep)
                     Element.GetCurrentPattern(InvokePattern.Pattern).Invoke()
                     return "passed"
                 # Selection of an item
                 elif pattern_name == "SelectionItem":
                     CommonUtil.ExecLog(sModuleInfo, "Selecting an item", 1)
                     Element.GetCurrentPattern(SelectionItemPattern.Pattern).Select()
-                    time.sleep(1)
+                    time.sleep(unnecessary_sleep)
                     return "passed"
                 # Toggling action
 
                 elif pattern_name == "Toggle":
                     CommonUtil.ExecLog(sModuleInfo, "Toggling an item", 1)
                     Element.GetCurrentPattern(TogglePattern.Pattern).Toggle()
-                    time.sleep(1)
+                    time.sleep(unnecessary_sleep)
                     return "passed"
                 # if no patterns are found, then we do an actual mouse click
                 else:
@@ -904,7 +905,7 @@ def Click_Element_None_Mouse(Element, Expand=True):
                     win32api.mouse_event(win32con.MOUSEEVENTF_LEFTDOWN, x, y, 0, 0)
                     time.sleep(0.1)
                     win32api.mouse_event(win32con.MOUSEEVENTF_LEFTUP, x, y, 0, 0)
-                    time.sleep(1)
+                    time.sleep(unnecessary_sleep)
                     return "passed"
 
         CommonUtil.ExecLog(sModuleInfo, "Unable to perform the action on the object", 3)
@@ -994,7 +995,6 @@ def Double_Click_Element(data_set):
                 CommonUtil.ExecLog(sModuleInfo, "Pattern name attached to the current element is: %s " % pattern_name, 1)
                 if pattern_name == "Invoke":
                     CommonUtil.ExecLog(sModuleInfo, "Double Invoking the object", 1)
-                    time.sleep(1)
                     Element.GetCurrentPattern(InvokePattern.Pattern).Invoke()
                     time.sleep(0.1)
                     Element.GetCurrentPattern(InvokePattern.Pattern).Invoke()
@@ -1038,7 +1038,7 @@ def Hover_Over_Element(data_set):
         win32api.SetCursorPos((x, y))
 
         autoit.mouse_move(x, y, speed=20)
-        time.sleep(1)
+        time.sleep(unnecessary_sleep)
         return "passed"
     except Exception:
         return CommonUtil.Exception_Handler(sys.exc_info(), None, "Error parsing data set")
@@ -1181,10 +1181,10 @@ def Enter_Text_In_Text_Box(data_set):
         else:
             try:
                 CommonUtil.ExecLog(sModuleInfo, "Trying to set the value by ValuePattern", 1)
-                time.sleep(common_sleep)
+                time.sleep(unnecessary_sleep)
                 Element.GetCurrentPattern(ValuePattern.Pattern).SetValue(text)
             except:
-                time.sleep(common_sleep)
+                time.sleep(0.5)
                 autoit.send("^a")
                 autoit.send(text)
                 CommonUtil.ExecLog(
@@ -1215,7 +1215,7 @@ def Scroll(data_set):
         win32api.SetCursorPos((x, y))
 
         autoit.mouse_wheel("up", 10)
-        time.sleep(1)
+        time.sleep(unnecessary_sleep)
     except Exception:
         return CommonUtil.Exception_Handler(sys.exc_info(), None, "Error parsing data set")
 
@@ -1273,7 +1273,6 @@ def Keystroke_For_Element(data_set):
     sModuleInfo = inspect.currentframe().f_code.co_name + " : " + MODULE_NAME
 
     try:
-        time.sleep(2)
         keystroke_value = ""
         keystroke_char = ""
         method_name = "pyautogui"
@@ -1297,6 +1296,7 @@ def Keystroke_For_Element(data_set):
         return CommonUtil.Exception_Handler(sys.exc_info(), None, errMsg)
 
     try:
+        time.sleep(gui_action_sleep)
         if method_name == 'pyautogui':
             try:
                 if keystroke_char != "":
