@@ -48,3 +48,4 @@ pyyaml
 psutil
 pywin32
 pythonnet
+keyboard
