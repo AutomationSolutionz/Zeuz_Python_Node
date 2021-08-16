@@ -3629,3 +3629,31 @@ def replace_string(data_set):
 
     except:
         return CommonUtil.Exception_Handler(sys.exc_info())
+
+
+
+@logger
+def search_and_save_text(data_set):
+    sModuleInfo = inspect.currentframe().f_code.co_name + " : " + MODULE_NAME
+
+    try:
+        variable_name = None
+        data = None
+        variable_value = None
+        user_given_data = None
+
+        for left, mid, right in data_set:
+            left = left.strip().lower()
+            if "pattern to match" in left:
+                user_given_data = right
+            elif "data" in left:
+                data = CommonUtil.parse_value_into_object(right)
+            elif "action" in mid:
+               variable_name = right.strip()
+
+        variable_value = re.findall(user_given_data,data)
+        sr.Set_Shared_Variables(variable_name, variable_value)
+        return "passed"
+
+    except:
+        CommonUtil.ExecLog(sModuleInfo, "Failed to save variable.", 3)
