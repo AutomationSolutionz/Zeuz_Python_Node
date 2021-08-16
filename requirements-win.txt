@@ -47,3 +47,4 @@ pyyaml
 psutil
 pywin32
 pythonnet
+imap-tools
