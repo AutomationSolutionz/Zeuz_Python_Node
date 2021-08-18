@@ -568,8 +568,11 @@ def Element_path_search(window_name, element_path):
         """
         ...>*Name='panel',**control="screen">**name='message',index=5>...> *Name='submit',**control='button'>
         """
-        CommonUtil.ExecLog(sModuleInfo, 'Window="%s" is selected. We are stepping inside the Window and will search for:\n%s'
-            % (ParentElement.Current.Name, element_path[:-1]), 1)
+        if window_name is None:
+            CommonUtil.ExecLog(sModuleInfo, 'Searching for:\n%s' % element_path[:-1], 1)
+        else:
+            CommonUtil.ExecLog(sModuleInfo, 'Window="%s" is selected. We are stepping inside the Window and will search for:\n%s'
+                % (ParentElement.Current.Name, element_path[:-1]), 1)
         global tabs
         tabs = 0
         temp = _child_search_by_path(
@@ -637,7 +640,7 @@ def _child_search_by_path(
                 return [all_elements[element_index]]
 
         else:
-            temp = _child_bfs_search(
+            temp = _child_search(
                 ParentElement,
                 element_name,
                 element_class,
@@ -650,7 +653,7 @@ def _child_search_by_path(
                 return []
             if element_path:
                 return _child_search_by_path(
-                    temp,
+                    temp[element_index],
                     element_path,
                     sModuleInfo
                 )
