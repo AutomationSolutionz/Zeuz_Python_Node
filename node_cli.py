@@ -291,14 +291,12 @@ def Login(cli=False, run_once=False):
                 user_info_object["project"] = default_team_and_project["project_name"]
                 user_info_object["team"] = default_team_and_project["team_name"]
 
-                CommonUtil.ExecLog(
-                    "", f"Authenticating user: {username}", 4, False,
-                )
+                CommonUtil.ExecLog("", f"Authenticating user: {username}", 4, False)
 
                 if api_flag:
                     r = RequestFormatter.Post("login_api", user_info_object)
 
-                if r or (isinstance(r,dict) and r['status']==200):
+                if r or (isinstance(r, dict) and r['status'] == 200):
                     CommonUtil.ExecLog(
                         "",
                         f"Authentication successful: USER='{username}', "
@@ -327,9 +325,7 @@ def Login(cli=False, run_once=False):
                             # RequestFormatter.Get("send_machine_time_zone_api", time_zone_object)
                             # end
                         except Exception as e:
-                            CommonUtil.ExecLog(
-                                "", "Time zone settings failed {}".format(e), 4, False
-                            )
+                            CommonUtil.ExecLog("", "Time zone settings failed {}".format(e), 4, False)
                         # Telling the node_manager that the node is ready to deploy
                         CommonUtil.node_manager_json(
                             {
@@ -399,20 +395,15 @@ def Login(cli=False, run_once=False):
                 4,
                 False,
             )
-            if cli:
-                zeuz_authentication_prompts_for_cli()
-                Login(cli=True)
-
+            # if cli:
+            #     zeuz_authentication_prompts_for_cli()
+            #     Login(cli=True)
             time.sleep(60)
 
     if run_once:
-        print(
-            "[OFFLINE]", "Zeuz Node is going offline after running one session, since `--once` or `-o` flag is specified.", 4
-        )
+        print("[OFFLINE]", "Zeuz Node is going offline after running one session, since `--once` or `-o` flag is specified.")
     else:
-        CommonUtil.ExecLog(
-            "[OFFLINE]", "Zeuz Node Offline", 3
-        )  # GUI relies on this exact text. GUI must be updated if this is changed
+        CommonUtil.ExecLog("[OFFLINE]", "Zeuz Node Offline", 3)  # GUI relies on this exact text. GUI must be updated if this is changed
 
     processing_test_case = False
 

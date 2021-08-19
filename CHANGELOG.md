@@ -1,6 +1,18 @@
 # Changelog
 
 # Version 14.x.x
+## Version 14.3.x
+### [14.3.0] [August 19, 2021]
+- **[Add]** Parent/Sibling/Index method added
+- **[Add]** Partial and case-insensitive search added
+- **[Add]** Element path method is added for searching an Element
+- **[Add]** element_path_detector.py app is added for generating path for an element
+- **[Add]** Zeuz default variable "os_name" is added
+- **[Add]** Wait for element to appear and disappear actions are added
+- **[Add]** "Save attribute values in list" action added
+- **[Fix]** All other desktop actions are fixed and improved
+- **[Change]** If all actions are disabled pass the step anyway
+- **[Change]** If internet goes down ZeuZ Node will now automatically handle the login when internet is up again
 ## Version 14.2.x
 ### [14.2.0] [July 10, 2021]
 - **[Change]** Changed Report API to handle both server version

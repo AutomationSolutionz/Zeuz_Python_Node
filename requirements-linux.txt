@@ -34,3 +34,5 @@ websocket-client
 tqdm
 pyscreenshot
 pyyaml
+pyautogui
+opencv-python

@@ -643,6 +643,7 @@ def Open_Browser_Wrapper(step_data):
         return CommonUtil.Exception_Handler(sys.exc_info(), None, ErrorMessage)
 
 
+
 @logger
 def Go_To_Link(step_data, page_title=False):
     # this function needs work with validating page title.  We need to check if user entered any title.
@@ -1056,7 +1057,7 @@ def execute_javascript(data_set):
         if var_name:
             Shared_Resources.Set_Shared_Variables(var_name, result)
     except Exception:
-        errMsg = "Failed to execute javascript."
+        errMsg = "Make sure element parameter is provided in the action."
         return CommonUtil.Exception_Handler(sys.exc_info(), None, errMsg)
 
 
