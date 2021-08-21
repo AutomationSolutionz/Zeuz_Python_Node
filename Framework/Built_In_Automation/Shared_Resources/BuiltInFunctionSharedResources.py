@@ -633,182 +633,173 @@ def parse_variable(name):
 def get_previous_response_variables_in_strings(step_data_string_input):
     sModuleInfo = inspect.currentframe().f_code.co_name + " : " + MODULE_NAME
     try:
-        changed = False
-        input = step_data_string_input
-        all_parse = input.split("%|")
+        input = str(step_data_string_input)
         output = ""
-        for each in all_parse:
-            if "|%" in each:
-                changed = True
-                parts = each.split("|%")
-
-                if str(parts[0]).startswith("random_data"):
-                    full_string = str(parts[0])
-                    random_string = ""
-                    if "(" in full_string:
-                        temp = full_string.split("(")
-                        params = temp[1].split(")")[0]
-                        if isinstance(CommonUtil.parse_value_into_object(params.strip()), list):
-                            random_string = str(random.choice(CommonUtil.parse_value_into_object(params.strip())))
-                        elif re.search("^\s*\d+\s*-{1}\s*\d+\s*$", params):
-                            start, end = params.replace(" ", "").split("-")
-                            random_string = str(random.randrange(int(start), int(end), 1))
-                        elif "," in params:
-                            list_of_params = params.split(",")
-                            random_string = random_string_generator(
-                                list_of_params[0].strip(),
-                                int(list_of_params[1].strip()),
-                            )
-                        else:
-                            if params.strip() == "":
-                                random_string = random_string_generator()
-                            else:
-                                random_string = random_string_generator(params.strip())
-
-                    else:
-                        CommonUtil.ExecLog(
-                            sModuleInfo,
-                            'Wrong format provided. The correct for %|random_data()|% is below\n' +
-                            '%|random_data( [False , "a", True] )|%\n%|random_string(100-200)|%',
-                            3,
+        while "%|" in input and "|%" in input:
+            splitted = input.split("%|", 1)
+            output += splitted[0]
+            splitted = splitted[1].split("|%", 1)
+            input = splitted[1]
+            var_name = splitted[0]
+            if var_name.startswith("random_data"):
+                full_string = var_name
+                random_string = ""
+                if "(" in full_string:
+                    temp = full_string.split("(")
+                    params = temp[1].split(")")[0]
+                    if isinstance(CommonUtil.parse_value_into_object(params.strip()), list):
+                        random_string = str(random.choice(CommonUtil.parse_value_into_object(params.strip())))
+                    elif re.search("^\s*\d+\s*-{1}\s*\d+\s*$", params):
+                        start, end = params.replace(" ", "").split("-")
+                        random_string = str(random.randrange(int(start), int(end), 1))
+                    elif "," in params:
+                        list_of_params = params.split(",")
+                        random_string = random_string_generator(
+                            list_of_params[0].strip(),
+                            int(list_of_params[1].strip()),
                         )
-                        return "zeuz_failed"
-
-                    output += random_string
-                    CommonUtil.ExecLog(
-                        sModuleInfo,
-                        'Replacing variable "%s" with its value "%s"'
-                        % (parts[0], random_string),
-                        0,
-                    )
-                elif str(parts[0]).startswith("random_string"):
-                    CommonUtil.ExecLog(
-                        "",
-                        '%|random_string()|% is deprecated and will be deleted soon. Use %|random_data()|% to get updated features',
-                        2
-                    )
-                    full_string = str(parts[0])
-                    random_string = ""
-                    if "(" in full_string:
-                        temp = full_string.split("(")
-                        params = temp[1].split(")")[0]
-                        if "," in params:
-                            list_of_params = params.split(",")
-                            random_string = random_string_generator(
-                                list_of_params[0].strip(),
-                                int(list_of_params[1].strip()),
-                            )
-                        else:
-                            if params.strip() == "":
-                                random_string = random_string_generator()
-                            else:
-                                random_string = random_string_generator(params.strip())
                     else:
-                        return "zeuz_failed"
-
-                    if random_string in failed_tag_list:
-                        return "zeuz_failed"
-
-                    output += random_string
-                elif str(parts[0]).startswith("rest_response"):
-                    full_string = str(parts[0])
-                    result_json = Get_Shared_Variables("rest_response")
-                    if result_json in failed_tag_list:
-                        CommonUtil.ExecLog(
-                            sModuleInfo,
-                            "No such variable named 'rest_response' in shared variables list",
-                            3,
-                        )
-                        return "zeuz_failed"
-                    rest_json_output = handle_nested_rest_json(
-                        result_json, str(parts[0])
-                    )
-                    if rest_json_output in failed_tag_list:
-                        CommonUtil.ExecLog(
-                            sModuleInfo,
-                            "Json indexes are not provided correctly for run_response",
-                            3,
-                        )
-                        return "zeuz_failed"
-                    output += str(rest_json_output)
-                elif str(parts[0]).lower().startswith("today") or str(parts[0]).startswith("currentEpochTime"):
-                    replaced_string = save_built_in_time_variable(str(parts[0]))
-                    if replaced_string in failed_tag_list:
-                        CommonUtil.ExecLog(
-                            sModuleInfo,
-                            "No such date variable named '%s', user formats like %%|today|%% , %%|today + 1d|%% , %%|today - 3m|%% , %%|today + 1w|%%, %%|today + 2y|%% , %%|currentEpochTime|%% etc."
-                            % parts[0],
-                            3,
-                        )
-                        return "zeuz_failed"
-                    output += str(save_built_in_time_variable(str(parts[0])))
-
-                elif str(parts[0]).startswith("random_number_in_range"):
-                    full_string = str(parts[0])
-                    if "(" in full_string:
-                        temp = full_string.split("(")
-                        params = temp[1].split(")")[0]
-                        if "," in params:
-                            list_of_params = params.split(",")
-                        if len(list_of_params) > 2:
-                            return "zeuz_failed"
+                        if params.strip() == "":
+                            random_string = random_string_generator()
                         else:
-                            random_string = str(
-                                random.randint(
-                                    int(list_of_params[0]), int(list_of_params[1])
-                                )
-                            )
-                    else:
-                        return "zeuz_failed"
-
-                    output += random_string
-
-                elif str(parts[0]).startswith("pick_random_element"):
-                    full_string = str(parts[0])
-                    if "(" in full_string:
-                        temp = full_string.split("(")
-                        params = temp[1].split(")")[0]
-                        if "," in params:
-                            list_of_params = params.split(",")
-                            rand_str = list_of_params[
-                                random.randint(0, len(list_of_params) - 1)
-                            ]
-                        else:
-                            rand_str = params
-
-                    else:
-                        return "zeuz_failed"
-                    if len(params) == 0:
-                        return "zeuz_failed"
-                    output += rand_str
-
-                elif str(parts[0]).startswith("os_name"):
-                    import platform
-                    p = platform.system().lower()
-                    if p.startswith("windows"): output += "windows"
-                    elif p.startswith("linux"): output += "linux"
-                    elif p.startswith("darwin"): output += "darwin"
-                    else: output += p
+                            random_string = random_string_generator(params.strip())
 
                 else:
-                    var_value = parse_variable(parts[0])
-                    if var_value == "zeuz_failed":
-                        CommonUtil.ExecLog(
-                            sModuleInfo,
-                            "No such variable named '%s' in shared variables list"
-                            % parts[0],
-                            3,
+                    CommonUtil.ExecLog(
+                        sModuleInfo,
+                        'Wrong format provided. The correct for %|random_data()|% is below\n' +
+                        '%|random_data( [False , "a", True] )|%\n%|random_string(100-200)|%',
+                        3,
+                    )
+                    return "zeuz_failed"
+
+                output += random_string
+
+            elif var_name.startswith("random_string"):
+                CommonUtil.ExecLog(
+                    "",
+                    '%|random_string()|% is deprecated and will be deleted soon. Use %|random_data()|% to get updated features',
+                    2
+                )
+                full_string = var_name
+                random_string = ""
+                if "(" in full_string:
+                    temp = full_string.split("(")
+                    params = temp[1].split(")")[0]
+                    if "," in params:
+                        list_of_params = params.split(",")
+                        random_string = random_string_generator(
+                            list_of_params[0].strip(),
+                            int(list_of_params[1].strip()),
                         )
+                    else:
+                        if params.strip() == "":
+                            random_string = random_string_generator()
+                        else:
+                            random_string = random_string_generator(params.strip())
+                else:
+                    return "zeuz_failed"
+
+                if random_string in failed_tag_list:
+                    return "zeuz_failed"
+
+                output += random_string
+
+            elif var_name.startswith("rest_response"):
+                full_string = var_name
+                result_json = Get_Shared_Variables("rest_response")
+                if result_json in failed_tag_list:
+                    CommonUtil.ExecLog(
+                        sModuleInfo,
+                        "No such variable named 'rest_response' in shared variables list",
+                        3,
+                    )
+                    return "zeuz_failed"
+                rest_json_output = handle_nested_rest_json(
+                    result_json, var_name
+                )
+                if rest_json_output in failed_tag_list:
+                    CommonUtil.ExecLog(
+                        sModuleInfo,
+                        "Json indexes are not provided correctly for run_response",
+                        3,
+                    )
+                    return "zeuz_failed"
+                output += str(rest_json_output)
+
+            elif var_name.lower().startswith("today") or var_name.startswith("currentEpochTime"):
+                replaced_string = save_built_in_time_variable(var_name)
+                if replaced_string in failed_tag_list:
+                    CommonUtil.ExecLog(
+                        sModuleInfo,
+                        "No such date variable named '%s', user formats like %%|today|%% , %%|today + 1d|%% , %%|today - 3m|%% , %%|today + 1w|%%, %%|today + 2y|%% , %%|currentEpochTime|%% etc."
+                        % var_name,
+                        3,
+                    )
+                    return "zeuz_failed"
+                output += str(save_built_in_time_variable(var_name))
+
+            elif var_name.startswith("random_number_in_range"):
+                full_string = var_name
+                if "(" in full_string:
+                    temp = full_string.split("(")
+                    params = temp[1].split(")")[0]
+                    if "," in params:
+                        list_of_params = params.split(",")
+                    if len(list_of_params) > 2:
                         return "zeuz_failed"
                     else:
-                        output += str(var_value)
-                output += parts[1]
+                        random_string = str(
+                            random.randint(
+                                int(list_of_params[0]), int(list_of_params[1])
+                            )
+                        )
+                else:
+                    return "zeuz_failed"
+
+                output += random_string
+
+            elif var_name.startswith("pick_random_element"):
+                full_string = var_name
+                if "(" in full_string:
+                    temp = full_string.split("(")
+                    params = temp[1].split(")")[0]
+                    if "," in params:
+                        list_of_params = params.split(",")
+                        rand_str = list_of_params[
+                            random.randint(0, len(list_of_params) - 1)
+                        ]
+                    else:
+                        rand_str = params
+
+                else:
+                    return "zeuz_failed"
+                if len(params) == 0:
+                    return "zeuz_failed"
+                output += rand_str
+
+            elif var_name.startswith("os_name"):
+                import platform
+                p = platform.system().lower()
+                if p.startswith("windows"): output += "windows"
+                elif p.startswith("linux"): output += "linux"
+                elif p.startswith("darwin"): output += "darwin"
+                else: output += p
+
             else:
-                output += each
-        if changed == True:
-            CommonUtil.ExecLog(sModuleInfo, "Input string is changed by variable substitution", 0)
-            CommonUtil.ExecLog(sModuleInfo, "Input string before change: %s" % input, 0)
-            CommonUtil.ExecLog(sModuleInfo, "Input string after change: %s" % output, 0)
+                var_value = parse_variable(var_name)
+                if var_value == "zeuz_failed":
+                    CommonUtil.ExecLog(
+                        sModuleInfo,
+                        "No such variable named '%s' in shared variables list"
+                        % var_name,
+                        3,
+                    )
+                    return "zeuz_failed"
+                else:
+                    output += str(var_value)
+
+        output += input
 
         return output
 
