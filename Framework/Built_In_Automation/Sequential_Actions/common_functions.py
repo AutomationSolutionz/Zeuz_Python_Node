@@ -963,21 +963,35 @@ def New_Compare_Variables(step_data):
         if check_subset:
             list1 = CommonUtil.parse_value_into_object(list1_name)
             list2 = CommonUtil.parse_value_into_object(list2_name)
+            if type(list1) == str and type(list2) == str:
+                if list1 == list2:
+                    CommonUtil.ExecLog(sModuleInfo, "LEFT (%s):\n%s\n\nRIGHT (%s):\n%s" % (datatype1, list1_str, datatype2, list2_str), 1)
+                    CommonUtil.ExecLog(sModuleInfo, "RIGHT str is equal to the LEFT str", 1)
+                    return "passed"
+                elif list1 in list2:
+                    CommonUtil.ExecLog(sModuleInfo, "LEFT (%s):\n%s\n\nRIGHT (%s):\n%s" % (datatype1, list1_str, datatype2, list2_str), 1)
+                    CommonUtil.ExecLog(sModuleInfo, "LEFT str is a subset of RIGHT str", 1)
+                    return "passed"
+                else:
+                    CommonUtil.ExecLog(sModuleInfo, "LEFT (%s):\n%s\n\nRIGHT (%s):\n%s" % (datatype1, list1_str, datatype2, list2_str), 3)
+                    CommonUtil.ExecLog(sModuleInfo, "LEFT str is not a subset of RIGHT str", 3)
+                    return "zeuz_failed"
+
             if not (type(list1).__name__ in ("list", "tuple") and type(list2).__name__ in ("list", "tuple")):
                 CommonUtil.ExecLog(sModuleInfo, "LEFT (%s):\n%s\n\nRIGHT (%s):\n%s" % (datatype1, list1_str, datatype2, list2_str), 3)
-                CommonUtil.ExecLog(sModuleInfo, "To check subset both the variable should be list or tuple", 3)
+                CommonUtil.ExecLog(sModuleInfo, "To check subset both the variable should be list or tuple or str", 3)
                 return "zeuz_failed"
             elif list1 == list2:
                 CommonUtil.ExecLog(sModuleInfo, "LEFT (%s):\n%s\n\nRIGHT (%s):\n%s" % (datatype1, list1_str, datatype2, list2_str), 1)
                 CommonUtil.ExecLog(sModuleInfo, "RIGHT list is equal to the LEFT list", 1)
                 return "passed"
-            elif all(x in list1 for x in list2):
+            elif all(x in list2 for x in list1):
                 CommonUtil.ExecLog(sModuleInfo, "LEFT (%s):\n%s\n\nRIGHT (%s):\n%s" % (datatype1, list1_str, datatype2, list2_str), 1)
-                CommonUtil.ExecLog(sModuleInfo, "RIGHT list is a subset of LEFT list", 1)
+                CommonUtil.ExecLog(sModuleInfo, "LEFT list is a subset of RIGHT list", 1)
                 return "passed"
             else:
                 CommonUtil.ExecLog(sModuleInfo, "LEFT (%s):\n%s\n\nRIGHT (%s):\n%s" % (datatype1, list1_str, datatype2, list2_str), 3)
-                CommonUtil.ExecLog(sModuleInfo, "RIGHT list is not a subset of LEFT list", 3)
+                CommonUtil.ExecLog(sModuleInfo, "LEFT list is not a subset of RIGHT list", 3)
                 return "zeuz_failed"
 
         found_list = []
@@ -1029,7 +1043,7 @@ def New_Compare_Variables(step_data):
             else:
                 if results == "not matched":
                     CommonUtil.ExecLog(sModuleInfo, "LEFT (%s):\n%s\n\nRIGHT (%s):\n%s" % (datatype1, list1_str, datatype2, list2_str), 3)
-                    CommonUtil.ExecLog(sModuleInfo, "Somewhere inside RIGHT list has more items than LEFT list", 3)
+                    CommonUtil.ExecLog(sModuleInfo, "LEFT list and RIGHT list did not match", 3)
                     return "zeuz_failed"
                 elif results == "all matched":
                     CommonUtil.ExecLog(sModuleInfo, "LEFT (%s):\n%s\n\nRIGHT (%s):\n%s" % (datatype1, list1_str, datatype2, list2_str), 1)
@@ -1104,6 +1118,7 @@ def New_Compare_Variables(step_data):
                     CommonUtil.ExecLog(sModuleInfo, "LEFT (%s):\n%s\n\nRIGHT (%s):\n%s" % (datatype1, list1, datatype2, list2), 3)
                     CommonUtil.ExecLog(sModuleInfo, "LEFT and RIGHT value did not match", 3)
                     return "zeuz_failed"
+        """ Below code is useless now"""
         if nested:
             pass
         else:
@@ -1255,23 +1270,26 @@ def compare_list_tuple(list1, list2, check_exclusion, match_by_index):
 
     else:
         if (len(list1) and type(list1[0]).__name__ in ("list", "tuple")) or (len(list2) and type(list2[0]).__name__ in ("list", "tuple")):
-            nested = True
+            nested = True   # Maybe its not needed here in exact match
+        if type(list1).__name__ in ("list", "tuple"):
             list1 = get_list(list1)
+        if type(list2).__name__ in ("list", "tuple"):
             list2 = get_list(list2)
-            if list1 == list2:
-                return "all matched"
-            else:
-                return "not matched"
+        if list1 == list2:
+            return "all matched"
+        else:
+            return "not matched"
 
-        for cnt in range(len(list1)):
-            if list1[cnt] == list2[cnt]:
-                found_list.append(list1[cnt])
-                pass_count += 1
-            else:
-                not_found_list2.append(list1[cnt])
-                not_found_list1.append(list2[cnt])
-                fail_count += 1
-        return found_list, not_found_list1, not_found_list2, pass_count, fail_count
+        """ Old method removed """
+        # for cnt in range(len(list1)):
+        #     if list1[cnt] == list2[cnt]:
+        #         found_list.append(list1[cnt])
+        #         pass_count += 1
+        #     else:
+        #         not_found_list2.append(list1[cnt])
+        #         not_found_list1.append(list2[cnt])
+        #         fail_count += 1
+        # return found_list, not_found_list1, not_found_list2, pass_count, fail_count
 
 
 def get_list(value):
