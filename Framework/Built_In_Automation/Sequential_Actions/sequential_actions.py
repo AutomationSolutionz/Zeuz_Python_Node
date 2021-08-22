@@ -298,8 +298,7 @@ def if_else_log_for_actions(left, next_level_step_data, statement="if"):
     return left + ".... condition matched\n" + "Running actions: " + log_actions
 
 
-def Handle_Conditional_Action(step_data, data_set_no):
-    #TODO: Rename this action to "If_else_action"
+def If_else_action(step_data, data_set_no):
     sModuleInfo = inspect.currentframe().f_code.co_name + " : " + MODULE_NAME
     try:
         data_set = step_data[data_set_no]
@@ -344,8 +343,9 @@ def Handle_Conditional_Action(step_data, data_set_no):
                         if i.strip() in left:
                             operators[i] += 1
                     #TODO: Check these 2 lines, should not be needed anymore
-                    operators[" |<| "] -= operators[" |<=| "]
-                    operators[" |>| "] -= operators[" |>=| "]
+
+                    # operators[" |<| "] -= operators[" |<=| "]
+                    # operators[" |>| "] -= operators[" |>=| "]
 
                     if sum(operators.values()) == 0:
                         CommonUtil.ExecLog(
@@ -544,6 +544,8 @@ def for_loop_action(step_data, data_set_no):
         data_set = common.shared_variable_to_value(data_set)
         if data_set in failed_tag_list:
             return "zeuz_failed", []
+        operators = ["|==|", "==", "|!=|", "|<=|", "|>=|", "|>|", "|<|", "|in|"]
+        operator = ""
 
         for row in data_set:
             if row[1].strip().lower() == "for loop action":
@@ -570,20 +572,37 @@ def for_loop_action(step_data, data_set_no):
                         iterable = CommonUtil.parse_value_into_object(left)
                     CommonUtil.ExecLog(sModuleInfo, "Looping through a %s: %s" % (type(iterable).__name__, str(iterable)), 1)
             elif row[0].strip().lower().startswith("exit loop"):
+                if not row[2].lower().startswith("if"):
+                    CommonUtil.ExecLog(
+                        sModuleInfo,
+                        "'if' keyword is not provided at beginning",
+                        3
+                    )
+                    return "zeuz_failed", []
+                for i in operators:
+                    if i in row[2]:
+                        operator = i
+                        break
+                if operator == "==":
+                    CommonUtil.ExecLog(
+                        sModuleInfo,
+                        "Please use |==| instead of ==",
+                        2
+                    )
                 value = row[2].strip()
-                if "pass" in value.lower() and "==" not in value:
+                if "pass" in value.lower() and not operator:
                     if "any" in value.lower(): passing_data_sets += loop_this_data_sets
                     else: passing_data_sets += get_data_set_nums(value)
                     if row[0].strip().lower() == "exit loop and fail":
                         if "any" in value.lower(): exit_loop_and_fail += loop_this_data_sets
                         else: exit_loop_and_fail += get_data_set_nums(value)
-                elif "fail" in value.lower() and "==" not in value:
+                elif "fail" in value.lower() and not operator:
                     if "any" in value.lower(): failing_data_sets += loop_this_data_sets
                     else: failing_data_sets += get_data_set_nums(value)
                     if row[0].strip().lower() == "exit loop and fail":
                         if "any" in value.lower(): exit_loop_and_fail += loop_this_data_sets
                         else: exit_loop_and_fail += get_data_set_nums(value)
-                elif "==" in value and "optional loop settings" in row[1].strip().lower():
+                elif operator and "optional loop settings" in row[1].strip().lower():
                     operand_matching = row
                     if row[0].strip().lower() == "exit loop and fail":
                         exit_loop_nd_fail = True
@@ -656,14 +675,21 @@ def for_loop_action(step_data, data_set_no):
                     operand_matching_2 = operand_matching[2][3:] if operand_matching[2][2] == " " else operand_matching[2][2:]
                     data = [(operand_matching[0], "optional parameter", operand_matching_2)]
                     RandL = common.shared_variable_to_value(data)[0][2]
-                    Lvalue, Rvalue = RandL.split("==")
+                    if operator == "":
+                        CommonUtil.ExecLog(
+                            sModuleInfo,
+                            "Specify an operator among |==|, |!=|, |<|, |>|, |<=|, |>=|, |in| and add a <single space> before and after the operator",
+                            3,
+                        )
+                        return "zeuz_failed", []
+                    Lvalue, Rvalue = RandL.split(operator)
                     Lvalue = Lvalue[:-1] if Lvalue[-1] == " " else Lvalue  # remove 1 space before the operator
                     Rvalue = Rvalue[1:] if Rvalue[0] == " " else Rvalue  # remove 1 space after the operator
                     Lvalue, Rvalue = CommonUtil.parse_value_into_object(Lvalue), CommonUtil.parse_value_into_object(Rvalue)
-                    if Lvalue == Rvalue:
+                    if eval("Lvalue %s Rvalue" % operator.strip("|")):
                         CommonUtil.ExecLog(
                             sModuleInfo,
-                            "Loop exit condition satisfied. Left and Right operands matched. Exiting loop",
+                            "Loop exit condition satisfied. Left and Right operands compared. Exiting loop",
                             1,
                         )
                         if exit_loop_nd_fail:
@@ -687,7 +713,7 @@ def for_loop_action(step_data, data_set_no):
         return CommonUtil.Exception_Handler(sys.exc_info()), []
 
 
-def Handle_While_Loop_Action(step_data, data_set_no):
+def While_Loop_Action(step_data, data_set_no):
     sModuleInfo = inspect.currentframe().f_code.co_name + " : " + MODULE_NAME
     try:
         data_set = step_data[data_set_no]
@@ -708,6 +734,8 @@ def Handle_While_Loop_Action(step_data, data_set_no):
         data_set = common.shared_variable_to_value(data_set)
         if data_set in failed_tag_list:
             return "zeuz_failed", []
+        operators = ["|==|", "==", "|!=|", "|<=|", "|>=|", "|>|", "|<|", "|in|"]
+        operator = ""
 
         for row in data_set:
             if row[0].strip().lower() == "run actions":
@@ -716,20 +744,37 @@ def Handle_While_Loop_Action(step_data, data_set_no):
             elif row[0].strip().lower() == "repeat":
                 max_no_of_loop = int(sr.get_previous_response_variables_in_strings(row[2].strip()))
             elif row[0].strip().lower().startswith("exit loop"):
+                if not row[2].lower().startswith("if"):
+                    CommonUtil.ExecLog(
+                        sModuleInfo,
+                        "'if' keyword is not provided at beginning",
+                        3
+                    )
+                    return "zeuz_failed", []
+                for i in operators:
+                    if i in row[2]:
+                        operator = i
+                        break
+                if operator == "==":
+                    CommonUtil.ExecLog(
+                        sModuleInfo,
+                        "Please use |==| instead of ==",
+                        2
+                    )
                 value = row[2].strip()
-                if "pass" in value.lower() and "==" not in value:
+                if "pass" in value.lower() and not operator:
                     if "any" in value.lower(): passing_data_sets += loop_this_data_sets
                     else: passing_data_sets += get_data_set_nums(value)
                     if row[0].strip().lower() == "exit loop and fail":
                         if "any" in value.lower(): exit_loop_and_fail += loop_this_data_sets
                         else: exit_loop_and_fail += get_data_set_nums(value)
-                elif "fail" in value.lower() and "==" not in value:
+                elif "fail" in value.lower() and not operator:
                     if "any" in value.lower(): failing_data_sets += loop_this_data_sets
                     else: failing_data_sets += get_data_set_nums(value)
                     if row[0].strip().lower() == "exit loop and fail":
                         if "any" in value.lower(): exit_loop_and_fail += loop_this_data_sets
                         else: exit_loop_and_fail += get_data_set_nums(value)
-                elif "==" in value and "optional loop settings" in row[1].strip().lower():
+                elif operator and "optional loop settings" in row[1].strip().lower():
                     operand_matching = row
                     if row[0].strip().lower() == "exit loop and fail":
                         exit_loop_nd_fail = True
@@ -819,14 +864,21 @@ def Handle_While_Loop_Action(step_data, data_set_no):
                     operand_matching_2 = operand_matching[2][3:] if operand_matching[2][2] == " " else operand_matching[2][2:]
                     data = [(operand_matching[0], "optional parameter", operand_matching_2)]
                     RandL = common.shared_variable_to_value(data)[0][2]
-                    Lvalue, Rvalue = RandL.split("==")
+                    if operator == "":
+                        CommonUtil.ExecLog(
+                            sModuleInfo,
+                            "Specify an operator among |==|, |!=|, |<|, |>|, |<=|, |>=|, |in| and add a <single space> before and after the operator",
+                            3,
+                        )
+                        return "zeuz_failed", []
+                    Lvalue, Rvalue = RandL.split(operator)
                     Lvalue = Lvalue[:-1] if Lvalue[-1] == " " else Lvalue  # remove 1 space before the operator
                     Rvalue = Rvalue[1:] if Rvalue[0] == " " else Rvalue  # remove 1 space after the operator
                     Lvalue, Rvalue = CommonUtil.parse_value_into_object(Lvalue), CommonUtil.parse_value_into_object(Rvalue)
-                    if Lvalue == Rvalue:
+                    if eval("Lvalue %s Rvalue" % operator.strip("|")):
                         CommonUtil.ExecLog(
                             sModuleInfo,
-                            "Loop exit condition satisfied. Left and Right operands matched. Exiting loop",
+                            "Loop exit condition satisfied. Left and Right operands compared. Exiting loop",
                             1,
                         )
                         if exit_loop_nd_fail:
@@ -948,7 +1000,7 @@ def Run_Sequential_Actions(
                         break
 
                     else:
-                        result, to_skip = Handle_Conditional_Action(step_data, dataset_cnt)
+                        result, to_skip = If_else_action(step_data, dataset_cnt)
                         skip += to_skip
                         skip_for_loop += to_skip
                         if result in failed_tag_list:
@@ -997,7 +1049,7 @@ def Run_Sequential_Actions(
                             return "zeuz_failed", skip_for_loop
                 elif "loop" in action_name:
                     if "while" in action_name.lower():
-                        result, skip_for_loop = Handle_While_Loop_Action(step_data, dataset_cnt)
+                        result, skip_for_loop = While_Loop_Action(step_data, dataset_cnt)
                     skip = list(set(skip + skip_for_loop))
                     if result in failed_tag_list:
                         return "zeuz_failed", skip_for_loop
