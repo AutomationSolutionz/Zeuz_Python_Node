@@ -945,6 +945,7 @@ def command_line_args():
             ConfigModule.add_config_value(AUTHENTICATION_TAG, "server_address", server)
         elif logout:
             ConfigModule.remove_config_value(AUTHENTICATION_TAG, "server_address")
+            zeuz_authentication_prompts_for_cli()
         else:
             CommonUtil.ExecLog(
                 "AUTHENTICATION FAILED",
