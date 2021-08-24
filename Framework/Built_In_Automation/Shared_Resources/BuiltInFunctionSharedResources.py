@@ -641,9 +641,20 @@ def get_previous_response_variables_in_strings(step_data_string_input):
             splitted = splitted[1].split("|%", 1)
             input = splitted[1]
             var_name = splitted[0]
+            functions = []
+            while True:
+                fun = re.findall("\.[a-zA-Z_]+\([^()]*\)$", var_name)
+                if not fun:
+                    break
+                functions += fun
+                var_name = var_name[:-len(fun[0])]
+            functions.reverse()
+            # functions = re.findall("(\.[a-zA-Z_]+\([^()]*\))+$", var_name)
+            # if functions:
+            #     var_name = var_name[:-len(functions[0])]
+            #     functions = re.findall("\.[a-zA-Z_]+\([^()]*\)", functions[0])
             if var_name.startswith("random_data"):
                 full_string = var_name
-                random_string = ""
                 if "(" in full_string:
                     temp = full_string.split("(")
                     params = temp[1].split(")")[0]
@@ -673,7 +684,7 @@ def get_previous_response_variables_in_strings(step_data_string_input):
                     )
                     return "zeuz_failed"
 
-                output += random_string
+                generated_value = random_string
 
             elif var_name.startswith("random_string"):
                 CommonUtil.ExecLog(
@@ -703,7 +714,7 @@ def get_previous_response_variables_in_strings(step_data_string_input):
                 if random_string in failed_tag_list:
                     return "zeuz_failed"
 
-                output += random_string
+                generated_value = random_string
 
             elif var_name.startswith("rest_response"):
                 full_string = var_name
@@ -725,7 +736,7 @@ def get_previous_response_variables_in_strings(step_data_string_input):
                         3,
                     )
                     return "zeuz_failed"
-                output += str(rest_json_output)
+                generated_value = rest_json_output
 
             elif var_name.lower().startswith("today") or var_name.startswith("currentEpochTime"):
                 replaced_string = save_built_in_time_variable(var_name)
@@ -737,7 +748,7 @@ def get_previous_response_variables_in_strings(step_data_string_input):
                         3,
                     )
                     return "zeuz_failed"
-                output += str(save_built_in_time_variable(var_name))
+                generated_value = save_built_in_time_variable(var_name)
 
             elif var_name.startswith("random_number_in_range"):
                 full_string = var_name
@@ -757,7 +768,7 @@ def get_previous_response_variables_in_strings(step_data_string_input):
                 else:
                     return "zeuz_failed"
 
-                output += random_string
+                generated_value = random_string
 
             elif var_name.startswith("pick_random_element"):
                 full_string = var_name
@@ -776,15 +787,15 @@ def get_previous_response_variables_in_strings(step_data_string_input):
                     return "zeuz_failed"
                 if len(params) == 0:
                     return "zeuz_failed"
-                output += rand_str
+                generated_value = rand_str
 
             elif var_name.startswith("os_name"):
                 import platform
                 p = platform.system().lower()
-                if p.startswith("windows"): output += "windows"
-                elif p.startswith("linux"): output += "linux"
-                elif p.startswith("darwin"): output += "darwin"
-                else: output += p
+                if p.startswith("windows"): generated_value = "windows"
+                elif p.startswith("linux"): generated_value = "linux"
+                elif p.startswith("darwin"): generated_value = "darwin"
+                else: generated_value = p
 
             else:
                 var_value = parse_variable(var_name)
@@ -797,7 +808,9 @@ def get_previous_response_variables_in_strings(step_data_string_input):
                     )
                     return "zeuz_failed"
                 else:
-                    output += str(var_value)
+                    generated_value = var_value
+            generated_value = evaluate_methods(generated_value, functions)
+            output += generated_value
 
         output += input
 
@@ -805,6 +818,12 @@ def get_previous_response_variables_in_strings(step_data_string_input):
 
     except Exception:
         return CommonUtil.Exception_Handler(sys.exc_info())
+
+
+def evaluate_methods(value, functions):
+    for i in functions:
+        value = eval("value" + i)
+    return str(value)
 
 
 def random_string_generator(pattern="nluc", size=10):
