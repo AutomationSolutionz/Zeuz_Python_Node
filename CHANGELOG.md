@@ -1,6 +1,15 @@
 # Changelog
 
 # Version 14.x.x
+## Version 14.4.x
+### [14.4.0] [August 24, 2021]
+- **[Fix]** Fixed variable parsing limitations
+- **[Fix]** Fixed exact match bug and improved subset in compare_data action
+- **[Add]**  All types of operators = ["|==|", "==", "|!=|", "|<=|", "|>=|", "|>|", "|<|", "|in|"] now can be used in For loop and While loop exit conditions. Example: 
+`exit loop and continue, optional loop setting, if "start date" |in| %|row[0]|%`
+- **[Add]** Added all python default methods in zeuz variable syntax. Example: 
+`%|list_name.sort()|%`
+`%|var_name.upper().strip().split(" ")|%`
 ## Version 14.3.x
 ### [14.3.0] [August 19, 2021]
 - **[Add]** Parent/Sibling/Index method added
