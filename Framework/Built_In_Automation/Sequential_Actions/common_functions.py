@@ -3658,3 +3658,4 @@ def search_and_save_text(data_set):
 
     except:
         CommonUtil.ExecLog(sModuleInfo, "Failed to save variable.", 3)
+        return "zeuz_failed"
