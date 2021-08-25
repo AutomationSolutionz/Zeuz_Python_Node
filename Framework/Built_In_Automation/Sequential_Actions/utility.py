@@ -320,7 +320,7 @@ def delete_mail(
         mailboxi.delete(subjects)
         for k in subjects:
             print(subjects)
-        return
+
 
 
 def save_mail(
