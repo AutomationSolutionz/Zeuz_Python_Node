@@ -2,6 +2,12 @@
 
 # Version 14.x.x
 ## Version 14.3.x
+
+### [14.3.1] [August 28, 2021]
+
+- **[Add]** Parse port from database host url if specified in the form
+  `127.0.0.1:8080` where the port is separated by a `:` symbol.
+
 ### [14.3.0] [August 19, 2021]
 - **[Add]** Parent/Sibling/Index method added
 - **[Add]** Partial and case-insensitive search added
