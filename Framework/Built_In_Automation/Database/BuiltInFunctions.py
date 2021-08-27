@@ -166,6 +166,11 @@ def db_get_connection():
         db_password = g(DB_PASSWORD)
         db_host = g(DB_HOST)
         db_port = int(g(DB_PORT))
+
+        if ":" in db_host:
+            db_host, db_port = db_host.rsplit(":", 1)
+            db_port = int(db_port)
+
         db_sid = g(DB_SID)
         db_service_name = g(DB_SERVICE_NAME)
 
@@ -206,24 +211,22 @@ def db_get_connection():
             import cx_Oracle
 
             # https://cx-oracle.readthedocs.io/en/latest/api_manual/module.html#cx_Oracle.makedsn
-            if db_service_name=='zeuz_failed' and db_sid!='zeuz_failed':
+            if db_sid != 'zeuz_failed':
                 dsn = cx_Oracle.makedsn(
                     host=db_host,
                     port=db_port,
                     sid=db_sid
                 )
-            elif db_service_name!='zeuz_failed' and db_sid=='zeuz_failed':
+            elif db_service_name != 'zeuz_failed':
                 dsn = cx_Oracle.makedsn(
                     host=db_host,
                     port=db_port,
                     service_name=db_service_name
                 )
-            elif db_service_name!='zeuz_failed' and db_sid!='zeuz_failed':
-                CommonUtil.ExecLog(sModuleInfo, "you have to choose one between db_sid and db_service_name.", 3)
-                return "zeuz_failed"
             else:
-                CommonUtil.ExecLog(sModuleInfo, "db_sid or db_service must need to provide.", 3)
+                CommonUtil.ExecLog(sModuleInfo, "Either db_sid or db_service must be provide.", 3)
                 return "zeuz_failed"
+
             # Connect to db
             # https://cx-oracle.readthedocs.io/en/latest/api_manual/module.html#cx_Oracle.connect
             db_con = cx_Oracle.connect(
