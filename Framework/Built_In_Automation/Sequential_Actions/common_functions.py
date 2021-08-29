@@ -2234,7 +2234,13 @@ def check_latest_mail(data_set):
                 3,
             )
             return "zeuz_failed"
-
+        if not subject_to_check and not sender_mail_to_check and not sender_name_to_check:
+            CommonUtil.ExecLog(
+                sModuleInfo,
+                "One of the following 3 parameters is required: subject, sender name, email body",
+                3,
+            )
+            return "zeuz_failed"
         # Function to send email
         result = check_latest_received_email(
             imap_host,
