@@ -2254,16 +2254,10 @@ def check_latest_mail(data_set):
         )
 
         if result:
-            if sender_name_to_check == "":
-                CommonUtil.ExecLog(sModuleInfo, "Subject and sender matched", 1)
-            else:
-                CommonUtil.ExecLog(sModuleInfo, "Subject, sender and name matched", 1)
+            CommonUtil.ExecLog(sModuleInfo, "Email parameters matched", 1)
             return "passed"
         else:
-            if sender_name_to_check == "":
-                CommonUtil.ExecLog(sModuleInfo, "Subject and sender didn't match", 3)
-            else:
-                CommonUtil.ExecLog(sModuleInfo, "Subject, sender and name didn't match", 3)
+            CommonUtil.ExecLog(sModuleInfo, "Email parameters didn't match", 3)
             return "zeuz_failed"
 
     except Exception:

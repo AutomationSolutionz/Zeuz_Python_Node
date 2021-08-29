@@ -99,7 +99,7 @@ def check_latest_received_email(
     sender_mail_from_response = email.utils.parseaddr(mail["sender"])[-1]
     sender_name_from_response = email.utils.parseaddr(mail["sender"])[0]
 
-    msg = "Sender name: %s\nSubject: %s\n Email-body: %s" % (sender_name_from_response, mail["subject"], sender_mail_from_response)
+    msg = "Sender name: %s\nSubject: %s\nSender email: %s" % (sender_name_from_response, mail["subject"], sender_mail_from_response)
     CommonUtil.ExecLog("", msg, 5)
 
     result = False
