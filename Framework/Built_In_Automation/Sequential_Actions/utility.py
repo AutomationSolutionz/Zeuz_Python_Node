@@ -11,6 +11,10 @@ from pprint import pprint
 from datetime import datetime
 from quopri import decodestring
 from email.header import decode_header
+from Framework.Utilities import CommonUtil
+import inspect
+
+from Framework.Utilities.CommonUtil import MODULE_NAME
 
 
 # using IMAP protocol
@@ -311,15 +315,20 @@ def delete_mail(
         #         a = gt(adate)
         #         b = gt(bdate)
         #         clauses.append(AND(date_gte=datetime.date(a), date_lt=datetime.date(b)))
+        mail_list = []
+        for mail in mailboxi.fetch(AND(*clauses)):
+            mail_list.append({
+                "uid": mail.uid,
+                "from": mail.from_,
+                "subject": mail.subject,
+                "to": mail.to,
+                "text": mail.text,
+                "html": mail.html,
+            })
 
-        subjects = [msg.uid for msg in mailboxi.fetch(AND(*clauses))]
-        alert = [(txt.from_, ':', txt.subject, ':',txt.obj,':',txt.to,':',txt.text,txt.html) for txt in mailboxi.fetch(AND(*clauses))]
-        for i in alert:
-            print(alert)
+        CommonUtil.ExecLog(sModuleInfo, str(mail_list), 1)
+        mailboxi.delete([mail["uid"] for mail in mail_list])
 
-        mailboxi.delete(subjects)
-        for k in subjects:
-            print(subjects)
 
 
 
