@@ -14,10 +14,10 @@ from email.header import decode_header
 from Framework.Utilities import CommonUtil
 import inspect
 
+# using IMAP protocol
 from Framework.Utilities.CommonUtil import MODULE_NAME
 
 
-# using IMAP protocol
 def check_latest_received_email(
     imap_host,
     imap_port,
@@ -92,7 +92,6 @@ def check_latest_received_email(
         "date": msg["Date"],
         # 'body': get_body(msg)
     }
-    pprint(mail)
 
     imap.close()
     imap.logout()
@@ -100,23 +99,23 @@ def check_latest_received_email(
     sender_mail_from_response = email.utils.parseaddr(mail["sender"])[-1]
     sender_name_from_response = email.utils.parseaddr(mail["sender"])[0]
 
-    subject_matched = False
-    mail_matched = False
-    name_matched = False
+    msg = "Sender name: %s\nSubject: %s\n Email-body: %s" % (sender_name_from_response, mail["subject"], sender_mail_from_response)
+    CommonUtil.ExecLog("", msg, 5)
 
-    if subject_to_check == mail["subject"].strip():
-        subject_matched = True
-    if sender_mail_to_check == sender_mail_from_response:
-        mail_matched = True
-    if sender_name_to_check == "":
-        name_matched = True
-    elif sender_name_to_check.lower().strip() == sender_name_from_response.lower():
-        name_matched = True
-
-    if name_matched and mail_matched and subject_matched:
-        return True
-    else:
+    result = False
+    if subject_to_check and subject_to_check == mail["subject"].strip():
+        result = True
+    elif subject_to_check:
         return False
+    if sender_mail_to_check and sender_mail_to_check == sender_mail_from_response:
+        result = True
+    elif sender_mail_to_check:
+        return False
+    if sender_name_to_check and sender_name_to_check.lower().strip() == sender_name_from_response.lower():
+        result = True
+    elif sender_name_to_check:
+        return False
+    return result
 
 
 def send_email(
@@ -251,6 +250,8 @@ def delete_mail(
         before_date
 
 ):
+    sModuleInfo = inspect.currentframe().f_code.co_name + " : " + MODULE_NAME
+
     host = imap_host
     user = imap_user
     password = imap_pass
@@ -309,12 +310,7 @@ def delete_mail(
         if bdate:
             b = gt(bdate)
             clauses.append(AND(date_lt=datetime.date(b)))
-        # if adate:
-        #     if bdate:
-        #
-        #         a = gt(adate)
-        #         b = gt(bdate)
-        #         clauses.append(AND(date_gte=datetime.date(a), date_lt=datetime.date(b)))
+
         mail_list = []
         for mail in mailboxi.fetch(AND(*clauses)):
             mail_list.append({
@@ -328,8 +324,6 @@ def delete_mail(
 
         CommonUtil.ExecLog(sModuleInfo, str(mail_list), 1)
         mailboxi.delete([mail["uid"] for mail in mail_list])
-
-
 
 
 def save_mail(
@@ -347,6 +341,8 @@ imap_host,
         after_date,
         before_date
 ):
+    sModuleInfo = inspect.currentframe().f_code.co_name + " : " + MODULE_NAME
+
     host = imap_host
     user = imap_user
     password = imap_pass
@@ -419,7 +415,6 @@ imap_host,
         text = [msg.text for msg in mailboxi.fetch(AND(*clauses))]
         html_body = [msg.html for msg in mailboxi.fetch(AND(*clauses))]
 
-
         mail_list = []
         for mail in mailboxi.fetch(AND(*clauses)):
             mail_list.append({
@@ -432,7 +427,6 @@ imap_host,
             })
 
         CommonUtil.ExecLog(sModuleInfo, str(mail_list), 1)
-        mailboxi.delete([mail["uid"] for mail in mail_list])
 
         def listToString(s):
             # initialize an empty string
