@@ -419,10 +419,20 @@ imap_host,
         text = [msg.text for msg in mailboxi.fetch(AND(*clauses))]
         html_body = [msg.html for msg in mailboxi.fetch(AND(*clauses))]
 
-        alert = [(txt.from_, ':', txt.subject, ':', txt.obj, ':', txt.to, ':', txt.text, txt.html) for txt in
-                 mailboxi.fetch(AND(*clauses))]
-        for i in alert:
-            print(alert)
+
+        mail_list = []
+        for mail in mailboxi.fetch(AND(*clauses)):
+            mail_list.append({
+                "uid": mail.uid,
+                "from": mail.from_,
+                "subject": mail.subject,
+                "to": mail.to,
+                "text": mail.text,
+                "html": mail.html,
+            })
+
+        CommonUtil.ExecLog(sModuleInfo, str(mail_list), 1)
+        mailboxi.delete([mail["uid"] for mail in mail_list])
 
         def listToString(s):
             # initialize an empty string
