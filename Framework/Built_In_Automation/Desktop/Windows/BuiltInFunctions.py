@@ -85,15 +85,18 @@ def Click_Element(data_set):
 
     sModuleInfo = inspect.currentframe().f_code.co_name + " : " + MODULE_NAME
     expand = True
+    Gui = False
 
     # parse dataset and read data
     try:
         for left, mid, right in data_set:
             right = right.strip().lower()
             left = left.strip().lower()
-            if left == "method" and right == "collapse":
-                expand = False
-
+            if left == "method":
+                if right == "collapse":
+                    expand = False
+                elif right == "gui":
+                    Gui = True
     except Exception:
         CommonUtil.ExecLog(sModuleInfo, "You have provided an invalid Click data.  Please refer to help", 3)
         CommonUtil.Exception_Handler(sys.exc_info(), None, "You have provided an invalid Click data.  Please refer to help")
@@ -107,7 +110,7 @@ def Click_Element(data_set):
 
     try:
         CommonUtil.ExecLog(sModuleInfo, "Element was located.  Performing action provided ", 1)
-        result = Click_Element_None_Mouse(Element, expand)
+        result = Click_Element_None_Mouse(Element, expand, Gui)
         if result == "zeuz_failed":
             CommonUtil.ExecLog(sModuleInfo, "Could not click element", 3)
             return "zeuz_failed"
@@ -812,11 +815,11 @@ def _get_main_window(WindowName):
         return None
 
 @logger
-def Click_Element_None_Mouse(Element, Expand=True):
+def Click_Element_None_Mouse(Element, Expand=True, Gui=False):
     try:
         sModuleInfo = inspect.currentframe().f_code.co_name + " : " + MODULE_NAME
         patter_list = Element.GetSupportedPatterns()
-        if len(patter_list) == 0:
+        if len(patter_list) == 0 or Gui:
             # x = int (Element.Current.BoundingRectangle.X)
             # y = int (Element.Current.BoundingRectangle.Y)
             CommonUtil.ExecLog(sModuleInfo, "We did not find any pattern for this object, so we will click by mouse with location", 1)
@@ -987,6 +990,13 @@ def Drag_Object(Element1_source, Element2_destination):
 def Double_Click_Element(data_set):
     sModuleInfo = inspect.currentframe().f_code.co_name + " : " + MODULE_NAME
     try:
+        Gui = False
+        for left, mid, right in data_set:
+            right = right.strip().lower()
+            left = left.strip().lower()
+            if left == "method" and right == "gui":
+                    Gui = True
+
         Element = Get_Element(data_set)
         if Element == "zeuz_failed":
             return "zeuz_failed"
