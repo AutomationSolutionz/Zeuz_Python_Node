@@ -1002,7 +1002,7 @@ def Double_Click_Element(data_set):
             return "zeuz_failed"
 
         patter_list = Element.GetSupportedPatterns()
-        if len(patter_list) > 0:
+        if len(patter_list) > 0 and not Gui:
             for each in patter_list:
                 pattern_name = Automation.PatternName(each)
                 CommonUtil.ExecLog(sModuleInfo, "Pattern name attached to the current element is: %s " % pattern_name, 1)
