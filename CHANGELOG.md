@@ -3,6 +3,12 @@
 # Version 14.x.x
 ## Version 14.3.x
 
+### [14.4.0] [September 6, 2021]
+
+- **[Add]** Desktop record and replay action! Record your mouse interactions
+  with **Node > Apps > desktop-recorder > MouseModuleRecorder.py** and replay
+  them with the `playback recorded events` action.
+
 ### [14.3.1] [August 28, 2021]
 
 - **[Add]** Parse port from database host url if specified in the form
