@@ -30,6 +30,7 @@ from Framework.Utilities.CommonUtil import (
     skipped_tag_list,
 )  # Allowed return strings, used to normalize pass/fail
 from Framework.Built_In_Automation.Shared_Resources import LocateElement
+from Framework.Built_In_Automation.Desktop.RecordPlayback.ChoosePlaybackModule import ChoosePlaybackModule
 
 # Disable pyautogui failsafe when moving to top left corner
 gui.FAILSAFE = False
@@ -1046,4 +1047,54 @@ def navigate_listbox(data_set):
 
     except Exception:
         errMsg = "Error while trying to perform drag action"
+        return CommonUtil.Exception_Handler(sys.exc_info(), None, errMsg)
+
+
+@logger
+def playback_recorded_events(data_set):
+    """Plays back the recorded events from a given file."""
+
+    sModuleInfo = inspect.currentframe().f_code.co_name + " : " + MODULE_NAME
+
+    # Parse data set
+    try:
+        filepath = ""
+        speed_factor = 1.0
+
+        for left, _, right in data_set:
+            left = left.lower().strip()
+            if "file path" in left:
+                filepath = right.strip()
+            elif "speed factor" in left:
+                speed_factor = float(right.strip())
+
+        if filepath == "":
+            CommonUtil.ExecLog(
+                sModuleInfo,
+                "A valid path to the recorded event file must be provided. If you've uploaded it into attachments with name `recording_1.zvt`,"
+                " you can use it by providing the path as `%|recording_1.zvt|%`",
+                3,
+            )
+            return "zeuz_failed"
+
+    except Exception:
+        errMsg = "Error parsing data set"
+        return CommonUtil.Exception_Handler(sys.exc_info(), None, errMsg)
+
+    # Perform action
+    try:
+        CommonUtil.ExecLog(
+            sModuleInfo, "Playing the events recorded in - %s" % filepath, 1
+        )
+
+        playback_chooser = ChoosePlaybackModule(filepath)
+        playback_chooser.play(speed_factor=speed_factor)
+
+        CommonUtil.ExecLog(
+            sModuleInfo, "DONE playing back events.", 1
+        )
+        return "passed"
+
+    except Exception:
+        errMsg = "Failed to playback recorded events from file: %s" % filepath
         return CommonUtil.Exception_Handler(sys.exc_info(), None, errMsg)
