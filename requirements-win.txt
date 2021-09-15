@@ -49,3 +49,4 @@ psutil
 pywin32
 pythonnet
 keyboard
+mouse

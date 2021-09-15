@@ -36,3 +36,5 @@ pyscreenshot
 pyyaml
 pyautogui
 opencv-python
+keyboard
+mouse
