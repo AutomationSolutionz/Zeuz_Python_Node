@@ -18,12 +18,8 @@ except:
 import os, os.path, sys, time, inspect, subprocess
 from Framework.Utilities import CommonUtil, FileUtilities as FL
 from Framework.Utilities.decorators import logger
-from Framework.Built_In_Automation.Built_In_Utility.CrossPlatform import (
-    BuiltInUtilityFunction as FU,
-)
-from Framework.Built_In_Automation.Shared_Resources import (
-    BuiltInFunctionSharedResources as Shared_Resources,
-)
+from Framework.Built_In_Automation.Built_In_Utility.CrossPlatform import BuiltInUtilityFunction as FU
+from Framework.Built_In_Automation.Shared_Resources import BuiltInFunctionSharedResources as Shared_Resources
 from Framework.Utilities.CommonUtil import (
     passed_tag_list,
     failed_tag_list,
@@ -47,12 +43,8 @@ positions = ("left", "right", "centre", "center")
 
 # Recall dependency, if not already set
 dependency = None
-if Shared_Resources.Test_Shared_Variables(
-    "dependency"
-):  # Check if driver is already set in shared variables
-    dependency = Shared_Resources.Get_Shared_Variables(
-        "dependency"
-    )  # Retreive appium driver
+if Shared_Resources.Test_Shared_Variables("dependency"):  # Check if driver is already set in shared variables
+    dependency = Shared_Resources.Get_Shared_Variables("dependency")  # Retreive appium driver
 else:
     raise ValueError("No dependency set - Cannot run")
 
@@ -89,14 +81,10 @@ def getCoordinates(element, position):
         position = position.lower().strip()
 
         if position not in positions:
-            CommonUtil.ExecLog(
-                sModuleInfo, "Position must be one of: %s" % positions, 3
-            )
+            CommonUtil.ExecLog(sModuleInfo, "Position must be one of: %s" % positions, 3)
             return "zeuz_failed"
     except Exception:
-        return CommonUtil.Exception_Handler(
-            sys.exc_info(), None, "Error parsing coordinates"
-        )
+        return CommonUtil.Exception_Handler(sys.exc_info(), None, "Error parsing coordinates")
 
     # Perform calculations
     try:
@@ -113,9 +101,7 @@ def getCoordinates(element, position):
             return "zeuz_failed", ""
         return int(result_x), int(result_y)
     except Exception:
-        return CommonUtil.Exception_Handler(
-            sys.exc_info(), None, "Error calculating coordinates"
-        )
+        return CommonUtil.Exception_Handler(sys.exc_info(), None, "Error calculating coordinates")
 
 
 @logger
@@ -165,18 +151,14 @@ def Enter_Text(data_set):
         for row in data_set:
             if "action" in row[1]:
                 text_value = row[2]
-            if (
-                row[1] == "element parameter"
-            ):  # Indicates we should find the element instead of assuming we have keyboard focus
+            if row[1] == "element parameter":  # Indicates we should find the element instead of assuming we have keyboard focus
                 element_parameter = True
 
         if text_value == "":
             CommonUtil.ExecLog(sModuleInfo, "Could not find value for this action", 3)
             return "zeuz_failed"
     except:
-        return CommonUtil.Exception_Handler(
-            sys.exc_info(), None, "Error parsing data set"
-        )
+        return CommonUtil.Exception_Handler(sys.exc_info(), None, "Error parsing data set")
 
     # Perform action
     try:
@@ -196,12 +178,8 @@ def Enter_Text(data_set):
                     Element = LocateElement.Get_Element(data_set, gui)
                 except:
                     True
-                if Element == None:
-                    CommonUtil.ExecLog(
-                        sModuleInfo,
-                        "Could not find element.  Waiting and Trying again .... ",
-                        2,
-                    )
+                if Element is None:
+                    CommonUtil.ExecLog(sModuleInfo, "Could not find element.  Waiting and Trying again .... ", 2)
                 else:
                     break
                 time.sleep(sleep_in_sec)
@@ -215,9 +193,7 @@ def Enter_Text(data_set):
             if x in failed_tag_list:  # Error reason logged by Get_Element
                 CommonUtil.ExecLog(sModuleInfo, "Error calculating coordinates", 3)
                 return "zeuz_failed"
-            CommonUtil.ExecLog(
-                sModuleInfo, "Image coordinates on screen %d x %d" % (x, y), 0
-            )
+            CommonUtil.ExecLog(sModuleInfo, "Image coordinates on screen %d x %d" % (x, y), 0)
             gui.click(x, y)  # Single click
         else:
             CommonUtil.ExecLog(
@@ -226,15 +202,9 @@ def Enter_Text(data_set):
                 0,
             )
 
-        # CommonUtil.TakeScreenShot(
-        #     sModuleInfo
-        # )  # Capture screenshot, if settings allow for it
-
         # Enter text
         gui.typewrite(text_value)
-        CommonUtil.ExecLog(
-            sModuleInfo, "Successfully set the value of to text to: %s" % text_value, 1
-        )
+        CommonUtil.ExecLog(sModuleInfo, "Successfully set the value of to text to: %s" % text_value, 1)
         return "passed"
 
     except Exception:
@@ -284,13 +254,9 @@ def execute_hotkey(data_set) -> str:
                     count = int(right)
                 except:
                     count = 1
-                    CommonUtil.ExecLog(
-                        sModuleInfo, "Count is set to 1", 2,
-                    )
+                    CommonUtil.ExecLog(sModuleInfo, "Count is set to 1", 2,)
     except:
-        CommonUtil.ExecLog(
-            sModuleInfo, "Couldn't  parse data_set", 3,
-        )
+        CommonUtil.ExecLog(sModuleInfo, "Couldn't  parse data_set", 3,)
         return "zeuz_failed"
 
     try:
@@ -727,9 +693,7 @@ def launch_program(data_set):
         file_name = data_set[0][2]  # Get filename from data set
         Command = ""
         if file_name == "":
-            CommonUtil.ExecLog(
-                sModuleInfo, "Value field empty. Expected filename or full file path", 3
-            )
+            CommonUtil.ExecLog(sModuleInfo, "Value field empty. Expected filename or full file path", 3)
             return "zeuz_failed"
     except:
         errMsg = "Error parsing data set"
