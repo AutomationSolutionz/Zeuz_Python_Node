@@ -563,7 +563,6 @@ def run_all_test_steps_in_a_test_case(
 
         # get step start time
         TestStepStartTime = time.time()
-        sTestStepStartTime = datetime.fromtimestamp(TestStepStartTime).strftime("%Y-%m-%d %H:%M:%S")
         WinMemBegin = CommonUtil.PhysicalAvailableMemory()  # get available memory
 
         if ConfigModule.get_config_value("RunDefinition", "local_run") == "False":
@@ -603,9 +602,8 @@ def run_all_test_steps_in_a_test_case(
                 debug_actions,
             )
         TestStepEndTime = time.time()
-        sTestStepEndTime = datetime.fromtimestamp(TestStepEndTime).strftime("%Y-%m-%d %H:%M:%S")
         WinMemEnd = CommonUtil.PhysicalAvailableMemory()  # get available memory
-        TestStepDuration = CommonUtil.FormatSeconds(int(TestStepEndTime - TestStepStartTime))
+        TestStepDuration = TestStepEndTime - TestStepStartTime
         TestStepMemConsumed = WinMemBegin - WinMemEnd  # get memory consumed
         for i in step_attachment_list: shared.Remove_From_Shared_Variables(i)  # Cleanup step_attachment variables
 
@@ -633,8 +631,8 @@ def run_all_test_steps_in_a_test_case(
 
         # step dictionary after execution
         after_execution_dict = {
-            "stepstarttime": sTestStepStartTime,
-            "stependtime": sTestStepEndTime,
+            "stepstarttime": TestStepStartTime,
+            "stependtime": TestStepEndTime,
             "end_memory": WinMemEnd,
             "duration": TestStepDuration,
             "memory_consumed": TestStepMemConsumed,
