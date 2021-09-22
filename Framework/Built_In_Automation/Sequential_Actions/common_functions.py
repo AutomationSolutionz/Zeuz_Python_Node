@@ -39,6 +39,7 @@ import traceback
 import json
 from datetime import timedelta
 from .utility import send_email, check_latest_received_email, delete_mail, save_mail
+import re
 
 months = [
     "Unknown",
@@ -69,6 +70,7 @@ unmask_characters = {
 }
 
 programming_logic_keywords = ["if else", "while loop", "for loop", "loop settings"]
+
 
 MODULE_NAME = inspect.getmodulename(__file__)
 
@@ -1272,7 +1274,7 @@ def compare_list_tuple(list1, list2, check_exclusion, match_by_index):
 
     else:
         if (len(list1) and type(list1[0]).__name__ in ("list", "tuple")) or (len(list2) and type(list2[0]).__name__ in ("list", "tuple")):
-            nested = True   # Maybe its not needed here in exact match
+            nested = True  # Maybe its not needed here in exact match
         if type(list1).__name__ in ("list", "tuple"):
             list1 = get_list(list1)
         if type(list2).__name__ in ("list", "tuple"):
@@ -2276,6 +2278,7 @@ def check_latest_mail(data_set):
             return "passed"
         else:
             CommonUtil.ExecLog(sModuleInfo, "Email parameters didn't match", 3)
+            return "zeuz_failed"
             return "zeuz_failed"
 
     except Exception:
@@ -3831,3 +3834,31 @@ def save_mail_action(data_set):
         return "passed"
     except:
         return CommonUtil.Exception_Handler(sys.exc_info())
+
+
+@logger
+def search_and_save_text(data_set):
+    sModuleInfo = inspect.currentframe().f_code.co_name + " : " + MODULE_NAME
+
+    try:
+        variable_name = None
+        data = None
+        variable_value = None
+        user_given_data = None
+
+        for left, mid, right in data_set:
+            left = left.strip().lower()
+            if "pattern to match" in left:
+                user_given_data = right
+            elif "data" in left:
+                data = CommonUtil.parse_value_into_object(right)
+            elif "action" in mid:
+               variable_name = right.strip()
+
+        variable_value = re.findall(user_given_data,data)
+        sr.Set_Shared_Variables(variable_name, variable_value)
+        return "passed"
+
+    except:
+        CommonUtil.ExecLog(sModuleInfo, "Failed to save variable.", 3)
+        return "zeuz_failed"
