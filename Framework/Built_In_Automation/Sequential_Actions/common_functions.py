@@ -7,6 +7,9 @@
 
 import inspect, sys, time, collections, ftplib, os, ast, copy, csv, yaml
 from pathlib import Path
+from imap_tools import MailBox
+import re
+from typing import List
 
 try:
     import xlwings as xw
@@ -35,7 +38,7 @@ import datefinder
 import traceback
 import json
 from datetime import timedelta
-from .utility import send_email, check_latest_received_email
+from .utility import send_email, check_latest_received_email, delete_mail, save_mail
 
 months = [
     "Unknown",
@@ -66,7 +69,6 @@ unmask_characters = {
 }
 
 programming_logic_keywords = ["if else", "while loop", "for loop", "loop settings"]
-
 
 MODULE_NAME = inspect.getmodulename(__file__)
 
@@ -2250,7 +2252,13 @@ def check_latest_mail(data_set):
                 3,
             )
             return "zeuz_failed"
-
+        if not subject_to_check and not sender_mail_to_check and not sender_name_to_check:
+            CommonUtil.ExecLog(
+                sModuleInfo,
+                "One of the following 3 parameters is required: subject, sender name, email body",
+                3,
+            )
+            return "zeuz_failed"
         # Function to send email
         result = check_latest_received_email(
             imap_host,
@@ -2264,16 +2272,10 @@ def check_latest_mail(data_set):
         )
 
         if result:
-            if sender_name_to_check == "":
-                CommonUtil.ExecLog(sModuleInfo, "Subject and sender matched", 1)
-            else:
-                CommonUtil.ExecLog(sModuleInfo, "Subject, sender and name matched", 1)
+            CommonUtil.ExecLog(sModuleInfo, "Email parameters matched", 1)
             return "passed"
         else:
-            if sender_name_to_check == "":
-                CommonUtil.ExecLog(sModuleInfo, "Subject and sender didn't match", 3)
-            else:
-                CommonUtil.ExecLog(sModuleInfo, "Subject, sender and name didn't match", 3)
+            CommonUtil.ExecLog(sModuleInfo, "Email parameters didn't match", 3)
             return "zeuz_failed"
 
     except Exception:
@@ -3645,5 +3647,187 @@ def replace_string(data_set):
         CommonUtil.ExecLog(sModuleInfo, "Replaced '%s' with '%s'" % (old_value, new_value), 1)
         return sr.Set_Shared_Variables(var_name, result_str)
 
+    except:
+        return CommonUtil.Exception_Handler(sys.exc_info())
+
+
+@logger
+def delete_mail_action(data_set):
+    sModuleInfo = inspect.currentframe().f_code.co_name + " : " + MODULE_NAME
+
+    try:
+        imap_host = ""
+        imap_user = ""
+        select_mailbox = ""
+        imap_pass = ""
+        subject_to_check = ""
+        body = ""
+        sender_email = ""
+        rcvremail = ""
+        flagged_email =""
+        check_email =""
+        exact_date = ""
+        after_date = ""
+        before_date = ""
+
+        for left, mid, right in data_set:
+            left = left.lower()
+            right = right.strip()
+
+            if "imap host" in left:
+                imap_host = right
+            elif "imap user" in left:
+                imap_user = right
+
+            elif "inbox" in left:
+                select_mailbox = right
+
+            elif "imap pass" in left:
+                imap_pass = right
+
+            elif "subject" in left:
+                subject_to_check = right
+            elif "text" in left:
+                body = right
+            elif "sender email" in left:
+                sender_email = right
+            elif "receiver email" in left:
+                rcvremail = right
+            elif "flagged email" in left:
+                flagged_email = right
+            elif "checked email" in left:
+                check_email = right
+            elif "exact date" in left:
+                exact_date = right
+            elif "after date" in left:
+                after_date = right
+            elif "before date" in left:
+                before_date = right
+
+        if imap_host == "" or imap_user == "" or imap_pass == ""  or select_mailbox == "" :
+            CommonUtil.ExecLog(
+                sModuleInfo,
+                "please provide the imap credentials for your mail server, see action help",
+                3,
+            )
+
+            return "zeuz_failed"
+        result = delete_mail(
+            imap_host,
+            imap_user,
+            select_mailbox,
+            imap_pass,
+            subject_to_check,
+            body,
+            sender_email,
+            rcvremail,
+            flagged_email,
+            check_email,
+            exact_date,
+            after_date,
+            before_date
+        )
+        print(result)
+
+        return "passed"
+    except:
+        return CommonUtil.Exception_Handler(sys.exc_info())
+
+
+@logger
+def save_mail_action(data_set):
+    sModuleInfo = inspect.currentframe().f_code.co_name + " : " + MODULE_NAME
+
+    try:
+        imap_host = ""
+        imap_user = ""
+        select_mailbox = ""
+        imap_pass = ""
+        subject_to_check = ""
+        body = ""
+        sender_email = ""
+        rcvremail = ""
+        flagged_email =""
+        check_email =""
+        exact_date = ""
+        after_date = ""
+        before_date = ""
+        variable_name = None
+
+        for left, mid, right in data_set:
+
+            left = left.lower()
+            right = right.strip()
+
+            if "imap host" in left:
+                imap_host = right
+            elif "imap user" in left:
+                imap_user = right
+
+            elif "inbox" in left:
+                select_mailbox = right
+
+            elif "imap pass" in left:
+                imap_pass = right
+
+            elif "subject" in left:
+                subject_to_check = right
+            elif "text" in left:
+                body = right
+            elif "sender email" in left:
+                sender_email = right
+            elif "receiver email" in left:
+                rcvremail = right
+            elif "flagged email" in left:
+                flagged_email = right
+            elif "checked email" in left:
+                check_email = right
+            elif "exact date" in left:
+                exact_date = right
+            elif "after date" in left:
+                after_date = right
+            elif "before date" in left:
+                before_date = right
+            elif "action" in mid:
+                variable_name = right.strip()
+
+        if imap_host == "" or imap_user == "" or imap_pass == ""  or select_mailbox == "" :
+            CommonUtil.ExecLog(
+                sModuleInfo,
+                "please provide the imap credentials for your mail server, see action help",
+                3,
+            )
+        if variable_name =="":
+            CommonUtil.ExecLog(
+                sModuleInfo,
+                "please provide variable name",
+                3,
+            )
+            return "zeuz_failed"
+        result = save_mail(
+            imap_host,
+            imap_user,
+            select_mailbox,
+            imap_pass,
+            subject_to_check,
+            body,
+            sender_email,
+            rcvremail,
+            flagged_email,
+            check_email,
+            exact_date,
+            after_date,
+            before_date
+        )
+
+        CommonUtil.ExecLog(
+            sModuleInfo,
+            str(result),
+            1,
+        )
+        variable_value = result
+
+        sr.Set_Shared_Variables(variable_name, variable_value)
+        return "passed"
     except:
         return CommonUtil.Exception_Handler(sys.exc_info())

@@ -49,6 +49,8 @@ declarations = (
     # Mail actions
     { "name": "send mail",                                   "function": "send_mail",                             "screenshot": "none" },
     { "name": "check latest mail",                           "function": "check_latest_mail",                     "screenshot": "none" },
+    {"name": "delete mail",                                  "function": "delete_mail_action",                     "screenshot": "none"},
+    {"name": "save mail",                                    "function": "save_mail_action",                       "screenshot": "none"},
 
     # Global Variable Actions
     { "name": "get global list variable",                    "function": "get_global_list_variable",              "screenshot": "none" },

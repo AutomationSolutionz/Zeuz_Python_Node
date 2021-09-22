@@ -36,3 +36,4 @@ pyscreenshot
 pyyaml
 pyautogui
 opencv-python
+imap-tools
