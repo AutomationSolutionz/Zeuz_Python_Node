@@ -3336,6 +3336,7 @@ def switch_iframe(step_data):
                     CommonUtil.ExecLog(sModuleInfo, "Iframe switched using above Xpath", 1)
                 except:
                     CommonUtil.ExecLog(sModuleInfo, "No such iframe found using above Xpath", 3)
+                    return "zeuz_failed"
         return "passed"
     except Exception:
         CommonUtil.ExecLog(sModuleInfo, "Unable to switch iframe", 3)
@@ -3647,9 +3648,9 @@ def slider_bar(data_set):
         for left, mid, right in data_set:
             if "action" in mid:
                 value = int(right.strip())
-        if value not in range (0,100):
-            raise Exception
-
+        if value not in range(0, 100):
+            CommonUtil.ExecLog(sModuleInfo, "Failed to parse data/locate element. You must provide a number between 0-100", 3)
+            return "zeuz_failed"
         Element = LocateElement.Get_Element(data_set, selenium_driver)
         if Element == "zeuz_failed":
             CommonUtil.ExecLog(sModuleInfo, "Could not find the element", 3)
@@ -3668,10 +3669,7 @@ def slider_bar(data_set):
                     
         return "passed"
     except Exception:
-        errMsg = (
-            "Failed to parse data/locate element. You must provide a number between 0-100"
-        )
-        return CommonUtil.Exception_Handler(sys.exc_info(), None, errMsg)
+        return CommonUtil.Exception_Handler(sys.exc_info())
 
 
 @logger
