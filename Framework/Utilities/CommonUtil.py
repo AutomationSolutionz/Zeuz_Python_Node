@@ -121,6 +121,7 @@ current_step_no = ""
 current_step_name = ""
 current_tc_no = ""
 current_session_name = ""
+custom_step_duration = ""
 
 executor = concurrent.futures.ThreadPoolExecutor()
 all_threads = {}

@@ -501,6 +501,7 @@ def run_all_test_steps_in_a_test_case(
     while StepSeq <= Stepscount:
 
         # check if debug step
+        CommonUtil.custom_step_duration = ""
         if debug and debug_steps:
             if str(StepSeq) not in debug_steps:
                 StepSeq += 1
@@ -563,6 +564,7 @@ def run_all_test_steps_in_a_test_case(
 
         # get step start time
         TestStepStartTime = time.time()
+        sTestStepStartTime = datetime.fromtimestamp(TestStepStartTime).strftime("%Y-%m-%d %H:%M:%S.%f")
         WinMemBegin = CommonUtil.PhysicalAvailableMemory()  # get available memory
 
         if ConfigModule.get_config_value("RunDefinition", "local_run") == "False":
@@ -602,8 +604,16 @@ def run_all_test_steps_in_a_test_case(
                 debug_actions,
             )
         TestStepEndTime = time.time()
+        sTestStepEndTime = datetime.fromtimestamp(TestStepEndTime).strftime("%Y-%m-%d %H:%M:%S.%f")
         WinMemEnd = CommonUtil.PhysicalAvailableMemory()  # get available memory
-        TestStepDuration = TestStepEndTime - TestStepStartTime
+        if CommonUtil.custom_step_duration:
+            TestStepDuration = CommonUtil.custom_step_duration
+            CommonUtil.custom_step_duration = ""
+        else:
+            sec = TestStepEndTime - TestStepStartTime
+            hours, remainder = sec // 3600, sec % 3600
+            minutes, seconds = remainder // 60, remainder % 60
+            TestStepDuration = "%02d:%02d:%f" % (hours, minutes, seconds)
         TestStepMemConsumed = WinMemBegin - WinMemEnd  # get memory consumed
         for i in step_attachment_list: shared.Remove_From_Shared_Variables(i)  # Cleanup step_attachment variables
 
@@ -624,15 +634,13 @@ def run_all_test_steps_in_a_test_case(
             sTestStepResultList.append(sStepResult.upper())
         else:
             sTestStepResultList.append("zeuz_failed")
-            CommonUtil.ExecLog(
-                sModuleInfo, "sStepResult : %s" % sStepResult, 1
-            )  # add log
+            CommonUtil.ExecLog(sModuleInfo, "sStepResult : %s" % sStepResult, 1)  # add log
             sStepResult = "zeuz_failed"
 
         # step dictionary after execution
         after_execution_dict = {
-            "stepstarttime": TestStepStartTime,
-            "stependtime": TestStepEndTime,
+            "stepstarttime": sTestStepStartTime,
+            "stependtime": sTestStepEndTime,
             "end_memory": WinMemEnd,
             "duration": TestStepDuration,
             "memory_consumed": TestStepMemConsumed,
@@ -643,22 +651,16 @@ def run_all_test_steps_in_a_test_case(
 
         if sStepResult.upper() == PASSED_TAG.upper():
             # Step Passed
-            CommonUtil.ExecLog(
-                sModuleInfo, "%s : Test Step Passed" % current_step_name, 1
-            )
+            CommonUtil.ExecLog(sModuleInfo, "%s : Test Step Passed" % current_step_name, 1)
             after_execution_dict.update({"status": PASSED_TAG})
 
         elif sStepResult.upper() == SKIPPED_TAG.upper():
             # Step Passed
-            CommonUtil.ExecLog(
-                sModuleInfo, "%s : Test Step Skipped" % current_step_name, 1
-            )
+            CommonUtil.ExecLog(sModuleInfo, "%s : Test Step Skipped" % current_step_name, 1)
             after_execution_dict.update({"status": SKIPPED_TAG})
 
         elif sStepResult.upper() == WARNING_TAG.upper():
-            CommonUtil.ExecLog(
-                sModuleInfo, "%s : Test Step Warning" % current_step_name, 2
-            )
+            CommonUtil.ExecLog(sModuleInfo, "%s : Test Step Warning" % current_step_name, 2)
             after_execution_dict.update({"status": WARNING_TAG})
 
             if not test_case_continue:
@@ -670,9 +672,7 @@ def run_all_test_steps_in_a_test_case(
 
         elif sStepResult.upper() == NOT_RUN_TAG.upper():
             # Step has Warning, but continue running next test step for this test case
-            CommonUtil.ExecLog(
-                sModuleInfo, "%s : Test Step Not Run" % current_step_name, 2
-            )
+            CommonUtil.ExecLog(sModuleInfo, "%s : Test Step Not Run" % current_step_name, 2)
             after_execution_dict.update({"status": NOT_RUN_TAG})
 
         elif sStepResult.upper() == FAILED_TAG.upper():
@@ -699,9 +699,7 @@ def run_all_test_steps_in_a_test_case(
 
             # Step has a Critical failure, fail the test step and test case. go to next test case
 
-            CommonUtil.ExecLog(
-                sModuleInfo, "%s%s" % (current_step_name, CommonUtil.to_dlt_from_fail_reason), 3
-            )  # add log
+            CommonUtil.ExecLog(sModuleInfo, "%s%s" % (current_step_name, CommonUtil.to_dlt_from_fail_reason), 3)  # add log
 
             after_execution_dict.update({"status": "Failed"})  # dictionary update
 
@@ -729,15 +727,11 @@ def run_all_test_steps_in_a_test_case(
 
         elif sStepResult.upper() == BLOCKED_TAG.upper():
             # Step is Blocked, Block the test step and test case. go to next test case
-            CommonUtil.ExecLog(
-                sModuleInfo, "%s : Test Step Blocked" % current_step_name, 3
-            )
+            CommonUtil.ExecLog(sModuleInfo, "%s : Test Step Blocked" % current_step_name, 3)
             after_execution_dict.update({"status": BLOCKED_TAG})
 
         elif sStepResult.upper() == CANCELLED_TAG.upper():
-            CommonUtil.ExecLog(
-                sModuleInfo, "%s : Test Step Cancelled" % current_step_name, 3
-            )
+            CommonUtil.ExecLog(sModuleInfo, "%s : Test Step Cancelled" % current_step_name, 3)
             after_execution_dict.update({"status": CANCELLED_TAG})
             cleanup_runid_from_server(run_id)   # This is an api call. What to do with this in new maindriver system?
             CommonUtil.CreateJsonReport(stepInfo=after_execution_dict)
@@ -745,9 +739,7 @@ def run_all_test_steps_in_a_test_case(
             return "pass"
 
         else:
-            CommonUtil.ExecLog(
-                sModuleInfo, "%s : Test Step Cancelled" % current_step_name, 3
-            )
+            CommonUtil.ExecLog(sModuleInfo, "%s : Test Step Cancelled" % current_step_name, 3)
             after_execution_dict.update({"status": CANCELLED_TAG})
             cleanup_runid_from_server(run_id)   # This is an api call. What to do with this in new maindriver system?
             CommonUtil.CreateJsonReport(stepInfo=after_execution_dict)
