@@ -3843,7 +3843,6 @@ def search_and_save_text(data_set):
     try:
         variable_name = None
         data = None
-        variable_value = None
         user_given_data = None
 
         for left, mid, right in data_set:
@@ -3855,10 +3854,39 @@ def search_and_save_text(data_set):
             elif "action" in mid:
                variable_name = right.strip()
 
-        variable_value = re.findall(user_given_data,data)
+        variable_value = re.findall(user_given_data, data)
         sr.Set_Shared_Variables(variable_name, variable_value)
         return "passed"
 
     except:
-        CommonUtil.ExecLog(sModuleInfo, "Failed to save variable.", 3)
-        return "zeuz_failed"
+        return CommonUtil.Exception_Handler(sys.exc_info())
+
+
+@logger
+def custom_step_duration(data_set):
+    sModuleInfo = inspect.currentframe().f_code.co_name + " : " + MODULE_NAME
+    try:
+        for left, mid, right in data_set:
+            if "action" in mid:
+               value = right.strip()
+        dot = value.count(".")
+        if dot == 0:
+            value += ".000000"
+        elif dot != 1:
+            CommonUtil.ExecLog(sModuleInfo, "Please provide in valid time format- HH:MM:SS.mmm", 3)
+            return "zeuz_failed"
+        else:
+            value += "0" * (6-len(value.split(".")[-1]))
+        colon = 2 - value.count(":")
+        if colon < 0:
+            CommonUtil.ExecLog(sModuleInfo, "Please provide in valid time format- HH:MM:SS.mmm", 3)
+            return "zeuz_failed"
+        for i in range(colon):
+            value = "00:" + value
+        CommonUtil.custom_step_duration = value
+        CommonUtil.ExecLog(sModuleInfo, "%s is set as step duration" % value, 1)
+        return "passed"
+
+    except:
+        return CommonUtil.Exception_Handler(sys.exc_info())
+
