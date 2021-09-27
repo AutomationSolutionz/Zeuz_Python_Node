@@ -3,6 +3,11 @@
 # Version 14.x.x
 ## Version 14.4.x
 
+### [14.4.1] [September 27, 2021]
+
+- **[Change]** All internal APIs that communicate with Zeuz Server are now
+  authenticated by API key. Only API key based login is going to work now.
+
 ### [14.4.0] [September 6, 2021]
 
 - **[Add]** Desktop record and replay action! Record your mouse interactions
