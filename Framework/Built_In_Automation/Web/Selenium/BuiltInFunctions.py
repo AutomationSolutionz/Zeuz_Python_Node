@@ -30,7 +30,7 @@ from selenium.webdriver.firefox.firefox_binary import FirefoxBinary
 from selenium.webdriver.support.ui import Select
 from selenium.webdriver.support.ui import WebDriverWait
 from selenium.webdriver.common.action_chains import ActionChains
-from selenium.common.exceptions import NoAlertPresentException, ElementClickInterceptedException, WebDriverException,\
+from selenium.common.exceptions import ElementClickInterceptedException, WebDriverException,\
     SessionNotCreatedException, TimeoutException, NoSuchFrameException, StaleElementReferenceException
 from selenium.webdriver.common.keys import Keys
 from selenium.webdriver.common.by import By
@@ -3319,8 +3319,21 @@ def switch_iframe(step_data):
                 selenium_driver.switch_to.default_content()
                 CommonUtil.ExecLog(sModuleInfo, "Exited all iframes and switched to default content", 1)
             elif left == "index":
-                selenium_driver.switch_to.frame(int(right.strip()))
-                CommonUtil.ExecLog(sModuleInfo, "Iframe switched to index %s" % right.strip(), 1)
+                for i in range(5):
+                    iframes = selenium_driver.find_elements_by_tag_name("iframe")
+                    idx = int(right.strip())
+                    if -len(iframes) <= idx < len(iframes):
+                        CommonUtil.ExecLog(sModuleInfo, "Iframe switched to index %s" % right.strip(), 1)
+                        break
+                    CommonUtil.ExecLog(sModuleInfo, "Iframe index = %s not found. retrying after 2 sec wait" % right.strip(), 2)
+                    time.sleep(2)
+                else:
+                    CommonUtil.ExecLog(sModuleInfo, "Index out of range. Total %s iframes found." % len(iframes), 3)
+                    return "zeuz_failed"
+                if idx < 0:
+                    idx = len(iframes) + idx
+                selenium_driver.switch_to.frame(idx)
+
             elif "default" in right.lower():
                 try:
                     Element = LocateElement.Get_Element([(left, "element parameter", right)], selenium_driver)
@@ -3339,8 +3352,7 @@ def switch_iframe(step_data):
                     return "zeuz_failed"
         return "passed"
     except Exception:
-        CommonUtil.ExecLog(sModuleInfo, "Unable to switch iframe", 3)
-        return "zeuz_failed"
+        return CommonUtil.Exception_Handler(sys.exc_info())
 
 
 # Method to upload file
