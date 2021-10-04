@@ -1745,7 +1745,7 @@ def Conditional_Action_Handler(step_data, dataset_cnt):
 
             start_time = time.time()
             end_time = start_time + wait
-            LocateElement.end = 1
+            LocateElement.end = 7
             while True:
                 Element = LocateElement.Get_Element(
                     data_set, eval(module).get_driver()
@@ -1753,7 +1753,7 @@ def Conditional_Action_Handler(step_data, dataset_cnt):
                 time.sleep(wait/10)
                 if (Element not in failed_tag_list) or (time.time() >= end_time):
                     break
-            LocateElement.end = 20
+            LocateElement.end = 7
             if Element in failed_tag_list:
                 CommonUtil.ExecLog(
                     sModuleInfo, "Conditional Actions could not find the element", 3

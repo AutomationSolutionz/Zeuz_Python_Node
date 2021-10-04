@@ -594,7 +594,7 @@ def Wait_For_Element(data_set):
                 timeout_duration = int(row[2])
 
         # Check for element every second
-        LocateElement.end = 1
+        LocateElement.end = 7
         end_time = time.time() + timeout_duration  # Time at which we should stop looking
         for i in range(timeout_duration):
             # Keep testing element until this is reached (likely never hit due to timeout below)
@@ -610,7 +610,7 @@ def Wait_For_Element(data_set):
             if not wait_for_element_to_disappear:  # Wait for it to appear
                 if Element not in failed_tag_list:  # Element found
                     CommonUtil.ExecLog(sModuleInfo, "Found element", 1)
-                    LocateElement.end = 20
+                    LocateElement.end = 7
                     return "passed"
                 else:  # Element not found, keep waiting
                     CommonUtil.ExecLog(
@@ -621,7 +621,7 @@ def Wait_For_Element(data_set):
             else:  # Wait for it to be removed/hidden/disabled
                 if Element in failed_tag_list:  # Element removed
                     CommonUtil.ExecLog(sModuleInfo, "Element disappeared", 1)
-                    LocateElement.end = 20
+                    LocateElement.end = 7
                     return "passed"
                 else:  # Element found, keep waiting
                     CommonUtil.ExecLog(
@@ -631,7 +631,7 @@ def Wait_For_Element(data_set):
                     )
 
         # Element status not changed after time elapsed, to exit with failure
-        LocateElement.end = 20
+        LocateElement.end = 7
         CommonUtil.ExecLog(sModuleInfo, "Wait for element failed", 3)
         return "zeuz_failed"
 
