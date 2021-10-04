@@ -427,7 +427,8 @@ def RunProcess(sTesterid, user_info_object, run_once=False):
                 return True  # Timeout reached, re-login. We do this because after about 3-4 hours this function will hang, and thus not be available for deployment
             executor.submit(RequestFormatter.Get, "update_machine_with_time_api", {"machine_name": sTesterid})
             # r = RequestFormatter.Get("is_run_submitted_api", {"machine_name": sTesterid})
-            r = requests.get(RequestFormatter.form_uri("is_submitted_api"), {"machine_name": sTesterid}, verify=False).json()
+            r = RequestFormatter.Get(f"is_submitted_api?machine_name={sTesterid}")
+            # r = requests.get(RequestFormatter.form_uri("is_submitted_api"), {"machine_name": sTesterid}, verify=False).json()
             Userid = (CommonUtil.MachineInfo().getLocalUser()).lower()
             if r and "found" in r and r["found"]:
                 size = round(int(r["file_size"]) / 1024, 2)
@@ -438,7 +439,8 @@ def RunProcess(sTesterid, user_info_object, run_once=False):
                 save_path = temp_ini_file.parent / "attachments"
                 CommonUtil.ExecLog("", "Downloading dataset and attachments of %s into:\n%s" % (size, str(save_path/"input.zip")), 4)
                 FL.CreateFolder(save_path)
-                response = requests.get(RequestFormatter.form_uri("getting_json_data_api"), {"machine_name": Userid}, stream=True, verify=False)
+                headers = RequestFormatter.add_api_key_to_headers({})
+                response = requests.get(RequestFormatter.form_uri("getting_json_data_api"), {"machine_name": Userid}, stream=True, verify=False, **headers)
                 chunk_size = 4096
                 progress_bar = tqdm(total=r["file_size"], unit='B', mininterval=0, unit_scale=True, unit_divisor=1024, leave=False)
                 with open(save_path/"input.zip", 'wb') as file:

@@ -49,4 +49,4 @@ psutil
 pywin32
 pythonnet
 keyboard
-imap-tools
+mouse

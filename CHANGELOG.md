@@ -2,6 +2,14 @@
 
 # Version 14.x.x
 ## Version 14.4.x
+
+### [14.4.1] [September 27, 2021]
+
+- **[Change]** All internal APIs that communicate with Zeuz Server are now
+  authenticated by API key. Only API key based login is going to work now.
+- **[Add]** Desktop record and replay action! Record your mouse interactions
+  with **Node > Apps > desktop-recorder > MouseModuleRecorder.py** and replay
+  them with the `playback recorded events` action.
 ### [14.4.0] [August 24, 2021]
 - **[Fix]** Fixed variable parsing limitations
 - **[Fix]** Fixed exact match bug and improved subset in compare_data action
@@ -10,7 +18,14 @@
 - **[Add]** Added all python default methods in zeuz variable syntax. Example: 
 `%|list_name.sort()|%`
 `%|var_name.upper().strip().split(" ")|%`
+
 ## Version 14.3.x
+
+### [14.3.1] [August 28, 2021]
+
+- **[Add]** Parse port from database host url if specified in the form
+  `127.0.0.1:8080` where the port is separated by a `:` symbol.
+
 ### [14.3.0] [August 19, 2021]
 - **[Add]** Parent/Sibling/Index method added
 - **[Add]** Partial and case-insensitive search added

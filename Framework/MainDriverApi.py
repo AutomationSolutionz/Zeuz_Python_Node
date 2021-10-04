@@ -1254,19 +1254,23 @@ def upload_json_report(Userid, temp_ini_file, run_id):
                 size = str(size) + " KB"
             print("Uploading %s report of %s testcases of %s from:\n%s"
                   % (CommonUtil.current_session_name, len(json_report[0]["test_cases"]), size, str(zip_path) + ".zip"))
-            for i in range(5):
+
+            headers = RequestFormatter.add_api_key_to_headers({})
+            for _ in range(5):
                 try:
                     res = requests.post(
                         RequestFormatter.form_uri("create_report_log_api/"),
                         files={"file": fzip},
                         data={"machine_name": Userid, "file_name": json_report[CommonUtil.runid_index]["file_name"]},
-                        verify=False)
+                        verify=False,
+                        **headers)
                 except KeyError:
                     res = requests.post(
                         RequestFormatter.form_uri("create_report_log_api/"),
                         files={"file": fzip},
                         data={"machine_name": Userid},
-                        verify=False)
+                        verify=False,
+                        **headers)
                 if res.status_code == 200:
                     try:
                         res_json = res.json()
