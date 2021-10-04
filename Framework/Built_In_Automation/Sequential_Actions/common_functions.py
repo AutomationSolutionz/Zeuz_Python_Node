@@ -7,6 +7,9 @@
 
 import inspect, sys, time, collections, ftplib, os, ast, copy, csv, yaml
 from pathlib import Path
+from imap_tools import MailBox
+import re
+from typing import List
 
 try:
     import xlwings as xw
@@ -35,7 +38,8 @@ import datefinder
 import traceback
 import json
 from datetime import timedelta
-from .utility import send_email, check_latest_received_email
+from .utility import send_email, check_latest_received_email, delete_mail, save_mail
+import re
 
 months = [
     "Unknown",
@@ -590,28 +594,23 @@ def Wait_For_Element(data_set):
                 timeout_duration = int(row[2])
 
         # Check for element every second
-        end_time = (
-            time.time() + timeout_duration
-        )  # Time at which we should stop looking
-        for i in range(
-            timeout_duration
-        ):  # Keep testing element until this is reached (likely never hit due to timeout below)
+        LocateElement.end = 7
+        end_time = time.time() + timeout_duration  # Time at which we should stop looking
+        for i in range(timeout_duration):
+            # Keep testing element until this is reached (likely never hit due to timeout below)
             # Wait and then test if we are over our alloted time limit
-            if (
-                time.time() >= end_time
-            ):  # Keep testing element until this is reached (ensures we wait exactly the specified amount of time)
+            if time.time() >= end_time:  # Keep testing element until this is reached (ensures we wait exactly the specified amount of time)
                 break
             time.sleep(1)
 
             # Test if element exists or not
-            Element = LocateElement.Get_Element(
-                data_set, common_driver, wait_enable=False
-            )
+            Element = LocateElement.Get_Element(data_set, common_driver, wait_enable=False)
 
             # Check if element exists or not, depending on the type of wait the user wanted
-            if wait_for_element_to_disappear == False:  # Wait for it to appear
+            if not wait_for_element_to_disappear:  # Wait for it to appear
                 if Element not in failed_tag_list:  # Element found
                     CommonUtil.ExecLog(sModuleInfo, "Found element", 1)
+                    LocateElement.end = 7
                     return "passed"
                 else:  # Element not found, keep waiting
                     CommonUtil.ExecLog(
@@ -622,6 +621,7 @@ def Wait_For_Element(data_set):
             else:  # Wait for it to be removed/hidden/disabled
                 if Element in failed_tag_list:  # Element removed
                     CommonUtil.ExecLog(sModuleInfo, "Element disappeared", 1)
+                    LocateElement.end = 7
                     return "passed"
                 else:  # Element found, keep waiting
                     CommonUtil.ExecLog(
@@ -631,6 +631,7 @@ def Wait_For_Element(data_set):
                     )
 
         # Element status not changed after time elapsed, to exit with failure
+        LocateElement.end = 7
         CommonUtil.ExecLog(sModuleInfo, "Wait for element failed", 3)
         return "zeuz_failed"
 
@@ -963,21 +964,35 @@ def New_Compare_Variables(step_data):
         if check_subset:
             list1 = CommonUtil.parse_value_into_object(list1_name)
             list2 = CommonUtil.parse_value_into_object(list2_name)
+            if type(list1) == str and type(list2) == str:
+                if list1 == list2:
+                    CommonUtil.ExecLog(sModuleInfo, "LEFT (%s):\n%s\n\nRIGHT (%s):\n%s" % (datatype1, list1_str, datatype2, list2_str), 1)
+                    CommonUtil.ExecLog(sModuleInfo, "RIGHT str is equal to the LEFT str", 1)
+                    return "passed"
+                elif list1 in list2:
+                    CommonUtil.ExecLog(sModuleInfo, "LEFT (%s):\n%s\n\nRIGHT (%s):\n%s" % (datatype1, list1_str, datatype2, list2_str), 1)
+                    CommonUtil.ExecLog(sModuleInfo, "LEFT str is a subset of RIGHT str", 1)
+                    return "passed"
+                else:
+                    CommonUtil.ExecLog(sModuleInfo, "LEFT (%s):\n%s\n\nRIGHT (%s):\n%s" % (datatype1, list1_str, datatype2, list2_str), 3)
+                    CommonUtil.ExecLog(sModuleInfo, "LEFT str is not a subset of RIGHT str", 3)
+                    return "zeuz_failed"
+
             if not (type(list1).__name__ in ("list", "tuple") and type(list2).__name__ in ("list", "tuple")):
                 CommonUtil.ExecLog(sModuleInfo, "LEFT (%s):\n%s\n\nRIGHT (%s):\n%s" % (datatype1, list1_str, datatype2, list2_str), 3)
-                CommonUtil.ExecLog(sModuleInfo, "To check subset both the variable should be list or tuple", 3)
+                CommonUtil.ExecLog(sModuleInfo, "To check subset both the variable should be list or tuple or str", 3)
                 return "zeuz_failed"
             elif list1 == list2:
                 CommonUtil.ExecLog(sModuleInfo, "LEFT (%s):\n%s\n\nRIGHT (%s):\n%s" % (datatype1, list1_str, datatype2, list2_str), 1)
                 CommonUtil.ExecLog(sModuleInfo, "RIGHT list is equal to the LEFT list", 1)
                 return "passed"
-            elif all(x in list1 for x in list2):
+            elif all(x in list2 for x in list1):
                 CommonUtil.ExecLog(sModuleInfo, "LEFT (%s):\n%s\n\nRIGHT (%s):\n%s" % (datatype1, list1_str, datatype2, list2_str), 1)
-                CommonUtil.ExecLog(sModuleInfo, "RIGHT list is a subset of LEFT list", 1)
+                CommonUtil.ExecLog(sModuleInfo, "LEFT list is a subset of RIGHT list", 1)
                 return "passed"
             else:
                 CommonUtil.ExecLog(sModuleInfo, "LEFT (%s):\n%s\n\nRIGHT (%s):\n%s" % (datatype1, list1_str, datatype2, list2_str), 3)
-                CommonUtil.ExecLog(sModuleInfo, "RIGHT list is not a subset of LEFT list", 3)
+                CommonUtil.ExecLog(sModuleInfo, "LEFT list is not a subset of RIGHT list", 3)
                 return "zeuz_failed"
 
         found_list = []
@@ -1029,7 +1044,7 @@ def New_Compare_Variables(step_data):
             else:
                 if results == "not matched":
                     CommonUtil.ExecLog(sModuleInfo, "LEFT (%s):\n%s\n\nRIGHT (%s):\n%s" % (datatype1, list1_str, datatype2, list2_str), 3)
-                    CommonUtil.ExecLog(sModuleInfo, "Somewhere inside RIGHT list has more items than LEFT list", 3)
+                    CommonUtil.ExecLog(sModuleInfo, "LEFT list and RIGHT list did not match", 3)
                     return "zeuz_failed"
                 elif results == "all matched":
                     CommonUtil.ExecLog(sModuleInfo, "LEFT (%s):\n%s\n\nRIGHT (%s):\n%s" % (datatype1, list1_str, datatype2, list2_str), 1)
@@ -1104,6 +1119,7 @@ def New_Compare_Variables(step_data):
                     CommonUtil.ExecLog(sModuleInfo, "LEFT (%s):\n%s\n\nRIGHT (%s):\n%s" % (datatype1, list1, datatype2, list2), 3)
                     CommonUtil.ExecLog(sModuleInfo, "LEFT and RIGHT value did not match", 3)
                     return "zeuz_failed"
+        """ Below code is useless now"""
         if nested:
             pass
         else:
@@ -1255,23 +1271,26 @@ def compare_list_tuple(list1, list2, check_exclusion, match_by_index):
 
     else:
         if (len(list1) and type(list1[0]).__name__ in ("list", "tuple")) or (len(list2) and type(list2[0]).__name__ in ("list", "tuple")):
-            nested = True
+            nested = True  # Maybe its not needed here in exact match
+        if type(list1).__name__ in ("list", "tuple"):
             list1 = get_list(list1)
+        if type(list2).__name__ in ("list", "tuple"):
             list2 = get_list(list2)
-            if list1 == list2:
-                return "all matched"
-            else:
-                return "not matched"
+        if list1 == list2:
+            return "all matched"
+        else:
+            return "not matched"
 
-        for cnt in range(len(list1)):
-            if list1[cnt] == list2[cnt]:
-                found_list.append(list1[cnt])
-                pass_count += 1
-            else:
-                not_found_list2.append(list1[cnt])
-                not_found_list1.append(list2[cnt])
-                fail_count += 1
-        return found_list, not_found_list1, not_found_list2, pass_count, fail_count
+        """ Old method removed """
+        # for cnt in range(len(list1)):
+        #     if list1[cnt] == list2[cnt]:
+        #         found_list.append(list1[cnt])
+        #         pass_count += 1
+        #     else:
+        #         not_found_list2.append(list1[cnt])
+        #         not_found_list1.append(list2[cnt])
+        #         fail_count += 1
+        # return found_list, not_found_list1, not_found_list2, pass_count, fail_count
 
 
 def get_list(value):
@@ -2232,7 +2251,13 @@ def check_latest_mail(data_set):
                 3,
             )
             return "zeuz_failed"
-
+        if not subject_to_check and not sender_mail_to_check and not sender_name_to_check:
+            CommonUtil.ExecLog(
+                sModuleInfo,
+                "One of the following 3 parameters is required: subject, sender name, email body",
+                3,
+            )
+            return "zeuz_failed"
         # Function to send email
         result = check_latest_received_email(
             imap_host,
@@ -2246,16 +2271,11 @@ def check_latest_mail(data_set):
         )
 
         if result:
-            if sender_name_to_check == "":
-                CommonUtil.ExecLog(sModuleInfo, "Subject and sender matched", 1)
-            else:
-                CommonUtil.ExecLog(sModuleInfo, "Subject, sender and name matched", 1)
+            CommonUtil.ExecLog(sModuleInfo, "Email parameters matched", 1)
             return "passed"
         else:
-            if sender_name_to_check == "":
-                CommonUtil.ExecLog(sModuleInfo, "Subject and sender didn't match", 3)
-            else:
-                CommonUtil.ExecLog(sModuleInfo, "Subject, sender and name didn't match", 3)
+            CommonUtil.ExecLog(sModuleInfo, "Email parameters didn't match", 3)
+            return "zeuz_failed"
             return "zeuz_failed"
 
     except Exception:
@@ -3629,3 +3649,241 @@ def replace_string(data_set):
 
     except:
         return CommonUtil.Exception_Handler(sys.exc_info())
+
+
+@logger
+def delete_mail_action(data_set):
+    sModuleInfo = inspect.currentframe().f_code.co_name + " : " + MODULE_NAME
+
+    try:
+        imap_host = ""
+        imap_user = ""
+        select_mailbox = ""
+        imap_pass = ""
+        subject_to_check = ""
+        body = ""
+        sender_email = ""
+        rcvremail = ""
+        flagged_email =""
+        check_email =""
+        exact_date = ""
+        after_date = ""
+        before_date = ""
+
+        for left, mid, right in data_set:
+            left = left.lower()
+            right = right.strip()
+
+            if "imap host" in left:
+                imap_host = right
+            elif "imap user" in left:
+                imap_user = right
+
+            elif "inbox" in left:
+                select_mailbox = right
+
+            elif "imap pass" in left:
+                imap_pass = right
+
+            elif "subject" in left:
+                subject_to_check = right
+            elif "text" in left:
+                body = right
+            elif "sender email" in left:
+                sender_email = right
+            elif "receiver email" in left:
+                rcvremail = right
+            elif "flagged email" in left:
+                flagged_email = right
+            elif "checked email" in left:
+                check_email = right
+            elif "exact date" in left:
+                exact_date = right
+            elif "after date" in left:
+                after_date = right
+            elif "before date" in left:
+                before_date = right
+
+        if imap_host == "" or imap_user == "" or imap_pass == ""  or select_mailbox == "" :
+            CommonUtil.ExecLog(
+                sModuleInfo,
+                "please provide the imap credentials for your mail server, see action help",
+                3,
+            )
+
+            return "zeuz_failed"
+        result = delete_mail(
+            imap_host,
+            imap_user,
+            select_mailbox,
+            imap_pass,
+            subject_to_check,
+            body,
+            sender_email,
+            rcvremail,
+            flagged_email,
+            check_email,
+            exact_date,
+            after_date,
+            before_date
+        )
+        print(result)
+
+        return "passed"
+    except:
+        return CommonUtil.Exception_Handler(sys.exc_info())
+
+
+@logger
+def save_mail_action(data_set):
+    sModuleInfo = inspect.currentframe().f_code.co_name + " : " + MODULE_NAME
+
+    try:
+        imap_host = ""
+        imap_user = ""
+        select_mailbox = ""
+        imap_pass = ""
+        subject_to_check = ""
+        body = ""
+        sender_email = ""
+        rcvremail = ""
+        flagged_email =""
+        check_email =""
+        exact_date = ""
+        after_date = ""
+        before_date = ""
+        variable_name = None
+
+        for left, mid, right in data_set:
+
+            left = left.lower()
+            right = right.strip()
+
+            if "imap host" in left:
+                imap_host = right
+            elif "imap user" in left:
+                imap_user = right
+
+            elif "inbox" in left:
+                select_mailbox = right
+
+            elif "imap pass" in left:
+                imap_pass = right
+
+            elif "subject" in left:
+                subject_to_check = right
+            elif "text" in left:
+                body = right
+            elif "sender email" in left:
+                sender_email = right
+            elif "receiver email" in left:
+                rcvremail = right
+            elif "flagged email" in left:
+                flagged_email = right
+            elif "checked email" in left:
+                check_email = right
+            elif "exact date" in left:
+                exact_date = right
+            elif "after date" in left:
+                after_date = right
+            elif "before date" in left:
+                before_date = right
+            elif "action" in mid:
+                variable_name = right.strip()
+
+        if imap_host == "" or imap_user == "" or imap_pass == ""  or select_mailbox == "" :
+            CommonUtil.ExecLog(
+                sModuleInfo,
+                "please provide the imap credentials for your mail server, see action help",
+                3,
+            )
+        if variable_name =="":
+            CommonUtil.ExecLog(
+                sModuleInfo,
+                "please provide variable name",
+                3,
+            )
+            return "zeuz_failed"
+        result = save_mail(
+            imap_host,
+            imap_user,
+            select_mailbox,
+            imap_pass,
+            subject_to_check,
+            body,
+            sender_email,
+            rcvremail,
+            flagged_email,
+            check_email,
+            exact_date,
+            after_date,
+            before_date
+        )
+
+        CommonUtil.ExecLog(
+            sModuleInfo,
+            str(result),
+            1,
+        )
+        variable_value = result
+
+        sr.Set_Shared_Variables(variable_name, variable_value)
+        return "passed"
+    except:
+        return CommonUtil.Exception_Handler(sys.exc_info())
+
+
+@logger
+def search_and_save_text(data_set):
+    sModuleInfo = inspect.currentframe().f_code.co_name + " : " + MODULE_NAME
+
+    try:
+        variable_name = None
+        data = None
+        user_given_data = None
+
+        for left, mid, right in data_set:
+            left = left.strip().lower()
+            if "pattern to match" in left:
+                user_given_data = right
+            elif "data" in left:
+                data = CommonUtil.parse_value_into_object(right)
+            elif "action" in mid:
+               variable_name = right.strip()
+
+        variable_value = re.findall(user_given_data, data)
+        sr.Set_Shared_Variables(variable_name, variable_value)
+        return "passed"
+
+    except:
+        return CommonUtil.Exception_Handler(sys.exc_info())
+
+
+@logger
+def custom_step_duration(data_set):
+    sModuleInfo = inspect.currentframe().f_code.co_name + " : " + MODULE_NAME
+    try:
+        for left, mid, right in data_set:
+            if "action" in mid:
+               value = right.strip()
+        dot = value.count(".")
+        if dot == 0:
+            value += ".000000"
+        elif dot != 1:
+            CommonUtil.ExecLog(sModuleInfo, "Please provide in valid time format- HH:MM:SS.mmm", 3)
+            return "zeuz_failed"
+        else:
+            value += "0" * (6-len(value.split(".")[-1]))
+        colon = 2 - value.count(":")
+        if colon < 0:
+            CommonUtil.ExecLog(sModuleInfo, "Please provide in valid time format- HH:MM:SS.mmm", 3)
+            return "zeuz_failed"
+        for i in range(colon):
+            value = "00:" + value
+        CommonUtil.custom_step_duration = value
+        CommonUtil.ExecLog(sModuleInfo, "%s is set as step duration" % value, 1)
+        return "passed"
+
+    except:
+        return CommonUtil.Exception_Handler(sys.exc_info())
+

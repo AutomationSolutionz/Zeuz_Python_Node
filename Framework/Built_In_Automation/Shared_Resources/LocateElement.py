@@ -609,7 +609,7 @@ def _switch(step_data_set):
     except Exception:
         return CommonUtil.Exception_Handler(sys.exc_info())
 
-
+end = 7
 def _get_xpath_or_css_element(element_query, css_xpath, index_number=None, Filter="", return_all_elements=False):
     """
     Here, we actually execute the query based on css/xpath and then analyze if there are multiple.
@@ -625,10 +625,10 @@ def _get_xpath_or_css_element(element_query, css_xpath, index_number=None, Filte
         exception_cnd = False
         start = time.time()
         #end = start + int(sr.Get_Shared_Variables("element_wait"))
-        end = 7
+
         x = 0
         #while time.time() < end:
-        while x <end:
+        while x < end:
             x = x+1
             if css_xpath == "unique" and (
                 driver_type == "appium" or driver_type == "selenium"
@@ -701,13 +701,9 @@ def _get_xpath_or_css_element(element_query, css_xpath, index_number=None, Filte
             elif css_xpath == "xpath" and driver_type != "xml":
                 all_matching_elements_visible_invisible = generic_driver.find_elements(By.XPATH, element_query)
             elif css_xpath == "xpath" and driver_type == "xml":
-                all_matching_elements_visible_invisible = generic_driver.xpath(
-                    element_query
-                )
+                all_matching_elements_visible_invisible = generic_driver.xpath(element_query)
             elif css_xpath == "css":
-                all_matching_elements_visible_invisible = generic_driver.find_elements(
-                    By.CSS_SELECTOR, element_query
-                )
+                all_matching_elements_visible_invisible = generic_driver.find_elements(By.CSS_SELECTOR, element_query)
 
             if all_matching_elements_visible_invisible and len(filter_elements(all_matching_elements_visible_invisible, "")) > 0:
                 break

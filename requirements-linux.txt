@@ -36,5 +36,6 @@ pyscreenshot
 pyyaml
 pyautogui
 opencv-python
+imap-tools
 keyboard
 mouse

@@ -42,5 +42,6 @@ websocket-client
 tqdm
 pyscreenshot
 pyyaml
+imap-tools
 keyboard
 mouse

@@ -7,12 +7,17 @@
 
 - **[Change]** All internal APIs that communicate with Zeuz Server are now
   authenticated by API key. Only API key based login is going to work now.
-
-### [14.4.0] [September 6, 2021]
-
 - **[Add]** Desktop record and replay action! Record your mouse interactions
   with **Node > Apps > desktop-recorder > MouseModuleRecorder.py** and replay
   them with the `playback recorded events` action.
+### [14.4.0] [August 24, 2021]
+- **[Fix]** Fixed variable parsing limitations
+- **[Fix]** Fixed exact match bug and improved subset in compare_data action
+- **[Add]**  All types of operators = ["|==|", "==", "|!=|", "|<=|", "|>=|", "|>|", "|<|", "|in|"] now can be used in For loop and While loop exit conditions. Example: 
+`exit loop and continue, optional loop setting, if "start date" |in| %|row[0]|%`
+- **[Add]** Added all python default methods in zeuz variable syntax. Example: 
+`%|list_name.sort()|%`
+`%|var_name.upper().strip().split(" ")|%`
 
 ## Version 14.3.x
 
