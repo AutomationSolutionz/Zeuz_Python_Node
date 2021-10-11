@@ -613,7 +613,7 @@ def run_all_test_steps_in_a_test_case(
             sec = TestStepEndTime - TestStepStartTime
             hours, remainder = sec // 3600, sec % 3600
             minutes, seconds = remainder // 60, remainder % 60
-            TestStepDuration = "%02d:%02d:%f" % (hours, minutes, seconds)
+            TestStepDuration = "%02d:%02d:%s" % (hours, minutes, round(seconds, 3))
         TestStepMemConsumed = WinMemBegin - WinMemEnd  # get memory consumed
         for i in step_attachment_list: shared.Remove_From_Shared_Variables(i)  # Cleanup step_attachment variables
 

@@ -3868,12 +3868,14 @@ def custom_step_duration(data_set):
                value = right.strip()
         dot = value.count(".")
         if dot == 0:
-            value += ".000000"
+            value += ".000"
         elif dot != 1:
             CommonUtil.ExecLog(sModuleInfo, "Please provide in valid time format- HH:MM:SS.mmm", 3)
             return "zeuz_failed"
         else:
-            value += "0" * (6-len(value.split(".")[-1]))
+            value = value.split(".")
+            value = value[0] + "." + str(round(float("." + value[-1]), 3))[2:]
+            value += "0" * (3-len(value.split(".")[-1]))
         colon = 2 - value.count(":")
         if colon < 0:
             CommonUtil.ExecLog(sModuleInfo, "Please provide in valid time format- HH:MM:SS.mmm", 3)
