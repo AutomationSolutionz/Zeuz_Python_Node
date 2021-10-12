@@ -169,12 +169,13 @@ def ZeuZ_map_code_decoder(val):
 
 def parse_value_into_object(val):
     """Parses the given value into a Python object: int, str, list, dict."""
-
     if not isinstance(val, str):
         return val
 
     try:
-        val2 = ast.literal_eval(val)
+        # val2 = ast.literal_eval(val)  # previous method
+        # encoding and decoding is for handling escape characters such as \a \1 \2
+        val2 = ast.literal_eval(val.encode('unicode_escape').decode())
         if not (val.startswith("(") and val.endswith(")")) and isinstance(val2, tuple):
             # We are preventing "1,2" >> (1,2) (str to tuple conversion without first brackets)
             pass
@@ -189,10 +190,11 @@ def parse_value_into_object(val):
                     #ToDo: find a way to convert the datatype to str or list
                     val = ZeuZ_map_code[val]
                 else:
-                    val = ast.literal_eval(f'"{val}"')
+                    # val = ast.literal_eval(f'"{val}"')   # previous method
+                    # encoding and decoding is for handling escape characters such as \a \1 \2
+                    val = ast.literal_eval(f'"{val.encode("unicode_escape").decode()}"')
             except:
                 pass
-
     return val
 
 
@@ -681,7 +683,7 @@ def set_screenshot_vars(shared_variables):
 
 def TakeScreenShot(function_name, local_run=False):
     """ Puts TakeScreenShot into a thread, so it doesn't block test case execution """
-
+    # if debug_status: return
     try:
         if upload_on_fail and rerun_on_fail and not rerunning_on_fail and not debug_status:
             return
