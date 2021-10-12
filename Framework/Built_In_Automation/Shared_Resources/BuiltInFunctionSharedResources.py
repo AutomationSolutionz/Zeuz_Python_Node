@@ -460,7 +460,7 @@ def generate_zeuz_code_if_not_json_obj(val):
         return val
     except:
         while True:
-            code = "#ZeuZ_map_code#" + ''.join(random.choices(string.ascii_letters + string.digits + string.punctuation, k=15))
+            code = "#ZeuZ_map_code#" + ''.join(random.choices(string.ascii_letters + string.digits + '!#$%&()*+,-./:;<=>?@[]^_`{|}~', k=15))
             if code not in CommonUtil.ZeuZ_map_code:
                 break
         CommonUtil.ZeuZ_map_code[code] = val
@@ -739,8 +739,8 @@ def get_previous_response_variables_in_strings(step_data_string_input):
                 generated_value = rest_json_output
 
             elif var_name.lower().startswith("today") or var_name.startswith("currentEpochTime"):
-                replaced_string = save_built_in_time_variable(var_name)
-                if replaced_string in failed_tag_list:
+                replaced = save_built_in_time_variable(var_name)
+                if replaced in failed_tag_list:
                     CommonUtil.ExecLog(
                         sModuleInfo,
                         "No such date variable named '%s', user formats like %%|today|%% , %%|today + 1d|%% , %%|today - 3m|%% , %%|today + 1w|%%, %%|today + 2y|%% , %%|currentEpochTime|%% etc."
@@ -748,7 +748,7 @@ def get_previous_response_variables_in_strings(step_data_string_input):
                         3,
                     )
                     return "zeuz_failed"
-                generated_value = save_built_in_time_variable(var_name)
+                generated_value = replaced
 
             elif var_name.startswith("random_number_in_range"):
                 full_string = var_name
