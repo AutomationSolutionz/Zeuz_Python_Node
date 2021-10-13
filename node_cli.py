@@ -198,7 +198,8 @@ exit_script = False  # Used by Zeuz Node GUI to exit script
 
 
 def zeuz_authentication_prompts_for_cli():
-    prompts = ["server_address", "username", "password"]
+    prompts = ["server_address", "api-key"]
+    values = []
     for prompt in prompts:
         if prompt == "password":
             value = getpass()
@@ -212,6 +213,8 @@ def zeuz_authentication_prompts_for_cli():
                 if value[-1] == "/":
                     value = value[:-1]
             ConfigModule.add_config_value(AUTHENTICATION_TAG, prompt, str(value))
+        values.append(value)
+    return values
 
 
 def Login(cli=False, run_once=False):
@@ -220,12 +223,15 @@ def Login(cli=False, run_once=False):
     server_name = ConfigModule.get_config_value(AUTHENTICATION_TAG, "server_address")
     api = ConfigModule.get_config_value(AUTHENTICATION_TAG, "api-key")
     api_flag = True
-
-    if api:
-        if not server_name:
-            print("Please provide server url with --server and --api-key or type  -h for more info")
-            return
-
+    if not api or not server_name:
+        zeuz_authentication_prompts_for_cli()
+        for i in range(30):     # it takes time to save in the file. so lets wait 15 sec
+            time.sleep(0.5)
+            api = ConfigModule.get_config_value(AUTHENTICATION_TAG, "api-key")
+            server_name = ConfigModule.get_config_value(AUTHENTICATION_TAG, "server_address")
+            if api and server_name:
+                break
+    while api and server_name:
         url = '/api/auth/token/verify?api_key=%s' % (api)
         r = RequestFormatter.Get(url)
         if r:
@@ -236,12 +242,14 @@ def Login(cli=False, run_once=False):
                 username = info['username']
                 api_flag = False
                 ConfigModule.add_config_value(AUTHENTICATION_TAG, "username", username)
+                break
             except:
                 print("Incorrect API key...")
-                return
+                server_name, api = zeuz_authentication_prompts_for_cli()
+                continue
         else:
-            print("Failed to get authentication token from server.")
-            return
+            print("Server down. Trying again after 30 seconds")
+            time.sleep(30)
 
     if password == "YourUserNameGoesHere":
         password = password
@@ -967,6 +975,15 @@ def command_line_args():
     #     sys.exit()
 
 
+def Bypass():
+    while True:
+        user_info_object = {'project': 'zeuz', 'team': 'zeuz'}
+        oLocalInfo = CommonUtil.MachineInfo()
+        testerid = (oLocalInfo.getLocalUser()).lower()
+        print("[Bypass] Zeuz Node is online: %s" % testerid)
+        RunProcess(testerid, user_info_object)
+
+
 if __name__ == "__main__":
     signal.signal(signal.SIGINT, signal_handler)
     print("Press Ctrl-C to disconnect and quit.")
@@ -978,5 +995,6 @@ if __name__ == "__main__":
     if local_run:
         Local_run()
     else:
+        # Bypass()
         Login(cli=True, run_once=RUN_ONCE)
     CommonUtil.ShutdownExecutor()

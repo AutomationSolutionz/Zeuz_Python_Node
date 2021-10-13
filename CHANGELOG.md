@@ -3,13 +3,19 @@
 # Version 14.x.x
 ## Version 14.4.x
 
-### [14.4.1] [September 27, 2021]
+### [14.5.0] [October 13, 2021]
 
+- **[Improve]** Improved variable parsing by handling escape characters
 - **[Change]** All internal APIs that communicate with Zeuz Server are now
   authenticated by API key. Only API key based login is going to work now.
 - **[Add]** Desktop record and replay action! Record your mouse interactions
   with **Node > Apps > desktop-recorder > MouseModuleRecorder.py** and replay
   them with the `playback recorded events` action.
+- **[Fix]** Switch Iframe and Slider bar bug is fixed
+- **[Add]** Custom step duration action is added
+- **[Add]** Read and save mail action is added
+- **[Add]** Delete mail action is added
+- **[Add]** Search and save text using regex action is added
 ### [14.4.0] [August 24, 2021]
 - **[Fix]** Fixed variable parsing limitations
 - **[Fix]** Fixed exact match bug and improved subset in compare_data action

@@ -1572,7 +1572,7 @@ def Add_Log(step_data):
         list = log_info.split(
             " "
         )  # log level in step data is given as log_1/log_2/log_3 , so to get the level split it by "_"
-        Comment = str(step_data[0][2]).strip()  # get the comment
+        Comment = str(CommonUtil.parse_value_into_object(step_data[0][2])).strip()  # get the comment
         LogLevel = int(list[1])  # get the level
         CommonUtil.ExecLog(sModuleInfo, "%s" % Comment, LogLevel)
         return "passed"
