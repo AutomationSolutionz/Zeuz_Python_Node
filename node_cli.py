@@ -249,7 +249,7 @@ def Login(cli=False, run_once=False):
                 continue
         else:
             print("Server down. Trying again after 30 seconds")
-            time.sleep(2)
+            time.sleep(30)
 
     if password == "YourUserNameGoesHere":
         password = password
