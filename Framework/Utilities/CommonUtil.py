@@ -192,10 +192,6 @@ def parse_value_into_object(val):
                     if val.startswith("#ZeuZ_map_code#") and val in ZeuZ_map_code:
                         #ToDo: find a way to convert the datatype to str or list
                         val = ZeuZ_map_code[val]
-                    else:
-                        # val = ast.literal_eval(f'"{val}"')   # previous method
-                        # encoding and decoding is for handling escape characters such as \a \1 \2
-                        val = ast.literal_eval(f'"{val.encode("unicode_escape").decode()}"')
                 except:
                     pass
     return val
