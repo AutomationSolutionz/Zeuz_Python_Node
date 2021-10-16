@@ -2527,6 +2527,8 @@ def excel_read(data_set):
         var_name = None
         cell_range = None
         expand = None
+        structure_of_variable = None
+        key_reference = None
 
         for left, mid, right in data_set:
             left = left.lower()
@@ -2546,6 +2548,16 @@ def excel_read(data_set):
                 cell_range = right.strip()
             if "read from excel" in left:
                 var_name = right.strip()
+            if "structure of variable" in left:
+                structure_of_variable = right.lower().strip()
+                if structure_of_variable not in ("dictionary", "list of lists"):
+                    CommonUtil.ExecLog(sModuleInfo,"Only 'list of lists' and 'dictionary' avaliable",3)
+                    return "zeuz_failed"
+            if "key reference" in left:
+                key_reference = right.lower().strip().replace(" ", "")
+                if key_reference not in ("row1", "column1"):
+                    CommonUtil.ExecLog(sModuleInfo, "Currently we only support Column 1 and Row 1", 3)
+                    return "zeuz_failed"
 
         wb = xw.Book(filepath)
         sheet = wb.sheets[sheet_name]
@@ -2555,6 +2567,17 @@ def excel_read(data_set):
             cell_data = sheet.range(cell_range).expand(expand).value
         else:
             cell_data = sheet.range(cell_range).value
+
+        if structure_of_variable == "dictionary":
+            data_dict = {}
+            if key_reference == "row1":
+                for cells in cell_data:
+                    data_dict[cells[0]] = cells[1:]
+            elif key_reference == "column1":
+                column_data = list(map(list, zip(*cell_data)))
+                for cells in column_data:
+                    data_dict[cells[0]] = cells[1:]
+            cell_data = data_dict
 
         # Save into shared variables
         sr.Set_Shared_Variables(var_name, cell_data)
