@@ -448,7 +448,7 @@ def Open_Browser(dependency, window_size_X=None, window_size_Y=None):
             CommonUtil.set_screenshot_vars(Shared_Resources.Shared_Variable_Export())
             return "passed"
 
-        elif browser == "edge":
+        elif browser == "microsoft edge chromium":
             edge_path = ConfigModule.get_config_value("Selenium_driver_paths", "edge_path")
             if not edge_path:
                 edge_path = EdgeChromiumDriverManager().install()
