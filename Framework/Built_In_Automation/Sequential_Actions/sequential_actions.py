@@ -33,6 +33,7 @@ import os
 import sys
 import time
 import json
+import subprocess
 from concurrent.futures import ThreadPoolExecutor
 from datetime import datetime
 
@@ -1965,6 +1966,22 @@ def Action_Handler(_data_set, action_row):
 
     if str(action_subfield).startswith("%|"):  # if shared variable
         action_subfield = sr.get_previous_response_variables_in_strings(action_subfield)
+
+    if action_subfield.lower().startswith("windows"):
+        python_folder= []
+        for location in subprocess.getoutput("where python").split("\n"):
+	        if "Microsoft" not in location:
+		        python_folder.append(location)
+        if not 3.5 <= float(sys.version.split(" ")[0][0:3]) <= 3.8:
+            error_msg = "You have the wrong Python version or bit"\
+                +"\nFollow this procedure"\
+                    +"\n1.Go to settings, then go to Apps and in search box type python and uninstall all python related things"\
+                        +"\n2.Delete your Python folder  by going to {}".format(python_folder[0].split("Python")[0] + "Python")\
+                            +"\n3.Go to this link and download python https://www.python.org/ftp/python/3.8.10/python-3.8.10-amd64.exe"\
+                                +"\n4.During installation give check 'Add Python to Path' and uncheck 'for all user'. This is very important."\
+                                    +"\n5.Relaunch zeuz node_cli.py"
+            CommonUtil.ExecLog(sModuleInfo, error_msg, 3,)
+            return "zeuz_failed" 
 
     module, function, original_module, screenshot = common.get_module_and_function(action_name, action_subfield)  # New, get the module to execute
 
