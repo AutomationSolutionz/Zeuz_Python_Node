@@ -4,17 +4,22 @@ import keyboard, autoit, pyautogui
 import os, sys
 import inspect
 from colorama import Fore
+from PIL import ImageGrab as ImageGrab_Mac_Win
+from PIL import Image, ImageTk
 
 new_line = True
 import clr, System
+import tkinter
 
 dll_path = os.getcwd().split("Apps")[0] + "Framework" + os.sep + "windows_dll_files" + os.sep
 clr.AddReference(dll_path + "UIAutomationClient")
 clr.AddReference(dll_path + "UIAutomationTypes")
 clr.AddReference(dll_path + "UIAutomationProvider")
 clr.AddReference( "System.Windows.Forms")
-x, y = 0, 0
+x, y = -1, -1
 from System.Windows.Automation import *
+
+
 def ExecLog(sModuleInfo, sDetails, iLogLevel):
     if iLogLevel == 1:
         status = "Passed"
@@ -25,6 +30,8 @@ def ExecLog(sModuleInfo, sDetails, iLogLevel):
     elif iLogLevel == 3:
         status = "Error"
         line_color = Fore.RED
+    else:
+        return
     info = f"{sModuleInfo}\t\n"
     print(line_color + f"{status.upper()} - {info}{sDetails}")
 
@@ -177,6 +184,37 @@ def copy_tree(Children, ParentElement):
             copy_tree(Node.children, each_child)
     except:
         Exception_Handler(sys.exc_info())
+
+root = tkinter.Tk()
+def close(e):
+    global x,y
+    x = e.x
+    y = e.y
+    root.quit()
+def showPIL(pilImage):
+
+    w, h = root.winfo_screenwidth(), root.winfo_screenheight()
+    print(w,h)
+    root.overrideredirect(1)
+    root.geometry("%dx%d+0+0" % (w, h))
+    root.focus_set()
+    # root.bind("<Escape>", lambda e: (e.widget.withdraw(), e.widget.quit()))
+    root.bind("<Escape>", close)
+    root.bind("<ButtonPress>", close)
+
+    canvas = tkinter.Canvas(root,width=w,height=h)
+    canvas.pack()
+    canvas.configure(background='black')
+    imgWidth, imgHeight = pilImage.size
+    if imgWidth > w or imgHeight > h:
+        ratio = min(w/imgWidth, h/imgHeight)
+        imgWidth = int(imgWidth*ratio)
+        imgHeight = int(imgHeight*ratio)
+        pilImage = pilImage.resize((imgWidth,imgHeight), Image.ANTIALIAS)
+    image = ImageTk.PhotoImage(pilImage)
+    imagesprite = canvas.create_image(w/2,h/2,image=image)
+    root.mainloop()
+
 def main():
     try:
         global x, y
@@ -185,28 +223,35 @@ def main():
         start = time.time()
         Root = node(AutomationElement.RootElement)
         all_windows = AutomationElement.RootElement.FindAll(TreeScope.Children, Condition.TrueCondition)
-        if all_windows.Count != 0:
-            print("Enter between 1-%s to select a window" % all_windows.Count)
-            for i in range(len(all_windows)):
-                print("%s. %s" % (i+1, all_windows[i].Current.Name))
-            dur = time.time() - start
-            idx = input()
-            start = time.time()
-            try:
-                idx = int(idx.strip())
-            except:
-                return Exception_Handler(sys.exc_info())
-            window = all_windows[idx-1]
-            Root.children.append(node(window))
-            all_elements = window.FindAll(TreeScope.Children, Condition.TrueCondition)
-            if all_elements.Count != 0:
-                for each_child in all_elements:
-                    copy_tree(Root.children[0].children, each_child)
+        if all_windows.Count == 0:
+            return
+        print("Enter between 1-%s to select a window" % all_windows.Count)
+        for i in range(len(all_windows)):
+            print("%s. %s" % (i+1, all_windows[i].Current.Name))
+        dur = time.time() - start
+        idx = input()
+        start = time.time()
+        try:
+            idx = int(idx.strip())
+        except:
+            return Exception_Handler(sys.exc_info())
+        window = all_windows[idx-1]
+        window_name = window.Current.Name
+        Root.children.append(node(window))
+        all_elements = window.FindAll(TreeScope.Children, Condition.TrueCondition)
+        if all_elements.Count != 0:
+            for each_child in all_elements:
+                copy_tree(Root.children[0].children, each_child)
         print("time taken for copy = %s" % (time.time() - start + dur))
-        # import ctypes
-        # ctypes.windll.user32.ShowWindow(ctypes.windll.kernel32.GetConsoleWindow(), 6)
-        keyboard.wait("ctrl")
-        x, y = pyautogui.position()
+        autoit.win_activate(window_name)
+        ImageName = "Apps\\Windows\\ss.png"
+        image = ImageGrab_Mac_Win.grab()
+        # image.save(ImageName, format="PNG")
+        print(image.size)
+        showPIL(image)
+        print("finish")
+        print(x, y)
+
         res = _child_search(Root)[:-2] + "\n"
         print(res)
     except:
