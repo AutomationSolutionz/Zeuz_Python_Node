@@ -11,6 +11,8 @@ new_line = True
 import clr, System
 import tkinter
 
+screen_title = "ZeuZ Windows Inspector"
+os.system("title " + screen_title)
 dll_path = os.getcwd().split("Apps")[0] + "Framework" + os.sep + "windows_dll_files" + os.sep
 clr.AddReference(dll_path + "UIAutomationClient")
 clr.AddReference(dll_path + "UIAutomationTypes")
@@ -185,22 +187,24 @@ def copy_tree(Children, ParentElement):
     except:
         Exception_Handler(sys.exc_info())
 
-root = tkinter.Tk()
+global_root = None
 def close(e):
     global x,y
     x = e.x
     y = e.y
-    root.quit()
+    global_root.quit()
 def showPIL(pilImage):
-
+    root = tkinter.Tk()
+    global global_root
+    global_root = root
     w, h = root.winfo_screenwidth(), root.winfo_screenheight()
     print(w,h)
     root.overrideredirect(1)
     root.geometry("%dx%d+0+0" % (w, h))
     root.focus_set()
     # root.bind("<Escape>", lambda e: (e.widget.withdraw(), e.widget.quit()))
-    root.bind("<Escape>", close)
-    root.bind("<ButtonPress>", close)
+    root.bind("<Escape>", close, root)
+    root.bind("<ButtonPress>", close, root)
 
     canvas = tkinter.Canvas(root,width=w,height=h)
     canvas.pack()
@@ -244,16 +248,18 @@ def main():
                 copy_tree(Root.children[0].children, each_child)
         print("time taken for copy = %s" % (time.time() - start + dur))
         autoit.win_activate(window_name)
-        ImageName = "Apps\\Windows\\ss.png"
+        time.sleep(0.5)
+        ImageName = "ss.png"
         image = ImageGrab_Mac_Win.grab()
+        autoit.win_activate(screen_title)
         # image.save(ImageName, format="PNG")
-        print(image.size)
+        # image = Image.open(ImageName)
         showPIL(image)
-        print("finish")
-        print(x, y)
-
-        res = _child_search(Root)[:-2] + "\n"
-        print(res)
+        print("tkinter close")
+        print("************ YOUR Exact Path *************")
+        if x>=0 and y>=0:
+            res = _child_search(Root)[:-2] + "\n"
+            print(res)
     except:
         Exception_Handler(sys.exc_info())
 
