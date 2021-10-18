@@ -230,6 +230,14 @@ def Get_Element(step_data_set, driver, query_debug=False, wait_enable=True, retu
             True
 
         if result not in failed_tag_list:
+            if type(result) != list:
+                attribute_parameter = result.get_attribute('outerHTML')
+                CommonUtil.ExecLog(
+                    sModuleInfo,
+                    "%s"
+                    % (attribute_parameter),
+                    5,
+                )
             if save_parameter != "":  # save element to a variable
                 sr.Set_Shared_Variables(save_parameter, result)
             return result  # Return on pass
