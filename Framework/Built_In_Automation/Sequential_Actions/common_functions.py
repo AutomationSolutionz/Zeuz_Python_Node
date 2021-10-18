@@ -2572,12 +2572,12 @@ def excel_read(data_set):
         if structure_of_variable == "dictionary":
             data_dict = {}
             if key_reference == "row1":
-                for cells in cell_data:
+                row_data = list(map(list, zip(*cell_data)))
+                for cells in row_data:
                     data_dict[cells[0]] = cells[1:]
             elif key_reference == "column1":
-                column_data = list(map(list, zip(*cell_data)))
-                for cells in column_data:
-                    data_dict[cells[0]] = cells[1:]
+                for cells in cell_data:
+                    data_dict[cells[0]] = cells[1:] 
             cell_data = data_dict
 
         # Save into shared variables
