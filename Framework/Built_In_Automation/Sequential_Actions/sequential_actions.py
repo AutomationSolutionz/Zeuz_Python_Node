@@ -33,6 +33,7 @@ import os
 import sys
 import time
 import json
+import subprocess
 from concurrent.futures import ThreadPoolExecutor
 from datetime import datetime
 
@@ -1956,40 +1957,41 @@ def Action_Handler(_data_set, action_row):
     sModuleInfo = inspect.currentframe().f_code.co_name + " : " + MODULE_NAME
     CommonUtil.ExecLog(sModuleInfo, "Function Start", 0)
 
-    # skip_conversion_of_shared_variable_for_actions = ["loop settings"]
-
     # Split data set row into the usable parts
     action_name = action_row[0]
     action_subfield = action_row[1]
 
     if str(action_name).startswith("%|"):  # if shared variable
-        # action_name = str(action_name).split("%|")[1][:-2]
-        # action_name = sr.Get_Shared_Variables(action_name)
         action_name = sr.get_previous_response_variables_in_strings(action_name)
 
     if str(action_subfield).startswith("%|"):  # if shared variable
-        # action_subfield = str(action_subfield).split("%|")[0][:-2]
-        # action_subfield = sr.Get_Shared_Variables(action_subfield)
         action_subfield = sr.get_previous_response_variables_in_strings(action_subfield)
 
+    if action_subfield.lower().startswith("windows"):
+        python_folder= []
+        for location in subprocess.getoutput("where python").split("\n"):
+	        if "Microsoft" not in location:
+		        python_folder.append(location)
+        try:
+            python_location = "" if len(python_folder) == 0 else "by going to {}".format(python_folder[0].split("Python")[0] + "Python")
+        except:
+            python_location = ""
+        if not 3.5 <= float(sys.version.split(" ")[0][0:3]) <= 3.8:
+            error_msg = "You have the wrong Python version or bit"\
+                +"\nFollow this procedure"\
+                    +"\n1.Go to settings, then go to Apps and in search box type python and uninstall all python related things"\
+                        +"\n2.Delete your Python folder"\
+                            + python_location \
+                            +"\n3.Go to this link and download python https://www.python.org/ftp/python/3.8.10/python-3.8.10-amd64.exe"\
+                                +"\n4.During installation, give uncheck 'for all user' and check 'Add Python to Path'. This is very important."\
+                                    +"\n5.Relaunch zeuz node_cli.py"
+            CommonUtil.ExecLog(sModuleInfo, error_msg, 3,)
+            return "zeuz_failed" 
 
-    # Get module and function for this action
-    module = ""
-    function = ""
-    original_module = ""
     module, function, original_module, screenshot = common.get_module_and_function(action_name, action_subfield)  # New, get the module to execute
-    CommonUtil.ExecLog(
-        sModuleInfo,
-        "Function identified as function: %s in module: %s" % (function, module),
-        0,
-    )
 
     if module in failed_tag_list or module == "" or function == "":  # New, make sure we have a function
-        CommonUtil.ExecLog(
-            sModuleInfo,
-            "You probably didn't add the module as part of the action. Eg: appium action",
-            3,
-        )
+        CommonUtil.ExecLog(sModuleInfo, "You probably didn't add the module as part of the action. Eg: appium action", 3)
         return "zeuz_failed"
 
     # If this is a common function, try to get the webdriver for it, if there is one, and save it to shared variables. This will allow common functions to work with whichever webdriver they need
@@ -1997,9 +1999,7 @@ def Action_Handler(_data_set, action_row):
         try:
             result = load_sa_modules(original_module)  # Load the appropriate module (in case its never been run before this common action has started)
             if result == "zeuz_failed":
-                CommonUtil.ExecLog(
-                    sModuleInfo, "Can't find module for %s" % original_module, 3
-                )
+                CommonUtil.ExecLog(sModuleInfo, "Can't find module for %s" % original_module, 3)
                 return "zeuz_failed"
 
             common_driver = eval(original_module).get_driver()  # Get webdriver object
@@ -2026,14 +2026,13 @@ def Action_Handler(_data_set, action_row):
 
     take_screenshot_settings = ConfigModule.get_config_value("RunDefinition", "take_screenshot")  # True/False to take screenshot from settings.conf
 
-    local_run = ConfigModule.get_config_value("RunDefinition", "local_run")
     if take_screenshot_settings.lower() == "false":
         screenshot = "none"
 
     sr.Set_Shared_Variables("screen_capture", screenshot.lower().strip())
     CommonUtil.set_screenshot_vars(sr.Shared_Variable_Export())
 
-    # Convert shared variables to their string equivelent
+    # Convert shared variables to their string equivalent
     # if action_name not in skip_conversion_of_shared_variable_for_actions:
     data_set = common.shared_variable_to_value(data_set)
     if data_set in failed_tag_list:

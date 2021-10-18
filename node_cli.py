@@ -473,20 +473,14 @@ def RunProcess(sTesterid, user_info_object, run_once=False):
                     }
                 )
                 try:
-                    value = MainDriverApi.main(device_dict, user_info_object)
+                    MainDriverApi.main(device_dict, user_info_object)
                 except:
-                    value = None
+                    pass
 
-                if run_once:
+                if run_once or exit_script:
                     return False
-
-                if value == "pass":
-                    if exit_script:
-                        return False
-                    break
-                CommonUtil.ExecLog(
-                    "", "Successfully updated db with parameter", 4, False
-                )
+                CommonUtil.ExecLog("", "Successfully updated db with parameter", 4, False)
+                break
             else:
                 time.sleep(3)
 

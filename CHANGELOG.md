@@ -1,8 +1,11 @@
 # Changelog
 
 # Version 14.x.x
-## Version 14.4.x
+## Version 14.5.x
 
+### [14.5.1] [October 18, 2021]
+- **[Add]** key-value structure is added in excel_read action
+- 
 ### [14.5.0] [October 13, 2021]
 
 - **[Improve]** Improved variable parsing by handling escape characters
@@ -16,6 +19,7 @@
 - **[Add]** Read and save mail action is added
 - **[Add]** Delete mail action is added
 - **[Add]** Search and save text using regex action is added
+## Version 14.4.x
 ### [14.4.0] [August 24, 2021]
 - **[Fix]** Fixed variable parsing limitations
 - **[Fix]** Fixed exact match bug and improved subset in compare_data action
