@@ -2551,7 +2551,7 @@ def excel_read(data_set):
             if "structure of variable" in left:
                 structure_of_variable = right.lower().strip()
                 if structure_of_variable not in ("dictionary", "list of lists"):
-                    CommonUtil.ExecLog(sModuleInfo,"Only 'list of lists' and 'dictionary' avaliable",3)
+                    CommonUtil.ExecLog(sModuleInfo, "Only 'list of lists' and 'dictionary' avaliable", 3)
                     return "zeuz_failed"
             if "key reference" in left:
                 key_reference = right.lower().strip().replace(" ", "")
