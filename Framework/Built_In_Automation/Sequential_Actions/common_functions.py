@@ -2562,7 +2562,7 @@ def excel_read(data_set):
         wb = xw.Book(filepath)
         sheet = wb.sheets[sheet_name]
         if key_reference is None:
-            key_reference = "column1"
+            key_reference = "row1"
         if expand:
             # expand can be 'table', 'down' and 'right'
             cell_data = sheet.range(cell_range).expand(expand).value
