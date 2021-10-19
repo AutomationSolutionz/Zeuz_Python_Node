@@ -3,9 +3,12 @@
 # Version 14.x.x
 ## Version 14.5.x
 
+### [14.5.2] [October 19, 2021]
+- **[Add]** Dictionary support is added in compare variable action
+
 ### [14.5.1] [October 18, 2021]
 - **[Add]** key-value structure is added in excel_read action
-- 
+
 ### [14.5.0] [October 13, 2021]
 
 - **[Improve]** Improved variable parsing by handling escape characters
