@@ -1175,6 +1175,20 @@ def New_Compare_Variables(step_data):
                             ),
                             2,
                         )
+                    if match_by_index:
+                        if list1 == list2:
+                            CommonUtil.ExecLog(sModuleInfo, "LEFT (%s):\n%s\n\nRIGHT (%s):\n%s" % (datatype1, list1_str, datatype2, list2_str), 1)
+                            CommonUtil.ExecLog(sModuleInfo, "LEFT and RIGHT value matched", 1)
+                            return "passed"
+                        else:
+                            CommonUtil.ExecLog(sModuleInfo, "LEFT (%s):\n%s\n\nRIGHT (%s):\n%s" % (datatype1, list1_str, datatype2, list2_str), 3)
+                            CommonUtil.ExecLog(sModuleInfo, "LEFT and RIGHT value did not match", 3)
+                            return "zeuz_failed"
+                    else:
+                        CommonUtil.ExecLog(sModuleInfo, "Right now we only support 'exact match' for dictionary comparison", 3)
+                        return "zeuz_failed"
+
+
             else:
                 if len(not_found_list1) > 0 or len(not_found_list2) > 0:
                     CommonUtil.ExecLog(sModuleInfo, "LEFT (Simple list):\n%s\n\nRIGHT (Simple list):\n%s" % (list1_str, list2_str), 3)
