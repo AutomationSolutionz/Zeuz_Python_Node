@@ -3332,6 +3332,19 @@ def switch_iframe(step_data):
                     return "zeuz_failed"
                 if idx < 0:
                     idx = len(iframes) + idx
+                try:
+                    frame_attribute = iframes[idx].get_attribute('outerHTML')
+                    i, c = 0, 0
+                    while i <= len(frame_attribute): 
+                        if frame_attribute[i] == '"':
+                            c += 1
+                        if (frame_attribute[i] == ">" and c % 2 == 0):
+                            break
+                        i += 1
+                    frame_attribute =  frame_attribute[:i+1]
+                    CommonUtil.ExecLog(sModuleInfo, "%s" % (frame_attribute), 5)
+                except:
+                    pass
                 selenium_driver.switch_to.frame(idx)
 
             elif "default" in right.lower():

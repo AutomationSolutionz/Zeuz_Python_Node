@@ -233,6 +233,14 @@ def Get_Element(step_data_set, driver, query_debug=False, wait_enable=True, retu
             if type(result) != list:
                 try:
                     attribute_parameter = result.get_attribute('outerHTML')
+                    i, c = 0, 0
+                    while i <= len(attribute_parameter):
+                        if attribute_parameter[i] == '"':
+                            c += 1 
+                        if (attribute_parameter[i] == ">" and c % 2 == 0):
+                            break
+                        i += 1
+                    attribute_parameter =  attribute_parameter[:i+1]
                     CommonUtil.ExecLog(sModuleInfo, "%s" % (attribute_parameter), 5)
                 except:
                     pass
