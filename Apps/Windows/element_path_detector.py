@@ -341,18 +341,25 @@ def create_path(index_trace: dict, element):
 def _child_search(ParentElement):
     try:
         path = ""
+        global xml
         child_elements = ParentElement.FindAll(TreeScope.Children, Condition.TrueCondition)
         if child_elements.Count == 0:
             return path
 
         index_trace = {}
+        temp = ""
         for each_child in child_elements:
-            if _found(each_child):
+            xml += '<div Name="%s" AutomationId="%s" ClassName="%s" LocalizedControlType="%s">' % \
+            (each_child.Current.Name, each_child.Current.AutomationId, each_child.Current.ClassName, each_child.Current.LocalizedControlType)
+            if _found(each_child) and not temp:
                 path += create_path(index_trace, each_child)
-                temp = _child_search(each_child)
-                if temp:
-                    return path + temp
-            create_index(index_trace, each_child)
+            temp = _child_search(each_child)
+            if not temp:
+                create_index(index_trace, each_child)
+            xml += "</div>"
+
+        if temp:
+            return path + temp
 
         return path
 
@@ -360,16 +367,36 @@ def _child_search(ParentElement):
         print(sys.exc_info())
         return ""
 
-
+xml = ""
 def main():
     try:
-        global x, y
+        global x, y, path_priority
         print("Hover over the desired element and press control")
         while True:
             keyboard.wait("ctrl")
             x, y = pyautogui.position()
-            res = _child_search(AutomationElement.RootElement)[:-2] + "\n"
-            print(res)
+            windows = AutomationElement.RootElement.FindAll(TreeScope.Children, Condition.TrueCondition)
+            if windows.Count == 0:
+                return
+            global xml
+            for window in windows:
+                if _found(window):
+                    xml += '<body Window="%s">' % window.Current.Name
+                    path = create_path({}, window)
+                    break
+            else:
+                ExecLog("No window found in that coordinate")
+                return
+            path += _child_search(window)[:-2] + "\n"
+            xml += "</body>"
+            print("************* Exact Path *************")
+            print(path)
+            print("************* XML *************")
+            print(xml)
+            print("************* path_priority *************")
+            print("Path priority =", path_priority, "\n\n")
+            xml = ""
+            path_priority = 0
     except:
         print(sys.exc_info())
 
