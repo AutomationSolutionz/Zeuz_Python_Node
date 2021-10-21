@@ -1175,6 +1175,20 @@ def New_Compare_Variables(step_data):
                             ),
                             2,
                         )
+                    if match_by_index:
+                        if list1 == list2:
+                            CommonUtil.ExecLog(sModuleInfo, "LEFT (%s):\n%s\n\nRIGHT (%s):\n%s" % (datatype1, list1_str, datatype2, list2_str), 1)
+                            CommonUtil.ExecLog(sModuleInfo, "LEFT and RIGHT value matched", 1)
+                            return "passed"
+                        else:
+                            CommonUtil.ExecLog(sModuleInfo, "LEFT (%s):\n%s\n\nRIGHT (%s):\n%s" % (datatype1, list1_str, datatype2, list2_str), 3)
+                            CommonUtil.ExecLog(sModuleInfo, "LEFT and RIGHT value did not match", 3)
+                            return "zeuz_failed"
+                    else:
+                        CommonUtil.ExecLog(sModuleInfo, "Right now we only support 'exact match' for dictionary comparison", 3)
+                        return "zeuz_failed"
+
+
             else:
                 if len(not_found_list1) > 0 or len(not_found_list2) > 0:
                     CommonUtil.ExecLog(sModuleInfo, "LEFT (Simple list):\n%s\n\nRIGHT (Simple list):\n%s" % (list1_str, list2_str), 3)
@@ -2551,7 +2565,7 @@ def excel_read(data_set):
             if "structure of variable" in left:
                 structure_of_variable = right.lower().strip()
                 if structure_of_variable not in ("dictionary", "list of lists"):
-                    CommonUtil.ExecLog(sModuleInfo,"Only 'list of lists' and 'dictionary' avaliable",3)
+                    CommonUtil.ExecLog(sModuleInfo, "Only 'list of lists' and 'dictionary' avaliable", 3)
                     return "zeuz_failed"
             if "key reference" in left:
                 key_reference = right.lower().strip().replace(" ", "")
@@ -2561,7 +2575,8 @@ def excel_read(data_set):
 
         wb = xw.Book(filepath)
         sheet = wb.sheets[sheet_name]
-
+        if key_reference is None:
+            key_reference = "row1"
         if expand:
             # expand can be 'table', 'down' and 'right'
             cell_data = sheet.range(cell_range).expand(expand).value
@@ -2571,12 +2586,12 @@ def excel_read(data_set):
         if structure_of_variable == "dictionary":
             data_dict = {}
             if key_reference == "row1":
-                for cells in cell_data:
+                row_data = list(map(list, zip(*cell_data)))
+                for cells in row_data:
                     data_dict[cells[0]] = cells[1:]
             elif key_reference == "column1":
-                column_data = list(map(list, zip(*cell_data)))
-                for cells in column_data:
-                    data_dict[cells[0]] = cells[1:]
+                for cells in cell_data:
+                    data_dict[cells[0]] = cells[1:] 
             cell_data = data_dict
 
         # Save into shared variables
