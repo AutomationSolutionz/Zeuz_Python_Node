@@ -20,6 +20,7 @@ clr.AddReference(dll_path + "UIAutomationProvider")
 clr.AddReference( "System.Windows.Forms")
 x, y = -1, -1
 path_priority = 0
+xml = ""
 from System.Windows.Automation import *
 
 
@@ -338,39 +339,47 @@ def create_path(index_trace: dict, element):
     return s_name_control + ',index="%s">' % (index_trace[s_name_control] + 1) + "\n" if new_line else ""
 
 
-def _child_search(ParentElement):
+element_plugin = False
+def _child_search(ParentElement, parenthesis=1):
     try:
         path = ""
-        global xml
+        global xml, element_plugin
         child_elements = ParentElement.FindAll(TreeScope.Children, Condition.TrueCondition)
         if child_elements.Count == 0:
             return path
 
         index_trace = {}
         temp = ""
+        found = False
         for each_child in child_elements:
-            xml += '<div Name="%s" AutomationId="%s" ClassName="%s" LocalizedControlType="%s">' % \
+            xml += "\n" + "  "*parenthesis + '<div Name="%s" AutomationId="%s" ClassName="%s" LocalizedControlType="%s">' % \
             (each_child.Current.Name, each_child.Current.AutomationId, each_child.Current.ClassName, each_child.Current.LocalizedControlType)
-            if _found(each_child) and not temp:
+            if _found(each_child) and not found:
                 path += create_path(index_trace, each_child)
-            temp = _child_search(each_child)
+                found = True
+                if not element_plugin:
+                    xml_len = len(xml)
             if not temp:
+                temp = _child_search(each_child, parenthesis+1)
+            else:
+                _child_search(each_child, parenthesis+1)
+            if not found:
                 create_index(index_trace, each_child)
-            xml += "</div>"
+            xml += "\n" + "  "*parenthesis + "</div>"
 
-        if temp:
-            return path + temp
-
-        return path
+        if found and not element_plugin:
+            xml = xml[:xml_len-1] + ' zeuz="aiplugin"' + xml[xml_len-1:]
+            element_plugin = True
+        return path + temp
 
     except Exception:
         print(sys.exc_info())
         return ""
 
-xml = ""
+
 def main():
     try:
-        global x, y, path_priority
+        global x, y, path_priority, element_plugin
         print("Hover over the desired element and press control")
         while True:
             keyboard.wait("ctrl")
@@ -388,18 +397,26 @@ def main():
                 ExecLog("No window found in that coordinate")
                 return
             path += _child_search(window)[:-2] + "\n"
-            xml += "</body>"
-            print("************* Exact Path *************")
-            print(path)
+            xml += "\n" + "</body>"
+
             print("************* XML *************")
             print(xml)
+            print("************* Exact Path *************")
+            print(path)
             print("************* path_priority *************")
             print("Path priority =", path_priority, "\n\n")
+            with open("xml.xml", "w") as f:
+                f.write(xml.encode('ascii', 'ignore').decode())
+            print("done writing xml")
             xml = ""
             path_priority = 0
+            element_plugin = False
+            break
     except:
-        print(sys.exc_info())
-
+        Exception_Handler(sys.exc_info())
+        xml = ""
+        path_priority = 0
+        element_plugin = False
 
 if __name__ == "__main__":
     main()
