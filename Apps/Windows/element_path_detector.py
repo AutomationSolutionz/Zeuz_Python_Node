@@ -1,11 +1,11 @@
 import time
-
 import keyboard, autoit, pyautogui
 import os, sys
 import inspect
 from colorama import Fore
 from PIL import ImageGrab as ImageGrab_Mac_Win
 from PIL import Image, ImageTk
+import configparser
 
 new_line = True
 import clr, System
@@ -20,7 +20,7 @@ clr.AddReference(dll_path + "UIAutomationProvider")
 clr.AddReference( "System.Windows.Forms")
 x, y = -1, -1
 path_priority = 0
-xml = ""
+xml_str = ""
 from System.Windows.Automation import *
 
 
@@ -343,7 +343,7 @@ element_plugin = False
 def _child_search(ParentElement, parenthesis=1):
     try:
         path = ""
-        global xml, element_plugin
+        global xml_str, element_plugin
         child_elements = ParentElement.FindAll(TreeScope.Children, Condition.TrueCondition)
         if child_elements.Count == 0:
             return path
@@ -352,23 +352,28 @@ def _child_search(ParentElement, parenthesis=1):
         temp = ""
         found = False
         for each_child in child_elements:
-            xml += "\n" + "  "*parenthesis + '<div Name="%s" AutomationId="%s" ClassName="%s" LocalizedControlType="%s">' % \
-            (each_child.Current.Name, each_child.Current.AutomationId, each_child.Current.ClassName, each_child.Current.LocalizedControlType)
+            elem_name = each_child.Current.Name.replace("&", "&amp;").replace("<", "&lt;").replace(">", "&gt;").replace('"', "&quot;").replace("'", "&apos;").replace(r"\Automation_Solutionz\Zeuz_Node\Public_Node\Zeuz_Python_Node\Apps\W", "xyz")
+            elem_automationid = each_child.Current.AutomationId.replace("&", "&amp;").replace("<", "&lt;").replace(">", "&gt;").replace('"', "&quot;").replace("'", "&apos;")
+            elem_class = each_child.Current.ClassName.replace("&", "&amp;").replace("<", "&lt;").replace(">", "&gt;").replace('"', "&quot;").replace("'", "&apos;")
+            elem_control = each_child.Current.LocalizedControlType.replace("&", "&amp;").replace("<", "&lt;").replace(">", "&gt;").replace('"', "&quot;").replace("'", "&apos;")
+
+            xml_str += "\n" + "  "*parenthesis + '<div Name="%s" AutomationId="%s" ClassName="%s" LocalizedControlType="%s">' % \
+            (elem_name, elem_automationid, elem_class, elem_control)
             if _found(each_child) and not found:
                 path += create_path(index_trace, each_child)
                 found = True
                 if not element_plugin:
-                    xml_len = len(xml)
+                    xml_len = len(xml_str)
             if not temp:
                 temp = _child_search(each_child, parenthesis+1)
             else:
                 _child_search(each_child, parenthesis+1)
             if not found:
                 create_index(index_trace, each_child)
-            xml += "\n" + "  "*parenthesis + "</div>"
+            xml_str += "\n" + "  "*parenthesis + "</div>"
 
         if found and not element_plugin:
-            xml = xml[:xml_len-1] + ' zeuz="aiplugin"' + xml[xml_len-1:]
+            xml_str = xml_str[:xml_len-1] + ' zeuz="aiplugin"' + xml_str[xml_len-1:]
             element_plugin = True
         return path + temp
 
@@ -376,10 +381,24 @@ def _child_search(ParentElement, parenthesis=1):
         print(sys.exc_info())
         return ""
 
+server = ""
+api_key = ""
+def Authenticate():
+    global server, api_key
+    config = configparser.ConfigParser()
+    config.read("..\..\Framework\settings.conf")
+    try: api_key = config.get("Authentication", "api-key")
+    except: api_key = ""
+    try: server = config.get("Authentication", "server_address")
+    except: server = ""
+    while not server or not api_key:
+        server = input("Provide Server Address: ")
+        api_key = input("Provide API-Key: ")
 
 def main():
     try:
         global x, y, path_priority, element_plugin
+        Authenticate()
         print("Hover over the desired element and press control")
         while True:
             keyboard.wait("ctrl")
@@ -387,34 +406,34 @@ def main():
             windows = AutomationElement.RootElement.FindAll(TreeScope.Children, Condition.TrueCondition)
             if windows.Count == 0:
                 return
-            global xml
+            global xml_str
             for window in windows:
                 if _found(window):
-                    xml += '<body Window="%s">' % window.Current.Name
+                    xml_str += '<body Window="%s">' % window.Current.Name
                     path = create_path({}, window)
                     break
             else:
                 ExecLog("No window found in that coordinate")
                 return
             path += _child_search(window)[:-2] + "\n"
-            xml += "\n" + "</body>"
+            xml_str += "\n" + "</body>"
 
-            print("************* XML *************")
-            print(xml)
+            print("************* xml_str *************")
+            print(xml_str)
             print("************* Exact Path *************")
             print(path)
             print("************* path_priority *************")
             print("Path priority =", path_priority, "\n\n")
             with open("xml.xml", "w") as f:
-                f.write(xml.encode('ascii', 'ignore').decode())
-            print("done writing xml")
-            xml = ""
+                f.write(xml_str.encode('ascii', 'ignore').decode())     # ignore characters which are not ascii presentable
+            print("done writing xml_str")
+            xml_str = ""
             path_priority = 0
             element_plugin = False
             break
     except:
         Exception_Handler(sys.exc_info())
-        xml = ""
+        xml_str = ""
         path_priority = 0
         element_plugin = False
 
