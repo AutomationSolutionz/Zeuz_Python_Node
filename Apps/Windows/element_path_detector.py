@@ -6,10 +6,14 @@ from colorama import Fore
 from PIL import ImageGrab as ImageGrab_Mac_Win
 from PIL import Image, ImageTk
 import configparser
+import requests
+import json
+import concurrent.futures
 
 new_line = True
 import clr, System
 import tkinter
+executor = concurrent.futures.ThreadPoolExecutor()
 
 screen_title = "ZeuZ Windows Inspector"
 os.system("title " + screen_title)
@@ -383,6 +387,7 @@ def _child_search(ParentElement, parenthesis=1):
 
 server = ""
 api_key = ""
+auth = ""
 def Authenticate():
     global server, api_key
     config = configparser.ConfigParser()
@@ -397,8 +402,11 @@ def Authenticate():
 
 def main():
     try:
-        global x, y, path_priority, element_plugin
+        global x, y, path_priority, element_plugin, auth
         Authenticate()
+        url = server + "/" if server[-1] != "/" else server
+        url += "api/auth/token/verify?api_key=" + api_key
+        auth_thread = executor.submit(requests.get, url)
         print("Hover over the desired element and press control")
         while True:
             keyboard.wait("ctrl")
@@ -418,6 +426,8 @@ def main():
             path += _child_search(window)[:-2] + "\n"
             xml_str += "\n" + "</body>"
 
+            xml_str = xml_str.encode('ascii', 'ignore').decode()
+
             print("************* xml_str *************")
             print(xml_str)
             print("************* Exact Path *************")
@@ -427,6 +437,30 @@ def main():
             with open("xml.xml", "w") as f:
                 f.write(xml_str.encode('ascii', 'ignore').decode())     # ignore characters which are not ascii presentable
             print("done writing xml_str")
+
+            if not auth:
+                auth = auth_thread.result().json()["token"]
+            Authorization = 'Bearer ' + auth
+            url = server + "/" if server[-1] != "/" else server
+            url += "api/contents/"
+            content = json.dumps({
+                'html': xml_str,
+                "exact_path": {"path": path, "priority": path_priority}
+            })
+
+            payload = json.dumps({
+                "content": content,
+                "source": "windows"
+            })
+            headers = {
+                'Authorization': Authorization,
+                'Content-Type': 'application/json'
+            }
+
+            response = requests.request("POST", url, headers=headers, data=payload)
+
+            print(response.text)
+
             xml_str = ""
             path_priority = 0
             element_plugin = False
