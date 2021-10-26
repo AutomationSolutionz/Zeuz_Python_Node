@@ -412,8 +412,6 @@ def Authenticate():
 
 
 def sibling_found(each):
-
-
     try:
         left = float(each.attrib["Left"])
         right = float(each.attrib["Right"])
@@ -425,6 +423,7 @@ def sibling_found(each):
     except Exception:
         print(sys.exc_info())
         return False
+
 
 def sibling_search(ParentElement):
     if len(ParentElement) == 0:
@@ -443,7 +442,7 @@ def main():
         url = server + "/" if server[-1] != "/" else server
         url += "api/auth/token/verify?api_key=" + api_key
         auth_thread = executor.submit(requests.get, url)
-        print("Hover over the desired element and press control")
+        print("Hover over the Element and press control")
         while True:
             keyboard.wait("ctrl")
             x, y = pyautogui.position()
@@ -481,7 +480,7 @@ def main():
             sibling = pyautogui.confirm('This displays text and has an OK and Cancel button.')
             if sibling.strip().lower() == "ok":
                 root = ET.fromstring(xml_str)
-                print("Hover over the desired element and press control")
+                print("Hover over the SIBLING and press control")
                 keyboard.wait("ctrl")
                 x, y = pyautogui.position()
                 sibling_search(root)
@@ -509,9 +508,9 @@ def main():
                 'Content-Type': 'application/json'
             }
 
-            # response = requests.request("POST", url, headers=headers, data=payload)
-            #
-            # print(response.text)
+            response = requests.request("POST", url, headers=headers, data=payload)
+
+            print(response.text)
 
             xml_str = ""
             path_priority = 0
