@@ -349,11 +349,15 @@ def create_path(index_trace: dict, element):
 
 
 element_plugin = False
+findall_time = 0; findall_count = 0
 def _child_search(ParentElement, parenthesis=1):
     try:
         path = ""
-        global xml_str, element_plugin
+        global xml_str, element_plugin, findall_time, findall_count
+        start = time.perf_counter()
         child_elements = ParentElement.FindAll(TreeScope.Children, Condition.TrueCondition)
+        findall_time += time.perf_counter()-start
+        findall_count += 1
         if child_elements.Count == 0:
             return path
 
@@ -417,7 +421,7 @@ def Authenticate():
         return executor.submit(requests.get, url)
 
 
-def Upload(auth_thread):
+def Upload(auth_thread, window):
     global auth
     if not auth:
         auth = auth_thread.result().json()["token"]
@@ -426,7 +430,8 @@ def Upload(auth_thread):
     url += "api/contents/"
     content = json.dumps({
         'html': xml_str,
-        "exact_path": {"path": path, "priority": path_priority}
+        "exact_path": {"path": path, "priority": path_priority},
+        "window_name": window.Current.Name
     })
 
     payload = json.dumps({
@@ -477,11 +482,11 @@ def Remove_coordinate(root):
 
 def main():
     try:
-        global x, y, path_priority, element_plugin, auth, path, xml_str
+        global x, y, path_priority, element_plugin, auth, path, xml_str, findall_time, findall_count
         auth_thread = Authenticate()
         print("Hover over the Element and press control")
         while True:
-            path = ""; xml_str = ""; path_priority = 0; element_plugin = False
+            path = ""; xml_str = ""; path_priority = 0; element_plugin = False; findall_time = 0; findall_count = 0
             keyboard.wait("ctrl")
             x, y = pyautogui.position()
 
@@ -533,13 +538,14 @@ def main():
             print("done writing Sibling")
 
             start = time.perf_counter()
-            Upload(auth_thread)
+            Upload(auth_thread, window)
             Upload_time = round(time.perf_counter()-start, 3)
 
             print("\nElement searching time =", element_time, "sec")
             print("Sibling searching time =", sibling_time, "sec")
             print("Coordinate remove time =", Remove_coordinate_time, "sec")
             print("Uploading to API  time =", Upload_time, "sec")
+            print("start_findall time =", round(findall_time, 3), "sec", "Findall count =", findall_count)
             break
     except:
         Exception_Handler(sys.exc_info())
