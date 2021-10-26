@@ -29,6 +29,7 @@ clr.AddReference( "System.Windows.Forms")
 x, y = -1, -1
 path_priority = 0
 xml_str = ""
+path = ""
 from System.Windows.Automation import *
 
 
@@ -410,6 +411,38 @@ def Authenticate():
         server = input("Provide Server Address: ")
         api_key = input("Provide API-Key: ")
 
+    if not auth:
+        url = server + "/" if server[-1] != "/" else server
+        url += "api/auth/token/verify?api_key=" + api_key
+        return executor.submit(requests.get, url)
+
+
+def Upload(auth_thread):
+    global auth
+    if not auth:
+        auth = auth_thread.result().json()["token"]
+    Authorization = 'Bearer ' + auth
+    url = server + "/" if server[-1] != "/" else server
+    url += "api/contents/"
+    content = json.dumps({
+        'html': xml_str,
+        "exact_path": {"path": path, "priority": path_priority}
+    })
+
+    payload = json.dumps({
+        "content": content,
+        "source": "windows"
+    })
+    headers = {
+        'Authorization': Authorization,
+        'Content-Type': 'application/json'
+    }
+
+    response = requests.request("POST", url, headers=headers, data=payload)
+    response = response.json()
+    del response["content"]
+    print(response)
+
 
 def sibling_found(each):
     try:
@@ -435,21 +468,31 @@ def sibling_search(ParentElement):
             return
 
 
+def Remove_coordinate(root):
+    for each in root:
+        att = each.attrib
+        del att["Left"]; del att["Right"]; del att["Top"]; del att["Bottom"]
+        Remove_coordinate(each)
+
+
 def main():
     try:
-        global x, y, path_priority, element_plugin, auth
-        Authenticate()
-        url = server + "/" if server[-1] != "/" else server
-        url += "api/auth/token/verify?api_key=" + api_key
-        auth_thread = executor.submit(requests.get, url)
+        global x, y, path_priority, element_plugin, auth, path, xml_str
+        auth_thread = Authenticate()
         print("Hover over the Element and press control")
         while True:
+            path = ""; xml_str = ""; path_priority = 0; element_plugin = False
             keyboard.wait("ctrl")
             x, y = pyautogui.position()
+
+            try: autoit.win_activate(screen_title)
+            except: pass
+            print("Searching for the Element identifier")
+
+            start = time.perf_counter()
             windows = AutomationElement.RootElement.FindAll(TreeScope.Children, Condition.TrueCondition)
             if windows.Count == 0:
                 return
-            global xml_str
             for window in windows:
                 if _found(window):
                     xml_str += '<body Window="%s">' % window.Current.Name
@@ -463,8 +506,6 @@ def main():
 
             xml_str = xml_str.encode('ascii', 'ignore').decode()        # ignore characters which are not ascii presentable
 
-            print("************* xml_str *************")
-            print(xml_str)
             print("************* Exact Path *************")
             print(path)
             print("************* path_priority *************")
@@ -472,49 +513,33 @@ def main():
             with open("Element.xml", "w") as f:
                 f.write(xml_str)
             print("done writing Element")
-
-            try:
-                autoit.win_activate(screen_title)
-            except:
-                pass
+            element_time = round(time.perf_counter()-start, 3)
+            sibling_time = 0
             sibling = pyautogui.confirm('This displays text and has an OK and Cancel button.')
+            root = ET.fromstring(xml_str)
             if sibling.strip().lower() == "ok":
-                root = ET.fromstring(xml_str)
                 print("Hover over the SIBLING and press control")
                 keyboard.wait("ctrl")
                 x, y = pyautogui.position()
+                start = time.perf_counter()
                 sibling_search(root)
-                xml_str = ET.tostring(root).decode()
-                with open("Sibling.xml", "w") as f:
-                    f.write(xml_str)
-                print("done writing Sibling")
+                sibling_time = round(time.perf_counter() - start, 3)
+            start = time.perf_counter()
+            Remove_coordinate(root)
+            Remove_coordinate_time = round(time.perf_counter() - start, 3)
+            xml_str = ET.tostring(root).decode()
+            with open("Sibling.xml", "w") as f:
+                f.write(xml_str)
+            print("done writing Sibling")
 
-            if not auth:
-                auth = auth_thread.result().json()["token"]
-            Authorization = 'Bearer ' + auth
-            url = server + "/" if server[-1] != "/" else server
-            url += "api/contents/"
-            content = json.dumps({
-                'html': xml_str,
-                "exact_path": {"path": path, "priority": path_priority}
-            })
+            start = time.perf_counter()
+            Upload(auth_thread)
+            Upload_time = round(time.perf_counter()-start, 3)
 
-            payload = json.dumps({
-                "content": content,
-                "source": "windows"
-            })
-            headers = {
-                'Authorization': Authorization,
-                'Content-Type': 'application/json'
-            }
-
-            response = requests.request("POST", url, headers=headers, data=payload)
-
-            print(response.text)
-
-            xml_str = ""
-            path_priority = 0
-            element_plugin = False
+            print("\nElement searching time =", element_time, "sec")
+            print("Sibling searching time =", sibling_time, "sec")
+            print("Coordinate remove time =", Remove_coordinate_time, "sec")
+            print("Uploading to API  time =", Upload_time, "sec")
             break
     except:
         Exception_Handler(sys.exc_info())
