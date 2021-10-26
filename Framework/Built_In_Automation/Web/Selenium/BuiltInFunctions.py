@@ -3340,7 +3340,6 @@ def switch_iframe(step_data):
                             c += 1
                         if (frame_attribute[i] == ">" and c % 2 == 0):
                             break
-                        i += 1
                     frame_attribute =  frame_attribute[:i+1]
                     CommonUtil.ExecLog(sModuleInfo, "%s" % (frame_attribute), 5)
                 except:

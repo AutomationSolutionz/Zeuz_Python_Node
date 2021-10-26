@@ -239,7 +239,6 @@ def Get_Element(step_data_set, driver, query_debug=False, wait_enable=True, retu
                             c += 1 
                         if (attribute_parameter[i] == ">" and c % 2 == 0):
                             break
-                        i += 1
                     attribute_parameter =  attribute_parameter[:i+1]
                     CommonUtil.ExecLog(sModuleInfo, "%s" % (attribute_parameter), 5)
                 except:
