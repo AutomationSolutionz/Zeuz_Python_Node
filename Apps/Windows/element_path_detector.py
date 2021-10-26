@@ -1,6 +1,9 @@
 import time
-import keyboard, autoit, pyautogui
-import os, sys
+import keyboard
+import autoit
+import pyautogui
+import os
+import sys
 import inspect
 from colorama import Fore
 from PIL import ImageGrab as ImageGrab_Mac_Win
@@ -9,6 +12,7 @@ import configparser
 import requests
 import json
 import concurrent.futures
+import xml.etree.ElementTree as ET
 
 new_line = True
 import clr, System
@@ -360,9 +364,15 @@ def _child_search(ParentElement, parenthesis=1):
             elem_automationid = each_child.Current.AutomationId.replace("&", "&amp;").replace("<", "&lt;").replace(">", "&gt;").replace('"', "&quot;").replace("'", "&apos;")
             elem_class = each_child.Current.ClassName.replace("&", "&amp;").replace("<", "&lt;").replace(">", "&gt;").replace('"', "&quot;").replace("'", "&apos;")
             elem_control = each_child.Current.LocalizedControlType.replace("&", "&amp;").replace("<", "&lt;").replace(">", "&gt;").replace('"', "&quot;").replace("'", "&apos;")
-
-            xml_str += "\n" + "  "*parenthesis + '<div Name="%s" AutomationId="%s" ClassName="%s" LocalizedControlType="%s">' % \
-            (elem_name, elem_automationid, elem_class, elem_control)
+            try:
+                left = str(each_child.Current.BoundingRectangle.Left)
+                right = str(each_child.Current.BoundingRectangle.Right)
+                bottom = str(each_child.Current.BoundingRectangle.Bottom)
+                top = str(each_child.Current.BoundingRectangle.Top)
+            except:
+                left, right, top, bottom = "", "", "", ""
+            xml_str += "\n" + "  "*parenthesis + '<div Name="%s" AutomationId="%s" ClassName="%s" LocalizedControlType="%s"' % \
+            (elem_name, elem_automationid, elem_class, elem_control) + ' Left="%s" Right="%s" Top="%s" Bottom="%s">' % (left, right, top, bottom)
             if _found(each_child) and not found:
                 path += create_path(index_trace, each_child)
                 found = True
@@ -400,6 +410,32 @@ def Authenticate():
         server = input("Provide Server Address: ")
         api_key = input("Provide API-Key: ")
 
+
+def sibling_found(each):
+
+
+    try:
+        left = float(each.attrib["Left"])
+        right = float(each.attrib["Right"])
+        top = float(each.attrib["Top"])
+        bottom = float(each.attrib["Bottom"])
+        if left <= x <= right and top <= y <= bottom:
+            return True
+        return False
+    except Exception:
+        print(sys.exc_info())
+        return False
+
+def sibling_search(ParentElement):
+    if len(ParentElement) == 0:
+        ParentElement.set("zeuz-sibling", "aiplugin-sibling")
+        return
+    for each in ParentElement:
+        if sibling_found(each):
+            sibling_search(each)
+            return
+
+
 def main():
     try:
         global x, y, path_priority, element_plugin, auth
@@ -421,12 +457,12 @@ def main():
                     path = create_path({}, window)
                     break
             else:
-                ExecLog("No window found in that coordinate")
+                print("No window found in that coordinate")
                 return
             path += _child_search(window)[:-2] + "\n"
             xml_str += "\n" + "</body>"
 
-            xml_str = xml_str.encode('ascii', 'ignore').decode()
+            xml_str = xml_str.encode('ascii', 'ignore').decode()        # ignore characters which are not ascii presentable
 
             print("************* xml_str *************")
             print(xml_str)
@@ -434,9 +470,25 @@ def main():
             print(path)
             print("************* path_priority *************")
             print("Path priority =", path_priority, "\n\n")
-            with open("xml.xml", "w") as f:
-                f.write(xml_str.encode('ascii', 'ignore').decode())     # ignore characters which are not ascii presentable
-            print("done writing xml_str")
+            with open("Element.xml", "w") as f:
+                f.write(xml_str)
+            print("done writing Element")
+
+            try:
+                autoit.win_activate(screen_title)
+            except:
+                pass
+            sibling = pyautogui.confirm('This displays text and has an OK and Cancel button.')
+            if sibling.strip().lower() == "ok":
+                root = ET.fromstring(xml_str)
+                print("Hover over the desired element and press control")
+                keyboard.wait("ctrl")
+                x, y = pyautogui.position()
+                sibling_search(root)
+                xml_str = ET.tostring(root).decode()
+                with open("Sibling.xml", "w") as f:
+                    f.write(xml_str)
+                print("done writing Sibling")
 
             if not auth:
                 auth = auth_thread.result().json()["token"]
@@ -457,9 +509,9 @@ def main():
                 'Content-Type': 'application/json'
             }
 
-            response = requests.request("POST", url, headers=headers, data=payload)
-
-            print(response.text)
+            # response = requests.request("POST", url, headers=headers, data=payload)
+            #
+            # print(response.text)
 
             xml_str = ""
             path_priority = 0
