@@ -3335,7 +3335,7 @@ def switch_iframe(step_data):
                 try:
                     frame_attribute = iframes[idx].get_attribute('outerHTML')
                     i, c = 0, 0
-                    while i <= len(frame_attribute): 
+                    for i in range(len(frame_attribute)): 
                         if frame_attribute[i] == '"':
                             c += 1
                         if (frame_attribute[i] == ">" and c % 2 == 0):
