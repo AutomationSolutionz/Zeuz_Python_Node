@@ -486,6 +486,8 @@ def main():
         auth_thread = Authenticate()
         print("Hover over the Element and press control")
         while True:
+            # if pyautogui.confirm('Start Inspecting?').strip().lower() != "ok":
+            #     return
             path = ""; xml_str = ""; path_priority = 0; element_plugin = False; findall_time = 0; findall_count = 0
             keyboard.wait("ctrl")
             x, y = pyautogui.position()
@@ -513,11 +515,10 @@ def main():
 
             print("************* Exact Path *************")
             print(path)
-            print("************* path_priority *************")
-            print("Path priority =", path_priority, "\n\n")
+            # print("************* path_priority *************")
+            # print("Path priority =", path_priority, "\n\n")
             with open("Element.xml", "w") as f:
                 f.write(xml_str)
-            print("done writing Element")
             element_time = round(time.perf_counter()-start, 3)
             sibling_time = 0
             sibling = pyautogui.confirm('Do you want SIBLING?')
@@ -535,7 +536,6 @@ def main():
             xml_str = ET.tostring(root).decode()
             with open("Sibling.xml", "w") as f:
                 f.write(xml_str)
-            print("done writing Sibling")
 
             start = time.perf_counter()
             Upload(auth_thread, window)
