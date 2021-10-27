@@ -520,7 +520,7 @@ def main():
             print("done writing Element")
             element_time = round(time.perf_counter()-start, 3)
             sibling_time = 0
-            sibling = pyautogui.confirm('This displays text and has an OK and Cancel button.')
+            sibling = pyautogui.confirm('Do you want SIBLING?')
             root = ET.fromstring(xml_str)
             if sibling.strip().lower() == "ok":
                 print("Hover over the SIBLING and press control")
