@@ -418,7 +418,7 @@ def Authenticate():
     if not auth:
         url = server + "/" if server[-1] != "/" else server
         url += "api/auth/token/verify?api_key=" + api_key
-        return executor.submit(requests.get, url)
+        return executor.submit(requests.get, url,verify=False)
 
 
 def Upload(auth_thread, window):
@@ -441,9 +441,10 @@ def Upload(auth_thread, window):
     headers = {
         'Authorization': Authorization,
         'Content-Type': 'application/json'
+        
     }
 
-    response = requests.request("POST", url, headers=headers, data=payload)
+    response = requests.request("POST", url, headers=headers, data=payload,verify=False)
     response = response.json()
     del response["content"]
     print(response)
