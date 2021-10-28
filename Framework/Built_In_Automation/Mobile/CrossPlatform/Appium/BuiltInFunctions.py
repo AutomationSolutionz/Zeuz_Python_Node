@@ -2667,48 +2667,48 @@ def Enter_Text_Appium(data_set):
         try:
             CommonUtil.ExecLog(sModuleInfo, "Clicking and clearing the text field", 1)
             Element.click()  # Set focus to textbox
-            Element = LocateElement.Get_Element(data_set, appium_driver)
-            if Element == "zeuz_failed":
-                CommonUtil.ExecLog(
-                    sModuleInfo, "Unable to locate your element with given data.", 3
-                )
-                CommonUtil.ExecLog(
-                    sModuleInfo, "Trying to see if there are contexts", 1
-                )
-                context_result = auto_switch_context_and_try("webview")
-                if context_result == "zeuz_failed":
-                    CommonUtil.ExecLog(
-                        sModuleInfo,
-                        "Unable to locate your element with different contexts.",
-                        3,
-                    )
-                    return "zeuz_failed"
-                else:
-                    context_switched = True
-                Element = LocateElement.Get_Element(data_set, appium_driver)
-                if Element == "zeuz_failed":
-                    CommonUtil.ExecLog(
-                        sModuleInfo,
-                        "Unable to locate your element with different contexts.",
-                        3,
-                    )
-                    if context_switched == True:
-                        CommonUtil.ExecLog(
-                            sModuleInfo,
-                            "Context was switched during this action.  Switching back to default Native Context",
-                            1,
-                        )
-                        context_result = auto_switch_context_and_try("native")
-                    CommonUtil.ExecLog(
-                        sModuleInfo,
-                        "Unable to locate your element with different contexts.",
-                        3,
-                    )
-                    return "zeuz_failed"
-                else:
-                    CommonUtil.ExecLog(
-                        sModuleInfo, "Found your element with different context", 1
-                    )
+            # Element = LocateElement.Get_Element(data_set, appium_driver)
+            # if Element == "zeuz_failed":
+            #     CommonUtil.ExecLog(
+            #         sModuleInfo, "Unable to locate your element with given data.", 3
+            #     )
+            #     CommonUtil.ExecLog(
+            #         sModuleInfo, "Trying to see if there are contexts", 1
+            #     )
+            #     context_result = auto_switch_context_and_try("webview")
+            #     if context_result == "zeuz_failed":
+            #         CommonUtil.ExecLog(
+            #             sModuleInfo,
+            #             "Unable to locate your element with different contexts.",
+            #             3,
+            #         )
+            #         return "zeuz_failed"
+            #     else:
+            #         context_switched = True
+            #     Element = LocateElement.Get_Element(data_set, appium_driver)
+            #     if Element == "zeuz_failed":
+            #         CommonUtil.ExecLog(
+            #             sModuleInfo,
+            #             "Unable to locate your element with different contexts.",
+            #             3,
+            #         )
+            #         if context_switched == True:
+            #             CommonUtil.ExecLog(
+            #                 sModuleInfo,
+            #                 "Context was switched during this action.  Switching back to default Native Context",
+            #                 1,
+            #             )
+            #             context_result = auto_switch_context_and_try("native")
+            #         CommonUtil.ExecLog(
+            #             sModuleInfo,
+            #             "Unable to locate your element with different contexts.",
+            #             3,
+            #         )
+            #         return "zeuz_failed"
+            #     else:
+            #         CommonUtil.ExecLog(
+            #             sModuleInfo, "Found your element with different context", 1
+            #         )
             Element.clear()  # Remove any text already existing
         except:
             # just in case we run into any error, we will still try to proceed
