@@ -46,7 +46,7 @@ from Framework.Utilities.CommonUtil import (
     passed_tag_list,
     failed_tag_list,
 )  # Allowed return strings, used to normalize pass/fail
-
+from Framework.Built_In_Automation.Desktop.Windows import BuiltInFunctions
 
 MODULE_NAME = inspect.getmodulename(__file__)
 temp_ini_file = os.path.join(
@@ -990,7 +990,17 @@ def Run_Sequential_Actions(
 
                 # If middle column = conditional action, evaluate data set
                 elif "conditional action" in action_name or "if else" in action_name:
-                    if action_name.lower().strip() != "conditional action" and action_name.lower().strip() != "if else":
+                    if action_name.lower().strip() == "windows conditional action":
+                        result, to_skip = BuiltInFunctions.Windows_Conditional_Action_Handler(step_data, dataset_cnt)
+                        skip += to_skip
+                        skip_for_loop += to_skip
+                        if result in failed_tag_list:
+                            CommonUtil.ExecLog(sModuleInfo, "Returned result from Conditional Action Failed", 3)
+                            return result, skip_for_loop
+                        break
+
+
+                    elif action_name.lower().strip() != "conditional action" and action_name.lower().strip() != "if else":
                         # old style conditional action
                         result, to_skip = Conditional_Action_Handler(step_data, dataset_cnt)
                         skip += to_skip
