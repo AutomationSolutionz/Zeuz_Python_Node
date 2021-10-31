@@ -12,7 +12,7 @@ with open(version_path, "r"):
 from Framework.module_installer import install_missing_modules
 install_missing_modules()
 
-import sys, time, os.path, base64, signal, argparse, requests, json, io, zipfile, shutil
+import sys, time, os.path, base64, signal, argparse, requests, zipfile
 from getpass import getpass
 from urllib3.exceptions import InsecureRequestWarning
 from tqdm import tqdm
@@ -217,7 +217,7 @@ def zeuz_authentication_prompts_for_cli():
     return values
 
 
-def Login(cli=False, run_once=False):
+def Login(cli=False, run_once=False, log_dir=None):
     username = ConfigModule.get_config_value(AUTHENTICATION_TAG, USERNAME_TAG)
     password = ConfigModule.get_config_value(AUTHENTICATION_TAG, PASSWORD_TAG)
     server_name = ConfigModule.get_config_value(AUTHENTICATION_TAG, "server_address")
@@ -344,7 +344,7 @@ def Login(cli=False, run_once=False):
                                 }
                             }
                         )
-                        run_again = RunProcess(tester_id, user_info_object, run_once=run_once)
+                        run_again = RunProcess(tester_id, user_info_object, run_once=run_once, log_dir=log_dir)
 
                         if not run_again:
                             break  # Exit login
@@ -423,7 +423,7 @@ def disconnect_from_server():
     CommonUtil.set_exit_mode(True)  # Tell Sequential Actions to exit
 
 
-def RunProcess(sTesterid, user_info_object, run_once=False):
+def RunProcess(sTesterid, user_info_object, run_once=False, log_dir=None):
     etime = time.time() + (30 * 60)  # 30 minutes
     executor = CommonUtil.GetExecutor()
     while True:
@@ -446,7 +446,7 @@ def RunProcess(sTesterid, user_info_object, run_once=False):
                     size = str(size) + " KB"
                 save_path = temp_ini_file.parent / "attachments"
                 CommonUtil.ExecLog("", "Downloading dataset and attachments of %s into:\n%s" % (size, str(save_path/"input.zip")), 4)
-                FL.CreateFolder(save_path)
+                save_path.mkdir(parents=True, exist_ok=True)
                 headers = RequestFormatter.add_api_key_to_headers({})
                 response = requests.get(RequestFormatter.form_uri("getting_json_data_api"), {"machine_name": Userid}, stream=True, verify=False, **headers)
                 chunk_size = 4096
@@ -461,7 +461,7 @@ def RunProcess(sTesterid, user_info_object, run_once=False):
                 z.extractall(save_path)
                 z.close()
                 os.unlink(save_path/"input.zip")
-                PreProcess()
+                PreProcess(log_dir=log_dir)
                 # Telling the node_manager that a run_id is deployed
                 CommonUtil.node_manager_json(
                     {
@@ -504,12 +504,11 @@ def RunProcess(sTesterid, user_info_object, run_once=False):
     return True
 
 
-def PreProcess():
-    TEMP_TAG = "Advanced Options"
-    file_name = ConfigModule.get_config_value(TEMP_TAG, "_file")
+def PreProcess(log_dir=None):
     current_path_file = temp_ini_file
     ConfigModule.clean_config_file(current_path_file)
     ConfigModule.add_section("sectionOne", current_path_file)
+
     if not ConfigModule.has_section("Selenium_driver_paths"):
         ConfigModule.add_section("Selenium_driver_paths")
         ConfigModule.add_config_value("Selenium_driver_paths", "chrome_path", "")
@@ -517,10 +516,16 @@ def PreProcess():
         ConfigModule.add_config_value("Selenium_driver_paths", "edge_path", "")
         ConfigModule.add_config_value("Selenium_driver_paths", "opera_path", "")
         ConfigModule.add_config_value("Selenium_driver_paths", "ie_path", "")
+
+    # If `log_dir` is not specified, then store all logs inside Zeuz Node's
+    # "AutomationLog" folder
+    if log_dir is None:
+        log_dir = temp_ini_file.parent
+
     ConfigModule.add_config_value(
         "sectionOne",
         "temp_run_file_path",
-        str(temp_ini_file.parent),
+        str(log_dir),
         current_path_file,
     )
     ConfigModule.add_config_value("sectionOne", "sTestStepExecLogId", "node_cli", temp_ini_file)
@@ -814,9 +819,9 @@ def check_for_updates():
         print("Exception in CheckUpdates")
 
 
-def Local_run():
+def Local_run(log_dir=None):
     try:
-        PreProcess()
+        PreProcess(log_dir=log_dir)
         user_info_object = {}
         user_info_object['project'] = ConfigModule.get_config_value("sectionOne", PROJECT_TAG, temp_ini_file)
         user_info_object['team'] = ConfigModule.get_config_value("sectionOne", TEAM_TAG, temp_ini_file)
@@ -841,9 +846,12 @@ def Local_run():
         )
         CommonUtil.ExecLog("", Error_Detail, 4, False)
 
-def command_line_args():
+def command_line_args() -> Path:
     """
-    This function handles command line scripts with given arguments
+    This function handles command line scripts with given arguments.
+
+    Returns:
+      `log_dir` - the custom log directory if specified, otherwise `None`.
 
     Example 1:
     1. python node_cli.py
@@ -914,6 +922,9 @@ def command_line_args():
     parser_object.add_argument(
         "-o", "--once", action="store_true", help="If specified, this flag tells node to run only one session (test set/deployment) and then quit immediately"
     )
+    parser_object.add_argument(
+        "-d", "--log_dir", action="store", help="Specify a custom directory for storing Run IDs and logs."
+    )
     all_arguments = parser_object.parse_args()
 
     username = all_arguments.username
@@ -924,8 +935,28 @@ def command_line_args():
     max_run_history = all_arguments.max_run_history
     logout = all_arguments.logout
     auto_update = all_arguments.auto_update
+
+    # Check if custom log directory exists, if not, we'll try to create it. If
+    # we can't create the custom log directory, we should error out.
+    log_dir = None
+    try:
+        if all_arguments.log_dir:
+            log_dir = Path(all_arguments.log_dir.strip())
+            log_dir.mkdir(parents=True, exist_ok=True)
+
+            # Try creating a temporary file to see if we have enough permissions
+            # to write in the specified log directory.
+            touch_file = log_dir / "touch"
+            touch_file.touch()
+            touch_file.unlink()
+    except PermissionError:
+        raise Exception(f"ERR: Zeuz Node does not have enough permissions to write to the specified log directory: {log_dir}")
+    except:
+        raise Exception(f"ERR: Invalid custom log directory, or failed to create directory: {log_dir}")
+
     global local_run
     local_run = all_arguments.local_run
+
     global RUN_ONCE
     RUN_ONCE = all_arguments.once
 
@@ -968,6 +999,8 @@ def command_line_args():
     #     CommonUtil.ExecLog("\ncommand_line_args : node_cli.py","Did not parse anything from given arguments",4)
     #     sys.exit()
 
+    return log_dir
+
 
 def Bypass():
     while True:
@@ -984,11 +1017,17 @@ if __name__ == "__main__":
 
     """We can use this condition to skip command_line_args() when "python node_cli.py" or "node_cli.py" is executed"""
     # if (len(sys.argv)) > 1:
-    command_line_args()
+    try:
+        log_dir = command_line_args()
+    except Exception as e:
+        from colorama import Fore
+        print(Fore.RED + str(e))
+        print("Exiting...")
+        sys.exit(1)
 
     if local_run:
-        Local_run()
+        Local_run(log_dir=log_dir)
     else:
         # Bypass()
-        Login(cli=True, run_once=RUN_ONCE)
+        Login(cli=True, run_once=RUN_ONCE, log_dir=log_dir)
     CommonUtil.ShutdownExecutor()
