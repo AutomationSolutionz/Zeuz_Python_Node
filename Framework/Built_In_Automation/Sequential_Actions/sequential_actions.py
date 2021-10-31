@@ -197,8 +197,12 @@ def Sequential_Actions(
             device_info = _device_info
             sr.Set_Shared_Variables("device_info", device_info, protected=True)
 
-        # Set default variables (Must be defined here in case anyone destroys all shared variables)
-        sr.Set_Shared_Variables("element_wait", 10)  # Default time for get_element() to find the element
+        element_wait = ConfigModule.get_config_value("Advanced Options", "element_wait")
+        try:
+            element_wait = float(element_wait)
+        except:
+            element_wait = 10.0
+        sr.Set_Shared_Variables("element_wait", element_wait)
 
         # Prepare step data for processing
         step_data = common.unmask_step_data(step_data)
@@ -1746,7 +1750,6 @@ def Conditional_Action_Handler(step_data, dataset_cnt):
 
             start_time = time.time()
             end_time = start_time + wait
-            LocateElement.end = 7
             while True:
                 Element = LocateElement.Get_Element(
                     data_set, eval(module).get_driver()
@@ -1754,11 +1757,8 @@ def Conditional_Action_Handler(step_data, dataset_cnt):
                 time.sleep(wait/10)
                 if (Element not in failed_tag_list) or (time.time() >= end_time):
                     break
-            LocateElement.end = 7
             if Element in failed_tag_list:
-                CommonUtil.ExecLog(
-                    sModuleInfo, "Conditional Actions could not find the element", 3
-                )
+                CommonUtil.ExecLog(sModuleInfo, "Conditional Actions could not find the element", 3)
                 logic_decision = "false"
                 log_msg += "Element is not found\n"
             else:
@@ -1766,9 +1766,7 @@ def Conditional_Action_Handler(step_data, dataset_cnt):
                 log_msg += "Element is found\n"
 
         except:  # Element doesn't exist, proceed with the step data following the fail/false path
-            CommonUtil.ExecLog(
-                sModuleInfo, "Conditional Actions could not find the element", 3
-            )
+            CommonUtil.ExecLog(sModuleInfo, "Conditional Actions could not find the element", 3)
             logic_decision = "false"
             log_msg += "Element is not found\n"
 
