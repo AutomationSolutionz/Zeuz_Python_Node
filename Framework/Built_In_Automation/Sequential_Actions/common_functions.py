@@ -585,35 +585,22 @@ def Wait_For_Element(data_set):
 
     try:
         wait_for_element_to_disappear = False
-
-        # Find the wait time from the data set
+        timeout_duration = None
         for row in data_set:
             if row[1] == "action":
                 if row[0] == "wait disable":
                     wait_for_element_to_disappear = True
-                timeout_duration = int(row[2])
+                timeout_duration = float(row[2])
 
-        # Check for element every second
-        end_time = time.time() + timeout_duration  # Time at which we should stop looking
-        for i in range(timeout_duration):
-            # Keep testing element until this is reached (likely never hit due to timeout below)
-            # Wait and then test if we are over our alloted time limit
-            if time.time() >= end_time:  # Keep testing element until this is reached (ensures we wait exactly the specified amount of time)
-                break
-            time.sleep(1)
+        Element = LocateElement.Get_Element(data_set, common_driver, wait_enable=False, element_wait=timeout_duration)
 
-            # Test if element exists or not
-            Element = LocateElement.Get_Element(data_set, common_driver, wait_enable=False)
+        if not wait_for_element_to_disappear and Element not in failed_tag_list:  # Element found
+            CommonUtil.ExecLog(sModuleInfo, "Found element", 1)
+            return "passed"
+        elif Element in failed_tag_list:  # Element removed
+            CommonUtil.ExecLog(sModuleInfo, "Element disappeared", 1)
+            return "passed"
 
-            # Check if element exists or not, depending on the type of wait the user wanted
-            if not wait_for_element_to_disappear and Element not in failed_tag_list:  # Element found
-                CommonUtil.ExecLog(sModuleInfo, "Found element", 1)
-                return "passed"
-            elif Element in failed_tag_list:  # Element removed
-                CommonUtil.ExecLog(sModuleInfo, "Element disappeared", 1)
-                return "passed"
-
-        # Element status not changed after time elapsed, to exit with failure
         CommonUtil.ExecLog(sModuleInfo, "Wait for element failed", 3)
         return "zeuz_failed"
 

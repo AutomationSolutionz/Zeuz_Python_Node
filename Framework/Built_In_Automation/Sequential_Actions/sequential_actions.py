@@ -1681,9 +1681,7 @@ def Loop_Action_Handler(data, row, dataset_cnt):
 
 def Conditional_Action_Handler(step_data, dataset_cnt):
     """ Process conditional actions, called only by Sequential_Actions() """
-
     sModuleInfo = inspect.currentframe().f_code.co_name + " : " + MODULE_NAME
-
 
     # Get module and dynamically load it
     # module = row[1].split(" ")[0]
@@ -1748,15 +1746,7 @@ def Conditional_Action_Handler(step_data, dataset_cnt):
                 if "optional parameter" in mid and "wait" in left:
                     wait = float(right.strip())
 
-            start_time = time.time()
-            end_time = start_time + wait
-            while True:
-                Element = LocateElement.Get_Element(
-                    data_set, eval(module).get_driver()
-                )  # Get the element object or "zeuz_failed"
-                time.sleep(wait/10)
-                if (Element not in failed_tag_list) or (time.time() >= end_time):
-                    break
+            Element = LocateElement.Get_Element(data_set, eval(module).get_driver(), element_wait=wait)
             if Element in failed_tag_list:
                 CommonUtil.ExecLog(sModuleInfo, "Conditional Actions could not find the element", 3)
                 logic_decision = "false"
@@ -1814,9 +1804,7 @@ def Conditional_Action_Handler(step_data, dataset_cnt):
             element_step_data[0]
         )  # Make sure the element step data we got back from above is good
         if (returned_step_data_list == []) or (returned_step_data_list == "zeuz_failed"):  # Element step data is bad, so fail
-            CommonUtil.ExecLog(
-                sModuleInfo, "Element data is bad: %s" % str(element_step_data), 3
-            )
+            CommonUtil.ExecLog(sModuleInfo, "Element data is bad: %s" % str(element_step_data), 3)
             return "zeuz_failed", []
         else:  # Element step data is good, so continue
             # Check if element from data set exists on device

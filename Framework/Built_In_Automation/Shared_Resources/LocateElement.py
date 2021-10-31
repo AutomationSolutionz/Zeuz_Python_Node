@@ -49,6 +49,9 @@ def Get_Element(step_data_set, driver, query_debug=False, wait_enable=True, retu
         else:
             web_element_object = False
 
+        if element_wait is not None:
+            element_wait = float(element_wait)
+
         if driver_type == None:
             CommonUtil.ExecLog(
                 sModuleInfo, "Incorrect driver. Please validate driver", 3
@@ -694,7 +697,6 @@ def _get_xpath_or_css_element(element_query, css_xpath, index_number=None, Filte
 
             if all_matching_elements_visible_invisible and len(filter_elements(all_matching_elements_visible_invisible, "")) > 0:
                 break
-            time.sleep(1)
         # end of while loop
 
         if exception_cnd:
