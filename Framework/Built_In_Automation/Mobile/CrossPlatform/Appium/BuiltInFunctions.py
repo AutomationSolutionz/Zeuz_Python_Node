@@ -1110,7 +1110,7 @@ def kill_node():
 
 
 @logger
-def teardown_appium(data_set):
+def teardown_appium():
     """ Teardown of appium instance """
 
     sModuleInfo = inspect.currentframe().f_code.co_name + " : " + MODULE_NAME
