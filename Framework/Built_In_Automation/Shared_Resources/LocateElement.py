@@ -29,7 +29,7 @@ driver_type = None
 MODULE_NAME = inspect.getmodulename(__file__)
 
 
-def Get_Element(step_data_set, driver, query_debug=False, wait_enable=True, return_all_elements=False):
+def Get_Element(step_data_set, driver, query_debug=False, wait_enable=True, return_all_elements=False, element_wait=None):
     """
     This funciton will return "zeuz_failed" if something went wrong, else it will always return a single element
     if you are trying to produce a query from a step dataset, make sure you provide query_debug =True.  This is
@@ -48,6 +48,9 @@ def Get_Element(step_data_set, driver, query_debug=False, wait_enable=True, retu
             web_element_object = True
         else:
             web_element_object = False
+
+        if element_wait is not None:
+            element_wait = float(element_wait)
 
         if driver_type == None:
             CommonUtil.ExecLog(
@@ -181,11 +184,11 @@ def Get_Element(step_data_set, driver, query_debug=False, wait_enable=True, retu
         if element_query == False:
             result = "zeuz_failed"
         elif query_type == "xpath" and element_query != False:
-            result = _get_xpath_or_css_element(element_query, "xpath", index_number, Filter, return_all_elements)
+            result = _get_xpath_or_css_element(element_query, "xpath", index_number, Filter, return_all_elements, element_wait)
         elif query_type == "css" and element_query != False:
-            result = _get_xpath_or_css_element(element_query, "css", index_number, Filter)
+            result = _get_xpath_or_css_element(element_query, "css", index_number, Filter, element_wait)
         elif query_type == "unique" and element_query != False:
-            result = _get_xpath_or_css_element(element_query, "unique", index_number, Filter)
+            result = _get_xpath_or_css_element(element_query, "unique", index_number, Filter, element_wait)
         else:
             result = "zeuz_failed"
 
@@ -622,8 +625,8 @@ def _switch(step_data_set):
     except Exception:
         return CommonUtil.Exception_Handler(sys.exc_info())
 
-end = 7
-def _get_xpath_or_css_element(element_query, css_xpath, index_number=None, Filter="", return_all_elements=False):
+
+def _get_xpath_or_css_element(element_query, css_xpath, index_number=None, Filter="", return_all_elements=False, element_wait=None):
     """
     Here, we actually execute the query based on css/xpath and then analyze if there are multiple.
     If we find multiple we give warning and send the first one we found.
@@ -634,18 +637,14 @@ def _get_xpath_or_css_element(element_query, css_xpath, index_number=None, Filte
         all_matching_elements_visible_invisible = False
         sModuleInfo = inspect.currentframe().f_code.co_name + " : " + MODULE_NAME
 
-        exception_msg = ""
         exception_cnd = False
         start = time.time()
-        #end = start + int(sr.Get_Shared_Variables("element_wait"))
+        if element_wait is None:
+            element_wait = int(sr.Get_Shared_Variables("element_wait"))
+        end = start + element_wait
 
-        x = 0
-        #while time.time() < end:
-        while x < end:
-            x = x+1
-            if css_xpath == "unique" and (
-                driver_type == "appium" or driver_type == "selenium"
-            ):  # for unique id
+        while time.time() < end:
+            if css_xpath == "unique" and (driver_type == "appium" or driver_type == "selenium"):  # for unique id
                 try:
                     unique_key = element_query[0]
                     unique_value = element_query[1]
@@ -655,60 +654,38 @@ def _get_xpath_or_css_element(element_query, css_xpath, index_number=None, Filte
                         or unique_key == "content-desc"
                         or unique_key == "content desc"
                     ):  # content-desc for android, accessibility id for iOS
-                        unique_element = generic_driver.find_element_by_accessibility_id(
-                            unique_value
-                        )
+                        unique_element = generic_driver.find_element_by_accessibility_id(unique_value)
                     elif unique_key == "id" or (driver_type == "appium" and (unique_key == "resource id" or unique_key == "resource-id" or unique_key == "name")):  # name for iOS
                         unique_element = generic_driver.find_element(By.ID, unique_value)
                     elif unique_key == "name":
                         unique_element = generic_driver.find_element(By.NAME, unique_value)
                     elif unique_key == "class":
-                        unique_element = generic_driver.find_element(
-                            By.CLASS_NAME, unique_value
-                        )
+                        unique_element = generic_driver.find_element(By.CLASS_NAME, unique_value)
                     elif unique_key == "tag":
-                        unique_element = generic_driver.find_element(
-                            By.TAG_NAME, unique_value
-                        )
+                        unique_element = generic_driver.find_element(By.TAG_NAME, unique_value)
                     elif unique_key == "css":
-                        unique_element = generic_driver.find_element(
-                            By.CSS_SELECTOR, unique_value
-                        )
+                        unique_element = generic_driver.find_element(By.CSS_SELECTOR, unique_value)
                     elif unique_key == "xpath":
                         unique_element = generic_driver.find_element(By.XPATH, unique_value)
                     elif unique_key in ["text", "*text"]:
                         if driver_type == "appium":
                             if unique_key == "text":
-                                unique_element = generic_driver.find_element(
-                                    By.XPATH, '//*[@text="%s"]' % unique_value
-                                )
+                                unique_element = generic_driver.find_element(By.XPATH, '//*[@text="%s"]' % unique_value)
                             else:
-                                unique_element = generic_driver.find_element(
-                                    By.XPATH, '//*[contains(@text,"%s")]' % unique_value
-                                )
+                                unique_element = generic_driver.find_element(By.XPATH, '//*[contains(@text,"%s")]' % unique_value)
                         else:
                             if unique_key == "text":
-                                unique_element = generic_driver.find_element(
-                                    By.XPATH, '//*[text()="%s"]' % unique_value
-                                )
+                                unique_element = generic_driver.find_element(By.XPATH, '//*[text()="%s"]' % unique_value)
                             else:
-                                unique_element = generic_driver.find_element(
-                                    By.XPATH, '//*[contains(text(),"%s")]' % unique_value
-                                )
+                                unique_element = generic_driver.find_element(By.XPATH, '//*[contains(text(),"%s")]' % unique_value)
                     else:
                         if "*" in unique_key:
                             unique_key = unique_key[1:]  # drop the asterisk
-                            unique_element = generic_driver.find_element(
-                                By.XPATH,
-                                "//*[contains(@%s,'%s')]" % (unique_key, unique_value),
-                            )
+                            unique_element = generic_driver.find_element(By.XPATH, "//*[contains(@%s,'%s')]" % (unique_key, unique_value))
                         else:
-                            unique_element = generic_driver.find_element(
-                                By.XPATH, "//*[@%s='%s']" % (unique_key, unique_value)
-                            )
+                            unique_element = generic_driver.find_element(By.XPATH, "//*[@%s='%s']" % (unique_key, unique_value))
                     return unique_element
                 except Exception as e:
-                    exception_msg = e
                     exception_cnd = True
                     continue
             elif css_xpath == "xpath" and driver_type != "xml":
@@ -720,7 +697,6 @@ def _get_xpath_or_css_element(element_query, css_xpath, index_number=None, Filte
 
             if all_matching_elements_visible_invisible and len(filter_elements(all_matching_elements_visible_invisible, "")) > 0:
                 break
-            time.sleep(1)
         # end of while loop
 
         if exception_cnd:
