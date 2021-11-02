@@ -995,7 +995,7 @@ def Run_Sequential_Actions(
                 # If middle column = conditional action, evaluate data set
                 elif "conditional action" in action_name or "if else" in action_name:
                     if action_name.lower().strip() == "windows conditional action":
-                        result, to_skip = BuiltInFunctions.Windows_Conditional_Action_Handler(step_data, dataset_cnt)
+                        result, to_skip = Conditional_Action_Handler(step_data, dataset_cnt)
                         skip += to_skip
                         skip_for_loop += to_skip
                         if result in failed_tag_list:
@@ -1741,9 +1741,9 @@ def Conditional_Action_Handler(step_data, dataset_cnt):
             "Try our other action 'if else'",
             2)
         if result in failed_tag_list:  # Check result from previous action
-            logic_decision = "false"
+            logic_decision = False
         else:  # Passed / Skipped
-            logic_decision = "true"
+            logic_decision = True
 
     # *** Old method of conditional actions in the if statements below. Only kept for backwards compatibility *** #
 
@@ -1759,16 +1759,53 @@ def Conditional_Action_Handler(step_data, dataset_cnt):
             Element = LocateElement.Get_Element(data_set, eval(module).get_driver(), element_wait=wait)
             if Element in failed_tag_list:
                 CommonUtil.ExecLog(sModuleInfo, "Conditional Actions could not find the element", 3)
-                logic_decision = "false"
+                logic_decision = False
                 log_msg += "Element is not found\n"
             else:
-                logic_decision = "true"
+                logic_decision = True
                 log_msg += "Element is found\n"
 
         except:  # Element doesn't exist, proceed with the step data following the fail/false path
             CommonUtil.ExecLog(sModuleInfo, "Conditional Actions could not find the element", 3)
-            logic_decision = "false"
+            logic_decision = False
             log_msg += "Element is not found\n"
+
+    elif module == "windows":
+        try:
+            wait = 10
+            for left, mid, right in data_set:
+                mid = mid.lower()
+                left = left.lower()
+                if "optional parameter" in mid and "wait" in left:
+                    wait = float(right.strip())
+
+            start_time = time.time()
+            end_time = start_time + wait
+            while True:
+                Element = BuiltInFunctions.Get_Element(
+                    data_set, wait
+                )  # Get the element object or "zeuz_failed"
+
+                if (Element not in failed_tag_list) or (time.time() >= end_time):
+                    break
+
+            if Element in failed_tag_list:
+                CommonUtil.ExecLog(
+                    sModuleInfo, "Conditional Actions could not find the element", 3
+                )
+                logic_decision = False
+                log_msg += "Element is not found\n"
+            else:
+                logic_decision = True
+                log_msg += "Element is found\n"
+
+        except:  # Element doesn't exist, proceed with the step data following the fail/false path
+            CommonUtil.ExecLog(
+                sModuleInfo, "Conditional Actions could not find the element", 3
+            )
+            logic_decision = False
+            log_msg += "Element is not found\n"
+
 
     elif module == "common" or module == "database":  # compare variable or list, and based on the result conditional actions will work
         try:
@@ -1788,16 +1825,16 @@ def Conditional_Action_Handler(step_data, dataset_cnt):
                         "Conditional Actions Result is False, Variable doesn't match with given value",
                         1,
                     )
-                    logic_decision = "false"
+                    logic_decision = False
                 else:
-                    logic_decision = "true"
+                    logic_decision = True
             else:
-                logic_decision = "true"
+                logic_decision = True
         except:  # Element doesn't exist, proceed with the step data following the fail/false path
             CommonUtil.ExecLog(
                 sModuleInfo, "Conditional Actions could not find the variable", 3
             )
-            logic_decision = "false"
+            logic_decision = False
 
     elif module == "rest":
         CommonUtil.ExecLog(
@@ -1822,12 +1859,12 @@ def Conditional_Action_Handler(step_data, dataset_cnt):
                 Get_Response = getattr(eval(module), "Get_Response")
                 Element = Get_Response(element_step_data[0])
                 if Element == "zeuz_failed":  # Element doesn't exist, proceed with the step data following the fail/false path
-                    logic_decision = "false"
+                    logic_decision = False
                 else:  # Any other return means we found the element, proceed with the step data following the pass/true pass
-                    logic_decision = "true"
+                    logic_decision = True
             except Exception:  # Element doesn't exist, proceed with the step data following the fail/false path
                 CommonUtil.ExecLog(sModuleInfo, "Could not find element in the by the criteria...", 3)
-                logic_decision = "false"
+                logic_decision = False
                 return CommonUtil.Exception_Handler(sys.exc_info()), []
 
     elif module == "utility":
@@ -1857,14 +1894,14 @@ def Conditional_Action_Handler(step_data, dataset_cnt):
                 find = getattr(eval(module), "find")
                 Element = find(returned_step_data_list[0])
                 if Element == False:
-                    logic_decision = "false"
+                    logic_decision = False
                 else:
-                    logic_decision = "true"
+                    logic_decision = True
             except Exception:  # Element doesn't exist, proceed with the step data following the fail/false path
                 CommonUtil.ExecLog(
                     sModuleInfo, "Could not find element in the by the criteria...", 3
                 )
-                logic_decision = "false"
+                logic_decision = False
                 return CommonUtil.Exception_Handler(sys.exc_info()), []
 
     # *** Old method of conditional actions in the if statements above. Only kept for backwards compatibility *** #
@@ -1885,14 +1922,14 @@ def Conditional_Action_Handler(step_data, dataset_cnt):
         mid = mid.lower()
         if "true" in left and "conditional action" in mid:
             outer_skip += get_data_set_nums(str(right).strip())
-            if logic_decision == "true":
+            if logic_decision is True:
                 for i in get_data_set_nums(str(right).strip()):
                     next_level_step_data.append(i)
                 log_msg = if_else_log_for_actions(log_msg, next_level_step_data, "element")
 
         elif "false" in left and "conditional action" in mid:
             outer_skip += get_data_set_nums(str(right).strip())
-            if logic_decision == "false":
+            if logic_decision is False:
                 for i in get_data_set_nums(str(right).strip()):
                     next_level_step_data.append(i)
                 log_msg = if_else_log_for_actions(log_msg, next_level_step_data, "element")
