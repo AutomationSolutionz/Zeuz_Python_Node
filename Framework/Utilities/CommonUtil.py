@@ -43,10 +43,6 @@ colorama_init(autoreset=True)
 MODULE_NAME = inspect.getmodulename(__file__)
 
 # Get file path for temporary config file
-# temp_config = os.path.join(os.path.join(FL.get_home_folder(), os.path.join('Desktop', os.path.join('AutomationLog',ConfigModule.get_config_value('Advanced Options','_file')))))
-
-
-# temp_config = os.path.join(os.path.join (os.path.realpath(__file__).split("Framework")[0] , os.path.join ('AutomationLog',ConfigModule.get_config_value('Advanced Options', '_file'))))
 temp_config = Path(
     os.path.join(os.path.abspath(__file__).split("Framework")[0])
     / Path("AutomationLog")
@@ -54,7 +50,6 @@ temp_config = Path(
         ConfigModule.get_config_value(
             "Advanced Options",
             "_file",
-            Path(os.path.abspath(__file__)).parent.parent / Path("settings.conf"),
         )
     )
 )
@@ -994,8 +989,6 @@ class MachineInfo:
         :return: returns the local pc unique ID
         """
         try:
-            # node_id_file_path = os.path.join(FL.get_home_folder(), os.path.join('Desktop', 'node_id.conf'))
-            # node_id_file_path = os.path.join (os.path.realpath(__file__).split("Framework")[0] , os.path.join ('node_id.conf'))
             node_id_file_path = Path(
                 os.path.abspath(__file__).split("Framework")[0]
             ) / Path("node_id.conf")
