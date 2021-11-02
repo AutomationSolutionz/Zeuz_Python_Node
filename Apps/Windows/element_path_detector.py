@@ -418,7 +418,7 @@ def Authenticate():
     if not auth:
         url = server + "/" if server[-1] != "/" else server
         url += "api/auth/token/verify?api_key=" + api_key
-        return executor.submit(requests.get, url,verify=False)
+        return executor.submit(requests.get, url, verify=False)
 
 
 def Upload(auth_thread, window):
@@ -441,10 +441,10 @@ def Upload(auth_thread, window):
     headers = {
         'Authorization': Authorization,
         'Content-Type': 'application/json'
-        
+
     }
 
-    response = requests.request("POST", url, headers=headers, data=payload,verify=False)
+    response = requests.request("POST", url, headers=headers, data=payload, verify=False)
     response = response.json()
     del response["content"]
     print(response)
@@ -493,8 +493,6 @@ def main():
             keyboard.wait("ctrl")
             x, y = pyautogui.position()
 
-            try: autoit.win_activate(screen_title)
-            except: pass
             print("Searching for the Element identifier")
 
             start = time.perf_counter()
@@ -522,6 +520,8 @@ def main():
                 f.write(xml_str)
             element_time = round(time.perf_counter()-start, 3)
             sibling_time = 0
+            try: autoit.win_activate(screen_title)
+            except: pass
             sibling = pyautogui.confirm('Do you want SIBLING?')
             root = ET.fromstring(xml_str)
             if sibling.strip().lower() == "ok":
