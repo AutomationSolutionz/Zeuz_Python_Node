@@ -25,6 +25,14 @@
             "console": "integratedTerminal"
         },
         {
+            "name": "Python: node_cli custom log dir",
+            "type": "python",
+            "request": "launch",
+            "program": "${workspaceFolder}/node_cli.py",
+            "args": ["-d /home/szxo3/Desktop/test_node_dir"],
+            "console": "integratedTerminal"
+        },
+        {
             "name": "Python: node_gui",
             "type": "python",
             "request": "launch",

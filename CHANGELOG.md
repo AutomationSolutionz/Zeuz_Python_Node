@@ -2,9 +2,7 @@
 
 # Version 14.x.x
 ## Version 14.5.x
-### [14.5.3] [October 28, 2021]
-- **[Add]** size and location added into Save_attribute appium
-- **[Improve]** Improved Windows inspector with parent sibling
+
 ### [14.5.2] [October 19, 2021]
 - **[Add]** Dictionary support is added in compare variable action
 
