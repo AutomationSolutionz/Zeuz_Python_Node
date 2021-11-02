@@ -1922,14 +1922,14 @@ def Conditional_Action_Handler(step_data, dataset_cnt):
         mid = mid.lower()
         if "true" in left and "conditional action" in mid:
             outer_skip += get_data_set_nums(str(right).strip())
-            if logic_decision is True:
+            if logic_decision:
                 for i in get_data_set_nums(str(right).strip()):
                     next_level_step_data.append(i)
                 log_msg = if_else_log_for_actions(log_msg, next_level_step_data, "element")
 
         elif "false" in left and "conditional action" in mid:
             outer_skip += get_data_set_nums(str(right).strip())
-            if logic_decision is False:
+            if not logic_decision:
                 for i in get_data_set_nums(str(right).strip()):
                     next_level_step_data.append(i)
                 log_msg = if_else_log_for_actions(log_msg, next_level_step_data, "element")
