@@ -923,7 +923,7 @@ def command_line_args() -> Path:
         "-o", "--once", action="store_true", help="If specified, this flag tells node to run only one session (test set/deployment) and then quit immediately"
     )
     parser_object.add_argument(
-        "-d", "--log_dir", action="store", help="Specify a custom directory for storing Run IDs and logs."
+        "-d", "--log_dir", action="store", help="Specify a custom directory for storing Run IDs and logs.", metavar=""
     )
     all_arguments = parser_object.parse_args()
 
