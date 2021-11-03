@@ -29,7 +29,7 @@ driver_type = None
 MODULE_NAME = inspect.getmodulename(__file__)
 
 
-def Get_Element(step_data_set, driver, query_debug=False, wait_enable=True, return_all_elements=False, element_wait=None):
+def Get_Element(step_data_set, driver, query_debug=False, return_all_elements=False, element_wait=None):
     """
     This funciton will return "zeuz_failed" if something went wrong, else it will always return a single element
     if you are trying to produce a query from a step dataset, make sure you provide query_debug =True.  This is
@@ -137,7 +137,12 @@ def Get_Element(step_data_set, driver, query_debug=False, wait_enable=True, retu
                     CommonUtil.ExecLog(sModuleInfo, "Use '%| |%' sign to get variable value", 3)
                     return "zeuz_failed"
             elif row[1].strip().lower() == "option":
-                Filter = row[0].strip().lower() if row[2].strip().lower() in ("yes", "true", "ok") else Filter
+                left = row[0].strip().lower()
+                right = row[2].strip().lower()
+                if left in ("allow hidden", "allow disable"):
+                    Filter = left if right in ("yes", "true", "ok") else Filter
+                elif left == "wait":
+                    element_wait = float(right)
 
         if get_parameter != "":
 
@@ -183,54 +188,10 @@ def Get_Element(step_data_set, driver, query_debug=False, wait_enable=True, retu
             result = "passed"
         if element_query == False:
             result = "zeuz_failed"
-        elif query_type == "xpath" and element_query != False:
-            result = _get_xpath_or_css_element(element_query, "xpath", index_number, Filter, return_all_elements, element_wait)
-        elif query_type == "css" and element_query != False:
-            result = _get_xpath_or_css_element(element_query, "css", index_number, Filter, element_wait)
-        elif query_type == "unique" and element_query != False:
-            result = _get_xpath_or_css_element(element_query, "unique", index_number, Filter, element_wait)
+        elif query_type in ("xpath", "css", "unique"):
+            result = _get_xpath_or_css_element(element_query, query_type, index_number, Filter, return_all_elements, element_wait)
         else:
             result = "zeuz_failed"
-
-        # if user sends optional option check if element is displayed or not. We may need to add more
-        # items here such as enabled, visible and such.
-
-        try:
-            if driver_type == "appium" or driver_type == "selenium":
-                is_displayed_value = ""
-                for row in step_data_set:
-                    if (
-                        "option" in str(row[1]).lower().strip()
-                        and "is_displayed" in str(row[0]).lower().strip()
-                    ):
-                        is_displayed_value = row[2].strip().lower()
-                        if is_displayed_value == "true":
-                            if not return_all_elements:
-                                if not result.is_displayed():
-                                    CommonUtil.ExecLog(
-                                        sModuleInfo,
-                                        "Element was found, however, it was not displayed or enabled. Returning failed",
-                                        2,
-                                    )
-                                    result = "zeuz_failed"
-                                    break
-                                else:
-                                    break
-                            if return_all_elements:
-                                i = 0
-                                for each_element in result:
-                                    i = i+1
-                                    if not each_element.is_displayed():
-                                        CommonUtil.ExecLog(
-                                            sModuleInfo,
-                                            "%s no element was not displayed or enabled. Returning failed" % i,
-                                            2,
-                                        )
-                                        result = "zeuz_failed"
-                                        break
-                                break
-        except:
-            True
 
         if result not in failed_tag_list:
             if type(result) != list:
@@ -249,16 +210,7 @@ def Get_Element(step_data_set, driver, query_debug=False, wait_enable=True, retu
             if save_parameter != "":  # save element to a variable
                 sr.Set_Shared_Variables(save_parameter, result)
             return result  # Return on pass
-        if not wait_enable:
-            CommonUtil.ExecLog(
-                sModuleInfo,
-                "Element not found. Waiting is disabled, so returning",
-                2,
-            )
-            return result  # If asked not to loop, return the failure
-            # If fail, but instructed to loop, do so
         return "zeuz_failed"
-
     except Exception:
         return CommonUtil.Exception_Handler(sys.exc_info())
 

@@ -592,17 +592,25 @@ def Wait_For_Element(data_set):
                     wait_for_element_to_disappear = True
                 timeout_duration = float(row[2])
 
-        Element = LocateElement.Get_Element(data_set, common_driver, wait_enable=False, element_wait=timeout_duration)
+        if not wait_for_element_to_disappear:
+            Element = LocateElement.Get_Element(data_set, common_driver, element_wait=timeout_duration)
+            if Element not in failed_tag_list:  # Element found
+                CommonUtil.ExecLog(sModuleInfo, "Element appeared", 1)
+                return "passed"
+            else:
+                CommonUtil.ExecLog(sModuleInfo, "Element did not appear", 3)
+                return "zeuz_failed"
 
-        if not wait_for_element_to_disappear and Element not in failed_tag_list:  # Element found
-            CommonUtil.ExecLog(sModuleInfo, "Found element", 1)
-            return "passed"
-        elif Element in failed_tag_list:  # Element removed
-            CommonUtil.ExecLog(sModuleInfo, "Element disappeared", 1)
-            return "passed"
-
-        CommonUtil.ExecLog(sModuleInfo, "Wait for element failed", 3)
-        return "zeuz_failed"
+        else:
+            start = time.time()
+            while time.time() <= start + timeout_duration:
+                Element = LocateElement.Get_Element(data_set, common_driver, element_wait=2.0)
+                if Element in failed_tag_list:  # Element removed
+                    CommonUtil.ExecLog(sModuleInfo, "Element disappeared", 1)
+                    return "passed"
+                time.sleep(timeout_duration/10)
+            CommonUtil.ExecLog(sModuleInfo, "Element did not disappear", 3)
+            return "zeuz_failed"
 
     except Exception:
         return CommonUtil.Exception_Handler(sys.exc_info())
