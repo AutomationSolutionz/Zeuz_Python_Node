@@ -578,6 +578,67 @@ def _switch(step_data_set):
         return CommonUtil.Exception_Handler(sys.exc_info())
 
 
+def auto_scroll():
+    """
+    To auto scroll to an element which is scrollable, won't work if no scrollable is present
+    """
+    global generic_driver
+    scrollable_element = generic_driver.find_elements_by_android_uiautomator("new UiSelector().scrollable(true)")
+    try:
+        inset = 10
+        position = 50
+        direction = ""
+        adjust = ""
+        duration = ""
+        if len(scrollable_element) == 0:
+            return
+        elif len(scrollable_element) == 1:
+            height = scrollable_element[0].size["height"]
+            width = scrollable_element[0].size["width"]
+            xstart_location = scrollable_element[0].location["x"]
+            ystart_location = scrollable_element[0].location["y"]
+            #float or integer expected here - convert into pixels
+            inset = float(str(inset).replace("%", "")) / 100.0  # Convert % to float
+            position = float(str(position).replace("%", "")) / 100.0  # Convert % to float
+            adjust = int(adjust) if adjust else 0 
+            # Checks whether the height of the scroll area is greater than width then direction of swipe is up
+            if height > width:
+                direction = "up"
+            else:
+                direction = "left"
+            if direction == "up":
+                tmp = 1.0 - inset  # Calculate from other end (X% from max height)
+                inset = round(tmp * height)
+                position = round(position * width)
+
+                # Calculate exact pixel for the swipe
+                x1 = position
+                x2 = position
+                y1 = inset - 1
+                y2 = - adjust
+
+                duration = height * 3.2
+                generic_driver.swipe(x1, y1, x2, y2, duration)
+            else:
+                tmp = 1.0 - inset  # Calculate from other end (X% from max width)
+                inset = round(tmp * width)
+                position = round(position * height)
+
+                # Calculate exact pixel for the swipe
+                x1 = inset - 1
+                x2 = adjust    
+                y1 = position
+                y2 = position
+
+                duration = width * 3.2
+                generic_driver.swipe(x1, y1, x2, y2, duration)
+        else:
+            pass
+    except Exception:
+                errMsg = "Error could not auto scroll"
+                result = CommonUtil.Exception_Handler(sys.exc_info(), None, errMsg)
+                return result, "", "", ""
+
 def _get_xpath_or_css_element(element_query, css_xpath, index_number=None, Filter="", return_all_elements=False, element_wait=None):
     """
     Here, we actually execute the query based on css/xpath and then analyze if there are multiple.
@@ -654,6 +715,10 @@ def _get_xpath_or_css_element(element_query, css_xpath, index_number=None, Filte
         if exception_cnd:
             return False
 
+        while len(all_matching_elements_visible_invisible) == 0:
+            auto_scroll()
+            all_matching_elements_visible_invisible = generic_driver.find_elements(By.XPATH, element_query)
+             
         all_matching_elements = filter_elements(all_matching_elements_visible_invisible, Filter)
         if Filter == "allow hidden":
             displayed_len = len(filter_elements(all_matching_elements_visible_invisible, ""))
