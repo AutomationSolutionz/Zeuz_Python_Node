@@ -622,7 +622,7 @@ def auto_scroll():
             else:
                 tmp = 1.0 - inset  # Calculate from other end (X% from max width)
                 inset = round(tmp * width)
-                position = round(position * height)
+                position = round(position * width)
 
                 # Calculate exact pixel for the swipe
                 x1 = inset - 1
@@ -715,9 +715,12 @@ def _get_xpath_or_css_element(element_query, css_xpath, index_number=None, Filte
         if exception_cnd:
             return False
 
-        while len(all_matching_elements_visible_invisible) == 0:
+        while len(all_matching_elements_visible_invisible) == 0 :
+            page_src=generic_driver.page_source
             auto_scroll()
             all_matching_elements_visible_invisible = generic_driver.find_elements(By.XPATH, element_query)
+            if page_src == generic_driver.page_source :
+                break
              
         all_matching_elements = filter_elements(all_matching_elements_visible_invisible, Filter)
         if Filter == "allow hidden":
