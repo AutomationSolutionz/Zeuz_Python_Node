@@ -43,7 +43,7 @@
 - **[Add]** Parent/Sibling/Index method added
 - **[Add]** Partial and case-insensitive search added
 - **[Add]** Element path method is added for searching an Element
-- **[Add]** element_path_detector.py app is added for generating path for an element
+- **[Add]** ZeuZ_Windows_Inspector.py app is added for generating path for an element
 - **[Add]** Zeuz default variable "os_name" is added
 - **[Add]** Wait for element to appear and disappear actions are added
 - **[Add]** "Save attribute values in list" action added
