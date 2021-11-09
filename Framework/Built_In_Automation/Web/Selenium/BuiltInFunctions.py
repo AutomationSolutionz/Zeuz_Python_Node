@@ -359,6 +359,7 @@ def Open_Browser(dependency, window_size_X=None, window_size_Y=None):
             options.add_experimental_option("useAutomationExtension", False)
             d = DesiredCapabilities.CHROME
             d["loggingPrefs"] = {"browser": "ALL"}
+            d['goog:loggingPrefs'] = {'performance': 'ALL'}
             if "chromeheadless" in browser:
                 options.add_argument(
                     "--headless"
