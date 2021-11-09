@@ -578,58 +578,97 @@ def _switch(step_data_set):
         return CommonUtil.Exception_Handler(sys.exc_info())
 
 
-def auto_scroll():
+def auto_scroll(data_set):
     """
     To auto scroll to an element which is scrollable, won't work if no scrollable element is present
     """
     global generic_driver
     scrollable_element = generic_driver.find_elements_by_android_uiautomator("new UiSelector().scrollable(true)")
+    inset = 10
+    position = 50
+    height = scrollable_element[0].size["height"]
+    width = scrollable_element[0].size["width"]
+    xstart_location = scrollable_element[0].location["x"]  # Starting location of the x-coordinate of scrollable element
+    ystart_location = scrollable_element[0].location["y"]  # Starting location of the y-coordinate of scrollable element
+    inset = float(str(inset).replace("%", "")) / 100.0  # Convert % to float
+    position = float(str(position).replace("%", "")) / 100.0
+    max_try = 20
+    direction = "up" if height > width else "left"
+    if direction == "up":
+        tmp = 1.0 - inset  # Calculate from other end (X% from max height)
+        inset = round(tmp * height)
+        position = round(position * width)
+
+    elif direction == "left":
+        tmp = 1.0 - inset  # Calculate from other end (X% from max width)
+        inset = round(tmp * width)
+        position = round(position * height)
+
+    x1,x2,y1,y2 ,duration = 0
+
     try:
-        inset = 10
-        position = 50
-        direction = ""
-        duration = ""
+        for left, mid, right in data_set:
+            left = left.strip().lower()
+            mid = mid.strip().lower()
+            right = right.strip()
+            if "scroll parameter" in mid:
+                if left == "auto scroll":
+                    if right.strip().lower()=="yes":
+                        pass
+                    else:
+                        return
+                elif left == "direction":
+                    if "up" or "down" or "left" or "right" == right.strip().lower():
+                        direction = right.strip().lower()
+
+                elif left == "duration":
+                    if right.strip().is_digit():
+                        duration = right.strip()
+
+                elif left == "inset":
+                    if right.strip().is_digit():
+                        inset = float(str(right.strip()).replace("%", "")) / 100.0
+
+                elif left == "position":
+                    if right.strip().is_digit():
+                        position = float(str(right.strip()).replace("%", "")) / 100.0
+                elif left == "max try":
+                    if right.strip().is_digit():
+                        max_try = right.strip()
+
+    except:
+        CommonUtil.Exception_Handler(sys.exc_info())
+        CommonUtil.ExecLog("Unable to parse data. Please write data in correct format",3)
+        return "zeuz_failed"
+
+    if direction == "up":
+        x1 = position + xstart_location
+        x2 = x1
+        y1 = ystart_location + inset
+        y2 = ystart_location
+        duration = height * 3.2
+    elif direction == "left":
+        x1 = xstart_location + inset
+        x2 = xstart_location
+        y1 = position + ystart_location
+        y2 = y1
+        duration = width * 3.2
+    else:
+        pass
+
+    try:
+
         if len(scrollable_element) == 0:
             return
         elif len(scrollable_element) == 1:
-            height = scrollable_element[0].size["height"]
-            width = scrollable_element[0].size["width"]
-            xstart_location = scrollable_element[0].location["x"] #Starting location of the x-coordinate of scrollable element
-            ystart_location = scrollable_element[0].location["y"] #Starting location of the y-coordinate of scrollable element
-            #float or integer expected here - convert into pixels
-            inset = float(str(inset).replace("%", "")) / 100.0  # Convert % to float
-            position = float(str(position).replace("%", "")) / 100.0  # Convert % to float
-            # Checks whether the height of the scroll area is greater than width then direction of swipe is up
-            if height > width:
-                direction = "up"
-            else:
-                direction = "left"
-            if direction == "up":
-                tmp = 1.0 - inset  # Calculate from other end (X% from max height)
-                inset = round(tmp * height)
-                position = round(position * width)
-
-                x1 = position + xstart_location
-                x2 = x1
-                y1 = ystart_location + height - (height - inset)
-                y2 = ystart_location
-
-                duration = height * 3.2
+            i=0
+            while i < max_try :
                 generic_driver.swipe(x1, y1, x2, y2, duration)
-            else:
-                tmp = 1.0 - inset  # Calculate from other end (X% from max width)
-                inset = round(tmp * width)
-                position = round(position * height)
+                i=i+1
 
-                x1 = xstart_location + height - (height- inset)
-                x2 = xstart_location   
-                y1 = position + ystart_location
-                y2 = y1
-
-                duration = width * 3.2
-                generic_driver.swipe(x1, y1, x2, y2, duration)
         else:
             pass
+
     except Exception:
                 errMsg = "Error could not auto scroll"
                 result = CommonUtil.Exception_Handler(sys.exc_info(), None, errMsg)
