@@ -580,7 +580,7 @@ def _switch(step_data_set):
 
 def auto_scroll():
     """
-    To auto scroll to an element which is scrollable, won't work if no scrollable is present
+    To auto scroll to an element which is scrollable, won't work if no scrollable element is present
     """
     global generic_driver
     scrollable_element = generic_driver.find_elements_by_android_uiautomator("new UiSelector().scrollable(true)")
@@ -588,19 +588,17 @@ def auto_scroll():
         inset = 10
         position = 50
         direction = ""
-        adjust = ""
         duration = ""
         if len(scrollable_element) == 0:
             return
         elif len(scrollable_element) == 1:
             height = scrollable_element[0].size["height"]
             width = scrollable_element[0].size["width"]
-            xstart_location = scrollable_element[0].location["x"]
-            ystart_location = scrollable_element[0].location["y"]
+            xstart_location = scrollable_element[0].location["x"] #Starting location of the x-coordinate of scrollable element
+            ystart_location = scrollable_element[0].location["y"] #Starting location of the y-coordinate of scrollable element
             #float or integer expected here - convert into pixels
             inset = float(str(inset).replace("%", "")) / 100.0  # Convert % to float
             position = float(str(position).replace("%", "")) / 100.0  # Convert % to float
-            adjust = int(adjust) if adjust else 0 
             # Checks whether the height of the scroll area is greater than width then direction of swipe is up
             if height > width:
                 direction = "up"
@@ -611,24 +609,22 @@ def auto_scroll():
                 inset = round(tmp * height)
                 position = round(position * width)
 
-                # Calculate exact pixel for the swipe
-                x1 = position
-                x2 = position
-                y1 = inset - 1
-                y2 = - adjust
+                x1 = position + xstart_location
+                x2 = x1
+                y1 = ystart_location + height - (height - inset)
+                y2 = ystart_location
 
                 duration = height * 3.2
                 generic_driver.swipe(x1, y1, x2, y2, duration)
             else:
                 tmp = 1.0 - inset  # Calculate from other end (X% from max width)
                 inset = round(tmp * width)
-                position = round(position * width)
+                position = round(position * height)
 
-                # Calculate exact pixel for the swipe
-                x1 = inset - 1
-                x2 = adjust    
-                y1 = position
-                y2 = position
+                x1 = xstart_location + height - (height- inset)
+                x2 = xstart_location   
+                y1 = position + ystart_location
+                y2 = y1
 
                 duration = width * 3.2
                 generic_driver.swipe(x1, y1, x2, y2, duration)
@@ -715,12 +711,15 @@ def _get_xpath_or_css_element(element_query, css_xpath, index_number=None, Filte
         if exception_cnd:
             return False
 
-        while len(all_matching_elements_visible_invisible) == 0 :
-            page_src=generic_driver.page_source
-            auto_scroll()
-            all_matching_elements_visible_invisible = generic_driver.find_elements(By.XPATH, element_query)
-            if page_src == generic_driver.page_source :
-                break
+        if index_number is not None and index_number > 0:
+            print("WARNING!! Does not support auto scroll")
+        else:
+            while len(all_matching_elements_visible_invisible) == 0 :
+                page_src=generic_driver.page_source
+                auto_scroll()
+                all_matching_elements_visible_invisible = generic_driver.find_elements(By.XPATH, element_query)
+                if page_src == generic_driver.page_source :
+                    break
              
         all_matching_elements = filter_elements(all_matching_elements_visible_invisible, Filter)
         if Filter == "allow hidden":
