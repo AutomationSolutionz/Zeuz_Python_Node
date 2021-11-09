@@ -32,6 +32,9 @@ xml_str = ""
 path = ""
 from System.Windows.Automation import *
 
+# Suppress the InsecureRequestWarning since we use verify=False parameter.
+from urllib3.exceptions import InsecureRequestWarning
+requests.packages.urllib3.disable_warnings(category=InsecureRequestWarning)
 
 def ExecLog(sModuleInfo, sDetails, iLogLevel):
     if iLogLevel == 1:
@@ -418,10 +421,9 @@ def Authenticate():
     if not auth:
         url = server + "/" if server[-1] != "/" else server
         url += "api/auth/token/verify?api_key=" + api_key
-        return executor.submit(requests.get, url,verify=False)
+        return executor.submit(requests.get, url, verify=False)
 
-
-def Upload(auth_thread, window):
+def Upload(auth_thread, window_name):
     global auth
     if not auth:
         auth = auth_thread.result().json()["token"]
@@ -431,7 +433,7 @@ def Upload(auth_thread, window):
     content = json.dumps({
         'html': xml_str,
         "exact_path": {"path": path, "priority": path_priority},
-        "window_name": window.Current.Name
+        "window_name": window_name
     })
 
     payload = json.dumps({
@@ -441,10 +443,10 @@ def Upload(auth_thread, window):
     headers = {
         'Authorization': Authorization,
         'Content-Type': 'application/json'
-        
+
     }
 
-    response = requests.request("POST", url, headers=headers, data=payload,verify=False)
+    response = requests.request("POST", url, headers=headers, data=payload, verify=False)
     response = response.json()
     del response["content"]
     print(response)
@@ -485,16 +487,13 @@ def main():
     try:
         global x, y, path_priority, element_plugin, auth, path, xml_str, findall_time, findall_count
         auth_thread = Authenticate()
-        print("Hover over the Element and press control")
         while True:
-            # if pyautogui.confirm('Start Inspecting?').strip().lower() != "ok":
-            #     return
+            os.system('pause')
+            print("Hover over the Element and press control")
             path = ""; xml_str = ""; path_priority = 0; element_plugin = False; findall_time = 0; findall_count = 0
             keyboard.wait("ctrl")
             x, y = pyautogui.position()
 
-            try: autoit.win_activate(screen_title)
-            except: pass
             print("Searching for the Element identifier")
 
             start = time.perf_counter()
@@ -503,7 +502,8 @@ def main():
                 return
             for window in windows:
                 if _found(window):
-                    xml_str += '<body Window="%s">' % window.Current.Name
+                    window_name = window.Current.Name
+                    xml_str += '<body Window="%s">' % window_name
                     path = create_path({}, window)
                     break
             else:
@@ -522,6 +522,8 @@ def main():
                 f.write(xml_str)
             element_time = round(time.perf_counter()-start, 3)
             sibling_time = 0
+            try: autoit.win_activate(screen_title)
+            except: pass
             sibling = pyautogui.confirm('Do you want SIBLING?')
             root = ET.fromstring(xml_str)
             if sibling.strip().lower() == "ok":
@@ -539,7 +541,7 @@ def main():
                 f.write(xml_str)
 
             start = time.perf_counter()
-            Upload(auth_thread, window)
+            Upload(auth_thread, window_name)
             Upload_time = round(time.perf_counter()-start, 3)
 
             print("\nElement searching time =", element_time, "sec")
@@ -547,7 +549,7 @@ def main():
             print("Coordinate remove time =", Remove_coordinate_time, "sec")
             print("Uploading to API  time =", Upload_time, "sec")
             print("start_findall time =", round(findall_time, 3), "sec", "Findall count =", findall_count)
-            break
+
     except:
         Exception_Handler(sys.exc_info())
         xml_str = ""

@@ -839,9 +839,9 @@ def cleanup_driver_instances():  # cleans up driver(selenium, appium) instances
             driver = shared.Remove_From_Shared_Variables("selenium_driver")
             if driver not in failed_tag_list:
                 Selenium.Tear_Down_Selenium()
-        if shared.Test_Shared_Variables("appium_driver"):
+        if shared.Test_Shared_Variables("appium_details"):
             import Framework.Built_In_Automation.Mobile.CrossPlatform.Appium.BuiltInFunctions as Appium
-            driver = shared.Remove_From_Shared_Variables("appium_driver")
+            driver = shared.Remove_From_Shared_Variables("appium_details")
             if driver not in failed_tag_list:
                 Appium.teardown_appium()
 

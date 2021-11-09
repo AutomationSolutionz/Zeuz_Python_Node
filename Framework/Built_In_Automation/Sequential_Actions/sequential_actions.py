@@ -46,7 +46,7 @@ from Framework.Utilities.CommonUtil import (
     passed_tag_list,
     failed_tag_list,
 )  # Allowed return strings, used to normalize pass/fail
-
+from Framework.Built_In_Automation.Desktop.Windows import BuiltInFunctions
 
 MODULE_NAME = inspect.getmodulename(__file__)
 temp_ini_file = os.path.join(
@@ -197,8 +197,12 @@ def Sequential_Actions(
             device_info = _device_info
             sr.Set_Shared_Variables("device_info", device_info, protected=True)
 
-        # Set default variables (Must be defined here in case anyone destroys all shared variables)
-        sr.Set_Shared_Variables("element_wait", 10)  # Default time for get_element() to find the element
+        element_wait = ConfigModule.get_config_value("Advanced Options", "element_wait")
+        try:
+            element_wait = float(element_wait)
+        except:
+            element_wait = 10.0
+        sr.Set_Shared_Variables("element_wait", element_wait)
 
         # Prepare step data for processing
         step_data = common.unmask_step_data(step_data)
@@ -990,7 +994,17 @@ def Run_Sequential_Actions(
 
                 # If middle column = conditional action, evaluate data set
                 elif "conditional action" in action_name or "if else" in action_name:
-                    if action_name.lower().strip() != "conditional action" and action_name.lower().strip() != "if else":
+                    if action_name.lower().strip() == "windows conditional action":
+                        result, to_skip = Conditional_Action_Handler(step_data, dataset_cnt)
+                        skip += to_skip
+                        skip_for_loop += to_skip
+                        if result in failed_tag_list:
+                            CommonUtil.ExecLog(sModuleInfo, "Returned result from Conditional Action Failed", 3)
+                            return result, skip_for_loop
+                        break
+
+
+                    elif action_name.lower().strip() != "conditional action" and action_name.lower().strip() != "if else":
                         # old style conditional action
                         result, to_skip = Conditional_Action_Handler(step_data, dataset_cnt)
                         skip += to_skip
@@ -1677,9 +1691,7 @@ def Loop_Action_Handler(data, row, dataset_cnt):
 
 def Conditional_Action_Handler(step_data, dataset_cnt):
     """ Process conditional actions, called only by Sequential_Actions() """
-
     sModuleInfo = inspect.currentframe().f_code.co_name + " : " + MODULE_NAME
-
 
     # Get module and dynamically load it
     # module = row[1].split(" ")[0]
@@ -1729,9 +1741,9 @@ def Conditional_Action_Handler(step_data, dataset_cnt):
             "Try our other action 'if else'",
             2)
         if result in failed_tag_list:  # Check result from previous action
-            logic_decision = "false"
+            logic_decision = False
         else:  # Passed / Skipped
-            logic_decision = "true"
+            logic_decision = True
 
     # *** Old method of conditional actions in the if statements below. Only kept for backwards compatibility *** #
 
@@ -1744,33 +1756,56 @@ def Conditional_Action_Handler(step_data, dataset_cnt):
                 if "optional parameter" in mid and "wait" in left:
                     wait = float(right.strip())
 
+            Element = LocateElement.Get_Element(data_set, eval(module).get_driver(), element_wait=wait)
+            if Element in failed_tag_list:
+                CommonUtil.ExecLog(sModuleInfo, "Conditional Actions could not find the element", 3)
+                logic_decision = False
+                log_msg += "Element is not found\n"
+            else:
+                logic_decision = True
+                log_msg += "Element is found\n"
+
+        except:  # Element doesn't exist, proceed with the step data following the fail/false path
+            CommonUtil.ExecLog(sModuleInfo, "Conditional Actions could not find the element", 3)
+            logic_decision = False
+            log_msg += "Element is not found\n"
+
+    elif module == "windows":
+        try:
+            wait = 10
+            for left, mid, right in data_set:
+                mid = mid.lower()
+                left = left.lower()
+                if "optional parameter" in mid and "wait" in left:
+                    wait = float(right.strip())
+
             start_time = time.time()
             end_time = start_time + wait
-            LocateElement.end = 7
             while True:
-                Element = LocateElement.Get_Element(
-                    data_set, eval(module).get_driver()
+                Element = BuiltInFunctions.Get_Element(
+                    data_set, wait
                 )  # Get the element object or "zeuz_failed"
-                time.sleep(wait/10)
+
                 if (Element not in failed_tag_list) or (time.time() >= end_time):
                     break
-            LocateElement.end = 7
+
             if Element in failed_tag_list:
                 CommonUtil.ExecLog(
                     sModuleInfo, "Conditional Actions could not find the element", 3
                 )
-                logic_decision = "false"
+                logic_decision = False
                 log_msg += "Element is not found\n"
             else:
-                logic_decision = "true"
+                logic_decision = True
                 log_msg += "Element is found\n"
 
         except:  # Element doesn't exist, proceed with the step data following the fail/false path
             CommonUtil.ExecLog(
                 sModuleInfo, "Conditional Actions could not find the element", 3
             )
-            logic_decision = "false"
+            logic_decision = False
             log_msg += "Element is not found\n"
+
 
     elif module == "common" or module == "database":  # compare variable or list, and based on the result conditional actions will work
         try:
@@ -1790,16 +1825,16 @@ def Conditional_Action_Handler(step_data, dataset_cnt):
                         "Conditional Actions Result is False, Variable doesn't match with given value",
                         1,
                     )
-                    logic_decision = "false"
+                    logic_decision = False
                 else:
-                    logic_decision = "true"
+                    logic_decision = True
             else:
-                logic_decision = "true"
+                logic_decision = True
         except:  # Element doesn't exist, proceed with the step data following the fail/false path
             CommonUtil.ExecLog(
                 sModuleInfo, "Conditional Actions could not find the variable", 3
             )
-            logic_decision = "false"
+            logic_decision = False
 
     elif module == "rest":
         CommonUtil.ExecLog(
@@ -1816,9 +1851,7 @@ def Conditional_Action_Handler(step_data, dataset_cnt):
             element_step_data[0]
         )  # Make sure the element step data we got back from above is good
         if (returned_step_data_list == []) or (returned_step_data_list == "zeuz_failed"):  # Element step data is bad, so fail
-            CommonUtil.ExecLog(
-                sModuleInfo, "Element data is bad: %s" % str(element_step_data), 3
-            )
+            CommonUtil.ExecLog(sModuleInfo, "Element data is bad: %s" % str(element_step_data), 3)
             return "zeuz_failed", []
         else:  # Element step data is good, so continue
             # Check if element from data set exists on device
@@ -1826,12 +1859,12 @@ def Conditional_Action_Handler(step_data, dataset_cnt):
                 Get_Response = getattr(eval(module), "Get_Response")
                 Element = Get_Response(element_step_data[0])
                 if Element == "zeuz_failed":  # Element doesn't exist, proceed with the step data following the fail/false path
-                    logic_decision = "false"
+                    logic_decision = False
                 else:  # Any other return means we found the element, proceed with the step data following the pass/true pass
-                    logic_decision = "true"
+                    logic_decision = True
             except Exception:  # Element doesn't exist, proceed with the step data following the fail/false path
                 CommonUtil.ExecLog(sModuleInfo, "Could not find element in the by the criteria...", 3)
-                logic_decision = "false"
+                logic_decision = False
                 return CommonUtil.Exception_Handler(sys.exc_info()), []
 
     elif module == "utility":
@@ -1861,14 +1894,14 @@ def Conditional_Action_Handler(step_data, dataset_cnt):
                 find = getattr(eval(module), "find")
                 Element = find(returned_step_data_list[0])
                 if Element == False:
-                    logic_decision = "false"
+                    logic_decision = False
                 else:
-                    logic_decision = "true"
+                    logic_decision = True
             except Exception:  # Element doesn't exist, proceed with the step data following the fail/false path
                 CommonUtil.ExecLog(
                     sModuleInfo, "Could not find element in the by the criteria...", 3
                 )
-                logic_decision = "false"
+                logic_decision = False
                 return CommonUtil.Exception_Handler(sys.exc_info()), []
 
     # *** Old method of conditional actions in the if statements above. Only kept for backwards compatibility *** #
@@ -1889,14 +1922,14 @@ def Conditional_Action_Handler(step_data, dataset_cnt):
         mid = mid.lower()
         if "true" in left and "conditional action" in mid:
             outer_skip += get_data_set_nums(str(right).strip())
-            if logic_decision == "true":
+            if logic_decision:
                 for i in get_data_set_nums(str(right).strip()):
                     next_level_step_data.append(i)
                 log_msg = if_else_log_for_actions(log_msg, next_level_step_data, "element")
 
         elif "false" in left and "conditional action" in mid:
             outer_skip += get_data_set_nums(str(right).strip())
-            if logic_decision == "false":
+            if not logic_decision:
                 for i in get_data_set_nums(str(right).strip()):
                     next_level_step_data.append(i)
                 log_msg = if_else_log_for_actions(log_msg, next_level_step_data, "element")
@@ -1968,10 +2001,10 @@ def Action_Handler(_data_set, action_row):
         action_subfield = sr.get_previous_response_variables_in_strings(action_subfield)
 
     if action_subfield.lower().startswith("windows"):
-        python_folder= []
+        python_folder = []
         for location in subprocess.getoutput("where python").split("\n"):
-	        if "Microsoft" not in location:
-		        python_folder.append(location)
+            if "Microsoft" not in location:
+                python_folder.append(location)
         try:
             python_location = "" if len(python_folder) == 0 else "by going to {}".format(python_folder[0].split("Python")[0] + "Python")
         except:
@@ -1979,13 +2012,13 @@ def Action_Handler(_data_set, action_row):
         if not 3.5 <= float(sys.version.split(" ")[0][0:3]) <= 3.8:
             error_msg = "You have the wrong Python version or bit"\
                 +"\nFollow this procedure"\
-                    +"\n1.Go to settings, then go to Apps and in search box type python and uninstall all python related things"\
-                        +"\n2.Delete your Python folder"\
-                            + python_location \
-                            +"\n3.Go to this link and download python https://www.python.org/ftp/python/3.8.10/python-3.8.10-amd64.exe"\
-                                +"\n4.During installation, give uncheck 'for all user' and check 'Add Python to Path'. This is very important."\
-                                    +"\n5.Relaunch zeuz node_cli.py"
-            CommonUtil.ExecLog(sModuleInfo, error_msg, 3,)
+                +"\n1.Go to settings, then go to Apps and in search box type python and uninstall all python related things"\
+                +"\n2.Delete your Python folder"\
+                + python_location \
+                +"\n3.Go to this link and download python https://www.python.org/ftp/python/3.8.10/python-3.8.10-amd64.exe"\
+                +"\n4.During installation, give uncheck 'for all user' and check 'Add Python to Path'. This is very important."\
+                +"\n5.Relaunch zeuz node_cli.py"
+            CommonUtil.ExecLog(sModuleInfo, error_msg, 3)
             return "zeuz_failed" 
 
     module, function, original_module, screenshot = common.get_module_and_function(action_name, action_subfield)  # New, get the module to execute

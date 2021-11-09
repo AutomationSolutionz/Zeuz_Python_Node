@@ -1110,7 +1110,7 @@ def kill_node():
 
 
 @logger
-def teardown_appium(data_set):
+def teardown_appium(dataset=None):
     """ Teardown of appium instance """
 
     sModuleInfo = inspect.currentframe().f_code.co_name + " : " + MODULE_NAME
@@ -2032,20 +2032,14 @@ def tap_location(data_set):
     if skip_or_not == False:
         return "passed"
 
-    # Parse data set
     try:
-        positions = []
-        posX, posY = data_set[0][2].replace(" ", "").split(",")
-        positions.append(
-            (posX, posY)
-        )  # Put coordinates in a tuple inside of a list - must be this way for appium_driver.tap
+        positions = data_set[0][2].replace(" ", "").split(",")
     except Exception:
-        errMsg = "Unable to parse data set"
-        return CommonUtil.Exception_Handler(sys.exc_info(), None, errMsg)
+        return CommonUtil.Exception_Handler(sys.exc_info())
 
     try:
-        appium_driver.tap(positions)  # Tap the location (must be in list format)
-        CommonUtil.ExecLog(sModuleInfo, "Tapped on location successfully", 0)
+        appium_driver.tap([positions])  # Tap the location (must be in list format)
+        CommonUtil.ExecLog(sModuleInfo, "Tapped on %s successfully" % positions, 1)
         return "passed"
     except Exception:
         errMsg = "Tapped on location unsuccessfully"
@@ -2673,48 +2667,48 @@ def Enter_Text_Appium(data_set):
         try:
             CommonUtil.ExecLog(sModuleInfo, "Clicking and clearing the text field", 1)
             Element.click()  # Set focus to textbox
-            Element = LocateElement.Get_Element(data_set, appium_driver)
-            if Element == "zeuz_failed":
-                CommonUtil.ExecLog(
-                    sModuleInfo, "Unable to locate your element with given data.", 3
-                )
-                CommonUtil.ExecLog(
-                    sModuleInfo, "Trying to see if there are contexts", 1
-                )
-                context_result = auto_switch_context_and_try("webview")
-                if context_result == "zeuz_failed":
-                    CommonUtil.ExecLog(
-                        sModuleInfo,
-                        "Unable to locate your element with different contexts.",
-                        3,
-                    )
-                    return "zeuz_failed"
-                else:
-                    context_switched = True
-                Element = LocateElement.Get_Element(data_set, appium_driver)
-                if Element == "zeuz_failed":
-                    CommonUtil.ExecLog(
-                        sModuleInfo,
-                        "Unable to locate your element with different contexts.",
-                        3,
-                    )
-                    if context_switched == True:
-                        CommonUtil.ExecLog(
-                            sModuleInfo,
-                            "Context was switched during this action.  Switching back to default Native Context",
-                            1,
-                        )
-                        context_result = auto_switch_context_and_try("native")
-                    CommonUtil.ExecLog(
-                        sModuleInfo,
-                        "Unable to locate your element with different contexts.",
-                        3,
-                    )
-                    return "zeuz_failed"
-                else:
-                    CommonUtil.ExecLog(
-                        sModuleInfo, "Found your element with different context", 1
-                    )
+            # Element = LocateElement.Get_Element(data_set, appium_driver)
+            # if Element == "zeuz_failed":
+            #     CommonUtil.ExecLog(
+            #         sModuleInfo, "Unable to locate your element with given data.", 3
+            #     )
+            #     CommonUtil.ExecLog(
+            #         sModuleInfo, "Trying to see if there are contexts", 1
+            #     )
+            #     context_result = auto_switch_context_and_try("webview")
+            #     if context_result == "zeuz_failed":
+            #         CommonUtil.ExecLog(
+            #             sModuleInfo,
+            #             "Unable to locate your element with different contexts.",
+            #             3,
+            #         )
+            #         return "zeuz_failed"
+            #     else:
+            #         context_switched = True
+            #     Element = LocateElement.Get_Element(data_set, appium_driver)
+            #     if Element == "zeuz_failed":
+            #         CommonUtil.ExecLog(
+            #             sModuleInfo,
+            #             "Unable to locate your element with different contexts.",
+            #             3,
+            #         )
+            #         if context_switched == True:
+            #             CommonUtil.ExecLog(
+            #                 sModuleInfo,
+            #                 "Context was switched during this action.  Switching back to default Native Context",
+            #                 1,
+            #             )
+            #             context_result = auto_switch_context_and_try("native")
+            #         CommonUtil.ExecLog(
+            #             sModuleInfo,
+            #             "Unable to locate your element with different contexts.",
+            #             3,
+            #         )
+            #         return "zeuz_failed"
+            #     else:
+            #         CommonUtil.ExecLog(
+            #             sModuleInfo, "Found your element with different context", 1
+            #         )
             Element.clear()  # Remove any text already existing
         except:
             # just in case we run into any error, we will still try to proceed
@@ -4131,55 +4125,31 @@ def Save_Attribute_appium(step_data):
     try:
         Element = LocateElement.Get_Element(step_data, appium_driver)
         if Element == "zeuz_failed":
-            CommonUtil.ExecLog(
-                sModuleInfo, "Unable to locate your element with given data.", 3
-            )
+            CommonUtil.ExecLog(sModuleInfo, "Unable to locate your element with given data.", 3)
             return "zeuz_failed"
-        else:
-            CommonUtil.ExecLog(
-                sModuleInfo,
-                "Target element was found. We will attempt to extract the attribute value that you provided",
-                1,
-            )
 
         for each_step_data_item in step_data:
             if "save parameter" in each_step_data_item[1]:
                 variable_name = each_step_data_item[2]
-                attribute_name = each_step_data_item[0]
+                attribute_name = each_step_data_item[0].strip().lower()
                 break
         try:
-            attribute_value = Element.get_attribute(attribute_name)
+            if attribute_name == "text":
+                attribute_value = Element.text
+            elif attribute_name == "tag":
+                attribute_value = Element.tag_name
+            elif attribute_name == "location":
+                attribute_value = Element.location
+            elif attribute_name == "size":
+                attribute_value = Element.size
+            else:
+                attribute_value = Element.get_attribute(attribute_name)
         except Exception as supported_attribute:
             CommonUtil.ExecLog(sModuleInfo, str(supported_attribute), 3)
             return CommonUtil.Exception_Handler(sys.exc_info())
 
-        CommonUtil.ExecLog(
-            sModuleInfo,
-            "Your attribute %s was found and value is %s"
-            % (attribute_name, attribute_value),
-            1,
-        )
-        if attribute_value == "":
-            CommonUtil.ExecLog(
-                sModuleInfo, "Unable to save attribute value as it is empty", 3
-            )
-            return "zeuz_failed"
+        return Shared_Resources.Set_Shared_Variables(variable_name, attribute_value)
 
-        result = Shared_Resources.Set_Shared_Variables(variable_name, attribute_value)
-
-        if result in failed_tag_list:
-            CommonUtil.ExecLog(
-                sModuleInfo,
-                "Value of Variable '%s' could not be saved!!!" % variable_name,
-                3,
-            )
-            return "zeuz_failed"
-        else:
-            Shared_Resources.Show_All_Shared_Variables()
-            CommonUtil.ExecLog(
-                sModuleInfo, "Value of Variable '%s' was saved" % variable_name, 1
-            )
-            return "passed"
     except Exception:
         return CommonUtil.Exception_Handler(sys.exc_info())
 
