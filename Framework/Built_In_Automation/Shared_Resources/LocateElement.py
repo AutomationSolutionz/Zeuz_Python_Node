@@ -578,11 +578,12 @@ def _switch(step_data_set):
         return CommonUtil.Exception_Handler(sys.exc_info())
 
 
-def auto_scroll(data_set):
+def auto_scroll(data_set,element_query):
     """
     To auto scroll to an element which is scrollable, won't work if no scrollable element is present
     """
     global generic_driver
+    sModuleInfo = inspect.currentframe().f_code.co_name + " : " + MODULE_NAME
     scrollable_element = generic_driver.find_elements_by_android_uiautomator("new UiSelector().scrollable(true)")
     inset = 10
     position = 50
@@ -604,7 +605,7 @@ def auto_scroll(data_set):
         inset = round(tmp * width)
         position = round(position * height)
 
-    x1,x2,y1,y2 ,duration = 0
+    x1,x2,y1,y2 ,duration = 0,0,0,0,10
 
     try:
         for left, mid, right in data_set:
@@ -638,7 +639,7 @@ def auto_scroll(data_set):
 
     except:
         CommonUtil.Exception_Handler(sys.exc_info())
-        CommonUtil.ExecLog("Unable to parse data. Please write data in correct format",3)
+        CommonUtil.ExecLog(sModuleInfo,"Unable to parse data. Please write data in correct format",1)
         return "zeuz_failed"
 
     if direction == "up":
@@ -654,7 +655,7 @@ def auto_scroll(data_set):
         y2 = y1
         duration = width * 3.2
     else:
-        pass
+        CommonUtil.ExecLog("Multiple scrollable element found.So Auto scroll will not respond.", 1)
 
     try:
 
@@ -663,7 +664,11 @@ def auto_scroll(data_set):
         elif len(scrollable_element) == 1:
             i=0
             while i < max_try :
+                page_src = generic_driver.page_source
                 generic_driver.swipe(x1, y1, x2, y2, duration)
+                all_matching_elements_visible_invisible = generic_driver.find_elements(By.XPATH, element_query)
+                if page_src == generic_driver.page_source or len(all_matching_elements_visible_invisible)!=0 :
+                    return all_matching_elements_visible_invisible
                 i=i+1
 
         else:
@@ -753,12 +758,8 @@ def _get_xpath_or_css_element(element_query, css_xpath, index_number=None, Filte
         if index_number is not None and index_number > 0:
             print("WARNING!! Does not support auto scroll")
         else:
-            while len(all_matching_elements_visible_invisible) == 0 :
-                page_src=generic_driver.page_source
-                auto_scroll()
-                all_matching_elements_visible_invisible = generic_driver.find_elements(By.XPATH, element_query)
-                if page_src == generic_driver.page_source :
-                    break
+            if len(all_matching_elements_visible_invisible) == 0 :
+                all_matching_elements_visible_invisible = auto_scroll(data_set,element_query)
              
         all_matching_elements = filter_elements(all_matching_elements_visible_invisible, Filter)
         if Filter == "allow hidden":
