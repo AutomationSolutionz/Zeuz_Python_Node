@@ -189,7 +189,7 @@ def Get_Element(step_data_set, driver, query_debug=False, return_all_elements=Fa
         if element_query == False:
             result = "zeuz_failed"
         elif query_type in ("xpath", "css", "unique"):
-            result = _get_xpath_or_css_element(element_query, query_type, index_number, Filter, return_all_elements, element_wait)
+            result = _get_xpath_or_css_element(element_query, query_type,step_data_set, index_number, Filter, return_all_elements, element_wait)
         else:
             result = "zeuz_failed"
 
@@ -583,6 +583,7 @@ def auto_scroll(data_set,element_query):
     To auto scroll to an element which is scrollable, won't work if no scrollable element is present
     """
     global generic_driver
+    all_matching_elements_visible_invisible =[]
     sModuleInfo = inspect.currentframe().f_code.co_name + " : " + MODULE_NAME
     scrollable_element = generic_driver.find_elements_by_android_uiautomator("new UiSelector().scrollable(true)")
     inset = 10
@@ -595,15 +596,6 @@ def auto_scroll(data_set,element_query):
     position = float(str(position).replace("%", "")) / 100.0
     max_try = 20
     direction = "up" if height > width else "left"
-    if direction == "up":
-        tmp = 1.0 - inset  # Calculate from other end (X% from max height)
-        inset = round(tmp * height)
-        position = round(position * width)
-
-    elif direction == "left":
-        tmp = 1.0 - inset  # Calculate from other end (X% from max width)
-        inset = round(tmp * width)
-        position = round(position * height)
 
     x1,x2,y1,y2 ,duration = 0,0,0,0,10
 
@@ -623,19 +615,15 @@ def auto_scroll(data_set,element_query):
                         direction = right.strip().lower()
 
                 elif left == "duration":
-                    if right.strip().is_digit():
                         duration = right.strip()
 
                 elif left == "inset":
-                    if right.strip().is_digit():
-                        inset = float(str(right.strip()).replace("%", "")) / 100.0
+                    inset = float(str(right.strip()).replace("%", "")) / 100.0
 
                 elif left == "position":
-                    if right.strip().is_digit():
-                        position = float(str(right.strip()).replace("%", "")) / 100.0
+                    position = float(str(right.strip()).replace("%", "")) / 100.0
                 elif left == "max try":
-                    if right.strip().is_digit():
-                        max_try = right.strip()
+                    max_try = right.strip()
 
     except:
         CommonUtil.Exception_Handler(sys.exc_info())
@@ -643,27 +631,50 @@ def auto_scroll(data_set,element_query):
         return "zeuz_failed"
 
     if direction == "up":
+        tmp = 1.0 - inset  # Calculate from other end (X% from max height)
+        inset = round(tmp * height)
+        position = round(position * width)
         x1 = position + xstart_location
         x2 = x1
         y1 = ystart_location + inset
         y2 = ystart_location
         duration = height * 3.2
+
+    elif direction == "down":
+        tmp = 1.0 - inset  # Calculate from other end (X% from max height)
+        inset = round(tmp * height)
+        position = round(position * width)
+        x1 = position + xstart_location
+        x2 = x1
+        y1 = ystart_location
+        y2 = ystart_location + inset
+        duration = height * 3.2
+
     elif direction == "left":
+        tmp = 1.0 - inset  # Calculate from other end (X% from max width)
+        inset = round(tmp * width)
+        position = round(position * height)
         x1 = xstart_location + inset
         x2 = xstart_location
         y1 = position + ystart_location
         y2 = y1
         duration = width * 3.2
-    else:
-        CommonUtil.ExecLog("Multiple scrollable element found.So Auto scroll will not respond.", 1)
+
+    elif direction == "right":
+        tmp = 1.0 - inset  # Calculate from other end (X% from max width)
+        inset = round(tmp * width)
+        position = round(position * height)
+        x1 = xstart_location
+        x2 = xstart_location + inset
+        y1 = position + ystart_location
+        y2 = y1
+        duration = width * 3.2
 
     try:
 
-        if len(scrollable_element) == 0:
-            return
-        elif len(scrollable_element) == 1:
+        if len(scrollable_element) == 1:
             i=0
-            while i < max_try :
+            while i < int(max_try) :
                 page_src = generic_driver.page_source
                 generic_driver.swipe(x1, y1, x2, y2, duration)
                 all_matching_elements_visible_invisible = generic_driver.find_elements(By.XPATH, element_query)
@@ -671,21 +682,24 @@ def auto_scroll(data_set,element_query):
                     return all_matching_elements_visible_invisible
                 i=i+1
 
+            return all_matching_elements_visible_invisible
+
         else:
-            pass
+            CommonUtil.ExecLog("Multiple scrollable element found.So Auto scroll will not respond.", 1)
 
     except Exception:
                 errMsg = "Error could not auto scroll"
                 result = CommonUtil.Exception_Handler(sys.exc_info(), None, errMsg)
                 return result, "", "", ""
 
-def _get_xpath_or_css_element(element_query, css_xpath, index_number=None, Filter="", return_all_elements=False, element_wait=None):
+def _get_xpath_or_css_element(element_query, css_xpath,data_set, index_number=None, Filter="", return_all_elements=False, element_wait=None):
     """
     Here, we actually execute the query based on css/xpath and then analyze if there are multiple.
     If we find multiple we give warning and send the first one we found.
     We also consider if user sent index. If they did, we send them the index they provided
     If return_all_elements = True then we return all elements.
     """
+    global generic_driver
     try:
         all_matching_elements_visible_invisible = False
         sModuleInfo = inspect.currentframe().f_code.co_name + " : " + MODULE_NAME
@@ -758,7 +772,8 @@ def _get_xpath_or_css_element(element_query, css_xpath, index_number=None, Filte
         if index_number is not None and index_number > 0:
             print("WARNING!! Does not support auto scroll")
         else:
-            if len(all_matching_elements_visible_invisible) == 0 :
+            scrollable_element = generic_driver.find_elements_by_android_uiautomator("new UiSelector().scrollable(true)")
+            if len(all_matching_elements_visible_invisible) == 0 and len(scrollable_element)>0 :
                 all_matching_elements_visible_invisible = auto_scroll(data_set,element_query)
              
         all_matching_elements = filter_elements(all_matching_elements_visible_invisible, Filter)
