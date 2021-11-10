@@ -3515,29 +3515,61 @@ def text_write(data_set):
     try:
         filepath = None
         value = ""
-        index = 0
+        line_no = None
+        operation = "overwrite"
         for left, _, right in data_set:
             left = left.lower().strip()
             if "file path" == left:
                 filepath = right.strip()
-                # Expand ~ (home directory of user) to absolute path.
-                if "~" in filepath:
-                    filepath = Path(os.path.expanduser(filepath))
-                filepath = Path(filepath)
+
             elif "line no" == left:
-                index = CommonUtil.parse_value_into_object(right.strip())
+                line_no = CommonUtil.parse_value_into_object(right.strip())
             elif "write into text file" == left:
                 value = right
+            elif "operation" == left:
+                Right = right.strip().lower()
+                if Right == "append":
+                    operation = Right
+                elif Right in ("overwrite", "rewrite", "new"):
+                    pass
+                else:
+                    CommonUtil.ExecLog(sModuleInfo, 'We only support "New", "Overwrite" and "Append" operations', 3)
+                    return "zeuz_failed"
 
-        with open(filepath) as text_file:
-            lines = text_file.readlines()
-        if not value.endswith("\n"):
-            value = value + "\n"
-        lines[index] = value
-        with open(filepath, "w") as text_file:
-            text_file.writelines(lines)
+        # Expand ~ (home directory of user) to absolute path.
+        if "~" in filepath:
+            filepath = Path(os.path.expanduser(filepath))
 
-        CommonUtil.ExecLog(sModuleInfo, "%s no line of %s was changed with the given text successfully" % (str(index), str(filepath)), 1)
+        filepath = Path(filepath)
+
+        if line_no is not None:
+            with open(filepath) as text_file:
+                lines = text_file.readlines()
+            if not value.endswith("\n"):
+                value = value + "\n"
+            lines[line_no] = value
+            with open(filepath, "w") as text_file:
+                text_file.writelines(lines)
+            CommonUtil.ExecLog(sModuleInfo, "%s no line of %s was changed with the given text successfully" % (str(line_no), str(filepath)), 1)
+
+        elif operation == "append":
+            exist = os.path.exists(filepath)
+            with open(filepath, 'a') as text_file:
+                text_file.write(value)
+            if exist:
+                CommonUtil.ExecLog(sModuleInfo, "Appended the given text into: %s" % str(filepath), 1)
+            else:
+                CommonUtil.ExecLog(sModuleInfo, "The file does not exist so creating a new file into: %s" % str(filepath), 1)
+
+        elif operation == "overwrite":
+            exist = os.path.exists(filepath)
+            with open(filepath, 'w') as text_file:
+                text_file.write(value)
+            if exist:
+                CommonUtil.ExecLog(sModuleInfo, "Overwritten the given text into: %s" % str(filepath), 1)
+            else:
+                CommonUtil.ExecLog(sModuleInfo, "The file does not exist so creating a new file into: %s" % str(filepath), 1)
+
         return "passed"
 
     except:
