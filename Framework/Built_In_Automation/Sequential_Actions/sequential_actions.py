@@ -46,7 +46,9 @@ from Framework.Utilities.CommonUtil import (
     passed_tag_list,
     failed_tag_list,
 )  # Allowed return strings, used to normalize pass/fail
-from Framework.Built_In_Automation.Desktop.Windows import BuiltInFunctions
+if os.name == 'nt':
+    from Framework.Built_In_Automation.Desktop.Windows import BuiltInFunctions
+
 
 MODULE_NAME = inspect.getmodulename(__file__)
 temp_ini_file = os.path.join(
