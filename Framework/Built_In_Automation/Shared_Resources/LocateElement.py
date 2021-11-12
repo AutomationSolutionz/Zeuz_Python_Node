@@ -590,12 +590,11 @@ def _get_xpath_or_css_element(element_query, css_xpath, index_number=None, Filte
         sModuleInfo = inspect.currentframe().f_code.co_name + " : " + MODULE_NAME
 
         exception_cnd = False
-        start = time.time()
         if element_wait is None:
             element_wait = int(sr.Get_Shared_Variables("element_wait"))
-        end = start + element_wait
+        end = time.time() + element_wait
 
-        while time.time() < end:
+        while True:
             if css_xpath == "unique" and (driver_type == "appium" or driver_type == "selenium"):  # for unique id
                 try:
                     unique_key = element_query[0]
@@ -648,6 +647,8 @@ def _get_xpath_or_css_element(element_query, css_xpath, index_number=None, Filte
                 all_matching_elements_visible_invisible = generic_driver.find_elements(By.CSS_SELECTOR, element_query)
 
             if all_matching_elements_visible_invisible and len(filter_elements(all_matching_elements_visible_invisible, "")) > 0:
+                break
+            elif time.time() > end:
                 break
         # end of while loop
 
