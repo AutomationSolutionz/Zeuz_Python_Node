@@ -17,6 +17,7 @@ from selenium.webdriver.support.ui import WebDriverWait
 from selenium.webdriver.support import expected_conditions as EC
 from selenium.webdriver.common.by import By
 import selenium
+from xml.etree.ElementTree import tostring, fromstring
 global WebDriver_Wait
 WebDriver_Wait = 2
 global generic_driver
@@ -578,119 +579,119 @@ def _switch(step_data_set):
         return CommonUtil.Exception_Handler(sys.exc_info())
 
 
-def auto_scroll(data_set,element_query):
+def auto_scroll(data_set, element_query):
     """
     To auto scroll to an element which is scrollable, won't work if no scrollable element is present
     """
     global generic_driver
-    all_matching_elements_visible_invisible =[]
+    all_matching_elements_visible_invisible = []
     sModuleInfo = inspect.currentframe().f_code.co_name + " : " + MODULE_NAME
     scrollable_element = generic_driver.find_elements_by_android_uiautomator("new UiSelector().scrollable(true)")
-    inset = 10
-    position = 50
+    if len(scrollable_element) == 0:
+        return []
+    elif len(scrollable_element) > 1:
+        CommonUtil.ExecLog(sModuleInfo, 'Multiple scrollable page found. So Auto scroll will not respond. Please use "Scroll to an element" action if you need scroll to find that element', 2)
+        return []
+    inset = 0.1
+    position = 0.5
     height = scrollable_element[0].size["height"]
     width = scrollable_element[0].size["width"]
     xstart_location = scrollable_element[0].location["x"]  # Starting location of the x-coordinate of scrollable element
     ystart_location = scrollable_element[0].location["y"]  # Starting location of the y-coordinate of scrollable element
-    inset = float(str(inset).replace("%", "")) / 100.0  # Convert % to float
-    position = float(str(position).replace("%", "")) / 100.0
-    max_try = 20
+    max_try = 15
     direction = "up" if height > width else "left"
-
-    x1,x2,y1,y2 ,duration = 0,0,0,0,10
+    duration = None
 
     try:
         for left, mid, right in data_set:
             left = left.strip().lower()
             mid = mid.strip().lower()
-            right = right.strip()
+            right = right.replace("%", "").replace(" ", "").lower()
             if "scroll parameter" in mid:
                 if left == "auto scroll":
-                    if right.strip().lower()=="yes":
-                        pass
-                    else:
+                    if right not in ("yes", "ok", "enable", "true"):
                         return
                 elif left == "direction":
-                    if "up" or "down" or "left" or "right" == right.strip().lower():
-                        direction = right.strip().lower()
-
+                    if right in ("up", "down", "left", "right"):
+                        direction = right
                 elif left == "duration":
-                        duration = right.strip()
-
+                    duration = float(right)
                 elif left == "inset":
-                    inset = float(str(right.strip()).replace("%", "")) / 100.0
-
+                    inset = float(right) / 100.0
                 elif left == "position":
-                    position = float(str(right.strip()).replace("%", "")) / 100.0
+                    position = float(right) / 100.0
                 elif left == "max try":
-                    max_try = right.strip()
-
+                    max_try = float(right)
     except:
-        CommonUtil.Exception_Handler(sys.exc_info())
-        CommonUtil.ExecLog(sModuleInfo,"Unable to parse data. Please write data in correct format",1)
-        return "zeuz_failed"
+        CommonUtil.Exception_Handler(sys.exc_info(), None, "Unable to parse data. Please write data in correct format")
+        return []
 
     if direction == "up":
-        tmp = 1.0 - inset  # Calculate from other end (X% from max height)
-        inset = round(tmp * height)
-        position = round(position * width)
-        x1 = position + xstart_location
+        tmp = 1.0 - inset
+        new_height = round(tmp * height)
+        new_width = round(position * width)
+        x1 = xstart_location + new_width
         x2 = x1
-        y1 = ystart_location + inset
+        y1 = ystart_location + new_height - 1
         y2 = ystart_location
-        duration = height * 3.2
+        if duration is None:
+            duration = height * 3.2
 
     elif direction == "down":
-        tmp = 1.0 - inset  # Calculate from other end (X% from max height)
-        inset = round(tmp * height)
-        position = round(position * width)
-        x1 = position + xstart_location
+        tmp = 1.0 - inset
+        new_height = round(tmp * height)
+        new_width = round(position * width)
+        x1 = xstart_location + new_width
         x2 = x1
-        y1 = ystart_location
-        y2 = ystart_location + inset
-        duration = height * 3.2
+        y1 = ystart_location + 1
+        y2 = ystart_location + new_height
+        if duration is None:
+            duration = height * 3.2
 
     elif direction == "left":
-        tmp = 1.0 - inset  # Calculate from other end (X% from max width)
-        inset = round(tmp * width)
-        position = round(position * height)
-        x1 = xstart_location + inset
+        tmp = 1.0 - inset
+        new_width = round(tmp * width)
+        new_height = round(position * height)
+        x1 = xstart_location + new_width - 1
         x2 = xstart_location
-        y1 = position + ystart_location
+        y1 = ystart_location + new_height
         y2 = y1
-        duration = width * 3.2
+        if duration is None:
+            duration = width * 3.2
 
     elif direction == "right":
-        tmp = 1.0 - inset  # Calculate from other end (X% from max width)
-        inset = round(tmp * width)
-        position = round(position * height)
-        x1 = xstart_location
-        x2 = xstart_location + inset
-        y1 = position + ystart_location
+        tmp = 1.0 - inset
+        new_width = round(tmp * width)
+        new_height = round(position * height)
+        x1 = xstart_location + 1
+        x2 = xstart_location + new_width
+        y1 = ystart_location + new_height
         y2 = y1
-        duration = width * 3.2
+        if duration is None:
+            duration = width * 3.2
+
+    else:
+        CommonUtil.ExecLog(sModuleInfo, "Direction should be among up, down, right or left", 3)
+        return []
 
     try:
-
-        if len(scrollable_element) == 1:
-            i=0
-            while i < int(max_try) :
-                page_src = generic_driver.page_source
-                generic_driver.swipe(x1, y1, x2, y2, duration)
-                all_matching_elements_visible_invisible = generic_driver.find_elements(By.XPATH, element_query)
-                if page_src == generic_driver.page_source or len(all_matching_elements_visible_invisible)!=0 :
-                    return all_matching_elements_visible_invisible
-                i=i+1
-
-            return all_matching_elements_visible_invisible
-
-        else:
-            CommonUtil.ExecLog("Multiple scrollable element found.So Auto scroll will not respond.", 1)
+        CommonUtil.ExecLog(sModuleInfo, "Auto scrolling with the following scroll parameter:\n" +
+           "Max_try: %s, Direction: %s, Duration: %s, Inset: %s, Position:%s\n" % (max_try, direction, duration, inset*100, position*100) +
+           "Calculated Coordinate: (%s,%s) to (%s,%s)" % (x1, y1, x2, y2), 1)
+        i = 0
+        while i < max_try:
+            page_src = tostring(fromstring(generic_driver.page_source).findall('.//*[@scrollable="true"]')[0]).decode()
+            generic_driver.swipe(x1, y1, x2, y2, duration)
+            all_matching_elements_visible_invisible = generic_driver.find_elements(By.XPATH, element_query)
+            if page_src == tostring(fromstring(generic_driver.page_source).findall('.//*[@scrollable="true"]')[0]).decode() or len(all_matching_elements_visible_invisible) != 0:
+                return all_matching_elements_visible_invisible
+            i += 1
+        return all_matching_elements_visible_invisible
 
     except Exception:
-                errMsg = "Error could not auto scroll"
-                result = CommonUtil.Exception_Handler(sys.exc_info(), None, errMsg)
-                return result, "", "", ""
+        CommonUtil.Exception_Handler(sys.exc_info(), None, "Error could not auto scroll")
+        return []
+
 
 def _get_xpath_or_css_element(element_query, css_xpath,data_set, index_number=None, Filter="", return_all_elements=False, element_wait=None):
     """
@@ -769,12 +770,10 @@ def _get_xpath_or_css_element(element_query, css_xpath,data_set, index_number=No
         if exception_cnd:
             return False
 
-        if index_number is not None and index_number > 0:
-            print("WARNING!! Does not support auto scroll")
-        else:
-            scrollable_element = generic_driver.find_elements_by_android_uiautomator("new UiSelector().scrollable(true)")
-            if len(all_matching_elements_visible_invisible) == 0 and len(scrollable_element)>0 :
-                all_matching_elements_visible_invisible = auto_scroll(data_set,element_query)
+        if driver_type == "appium" and index_number is not None and index_number > 0 and len(all_matching_elements_visible_invisible) == 0:
+            CommonUtil.ExecLog(sModuleInfo, "Element not found and we do not support Auto Scroll when index is provided", 2)
+        elif len(all_matching_elements_visible_invisible) == 0:
+            all_matching_elements_visible_invisible = auto_scroll(data_set, element_query)
              
         all_matching_elements = filter_elements(all_matching_elements_visible_invisible, Filter)
         if Filter == "allow hidden":
