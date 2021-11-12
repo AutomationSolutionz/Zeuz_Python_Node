@@ -1751,7 +1751,7 @@ def Conditional_Action_Handler(step_data, dataset_cnt):
 
     elif module == "appium" or module == "selenium":
         try:
-            wait = 0
+            wait = 10
             for left, mid, right in data_set:
                 mid = mid.lower()
                 left = left.lower()
