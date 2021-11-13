@@ -3549,86 +3549,88 @@ def modify_datetime(data_set):
     This action allows you to modify the date and time of a given datetime 
     object or today's date.
     """
-    
-    sModuleInfo = inspect.currentframe().f_code.co_name + " : " + MODULE_NAME
+    try:
+        sModuleInfo = inspect.currentframe().f_code.co_name + " : " + MODULE_NAME
 
-    from datetime import datetime, timedelta
-    from dateutil import parser
+        from datetime import datetime, timedelta
+        from dateutil import parser
 
-    data = None
-    var_name = None
-    date_format = None
+        data = None
+        var_name = None
+        date_format = None
 
-    fields = ["years", "months", "days", "hours", "minutes", "seconds"]
+        fields = ["years", "months", "days", "hours", "minutes", "seconds"]
 
-    def perform_mod(op, val, t):
-        """
-        op: one of the "fields" values.
-        t: datetime object
-        val: value to set.
-        """
+        def perform_mod(op, val, t):
+            """
+            op: one of the "fields" values.
+            t: datetime object
+            val: value to set.
+            """
 
-        try:
-            converted_val = int(val)
+            try:
+                converted_val = int(val)
 
-            if val[0] in ("+", "-",):
-                # Convert years and months to days, since timedelta does not
-                # support them.
-                # WARNING: This does not take into account the differences
-                # of days in different months (28, 29, 30, 31). It also does
-                # not take into account whether the year is a leap year.
-                if op == "months":
-                    converted_val *= 30
-                    op = "days"
-                elif op == "years":
-                    converted_val *= 365
-                    op = "days"
+                if val[0] in ("+", "-",):
+                    # Convert years and months to days, since timedelta does not
+                    # support them.
+                    # WARNING: This does not take into account the differences
+                    # of days in different months (28, 29, 30, 31). It also does
+                    # not take into account whether the year is a leap year.
+                    if op == "months":
+                        converted_val *= 30
+                        op = "days"
+                    elif op == "years":
+                        converted_val *= 365
+                        op = "days"
 
-                # A relative change of datetime is requested
-                delta = timedelta(**{op: converted_val})
-                t += delta
-            else:
-                # A fixed change of datetime is requested
-                t = t.replace(**{op[:-1]: converted_val})
+                    # A relative change of datetime is requested
+                    delta = timedelta(**{op: converted_val})
+                    t += delta
+                else:
+                    # A fixed change of datetime is requested
+                    t = t.replace(**{op[:-1]: converted_val})
 
-        except:
-            CommonUtil.ExecLog(
-                sModuleInfo,
-                "Failed to modify the '%s' of the given datetime: '%s'\n"
-                "Invalid value: %s" % (t, t, val),
-                3
-            )
-            traceback.print_exc()
+            except:
+                CommonUtil.ExecLog(
+                    sModuleInfo,
+                    "Failed to modify the '%s' of the given datetime: '%s'\n"
+                    "Invalid value: %s" % (t, t, val),
+                    3
+                )
+                traceback.print_exc()
 
-        return t
+            return t
 
-    for left, mid, right in data_set:
-        left = left.strip().lower()
+        for left, mid, right in data_set:
+            left = left.strip().lower()
 
-        if "data" in left:
-            if right.strip().lower() == "today":
-                data = datetime.today()
-            else:
-                data = parser.parse(right.strip())
-            continue
-        if "action" in mid:
-            var_name = right.strip()
-            continue
-        if "format" in left:
-            date_format = right
-            continue
+            if "data" in left:
+                if right.strip().lower() == "today":
+                    data = datetime.today()
+                else:
+                    data = parser.parse(right.strip())
+                continue
+            if "action" in mid:
+                var_name = right.strip()
+                continue
+            if "format" in left:
+                date_format = right
+                continue
 
-        right = right.strip()
-        if left in fields:
-            data = perform_mod(left, right, data)
+            right = right.strip()
+            if left in fields:
+                data = perform_mod(left, right, data)
 
-    if date_format:
-        data = data.strftime(date_format)
-    else:
-        data = str(data)
+        if date_format:
+            data = data.strftime(date_format)
+        else:
+            data = str(data)
 
-    CommonUtil.ExecLog(sModuleInfo, "Modified datetime. New value: %s" % data, 1)
-    return sr.Set_Shared_Variables(var_name, data)
+        CommonUtil.ExecLog(sModuleInfo, "Modified datetime. New value: %s" % data, 1)
+        return sr.Set_Shared_Variables(var_name, data)
+    except:
+        return CommonUtil.Exception_Handler(sys.exc_info())
 
 
 @logger
