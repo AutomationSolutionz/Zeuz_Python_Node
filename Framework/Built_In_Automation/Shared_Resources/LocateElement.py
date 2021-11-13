@@ -579,7 +579,7 @@ def _switch(step_data_set):
         return CommonUtil.Exception_Handler(sys.exc_info())
 
 
-def auto_scroll(data_set, element_query):
+def auto_scroll_appium(data_set, element_query):
     """
     To auto scroll to an element which is scrollable, won't work if no scrollable element is present
     """
@@ -680,8 +680,9 @@ def auto_scroll(data_set, element_query):
            "Calculated Coordinate: (%s,%s) to (%s,%s)" % (x1, y1, x2, y2), 1)
         i = 0
         while i < max_try:
+            # We will try to match the outerHTML of the scrollable element to determine the end of the scroll.
             page_src = tostring(fromstring(generic_driver.page_source).findall('.//*[@scrollable="true"]')[0]).decode()
-            generic_driver.swipe(x1, y1, x2, y2, duration)
+            generic_driver.swipe(x1, y1, x2, y2, duration * 1000)  # duration seconds to milliseconds
             all_matching_elements_visible_invisible = generic_driver.find_elements(By.XPATH, element_query)
             if page_src == tostring(fromstring(generic_driver.page_source).findall('.//*[@scrollable="true"]')[0]).decode() or len(all_matching_elements_visible_invisible) != 0:
                 return all_matching_elements_visible_invisible
@@ -773,7 +774,7 @@ def _get_xpath_or_css_element(element_query, css_xpath,data_set, index_number=No
         if driver_type == "appium" and index_number is not None and index_number > 0 and len(all_matching_elements_visible_invisible) == 0:
             CommonUtil.ExecLog(sModuleInfo, "Element not found and we do not support Auto Scroll when index is provided", 2)
         elif driver_type == "appium" and len(all_matching_elements_visible_invisible) == 0:
-            all_matching_elements_visible_invisible = auto_scroll(data_set, element_query)
+            all_matching_elements_visible_invisible = auto_scroll_appium(data_set, element_query)
              
         all_matching_elements = filter_elements(all_matching_elements_visible_invisible, Filter)
         if Filter == "allow hidden":
