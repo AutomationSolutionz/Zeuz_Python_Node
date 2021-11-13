@@ -1,3 +1,4 @@
+import json
 import poplib
 import smtplib, ssl, email, imaplib
 import time
@@ -240,34 +241,21 @@ def delete_mail(
         select_mailbox,
         imap_pass,
         subject_to_check,
-        body,
+        text,
         sender_email,
-        rcvremail,
+        receiver_email,
         flagged_email,
         check_email,
         exact_date,
         after_date,
-        before_date
-
+        before_date,
+        wait=10.0
 ):
     sModuleInfo = inspect.currentframe().f_code.co_name + " : " + MODULE_NAME
 
-    host = imap_host
-    user = imap_user
-    password = imap_pass
-    mbox = select_mailbox
-    subject = subject_to_check
-    text = body
-    senderid = sender_email
-    receiverid = rcvremail
-    fmail = flagged_email.lower()
-    chkmail = check_email.lower()
-    exdate = exact_date
-    adate = after_date
-    bdate = before_date
-    time.sleep(5)
+    # time.sleep(5)
 
-    with MailBox(host).login(user, password, initial_folder=mbox) as mailboxi:
+    with MailBox(imap_host).login(imap_user, imap_pass, initial_folder=select_mailbox) as mailboxi:
 
         clauses = []
 
@@ -275,44 +263,42 @@ def delete_mail(
             dt = datetime.strptime(dt, '%Y-%m-%d')
             return dt
 
-        # subject = None
-        # text = None
-        # senderid = None
-        # receiverid = None
-        # fmail = None
-        # chkmail = None
-        # exdate = None
-
-        if subject:
-            clauses.append(AND(subject=subject))
+        if subject_to_check:
+            clauses.append(AND(subject=subject_to_check))
         if text:
             clauses.append(AND(text=text))
-        if senderid:
-            clauses.append(AND(from_=senderid))
-        if chkmail:
-            if 'true' == chkmail:
-                clauses.append(AND(seen=True))
-            else:
+        if sender_email:
+            clauses.append(AND(from_=sender_email))
+        if check_email:
+            if check_email in ("false", "unseen", "unread", "unchecked", "no"):
                 clauses.append(AND(seen=False))
-        if fmail:
-            if 'true' == fmail:
+            else:
+                clauses.append(AND(seen=True))
+        if flagged_email:
+            if flagged_email in ("true", "ok", "yes", "flag", "flagged"):
                 clauses.append(AND(flagged=True))
             else:
                 clauses.append(AND(flagged=False))
-        if receiverid:
-            clauses.append(AND(to=receiverid))
-        if exdate:
-            f = gt(exdate)
+        if receiver_email:
+            clauses.append(AND(to=receiver_email))
+        if exact_date:
+            f = gt(exact_date)
             clauses.append(AND(date=datetime.date(f)))
-        if adate:
-            a = gt(adate)
+        if after_date:
+            a = gt(after_date)
             clauses.append(AND(date_gte=datetime.date(a)))
-        if bdate:
-            b = gt(bdate)
+        if before_date:
+            b = gt(before_date)
             clauses.append(AND(date_lt=datetime.date(b)))
 
+        end = time.time() + wait
+        while True:
+            all_mails = list(mailboxi.fetch(AND(*clauses)))
+            if len(all_mails) > 0 or time.time() > end:
+                break
+
         mail_list = []
-        for mail in mailboxi.fetch(AND(*clauses)):
+        for mail in all_mails:
             mail_list.append({
                 "uid": mail.uid,
                 "from": mail.from_,
@@ -322,7 +308,9 @@ def delete_mail(
                 "html": mail.html,
             })
 
-        CommonUtil.ExecLog(sModuleInfo, str(mail_list), 1)
+        try: log_msg = json.dumps(mail_list, indent=2)
+        except: log_msg = str(mail_list)
+        CommonUtil.ExecLog(sModuleInfo, "Deleting the following mails:" + log_msg, 1)
         mailboxi.delete([mail["uid"] for mail in mail_list])
 
 
@@ -384,6 +372,7 @@ def save_mail(
             all_mails = list(mailboxi.fetch(AND(*clauses)))
             if len(all_mails) > 0 or time.time() > end:
                 break
+
         mail_to, mail_from, subject, date, text, html_body = [], [], [], [], [], []
         for msg in all_mails:
             mail_from.append(msg.from_)

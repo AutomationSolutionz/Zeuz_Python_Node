@@ -3678,56 +3678,51 @@ def delete_mail_action(data_set):
         subject_to_check = ""
         body = ""
         sender_email = ""
-        rcvremail = ""
+        receiver_email = ""
         flagged_email =""
         check_email =""
         exact_date = ""
         after_date = ""
         before_date = ""
+        wait = 10.0
 
         for left, mid, right in data_set:
-            left = left.lower()
+            left = left.strip().lower()
             right = right.strip()
-
-            if "imap host" in left:
+            if "imap host" == left:
                 imap_host = right
-            elif "imap user" in left:
+            elif "imap user" == left:
                 imap_user = right
-
-            elif "inbox" in left:
+            elif "inbox" == left:
                 select_mailbox = right
-
-            elif "imap pass" in left:
+            elif "imap pass" == left:
                 imap_pass = right
-
-            elif "subject" in left:
+            elif "subject" == left:
                 subject_to_check = right
-            elif "text" in left:
+            elif "text" == left:
                 body = right
-            elif "sender email" in left:
+            elif "sender email" == left:
                 sender_email = right
-            elif "receiver email" in left:
-                rcvremail = right
-            elif "flagged email" in left:
-                flagged_email = right
-            elif "checked email" in left:
-                check_email = right
-            elif "exact date" in left:
+            elif "receiver email" == left:
+                receiver_email = right
+            elif "flagged email" == left:
+                flagged_email = right.lower()
+            elif "checked email" == left:
+                check_email = right.lower()
+            elif "exact date" == left:
                 exact_date = right
-            elif "after date" in left:
+            elif "after date" == left:
                 after_date = right
-            elif "before date" in left:
+            elif "before date" == left:
                 before_date = right
+            elif "wait" == left:
+                wait = float(right.strip())
 
-        if imap_host == "" or imap_user == "" or imap_pass == ""  or select_mailbox == "" :
-            CommonUtil.ExecLog(
-                sModuleInfo,
-                "please provide the imap credentials for your mail server, see action help",
-                3,
-            )
-
+        if imap_host == "" or imap_user == "" or imap_pass == "" or select_mailbox == "":
+            CommonUtil.ExecLog(sModuleInfo, "Please provide the imap credentials for your mail server, see action help", 3)
             return "zeuz_failed"
-        result = delete_mail(
+
+        delete_mail(
             imap_host,
             imap_user,
             select_mailbox,
@@ -3735,15 +3730,14 @@ def delete_mail_action(data_set):
             subject_to_check,
             body,
             sender_email,
-            rcvremail,
+            receiver_email,
             flagged_email,
             check_email,
             exact_date,
             after_date,
-            before_date
+            before_date,
+            wait
         )
-        print(result)
-
         return "passed"
     except:
         return CommonUtil.Exception_Handler(sys.exc_info())
