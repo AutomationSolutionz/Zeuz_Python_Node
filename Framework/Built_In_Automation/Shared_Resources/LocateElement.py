@@ -635,7 +635,7 @@ def auto_scroll_appium(data_set, element_query):
         y1 = ystart_location + new_height - 1
         y2 = ystart_location
         if duration is None:
-            duration = height * 3.2
+            duration = height * 0.0032
 
     elif direction == "down":
         tmp = 1.0 - inset
@@ -646,7 +646,7 @@ def auto_scroll_appium(data_set, element_query):
         y1 = ystart_location + 1
         y2 = ystart_location + new_height
         if duration is None:
-            duration = height * 3.2
+            duration = height * 0.0032
 
     elif direction == "left":
         tmp = 1.0 - inset
@@ -657,7 +657,7 @@ def auto_scroll_appium(data_set, element_query):
         y1 = ystart_location + new_height
         y2 = y1
         if duration is None:
-            duration = width * 3.2
+            duration = width * 0.0032
 
     elif direction == "right":
         tmp = 1.0 - inset
@@ -668,7 +668,7 @@ def auto_scroll_appium(data_set, element_query):
         y1 = ystart_location + new_height
         y2 = y1
         if duration is None:
-            duration = width * 3.2
+            duration = width * 0.0032
 
     else:
         CommonUtil.ExecLog(sModuleInfo, "Direction should be among up, down, right or left", 3)
