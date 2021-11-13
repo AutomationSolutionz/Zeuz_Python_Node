@@ -373,15 +373,10 @@ def save_mail(
             if len(all_mails) > 0 or time.time() > end:
                 break
 
-        mail_to, mail_from, subject, date, text, html_body = [], [], [], [], [], []
+        value = []
         for msg in all_mails:
-            mail_from.append(msg.from_)
-            mail_to.append(msg.to)
-            subject.append(msg.subject)
-            date.append(msg.date)
-            text.append(msg.text)
-            html_body.append(msg.html)
-        return {"Sender": mail_from, "Receiver": mail_to, "Subject": subject, "Date": date, "Text": text, "htmlBody": html_body}
+            value.append({"Sender": msg.from_, "Receiver": msg.to, "Subject": msg.subject, "Date": msg.date, "Text": msg.text, "htmlBody": msg.html})
+        return value
 
         # if adate:
         #     if bdate:
