@@ -3759,90 +3759,76 @@ def save_mail_action(data_set):
         select_mailbox = ""
         imap_pass = ""
         subject_to_check = ""
-        body = ""
+        text = ""
         sender_email = ""
-        rcvremail = ""
-        flagged_email =""
-        check_email =""
+        receiver_email = ""
+        flagged_email = ""
+        check_email = ""
         exact_date = ""
         after_date = ""
         before_date = ""
         variable_name = None
+        wait = 10.0
 
         for left, mid, right in data_set:
-
-            left = left.lower()
+            left = left.lower().strip()
             right = right.strip()
-
-            if "imap host" in left:
+            if "imap host" == left:
                 imap_host = right
-            elif "imap user" in left:
+            elif "imap user" == left:
                 imap_user = right
-
-            elif "inbox" in left:
+            elif "inbox" == left:
                 select_mailbox = right
-
-            elif "imap pass" in left:
+            elif "imap pass" == left:
                 imap_pass = right
-
-            elif "subject" in left:
+            elif "subject" == left:
                 subject_to_check = right
-            elif "text" in left:
-                body = right
-            elif "sender email" in left:
+            elif "text" == left:
+                text = right
+            elif "sender email" == left:
                 sender_email = right
-            elif "receiver email" in left:
-                rcvremail = right
-            elif "flagged email" in left:
-                flagged_email = right
-            elif "checked email" in left:
-                check_email = right
-            elif "exact date" in left:
+            elif "receiver email" == left:
+                receiver_email = right
+            elif "flagged email" == left:
+                flagged_email = right.lower()
+            elif "checked email" == left:
+                check_email = right.lower()
+            elif "exact date" == left:
                 exact_date = right
-            elif "after date" in left:
+            elif "after date" == left:
                 after_date = right
-            elif "before date" in left:
+            elif "before date" == left:
                 before_date = right
-            elif "action" in mid:
+            elif "action" == mid:
                 variable_name = right.strip()
+            elif "wait" == left:
+                wait = float(right.strip())
 
-        if imap_host == "" or imap_user == "" or imap_pass == ""  or select_mailbox == "" :
-            CommonUtil.ExecLog(
-                sModuleInfo,
-                "please provide the imap credentials for your mail server, see action help",
-                3,
-            )
-        if variable_name =="":
-            CommonUtil.ExecLog(
-                sModuleInfo,
-                "please provide variable name",
-                3,
-            )
+        if imap_host == "" or imap_user == "" or imap_pass == "" or select_mailbox == "":
+            CommonUtil.ExecLog(sModuleInfo, "please provide the imap credentials for your mail server, see action help", 3)
             return "zeuz_failed"
+        if variable_name == "":
+            CommonUtil.ExecLog(sModuleInfo, "please provide variable name", 3)
+            return "zeuz_failed"
+
         result = save_mail(
             imap_host,
             imap_user,
             select_mailbox,
             imap_pass,
             subject_to_check,
-            body,
+            text,
             sender_email,
-            rcvremail,
+            receiver_email,
             flagged_email,
             check_email,
             exact_date,
             after_date,
-            before_date
+            before_date,
+            wait
         )
 
-        CommonUtil.ExecLog(
-            sModuleInfo,
-            str(result),
-            1,
-        )
-        variable_value = result
-
-        sr.Set_Shared_Variables(variable_name, variable_value)
+        sr.Set_Shared_Variables(variable_name, result)
         return "passed"
     except:
         return CommonUtil.Exception_Handler(sys.exc_info())

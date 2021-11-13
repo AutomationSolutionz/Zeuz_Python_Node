@@ -327,38 +327,23 @@ def delete_mail(
 
 
 def save_mail(
-imap_host,
+        imap_host,
         imap_user,
         select_mailbox,
         imap_pass,
         subject_to_check,
-        body,
+        text,
         sender_email,
-        rcvremail,
+        receiver_email,
         flagged_email,
         check_email,
         exact_date,
         after_date,
-        before_date
+        before_date,
+        wait
 ):
-    sModuleInfo = inspect.currentframe().f_code.co_name + " : " + MODULE_NAME
-
-    host = imap_host
-    user = imap_user
-    password = imap_pass
-    mbox = select_mailbox
-    subject = subject_to_check
-    text = body
-    senderid = sender_email
-    receiverid = rcvremail
-    fmail = flagged_email.lower()
-    chkmail = check_email.lower()
-    exdate = exact_date
-    adate = after_date
-    bdate = before_date
-    time.sleep(5)
-
-    with MailBox(host).login(user, password, initial_folder=mbox) as mailboxi:
+    # time.sleep(5)
+    with MailBox(imap_host).login(imap_user, imap_pass, initial_folder=select_mailbox) as mailboxi:
 
         clauses = []
 
@@ -366,41 +351,49 @@ imap_host,
             dt = datetime.strptime(dt, '%Y-%m-%d')
             return dt
 
-        # subject = None
-        # text = None
-        # senderid = None
-        # receiverid = None
-        # fmail = None
-        # chkmail = None
-        # exdate = None
-
-        if subject:
-            clauses.append(AND(subject=subject))
+        if subject_to_check:
+            clauses.append(AND(subject=subject_to_check))
         if text:
             clauses.append(AND(text=text))
-        if senderid:
-            clauses.append(AND(from_=senderid))
-        if chkmail:
-            if 'true' == chkmail:
-                clauses.append(AND(seen=True))
-            else:
+        if sender_email:
+            clauses.append(AND(from_=sender_email))
+        if check_email:
+            if check_email in ("false", "unseen", "unread", "unchecked", "no"):
                 clauses.append(AND(seen=False))
-        if fmail:
-            if 'true' == fmail:
+            else:
+                clauses.append(AND(seen=True))
+        if flagged_email:
+            if flagged_email in ("true", "ok", "yes", "flag", "flagged"):
                 clauses.append(AND(flagged=True))
             else:
                 clauses.append(AND(flagged=False))
-        if receiverid:
-            clauses.append(AND(to=receiverid))
-        if exdate:
-            f = gt(exdate)
+        if receiver_email:
+            clauses.append(AND(to=receiver_email))
+        if exact_date:
+            f = gt(exact_date)
             clauses.append(AND(date=datetime.date(f)))
-        if adate:
-            a = gt(adate)
+        if after_date:
+            a = gt(after_date)
             clauses.append(AND(date_gte=datetime.date(a)))
-        if bdate:
-            b = gt(bdate)
+        if before_date:
+            b = gt(before_date)
             clauses.append(AND(date_lt=datetime.date(b)))
+
+        end = time.time() + wait
+        while True:
+            all_mails = list(mailboxi.fetch(AND(*clauses)))
+            if len(all_mails) > 0 or time.time() > end:
+                break
+        mail_to, mail_from, subject, date, text, html_body = [], [], [], [], [], []
+        for msg in all_mails:
+            mail_from.append(msg.from_)
+            mail_to.append(msg.to)
+            subject.append(msg.subject)
+            date.append(msg.date)
+            text.append(msg.text)
+            html_body.append(msg.html)
+        return {"Sender": mail_from, "Receiver": mail_to, "Subject": subject, "Date": date, "Text": text, "htmlBody": html_body}
+
         # if adate:
         #     if bdate:
         #
@@ -408,52 +401,45 @@ imap_host,
         #         b = gt(bdate)
         #         clauses.append(AND(date_gte=datetime.date(a), date_lt=datetime.date(b)))
 
-        mail_from = [msg.from_ for msg in mailboxi.fetch(AND(*clauses))]
-        mail_to = [msg.to for msg in mailboxi.fetch(AND(*clauses))]
-        subject = [msg.subject for msg in mailboxi.fetch(AND(*clauses))]
-        date =[msg.date for msg in mailboxi.fetch(AND(*clauses))]
-        text = [msg.text for msg in mailboxi.fetch(AND(*clauses))]
-        html_body = [msg.html for msg in mailboxi.fetch(AND(*clauses))]
+        # mail_from = [msg.from_ for msg in mailboxi.fetch(AND(*clauses))]
+        # mail_to = [msg.to for msg in mailboxi.fetch(AND(*clauses))]
+        # subject = [msg.subject for msg in mailboxi.fetch(AND(*clauses))]
+        # date =[msg.date for msg in mailboxi.fetch(AND(*clauses))]
+        # text = [msg.text for msg in mailboxi.fetch(AND(*clauses))]
+        # html_body = [msg.html for msg in mailboxi.fetch(AND(*clauses))]
 
-        mail_list = []
-        for mail in mailboxi.fetch(AND(*clauses)):
-            mail_list.append({
-                "uid": mail.uid,
-                "from": mail.from_,
-                "subject": mail.subject,
-                "to": mail.to,
-                "text": mail.text,
-                "html": mail.html,
-            })
+        # mail_list = []
+        # for mail in mailboxi.fetch(AND(*clauses)):
+        #     mail_list.append({
+        #         "uid": mail.uid,
+        #         "from": mail.from_,
+        #         "subject": mail.subject,
+        #         "to": mail.to,
+        #         "text": mail.text,
+        #         "html": mail.html,
+        #     })
+        #
+        # CommonUtil.ExecLog(sModuleInfo, str(mail_list), 1)
 
-        CommonUtil.ExecLog(sModuleInfo, str(mail_list), 1)
+        # def listToString(s):
+        #     # initialize an empty string
+        #     str1 = " "
+        #
+        #     # return string
+        #     return str1.join(s)
 
-        def listToString(s):
-            # initialize an empty string
-            str1 = " "
-
-            # return string
-            return str1.join(s)
-
-        mail_from = mail_from
-        mail_to = list(mail_to)
-        subject = subject
-        text = text
-        html_body = html_body
-
-        mail = dict()
-        if mail_from:
-            mail.update(Sender=mail_from)
-        if mail_to:
-            mail.update(Receiver=mail_to)
-        if subject:
-            mail.update(Subject=subject)
-        if date:
-            mail.update(Date=date)
-        if text:
-            mail.update(Text=text)
-        if html_body:
-            mail.update(htmlBody=html_body)
-
-        print(mail)
-        return mail
+        # mail = dict()
+        # if mail_from:
+        #     mail.update(Sender=mail_from)
+        # if mail_to:
+        #     mail.update(Receiver=mail_to)
+        # if subject:
+        #     mail.update(Subject=subject)
+        # if date:
+        #     mail.update(Date=date)
+        # if text:
+        #     mail.update(Text=text)
+        # if html_body:
+        #     mail.update(htmlBody=html_body)
+        #
+        # return mail
