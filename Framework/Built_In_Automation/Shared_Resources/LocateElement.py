@@ -772,7 +772,7 @@ def _get_xpath_or_css_element(element_query, css_xpath,data_set, index_number=No
 
         if driver_type == "appium" and index_number is not None and index_number > 0 and len(all_matching_elements_visible_invisible) == 0:
             CommonUtil.ExecLog(sModuleInfo, "Element not found and we do not support Auto Scroll when index is provided", 2)
-        elif len(all_matching_elements_visible_invisible) == 0:
+        elif driver_type == "appium" and len(all_matching_elements_visible_invisible) == 0:
             all_matching_elements_visible_invisible = auto_scroll(data_set, element_query)
              
         all_matching_elements = filter_elements(all_matching_elements_visible_invisible, Filter)
