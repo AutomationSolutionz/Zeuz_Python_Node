@@ -13,6 +13,7 @@
 - **[Change]** Settings.conf variables are changed
 - **[Fix]** Appium teardown is fixed
 - **[Add]** Desktop conditional if else action is added
+- **[Fix]** Read Email and Delete Email actions are fixed
 
 ### [14.6.0] [October 31, 2021]
 - **[Add]** Add support for specifying custom log directory. Usage:
