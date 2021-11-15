@@ -46,8 +46,6 @@ from Framework.Utilities.CommonUtil import (
     passed_tag_list,
     failed_tag_list,
 )  # Allowed return strings, used to normalize pass/fail
-if os.name == 'nt':
-    from Framework.Built_In_Automation.Desktop.Windows import BuiltInFunctions
 
 
 MODULE_NAME = inspect.getmodulename(__file__)
@@ -1774,6 +1772,7 @@ def Conditional_Action_Handler(step_data, dataset_cnt):
 
     elif module == "windows":
         try:
+            from Framework.Built_In_Automation.Desktop.Windows import BuiltInFunctions
             wait = 10
             for left, mid, right in data_set:
                 mid = mid.lower()
