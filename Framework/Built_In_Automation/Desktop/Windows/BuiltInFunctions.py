@@ -668,7 +668,7 @@ def _child_search_by_path(
         return []
 
 @logger
-def Get_Element(data_set, wait_time=10, Parent_Element=None):
+def Get_Element(data_set, desired_scroll_flag=False, wait_time=10, Parent_Element=None):
     """ Top function for searching an element """
     sModuleInfo = inspect.currentframe().f_code.co_name + " : " + MODULE_NAME
 
@@ -686,6 +686,16 @@ def Get_Element(data_set, wait_time=10, Parent_Element=None):
             elif "window" in left: window_name = [right, _count_star(left)]
 
             if mid == "element parameter":
+                elem = True
+                if desired_scroll_flag == True:
+                    pass
+                elif "class" in left: element_class = [right, _count_star(left)]
+                elif "name" in left: element_name = [right, _count_star(left)]
+                elif "automation" in left: element_automation = [right, _count_star(left)]  # automationid
+                elif "control" in left: element_control = [right, _count_star(left)]    # localizedcontroltype
+                elif "path" in left: element_path = right.strip()
+
+            elif mid == "desired element parameter" and desired_scroll_flag == True:
                 elem = True
                 if "class" in left: element_class = [right, _count_star(left)]
                 elif "name" in left: element_name = [right, _count_star(left)]
@@ -1226,7 +1236,61 @@ def Swipe(data_set):
                 right = right.replace("%", "").replace(" ", "").lower()
                 if "scroll parameter" in mid:
                     if left == "direction":
-                        if right in ("up", "down"):
+                        if right in ("up", "down","right","left"):
+                            direction = right
+                    elif left == "scroll count":
+                        max_scroll = int(right)
+        except:
+            CommonUtil.Exception_Handler(sys.exc_info(), None, "Unable to parse data. Please write data in correct format")
+            return "zeuz_failed"
+        x = int(
+            Element.Current.BoundingRectangle.Right
+            - Element.Current.BoundingRectangle.Width / 2
+        )
+        y = int(
+            Element.Current.BoundingRectangle.Bottom
+            - Element.Current.BoundingRectangle.Height / 2
+        )
+        win32api.SetCursorPos((x, y))
+        if direction =="right":
+            direction = "down"
+            pyautogui.keyDown('shift')
+            autoit.mouse_wheel(direction, max_scroll)
+            pyautogui.keyUp('shift')
+            direction = "right"
+        elif direction =="left":
+            direction = "up"
+            pyautogui.keyDown('shift')
+            autoit.mouse_wheel(direction, max_scroll)
+            pyautogui.keyUp('shift')
+            direction = "left"
+        else:
+            autoit.mouse_wheel(direction, max_scroll)
+
+        time.sleep(unnecessary_sleep)
+        CommonUtil.ExecLog(sModuleInfo, "Scrolled %s the window element %s times" % (direction, max_scroll), 1)
+        return "passed"
+    except Exception:
+        return CommonUtil.Exception_Handler(sys.exc_info(), None, "Can't scroll the given window element.")
+
+
+@logger
+def Scroll_to_element(dataset):
+    try:
+        direction = "down"
+        max_scroll = 1
+        sModuleInfo = inspect.currentframe().f_code.co_name + " : " + MODULE_NAME
+        Element = Get_Element(data_set)
+        if Element == "zeuz_failed":
+            return "zeuz_failed"
+        try:
+            for left, mid, right in data_set:
+                left = left.strip().lower()
+                mid = mid.strip().lower()
+                right = right.replace("%", "").replace(" ", "").lower()
+                if "scroll parameter" in mid:
+                    if left == "direction":
+                        if right in ("up", "down","right","left"):
                             direction = right
                     elif left == "scroll count":
                         max_scroll = int(right)
@@ -1243,17 +1307,34 @@ def Swipe(data_set):
         )
         win32api.SetCursorPos((x, y))
 
-        autoit.mouse_wheel(direction, max_scroll)
+        desired_Element = Get_Element(data_set,True)
+        if len(desired_Element)>0:
+            CommonUtil.ExecLog(sModuleInfo,"Desired element found.No need to scroll.", 1)
+        else:
+            count=0
+            while(len(desired_Element)==0):
+                if direction =="right":
+                    direction = "down"
+                    pyautogui.keyDown('shift')
+                    autoit.mouse_wheel(direction, max_scroll)
+                    pyautogui.keyUp('shift')
+                    direction = "right"
+                elif direction =="left":
+                    direction = "up"
+                    pyautogui.keyDown('shift')
+                    autoit.mouse_wheel(direction, max_scroll)
+                    pyautogui.keyUp('shift')
+                    direction = "left"
+                else:
+                    autoit.mouse_wheel(direction, max_scroll)
+                desired_Element = Get_Element(data_set, True)
+                count=count+1
+            CommonUtil.ExecLog(sModuleInfo,"Scrolled %s the window element %s times" % (direction, max_scroll * count), 1)
         time.sleep(unnecessary_sleep)
-        CommonUtil.ExecLog(sModuleInfo, "Scrolled %s the window element %s times" % (direction, max_scroll), 1)
         return "passed"
     except Exception:
         return CommonUtil.Exception_Handler(sys.exc_info(), None, "Can't scroll the given window element.")
 
-
-@logger
-def Scroll_to_element(dataset):
-    pass
 
 
 @logger
