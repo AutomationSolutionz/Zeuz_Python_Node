@@ -14,7 +14,8 @@ declarations = (
     { "name": "save attribute",  "function": "Save_Attribute",         "screenshot": "desktop" },
     { "name": "wait to appear",  "function": "wait_for_element",       "screenshot": "desktop" },
     { "name": "wait to disappear","function": "wait_for_element",      "screenshot": "desktop" },
-    { "name": "scroll",           "function": "Scroll",                "screenshot": "desktop" },
+    { "name": "scroll to element","function": "Scroll_to_element",     "screenshot": "desktop" },
+    { "name": "swipe",            "function": "Swipe",                 "screenshot": "desktop" },
     { "name": "save attribute values in list","function": "save_attribute_values_in_list","screenshot": "desktop" },
 ) # yapf: disable
 
