@@ -1213,10 +1213,27 @@ def Enter_Text_In_Text_Box(data_set):
 @logger
 def Scroll(data_set):
     try:
+        direction =""
+        max_scroll=10
         sModuleInfo = inspect.currentframe().f_code.co_name + " : " + MODULE_NAME
         Element = Get_Element(data_set)
         if Element == "zeuz_failed":
             return "zeuz_failed"
+        try:
+            for left, mid, right in data_set:
+                left = left.strip().lower()
+                mid = mid.strip().lower()
+                right = right.replace("%", "").replace(" ", "").lower()
+                if "scroll parameter" in mid:
+                    if left == "direction":
+                        if right in ("up", "down"):
+                            direction = right
+                    elif left == "max try":
+                        max_scroll = int(right)
+        except:
+            CommonUtil.Exception_Handler(sys.exc_info(), None,
+                                         "Unable to parse data. Please write data in correct format")
+            return []
         x = int(
             Element.Current.BoundingRectangle.Right
             - Element.Current.BoundingRectangle.Width / 2
@@ -1227,10 +1244,12 @@ def Scroll(data_set):
         )
         win32api.SetCursorPos((x, y))
 
-        autoit.mouse_wheel("up", 10)
+        autoit.mouse_wheel(direction, max_scroll)
         time.sleep(unnecessary_sleep)
+        CommonUtil.ExecLog(sModuleInfo, "Scrolled %s the window element %s times" % (direction,max_scroll), 1)
+        return "passed"
     except Exception:
-        return CommonUtil.Exception_Handler(sys.exc_info(), None, "Error parsing data set")
+        return CommonUtil.Exception_Handler(sys.exc_info(), None, "Can't scroll the given window element.")
 
 
 @logger
