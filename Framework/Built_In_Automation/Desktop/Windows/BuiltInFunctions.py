@@ -1255,18 +1255,14 @@ def Swipe(data_set):
             - Element.Current.BoundingRectangle.Height / 2
         )
         win32api.SetCursorPos((x, y))
-        if direction =="right":
-            direction = "down"
+        if direction == "right":
             pyautogui.keyDown('shift')
-            autoit.mouse_wheel(direction, max_scroll)
+            autoit.mouse_wheel("down", max_scroll)
             pyautogui.keyUp('shift')
-            direction = "right"
-        elif direction =="left":
-            direction = "up"
+        elif direction == "left":
             pyautogui.keyDown('shift')
-            autoit.mouse_wheel(direction, max_scroll)
+            autoit.mouse_wheel("up", max_scroll)
             pyautogui.keyUp('shift')
-            direction = "left"
         else:
             autoit.mouse_wheel(direction, max_scroll)
 
@@ -1282,7 +1278,7 @@ def Scroll_to_element(dataset):
     try:
         direction = "down"
         max_scroll = 1
-        desired_dataset=[]
+        desired_dataset = []
         sModuleInfo = inspect.currentframe().f_code.co_name + " : " + MODULE_NAME
         Element = Get_Element(dataset)
         if Element == "zeuz_failed":
@@ -1294,16 +1290,18 @@ def Scroll_to_element(dataset):
                 right = right.strip()
                 if mid.startswith("desired"):
                     desired_dataset.append((left, 'element parameter', right))
-
                 if "scroll parameter" in mid:
                     if left == "direction":
-                        if right in ("up", "down","right","left"):
+                        if right in ("up", "down", "right", "left"):
                             direction = right
+                        else:
+                            CommonUtil.ExecLog(sModuleInfo, "direction should be one of up/down/left/right", 3)
+                            return "zeuz_failed"
                     elif left == "scroll count":
                         max_scroll = int(right)
         except:
-            CommonUtil.Exception_Handler(sys.exc_info(), None, "Unable to parse data. Please write data in correct format")
-            return "zeuz_failed"
+            return CommonUtil.Exception_Handler(sys.exc_info(), None, "Unable to parse data. Please write data in correct format")
+
         x = int(
             Element.Current.BoundingRectangle.Right
             - Element.Current.BoundingRectangle.Width / 2
@@ -1315,27 +1313,23 @@ def Scroll_to_element(dataset):
         win32api.SetCursorPos((x, y))
 
         desired_Element = Get_Element(desired_dataset)
-        if desired_Element!="zeuz_failed":
-            CommonUtil.ExecLog(sModuleInfo,"Desired element found.No need to scroll.", 1)
+        if desired_Element != "zeuz_failed":
+            CommonUtil.ExecLog(sModuleInfo, "Desired element is found.No need to scroll.", 1)
         else:
             count=0
-            while(desired_Element=="zeuz_failed"):
-                if direction =="right":
-                    direction = "down"
+            while desired_Element == "zeuz_failed":
+                if direction == "right":
                     pyautogui.keyDown('shift')
-                    autoit.mouse_wheel(direction, max_scroll)
+                    autoit.mouse_wheel("down", max_scroll)
                     pyautogui.keyUp('shift')
-                    direction = "right"
-                elif direction =="left":
-                    direction = "up"
+                elif direction == "left":
                     pyautogui.keyDown('shift')
-                    autoit.mouse_wheel(direction, max_scroll)
+                    autoit.mouse_wheel("up", max_scroll)
                     pyautogui.keyUp('shift')
-                    direction = "left"
                 else:
                     autoit.mouse_wheel(direction, max_scroll)
                 desired_Element = Get_Element(desired_dataset)
-                count=count+1
+                count = count+1
             CommonUtil.ExecLog(sModuleInfo,"Scrolled %s the window element %s times" % (direction, max_scroll * count), 1)
         time.sleep(unnecessary_sleep)
         return "passed"
