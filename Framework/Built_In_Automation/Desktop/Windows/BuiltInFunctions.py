@@ -689,8 +689,8 @@ def Get_Element(data_set, desired_scroll_flag=False, wait_time=10, Parent_Elemen
                 elif "name" in left: element_name = [right, _count_star(left)]
                 elif "automation" in left: element_automation = [right, _count_star(left)]  # automationid
                 elif "control" in left: element_control = [right, _count_star(left)]    # localizedcontroltype
+                elif "image" in left: element_filepath = right.strip()
                 elif "path" in left: element_path = right.strip()
-                elif "filepath" in left: element_filepath = right.strip()
 
             elif mid == "desired element parameter" and desired_scroll_flag == True:
                 elem = True
@@ -717,7 +717,7 @@ def Get_Element(data_set, desired_scroll_flag=False, wait_time=10, Parent_Elemen
         if not elem:
             CommonUtil.ExecLog(sModuleInfo, "No element info is given", 3)
             return "zeuz_failed"
-        if elem and (element_name, element_class, element_automation, element_control, element_path) == (None, None, None, None, ""):
+        if elem and (element_name, element_class, element_automation, element_control, element_path, element_filepath) == (None, None, None, None, "", None):
             CommonUtil.ExecLog(sModuleInfo, "We support only 'Window', 'Name', 'ClassName', 'LocalizedControlType', 'AutomationId', 'element path'", 3)
             return "zeuz_failed"
         if sibling and not parent:
@@ -739,6 +739,10 @@ def Get_Element(data_set, desired_scroll_flag=False, wait_time=10, Parent_Elemen
 
         s = time.time()
         while True:
+            if element_filepath:
+                _get_main_window(window_name)
+                result = LocateElement.Get_Element([["image", "element parameter", element_filepath]], gui)
+                return result
             if element_path:
                 all_elements = Element_path_search(window_name, element_path)
                 if all_elements == "zeuz_failed" and time.time() < s + wait_time:
@@ -940,6 +944,7 @@ def Drag_and_Drop_Element(data_set):
     destination = []
     try:
         for left, mid, right in data_set:
+            left = left.strip().lower()
             if "src" in left or "source" in left:
                 source.append((left.replace("src", "").replace("source", ""), mid, right))
             elif "dst" in left or "destination" in left:
@@ -969,23 +974,33 @@ def Drag_and_Drop_Element(data_set):
 def Drag_Object(Element1_source, Element2_destination):
     try:
 
-        x_source = int(
-            Element1_source.Current.BoundingRectangle.Right
-            - Element1_source.Current.BoundingRectangle.Width / 2
-        )
-        y_source = int(
-            Element1_source.Current.BoundingRectangle.Bottom
-            - Element1_source.Current.BoundingRectangle.Height / 2
-        )
+        if type(Element1_source).__name__.lower() == "box":
+            coord = list(Element1_source)
+            x_source = round(coord[0] + coord[2] / 2)
+            y_source = round(coord[1] + coord[3] / 2)
+        else:
+            x_source = int(
+                Element1_source.Current.BoundingRectangle.Right
+                - Element1_source.Current.BoundingRectangle.Width / 2
+            )
+            y_source = int(
+                Element1_source.Current.BoundingRectangle.Bottom
+                - Element1_source.Current.BoundingRectangle.Height / 2
+            )
 
-        x_destination = int(
-            Element2_destination.Current.BoundingRectangle.Right
-            - Element2_destination.Current.BoundingRectangle.Width / 2
-        )
-        y_destination = int(
-            Element2_destination.Current.BoundingRectangle.Bottom
-            - Element2_destination.Current.BoundingRectangle.Height / 2
-        )
+        if type(Element2_destination).__name__.lower() == "box":
+            coord = list(Element2_destination)
+            x_destination = round(coord[0] + coord[2] / 2)
+            y_destination = round(coord[1] + coord[3] / 2)
+        else:
+            x_destination = int(
+                Element2_destination.Current.BoundingRectangle.Right
+                - Element2_destination.Current.BoundingRectangle.Width / 2
+            )
+            y_destination = int(
+                Element2_destination.Current.BoundingRectangle.Bottom
+                - Element2_destination.Current.BoundingRectangle.Height / 2
+            )
         autoit.mouse_click_drag(
             x_source, y_source, x_destination, y_destination, button="left", speed=20
         )
