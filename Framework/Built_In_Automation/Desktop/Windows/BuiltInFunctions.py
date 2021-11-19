@@ -1232,7 +1232,7 @@ def Enter_Text_In_Text_Box(data_set):
 def Swipe(data_set):
     try:
         direction = "down"
-        max_scroll = 1
+        scroll_count = 1
         sModuleInfo = inspect.currentframe().f_code.co_name + " : " + MODULE_NAME
         Element = Get_Element(data_set)
         if Element == "zeuz_failed":
@@ -1247,7 +1247,7 @@ def Swipe(data_set):
                         if right in ("up", "down","right","left"):
                             direction = right
                     elif left == "scroll count":
-                        max_scroll = int(right)
+                        scroll_count = int(right)
         except:
             CommonUtil.Exception_Handler(sys.exc_info(), None, "Unable to parse data. Please write data in correct format")
             return "zeuz_failed"
@@ -1262,17 +1262,17 @@ def Swipe(data_set):
         win32api.SetCursorPos((x, y))
         if direction == "right":
             pyautogui.keyDown('shift')
-            autoit.mouse_wheel("down", max_scroll)
+            autoit.mouse_wheel("down", scroll_count)
             pyautogui.keyUp('shift')
         elif direction == "left":
             pyautogui.keyDown('shift')
-            autoit.mouse_wheel("up", max_scroll)
+            autoit.mouse_wheel("up", scroll_count)
             pyautogui.keyUp('shift')
         else:
-            autoit.mouse_wheel(direction, max_scroll)
+            autoit.mouse_wheel(direction, scroll_count)
 
         time.sleep(unnecessary_sleep)
-        CommonUtil.ExecLog(sModuleInfo, "Scrolled %s the window element %s times" % (direction, max_scroll), 1)
+        CommonUtil.ExecLog(sModuleInfo, "Scrolled %s the window element %s times" % (direction, scroll_count), 1)
         return "passed"
     except Exception:
         return CommonUtil.Exception_Handler(sys.exc_info(), None, "Can't scroll the given window element.")
@@ -1282,7 +1282,8 @@ def Swipe(data_set):
 def Scroll_to_element(dataset):
     try:
         direction = "down"
-        max_scroll = 1
+        scroll_count = 1
+        max_try = 50
         desired_dataset = []
         sModuleInfo = inspect.currentframe().f_code.co_name + " : " + MODULE_NAME
         Element = Get_Element(dataset)
@@ -1303,7 +1304,10 @@ def Scroll_to_element(dataset):
                             CommonUtil.ExecLog(sModuleInfo, "direction should be one of up/down/left/right", 3)
                             return "zeuz_failed"
                     elif left == "scroll count":
-                        max_scroll = int(right)
+                        scroll_count = int(right)
+                    elif left == "max try":
+                        max_try = int(right)
+
         except:
             return CommonUtil.Exception_Handler(sys.exc_info(), None, "Unable to parse data. Please write data in correct format")
 
@@ -1317,30 +1321,31 @@ def Scroll_to_element(dataset):
         )
         win32api.SetCursorPos((x, y))
 
-        desired_Element = Get_Element(desired_dataset)
+        desired_Element = Get_Element(desired_dataset, 0)
         if desired_Element != "zeuz_failed":
             CommonUtil.ExecLog(sModuleInfo, "Desired element is found.No need to scroll.", 1)
         else:
-            count=0
-            while desired_Element == "zeuz_failed":
+            count = 0
+            while True:
                 if direction == "right":
                     pyautogui.keyDown('shift')
-                    autoit.mouse_wheel("down", max_scroll)
+                    autoit.mouse_wheel("down", scroll_count)
                     pyautogui.keyUp('shift')
                 elif direction == "left":
                     pyautogui.keyDown('shift')
-                    autoit.mouse_wheel("up", max_scroll)
+                    autoit.mouse_wheel("up", scroll_count)
                     pyautogui.keyUp('shift')
                 else:
-                    autoit.mouse_wheel(direction, max_scroll)
-                desired_Element = Get_Element(desired_dataset)
-                count = count+1
-            CommonUtil.ExecLog(sModuleInfo,"Scrolled %s the window element %s times" % (direction, max_scroll * count), 1)
+                    autoit.mouse_wheel(direction, scroll_count)
+                desired_Element = Get_Element(desired_dataset, 0)
+                count += 1
+                if count >= max_try or desired_Element != "zeuz_failed":
+                    break
+            CommonUtil.ExecLog(sModuleInfo, "Scrolled %s the window element %s times" % (direction, scroll_count * count), 1)
         time.sleep(unnecessary_sleep)
         return "passed"
     except Exception:
         return CommonUtil.Exception_Handler(sys.exc_info(), None, "Can't scroll the given window element.")
-
 
 
 @logger
