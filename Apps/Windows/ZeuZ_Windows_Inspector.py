@@ -315,13 +315,23 @@ def create_index(index_trace: dict, element):
     if s in index_trace: index_trace[s] += 1
     else: index_trace[s] = 0
 
-def create_path(index_trace: dict, element):
+def create_path(index_trace: dict, element, window_cond=False):
     NameE = element.Current.Name
     ClassE = element.Current.ClassName
     AutomationE = element.Current.AutomationId
     LocalizedControlTypeE = element.Current.LocalizedControlType
 
-    s_name = 'name="%s"' % NameE
+    if window_cond:
+        config = configparser.ConfigParser()
+        config.read("..\..\Framework\settings.conf")
+        try: window_name = config.get("Inspector", "Window")
+        except: window_name = ""
+        if window_name:
+            s_name = '**name="%s"' % window_name
+        else:
+            s_name = 'name="%s"' % NameE
+    else:
+        s_name = 'name="%s"' % NameE
     if NameE and s_name not in index_trace:
         return s_name + ">" + "\n" if new_line else ""
     s_name_control = 'name="%s",control="%s"' % (NameE, LocalizedControlTypeE)
@@ -504,7 +514,7 @@ def main():
                 if _found(window):
                     window_name = window.Current.Name
                     xml_str += '<body Window="%s">' % window_name
-                    path = create_path({}, window)
+                    path = create_path({}, window, True)
                     break
             else:
                 print("No window found in that coordinate")
