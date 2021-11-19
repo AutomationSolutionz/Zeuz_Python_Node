@@ -1280,17 +1280,7 @@ def Scroll_to_element(dataset):
                 mid = mid.strip().lower()
                 right = right.strip()
                 if mid.startswith("desired"):
-                    temp = right.strip(",").split(",")
-                    data = []
-                    for each in temp:
-                        data.append(each.strip().split("="))
-                    for i in range(len(data)):
-                        for j in range(len(data[i])):
-                            data[i][j] = data[i][j].strip()
-                            if j == 1:
-                                data[i][j] = data[i][j].strip('"')
-                    for Left, Right in data:
-                        desired_dataset.append((Left, 'element parameter', Right))
+                    desired_dataset.append((left, 'element parameter', right))
 
                 if "scroll parameter" in mid:
                     if left == "direction":
