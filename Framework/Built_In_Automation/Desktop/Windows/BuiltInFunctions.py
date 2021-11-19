@@ -12,9 +12,8 @@ from collections import deque
 
 sys.path.append(os.path.dirname(__file__))
 import pyautogui as gui  # https://pyautogui.readthedocs.io/en/latest/
-from Framework.Built_In_Automation.Shared_Resources import (
-    BuiltInFunctionSharedResources as Shared_Resources,
-)
+from Framework.Built_In_Automation.Shared_Resources import BuiltInFunctionSharedResources as Shared_Resources, LocateElement
+
 import inspect, time, datetime, os, sys
 from Framework.Utilities import CommonUtil
 from Framework.Utilities.decorators import logger
@@ -346,7 +345,6 @@ def _child_search(
         return []
 
 
-@logger
 def Parent_search(
     Parent_Element, element_name, window_name, element_class, element_automation, element_control, element_index,
     parent_name, parent_class, parent_automation, parent_control,
@@ -424,7 +422,6 @@ def _child_search_with_parent(
         return []
 
 
-@logger
 def Sibling_search(
     Parent_Element, element_name, window_name, element_class, element_automation, element_control, element_index,
     parent_name, parent_class, parent_automation, parent_control,
@@ -561,7 +558,6 @@ def _element_path_parser(element_path: str):
         return "", "error", None, None, None, None, 0
 
 
-@logger
 def Element_path_search(window_name, element_path):
     try:
         sModuleInfo = inspect.currentframe().f_code.co_name + " : " + MODULE_NAME
@@ -672,13 +668,13 @@ def Get_Element(data_set, desired_scroll_flag=False, wait_time=10, Parent_Elemen
     """ Top function for searching an element """
     sModuleInfo = inspect.currentframe().f_code.co_name + " : " + MODULE_NAME
 
-    element_name, window_name, element_class, element_automation, element_control, element_path, elem = None, None, None, None, None, "", False
+    element_name, window_name, element_class, element_automation, element_control, element_path, elem, element_filepath = None, None, None, None, None, "", False, None
     parent_name, parent_class, parent_automation, parent_control, parent = None, None, None, None, False
     sibling_name, sibling_class, sibling_automation, sibling_control, sibling = None, None, None, None, False
     element_index = 0
     try:
         for left, mid, right in data_set:
-            left = left.strip().lower()
+            left = left.replace(" ", "").replace("_", "").lower()
             mid = mid.strip().lower()
 
             if left == "wait time": wait_time = int(right)
@@ -694,6 +690,7 @@ def Get_Element(data_set, desired_scroll_flag=False, wait_time=10, Parent_Elemen
                 elif "automation" in left: element_automation = [right, _count_star(left)]  # automationid
                 elif "control" in left: element_control = [right, _count_star(left)]    # localizedcontroltype
                 elif "path" in left: element_path = right.strip()
+                elif "filepath" in left: element_filepath = right.strip()
 
             elif mid == "desired element parameter" and desired_scroll_flag == True:
                 elem = True
@@ -734,15 +731,18 @@ def Get_Element(data_set, desired_scroll_flag=False, wait_time=10, Parent_Elemen
             return "zeuz_failed"
         if window_name is None and Parent_Element is None and not element_path:
             CommonUtil.ExecLog(sModuleInfo, "You should provide 'Window' otherwise the search won't be efficient", 2)
+        if element_path:
+            if element_path[-1] != ">": element_path = element_path.strip() + ">"
+            if element_path[0] == ">": element_path = element_path[1:]
+            if element_index != 0:
+                CommonUtil.ExecLog(sModuleInfo, "Index is not allowed other than 0 for 'element path' search. Setting index = 0", 2)
 
         s = time.time()
         while True:
             if element_path:
-                if element_path[-1] != ">": element_path = element_path.strip() + ">"
-                if element_path[0] == ">": element_path = element_path[1:]
-                if element_index != 0:
-                    CommonUtil.ExecLog(sModuleInfo, "Index is not allowed other than 0 for 'element path' search. Setting index = 0", 2)
                 all_elements = Element_path_search(window_name, element_path)
+                if all_elements == "zeuz_failed" and time.time() < s + wait_time:
+                    time.sleep(0.5)  # Sleep is needed to avoid unlimited logging
 
             elif parent and sibling:
                 all_elements = Sibling_search(
@@ -762,7 +762,6 @@ def Get_Element(data_set, desired_scroll_flag=False, wait_time=10, Parent_Elemen
 
             if all_elements != "zeuz_failed" and -len(all_elements) <= element_index < len(all_elements) or time.time() > s + wait_time:
                 break
-            time.sleep(0.5)   # Sleep is needed. dont need unlimited searching
 
         if all_elements == "zeuz_failed":
             CommonUtil.ExecLog(sModuleInfo, "Could not find the element", 3)
