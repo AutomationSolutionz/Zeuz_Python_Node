@@ -1279,7 +1279,7 @@ def Scroll_to_element(dataset):
                 left = left.strip().lower()
                 mid = mid.strip().lower()
                 right = right.strip()
-                if "desired element parameter" in mid:
+                if mid.startswith("desired"):
                     temp = right.strip(",").split(",")
                     data = []
                     for each in temp:
