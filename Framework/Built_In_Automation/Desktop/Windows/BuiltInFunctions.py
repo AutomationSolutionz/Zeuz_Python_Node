@@ -9,6 +9,7 @@ tabs = 0
 import sys, os
 import re
 from collections import deque
+from pathlib import Path
 
 sys.path.append(os.path.dirname(__file__))
 import pyautogui as gui  # https://pyautogui.readthedocs.io/en/latest/
@@ -688,6 +689,10 @@ def Get_Element(data_set , wait_time=10, Parent_Element=None):
                 elif "automation" in left: element_automation = [right, _count_star(left)]  # automationid
                 elif "control" in left: element_control = [right, _count_star(left)]    # localizedcontroltype
                 elif "path" in left: element_path = right.strip()
+                elif "image" in left:
+                    element_filepath = right.strip()
+                    if "~" in element_filepath:
+                        element_filepath = Path(os.path.expanduser(element_filepath))
 
             elif mid == "parent parameter":
                 parent = True
@@ -707,7 +712,7 @@ def Get_Element(data_set , wait_time=10, Parent_Element=None):
             CommonUtil.ExecLog(sModuleInfo, "No element info is given", 3)
             return "zeuz_failed"
         if elem and (element_name, element_class, element_automation, element_control, element_path, element_filepath) == (None, None, None, None, "", None):
-            CommonUtil.ExecLog(sModuleInfo, "We support only 'Window', 'Name', 'ClassName', 'LocalizedControlType', 'AutomationId', 'element path'", 3)
+            CommonUtil.ExecLog(sModuleInfo, "We support only 'Window', 'Name', 'ClassName', 'LocalizedControlType', 'AutomationId', 'element path', 'image'", 3)
             return "zeuz_failed"
         if sibling and not parent:
             CommonUtil.ExecLog(sModuleInfo, "A common PARENT of both ELEMENT and SIBLING should be provided", 3)
