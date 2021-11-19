@@ -664,7 +664,7 @@ def _child_search_by_path(
         return []
 
 @logger
-def Get_Element(data_set, desired_scroll_flag=False, wait_time=10, Parent_Element=None):
+def Get_Element(data_set , wait_time=10, Parent_Element=None):
     """ Top function for searching an element """
     sModuleInfo = inspect.currentframe().f_code.co_name + " : " + MODULE_NAME
 
@@ -682,17 +682,6 @@ def Get_Element(data_set, desired_scroll_flag=False, wait_time=10, Parent_Elemen
             elif "window" in left: window_name = [right, _count_star(left)]
 
             if mid == "element parameter":
-                elem = True
-                if desired_scroll_flag == True:
-                    pass
-                elif "class" in left: element_class = [right, _count_star(left)]
-                elif "name" in left: element_name = [right, _count_star(left)]
-                elif "automation" in left: element_automation = [right, _count_star(left)]  # automationid
-                elif "control" in left: element_control = [right, _count_star(left)]    # localizedcontroltype
-                elif "image" in left: element_filepath = right.strip()
-                elif "path" in left: element_path = right.strip()
-
-            elif mid == "desired element parameter" and desired_scroll_flag == True:
                 elem = True
                 if "class" in left: element_class = [right, _count_star(left)]
                 elif "name" in left: element_name = [right, _count_star(left)]
@@ -1293,15 +1282,19 @@ def Scroll_to_element(dataset):
     try:
         direction = "down"
         max_scroll = 1
+        desired_dataset=[]
         sModuleInfo = inspect.currentframe().f_code.co_name + " : " + MODULE_NAME
-        Element = Get_Element(data_set)
+        Element = Get_Element(dataset)
         if Element == "zeuz_failed":
             return "zeuz_failed"
         try:
-            for left, mid, right in data_set:
+            for left, mid, right in dataset:
                 left = left.strip().lower()
                 mid = mid.strip().lower()
-                right = right.replace("%", "").replace(" ", "").lower()
+                right = right.strip()
+                if mid.startswith("desired"):
+                    desired_dataset.append((left, 'element parameter', right))
+
                 if "scroll parameter" in mid:
                     if left == "direction":
                         if right in ("up", "down","right","left"):
@@ -1321,12 +1314,12 @@ def Scroll_to_element(dataset):
         )
         win32api.SetCursorPos((x, y))
 
-        desired_Element = Get_Element(data_set,True)
-        if len(desired_Element)>0:
+        desired_Element = Get_Element(desired_dataset)
+        if desired_Element!="zeuz_failed":
             CommonUtil.ExecLog(sModuleInfo,"Desired element found.No need to scroll.", 1)
         else:
             count=0
-            while(len(desired_Element)==0):
+            while(desired_Element=="zeuz_failed"):
                 if direction =="right":
                     direction = "down"
                     pyautogui.keyDown('shift')
@@ -1341,7 +1334,7 @@ def Scroll_to_element(dataset):
                     direction = "left"
                 else:
                     autoit.mouse_wheel(direction, max_scroll)
-                desired_Element = Get_Element(data_set, True)
+                desired_Element = Get_Element(desired_dataset)
                 count=count+1
             CommonUtil.ExecLog(sModuleInfo,"Scrolled %s the window element %s times" % (direction, max_scroll * count), 1)
         time.sleep(unnecessary_sleep)
