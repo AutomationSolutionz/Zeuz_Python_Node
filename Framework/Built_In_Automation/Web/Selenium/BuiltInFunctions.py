@@ -962,7 +962,7 @@ def Keystroke_For_Element(data_set):
         )
 
     # Get the element, or if none provided, create action chains for keystroke insertion without an element
-    if get_element == True:
+    if get_element:
         Element = LocateElement.Get_Element(data_set, selenium_driver)
         if Element in failed_tag_list:
             CommonUtil.ExecLog(sModuleInfo, "Failed to locate element", 3)
@@ -974,17 +974,30 @@ def Keystroke_For_Element(data_set):
     try:
         if stype == "keys":
             # Requires: python-selenium v3.1+, geckodriver v0.15.0+
-            get_keystroke_value = getattr(
-                Keys, keystroke_value.upper()
-            )  # Create an object for the keystroke
-            result = Element.send_keys(
-                get_keystroke_value * key_count
-            )  # Prepare keystroke for sending if Actions, or send if Element
-            if get_element == False:
-                Element.perform()  # Send keystroke
+            keystroke_value = keystroke_value.upper().replace("CTRL", "CONTROL")
+            if "+" in keystroke_value:
+                hotkey_list = keystroke_value.split("+")
+                for i in range(len(hotkey_list)):
+                    if hotkey_list[i] in list(dict(Keys.__dict__).keys())[2:-2]:
+                        Element.key_down(getattr(Keys, hotkey_list[i]))
+                    else:
+                        Element.key_down(hotkey_list[i])
+                for i in range(len(hotkey_list)).__reversed__():
+                    if hotkey_list[i] in list(dict(Keys.__dict__).keys())[2:-2]:
+                        Element.key_up(getattr(Keys, hotkey_list[i]))
+                    else:
+                        Element.key_up(hotkey_list[i])
+                Element.perform()
+                result = "passed"
+
+            else:
+                get_keystroke_value = getattr(Keys, keystroke_value)  # Create an object for the keystroke
+                result = Element.send_keys(get_keystroke_value * key_count)  # Prepare keystroke for sending if Actions, or send if Element
+                if not get_element:
+                    Element.perform()  # Send keystroke
         else:
             result = Element.send_keys(keystroke_value)
-            if get_element == False:
+            if not get_element:
                 Element.perform()
     except:
         return CommonUtil.Exception_Handler(
