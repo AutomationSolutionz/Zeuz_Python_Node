@@ -669,7 +669,7 @@ def Get_Element(data_set , wait_time=10, Parent_Element=None):
     """ Top function for searching an element """
     sModuleInfo = inspect.currentframe().f_code.co_name + " : " + MODULE_NAME
 
-    element_name, window_name, element_class, element_automation, element_control, element_path, elem, element_filepath = None, None, None, None, None, "", False, None
+    element_name, window_name, element_class, element_automation, element_control, element_path, elem, element_image = None, None, None, None, None, "", False, []
     parent_name, parent_class, parent_automation, parent_control, parent = None, None, None, None, False
     sibling_name, sibling_class, sibling_automation, sibling_control, sibling = None, None, None, None, False
     element_index = 0
@@ -690,9 +690,7 @@ def Get_Element(data_set , wait_time=10, Parent_Element=None):
                 elif "control" in left: element_control = [right, _count_star(left)]    # localizedcontroltype
                 elif "path" in left: element_path = right.strip()
                 elif "image" in left:
-                    element_filepath = right.strip()
-                    if "~" in element_filepath:
-                        element_filepath = Path(os.path.expanduser(element_filepath))
+                    element_image.append((left, mid, right))
 
             elif mid == "parent parameter":
                 parent = True
@@ -711,7 +709,7 @@ def Get_Element(data_set , wait_time=10, Parent_Element=None):
         if not elem:
             CommonUtil.ExecLog(sModuleInfo, "No element info is given", 3)
             return "zeuz_failed"
-        if elem and (element_name, element_class, element_automation, element_control, element_path, element_filepath) == (None, None, None, None, "", None):
+        if elem and (element_name, element_class, element_automation, element_control, element_path, element_image) == (None, None, None, None, "", []):
             CommonUtil.ExecLog(sModuleInfo, "We support only 'Window', 'Name', 'ClassName', 'LocalizedControlType', 'AutomationId', 'element path', 'image'", 3)
             return "zeuz_failed"
         if sibling and not parent:
@@ -733,9 +731,9 @@ def Get_Element(data_set , wait_time=10, Parent_Element=None):
 
         s = time.time()
         while True:
-            if element_filepath:
+            if element_image:
                 _get_main_window(window_name)
-                result = LocateElement.Get_Element([["image", "element parameter", element_filepath]], gui)
+                result = LocateElement.Get_Element(element_image, gui)
                 return result
             if element_path:
                 all_elements = Element_path_search(window_name, element_path)
@@ -946,10 +944,12 @@ def Drag_and_Drop_Element(data_set):
 
         Element1 = Get_Element(source)
         if Element1 == "zeuz_failed":
+            CommonUtil.ExecLog(sModuleInfo, "Could not find source element", 3)
             return "zeuz_failed"
 
         Element2 = Get_Element(destination)
         if Element2 == "zeuz_failed":
+            CommonUtil.ExecLog(sModuleInfo, "Could not destination element", 3)
             return "zeuz_failed"
 
         result = Drag_Object(Element1, Element2)

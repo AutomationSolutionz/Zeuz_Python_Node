@@ -1014,15 +1014,29 @@ def _pyautogui(step_data_set):
         resolution = ""
         direction = "all"
         index = False
-        for row in step_data_set:
-            if row[1] == "element parameter":  # Find element line
-                file_name = row[2]  # Save Value as the filename
-                resolution = row[0]  # Save the resolution of the source of the image, if provided
-            if row[1] in ("child parameter", "parent parameter"):  # Find a related image, that we'll use as a reference point
-                file_name_parent = row[2]  # Save Value as the filename
-                direction = row[0].lower().strip()  # Save Field as a possible distance or index
-            elif row[1] == "action" and file_name == "":  # Alternative method, there is no element parameter, so filename is expected on the action line
-                file_name = Path(row[2])  # Save Value as the filename
+        idx = 0
+        confidence = 0.85
+        for left, mid, right in step_data_set:
+            left = left.strip().lower()
+            mid = mid.strip().lower()
+            if mid == "element parameter":  # Find element line
+                # resolution = left  # Save the resolution of the source of the image, if provided
+                if "resolution" in left:
+                    resolution = right.strip().lower()
+                elif "index" in left:
+                    idx = int(right.strip())
+                elif "confidence" in left:
+                    confidence = float(right.replace("%", "").replace(" ", "").lower())/100
+                else:
+                    file_name = right.strip()
+                    if "~" in file_name:
+                        file_name = str(Path(os.path.expanduser(file_name)))
+
+            if mid in ("child parameter", "parent parameter"):  # Find a related image, that we'll use as a reference point
+                file_name_parent = right  # Save Value as the filename
+                direction = left.lower().strip()  # Save Field as a possible distance or index
+            elif mid == "action" and file_name == "":  # Alternative method, there is no element parameter, so filename is expected on the action line
+                file_name = Path(right)  # Save Value as the filename
 
         # Check that we have some value
         if file_name == "":
@@ -1084,7 +1098,7 @@ def _pyautogui(step_data_set):
             match = regex.search(resolution)  # Search for resolution within the Field of the element paramter row (this is the resolution of the screen the image was captured on)
 
         if match is not None:  # Match found, so scale
-            CommonUtil.ExecLog(sModuleInfo, "Scaling image (%s)" % match.group(0), 0)
+            CommonUtil.ExecLog(sModuleInfo, "Scaling image (%s)" % match.group(0), 5)
             size_w, size_h = (
                 int(match.group(1)),
                 int(match.group(2)),
@@ -1094,13 +1108,14 @@ def _pyautogui(step_data_set):
                 file_name_parent = _scale_image(file_name_parent, size_w, size_h)  # Scale parent image element
 
         # Find image on screen (file_name here is either an actual directory/file or a PIL image object after scaling)
+        element_list = []
         start = time.time()
-        while time.time() < start + int(sr.Get_Shared_Variables("element_wait")):
+        while True:
             element = pyautogui.locateAllOnScreen(
                 file_name, grayscale=True, confidence=0.85
             )  # Get coordinates of element. Use greyscale for increased speed and better matching across machines. May cause higher number of false-positives
             element_list = tuple(element)
-            if element_list:
+            if element_list or time.time() > start + int(sr.Get_Shared_Variables("element_wait")):
                 break
             time.sleep(0.1)
         #         if len(tuple(tmp)) == 0: # !!! This should work, but accessing the generator causes it to lose one or more of it's results, thus causing an error when we  try to use it with a single image
@@ -1116,7 +1131,11 @@ def _pyautogui(step_data_set):
         if file_name_parent == "":
             # element_list = tuple(element)
             # First match reassigned as the only element
-            element = element_list[0] if len(element_list) > 0 else None
+            element = None
+            if -len(element_list) <= idx < len(element_list):
+                element = element_list[idx]
+            elif len(element_list) != 0:
+                CommonUtil.ExecLog(sModuleInfo, "Found %s elements. Index out of range" % len(element_list), 3)
 
         # Reference image specified, so find the closest image element to it
         else:
@@ -1124,11 +1143,11 @@ def _pyautogui(step_data_set):
 
             # Get coordinates of reference image
             start = time.time()
-            while time.time() < start + int(sr.Get_Shared_Variables("element_wait")):
+            while True:
                 element_parent = pyautogui.locateOnScreen(
                     file_name_parent, grayscale=True, confidence=0.85
                 )
-                if element_parent:
+                if element_parent or time.time() > start + int(sr.Get_Shared_Variables("element_wait")):
                     break
                 time.sleep(0.1)
             if element_parent == None:
@@ -1234,9 +1253,9 @@ def _scale_image(file_name, size_w, size_h):
         size = (int(image_w * ratio), int(image_h * ratio))  # Calculate new resolution of image element
 
         # Scale image
-        file_name.thumbnail(size, Image.ANTIALIAS)  # Resize image per calculation above
+        # file_name.thumbnail(size, Image.ANTIALIAS)  # Resize image per calculation above
 
-        return file_name  # Return the scaled image object
+        return file_name.resize(size)  # Return the scaled image object
     except:
         return CommonUtil.Exception_Handler(sys.exc_info(), None, "Error scaling image")
 
