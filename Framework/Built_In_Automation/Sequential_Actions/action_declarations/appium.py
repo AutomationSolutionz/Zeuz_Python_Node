@@ -7,7 +7,7 @@ declarations = (
     { "name": "install",                  "function": "install_application",         "screenshot": "mobile" },
     { "name": "launch",                   "function": "launch_application",          "screenshot": "mobile" },
     { "name": "get location",             "function": "get_element_location_by_id",  "screenshot": "mobile" },
-    { "name": "swipe",                    "function": "swipe_handler_wrapper",       "screenshot": "mobile" },
+    { "name": "swipe",                    "function": "swipe_appium",                "screenshot": "mobile" },
     { "name": "swipe in direction",       "function": "swipe_in_direction",          "screenshot": "mobile" },
     { "name": "scroll to an element",     "function": "scroll_to_an_element",        "screenshot": "mobile" },
     { "name": "close",                    "function": "close_application",           "screenshot": "mobile" },
