@@ -15,20 +15,17 @@ sys.path.append(os.path.dirname(__file__))
 import pyautogui as gui  # https://pyautogui.readthedocs.io/en/latest/
 from Framework.Built_In_Automation.Shared_Resources import BuiltInFunctionSharedResources as Shared_Resources, LocateElement
 
-import inspect, time, datetime, os, sys
+import inspect, time
 from Framework.Utilities import CommonUtil
 from Framework.Utilities.decorators import logger
 
 MODULE_NAME = inspect.getmodulename(__file__)
 
-
-import clr, inspect
+import inspect
 from _elementtree import Element
 
 import win32api
 import win32con
-
-
 
 # this needs to be here on top, otherwise will return error
 import clr, System
@@ -58,7 +55,7 @@ gui_action_sleep = 2
 
 
 @logger
-def go_to_desktop(data_set):
+def go_to_desktop(data_set=[]):
     sModuleInfo = inspect.currentframe().f_code.co_name + " : " + MODULE_NAME
     Element = Element_only_search(None, None, ["Show desktop", ""], ["TrayShowDesktopButtonWClass", ""], None, None, 0)[0]
     if Element == "zeuz_failed":
@@ -76,6 +73,18 @@ def go_to_desktop(data_set):
         errMsg = "Could not select/click your element."
         CommonUtil.ExecLog(sModuleInfo, errMsg, 3)
         return CommonUtil.Exception_Handler(sys.exc_info(), None, errMsg)
+
+
+def get_coords(Element):
+    x = int(
+        Element.Current.BoundingRectangle.Left
+        + Element.Current.BoundingRectangle.Width / 2
+    )
+    y = int(
+        Element.Current.BoundingRectangle.Top
+        + Element.Current.BoundingRectangle.Height / 2
+    )
+    return x, y
 
 
 # Method to click on element; step data passed on by the user
@@ -124,6 +133,98 @@ def Click_Element(data_set):
 
 
 @logger
+def Click_Element_None_Mouse(Element, Expand=True, Gui=False):
+    try:
+        sModuleInfo = inspect.currentframe().f_code.co_name + " : " + MODULE_NAME
+        patter_list = Element.GetSupportedPatterns()
+        if len(patter_list) == 0 or Gui:
+            # x = int (Element.Current.BoundingRectangle.X)
+            # y = int (Element.Current.BoundingRectangle.Y)
+            CommonUtil.ExecLog(sModuleInfo, "We did not find any pattern for this object, so we will click by mouse with location", 1)
+            x, y = get_coords(Element)
+            win32api.SetCursorPos((x, y))
+            win32api.mouse_event(win32con.MOUSEEVENTF_LEFTDOWN, x, y, 0, 0)
+            time.sleep(0.1)
+            win32api.mouse_event(win32con.MOUSEEVENTF_LEFTUP, x, y, 0, 0)
+            return "passed"
+        else:
+            for each in patter_list:
+                pattern_name = Automation.PatternName(each)
+                CommonUtil.ExecLog(sModuleInfo, "Pattern name attached to the current element is: %s " % pattern_name, 1)
+
+                # Expand and collapse actions
+                if pattern_name == "ExpandCollapse":
+                    if Expand:
+                        # check to see if its expanded, if expanded, then do nothing... if not, expand it
+                        status = Element.GetCurrentPattern(
+                            ExpandCollapsePattern.Pattern
+                        ).Current.ExpandCollapseState
+                        if status == 0:
+                            CommonUtil.ExecLog(sModuleInfo, "Expanding the item", 1)
+                            Element.GetCurrentPattern(
+                                ExpandCollapsePattern.Pattern
+                            ).Expand()
+                            return "passed"
+                        elif status == 1:
+                            CommonUtil.ExecLog(sModuleInfo, "Already expanded", 1)
+                            return "passed"
+                    else:
+                        # check to see if its Collapsed, if Collapsed, then do nothing... if not, Collapse it
+                        status = Element.GetCurrentPattern(
+                            ExpandCollapsePattern.Pattern
+                        ).Current.ExpandCollapseState
+                        if status == 1:
+                            CommonUtil.ExecLog(sModuleInfo, "Collapsing the item", 1)
+                            Element.GetCurrentPattern(
+                                ExpandCollapsePattern.Pattern
+                            ).Collapse()
+                            return "passed"
+                        elif status == 0:
+                            CommonUtil.ExecLog(sModuleInfo, "Already collapsed", 1)
+                            return "passed"
+                # Invoking actions
+                elif pattern_name == "Invoke":
+                    CommonUtil.ExecLog(sModuleInfo, "Invoking the object", 1)
+                    time.sleep(unnecessary_sleep)
+                    Element.GetCurrentPattern(InvokePattern.Pattern).Invoke()
+                    return "passed"
+                # Selection of an item
+                elif pattern_name == "SelectionItem":
+                    CommonUtil.ExecLog(sModuleInfo, "Selecting an item", 1)
+                    Element.GetCurrentPattern(SelectionItemPattern.Pattern).Select()
+                    time.sleep(unnecessary_sleep)
+                    return "passed"
+                # Toggling action
+
+                elif pattern_name == "Toggle":
+                    CommonUtil.ExecLog(sModuleInfo, "Toggling an item", 1)
+                    Element.GetCurrentPattern(TogglePattern.Pattern).Toggle()
+                    time.sleep(unnecessary_sleep)
+                    return "passed"
+                # if no patterns are found, then we do an actual mouse click
+                else:
+                    # x = int (Element.Current.BoundingRectangle.X)
+                    # y = int (Element.Current.BoundingRectangle.Y)
+                    CommonUtil.ExecLog(
+                        sModuleInfo,
+                        "We did not find any pattern for this object, so we will click by mouse with location",
+                        1,
+                    )
+                    x, y = get_coords(Element)
+                    win32api.SetCursorPos((x, y))
+                    win32api.mouse_event(win32con.MOUSEEVENTF_LEFTDOWN, x, y, 0, 0)
+                    time.sleep(0.1)
+                    win32api.mouse_event(win32con.MOUSEEVENTF_LEFTUP, x, y, 0, 0)
+                    time.sleep(unnecessary_sleep)
+                    return "passed"
+
+        CommonUtil.ExecLog(sModuleInfo, "Unable to perform the action on the object", 3)
+        return "zeuz_failed"
+    except Exception:
+        return CommonUtil.Exception_Handler(sys.exc_info())
+
+
+@logger
 def Right_Click_Element(data_set):
     sModuleInfo = inspect.currentframe().f_code.co_name + " : " + MODULE_NAME
     try:
@@ -131,14 +232,7 @@ def Right_Click_Element(data_set):
         if Element == "zeuz_failed":
             return "zeuz_failed"
 
-        x = int(
-            Element.Current.BoundingRectangle.Right
-            - Element.Current.BoundingRectangle.Width / 2
-        )
-        y = int(
-            Element.Current.BoundingRectangle.Bottom
-            - Element.Current.BoundingRectangle.Height / 2
-        )
+        x, y = get_coords(Element)
         win32api.SetCursorPos((x, y))
         win32api.mouse_event(win32con.MOUSEEVENTF_RIGHTDOWN, x, y, 0, 0)
         time.sleep(0.1)
@@ -664,8 +758,148 @@ def _child_search_by_path(
         CommonUtil.Exception_Handler(sys.exc_info(), None, _not_found_log(element_name, element_class, element_automation, element_control))
         return []
 
+
+class _Element:
+    def __init__(self, element):
+        self.Current = self.Current(element)
+
+    class Current:
+        def __init__(self, element):
+            self.BoundingRectangle = self.BoundingRectangle(element)
+
+        class BoundingRectangle:
+            def __init__(self, image):
+                self.Left = image[0]
+                self.Top = image[1]
+                self.Width = image[2]
+                self.Height = image[3]
+
+    def GetSupportedPatterns(self):
+        return []
+
+
+def image_search(step_data_set):
+    sModuleInfo = inspect.currentframe().f_code.co_name + " : " + MODULE_NAME
+    try:
+        file_name = ""
+        resolution = ""
+        idx = 0
+        confidence = 0.85
+        parent_dataset = []
+        for left, mid, right in step_data_set:
+            left = left.strip().lower()
+            mid = mid.strip().lower()
+            if mid == "element parameter":
+                if "resolution" in left:
+                    resolution = right.strip().lower()
+                elif "index" in left:
+                    idx = int(right.strip())
+                elif "confidence" in left:
+                    confidence = float(right.replace("%", "").replace(" ", "").lower()) / 100
+                else:
+                    file_name = right.strip()
+                    if "~" in file_name:
+                        file_name = str(Path(os.path.expanduser(file_name)))
+            if mid == "parent parameter":
+                parent_dataset.append((left, mid, right))
+
+        if parent_dataset:
+            parent = Get_Element(parent_dataset)
+            if parent == "zeuz_failed":
+                return parent
+            left = parent.Current.BoundingRectangle.Left
+            top = parent.Current.BoundingRectangle.Top
+            width = parent.Current.BoundingRectangle.Width
+            height = parent.Current.BoundingRectangle.Height
+        else:
+            left, top = 0, 0
+            width, height = pyautogui.size()
+
+        if file_name == "":
+            return "zeuz_failed"
+
+        if not os.path.exists(file_name):
+            CommonUtil.ExecLog(
+                sModuleInfo,
+                "Could not find file attachment called %s" % file_name,
+                3,
+            )
+            return "zeuz_failed"
+    except:
+        return CommonUtil.Exception_Handler(sys.exc_info(), None, "Error parsing data set")
+
+    # Find element information
+    try:
+        # Scale image if required
+        regex = re.compile(r"(\d+)\s*x\s*(\d+)", re.IGNORECASE)  # Create regex object with expression
+        match = regex.search(file_name)  # Search for resolution within filename (this is the resolution of the screen the image was captured on)
+        if match is None and resolution != "":  # If resolution not in filename, try to find it in the step data
+            match = regex.search(resolution)  # Search for resolution within the Field of the element paramter row (this is the resolution of the screen the image was captured on)
+
+        if match is not None:  # Match found, so scale
+            CommonUtil.ExecLog(sModuleInfo, "Scaling image (%s)" % match.group(0), 5)
+            size_w, size_h = (
+                int(match.group(1)),
+                int(match.group(2)),
+            )  # Extract width, height from match (is screen resolution of desktop image was taken on)
+            file_name = _scale_image(file_name, size_w, size_h)  # Scale image element
+
+        element = pyautogui.locateAllOnScreen(
+            file_name, grayscale=True, confidence=confidence, region=(left, top, width, height)
+        )  # Get coordinates of element. Use greyscale for increased speed and better matching across machines. May cause higher number of false-positives
+        element_list = tuple(element)
+
+        element = None
+        if -len(element_list) <= idx < len(element_list):
+            element = element_list[idx]
+        elif len(element_list) != 0:
+            CommonUtil.ExecLog(sModuleInfo, "Found %s elements. Index out of range" % len(element_list), 3)
+        else:
+            CommonUtil.ExecLog(sModuleInfo, "Element was not found", 3)
+
+        if element is None:
+            return "zeuz_failed"
+        return _Element(element)
+    except:
+        return CommonUtil.Exception_Handler(sys.exc_info())
+
+
+def _scale_image(file_name, size_w, size_h):
+    """ This function calculates ratio and scales an image for comparison by _pyautogui() """
+
+    sModuleInfo = inspect.currentframe().f_code.co_name + " : " + MODULE_NAME
+
+    # Only used by desktop, so only import here
+    import pyautogui
+    from PIL import Image
+    from decimal import Decimal
+
+    try:
+        # Open image file
+        file_name = open(file_name, "rb")  # Read file into memory
+        file_name = Image.open(file_name)  # Convert to PIL format
+
+        # Read sizes
+        screen_w, screen_h = pyautogui.size()  # Read screen resolution
+        image_w, image_h = file_name.size  # Read the image element's actual size
+
+        # Calculate new image size
+        if size_w > screen_w:  # Make sure we create the scaling ratio in the proper direction
+            ratio = Decimal(size_w) / Decimal(screen_w)  # Get ratio (assume same for height)
+        else:
+            ratio = Decimal(screen_w) / Decimal(size_w)  # Get ratio (assume same for height)
+        size = (int(image_w * ratio), int(image_h * ratio))  # Calculate new resolution of image element
+
+        # Scale image
+        # file_name.thumbnail(size, Image.ANTIALIAS)  # Resize image per calculation above
+
+        return file_name.resize(size)  # Return the scaled image object
+    except:
+        return CommonUtil.Exception_Handler(sys.exc_info(), None, "Error scaling image")
+
+
 @logger
-def Get_Element(data_set , wait_time=10, Parent_Element=None):
+def Get_Element(data_set, wait_time=Shared_Resources.Get_Shared_Variables("element_wait"), Parent_Element=None):
     """ Top function for searching an element """
     sModuleInfo = inspect.currentframe().f_code.co_name + " : " + MODULE_NAME
 
@@ -733,7 +967,7 @@ def Get_Element(data_set , wait_time=10, Parent_Element=None):
         while True:
             if element_image:
                 _get_main_window(window_name)
-                result = LocateElement.Get_Element(element_image, gui)
+                result = image_search(element_image)
                 return result
             if element_path:
                 all_elements = Element_path_search(window_name, element_path)
@@ -819,119 +1053,10 @@ def _get_main_window(WindowName):
         CommonUtil.Exception_Handler(sys.exc_info())
         return None
 
-@logger
-def Click_Element_None_Mouse(Element, Expand=True, Gui=False):
-    try:
-        sModuleInfo = inspect.currentframe().f_code.co_name + " : " + MODULE_NAME
-        patter_list = Element.GetSupportedPatterns()
-        if len(patter_list) == 0 or Gui:
-            # x = int (Element.Current.BoundingRectangle.X)
-            # y = int (Element.Current.BoundingRectangle.Y)
-            CommonUtil.ExecLog(sModuleInfo, "We did not find any pattern for this object, so we will click by mouse with location", 1)
-            x = int(
-                Element.Current.BoundingRectangle.Right
-                - Element.Current.BoundingRectangle.Width / 2
-            )
-            y = int(
-                Element.Current.BoundingRectangle.Bottom
-                - Element.Current.BoundingRectangle.Height / 2
-            )
-            win32api.SetCursorPos((x, y))
-            win32api.mouse_event(win32con.MOUSEEVENTF_LEFTDOWN, x, y, 0, 0)
-            time.sleep(0.1)
-            win32api.mouse_event(win32con.MOUSEEVENTF_LEFTUP, x, y, 0, 0)
-            return "passed"
-        else:
-            for each in patter_list:
-                pattern_name = Automation.PatternName(each)
-                CommonUtil.ExecLog(sModuleInfo, "Pattern name attached to the current element is: %s " % pattern_name, 1)
-
-                # Expand and collapse actions
-                if pattern_name == "ExpandCollapse":
-                    if Expand:
-                        # check to see if its expanded, if expanded, then do nothing... if not, expand it
-                        status = Element.GetCurrentPattern(
-                            ExpandCollapsePattern.Pattern
-                        ).Current.ExpandCollapseState
-                        if status == 0:
-                            CommonUtil.ExecLog(sModuleInfo, "Expanding the item", 1)
-                            Element.GetCurrentPattern(
-                                ExpandCollapsePattern.Pattern
-                            ).Expand()
-                            return "passed"
-                        elif status == 1:
-                            CommonUtil.ExecLog(sModuleInfo, "Already expanded", 1)
-                            return "passed"
-                    else:
-                        # check to see if its Collapsed, if Collapsed, then do nothing... if not, Collapse it
-                        status = Element.GetCurrentPattern(
-                            ExpandCollapsePattern.Pattern
-                        ).Current.ExpandCollapseState
-                        if status == 1:
-                            CommonUtil.ExecLog(sModuleInfo, "Collapsing the item", 1)
-                            Element.GetCurrentPattern(
-                                ExpandCollapsePattern.Pattern
-                            ).Collapse()
-                            return "passed"
-                        elif status == 0:
-                            CommonUtil.ExecLog(sModuleInfo, "Already collapsed", 1)
-                            return "passed"
-                # Invoking actions
-                elif pattern_name == "Invoke":
-                    CommonUtil.ExecLog(sModuleInfo, "Invoking the object", 1)
-                    time.sleep(unnecessary_sleep)
-                    Element.GetCurrentPattern(InvokePattern.Pattern).Invoke()
-                    return "passed"
-                # Selection of an item
-                elif pattern_name == "SelectionItem":
-                    CommonUtil.ExecLog(sModuleInfo, "Selecting an item", 1)
-                    Element.GetCurrentPattern(SelectionItemPattern.Pattern).Select()
-                    time.sleep(unnecessary_sleep)
-                    return "passed"
-                # Toggling action
-
-                elif pattern_name == "Toggle":
-                    CommonUtil.ExecLog(sModuleInfo, "Toggling an item", 1)
-                    Element.GetCurrentPattern(TogglePattern.Pattern).Toggle()
-                    time.sleep(unnecessary_sleep)
-                    return "passed"
-                # if no patterns are found, then we do an actual mouse click
-                else:
-                    # x = int (Element.Current.BoundingRectangle.X)
-                    # y = int (Element.Current.BoundingRectangle.Y)
-                    CommonUtil.ExecLog(
-                        sModuleInfo,
-                        "We did not find any pattern for this object, so we will click by mouse with location",
-                        1,
-                    )
-                    x = int(
-                        Element.Current.BoundingRectangle.Right
-                        - Element.Current.BoundingRectangle.Width / 2
-                    )
-                    y = int(
-                        Element.Current.BoundingRectangle.Bottom
-                        - Element.Current.BoundingRectangle.Height / 2
-                    )
-                    win32api.SetCursorPos((x, y))
-                    win32api.mouse_event(win32con.MOUSEEVENTF_LEFTDOWN, x, y, 0, 0)
-                    time.sleep(0.1)
-                    win32api.mouse_event(win32con.MOUSEEVENTF_LEFTUP, x, y, 0, 0)
-                    time.sleep(unnecessary_sleep)
-                    return "passed"
-
-        CommonUtil.ExecLog(sModuleInfo, "Unable to perform the action on the object", 3)
-        return "zeuz_failed"
-    except Exception:
-        return CommonUtil.Exception_Handler(sys.exc_info())
-
 
 @logger
 def Drag_and_Drop_Element(data_set):
     sModuleInfo = inspect.currentframe().f_code.co_name + " : " + MODULE_NAME
-
-    element_name = []
-    window_name = []
-
     source = []
     destination = []
     try:
@@ -952,49 +1077,8 @@ def Drag_and_Drop_Element(data_set):
             CommonUtil.ExecLog(sModuleInfo, "Could not destination element", 3)
             return "zeuz_failed"
 
-        result = Drag_Object(Element1, Element2)
-        if result == "zeuz_failed":
-            CommonUtil.ExecLog(sModuleInfo, "Could not Drag element", 3)
-            return "zeuz_failed"
-        else:
-            CommonUtil.ExecLog(sModuleInfo, "Successfully dragged and dropped the element", 1)
-            return "passed"
-
-    except Exception:
-        return CommonUtil.Exception_Handler(sys.exc_info(), None, "Error parsing data set")
-
-
-@logger
-def Drag_Object(Element1_source, Element2_destination):
-    try:
-
-        if type(Element1_source).__name__.lower() == "box":
-            coord = list(Element1_source)
-            x_source = round(coord[0] + coord[2] / 2)
-            y_source = round(coord[1] + coord[3] / 2)
-        else:
-            x_source = int(
-                Element1_source.Current.BoundingRectangle.Right
-                - Element1_source.Current.BoundingRectangle.Width / 2
-            )
-            y_source = int(
-                Element1_source.Current.BoundingRectangle.Bottom
-                - Element1_source.Current.BoundingRectangle.Height / 2
-            )
-
-        if type(Element2_destination).__name__.lower() == "box":
-            coord = list(Element2_destination)
-            x_destination = round(coord[0] + coord[2] / 2)
-            y_destination = round(coord[1] + coord[3] / 2)
-        else:
-            x_destination = int(
-                Element2_destination.Current.BoundingRectangle.Right
-                - Element2_destination.Current.BoundingRectangle.Width / 2
-            )
-            y_destination = int(
-                Element2_destination.Current.BoundingRectangle.Bottom
-                - Element2_destination.Current.BoundingRectangle.Height / 2
-            )
+        x_source, y_source = get_coords(Element1)
+        x_destination, y_destination = get_coords(Element2)
         autoit.mouse_click_drag(
             x_source, y_source, x_destination, y_destination, button="left", speed=20
         )
@@ -1031,14 +1115,7 @@ def Double_Click_Element(data_set):
                     Element.GetCurrentPattern(InvokePattern.Pattern).Invoke()
                     return "passed"
 
-        x = int(
-            Element.Current.BoundingRectangle.Right
-            - Element.Current.BoundingRectangle.Width / 2
-        )
-        y = int(
-            Element.Current.BoundingRectangle.Bottom
-            - Element.Current.BoundingRectangle.Height / 2
-        )
+        x, y = get_coords(Element)
         win32api.SetCursorPos((x, y))
         win32api.mouse_event(win32con.MOUSEEVENTF_LEFTDOWN, x, y, 0, 0)
         time.sleep(0.1)
@@ -1058,14 +1135,7 @@ def Hover_Over_Element(data_set):
         Element = Get_Element(data_set)
         if Element == "zeuz_failed":
             return "zeuz_failed"
-        x = int(
-            Element.Current.BoundingRectangle.Right
-            - Element.Current.BoundingRectangle.Width / 2
-        )
-        y = int(
-            Element.Current.BoundingRectangle.Bottom
-            - Element.Current.BoundingRectangle.Height / 2
-        )
+        x, y = get_coords(Element)
         win32api.SetCursorPos((x, y))
 
         autoit.mouse_move(x, y, speed=20)
@@ -1194,14 +1264,7 @@ def Enter_Text_In_Text_Box(data_set):
             return "zeuz_failed"
 
         if keystroke:
-            x = int(
-                Element.Current.BoundingRectangle.Right
-                - Element.Current.BoundingRectangle.Width / 2
-            )
-            y = int(
-                Element.Current.BoundingRectangle.Bottom
-                - Element.Current.BoundingRectangle.Height / 2
-            )
+            x, y = get_coords(Element)
             win32api.SetCursorPos((x, y))
             win32api.mouse_event(win32con.MOUSEEVENTF_LEFTDOWN, x, y, 0, 0)
             time.sleep(0.1)
@@ -1251,14 +1314,7 @@ def Swipe(data_set):
         except:
             CommonUtil.Exception_Handler(sys.exc_info(), None, "Unable to parse data. Please write data in correct format")
             return "zeuz_failed"
-        x = int(
-            Element.Current.BoundingRectangle.Right
-            - Element.Current.BoundingRectangle.Width / 2
-        )
-        y = int(
-            Element.Current.BoundingRectangle.Bottom
-            - Element.Current.BoundingRectangle.Height / 2
-        )
+        x, y = get_coords(Element)
         win32api.SetCursorPos((x, y))
         if direction == "right":
             pyautogui.keyDown('shift')
@@ -1311,14 +1367,7 @@ def Scroll_to_element(dataset):
         except:
             return CommonUtil.Exception_Handler(sys.exc_info(), None, "Unable to parse data. Please write data in correct format")
 
-        x = int(
-            Element.Current.BoundingRectangle.Right
-            - Element.Current.BoundingRectangle.Width / 2
-        )
-        y = int(
-            Element.Current.BoundingRectangle.Bottom
-            - Element.Current.BoundingRectangle.Height / 2
-        )
+        x, y = get_coords(Element)
         win32api.SetCursorPos((x, y))
 
         desired_Element = Get_Element(desired_dataset, 0)

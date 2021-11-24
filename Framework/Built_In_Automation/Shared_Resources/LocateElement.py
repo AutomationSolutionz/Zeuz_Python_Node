@@ -1112,7 +1112,7 @@ def _pyautogui(step_data_set):
         start = time.time()
         while True:
             element = pyautogui.locateAllOnScreen(
-                file_name, grayscale=True, confidence=0.85
+                file_name, grayscale=True, confidence=confidence
             )  # Get coordinates of element. Use greyscale for increased speed and better matching across machines. May cause higher number of false-positives
             element_list = tuple(element)
             if element_list or time.time() > start + int(sr.Get_Shared_Variables("element_wait")):
