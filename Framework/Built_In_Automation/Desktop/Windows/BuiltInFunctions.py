@@ -1256,7 +1256,7 @@ def Enter_Text_In_Text_Box(data_set):
         for left, mid, right in data_set:
             if mid.lower().strip() == "action":
                 text = right
-            elif left.lower().strip() == "method" and right.lower().strip() == "keystroke":
+            elif left.lower().strip() == "method" and right.lower().strip() in ("gui", "keystroke"):
                 keystroke = True
 
         Element = Get_Element(data_set)
