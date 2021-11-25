@@ -350,9 +350,9 @@ def create_path(index_trace: dict, element, window_cond=False):
     global path_priority
     path_priority = 2
     if NameE and s in index_trace:
-        return s_name + ">" + ',index="%s">' % (index_trace[s_name] + 1) + "\n" if new_line else ""
+        return s_name + ',index="%s">' % (index_trace[s_name] + 1) + "\n" if new_line else ""
     if ClassE and s in index_trace:
-        return s_class + ">" + ',index="%s">' % (index_trace[s_class] + 1) + "\n" if new_line else ""
+        return s_class + ',index="%s">' % (index_trace[s_class] + 1) + "\n" if new_line else ""
 
     # if s_name not in index_trace:
     #     return s_name + ">" + "\n" if new_line else ""
@@ -498,7 +498,8 @@ def main():
         global x, y, path_priority, element_plugin, auth, path, xml_str, findall_time, findall_count
         auth_thread = Authenticate()
         while True:
-            os.system('pause')
+            # os.system('pause')
+            input()
             print("Hover over the Element and press control")
             path = ""; xml_str = ""; path_priority = 0; element_plugin = False; findall_time = 0; findall_count = 0
             keyboard.wait("ctrl")
