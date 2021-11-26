@@ -438,331 +438,334 @@ def run_all_test_steps_in_a_test_case(
     is_linked="",
     performance=False
 ):
+    try:
+        StepSeq = 1
+        CommonUtil.step_index = 0
+        sTestStepResultList = []
+        already_failed = False
 
-    StepSeq = 1
-    CommonUtil.step_index = 0
-    sTestStepResultList = []
-    already_failed = False
+        Stepscount = len(testcase_info["steps"])  # no. of steps
+        debug_steps = ""
+        debug = False
+        cleanup_drivers_during_debug = False
+        debug_actions = ""
 
-    Stepscount = len(testcase_info["steps"])  # no. of steps
-    debug_steps = ""
-    debug = False
-    cleanup_drivers_during_debug = False
-    debug_actions = ""
+        if run_id.startswith("debug"):
+            debug = True
+            debug_steps = debug_info["debug_steps"]
+            if "debug_step_actions" in debug_info:
+                debug_actions = debug_info["debug_step_actions"]
+            if debug_info["debug_clean"] == "YES":
+                cleanup_drivers_during_debug = True
 
-    if run_id.startswith("debug"):
-        debug = True
-        debug_steps = debug_info["debug_steps"]
-        if "debug_step_actions" in debug_info:
-            debug_actions = debug_info["debug_step_actions"]
-        if debug_info["debug_clean"] == "YES":
-            cleanup_drivers_during_debug = True
+        # clean up shared variables and teardown drivers
+        if cleanup_drivers_during_debug:
+            cleanup_driver_instances()
+            shared.Clean_Up_Shared_Variables()
+        if not debug_steps:
+            debug_steps = []
 
-    # clean up shared variables and teardown drivers
-    if cleanup_drivers_during_debug:
-        cleanup_driver_instances()
-        shared.Clean_Up_Shared_Variables()
-    if not debug_steps:
-        debug_steps = []
+        if not debug_actions:
+            debug_actions = []
 
-    if not debug_actions:
-        debug_actions = []
+        # performance testing
+        if performance:
+            StepSeq = 2
+            CommonUtil.step_index = 1
+            sTestStepResultList.append("PASSED")
 
-    # performance testing
-    if performance:
-        StepSeq = 2
-        CommonUtil.step_index = 1
-        sTestStepResultList.append("PASSED")
-
-    # Creating Testcase attachment variables
-    attachment_path = str(Path(ConfigModule.get_config_value("sectionOne", "temp_run_file_path", temp_ini_file)) / "attachments")
-    tc_attachment_list = []
-    for tc_attachment in testcase_info['testcase_attachments_links']:
-        path = str(Path(attachment_path + tc_attachment[0][10:]))
-        var_name = tc_attachment[1] + "." + tc_attachment[2] if tc_attachment[2] else tc_attachment[1]
-        tc_attachment_list.append(var_name)
-        shared.Set_Shared_Variables(var_name, path)
-
-    all_step_info = testcase_info["steps"]
-    all_step_dataset, all_action_info = [], []
-    for step_info in all_step_info:
-        all_Action_info = step_info["actions"]
-        all_action_data_set, all_action_Info = [], []
-        for action_info in all_Action_info:
-            action_dataset = action_info["step_actions"]
-            all_action_data_set.append(action_dataset)
-            dict = {}
-            dict["Action disabled"] = True if action_info["action_disabled"] == False else False
-            dict["Action name"] = action_info["action_name"]
-            all_action_Info.append(dict)
-        all_step_dataset.append(all_action_data_set)
-        all_action_info.append(all_action_Info)
-    # loop through the steps
-    while StepSeq <= Stepscount:
-
-        # check if debug step
-        CommonUtil.custom_step_duration = ""
-        if debug and debug_steps:
-            if str(StepSeq) not in debug_steps:
-                StepSeq += 1
-                CommonUtil.step_index += 1
-                continue
-
-        # check if already failed
-        if already_failed:
-            always_run = all_step_info[StepSeq - 1]["always_run"]  # get always run info
-            if always_run:
-                CommonUtil.ExecLog(
-                    sModuleInfo,
-                    "Step-%s is set as 'Always run' so executing this step" % (CommonUtil.step_index + 1),
-                    2,
-                )
-            else:
-                StepSeq += 1
-                CommonUtil.step_index += 1
-                continue
-
-        # get step info
-        current_step_name = all_step_info[StepSeq - 1]["step_name"]
-        current_step_id = all_step_info[StepSeq - 1]["step_id"]
-        current_step_sequence = all_step_info[StepSeq - 1]["step_sequence"]
-
-        step_attachments = all_step_info[StepSeq - 1]['step_attachments']
-        step_attachment_list = []
-        for attachment in step_attachments:
-            path = str(Path(attachment_path + attachment[1][12:]))
-            var_name = attachment[2] + "." + attachment[3] if attachment[3] else attachment[2]
-            step_attachment_list.append(var_name)
+        # Creating Testcase attachment variables
+        attachment_path = str(Path(ConfigModule.get_config_value("sectionOne", "temp_run_file_path", temp_ini_file)) / "attachments")
+        tc_attachment_list = []
+        for tc_attachment in testcase_info['testcase_attachments_links']:
+            path = str(Path(attachment_path + tc_attachment[0][10:]))
+            var_name = tc_attachment[1] + "." + tc_attachment[2] if tc_attachment[2] else tc_attachment[1]
+            tc_attachment_list.append(var_name)
             shared.Set_Shared_Variables(var_name, path)
 
-        # add config value
-        ConfigModule.add_config_value(
-            "sectionOne",
-            "sTestStepExecLogId",
-            run_id + "|" + test_case + "|" + str(current_step_id) + "|" + str(current_step_sequence),
-            temp_ini_file,
-        )
-        CommonUtil.current_step_no = str(current_step_sequence)
-        # add log
-        log_line = "STEP #%d: %s" % (StepSeq, current_step_name)
-        print("-"*len(log_line))
-        CommonUtil.ExecLog(sModuleInfo, log_line, 4)
-        print("-"*len(log_line))
+        all_step_info = testcase_info["steps"]
+        all_step_dataset, all_action_info = [], []
+        for step_info in all_step_info:
+            all_Action_info = step_info["actions"]
+            all_action_data_set, all_action_Info = [], []
+            for action_info in all_Action_info:
+                action_dataset = action_info["step_actions"]
+                all_action_data_set.append(action_dataset)
+                dict = {}
+                dict["Action disabled"] = True if action_info["action_disabled"] == False else False
+                dict["Action name"] = action_info["action_name"]
+                all_action_Info.append(dict)
+            all_step_dataset.append(all_action_data_set)
+            all_action_info.append(all_action_Info)
+        # loop through the steps
+        while StepSeq <= Stepscount:
 
-        test_steps_data = all_step_dataset[StepSeq-1]
-        test_action_info = all_action_info[StepSeq-1]
-        try:
-            test_case_continue = all_step_info[StepSeq - 1]["continue_on_fail"]
-            step_time = all_step_info[StepSeq - 1]["step_time"]
-            if str(step_time) != "" and step_time is not None:
-                step_time = int(step_time)
-            else:
+            # check if debug step
+            CommonUtil.custom_step_duration = ""
+            if debug and debug_steps:
+                if str(StepSeq) not in debug_steps:
+                    StepSeq += 1
+                    CommonUtil.step_index += 1
+                    continue
+
+            # check if already failed
+            if already_failed:
+                always_run = all_step_info[StepSeq - 1]["always_run"]  # get always run info
+                if always_run:
+                    CommonUtil.ExecLog(
+                        sModuleInfo,
+                        "Step-%s is set as 'Always run' so executing this step" % (CommonUtil.step_index + 1),
+                        2,
+                    )
+                else:
+                    StepSeq += 1
+                    CommonUtil.step_index += 1
+                    continue
+
+            # get step info
+            current_step_name = all_step_info[StepSeq - 1]["step_name"]
+            current_step_id = all_step_info[StepSeq - 1]["step_id"]
+            current_step_sequence = all_step_info[StepSeq - 1]["step_sequence"]
+
+            step_attachments = all_step_info[StepSeq - 1]['step_attachments']
+            step_attachment_list = []
+            for attachment in step_attachments:
+                path = str(Path(attachment_path + attachment[1][12:]))
+                var_name = attachment[2] + "." + attachment[3] if attachment[3] else attachment[2]
+                step_attachment_list.append(var_name)
+                shared.Set_Shared_Variables(var_name, path)
+
+            # add config value
+            ConfigModule.add_config_value(
+                "sectionOne",
+                "sTestStepExecLogId",
+                run_id + "|" + test_case + "|" + str(current_step_id) + "|" + str(current_step_sequence),
+                temp_ini_file,
+            )
+            CommonUtil.current_step_no = str(current_step_sequence)
+            # add log
+            log_line = "STEP #%d: %s" % (StepSeq, current_step_name)
+            print("-"*len(log_line))
+            CommonUtil.ExecLog(sModuleInfo, log_line, 4)
+            print("-"*len(log_line))
+
+            test_steps_data = all_step_dataset[StepSeq-1]
+            test_action_info = all_action_info[StepSeq-1]
+            try:
+                test_case_continue = all_step_info[StepSeq - 1]["continue_on_fail"]
+                step_time = all_step_info[StepSeq - 1]["step_time"]
+                if str(step_time) != "" and step_time is not None:
+                    step_time = int(step_time)
+                else:
+                    step_time = 59
+            except:
+                test_case_continue = False
                 step_time = 59
-        except:
-            test_case_continue = False
-            step_time = 59
 
-        # get step start time
-        TestStepStartTime = time.time()
-        sTestStepStartTime = datetime.fromtimestamp(TestStepStartTime).strftime("%Y-%m-%d %H:%M:%S.%f")
-        WinMemBegin = CommonUtil.PhysicalAvailableMemory()  # get available memory
+            # get step start time
+            TestStepStartTime = time.time()
+            sTestStepStartTime = datetime.fromtimestamp(TestStepStartTime).strftime("%Y-%m-%d %H:%M:%S.%f")
+            WinMemBegin = CommonUtil.PhysicalAvailableMemory()  # get available memory
 
-        if ConfigModule.get_config_value("RunDefinition", "local_run") == "False":
-            # make test step run dictionary
-            Dict = {
-                "teststepsequence": current_step_sequence,
-                "status": PROGRESS_TAG,
+            if ConfigModule.get_config_value("RunDefinition", "local_run") == "False":
+                # make test step run dictionary
+                Dict = {
+                    "teststepsequence": current_step_sequence,
+                    "status": PROGRESS_TAG,
+                    "stepstarttime": sTestStepStartTime,
+                    "logid": ConfigModule.get_config_value(
+                        "sectionOne", "sTestStepExecLogId", temp_ini_file
+                    ),
+                    "start_memory": WinMemBegin,
+                    "testcaseresulttindex": "Dont NEED",
+                }
+
+            # check if machine failed
+            is_failed_result = ""
+            if is_linked == "yes":
+                is_failed_result = check_if_other_machines_failed_in_linked_run()
+
+            # check step result
+            if is_failed_result in failed_tag_list or test_steps_data in failed_tag_list:
+                sStepResult = "zeuz_failed"
+            else:
+                # run driver for step and get result
+                sStepResult = call_driver_function_of_test_step(
+                    sModuleInfo,
+                    all_step_info,
+                    StepSeq,
+                    step_time,
+                    current_step_name,
+                    final_dependency,
+                    final_run_params,
+                    test_steps_data,
+                    test_action_info,
+                    file_specific_steps,
+                    debug_actions,
+                )
+            TestStepEndTime = time.time()
+            sTestStepEndTime = datetime.fromtimestamp(TestStepEndTime).strftime("%Y-%m-%d %H:%M:%S.%f")
+            WinMemEnd = CommonUtil.PhysicalAvailableMemory()  # get available memory
+            if CommonUtil.custom_step_duration:
+                TestStepDuration = CommonUtil.custom_step_duration
+                CommonUtil.custom_step_duration = ""
+            else:
+                sec = TestStepEndTime - TestStepStartTime
+                hours, remainder = sec // 3600, sec % 3600
+                minutes, seconds = remainder // 60, remainder % 60
+                TestStepDuration = "%02d:%02d:%s" % (hours, minutes, round(seconds, 3))
+            TestStepMemConsumed = WinMemBegin - WinMemEnd  # get memory consumed
+            for i in step_attachment_list: shared.Remove_From_Shared_Variables(i)  # Cleanup step_attachment variables
+
+            """ Run cancelled feature is disabled for now. maybe implement it later"""
+            run_cancelled = ""
+            # if ConfigModule.get_config_value("RunDefinition", "local_run") == "False":
+            #     run_cancelled = get_status_of_runid(run_id)
+
+            # add result of each step to a list;
+            # for a test case to pass all steps should pass;
+            # at least one Failed makes it 'Fail' else 'Warning' or 'Blocked';
+            run_cancelled = ""
+            # if ConfigModule.get_config_value("RunDefinition", "local_run") == "False":
+            #     run_cancelled = get_status_of_runid(run_id)
+
+            # append step result
+            if sStepResult:
+                sTestStepResultList.append(sStepResult.upper())
+            else:
+                sTestStepResultList.append("zeuz_failed")
+                CommonUtil.ExecLog(sModuleInfo, "sStepResult : %s" % sStepResult, 1)  # add log
+                sStepResult = "zeuz_failed"
+
+            # step dictionary after execution
+            after_execution_dict = {
                 "stepstarttime": sTestStepStartTime,
-                "logid": ConfigModule.get_config_value(
-                    "sectionOne", "sTestStepExecLogId", temp_ini_file
-                ),
-                "start_memory": WinMemBegin,
-                "testcaseresulttindex": "Dont NEED",
+                "stependtime": sTestStepEndTime,
+                "end_memory": WinMemEnd,
+                "duration": TestStepDuration,
+                "memory_consumed": TestStepMemConsumed,
+                "logid": ConfigModule.get_config_value("sectionOne", "sTestStepExecLogId", temp_ini_file)
             }
 
-        # check if machine failed
-        is_failed_result = ""
-        if is_linked == "yes":
-            is_failed_result = check_if_other_machines_failed_in_linked_run()
+            # add/print logs for step result
 
-        # check step result
-        if is_failed_result in failed_tag_list or test_steps_data in failed_tag_list:
-            sStepResult = "zeuz_failed"
-        else:
-            # run driver for step and get result
-            sStepResult = call_driver_function_of_test_step(
-                sModuleInfo,
-                all_step_info,
-                StepSeq,
-                step_time,
-                current_step_name,
-                final_dependency,
-                final_run_params,
-                test_steps_data,
-                test_action_info,
-                file_specific_steps,
-                debug_actions,
-            )
-        TestStepEndTime = time.time()
-        sTestStepEndTime = datetime.fromtimestamp(TestStepEndTime).strftime("%Y-%m-%d %H:%M:%S.%f")
-        WinMemEnd = CommonUtil.PhysicalAvailableMemory()  # get available memory
-        if CommonUtil.custom_step_duration:
-            TestStepDuration = CommonUtil.custom_step_duration
-            CommonUtil.custom_step_duration = ""
-        else:
-            sec = TestStepEndTime - TestStepStartTime
-            hours, remainder = sec // 3600, sec % 3600
-            minutes, seconds = remainder // 60, remainder % 60
-            TestStepDuration = "%02d:%02d:%s" % (hours, minutes, round(seconds, 3))
-        TestStepMemConsumed = WinMemBegin - WinMemEnd  # get memory consumed
-        for i in step_attachment_list: shared.Remove_From_Shared_Variables(i)  # Cleanup step_attachment variables
+            if sStepResult.upper() == PASSED_TAG.upper():
+                # Step Passed
+                CommonUtil.ExecLog(sModuleInfo, "%s : Test Step Passed" % current_step_name, 1)
+                after_execution_dict.update({"status": PASSED_TAG})
 
-        """ Run cancelled feature is disabled for now. maybe implement it later"""
-        run_cancelled = ""
-        # if ConfigModule.get_config_value("RunDefinition", "local_run") == "False":
-        #     run_cancelled = get_status_of_runid(run_id)
+            elif sStepResult.upper() == SKIPPED_TAG.upper():
+                # Step Passed
+                CommonUtil.ExecLog(sModuleInfo, "%s : Test Step Skipped" % current_step_name, 1)
+                after_execution_dict.update({"status": SKIPPED_TAG})
 
-        # add result of each step to a list;
-        # for a test case to pass all steps should pass;
-        # at least one Failed makes it 'Fail' else 'Warning' or 'Blocked';
-        run_cancelled = ""
-        # if ConfigModule.get_config_value("RunDefinition", "local_run") == "False":
-        #     run_cancelled = get_status_of_runid(run_id)
+            elif sStepResult.upper() == WARNING_TAG.upper():
+                CommonUtil.ExecLog(sModuleInfo, "%s : Test Step Warning" % current_step_name, 2)
+                after_execution_dict.update({"status": WARNING_TAG})
 
-        # append step result
-        if sStepResult:
-            sTestStepResultList.append(sStepResult.upper())
-        else:
-            sTestStepResultList.append("zeuz_failed")
-            CommonUtil.ExecLog(sModuleInfo, "sStepResult : %s" % sStepResult, 1)  # add log
-            sStepResult = "zeuz_failed"
+                if not test_case_continue:
+                    already_failed = True
+                    StepSeq += 1
+                    CommonUtil.CreateJsonReport(stepInfo=after_execution_dict)
+                    CommonUtil.step_index += 1
+                    continue
 
-        # step dictionary after execution
-        after_execution_dict = {
-            "stepstarttime": sTestStepStartTime,
-            "stependtime": sTestStepEndTime,
-            "end_memory": WinMemEnd,
-            "duration": TestStepDuration,
-            "memory_consumed": TestStepMemConsumed,
-            "logid": ConfigModule.get_config_value("sectionOne", "sTestStepExecLogId", temp_ini_file)
-        }
+            elif sStepResult.upper() == NOT_RUN_TAG.upper():
+                # Step has Warning, but continue running next test step for this test case
+                CommonUtil.ExecLog(sModuleInfo, "%s : Test Step Not Run" % current_step_name, 2)
+                after_execution_dict.update({"status": NOT_RUN_TAG})
 
-        # add/print logs for step result
+            elif sStepResult.upper() == FAILED_TAG.upper():
 
-        if sStepResult.upper() == PASSED_TAG.upper():
-            # Step Passed
-            CommonUtil.ExecLog(sModuleInfo, "%s : Test Step Passed" % current_step_name, 1)
-            after_execution_dict.update({"status": PASSED_TAG})
+                # step failed, if linked test case notify other test cases via setting server variable named 'is_failed'
+                global failed_due_to_linked_fail
 
-        elif sStepResult.upper() == SKIPPED_TAG.upper():
-            # Step Passed
-            CommonUtil.ExecLog(sModuleInfo, "%s : Test Step Skipped" % current_step_name, 1)
-            after_execution_dict.update({"status": SKIPPED_TAG})
+                if is_linked == "yes" and not failed_due_to_linked_fail:
+                    CommonUtil.ExecLog(
+                        sModuleInfo,
+                        str(test_case)
+                        + " failed in linked run.. Notifying other linked machines",
+                        3,
+                    )
 
-        elif sStepResult.upper() == WARNING_TAG.upper():
-            CommonUtil.ExecLog(sModuleInfo, "%s : Test Step Warning" % current_step_name, 2)
-            after_execution_dict.update({"status": WARNING_TAG})
+                    # set server variables
+                    set_server_variable(run_id, "is_failed", "yes")
+                    set_server_variable(
+                        run_id,
+                        "failed_machine",
+                        (CommonUtil.MachineInfo().getLocalUser()).lower(),
+                    )
+                    set_server_variable(run_id, "failed_test_case", str(test_case))
 
-            if not test_case_continue:
-                already_failed = True
-                StepSeq += 1
+                # Step has a Critical failure, fail the test step and test case. go to next test case
+
+                CommonUtil.ExecLog(sModuleInfo, "%s%s" % (current_step_name, CommonUtil.to_dlt_from_fail_reason), 3)  # add log
+
+                after_execution_dict.update({"status": "Failed"})  # dictionary update
+
+                # check if set for continue
+                if not test_case_continue and ConfigModule.get_config_value("RunDefinition", "local_run") == "False":
+                    # run_cancelled = get_status_of_runid(run_id)
+                    if run_cancelled == "Cancelled":
+                        CommonUtil.ExecLog(
+                            sModuleInfo,
+                            "Test Run status is Cancelled. Exiting the current Test Case...%s"
+                            % test_case,
+                            2,
+                        )  # add log
+                    already_failed = True
+                    StepSeq += 1
+                    CommonUtil.CreateJsonReport(stepInfo=after_execution_dict)
+                    CommonUtil.step_index += 1
+                    continue
+                elif test_case_continue and CommonUtil.step_index + 1 < len(all_step_info):
+                    CommonUtil.ExecLog(
+                        sModuleInfo,
+                        "Step-%s is set as 'Continue on fail' so continuing to next step" % (CommonUtil.step_index + 1),
+                        2
+                    )
+
+            elif sStepResult.upper() == BLOCKED_TAG.upper():
+                # Step is Blocked, Block the test step and test case. go to next test case
+                CommonUtil.ExecLog(sModuleInfo, "%s : Test Step Blocked" % current_step_name, 3)
+                after_execution_dict.update({"status": BLOCKED_TAG})
+
+            elif sStepResult.upper() == CANCELLED_TAG.upper():
+                CommonUtil.ExecLog(sModuleInfo, "%s : Test Step Cancelled" % current_step_name, 3)
+                after_execution_dict.update({"status": CANCELLED_TAG})
+                cleanup_runid_from_server(run_id)   # This is an api call. What to do with this in new maindriver system?
                 CommonUtil.CreateJsonReport(stepInfo=after_execution_dict)
-                CommonUtil.step_index += 1
-                continue
+                for i in tc_attachment_list: shared.Remove_From_Shared_Variables(i)   # Cleanup tc_attachment variables
+                return "pass"
 
-        elif sStepResult.upper() == NOT_RUN_TAG.upper():
-            # Step has Warning, but continue running next test step for this test case
-            CommonUtil.ExecLog(sModuleInfo, "%s : Test Step Not Run" % current_step_name, 2)
-            after_execution_dict.update({"status": NOT_RUN_TAG})
+            else:
+                CommonUtil.ExecLog(sModuleInfo, "%s : Test Step Cancelled" % current_step_name, 3)
+                after_execution_dict.update({"status": CANCELLED_TAG})
+                cleanup_runid_from_server(run_id)   # This is an api call. What to do with this in new maindriver system?
+                CommonUtil.CreateJsonReport(stepInfo=after_execution_dict)
+                for i in tc_attachment_list: shared.Remove_From_Shared_Variables(i)   # Cleanup tc_attachment variables
+                return "pass"
 
-        elif sStepResult.upper() == FAILED_TAG.upper():
-
-            # step failed, if linked test case notify other test cases via setting server variable named 'is_failed'
-            global failed_due_to_linked_fail
-
-            if is_linked == "yes" and not failed_due_to_linked_fail:
-                CommonUtil.ExecLog(
-                    sModuleInfo,
-                    str(test_case)
-                    + " failed in linked run.. Notifying other linked machines",
-                    3,
-                )
-
-                # set server variables
-                set_server_variable(run_id, "is_failed", "yes")
-                set_server_variable(
-                    run_id,
-                    "failed_machine",
-                    (CommonUtil.MachineInfo().getLocalUser()).lower(),
-                )
-                set_server_variable(run_id, "failed_test_case", str(test_case))
-
-            # Step has a Critical failure, fail the test step and test case. go to next test case
-
-            CommonUtil.ExecLog(sModuleInfo, "%s%s" % (current_step_name, CommonUtil.to_dlt_from_fail_reason), 3)  # add log
-
-            after_execution_dict.update({"status": "Failed"})  # dictionary update
-
-            # check if set for continue
-            if not test_case_continue and ConfigModule.get_config_value("RunDefinition", "local_run") == "False":
-                # run_cancelled = get_status_of_runid(run_id)
+            CommonUtil.CreateJsonReport(stepInfo=after_execution_dict)
+            if ConfigModule.get_config_value("RunDefinition", "local_run") == "False":
+                # run_cancelled = get_status_of_runid(run_id)     # Response = "In-Progress"
                 if run_cancelled == "Cancelled":
                     CommonUtil.ExecLog(
                         sModuleInfo,
                         "Test Run status is Cancelled. Exiting the current Test Case...%s"
                         % test_case,
                         2,
-                    )  # add log
-                already_failed = True
-                StepSeq += 1
-                CommonUtil.CreateJsonReport(stepInfo=after_execution_dict)
-                CommonUtil.step_index += 1
-                continue
-            elif test_case_continue and CommonUtil.step_index + 1 < len(all_step_info):
-                CommonUtil.ExecLog(
-                    sModuleInfo,
-                    "Step-%s is set as 'Continue on fail' so continuing to next step" % (CommonUtil.step_index + 1),
-                    2
-                )
+                    )
+                    sTestStepResultList[len(sTestStepResultList) - 1] = CANCELLED_TAG
+                    break
+            StepSeq += 1
+            CommonUtil.step_index += 1
 
-        elif sStepResult.upper() == BLOCKED_TAG.upper():
-            # Step is Blocked, Block the test step and test case. go to next test case
-            CommonUtil.ExecLog(sModuleInfo, "%s : Test Step Blocked" % current_step_name, 3)
-            after_execution_dict.update({"status": BLOCKED_TAG})
-
-        elif sStepResult.upper() == CANCELLED_TAG.upper():
-            CommonUtil.ExecLog(sModuleInfo, "%s : Test Step Cancelled" % current_step_name, 3)
-            after_execution_dict.update({"status": CANCELLED_TAG})
-            cleanup_runid_from_server(run_id)   # This is an api call. What to do with this in new maindriver system?
-            CommonUtil.CreateJsonReport(stepInfo=after_execution_dict)
-            for i in tc_attachment_list: shared.Remove_From_Shared_Variables(i)   # Cleanup tc_attachment variables
-            return "pass"
-
-        else:
-            CommonUtil.ExecLog(sModuleInfo, "%s : Test Step Cancelled" % current_step_name, 3)
-            after_execution_dict.update({"status": CANCELLED_TAG})
-            cleanup_runid_from_server(run_id)   # This is an api call. What to do with this in new maindriver system?
-            CommonUtil.CreateJsonReport(stepInfo=after_execution_dict)
-            for i in tc_attachment_list: shared.Remove_From_Shared_Variables(i)   # Cleanup tc_attachment variables
-            return "pass"
-
-        CommonUtil.CreateJsonReport(stepInfo=after_execution_dict)
-        if ConfigModule.get_config_value("RunDefinition", "local_run") == "False":
-            # run_cancelled = get_status_of_runid(run_id)     # Response = "In-Progress"
-            if run_cancelled == "Cancelled":
-                CommonUtil.ExecLog(
-                    sModuleInfo,
-                    "Test Run status is Cancelled. Exiting the current Test Case...%s"
-                    % test_case,
-                    2,
-                )
-                sTestStepResultList[len(sTestStepResultList) - 1] = CANCELLED_TAG
-                break
-        StepSeq += 1
-        CommonUtil.step_index += 1
-
-    for i in tc_attachment_list: shared.Remove_From_Shared_Variables(i)   # Cleanup tc_attachment variables
-    return sTestStepResultList
+        for i in tc_attachment_list: shared.Remove_From_Shared_Variables(i)   # Cleanup tc_attachment variables
+        return sTestStepResultList
+    except:
+        CommonUtil.Exception_Handler(sys.exc_info())
+        raise Exception
 
 
 # from the returned step results, it finds out the test case result
@@ -866,126 +869,154 @@ def run_test_case(
     performance=False,
     browserDriver=None,
 ):
-    shared.Set_Shared_Variables("run_id", run_id)
-    test_case = str(TestCaseID).replace("#", "no")
-    CommonUtil.current_tc_no = test_case
-    CommonUtil.load_testing = False
-    ConfigModule.add_config_value("sectionOne", "sTestStepExecLogId", sModuleInfo, temp_ini_file)
-    create_tc_log_ss_folder(run_id, test_case, temp_ini_file)
-    file_specific_steps = all_file_specific_steps[TestCaseID] if TestCaseID in all_file_specific_steps else {}
-    TestCaseName = testcase_info["title"]
-    log_line = "# EXECUTING TEST CASE : %s :: %s #" % (test_case, TestCaseName)
-    print("#"*(len(log_line)))
-    CommonUtil.ExecLog("", log_line, 4, False)
-    print("#"*(len(log_line)))
+    try:
+        TestCaseStartTime = time.time()
+        shared.Set_Shared_Variables("run_id", run_id)
+        test_case = str(TestCaseID).replace("#", "no")
+        CommonUtil.current_tc_no = test_case
+        CommonUtil.load_testing = False
+        ConfigModule.add_config_value("sectionOne", "sTestStepExecLogId", sModuleInfo, temp_ini_file)
+        create_tc_log_ss_folder(run_id, test_case, temp_ini_file)
+        file_specific_steps = all_file_specific_steps[TestCaseID] if TestCaseID in all_file_specific_steps else {}
+        TestCaseName = testcase_info["title"]
+        log_line = "# EXECUTING TEST CASE : %s :: %s #" % (test_case, TestCaseName)
+        print("#"*(len(log_line)))
+        CommonUtil.ExecLog("", log_line, 4, False)
+        print("#"*(len(log_line)))
 
-    # get test case start time
-    TestCaseStartTime = time.time()
-    if performance and browserDriver:
-        shared.Set_Shared_Variables("selenium_driver", browserDriver)
+        # get test case start time
+        if performance and browserDriver:
+            shared.Set_Shared_Variables("selenium_driver", browserDriver)
 
-    # runs all test steps in the test case, all test step result is stored in the list named sTestStepResultList
-    sTestStepResultList = run_all_test_steps_in_a_test_case(
-        testcase_info,
-        test_case,
-        sModuleInfo,
-        run_id,
-        file_specific_steps,
-        final_dependency,
-        final_run_params,
-        temp_ini_file,
-        executor,
-        debug_info,
-        is_linked,
-        performance
-    )
-
-    ConfigModule.add_config_value(
-        "sectionOne",
-        "sTestStepExecLogId",
-        run_id + "|" + test_case + "|" + "none" + "|" + "none",
-        temp_ini_file,
-    )
-
-    # get test case end time
-    TestCaseEndTime = time.time()
-    sTestCaseEndTime = datetime.fromtimestamp(TestCaseEndTime).strftime("%Y-%m-%d %H:%M:%S")
-
-    # Decide if Test Case Pass/Failed
-    sTestCaseStatus = calculate_test_case_result(sModuleInfo, test_case, run_id, sTestStepResultList, testcase_info)
-
-    # write locust file for performance testing
-    if performance:
-        locust_output_file_path = (
-            os.getcwd()
-            + os.sep
-            + "Built_In_Automation"
-            + os.sep
-            + "Performance_Testing"
-            + os.sep
-            + "locustFileOutput.txt"
-        )
-        file = open(locust_output_file_path, "a+")
-        file.write(sTestCaseStatus + "-" + str(",".join(sTestStepResultList)) + "\n")
-        file.close()
-
-    # Time it took to run the test case
-    TimeDiff = TestCaseEndTime - TestCaseStartTime
-    TimeInSec = int(TimeDiff)
-    TestCaseDuration = CommonUtil.FormatSeconds(TimeInSec)
-    after_execution_dict = {
-        "teststarttime": datetime.fromtimestamp(TestCaseStartTime).strftime("%Y-%m-%d %H:%M:%S"),
-        "testendtime": sTestCaseEndTime,
-        "duration": TestCaseDuration,
-        "status": sTestCaseStatus,
-        "failreason": ""
-    }
-    if sTestCaseStatus not in passed_tag_list or sTestCaseStatus in passed_tag_list and not send_log_file_only_for_fail:
-        TCLogFile = (
-            os.sep
-            + ConfigModule.get_config_value("Advanced Options", "_file_upload_path")
-            + os.sep
-            + run_id.replace(":", "-")
-            + "/"
-            + ConfigModule.get_config_value("sectionOne", "test_case", temp_ini_file)
-            + ".zip"
-        )
-        after_execution_dict["logid"] = TCLogFile
-    CommonUtil.CreateJsonReport(TCInfo=after_execution_dict)
-    CommonUtil.clear_logs_from_report(send_log_file_only_for_fail, rerun_on_fail, sTestCaseStatus)
-
-    if not CommonUtil.debug_status:  # if normal run, then write log file and cleanup driver instances
-        CommonUtil.Join_Thread_and_Return_Result("screenshot")  # Let the capturing screenshot end in thread
-        cleanup_driver_instances()  # clean up drivers
-        shared.Clean_Up_Shared_Variables()  # clean up shared variables
-        sTestCaseStatus = rerun_testcase(
-            sTestCaseStatus,
-            TestCaseID,
+        # runs all test steps in the test case, all test step result is stored in the list named sTestStepResultList
+        sTestStepResultList = run_all_test_steps_in_a_test_case(
+            testcase_info,
+            test_case,
             sModuleInfo,
             run_id,
+            file_specific_steps,
             final_dependency,
             final_run_params,
             temp_ini_file,
-            is_linked,
-            testcase_info,
             executor,
             debug_info,
-            all_file_specific_steps,
-            rerun_on_fail,
-            send_log_file_only_for_fail,
-            performance,
-            browserDriver,
+            is_linked,
+            performance
         )
-        if ConfigModule.get_config_value("RunDefinition", "local_run") == "False":
-            zip_and_delete_tc_folder(
-                sTestCaseStatus,
-                temp_ini_file,
-                send_log_file_only_for_fail
-            )
 
-    if sTestStepResultList[-1] == CANCELLED_TAG:
-        return CANCELLED_TAG
-    return "passed"
+        ConfigModule.add_config_value(
+            "sectionOne",
+            "sTestStepExecLogId",
+            run_id + "|" + test_case + "|" + "none" + "|" + "none",
+            temp_ini_file,
+        )
+
+        # get test case end time
+        TestCaseEndTime = time.time()
+        sTestCaseEndTime = datetime.fromtimestamp(TestCaseEndTime).strftime("%Y-%m-%d %H:%M:%S")
+
+        # Decide if Test Case Pass/Failed
+        sTestCaseStatus = calculate_test_case_result(sModuleInfo, test_case, run_id, sTestStepResultList, testcase_info)
+
+        # write locust file for performance testing
+        if performance:
+            locust_output_file_path = (
+                os.getcwd()
+                + os.sep
+                + "Built_In_Automation"
+                + os.sep
+                + "Performance_Testing"
+                + os.sep
+                + "locustFileOutput.txt"
+            )
+            file = open(locust_output_file_path, "a+")
+            file.write(sTestCaseStatus + "-" + str(",".join(sTestStepResultList)) + "\n")
+            file.close()
+
+        # Time it took to run the test case
+        TimeDiff = TestCaseEndTime - TestCaseStartTime
+        TimeInSec = int(TimeDiff)
+        TestCaseDuration = CommonUtil.FormatSeconds(TimeInSec)
+        after_execution_dict = {
+            "teststarttime": datetime.fromtimestamp(TestCaseStartTime).strftime("%Y-%m-%d %H:%M:%S"),
+            "testendtime": sTestCaseEndTime,
+            "duration": TestCaseDuration,
+            "status": sTestCaseStatus,
+            "failreason": ""
+        }
+        if sTestCaseStatus not in passed_tag_list or sTestCaseStatus in passed_tag_list and not send_log_file_only_for_fail:
+            TCLogFile = (
+                os.sep
+                + ConfigModule.get_config_value("Advanced Options", "_file_upload_path")
+                + os.sep
+                + run_id.replace(":", "-")
+                + "/"
+                + ConfigModule.get_config_value("sectionOne", "test_case", temp_ini_file)
+                + ".zip"
+            )
+            after_execution_dict["logid"] = TCLogFile
+        CommonUtil.CreateJsonReport(TCInfo=after_execution_dict)
+        CommonUtil.clear_logs_from_report(send_log_file_only_for_fail, rerun_on_fail, sTestCaseStatus)
+
+        if not CommonUtil.debug_status:  # if normal run, then write log file and cleanup driver instances
+            CommonUtil.Join_Thread_and_Return_Result("screenshot")  # Let the capturing screenshot end in thread
+            cleanup_driver_instances()  # clean up drivers
+            shared.Clean_Up_Shared_Variables()  # clean up shared variables
+            sTestCaseStatus = rerun_testcase(
+                sTestCaseStatus,
+                TestCaseID,
+                sModuleInfo,
+                run_id,
+                final_dependency,
+                final_run_params,
+                temp_ini_file,
+                is_linked,
+                testcase_info,
+                executor,
+                debug_info,
+                all_file_specific_steps,
+                rerun_on_fail,
+                send_log_file_only_for_fail,
+                performance,
+                browserDriver,
+            )
+            if ConfigModule.get_config_value("RunDefinition", "local_run") == "False":
+                zip_and_delete_tc_folder(
+                    sTestCaseStatus,
+                    temp_ini_file,
+                    send_log_file_only_for_fail
+                )
+
+        if sTestStepResultList[-1] == CANCELLED_TAG:
+            return CANCELLED_TAG
+        return "passed"
+    except:
+        CommonUtil.Exception_Handler(sys.exc_info())
+        TestCaseEndTime = time.time()
+        sTestCaseEndTime = datetime.fromtimestamp(TestCaseEndTime).strftime("%Y-%m-%d %H:%M:%S")
+        TimeDiff = TestCaseEndTime - TestCaseStartTime
+        TimeInSec = int(TimeDiff)
+        TestCaseDuration = CommonUtil.FormatSeconds(TimeInSec)
+        sTestCaseStatus = "Blocked"
+        after_execution_dict = {
+            "teststarttime": datetime.fromtimestamp(TestCaseStartTime).strftime("%Y-%m-%d %H:%M:%S"),
+            "testendtime": sTestCaseEndTime,
+            "duration": TestCaseDuration,
+            "status": sTestCaseStatus,
+            "failreason": ""
+        }
+        TCLogFile = (
+                os.sep
+                + ConfigModule.get_config_value("Advanced Options", "_file_upload_path")
+                + os.sep
+                + run_id.replace(":", "-")
+                + "/"
+                + ConfigModule.get_config_value("sectionOne", "test_case", temp_ini_file)
+                + ".zip"
+        )
+        after_execution_dict["logid"] = TCLogFile
+        CommonUtil.CreateJsonReport(TCInfo=after_execution_dict)
+        return "passed"
 
 
 def rerun_testcase(
@@ -1641,7 +1672,7 @@ def main(device_dict, user_info_object):
 
         return "pass"
     except:
-        CommonUtil.debug_code_error(sys.exc_info())  # For system debugging purpose.
+        CommonUtil.debug_code_error(sys.exc_info())
         return None
 
 
