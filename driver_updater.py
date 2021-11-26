@@ -3,17 +3,66 @@
 import os
 import sys
 from pathlib import Path
+from Framework.Utilities import CommonUtil, ConfigModule
 
 try:
-    import webdrivermanager
+    from webdriver_manager.chrome import ChromeDriverManager
+    from webdriver_manager.firefox import GeckoDriverManager
+    from webdriver_manager.microsoft import IEDriverManager
+    from webdriver_manager.microsoft import EdgeChromiumDriverManager
+    from webdriver_manager.opera import OperaDriverManager
 except:
-    print("Could not find module webdrivermanager. Install by running command:")
-    print("> pip install webdrivermanager")
+    print("Could not find module webdriver-manager. Install by running command:")
+    print("> pip install webdriver-manager")
     print("Press any key or [ENTER] to exit.")
     input()
+    sys.exit()
+# try:
+#     import webdrivermanager
+# except:
+#     print("Could not find module webdrivermanager. Install by running command:")
+#     print("> pip install webdrivermanager")
+#     print("Press any key or [ENTER] to exit.")
+#     input()
+
+def update():
+    try:
+        path = ChromeDriverManager().install()
+        print("Downloaded Chrome driver into:", path)
+        ConfigModule.add_config_value("Selenium_driver_paths", "chrome_path", path)
+    except:
+        print(sys.exc_info())
+
+    try:
+        path = GeckoDriverManager().install()
+        print("Downloaded Firefox driver into:", path)
+        ConfigModule.add_config_value("Selenium_driver_paths", "firefox_path", path)
+    except:
+        print(sys.exc_info())
+
+    try:
+        path = EdgeChromiumDriverManager().install()
+        print("Downloaded Edge driver into:", path)
+        ConfigModule.add_config_value("Selenium_driver_paths", "edge_path", path)
+    except:
+        print(sys.exc_info())
+
+    try:
+        path = OperaDriverManager().install()
+        print("Downloaded Opera driver into:", path)
+        ConfigModule.add_config_value("Selenium_driver_paths", "opera_path", path)
+    except:
+        print(sys.exc_info())
+
+    try:
+        path = IEDriverManager().install()
+        print("Downloaded Internet Explorer driver into:", path)
+        ConfigModule.add_config_value("Selenium_driver_paths", "ie_path", path)
+    except:
+        print(sys.exc_info())
 
 
-def update(pathname):
+def update_old(pathname):
     driver_download_path = Path(pathname) / Path("webdrivers")
     drivers = webdrivermanager.AVAILABLE_DRIVERS
 
@@ -47,12 +96,11 @@ def update(pathname):
 
 def main():
     # Scripts folder is usually placed in the PATH. So we'll download the drivers there
-    PYTHON_DIR = os.path.dirname(sys.executable)
-    PYTHON_SCRIPTS_DIR = os.path.join(PYTHON_DIR, "Scripts")
-
-    print("Starting update. Drivers will be placed in the following directory:")
-    print("> %s" % PYTHON_SCRIPTS_DIR)
-    update(pathname=PYTHON_SCRIPTS_DIR)
+    # PYTHON_DIR = os.path.dirname(sys.executable)
+    # PYTHON_SCRIPTS_DIR = os.path.join(PYTHON_DIR, "Scripts")
+    # print("Starting update. Drivers will be placed in the following directory:")
+    # print("> %s" % PYTHON_SCRIPTS_DIR)
+    update()
 
 if __name__ == "__main__":
     main()
