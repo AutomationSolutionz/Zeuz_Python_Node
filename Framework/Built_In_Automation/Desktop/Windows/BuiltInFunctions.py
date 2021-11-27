@@ -27,6 +27,9 @@ from _elementtree import Element
 import win32api
 import win32con
 
+import PIL
+from PIL import Image, ImageGrab
+
 # this needs to be here on top, otherwise will return error
 import clr, System
 dll_path = os.getcwd().split("Framework")[0] + "Framework" + os.sep + "windows_dll_files" + os.sep
@@ -786,6 +789,7 @@ def image_search(step_data_set):
         idx = 0
         confidence = 0.85
         parent_dataset = []
+        image_text = ""
         for left, mid, right in step_data_set:
             left = left.strip().lower()
             mid = mid.strip().lower()
@@ -796,12 +800,14 @@ def image_search(step_data_set):
                     idx = int(right.strip())
                 elif "confidence" in left:
                     confidence = float(right.replace("%", "").replace(" ", "").lower()) / 100
+                elif "text" in left:
+                    image_text = right
                 else:
                     file_name = right.strip()
                     if "~" in file_name:
                         file_name = str(Path(os.path.expanduser(file_name)))
             if mid == "parent parameter":
-                parent_dataset.append((left, mid, right))
+                parent_dataset.append((left, "element parameter", right))
 
         if parent_dataset:
             parent = Get_Element(parent_dataset)
@@ -814,11 +820,12 @@ def image_search(step_data_set):
         else:
             left, top = 0, 0
             width, height = pyautogui.size()
+        print("left,top,width,height=", (left, top, width, height))
 
-        if file_name == "":
+        if file_name == "" and image_text == "":
             return "zeuz_failed"
 
-        if not os.path.exists(file_name):
+        if file_name and not os.path.exists(file_name):
             CommonUtil.ExecLog(
                 sModuleInfo,
                 "Could not find file attachment called %s" % file_name,
@@ -830,6 +837,39 @@ def image_search(step_data_set):
 
     # Find element information
     try:
+        if image_text:
+            import cv2
+            from pytesseract import pytesseract
+            pytesseract.tesseract_cmd = r'C:\Program Files\Tesseract-OCR\tesseract.exe'
+
+            image_text = image_text.replace(" ", "").lower()
+            PIL.ImageGrab.grab().crop((left, top, left + width, top + height)).save("sample.jpg")
+            imge = cv2.imread("sample.jpg")
+            gray = cv2.cvtColor(imge, cv2.COLOR_BGR2GRAY)
+
+            data = pytesseract.image_to_boxes(gray)
+            all_letters = data.split("\n")
+            # t = "signature"
+            full_string = ""
+            for i in all_letters:
+                full_string += i[0] if len(i) > 0 else "~"
+            i = full_string.lower().find(image_text)
+            if i == -1:
+                print('Could not find text "%s"' % image_text.lower())
+                return "zeuz_failed"
+            a = all_letters[i:i + len(image_text)]
+            for i in a:
+                print(i)
+            left_top = list(map(int, a[0].split(" ")[1:3]))
+            right_bottom = list(map(int, a[-1].split(" ")[3:5]))
+            center = left + (right_bottom[0] + left_top[0]) // 2, top + height - (right_bottom[1] + left_top[1]) // 2
+            print("Center = " + str(center))
+            # pyautogui.moveTo(center)
+
+            element = left_top[0] + left, height - right_bottom[1] + top, right_bottom[0] - left_top[0], right_bottom[1] - left_top[1]
+            print("Element=", element)
+            return _Element(element)
+
         # Scale image if required
         regex = re.compile(r"(\d+)\s*x\s*(\d+)", re.IGNORECASE)  # Create regex object with expression
         match = regex.search(file_name)  # Search for resolution within filename (this is the resolution of the screen the image was captured on)
@@ -905,6 +945,7 @@ def Get_Element(data_set, wait_time=Shared_Resources.Get_Shared_Variables("eleme
 
     element_name, window_name, element_class, element_automation, element_control, element_path, elem, element_image = None, None, None, None, None, "", False, []
     parent_name, parent_class, parent_automation, parent_control, parent = None, None, None, None, False
+    parent_path = ""
     sibling_name, sibling_class, sibling_automation, sibling_control, sibling = None, None, None, None, False
     element_index = 0
     try:
@@ -932,6 +973,7 @@ def Get_Element(data_set, wait_time=Shared_Resources.Get_Shared_Variables("eleme
                 elif "name" in left: parent_name = [right, _count_star(left)]
                 elif "automation" in left: parent_automation = [right, _count_star(left)]  # automationid
                 elif "control" in left: parent_control = [right, _count_star(left)]    # localizedcontroltype
+                elif "path" in left: parent_path = right.strip()
 
             elif mid == "sibling parameter":
                 sibling = True
@@ -949,7 +991,10 @@ def Get_Element(data_set, wait_time=Shared_Resources.Get_Shared_Variables("eleme
         if sibling and not parent:
             CommonUtil.ExecLog(sModuleInfo, "A common PARENT of both ELEMENT and SIBLING should be provided", 3)
             return "zeuz_failed"
-        if parent and (parent_name, parent_class, parent_automation, parent_control) == (None, None, None, None):
+        if parent and element_image and (parent_name, parent_class, parent_automation, parent_control, parent_path) == (None, None, None, None, ""):
+            CommonUtil.ExecLog(sModuleInfo, "For image parent, We support only 'Window', 'Name', 'ClassName', 'LocalizedControlType', 'AutomationId', 'path'", 3)
+            return "zeuz_failed"
+        elif parent and not element_image and (parent_name, parent_class, parent_automation, parent_control) == (None, None, None, None):
             CommonUtil.ExecLog(sModuleInfo, "We support only 'Window', 'Name', 'ClassName', 'LocalizedControlType', 'AutomationId'", 3)
             return "zeuz_failed"
         if sibling and (sibling_name, sibling_class, sibling_automation, sibling_control) == (None, None, None, None):
@@ -967,6 +1012,9 @@ def Get_Element(data_set, wait_time=Shared_Resources.Get_Shared_Variables("eleme
         while True:
             if element_image:
                 _get_main_window(window_name)
+                for i in (("name", parent_name), ("class", parent_class), ("automationid", parent_automation), ("control", parent_control), ("path", parent_path)):
+                    if i[1]:
+                        element_image.append((i[0], "parent parameter", i[1]))
                 result = image_search(element_image)
                 return result
             if element_path:

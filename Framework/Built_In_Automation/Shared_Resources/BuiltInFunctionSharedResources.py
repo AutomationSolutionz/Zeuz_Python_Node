@@ -3,6 +3,7 @@
 
 # shared_variables
 
+import os
 import json
 import inspect, sys, time, collections
 import string
