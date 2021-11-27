@@ -853,53 +853,67 @@ def image_search(step_data_set):
             full_string = ""
             for i in all_letters:
                 full_string += i[0] if len(i) > 0 else "~"
-            i = full_string.lower().find(image_text)
-            if i == -1:
-                print('Could not find text "%s"' % image_text.lower())
+            full_string = full_string.lower()
+
+            all_pos = [m.start() for m in re.finditer(image_text, full_string)]
+
+            if -len(all_pos) <= idx < len(all_pos):
+                CommonUtil.ExecLog(sModuleInfo, "Found %s text elements. Returning element of index %s" % (len(all_pos), idx), 1)
+                i = all_pos[idx]
+            elif len(all_pos) != 0:
+                CommonUtil.ExecLog(sModuleInfo, "Found %s text elements. Index out of range" % len(all_pos), 3)
                 return "zeuz_failed"
+            else:
+                CommonUtil.ExecLog(sModuleInfo, 'Could not find text "%s"' % image_text, 3)
+                return "zeuz_failed"
+
+            msg = ""
             a = all_letters[i:i + len(image_text)]
             for i in a:
-                print(i)
+                msg += i + "\n"
             left_top = list(map(int, a[0].split(" ")[1:3]))
             right_bottom = list(map(int, a[-1].split(" ")[3:5]))
             center = left + (right_bottom[0] + left_top[0]) // 2, top + height - (right_bottom[1] + left_top[1]) // 2
-            print("Center = " + str(center))
+            msg += "Center = " + str(center) + "\n"
             # pyautogui.moveTo(center)
 
             element = left_top[0] + left, height - right_bottom[1] + top, right_bottom[0] - left_top[0], right_bottom[1] - left_top[1]
-            print("Element=", element)
+            msg += "Coordinates = " + str(element) + "\n"
+            CommonUtil.ExecLog(sModuleInfo, msg, 5)
+
             return _Element(element)
-
-        # Scale image if required
-        regex = re.compile(r"(\d+)\s*x\s*(\d+)", re.IGNORECASE)  # Create regex object with expression
-        match = regex.search(file_name)  # Search for resolution within filename (this is the resolution of the screen the image was captured on)
-        if match is None and resolution != "":  # If resolution not in filename, try to find it in the step data
-            match = regex.search(resolution)  # Search for resolution within the Field of the element paramter row (this is the resolution of the screen the image was captured on)
-
-        if match is not None:  # Match found, so scale
-            CommonUtil.ExecLog(sModuleInfo, "Scaling image (%s)" % match.group(0), 5)
-            size_w, size_h = (
-                int(match.group(1)),
-                int(match.group(2)),
-            )  # Extract width, height from match (is screen resolution of desktop image was taken on)
-            file_name = _scale_image(file_name, size_w, size_h)  # Scale image element
-
-        element = pyautogui.locateAllOnScreen(
-            file_name, grayscale=True, confidence=confidence, region=(left, top, width, height)
-        )  # Get coordinates of element. Use greyscale for increased speed and better matching across machines. May cause higher number of false-positives
-        element_list = tuple(element)
-
-        element = None
-        if -len(element_list) <= idx < len(element_list):
-            element = element_list[idx]
-        elif len(element_list) != 0:
-            CommonUtil.ExecLog(sModuleInfo, "Found %s elements. Index out of range" % len(element_list), 3)
         else:
-            CommonUtil.ExecLog(sModuleInfo, "Element was not found", 3)
+            # Scale image if required
+            regex = re.compile(r"(\d+)\s*x\s*(\d+)", re.IGNORECASE)  # Create regex object with expression
+            match = regex.search(file_name)  # Search for resolution within filename (this is the resolution of the screen the image was captured on)
+            if match is None and resolution != "":  # If resolution not in filename, try to find it in the step data
+                match = regex.search(resolution)  # Search for resolution within the Field of the element paramter row (this is the resolution of the screen the image was captured on)
 
-        if element is None:
-            return "zeuz_failed"
-        return _Element(element)
+            if match is not None:  # Match found, so scale
+                CommonUtil.ExecLog(sModuleInfo, "Scaling image (%s)" % match.group(0), 5)
+                size_w, size_h = (
+                    int(match.group(1)),
+                    int(match.group(2)),
+                )  # Extract width, height from match (is screen resolution of desktop image was taken on)
+                file_name = _scale_image(file_name, size_w, size_h)  # Scale image element
+
+            element = pyautogui.locateAllOnScreen(
+                file_name, grayscale=True, confidence=confidence, region=(left, top, width, height)
+            )  # Get coordinates of element. Use greyscale for increased speed and better matching across machines. May cause higher number of false-positives
+            element_list = tuple(element)
+
+            element = None
+            if -len(element_list) <= idx < len(element_list):
+                CommonUtil.ExecLog(sModuleInfo, "Found %s elements. Returning element of index %s" % (len(element_list), idx), 1)
+                element = element_list[idx]
+            elif len(element_list) != 0:
+                CommonUtil.ExecLog(sModuleInfo, "Found %s elements. Index out of range" % len(element_list), 3)
+            else:
+                CommonUtil.ExecLog(sModuleInfo, "Element was not found", 3)
+
+            if element is None:
+                return "zeuz_failed"
+            return _Element(element)
     except:
         return CommonUtil.Exception_Handler(sys.exc_info())
 
@@ -1015,6 +1029,7 @@ def Get_Element(data_set, wait_time=Shared_Resources.Get_Shared_Variables("eleme
                 for i in (("name", parent_name), ("class", parent_class), ("automationid", parent_automation), ("control", parent_control), ("path", parent_path)):
                     if i[1]:
                         element_image.append((i[0], "parent parameter", i[1]))
+                element_image.append(("index", "element parameter", str(element_index)))
                 result = image_search(element_image)
                 return result
             if element_path:
