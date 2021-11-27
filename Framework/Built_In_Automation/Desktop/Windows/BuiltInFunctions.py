@@ -840,7 +840,7 @@ def image_search(step_data_set):
         if image_text:
             import cv2
             from pytesseract import pytesseract
-            pytesseract.tesseract_cmd = r'C:\Program Files\Tesseract-OCR\tesseract.exe'
+            pytesseract.tesseract_cmd = os.environ["PROGRAMFILES"] + r"\Tesseract-OCR\tesseract.exe"
 
             image_text = image_text.replace(" ", "").lower()
             PIL.ImageGrab.grab().crop((left, top, left + width, top + height)).save("sample.jpg")
