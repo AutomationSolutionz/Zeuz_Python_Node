@@ -289,6 +289,14 @@ def _found(dataset_val, object_val):
         return False
 
 
+def _get_attribute(value):
+    val = value.strip().lower()
+    d = {"class": "ClassName", "name": "Name", "automation": "AutomationId", "control": "LocalizedControlType"}
+    if val in d:
+        return d[val]
+    return value
+
+
 @logger
 def Element_only_search(
     Parent_Element,
@@ -1685,7 +1693,7 @@ def save_attribute_values_in_list(data_set):
                 elif left == "save attribute values in list":
                     variable_name = right
                 elif left == "paired":
-                    paired = False if right.lower() == "no" else True
+                    paired = False if right.lower() in ("no", "false") or "colum" in right.lower() else True
                     p = True
 
         except:
@@ -1693,13 +1701,13 @@ def save_attribute_values_in_list(data_set):
             CommonUtil.ExecLog(sModuleInfo, "Unable to parse data. Please write data in correct format", 3)
             return "zeuz_failed"
 
-        if not p and len(target) == 1:
-            paired = False
+        # if not p and len(target) == 1:
+        #     paired = False
 
         for each in target:
             all_elements.append(Get_Element(each[0], Parent_Element=Element))
 
-        if paired:
+        if paired and not len(target) == 1:
             variable_value_size = 0
             variable_value = []
             for each in all_elements:
@@ -1712,9 +1720,9 @@ def save_attribute_values_in_list(data_set):
                 j = 0
                 for elem in each:
                     if search_by_attribute.strip().lower() == "value":
-                        Attribute_value = eval("elem.GetCurrentPattern(ValuePattern.Pattern).Current.Value" + search_by_attribute)
+                        Attribute_value = eval("elem.GetCurrentPattern(ValuePattern.Pattern).Current.Value")
                     else:
-                        Attribute_value = eval("elem.Current." + search_by_attribute)
+                        Attribute_value = eval("elem.Current." + _get_attribute(search_by_attribute))
                     try:
                         for search_contain in target[i][2]:
                             if not isinstance(search_contain, type(Attribute_value)) or search_contain in Attribute_value or len(search_contain) == 0:
@@ -1741,9 +1749,9 @@ def save_attribute_values_in_list(data_set):
                 j = 0
                 for elem in each:
                     if search_by_attribute.strip().lower() == "value":
-                        Attribute_value = eval("elem.GetCurrentPattern(ValuePattern.Pattern).Current.Value" + search_by_attribute)
+                        Attribute_value = eval("elem.GetCurrentPattern(ValuePattern.Pattern).Current.Value")
                     else:
-                        Attribute_value = eval("elem.Current." + search_by_attribute)
+                        Attribute_value = eval("elem.Current." + _get_attribute(search_by_attribute))
                     try:
                         for search_contain in target[i][2]:
                             if not isinstance(search_contain, type(Attribute_value)) or search_contain in Attribute_value or len(search_contain) == 0:
@@ -1764,17 +1772,30 @@ def save_attribute_values_in_list(data_set):
                     j = j + 1
                 i = i + 1
             if len(target) == 1:
-                variable_value = variable_value[0]
-                new_values = {}
-                for i in variable_value:
-                    top = str(i[1].Current.BoundingRectangle.Top)
-                    if top in new_values:
-                        new_values[top] += [i[0]]
-                    else:
-                        new_values[top] = []
-                variable_value = []
-                for i in new_values:
-                    variable_value.append(new_values[i])
+                if paired:
+                    variable_value = variable_value[0]
+                    new_values = {}
+                    for i in variable_value:
+                        top = str(i[1].Current.BoundingRectangle.Top)
+                        if top in new_values:
+                            new_values[top] += [i[0]]
+                        else:
+                            new_values[top] = [i[0]]
+                    variable_value = []
+                    for i in new_values:
+                        variable_value.append(new_values[i])
+                else:
+                    variable_value = variable_value[0]
+                    new_values = {}
+                    for i in variable_value:
+                        top = str(i[1].Current.BoundingRectangle.Left)
+                        if top in new_values:
+                            new_values[top] += [i[0]]
+                        else:
+                            new_values[top] = [i[0]]
+                    variable_value = []
+                    for i in new_values:
+                        variable_value.append(new_values[i])
 
         return Shared_Resources.Set_Shared_Variables(variable_name, variable_value)
 
