@@ -683,7 +683,8 @@ def Element_path_search(window_name, element_path):
         temp = _child_search_by_path(
             ParentElement,
             element_path,
-            sModuleInfo
+            sModuleInfo,
+            True if window_name is None else False
         )
         if temp == []: temp = "zeuz_failed"
         return temp
@@ -695,7 +696,8 @@ def Element_path_search(window_name, element_path):
 def _child_search_by_path(
     ParentElement,
     element_path,
-    sModuleInfo
+    sModuleInfo,
+    switch_window=False
 ):
     element_name, element_class, element_automation, element_control = None, None, None, None
     global tabs
@@ -728,7 +730,10 @@ def _child_search_by_path(
                 if found and element_automation is not None and not _found(element_automation, AutomationE): found = False
                 if found and element_control is not None and not _found(element_control, LocalizedControlTypeE): found = False
 
-                if found: all_elements.append(each_child)
+                if found:
+                    if switch_window:
+                        autoit.win_activate(NameE)
+                    all_elements.append(each_child)
                 if 0 <= element_index == len(all_elements) - 1: break
 
             if code_debug: tabs += 1

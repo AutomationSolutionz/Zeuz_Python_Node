@@ -498,8 +498,8 @@ def main():
         global x, y, path_priority, element_plugin, auth, path, xml_str, findall_time, findall_count
         auth_thread = Authenticate()
         while True:
-            # os.system('pause')
-            input()
+            os.system('pause')
+            # input()
             print("Hover over the Element and press control")
             path = ""; xml_str = ""; path_priority = 0; element_plugin = False; findall_time = 0; findall_count = 0
             keyboard.wait("ctrl")
