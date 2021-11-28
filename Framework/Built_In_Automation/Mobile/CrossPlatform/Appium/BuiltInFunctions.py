@@ -1699,36 +1699,35 @@ def swipe_handler_android(data_set=[], save_att_data_set={}):
 @logger
 @deprecated
 def scroll_to_an_element(data_set):
+    global appium_driver
     sModuleInfo = inspect.currentframe().f_code.co_name + " : " + MODULE_NAME
     skip_or_not = filter_optional_action_and_step_data(data_set, sModuleInfo)
     if skip_or_not == False:
         return "passed"
     try:
-        final_string = "new UiScrollable(new UiSelector().scrollable(true))"
-        search_string = ""
+        final_scroll_string = "new UiScrollable(new UiSelector()"
+        final_element_string = ".scrollIntoView(new UiSelector()"
+        scroll_search_string = ""
+        element_search_string = ""
+        element = None
         direction = ""
-        element_dataset = []
-        element_search = False
-        varname = ""
         max_scroll = ""
         scroll_to = ""
         try:
             for left, mid, right in data_set:
                 mid = mid.strip().lower()
                 left = left.strip().lower()
-                if "search element parameter" != mid:
-                    element_dataset.append((left, mid, right))
-                else:
+                if "element parameter" == mid:
                     if left == "*resource-id":
-                        search_string += '.resourceIdMatches(".*' + right + '.*")'
+                        scroll_search_string += '.resourceIdMatches(".*' + right + '.*")'
                     elif left == "resource-id":
-                        search_string += '.resourceIdMatches("' + right + '")'
+                        scroll_search_string += '.resourceIdMatches("' + right + '")'
                     elif left == "*text":
-                        search_string += '.textContains("' + right + '")'
+                        scroll_search_string += '.textContains("' + right + '")'
                     elif left == "text":
-                        search_string += '.text("' + right + '")'
+                        scroll_search_string += '.text("' + right + '")'
                     elif left == "class":
-                        search_string += '.className("' + right + '")'
+                        scroll_search_string += '.className("' + right + '")'
                     elif left == "*class":
                         CommonUtil.ExecLog(
                             sModuleInfo,
@@ -1738,7 +1737,7 @@ def scroll_to_an_element(data_set):
                             3)
                         return "zeuz_failed"
                     elif left == "index":
-                        search_string += '.instance("' + right + '")'
+                        scroll_search_string += '.instance("' + right + '")'
                     else:
                         CommonUtil.ExecLog(
                             sModuleInfo,
@@ -1746,8 +1745,38 @@ def scroll_to_an_element(data_set):
                             "resource-id\n*resource-id\ntext\n*text\nclass\nindex",
                             3)
                         return "zeuz_failed"
-                if "element parameter" == mid:
-                    element_search = True
+
+                elif "desired element parameter" == mid:
+                    if left == "*resource-id":
+                        element_search_string += '.resourceIdMatches(".*' + right + '.*")'
+                    elif left == "resource-id":
+                        element_search_string += '.resourceIdMatches("' + right + '")'
+                    elif left == "*text":
+                        element_search_string += '.textContains("' + right + '")'
+                    elif left == "text":
+                        element_search_string += '.text("' + right + '")'
+                    elif left == "class":
+                        element_search_string += '.className("' + right + '")'
+                    elif left == "*class":
+                        CommonUtil.ExecLog(
+                            sModuleInfo,
+                            "Partial matching does not work for class. It works for resource-id and text.\n" +
+                            "The following 6 Attributes will work for search element parameter:\n" +
+                            "resource-id\n*resource-id\ntext\n*text\nclass\nindex",
+                            3)
+                        return "zeuz_failed"
+                    elif left == "index":
+                        element_search_string += '.instance("' + right + '")'
+                    else:
+                        CommonUtil.ExecLog(
+                            sModuleInfo,
+                            "Only the following 6 Attributes will work for search element parameter:\n" +
+                            "resource-id\n*resource-id\ntext\n*text\nclass\nindex",
+                            3)
+                        return "zeuz_failed"
+
+        #        if "element parameter" == mid:
+        #            element_search = True
                 elif "direction" == left:
                     r = right.strip().lower()
                     if r == "up": direction = ".setAsVerticalList().scrollForward()"
@@ -1755,8 +1784,8 @@ def scroll_to_an_element(data_set):
                     elif r == "left": direction = ".setAsHorizontalList().scrollForward()"
                     elif r == "right": direction = ".setAsHorizontalList().scrollBackward()"
                     else: direction = ""
-                elif "save search element" == left:
-                    varname = right.strip()
+        #        elif "save search element" == left:
+        #            varname = right.strip()
                 elif "max scroll" == left:
                     if right.strip().isdigit():
                         max_scroll = right.strip().lower()
@@ -1769,46 +1798,40 @@ def scroll_to_an_element(data_set):
                     elif right.strip().lower() == "scroll to beginning":
                         scroll_to = "beginning"
 
+            if scroll_search_string == "":
+                scroll_search_string = ".scrollable(true)"
+
+            final_scroll_string = final_scroll_string + scroll_search_string + ')'
+            final_element_string = final_element_string + element_search_string + ')'
+
             if scroll_to == "end":
                 if max_scroll == "":
                     CommonUtil.ExecLog(sModuleInfo, "Max scroll is not set. Setting it to 20", 2)
                     max_scroll = "20"
-                final_string += ".scrollToEnd(" + max_scroll + ")"
+                max_scroll_string = ".scrollToEnd(" + max_scroll + ")"
             elif scroll_to == "beginning":
                 if max_scroll == "":
                     CommonUtil.ExecLog(sModuleInfo, "Max scroll is not set. Setting it to 20", 2)
                     max_scroll = "20"
-                final_string += ".scrollToBeginning(" + max_scroll + ")"
+                max_scroll_string = ".scrollToBeginning(" + max_scroll + ")"
             else:
-                if not search_string:
-                    CommonUtil.ExecLog(sModuleInfo, "You have not provided any 'Search element parameter'", 3)
-                    return "zeuz_failed"
-                max_scroll = ".setMaxSearchSwipes(" + max_scroll + ")" if max_scroll else ""
-                final_string += direction + max_scroll + ".scrollIntoView(new UiSelector()" + search_string + ")"
+                max_scroll_string = ".setMaxSearchSwipes(" + max_scroll + ")" if max_scroll else ""
 
+            final_string = final_scroll_string + direction + max_scroll_string + final_element_string
             CommonUtil.ExecLog(sModuleInfo, "Search string used for UI Automator:\n" + final_string, 1)
         except:
             errMsg = "Error parsing data"
             return CommonUtil.Exception_Handler(sys.exc_info(), None, errMsg)
 
         try:
-            if element_search:
-                Element = LocateElement.Get_Element(element_dataset, appium_driver)
-                if Element == "zeuz_failed":
-                    CommonUtil.ExecLog(sModuleInfo, "Could not find the Parent element. Searching for the scrollable parent element automatically", 2)
-                    Element = appium_driver
-            else:
-                Element = appium_driver
-
-            elem = Element.find_element_by_android_uiautomator(final_string)
-            # Not sure what element its returning. So not adding variable in the control server for now
-            if varname:
-                Shared_Resources.Set_Shared_Variables(varname, elem)
+            element = appium_driver.find_element_by_android_uiautomator(final_string)
+            CommonUtil.ExecLog(sModuleInfo, "Swiped to the element successfully", 1)
+            return "passed"
         except:
-            return CommonUtil.Exception_Handler(sys.exc_info())
+            errMsg = "Desired element is not found within "
+            return CommonUtil.Exception_Handler(sys.exc_info(), None, errMsg)
 
-        CommonUtil.ExecLog(sModuleInfo, "Swiped to the element successfully", 1)
-        return "passed"
+
     except:
         errMsg = "Unable to swipe"
         return CommonUtil.Exception_Handler(sys.exc_info(), None, errMsg)
