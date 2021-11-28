@@ -1697,7 +1697,6 @@ def swipe_handler_android(data_set=[], save_att_data_set={}):
 
 
 @logger
-@deprecated
 def scroll_to_an_element(data_set):
     global appium_driver
     sModuleInfo = inspect.currentframe().f_code.co_name + " : " + MODULE_NAME
