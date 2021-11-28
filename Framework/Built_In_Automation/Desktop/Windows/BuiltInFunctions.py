@@ -781,6 +781,7 @@ class _Element:
         return []
 
 
+@logger
 def image_search(step_data_set):
     sModuleInfo = inspect.currentframe().f_code.co_name + " : " + MODULE_NAME
     try:
@@ -962,18 +963,20 @@ def Get_Element(data_set, wait_time=Shared_Resources.Get_Shared_Variables("eleme
     parent_path = ""
     sibling_name, sibling_class, sibling_automation, sibling_control, sibling = None, None, None, None, False
     element_index = 0
+    parent_index = 0
     try:
         for left, mid, right in data_set:
             left = left.replace(" ", "").replace("_", "").lower()
             mid = mid.strip().lower()
 
             if left == "wait time": wait_time = int(right)
-            elif left == "index": element_index = int(right.strip())
+            # elif left == "index": element_index = int(right.strip())
             elif "window" in left: window_name = [right, _count_star(left)]
 
             if mid == "element parameter":
                 elem = True
                 if "class" in left: element_class = [right, _count_star(left)]
+                elif left == "index": element_index = int(right.strip())
                 elif "name" in left: element_name = [right, _count_star(left)]
                 elif "automation" in left: element_automation = [right, _count_star(left)]  # automationid
                 elif "control" in left: element_control = [right, _count_star(left)]    # localizedcontroltype
@@ -988,6 +991,7 @@ def Get_Element(data_set, wait_time=Shared_Resources.Get_Shared_Variables("eleme
                 elif "automation" in left: parent_automation = [right, _count_star(left)]  # automationid
                 elif "control" in left: parent_control = [right, _count_star(left)]    # localizedcontroltype
                 elif "path" in left: parent_path = right.strip()
+                elif "index" in left: parent_index = right.strip()
 
             elif mid == "sibling parameter":
                 sibling = True
@@ -1026,9 +1030,13 @@ def Get_Element(data_set, wait_time=Shared_Resources.Get_Shared_Variables("eleme
         while True:
             if element_image:
                 _get_main_window(window_name)
-                for i in (("name", parent_name), ("class", parent_class), ("automationid", parent_automation), ("control", parent_control), ("path", parent_path)):
+                for i in (("name", parent_name), ("class", parent_class), ("automationid", parent_automation), ("control", parent_control), ("path", parent_path), ("window", window_name), ("index", parent_index)):
                     if i[1]:
-                        element_image.append((i[0], "parent parameter", i[1]))
+                        if type(i[1]) == list and len(i[1]) == 2:
+                            data = (i[1][1] + i[0], "parent parameter", i[1][0])
+                        else:
+                            data = (i[0], "parent parameter", i[1])
+                        element_image.append(data)
                 element_image.append(("index", "element parameter", str(element_index)))
                 result = image_search(element_image)
                 return result
@@ -1749,11 +1757,24 @@ def save_attribute_values_in_list(data_set):
                                 Attribute_value = None
                     except:
                         CommonUtil.ExecLog(sModuleInfo, "Couldn't search by return_contains and return_does_not_contain", 2)
-                    variable_value[i].append(Attribute_value)
+                    if len(target) == 1:
+                        variable_value[i].append([Attribute_value, elem])
+                    else:
+                        variable_value[i].append(Attribute_value)
                     j = j + 1
                 i = i + 1
             if len(target) == 1:
                 variable_value = variable_value[0]
+                new_values = {}
+                for i in variable_value:
+                    top = str(i[1].Current.BoundingRectangle.Top)
+                    if top in new_values:
+                        new_values[top] += [i[0]]
+                    else:
+                        new_values[top] = []
+                variable_value = []
+                for i in new_values:
+                    variable_value.append(new_values[i])
 
         return Shared_Resources.Set_Shared_Variables(variable_name, variable_value)
 
