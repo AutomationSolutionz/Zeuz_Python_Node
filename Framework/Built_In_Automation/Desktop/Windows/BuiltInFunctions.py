@@ -1786,30 +1786,17 @@ def save_attribute_values_in_list(data_set):
                         j = j + 1
                     i = i + 1
                 if len(target) == 1:
-                    if paired:
-                        variable_value = variable_value[0]
-                        new_values = {}
-                        for i in variable_value:
-                            top = str(i[1].Current.BoundingRectangle.Top)
-                            if top in new_values:
-                                new_values[top] += [i[0]]
-                            else:
-                                new_values[top] = [i[0]]
-                        variable_value = []
-                        for i in new_values:
-                            variable_value.append(new_values[i])
-                    else:
-                        variable_value = variable_value[0]
-                        new_values = {}
-                        for i in variable_value:
-                            top = str(i[1].Current.BoundingRectangle.Left)
-                            if top in new_values:
-                                new_values[top] += [i[0]]
-                            else:
-                                new_values[top] = [i[0]]
-                        variable_value = []
-                        for i in new_values:
-                            variable_value.append(new_values[i])
+                    variable_value = variable_value[0]
+                    new_values = {}
+                    for i in variable_value:
+                        top = str(i[1].Current.BoundingRectangle.Top)
+                        if top in new_values:
+                            new_values[top] += [i[0]]
+                        else:
+                            new_values[top] = [i[0]]
+                    variable_value = []
+                    for i in new_values:
+                        variable_value.append(new_values[i])
 
             if scroll_value is None:
                 scroll_value = variable_value
@@ -1828,6 +1815,8 @@ def save_attribute_values_in_list(data_set):
             win32api.SetCursorPos(get_coords(Element))
             autoit.mouse_wheel("down", scroll_count)
 
+        if not paired:
+            scroll_value = list(map(list, zip(*scroll_value)))
         return Shared_Resources.Set_Shared_Variables(variable_name, scroll_value)
 
     except Exception:
