@@ -1814,7 +1814,7 @@ def scroll_to_an_element(data_set):
                     max_scroll = "20"
                 max_scroll_string = ".scrollToBeginning(" + max_scroll + ")"
             else:
-                max_scroll_string = ".setMaxSearchSwipes(" + max_scroll + ")" if max_scroll else ""
+                max_scroll_string = ".setMaxSearchSwipes(%d)" % int(max_scroll) if max_scroll else ""
 
             final_string = final_scroll_string + direction + max_scroll_string + final_element_string
             CommonUtil.ExecLog(sModuleInfo, "Search string used for UI Automator:\n" + final_string, 1)
@@ -1822,14 +1822,13 @@ def scroll_to_an_element(data_set):
             errMsg = "Error parsing data"
             return CommonUtil.Exception_Handler(sys.exc_info(), None, errMsg)
 
-        try:
-            element = appium_driver.find_element_by_android_uiautomator(final_string)
-            CommonUtil.ExecLog(sModuleInfo, "Swiped to the element successfully", 1)
-            return "passed"
-        except:
-            errMsg = "Desired element is not found within "
-            return CommonUtil.Exception_Handler(sys.exc_info(), None, errMsg)
 
+        element = appium_driver.find_element_by_android_uiautomator(final_string)
+        if element.text == '' or element == None :
+            CommonUtil.ExecLog(sModuleInfo, "Desired element is not found in scrollable element", 3)
+            return "zeuz_failed"
+        CommonUtil.ExecLog(sModuleInfo, "Swiped to the element successfully", 1)
+        return "passed"
 
     except:
         errMsg = "Unable to swipe"
