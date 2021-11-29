@@ -25,39 +25,40 @@ except:
 #     print("Press any key or [ENTER] to exit.")
 #     input()
 
+location = Path(os.getcwd()).parent/"Framework"/"settings.conf"
 def update():
     try:
         path = ChromeDriverManager().install()
         print("Downloaded Chrome driver into:", path)
-        ConfigModule.add_config_value("Selenium_driver_paths", "chrome_path", path)
+        ConfigModule.add_config_value("Selenium_driver_paths", "chrome_path", path, location)
     except:
         print(sys.exc_info())
 
     try:
         path = GeckoDriverManager().install()
         print("Downloaded Firefox driver into:", path)
-        ConfigModule.add_config_value("Selenium_driver_paths", "firefox_path", path)
+        ConfigModule.add_config_value("Selenium_driver_paths", "firefox_path", path, location)
     except:
         print(sys.exc_info())
 
     try:
         path = EdgeChromiumDriverManager().install()
         print("Downloaded Edge driver into:", path)
-        ConfigModule.add_config_value("Selenium_driver_paths", "edge_path", path)
+        ConfigModule.add_config_value("Selenium_driver_paths", "edge_path", path, location)
     except:
         print(sys.exc_info())
 
     try:
         path = OperaDriverManager().install()
         print("Downloaded Opera driver into:", path)
-        ConfigModule.add_config_value("Selenium_driver_paths", "opera_path", path)
+        ConfigModule.add_config_value("Selenium_driver_paths", "opera_path", path, location)
     except:
         print(sys.exc_info())
 
     try:
         path = IEDriverManager().install()
         print("Downloaded Internet Explorer driver into:", path)
-        ConfigModule.add_config_value("Selenium_driver_paths", "ie_path", path)
+        ConfigModule.add_config_value("Selenium_driver_paths", "ie_path", path, location)
     except:
         print(sys.exc_info())
 
