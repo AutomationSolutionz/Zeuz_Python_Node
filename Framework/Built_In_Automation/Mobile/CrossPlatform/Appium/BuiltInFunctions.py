@@ -4800,7 +4800,6 @@ def scroll_to_element(data_set):
            "Calculated Coordinate: (%s,%s) to (%s,%s)" % (x1, y1, x2, y2), 1)
         i = 0
         while i < max_try:
-            generic_driver.swipe(x1, y1, x2, y2, duration * 1000)  # duration seconds to milliseconds
             Element = LocateElement.Get_Element(desired_dataset, appium_driver)
             if Element != ('zeuz_failed' or None):
                 CommonUtil.ExecLog(sModuleInfo,"Scrolled to desired element succesfully.",1)

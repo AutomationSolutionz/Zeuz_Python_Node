@@ -592,6 +592,7 @@ def auto_scroll_appium(data_set, element_query):
     elif len(scrollable_element) > 1:
         CommonUtil.ExecLog(sModuleInfo, 'Multiple scrollable page found. So Auto scroll will not respond. Please use "Scroll to an element" action if you need scroll to find that element', 2)
         return []
+    auto_scroll = False
     inset = 0.1
     position = 0.5
     height = scrollable_element[0].size["height"]
@@ -609,7 +610,9 @@ def auto_scroll_appium(data_set, element_query):
             right = right.replace("%", "").replace(" ", "").lower()
             if "scroll parameter" in mid:
                 if left == "auto scroll":
-                    if right not in ("yes", "ok", "enable", "true"):
+                    if right in ("yes", "ok", "enable", "true"):
+                        auto_scroll = right
+                    else:
                         return
                 elif left == "direction":
                     if right in ("up", "down", "left", "right"):
@@ -624,6 +627,9 @@ def auto_scroll_appium(data_set, element_query):
                     max_try = float(right)
     except:
         CommonUtil.Exception_Handler(sys.exc_info(), None, "Unable to parse data. Please write data in correct format")
+        return []
+
+    if auto_scroll == False :
         return []
 
     if direction == "up":
@@ -772,10 +778,10 @@ def _get_xpath_or_css_element(element_query, css_xpath,data_set, index_number=No
         if exception_cnd:
             return False
 
-#        if driver_type == "appium" and index_number is not None and index_number > 0 and len(all_matching_elements_visible_invisible) == 0:
-#            CommonUtil.ExecLog(sModuleInfo, "Element not found and we do not support Auto Scroll when index is provided", 2)
-#        elif driver_type == "appium" and len(all_matching_elements_visible_invisible) == 0:
-#            all_matching_elements_visible_invisible = auto_scroll_appium(data_set, element_query)
+        if driver_type == "appium" and index_number is not None and index_number > 0 and len(all_matching_elements_visible_invisible) == 0:
+            CommonUtil.ExecLog(sModuleInfo, "Element not found and we do not support Auto Scroll when index is provided", 2)
+        elif driver_type == "appium" and len(all_matching_elements_visible_invisible) == 0:
+            all_matching_elements_visible_invisible = auto_scroll_appium(data_set, element_query)
              
         all_matching_elements = filter_elements(all_matching_elements_visible_invisible, Filter)
         if Filter == "allow hidden":
