@@ -4806,8 +4806,8 @@ def scroll_to_element(data_set):
                 return "passed"
             generic_driver.swipe(x1, y1, x2, y2, duration * 1000)  # duration seconds to milliseconds
             i = i+1
-        CommonUtil.ExecLog(sModuleInfo, "Scrolled %d times.Couldn't find the element." %max_try , 1)
-        return "passed"
+        CommonUtil.ExecLog(sModuleInfo, "Scrolled %d times.Couldn't find the element." %max_try , 3)
+        return "zeuz_failed"
 
     except Exception:
         CommonUtil.Exception_Handler(sys.exc_info(), None, "Error could not scroll the element")
