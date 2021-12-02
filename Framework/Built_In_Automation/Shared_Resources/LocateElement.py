@@ -621,12 +621,7 @@ def auto_scroll_appium(data_set, element_query):
             mid = mid.strip().lower()
             right = right.replace("%", "").replace(" ", "").lower()
             if "scroll parameter" in mid:
-                if left == "auto scroll":
-                    if right in ("yes", "ok", "enable", "true"):
-                        auto_scroll = right
-                    else:
-                        return
-                elif left == "direction":
+                if left == "direction":
                     if right in ("up", "down", "left", "right"):
                         direction = right
                 elif left == "duration":
