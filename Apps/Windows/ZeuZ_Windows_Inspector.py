@@ -362,15 +362,19 @@ def create_path(index_trace: dict, element, window_cond=False):
 
 
 element_plugin = False
-findall_time = 0; findall_count = 0
-def _child_search(ParentElement, parenthesis=1):
+findall_time = 0; findall_count = 0; each_findall_time = []
+def _child_search(ParentElement, level, parenthesis=1):
     try:
         path = ""
         global xml_str, element_plugin, findall_time, findall_count
         start = time.perf_counter()
         child_elements = ParentElement.FindAll(TreeScope.Children, Condition.TrueCondition)
-        findall_time += time.perf_counter()-start
+        temp_findall_time = time.perf_counter()-start
+        global each_findall_time
+        each_findall_time += [[temp_findall_time/child_elements.Count if child_elements.Count>0 else -1, temp_findall_time, child_elements.Count]]
+        findall_time += temp_findall_time
         findall_count += 1
+        # child_elements.Count>0 and temp_findall_time/child_elements.Count>2.5
         if child_elements.Count == 0:
             return path
 
@@ -389,20 +393,28 @@ def _child_search(ParentElement, parenthesis=1):
                 top = str(each_child.Current.BoundingRectangle.Top)
             except:
                 left, right, top, bottom = "", "", "", ""
-            xml_str += "\n" + "  "*parenthesis + '<div Name="%s" AutomationId="%s" ClassName="%s" LocalizedControlType="%s"' % \
-            (elem_name, elem_automationid, elem_class, elem_control) + ' Left="%s" Right="%s" Top="%s" Bottom="%s">' % (left, right, top, bottom)
+            end_div = False
+            if level >= No_of_level_to_skip:
+                xml_str += "\n" + "  "*parenthesis + '<div Name="%s" AutomationId="%s" ClassName="%s" LocalizedControlType="%s"' % \
+                (elem_name, elem_automationid, elem_class, elem_control) + ' Left="%s" Right="%s" Top="%s" Bottom="%s">' % (left, right, top, bottom)
+                end_div = True
             if _found(each_child) and not found:
+                if not level >= No_of_level_to_skip:
+                    xml_str += "\n" + "  " * parenthesis + '<div Name="%s" AutomationId="%s" ClassName="%s" LocalizedControlType="%s"' % \
+                   (elem_name, elem_automationid, elem_class, elem_control) + ' Left="%s" Right="%s" Top="%s" Bottom="%s">' % (left, right, top, bottom)
+                    end_div = True
                 path += create_path(index_trace, each_child)
                 found = True
                 if not element_plugin:
                     xml_len = len(xml_str)
-            if not temp:
-                temp = _child_search(each_child, parenthesis+1)
-            else:
-                _child_search(each_child, parenthesis+1)
+            if not temp and found:
+                temp = _child_search(each_child, level+1, parenthesis+1)
+            elif level >= No_of_level_to_skip:
+                _child_search(each_child, level+1, parenthesis+1)
             if not found:
                 create_index(index_trace, each_child)
-            xml_str += "\n" + "  "*parenthesis + "</div>"
+            if end_div:
+                xml_str += "\n" + "  "*parenthesis + "</div>"
 
         if found and not element_plugin:
             xml_str = xml_str[:xml_len-1] + ' zeuz="aiplugin"' + xml_str[xml_len-1:]
@@ -493,13 +505,29 @@ def Remove_coordinate(root):
         Remove_coordinate(each)
 
 
+def debugger_is_active() -> bool:
+    """Return if the debugger is currently active"""
+    gettrace = getattr(sys, 'gettrace', lambda : None)
+    return gettrace() is not None
+
+
+config = configparser.ConfigParser()
+config.read("..\..\Framework\settings.conf")
+try:
+    No_of_level_to_skip = int(config.get("Inspector", "No_of_level_to_skip"))
+except:
+    No_of_level_to_skip = 0
+
+
 def main():
     try:
         global x, y, path_priority, element_plugin, auth, path, xml_str, findall_time, findall_count
         auth_thread = Authenticate()
         while True:
-            os.system('pause')
-            # input()
+            if debugger_is_active():
+                input("Press Enter to Continue")
+            else:
+                os.system('pause')
             print("Hover over the Element and press control")
             path = ""; xml_str = ""; path_priority = 0; element_plugin = False; findall_time = 0; findall_count = 0
             keyboard.wait("ctrl")
@@ -520,7 +548,7 @@ def main():
             else:
                 print("No window found in that coordinate")
                 return
-            path += _child_search(window)[:-2] + "\n"
+            path += _child_search(window, 0)[:-2] + "\n"
             xml_str += "\n" + "</body>"
 
             xml_str = xml_str.encode('ascii', 'ignore').decode()        # ignore characters which are not ascii presentable
@@ -560,12 +588,20 @@ def main():
             print("Coordinate remove time =", Remove_coordinate_time, "sec")
             print("Uploading to API  time =", Upload_time, "sec")
             print("start_findall time =", round(findall_time, 3), "sec", "Findall count =", findall_count)
+            print("each__findall_time (Each_Element_find_time, finall_time, child_count)")
+            from operator import itemgetter
+            global each_findall_time
+            each_findall_time = sorted(each_findall_time, key=itemgetter(0), reverse=True)
+            # for i in each_findall_time:
+            #     print(i)
+            # break
 
     except:
         Exception_Handler(sys.exc_info())
         xml_str = ""
         path_priority = 0
         element_plugin = False
+
 
 if __name__ == "__main__":
     main()
