@@ -587,14 +587,26 @@ def auto_scroll_appium(data_set, element_query):
     all_matching_elements_visible_invisible = []
     sModuleInfo = inspect.currentframe().f_code.co_name + " : " + MODULE_NAME
     scrollable_element = generic_driver.find_elements_by_android_uiautomator("new UiSelector().scrollable(true)")
+    auto_scroll = False
+    inset = 0.1
+    position = 0.5
+    for left, mid, right in data_set:
+        left = left.strip().lower()
+        mid = mid.strip().lower()
+        right = right.replace("%", "").replace(" ", "").lower()
+        if "scroll parameter" in mid:
+            if left == "auto scroll":
+                if right in ("yes", "ok", "enable", "true"):
+                    auto_scroll = right
+    if auto_scroll == False :
+        return []
+
     if len(scrollable_element) == 0:
         return []
     elif len(scrollable_element) > 1:
         CommonUtil.ExecLog(sModuleInfo, 'Multiple scrollable page found. So Auto scroll will not respond. Please use "Scroll to an element" action if you need scroll to find that element', 2)
         return []
-    auto_scroll = False
-    inset = 0.1
-    position = 0.5
+
     height = scrollable_element[0].size["height"]
     width = scrollable_element[0].size["width"]
     xstart_location = scrollable_element[0].location["x"]  # Starting location of the x-coordinate of scrollable element
@@ -627,9 +639,6 @@ def auto_scroll_appium(data_set, element_query):
                     max_try = float(right)
     except:
         CommonUtil.Exception_Handler(sys.exc_info(), None, "Unable to parse data. Please write data in correct format")
-        return []
-
-    if auto_scroll == False :
         return []
 
     if direction == "up":
