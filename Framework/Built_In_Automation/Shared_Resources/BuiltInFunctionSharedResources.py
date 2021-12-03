@@ -749,6 +749,7 @@ def get_previous_response_variables_in_strings(step_data_string_input):
                         3,
                     )
                     return "zeuz_failed"
+                print(replaced)
                 generated_value = replaced
 
             elif var_name.startswith("random_number_in_range"):
@@ -1479,6 +1480,8 @@ def save_built_in_time_variable(string):
             return int(time.time())
         elif input.startswith("today"):
             if input.lower().strip() == "today":
+                if os.name == "nt":
+                    datetime_format.replace("%-d", "%#d")
                 return datetime.today().strftime(datetime_format)
             elif "+" in input:
                 l = input.split("+")
