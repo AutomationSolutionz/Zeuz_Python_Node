@@ -446,33 +446,36 @@ def Authenticate():
         return executor.submit(requests.get, url, verify=False)
 
 def Upload(auth_thread, window_name):
-    global auth
-    if not auth:
-        auth = auth_thread.result().json()["token"]
-    Authorization = 'Bearer ' + auth
-    url = server + "/" if server[-1] != "/" else server
-    url += "api/contents/"
-    content = json.dumps({
-        'html': xml_str,
-        "exact_path": {"path": path, "priority": path_priority},
-        "window_name": window_name
-    })
+    try:
+        global auth
+        if not auth:
+            auth = auth_thread.result().json()["token"]
+        Authorization = 'Bearer ' + auth
+        url = server + "/" if server[-1] != "/" else server
+        url += "api/contents/"
+        content = json.dumps({
+            'html': xml_str,
+            "exact_path": {"path": path, "priority": path_priority},
+            "window_name": window_name
+        })
 
-    payload = json.dumps({
-        "content": content,
-        "source": "windows"
-    })
-    headers = {
-        'Authorization': Authorization,
-        'Content-Type': 'application/json'
+        payload = json.dumps({
+            "content": content,
+            "source": "windows"
+        })
+        headers = {
+            'Authorization': Authorization,
+            'Content-Type': 'application/json'
 
-    }
+        }
 
-    response = requests.request("POST", url, headers=headers, data=payload, verify=False)
-    response = response.json()
-    del response["content"]
-    print(response)
-
+        response = requests.request("POST", url, headers=headers, data=payload, verify=False)
+        response = response.json()
+        del response["content"]
+        print(response)
+    except:
+        Exception_Handler(sys.exc_info())
+        ExecLog("", "Could not upload Element identifiers xml", 3)
 
 def sibling_found(each):
     try:
@@ -515,6 +518,8 @@ config = configparser.ConfigParser()
 config.read("..\..\Framework\settings.conf")
 try:
     No_of_level_to_skip = int(config.get("Inspector", "No_of_level_to_skip"))
+    if No_of_level_to_skip < 0:
+        No_of_level_to_skip = 0
 except:
     No_of_level_to_skip = 0
 
