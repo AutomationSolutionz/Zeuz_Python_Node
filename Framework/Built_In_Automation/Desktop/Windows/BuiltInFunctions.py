@@ -6,7 +6,7 @@
 #########################
 code_debug = False
 tabs = 0
-import sys, os
+import sys, os, subprocess
 import re
 from collections import deque
 from pathlib import Path
@@ -1485,11 +1485,26 @@ def Scroll_to_element(dataset):
         return CommonUtil.Exception_Handler(sys.exc_info(), None, "Can't scroll the given window element.")
 
 
+def _open_inspector(inspector, args):
+    d = {"uispy": ["UI Spy", "UISpy"], "inspectx64": ["Inspect  (HWND", "InspectX64"], "inspectx86": ["Inspect  (HWND", "InspectX86"]}
+    if len(pygetwindow.getWindowsWithTitle(d[inspector][0])) > 0:
+        for i in pygetwindow.getWindowsWithTitle(d[inspector][0]):
+            i.minimize()
+    else:
+        subprocess.Popen(r"..\Apps\Windows\%s.exe" % d[inspector][1], **args)
+        for i in range(30):
+            if len(pygetwindow.getWindowsWithTitle(d[inspector][0])) > 0:
+                break
+            time.sleep(0.5)
+        time.sleep(1)
+        pygetwindow.getWindowsWithTitle(d[inspector][0])[0].minimize()
+
+
 @logger
 def Run_Application(data_set):
     sModuleInfo = inspect.currentframe().f_code.co_name + " : " + MODULE_NAME
     try:
-
+        args = {"shell": True, "stdin": None, "stdout": None, "stderr": None}
         Desktop_app = ""
         size, top_left, maximize = None, None, False
         wait = Shared_Resources.Get_Shared_Variables("element_wait")
@@ -1500,11 +1515,11 @@ def Run_Application(data_set):
             if mid.strip().lower() == "action":
                 Desktop_app = right.strip()
             elif "uispy" in left and yes_cond:
-                os.system(r"..\Apps\Windows\UISpy.exe")
+                _open_inspector("uispy", args)
             elif "inspectx64" in left and yes_cond:
-                os.system(r"..\Apps\Windows\InspectX64.exe")
+                _open_inspector("inspectx64", args)
             elif "inspectx86" in left and yes_cond:
-                os.system(r"..\Apps\Windows\InspectX86.exe")
+                _open_inspector("inspectx86", args)
             elif "size" == left:
                 size = r
             elif "topleft" in left or "location" in left:
@@ -1517,7 +1532,7 @@ def Run_Application(data_set):
         if os.path.isfile(Desktop_app):
             cmd = Desktop_app[:2] + " && cd " + os.path.dirname(Desktop_app) + " && start cmd.exe /K " + Desktop_app
             CommonUtil.ExecLog(sModuleInfo, "Running following cmd:\n" + cmd, 1)
-            os.system(cmd)
+            subprocess.Popen(cmd, **args)
             # Desktop_app = os.path.basename(Desktop_app)
         else:
             autoit.send("^{ESC}")
