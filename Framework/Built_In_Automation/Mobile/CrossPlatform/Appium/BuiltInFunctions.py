@@ -4611,9 +4611,8 @@ def swipe_appium(data_set):
             mid = mid.strip().lower()
             right = right.replace("%", "").replace(" ", "")
             if "scroll parameter" in mid:
-                if left == "direction":
-                    if right in ("up", "down", "left", "right"):
-                        direction = right
+                if left == "direction" and right in ("up", "down", "left", "right"):
+                    direction = right
                 elif left == "swipe speed":
                     swipe_speed = float(right) / 1000.0
                 elif left == "inset":
@@ -4722,7 +4721,7 @@ def scroll_to_element(data_set):
     width = scrollable_element.size["width"]
     xstart_location = scrollable_element.location["x"]  # Starting location of the x-coordinate of scrollable element
     ystart_location = scrollable_element.location["y"]  # Starting location of the y-coordinate of scrollable element
-    max_try = 1
+    max_try = 10
     direction = "up" if height > width else "left"
     swipe_speed = None
 
@@ -4735,9 +4734,8 @@ def scroll_to_element(data_set):
                 desired_dataset.append((left, 'element parameter', right))
 
             if "scroll parameter" in mid:
-                if left == "direction":
-                    if right in ("up", "down", "left", "right"):
-                        direction = right
+                if left == "direction" and right in ("up", "down", "left", "right"):
+                    direction = right
                 elif left == "swipe speed":
                     swipe_speed = float(right) / 1000.00 # millisecond per pixel
                 elif left == "inset":
