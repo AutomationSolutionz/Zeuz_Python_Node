@@ -10,6 +10,7 @@ import sys, os
 import re
 from collections import deque
 from pathlib import Path
+import pygetwindow
 
 sys.path.append(os.path.dirname(__file__))
 import pyautogui as gui  # https://pyautogui.readthedocs.io/en/latest/
@@ -1488,21 +1489,80 @@ def Scroll_to_element(dataset):
 def Run_Application(data_set):
     sModuleInfo = inspect.currentframe().f_code.co_name + " : " + MODULE_NAME
     try:
+
         Desktop_app = ""
+        size, top_left, maximize = None, None, False
+        wait = Shared_Resources.Get_Shared_Variables("element_wait")
         for left, mid, right in data_set:
+            left = left.replace(" ", "").replace("_", "").replace("-", "").lower()
+            r = right.strip().lower()
+            yes_cond = r in ("yes", "ok", "true", "enable")
             if mid.strip().lower() == "action":
                 Desktop_app = right.strip()
+            elif "uispy" in left and yes_cond:
+                os.system(r"..\Apps\Windows\UISpy.exe")
+            elif "inspectx64" in left and yes_cond:
+                os.system(r"..\Apps\Windows\InspectX64.exe")
+            elif "inspectx86" in left and yes_cond:
+                os.system(r"..\Apps\Windows\InspectX86.exe")
+            elif "size" == left:
+                size = r
+            elif "topleft" in left or "location" in left:
+                top_left = r
+            elif "maximize" in left and yes_cond:
+                maximize = True
+            elif "wait" == left:
+                wait = float(r)
 
-        autoit.send("^{ESC}")
-        time.sleep(0.5)
-        autoit.send(Desktop_app)
-        time.sleep(0.5)
-        autoit.send("{ENTER}")
-        CommonUtil.ExecLog(sModuleInfo, "Successfully launched your app", 1)
-        time.sleep(2)
+        if os.path.isfile(Desktop_app):
+            cmd = Desktop_app[:2] + " && cd " + os.path.dirname(Desktop_app) + " && start cmd.exe /K " + Desktop_app
+            CommonUtil.ExecLog(sModuleInfo, "Running following cmd:\n" + cmd, 1)
+            os.system(cmd)
+            # Desktop_app = os.path.basename(Desktop_app)
+        else:
+            autoit.send("^{ESC}")
+            time.sleep(0.5)
+            autoit.send(Desktop_app)
+            time.sleep(0.5)
+            autoit.send("{ENTER}")
+            CommonUtil.ExecLog(sModuleInfo, "Successfully launched your app", 1)
+            time.sleep(2)
+
+        # if not Desktop_app.endswith(".exe"):
+        #     Desktop_app += ".exe"
+        CommonUtil.ExecLog(sModuleInfo, "Waiting for the app to launch for maximum %s seconds" % wait, 1)
+        s = time.time()
+        while time.time() - s < wait:
+            # if len(pygetwindow.getWindowsWithTitle(Desktop_app)) > 0:     # This is case in-sensitive
+            if Desktop_app in pygetwindow.getActiveWindow().title:          # This is case sensitive
+                break
+            time.sleep(0.5)
+        else:
+            if maximize or size is not None:
+                CommonUtil.ExecLog(sModuleInfo, "Could not find any launched app with title: %s however continuing. Maximize or custom app size wont work" % Desktop_app, 2)
+            else:
+                CommonUtil.ExecLog(sModuleInfo, "Could not find any launched app with title: %s however continuing" % Desktop_app, 2)
+            return "passed"
+
+        if maximize:
+            win = pygetwindow.getWindowsWithTitle(Desktop_app)[0]
+            win.maximize()
+            CommonUtil.ExecLog(sModuleInfo, "Maximizing your app. Your Desktop Resolution = %s" % str((gui.size()[0], gui.size()[1])), 1)
+        elif size is not None:
+            size = tuple([int(i) for i in size.split(",")])
+            if top_left is None:
+                top_left = (0, 0)
+            else:
+                top_left = tuple([int(i) for i in top_left.split(",")])
+            CommonUtil.ExecLog(sModuleInfo, "Restoring and Resizing the app with Size = %s and Top_Left = %s" % (size, top_left), 1)
+            win = pygetwindow.getWindowsWithTitle(Desktop_app)[0]
+            win.restore()
+            win.size = size
+            win.topleft = top_left
+
         return "passed"
     except:
-        CommonUtil.ExecLog(sModuleInfo, "Unable to start your app %s" % Desktop_app, 3)
+        CommonUtil.Exception_Handler(sys.exc_info())
         return "zeuz_failed"
 
 
@@ -1524,7 +1584,7 @@ def Close_Application(data_set):
 
         return "passed"
     except:
-        CommonUtil.ExecLog(sModuleInfo, "Unable to start your app %s" % Desktop_app, 3)
+        CommonUtil.Exception_Handler(sys.exc_info())
         return "zeuz_failed"
 
 
