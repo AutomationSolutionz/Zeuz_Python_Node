@@ -1505,6 +1505,7 @@ def Run_Application(data_set):
     sModuleInfo = inspect.currentframe().f_code.co_name + " : " + MODULE_NAME
     try:
         args = {"shell": True, "stdin": None, "stdout": None, "stderr": None}
+        launch_cond = ""
         Desktop_app = ""
         size, top_left, maximize = None, None, False
         wait = Shared_Resources.Get_Shared_Variables("element_wait")
@@ -1526,38 +1527,51 @@ def Run_Application(data_set):
                 top_left = r
             elif "maximize" in left and yes_cond:
                 maximize = True
+            elif "relaunch" in left and yes_cond:
+                launch_cond = "relaunch"
+            elif "launchagain" in left and yes_cond:
+                launch_cond = "launchagain"
             elif "wait" == left:
                 wait = float(r)
 
-        if os.path.isfile(Desktop_app):
-            cmd = Desktop_app[:2] + " && cd " + os.path.dirname(Desktop_app) + " && start cmd.exe /K " + Desktop_app
-            CommonUtil.ExecLog(sModuleInfo, "Running following cmd:\n" + cmd, 1)
-            subprocess.Popen(cmd, **args)
-            # Desktop_app = os.path.basename(Desktop_app)
+        if not launch_cond and len(pygetwindow.getWindowsWithTitle(Desktop_app)) > 0:
+            CommonUtil.ExecLog(
+                sModuleInfo,
+                "The App has already been launched earlier. So not launching again.\n" +
+                'If you want to quit the existing app and relaunch it then add a row ("relaunch", "optional parameter", "yes")\n' +
+                'If you want to keep the existing app and launch another instance of it then add a row ("launch again", "optional parameter", "yes")', 2)
         else:
-            autoit.send("^{ESC}")
-            time.sleep(0.5)
-            autoit.send(Desktop_app)
-            time.sleep(0.5)
-            autoit.send("{ENTER}")
-            CommonUtil.ExecLog(sModuleInfo, "Successfully launched your app", 1)
-            time.sleep(2)
-
-        # if not Desktop_app.endswith(".exe"):
-        #     Desktop_app += ".exe"
-        CommonUtil.ExecLog(sModuleInfo, "Waiting for the app to launch for maximum %s seconds" % wait, 1)
-        s = time.time()
-        while time.time() - s < wait:
-            # if len(pygetwindow.getWindowsWithTitle(Desktop_app)) > 0:     # This is case in-sensitive
-            if Desktop_app in pygetwindow.getActiveWindow().title:          # This is case sensitive
-                break
-            time.sleep(0.5)
-        else:
-            if maximize or size is not None:
-                CommonUtil.ExecLog(sModuleInfo, "Could not find any launched app with title: %s however continuing. Maximize or custom app size wont work" % Desktop_app, 2)
+            if launch_cond == "relaunch":
+                Close_Application([("close app", "action", Desktop_app)])
+            if os.path.isfile(Desktop_app):
+                cmd = Desktop_app[:2] + " && cd " + os.path.dirname(Desktop_app) + " && start cmd.exe /K " + Desktop_app
+                CommonUtil.ExecLog(sModuleInfo, "Running following cmd:\n" + cmd, 1)
+                subprocess.Popen(cmd, **args)
+                # Desktop_app = os.path.basename(Desktop_app)
             else:
-                CommonUtil.ExecLog(sModuleInfo, "Could not find any launched app with title: %s however continuing" % Desktop_app, 2)
-            return "passed"
+                autoit.send("^{ESC}")
+                time.sleep(0.5)
+                autoit.send(Desktop_app)
+                time.sleep(0.5)
+                autoit.send("{ENTER}")
+                CommonUtil.ExecLog(sModuleInfo, "Successfully launched your app", 1)
+                time.sleep(2)
+
+            # if not Desktop_app.endswith(".exe"):
+            #     Desktop_app += ".exe"
+            CommonUtil.ExecLog(sModuleInfo, "Waiting for the app to launch for maximum %s seconds" % wait, 1)
+            s = time.time()
+            while time.time() - s < wait:
+                # if len(pygetwindow.getWindowsWithTitle(Desktop_app)) > 0:     # This is case in-sensitive
+                if Desktop_app in pygetwindow.getActiveWindow().title:          # This is case sensitive
+                    break
+                time.sleep(0.5)
+            else:
+                if maximize or size is not None:
+                    CommonUtil.ExecLog(sModuleInfo, "Could not find any launched app with title: %s however continuing. Maximize or custom app size wont work" % Desktop_app, 2)
+                else:
+                    CommonUtil.ExecLog(sModuleInfo, "Could not find any launched app with title: %s however continuing" % Desktop_app, 2)
+                return "passed"
 
         if maximize:
             win = pygetwindow.getWindowsWithTitle(Desktop_app)[0]
