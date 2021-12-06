@@ -613,7 +613,7 @@ def auto_scroll_appium(data_set, element_query):
     ystart_location = scrollable_element[0].location["y"]  # Starting location of the y-coordinate of scrollable element
     max_try = 15
     direction = "up" if height > width else "left"
-    duration = None
+    swipe_speed = None
 
     try:
         for left, mid, right in data_set:
@@ -624,8 +624,8 @@ def auto_scroll_appium(data_set, element_query):
                 if left == "direction":
                     if right in ("up", "down", "left", "right"):
                         direction = right
-                elif left == "duration":
-                    duration = float(right)
+                elif left == "swipe speed":
+                    swipe_speed = float(right) / 1000.00
                 elif left == "inset":
                     inset = float(right) / 100.0
                 elif left == "position":
@@ -644,9 +644,10 @@ def auto_scroll_appium(data_set, element_query):
         x2 = x1
         y1 = ystart_location + new_height - 1
         y2 = ystart_location
-        if duration is None:
-            duration = height * 0.0032
-
+        if swipe_speed is None:
+            duration = new_height * 0.0032
+        else:
+            duration = new_height * swipe_speed
     elif direction == "down":
         tmp = 1.0 - inset
         new_height = round(tmp * height)
@@ -655,9 +656,10 @@ def auto_scroll_appium(data_set, element_query):
         x2 = x1
         y1 = ystart_location + 1
         y2 = ystart_location + new_height
-        if duration is None:
-            duration = height * 0.0032
-
+        if swipe_speed is None:
+            duration = new_height * 0.0032
+        else:
+            duration = new_height * swipe_speed
     elif direction == "left":
         tmp = 1.0 - inset
         new_width = round(tmp * width)
@@ -666,8 +668,10 @@ def auto_scroll_appium(data_set, element_query):
         x2 = xstart_location
         y1 = ystart_location + new_height
         y2 = y1
-        if duration is None:
-            duration = width * 0.0032
+        if swipe_speed is None:
+            duration = new_width * 0.0032
+        else:
+            duration = new_width * swipe_speed
 
     elif direction == "right":
         tmp = 1.0 - inset
@@ -677,16 +681,17 @@ def auto_scroll_appium(data_set, element_query):
         x2 = xstart_location + new_width
         y1 = ystart_location + new_height
         y2 = y1
-        if duration is None:
-            duration = width * 0.0032
-
+        if swipe_speed is None:
+            duration = new_width * 0.0032
+        else:
+            duration = new_width * swipe_speed
     else:
         CommonUtil.ExecLog(sModuleInfo, "Direction should be among up, down, right or left", 3)
         return []
 
     try:
         CommonUtil.ExecLog(sModuleInfo, "Auto scrolling with the following scroll parameter:\n" +
-           "Max_try: %s, Direction: %s, Duration: %s, Inset: %s, Position:%s\n" % (max_try, direction, duration, inset*100, position*100) +
+           "Max_try: %s, Direction: %s, Duration of a swipe: %s second, Inset: %s, Position:%s\n" % (max_try, direction, duration, inset*100, position*100) +
            "Calculated Coordinate: (%s,%s) to (%s,%s)" % (x1, y1, x2, y2), 1)
         i = 0
         while i < max_try:
