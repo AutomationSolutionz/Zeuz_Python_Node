@@ -229,6 +229,52 @@ def Click_Element_None_Mouse(Element, Expand=True, Gui=False):
 
 
 @logger
+def Check_uncheck(data_set):
+    sModuleInfo = inspect.currentframe().f_code.co_name + " : " + MODULE_NAME
+    command = "check"
+    try:
+        for left, mid, right in data_set:
+            left = left.lower().strip()
+            if "check uncheck" == left:
+                command = "uncheck" if "uncheck" in right.lower() else "check"
+    except Exception:
+        return CommonUtil.Exception_Handler(sys.exc_info(), None, "Error parsing data set")
+
+    Element = Get_Element(data_set)
+    if Element == "zeuz_failed":
+        CommonUtil.ExecLog(sModuleInfo, "Could not find the element", 3)
+        return "zeuz_failed"
+
+    pattern_list = [Automation.PatternName(i) for i in Element.GetSupportedPatterns()]
+    if "Toggle" in pattern_list:
+        is_selected = Element.GetCurrentPattern(TogglePattern.Pattern).Current.ToggleState
+    else:
+        CommonUtil.ExecLog(sModuleInfo, "No Toggle pattern found for the Element", 3)
+        return "zeuz_failed"
+
+    if command == "check" and is_selected:
+        CommonUtil.ExecLog(sModuleInfo, "The element is already checked so skipped it", 1)
+        return "passed"
+    elif command == "uncheck" and not is_selected:
+        CommonUtil.ExecLog(sModuleInfo, "The element is already unchecked so skipped it", 1)
+        return "passed"
+    try:
+        if "Toggle" in pattern_list:
+            Element.GetCurrentPattern(TogglePattern.Pattern).Toggle()
+        if command == "check":
+            CommonUtil.ExecLog(sModuleInfo, "The element is checked successfully", 1)
+        else:
+            CommonUtil.ExecLog(sModuleInfo, "The element is unchecked successfully", 1)
+        return "passed"
+    except:
+        if command == "check":
+            CommonUtil.ExecLog(sModuleInfo, "The element couldn't be checked", 3)
+        else:
+            CommonUtil.ExecLog(sModuleInfo, "The element couldn't be unchecked", 3)
+        return "zeuz_failed"
+
+
+@logger
 def Right_Click_Element(data_set):
     sModuleInfo = inspect.currentframe().f_code.co_name + " : " + MODULE_NAME
     try:
