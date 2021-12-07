@@ -1,6 +1,7 @@
 declarations = (
     { "name": "click",           "function": "Click_Element",          "screenshot": "desktop" },
     { "name": "right click",     "function": "Right_Click_Element",    "screenshot": "desktop" },
+    { "name": "check uncheck",   "function": "Check_uncheck",          "screenshot": "desktop" },
     { "name": "drag and drop",   "function": "Drag_and_Drop_Element",  "screenshot": "desktop" },
     { "name": "double click",    "function": "Double_Click_Element",   "screenshot": "desktop" },
     { "name": "hover",           "function": "Hover_Over_Element",     "screenshot": "desktop" },
