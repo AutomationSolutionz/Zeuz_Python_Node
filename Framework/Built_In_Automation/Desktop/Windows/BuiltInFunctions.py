@@ -1313,16 +1313,32 @@ def Save_Attribute(data_set):
         field = "value"
         for left, mid, right in data_set:
             if mid.strip().lower() == "save parameter":
-                field = left.lower().strip()
+                field = left.replace(" ", "").lower()
                 variable_name = right.strip()
 
         Element = Get_Element(data_set)
         if Element == "zeuz_failed":
             return "zeuz_failed"
 
+        pattern_list = [Automation.PatternName(i) for i in Element.GetSupportedPatterns()]
+        print(pattern_list)
+
         actual_text = ""
         if "value" in field:
-            actual_text = str(Element.GetCurrentPattern(ValuePattern.Pattern).Current.Value).strip()
+            if "Value" not in pattern_list:
+                CommonUtil.ExecLog(sModuleInfo, "Value pattern is not found for this Element", 3)
+                return "zeuz_failed"
+            actual_text = str(Element.GetCurrentPattern(ValuePattern.Pattern).Current.Value)
+        elif "togglepattern" in field:
+            if "Toggle" not in pattern_list:
+                CommonUtil.ExecLog(sModuleInfo, "Toggle pattern is not found for this Element", 3)
+                return "zeuz_failed"
+            actual_text = True if Element.GetCurrentPattern(TogglePattern.Pattern).Current.ToggleState else False
+        elif "select" in field and "pattern" in field:
+            if not "SelectionItem" in pattern_list:
+                CommonUtil.ExecLog(sModuleInfo, "SelectionItemPattern is not found for this Element", 3)
+                return "zeuz_failed"
+            actual_text = Element.GetCurrentPattern(SelectionItemPattern.Pattern).Current.IsSelected
         elif "name" in field:
             actual_text = str(Element.Current.Name).strip()
         elif "class" in field:
