@@ -1,8 +1,8 @@
-# Author: Mohammed Sazid Al Rashid
-
 import os
 import sys
 from pathlib import Path
+sys.path.append("..")
+
 from Framework.Utilities import CommonUtil, ConfigModule
 
 try:
