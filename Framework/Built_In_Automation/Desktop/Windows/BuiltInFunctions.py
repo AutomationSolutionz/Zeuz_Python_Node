@@ -1596,6 +1596,8 @@ def Run_Application(data_set):
             elif "wait" == left:
                 wait = float(r)
 
+        if "~" in Desktop_app and os.path.isfile(os.path.expanduser(Desktop_app)):
+            Desktop_app = os.path.expanduser(Desktop_app)
         if not launch_cond and len(pygetwindow.getWindowsWithTitle(Desktop_app)) > 0:
             CommonUtil.ExecLog(
                 sModuleInfo,
@@ -1606,8 +1608,6 @@ def Run_Application(data_set):
             if launch_cond == "relaunch":
                 Close_Application([("close app", "action", Desktop_app)])
             if os.path.isfile(Desktop_app):
-                if "~" in Desktop_app:
-                    Desktop_app = Path(os.path.expanduser(Desktop_app))
                 cmd = Desktop_app[:2] + " && cd " + os.path.dirname(Desktop_app) + " && start cmd.exe /K " + Desktop_app
                 CommonUtil.ExecLog(sModuleInfo, "Running following cmd:\n" + cmd, 1)
                 subprocess.Popen(cmd, **args)
