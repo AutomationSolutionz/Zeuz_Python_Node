@@ -476,6 +476,9 @@ def Upload(auth_thread, window_name):
     except:
         Exception_Handler(sys.exc_info())
         ExecLog("", "Could not upload Element identifiers xml", 3)
+        try: print(response)
+        except: pass
+
 
 def sibling_found(each):
     try:
