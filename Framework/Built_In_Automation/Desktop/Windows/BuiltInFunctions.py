@@ -816,7 +816,7 @@ def _child_search_by_path(
                     sModuleInfo
                 )
             else:
-                return [temp]
+                return [temp[element_index]]
 
     except:
         CommonUtil.Exception_Handler(sys.exc_info(), None, _not_found_log(element_name, element_class, element_automation, element_control))
@@ -911,7 +911,7 @@ def image_search(step_data_set):
 
             data = pytesseract.image_to_boxes(gray)
             all_letters = data.split("\n")
-            # t = "signature"
+            print(all_letters)
             full_string = ""
             for i in all_letters:
                 full_string += i[0] if len(i) > 0 else "~"
@@ -1974,4 +1974,3 @@ def save_attribute_values_in_list(data_set):
 
     except Exception:
         return CommonUtil.Exception_Handler(sys.exc_info())
-
