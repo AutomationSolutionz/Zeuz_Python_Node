@@ -1481,7 +1481,7 @@ def save_built_in_time_variable(string):
         elif input.startswith("today"):
             if input.lower().strip() == "today":
                 if os.name == "nt":
-                    datetime_format.replace("%-d", "%#d")
+                    datetime_format = datetime_format.replace("%-d", "%#d").replace("%-m", "%#m").replace("%-H", "%#H").replace("%-I", "%#I").replace("%-M", "%#M").replace("%-S", "%#S").replace("%-j", "%#j")
                 return datetime.today().strftime(datetime_format)
             elif "+" in input:
                 l = input.split("+")
