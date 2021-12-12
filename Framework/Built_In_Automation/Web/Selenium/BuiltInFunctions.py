@@ -339,6 +339,7 @@ def Open_Electron_App(data_set):
                 selenium_driver.implicitly_wait(WebDriver_Wait)
                 CommonUtil.ExecLog(sModuleInfo, "Started Electron App", 1)
                 Shared_Resources.Set_Shared_Variables("selenium_driver", selenium_driver)
+                CommonUtil.teardown = True
                 CommonUtil.set_screenshot_vars(Shared_Resources.Shared_Variable_Export())
             except:
                 CommonUtil.ExecLog(sModuleInfo, "To start an Electron app, you need to download a ChromeDriver with the version that your Electron app supports.\n" +
