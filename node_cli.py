@@ -446,7 +446,7 @@ def RunProcess(sTesterid, user_info_object, run_once=False, log_dir=None):
                     size = str(size) + " KB"
                 save_path = temp_ini_file.parent / "attachments"
                 CommonUtil.ExecLog("", "Downloading dataset and attachments of %s into:\n%s" % (size, str(save_path/"input.zip")), 4)
-                save_path.mkdir(parents=True, exist_ok=True)
+                FL.CreateFolder(save_path)
                 headers = RequestFormatter.add_api_key_to_headers({})
                 response = requests.get(RequestFormatter.form_uri("getting_json_data_api"), {"machine_name": Userid}, stream=True, verify=False, **headers)
                 chunk_size = 4096
@@ -516,6 +516,8 @@ def PreProcess(log_dir=None):
         ConfigModule.add_config_value("Selenium_driver_paths", "edge_path", "")
         ConfigModule.add_config_value("Selenium_driver_paths", "opera_path", "")
         ConfigModule.add_config_value("Selenium_driver_paths", "ie_path", "")
+    if not ConfigModule.get_config_value("Selenium_driver_paths", "electron_chrome_path"):
+        ConfigModule.add_config_value("Selenium_driver_paths", "electron_chrome_path", "")
 
     # If `log_dir` is not specified, then store all logs inside Zeuz Node's
     # "AutomationLog" folder

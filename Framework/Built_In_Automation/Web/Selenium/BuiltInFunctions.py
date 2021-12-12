@@ -13,6 +13,7 @@
 #        Modules        #
 #                       #
 #########################
+import platform
 import sys, os, time, inspect, shutil, subprocess
 import socket
 import requests
@@ -286,6 +287,64 @@ def start_appium_server():
         return CommonUtil.Exception_Handler(
             sys.exc_info(), None, "Error starting Appium server"
         )
+
+
+@logger
+def Open_Electron_App(data_set):
+    sModuleInfo = inspect.currentframe().f_code.co_name + " : " + MODULE_NAME
+    try:
+        desktop_app_path = ""
+        for left, _, right in data_set:
+            left = left.lower().strip()
+            if "windows" in left and platform.system() == "Windows":
+                desktop_app_path = right
+            elif "mac" in left and platform.system() == "Darwin":
+                desktop_app_path = right
+            elif "linux" in left and platform.system() == "Linux":
+                desktop_app_path = right
+
+        if not desktop_app_path:
+            CommonUtil.ExecLog(sModuleInfo, "You did not provide an Electron app path for %s OS" % platform.system(), 3)
+            return "zeuz_failed"
+
+        desktop_app_path = CommonUtil.path_parser(desktop_app_path)
+        electron_chrome_path = ConfigModule.get_config_value("Selenium_driver_paths", "electron_chrome_path")
+        if not electron_chrome_path:
+            electron_chrome_path = ConfigModule.get_config_value("Selenium_driver_paths", "chrome_path")
+
+        try:
+            from selenium.webdriver.chrome.options import Options
+            opts = Options()
+            opts.binary_location = desktop_app_path
+            selenium_driver = webdriver.Chrome(executable_path=electron_chrome_path, chrome_options=opts)
+            selenium_driver.implicitly_wait(WebDriver_Wait)
+            CommonUtil.ExecLog(sModuleInfo, "Started Electron App", 1)
+            Shared_Resources.Set_Shared_Variables("selenium_driver", selenium_driver)
+            CommonUtil.set_screenshot_vars(Shared_Resources.Shared_Variable_Export())
+        except SessionNotCreatedException as exc:
+            try:
+                major_version = exc.msg.split("\n")[1].split("is ", 1)[1].split(".")[0]
+                specific_version = requests.get("https://chromedriver.storage.googleapis.com/LATEST_RELEASE_" + major_version).text
+                electron_chrome_path = ChromeDriverManager(version=specific_version).install()
+                ConfigModule.add_config_value("Selenium_driver_paths", "electron_chrome_path", electron_chrome_path)
+                from selenium.webdriver.chrome.options import Options
+                opts = Options()
+                opts.binary_location = desktop_app_path
+                selenium_driver = webdriver.Chrome(executable_path=electron_chrome_path, chrome_options=opts)
+                selenium_driver.implicitly_wait(WebDriver_Wait)
+                CommonUtil.ExecLog(sModuleInfo, "Started Electron App", 1)
+                Shared_Resources.Set_Shared_Variables("selenium_driver", selenium_driver)
+                CommonUtil.set_screenshot_vars(Shared_Resources.Shared_Variable_Export())
+            except:
+                CommonUtil.ExecLog(sModuleInfo, "To start an Electron app, you need to download a ChromeDriver with the version that your Electron app supports.\n" +
+                   "Visit this link to download specific version of Chrome driver: https://chromedriver.chromium.org/downloads\n" +
+                   'Then add the path of the ChromeDriver path into Framework/settings.conf file "Selenium_driver_paths" section with "electron_chrome_path" name', 3)
+                return "zeuz_failed"
+        except Exception as e:
+            return CommonUtil.Exception_Handler(sys.exc_info())
+        return "passed"
+    except:
+        return CommonUtil.Exception_Handler(sys.exc_info())
 
 
 
