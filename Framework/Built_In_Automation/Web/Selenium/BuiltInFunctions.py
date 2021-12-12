@@ -292,6 +292,11 @@ def start_appium_server():
 @logger
 def Open_Electron_App(data_set):
     sModuleInfo = inspect.currentframe().f_code.co_name + " : " + MODULE_NAME
+    global selenium_driver
+    try:
+        selenium_driver.close()
+    except:
+        pass
     try:
         desktop_app_path = ""
         for left, _, right in data_set:
