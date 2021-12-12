@@ -2023,6 +2023,47 @@ def save_attribute_values_in_list(step_data):
 
 
 @logger
+def Extract_Table_Data(step_data):
+    sModuleInfo = inspect.currentframe().f_code.co_name + " : " + MODULE_NAME
+    global selenium_driver
+    try:
+        Element = LocateElement.Get_Element(step_data, selenium_driver)
+        if Element == "zeuz_failed":
+            CommonUtil.ExecLog(sModuleInfo, "Unable to locate your element with given data.", 3)
+            return "zeuz_failed"
+        if Element.tag_name != "tbody":
+            CommonUtil.ExecLog(sModuleInfo, 'Tag name of the Element is not "tbody"', 2)
+
+        try:
+            for left, mid, right in step_data:
+                left = left.strip().lower()
+                right = right.strip()
+                if left == "extract table data":
+                    variable_name = right
+                elif "row" in left:
+                    pass        # Todo: We will extract data on that range
+                elif "column" in left:
+                    pass        # Todo: We will extract data on that range
+        except:
+            CommonUtil.ExecLog(sModuleInfo, "Unable to parse data. Please write data in correct format", 3)
+            return "zeuz_failed"
+
+        variable_value = []
+        all_tr = Element.find_elements_by_tag_name("tr")
+        for row in all_tr:
+            all_td = row.find_elements_by_tag_name("td")
+            td_data = []
+            for td in all_td:
+                td_data.append(td.text)
+            variable_value.append(td_data)
+
+        return Shared_Resources.Set_Shared_Variables(variable_name, variable_value)
+
+    except Exception:
+        return CommonUtil.Exception_Handler(sys.exc_info())
+
+
+@logger
 def save_web_elements_in_list(step_data):
     sModuleInfo = inspect.currentframe().f_code.co_name + " : " + MODULE_NAME
     global selenium_driver

@@ -47,6 +47,7 @@ declarations = (
     { "name": "switch iframe",                 "function": "switch_iframe",                 "screenshot": "web" },
     { "name": "save attribute",                "function": "Save_Attribute",                "screenshot": "web" },
     { "name": "save attribute values in list", "function": "save_attribute_values_in_list", "screenshot": "web" },
+    { "name": "extract table data",            "function": "Extract_Table_Data",            "screenshot": "web" },
     { "name": "save web elements in list",     "function": "save_web_elements_in_list",     "screenshot": "web" },
     { "name": "take screenshot web",           "function": "take_screenshot_selenium",      "screenshot": "web" },
     { "name": "mouse click",                   "function": "Mouse_Click_Element",           "screenshot": "web" },
