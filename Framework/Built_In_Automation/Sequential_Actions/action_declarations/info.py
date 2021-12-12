@@ -41,6 +41,7 @@ action_support = (
     "sibling parameter",
     "parent parameter",
     "search element parameter",
+    "desired element parameter",
     "target parameter",
     "desired element parameter",
     "desired parent parameter",
