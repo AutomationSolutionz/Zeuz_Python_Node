@@ -315,7 +315,7 @@ def Open_Electron_App(data_set):
         desktop_app_path = CommonUtil.path_parser(desktop_app_path)
         electron_chrome_path = ConfigModule.get_config_value("Selenium_driver_paths", "electron_chrome_path")
         if not electron_chrome_path:
-            electron_chrome_path = ChromeDriverManager.install()
+            electron_chrome_path = ChromeDriverManager().install()
 
         try:
             from selenium.webdriver.chrome.options import Options
