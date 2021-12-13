@@ -1314,6 +1314,7 @@ def Save_Attribute(data_set):
         for left, mid, right in data_set:
             if mid.strip().lower() == "save parameter":
                 field = left.replace(" ", "").lower()
+                field2 = left.strip()
                 variable_name = right.strip()
 
         Element = Get_Element(data_set)
@@ -1347,6 +1348,8 @@ def Save_Attribute(data_set):
             actual_text = str(Element.Current.AutomationId).strip()
         elif "type" in field or "control" in field:
             actual_text = str(Element.Current.LocalizedControlType).strip()
+        else:
+            actual_text = eval("Element.Current." + field2)
 
         Shared_Resources.Set_Shared_Variables(variable_name, actual_text)
 
