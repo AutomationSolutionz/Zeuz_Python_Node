@@ -2793,9 +2793,7 @@ def save_text_from_file_into_variable(data_set):
         for row in data_set:
             if str(row[0]).strip().lower() == "text file path":
                 text_file_path = str(row[2]).strip()
-            elif (
-                str(row[0]).strip().lower() == "variable name where data will be saved"
-            ):
+            elif str(row[0]).strip().lower() == "save text from file into variable":
                 var_name = str(row[2]).strip()
 
         if text_file_path == "" or var_name == "":
@@ -3260,7 +3258,6 @@ def execute_python_code(data_set):
             main_function = right.strip().split("(")[0]
         elif left == "execute python code":
             Code = right
-
     Code = filepath_code if filepath_code else Code
     try: exec(Code, globals())
     except: return CommonUtil.Exception_Handler(sys.exc_info())
