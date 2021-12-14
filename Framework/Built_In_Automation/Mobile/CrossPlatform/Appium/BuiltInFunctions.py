@@ -1697,38 +1697,36 @@ def swipe_handler_android(data_set=[], save_att_data_set={}):
 
 
 @logger
-@deprecated
 def scroll_to_an_element(data_set):
+    global appium_driver
     sModuleInfo = inspect.currentframe().f_code.co_name + " : " + MODULE_NAME
     skip_or_not = filter_optional_action_and_step_data(data_set, sModuleInfo)
     if skip_or_not == False:
         return "passed"
     try:
-        final_string = "new UiScrollable(new UiSelector().scrollable(true))"
-        search_string = ""
+        final_scroll_string = "new UiScrollable(new UiSelector()"
+        final_element_string = ".scrollIntoView(new UiSelector()"
+        scroll_search_string = ""
+        element_search_string = ""
+        element = None
         direction = ""
-        element_dataset = []
-        element_search = False
-        varname = ""
         max_scroll = ""
         scroll_to = ""
         try:
             for left, mid, right in data_set:
                 mid = mid.strip().lower()
                 left = left.strip().lower()
-                if "search element parameter" != mid:
-                    element_dataset.append((left, mid, right))
-                else:
+                if "element parameter" == mid:
                     if left == "*resource-id":
-                        search_string += '.resourceIdMatches(".*' + right + '.*")'
+                        scroll_search_string += '.resourceIdMatches(".*' + right + '.*")'
                     elif left == "resource-id":
-                        search_string += '.resourceIdMatches("' + right + '")'
+                        scroll_search_string += '.resourceIdMatches("' + right + '")'
                     elif left == "*text":
-                        search_string += '.textContains("' + right + '")'
+                        scroll_search_string += '.textContains("' + right + '")'
                     elif left == "text":
-                        search_string += '.text("' + right + '")'
+                        scroll_search_string += '.text("' + right + '")'
                     elif left == "class":
-                        search_string += '.className("' + right + '")'
+                        scroll_search_string += '.className("' + right + '")'
                     elif left == "*class":
                         CommonUtil.ExecLog(
                             sModuleInfo,
@@ -1738,7 +1736,7 @@ def scroll_to_an_element(data_set):
                             3)
                         return "zeuz_failed"
                     elif left == "index":
-                        search_string += '.instance("' + right + '")'
+                        scroll_search_string += '.instance("' + right + '")'
                     else:
                         CommonUtil.ExecLog(
                             sModuleInfo,
@@ -1746,8 +1744,38 @@ def scroll_to_an_element(data_set):
                             "resource-id\n*resource-id\ntext\n*text\nclass\nindex",
                             3)
                         return "zeuz_failed"
-                if "element parameter" == mid:
-                    element_search = True
+
+                elif "desired element parameter" == mid:
+                    if left == "*resource-id":
+                        element_search_string += '.resourceIdMatches(".*' + right + '.*")'
+                    elif left == "resource-id":
+                        element_search_string += '.resourceIdMatches("' + right + '")'
+                    elif left == "*text":
+                        element_search_string += '.textContains("' + right + '")'
+                    elif left == "text":
+                        element_search_string += '.text("' + right + '")'
+                    elif left == "class":
+                        element_search_string += '.className("' + right + '")'
+                    elif left == "*class":
+                        CommonUtil.ExecLog(
+                            sModuleInfo,
+                            "Partial matching does not work for class. It works for resource-id and text.\n" +
+                            "The following 6 Attributes will work for search element parameter:\n" +
+                            "resource-id\n*resource-id\ntext\n*text\nclass\nindex",
+                            3)
+                        return "zeuz_failed"
+                    elif left == "index":
+                        element_search_string += '.instance("' + right + '")'
+                    else:
+                        CommonUtil.ExecLog(
+                            sModuleInfo,
+                            "Only the following 6 Attributes will work for search element parameter:\n" +
+                            "resource-id\n*resource-id\ntext\n*text\nclass\nindex",
+                            3)
+                        return "zeuz_failed"
+
+        #        if "element parameter" == mid:
+        #            element_search = True
                 elif "direction" == left:
                     r = right.strip().lower()
                     if r == "up": direction = ".setAsVerticalList().scrollForward()"
@@ -1755,8 +1783,8 @@ def scroll_to_an_element(data_set):
                     elif r == "left": direction = ".setAsHorizontalList().scrollForward()"
                     elif r == "right": direction = ".setAsHorizontalList().scrollBackward()"
                     else: direction = ""
-                elif "save search element" == left:
-                    varname = right.strip()
+        #        elif "save search element" == left:
+        #            varname = right.strip()
                 elif "max scroll" == left:
                     if right.strip().isdigit():
                         max_scroll = right.strip().lower()
@@ -1769,46 +1797,39 @@ def scroll_to_an_element(data_set):
                     elif right.strip().lower() == "scroll to beginning":
                         scroll_to = "beginning"
 
+            if scroll_search_string == "":
+                scroll_search_string = ".scrollable(true)"
+
+            final_scroll_string = final_scroll_string + scroll_search_string + ')'
+            final_element_string = final_element_string + element_search_string + ')'
+
             if scroll_to == "end":
                 if max_scroll == "":
                     CommonUtil.ExecLog(sModuleInfo, "Max scroll is not set. Setting it to 20", 2)
                     max_scroll = "20"
-                final_string += ".scrollToEnd(" + max_scroll + ")"
+                max_scroll_string = ".scrollToEnd(" + max_scroll + ")"
             elif scroll_to == "beginning":
                 if max_scroll == "":
                     CommonUtil.ExecLog(sModuleInfo, "Max scroll is not set. Setting it to 20", 2)
                     max_scroll = "20"
-                final_string += ".scrollToBeginning(" + max_scroll + ")"
+                max_scroll_string = ".scrollToBeginning(" + max_scroll + ")"
             else:
-                if not search_string:
-                    CommonUtil.ExecLog(sModuleInfo, "You have not provided any 'Search element parameter'", 3)
-                    return "zeuz_failed"
-                max_scroll = ".setMaxSearchSwipes(" + max_scroll + ")" if max_scroll else ""
-                final_string += direction + max_scroll + ".scrollIntoView(new UiSelector()" + search_string + ")"
+                max_scroll_string = ".setMaxSearchSwipes(%d)" % int(max_scroll) if max_scroll else ""
 
+            final_string = final_scroll_string + direction + max_scroll_string + final_element_string
             CommonUtil.ExecLog(sModuleInfo, "Search string used for UI Automator:\n" + final_string, 1)
         except:
             errMsg = "Error parsing data"
             return CommonUtil.Exception_Handler(sys.exc_info(), None, errMsg)
 
-        try:
-            if element_search:
-                Element = LocateElement.Get_Element(element_dataset, appium_driver)
-                if Element == "zeuz_failed":
-                    CommonUtil.ExecLog(sModuleInfo, "Could not find the Parent element. Searching for the scrollable parent element automatically", 2)
-                    Element = appium_driver
-            else:
-                Element = appium_driver
 
-            elem = Element.find_element_by_android_uiautomator(final_string)
-            # Not sure what element its returning. So not adding variable in the control server for now
-            if varname:
-                Shared_Resources.Set_Shared_Variables(varname, elem)
-        except:
-            return CommonUtil.Exception_Handler(sys.exc_info())
-
+        element = appium_driver.find_element_by_android_uiautomator(final_string)
+        if element.text == '' or element == None :
+            CommonUtil.ExecLog(sModuleInfo, "Desired element is not found in scrollable element", 3)
+            return "zeuz_failed"
         CommonUtil.ExecLog(sModuleInfo, "Swiped to the element successfully", 1)
         return "passed"
+
     except:
         errMsg = "Unable to swipe"
         return CommonUtil.Exception_Handler(sys.exc_info(), None, errMsg)
@@ -4558,4 +4579,242 @@ def auto_switch_context_and_try(native_web):
             % choice,
             3,
         )
+        return "zeuz_failed"
+
+@logger
+def swipe_appium(data_set):
+    """
+    To auto scroll to an element which is scrollable, won't work if no scrollable element is present
+    """
+    scrollable_element = None
+    global generic_driver
+    generic_driver = appium_driver
+    sModuleInfo = inspect.currentframe().f_code.co_name + " : " + MODULE_NAME
+    scrollable_element = LocateElement.Get_Element(data_set,appium_driver)
+    if scrollable_element == None:
+        CommonUtil.ExecLog(sModuleInfo, "Scrollable element is not found", 3)
+        return "zeuz_failed"
+
+    inset = 0.1
+    position = 0.5
+    height = scrollable_element.size["height"]
+    width = scrollable_element.size["width"]
+    xstart_location = scrollable_element.location["x"]  # Starting location of the x-coordinate of scrollable element
+    ystart_location = scrollable_element.location["y"]  # Starting location of the y-coordinate of scrollable element
+    max_try = 1
+    direction = "up" if height > width else "left"
+    swipe_speed = None
+
+    try:
+        for left, mid, right in data_set:
+            left = left.strip().lower()
+            mid = mid.strip().lower()
+            right = right.replace("%", "").replace(" ", "")
+            if "scroll parameter" in mid:
+                if left == "direction" and right in ("up", "down", "left", "right"):
+                    direction = right
+                elif left == "swipe speed":
+                    swipe_speed = float(right) / 1000.0
+                elif left == "inset":
+                    inset = float(right) / 100.0
+                elif left == "position":
+                    position = float(right) / 100.0
+                elif left == "max try":
+                    max_try = float(right)
+    except:
+        CommonUtil.Exception_Handler(sys.exc_info(), None, "Unable to parse data. Please write data in correct format")
+        return "zeuz_failed"
+
+    if direction == "up":
+        tmp = 1.0 - inset
+        new_height = round(tmp * height)
+        new_width = round(position * width)
+        x1 = xstart_location + new_width
+        x2 = x1
+        y1 = ystart_location + new_height - 1
+        y2 = ystart_location
+        if swipe_speed is None:
+            duration = new_height * 0.0032  #0.0032 second per pixel
+        else:
+            duration = new_height * swipe_speed
+    elif direction == "down":
+        tmp = 1.0 - inset
+        new_height = round(tmp * height)
+        new_width = round(position * width)
+        x1 = xstart_location + new_width
+        x2 = x1
+        y1 = ystart_location + 1
+        y2 = ystart_location + new_height
+        if swipe_speed is None:
+            duration = new_height * 0.0032
+        else:
+            duration = new_height * swipe_speed
+    elif direction == "left":
+        tmp = 1.0 - inset
+        new_width = round(tmp * width)
+        new_height = round(position * height)
+        x1 = xstart_location + new_width - 1
+        x2 = xstart_location
+        y1 = ystart_location + new_height
+        y2 = y1
+        if swipe_speed is None:
+            duration = new_width * 0.0032
+        else:
+            duration = new_width * swipe_speed
+    elif direction == "right":
+        tmp = 1.0 - inset
+        new_width = round(tmp * width)
+        new_height = round(position * height)
+        x1 = xstart_location + 1
+        x2 = xstart_location + new_width
+        y1 = ystart_location + new_height
+        y2 = y1
+        if swipe_speed is None:
+            duration = new_width * 0.0032
+        else:
+            duration = new_width * swipe_speed
+    else:
+        CommonUtil.ExecLog(sModuleInfo, "Direction should be among up, down, right or left", 3)
+        return "zeuz_failed"
+
+    try:
+        CommonUtil.ExecLog(sModuleInfo, "Scrolling with the following scroll parameter:\n" +
+           "Max_try: %s, Direction: %s, Duration of a swipe: %s second, Inset: %s, Position:%s\n" % (max_try, direction, duration, inset*100, position*100) +
+           "Calculated Coordinate: (%s,%s) to (%s,%s)" % (x1, y1, x2, y2), 1)
+        i = 0
+        while i < max_try:
+            generic_driver.swipe(x1, y1, x2, y2, duration * 1000)  # duration seconds to milliseconds
+            i = i+1
+        return "passed"
+
+    except Exception:
+        CommonUtil.Exception_Handler(sys.exc_info(), None, "Error could not scroll the element")
+        return "zeuz_failed"
+
+@logger
+def scroll_to_element(data_set):
+    """
+    To auto scroll to an element which is scrollable, won't work if no scrollable element is present
+    """
+    scrollable_element = None
+    global generic_driver
+    generic_driver = appium_driver
+    sModuleInfo = inspect.currentframe().f_code.co_name + " : " + MODULE_NAME
+    scroll_dataset = []
+
+    for left, mid, right in data_set:
+        left = left.strip().lower()
+        mid = mid.strip().lower()
+        right = right.replace("%", "").replace(" ", "")
+        if mid == 'element parameter':
+            scroll_dataset.append((left, 'element parameter', right))
+
+    scrollable_element = LocateElement.Get_Element(scroll_dataset,appium_driver)
+    if scrollable_element == None:
+        CommonUtil.ExecLog(sModuleInfo, "Scrollable element is not found", 3)
+        return "zeuz_failed"
+    desired_dataset =[]
+    Element = None
+    inset = 0.1
+    position = 0.5
+    height = scrollable_element.size["height"]
+    width = scrollable_element.size["width"]
+    xstart_location = scrollable_element.location["x"]  # Starting location of the x-coordinate of scrollable element
+    ystart_location = scrollable_element.location["y"]  # Starting location of the y-coordinate of scrollable element
+    max_try = 10
+    direction = "up" if height > width else "left"
+    swipe_speed = None
+
+    try:
+        for left, mid, right in data_set:
+            left = left.strip().lower()
+            mid = mid.strip().lower()
+            right = right.replace("%", "").replace(" ", "")
+            if mid.startswith("desired"):
+                desired_dataset.append((left, 'element parameter', right))
+
+            if "scroll parameter" in mid:
+                if left == "direction" and right in ("up", "down", "left", "right"):
+                    direction = right
+                elif left == "swipe speed":
+                    swipe_speed = float(right) / 1000.00 # millisecond per pixel
+                elif left == "inset":
+                    inset = float(right) / 100.0
+                elif left == "position":
+                    position = float(right) / 100.0
+                elif left == "max try":
+                    max_try = float(right)
+    except:
+        CommonUtil.Exception_Handler(sys.exc_info(), None, "Unable to parse data. Please write data in correct format")
+        return "zeuz_failed"
+
+    if direction == "up":
+        tmp = 1.0 - inset
+        new_height = round(tmp * height)
+        new_width = round(position * width)
+        x1 = xstart_location + new_width
+        x2 = x1
+        y1 = ystart_location + new_height - 1
+        y2 = ystart_location
+        if swipe_speed is None:
+            duration = new_height * 0.0032
+        else :
+            duration = new_height * swipe_speed
+    elif direction == "down":
+        tmp = 1.0 - inset
+        new_height = round(tmp * height)
+        new_width = round(position * width)
+        x1 = xstart_location + new_width
+        x2 = x1
+        y1 = ystart_location + 1
+        y2 = ystart_location + new_height
+        if swipe_speed is None:
+            duration = new_height * 0.0032
+        else:
+            duration = new_height * swipe_speed
+    elif direction == "left":
+        tmp = 1.0 - inset
+        new_width = round(tmp * width)
+        new_height = round(position * height)
+        x1 = xstart_location + new_width - 1
+        x2 = xstart_location
+        y1 = ystart_location + new_height
+        y2 = y1
+        if swipe_speed is None:
+            duration = new_width * 0.0032
+        else:
+            duration = new_width * swipe_speed
+    elif direction == "right":
+        tmp = 1.0 - inset
+        new_width = round(tmp * width)
+        new_height = round(position * height)
+        x1 = xstart_location + 1
+        x2 = xstart_location + new_width
+        y1 = ystart_location + new_height
+        y2 = y1
+        if swipe_speed is None:
+            duration = new_width * 0.0032
+        else:
+            duration = new_width * swipe_speed
+    else:
+        CommonUtil.ExecLog(sModuleInfo, "Direction should be among up, down, right or left", 3)
+        return "zeuz_failed"
+
+    try:
+        CommonUtil.ExecLog(sModuleInfo, "Scrolling with the following scroll parameter:\n" +
+           "Max_try: %s, Direction: %s, Duration: %s, Inset: %s, Position:%s\n" % (max_try, direction, duration, inset*100, position*100) +
+           "Calculated Coordinate: (%s,%s) to (%s,%s)" % (x1, y1, x2, y2), 1)
+        i = 0
+        while i < max_try:
+            Element = LocateElement.Get_Element(desired_dataset, appium_driver)
+            if Element != ('zeuz_failed' or None):
+                CommonUtil.ExecLog(sModuleInfo,"Scrolled to desired element succesfully.",1)
+                return "passed"
+            generic_driver.swipe(x1, y1, x2, y2, duration * 1000)  # duration seconds to milliseconds
+            i = i+1
+        CommonUtil.ExecLog(sModuleInfo, "Scrolled %d times.Couldn't find the element." %max_try , 3)
+        return "zeuz_failed"
+
+    except Exception:
+        CommonUtil.Exception_Handler(sys.exc_info(), None, "Error could not scroll the element")
         return "zeuz_failed"

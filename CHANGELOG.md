@@ -1,6 +1,10 @@
 # Changelog
 
 # Version 14
+
+### [14.7.1] [December 6, 2021]
+- **[Add]** Added appium custom swipe action and appium swipe to an element action.
+- **[Change]** Autoscroll is set off by default.
 ### [14.7.0] [November 13, 2021]
 - **[Add]** Added wait as an optional parameter in every action of appium and selenium.
 - **[Add]** Also you can set a default wait from `element_wait` variable in settings.conf file
