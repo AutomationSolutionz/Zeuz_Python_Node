@@ -13,6 +13,7 @@
 #        Modules        #
 #                       #
 #########################
+import platform
 import sys, os, time, inspect, shutil, subprocess
 import socket
 import requests
@@ -286,6 +287,70 @@ def start_appium_server():
         return CommonUtil.Exception_Handler(
             sys.exc_info(), None, "Error starting Appium server"
         )
+
+
+@logger
+def Open_Electron_App(data_set):
+    sModuleInfo = inspect.currentframe().f_code.co_name + " : " + MODULE_NAME
+    global selenium_driver
+    try:
+        selenium_driver.close()
+    except:
+        pass
+    try:
+        desktop_app_path = ""
+        for left, _, right in data_set:
+            left = left.lower().strip()
+            if "windows" in left and platform.system() == "Windows":
+                desktop_app_path = right
+            elif "mac" in left and platform.system() == "Darwin":
+                desktop_app_path = right
+            elif "linux" in left and platform.system() == "Linux":
+                desktop_app_path = right
+
+        if not desktop_app_path:
+            CommonUtil.ExecLog(sModuleInfo, "You did not provide an Electron app path for %s OS" % platform.system(), 3)
+            return "zeuz_failed"
+
+        desktop_app_path = CommonUtil.path_parser(desktop_app_path)
+        electron_chrome_path = ConfigModule.get_config_value("Selenium_driver_paths", "electron_chrome_path")
+        if not electron_chrome_path:
+            electron_chrome_path = ChromeDriverManager().install()
+
+        try:
+            from selenium.webdriver.chrome.options import Options
+            opts = Options()
+            opts.binary_location = desktop_app_path
+            selenium_driver = webdriver.Chrome(executable_path=electron_chrome_path, chrome_options=opts)
+            selenium_driver.implicitly_wait(WebDriver_Wait)
+            CommonUtil.ExecLog(sModuleInfo, "Started Electron App", 1)
+            Shared_Resources.Set_Shared_Variables("selenium_driver", selenium_driver)
+            CommonUtil.set_screenshot_vars(Shared_Resources.Shared_Variable_Export())
+        except SessionNotCreatedException as exc:
+            try:
+                major_version = exc.msg.split("\n")[1].split("is ", 1)[1].split(".")[0]
+                specific_version = requests.get("https://chromedriver.storage.googleapis.com/LATEST_RELEASE_" + major_version).text
+                electron_chrome_path = ChromeDriverManager(version=specific_version).install()
+                ConfigModule.add_config_value("Selenium_driver_paths", "electron_chrome_path", electron_chrome_path)
+                from selenium.webdriver.chrome.options import Options
+                opts = Options()
+                opts.binary_location = desktop_app_path
+                selenium_driver = webdriver.Chrome(executable_path=electron_chrome_path, chrome_options=opts)
+                selenium_driver.implicitly_wait(WebDriver_Wait)
+                CommonUtil.ExecLog(sModuleInfo, "Started Electron App", 1)
+                Shared_Resources.Set_Shared_Variables("selenium_driver", selenium_driver)
+                CommonUtil.teardown = True
+                CommonUtil.set_screenshot_vars(Shared_Resources.Shared_Variable_Export())
+            except:
+                CommonUtil.ExecLog(sModuleInfo, "To start an Electron app, you need to download a ChromeDriver with the version that your Electron app supports.\n" +
+                   "Visit this link to download specific version of Chrome driver: https://chromedriver.chromium.org/downloads\n" +
+                   'Then add the path of the ChromeDriver path into Framework/settings.conf file "Selenium_driver_paths" section with "electron_chrome_path" name', 3)
+                return "zeuz_failed"
+        except Exception as e:
+            return CommonUtil.Exception_Handler(sys.exc_info())
+        return "passed"
+    except:
+        return CommonUtil.Exception_Handler(sys.exc_info())
 
 
 
@@ -962,7 +1027,7 @@ def Keystroke_For_Element(data_set):
         )
 
     # Get the element, or if none provided, create action chains for keystroke insertion without an element
-    if get_element == True:
+    if get_element:
         Element = LocateElement.Get_Element(data_set, selenium_driver)
         if Element in failed_tag_list:
             CommonUtil.ExecLog(sModuleInfo, "Failed to locate element", 3)
@@ -974,17 +1039,30 @@ def Keystroke_For_Element(data_set):
     try:
         if stype == "keys":
             # Requires: python-selenium v3.1+, geckodriver v0.15.0+
-            get_keystroke_value = getattr(
-                Keys, keystroke_value.upper()
-            )  # Create an object for the keystroke
-            result = Element.send_keys(
-                get_keystroke_value * key_count
-            )  # Prepare keystroke for sending if Actions, or send if Element
-            if get_element == False:
-                Element.perform()  # Send keystroke
+            keystroke_value = keystroke_value.upper().replace("CTRL", "CONTROL")
+            if "+" in keystroke_value:
+                hotkey_list = keystroke_value.split("+")
+                for i in range(len(hotkey_list)):
+                    if hotkey_list[i] in list(dict(Keys.__dict__).keys())[2:-2]:
+                        Element.key_down(getattr(Keys, hotkey_list[i]))
+                    else:
+                        Element.key_down(hotkey_list[i])
+                for i in range(len(hotkey_list)).__reversed__():
+                    if hotkey_list[i] in list(dict(Keys.__dict__).keys())[2:-2]:
+                        Element.key_up(getattr(Keys, hotkey_list[i]))
+                    else:
+                        Element.key_up(hotkey_list[i])
+                Element.perform()
+                result = "passed"
+
+            else:
+                get_keystroke_value = getattr(Keys, keystroke_value)  # Create an object for the keystroke
+                result = Element.send_keys(get_keystroke_value * key_count)  # Prepare keystroke for sending if Actions, or send if Element
+                if not get_element:
+                    Element.perform()  # Send keystroke
         else:
             result = Element.send_keys(keystroke_value)
-            if get_element == False:
+            if not get_element:
                 Element.perform()
     except:
         return CommonUtil.Exception_Handler(
@@ -1937,6 +2015,47 @@ def save_attribute_values_in_list(step_data):
             variable_value = list(map(list, zip(*variable_value)))[0]
         elif not paired:
             variable_value = list(map(list, zip(*variable_value)))
+
+        return Shared_Resources.Set_Shared_Variables(variable_name, variable_value)
+
+    except Exception:
+        return CommonUtil.Exception_Handler(sys.exc_info())
+
+
+@logger
+def Extract_Table_Data(step_data):
+    sModuleInfo = inspect.currentframe().f_code.co_name + " : " + MODULE_NAME
+    global selenium_driver
+    try:
+        Element = LocateElement.Get_Element(step_data, selenium_driver)
+        if Element == "zeuz_failed":
+            CommonUtil.ExecLog(sModuleInfo, "Unable to locate your element with given data.", 3)
+            return "zeuz_failed"
+        if Element.tag_name != "tbody":
+            CommonUtil.ExecLog(sModuleInfo, 'Tag name of the Element is not "tbody"', 2)
+
+        try:
+            for left, mid, right in step_data:
+                left = left.strip().lower()
+                right = right.strip()
+                if left == "extract table data":
+                    variable_name = right
+                elif "row" in left:
+                    pass        # Todo: We will extract data on that range
+                elif "column" in left:
+                    pass        # Todo: We will extract data on that range
+        except:
+            CommonUtil.ExecLog(sModuleInfo, "Unable to parse data. Please write data in correct format", 3)
+            return "zeuz_failed"
+
+        variable_value = []
+        all_tr = Element.find_elements_by_tag_name("tr")
+        for row in all_tr:
+            all_td = row.find_elements_by_tag_name("td")
+            td_data = []
+            for td in all_td:
+                td_data.append(td.text)
+            variable_value.append(td_data)
 
         return Shared_Resources.Set_Shared_Variables(variable_name, variable_value)
 

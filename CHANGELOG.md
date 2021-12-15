@@ -2,6 +2,22 @@
 
 # Version 14
 
+### [14.8.0] [December 15, 2021]
+- **[Add]** Windows Scroll to an Element and Swipe action are added
+- **[Add]** Snapshot search and Image text search is added with parent support in Windows
+- **[Add]** Added Check_uncheck action for windows
+- **[Add]** Toggle pattern and selection item pattern is added into save_attribute action
+- **[Add]** Added Chrome Electron App launch with required browser version
+- **[Improve]** Save Attribute values is improved to scroll and extract data according to coordinates
+- **[Improve]** Made time format cross-platform
+- **[Improve]** direct access given number of levels in xml tree
+- **[Improve]** Improved windows Launch app with maximize, setting custom size and location, wait, inspector open
+- **[Improve]** Improved today variable with cross-platform feature
+- **[Improve]** Server side system bug now will be handled in Node
+- **[Add]** Extract Table data action is added for selenium
+- **[Add]** Added multiple keystroke for selenium with + sign
+- **[Fix]** WebDriver_installer fixed 
+
 ### [14.7.1] [December 6, 2021]
 - **[Add]** Added appium custom swipe action and appium swipe to an element action.
 - **[Change]** Autoscroll is set off by default.
