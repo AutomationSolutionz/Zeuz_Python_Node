@@ -608,7 +608,7 @@ def parse_variable(name):
                         val = val[:right]
                     elif right is None and left:
                         val = val[left:]
-                    if left is None and right is None:
+                    elif left is None and right is None:
                         CommonUtil.ExecLog(
                             sModuleInfo,
                             "Invalid left and right index for ranged variable access.",
