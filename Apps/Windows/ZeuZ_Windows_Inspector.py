@@ -315,13 +315,23 @@ def create_index(index_trace: dict, element):
     if s in index_trace: index_trace[s] += 1
     else: index_trace[s] = 0
 
-def create_path(index_trace: dict, element):
+def create_path(index_trace: dict, element, window_cond=False):
     NameE = element.Current.Name
     ClassE = element.Current.ClassName
     AutomationE = element.Current.AutomationId
     LocalizedControlTypeE = element.Current.LocalizedControlType
 
-    s_name = 'name="%s"' % NameE
+    if window_cond:
+        config = configparser.ConfigParser()
+        config.read("..\..\Framework\settings.conf")
+        try: window_name = config.get("Inspector", "Window")
+        except: window_name = ""
+        if window_name:
+            s_name = '**name="%s"' % window_name
+        else:
+            s_name = 'name="%s"' % NameE
+    else:
+        s_name = 'name="%s"' % NameE
     if NameE and s_name not in index_trace:
         return s_name + ">" + "\n" if new_line else ""
     s_name_control = 'name="%s",control="%s"' % (NameE, LocalizedControlTypeE)
@@ -340,9 +350,9 @@ def create_path(index_trace: dict, element):
     global path_priority
     path_priority = 2
     if NameE and s in index_trace:
-        return s_name + ">" + ',index="%s">' % (index_trace[s_name] + 1) + "\n" if new_line else ""
+        return s_name + ',index="%s">' % (index_trace[s_name] + 1) + "\n" if new_line else ""
     if ClassE and s in index_trace:
-        return s_class + ">" + ',index="%s">' % (index_trace[s_class] + 1) + "\n" if new_line else ""
+        return s_class + ',index="%s">' % (index_trace[s_class] + 1) + "\n" if new_line else ""
 
     # if s_name not in index_trace:
     #     return s_name + ">" + "\n" if new_line else ""
@@ -352,15 +362,19 @@ def create_path(index_trace: dict, element):
 
 
 element_plugin = False
-findall_time = 0; findall_count = 0
-def _child_search(ParentElement, parenthesis=1):
+findall_time = 0; findall_count = 0; each_findall_time = []
+def _child_search(ParentElement, level, parenthesis=1):
     try:
         path = ""
         global xml_str, element_plugin, findall_time, findall_count
         start = time.perf_counter()
         child_elements = ParentElement.FindAll(TreeScope.Children, Condition.TrueCondition)
-        findall_time += time.perf_counter()-start
+        temp_findall_time = time.perf_counter()-start
+        global each_findall_time
+        each_findall_time += [[temp_findall_time/child_elements.Count if child_elements.Count>0 else -1, temp_findall_time, child_elements.Count]]
+        findall_time += temp_findall_time
         findall_count += 1
+        # child_elements.Count>0 and temp_findall_time/child_elements.Count>2.5
         if child_elements.Count == 0:
             return path
 
@@ -379,20 +393,28 @@ def _child_search(ParentElement, parenthesis=1):
                 top = str(each_child.Current.BoundingRectangle.Top)
             except:
                 left, right, top, bottom = "", "", "", ""
-            xml_str += "\n" + "  "*parenthesis + '<div Name="%s" AutomationId="%s" ClassName="%s" LocalizedControlType="%s"' % \
-            (elem_name, elem_automationid, elem_class, elem_control) + ' Left="%s" Right="%s" Top="%s" Bottom="%s">' % (left, right, top, bottom)
+            end_div = False
+            if level >= No_of_level_to_skip:
+                xml_str += "\n" + "  "*parenthesis + '<div Name="%s" AutomationId="%s" ClassName="%s" LocalizedControlType="%s"' % \
+                (elem_name, elem_automationid, elem_class, elem_control) + ' Left="%s" Right="%s" Top="%s" Bottom="%s">' % (left, right, top, bottom)
+                end_div = True
             if _found(each_child) and not found:
+                if not level >= No_of_level_to_skip:
+                    xml_str += "\n" + "  " * parenthesis + '<div Name="%s" AutomationId="%s" ClassName="%s" LocalizedControlType="%s"' % \
+                   (elem_name, elem_automationid, elem_class, elem_control) + ' Left="%s" Right="%s" Top="%s" Bottom="%s">' % (left, right, top, bottom)
+                    end_div = True
                 path += create_path(index_trace, each_child)
                 found = True
                 if not element_plugin:
                     xml_len = len(xml_str)
-            if not temp:
-                temp = _child_search(each_child, parenthesis+1)
-            else:
-                _child_search(each_child, parenthesis+1)
+            if not temp and found:
+                temp = _child_search(each_child, level+1, parenthesis+1)
+            elif level >= No_of_level_to_skip:
+                _child_search(each_child, level+1, parenthesis+1)
             if not found:
                 create_index(index_trace, each_child)
-            xml_str += "\n" + "  "*parenthesis + "</div>"
+            if end_div:
+                xml_str += "\n" + "  "*parenthesis + "</div>"
 
         if found and not element_plugin:
             xml_str = xml_str[:xml_len-1] + ' zeuz="aiplugin"' + xml_str[xml_len-1:]
@@ -424,32 +446,38 @@ def Authenticate():
         return executor.submit(requests.get, url, verify=False)
 
 def Upload(auth_thread, window_name):
-    global auth
-    if not auth:
-        auth = auth_thread.result().json()["token"]
-    Authorization = 'Bearer ' + auth
-    url = server + "/" if server[-1] != "/" else server
-    url += "api/contents/"
-    content = json.dumps({
-        'html': xml_str,
-        "exact_path": {"path": path, "priority": path_priority},
-        "window_name": window_name
-    })
+    try:
+        global auth
+        if not auth:
+            auth = auth_thread.result().json()["token"]
+        Authorization = 'Bearer ' + auth
+        url = server + "/" if server[-1] != "/" else server
+        url += "api/contents/"
+        content = json.dumps({
+            'html': xml_str,
+            "exact_path": {"path": path, "priority": path_priority},
+            "window_name": window_name
+        })
 
-    payload = json.dumps({
-        "content": content,
-        "source": "windows"
-    })
-    headers = {
-        'Authorization': Authorization,
-        'Content-Type': 'application/json'
+        payload = json.dumps({
+            "content": content,
+            "source": "windows"
+        })
+        headers = {
+            'Authorization': Authorization,
+            'Content-Type': 'application/json'
 
-    }
+        }
 
-    response = requests.request("POST", url, headers=headers, data=payload, verify=False)
-    response = response.json()
-    del response["content"]
-    print(response)
+        response = requests.request("POST", url, headers=headers, data=payload, verify=False)
+        response = response.json()
+        del response["content"]
+        print(response)
+    except:
+        Exception_Handler(sys.exc_info())
+        ExecLog("", "Could not upload Element identifiers xml", 3)
+        try: print(response)
+        except: pass
 
 
 def sibling_found(each):
@@ -483,12 +511,31 @@ def Remove_coordinate(root):
         Remove_coordinate(each)
 
 
+def debugger_is_active() -> bool:
+    """Return if the debugger is currently active"""
+    gettrace = getattr(sys, 'gettrace', lambda : None)
+    return gettrace() is not None
+
+
+config = configparser.ConfigParser()
+config.read("..\..\Framework\settings.conf")
+try:
+    No_of_level_to_skip = int(config.get("Inspector", "No_of_level_to_skip"))
+    if No_of_level_to_skip < 0:
+        No_of_level_to_skip = 0
+except:
+    No_of_level_to_skip = 0
+
+
 def main():
     try:
         global x, y, path_priority, element_plugin, auth, path, xml_str, findall_time, findall_count
         auth_thread = Authenticate()
         while True:
-            os.system('pause')
+            if debugger_is_active():
+                input("Press Enter to Continue")
+            else:
+                os.system('pause')
             print("Hover over the Element and press control")
             path = ""; xml_str = ""; path_priority = 0; element_plugin = False; findall_time = 0; findall_count = 0
             keyboard.wait("ctrl")
@@ -504,12 +551,12 @@ def main():
                 if _found(window):
                     window_name = window.Current.Name
                     xml_str += '<body Window="%s">' % window_name
-                    path = create_path({}, window)
+                    path = create_path({}, window, True)
                     break
             else:
                 print("No window found in that coordinate")
                 return
-            path += _child_search(window)[:-2] + "\n"
+            path += _child_search(window, 0)[:-2] + "\n"
             xml_str += "\n" + "</body>"
 
             xml_str = xml_str.encode('ascii', 'ignore').decode()        # ignore characters which are not ascii presentable
@@ -549,12 +596,20 @@ def main():
             print("Coordinate remove time =", Remove_coordinate_time, "sec")
             print("Uploading to API  time =", Upload_time, "sec")
             print("start_findall time =", round(findall_time, 3), "sec", "Findall count =", findall_count)
+            print("each__findall_time (Each_Element_find_time, finall_time, child_count)")
+            from operator import itemgetter
+            global each_findall_time
+            each_findall_time = sorted(each_findall_time, key=itemgetter(0), reverse=True)
+            # for i in each_findall_time:
+            #     print(i)
+            # break
 
     except:
         Exception_Handler(sys.exc_info())
         xml_str = ""
         path_priority = 0
         element_plugin = False
+
 
 if __name__ == "__main__":
     main()

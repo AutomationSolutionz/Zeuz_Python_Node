@@ -3,6 +3,7 @@
 
 # shared_variables
 
+import os
 import json
 import inspect, sys, time, collections
 import string
@@ -607,7 +608,7 @@ def parse_variable(name):
                         val = val[:right]
                     elif right is None and left:
                         val = val[left:]
-                    if left is None and right is None:
+                    elif left is None and right is None:
                         CommonUtil.ExecLog(
                             sModuleInfo,
                             "Invalid left and right index for ranged variable access.",
@@ -748,6 +749,7 @@ def get_previous_response_variables_in_strings(step_data_string_input):
                         3,
                     )
                     return "zeuz_failed"
+                print(replaced)
                 generated_value = replaced
 
             elif var_name.startswith("random_number_in_range"):
@@ -1478,6 +1480,8 @@ def save_built_in_time_variable(string):
             return int(time.time())
         elif input.startswith("today"):
             if input.lower().strip() == "today":
+                if os.name == "nt":
+                    datetime_format = datetime_format.replace("%-d", "%#d").replace("%-m", "%#m").replace("%-H", "%#H").replace("%-I", "%#I").replace("%-M", "%#M").replace("%-S", "%#S").replace("%-j", "%#j")
                 return datetime.today().strftime(datetime_format)
             elif "+" in input:
                 l = input.split("+")

@@ -1042,3 +1042,10 @@ def debug_code_error(exc_info):
             + str(exc_tb.tb_lineno)
     )
     print(Error_Detail)
+
+
+def path_parser(path: str) -> str:
+    if "~" in path:
+        path = os.path.expanduser(path)
+    return path
+
