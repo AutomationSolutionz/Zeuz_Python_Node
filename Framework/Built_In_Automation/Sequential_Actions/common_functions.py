@@ -2521,16 +2521,19 @@ def excel_read(data_set):
         structure_of_variable = None
         key_reference = None
 
+
         for left, mid, right in data_set:
             left = left.lower()
             if "file path" in left:
                 filepath = right.strip()
-
-                # Expand ~ (home directory of user) to absolute path.
-                if "~" in filepath:
-                    filepath = Path(os.path.expanduser(filepath))
-
-                filepath = Path(filepath)
+                if left.startswith("*"):
+                    filepath = CommonUtil.path_parser(filepath)
+                else:
+                    if "~" in filepath:
+                        filepath = Path(os.path.expanduser(filepath))
+                        filepath = Path(filepath)
+                    else:
+                        filepath = Path(filepath)
             if "sheet name" in left:
                 sheet_name = right.strip()
             if "expand" in left:
@@ -2611,12 +2614,14 @@ def excel_comparison(data_set):
             left = left.lower()
             if "file path" in left:
                 filepath = right.strip()
-
-                # Expand ~ (home directory of user) to absolute path.
-                if "~" in filepath:
-                    filepath = Path(os.path.expanduser(filepath))
-
-                filepath = Path(filepath)
+                if left.startswith("*"):
+                    filepath = CommonUtil.path_parser(filepath)
+                else:
+                    if "~" in filepath:
+                        filepath = Path(os.path.expanduser(filepath))
+                        filepath = Path(filepath)
+                    else:
+                        filepath = Path(filepath)
             if "sheet name" in left:
                 sheet_name = right.strip()
             if "expand" in left:
@@ -2786,17 +2791,27 @@ def save_text_from_file_into_variable(data_set):
 
     try:
         import PyPDF2
-        text_file_path = ""
+        filepath = ""
         var_name = ""
         var_value = ""
 
-        for row in data_set:
-            if str(row[0]).strip().lower() == "text file path":
-                text_file_path = str(row[2]).strip()
-            elif str(row[0]).strip().lower() == "save text from file into variable":
-                var_name = str(row[2]).strip()
+        for left, mid, right in data_set:
+            left = left.lower()
+            if "file path" in left:
+                filepath = right.strip()
+                if left.startswith("*"):
+                    filepath = CommonUtil.path_parser(filepath)
+                else:
+                    if "~" in filepath:
+                        filepath = Path(os.path.expanduser(filepath))
+                        filepath = Path(filepath)
+                    else:
+                        filepath = Path(filepath)
 
-        if text_file_path == "" or var_name == "":
+            elif "save text from file into variable" in left:
+                var_name = str(right).strip()
+
+        if filepath == "" or var_name == "":
             CommonUtil.ExecLog(
                 sModuleInfo,
                 "Text file info not given properly, please see action help",
@@ -2804,11 +2819,8 @@ def save_text_from_file_into_variable(data_set):
             )
             return "zeuz_failed"
 
-        if "/" not in text_file_path and "\\" not in text_file_path:
-            text_file_path = FileUtilities.get_home_folder() + os.sep + text_file_path
-
-        if text_file_path.endswith("pdf"):
-            pdfFileObj = open(text_file_path, "rb")
+        if filepath.endswith("pdf"):
+            pdfFileObj = open(filepath, "rb")
             pdfReader = PyPDF2.PdfFileReader(pdfFileObj)
             no_of_page = pdfReader.numPages
 
@@ -2818,7 +2830,7 @@ def save_text_from_file_into_variable(data_set):
                 var_value += pageObj.extractText()
                 i += 1
         else:
-            with open(text_file_path, "r") as file:
+            with open(filepath, "r") as file:
                 data = file.read()
                 var_value += data
 
@@ -3303,12 +3315,17 @@ def csv_read(data_set):
         Integer, Float, Bool = [], [], []
         for left, _, right in data_set:
             left = left.lower().strip()
-            if "file path" == left:
+            if "file path" in left:
                 filepath = right.strip()
-                # Expand ~ (home directory of user) to absolute path.
-                if "~" in filepath:
-                    filepath = Path(os.path.expanduser(filepath))
-                filepath = Path(filepath)
+                if left.startswith("*"):
+                    filepath = CommonUtil.path_parser(filepath)
+                else:
+                    if "~" in filepath:
+                        filepath = Path(os.path.expanduser(filepath))
+                        filepath = Path(filepath)
+                    else:
+                        filepath = Path(filepath)
+
             elif "delimiter" == left:
                 right = right.strip()
                 if right in delimiter_support:
