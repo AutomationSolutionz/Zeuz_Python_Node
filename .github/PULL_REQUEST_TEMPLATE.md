@@ -1,6 +1,3 @@
-<!-- Thanks for considering contributing Zeuz Node! -->
-<!-- Please fill out the following to get your PR reviewed quicker. -->
-
 ## PR Type
 <!-- What kind of change does this PR make? -->
 <!-- Bug Fix / Feature / Refactor / Code Style / Other -->
@@ -15,8 +12,6 @@ PR_TYPE
 - [ ] Documentation comments have been added / updated.
 - [ ] A changelog entry has been made.
 - [ ] Version number has been updated.
-- [ ] Format code with the latest stable yapf.
-- [ ] (Team) Label with affected action categories and semver status.
 
 
 ## Overview
