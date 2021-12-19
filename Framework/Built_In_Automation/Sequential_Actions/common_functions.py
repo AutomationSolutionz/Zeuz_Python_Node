@@ -2520,6 +2520,7 @@ def excel_read(data_set):
         expand = None
         structure_of_variable = None
         key_reference = None
+        partial_path = False
 
 
         for left, mid, right in data_set:
@@ -2527,13 +2528,10 @@ def excel_read(data_set):
             if "file path" in left:
                 filepath = right.strip()
                 if left.startswith("*"):
-                    filepath = CommonUtil.path_parser(filepath)
+                    partial_path = True
+                    filepath = CommonUtil.path_parser(filepath,partial_path)
                 else:
-                    if "~" in filepath:
-                        filepath = Path(os.path.expanduser(filepath))
-                        filepath = Path(filepath)
-                    else:
-                        filepath = Path(filepath)
+                    filepath = CommonUtil.path_parser(filepath, partial_path)
             if "sheet name" in left:
                 sheet_name = right.strip()
             if "expand" in left:
@@ -2609,19 +2607,17 @@ def excel_comparison(data_set):
         expand = None
         compare_variable = None
         write_to = None
+        partial_path = False
 
         for left, mid, right in data_set:
             left = left.lower()
             if "file path" in left:
                 filepath = right.strip()
                 if left.startswith("*"):
-                    filepath = CommonUtil.path_parser(filepath)
+                    partial_path = True
+                    filepath = CommonUtil.path_parser(filepath,partial_path)
                 else:
-                    if "~" in filepath:
-                        filepath = Path(os.path.expanduser(filepath))
-                        filepath = Path(filepath)
-                    else:
-                        filepath = Path(filepath)
+                    filepath = CommonUtil.path_parser(filepath, partial_path)
             if "sheet name" in left:
                 sheet_name = right.strip()
             if "expand" in left:
@@ -2794,19 +2790,17 @@ def save_text_from_file_into_variable(data_set):
         filepath = ""
         var_name = ""
         var_value = ""
+        partial_path = False
 
         for left, mid, right in data_set:
             left = left.lower()
             if "file path" in left:
                 filepath = right.strip()
                 if left.startswith("*"):
-                    filepath = CommonUtil.path_parser(filepath)
+                    partial_path = True
+                    filepath = CommonUtil.path_parser(filepath,partial_path)
                 else:
-                    if "~" in filepath:
-                        filepath = Path(os.path.expanduser(filepath))
-                        filepath = Path(filepath)
-                    else:
-                        filepath = Path(filepath)
+                    filepath = CommonUtil.path_parser(filepath, partial_path)
 
             elif "save text from file into variable" in left:
                 var_name = str(right).strip()
@@ -3312,19 +3306,17 @@ def csv_read(data_set):
         structure = "list of dictionaries"
         allowed_list = None
         map_key_names = None
+        partial_path = False
         Integer, Float, Bool = [], [], []
         for left, _, right in data_set:
             left = left.lower().strip()
             if "file path" in left:
                 filepath = right.strip()
                 if left.startswith("*"):
-                    filepath = CommonUtil.path_parser(filepath)
+                    partial_path = True
+                    filepath = CommonUtil.path_parser(filepath,partial_path)
                 else:
-                    if "~" in filepath:
-                        filepath = Path(os.path.expanduser(filepath))
-                        filepath = Path(filepath)
-                    else:
-                        filepath = Path(filepath)
+                    filepath = CommonUtil.path_parser(filepath, partial_path)
 
             elif "delimiter" == left:
                 right = right.strip()

@@ -1044,25 +1044,35 @@ def debug_code_error(exc_info):
     print(Error_Detail)
 
 
-def path_parser(path: str) -> str:
-    if "~" in path:
-        name = path.split('\\')[-1]
-        name_prev_path = "~\\" + path.split('\\')[-2]
-        w = list(os.walk(os.path.expanduser(name_prev_path)))[0]
-        for i in range(len(w[2])):
-            if w[2][i].startswith(name):
-                path = w[0] + os.sep + w[2][i]
-                print(path)
-                return path
+def path_parser(path: str,partial_path) -> str:
+    if partial_path:
+        if "~" in path:
+            name = path.split('\\')[-1]
+            name_prev_path = "~\\" + path.split('\\')[-2]
+            w = list(os.walk(os.path.expanduser(name_prev_path)))[0]
+            for i in range(len(w[2])):
+                if w[2][i].startswith(name):
+                    path = w[0] + os.sep + w[2][i]
+                    print(path)
+                    return path
+        else:
+            name = path.split('\\')[-1]
+            name_prev_path = ''
+            if name in path:
+                name_prev_path = path.replace(name ,'')
+            w = list(os.walk(name_prev_path))[0]
+            for i in range(len(w[2])):
+                if w[2][i].startswith(name):
+                    path = w[0] + os.sep + w[2][i]
+                    print(path)
+                    return path
     else:
-        name = path.split('\\')[-1]
-        name_prev_path = ''
-        if name in path:
-            name_prev_path = path.replace(name ,'')
-        w = list(os.walk(name_prev_path))[0]
-        for i in range(len(w[2])):
-            if w[2][i].startswith(name):
-                path = w[0] + os.sep + w[2][i]
-                print(path)
-                return path
-
+        if "~" in path:
+            path = Path(os.path.expanduser(path))
+            path = Path(path)
+            print(path)
+            return path
+        else:
+            path = Path(path)
+            print(path)
+            return path
