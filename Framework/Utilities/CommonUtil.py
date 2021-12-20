@@ -1067,12 +1067,4 @@ def path_parser(path: str,partial_path) -> str:
                     print(path)
                     return path
     else:
-        if "~" in path:
-            path = Path(os.path.expanduser(path))
-            path = Path(path)
-            print(path)
-            return path
-        else:
-            path = Path(path)
-            print(path)
-            return path
+        return Path(path).expanduser()

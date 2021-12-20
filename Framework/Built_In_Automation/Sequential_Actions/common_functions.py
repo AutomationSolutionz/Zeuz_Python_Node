@@ -2813,7 +2813,7 @@ def save_text_from_file_into_variable(data_set):
             )
             return "zeuz_failed"
 
-        if filepath.endswith("pdf"):
+        if str(filepath).endswith("pdf"):
             pdfFileObj = open(filepath, "rb")
             pdfReader = PyPDF2.PdfFileReader(pdfFileObj)
             no_of_page = pdfReader.numPages
