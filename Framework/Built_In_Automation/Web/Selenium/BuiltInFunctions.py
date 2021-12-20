@@ -3584,11 +3584,14 @@ def drag_and_drop(step_data):
     try:
         source = ""
         destination = ""
+        duration = 1
         for each in step_data:
             if each[0] == "source":
                 source = str(each[2]).strip()
             elif each[0] == "destination":
                 destination = str(each[2]).strip()
+            elif each[0] == "wait":
+                duration = int(str(each[2]).strip())
 
         if source == "":
             CommonUtil.ExecLog(
@@ -3620,7 +3623,7 @@ def drag_and_drop(step_data):
             )
 
         #ActionChains(selenium_driver).drag_and_drop(source_element, destination_element).perform()
-        ActionChains(selenium_driver).click_and_hold(source_element).move_to_element(destination_element).pause(2).release(destination_element).perform()
+        ActionChains(selenium_driver).click_and_hold(source_element).move_to_element(destination_element).pause(duration).release(destination_element).perform()
         CommonUtil.ExecLog(
             sModuleInfo,
             "Drag and drop completed from source '%s' to destination '%s'"
