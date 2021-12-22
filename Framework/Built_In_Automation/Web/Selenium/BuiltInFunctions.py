@@ -302,7 +302,7 @@ def Open_Electron_App(data_set):
         for left, _, right in data_set:
             left = left.lower().strip()
             if "windows" in left and platform.system() == "Windows":
-                desktop_app_path = right
+                desktop_app_path = right.strip()
             elif "mac" in left and platform.system() == "Darwin":
                 desktop_app_path = right
             elif "linux" in left and platform.system() == "Linux":

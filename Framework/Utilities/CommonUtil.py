@@ -1044,27 +1044,25 @@ def debug_code_error(exc_info):
     print(Error_Detail)
 
 
-def path_parser(path: str,partial_path) -> str:
-    if partial_path:
-        if "~" in path:
-            name = path.split('\\')[-1]
-            name_prev_path = "~\\" + path.split('\\')[-2]
-            w = list(os.walk(os.path.expanduser(name_prev_path)))[0]
-            for i in range(len(w[2])):
-                if w[2][i].startswith(name):
-                    path = w[0] + os.sep + w[2][i]
-                    print(path)
-                    return path
-        else:
-            name = path.split('\\')[-1]
-            name_prev_path = ''
-            if name in path:
-                name_prev_path = path.replace(name ,'')
-            w = list(os.walk(name_prev_path))[0]
-            for i in range(len(w[2])):
-                if w[2][i].startswith(name):
-                    path = w[0] + os.sep + w[2][i]
-                    print(path)
-                    return path
-    else:
-        return Path(path).expanduser()
+
+def path_parser(path: str) -> str:
+    if path.startswith("~"):
+        path1 = str(Path("~\\" + path.split("\\")[1]).expanduser())
+        for i in path.split("\\")[2:]:
+            path1 = path1 + "\\" + i
+        path = path1
+
+    path = path.split("\\")
+    new_path = ''
+    for a in path:
+        if a.startswith("*"):
+            i = 2 if a == path[-1] else 1
+            w = list(os.walk(new_path))[0]
+            for j in range(len(w[i])):
+                if w[i][j].startswith(a.strip('*')):
+                    a = w[i][j]
+
+        new_path = new_path + a + "\\"
+    print(new_path)
+
+    return new_path

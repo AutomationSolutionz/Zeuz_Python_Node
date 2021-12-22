@@ -2339,11 +2339,8 @@ def write_into_single_cell_in_excel(data_set):
             elif "text to write" in left:
                 value = right
             elif "excel file path" in left:
-                excel_file_path = right
-                # Expand ~ (home directory of user) to absolute path.
-                if "~" in excel_file_path:
-                    excel_file_path = Path(os.path.expanduser(excel_file_path))
-                excel_file_path = Path(excel_file_path)
+                filepath = right.strip()
+                excel_file_path = Path(CommonUtil.path_parser(filepath))
 
         if (
             sheet_name == ""
@@ -2434,11 +2431,8 @@ def excel_write(data_set):
                 value = CommonUtil.parse_value_into_object(value)
                 # print("......1......", type(value), ".......", value)
             elif "file path" in left:
-                excel_file_path = right
-                # Expand ~ (home directory of user) to absolute path.
-                if "~" in excel_file_path:
-                    excel_file_path = Path(os.path.expanduser(excel_file_path))
-                excel_file_path = Path(excel_file_path)
+                filepath = right.strip()
+                excel_file_path = Path(CommonUtil.path_parser(filepath))
 
         if (
             sheet_name == ""
@@ -2487,6 +2481,7 @@ def run_macro_in_excel(data_set):
                 macro_name = str(row[2]).strip()
             elif str(row[0]).strip().lower() == "excel file path":
                 excel_file_path = str(row[2]).strip()
+                excel_file_path = Path(CommonUtil.path_parser(excel_file_path))
 
         if macro_name == "" or excel_file_path == "":
             CommonUtil.ExecLog(
@@ -2527,11 +2522,7 @@ def excel_read(data_set):
             left = left.lower()
             if "file path" in left:
                 filepath = right.strip()
-                if left.startswith("*"):
-                    partial_path = True
-                    filepath = CommonUtil.path_parser(filepath,partial_path)
-                else:
-                    filepath = CommonUtil.path_parser(filepath, partial_path)
+                filepath = Path(CommonUtil.path_parser(filepath))
             if "sheet name" in left:
                 sheet_name = right.strip()
             if "expand" in left:
@@ -2607,17 +2598,12 @@ def excel_comparison(data_set):
         expand = None
         compare_variable = None
         write_to = None
-        partial_path = False
 
         for left, mid, right in data_set:
             left = left.lower()
             if "file path" in left:
                 filepath = right.strip()
-                if left.startswith("*"):
-                    partial_path = True
-                    filepath = CommonUtil.path_parser(filepath,partial_path)
-                else:
-                    filepath = CommonUtil.path_parser(filepath, partial_path)
+                filepath = Path(CommonUtil.path_parser(filepath))
             if "sheet name" in left:
                 sheet_name = right.strip()
             if "expand" in left:
@@ -2693,6 +2679,7 @@ def get_excel_table(data_set):
                 first_cell_location = str(row[2]).strip()
             elif str(row[0]).strip().lower() == "excel file path":
                 excel_file_path = str(row[2]).strip()
+                excel_file_path = Path(CommonUtil.path_parser(excel_file_path))
             elif (
                 str(row[0]).strip().lower() == "variable name where data will be saved"
             ):
@@ -2796,11 +2783,7 @@ def save_text_from_file_into_variable(data_set):
             left = left.lower()
             if "file path" in left:
                 filepath = right.strip()
-                if left.startswith("*"):
-                    partial_path = True
-                    filepath = CommonUtil.path_parser(filepath,partial_path)
-                else:
-                    filepath = CommonUtil.path_parser(filepath, partial_path)
+                filepath = Path(CommonUtil.path_parser(filepath))
 
             elif "save text from file into variable" in left:
                 var_name = str(right).strip()
@@ -3250,10 +3233,7 @@ def execute_python_code(data_set):
         left = left.strip().lower()
         if left == "file path":
             filepath = right.strip()
-            # Expand ~ (home directory of user) to absolute path.
-            if "~" in filepath:
-                filepath = Path(os.path.expanduser(filepath))
-            filepath = Path(filepath)
+            filepath = Path(CommonUtil.path_parser(filepath))
             with open(filepath, "r") as file:
                 filepath_code = file.read()
         elif left == "input data":
@@ -3312,11 +3292,7 @@ def csv_read(data_set):
             left = left.lower().strip()
             if "file path" in left:
                 filepath = right.strip()
-                if left.startswith("*"):
-                    partial_path = True
-                    filepath = CommonUtil.path_parser(filepath,partial_path)
-                else:
-                    filepath = CommonUtil.path_parser(filepath, partial_path)
+                filepath = Path(CommonUtil.path_parser(filepath))
 
             elif "delimiter" == left:
                 right = right.strip()
@@ -3435,10 +3411,7 @@ def csv_write(data_set):
             left = left.lower().strip()
             if "file path" == left:
                 filepath = right.strip()
-                # Expand ~ (home directory of user) to absolute path.
-                if "~" in filepath:
-                    filepath = Path(os.path.expanduser(filepath))
-                filepath = Path(filepath)
+                filepath = Path(CommonUtil.path_parser(filepath))
             elif "structure of the variable" == left:
                 pass    # "list of dictionaries" for now. Will implement more structures in future
             elif "write into csv" == left:
@@ -3472,10 +3445,7 @@ def yaml_read(data_set):
             left = left.lower().strip()
             if "file path" == left:
                 filepath = right.strip()
-                # Expand ~ (home directory of user) to absolute path.
-                if "~" in filepath:
-                    filepath = Path(os.path.expanduser(filepath))
-                filepath = Path(filepath)
+                filepath = Path(CommonUtil.path_parser(filepath))
             elif "read from yaml" == left:
                 var_name = right.strip()
 
@@ -3499,10 +3469,7 @@ def yaml_write(data_set):
             left = left.lower().strip()
             if "file path" == left:
                 filepath = right.strip()
-                # Expand ~ (home directory of user) to absolute path.
-                if "~" in filepath:
-                    filepath = Path(os.path.expanduser(filepath))
-                filepath = Path(filepath)
+                filepath = Path(CommonUtil.path_parser(filepath))
             elif "write into yaml" == left:
                 value = CommonUtil.parse_value_into_object(right)
 
@@ -3527,6 +3494,7 @@ def text_write(data_set):
             left = left.lower().strip()
             if "file path" == left:
                 filepath = right.strip()
+                filepath = Path(CommonUtil.path_parser(filepath))
 
             elif "line no" == left:
                 line_no = CommonUtil.parse_value_into_object(right.strip())
@@ -3541,12 +3509,6 @@ def text_write(data_set):
                 else:
                     CommonUtil.ExecLog(sModuleInfo, 'We only support "New", "Overwrite" and "Append" operations', 3)
                     return "zeuz_failed"
-
-        # Expand ~ (home directory of user) to absolute path.
-        if "~" in filepath:
-            filepath = Path(os.path.expanduser(filepath))
-
-        filepath = Path(filepath)
 
         if line_no is not None:
             with open(filepath) as text_file:
