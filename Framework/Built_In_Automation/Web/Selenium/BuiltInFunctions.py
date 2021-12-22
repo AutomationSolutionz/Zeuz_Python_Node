@@ -3535,55 +3535,50 @@ def upload_file(step_data):
 
 # Method to upload file
 @logger
-def drag_and_drop(step_data):
+def drag_and_drop(dataset):
     sModuleInfo = inspect.currentframe().f_code.co_name + " : " + MODULE_NAME
     global selenium_driver
     try:
-        source = ""
-        destination = ""
-        for each in step_data:
-            if each[0] == "source":
-                source = str(each[2]).strip()
-            elif each[0] == "destination":
-                destination = str(each[2]).strip()
+        source = []
+        destination = []
+        param_dict = {"elementparameter": "element parameter", "parentparameter": "parent parameter", "siblingparameter": "sibling parameter", "childparameter": "child parameter"}
+        for left, mid, right in dataset:
+            if mid.startswith("src") or mid.startswith("source"):
+                mid = mid.replace("src", "").replace(" ", "").replace("source", "")
+                for param in param_dict:
+                    if param == mid:
+                        source.append((left, param_dict[param], right))
+            elif mid.startswith("dst") or mid.startswith("destination"):
+                mid = mid.replace("dst", "").replace(" ", "").replace("destination", "")
+                for param in param_dict:
+                    if param == mid:
+                        destination.append((left, param_dict[param], right))
+            elif left.strip().lower() in ("wait", "allow disable", "allow hidden") and mid == "option":
+                source.append((left, mid, right))
+                destination.append((left, mid, right))
 
-        if source == "":
-            CommonUtil.ExecLog(
-                sModuleInfo, "No source element specified for drag and drop", 3
-            )
+        if not source:
+            CommonUtil.ExecLog(sModuleInfo, 'Please provide source element with "src element parameter", "src parent parameter" etc. Example:\n'+
+               "(id, src element parameter, file)", 3)
             return "zeuz_failed"
-        elif destination == "":
-            CommonUtil.ExecLog(
-                sModuleInfo, "No destination element specified for drag and drop", 3
-            )
+        if not destination:
+            CommonUtil.ExecLog(sModuleInfo, 'Please provide Destination element with "dst element parameter", "dst parent parameter" etc. Example:\n'+
+               "(id, dst element parameter, table)", 3)
             return "zeuz_failed"
 
-        source_element = Shared_Resources.Get_Shared_Variables(source)
-        if source_element in failed_tag_list:
-            CommonUtil.ExecLog(
-                sModuleInfo,
-                "No element found in shared variables named '%s' which is defined as source for drag and drop",
-                source,
-                3,
-            )
+        source_element = LocateElement.Get_Element(source, selenium_driver)
+        if source_element == "zeuz_failed":
+            CommonUtil.ExecLog(sModuleInfo, "Source Element is not found", 3)
+            return "zeuz_failed"
 
-        destination_element = Shared_Resources.Get_Shared_Variables(destination)
-        if destination_element in failed_tag_list:
-            CommonUtil.ExecLog(
-                sModuleInfo,
-                "No element found in shared variables named '%s' which is defined as source for drag and drop",
-                source,
-                3,
-            )
+        destination_element = LocateElement.Get_Element(destination, selenium_driver)
+        if destination_element == "zeuz_failed":
+            CommonUtil.ExecLog(sModuleInfo, "Destination Element is not found", 3)
+            return "zeuz_failed"
 
-        ActionChains(selenium_driver).drag_and_drop(
-            source_element, destination_element
-        ).perform()
-        CommonUtil.ExecLog(
-            sModuleInfo,
-            "Drag and drop completed from source '%s' to destination '%s'"
-            % (source, destination),
-        )
+        # ActionChains(selenium_driver).drag_and_drop(source_element, destination_element).perform()
+        ActionChains(selenium_driver).click_and_hold(source_element).move_to_element(destination_element).pause(0.5).release(destination_element).perform()
+        CommonUtil.ExecLog(sModuleInfo, "Drag and drop completed from source to destination", 1)
 
         return "passed"
     except Exception:
