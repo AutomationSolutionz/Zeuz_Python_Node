@@ -677,7 +677,7 @@ def set_screenshot_vars(shared_variables):
 
 def TakeScreenShot(function_name, local_run=False):
     """ Puts TakeScreenShot into a thread, so it doesn't block test case execution """
-    # if debug_status: return
+    # if debug_status: return     # Tod: Comment this line out
     try:
         if upload_on_fail and rerun_on_fail and not rerunning_on_fail and not debug_status:
             return
@@ -1045,6 +1045,21 @@ def debug_code_error(exc_info):
 
 
 def path_parser(path: str) -> str:
+    r"""
+    Case-1: (Full_path)
+    C:\Users\ASUS\entreprize_5689.csv
+    Case-2: (Home_dir)
+    ~\Downloads\entreprize_5689.csv
+    Case-3: (Partial_search)
+    ~\Downloads\*entreprize_.csv
+    ~\Downloads\*entreprize_
+    Case-4: (Multiple_Partial_Search)
+    ~\Downloads\*server\*entreprize_.csv
+    Case-5: (Partial_Case-insensitive_Search)
+    ~\Downloads\**server\**entreprize_.csv
+    Case-6: (Partial search with Index)
+    ~\Downloads\**server\[idx]*entreprize_.csv
+    """
     if "~" in path:
         path = os.path.expanduser(path)
     return path
