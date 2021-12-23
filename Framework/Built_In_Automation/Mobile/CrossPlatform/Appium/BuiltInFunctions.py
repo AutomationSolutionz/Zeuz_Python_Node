@@ -1048,11 +1048,9 @@ def teardown_appium(dataset=None):
 @logger
 def close_application(data_set):
     """ Exit the application """
-
     sModuleInfo = inspect.currentframe().f_code.co_name + " : " + MODULE_NAME
-
     try:
-        CommonUtil.ExecLog(sModuleInfo, "Trying to close the app", 0)
+        CommonUtil.ExecLog(sModuleInfo, "Trying to close the app", 1)
         appium_driver.close_app()
         CommonUtil.ExecLog(sModuleInfo, "Closed the app successfully", 1)
         return "passed"
@@ -1086,7 +1084,7 @@ def install_application(data_set):
     sModuleInfo = inspect.currentframe().f_code.co_name + " : " + MODULE_NAME
 
     skip_or_not = filter_optional_action_and_step_data(data_set, sModuleInfo)
-    if skip_or_not == False:
+    if not skip_or_not:
         return
 
     # Parse data set
@@ -1094,19 +1092,11 @@ def install_application(data_set):
         file_name = ""
         serial = ""
         for row in data_set:  # Find required data
-            if (
-                row[1] == "action"
-            ):  # If using format of package on action line, and no serial number
-                serial = row[
-                    2
-                ].strip()  # May be serial or filename, we'll figure out later
-            elif (
-                row[1] == "element parameter"
-            ):  # If using the format of filename on it's own row, and possibly a serial number on the action line
+            if row[1] == "action":  # If using format of package on action line, and no serial number
+                serial = row[2].strip()  # May be serial or filename, we'll figure out later
+            elif row[1] == "element parameter":  # If using the format of filename on it's own row, and possibly a serial number on the action line
                 file_name = row[2].strip()  # Save filename
-        if (
-            file_name == ""
-        ):  # Fix previous filename from action row if no element parameter specified
+        if file_name == "":  # Fix previous filename from action row if no element parameter specified
             file_name = serial  # There was no element parameter row, so take the action row value for the filename
             serial = ""
 
@@ -1120,15 +1110,9 @@ def install_application(data_set):
             )
             return "zeuz_failed"
         if file_name in file_attachment:
-            file_name = file_attachment[
-                file_name
-            ]  # In file is an attachment, get the full path
+            file_name = file_attachment[file_name]  # In file is an attachment, get the full path
         if file_name == "":
-            CommonUtil.ExecLog(
-                sModuleInfo,
-                "File not specified or there was a problem reading the file attachments",
-                3,
-            )
+            CommonUtil.ExecLog(sModuleInfo, "File not specified or there was a problem reading the file attachments", 3)
             return "zeuz_failed"
 
         # Try to determine device serial
@@ -1143,13 +1127,9 @@ def install_application(data_set):
     try:
         result = adbOptions.install_app(file_name, serial)
         if result in failed_tag_list:
-            CommonUtil.ExecLog(
-                sModuleInfo, "Could not install application (%s)" % file_name, 3
-            )
+            CommonUtil.ExecLog(sModuleInfo, "Could not install application (%s)" % file_name, 3)
             return "zeuz_failed"
-        CommonUtil.ExecLog(
-            sModuleInfo, "Installed %s to device %s" % (file_name, serial), 1
-        )
+        CommonUtil.ExecLog(sModuleInfo, "Installed %s to device %s" % (file_name, serial), 1)
         return "passed"
 
     except Exception:
@@ -1164,7 +1144,7 @@ def uninstall_application(data_set):
     sModuleInfo = inspect.currentframe().f_code.co_name + " : " + MODULE_NAME
 
     skip_or_not = filter_optional_action_and_step_data(data_set, sModuleInfo)
-    if skip_or_not == False:
+    if not skip_or_not:
         return "passed"
 
     # Parse data set
@@ -1172,19 +1152,11 @@ def uninstall_application(data_set):
         package = ""
         serial = ""
         for row in data_set:  # Find required data
-            if (
-                row[1] == "action"
-            ):  # If using format of package on action line, and no serial number
-                serial = row[
-                    2
-                ].strip()  # May be serial or filename, we'll figure out later
-            elif (
-                row[1] == "element parameter"
-            ):  # If using the format of filename on it's own row, and possibly a serial number on the action line
+            if row[1] == "action":  # If using format of package on action line, and no serial number
+                serial = row[2].strip()  # May be serial or filename, we'll figure out later
+            elif row[1] == "element parameter":  # If using the format of filename on it's own row, and possibly a serial number on the action line
                 package = row[2].strip()  # Save filename
-        if (
-            package == ""
-        ):  # Fix previous filename from action row if no element parameter specified
+        if package == "":  # Fix previous filename from action row if no element parameter specified
             package = serial  # There was no element parameter row, so take the action row value for the filename
             serial = ""
 
@@ -1203,13 +1175,9 @@ def uninstall_application(data_set):
     try:
         result = adbOptions.uninstall_app(package, serial)
         if result in failed_tag_list:
-            CommonUtil.ExecLog(
-                sModuleInfo, "Could not uninstall application (%s)" % package, 3
-            )
+            CommonUtil.ExecLog(sModuleInfo, "Could not uninstall application (%s)" % package, 3)
             return "zeuz_failed"
-        CommonUtil.ExecLog(
-            sModuleInfo, "Uninstalled %s from device %s" % (package, serial), 1
-        )
+        CommonUtil.ExecLog(sModuleInfo, "Uninstalled %s from device %s" % (package, serial), 1)
         return "passed"
 
     except Exception:
@@ -1255,7 +1223,7 @@ def swipe_handler_ios(data_set):
     sModuleInfo = inspect.currentframe().f_code.co_name + " : " + MODULE_NAME
 
     skip_or_not = filter_optional_action_and_step_data(data_set, sModuleInfo)
-    if skip_or_not == False:
+    if not skip_or_not:
         return "passed"
 
     try:
@@ -1323,7 +1291,7 @@ def swipe_handler_android(data_set=[], save_att_data_set={}):
     sModuleInfo = inspect.currentframe().f_code.co_name + " : " + MODULE_NAME
 
     skip_or_not = filter_optional_action_and_step_data(data_set, sModuleInfo)
-    if skip_or_not == False:
+    if not skip_or_not:
         return "passed"
 
     @logger
@@ -1578,7 +1546,7 @@ def scroll_to_an_element(data_set):
     global appium_driver
     sModuleInfo = inspect.currentframe().f_code.co_name + " : " + MODULE_NAME
     skip_or_not = filter_optional_action_and_step_data(data_set, sModuleInfo)
-    if skip_or_not == False:
+    if not skip_or_not:
         return "passed"
     try:
         final_scroll_string = "new UiScrollable(new UiSelector()"
@@ -1718,7 +1686,7 @@ def swipe_in_direction(data_set):
     sModuleInfo = inspect.currentframe().f_code.co_name + " : " + MODULE_NAME
 
     skip_or_not = filter_optional_action_and_step_data(data_set, sModuleInfo)
-    if skip_or_not == False:
+    if not skip_or_not:
         return "passed"
 
     try:
@@ -1899,7 +1867,7 @@ def go_to_webpage(data_set):
     sModuleInfo = inspect.currentframe().f_code.co_name + " : " + MODULE_NAME
 
     skip_or_not = filter_optional_action_and_step_data(data_set, sModuleInfo)
-    if skip_or_not == False:
+    if not skip_or_not:
         return "passed"
 
     # Parse data set
@@ -1927,7 +1895,7 @@ def tap_location(data_set):
     sModuleInfo = inspect.currentframe().f_code.co_name + " : " + MODULE_NAME
 
     skip_or_not = filter_optional_action_and_step_data(data_set, sModuleInfo)
-    if skip_or_not == False:
+    if not skip_or_not:
         return "passed"
 
     try:
@@ -1951,7 +1919,7 @@ def get_element_location_by_id(data_set):
     sModuleInfo = inspect.currentframe().f_code.co_name + " : " + MODULE_NAME
 
     skip_or_not = filter_optional_action_and_step_data(data_set, sModuleInfo)
-    if skip_or_not == False:
+    if not skip_or_not:
         return "passed"
 
     # Parse data set
@@ -2034,7 +2002,7 @@ def Click_Element_Appium(data_set):
     sModuleInfo = inspect.currentframe().f_code.co_name + " : " + MODULE_NAME
     context_switched = False
     skip_or_not = filter_optional_action_and_step_data(data_set, sModuleInfo)
-    if skip_or_not == False:
+    if not skip_or_not:
         return "passed"
 
     try:
@@ -2215,7 +2183,7 @@ def Tap_Appium(data_set):
     sModuleInfo = inspect.currentframe().f_code.co_name + " : " + MODULE_NAME
 
     skip_or_not = filter_optional_action_and_step_data(data_set, sModuleInfo)
-    if skip_or_not == False:
+    if not skip_or_not:
         return "passed"
 
     try:
@@ -2323,7 +2291,7 @@ def Seek_Progress_Bar(data_set):
     sModuleInfo = inspect.currentframe().f_code.co_name + " : " + MODULE_NAME
 
     skip_or_not = filter_optional_action_and_step_data(data_set, sModuleInfo)
-    if skip_or_not == False:
+    if not skip_or_not:
         return "passed"
 
     try:
@@ -2406,7 +2374,7 @@ def Double_Tap_Appium(data_set):
     sModuleInfo = inspect.currentframe().f_code.co_name + " : " + MODULE_NAME
 
     skip_or_not = filter_optional_action_and_step_data(data_set, sModuleInfo)
-    if skip_or_not == False:
+    if not skip_or_not:
         return "passed"
 
     try:
@@ -2451,7 +2419,7 @@ def Long_Press_Appium(data_set):
     sModuleInfo = inspect.currentframe().f_code.co_name + " : " + MODULE_NAME
 
     skip_or_not = filter_optional_action_and_step_data(data_set, sModuleInfo)
-    if skip_or_not == False:
+    if not skip_or_not:
         return "passed"
 
     try:
@@ -2495,7 +2463,7 @@ def Enter_Text_Appium(data_set):
     context_switched = False
 
     skip_or_not = filter_optional_action_and_step_data(data_set, sModuleInfo)
-    if skip_or_not == False:
+    if not skip_or_not:
         return "passed"
 
     # Find text from action line
@@ -2695,13 +2663,11 @@ def Pickerwheel_Appium(data_set):
     sModuleInfo = inspect.currentframe().f_code.co_name + " : " + MODULE_NAME
 
     skip_or_not = filter_optional_action_and_step_data(data_set, sModuleInfo)
-    if skip_or_not == False:
+    if not skip_or_not:
         return "passed"
 
     # Find text from action line
-    text_value = (
-        ""  # Initialize as empty string in case user wants to pass an empty string
-    )
+    text_value = ""  # Initialize as empty string in case user wants to pass an empty string
     try:
         for each in data_set:
             if each[1] == "action":
@@ -2716,9 +2682,7 @@ def Pickerwheel_Appium(data_set):
     try:
         Element = LocateElement.Get_Element(data_set, appium_driver)
         if Element == "zeuz_failed":
-            CommonUtil.ExecLog(
-                sModuleInfo, "Unable to locate your element with given data.", 3
-            )
+            CommonUtil.ExecLog(sModuleInfo, "Unable to locate your element with given data.", 3)
             return "zeuz_failed"
         else:
 
@@ -2726,11 +2690,7 @@ def Pickerwheel_Appium(data_set):
             try:
                 Element.set_value(text_value)  # Enter the user specified text
             except Exception:
-                CommonUtil.ExecLog(
-                    sModuleInfo,
-                    "Found element, but couldn't write text to it. Trying another method",
-                    2,
-                )
+                CommonUtil.ExecLog(sModuleInfo, "Found element, but couldn't write text to it. Trying another method", 2)
 
             # Complete the action
             try:
@@ -2787,9 +2747,7 @@ def Clear_And_Enter_Text_ADB(data_set, serial=""):
                 Delet_Text = "KEYCODE_DEL " + Delet_Text
 
             if serial != "":
-                serial = (
-                    "-s %s" % serial
-                )  # Prepare serial number with command line switch
+                serial = "-s %s" % serial  # Prepare serial number with command line switch
             # deleting existing text by going to end of line and clicking delete multiple times
             subprocess.check_output(
                 "adb %s shell input keyevent 123" % (serial),
@@ -2818,9 +2776,7 @@ def Clear_And_Enter_Text_ADB(data_set, serial=""):
 
         if result in passed_tag_list:
             # CommonUtil.TakeScreenShot(sModuleInfo)
-            CommonUtil.ExecLog(
-                sModuleInfo, "Successfully entered text with adb shell", 1
-            )
+            CommonUtil.ExecLog(sModuleInfo, "Successfully entered text with adb shell", 1)
             appium_driver.hide_keyboard()  # Remove keyboard
             # CommonUtil.TakeScreenShot(sModuleInfo)  # Capture screen
             CommonUtil.ExecLog(sModuleInfo, "Successfully hid keyboard", 1)
@@ -2843,13 +2799,11 @@ def Clear_And_Enter_Text_Appium(data_set):
     sModuleInfo = inspect.currentframe().f_code.co_name + " : " + MODULE_NAME
 
     skip_or_not = filter_optional_action_and_step_data(data_set, sModuleInfo)
-    if skip_or_not == False:
+    if not skip_or_not:
         return "passed"
 
     # Find text from action line
-    text_value = (
-        ""  # Initialize as empty string in case user wants to pass an empty string
-    )
+    text_value = ""  # Initialize as empty string in case user wants to pass an empty string
     try:
         for each in data_set:
             if each[1] == "action":
@@ -2864,9 +2818,7 @@ def Clear_And_Enter_Text_Appium(data_set):
     try:
         Element = LocateElement.Get_Element(data_set, appium_driver)
         if Element == "zeuz_failed":
-            CommonUtil.ExecLog(
-                sModuleInfo, "Unable to locate your element with given data.", 3
-            )
+            CommonUtil.ExecLog(sModuleInfo, "Unable to locate your element with given data.", 3)
             return "zeuz_failed"
         else:
             try:
@@ -2875,9 +2827,7 @@ def Clear_And_Enter_Text_Appium(data_set):
                 Element.clear()  # Remove any text already existing
 
                 if str(appium_details[device_id]["type"]).lower() == "ios":
-                    Element.set_value(
-                        text_value
-                    )  # Work around for IOS issue in Appium v1.6.4 where send_keys() doesn't work
+                    Element.set_value(text_value)  # Work around for IOS issue in Appium v1.6.4 where send_keys() doesn't work
             except Exception:
                 errMsg = "Found element, but couldn't write text to it"
                 return CommonUtil.Exception_Handler(sys.exc_info(), None, errMsg)
@@ -2902,11 +2852,7 @@ def Clear_And_Enter_Text_Appium(data_set):
             try:
                 # appium_driver.hide_keyboard() # Remove keyboard
                 # CommonUtil.TakeScreenShot(sModuleInfo)  # Capture screen
-                CommonUtil.ExecLog(
-                    sModuleInfo,
-                    "Successfully set the value of to text to: %s" % text_value,
-                    1,
-                )
+                CommonUtil.ExecLog(sModuleInfo, "Successfully set the value of to text to: %s" % text_value, 1)
                 return "passed"
             except Exception:
                 errMsg = "Found element, but couldn't write text to it"
@@ -2921,14 +2867,9 @@ def Hide_Keyboard(data_set):
     """
     This action is used to hide keyboard:
     hide keyboard             appium action           hide
-
-
-     """
-
+    """
     sModuleInfo = inspect.currentframe().f_code.co_name + " : " + MODULE_NAME
-
     device_platform = str(appium_driver.capabilities["platformName"].strip().lower())
-
     if device_platform != "android":
         CommonUtil.ExecLog(
             sModuleInfo,
@@ -2936,7 +2877,6 @@ def Hide_Keyboard(data_set):
             2,
         )
         return "passed"
-
     try:
         if appium_driver.is_keyboard_shown():
             appium_driver.hide_keyboard()  # Remove keyboard
@@ -2951,7 +2891,6 @@ def Hide_Keyboard(data_set):
 def Android_Keystroke_Key_Mapping(keystroke, hold_key=False):
     """ Provides a friendly interface to invoke key events """
     # Keycodes: https://developer.android.com/reference/android/view/KeyEvent.html
-
     sModuleInfo = inspect.currentframe().f_code.co_name + " : " + MODULE_NAME
 
     # Sanitize input
@@ -3077,7 +3016,7 @@ def Keystroke_Appium(data_set):
     sModuleInfo = inspect.currentframe().f_code.co_name + " : " + MODULE_NAME
 
     skip_or_not = filter_optional_action_and_step_data(data_set, sModuleInfo)
-    if skip_or_not == False:
+    if not skip_or_not:
         return "passed"
 
     # Parse data set
@@ -3147,7 +3086,7 @@ def Validate_Text_Appium(data_set):
     sModuleInfo = inspect.currentframe().f_code.co_name + " : " + MODULE_NAME
 
     skip_or_not = filter_optional_action_and_step_data(data_set, sModuleInfo)
-    if skip_or_not == False:
+    if not skip_or_not:
         return "passed"
 
     data_set = [data_set]
@@ -3192,9 +3131,7 @@ def Validate_Text_Appium(data_set):
                 list_of_element_text.append(list_of_element)
         elif len(Element) > 1:
             for each_text in Element:
-                list_of_element = each_text.text.split(
-                    "\n"
-                )  # Extract the text elements
+                list_of_element = each_text.text.split("\n")  # Extract the text elements
                 list_of_element_text.append(list_of_element[0])
         else:
             return "zeuz_failed"
@@ -3217,9 +3154,7 @@ def Validate_Text_Appium(data_set):
             )
             #             print (">>>>>>>> Actual Text: %s" %actual_text_data)
             for each_actual_text_data_item in actual_text_data:
-                if (
-                    expected_text_data[0] in each_actual_text_data_item
-                ):  # index [0] used to remove the unicode 'u' from the text string
+                if expected_text_data[0] in each_actual_text_data_item:  # index [0] used to remove the unicode 'u' from the text string
                     CommonUtil.ExecLog(
                         sModuleInfo,
                         "Validate the text element %s using partial match."
@@ -3465,7 +3400,7 @@ def device_information(data_set):
     sModuleInfo = inspect.currentframe().f_code.co_name + " : " + MODULE_NAME
 
     skip_or_not = filter_optional_action_and_step_data(data_set, sModuleInfo)
-    if skip_or_not == False:
+    if not skip_or_not:
         return "passed"
 
     # Parse data set
@@ -3607,7 +3542,7 @@ def set_device_password(data_set):
     sModuleInfo = inspect.currentframe().f_code.co_name + " : " + MODULE_NAME
 
     skip_or_not = filter_optional_action_and_step_data(data_set, sModuleInfo)
-    if skip_or_not == False:
+    if not skip_or_not:
         return "passed"
 
     # Parse data set
@@ -3640,7 +3575,7 @@ def switch_device(data_set):
     sModuleInfo = inspect.currentframe().f_code.co_name + " : " + MODULE_NAME
 
     skip_or_not = filter_optional_action_and_step_data(data_set, sModuleInfo)
-    if skip_or_not == False:
+    if not skip_or_not:
         return "passed"
 
     # Parse data set
@@ -3681,7 +3616,7 @@ def package_information(data_set):
     sModuleInfo = inspect.currentframe().f_code.co_name + " : " + MODULE_NAME
 
     skip_or_not = filter_optional_action_and_step_data(data_set, sModuleInfo)
-    if skip_or_not == False:
+    if not skip_or_not:
         return "passed"
 
     # Parse data set
@@ -3770,7 +3705,7 @@ def minimize_appilcation(data_set):
     sModuleInfo = inspect.currentframe().f_code.co_name + " : " + MODULE_NAME
 
     skip_or_not = filter_optional_action_and_step_data(data_set, sModuleInfo)
-    if skip_or_not == False:
+    if not skip_or_not:
         return "passed"
 
     try:
@@ -3791,7 +3726,7 @@ def maximize_appilcation(data_set):
     sModuleInfo = inspect.currentframe().f_code.co_name + " : " + MODULE_NAME
 
     skip_or_not = filter_optional_action_and_step_data(data_set, sModuleInfo)
-    if skip_or_not == False:
+    if not skip_or_not:
         return "passed"
 
     try:
@@ -3836,7 +3771,7 @@ def Handle_Mobile_Alert(data_set):
     sModuleInfo = inspect.currentframe().f_code.co_name + " : " + MODULE_NAME
 
     skip_or_not = filter_optional_action_and_step_data(data_set, sModuleInfo)
-    if skip_or_not == False:
+    if not skip_or_not:
         return "passed"
 
     try:
@@ -3942,7 +3877,7 @@ def Switch_Context(data_set):
     """
     sModuleInfo = inspect.currentframe().f_code.co_name + " : " + MODULE_NAME
     skip_or_not = filter_optional_action_and_step_data(data_set, sModuleInfo)
-    if skip_or_not == False:
+    if not skip_or_not:
         return "passed"
 
     try:
@@ -4017,7 +3952,7 @@ def Save_Attribute_appium(step_data):
     """
     sModuleInfo = inspect.currentframe().f_code.co_name + " : " + MODULE_NAME
     skip_or_not = filter_optional_action_and_step_data(step_data, sModuleInfo)
-    if skip_or_not == False:
+    if not skip_or_not:
         return "passed"
 
     try:
@@ -4350,7 +4285,7 @@ def if_element_exists(data_set):
     sModuleInfo = inspect.currentframe().f_code.co_name + " : " + MODULE_NAME
 
     skip_or_not = filter_optional_action_and_step_data(data_set, sModuleInfo)
-    if skip_or_not == False:
+    if not skip_or_not:
         return "passed"
 
     try:
