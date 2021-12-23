@@ -1,6 +1,8 @@
 # Changelog
 
 # Version 14
+### [14.8.1] [December 23, 2021]
+- **[Improve]** Web Drag and Drop action is combined into single action
 
 ### [14.8.0] [December 15, 2021]
 - **[Add]** Windows Scroll to an Element and Swipe action are added
@@ -22,7 +24,7 @@
 - **[Add]** Added appium custom swipe action and appium swipe to an element action.
 - **[Change]** Autoscroll is set off by default.
 ### [14.7.0] [November 13, 2021]
-- **[Add]** Added wait as an optional parameter in every action of appium and selenium.
+- **[Add]** Added wait as an optional option in every action of appium and selenium. Example: (wait, optional option, 15)
 - **[Add]** Also you can set a default wait from `element_wait` variable in settings.conf file
 - **[Add]** Also you can change it in anywhere in a testcase with a save variable action changing `element_wait` variable
 - **[Add]** Added auto_scroll_appium which will scroll automatically when an element is not found inside a scrollable page

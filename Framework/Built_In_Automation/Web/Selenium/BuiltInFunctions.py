@@ -2034,10 +2034,7 @@ def Extract_Table_Data(step_data):
             return "zeuz_failed"
         if Element.tag_name != "tbody":
             CommonUtil.ExecLog(sModuleInfo, 'Tag name of the Element is not "tbody"', 2)
-        i = m = 0
-        j = n = None
-        comma_separated_row = False
-        comma_separated_column = False
+
         try:
             for left, mid, right in step_data:
                 left = left.strip().lower()
@@ -2045,56 +2042,17 @@ def Extract_Table_Data(step_data):
                 if left == "extract table data":
                     variable_name = right
                 elif "row" in left:
-                    if len(right) == 1:
-                        i = int(right)
-                        j = int(right)+1
-                    else:
-                        if ":" in right :
-                            right = right.split(":")
-                            i = int(right[0])
-                            j = int(right[1])+1
-                        else:
-                            right =right.split(",")
-                            comma_separated_row = True
-                            comma_list_row =[]
-                            for b in right :
-                                comma_list_row.append(int(b))
+                    pass        # Todo: We will extract data on that range
                 elif "column" in left:
-                    if len(right) == 1:
-                        m = int(right)
-                        n = int(right)+1
-                    else:
-                        if ":" in right :
-                            right = right.split(":")
-                            m = int(right[0])
-                            n = int(right[1])+1
-                        else:
-                            right =right.split(",")
-                            comma_separated_column = True
-                            comma_list_column =[]
-                            for a in right :
-                                comma_list_column.append(int(a))
-
-
+                    pass        # Todo: We will extract data on that range
         except:
             CommonUtil.ExecLog(sModuleInfo, "Unable to parse data. Please write data in correct format", 3)
             return "zeuz_failed"
 
         variable_value = []
-        if comma_separated_row == True:
-            all_tr = []
-            for i in comma_list_row :
-                all_tr.append(Element.find_elements_by_tag_name("tr")[i])
-        else:
-            all_tr = Element.find_elements_by_tag_name("tr")[i:j]
-
+        all_tr = Element.find_elements_by_tag_name("tr")
         for row in all_tr:
-            if comma_separated_column == True:
-                all_td =[]
-                for i in comma_list_column :
-                    all_td.append(row.find_elements_by_tag_name("td")[i])
-            else:
-                all_td = row.find_elements_by_tag_name("td")[m:n]
+            all_td = row.find_elements_by_tag_name("td")
             td_data = []
             for td in all_td:
                 td_data.append(td.text)
@@ -3582,16 +3540,23 @@ def drag_and_drop(step_data):
     sModuleInfo = inspect.currentframe().f_code.co_name + " : " + MODULE_NAME
     global selenium_driver
     try:
-        source = ""
-        destination = ""
-        duration = 1
-        for each in step_data:
-            if each[0] == "source":
-                source = str(each[2]).strip()
-            elif each[0] == "destination":
-                destination = str(each[2]).strip()
-            elif each[0] == "wait":
-                duration = int(str(each[2]).strip())
+        source = []
+        destination = []
+        param_dict = {"elementparameter": "element parameter", "parentparameter": "parent parameter", "siblingparameter": "sibling parameter", "childparameter": "child parameter"}
+        for left, mid, right in dataset:
+            if mid.startswith("src") or mid.startswith("source"):
+                mid = mid.replace("src", "").replace(" ", "").replace("source", "")
+                for param in param_dict:
+                    if param == mid:
+                        source.append((left, param_dict[param], right))
+            elif mid.startswith("dst") or mid.startswith("destination"):
+                mid = mid.replace("dst", "").replace(" ", "").replace("destination", "")
+                for param in param_dict:
+                    if param == mid:
+                        destination.append((left, param_dict[param], right))
+            elif left.strip().lower() in ("wait", "allow disable", "allow hidden") and mid == "option":
+                source.append((left, mid, right))
+                destination.append((left, mid, right))
 
         if source == "":
             CommonUtil.ExecLog(
@@ -3613,22 +3578,9 @@ def drag_and_drop(step_data):
                 3,
             )
 
-        destination_element = Shared_Resources.Get_Shared_Variables(destination)
-        if destination_element in failed_tag_list:
-            CommonUtil.ExecLog(
-                sModuleInfo,
-                "No element found in shared variables named '%s' which is defined as source for drag and drop",
-                source,
-                3,
-            )
-
-        #ActionChains(selenium_driver).drag_and_drop(source_element, destination_element).perform()
-        ActionChains(selenium_driver).click_and_hold(source_element).move_to_element(destination_element).pause(duration).release(destination_element).perform()
-        CommonUtil.ExecLog(
-            sModuleInfo,
-            "Drag and drop completed from source '%s' to destination '%s'"
-            % (source, destination),
-        )
+        # ActionChains(selenium_driver).drag_and_drop(source_element, destination_element).perform()
+        ActionChains(selenium_driver).click_and_hold(source_element).move_to_element(destination_element).pause(0.5).release(destination_element).perform()
+        CommonUtil.ExecLog(sModuleInfo, "Drag and drop completed from source to destination", 1)
 
         return "passed"
     except Exception:
