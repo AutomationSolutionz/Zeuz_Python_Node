@@ -498,7 +498,7 @@ def launch_application(data_set):
                 elif left == "work profile" and right.strip().lower() in ("yes", "true"):
                     work_profile = True
                 elif left in ("no reset", "no_reset", "noreset") and mid == "element parameter":
-                    if right.strip().lower() in ("yes", "true"):
+                    if right.strip().lower() in ("yes", "true", "ok", "enable"):
                         no_reset = True
                     else:
                         no_reset = False
@@ -570,20 +570,21 @@ def launch_application(data_set):
                 platform_version = appium_details[device_id]["platform_version"]
             if "device_name" in appium_details[device_id]:
                 device_name = appium_details[device_id]["device_name"]
-            if appium_details[device_id]["driver"] is None:
-                # Only create a new appium instance if we haven't already (may be done by install_and_start_driver())
-                result, launch_app = start_appium_driver(
-                    package_name,
-                    activity_name,
-                    platform_version=platform_version,
-                    device_name=device_name,
-                    ios=ios,
-                    no_reset=no_reset,
-                    work_profile=work_profile,
-                    desiredcaps=desiredcaps,
-                )
-                if result == "zeuz_failed":
-                    return "zeuz_failed"
+
+            # if appium_details[device_id]["driver"] is None:
+            #     # Only create a new appium instance if we haven't already (may be done by install_and_start_driver())
+            result, launch_app = start_appium_driver(
+                package_name,
+                activity_name,
+                platform_version=platform_version,
+                device_name=device_name,
+                ios=ios,
+                no_reset=no_reset,
+                work_profile=work_profile,
+                desiredcaps=desiredcaps,
+            )
+            if result == "zeuz_failed":
+                return "zeuz_failed"
 
             if launch_app:  # if ios simulator then no need to launch app again
                 appium_driver.launch_app()  # Launch program configured in the Appium capabilities
@@ -789,91 +790,60 @@ def start_appium_driver(
             CommonUtil.ExecLog(sModuleInfo, "AWS driver created successfully.", 1)
             return "passed", launch_app
 
-        if appium_details[device_id]["driver"] is None:
+        if appium_details[device_id]["server"] is None:
             # Start Appium server
             if start_appium_server() in failed_tag_list:
                 return "zeuz_failed", launch_app
 
-            # Create Appium driver
-            # Setup capabilities
-            desired_caps = {}
+        # Create Appium driver
+        # Setup capabilities
+        desired_caps = {}
 
-            # Include the user provided desired capabilities
-            desired_caps.update(desiredcaps)
+        # Include the user provided desired capabilities
+        desired_caps.update(desiredcaps)
 
-            if str(appium_details[device_id]["type"]).lower() == "android":
+        if str(appium_details[device_id]["type"]).lower() == "android":
+            # All Desired caps = https://appium.io/docs/en/writing-running-appium/caps/
+            desired_caps["platformName"] = appium_details[device_id]["type"]  # Set platform name
+            desired_caps["autoLaunch"] = "false"  # Do not launch application
+            desired_caps["fullReset"] = "false"  # Do not reinstall application
+            if no_reset:
+                desired_caps["noReset"] = "true"  # Do not clear application cache
+            desired_caps["newCommandTimeout"] = 6000  # Command timeout before appium destroys instance
+            desired_caps["automationName"] = "UiAutomator2"
+            if not adbOptions.is_android_connected(device_serial):
+                CommonUtil.ExecLog(sModuleInfo, "Could not detect any connected Android devices", 3)
+                return "zeuz_failed", launch_app
 
-                desired_caps["platformName"] = appium_details[device_id]["type"]  # Set platform name
-                desired_caps["autoLaunch"] = "false"  # Do not launch application
-                desired_caps["fullReset"] = "false"  # Do not clear application cache when complete
-                desired_caps["noReset"] = "true"  # Do not clear application cache when complete
-                desired_caps["newCommandTimeout"] = 6000  # Command timeout before appium destroys instance
-                desired_caps["automationName"] = "UiAutomator2"
-                if adbOptions.is_android_connected(device_serial) == False:
-                    CommonUtil.ExecLog(sModuleInfo, "Could not detect any connected Android devices", 3)
+            if work_profile:
+                work_profile_from_adb = adbOptions.get_work_profile()
+                if work_profile_from_adb in failed_tag_list:
+                    CommonUtil.ExecLog(sModuleInfo, "Couldn't get the work profile", 3)
                     return "zeuz_failed", launch_app
+                desired_caps["userProfile"] = work_profile_from_adb  # Command timeout before appium destroys instance
 
-                if work_profile:
-                    work_profile_from_adb = adbOptions.get_work_profile()
-                    if work_profile_from_adb in failed_tag_list:
-                        CommonUtil.ExecLog(sModuleInfo, "Couldn't get the work profile", 3)
-                        return "zeuz_failed"
-                    desired_caps["userProfile"] = work_profile_from_adb  # Command timeout before appium destroys instance
+            CommonUtil.ExecLog(sModuleInfo, "Setting up with Android", 1)
+            desired_caps["platformVersion"] = adbOptions.get_android_version(appium_details[device_id]["serial"]).strip()
+            desired_caps["deviceName"] = adbOptions.get_device_model(appium_details[device_id]["serial"]).strip()
+            if package_name:
+                desired_caps["appPackage"] = package_name.strip()
+            if activity_name:
+                desired_caps["appActivity"] = activity_name.strip()
+            if filename and package_name == "":  # User must specify package or file, not both. Specifying filename instructs Appium to install
+                desired_caps["app"] = PATH(filename).strip()
 
-                CommonUtil.ExecLog(sModuleInfo, "Setting up with Android", 1)
-                desired_caps["platformVersion"] = adbOptions.get_android_version(appium_details[device_id]["serial"]).strip()
-                desired_caps["deviceName"] = adbOptions.get_device_model(appium_details[device_id]["serial"]).strip()
-                if package_name:
-                    desired_caps["appPackage"] = package_name.strip()
-                if activity_name:
-                    desired_caps["appActivity"] = activity_name.strip()
-                if filename and package_name == "":  # User must specify package or file, not both. Specifying filename instructs Appium to install
-                    desired_caps["app"] = PATH(filename).strip()
+        elif str(appium_details[device_id]["type"]).lower() == "ios":
+            CommonUtil.ExecLog(sModuleInfo, "Setting up with IOS", 1)
+            if appium_details[device_id]["imei"] == "Simulated":  # ios simulator
+                launch_app = False  # ios simulator so need to launch app again
 
-            elif str(appium_details[device_id]["type"]).lower() == "ios":
-                CommonUtil.ExecLog(sModuleInfo, "Setting up with IOS", 1)
-                if appium_details[device_id]["imei"] == "Simulated":  # ios simulator
-                    launch_app = False  # ios simulator so need to launch app again
-
-                    if "browserName" in desired_caps:
-                        # We're trying to launch the Safari browser
-                        # NOTE: Other browsers are not supported by appium on iOS
-                        if "safariAllowPopups" not in desired_caps:
-                            # Allow popups by default, unless specified by the user
-                            desired_caps["safariAllowPopups"] = True
-                    else:
-                        # We're trying to launch an application using .app file
-                        if Shared_Resources.Test_Shared_Variables("ios_simulator_folder_path"):  # if simulator path already exists
-                            app = Shared_Resources.Get_Shared_Variables("ios_simulator_folder_path")
-                            app = os.path.normpath(app)
-                        else:
-                            app = os.path.normpath(os.getcwd() + os.sep + os.pardir)
-                            app = os.path.join(app, "iosSimulator")
-                            # saving simulator path for future use
-                            Shared_Resources.Set_Shared_Variables("ios_simulator_folder_path", str(app))
-
-                        app = os.path.join(app, ios)
-                        encoding = "utf-8"
-                        bundle_id = str(
-                            subprocess.check_output(
-                                ["osascript", "-e", 'id of app "%s"' % str(app)]
-                            ),
-                            encoding=encoding,
-                        ).strip()
-
-                        desired_caps["app"] = app  # Use set_value() for writing to element
-                        desired_caps["bundleId"] = bundle_id.replace("\\n", "")
-
-                    desired_caps["platformName"] = "iOS"  # Read version #!!! Temporarily hard coded
-                    desired_caps["platformVersion"] = platform_version
-                    desired_caps["deviceName"] = device_name
-                    desired_caps["automationName"] = "XCUITest"
-                    desired_caps["wdaLocalPort"] = wdaLocalPort
-                    desired_caps["udid"] = appium_details[device_id]["serial"]
-                    desired_caps["newCommandTimeout"] = 6000
-                    if no_reset:
-                        desired_caps["noReset"] = "true"  # Do not clear application cache when complete
-                else:  # for real ios device, not developed yet
+                if "browserName" in desired_caps:
+                    # We're trying to launch the Safari browser
+                    # NOTE: Other browsers are not supported by appium on iOS
+                    if "safariAllowPopups" not in desired_caps:
+                        # Allow popups by default, unless specified by the user
+                        desired_caps["safariAllowPopups"] = True
+                else:
                     # We're trying to launch an application using .app file
                     if Shared_Resources.Test_Shared_Variables("ios_simulator_folder_path"):  # if simulator path already exists
                         app = Shared_Resources.Get_Shared_Variables("ios_simulator_folder_path")
@@ -886,50 +856,80 @@ def start_appium_driver(
 
                     app = os.path.join(app, ios)
                     encoding = "utf-8"
-                    bundle_id = str(subprocess.check_output(["osascript", "-e", 'id of app "%s"' % str(app)]), encoding=encoding).strip()
+                    bundle_id = str(
+                        subprocess.check_output(
+                            ["osascript", "-e", 'id of app "%s"' % str(app)]
+                        ),
+                        encoding=encoding,
+                    ).strip()
 
-                    desired_caps["platformName"] = "iOS"
+                    desired_caps["app"] = app  # Use set_value() for writing to element
+                    desired_caps["bundleId"] = bundle_id.replace("\\n", "")
 
-                    desired_caps["automationName"] = "XCUITest"
+                desired_caps["platformName"] = "iOS"  # Read version #!!! Temporarily hard coded
+                desired_caps["platformVersion"] = platform_version
+                desired_caps["deviceName"] = device_name
+                desired_caps["automationName"] = "XCUITest"
+                desired_caps["wdaLocalPort"] = wdaLocalPort
+                desired_caps["udid"] = appium_details[device_id]["serial"]
+                desired_caps["newCommandTimeout"] = 6000
+                if no_reset:
+                    desired_caps["noReset"] = "true"  # Do not clear application cache when complete
+            else:  # for real ios device, not developed yet
+                # We're trying to launch an application using .app file
+                if Shared_Resources.Test_Shared_Variables("ios_simulator_folder_path"):  # if simulator path already exists
+                    app = Shared_Resources.Get_Shared_Variables("ios_simulator_folder_path")
+                    app = os.path.normpath(app)
+                else:
+                    app = os.path.normpath(os.getcwd() + os.sep + os.pardir)
+                    app = os.path.join(app, "iosSimulator")
+                    # saving simulator path for future use
+                    Shared_Resources.Set_Shared_Variables("ios_simulator_folder_path", str(app))
 
-                    desired_caps["sendKeyStrategy"] = "setValue"  # Use set_value() for writing to element
-                    desired_caps["platformVersion"] = "13.5"  # Read version #!!! Temporarily hard coded
-                    desired_caps["deviceName"] = "iPhone"  # Read model (only needs to be unique if using more than one)
-                    desired_caps["bundleId"] = ios
-                    desired_caps["udid"] = appium_details[device_id]["serial"]  # Device unique identifier - use auto if using only one phone
-            else:
-                CommonUtil.ExecLog(sModuleInfo, "Invalid device type: %s" % str(appium_details[device_id]["type"]), 3)
+                app = os.path.join(app, ios)
+                encoding = "utf-8"
+                bundle_id = str(subprocess.check_output(["osascript", "-e", 'id of app "%s"' % str(app)]), encoding=encoding).strip()
+
+                desired_caps["platformName"] = "iOS"
+                desired_caps["automationName"] = "XCUITest"
+                desired_caps["sendKeyStrategy"] = "setValue"  # Use set_value() for writing to element
+                desired_caps["platformVersion"] = "13.5"  # Read version #!!! Temporarily hard coded
+                desired_caps["deviceName"] = "iPhone"  # Read model (only needs to be unique if using more than one)
+                desired_caps["bundleId"] = ios
+                desired_caps["udid"] = appium_details[device_id]["serial"]  # Device unique identifier - use auto if using only one phone
+        else:
+            CommonUtil.ExecLog(sModuleInfo, "Invalid device type: %s" % str(appium_details[device_id]["type"]), 3)
+            return "zeuz_failed", launch_app
+        CommonUtil.ExecLog(sModuleInfo, "Capabilities: %s" % str(desired_caps), 1)
+
+        # Create Appium instance with capabilities
+        try:
+            count = 1
+            while count <= 5:
+                try:
+                    appium_driver = webdriver.Remote("http://localhost:%d/wd/hub" % appium_port, desired_caps)  # Create instance
+                    if appium_driver:
+                        break
+                    count += 1
+                    time.sleep(10)
+                    CommonUtil.ExecLog(sModuleInfo, "Failed to create appium driver, trying again", 2)
+                except:
+                    count += 1
+                    time.sleep(10)
+                    CommonUtil.ExecLog(sModuleInfo, "Failed to create appium driver, trying again", 2)
+
+            if appium_driver:  # Make sure we get the instance
+                appium_details[device_id]["driver"] = appium_driver
+                Shared_Resources.Set_Shared_Variables("appium_details", appium_details)
+                CommonUtil.set_screenshot_vars(Shared_Resources.Shared_Variable_Export())
+                CommonUtil.ExecLog(sModuleInfo, "Appium driver created successfully.", 1)
+                return "passed", launch_app
+            else:  # Error during setup, reset
+                appium_driver = None
+                CommonUtil.ExecLog(sModuleInfo, "Error during Appium setup", 3)
                 return "zeuz_failed", launch_app
-            CommonUtil.ExecLog(sModuleInfo, "Capabilities: %s" % str(desired_caps), 1)
-
-            # Create Appium instance with capabilities
-            try:
-                count = 1
-                while count <= 5:
-                    try:
-                        appium_driver = webdriver.Remote("http://localhost:%d/wd/hub" % appium_port, desired_caps)  # Create instance
-                        if appium_driver:
-                            break
-                        count += 1
-                        time.sleep(10)
-                        CommonUtil.ExecLog(sModuleInfo, "Failed to create appium driver, trying again", 2)
-                    except:
-                        count += 1
-                        time.sleep(10)
-                        CommonUtil.ExecLog(sModuleInfo, "Failed to create appium driver, trying again", 2)
-
-                if appium_driver:  # Make sure we get the instance
-                    appium_details[device_id]["driver"] = appium_driver
-                    Shared_Resources.Set_Shared_Variables("appium_details", appium_details)
-                    CommonUtil.set_screenshot_vars(Shared_Resources.Shared_Variable_Export())
-                    CommonUtil.ExecLog(sModuleInfo, "Appium driver created successfully.", 1)
-                    return "passed", launch_app
-                else:  # Error during setup, reset
-                    appium_driver = None
-                    CommonUtil.ExecLog(sModuleInfo, "Error during Appium setup", 3)
-                    return "zeuz_failed", launch_app
-            except Exception:
-                return CommonUtil.Exception_Handler(sys.exc_info()), launch_app
+        except Exception:
+            return CommonUtil.Exception_Handler(sys.exc_info()), launch_app
 
     except Exception:
         return CommonUtil.Exception_Handler(sys.exc_info()), launch_app
@@ -3307,7 +3307,7 @@ def get_program_names(search_name):
 
     # Find package name for the program that's already installed
     try:
-        if adbOptions.is_android_connected(device_serial) == False:
+        if not adbOptions.is_android_connected(device_serial):
             CommonUtil.ExecLog(
                 sModuleInfo, "Could not detect any connected Android devices", 3
             )
@@ -3442,7 +3442,7 @@ def device_information(data_set):
 
     # Ensure device is connected
     if dep == "android":
-        if adbOptions.is_android_connected(device_serial) == False:
+        if not adbOptions.is_android_connected(device_serial):
             CommonUtil.ExecLog(sModuleInfo, "Could not detect any connected Android devices", 3)
             return "zeuz_failed"
 
