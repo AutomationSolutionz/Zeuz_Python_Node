@@ -56,13 +56,10 @@ PATH = "%s" % PATH_
 # Recall appium driver, if not already set - needed between calls in a Zeuz test case
 appium_port = 4721  # Default appium port - changes if we have multiple devices
 wdaLocalPort = 8100
-appium_details = (
-    {}
-)  # Used to store device serial number, appium driver, if multiple devices are used
+appium_details = {}  # Used to store device serial number, appium driver, if multiple devices are used
 appium_driver = None  # Holds the currently used appium instance
-device_serial = (
-    ""  # Holds the identifier for the currently used device (if any are specified)
-)
+device_serial = ""  # Holds the identifier for the currently used device (if any are specified)
+
 device_id = ""  # Holds the name of the device the user has specified, if any. Relationship is set elsewhere
 
 from Framework.Utilities import All_Device_Info
@@ -70,32 +67,20 @@ from Framework.Utilities import All_Device_Info
 
 # Recall dependency, if not already set
 dependency = None
-if Shared_Resources.Test_Shared_Variables(
-    "dependency"
-):  # Check if driver is already set in shared variables
-    dependency = Shared_Resources.Get_Shared_Variables(
-        "dependency"
-    )  # Retreive appium driver
+if Shared_Resources.Test_Shared_Variables("dependency"):  # Check if driver is already set in shared variables
+    dependency = Shared_Resources.Get_Shared_Variables("dependency")  # Retreive appium driver
 else:
     pass  # May be phasing out dependency for mobile
     # raise ValueError("No dependency set - Cannot run")
 
 # Recall file attachments
 file_attachment = {}
-if Shared_Resources.Test_Shared_Variables(
-    "file_attachment"
-):  # Check if file_attachement is set
-    file_attachment = Shared_Resources.Get_Shared_Variables(
-        "file_attachment"
-    )  # Retreive file attachments
+if Shared_Resources.Test_Shared_Variables("file_attachment"):  # Check if file_attachement is set
+    file_attachment = Shared_Resources.Get_Shared_Variables("file_attachment")  # Retreive file attachments
 
 # Recall appium details
-if Shared_Resources.Test_Shared_Variables(
-    "appium_details"
-):  # Check if driver is already set in shared variables
-    appium_details = Shared_Resources.Get_Shared_Variables(
-        "appium_details"
-    )  # Retreive appium driver
+if Shared_Resources.Test_Shared_Variables("appium_details"):  # Check if driver is already set in shared variables
+    appium_details = Shared_Resources.Get_Shared_Variables("appium_details")  # Retreive appium driver
     # Populate the global variables with one of the device information. If more than one device is used, then it'll be the last. The user is responsible for calling either launch_application() or switch_device() to focus on the one they want
     for name in appium_details:
         appium_driver = appium_details[name]["driver"]
@@ -106,12 +91,8 @@ if Shared_Resources.Test_Shared_Variables(
 
 # Recall device_info, if not already set
 device_info = {}
-if Shared_Resources.Test_Shared_Variables(
-    "device_info"
-):  # Check if device_info is already set in shared variables
-    device_info = Shared_Resources.Get_Shared_Variables(
-        "device_info"
-    )  # Retreive device_info
+if Shared_Resources.Test_Shared_Variables("device_info"):  # Check if device_info is already set in shared variables
+    device_info = Shared_Resources.Get_Shared_Variables("device_info")  # Retreive device_info
 
 
 @logger
@@ -125,9 +106,7 @@ def find_appium():
         "/usr/bin/appium",
         os.path.join(str(os.getenv("HOME")), ".linuxbrew/bin/appium"),
         os.path.join(str(os.getenv("ProgramFiles")), "APPIUM", "Appium.exe"),
-        os.path.join(
-            str(os.getenv("USERPROFILE")), "AppData", "Roaming", "npm", "appium.cmd"
-        ),
+        os.path.join(str(os.getenv("USERPROFILE")), "AppData", "Roaming", "npm", "appium.cmd"),
     ]  # getenv() must be wrapped in str(), so it doesn't fail on other platforms
 
     # Try to find the appium executable
@@ -149,9 +128,7 @@ def find_appium():
 
     # Verify if we have the binary location
     if appium_binary == "":  # Didn't find where appium was installed
-        CommonUtil.ExecLog(
-            sModuleInfo, "Appium not found. Trying to locate via which", 0
-        )
+        CommonUtil.ExecLog(sModuleInfo, "Appium not found. Trying to locate via which", 0)
         try:
             appium_binary = subprocess.check_output(
                 "which appium", encoding="utf-8", shell=True
@@ -161,9 +138,7 @@ def find_appium():
 
         if appium_binary == "":  # Didn't find where appium was installed
             appium_binary = "appium"  # Default filename of appium, assume in the PATH
-            CommonUtil.ExecLog(
-                sModuleInfo, "Appium still not found. Assuming it's in the PATH.", 2
-            )
+            CommonUtil.ExecLog(sModuleInfo, "Appium still not found. Assuming it's in the PATH.", 2)
         else:
             CommonUtil.ExecLog(sModuleInfo, "Found appium: %s" % appium_binary, 1)
     else:  # Found appium's path
@@ -250,9 +225,7 @@ def find_correct_device_on_first_run(serial_or_name, device_info):
                 product_version = all_device_info[device]["osver"]
                 did = device
                 serial_check = True  # Flag as found
-                CommonUtil.ExecLog(
-                    sModuleInfo, "Found serial number in data set: %s" % serial, 0
-                )
+                CommonUtil.ExecLog(sModuleInfo, "Found serial number in data set: %s" % serial, 0)
                 break
 
         # Check if user provided name - must be accompanied by device_info, sent by server
@@ -328,6 +301,8 @@ def find_correct_device_on_first_run(serial_or_name, device_info):
             appium_details[device_id] = {}
             if "driver" not in appium_details[device_id]:
                 appium_details[device_id]["driver"] = None  # Initialize appium driver object
+            if "server" not in appium_details[device_id]:
+                appium_details[device_id]["server"] = None
             appium_details[device_id]["serial"] = serial
             appium_details[device_id]["type"] = device_type
             appium_details[device_id]["imei"] = imei
@@ -504,9 +479,7 @@ def launch_application(data_set):
         else:
             package_name = ""  # Name of application package
             activity_name = ""  # Name of application activity
-            serial = (
-                ""  # Serial number (may also be random string like "launch", "na", etc)
-            )
+            serial = ""  # Serial number (may also be random string like "launch", "na", etc)
             platform_version = ""
             device_name = ""
             ios = ""
@@ -557,9 +530,7 @@ def launch_application(data_set):
             # If android, then we will try to find the activity name, IOS doesn't need this
             if activity_name == "":
                 if appium_details[device_id]["type"] == "android":
-                    package_name, activity_name = get_program_names(
-                        package_name
-                    )  # Android only to match a partial package name if provided by the user
+                    package_name, activity_name = get_program_names(package_name)  # Android only to match a partial package name if provided by the user
                     Shared_Resources.Set_Shared_Variables("package_name", str(package_name))
 
             # Verify data
@@ -599,9 +570,8 @@ def launch_application(data_set):
                 platform_version = appium_details[device_id]["platform_version"]
             if "device_name" in appium_details[device_id]:
                 device_name = appium_details[device_id]["device_name"]
-            if (
-                appium_details[device_id]["driver"] == None
-            ):  # Only create a new appium instance if we haven't already (may be done by install_and_start_driver())
+            if appium_details[device_id]["driver"] is None:
+                # Only create a new appium instance if we haven't already (may be done by install_and_start_driver())
                 result, launch_app = start_appium_driver(
                     package_name,
                     activity_name,
@@ -689,16 +659,12 @@ def start_appium_server():
 
         try:
             appium_server = None
-            if (
-                sys.platform == "win32"
-            ):  # We need to open appium in it's own command dos box on Windows
+            if sys.platform == "win32":  # We need to open appium in it's own command dos box on Windows
                 cmd = (
                     'start "Appium Server" /wait /min cmd /c %s --allow-insecure chromedriver_autodownload -p %d'
                     % (appium_binary, appium_port)
                 )  # Use start to execute and minimize, then cmd /c will remove the dos box when appium is killed
-                appium_server = subprocess.Popen(
-                    cmd, shell=True
-                )  # Needs to run in a shell due to the execution command
+                appium_server = subprocess.Popen(cmd, shell=True)  # Needs to run in a shell due to the execution command
             elif sys.platform == "darwin":
                 appium_server = subprocess.Popen(
                     "%s --allow-insecure chromedriver_autodownload -p %s"
@@ -713,11 +679,8 @@ def start_appium_server():
                 )
             else:
                 try:
-
                     appium_binary_path = os.path.normpath(appium_binary)
-                    appium_binary_path = os.path.abspath(
-                        os.path.join(appium_binary_path, os.pardir)
-                    )
+                    appium_binary_path = os.path.abspath(os.path.join(appium_binary_path, os.pardir))
                     env = {"PATH": str(appium_binary_path)}
                     appium_server = subprocess.Popen(
                         subprocess.Popen(
@@ -733,9 +696,7 @@ def start_appium_server():
                         "Couldn't launch appium server, please do it manually by typing 'appium &' in the terminal",
                         2,
                     )
-            appium_details[device_id][
-                "server"
-            ] = appium_server  # Save the server object for teardown
+            appium_details[device_id]["server"] = appium_server  # Save the server object for teardown
         except Exception as returncode:  # Couldn't run server
             return CommonUtil.Exception_Handler(
                 sys.exc_info(),
@@ -828,7 +789,7 @@ def start_appium_driver(
             CommonUtil.ExecLog(sModuleInfo, "AWS driver created successfully.", 1)
             return "passed", launch_app
 
-        if appium_details[device_id]["driver"] == None:
+        if appium_details[device_id]["driver"] is None:
             # Start Appium server
             if start_appium_server() in failed_tag_list:
                 return "zeuz_failed", launch_app
@@ -842,51 +803,31 @@ def start_appium_driver(
 
             if str(appium_details[device_id]["type"]).lower() == "android":
 
-                desired_caps["platformName"] = appium_details[device_id][
-                    "type"
-                ]  # Set platform name
+                desired_caps["platformName"] = appium_details[device_id]["type"]  # Set platform name
                 desired_caps["autoLaunch"] = "false"  # Do not launch application
-                desired_caps[
-                    "fullReset"
-                ] = "false"  # Do not clear application cache when complete
-                desired_caps[
-                    "noReset"
-                ] = "true"  # Do not clear application cache when complete
-                desired_caps[
-                    "newCommandTimeout"
-                ] = 6000  # Command timeout before appium destroys instance
+                desired_caps["fullReset"] = "false"  # Do not clear application cache when complete
+                desired_caps["noReset"] = "true"  # Do not clear application cache when complete
+                desired_caps["newCommandTimeout"] = 6000  # Command timeout before appium destroys instance
                 desired_caps["automationName"] = "UiAutomator2"
                 if adbOptions.is_android_connected(device_serial) == False:
-                    CommonUtil.ExecLog(
-                        sModuleInfo, "Could not detect any connected Android devices", 3
-                    )
+                    CommonUtil.ExecLog(sModuleInfo, "Could not detect any connected Android devices", 3)
                     return "zeuz_failed", launch_app
 
                 if work_profile:
                     work_profile_from_adb = adbOptions.get_work_profile()
                     if work_profile_from_adb in failed_tag_list:
-                        CommonUtil.ExecLog(
-                            sModuleInfo, "Couldn't get the work profile", 3
-                        )
+                        CommonUtil.ExecLog(sModuleInfo, "Couldn't get the work profile", 3)
                         return "zeuz_failed"
-                    desired_caps[
-                        "userProfile"
-                    ] = work_profile_from_adb  # Command timeout before appium destroys instance
+                    desired_caps["userProfile"] = work_profile_from_adb  # Command timeout before appium destroys instance
 
                 CommonUtil.ExecLog(sModuleInfo, "Setting up with Android", 1)
-                desired_caps["platformVersion"] = adbOptions.get_android_version(
-                    appium_details[device_id]["serial"]
-                ).strip()
-                desired_caps["deviceName"] = adbOptions.get_device_model(
-                    appium_details[device_id]["serial"]
-                ).strip()
+                desired_caps["platformVersion"] = adbOptions.get_android_version(appium_details[device_id]["serial"]).strip()
+                desired_caps["deviceName"] = adbOptions.get_device_model(appium_details[device_id]["serial"]).strip()
                 if package_name:
                     desired_caps["appPackage"] = package_name.strip()
                 if activity_name:
                     desired_caps["appActivity"] = activity_name.strip()
-                if (
-                    filename and package_name == ""
-                ):  # User must specify package or file, not both. Specifying filename instructs Appium to install
+                if filename and package_name == "":  # User must specify package or file, not both. Specifying filename instructs Appium to install
                     desired_caps["app"] = PATH(filename).strip()
 
             elif str(appium_details[device_id]["type"]).lower() == "ios":
@@ -902,20 +843,14 @@ def start_appium_driver(
                             desired_caps["safariAllowPopups"] = True
                     else:
                         # We're trying to launch an application using .app file
-                        if Shared_Resources.Test_Shared_Variables(
-                            "ios_simulator_folder_path"
-                        ):  # if simulator path already exists
-                            app = Shared_Resources.Get_Shared_Variables(
-                                "ios_simulator_folder_path"
-                            )
+                        if Shared_Resources.Test_Shared_Variables("ios_simulator_folder_path"):  # if simulator path already exists
+                            app = Shared_Resources.Get_Shared_Variables("ios_simulator_folder_path")
                             app = os.path.normpath(app)
                         else:
                             app = os.path.normpath(os.getcwd() + os.sep + os.pardir)
                             app = os.path.join(app, "iosSimulator")
                             # saving simulator path for future use
-                            Shared_Resources.Set_Shared_Variables(
-                                "ios_simulator_folder_path", str(app)
-                            )
+                            Shared_Resources.Set_Shared_Variables("ios_simulator_folder_path", str(app))
 
                         app = os.path.join(app, ios)
                         encoding = "utf-8"
@@ -926,14 +861,10 @@ def start_appium_driver(
                             encoding=encoding,
                         ).strip()
 
-                        desired_caps[
-                            "app"
-                        ] = app  # Use set_value() for writing to element
+                        desired_caps["app"] = app  # Use set_value() for writing to element
                         desired_caps["bundleId"] = bundle_id.replace("\\n", "")
 
-                    desired_caps[
-                        "platformName"
-                    ] = "iOS"  # Read version #!!! Temporarily hard coded
+                    desired_caps["platformName"] = "iOS"  # Read version #!!! Temporarily hard coded
                     desired_caps["platformVersion"] = platform_version
                     desired_caps["deviceName"] = device_name
                     desired_caps["automationName"] = "XCUITest"
@@ -941,58 +872,33 @@ def start_appium_driver(
                     desired_caps["udid"] = appium_details[device_id]["serial"]
                     desired_caps["newCommandTimeout"] = 6000
                     if no_reset:
-                        desired_caps[
-                            "noReset"
-                        ] = "true"  # Do not clear application cache when complete
+                        desired_caps["noReset"] = "true"  # Do not clear application cache when complete
                 else:  # for real ios device, not developed yet
                     # We're trying to launch an application using .app file
-                    if Shared_Resources.Test_Shared_Variables(
-                        "ios_simulator_folder_path"
-                    ):  # if simulator path already exists
-                        app = Shared_Resources.Get_Shared_Variables(
-                            "ios_simulator_folder_path"
-                        )
+                    if Shared_Resources.Test_Shared_Variables("ios_simulator_folder_path"):  # if simulator path already exists
+                        app = Shared_Resources.Get_Shared_Variables("ios_simulator_folder_path")
                         app = os.path.normpath(app)
                     else:
                         app = os.path.normpath(os.getcwd() + os.sep + os.pardir)
                         app = os.path.join(app, "iosSimulator")
                         # saving simulator path for future use
-                        Shared_Resources.Set_Shared_Variables(
-                            "ios_simulator_folder_path", str(app)
-                        )
+                        Shared_Resources.Set_Shared_Variables("ios_simulator_folder_path", str(app))
 
                     app = os.path.join(app, ios)
                     encoding = "utf-8"
-                    bundle_id = str(
-                        subprocess.check_output(
-                            ["osascript", "-e", 'id of app "%s"' % str(app)]
-                        ),
-                        encoding=encoding,
-                    ).strip()
+                    bundle_id = str(subprocess.check_output(["osascript", "-e", 'id of app "%s"' % str(app)]), encoding=encoding).strip()
 
                     desired_caps["platformName"] = "iOS"
 
                     desired_caps["automationName"] = "XCUITest"
 
-                    desired_caps[
-                        "sendKeyStrategy"
-                    ] = "setValue"  # Use set_value() for writing to element
-                    desired_caps[
-                        "platformVersion"
-                    ] = "13.5"  # Read version #!!! Temporarily hard coded
-                    desired_caps[
-                        "deviceName"
-                    ] = "iPhone"  # Read model (only needs to be unique if using more than one)
+                    desired_caps["sendKeyStrategy"] = "setValue"  # Use set_value() for writing to element
+                    desired_caps["platformVersion"] = "13.5"  # Read version #!!! Temporarily hard coded
+                    desired_caps["deviceName"] = "iPhone"  # Read model (only needs to be unique if using more than one)
                     desired_caps["bundleId"] = ios
-                    desired_caps["udid"] = appium_details[device_id][
-                        "serial"
-                    ]  # Device unique identifier - use auto if using only one phone
+                    desired_caps["udid"] = appium_details[device_id]["serial"]  # Device unique identifier - use auto if using only one phone
             else:
-                CommonUtil.ExecLog(
-                    sModuleInfo,
-                    "Invalid device type: %s" % str(appium_details[device_id]["type"]),
-                    3,
-                )
+                CommonUtil.ExecLog(sModuleInfo, "Invalid device type: %s" % str(appium_details[device_id]["type"]), 3)
                 return "zeuz_failed", launch_app
             CommonUtil.ExecLog(sModuleInfo, "Capabilities: %s" % str(desired_caps), 1)
 
@@ -1001,59 +907,30 @@ def start_appium_driver(
                 count = 1
                 while count <= 5:
                     try:
-                        appium_driver = webdriver.Remote(
-                            "http://localhost:%d/wd/hub" % appium_port, desired_caps
-                        )  # Create instance
+                        appium_driver = webdriver.Remote("http://localhost:%d/wd/hub" % appium_port, desired_caps)  # Create instance
                         if appium_driver:
                             break
                         count += 1
                         time.sleep(10)
-                        CommonUtil.ExecLog(
-                            sModuleInfo,
-                            "Failed to create appium driver, trying again",
-                            2,
-                        )
+                        CommonUtil.ExecLog(sModuleInfo, "Failed to create appium driver, trying again", 2)
                     except:
                         count += 1
                         time.sleep(10)
-                        CommonUtil.ExecLog(
-                            sModuleInfo,
-                            "Failed to create appium driver, trying again",
-                            2,
-                        )
+                        CommonUtil.ExecLog(sModuleInfo, "Failed to create appium driver, trying again", 2)
 
                 if appium_driver:  # Make sure we get the instance
                     appium_details[device_id]["driver"] = appium_driver
-                    Shared_Resources.Set_Shared_Variables(
-                        "appium_details", appium_details
-                    )
-                    CommonUtil.set_screenshot_vars(
-                        Shared_Resources.Shared_Variable_Export()
-                    )  # Get all the shared variables, and pass them to CommonUtil
-                    CommonUtil.ExecLog(
-                        sModuleInfo, "Appium driver created successfully.", 1
-                    )
+                    Shared_Resources.Set_Shared_Variables("appium_details", appium_details)
+                    CommonUtil.set_screenshot_vars(Shared_Resources.Shared_Variable_Export())
+                    CommonUtil.ExecLog(sModuleInfo, "Appium driver created successfully.", 1)
                     return "passed", launch_app
                 else:  # Error during setup, reset
                     appium_driver = None
                     CommonUtil.ExecLog(sModuleInfo, "Error during Appium setup", 3)
                     return "zeuz_failed", launch_app
-            except Exception as e:
-                print(e)
-                return (
-                    CommonUtil.Exception_Handler(
-                        sys.exc_info(),
-                        None,
-                        "Error connecting to Appium server to create driver instance",
-                    ),
-                    launch_app,
-                )
+            except Exception:
+                return CommonUtil.Exception_Handler(sys.exc_info()), launch_app
 
-        else:  # Driver is already setup, don't do anything
-            CommonUtil.ExecLog(
-                sModuleInfo, "Driver already configured, not re-doing", 0
-            )
-            return "passed", launch_app
     except Exception:
         return CommonUtil.Exception_Handler(sys.exc_info()), launch_app
 
@@ -2029,17 +1906,17 @@ def go_to_webpage(data_set):
     try:
         url = data_set[0][2]
 
-        for _ in range(3):
+        for i in range(3):
             try:
                 appium_driver.get(url)
                 return "passed"
             except:
-                CommonUtil.ExecLog(
-                    sModuleInfo, "Failed executing go_to_webpage. Retrying...", 2
-                )
+                CommonUtil.ExecLog(sModuleInfo, "Failed executing go_to_webpage. Retrying...", 2)
+                if i == 2:
+                    return CommonUtil.Exception_Handler(sys.exc_info())
+
     except Exception:
-        errMsg = "Unable to parse data set"
-        return CommonUtil.Exception_Handler(sys.exc_info(), None, errMsg)
+        return CommonUtil.Exception_Handler(sys.exc_info())
 
 
 @logger
