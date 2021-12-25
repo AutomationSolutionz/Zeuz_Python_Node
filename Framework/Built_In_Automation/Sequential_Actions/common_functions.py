@@ -2781,7 +2781,7 @@ def split_string(data_set):
 
 
 @logger
-def save_text_from_file_into_variable(data_set):
+def Read_text_file(data_set):
     sModuleInfo = inspect.currentframe().f_code.co_name + " : " + MODULE_NAME
 
     try:
@@ -2790,13 +2790,11 @@ def save_text_from_file_into_variable(data_set):
         var_name = ""
         var_value = ""
 
-        for row in data_set:
-            if str(row[0]).strip().lower() == "text file path":
-                text_file_path = str(row[2]).strip()
-            elif (
-                str(row[0]).strip().lower() == "variable name where data will be saved"
-            ):
-                var_name = str(row[2]).strip()
+        for left, mid, right in data_set:
+            if left.strip().lower() == "file path":
+                text_file_path = CommonUtil.path_parser(right.strip())
+            elif left.strip().lower() == "read text file":
+                var_name = right.strip()
 
         if text_file_path == "" or var_name == "":
             CommonUtil.ExecLog(
