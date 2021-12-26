@@ -2047,6 +2047,8 @@ def Action_Handler(_data_set, action_row):
         new_row = list(row)
         if "optional parameter" in row[1] and "screen capture" == row[0].strip().lower():
             screenshot = row[2].strip().lower()
+            if screenshot in ("false", "no", "none", "disable"):
+                screenshot = "none"
             continue
         if "optional" in row[1]:
             new_row[1] = new_row[1].replace("optional", "").strip()

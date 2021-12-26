@@ -2779,6 +2779,56 @@ def split_string(data_set):
     except:
         return CommonUtil.Exception_Handler(sys.exc_info())
 
+@deprecated
+@logger
+def save_text_from_file_into_variable(data_set):
+    sModuleInfo = inspect.currentframe().f_code.co_name + " : " + MODULE_NAME
+
+    try:
+        import PyPDF2
+        text_file_path = ""
+        var_name = ""
+        var_value = ""
+
+        for row in data_set:
+            if str(row[0]).strip().lower() == "text file path":
+                text_file_path = str(row[2]).strip()
+            elif (
+                str(row[0]).strip().lower() == "variable name where data will be saved"
+            ):
+                var_name = str(row[2]).strip()
+
+        if text_file_path == "" or var_name == "":
+            CommonUtil.ExecLog(
+                sModuleInfo,
+                "Text file info not given properly, please see action help",
+                3,
+            )
+            return "zeuz_failed"
+
+        if "/" not in text_file_path and "\\" not in text_file_path:
+            text_file_path = FileUtilities.get_home_folder() + os.sep + text_file_path
+
+        if text_file_path.endswith("pdf"):
+            pdfFileObj = open(text_file_path, "rb")
+            pdfReader = PyPDF2.PdfFileReader(pdfFileObj)
+            no_of_page = pdfReader.numPages
+
+            i = 0
+            while i < no_of_page:
+                pageObj = pdfReader.getPage(i)
+                var_value += pageObj.extractText()
+                i += 1
+        else:
+            with open(text_file_path, "r") as file:
+                data = file.read()
+                var_value += data
+
+        sr.Set_Shared_Variables(var_name, var_value)
+        return "passed"
+    except Exception:
+        return CommonUtil.Exception_Handler(sys.exc_info())
+
 
 @logger
 def Read_text_file(data_set):
