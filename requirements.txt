@@ -35,3 +35,4 @@ tqdm
 pyscreenshot
 pyyaml
 imap-tools
+beautifulsoup4

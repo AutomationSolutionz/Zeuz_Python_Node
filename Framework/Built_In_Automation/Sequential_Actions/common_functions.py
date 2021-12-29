@@ -7,6 +7,8 @@
 
 import inspect, sys, time, collections, ftplib, os, ast, copy, csv, yaml
 from pathlib import Path
+
+from bs4 import BeautifulSoup
 from imap_tools import MailBox
 import re
 from typing import List
@@ -70,7 +72,6 @@ unmask_characters = {
 }
 
 programming_logic_keywords = ["if else", "while loop", "for loop", "loop settings"]
-
 
 MODULE_NAME = inspect.getmodulename(__file__)
 
@@ -136,8 +137,8 @@ def sanitize(step_data):
                 #         # ]  # Remove surrounding quotes
                 #         continue  # Do not change string
 
-                    # new_row[i] = new_row[i].replace("  ", " ")  # Double space to single space
-                    # new_row[i] = new_row[i].strip()  # Remove leading and trailing whitespace
+                # new_row[i] = new_row[i].replace("  ", " ")  # Double space to single space
+                # new_row[i] = new_row[i].strip()  # Remove leading and trailing whitespace
                 new_data_set.append(
                     tuple(new_row)
                 )  # Append list as tuple to data set list
@@ -186,13 +187,13 @@ def verify_step_data(step_data):
                     )
                     return "zeuz_failed"
                 elif (
-                    str(row[1]).lower().strip() not in action_support
+                        str(row[1]).lower().strip() not in action_support
                 ):  # Check against list of allowed Sub-Fields
                     if (
-                        "action" not in row[1]
-                        and str(row[1]).strip().lower()
-                        not in programming_logic_keywords
-                    ):  #!!! Temporary until module handling is all moved into it's own function
+                            "action" not in row[1]
+                            and str(row[1]).strip().lower()
+                            not in programming_logic_keywords
+                    ):  # !!! Temporary until module handling is all moved into it's own function
                         CommonUtil.ExecLog(
                             sModuleInfo,
                             "Sub-Field for data set %d contains invalid data: %s"
@@ -208,7 +209,7 @@ def verify_step_data(step_data):
                         continue  # Skip custom actions - they do not require a module
                     for action_index in actions:
                         if (
-                            actions[action_index]["module"] in row[1]
+                                actions[action_index]["module"] in row[1]
                         ):  # If one of the modules is in the Sub-Field
                             module_name = actions[action_index][
                                 "module"
@@ -226,30 +227,30 @@ def verify_step_data(step_data):
 
                 # Make sure Field has a valid action call
                 if (
-                    "action" in row[1]
+                        "action" in row[1]
                 ):  # Loop action, do not check because there could be different formats
                     continue
                 elif str(row[1]).lower().strip() in programming_logic_keywords:
                     action = True
                     continue
                 elif (
-                    "custom" in row[1]
+                        "custom" in row[1]
                 ):  # Skip custom actions - they do not execute like other actions
                     continue
                 elif (
-                    "action" in row[1] and "conditional" not in row[1]
+                        "action" in row[1] and "conditional" not in row[1]
                 ):  # Only apply to actions rows
                     for action_index in actions:
                         if (
-                            (
-                                actions[action_index]["name"] == row[0]
-                                and actions[action_index]["module"] == module_name
-                            )
-                            or (
+                                (
+                                        actions[action_index]["name"] == row[0]
+                                        and actions[action_index]["module"] == module_name
+                                )
+                                or (
                                 actions[action_index]["name"] == row[0]
                                 and actions[action_index]["module"] == "common"
-                            )
-                            or str(row[0]).startswith("%|")
+                        )
+                                or str(row[0]).startswith("%|")
                         ):  # If one of the action names in the Field
                             field_text = True  # Flag it's good
                             break
@@ -273,8 +274,8 @@ def verify_step_data(step_data):
                         )
                         return "zeuz_failed"
                     elif (
-                        row[0].strip().lower() == "recall"
-                        and "%|" not in row[2].strip()
+                            row[0].strip().lower() == "recall"
+                            and "%|" not in row[2].strip()
                     ):
                         CommonUtil.ExecLog(
                             sModuleInfo,
@@ -353,12 +354,14 @@ def adjust_element_parameters(step_data, platforms):
             # Special handling of "id"
             for id_adj_row in data_set:  # Find if this is an appium test step
                 if "appium" in id_adj_row[1]:  # Yes, so adjust
-                    if new_row[0] == "id" and dependency["Mobile"].lower() == "android":  # If user specifies id, they likely mean "resource-id"
+                    if new_row[0] == "id" and dependency[
+                        "Mobile"].lower() == "android":  # If user specifies id, they likely mean "resource-id"
                         new_row[0] = "resource-id"
                         new_row[2] = "*" + new_row[2]
                     elif new_row[0] == "id" and dependency["Mobile"].lower() == "ios":
                         new_row[0] = "accessibility id"  # If user specifies id, they likely mean "resource-id"
-                    elif new_row[0] == "text or name" and dependency["Mobile"].lower() == "android":  # If user specifies id, they likely mean "resource-id"
+                    elif new_row[0] == "text or name" and dependency[
+                        "Mobile"].lower() == "android":  # If user specifies id, they likely mean "resource-id"
                         new_row[0] = "text"
                     elif new_row[0] == "text or name" and dependency["Mobile"].lower() == "ios":
                         new_row[0] = "name"  # If user specifies id, they likely mean "resource-id"
@@ -367,15 +370,16 @@ def adjust_element_parameters(step_data, platforms):
             if dependency["Mobile"].lower() in new_row[1]:  # If dependency matches this Sub-Field, then save it
                 new_row[1] = (
                     new_row[1]
-                    .replace(dependency["Mobile"].lower(), "")
-                    .replace("  ", " ")
-                    .strip()
+                        .replace(dependency["Mobile"].lower(), "")
+                        .replace("  ", " ")
+                        .strip()
                 )  # Remove word and clean up spaces
                 new_data_set.append(tuple(new_row))  # Append list as tuple to data set list
             else:  # This dependency doesn't match. Figure out if this is an element parameter we don't want, or any other row we do want
                 b = False
                 for p in platforms:  # For each platform
-                    if p in new_row[1]:  # If one of the platforms matches (we already found the one we want above, so this is for anything we don't want), then we don't want it
+                    if p in new_row[
+                        1]:  # If one of the platforms matches (we already found the one we want above, so this is for anything we don't want), then we don't want it
                         b = True
                 if b == False:  # This row did not match unwanted platforms, so we keep it
                     new_data_set.append(tuple(new_row))  # Append list as tuple to data set list
@@ -400,7 +404,7 @@ def get_module_and_function(action_name, action_sub_field):
             for item in action_list:  # Loop through split string
                 for action_index in actions:
                     if (
-                        actions[action_index]["module"] == item
+                            actions[action_index]["module"] == item
                     ):  # Found the matching module
                         module = item  # Save it
                         break
@@ -410,8 +414,8 @@ def get_module_and_function(action_name, action_sub_field):
             # Check if this action is a common action, so we can modify the module accordingly
             for i in actions:
                 if (
-                    actions[i]["module"] == "common"
-                    and actions[i]["name"] == action_name
+                        actions[i]["module"] == "common"
+                        and actions[i]["name"] == action_name
                 ):
                     # Now we'll overwrite the module with the common module, and continue as normal
                     original_module = module
@@ -427,8 +431,8 @@ def get_module_and_function(action_name, action_sub_field):
 
             for i in actions:  # For each dictionary in the dictionary
                 if (
-                    actions[i]["module"] == module
-                    and actions[i]["name"] == action_name
+                        actions[i]["module"] == module
+                        and actions[i]["name"] == action_name
                 ):  # Module and action name match
                     function = actions[i]["function"]  # Save function
                     screenshot = actions[i]["screenshot"]  # Save screenshot
@@ -463,9 +467,9 @@ def shared_variable_to_value(data_set):
 
     skip_conversion_of_shared_variable_for_actions = [
         "if element exists",
-        "optional loop settings",   # Dont delete this. this parameter should be dynamically captured with new data
-        "loop settings",            # Dont delete this. this is older dataset. let it perform how it was designed
-        "get parameter",            # This is selenium/appium object, need to retrieve in its non-string actual datatype
+        "optional loop settings",  # Dont delete this. this parameter should be dynamically captured with new data
+        "loop settings",  # Dont delete this. this is older dataset. let it perform how it was designed
+        "get parameter",  # This is selenium/appium object, need to retrieve in its non-string actual datatype
         "for loop action"
     ]
 
@@ -509,7 +513,7 @@ def step_result(data_set):
         return CommonUtil.Exception_Handler(sys.exc_info())
 
     if (
-        action_value in failed_tag_list
+            action_value in failed_tag_list
     ):  # Convert user specified pass/fail into standard result
         return "zeuz_failed"
     elif action_value in skipped_tag_list:
@@ -535,7 +539,7 @@ def step_exit(data_set):
         return CommonUtil.Exception_Handler(sys.exc_info())
 
     if (
-        action_value in failed_tag_list
+            action_value in failed_tag_list
     ):  # Convert user specified pass/fail into standard result
         return "zeuz_failed"
     elif action_value in skipped_tag_list:
@@ -608,7 +612,7 @@ def Wait_For_Element(data_set):
                 if Element in failed_tag_list:  # Element removed
                     CommonUtil.ExecLog(sModuleInfo, "Element disappeared", 1)
                     return "passed"
-                time.sleep(timeout_duration/10)
+                time.sleep(timeout_duration / 10)
             CommonUtil.ExecLog(sModuleInfo, "Element did not disappear", 3)
             return "zeuz_failed"
 
@@ -801,7 +805,7 @@ def save_into_variable(data_set):
                     variable_value = s
         except:
             CommonUtil.ExecLog(
-                    sModuleInfo, f"Failed to perform extra action.", 3,
+                sModuleInfo, f"Failed to perform extra action.", 3,
             )
             return "zeuz_failed"
 
@@ -930,10 +934,14 @@ def New_Compare_Variables(step_data):
         list1 = CommonUtil.parse_value_into_object(list1_name)
         list2 = CommonUtil.parse_value_into_object(list2_name)
 
-        try: list1_str = json.dumps(CommonUtil.parse_value_into_object(list1), indent=2, sort_keys=True)
-        except: list1_str = str(list1)
-        try: list2_str = json.dumps(CommonUtil.parse_value_into_object(list2), indent=2, sort_keys=True)
-        except: list2_str = str(list2)
+        try:
+            list1_str = json.dumps(CommonUtil.parse_value_into_object(list1), indent=2, sort_keys=True)
+        except:
+            list1_str = str(list1)
+        try:
+            list2_str = json.dumps(CommonUtil.parse_value_into_object(list2), indent=2, sort_keys=True)
+        except:
+            list2_str = str(list2)
 
         datatype1 = get_datatype(list1)
         datatype2 = get_datatype(list2)
@@ -943,32 +951,43 @@ def New_Compare_Variables(step_data):
             list2 = CommonUtil.parse_value_into_object(list2_name)
             if type(list1) == str and type(list2) == str:
                 if list1 == list2:
-                    CommonUtil.ExecLog(sModuleInfo, "LEFT (%s):\n%s\n\nRIGHT (%s):\n%s" % (datatype1, list1_str, datatype2, list2_str), 1)
+                    CommonUtil.ExecLog(sModuleInfo, "LEFT (%s):\n%s\n\nRIGHT (%s):\n%s" % (
+                    datatype1, list1_str, datatype2, list2_str), 1)
                     CommonUtil.ExecLog(sModuleInfo, "RIGHT str is equal to the LEFT str", 1)
                     return "passed"
                 elif list1 in list2:
-                    CommonUtil.ExecLog(sModuleInfo, "LEFT (%s):\n%s\n\nRIGHT (%s):\n%s" % (datatype1, list1_str, datatype2, list2_str), 1)
+                    CommonUtil.ExecLog(sModuleInfo, "LEFT (%s):\n%s\n\nRIGHT (%s):\n%s" % (
+                    datatype1, list1_str, datatype2, list2_str), 1)
                     CommonUtil.ExecLog(sModuleInfo, "LEFT str is a subset of RIGHT str", 1)
                     return "passed"
                 else:
-                    CommonUtil.ExecLog(sModuleInfo, "LEFT (%s):\n%s\n\nRIGHT (%s):\n%s" % (datatype1, list1_str, datatype2, list2_str), 3)
+                    CommonUtil.ExecLog(sModuleInfo, "LEFT (%s):\n%s\n\nRIGHT (%s):\n%s" % (
+                    datatype1, list1_str, datatype2, list2_str), 3)
                     CommonUtil.ExecLog(sModuleInfo, "LEFT str is not a subset of RIGHT str", 3)
                     return "zeuz_failed"
 
             if not (type(list1).__name__ in ("list", "tuple") and type(list2).__name__ in ("list", "tuple")):
-                CommonUtil.ExecLog(sModuleInfo, "LEFT (%s):\n%s\n\nRIGHT (%s):\n%s" % (datatype1, list1_str, datatype2, list2_str), 3)
+                CommonUtil.ExecLog(sModuleInfo,
+                                   "LEFT (%s):\n%s\n\nRIGHT (%s):\n%s" % (datatype1, list1_str, datatype2, list2_str),
+                                   3)
                 CommonUtil.ExecLog(sModuleInfo, "To check subset both the variable should be list or tuple or str", 3)
                 return "zeuz_failed"
             elif list1 == list2:
-                CommonUtil.ExecLog(sModuleInfo, "LEFT (%s):\n%s\n\nRIGHT (%s):\n%s" % (datatype1, list1_str, datatype2, list2_str), 1)
+                CommonUtil.ExecLog(sModuleInfo,
+                                   "LEFT (%s):\n%s\n\nRIGHT (%s):\n%s" % (datatype1, list1_str, datatype2, list2_str),
+                                   1)
                 CommonUtil.ExecLog(sModuleInfo, "RIGHT list is equal to the LEFT list", 1)
                 return "passed"
             elif all(x in list2 for x in list1):
-                CommonUtil.ExecLog(sModuleInfo, "LEFT (%s):\n%s\n\nRIGHT (%s):\n%s" % (datatype1, list1_str, datatype2, list2_str), 1)
+                CommonUtil.ExecLog(sModuleInfo,
+                                   "LEFT (%s):\n%s\n\nRIGHT (%s):\n%s" % (datatype1, list1_str, datatype2, list2_str),
+                                   1)
                 CommonUtil.ExecLog(sModuleInfo, "LEFT list is a subset of RIGHT list", 1)
                 return "passed"
             else:
-                CommonUtil.ExecLog(sModuleInfo, "LEFT (%s):\n%s\n\nRIGHT (%s):\n%s" % (datatype1, list1_str, datatype2, list2_str), 3)
+                CommonUtil.ExecLog(sModuleInfo,
+                                   "LEFT (%s):\n%s\n\nRIGHT (%s):\n%s" % (datatype1, list1_str, datatype2, list2_str),
+                                   3)
                 CommonUtil.ExecLog(sModuleInfo, "LEFT list is not a subset of RIGHT list", 3)
                 return "zeuz_failed"
 
@@ -976,21 +995,25 @@ def New_Compare_Variables(step_data):
         not_found_list1 = []
         not_found_list2 = []
 
-        if (isinstance(list1, list) or isinstance(list1, tuple)) and (isinstance(list2, list) or isinstance(list2, tuple)):
+        if (isinstance(list1, list) or isinstance(list1, tuple)) and (
+                isinstance(list2, list) or isinstance(list2, tuple)):
             both_list = True
             variable_list1 = list1
             variable_list2 = list2
-            if (len(list1) and type(list1[0]).__name__ in ("list", "tuple")) or (len(list2) and type(list2[0]).__name__ in ("list", "tuple")):
+            if (len(list1) and type(list1[0]).__name__ in ("list", "tuple")) or (
+                    len(list2) and type(list2[0]).__name__ in ("list", "tuple")):
                 nested = True
 
             results = compare_list_tuple(list1, list2, check_exclusion, match_by_index)
             if check_exclusion:  # Check exclusion is turned off. will turn on in future if needed
                 if nested and results == "not found":
-                    CommonUtil.ExecLog(sModuleInfo, "LEFT (%s):\n%s\n\nRIGHT (%s):\n%s" % (datatype1, list1_str, datatype2, list2_str), 3)
+                    CommonUtil.ExecLog(sModuleInfo, "LEFT (%s):\n%s\n\nRIGHT (%s):\n%s" % (
+                    datatype1, list1_str, datatype2, list2_str), 3)
                     CommonUtil.ExecLog(sModuleInfo, "All items of RIGHT list is not found in the LEFT list", 3)
                     return "zeuz_failed"
                 elif nested and results == "all found":
-                    CommonUtil.ExecLog(sModuleInfo, "LEFT (%s):\n%s\n\nRIGHT (%s):\n%s" % (datatype1, list1_str, datatype2, list2_str), 1)
+                    CommonUtil.ExecLog(sModuleInfo, "LEFT (%s):\n%s\n\nRIGHT (%s):\n%s" % (
+                    datatype1, list1_str, datatype2, list2_str), 1)
                     CommonUtil.ExecLog(sModuleInfo, "All items of RIGHT list is found in the LEFT list", 1)
                     return "passed"
                 elif isinstance(results, list):
@@ -999,19 +1022,23 @@ def New_Compare_Variables(step_data):
                     print("invalid from check exclusion")
             elif not match_by_index:
                 if nested and results == "not found":
-                    CommonUtil.ExecLog(sModuleInfo, "LEFT (%s):\n%s\n\nRIGHT (%s):\n%s" % (datatype1, list1_str, datatype2, list2_str), 3)
+                    CommonUtil.ExecLog(sModuleInfo, "LEFT (%s):\n%s\n\nRIGHT (%s):\n%s" % (
+                    datatype1, list1_str, datatype2, list2_str), 3)
                     CommonUtil.ExecLog(sModuleInfo, "All items of LEFT list and RIGHT list did not match", 3)
                     return "zeuz_failed"
                 elif nested and results == "all found":
-                    CommonUtil.ExecLog(sModuleInfo, "LEFT (%s):\n%s\n\nRIGHT (%s):\n%s" % (datatype1, list1_str, datatype2, list2_str), 1)
+                    CommonUtil.ExecLog(sModuleInfo, "LEFT (%s):\n%s\n\nRIGHT (%s):\n%s" % (
+                    datatype1, list1_str, datatype2, list2_str), 1)
                     CommonUtil.ExecLog(sModuleInfo, "All items of LEFT list and RIGHT list matched", 1)
                     return "passed"
                 elif nested and results == "2nd list larger":
-                    CommonUtil.ExecLog(sModuleInfo, "LEFT (%s):\n%s\n\nRIGHT (%s):\n%s" % (datatype1, list1_str, datatype2, list2_str), 3)
+                    CommonUtil.ExecLog(sModuleInfo, "LEFT (%s):\n%s\n\nRIGHT (%s):\n%s" % (
+                    datatype1, list1_str, datatype2, list2_str), 3)
                     CommonUtil.ExecLog(sModuleInfo, "Somewhere inside RIGHT list has more items than LEFT list", 3)
                     return "zeuz_failed"
                 elif nested and results == "1st list larger":
-                    CommonUtil.ExecLog(sModuleInfo, "LEFT (%s):\n%s\n\nRIGHT (%s):\n%s" % (datatype1, list1_str, datatype2, list2_str), 3)
+                    CommonUtil.ExecLog(sModuleInfo, "LEFT (%s):\n%s\n\nRIGHT (%s):\n%s" % (
+                    datatype1, list1_str, datatype2, list2_str), 3)
                     CommonUtil.ExecLog(sModuleInfo, "Somewhere inside LEFT list has more items than RIGHT list", 3)
                     return "zeuz_failed"
                 elif isinstance(results, tuple):
@@ -1020,11 +1047,13 @@ def New_Compare_Variables(step_data):
                     print("invalid from not match by index")
             else:
                 if results == "not matched":
-                    CommonUtil.ExecLog(sModuleInfo, "LEFT (%s):\n%s\n\nRIGHT (%s):\n%s" % (datatype1, list1_str, datatype2, list2_str), 3)
+                    CommonUtil.ExecLog(sModuleInfo, "LEFT (%s):\n%s\n\nRIGHT (%s):\n%s" % (
+                    datatype1, list1_str, datatype2, list2_str), 3)
                     CommonUtil.ExecLog(sModuleInfo, "LEFT list and RIGHT list did not match", 3)
                     return "zeuz_failed"
                 elif results == "all matched":
-                    CommonUtil.ExecLog(sModuleInfo, "LEFT (%s):\n%s\n\nRIGHT (%s):\n%s" % (datatype1, list1_str, datatype2, list2_str), 1)
+                    CommonUtil.ExecLog(sModuleInfo, "LEFT (%s):\n%s\n\nRIGHT (%s):\n%s" % (
+                    datatype1, list1_str, datatype2, list2_str), 1)
                     CommonUtil.ExecLog(sModuleInfo, "All items of LEFT list and RIGHT list did matched", 1)
                     return "passed"
                 elif isinstance(results, tuple):
@@ -1080,27 +1109,31 @@ def New_Compare_Variables(step_data):
         else:
             if not match_by_index:
                 if str(list1) == str(list2):
-                    CommonUtil.ExecLog(sModuleInfo, "LEFT (%s):\n%s\n\nRIGHT (%s):\n%s" % (datatype1, list1, datatype2, list2), 1)
+                    CommonUtil.ExecLog(sModuleInfo,
+                                       "LEFT (%s):\n%s\n\nRIGHT (%s):\n%s" % (datatype1, list1, datatype2, list2), 1)
                     CommonUtil.ExecLog(sModuleInfo, "LEFT and RIGHT value matched", 1)
                     return "passed"
                 else:
-                    CommonUtil.ExecLog(sModuleInfo, "LEFT (%s):\n%s\n\nRIGHT (%s):\n%s" % (datatype1, list1, datatype2, list2), 3)
+                    CommonUtil.ExecLog(sModuleInfo,
+                                       "LEFT (%s):\n%s\n\nRIGHT (%s):\n%s" % (datatype1, list1, datatype2, list2), 3)
                     CommonUtil.ExecLog(sModuleInfo, "LEFT and RIGHT value did not match", 3)
                     return "zeuz_failed"
             else:
                 if list1 == list2:
-                    CommonUtil.ExecLog(sModuleInfo, "LEFT (%s):\n%s\n\nRIGHT (%s):\n%s" % (datatype1, list1, datatype2, list2), 1)
+                    CommonUtil.ExecLog(sModuleInfo,
+                                       "LEFT (%s):\n%s\n\nRIGHT (%s):\n%s" % (datatype1, list1, datatype2, list2), 1)
                     CommonUtil.ExecLog(sModuleInfo, "LEFT and RIGHT value matched", 1)
                     return "passed"
                 else:
-                    CommonUtil.ExecLog(sModuleInfo, "LEFT (%s):\n%s\n\nRIGHT (%s):\n%s" % (datatype1, list1, datatype2, list2), 3)
+                    CommonUtil.ExecLog(sModuleInfo,
+                                       "LEFT (%s):\n%s\n\nRIGHT (%s):\n%s" % (datatype1, list1, datatype2, list2), 3)
                     CommonUtil.ExecLog(sModuleInfo, "LEFT and RIGHT value did not match", 3)
                     return "zeuz_failed"
         """ Below code is useless now"""
         if nested:
             pass
         else:
-            if check_exclusion: # Check exclusion is turned off. will turn on in future if needed
+            if check_exclusion:  # Check exclusion is turned off. will turn on in future if needed
                 if len(found_list) > 0:
                     CommonUtil.ExecLog(
                         sModuleInfo, "Match found for items: %s" % found_list, 3
@@ -1109,10 +1142,14 @@ def New_Compare_Variables(step_data):
                 else:
                     CommonUtil.ExecLog(sModuleInfo, "No match found", 1)
                     return "passed"
-            try: list1_str = json.dumps(CommonUtil.parse_value_into_object(list1), indent=2, sort_keys=True)
-            except: list1_str = str(list1)
-            try: list2_str = json.dumps(CommonUtil.parse_value_into_object(list2), indent=2, sort_keys=True)
-            except: list2_str = str(list2)
+            try:
+                list1_str = json.dumps(CommonUtil.parse_value_into_object(list1), indent=2, sort_keys=True)
+            except:
+                list1_str = str(list1)
+            try:
+                list2_str = json.dumps(CommonUtil.parse_value_into_object(list2), indent=2, sort_keys=True)
+            except:
+                list2_str = str(list2)
 
             if not both_list:
                 for i in range(0, len(variable_list1)):
@@ -1154,21 +1191,26 @@ def New_Compare_Variables(step_data):
                         )
                     if match_by_index:
                         if list1 == list2:
-                            CommonUtil.ExecLog(sModuleInfo, "LEFT (%s):\n%s\n\nRIGHT (%s):\n%s" % (datatype1, list1_str, datatype2, list2_str), 1)
+                            CommonUtil.ExecLog(sModuleInfo, "LEFT (%s):\n%s\n\nRIGHT (%s):\n%s" % (
+                            datatype1, list1_str, datatype2, list2_str), 1)
                             CommonUtil.ExecLog(sModuleInfo, "LEFT and RIGHT value matched", 1)
                             return "passed"
                         else:
-                            CommonUtil.ExecLog(sModuleInfo, "LEFT (%s):\n%s\n\nRIGHT (%s):\n%s" % (datatype1, list1_str, datatype2, list2_str), 3)
+                            CommonUtil.ExecLog(sModuleInfo, "LEFT (%s):\n%s\n\nRIGHT (%s):\n%s" % (
+                            datatype1, list1_str, datatype2, list2_str), 3)
                             CommonUtil.ExecLog(sModuleInfo, "LEFT and RIGHT value did not match", 3)
                             return "zeuz_failed"
                     else:
-                        CommonUtil.ExecLog(sModuleInfo, "Right now we only support 'exact match' for dictionary comparison", 3)
+                        CommonUtil.ExecLog(sModuleInfo,
+                                           "Right now we only support 'exact match' for dictionary comparison", 3)
                         return "zeuz_failed"
 
 
             else:
                 if len(not_found_list1) > 0 or len(not_found_list2) > 0:
-                    CommonUtil.ExecLog(sModuleInfo, "LEFT (Simple list):\n%s\n\nRIGHT (Simple list):\n%s" % (list1_str, list2_str), 3)
+                    CommonUtil.ExecLog(sModuleInfo,
+                                       "LEFT (Simple list):\n%s\n\nRIGHT (Simple list):\n%s" % (list1_str, list2_str),
+                                       3)
                     CommonUtil.ExecLog(
                         sModuleInfo,
                         "LEFT list and RIGHT list did not match.\n" +
@@ -1176,7 +1218,9 @@ def New_Compare_Variables(step_data):
                         % (str(not_found_list1), str(not_found_list2)), 3)
                     return "zeuz_failed"
                 else:
-                    CommonUtil.ExecLog(sModuleInfo, "LEFT (Simple list):\n%s\n\nRIGHT (Simple list):\n%s" % (list1_str, list2_str), 1)
+                    CommonUtil.ExecLog(sModuleInfo,
+                                       "LEFT (Simple list):\n%s\n\nRIGHT (Simple list):\n%s" % (list1_str, list2_str),
+                                       1)
                     CommonUtil.ExecLog(sModuleInfo, "LEFT list and RIGHT list matched.", 1)
                     return "passed"
     except Exception:
@@ -1186,7 +1230,7 @@ def New_Compare_Variables(step_data):
 def compare_list_tuple(list1, list2, check_exclusion, match_by_index):
     found_list, not_found_list1, not_found_list2, pass_count, fail_count = [], [], [], 0, 0
     global nested
-    if check_exclusion: # Check exclusion is turned off. will turn on in future if needed
+    if check_exclusion:  # Check exclusion is turned off. will turn on in future if needed
         if nested and len(list1) != len(list2):
             pass
         for each2 in list2:
@@ -1261,7 +1305,8 @@ def compare_list_tuple(list1, list2, check_exclusion, match_by_index):
             return found_list, not_found_list1, not_found_list2
 
     else:
-        if (len(list1) and type(list1[0]).__name__ in ("list", "tuple")) or (len(list2) and type(list2[0]).__name__ in ("list", "tuple")):
+        if (len(list1) and type(list1[0]).__name__ in ("list", "tuple")) or (
+                len(list2) and type(list2[0]).__name__ in ("list", "tuple")):
             nested = True  # Maybe its not needed here in exact match
         if type(list1).__name__ in ("list", "tuple"):
             list1 = get_list(list1)
@@ -1303,11 +1348,12 @@ def get_datatype(value):
         each = type(value).__name__
         if each in ("list", "tuple"):
             datatype += each + " of "
-            try: value = value[0]
-            except: return datatype[:-4]
+            try:
+                value = value[0]
+            except:
+                return datatype[:-4]
         else:
             return datatype[:-4]
-
 
 
 @logger
@@ -1369,17 +1415,17 @@ def Save_Current_Time(data_set):
                 now_hour = now.hour
 
             variable_value = (
-                str(months[now.month])
-                + " "
-                + str(now.day)
-                + ", "
-                + str(now.year)
-                + ", "
-                + str(now_hour)
-                + ":"
-                + str(now.minute)
-                + " "
-                + time
+                    str(months[now.month])
+                    + " "
+                    + str(now.day)
+                    + ", "
+                    + str(now.year)
+                    + ", "
+                    + str(now_hour)
+                    + ":"
+                    + str(now.minute)
+                    + " "
+                    + time
             )
             print(variable_value)
     if variable_name != "" and variable_value != "":
@@ -1465,6 +1511,7 @@ def append_dict_shared_variable(data_set):
     except Exception:
         return CommonUtil.Exception_Handler(sys.exc_info())
 
+
 @deprecated
 @logger
 def save_dict_value_by_key(data_set):
@@ -1542,9 +1589,9 @@ def save_key_value_from_dict_list(data_set):
 
         for each in list_of_dict:
             if (
-                key_to_match in each
-                and each[key_to_match] == val_to_match
-                and key_to_return in each
+                    key_to_match in each
+                    and each[key_to_match] == val_to_match
+                    and key_to_return in each
             ):
                 variable_value = each[key_to_return]
                 break
@@ -1612,7 +1659,7 @@ def insert_list_into_another_list(data_set):
         tmp = data_set[0][
             2
         ].strip()  # Get key and value from Value field and clean them
-        tmp = tmp.split("=",1)  # Get variable name
+        tmp = tmp.split("=", 1)  # Get variable name
         parent_list_name = tmp[0].strip()
         if ";" in str(tmp[1]):  # direct initialization parent_list = [[a,b,c],[x,y,z]]
             parent_separator = ";"
@@ -1758,8 +1805,8 @@ def set_server_variable(data_set):
 
         for row in data_set:
             if (
-                str(row[1]).strip().lower() == "element parameter"
-                or "parameter" in str(row[1]).strip().lower()
+                    str(row[1]).strip().lower() == "element parameter"
+                    or "parameter" in str(row[1]).strip().lower()
             ):
                 key = str(row[0]).strip()
                 value = str(row[2]).strip()
@@ -1780,8 +1827,8 @@ def get_server_variable(data_set):
 
         for row in data_set:
             if (
-                str(row[1]).strip().lower() == "element parameter"
-                or "parameter" in str(row[1]).strip().lower()
+                    str(row[1]).strip().lower() == "element parameter"
+                    or "parameter" in str(row[1]).strip().lower()
             ):
                 key = str(row[0]).strip()
 
@@ -1808,8 +1855,8 @@ def get_server_variable_and_wait(data_set):
         wait_time = 5
         for row in data_set:
             if (
-                str(row[1]).strip().lower() == "element parameter"
-                or "parameter" in str(row[1]).strip().lower()
+                    str(row[1]).strip().lower() == "element parameter"
+                    or "parameter" in str(row[1]).strip().lower()
             ):
                 key = str(row[0]).strip()
             if str(row[1]).strip().lower() == "action":
@@ -1824,16 +1871,16 @@ def get_server_variable_and_wait(data_set):
                 if key in dict and dict[key] != "null":
                     break
                 elif (
-                    "is_failed" in dict
-                    and dict["is_failed"] != "null"
-                    and dict["is_failed"] == "yes"
+                        "is_failed" in dict
+                        and dict["is_failed"] != "null"
+                        and dict["is_failed"] == "yes"
                 ):
                     failed_machine = ""
                     if "failed_machine" in dict:
                         failed_machine = dict["failed_machine"]
                     if (
-                        failed_machine
-                        == (CommonUtil.MachineInfo().getLocalUser()).lower()
+                            failed_machine
+                            == (CommonUtil.MachineInfo().getLocalUser()).lower()
                     ):
                         continue
 
@@ -1964,7 +2011,7 @@ def create_3d_list(data_set):
         tmp = data_set[0][
             2
         ].strip()  # Get key and value from Value field and clean them
-        tmp = tmp.split("=",1)  # Get variable name
+        tmp = tmp.split("=", 1)  # Get variable name
         parent_list_name = tmp[0].strip()
         if ";;" in str(tmp[1]):
             major_parent_separator = ";;"
@@ -1976,7 +2023,7 @@ def create_3d_list(data_set):
             for each_2d_list in a_3d_list_splitted_by_semicolon:
                 a_2d_list = []
                 if ";" in str(
-                    each_2d_list
+                        each_2d_list
                 ):  # direct initialization parent_list = [[a,b,c],[x,y,z]]
                     parent_separator = ";"
                     if "|;|" in str(each_2d_list):
@@ -2010,7 +2057,7 @@ def create_3d_list(data_set):
         else:
             a_2d_list = []
             if ";" in str(
-                tmp[1]
+                    tmp[1]
             ):  # direct initialization parent_list = [[a,b,c],[x,y,z]]
                 parent_separator = ";"
                 if "|;|" in str(tmp[1]):
@@ -2157,10 +2204,10 @@ def send_mail(data_set):
                 body = str(row[2]).strip()
 
         if (
-            smtp_server == ""
-            or smtp_port == ""
-            or sender_email == ""
-            or sender_password == ""
+                smtp_server == ""
+                or smtp_port == ""
+                or sender_email == ""
+                or sender_password == ""
         ):
             CommonUtil.ExecLog(
                 sModuleInfo,
@@ -2221,7 +2268,7 @@ def check_latest_mail(data_set):
                 imap_host = right
             elif "imap port" in left:
                 imap_port = right
-            elif  "imap user" in left:
+            elif "imap user" in left:
                 imap_user = right
             elif "imap password" in left:
                 imap_pass = right
@@ -2233,7 +2280,6 @@ def check_latest_mail(data_set):
                 sender_mail_to_check = right
             elif "sender name to check" in left:
                 sender_name_to_check = right
-
 
         if imap_host == "" or imap_port == "" or imap_user == "" or imap_pass == "":
             CommonUtil.ExecLog(
@@ -2315,6 +2361,7 @@ def validate_schema(data_set):
     except Exception:
         return CommonUtil.Exception_Handler(sys.exc_info())
 
+
 @deprecated
 @logger
 def write_into_single_cell_in_excel(data_set):
@@ -2346,10 +2393,10 @@ def write_into_single_cell_in_excel(data_set):
                 excel_file_path = Path(excel_file_path)
 
         if (
-            sheet_name == ""
-            or column == ""
-            or column_number == ""
-            or excel_file_path == ""
+                sheet_name == ""
+                or column == ""
+                or column_number == ""
+                or excel_file_path == ""
         ):
             CommonUtil.ExecLog(
                 sModuleInfo,
@@ -2367,6 +2414,7 @@ def write_into_single_cell_in_excel(data_set):
         return "passed"
     except Exception:
         return CommonUtil.Exception_Handler(sys.exc_info())
+
 
 @logger
 def excel_write(data_set):
@@ -2441,9 +2489,9 @@ def excel_write(data_set):
                 excel_file_path = Path(excel_file_path)
 
         if (
-            sheet_name == ""
-            or cell == ""
-            or excel_file_path == ""
+                sheet_name == ""
+                or cell == ""
+                or excel_file_path == ""
         ):
             CommonUtil.ExecLog(
                 sModuleInfo,
@@ -2568,7 +2616,7 @@ def excel_read(data_set):
                     data_dict[cells[0]] = cells[1:]
             elif key_reference == "column1":
                 for cells in cell_data:
-                    data_dict[cells[0]] = cells[1:] 
+                    data_dict[cells[0]] = cells[1:]
             cell_data = data_dict
 
         # Save into shared variables
@@ -2693,15 +2741,15 @@ def get_excel_table(data_set):
             elif str(row[0]).strip().lower() == "excel file path":
                 excel_file_path = str(row[2]).strip()
             elif (
-                str(row[0]).strip().lower() == "variable name where data will be saved"
+                    str(row[0]).strip().lower() == "variable name where data will be saved"
             ):
                 var_name = str(row[2]).strip()
 
         if (
-            sheet_name == ""
-            or first_cell_location == ""
-            or var_name == ""
-            or excel_file_path == ""
+                sheet_name == ""
+                or first_cell_location == ""
+                or var_name == ""
+                or excel_file_path == ""
         ):
             CommonUtil.ExecLog(
                 sModuleInfo,
@@ -2764,7 +2812,8 @@ def split_string(data_set):
             return "zeuz_failed"
         source_string = CommonUtil.parse_value_into_object(source_string)
         if type(source_string) != str:
-            CommonUtil.ExecLog(sModuleInfo, "Got a %s object to split. Converting it to string before splitting" % type(source_string).__name__, 2)
+            CommonUtil.ExecLog(sModuleInfo, "Got a %s object to split. Converting it to string before splitting" % type(
+                source_string).__name__, 2)
             source_string = str(source_string)
         result = source_string.split(split_expression)
 
@@ -2794,7 +2843,7 @@ def save_text_from_file_into_variable(data_set):
             if str(row[0]).strip().lower() == "text file path":
                 text_file_path = str(row[2]).strip()
             elif (
-                str(row[0]).strip().lower() == "variable name where data will be saved"
+                    str(row[0]).strip().lower() == "variable name where data will be saved"
             ):
                 var_name = str(row[2]).strip()
 
@@ -2953,16 +3002,16 @@ def voice_command_response(step_data):
         exc_type, exc_obj, exc_tb = sys.exc_info()
         fname = os.path.split(exc_tb.tb_frame.f_code.co_filename)[1]
         Error_Detail = (
-            (str(exc_type).replace("type ", "Error Type: "))
-            + ";"
-            + "Error Message: "
-            + str(exc_obj)
-            + ";"
-            + "File Name: "
-            + fname
-            + ";"
-            + "Line: "
-            + str(exc_tb.tb_lineno)
+                (str(exc_type).replace("type ", "Error Type: "))
+                + ";"
+                + "Error Message: "
+                + str(exc_obj)
+                + ";"
+                + "File Name: "
+                + fname
+                + ";"
+                + "Line: "
+                + str(exc_tb.tb_lineno)
         )
         CommonUtil.ExecLog(
             sModuleInfo,
@@ -2983,8 +3032,8 @@ def get_global_list_variable(data_set):
 
         for row in data_set:
             if (
-                str(row[1]).strip().lower() == "element parameter"
-                or "parameter" in str(row[1]).strip().lower()
+                    str(row[1]).strip().lower() == "element parameter"
+                    or "parameter" in str(row[1]).strip().lower()
             ):
                 key = str(row[0]).strip()
 
@@ -3011,8 +3060,8 @@ def append_to_global_list_variable(data_set):
 
         for row in data_set:
             if (
-                str(row[1]).strip().lower() == "element parameter"
-                or "parameter" in str(row[1]).strip().lower()
+                    str(row[1]).strip().lower() == "element parameter"
+                    or "parameter" in str(row[1]).strip().lower()
             ):
                 key = str(row[0]).strip()
                 value = str(row[2]).strip()
@@ -3038,8 +3087,8 @@ def remove_item_from_global_list_variable(data_set):
 
         for row in data_set:
             if (
-                str(row[1]).strip().lower() == "element parameter"
-                or "parameter" in str(row[1]).strip().lower()
+                    str(row[1]).strip().lower() == "element parameter"
+                    or "parameter" in str(row[1]).strip().lower()
             ):
                 key = str(row[0]).strip()
                 value = str(row[2]).strip()
@@ -3082,6 +3131,7 @@ def save_variable_by_list_difference(data_set):
         return sr.Set_Shared_Variables(saved_variable_name, variable_value)
     else:
         return "zeuz_failed"
+
 
 @logger
 def validate_list_order(data_set):
@@ -3197,7 +3247,8 @@ def validate_list_order(data_set):
                     CommonUtil.ExecLog(
                         sModuleInfo,
                         'Your list is not in ascending order. Its in random order\n' +
-                        'The following list will be in ascending order for case sensitivity = %s\n%s' % (case_sensitivity, Actual_sorted),
+                        'The following list will be in ascending order for case sensitivity = %s\n%s' % (
+                        case_sensitivity, Actual_sorted),
                         3
                     )
                 return "zeuz_failed"
@@ -3225,7 +3276,8 @@ def validate_list_order(data_set):
                     CommonUtil.ExecLog(
                         sModuleInfo,
                         'Your list is not in descending order. Its in random order\n' +
-                        'The following list will be in descending order for case sensitivity = %s\n%s' % (case_sensitivity, Actual_sorted),
+                        'The following list will be in descending order for case sensitivity = %s\n%s' % (
+                        case_sensitivity, Actual_sorted),
                         3
                     )
                 return "zeuz_failed"
@@ -3236,6 +3288,7 @@ def validate_list_order(data_set):
             3
         )
         return "zeuz_failed"
+
 
 @logger
 def execute_python_code(data_set):
@@ -3262,17 +3315,24 @@ def execute_python_code(data_set):
             Code = right
 
     Code = filepath_code if filepath_code else Code
-    try: exec(Code, globals())
-    except: return CommonUtil.Exception_Handler(sys.exc_info())
+    try:
+        exec(Code, globals())
+    except:
+        return CommonUtil.Exception_Handler(sys.exc_info())
 
     if main_function:
         code = main_function + "(" + inp + ")"
-        try: out_val = eval(code)
-        except: return CommonUtil.Exception_Handler(sys.exc_info())
+        try:
+            out_val = eval(code)
+        except:
+            return CommonUtil.Exception_Handler(sys.exc_info())
         if out_var:
-            CommonUtil.ExecLog(sModuleInfo, "Executed '%s' function and captured the return value into '%s' variable" % (main_function, out_var), 1)
+            CommonUtil.ExecLog(sModuleInfo,
+                               "Executed '%s' function and captured the return value into '%s' variable" % (
+                               main_function, out_var), 1)
             return sr.Set_Shared_Variables(out_var, out_val)
-        CommonUtil.ExecLog(sModuleInfo, "Executed '%s' function and did not capture any return value" % main_function, 1)
+        CommonUtil.ExecLog(sModuleInfo, "Executed '%s' function and did not capture any return value" % main_function,
+                           1)
     else:
         CommonUtil.ExecLog(sModuleInfo, "Executed the python code which was provided", 1)
 
@@ -3319,7 +3379,7 @@ def csv_read(data_set):
                 else:
                     delimiter = right
             elif "structure of the variable" == left:
-                pass    # "list of dictionaries" for now. Will implement more structures in future
+                pass  # "list of dictionaries" for now. Will implement more structures in future
             elif "allowed list" == left:
                 allowed_list = CommonUtil.parse_value_into_object(right.strip())
                 if isinstance(allowed_list, str):
@@ -3331,7 +3391,8 @@ def csv_read(data_set):
                 map_key_names = CommonUtil.parse_value_into_object(right.strip())
                 if not isinstance(map_key_names, dict):
                     map_key_names = None
-                    CommonUtil.ExecLog(sModuleInfo, "Did not get 'Map key names' as a dictionary. Ignoring this parameter", 2)
+                    CommonUtil.ExecLog(sModuleInfo,
+                                       "Did not get 'Map key names' as a dictionary. Ignoring this parameter", 2)
             elif "convert" in left:
                 fields = CommonUtil.parse_value_into_object(right.strip())
                 if "int" in left:
@@ -3350,7 +3411,7 @@ def csv_read(data_set):
                     elif isinstance(fields, list):
                         Bool += fields
                 elif "str" in left:
-                    pass    # every field is already in string in csv
+                    pass  # every field is already in string in csv
             elif "read from csv" == left:
                 var_name = right.strip()
 
@@ -3379,7 +3440,9 @@ def csv_read(data_set):
                                 try:
                                     line[i] = int(line[i])
                                 except:
-                                    CommonUtil.ExecLog("", "Could not convert '%s' into integer of '%s' key. Keeping as it is" % (line[i], i), 2)
+                                    CommonUtil.ExecLog("",
+                                                       "Could not convert '%s' into integer of '%s' key. Keeping as it is" % (
+                                                       line[i], i), 2)
                             elif i not in not_exist:
                                 not_exist.append(i)
                                 CommonUtil.ExecLog("", "'%s' key does not exist for converting to integer", 2)
@@ -3389,7 +3452,9 @@ def csv_read(data_set):
                                 try:
                                     line[i] = float(line[i])
                                 except:
-                                    CommonUtil.ExecLog("", "Could not convert '%s' into float of '%s' key. Keeping as it is" % (line[i], i), 2)
+                                    CommonUtil.ExecLog("",
+                                                       "Could not convert '%s' into float of '%s' key. Keeping as it is" % (
+                                                       line[i], i), 2)
                             elif i not in not_exist:
                                 not_exist.append(i)
                                 CommonUtil.ExecLog("", "'%s' key does not exist for converting to float" % i, 2)
@@ -3403,14 +3468,19 @@ def csv_read(data_set):
                                     elif val == "false":
                                         line[i] = False
                                     else:
-                                        CommonUtil.ExecLog("", "Could not convert '%s' into boolean of '%s' key. Keeping as it is" % (line[i], i), 2)
+                                        CommonUtil.ExecLog("",
+                                                           "Could not convert '%s' into boolean of '%s' key. Keeping as it is" % (
+                                                           line[i], i), 2)
                                 except:
-                                    CommonUtil.ExecLog("", "Could not convert '%s' into boolean of '%s' key. Keeping as it is" % (line[i], i), 2)
+                                    CommonUtil.ExecLog("",
+                                                       "Could not convert '%s' into boolean of '%s' key. Keeping as it is" % (
+                                                       line[i], i), 2)
                             elif i not in not_exist:
                                 not_exist.append(i)
                                 CommonUtil.ExecLog("", "'%s' key does not exist for converting to boolean" % i, 2)
                     data_to_save.append(line)
-        CommonUtil.ExecLog(sModuleInfo, "Extracted CSV data with '%s' delimiter and saved data as %s format" % (delimiter, structure), 1)
+        CommonUtil.ExecLog(sModuleInfo, "Extracted CSV data with '%s' delimiter and saved data as %s format" % (
+        delimiter, structure), 1)
         sr.Set_Shared_Variables(var_name, data_to_save)
         return "passed"
 
@@ -3434,7 +3504,7 @@ def csv_write(data_set):
                     filepath = Path(os.path.expanduser(filepath))
                 filepath = Path(filepath)
             elif "structure of the variable" == left:
-                pass    # "list of dictionaries" for now. Will implement more structures in future
+                pass  # "list of dictionaries" for now. Will implement more structures in future
             elif "write into csv" == left:
                 value = right.strip()
 
@@ -3509,6 +3579,7 @@ def yaml_write(data_set):
     except:
         return CommonUtil.Exception_Handler(sys.exc_info())
 
+
 @logger
 def text_write(data_set):
     sModuleInfo = inspect.currentframe().f_code.co_name + " : " + MODULE_NAME
@@ -3550,7 +3621,8 @@ def text_write(data_set):
             lines[line_no] = value
             with open(filepath, "w") as text_file:
                 text_file.writelines(lines)
-            CommonUtil.ExecLog(sModuleInfo, "%s no line of %s was changed with the given text successfully" % (str(line_no), str(filepath)), 1)
+            CommonUtil.ExecLog(sModuleInfo, "%s no line of %s was changed with the given text successfully" % (
+            str(line_no), str(filepath)), 1)
 
         elif operation == "append":
             exist = os.path.exists(filepath)
@@ -3559,7 +3631,8 @@ def text_write(data_set):
             if exist:
                 CommonUtil.ExecLog(sModuleInfo, "Appended the given text into: %s" % str(filepath), 1)
             else:
-                CommonUtil.ExecLog(sModuleInfo, "The file does not exist so creating a new file into: %s" % str(filepath), 1)
+                CommonUtil.ExecLog(sModuleInfo,
+                                   "The file does not exist so creating a new file into: %s" % str(filepath), 1)
 
         elif operation == "overwrite":
             exist = os.path.exists(filepath)
@@ -3568,12 +3641,216 @@ def text_write(data_set):
             if exist:
                 CommonUtil.ExecLog(sModuleInfo, "Overwritten the given text into: %s" % str(filepath), 1)
             else:
-                CommonUtil.ExecLog(sModuleInfo, "The file does not exist so creating a new file into: %s" % str(filepath), 1)
+                CommonUtil.ExecLog(sModuleInfo,
+                                   "The file does not exist so creating a new file into: %s" % str(filepath), 1)
 
         return "passed"
 
     except:
         return CommonUtil.Exception_Handler(sys.exc_info())
+
+
+@logger
+def compare_item_occurrence(data_set):
+    sModuleInfo = inspect.currentframe().f_code.co_name + " : " + MODULE_NAME
+    try:
+        parentpath = None
+        childpath = None
+        attr_dict = {}
+        selector = None
+        for left, middle, right in data_set:
+            left = left.lower().strip()
+            middle = middle.lower().strip()
+            right = right.strip()
+            if "parent file" == left:
+                parentpath = right
+            elif "child file" == left:
+                childpath = right
+            elif "selector" == left:
+                selector = right
+            elif "class" == left or "id" == left:
+                attr_dict[left] = right
+
+        # Expand ~ (home directory of user) to absolute path.
+        if "~" in parentpath:
+            parentpath = Path(os.path.expanduser(parentpath))
+
+        if "~" in childpath:
+            childpath = Path(os.path.expanduser(childpath))
+
+        parentpath = Path(parentpath)
+        childpath = Path(childpath)
+
+        with open(parentpath) as pf:
+            p_soup = BeautifulSoup(pf, 'html.parser')
+
+        with open(childpath) as cf:
+            c_soup = BeautifulSoup(cf, 'html.parser')
+        p_total = len(p_soup.find_all(selector, attr_dict))
+        c_total = len(c_soup.find_all(selector, attr_dict))
+        if p_total == c_total:
+            CommonUtil.ExecLog(
+                sModuleInfo,
+                "Parent File has %s occurrence and Child file has %s occurrence , So they are Matched!!!" % (
+                p_total, c_total),
+                1,
+            )
+            return "passed"
+
+        else:
+            CommonUtil.ExecLog(
+                sModuleInfo,
+                "Parent File has %s occurrence and Child file has %s occurrence , So they  are not Matched!!!" % (
+                p_total, c_total),
+                3,
+            )
+            return "zeuz_failed"
+
+
+    except:
+        return CommonUtil.Exception_Handler(sys.exc_info())
+
+
+@logger
+def compare_text_and_font(data_set):
+    sModuleInfo = inspect.currentframe().f_code.co_name + " : " + MODULE_NAME
+    try:
+        parentpath = None
+        childpath = None
+        attr_dict = {}
+        text = None
+        attr = None
+        partial_text = False
+        for left, middle, right in data_set:
+            left = left.lower().strip()
+            middle = middle.lower().strip()
+            right = right
+            if "parent file" == left:
+                parentpath = right
+            elif "child file" == left:
+                childpath = right
+            elif "text" == left:
+                text = right
+            elif "attr" == left:
+                attr = right
+        # Expand ~ (home directory of user) to absolute path.
+        if "~" in parentpath:
+            parentpath = Path(os.path.expanduser(parentpath))
+
+        if "~" in childpath:
+            childpath = Path(os.path.expanduser(childpath))
+
+        parentpath = Path(parentpath)
+        childpath = Path(childpath)
+
+        with open(parentpath) as pf:
+            p_soup = BeautifulSoup(pf, 'html.parser')
+
+        with open(childpath) as cf:
+            c_soup = BeautifulSoup(cf, 'html.parser')
+
+        if attr != None:
+            p_bold = p_soup.select(attr)
+            p_texts = list(map(lambda tag: tag.text, p_bold))
+            c_bold = p_soup.select(attr)
+            c_texts = list(map(lambda tag: tag.text, c_bold))
+            if any(text in s for s in p_texts):
+                CommonUtil.ExecLog(
+                    sModuleInfo,
+                    "Parent File has this Bold Text -> '%s'" % (
+                        text),
+                    1,
+                )
+                if any(text in s for s in c_texts):
+                    CommonUtil.ExecLog(
+                        sModuleInfo,
+                        "Child File has this Bold Text ->'%s'" % (
+                            text),
+                        1,
+                    )
+                    CommonUtil.ExecLog(
+                        sModuleInfo,
+                        "Parent File and Child File are matched based On this Bold Text -> %s" % (
+                            text),
+                        1,
+                    )
+                    return "passed"
+                else:
+                    CommonUtil.ExecLog(
+                        sModuleInfo,
+                        "Child File doesn't have  this Bold Text ->'%s'" % (
+                            text),
+                        1,
+                    )
+                    CommonUtil.ExecLog(
+                        sModuleInfo,
+                        "Parent File and Child File aren't Matched based on this Bold Text -> %s" % (
+                            text),
+                        3,
+                    )
+                    return "zeuz_failed"
+            else:
+                CommonUtil.ExecLog(
+                    sModuleInfo,
+                    "Parent File doesn't have this Bold Text -> '%s'" % (
+                        text),
+                    3,
+                )
+                return "zeuz_failed"
+
+        else:
+            p_texts = p_soup.findAll(text=re.compile(text))
+            c_texts = c_soup.findAll(text=re.compile(text))
+            if any(text == s for s in list(p_texts)):
+                CommonUtil.ExecLog(
+                    sModuleInfo,
+                    "Parent File has this Text -> '%s'" % (
+                        text),
+                    1,
+                )
+                if  any(text == s for s in c_texts):
+                    CommonUtil.ExecLog(
+                        sModuleInfo,
+                        "Child File has this Text -> '%s'" % (
+                            text),
+                        1,
+                    )
+                    CommonUtil.ExecLog(
+                        sModuleInfo,
+                        "Parent File and Child File are matched based On this Text -> %s" % (
+                            text),
+                        1,
+                    )
+                    return "passed"
+                else:
+                    CommonUtil.ExecLog(
+                        sModuleInfo,
+                        "Child File doesn't have  this Text ->'%s'" % (
+                            text),
+                        1,
+                    )
+                    CommonUtil.ExecLog(
+                        sModuleInfo,
+                        "Parent File and Child File aren't Matched based on this Text -> %s" % (
+                            text),
+                        3,
+                    )
+                    return "zeuz_failed"
+
+
+            else:
+                CommonUtil.ExecLog(
+                    sModuleInfo,
+                    "Parent File doesn't have this Text -> '%s'" % (
+                        text),
+                    3,
+                )
+                return "zeuz_failed"
+
+
+    except:
+        return CommonUtil.Exception_Handler(sys.exc_info())
+
 
 @logger
 def modify_datetime(data_set):
@@ -3713,8 +3990,8 @@ def delete_mail_action(data_set):
         body = ""
         sender_email = ""
         receiver_email = ""
-        flagged_email =""
-        check_email =""
+        flagged_email = ""
+        check_email = ""
         exact_date = ""
         after_date = ""
         before_date = ""
@@ -3753,7 +4030,8 @@ def delete_mail_action(data_set):
                 wait = float(right.strip())
 
         if imap_host == "" or imap_user == "" or imap_pass == "" or select_mailbox == "":
-            CommonUtil.ExecLog(sModuleInfo, "Please provide the imap credentials for your mail server, see action help", 3)
+            CommonUtil.ExecLog(sModuleInfo, "Please provide the imap credentials for your mail server, see action help",
+                               3)
             return "zeuz_failed"
 
         delete_mail(
@@ -3833,7 +4111,8 @@ def save_mail_action(data_set):
                 wait = float(right.strip())
 
         if imap_host == "" or imap_user == "" or imap_pass == "" or select_mailbox == "":
-            CommonUtil.ExecLog(sModuleInfo, "please provide the imap credentials for your mail server, see action help", 3)
+            CommonUtil.ExecLog(sModuleInfo, "please provide the imap credentials for your mail server, see action help",
+                               3)
             return "zeuz_failed"
         if variable_name == "":
             CommonUtil.ExecLog(sModuleInfo, "please provide variable name", 3)
@@ -3878,7 +4157,7 @@ def search_and_save_text(data_set):
             elif "data" in left:
                 data = CommonUtil.parse_value_into_object(right)
             elif "action" in mid:
-               variable_name = right.strip()
+                variable_name = right.strip()
 
         variable_value = re.findall(user_given_data, data)
         sr.Set_Shared_Variables(variable_name, variable_value)
@@ -3894,7 +4173,7 @@ def custom_step_duration(data_set):
     try:
         for left, mid, right in data_set:
             if "action" in mid:
-               value = right.strip()
+                value = right.strip()
         dot = value.count(".")
         if dot == 0:
             value += ".000"
@@ -3904,7 +4183,7 @@ def custom_step_duration(data_set):
         else:
             value = value.split(".")
             value = value[0] + "." + str(round(float("." + value[-1]), 3))[2:]
-            value += "0" * (3-len(value.split(".")[-1]))
+            value += "0" * (3 - len(value.split(".")[-1]))
         colon = 2 - value.count(":")
         if colon < 0:
             CommonUtil.ExecLog(sModuleInfo, "Please provide in valid time format- HH:MM:SS.mmm", 3)
@@ -3917,4 +4196,3 @@ def custom_step_duration(data_set):
 
     except:
         return CommonUtil.Exception_Handler(sys.exc_info())
-

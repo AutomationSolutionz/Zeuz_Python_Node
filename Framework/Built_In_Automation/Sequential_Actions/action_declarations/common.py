@@ -69,7 +69,10 @@ declarations = (
     { "name": "write into csv",                              "function": "csv_write",                             "screenshot": "none" },
     { "name": "read from yaml",                              "function": "yaml_read",                             "screenshot": "none" },
     { "name": "write into yaml",                             "function": "yaml_write",                            "screenshot": "none" },
-    { "name": "write into text file",                        "function": "text_write",                            "screenshot": "none" }
+    { "name": "write into text file",                        "function": "text_write",                            "screenshot": "none" },
+    { "name": "compare item occurrence",                     "function": "compare_item_occurrence",                "screenshot": "none" },
+    { "name": "compare text and font",                     "function": "compare_text_and_font",                "screenshot": "none" },
+
 ) # yapf: disable
 
 module_name = "common"
