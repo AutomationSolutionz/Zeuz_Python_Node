@@ -1057,28 +1057,50 @@ def path_parser(path: str) -> str:
     ~\Downloads\*server\*entreprize_.csv
     Case-5: (Partial_Case-insensitive_Search)
     ~\Downloads\**server\**entreprize_.csv
-    Case-6: (Partial search with Index)
+    Case-6: (Partial search with Index) [It's not done yet. will be done if necessary]
     ~\Downloads\**server\[idx]*entreprize_.csv
+
+    tested against:
+    print(path_parser(r"~\Downloads"))                          C:\Users\ASUS\Downloads
+    print(path_parser(r"~\**download"))                         C:\Users\ASUS\Downloads
+    print(path_parser(r"C:\Users\ASUS\Downloads"))              C:\Users\ASUS\Downloads
+    print(path_parser(r"C:\Users\ASUS\**download"))             C:\Users\ASUS\Downloads
+    print(path_parser(r"~"))                                    C:\Users\ASUS
+    print(path_parser(r"C:"))                                   C:
+    print(path_parser(r"~\Downloads\*.pdf"))                    C:\Users\ASUS\Downloads\FF.pdf
+
     """
-    if path.startswith("~"):
-        path1 = str(Path("~\\" + path.split("\\")[1]).expanduser())
-        for i in path.split("\\")[2:]:
-            path1 = path1 + "\\" + i
-        path = path1
+    try:
+        sModuleInfo = inspect.currentframe().f_code.co_name + " : " + MODULE_NAME
+        if not path.startswith("~") and "*" not in path:
+            return path  # dont print execlog
+        if path.startswith("~"):
+            path = path.replace("~", os.path.expanduser("~"), 1)
 
-    path = path.split("\\")
-    new_path = ''
-    for a in path:
-        if a.startswith("*"):
-            i = 2 if a == path[-1] else 1
-            w = list(os.walk(new_path))[0]
-            for j in range(len(w[i])):
-                if w[i][j].startswith(a.strip('*')):
-                    a = w[i][j]
+        path = path.split(os.sep)
+        new_path = ''
+        for a in path:
+            final = a
+            if a.startswith("*"):
+                extension = a.split(".")[1] if "." in a else ""
+                name = a.split(".")[0].replace("*", "")
+                w = list(os.walk(new_path))[0]
+                w = w[1] + w[2]
+                for j in w:
+                    if a.startswith("**") and name.lower() in j.lower() and j.endswith(extension):
+                        final = j
+                        break
+                    elif a.startswith("*") and name in j and j.endswith(extension):
+                        final = j
+                        break
+                else:
+                    ExecLog(sModuleInfo, "No file_path or directory was found", 3)
+                    return "zeuz_failed"
 
-        new_path = new_path + a + "\\"
+            new_path = new_path + final + os.sep
 
-    new_path = new_path[:-1]
-    print(new_path)
-
-    return new_path
+        new_path = new_path[:-1]
+        ExecLog(sModuleInfo, new_path, 1)
+        return new_path
+    except:
+        return Exception_Handler(sys.exc_info())
