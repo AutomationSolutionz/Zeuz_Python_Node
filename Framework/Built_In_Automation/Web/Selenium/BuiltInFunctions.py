@@ -718,21 +718,18 @@ def Go_To_Link(step_data, page_title=False):
     window_size_X = ConfigModule.get_config_value("", "window_size_x")
     window_size_Y = ConfigModule.get_config_value("", "window_size_y")
     # Open browser and create driver if user has not already done so
+    global dependency
+    global selenium_driver
 
     try:
-        global selenium_driver
         if Shared_Resources.Test_Shared_Variables("selenium_driver") == False:
             CommonUtil.ExecLog(
                 sModuleInfo, "Browser not previously opened, doing so now", 1
             )
             global dependency
             # Get the dependency again in case it was missed
-            if Shared_Resources.Test_Shared_Variables(
-                    "dependency"
-            ):  # Check if driver is already set in shared variables
-                dependency = Shared_Resources.Get_Shared_Variables(
-                    "dependency"
-                )  # Retreive selenium driver
+            if Shared_Resources.Test_Shared_Variables("dependency"):  # Check if driver is already set in shared variables
+                dependency = Shared_Resources.Get_Shared_Variables("dependency")  # Retreive selenium driver
             if window_size_X == "None" and window_size_Y == "None":
                 result = Open_Browser(dependency)
             elif window_size_X == "None":
@@ -742,7 +739,7 @@ def Go_To_Link(step_data, page_title=False):
             else:
                 result = Open_Browser(dependency, window_size_X, window_size_Y)
 
-            if result in failed_tag_list:
+            if result == "zeuz_failed":
                 return "zeuz_failed"
         else:
             selenium_driver = Shared_Resources.Get_Shared_Variables("selenium_driver")
@@ -755,14 +752,36 @@ def Go_To_Link(step_data, page_title=False):
         web_link = step_data[0][2]  # Save Value field (URL)
         selenium_driver.get(web_link)  # Open in browser
         selenium_driver.implicitly_wait(0.5)  # Wait for page to load
-        CommonUtil.ExecLog(
-            sModuleInfo, "Successfully opened your link: %s" % web_link, 1
-        )
+        CommonUtil.ExecLog(sModuleInfo, "Successfully opened your link: %s" % web_link, 1)
         return "passed"
+    except WebDriverException as e:
+        if e.msg.lower().startswith("chrome not reachable"):
+            CommonUtil.ExecLog(sModuleInfo, "Browser not found. trying to restart the browser", 2)
+            if Shared_Resources.Test_Shared_Variables("dependency"):  # Check if driver is already set in shared variables
+                dependency = Shared_Resources.Get_Shared_Variables("dependency")  # Retreive selenium driver
+            if window_size_X == "None" and window_size_Y == "None":
+                result = Open_Browser(dependency)
+            elif window_size_X == "None":
+                result = Open_Browser(dependency, window_size_Y)
+            elif window_size_Y == "None":
+                result = Open_Browser(dependency, window_size_X)
+            else:
+                result = Open_Browser(dependency, window_size_X, window_size_Y)
+
+        if result == "zeuz_failed":
+            ErrorMessage = "failed to open your link: %s" % (web_link)
+            return CommonUtil.Exception_Handler(sys.exc_info(), None, ErrorMessage)
+        try:
+            selenium_driver.get(web_link)  # Open in browser
+            selenium_driver.implicitly_wait(0.5)  # Wait for page to load
+            CommonUtil.ExecLog(sModuleInfo, "Successfully opened your link: %s" % web_link, 1)
+            return "passed"
+        except Exception:
+            ErrorMessage = "failed to open your link: %s" % (web_link)
+            return CommonUtil.Exception_Handler(sys.exc_info(), None, ErrorMessage)
     except Exception:
         ErrorMessage = "failed to open your link: %s" % (web_link)
         return CommonUtil.Exception_Handler(sys.exc_info(), None, ErrorMessage)
-
 
 @logger
 def Handle_Browser_Alert(step_data):

@@ -24,6 +24,7 @@
 # are listed here as with the module set to "common". If there is a
 # "common" function, and another module with the same name created
 # here, there may be a conflict, and the wrong function may execute
+import sortedcontainers
 
 from .action_declarations.info import actions, action_support, supported_platforms
 
@@ -81,6 +82,12 @@ node_id = machineInfo.getLocalUser()  # Get Username+Node ID
 sr.Set_Shared_Variables(
     "node_id", node_id, protected=True
 )  # Save as protected shared variable
+
+from pathlib import Path
+if os.path.exists(Path(__file__).parent.parent.parent.parent / "bypass.json"):
+    bypass_exist = True
+else:
+    bypass_exist = False
 
 
 def load_sa_modules(
@@ -1985,7 +1992,88 @@ def Conditional_Action_Handler(step_data, dataset_cnt):
     return "passed", outer_skip
 
 
-def Action_Handler(_data_set, action_row):
+def bypass_bug(*args,):
+    """ Suppose, there is a bug in the test product which is a pop-up that appears randomly and you need to close that pop-up
+    So instead of putting that inside you testcase use this function.
+    This function will read the action dataset from "Zeuz_Python_Node/bypass.json" file and run that action after every particular type action
+    Example of bypass.json:
+    [
+      {
+        "action_name": "Dialog",
+        "action_disabled": "true",
+        "step_actions": [
+          ["web","optional parameter","click"],
+          ["wait","optional option","2"],
+          ["role","parent parameter","dialog"],
+          ["class","element parameter","MuiButton-label"],
+          ["text","element parameter","OK"],
+          ["click","selenium optional action","click"]
+        ]
+      }
+    ]
+     """
+    try:
+        sModuleInfo = inspect.currentframe().f_code.co_name + " : " + MODULE_NAME
+        if not bypass_exist:
+            return
+        bypass_path = Path(__file__).parent.parent.parent.parent / "bypass.json"
+        curr_action = args[0].strip().lower()
+        module = args[1].strip().lower()
+
+        with open(bypass_path, "r") as file:
+            all_actions = json.loads(file.read())
+
+        for action in all_actions:
+            disable = action["action_disabled"]
+            if type(disable) == bool and disable:
+                continue
+            elif type(disable) == str and disable.strip().lower() == "true":
+                continue
+            action_name = action["action_name"]
+            action_dataset = action["step_actions"]
+            for left, mid, right in action_dataset:
+                l = left.strip().lower()
+                m = mid.strip().lower()
+                r = right.strip().lower().split(",")
+                if "selenium" in module and l in ("web", "selenium") and "optional" in m and curr_action in [i.strip() for i in r]:
+                    break
+                elif "appium" in module and l in ("mobile", "appium") and "optional" in m and curr_action in [i.strip() for i in r]:
+                    break
+                elif "windows" in module and l in ("desktop", "windows") and "optional" in m and curr_action in [i.strip() for i in r]:
+                    break
+                elif ("common" in module or "utility" in module) and l in ("common", "utility") and "optional" in m and curr_action in [i.strip() for i in r]:
+                    break
+                elif "rest" in module and l.replace(" ", "").replace("-", "").replace("_", "") in ("rest", "api", "restapi") and "optional" in m and curr_action in [i.strip() for i in r]:
+                    break
+            else:
+                continue
+            indices = []
+            i = 0
+            for left, mid, right in action_dataset:
+                l = left.lower().replace(" ", "").replace("-", "").replace("_", "")
+                m = mid.strip().lower()
+                if l in ("web", "selenium", "mobile", "appium", "desktop", "windows", "common", "utility", "rest", "api", "restapi") and "optional" in m:
+                    indices.append(i)
+                i += 1
+            indices = reversed(indices)
+            for i in indices:
+                del action_dataset[i]
+            dataset = []
+            action_row = None
+            for i in action_dataset:
+                dataset.append(tuple(i))
+                if "action" in i[1].lower():
+                    action_row = tuple(i)
+            if action_row is None:
+                continue
+            CommonUtil.ExecLog("", "\n********** Starting Bypass action: %s **********\n%s" % (action_name, json.dumps(action, indent=2)), 4)
+            if Action_Handler(dataset, action_row, False) == "zeuz_failed":
+                CommonUtil.ExecLog(sModuleInfo, "Bypass action failed, however continuing", 2)
+    except:
+        return CommonUtil.Exception_Handler(sys.exc_info(), None, "Bypass action failed, however continuing")
+
+
+def Action_Handler(_data_set, action_row, _bypass_bug=True):
     """ Finds the appropriate function for the requested action in the step data and executes it """
 
     sModuleInfo = inspect.currentframe().f_code.co_name + " : " + MODULE_NAME
@@ -2047,6 +2135,8 @@ def Action_Handler(_data_set, action_row):
         new_row = list(row)
         if "optional parameter" in row[1] and "screen capture" == row[0].strip().lower():
             screenshot = row[2].strip().lower()
+            if screenshot in ("false", "no", "none", "disable"):
+                screenshot = "none"
             continue
         if "optional" in row[1]:
             new_row[1] = new_row[1].replace("optional", "").strip()
@@ -2082,6 +2172,8 @@ def Action_Handler(_data_set, action_row):
         run_function = getattr(eval(module), function)  # create a reference to the function
         result = run_function(data_set)  # Execute function, providing all rows in the data set
         CommonUtil.TakeScreenShot(function)
+        if _bypass_bug:
+            bypass_bug(action_name, action_subfield)
         return result  # Return result to sequential_actions()
 
     except Exception:

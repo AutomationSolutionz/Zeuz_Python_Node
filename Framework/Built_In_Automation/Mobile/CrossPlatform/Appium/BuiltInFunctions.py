@@ -56,13 +56,10 @@ PATH = "%s" % PATH_
 # Recall appium driver, if not already set - needed between calls in a Zeuz test case
 appium_port = 4721  # Default appium port - changes if we have multiple devices
 wdaLocalPort = 8100
-appium_details = (
-    {}
-)  # Used to store device serial number, appium driver, if multiple devices are used
+appium_details = {}  # Used to store device serial number, appium driver, if multiple devices are used
 appium_driver = None  # Holds the currently used appium instance
-device_serial = (
-    ""  # Holds the identifier for the currently used device (if any are specified)
-)
+device_serial = ""  # Holds the identifier for the currently used device (if any are specified)
+
 device_id = ""  # Holds the name of the device the user has specified, if any. Relationship is set elsewhere
 
 from Framework.Utilities import All_Device_Info
@@ -70,32 +67,20 @@ from Framework.Utilities import All_Device_Info
 
 # Recall dependency, if not already set
 dependency = None
-if Shared_Resources.Test_Shared_Variables(
-    "dependency"
-):  # Check if driver is already set in shared variables
-    dependency = Shared_Resources.Get_Shared_Variables(
-        "dependency"
-    )  # Retreive appium driver
+if Shared_Resources.Test_Shared_Variables("dependency"):  # Check if driver is already set in shared variables
+    dependency = Shared_Resources.Get_Shared_Variables("dependency")  # Retreive appium driver
 else:
     pass  # May be phasing out dependency for mobile
     # raise ValueError("No dependency set - Cannot run")
 
 # Recall file attachments
 file_attachment = {}
-if Shared_Resources.Test_Shared_Variables(
-    "file_attachment"
-):  # Check if file_attachement is set
-    file_attachment = Shared_Resources.Get_Shared_Variables(
-        "file_attachment"
-    )  # Retreive file attachments
+if Shared_Resources.Test_Shared_Variables("file_attachment"):  # Check if file_attachement is set
+    file_attachment = Shared_Resources.Get_Shared_Variables("file_attachment")  # Retreive file attachments
 
 # Recall appium details
-if Shared_Resources.Test_Shared_Variables(
-    "appium_details"
-):  # Check if driver is already set in shared variables
-    appium_details = Shared_Resources.Get_Shared_Variables(
-        "appium_details"
-    )  # Retreive appium driver
+if Shared_Resources.Test_Shared_Variables("appium_details"):  # Check if driver is already set in shared variables
+    appium_details = Shared_Resources.Get_Shared_Variables("appium_details")  # Retreive appium driver
     # Populate the global variables with one of the device information. If more than one device is used, then it'll be the last. The user is responsible for calling either launch_application() or switch_device() to focus on the one they want
     for name in appium_details:
         appium_driver = appium_details[name]["driver"]
@@ -106,12 +91,8 @@ if Shared_Resources.Test_Shared_Variables(
 
 # Recall device_info, if not already set
 device_info = {}
-if Shared_Resources.Test_Shared_Variables(
-    "device_info"
-):  # Check if device_info is already set in shared variables
-    device_info = Shared_Resources.Get_Shared_Variables(
-        "device_info"
-    )  # Retreive device_info
+if Shared_Resources.Test_Shared_Variables("device_info"):  # Check if device_info is already set in shared variables
+    device_info = Shared_Resources.Get_Shared_Variables("device_info")  # Retreive device_info
 
 
 @logger
@@ -125,9 +106,7 @@ def find_appium():
         "/usr/bin/appium",
         os.path.join(str(os.getenv("HOME")), ".linuxbrew/bin/appium"),
         os.path.join(str(os.getenv("ProgramFiles")), "APPIUM", "Appium.exe"),
-        os.path.join(
-            str(os.getenv("USERPROFILE")), "AppData", "Roaming", "npm", "appium.cmd"
-        ),
+        os.path.join(str(os.getenv("USERPROFILE")), "AppData", "Roaming", "npm", "appium.cmd"),
     ]  # getenv() must be wrapped in str(), so it doesn't fail on other platforms
 
     # Try to find the appium executable
@@ -149,9 +128,7 @@ def find_appium():
 
     # Verify if we have the binary location
     if appium_binary == "":  # Didn't find where appium was installed
-        CommonUtil.ExecLog(
-            sModuleInfo, "Appium not found. Trying to locate via which", 0
-        )
+        CommonUtil.ExecLog(sModuleInfo, "Appium not found. Trying to locate via which", 0)
         try:
             appium_binary = subprocess.check_output(
                 "which appium", encoding="utf-8", shell=True
@@ -161,9 +138,7 @@ def find_appium():
 
         if appium_binary == "":  # Didn't find where appium was installed
             appium_binary = "appium"  # Default filename of appium, assume in the PATH
-            CommonUtil.ExecLog(
-                sModuleInfo, "Appium still not found. Assuming it's in the PATH.", 2
-            )
+            CommonUtil.ExecLog(sModuleInfo, "Appium still not found. Assuming it's in the PATH.", 2)
         else:
             CommonUtil.ExecLog(sModuleInfo, "Found appium: %s" % appium_binary, 1)
     else:  # Found appium's path
@@ -250,9 +225,7 @@ def find_correct_device_on_first_run(serial_or_name, device_info):
                 product_version = all_device_info[device]["osver"]
                 did = device
                 serial_check = True  # Flag as found
-                CommonUtil.ExecLog(
-                    sModuleInfo, "Found serial number in data set: %s" % serial, 0
-                )
+                CommonUtil.ExecLog(sModuleInfo, "Found serial number in data set: %s" % serial, 0)
                 break
 
         # Check if user provided name - must be accompanied by device_info, sent by server
@@ -328,6 +301,8 @@ def find_correct_device_on_first_run(serial_or_name, device_info):
             appium_details[device_id] = {}
             if "driver" not in appium_details[device_id]:
                 appium_details[device_id]["driver"] = None  # Initialize appium driver object
+            if "server" not in appium_details[device_id]:
+                appium_details[device_id]["server"] = None
             appium_details[device_id]["serial"] = serial
             appium_details[device_id]["type"] = device_type
             appium_details[device_id]["imei"] = imei
@@ -504,9 +479,7 @@ def launch_application(data_set):
         else:
             package_name = ""  # Name of application package
             activity_name = ""  # Name of application activity
-            serial = (
-                ""  # Serial number (may also be random string like "launch", "na", etc)
-            )
+            serial = ""  # Serial number (may also be random string like "launch", "na", etc)
             platform_version = ""
             device_name = ""
             ios = ""
@@ -525,7 +498,7 @@ def launch_application(data_set):
                 elif left == "work profile" and right.strip().lower() in ("yes", "true"):
                     work_profile = True
                 elif left in ("no reset", "no_reset", "noreset") and mid == "element parameter":
-                    if right.strip().lower() in ("yes", "true"):
+                    if right.strip().lower() in ("yes", "true", "ok", "enable"):
                         no_reset = True
                     else:
                         no_reset = False
@@ -557,9 +530,7 @@ def launch_application(data_set):
             # If android, then we will try to find the activity name, IOS doesn't need this
             if activity_name == "":
                 if appium_details[device_id]["type"] == "android":
-                    package_name, activity_name = get_program_names(
-                        package_name
-                    )  # Android only to match a partial package name if provided by the user
+                    package_name, activity_name = get_program_names(package_name)  # Android only to match a partial package name if provided by the user
                     Shared_Resources.Set_Shared_Variables("package_name", str(package_name))
 
             # Verify data
@@ -599,21 +570,21 @@ def launch_application(data_set):
                 platform_version = appium_details[device_id]["platform_version"]
             if "device_name" in appium_details[device_id]:
                 device_name = appium_details[device_id]["device_name"]
-            if (
-                appium_details[device_id]["driver"] == None
-            ):  # Only create a new appium instance if we haven't already (may be done by install_and_start_driver())
-                result, launch_app = start_appium_driver(
-                    package_name,
-                    activity_name,
-                    platform_version=platform_version,
-                    device_name=device_name,
-                    ios=ios,
-                    no_reset=no_reset,
-                    work_profile=work_profile,
-                    desiredcaps=desiredcaps,
-                )
-                if result == "zeuz_failed":
-                    return "zeuz_failed"
+
+            # if appium_details[device_id]["driver"] is None:
+            #     # Only create a new appium instance if we haven't already (may be done by install_and_start_driver())
+            result, launch_app = start_appium_driver(
+                package_name,
+                activity_name,
+                platform_version=platform_version,
+                device_name=device_name,
+                ios=ios,
+                no_reset=no_reset,
+                work_profile=work_profile,
+                desiredcaps=desiredcaps,
+            )
+            if result == "zeuz_failed":
+                return "zeuz_failed"
 
             if launch_app:  # if ios simulator then no need to launch app again
                 appium_driver.launch_app()  # Launch program configured in the Appium capabilities
@@ -689,16 +660,12 @@ def start_appium_server():
 
         try:
             appium_server = None
-            if (
-                sys.platform == "win32"
-            ):  # We need to open appium in it's own command dos box on Windows
+            if sys.platform == "win32":  # We need to open appium in it's own command dos box on Windows
                 cmd = (
                     'start "Appium Server" /wait /min cmd /c %s --allow-insecure chromedriver_autodownload -p %d'
                     % (appium_binary, appium_port)
                 )  # Use start to execute and minimize, then cmd /c will remove the dos box when appium is killed
-                appium_server = subprocess.Popen(
-                    cmd, shell=True
-                )  # Needs to run in a shell due to the execution command
+                appium_server = subprocess.Popen(cmd, shell=True)  # Needs to run in a shell due to the execution command
             elif sys.platform == "darwin":
                 appium_server = subprocess.Popen(
                     "%s --allow-insecure chromedriver_autodownload -p %s"
@@ -713,11 +680,8 @@ def start_appium_server():
                 )
             else:
                 try:
-
                     appium_binary_path = os.path.normpath(appium_binary)
-                    appium_binary_path = os.path.abspath(
-                        os.path.join(appium_binary_path, os.pardir)
-                    )
+                    appium_binary_path = os.path.abspath(os.path.join(appium_binary_path, os.pardir))
                     env = {"PATH": str(appium_binary_path)}
                     appium_server = subprocess.Popen(
                         subprocess.Popen(
@@ -733,9 +697,7 @@ def start_appium_server():
                         "Couldn't launch appium server, please do it manually by typing 'appium &' in the terminal",
                         2,
                     )
-            appium_details[device_id][
-                "server"
-            ] = appium_server  # Save the server object for teardown
+            appium_details[device_id]["server"] = appium_server  # Save the server object for teardown
         except Exception as returncode:  # Couldn't run server
             return CommonUtil.Exception_Handler(
                 sys.exc_info(),
@@ -828,138 +790,69 @@ def start_appium_driver(
             CommonUtil.ExecLog(sModuleInfo, "AWS driver created successfully.", 1)
             return "passed", launch_app
 
-        if appium_details[device_id]["driver"] == None:
+        if appium_details[device_id]["server"] is None:
             # Start Appium server
             if start_appium_server() in failed_tag_list:
                 return "zeuz_failed", launch_app
 
-            # Create Appium driver
-            # Setup capabilities
-            desired_caps = {}
+        # Create Appium driver
+        # Setup capabilities
+        desired_caps = {}
 
-            # Include the user provided desired capabilities
-            desired_caps.update(desiredcaps)
+        # Include the user provided desired capabilities
+        desired_caps.update(desiredcaps)
 
-            if str(appium_details[device_id]["type"]).lower() == "android":
+        if str(appium_details[device_id]["type"]).lower() == "android":
+            # All Desired caps = https://appium.io/docs/en/writing-running-appium/caps/
+            desired_caps["platformName"] = appium_details[device_id]["type"]  # Set platform name
+            desired_caps["autoLaunch"] = "false"  # Do not launch application
+            desired_caps["fullReset"] = "false"  # Do not reinstall application
+            if no_reset:
+                desired_caps["noReset"] = "true"  # Do not clear application cache
+            desired_caps["newCommandTimeout"] = 6000  # Command timeout before appium destroys instance
+            desired_caps["automationName"] = "UiAutomator2"
+            if not adbOptions.is_android_connected(device_serial):
+                CommonUtil.ExecLog(sModuleInfo, "Could not detect any connected Android devices", 3)
+                return "zeuz_failed", launch_app
 
-                desired_caps["platformName"] = appium_details[device_id][
-                    "type"
-                ]  # Set platform name
-                desired_caps["autoLaunch"] = "false"  # Do not launch application
-                desired_caps[
-                    "fullReset"
-                ] = "false"  # Do not clear application cache when complete
-                desired_caps[
-                    "noReset"
-                ] = "true"  # Do not clear application cache when complete
-                desired_caps[
-                    "newCommandTimeout"
-                ] = 6000  # Command timeout before appium destroys instance
-                desired_caps["automationName"] = "UiAutomator2"
-                if adbOptions.is_android_connected(device_serial) == False:
-                    CommonUtil.ExecLog(
-                        sModuleInfo, "Could not detect any connected Android devices", 3
-                    )
+            if work_profile:
+                work_profile_from_adb = adbOptions.get_work_profile()
+                if work_profile_from_adb in failed_tag_list:
+                    CommonUtil.ExecLog(sModuleInfo, "Couldn't get the work profile", 3)
                     return "zeuz_failed", launch_app
+                desired_caps["userProfile"] = work_profile_from_adb  # Command timeout before appium destroys instance
 
-                if work_profile:
-                    work_profile_from_adb = adbOptions.get_work_profile()
-                    if work_profile_from_adb in failed_tag_list:
-                        CommonUtil.ExecLog(
-                            sModuleInfo, "Couldn't get the work profile", 3
-                        )
-                        return "zeuz_failed"
-                    desired_caps[
-                        "userProfile"
-                    ] = work_profile_from_adb  # Command timeout before appium destroys instance
+            CommonUtil.ExecLog(sModuleInfo, "Setting up with Android", 1)
+            desired_caps["platformVersion"] = adbOptions.get_android_version(appium_details[device_id]["serial"]).strip()
+            desired_caps["deviceName"] = adbOptions.get_device_model(appium_details[device_id]["serial"]).strip()
+            if package_name:
+                desired_caps["appPackage"] = package_name.strip()
+            if activity_name:
+                desired_caps["appActivity"] = activity_name.strip()
+            if filename and package_name == "":  # User must specify package or file, not both. Specifying filename instructs Appium to install
+                desired_caps["app"] = PATH(filename).strip()
 
-                CommonUtil.ExecLog(sModuleInfo, "Setting up with Android", 1)
-                desired_caps["platformVersion"] = adbOptions.get_android_version(
-                    appium_details[device_id]["serial"]
-                ).strip()
-                desired_caps["deviceName"] = adbOptions.get_device_model(
-                    appium_details[device_id]["serial"]
-                ).strip()
-                if package_name:
-                    desired_caps["appPackage"] = package_name.strip()
-                if activity_name:
-                    desired_caps["appActivity"] = activity_name.strip()
-                if (
-                    filename and package_name == ""
-                ):  # User must specify package or file, not both. Specifying filename instructs Appium to install
-                    desired_caps["app"] = PATH(filename).strip()
+        elif str(appium_details[device_id]["type"]).lower() == "ios":
+            CommonUtil.ExecLog(sModuleInfo, "Setting up with IOS", 1)
+            if appium_details[device_id]["imei"] == "Simulated":  # ios simulator
+                launch_app = False  # ios simulator so need to launch app again
 
-            elif str(appium_details[device_id]["type"]).lower() == "ios":
-                CommonUtil.ExecLog(sModuleInfo, "Setting up with IOS", 1)
-                if appium_details[device_id]["imei"] == "Simulated":  # ios simulator
-                    launch_app = False  # ios simulator so need to launch app again
-
-                    if "browserName" in desired_caps:
-                        # We're trying to launch the Safari browser
-                        # NOTE: Other browsers are not supported by appium on iOS
-                        if "safariAllowPopups" not in desired_caps:
-                            # Allow popups by default, unless specified by the user
-                            desired_caps["safariAllowPopups"] = True
-                    else:
-                        # We're trying to launch an application using .app file
-                        if Shared_Resources.Test_Shared_Variables(
-                            "ios_simulator_folder_path"
-                        ):  # if simulator path already exists
-                            app = Shared_Resources.Get_Shared_Variables(
-                                "ios_simulator_folder_path"
-                            )
-                            app = os.path.normpath(app)
-                        else:
-                            app = os.path.normpath(os.getcwd() + os.sep + os.pardir)
-                            app = os.path.join(app, "iosSimulator")
-                            # saving simulator path for future use
-                            Shared_Resources.Set_Shared_Variables(
-                                "ios_simulator_folder_path", str(app)
-                            )
-
-                        app = os.path.join(app, ios)
-                        encoding = "utf-8"
-                        bundle_id = str(
-                            subprocess.check_output(
-                                ["osascript", "-e", 'id of app "%s"' % str(app)]
-                            ),
-                            encoding=encoding,
-                        ).strip()
-
-                        desired_caps[
-                            "app"
-                        ] = app  # Use set_value() for writing to element
-                        desired_caps["bundleId"] = bundle_id.replace("\\n", "")
-
-                    desired_caps[
-                        "platformName"
-                    ] = "iOS"  # Read version #!!! Temporarily hard coded
-                    desired_caps["platformVersion"] = platform_version
-                    desired_caps["deviceName"] = device_name
-                    desired_caps["automationName"] = "XCUITest"
-                    desired_caps["wdaLocalPort"] = wdaLocalPort
-                    desired_caps["udid"] = appium_details[device_id]["serial"]
-                    desired_caps["newCommandTimeout"] = 6000
-                    if no_reset:
-                        desired_caps[
-                            "noReset"
-                        ] = "true"  # Do not clear application cache when complete
-                else:  # for real ios device, not developed yet
+                if "browserName" in desired_caps:
+                    # We're trying to launch the Safari browser
+                    # NOTE: Other browsers are not supported by appium on iOS
+                    if "safariAllowPopups" not in desired_caps:
+                        # Allow popups by default, unless specified by the user
+                        desired_caps["safariAllowPopups"] = True
+                else:
                     # We're trying to launch an application using .app file
-                    if Shared_Resources.Test_Shared_Variables(
-                        "ios_simulator_folder_path"
-                    ):  # if simulator path already exists
-                        app = Shared_Resources.Get_Shared_Variables(
-                            "ios_simulator_folder_path"
-                        )
+                    if Shared_Resources.Test_Shared_Variables("ios_simulator_folder_path"):  # if simulator path already exists
+                        app = Shared_Resources.Get_Shared_Variables("ios_simulator_folder_path")
                         app = os.path.normpath(app)
                     else:
                         app = os.path.normpath(os.getcwd() + os.sep + os.pardir)
                         app = os.path.join(app, "iosSimulator")
                         # saving simulator path for future use
-                        Shared_Resources.Set_Shared_Variables(
-                            "ios_simulator_folder_path", str(app)
-                        )
+                        Shared_Resources.Set_Shared_Variables("ios_simulator_folder_path", str(app))
 
                     app = os.path.join(app, ios)
                     encoding = "utf-8"
@@ -970,90 +863,74 @@ def start_appium_driver(
                         encoding=encoding,
                     ).strip()
 
-                    desired_caps["platformName"] = "iOS"
+                    desired_caps["app"] = app  # Use set_value() for writing to element
+                    desired_caps["bundleId"] = bundle_id.replace("\\n", "")
 
-                    desired_caps["automationName"] = "XCUITest"
+                desired_caps["platformName"] = "iOS"  # Read version #!!! Temporarily hard coded
+                desired_caps["platformVersion"] = platform_version
+                desired_caps["deviceName"] = device_name
+                desired_caps["automationName"] = "XCUITest"
+                desired_caps["wdaLocalPort"] = wdaLocalPort
+                desired_caps["udid"] = appium_details[device_id]["serial"]
+                desired_caps["newCommandTimeout"] = 6000
+                if no_reset:
+                    desired_caps["noReset"] = "true"  # Do not clear application cache when complete
+            else:  # for real ios device, not developed yet
+                # We're trying to launch an application using .app file
+                if Shared_Resources.Test_Shared_Variables("ios_simulator_folder_path"):  # if simulator path already exists
+                    app = Shared_Resources.Get_Shared_Variables("ios_simulator_folder_path")
+                    app = os.path.normpath(app)
+                else:
+                    app = os.path.normpath(os.getcwd() + os.sep + os.pardir)
+                    app = os.path.join(app, "iosSimulator")
+                    # saving simulator path for future use
+                    Shared_Resources.Set_Shared_Variables("ios_simulator_folder_path", str(app))
 
-                    desired_caps[
-                        "sendKeyStrategy"
-                    ] = "setValue"  # Use set_value() for writing to element
-                    desired_caps[
-                        "platformVersion"
-                    ] = "13.5"  # Read version #!!! Temporarily hard coded
-                    desired_caps[
-                        "deviceName"
-                    ] = "iPhone"  # Read model (only needs to be unique if using more than one)
-                    desired_caps["bundleId"] = ios
-                    desired_caps["udid"] = appium_details[device_id][
-                        "serial"
-                    ]  # Device unique identifier - use auto if using only one phone
-            else:
-                CommonUtil.ExecLog(
-                    sModuleInfo,
-                    "Invalid device type: %s" % str(appium_details[device_id]["type"]),
-                    3,
-                )
+                app = os.path.join(app, ios)
+                encoding = "utf-8"
+                bundle_id = str(subprocess.check_output(["osascript", "-e", 'id of app "%s"' % str(app)]), encoding=encoding).strip()
+
+                desired_caps["platformName"] = "iOS"
+                desired_caps["automationName"] = "XCUITest"
+                desired_caps["sendKeyStrategy"] = "setValue"  # Use set_value() for writing to element
+                desired_caps["platformVersion"] = "13.5"  # Read version #!!! Temporarily hard coded
+                desired_caps["deviceName"] = "iPhone"  # Read model (only needs to be unique if using more than one)
+                desired_caps["bundleId"] = ios
+                desired_caps["udid"] = appium_details[device_id]["serial"]  # Device unique identifier - use auto if using only one phone
+        else:
+            CommonUtil.ExecLog(sModuleInfo, "Invalid device type: %s" % str(appium_details[device_id]["type"]), 3)
+            return "zeuz_failed", launch_app
+        CommonUtil.ExecLog(sModuleInfo, "Capabilities: %s" % str(desired_caps), 1)
+
+        # Create Appium instance with capabilities
+        try:
+            count = 1
+            while count <= 5:
+                try:
+                    appium_driver = webdriver.Remote("http://localhost:%d/wd/hub" % appium_port, desired_caps)  # Create instance
+                    if appium_driver:
+                        break
+                    count += 1
+                    time.sleep(10)
+                    CommonUtil.ExecLog(sModuleInfo, "Failed to create appium driver, trying again", 2)
+                except:
+                    count += 1
+                    time.sleep(10)
+                    CommonUtil.ExecLog(sModuleInfo, "Failed to create appium driver, trying again", 2)
+
+            if appium_driver:  # Make sure we get the instance
+                appium_details[device_id]["driver"] = appium_driver
+                Shared_Resources.Set_Shared_Variables("appium_details", appium_details)
+                CommonUtil.set_screenshot_vars(Shared_Resources.Shared_Variable_Export())
+                CommonUtil.ExecLog(sModuleInfo, "Appium driver created successfully.", 1)
+                return "passed", launch_app
+            else:  # Error during setup, reset
+                appium_driver = None
+                CommonUtil.ExecLog(sModuleInfo, "Error during Appium setup", 3)
                 return "zeuz_failed", launch_app
-            CommonUtil.ExecLog(sModuleInfo, "Capabilities: %s" % str(desired_caps), 1)
+        except Exception:
+            return CommonUtil.Exception_Handler(sys.exc_info()), launch_app
 
-            # Create Appium instance with capabilities
-            try:
-                count = 1
-                while count <= 5:
-                    try:
-                        appium_driver = webdriver.Remote(
-                            "http://localhost:%d/wd/hub" % appium_port, desired_caps
-                        )  # Create instance
-                        if appium_driver:
-                            break
-                        count += 1
-                        time.sleep(10)
-                        CommonUtil.ExecLog(
-                            sModuleInfo,
-                            "Failed to create appium driver, trying again",
-                            2,
-                        )
-                    except:
-                        count += 1
-                        time.sleep(10)
-                        CommonUtil.ExecLog(
-                            sModuleInfo,
-                            "Failed to create appium driver, trying again",
-                            2,
-                        )
-
-                if appium_driver:  # Make sure we get the instance
-                    appium_details[device_id]["driver"] = appium_driver
-                    Shared_Resources.Set_Shared_Variables(
-                        "appium_details", appium_details
-                    )
-                    CommonUtil.set_screenshot_vars(
-                        Shared_Resources.Shared_Variable_Export()
-                    )  # Get all the shared variables, and pass them to CommonUtil
-                    CommonUtil.ExecLog(
-                        sModuleInfo, "Appium driver created successfully.", 1
-                    )
-                    return "passed", launch_app
-                else:  # Error during setup, reset
-                    appium_driver = None
-                    CommonUtil.ExecLog(sModuleInfo, "Error during Appium setup", 3)
-                    return "zeuz_failed", launch_app
-            except Exception as e:
-                print(e)
-                return (
-                    CommonUtil.Exception_Handler(
-                        sys.exc_info(),
-                        None,
-                        "Error connecting to Appium server to create driver instance",
-                    ),
-                    launch_app,
-                )
-
-        else:  # Driver is already setup, don't do anything
-            CommonUtil.ExecLog(
-                sModuleInfo, "Driver already configured, not re-doing", 0
-            )
-            return "passed", launch_app
     except Exception:
         return CommonUtil.Exception_Handler(sys.exc_info()), launch_app
 
@@ -1171,11 +1048,9 @@ def teardown_appium(dataset=None):
 @logger
 def close_application(data_set):
     """ Exit the application """
-
     sModuleInfo = inspect.currentframe().f_code.co_name + " : " + MODULE_NAME
-
     try:
-        CommonUtil.ExecLog(sModuleInfo, "Trying to close the app", 0)
+        CommonUtil.ExecLog(sModuleInfo, "Trying to close the app", 1)
         appium_driver.close_app()
         CommonUtil.ExecLog(sModuleInfo, "Closed the app successfully", 1)
         return "passed"
@@ -1209,7 +1084,7 @@ def install_application(data_set):
     sModuleInfo = inspect.currentframe().f_code.co_name + " : " + MODULE_NAME
 
     skip_or_not = filter_optional_action_and_step_data(data_set, sModuleInfo)
-    if skip_or_not == False:
+    if not skip_or_not:
         return
 
     # Parse data set
@@ -1217,19 +1092,11 @@ def install_application(data_set):
         file_name = ""
         serial = ""
         for row in data_set:  # Find required data
-            if (
-                row[1] == "action"
-            ):  # If using format of package on action line, and no serial number
-                serial = row[
-                    2
-                ].strip()  # May be serial or filename, we'll figure out later
-            elif (
-                row[1] == "element parameter"
-            ):  # If using the format of filename on it's own row, and possibly a serial number on the action line
+            if row[1] == "action":  # If using format of package on action line, and no serial number
+                serial = row[2].strip()  # May be serial or filename, we'll figure out later
+            elif row[1] == "element parameter":  # If using the format of filename on it's own row, and possibly a serial number on the action line
                 file_name = row[2].strip()  # Save filename
-        if (
-            file_name == ""
-        ):  # Fix previous filename from action row if no element parameter specified
+        if file_name == "":  # Fix previous filename from action row if no element parameter specified
             file_name = serial  # There was no element parameter row, so take the action row value for the filename
             serial = ""
 
@@ -1243,15 +1110,9 @@ def install_application(data_set):
             )
             return "zeuz_failed"
         if file_name in file_attachment:
-            file_name = file_attachment[
-                file_name
-            ]  # In file is an attachment, get the full path
+            file_name = file_attachment[file_name]  # In file is an attachment, get the full path
         if file_name == "":
-            CommonUtil.ExecLog(
-                sModuleInfo,
-                "File not specified or there was a problem reading the file attachments",
-                3,
-            )
+            CommonUtil.ExecLog(sModuleInfo, "File not specified or there was a problem reading the file attachments", 3)
             return "zeuz_failed"
 
         # Try to determine device serial
@@ -1266,13 +1127,9 @@ def install_application(data_set):
     try:
         result = adbOptions.install_app(file_name, serial)
         if result in failed_tag_list:
-            CommonUtil.ExecLog(
-                sModuleInfo, "Could not install application (%s)" % file_name, 3
-            )
+            CommonUtil.ExecLog(sModuleInfo, "Could not install application (%s)" % file_name, 3)
             return "zeuz_failed"
-        CommonUtil.ExecLog(
-            sModuleInfo, "Installed %s to device %s" % (file_name, serial), 1
-        )
+        CommonUtil.ExecLog(sModuleInfo, "Installed %s to device %s" % (file_name, serial), 1)
         return "passed"
 
     except Exception:
@@ -1287,7 +1144,7 @@ def uninstall_application(data_set):
     sModuleInfo = inspect.currentframe().f_code.co_name + " : " + MODULE_NAME
 
     skip_or_not = filter_optional_action_and_step_data(data_set, sModuleInfo)
-    if skip_or_not == False:
+    if not skip_or_not:
         return "passed"
 
     # Parse data set
@@ -1295,19 +1152,11 @@ def uninstall_application(data_set):
         package = ""
         serial = ""
         for row in data_set:  # Find required data
-            if (
-                row[1] == "action"
-            ):  # If using format of package on action line, and no serial number
-                serial = row[
-                    2
-                ].strip()  # May be serial or filename, we'll figure out later
-            elif (
-                row[1] == "element parameter"
-            ):  # If using the format of filename on it's own row, and possibly a serial number on the action line
+            if row[1] == "action":  # If using format of package on action line, and no serial number
+                serial = row[2].strip()  # May be serial or filename, we'll figure out later
+            elif row[1] == "element parameter":  # If using the format of filename on it's own row, and possibly a serial number on the action line
                 package = row[2].strip()  # Save filename
-        if (
-            package == ""
-        ):  # Fix previous filename from action row if no element parameter specified
+        if package == "":  # Fix previous filename from action row if no element parameter specified
             package = serial  # There was no element parameter row, so take the action row value for the filename
             serial = ""
 
@@ -1326,13 +1175,9 @@ def uninstall_application(data_set):
     try:
         result = adbOptions.uninstall_app(package, serial)
         if result in failed_tag_list:
-            CommonUtil.ExecLog(
-                sModuleInfo, "Could not uninstall application (%s)" % package, 3
-            )
+            CommonUtil.ExecLog(sModuleInfo, "Could not uninstall application (%s)" % package, 3)
             return "zeuz_failed"
-        CommonUtil.ExecLog(
-            sModuleInfo, "Uninstalled %s from device %s" % (package, serial), 1
-        )
+        CommonUtil.ExecLog(sModuleInfo, "Uninstalled %s from device %s" % (package, serial), 1)
         return "passed"
 
     except Exception:
@@ -1378,7 +1223,7 @@ def swipe_handler_ios(data_set):
     sModuleInfo = inspect.currentframe().f_code.co_name + " : " + MODULE_NAME
 
     skip_or_not = filter_optional_action_and_step_data(data_set, sModuleInfo)
-    if skip_or_not == False:
+    if not skip_or_not:
         return "passed"
 
     try:
@@ -1446,7 +1291,7 @@ def swipe_handler_android(data_set=[], save_att_data_set={}):
     sModuleInfo = inspect.currentframe().f_code.co_name + " : " + MODULE_NAME
 
     skip_or_not = filter_optional_action_and_step_data(data_set, sModuleInfo)
-    if skip_or_not == False:
+    if not skip_or_not:
         return "passed"
 
     @logger
@@ -1701,7 +1546,7 @@ def scroll_to_an_element(data_set):
     global appium_driver
     sModuleInfo = inspect.currentframe().f_code.co_name + " : " + MODULE_NAME
     skip_or_not = filter_optional_action_and_step_data(data_set, sModuleInfo)
-    if skip_or_not == False:
+    if not skip_or_not:
         return "passed"
     try:
         final_scroll_string = "new UiScrollable(new UiSelector()"
@@ -1841,7 +1686,7 @@ def swipe_in_direction(data_set):
     sModuleInfo = inspect.currentframe().f_code.co_name + " : " + MODULE_NAME
 
     skip_or_not = filter_optional_action_and_step_data(data_set, sModuleInfo)
-    if skip_or_not == False:
+    if not skip_or_not:
         return "passed"
 
     try:
@@ -2022,24 +1867,24 @@ def go_to_webpage(data_set):
     sModuleInfo = inspect.currentframe().f_code.co_name + " : " + MODULE_NAME
 
     skip_or_not = filter_optional_action_and_step_data(data_set, sModuleInfo)
-    if skip_or_not == False:
+    if not skip_or_not:
         return "passed"
 
     # Parse data set
     try:
         url = data_set[0][2]
 
-        for _ in range(3):
+        for i in range(3):
             try:
                 appium_driver.get(url)
                 return "passed"
             except:
-                CommonUtil.ExecLog(
-                    sModuleInfo, "Failed executing go_to_webpage. Retrying...", 2
-                )
+                CommonUtil.ExecLog(sModuleInfo, "Failed executing go_to_webpage. Retrying...", 2)
+                if i == 2:
+                    return CommonUtil.Exception_Handler(sys.exc_info())
+
     except Exception:
-        errMsg = "Unable to parse data set"
-        return CommonUtil.Exception_Handler(sys.exc_info(), None, errMsg)
+        return CommonUtil.Exception_Handler(sys.exc_info())
 
 
 @logger
@@ -2050,7 +1895,7 @@ def tap_location(data_set):
     sModuleInfo = inspect.currentframe().f_code.co_name + " : " + MODULE_NAME
 
     skip_or_not = filter_optional_action_and_step_data(data_set, sModuleInfo)
-    if skip_or_not == False:
+    if not skip_or_not:
         return "passed"
 
     try:
@@ -2074,7 +1919,7 @@ def get_element_location_by_id(data_set):
     sModuleInfo = inspect.currentframe().f_code.co_name + " : " + MODULE_NAME
 
     skip_or_not = filter_optional_action_and_step_data(data_set, sModuleInfo)
-    if skip_or_not == False:
+    if not skip_or_not:
         return "passed"
 
     # Parse data set
@@ -2157,7 +2002,7 @@ def Click_Element_Appium(data_set):
     sModuleInfo = inspect.currentframe().f_code.co_name + " : " + MODULE_NAME
     context_switched = False
     skip_or_not = filter_optional_action_and_step_data(data_set, sModuleInfo)
-    if skip_or_not == False:
+    if not skip_or_not:
         return "passed"
 
     try:
@@ -2338,7 +2183,7 @@ def Tap_Appium(data_set):
     sModuleInfo = inspect.currentframe().f_code.co_name + " : " + MODULE_NAME
 
     skip_or_not = filter_optional_action_and_step_data(data_set, sModuleInfo)
-    if skip_or_not == False:
+    if not skip_or_not:
         return "passed"
 
     try:
@@ -2446,7 +2291,7 @@ def Seek_Progress_Bar(data_set):
     sModuleInfo = inspect.currentframe().f_code.co_name + " : " + MODULE_NAME
 
     skip_or_not = filter_optional_action_and_step_data(data_set, sModuleInfo)
-    if skip_or_not == False:
+    if not skip_or_not:
         return "passed"
 
     try:
@@ -2529,7 +2374,7 @@ def Double_Tap_Appium(data_set):
     sModuleInfo = inspect.currentframe().f_code.co_name + " : " + MODULE_NAME
 
     skip_or_not = filter_optional_action_and_step_data(data_set, sModuleInfo)
-    if skip_or_not == False:
+    if not skip_or_not:
         return "passed"
 
     try:
@@ -2574,7 +2419,7 @@ def Long_Press_Appium(data_set):
     sModuleInfo = inspect.currentframe().f_code.co_name + " : " + MODULE_NAME
 
     skip_or_not = filter_optional_action_and_step_data(data_set, sModuleInfo)
-    if skip_or_not == False:
+    if not skip_or_not:
         return "passed"
 
     try:
@@ -2618,7 +2463,7 @@ def Enter_Text_Appium(data_set):
     context_switched = False
 
     skip_or_not = filter_optional_action_and_step_data(data_set, sModuleInfo)
-    if skip_or_not == False:
+    if not skip_or_not:
         return "passed"
 
     # Find text from action line
@@ -2818,13 +2663,11 @@ def Pickerwheel_Appium(data_set):
     sModuleInfo = inspect.currentframe().f_code.co_name + " : " + MODULE_NAME
 
     skip_or_not = filter_optional_action_and_step_data(data_set, sModuleInfo)
-    if skip_or_not == False:
+    if not skip_or_not:
         return "passed"
 
     # Find text from action line
-    text_value = (
-        ""  # Initialize as empty string in case user wants to pass an empty string
-    )
+    text_value = ""  # Initialize as empty string in case user wants to pass an empty string
     try:
         for each in data_set:
             if each[1] == "action":
@@ -2839,9 +2682,7 @@ def Pickerwheel_Appium(data_set):
     try:
         Element = LocateElement.Get_Element(data_set, appium_driver)
         if Element == "zeuz_failed":
-            CommonUtil.ExecLog(
-                sModuleInfo, "Unable to locate your element with given data.", 3
-            )
+            CommonUtil.ExecLog(sModuleInfo, "Unable to locate your element with given data.", 3)
             return "zeuz_failed"
         else:
 
@@ -2849,11 +2690,7 @@ def Pickerwheel_Appium(data_set):
             try:
                 Element.set_value(text_value)  # Enter the user specified text
             except Exception:
-                CommonUtil.ExecLog(
-                    sModuleInfo,
-                    "Found element, but couldn't write text to it. Trying another method",
-                    2,
-                )
+                CommonUtil.ExecLog(sModuleInfo, "Found element, but couldn't write text to it. Trying another method", 2)
 
             # Complete the action
             try:
@@ -2910,9 +2747,7 @@ def Clear_And_Enter_Text_ADB(data_set, serial=""):
                 Delet_Text = "KEYCODE_DEL " + Delet_Text
 
             if serial != "":
-                serial = (
-                    "-s %s" % serial
-                )  # Prepare serial number with command line switch
+                serial = "-s %s" % serial  # Prepare serial number with command line switch
             # deleting existing text by going to end of line and clicking delete multiple times
             subprocess.check_output(
                 "adb %s shell input keyevent 123" % (serial),
@@ -2941,9 +2776,7 @@ def Clear_And_Enter_Text_ADB(data_set, serial=""):
 
         if result in passed_tag_list:
             # CommonUtil.TakeScreenShot(sModuleInfo)
-            CommonUtil.ExecLog(
-                sModuleInfo, "Successfully entered text with adb shell", 1
-            )
+            CommonUtil.ExecLog(sModuleInfo, "Successfully entered text with adb shell", 1)
             appium_driver.hide_keyboard()  # Remove keyboard
             # CommonUtil.TakeScreenShot(sModuleInfo)  # Capture screen
             CommonUtil.ExecLog(sModuleInfo, "Successfully hid keyboard", 1)
@@ -2966,13 +2799,11 @@ def Clear_And_Enter_Text_Appium(data_set):
     sModuleInfo = inspect.currentframe().f_code.co_name + " : " + MODULE_NAME
 
     skip_or_not = filter_optional_action_and_step_data(data_set, sModuleInfo)
-    if skip_or_not == False:
+    if not skip_or_not:
         return "passed"
 
     # Find text from action line
-    text_value = (
-        ""  # Initialize as empty string in case user wants to pass an empty string
-    )
+    text_value = ""  # Initialize as empty string in case user wants to pass an empty string
     try:
         for each in data_set:
             if each[1] == "action":
@@ -2987,9 +2818,7 @@ def Clear_And_Enter_Text_Appium(data_set):
     try:
         Element = LocateElement.Get_Element(data_set, appium_driver)
         if Element == "zeuz_failed":
-            CommonUtil.ExecLog(
-                sModuleInfo, "Unable to locate your element with given data.", 3
-            )
+            CommonUtil.ExecLog(sModuleInfo, "Unable to locate your element with given data.", 3)
             return "zeuz_failed"
         else:
             try:
@@ -2998,9 +2827,7 @@ def Clear_And_Enter_Text_Appium(data_set):
                 Element.clear()  # Remove any text already existing
 
                 if str(appium_details[device_id]["type"]).lower() == "ios":
-                    Element.set_value(
-                        text_value
-                    )  # Work around for IOS issue in Appium v1.6.4 where send_keys() doesn't work
+                    Element.set_value(text_value)  # Work around for IOS issue in Appium v1.6.4 where send_keys() doesn't work
             except Exception:
                 errMsg = "Found element, but couldn't write text to it"
                 return CommonUtil.Exception_Handler(sys.exc_info(), None, errMsg)
@@ -3025,11 +2852,7 @@ def Clear_And_Enter_Text_Appium(data_set):
             try:
                 # appium_driver.hide_keyboard() # Remove keyboard
                 # CommonUtil.TakeScreenShot(sModuleInfo)  # Capture screen
-                CommonUtil.ExecLog(
-                    sModuleInfo,
-                    "Successfully set the value of to text to: %s" % text_value,
-                    1,
-                )
+                CommonUtil.ExecLog(sModuleInfo, "Successfully set the value of to text to: %s" % text_value, 1)
                 return "passed"
             except Exception:
                 errMsg = "Found element, but couldn't write text to it"
@@ -3044,14 +2867,9 @@ def Hide_Keyboard(data_set):
     """
     This action is used to hide keyboard:
     hide keyboard             appium action           hide
-
-
-     """
-
+    """
     sModuleInfo = inspect.currentframe().f_code.co_name + " : " + MODULE_NAME
-
     device_platform = str(appium_driver.capabilities["platformName"].strip().lower())
-
     if device_platform != "android":
         CommonUtil.ExecLog(
             sModuleInfo,
@@ -3059,7 +2877,6 @@ def Hide_Keyboard(data_set):
             2,
         )
         return "passed"
-
     try:
         if appium_driver.is_keyboard_shown():
             appium_driver.hide_keyboard()  # Remove keyboard
@@ -3074,7 +2891,6 @@ def Hide_Keyboard(data_set):
 def Android_Keystroke_Key_Mapping(keystroke, hold_key=False):
     """ Provides a friendly interface to invoke key events """
     # Keycodes: https://developer.android.com/reference/android/view/KeyEvent.html
-
     sModuleInfo = inspect.currentframe().f_code.co_name + " : " + MODULE_NAME
 
     # Sanitize input
@@ -3200,7 +3016,7 @@ def Keystroke_Appium(data_set):
     sModuleInfo = inspect.currentframe().f_code.co_name + " : " + MODULE_NAME
 
     skip_or_not = filter_optional_action_and_step_data(data_set, sModuleInfo)
-    if skip_or_not == False:
+    if not skip_or_not:
         return "passed"
 
     # Parse data set
@@ -3270,7 +3086,7 @@ def Validate_Text_Appium(data_set):
     sModuleInfo = inspect.currentframe().f_code.co_name + " : " + MODULE_NAME
 
     skip_or_not = filter_optional_action_and_step_data(data_set, sModuleInfo)
-    if skip_or_not == False:
+    if not skip_or_not:
         return "passed"
 
     data_set = [data_set]
@@ -3315,9 +3131,7 @@ def Validate_Text_Appium(data_set):
                 list_of_element_text.append(list_of_element)
         elif len(Element) > 1:
             for each_text in Element:
-                list_of_element = each_text.text.split(
-                    "\n"
-                )  # Extract the text elements
+                list_of_element = each_text.text.split("\n")  # Extract the text elements
                 list_of_element_text.append(list_of_element[0])
         else:
             return "zeuz_failed"
@@ -3340,9 +3154,7 @@ def Validate_Text_Appium(data_set):
             )
             #             print (">>>>>>>> Actual Text: %s" %actual_text_data)
             for each_actual_text_data_item in actual_text_data:
-                if (
-                    expected_text_data[0] in each_actual_text_data_item
-                ):  # index [0] used to remove the unicode 'u' from the text string
+                if expected_text_data[0] in each_actual_text_data_item:  # index [0] used to remove the unicode 'u' from the text string
                     CommonUtil.ExecLog(
                         sModuleInfo,
                         "Validate the text element %s using partial match."
@@ -3495,7 +3307,7 @@ def get_program_names(search_name):
 
     # Find package name for the program that's already installed
     try:
-        if adbOptions.is_android_connected(device_serial) == False:
+        if not adbOptions.is_android_connected(device_serial):
             CommonUtil.ExecLog(
                 sModuleInfo, "Could not detect any connected Android devices", 3
             )
@@ -3588,7 +3400,7 @@ def device_information(data_set):
     sModuleInfo = inspect.currentframe().f_code.co_name + " : " + MODULE_NAME
 
     skip_or_not = filter_optional_action_and_step_data(data_set, sModuleInfo)
-    if skip_or_not == False:
+    if not skip_or_not:
         return "passed"
 
     # Parse data set
@@ -3630,7 +3442,7 @@ def device_information(data_set):
 
     # Ensure device is connected
     if dep == "android":
-        if adbOptions.is_android_connected(device_serial) == False:
+        if not adbOptions.is_android_connected(device_serial):
             CommonUtil.ExecLog(sModuleInfo, "Could not detect any connected Android devices", 3)
             return "zeuz_failed"
 
@@ -3730,7 +3542,7 @@ def set_device_password(data_set):
     sModuleInfo = inspect.currentframe().f_code.co_name + " : " + MODULE_NAME
 
     skip_or_not = filter_optional_action_and_step_data(data_set, sModuleInfo)
-    if skip_or_not == False:
+    if not skip_or_not:
         return "passed"
 
     # Parse data set
@@ -3763,7 +3575,7 @@ def switch_device(data_set):
     sModuleInfo = inspect.currentframe().f_code.co_name + " : " + MODULE_NAME
 
     skip_or_not = filter_optional_action_and_step_data(data_set, sModuleInfo)
-    if skip_or_not == False:
+    if not skip_or_not:
         return "passed"
 
     # Parse data set
@@ -3804,7 +3616,7 @@ def package_information(data_set):
     sModuleInfo = inspect.currentframe().f_code.co_name + " : " + MODULE_NAME
 
     skip_or_not = filter_optional_action_and_step_data(data_set, sModuleInfo)
-    if skip_or_not == False:
+    if not skip_or_not:
         return "passed"
 
     # Parse data set
@@ -3893,7 +3705,7 @@ def minimize_appilcation(data_set):
     sModuleInfo = inspect.currentframe().f_code.co_name + " : " + MODULE_NAME
 
     skip_or_not = filter_optional_action_and_step_data(data_set, sModuleInfo)
-    if skip_or_not == False:
+    if not skip_or_not:
         return "passed"
 
     try:
@@ -3914,7 +3726,7 @@ def maximize_appilcation(data_set):
     sModuleInfo = inspect.currentframe().f_code.co_name + " : " + MODULE_NAME
 
     skip_or_not = filter_optional_action_and_step_data(data_set, sModuleInfo)
-    if skip_or_not == False:
+    if not skip_or_not:
         return "passed"
 
     try:
@@ -3959,7 +3771,7 @@ def Handle_Mobile_Alert(data_set):
     sModuleInfo = inspect.currentframe().f_code.co_name + " : " + MODULE_NAME
 
     skip_or_not = filter_optional_action_and_step_data(data_set, sModuleInfo)
-    if skip_or_not == False:
+    if not skip_or_not:
         return "passed"
 
     try:
@@ -4065,7 +3877,7 @@ def Switch_Context(data_set):
     """
     sModuleInfo = inspect.currentframe().f_code.co_name + " : " + MODULE_NAME
     skip_or_not = filter_optional_action_and_step_data(data_set, sModuleInfo)
-    if skip_or_not == False:
+    if not skip_or_not:
         return "passed"
 
     try:
@@ -4140,7 +3952,7 @@ def Save_Attribute_appium(step_data):
     """
     sModuleInfo = inspect.currentframe().f_code.co_name + " : " + MODULE_NAME
     skip_or_not = filter_optional_action_and_step_data(step_data, sModuleInfo)
-    if skip_or_not == False:
+    if not skip_or_not:
         return "passed"
 
     try:
@@ -4473,7 +4285,7 @@ def if_element_exists(data_set):
     sModuleInfo = inspect.currentframe().f_code.co_name + " : " + MODULE_NAME
 
     skip_or_not = filter_optional_action_and_step_data(data_set, sModuleInfo)
-    if skip_or_not == False:
+    if not skip_or_not:
         return "passed"
 
     try:

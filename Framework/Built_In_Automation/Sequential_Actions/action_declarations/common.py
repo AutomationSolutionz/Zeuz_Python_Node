@@ -29,6 +29,7 @@ declarations = (
     { "name": "randomize list",                              "function": "Randomize_List",                        "screenshot": "none" },
     { "name": "create 3d list",                              "function": "create_3d_list",                        "screenshot": "none" },
     { "name": "download ftp file",                           "function": "download_ftp_file",                     "screenshot": "none" },
+    { "name": "read text file",                              "function": "Read_text_file",                        "screenshot": "none" },
     { "name": "save text from file into variable",           "function": "save_text_from_file_into_variable",     "screenshot": "none" },
     { "name": "compare partial variable",                    "function": "Compare_Partial_Variables",             "screenshot": "none" },
     { "name": "save value from dictionary by key",           "function": "save_dict_value_by_key",                "screenshot": "none" },
