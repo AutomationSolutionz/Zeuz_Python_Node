@@ -1063,7 +1063,8 @@ def path_parser(path: str) -> str:
                     a = w[i][j]
 
         new_path = new_path + a + "\\"
-        new_path = new_path[:-1]
+
+    new_path = new_path[:-1]
     print(new_path)
 
     return new_path
