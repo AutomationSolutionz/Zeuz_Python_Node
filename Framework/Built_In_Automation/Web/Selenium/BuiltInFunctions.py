@@ -302,7 +302,7 @@ def Open_Electron_App(data_set):
         for left, _, right in data_set:
             left = left.lower().strip()
             if "windows" in left and platform.system() == "Windows":
-                desktop_app_path = right
+                desktop_app_path = right.strip()
             elif "mac" in left and platform.system() == "Darwin":
                 desktop_app_path = right
             elif "linux" in left and platform.system() == "Linux":
@@ -785,6 +785,7 @@ def Go_To_Link(step_data, page_title=False):
 
 @logger
 def Handle_Browser_Alert(step_data):
+    global selenium_driver
     # accepts browser alert
     """
     wait           optional parameter  5.0
@@ -820,18 +821,18 @@ def Handle_Browser_Alert(step_data):
 
     try:
         if choice_lower in ("accept", "pass", "yes", "ok"):
-            selenium_driver.switch_to_alert().accept()
+            selenium_driver.switch_to.alert.accept()
             CommonUtil.ExecLog(sModuleInfo, "Browser alert accepted", 1)
             return "passed"
 
         elif choice_lower in ("reject", "fail", "no", "cancel"):
-            selenium_driver.switch_to_alert().dismiss()
+            selenium_driver.switch_to.alert.dismiss()
             CommonUtil.ExecLog(sModuleInfo, "Browser alert rejected", 1)
             return "passed"
 
         elif "get text" in choice_lower:
-            alert_text = selenium_driver.switch_to_alert().text
-            selenium_driver.switch_to_alert().accept()
+            alert_text = selenium_driver.switch_to.alert.text
+            selenium_driver.switch_to.alert.accept()
             variable_name = (choice.split("="))[1]
             result = Shared_Resources.Set_Shared_Variables(
                 variable_name, alert_text
@@ -848,8 +849,8 @@ def Handle_Browser_Alert(step_data):
 
         elif "send text" in choice_lower:
             text_to_send = (choice.split("="))[1]
-            selenium_driver.switch_to_alert().send_keys(text_to_send)
-            selenium_driver.switch_to_alert().accept()
+            selenium_driver.switch_to.alert.send_keys(text_to_send)
+            selenium_driver.switch_to.alert.accept()
             return "passed"
 
         else:
@@ -3554,7 +3555,7 @@ def upload_file(step_data):
 
 # Method to upload file
 @logger
-def drag_and_drop(dataset):
+def drag_and_drop(step_data):
     sModuleInfo = inspect.currentframe().f_code.co_name + " : " + MODULE_NAME
     global selenium_driver
     try:
@@ -3576,24 +3577,25 @@ def drag_and_drop(dataset):
                 source.append((left, mid, right))
                 destination.append((left, mid, right))
 
-        if not source:
-            CommonUtil.ExecLog(sModuleInfo, 'Please provide source element with "src element parameter", "src parent parameter" etc. Example:\n'+
-               "(id, src element parameter, file)", 3)
+        if source == "":
+            CommonUtil.ExecLog(
+                sModuleInfo, "No source element specified for drag and drop", 3
+            )
             return "zeuz_failed"
-        if not destination:
-            CommonUtil.ExecLog(sModuleInfo, 'Please provide Destination element with "dst element parameter", "dst parent parameter" etc. Example:\n'+
-               "(id, dst element parameter, table)", 3)
-            return "zeuz_failed"
-
-        source_element = LocateElement.Get_Element(source, selenium_driver)
-        if source_element == "zeuz_failed":
-            CommonUtil.ExecLog(sModuleInfo, "Source Element is not found", 3)
+        elif destination == "":
+            CommonUtil.ExecLog(
+                sModuleInfo, "No destination element specified for drag and drop", 3
+            )
             return "zeuz_failed"
 
-        destination_element = LocateElement.Get_Element(destination, selenium_driver)
-        if destination_element == "zeuz_failed":
-            CommonUtil.ExecLog(sModuleInfo, "Destination Element is not found", 3)
-            return "zeuz_failed"
+        source_element = Shared_Resources.Get_Shared_Variables(source)
+        if source_element in failed_tag_list:
+            CommonUtil.ExecLog(
+                sModuleInfo,
+                "No element found in shared variables named '%s' which is defined as source for drag and drop",
+                source,
+                3,
+            )
 
         # ActionChains(selenium_driver).drag_and_drop(source_element, destination_element).perform()
         ActionChains(selenium_driver).click_and_hold(source_element).move_to_element(destination_element).pause(0.5).release(destination_element).perform()
