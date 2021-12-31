@@ -1,6 +1,10 @@
 # Changelog
 
 # Version 14
+### [14.8.2] [December 31, 2021]
+- **[Improve]** If browser is closed then teardown automatically and restart browser
+- **[Improve]** Support for running apps simultaneously in same mobile
+
 ### [14.8.1] [December 23, 2021]
 - **[Improve]** Web Drag and Drop action is combined into single action
 
