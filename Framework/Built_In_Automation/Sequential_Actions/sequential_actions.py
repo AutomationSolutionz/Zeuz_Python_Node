@@ -2173,8 +2173,11 @@ def Action_Handler(_data_set, action_row, _bypass_bug=True):
         result = run_function(data_set)  # Execute function, providing all rows in the data set
         CommonUtil.TakeScreenShot(function)
         if _bypass_bug:
+            CommonUtil.print_execlog = False
             bypass_bug(action_name, action_subfield)
+            CommonUtil.print_execlog = True
         return result  # Return result to sequential_actions()
 
     except Exception:
+        CommonUtil.print_execlog = True
         return CommonUtil.Exception_Handler(sys.exc_info())

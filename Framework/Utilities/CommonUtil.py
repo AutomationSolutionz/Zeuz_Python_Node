@@ -98,6 +98,7 @@ performance_report = {"data": [], "individual_stats": {"slowest": 0, "fastest": 
 # Holds the previously logged message (used for prevention of duplicate logs simultaneously)
 previous_log_line = None
 teardown = True
+print_execlog = True
 
 step_module_name = None
 
@@ -446,6 +447,8 @@ def ExecLog(
     # Do not log anything if load testing is going on and we're not forced to write logs
     if load_testing and not force_write:
         return
+
+    if not print_execlog: return    # For bypass_bug() function dont print logs
 
     # Read from settings file
     debug_mode = ConfigModule.get_config_value("RunDefinition", "debug_mode")
