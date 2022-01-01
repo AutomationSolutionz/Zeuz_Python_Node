@@ -1074,6 +1074,7 @@ def path_parser(path: str) -> str:
         sModuleInfo = inspect.currentframe().f_code.co_name + " : " + MODULE_NAME
         if not path.startswith("~") and "*" not in path:
             return path  # dont print execlog
+        inp_path = path
         if path.startswith("~"):
             path = path.replace("~", os.path.expanduser("~"), 1)
 
@@ -1094,8 +1095,8 @@ def path_parser(path: str) -> str:
                         final = j
                         break
                 else:
-                    ExecLog(sModuleInfo, "No file_path or directory was found", 3)
-                    return "zeuz_failed"
+                    ExecLog(sModuleInfo, "No file_path or directory was found with: %s" % inp_path, 3)
+                    raise Exception
 
             new_path = new_path + final + os.sep
 
@@ -1103,4 +1104,5 @@ def path_parser(path: str) -> str:
         ExecLog(sModuleInfo, new_path, 1)
         return new_path
     except:
-        return Exception_Handler(sys.exc_info())
+        Exception_Handler(sys.exc_info())
+        raise Exception
