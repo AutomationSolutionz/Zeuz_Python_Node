@@ -2052,7 +2052,10 @@ def Extract_Table_Data(step_data):
             return "zeuz_failed"
         if Element.tag_name != "tbody":
             CommonUtil.ExecLog(sModuleInfo, 'Tag name of the Element is not "tbody"', 2)
-
+        i = m = 0
+        j = n = None
+        comma_separated_row = False
+        comma_separated_column = False
         try:
             for left, mid, right in step_data:
                 left = left.strip().lower()
@@ -2060,17 +2063,56 @@ def Extract_Table_Data(step_data):
                 if left == "extract table data":
                     variable_name = right
                 elif "row" in left:
-                    pass        # Todo: We will extract data on that range
+                    if len(right) == 1:
+                        i = int(right)
+                        j = int(right)+1
+                    else:
+                        if ":" in right :
+                            right = right.split(":")
+                            i = int(right[0])
+                            j = int(right[1])+1
+                        else:
+                            right =right.split(",")
+                            comma_separated_row = True
+                            comma_list_row =[]
+                            for b in right :
+                                comma_list_row.append(int(b))
                 elif "column" in left:
-                    pass        # Todo: We will extract data on that range
+                    if len(right) == 1:
+                        m = int(right)
+                        n = int(right)+1
+                    else:
+                        if ":" in right :
+                            right = right.split(":")
+                            m = int(right[0])
+                            n = int(right[1])+1
+                        else:
+                            right =right.split(",")
+                            comma_separated_column = True
+                            comma_list_column =[]
+                            for a in right :
+                                comma_list_column.append(int(a))
+
+
         except:
             CommonUtil.ExecLog(sModuleInfo, "Unable to parse data. Please write data in correct format", 3)
             return "zeuz_failed"
 
         variable_value = []
-        all_tr = Element.find_elements_by_tag_name("tr")
+        if comma_separated_row == True:
+            all_tr = []
+            for i in comma_list_row :
+                all_tr.append(Element.find_elements_by_tag_name("tr")[i])
+        else:
+            all_tr = Element.find_elements_by_tag_name("tr")[i:j]
+
         for row in all_tr:
-            all_td = row.find_elements_by_tag_name("td")
+            if comma_separated_column == True:
+                all_td =[]
+                for i in comma_list_column :
+                    all_td.append(row.find_elements_by_tag_name("td")[i])
+            else:
+                all_td = row.find_elements_by_tag_name("td")[m:n]
             td_data = []
             for td in all_td:
                 td_data.append(td.text)
