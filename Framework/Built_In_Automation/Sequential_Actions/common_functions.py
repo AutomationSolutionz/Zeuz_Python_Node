@@ -9,6 +9,8 @@ import inspect, sys, time, collections, ftplib, os, ast, copy, csv, yaml
 from pathlib import Path
 
 from bs4 import BeautifulSoup
+from premailer import transform
+
 from imap_tools import MailBox
 import re
 from typing import List
@@ -3846,6 +3848,93 @@ def compare_text_and_font(data_set):
                     3,
                 )
                 return "zeuz_failed"
+
+
+    except:
+        return CommonUtil.Exception_Handler(sys.exc_info())
+@logger
+def compare_identifiers_content(data_set):
+    sModuleInfo = inspect.currentframe().f_code.co_name + " : " + MODULE_NAME
+    try:
+        parentpath = None
+        childpath = None
+        attr = None
+        exclude=None
+        for left, middle, right in data_set:
+            left = left.lower().strip()
+            middle = middle.lower().strip()
+            right = right
+            if "base file" == left:
+                parentpath = right
+            elif "files to be compared" == left:
+                childpath = right
+            elif "attr" == left:
+                attr = right
+            elif "exclude" == left:
+                exclude = right
+        # Expand ~ (home directory of user) to absolute path.
+        if "~" in parentpath:
+            parentpath = Path(os.path.expanduser(parentpath))
+
+        if "~" in childpath:
+            childpath = Path(os.path.expanduser(childpath))
+
+        parentpath = Path(parentpath)
+        childpath = Path(childpath)
+
+        with open(parentpath) as pf:
+            p_soup = BeautifulSoup(pf, 'html.parser')
+
+        with open(childpath) as cf:
+            c_soup = BeautifulSoup(cf, 'html.parser')
+        p_soup=BeautifulSoup(transform(str(p_soup)))
+        c_soup=BeautifulSoup(transform(str(c_soup)))
+        if attr != None:
+            p_all_bold = p_soup.select(attr)
+            c_all_bold = c_soup.select(attr)
+            p_texts = list(set(list(map(lambda tag: tag.text, p_all_bold))))
+            c_texts = list(set(list(map(lambda tag: tag.text, c_all_bold))))
+
+            if exclude!=None:
+                p_exclude=p_soup.select(exclude)
+                c_exclude=c_soup.select(exclude)
+                p_exclude_texts = list(set(list(map(lambda tag: tag.text, p_exclude))))
+                c_exclude_texts = list(set(list(map(lambda tag: tag.text, c_exclude))))
+                p_texts=[d for d in p_texts if d not in p_exclude_texts]
+                c_texts=[d for d in c_texts if d not in c_exclude_texts]
+
+            matched_text=[d for d in c_texts if d  in p_texts]
+            not_matched_text = [d for d in c_texts if d not in p_texts]
+            matched_text=list(set(matched_text))
+            not_matched_text=list(set(not_matched_text))
+            CommonUtil.ExecLog(
+                sModuleInfo,
+            "Matched found : %s" % (
+                            str(len(matched_text))),
+                        1,
+                    )
+            CommonUtil.ExecLog(
+                sModuleInfo,
+            "Text Not Matched : %s" % (
+                            str(len(not_matched_text))),
+                        1,
+                    )
+            CommonUtil.ExecLog(
+                sModuleInfo,
+            "Not Matched Text are : %s" %
+            (str(', '.join(not_matched_text))),
+                        1,
+                    )
+
+            return "passed"
+        else:
+            CommonUtil.ExecLog(
+                sModuleInfo,
+                "attr parameter must need to compare",
+                3
+            )
+            return "zeuz_failed"
+
 
 
     except:
