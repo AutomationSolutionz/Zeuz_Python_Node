@@ -3664,9 +3664,9 @@ def compare_item_occurrence(data_set):
             left = left.lower().strip()
             middle = middle.lower().strip()
             right = right.strip()
-            if "parent file" == left:
+            if "base file" == left:
                 parentpath = right
-            elif "child file" == left:
+            elif "files to be compared" == left:
                 childpath = right
             elif "selector" == left:
                 selector = right
@@ -3727,9 +3727,9 @@ def compare_text_and_font(data_set):
             left = left.lower().strip()
             middle = middle.lower().strip()
             right = right
-            if "parent file" == left:
+            if "base file" == left:
                 parentpath = right
-            elif "child file" == left:
+            elif "files to be compared" == left:
                 childpath = right
             elif "text" == left:
                 text = right
@@ -3853,6 +3853,7 @@ def compare_text_and_font(data_set):
     except:
         return CommonUtil.Exception_Handler(sys.exc_info())
 @logger
+
 def compare_identifiers_content(data_set):
     sModuleInfo = inspect.currentframe().f_code.co_name + " : " + MODULE_NAME
     try:
