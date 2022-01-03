@@ -1029,6 +1029,7 @@ def playback_recorded_events(data_set):
             left = left.lower().strip()
             if "file path" in left:
                 filepath = right.strip()
+                filepath = CommonUtil.path_parser(filepath)
             elif "speed factor" in left:
                 speed_factor = float(right.strip())
 

@@ -1293,6 +1293,7 @@ def Click_and_Download(data_set, retry=0):
                 use_js = right.strip().lower() in ("true", "yes", "1")
             elif left.strip().lower() == "folder path" and mid.strip().lower() == "parameter":
                 filepath = right.strip()
+                filepath = CommonUtil.path_parser(filepath)
 
             # On next improvement user will have option to tell the filename and only that filename will be copied from
             # the initial download directory

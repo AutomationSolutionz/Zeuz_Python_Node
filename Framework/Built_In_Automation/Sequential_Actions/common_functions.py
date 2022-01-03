@@ -2069,6 +2069,7 @@ def download_ftp_file(data_set):
                 file_to_download = str(row[2]).strip()
             elif str(row[0]).strip().lower() == "local file path":
                 local_file_path = str(row[2]).strip()
+                local_file_path = CommonUtil.path_parser(local_file_path)
 
         if ftp_usr == "" or ftp_srv == "" or ftp_pass == "" or file_to_download == "":
             CommonUtil.ExecLog(
