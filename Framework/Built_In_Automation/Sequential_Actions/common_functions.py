@@ -3877,7 +3877,7 @@ def compare_identifiers_content(data_set):
                 exclude = right
             elif "content" == left:
                 content = right
-            elif "step result" == left:
+            elif "end result" == left:
                 step_result = right
 
         # Expand ~ (home directory of user) to absolute path.
@@ -3916,11 +3916,25 @@ def compare_identifiers_content(data_set):
             matched_text=[d for d in c_texts if d  in p_texts]
             not_matched_text = [d for d in c_texts if d not in p_texts]
             if content=='text':
-                matched_text = [d for d in matched_text if d.isnumeric()==False]
-                not_matched_text = [d for d in not_matched_text if d.isnumeric()==False]
+                temp=[]
+                for index in range(len(matched_text)):
+                    text_list=matched_text[index].split('\n')
+                    text_list=list(filter(lambda x: x != "", text_list))
+                    # matched_text.pop(index)
+                    temp+=text_list
+                matched_text=temp
+                temp=[]
+                for index in range(len(not_matched_text)):
+                    text_list=not_matched_text[index].split('\n')
+                    text_list=list(filter(lambda x: x != "", text_list))
+                    # not_matched_text.pop(index)
+                    temp+=text_list
+                not_matched_text=temp
+                matched_text = [d for d in matched_text if d.replace(',', '').isnumeric()==False]
+                not_matched_text = [d for d in not_matched_text if d.replace(',', '').isnumeric()==False]
             elif content=="numeric" or content=="number":
-                matched_text = [d for d in matched_text if d.isnumeric()]
-                not_matched_text = [d for d in not_matched_text if d.isnumeric()]
+                matched_text = [d for d in matched_text if d.replace(',', '').isnumeric()]
+                not_matched_text = [d for d in not_matched_text if d.replace(',', '').isnumeric()]
 
             matched_text=list(set(matched_text))
             not_matched_text=list(set(not_matched_text))
@@ -3930,7 +3944,7 @@ def compare_identifiers_content(data_set):
                             str(len(matched_text))),
                         1,
                     )
-            if step_result!="passed":
+            if step_result!="pass":
                 CommonUtil.ExecLog(
                     sModuleInfo,
                 "Text Not Matched : %s" % (
