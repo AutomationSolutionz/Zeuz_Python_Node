@@ -3861,6 +3861,8 @@ def compare_identifiers_content(data_set):
         childpath = None
         attr = None
         exclude=None
+        content=None
+        step_result=None
         for left, middle, right in data_set:
             left = left.lower().strip()
             middle = middle.lower().strip()
@@ -3873,6 +3875,11 @@ def compare_identifiers_content(data_set):
                 attr = right
             elif "exclude" == left:
                 exclude = right
+            elif "content" == left:
+                content = right
+            elif "step result" == left:
+                step_result = right
+
         # Expand ~ (home directory of user) to absolute path.
         if "~" in parentpath:
             parentpath = Path(os.path.expanduser(parentpath))
@@ -3888,8 +3895,10 @@ def compare_identifiers_content(data_set):
 
         with open(childpath) as cf:
             c_soup = BeautifulSoup(cf, 'html.parser')
+
         p_soup=BeautifulSoup(transform(str(p_soup)))
         c_soup=BeautifulSoup(transform(str(c_soup)))
+
         if attr != None:
             p_all_bold = p_soup.select(attr)
             c_all_bold = c_soup.select(attr)
@@ -3906,6 +3915,13 @@ def compare_identifiers_content(data_set):
 
             matched_text=[d for d in c_texts if d  in p_texts]
             not_matched_text = [d for d in c_texts if d not in p_texts]
+            if content=='text':
+                matched_text = [d for d in matched_text if d.isnumeric()==False]
+                not_matched_text = [d for d in not_matched_text if d.isnumeric()==False]
+            elif content=="numeric" or content=="number":
+                matched_text = [d for d in matched_text if d.isnumeric()]
+                not_matched_text = [d for d in not_matched_text if d.isnumeric()]
+
             matched_text=list(set(matched_text))
             not_matched_text=list(set(not_matched_text))
             CommonUtil.ExecLog(
@@ -3914,18 +3930,35 @@ def compare_identifiers_content(data_set):
                             str(len(matched_text))),
                         1,
                     )
-            CommonUtil.ExecLog(
-                sModuleInfo,
-            "Text Not Matched : %s" % (
-                            str(len(not_matched_text))),
-                        1,
-                    )
-            CommonUtil.ExecLog(
-                sModuleInfo,
-            "Not Matched Text are : %s" %
-            (str(', '.join(not_matched_text))),
-                        1,
-                    )
+            if step_result!="passed":
+                CommonUtil.ExecLog(
+                    sModuleInfo,
+                "Text Not Matched : %s" % (
+                                str(len(not_matched_text))),
+                            3,
+                        )
+                if(len(not_matched_text)>0):
+                    CommonUtil.ExecLog(
+                        sModuleInfo,
+                    "Not Matched Text are : %s" %
+                    (str(', '.join(not_matched_text))),
+                                3,
+                            )
+                return "zeuz_failed"
+            else:
+                CommonUtil.ExecLog(
+                    sModuleInfo,
+                "Text Not Matched : %s" % (
+                                str(len(not_matched_text))),
+                            1,
+                        )
+                if(len(not_matched_text)>0):
+                    CommonUtil.ExecLog(
+                        sModuleInfo,
+                    "Not Matched Text are : %s" %
+                    (str(', '.join(not_matched_text))),
+                                1,
+                            )
 
             return "passed"
         else:
