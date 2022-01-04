@@ -2068,30 +2068,30 @@ def Extract_Table_Data(step_data):
                         i = int(right)
                         j = int(right)+1
                     else:
-                        if ":" in right :
+                        if ":" in right:
                             right = right.split(":")
                             i = int(right[0])
                             j = int(right[1])+1
                         else:
-                            right =right.split(",")
+                            right = right.split(",")
                             comma_separated_row = True
-                            comma_list_row =[]
-                            for b in right :
+                            comma_list_row = []
+                            for b in right:
                                 comma_list_row.append(int(b))
                 elif "column" in left:
                     if len(right) == 1:
                         m = int(right)
                         n = int(right)+1
                     else:
-                        if ":" in right :
+                        if ":" in right:
                             right = right.split(":")
                             m = int(right[0])
                             n = int(right[1])+1
                         else:
-                            right =right.split(",")
+                            right = right.split(",")
                             comma_separated_column = True
-                            comma_list_column =[]
-                            for a in right :
+                            comma_list_column = []
+                            for a in right:
                                 comma_list_column.append(int(a))
 
 
@@ -2100,17 +2100,17 @@ def Extract_Table_Data(step_data):
             return "zeuz_failed"
 
         variable_value = []
-        if comma_separated_row == True:
+        if comma_separated_row:
             all_tr = []
-            for i in comma_list_row :
+            for i in comma_list_row:
                 all_tr.append(Element.find_elements_by_tag_name("tr")[i])
         else:
             all_tr = Element.find_elements_by_tag_name("tr")[i:j]
 
         for row in all_tr:
-            if comma_separated_column == True:
+            if comma_separated_column:
                 all_td =[]
-                for i in comma_list_column :
+                for i in comma_list_column:
                     all_td.append(row.find_elements_by_tag_name("td")[i])
             else:
                 all_td = row.find_elements_by_tag_name("td")[m:n]
