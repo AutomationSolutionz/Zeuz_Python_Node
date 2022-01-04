@@ -3944,7 +3944,7 @@ def compare_identifiers_content(data_set):
                     (str(', '.join(not_matched_text))),
                                 3,
                             )
-                return "zeuz_failed"
+                    return "zeuz_failed"
             else:
                 CommonUtil.ExecLog(
                     sModuleInfo,
