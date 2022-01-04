@@ -3913,31 +3913,36 @@ def compare_identifiers_content(data_set):
                 p_texts=[d for d in p_texts if d not in p_exclude_texts]
                 c_texts=[d for d in c_texts if d not in c_exclude_texts]
 
-            matched_text=[d for d in c_texts if d  in p_texts]
-            not_matched_text = [d for d in c_texts if d not in p_texts]
+            temp=[]
+            for index in range(len(p_texts)):
+                text_list=p_texts[index].split('\n')
+                text_list=list(filter(lambda x: x != "" and x!="(" and x!=")", text_list))
+                # matched_text.pop(index)
+                temp+=text_list
+            p_texts=temp
+            temp=[]
+            for index in range(len(c_texts)):
+                text_list=c_texts[index].split('\n')
+                text_list=list(filter(lambda x: x != "" and x!="(" and x!=")", text_list))
+                # not_matched_text.pop(index)
+                temp+=text_list
+            c_texts=temp
+
+
             if content=='text':
-                temp=[]
-                for index in range(len(matched_text)):
-                    text_list=matched_text[index].split('\n')
-                    text_list=list(filter(lambda x: x != "", text_list))
-                    # matched_text.pop(index)
-                    temp+=text_list
-                matched_text=temp
-                temp=[]
-                for index in range(len(not_matched_text)):
-                    text_list=not_matched_text[index].split('\n')
-                    text_list=list(filter(lambda x: x != "", text_list))
-                    # not_matched_text.pop(index)
-                    temp+=text_list
-                not_matched_text=temp
-                matched_text = [d for d in matched_text if d.replace(',', '').isnumeric()==False]
-                not_matched_text = [d for d in not_matched_text if d.replace(',', '').isnumeric()==False]
+                p_texts = [d for d in p_texts if d.replace('(','').replace(')','').replace('$','').replace('=','').replace(',', '').isnumeric()==False]
+                c_texts = [d for d in c_texts if d.replace('(','').replace(')','').replace('$','').replace('=','').replace(',', '').isnumeric()==False]
             elif content=="numeric" or content=="number":
-                matched_text = [d for d in matched_text if d.replace(',', '').isnumeric()]
-                not_matched_text = [d for d in not_matched_text if d.replace(',', '').isnumeric()]
+                p_texts = [d for d in p_texts if d.replace(',', '').isnumeric()]
+                c_texts = [d for d in c_texts if d.replace(',', '').isnumeric()]
+
+            matched_text=[d for d in c_texts if d  in p_texts]
+            p_not_matched_text = [d for d in c_texts if d not in p_texts]
+            c_not_matched_text = [d for d in p_texts if d not in c_texts]
 
             matched_text=list(set(matched_text))
-            not_matched_text=list(set(not_matched_text))
+            p_not_matched_text=list(set(p_not_matched_text))
+            c_not_matched_text=list(set(c_not_matched_text))
             CommonUtil.ExecLog(
                 sModuleInfo,
             "Matched found : %s" % (
@@ -3948,14 +3953,21 @@ def compare_identifiers_content(data_set):
                 CommonUtil.ExecLog(
                     sModuleInfo,
                 "Text Not Matched : %s" % (
-                                str(len(not_matched_text))),
+                                str(len(p_not_matched_text)+len(c_not_matched_text))),
                             3,
                         )
-                if(len(not_matched_text)>0):
+                if(len(p_not_matched_text)>0):
                     CommonUtil.ExecLog(
                         sModuleInfo,
-                    "Not Matched Text are : %s" %
-                    (str(', '.join(not_matched_text))),
+                    "Not Matched Text in base file : %s" %
+                    (str(', '.join(p_not_matched_text))),
+                                3,
+                            )
+                if(len(c_not_matched_text)>0):
+                    CommonUtil.ExecLog(
+                        sModuleInfo,
+                    "Not Matched Text in compared file : %s" %
+                    (str(', '.join(c_not_matched_text))),
                                 3,
                             )
                     return "zeuz_failed"
@@ -3963,14 +3975,21 @@ def compare_identifiers_content(data_set):
                 CommonUtil.ExecLog(
                     sModuleInfo,
                 "Text Not Matched : %s" % (
-                                str(len(not_matched_text))),
+                                str(len(p_not_matched_text)+len(c_not_matched_text))),
                             1,
                         )
-                if(len(not_matched_text)>0):
+                if(len(p_not_matched_text)>0):
                     CommonUtil.ExecLog(
                         sModuleInfo,
-                    "Not Matched Text are : %s" %
-                    (str(', '.join(not_matched_text))),
+                    "Not Matched Text in base file : %s" %
+                    (str(', '.join(p_not_matched_text))),
+                                1,
+                            )
+                if(len(c_not_matched_text)>0):
+                    CommonUtil.ExecLog(
+                        sModuleInfo,
+                    "Not Matched Text in compared file : %s" %
+                    (str(', '.join(c_not_matched_text))),
                                 1,
                             )
 
