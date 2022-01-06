@@ -2071,46 +2071,19 @@ def Extract_Table_Data(step_data):
             return "zeuz_failed"
         if Element.tag_name != "tbody":
             CommonUtil.ExecLog(sModuleInfo, 'Tag name of the Element is not "tbody"', 2)
-        i = m = 0
-        j = n = None
-        comma_separated_row = False
-        comma_separated_column = False
+        _row = ""
+        _column = ""
         try:
             for left, mid, right in step_data:
                 left = left.strip().lower()
                 right = right.strip()
+                mid = mid.strip().lower()
                 if left == "extract table data":
                     variable_name = right
-                elif "row" in left:
-                    if len(right) == 1:
-                        i = int(right)
-                        j = int(right)+1
-                    else:
-                        if ":" in right:
-                            right = right.split(":")
-                            i = int(right[0])
-                            j = int(right[1])+1
-                        else:
-                            right = right.split(",")
-                            comma_separated_row = True
-                            comma_list_row = []
-                            for b in right:
-                                comma_list_row.append(int(b))
-                elif "column" in left:
-                    if len(right) == 1:
-                        m = int(right)
-                        n = int(right)+1
-                    else:
-                        if ":" in right:
-                            right = right.split(":")
-                            m = int(right[0])
-                            n = int(right[1])+1
-                        else:
-                            right = right.split(",")
-                            comma_separated_column = True
-                            comma_list_column = []
-                            for a in right:
-                                comma_list_column.append(int(a))
+                elif "row" in left and mid == "parameter":
+                    _row = right.replace(" ", "")
+                elif "column" in left and mid == "parameter":
+                    _column = right.replace(" ", "")
 
 
         except:
@@ -2118,24 +2091,26 @@ def Extract_Table_Data(step_data):
             return "zeuz_failed"
 
         variable_value = []
-        if comma_separated_row:
-            all_tr = []
-            for i in comma_list_row:
-                all_tr.append(Element.find_elements_by_tag_name("tr")[i])
-        else:
-            all_tr = Element.find_elements_by_tag_name("tr")[i:j]
-
+        all_tr = Element.find_elements_by_tag_name("tr")
         for row in all_tr:
-            if comma_separated_column:
-                all_td =[]
-                for i in comma_list_column:
-                    all_td.append(row.find_elements_by_tag_name("td")[i])
-            else:
-                all_td = row.find_elements_by_tag_name("td")[m:n]
+            all_td = row.find_elements_by_tag_name("td")
             td_data = []
             for td in all_td:
-                td_data.append(td.text)
+                text_data = td.text if td.is_displayed() else td.get_property("textContent").strip()
+                td_data.append(text_data)
             variable_value.append(td_data)
+        if _row and "," not in _row and "-" not in _row:
+            try:
+                int(_row)
+                variable_value = [variable_value[int(_row)]]
+            except:
+                variable_value = eval("variable_value[%s]" % _row)
+        if _column and "," not in _column and "-" not in _column:
+            try:
+                int(_column)
+                variable_value = [[i[int(_column)]] for i in variable_value]
+            except:
+                variable_value = [eval("i[%s]" % _column) for i in variable_value]
 
         return Shared_Resources.Set_Shared_Variables(variable_name, variable_value)
 
