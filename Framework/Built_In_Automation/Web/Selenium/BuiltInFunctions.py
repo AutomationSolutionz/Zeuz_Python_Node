@@ -2096,7 +2096,7 @@ def Extract_Table_Data(step_data):
             all_td = row.find_elements_by_tag_name("td")
             td_data = []
             for td in all_td:
-                text_data = td.text if td.is_displayed() else td.get_property("textContent").strip()
+                text_data = td.get_property("textContent").strip()
                 td_data.append(text_data)
             variable_value.append(td_data)
         if _row and "," not in _row and "-" not in _row:
