@@ -39,10 +39,7 @@ MODULE_NAME = inspect.getmodulename(__file__)
 """Constants"""
 PROGRESS_TAG = "In-Progress"
 PASSED_TAG = "Passed"
-SKIPPED_TAG = "Skipped"
-WARNING_TAG = "Warning"
 FAILED_TAG = "zeuz_failed"
-NOT_RUN_TAG = "Not Run"
 BLOCKED_TAG = "Blocked"
 CANCELLED_TAG = "Cancelled"
 COMPLETE_TAG = "Complete"
@@ -66,14 +63,11 @@ failed_tag_list = [
     "fail",
     "FAIL",
     "zeuz_failed",
-    "zeuz_failed",
-    "zeuz_failed",
     "false",
     "False",
     "FALSE",
     "0",
 ]
-skipped_tag_list = ["skip", "SKIP", "Skip", "skipped", "SKIPPED", "Skipped"]
 device_info = {}
 # if other linked machine failed in a linked run
 failed_due_to_linked_fail = False
@@ -303,10 +297,7 @@ def call_driver_function_of_test_step(
                 screen_capture = "Desktop"      # No need of screen capture. Need to delete this
 
                 # run in thread
-                if (
-                    ConfigModule.get_config_value("RunDefinition", "threading")
-                    in passed_tag_list
-                ):
+                if ConfigModule.get_config_value("RunDefinition", "threading") in passed_tag_list:
                     stepThread = threading.Thread(
                         target=functionTocall,
                         args=(
@@ -321,9 +312,7 @@ def call_driver_function_of_test_step(
                         ),
                     )  # start step thread
 
-                    CommonUtil.ExecLog(
-                        sModuleInfo, "Starting Test Step Thread..", 1
-                    )  # add log
+                    CommonUtil.ExecLog(sModuleInfo, "Starting Test Step Thread..", 1)  # add log
 
                     # start thread
                     stepThread.start()
@@ -342,17 +331,11 @@ def call_driver_function_of_test_step(
                         # Get the return value from the ExecuteTestStep
                         # fn via Queue
                         q.put(sStepResult)
-                        CommonUtil.ExecLog(
-                            sModuleInfo, "Test Step Thread Ended..", 1
-                        )
+                        CommonUtil.ExecLog(sModuleInfo, "Test Step Thread Ended..", 1)
                     except queue.Empty:
                         # Global.DefaultTestStepTimeout
-                        ErrorMessage = (
-                            "Test Step didn't return after %d seconds" % step_time
-                        )
-                        CommonUtil.Exception_Handler(
-                            sys.exc_info(), None, ErrorMessage
-                        )
+                        ErrorMessage = "Test Step didn't return after %d seconds" % step_time
+                        CommonUtil.Exception_Handler(sys.exc_info(), None, ErrorMessage)
                         sStepResult = "zeuz_failed"
                         q.put(sStepResult)
 
@@ -365,9 +348,7 @@ def call_driver_function_of_test_step(
                                 terminate_thread(stepThread)
                                 while stepThread.is_alive():
                                     time.sleep(1)
-                                    CommonUtil.ExecLog(
-                                        sModuleInfo, "Thread is still alive", 2
-                                    )
+                                    CommonUtil.ExecLog(sModuleInfo, "Thread is still alive", 2)
                             except:
                                 CommonUtil.Exception_Handler(sys.exc_info())
                 else:
@@ -392,24 +373,10 @@ def call_driver_function_of_test_step(
                 sStepResult = "PASSED"
             elif sStepResult in failed_tag_list:
                 sStepResult = "zeuz_failed".upper()
-            elif sStepResult in skipped_tag_list:
-                sStepResult = "SKIPPED"
-            elif sStepResult.upper() == CANCELLED_TAG.upper():
-                sStepResult = "CANCELLED"
             else:
-                CommonUtil.ExecLog(
-                    sModuleInfo, "sStepResult not an acceptable type", 3
-                )
-                CommonUtil.ExecLog(
-                    sModuleInfo,
-                    "Acceptable pass string(s): %s" % passed_tag_list,
-                    3,
-                )
-                CommonUtil.ExecLog(
-                    sModuleInfo,
-                    "Acceptable fail string(s): %s" % failed_tag_list,
-                    3,
-                )
+                CommonUtil.ExecLog(sModuleInfo, "sStepResult not an acceptable type", 3)
+                CommonUtil.ExecLog(sModuleInfo, "Acceptable pass string(s): %s" % passed_tag_list, 3)
+                CommonUtil.ExecLog(sModuleInfo, "Acceptable fail string(s): %s" % failed_tag_list, 3)
                 sStepResult = "zeuz_failed"
             q.put(sStepResult)
         except Exception as e:
@@ -433,9 +400,7 @@ def run_all_test_steps_in_a_test_case(
     final_dependency,
     final_run_params,
     temp_ini_file,
-    executor,
     debug_info,
-    is_linked="",
     performance=False
 ):
     try:
@@ -567,42 +532,19 @@ def run_all_test_steps_in_a_test_case(
             sTestStepStartTime = datetime.fromtimestamp(TestStepStartTime).strftime("%Y-%m-%d %H:%M:%S.%f")
             WinMemBegin = CommonUtil.PhysicalAvailableMemory()  # get available memory
 
-            if ConfigModule.get_config_value("RunDefinition", "local_run") == "False":
-                # make test step run dictionary
-                Dict = {
-                    "teststepsequence": current_step_sequence,
-                    "status": PROGRESS_TAG,
-                    "stepstarttime": sTestStepStartTime,
-                    "logid": ConfigModule.get_config_value(
-                        "sectionOne", "sTestStepExecLogId", temp_ini_file
-                    ),
-                    "start_memory": WinMemBegin,
-                    "testcaseresulttindex": "Dont NEED",
-                }
-
-            # check if machine failed
-            is_failed_result = ""
-            if is_linked == "yes":
-                is_failed_result = check_if_other_machines_failed_in_linked_run()
-
-            # check step result
-            if is_failed_result in failed_tag_list or test_steps_data in failed_tag_list:
-                sStepResult = "zeuz_failed"
-            else:
-                # run driver for step and get result
-                sStepResult = call_driver_function_of_test_step(
-                    sModuleInfo,
-                    all_step_info,
-                    StepSeq,
-                    step_time,
-                    current_step_name,
-                    final_dependency,
-                    final_run_params,
-                    test_steps_data,
-                    test_action_info,
-                    file_specific_steps,
-                    debug_actions,
-                )
+            sStepResult = call_driver_function_of_test_step(
+                sModuleInfo,
+                all_step_info,
+                StepSeq,
+                step_time,
+                current_step_name,
+                final_dependency,
+                final_run_params,
+                test_steps_data,
+                test_action_info,
+                file_specific_steps,
+                debug_actions,
+            )
             TestStepEndTime = time.time()
             sTestStepEndTime = datetime.fromtimestamp(TestStepEndTime).strftime("%Y-%m-%d %H:%M:%S.%f")
             WinMemEnd = CommonUtil.PhysicalAvailableMemory()  # get available memory
@@ -617,19 +559,6 @@ def run_all_test_steps_in_a_test_case(
             TestStepMemConsumed = WinMemBegin - WinMemEnd  # get memory consumed
             for i in step_attachment_list: shared.Remove_From_Shared_Variables(i)  # Cleanup step_attachment variables
 
-            """ Run cancelled feature is disabled for now. maybe implement it later"""
-            run_cancelled = ""
-            # if ConfigModule.get_config_value("RunDefinition", "local_run") == "False":
-            #     run_cancelled = get_status_of_runid(run_id)
-
-            # add result of each step to a list;
-            # for a test case to pass all steps should pass;
-            # at least one Failed makes it 'Fail' else 'Warning' or 'Blocked';
-            run_cancelled = ""
-            # if ConfigModule.get_config_value("RunDefinition", "local_run") == "False":
-            #     run_cancelled = get_status_of_runid(run_id)
-
-            # append step result
             if sStepResult:
                 sTestStepResultList.append(sStepResult.upper())
             else:
@@ -647,77 +576,18 @@ def run_all_test_steps_in_a_test_case(
                 "logid": ConfigModule.get_config_value("sectionOne", "sTestStepExecLogId", temp_ini_file)
             }
 
-            # add/print logs for step result
-
             if sStepResult.upper() == PASSED_TAG.upper():
                 # Step Passed
                 CommonUtil.ExecLog(sModuleInfo, "%s : Test Step Passed" % current_step_name, 1)
                 after_execution_dict.update({"status": PASSED_TAG})
 
-            elif sStepResult.upper() == SKIPPED_TAG.upper():
-                # Step Passed
-                CommonUtil.ExecLog(sModuleInfo, "%s : Test Step Skipped" % current_step_name, 1)
-                after_execution_dict.update({"status": SKIPPED_TAG})
-
-            elif sStepResult.upper() == WARNING_TAG.upper():
-                CommonUtil.ExecLog(sModuleInfo, "%s : Test Step Warning" % current_step_name, 2)
-                after_execution_dict.update({"status": WARNING_TAG})
-
-                if not test_case_continue:
-                    already_failed = True
-                    StepSeq += 1
-                    CommonUtil.CreateJsonReport(stepInfo=after_execution_dict)
-                    CommonUtil.step_index += 1
-                    continue
-
-            elif sStepResult.upper() == NOT_RUN_TAG.upper():
-                # Step has Warning, but continue running next test step for this test case
-                CommonUtil.ExecLog(sModuleInfo, "%s : Test Step Not Run" % current_step_name, 2)
-                after_execution_dict.update({"status": NOT_RUN_TAG})
-
-            elif sStepResult.upper() == FAILED_TAG.upper():
-
-                # step failed, if linked test case notify other test cases via setting server variable named 'is_failed'
-                global failed_due_to_linked_fail
-
-                if is_linked == "yes" and not failed_due_to_linked_fail:
-                    CommonUtil.ExecLog(
-                        sModuleInfo,
-                        str(test_case)
-                        + " failed in linked run.. Notifying other linked machines",
-                        3,
-                    )
-
-                    # set server variables
-                    set_server_variable(run_id, "is_failed", "yes")
-                    set_server_variable(
-                        run_id,
-                        "failed_machine",
-                        (CommonUtil.MachineInfo().getLocalUser()).lower(),
-                    )
-                    set_server_variable(run_id, "failed_test_case", str(test_case))
-
-                # Step has a Critical failure, fail the test step and test case. go to next test case
-
+            else:
                 CommonUtil.ExecLog(sModuleInfo, "%s%s" % (current_step_name, CommonUtil.to_dlt_from_fail_reason), 3)  # add log
-
                 after_execution_dict.update({"status": "Failed"})  # dictionary update
 
                 # check if set for continue
-                if not test_case_continue and ConfigModule.get_config_value("RunDefinition", "local_run") == "False":
-                    # run_cancelled = get_status_of_runid(run_id)
-                    if run_cancelled == "Cancelled":
-                        CommonUtil.ExecLog(
-                            sModuleInfo,
-                            "Test Run status is Cancelled. Exiting the current Test Case...%s"
-                            % test_case,
-                            2,
-                        )  # add log
+                if not test_case_continue:
                     already_failed = True
-                    StepSeq += 1
-                    CommonUtil.CreateJsonReport(stepInfo=after_execution_dict)
-                    CommonUtil.step_index += 1
-                    continue
                 elif test_case_continue and CommonUtil.step_index + 1 < len(all_step_info):
                     CommonUtil.ExecLog(
                         sModuleInfo,
@@ -725,41 +595,14 @@ def run_all_test_steps_in_a_test_case(
                         2
                     )
 
-            elif sStepResult.upper() == BLOCKED_TAG.upper():
-                # Step is Blocked, Block the test step and test case. go to next test case
-                CommonUtil.ExecLog(sModuleInfo, "%s : Test Step Blocked" % current_step_name, 3)
-                after_execution_dict.update({"status": BLOCKED_TAG})
-
-            elif sStepResult.upper() == CANCELLED_TAG.upper():
-                CommonUtil.ExecLog(sModuleInfo, "%s : Test Step Cancelled" % current_step_name, 3)
-                after_execution_dict.update({"status": CANCELLED_TAG})
-                cleanup_runid_from_server(run_id)   # This is an api call. What to do with this in new maindriver system?
-                CommonUtil.CreateJsonReport(stepInfo=after_execution_dict)
-                for i in tc_attachment_list: shared.Remove_From_Shared_Variables(i)   # Cleanup tc_attachment variables
-                return "pass"
-
-            else:
-                CommonUtil.ExecLog(sModuleInfo, "%s : Test Step Cancelled" % current_step_name, 3)
-                after_execution_dict.update({"status": CANCELLED_TAG})
-                cleanup_runid_from_server(run_id)   # This is an api call. What to do with this in new maindriver system?
-                CommonUtil.CreateJsonReport(stepInfo=after_execution_dict)
-                for i in tc_attachment_list: shared.Remove_From_Shared_Variables(i)   # Cleanup tc_attachment variables
-                return "pass"
-
             CommonUtil.CreateJsonReport(stepInfo=after_execution_dict)
-            if ConfigModule.get_config_value("RunDefinition", "local_run") == "False":
-                # run_cancelled = get_status_of_runid(run_id)     # Response = "In-Progress"
-                if run_cancelled == "Cancelled":
-                    CommonUtil.ExecLog(
-                        sModuleInfo,
-                        "Test Run status is Cancelled. Exiting the current Test Case...%s"
-                        % test_case,
-                        2,
-                    )
-                    sTestStepResultList[len(sTestStepResultList) - 1] = CANCELLED_TAG
-                    break
             StepSeq += 1
             CommonUtil.step_index += 1
+
+            if CommonUtil.run_cancel == CANCELLED_TAG:
+                CommonUtil.ExecLog(sModuleInfo, "Test Run status is Cancelled. Exiting the current Test Case...%s" % test_case, 2)
+                CommonUtil.run_cancelled = True
+                break
 
         for i in tc_attachment_list: shared.Remove_From_Shared_Variables(i)   # Cleanup tc_attachment variables
         return sTestStepResultList
@@ -798,7 +641,7 @@ def calculate_test_case_result(sModuleInfo, TestCaseID, run_id, sTestStepResultL
         CommonUtil.ExecLog(sModuleInfo, "Test Case Contain Skipped Step(s)", 1)
         skipped = True
         for each in sTestStepResultList:
-            if each not in skipped_tag_list:
+            if each != "SKIPPED":
                 skipped = False
                 break
         if skipped:
@@ -898,9 +741,7 @@ def run_test_case(
             final_dependency,
             final_run_params,
             temp_ini_file,
-            executor,
             debug_info,
-            is_linked,
             performance
         )
 
@@ -1062,9 +903,7 @@ def rerun_testcase(
         final_dependency,
         final_run_params,
         temp_ini_file,
-        executor,
         debug_info,
-        is_linked,
         performance
     )
 
@@ -1266,6 +1105,12 @@ def upload_csv_file_info(run_id, test_case):
         pass
 
 
+def check_run_cancel(run_id):
+    while not CommonUtil.run_cancelled:
+        CommonUtil.run_cancel = get_status_of_runid(run_id)
+    CommonUtil.run_cancelled = False
+
+
 def upload_json_report(Userid, temp_ini_file, run_id):
     if CommonUtil.debug_status: return
     zip_path = Path(ConfigModule.get_config_value("sectionOne", "temp_run_file_path", temp_ini_file))/run_id.replace(":", "-")/CommonUtil.current_session_name
@@ -1401,6 +1246,7 @@ def main(device_dict, user_info_object):
             run_id_info["base_path"] = ConfigModule.get_config_value("Advanced Options", "_file_upload_path")
             run_id = run_id_info["run_id"]
             run_cancelled = ""
+            CommonUtil.run_cancelled = False
             debug_info = ""
             CommonUtil.clear_all_logs()
 
