@@ -2069,6 +2069,7 @@ def download_ftp_file(data_set):
                 file_to_download = str(row[2]).strip()
             elif str(row[0]).strip().lower() == "local file path":
                 local_file_path = str(row[2]).strip()
+                local_file_path = CommonUtil.path_parser(local_file_path)
 
         if ftp_usr == "" or ftp_srv == "" or ftp_pass == "" or file_to_download == "":
             CommonUtil.ExecLog(
@@ -2481,7 +2482,7 @@ def run_macro_in_excel(data_set):
                 macro_name = str(row[2]).strip()
             elif str(row[0]).strip().lower() == "excel file path":
                 excel_file_path = str(row[2]).strip()
-                excel_file_path = Path(CommonUtil.path_parser(excel_file_path))
+                excel_file_path = CommonUtil.path_parser(excel_file_path)
 
         if macro_name == "" or excel_file_path == "":
             CommonUtil.ExecLog(
@@ -2515,8 +2516,6 @@ def excel_read(data_set):
         expand = None
         structure_of_variable = None
         key_reference = None
-        partial_path = False
-
 
         for left, mid, right in data_set:
             left = left.lower()
@@ -3334,11 +3333,10 @@ def csv_read(data_set):
         structure = "list of dictionaries"
         allowed_list = None
         map_key_names = None
-        partial_path = False
         Integer, Float, Bool = [], [], []
         for left, _, right in data_set:
             left = left.lower().strip()
-            if "file path" in left:
+            if "file path" == left:
                 filepath = right.strip()
                 filepath = Path(CommonUtil.path_parser(filepath))
 
@@ -3542,7 +3540,7 @@ def text_write(data_set):
             left = left.lower().strip()
             if "file path" == left:
                 filepath = right.strip()
-                filepath = Path(CommonUtil.path_parser(filepath))
+                filepath = CommonUtil.path_parser(filepath)
 
             elif "line no" == left:
                 line_no = CommonUtil.parse_value_into_object(right.strip())

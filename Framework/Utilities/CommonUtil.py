@@ -98,6 +98,7 @@ performance_report = {"data": [], "individual_stats": {"slowest": 0, "fastest": 
 # Holds the previously logged message (used for prevention of duplicate logs simultaneously)
 previous_log_line = None
 teardown = True
+print_execlog = True
 
 step_module_name = None
 
@@ -447,6 +448,8 @@ def ExecLog(
     if load_testing and not force_write:
         return
 
+    if not print_execlog: return    # For bypass_bug() function dont print logs
+
     # Read from settings file
     debug_mode = ConfigModule.get_config_value("RunDefinition", "debug_mode")
 
@@ -677,7 +680,7 @@ def set_screenshot_vars(shared_variables):
 
 def TakeScreenShot(function_name, local_run=False):
     """ Puts TakeScreenShot into a thread, so it doesn't block test case execution """
-    # if debug_status: return
+    # if debug_status: return     # Todo: Comment this line out
     try:
         if upload_on_fail and rerun_on_fail and not rerunning_on_fail and not debug_status:
             return
@@ -1044,27 +1047,65 @@ def debug_code_error(exc_info):
     print(Error_Detail)
 
 
-
 def path_parser(path: str) -> str:
-    if path.startswith("~"):
-        path1 = str(Path("~\\" + path.split("\\")[1]).expanduser())
-        for i in path.split("\\")[2:]:
-            path1 = path1 + "\\" + i
-        path = path1
+    r"""
+    Case-1: (Full_path)
+    C:\Users\ASUS\entreprize_5689.csv
+    Case-2: (Home_dir)
+    ~\Downloads\entreprize_5689.csv
+    Case-3: (Partial_search)
+    ~\Downloads\*entreprize_.csv
+    ~\Downloads\*entreprize_
+    Case-4: (Multiple_Partial_Search)
+    ~\Downloads\*server\*entreprize_.csv
+    Case-5: (Partial_Case-insensitive_Search)
+    ~\Downloads\**server\**entreprize_.csv
+    Case-6: (Partial search with Index) [It's not done yet. will be done if necessary]
+    ~\Downloads\**server\[idx]*entreprize_.csv
 
-    path = path.split("\\")
-    new_path = ''
-    for a in path:
-        if a.startswith("*"):
-            i = 2 if a == path[-1] else 1
-            w = list(os.walk(new_path))[0]
-            for j in range(len(w[i])):
-                if w[i][j].startswith(a.strip('*')):
-                    a = w[i][j]
+    tested against:
+    print(path_parser(r"~\Downloads"))                          C:\Users\ASUS\Downloads
+    print(path_parser(r"~\**download"))                         C:\Users\ASUS\Downloads
+    print(path_parser(r"C:\Users\ASUS\Downloads"))              C:\Users\ASUS\Downloads
+    print(path_parser(r"C:\Users\ASUS\**download"))             C:\Users\ASUS\Downloads
+    print(path_parser(r"~"))                                    C:\Users\ASUS
+    print(path_parser(r"C:"))                                   C:
+    print(path_parser(r"~\Downloads\*.pdf"))                    C:\Users\ASUS\Downloads\FF.pdf
 
-        new_path = new_path + a + "\\"
+    """
+    try:
+        sModuleInfo = inspect.currentframe().f_code.co_name + " : " + MODULE_NAME
+        if not path.startswith("~") and "*" not in path:
+            return path  # dont print execlog
+        inp_path = path
+        if path.startswith("~"):
+            path = path.replace("~", os.path.expanduser("~"), 1)
 
-    new_path = new_path[:-1]
-    print(new_path)
+        path = path.split(os.sep)
+        new_path = ''
+        for a in path:
+            final = a
+            if a.startswith("*"):
+                extension = a.split(".")[1] if "." in a else ""
+                name = a.split(".")[0].replace("*", "")
+                w = list(os.walk(new_path))[0]
+                w = w[1] + w[2]
+                for j in w:
+                    if a.startswith("**") and name.lower() in j.lower() and j.endswith(extension):
+                        final = j
+                        break
+                    elif a.startswith("*") and name in j and j.endswith(extension):
+                        final = j
+                        break
+                else:
+                    ExecLog(sModuleInfo, "No file_path or directory was found with: %s" % inp_path, 3)
+                    raise Exception
 
-    return new_path
+            new_path = new_path + final + os.sep
+
+        new_path = new_path[:-1]
+        ExecLog(sModuleInfo, new_path, 1)
+        return new_path
+    except:
+        Exception_Handler(sys.exc_info())
+        raise Exception

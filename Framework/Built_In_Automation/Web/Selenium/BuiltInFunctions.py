@@ -304,9 +304,9 @@ def Open_Electron_App(data_set):
             if "windows" in left and platform.system() == "Windows":
                 desktop_app_path = right.strip()
             elif "mac" in left and platform.system() == "Darwin":
-                desktop_app_path = right
+                desktop_app_path = right.strip()
             elif "linux" in left and platform.system() == "Linux":
-                desktop_app_path = right
+                desktop_app_path = right.strip()
 
         if not desktop_app_path:
             CommonUtil.ExecLog(sModuleInfo, "You did not provide an Electron app path for %s OS" % platform.system(), 3)
@@ -785,7 +785,6 @@ def Go_To_Link(step_data, page_title=False):
 
 @logger
 def Handle_Browser_Alert(step_data):
-    global selenium_driver
     # accepts browser alert
     """
     wait           optional parameter  5.0
@@ -821,18 +820,18 @@ def Handle_Browser_Alert(step_data):
 
     try:
         if choice_lower in ("accept", "pass", "yes", "ok"):
-            selenium_driver.switch_to.alert.accept()
+            selenium_driver.switch_to_alert().accept()
             CommonUtil.ExecLog(sModuleInfo, "Browser alert accepted", 1)
             return "passed"
 
         elif choice_lower in ("reject", "fail", "no", "cancel"):
-            selenium_driver.switch_to.alert.dismiss()
+            selenium_driver.switch_to_alert().dismiss()
             CommonUtil.ExecLog(sModuleInfo, "Browser alert rejected", 1)
             return "passed"
 
         elif "get text" in choice_lower:
-            alert_text = selenium_driver.switch_to.alert.text
-            selenium_driver.switch_to.alert.accept()
+            alert_text = selenium_driver.switch_to_alert().text
+            selenium_driver.switch_to_alert().accept()
             variable_name = (choice.split("="))[1]
             result = Shared_Resources.Set_Shared_Variables(
                 variable_name, alert_text
@@ -849,8 +848,8 @@ def Handle_Browser_Alert(step_data):
 
         elif "send text" in choice_lower:
             text_to_send = (choice.split("="))[1]
-            selenium_driver.switch_to.alert.send_keys(text_to_send)
-            selenium_driver.switch_to.alert.accept()
+            selenium_driver.switch_to_alert().send_keys(text_to_send)
+            selenium_driver.switch_to_alert().accept()
             return "passed"
 
         else:
@@ -1294,6 +1293,7 @@ def Click_and_Download(data_set, retry=0):
                 use_js = right.strip().lower() in ("true", "yes", "1")
             elif left.strip().lower() == "folder path" and mid.strip().lower() == "parameter":
                 filepath = right.strip()
+                filepath = CommonUtil.path_parser(filepath)
 
             # On next improvement user will have option to tell the filename and only that filename will be copied from
             # the initial download directory
@@ -2053,7 +2053,10 @@ def Extract_Table_Data(step_data):
             return "zeuz_failed"
         if Element.tag_name != "tbody":
             CommonUtil.ExecLog(sModuleInfo, 'Tag name of the Element is not "tbody"', 2)
-
+        i = m = 0
+        j = n = None
+        comma_separated_row = False
+        comma_separated_column = False
         try:
             for left, mid, right in step_data:
                 left = left.strip().lower()
@@ -2061,17 +2064,56 @@ def Extract_Table_Data(step_data):
                 if left == "extract table data":
                     variable_name = right
                 elif "row" in left:
-                    pass        # Todo: We will extract data on that range
+                    if len(right) == 1:
+                        i = int(right)
+                        j = int(right)+1
+                    else:
+                        if ":" in right:
+                            right = right.split(":")
+                            i = int(right[0])
+                            j = int(right[1])+1
+                        else:
+                            right = right.split(",")
+                            comma_separated_row = True
+                            comma_list_row = []
+                            for b in right:
+                                comma_list_row.append(int(b))
                 elif "column" in left:
-                    pass        # Todo: We will extract data on that range
+                    if len(right) == 1:
+                        m = int(right)
+                        n = int(right)+1
+                    else:
+                        if ":" in right:
+                            right = right.split(":")
+                            m = int(right[0])
+                            n = int(right[1])+1
+                        else:
+                            right = right.split(",")
+                            comma_separated_column = True
+                            comma_list_column = []
+                            for a in right:
+                                comma_list_column.append(int(a))
+
+
         except:
             CommonUtil.ExecLog(sModuleInfo, "Unable to parse data. Please write data in correct format", 3)
             return "zeuz_failed"
 
         variable_value = []
-        all_tr = Element.find_elements_by_tag_name("tr")
+        if comma_separated_row:
+            all_tr = []
+            for i in comma_list_row:
+                all_tr.append(Element.find_elements_by_tag_name("tr")[i])
+        else:
+            all_tr = Element.find_elements_by_tag_name("tr")[i:j]
+
         for row in all_tr:
-            all_td = row.find_elements_by_tag_name("td")
+            if comma_separated_column:
+                all_td =[]
+                for i in comma_list_column:
+                    all_td.append(row.find_elements_by_tag_name("td")[i])
+            else:
+                all_td = row.find_elements_by_tag_name("td")[m:n]
             td_data = []
             for td in all_td:
                 td_data.append(td.text)
@@ -3555,7 +3597,7 @@ def upload_file(step_data):
 
 # Method to upload file
 @logger
-def drag_and_drop(step_data):
+def drag_and_drop(dataset):
     sModuleInfo = inspect.currentframe().f_code.co_name + " : " + MODULE_NAME
     global selenium_driver
     try:
@@ -3577,25 +3619,24 @@ def drag_and_drop(step_data):
                 source.append((left, mid, right))
                 destination.append((left, mid, right))
 
-        if source == "":
-            CommonUtil.ExecLog(
-                sModuleInfo, "No source element specified for drag and drop", 3
-            )
+        if not source:
+            CommonUtil.ExecLog(sModuleInfo, 'Please provide source element with "src element parameter", "src parent parameter" etc. Example:\n'+
+               "(id, src element parameter, file)", 3)
             return "zeuz_failed"
-        elif destination == "":
-            CommonUtil.ExecLog(
-                sModuleInfo, "No destination element specified for drag and drop", 3
-            )
+        if not destination:
+            CommonUtil.ExecLog(sModuleInfo, 'Please provide Destination element with "dst element parameter", "dst parent parameter" etc. Example:\n'+
+               "(id, dst element parameter, table)", 3)
             return "zeuz_failed"
 
-        source_element = Shared_Resources.Get_Shared_Variables(source)
-        if source_element in failed_tag_list:
-            CommonUtil.ExecLog(
-                sModuleInfo,
-                "No element found in shared variables named '%s' which is defined as source for drag and drop",
-                source,
-                3,
-            )
+        source_element = LocateElement.Get_Element(source, selenium_driver)
+        if source_element == "zeuz_failed":
+            CommonUtil.ExecLog(sModuleInfo, "Source Element is not found", 3)
+            return "zeuz_failed"
+
+        destination_element = LocateElement.Get_Element(destination, selenium_driver)
+        if destination_element == "zeuz_failed":
+            CommonUtil.ExecLog(sModuleInfo, "Destination Element is not found", 3)
+            return "zeuz_failed"
 
         # ActionChains(selenium_driver).drag_and_drop(source_element, destination_element).perform()
         ActionChains(selenium_driver).click_and_hold(source_element).move_to_element(destination_element).pause(0.5).release(destination_element).perform()

@@ -24,7 +24,6 @@
 # are listed here as with the module set to "common". If there is a
 # "common" function, and another module with the same name created
 # here, there may be a conflict, and the wrong function may execute
-import sortedcontainers
 
 from .action_declarations.info import actions, action_support, supported_platforms
 
@@ -2173,8 +2172,11 @@ def Action_Handler(_data_set, action_row, _bypass_bug=True):
         result = run_function(data_set)  # Execute function, providing all rows in the data set
         CommonUtil.TakeScreenShot(function)
         if _bypass_bug:
+            CommonUtil.print_execlog = False
             bypass_bug(action_name, action_subfield)
+            CommonUtil.print_execlog = True
         return result  # Return result to sequential_actions()
 
     except Exception:
+        CommonUtil.print_execlog = True
         return CommonUtil.Exception_Handler(sys.exc_info())
