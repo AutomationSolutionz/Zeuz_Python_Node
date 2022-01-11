@@ -622,13 +622,7 @@ def parse_variable(name):
             CommonUtil.prettify(copy_of_name, val)
             return generate_zeuz_code_if_not_json_obj(val)
     except:
-        CommonUtil.ExecLog(
-            sModuleInfo,
-            "Failed to parse variable",
-            3,
-        )
-        print("")
-        return "zeuz_failed"
+        return CommonUtil.Exception_Handler(sys.exc_info())
 
 
 def get_previous_response_variables_in_strings(step_data_string_input):

@@ -775,9 +775,7 @@ def save_into_variable(data_set):
 
             variable_value = var
         else:
-            CommonUtil.ExecLog(
-                sModuleInfo, f"Invalid operation. Supported operations: save/append", 1,
-            )
+            CommonUtil.ExecLog(sModuleInfo, f"Invalid operation. Supported operations: save/append", 3)
             return "zeuz_failed"
 
         try:
