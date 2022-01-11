@@ -73,6 +73,7 @@ WebDriver_Wait_Short = 1
 
 global selenium_driver
 selenium_driver = None
+selenium_details = {}
 default_x, default_y = 1920, 1080
 
 # if Shared_Resources.Test_Shared_Variables('selenium_driver'): # Check if driver is already set in shared variables
@@ -293,24 +294,28 @@ def start_appium_server():
 def Open_Electron_App(data_set):
     sModuleInfo = inspect.currentframe().f_code.co_name + " : " + MODULE_NAME
     global selenium_driver
-    try:
-        selenium_driver.close()
-    except:
-        pass
+    global selenium_details
+
     try:
         desktop_app_path = ""
+        driver_id = ""
         for left, _, right in data_set:
-            left = left.lower().strip()
+            left = left.replace(" ", "").replace("_", "").replace("-", "").lower()
             if "windows" in left and platform.system() == "Windows":
                 desktop_app_path = right.strip()
             elif "mac" in left and platform.system() == "Darwin":
                 desktop_app_path = right.strip()
             elif "linux" in left and platform.system() == "Linux":
                 desktop_app_path = right.strip()
+            elif left == "driverid":
+                driver_id = right.strip()
 
         if not desktop_app_path:
             CommonUtil.ExecLog(sModuleInfo, "You did not provide an Electron app path for %s OS" % platform.system(), 3)
             return "zeuz_failed"
+
+        if not driver_id:
+            driver_id = "default"
 
         desktop_app_path = CommonUtil.path_parser(desktop_app_path)
         electron_chrome_path = ConfigModule.get_config_value("Selenium_driver_paths", "electron_chrome_path")
@@ -346,8 +351,13 @@ def Open_Electron_App(data_set):
                    "Visit this link to download specific version of Chrome driver: https://chromedriver.chromium.org/downloads\n" +
                    'Then add the path of the ChromeDriver path into Framework/settings.conf file "Selenium_driver_paths" section with "electron_chrome_path" name', 3)
                 return "zeuz_failed"
-        except Exception as e:
+        except Exception:
             return CommonUtil.Exception_Handler(sys.exc_info())
+
+        if driver_id in selenium_details:
+            pass    # we need to decide later based on the situation
+        else:
+            selenium_details[driver_id] = {"driver": selenium_driver}
         return "passed"
     except:
         return CommonUtil.Exception_Handler(sys.exc_info())
@@ -368,10 +378,10 @@ def Open_Browser(dependency, window_size_X=None, window_size_Y=None):
             "Dependency not set for browser. Please set the Apply Filter value to YES."
         )
         return CommonUtil.Exception_Handler(sys.exc_info(), None, ErrorMessage)
-    try:
-        selenium_driver.close()
-    except:
-        pass
+    # try:
+    #     selenium_driver.close()
+    # except:
+    #     pass
 
     try:
         CommonUtil.teardown = True
@@ -686,16 +696,10 @@ def Open_Browser_Wrapper(step_data):
     try:
         global dependency
         # Get the dependency again in case it was missed
-        if Shared_Resources.Test_Shared_Variables(
-                "dependency"
-        ):  # Check if driver is already set in shared variables
-            dependency = Shared_Resources.Get_Shared_Variables(
-                "dependency"
-            )  # Retreive selenium driver
+        if Shared_Resources.Test_Shared_Variables("dependency"):  # Check if driver is already set in shared variables
+            dependency = Shared_Resources.Get_Shared_Variables("dependency")  # Retrieve selenium driver
 
-        cmd = step_data[0][
-            2
-        ]  # Expected "open" or "close" for current method. May contain other strings for old method of Field="open browser"
+        cmd = step_data[0][2]  # Expected "open" or "close" for current method. May contain other strings for old method of Field="open browser"
         if cmd.lower().strip() == "close":  # User issued close command
             try:
                 selenium_driver.close()
@@ -720,12 +724,22 @@ def Go_To_Link(step_data, page_title=False):
     # Open browser and create driver if user has not already done so
     global dependency
     global selenium_driver
+    global selenium_details
 
     try:
-        if Shared_Resources.Test_Shared_Variables("selenium_driver") == False:
-            CommonUtil.ExecLog(
-                sModuleInfo, "Browser not previously opened, doing so now", 1
-            )
+        driver_id = ""
+        for left, mid, right in step_data:
+            left = left.replace(" ", "").replace("_", "").replace("-", "").lower()
+            if left == "gotolink":
+                web_link = right.strip()
+            elif left == "driverid":
+                driver_id = right.strip()
+
+        if not driver_id:
+            driver_id = "default"
+
+        if driver_id not in selenium_details:
+            CommonUtil.ExecLog(sModuleInfo, "Browser not previously opened, doing so now", 1)
             global dependency
             # Get the dependency again in case it was missed
             if Shared_Resources.Test_Shared_Variables("dependency"):  # Check if driver is already set in shared variables
@@ -741,18 +755,21 @@ def Go_To_Link(step_data, page_title=False):
 
             if result == "zeuz_failed":
                 return "zeuz_failed"
+
+            selenium_details[driver_id] = {"driver": Shared_Resources.Get_Shared_Variables("selenium_driver")}
+
         else:
-            selenium_driver = Shared_Resources.Get_Shared_Variables("selenium_driver")
+            selenium_driver = selenium_details[driver_id]["driver"]
+            Shared_Resources.Set_Shared_Variables("selenium_driver", selenium_driver)
     except Exception:
         ErrorMessage = "failed to open browser"
         return CommonUtil.Exception_Handler(sys.exc_info(), None, ErrorMessage)
 
     # Open URL in browser
     try:
-        web_link = step_data[0][2]  # Save Value field (URL)
         selenium_driver.get(web_link)  # Open in browser
         selenium_driver.implicitly_wait(0.5)  # Wait for page to load
-        CommonUtil.ExecLog(sModuleInfo, "Successfully opened your link: %s" % web_link, 1)
+        CommonUtil.ExecLog(sModuleInfo, "Successfully opened your link with driver_id='%s': %s" % (driver_id, web_link), 1)
         return "passed"
     except WebDriverException as e:
         if e.msg.lower().startswith("chrome not reachable"):
@@ -769,12 +786,13 @@ def Go_To_Link(step_data, page_title=False):
                 result = Open_Browser(dependency, window_size_X, window_size_Y)
 
         if result == "zeuz_failed":
-            ErrorMessage = "failed to open your link: %s" % (web_link)
+            ErrorMessage = "failed to open your link with driver_id='%s: %s" % (driver_id, web_link)
             return CommonUtil.Exception_Handler(sys.exc_info(), None, ErrorMessage)
         try:
+            selenium_details[driver_id] = {"driver": Shared_Resources.Get_Shared_Variables("selenium_driver")}
             selenium_driver.get(web_link)  # Open in browser
             selenium_driver.implicitly_wait(0.5)  # Wait for page to load
-            CommonUtil.ExecLog(sModuleInfo, "Successfully opened your link: %s" % web_link, 1)
+            CommonUtil.ExecLog(sModuleInfo, "Successfully opened your link with driver_id='%s': %s" % (driver_id, web_link), 1)
             return "passed"
         except Exception:
             ErrorMessage = "failed to open your link: %s" % (web_link)
@@ -2053,46 +2071,19 @@ def Extract_Table_Data(step_data):
             return "zeuz_failed"
         if Element.tag_name != "tbody":
             CommonUtil.ExecLog(sModuleInfo, 'Tag name of the Element is not "tbody"', 2)
-        i = m = 0
-        j = n = None
-        comma_separated_row = False
-        comma_separated_column = False
+        _row = ""
+        _column = ""
         try:
             for left, mid, right in step_data:
                 left = left.strip().lower()
                 right = right.strip()
+                mid = mid.strip().lower()
                 if left == "extract table data":
                     variable_name = right
-                elif "row" in left:
-                    if len(right) == 1:
-                        i = int(right)
-                        j = int(right)+1
-                    else:
-                        if ":" in right:
-                            right = right.split(":")
-                            i = int(right[0])
-                            j = int(right[1])+1
-                        else:
-                            right = right.split(",")
-                            comma_separated_row = True
-                            comma_list_row = []
-                            for b in right:
-                                comma_list_row.append(int(b))
-                elif "column" in left:
-                    if len(right) == 1:
-                        m = int(right)
-                        n = int(right)+1
-                    else:
-                        if ":" in right:
-                            right = right.split(":")
-                            m = int(right[0])
-                            n = int(right[1])+1
-                        else:
-                            right = right.split(",")
-                            comma_separated_column = True
-                            comma_list_column = []
-                            for a in right:
-                                comma_list_column.append(int(a))
+                elif "row" in left and mid == "parameter":
+                    _row = right.replace(" ", "")
+                elif "column" in left and mid == "parameter":
+                    _column = right.replace(" ", "")
 
 
         except:
@@ -2100,24 +2091,26 @@ def Extract_Table_Data(step_data):
             return "zeuz_failed"
 
         variable_value = []
-        if comma_separated_row:
-            all_tr = []
-            for i in comma_list_row:
-                all_tr.append(Element.find_elements_by_tag_name("tr")[i])
-        else:
-            all_tr = Element.find_elements_by_tag_name("tr")[i:j]
-
+        all_tr = Element.find_elements_by_tag_name("tr")
         for row in all_tr:
-            if comma_separated_column:
-                all_td =[]
-                for i in comma_list_column:
-                    all_td.append(row.find_elements_by_tag_name("td")[i])
-            else:
-                all_td = row.find_elements_by_tag_name("td")[m:n]
+            all_td = row.find_elements_by_tag_name("td")
             td_data = []
             for td in all_td:
-                td_data.append(td.text)
+                text_data = td.get_property("textContent").strip()
+                td_data.append(text_data)
             variable_value.append(td_data)
+        if _row and "," not in _row and "-" not in _row:
+            try:
+                int(_row)
+                variable_value = [variable_value[int(_row)]]
+            except:
+                variable_value = eval("variable_value[%s]" % _row)
+        if _column and "," not in _column and "-" not in _column:
+            try:
+                int(_column)
+                variable_value = [[i[int(_column)]] for i in variable_value]
+            except:
+                variable_value = [eval("i[%s]" % _column) for i in variable_value]
 
         return Shared_Resources.Set_Shared_Variables(variable_name, variable_value)
 
@@ -3155,19 +3148,86 @@ def get_webpage_table_css(data_set, ignore_rows=[], ignore_cols=[], retain_case=
 
 
 @logger
-def Tear_Down_Selenium(step_data=[[[]]]):
+def Tear_Down_Selenium(step_data=[]):
     sModuleInfo = inspect.currentframe().f_code.co_name + " : " + MODULE_NAME
     global selenium_driver
+    global selenium_details
     try:
-        if not CommonUtil.teardown:
-            CommonUtil.ExecLog(sModuleInfo, "Browser is already closed", 1)
-            return "passed"
-        CommonUtil.ExecLog(sModuleInfo, "Trying to tear down the page and close the browser...", 0)
-        CommonUtil.Join_Thread_and_Return_Result("screenshot")   # Let the capturing screenshot end in thread
-        selenium_driver.quit()
-        Shared_Resources.Remove_From_Shared_Variables("selenium_driver")
-        CommonUtil.ExecLog(sModuleInfo, "Closed the browser successfully.", 1)
-        CommonUtil.teardown = False
+        driver_id = ""
+        for left, mid, right in step_data:
+            left = left.replace(" ", "").replace("_", "").replace("-", "").lower()
+            if left == "driverid":
+                driver_id = right.strip()
+
+        if not driver_id:
+            if not CommonUtil.teardown:
+                CommonUtil.ExecLog(sModuleInfo, "Browser is already closed", 1)
+                return "passed"
+            CommonUtil.Join_Thread_and_Return_Result("screenshot")  # Let the capturing screenshot end in thread
+            for driver in selenium_details:
+                try:
+                    selenium_details[driver]["driver"].quit()
+                    CommonUtil.ExecLog(sModuleInfo, "Teared down driver_id='%s'" % driver, 1)
+                except:
+                    errMsg = "Unable to tear down driver_id='%s'. may already be killed" % driver
+                    CommonUtil.ExecLog(sModuleInfo, errMsg, 2)
+            Shared_Resources.Remove_From_Shared_Variables("selenium_driver")
+            selenium_details = {}
+            selenium_driver = None
+            CommonUtil.ExecLog(sModuleInfo, "Closed the browser successfully.", 1)
+            CommonUtil.teardown = False
+
+        elif driver_id not in selenium_details:
+            CommonUtil.ExecLog(sModuleInfo, "Driver_id='%s' not found. So could not tear down" % driver_id, 2)
+
+        else:
+            try:
+                selenium_details[driver_id]["driver"].quit()
+                CommonUtil.ExecLog(sModuleInfo, "Teared down driver_id='%s'" % driver_id, 1)
+            except:
+                CommonUtil.ExecLog(sModuleInfo, "Unable to tear down driver_id='%s'. may already be killed" % driver_id, 2)
+            del selenium_details[driver_id]
+            if selenium_details:
+                for driver in selenium_details:
+                    selenium_driver = selenium_details[driver]["driver"]
+                    Shared_Resources.Set_Shared_Variables("selenium_driver", selenium_driver)
+                    CommonUtil.ExecLog(sModuleInfo, "Current driver is set to driver_id='%s'" % driver, 1)
+                    break
+            else:
+                Shared_Resources.Remove_From_Shared_Variables("selenium_driver")
+                selenium_driver = None
+
+        return "passed"
+    except Exception:
+        errMsg = "Unable to tear down selenium browsers. may already be killed"
+        # return CommonUtil.Exception_Handler(sys.exc_info(), None, errMsg)
+        CommonUtil.ExecLog(sModuleInfo, errMsg, 2)
+        return "passed"
+
+
+@logger
+def Switch_Browser(step_data):
+    sModuleInfo = inspect.currentframe().f_code.co_name + " : " + MODULE_NAME
+    global selenium_driver
+    global selenium_details
+    try:
+        driver_id = ""
+        for left, mid, right in step_data:
+            left = left.replace(" ", "").replace("_", "").replace("-", "").lower()
+            if left == "driverid":
+                driver_id = right.strip()
+
+        if not driver_id:
+            driver_id = "default"
+
+        if driver_id not in selenium_details:
+            CommonUtil.ExecLog(sModuleInfo, "Driver_id='%s' not found. So could not Switch" % driver_id, 3)
+            return "zeuz_failed"
+        else:
+            selenium_driver = selenium_details[driver_id]["driver"]
+            Shared_Resources.Set_Shared_Variables("selenium_driver", selenium_driver)
+            CommonUtil.ExecLog(sModuleInfo, "Current driver is set to driver_id='%s'" % driver_id, 1)
+
         return "passed"
     except Exception:
         errMsg = "Unable to tear down selenium browsers. may already be killed"

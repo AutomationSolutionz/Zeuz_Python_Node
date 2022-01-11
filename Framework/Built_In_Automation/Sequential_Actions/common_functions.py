@@ -788,6 +788,8 @@ def save_into_variable(data_set):
                     variable_value = list(set(variable_value))
                 elif "sort" in extra_operation or "shuffle" in extra_operation:
                     variable_value = sort_list(variable_value, extra_operation)
+                elif "directory" in extra_operation or "path" in extra_operation:
+                    variable_value = CommonUtil.path_parser(variable_value)
                 elif "sum" in extra_operation:
                     s = 0
                     for i in variable_value:
@@ -800,17 +802,12 @@ def save_into_variable(data_set):
                             continue
                     variable_value = s
         except:
-            CommonUtil.ExecLog(
-                    sModuleInfo, f"Failed to perform extra action.", 3,
-            )
-            return "zeuz_failed"
+            return CommonUtil.Exception_Handler(sys.exc_info())
 
         sr.Set_Shared_Variables(variable_name, variable_value)
-
         return "passed"
     except:
-        CommonUtil.ExecLog(sModuleInfo, "Failed to save variable.", 3)
-        return "zeuz_failed"
+        return CommonUtil.Exception_Handler(sys.exc_info())
 
 
 def sort_list(variable_value, extra_operation):
