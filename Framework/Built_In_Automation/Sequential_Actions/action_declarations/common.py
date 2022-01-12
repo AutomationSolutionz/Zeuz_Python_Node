@@ -72,8 +72,8 @@ declarations = (
     { "name": "write into yaml",                             "function": "yaml_write",                            "screenshot": "none" },
     { "name": "write into text file",                        "function": "text_write",                            "screenshot": "none" },
     {"name":"random email generator",                        "function": "random_email_generator",               "screenshot": "none"},
-    {"name":"random email read",                            "function": "random_email_read",                      "screenshot": "none"},
-    {"name":"random email delete",                            "function": "random_email_delete",                      "screenshot": "none"},
+    {"name":"random email read",                             "function": "random_email_read",                     "screenshot": "none"},
+    {"name":"random email delete",                           "function": "random_email_delete",                   "screenshot": "none"},
 ) # yapf: disable
 
 module_name = "common"
