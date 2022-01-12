@@ -38,8 +38,7 @@ import datefinder
 import traceback
 import json
 from datetime import timedelta
-from .utility import send_email, check_latest_received_email, delete_mail, save_mail, create_random_email_address, \
-    checkMails, deleteMail
+from .utility import send_email, check_latest_received_email, delete_mail, save_mail, RandomEmail1SecMail
 import re
 
 months = [
@@ -3940,8 +3939,8 @@ def random_email_generator(data_set):
     note: email will be the variable name to store
     """
 
-
     sModuleInfo = inspect.currentframe().f_code.co_name + " : " + MODULE_NAME
+
     try:
         var_email = None
         var_variable = None
@@ -3953,7 +3952,7 @@ def random_email_generator(data_set):
             CommonUtil.ExecLog(sModuleInfo, "Please provide variable name to store results", 3)
             return "zeuz_failed"
 
-        var_email = create_random_email_address() #return random email address
+        var_email = RandomEmail1SecMail.create_random_email_address() #return random email address
 
         CommonUtil.ExecLog(sModuleInfo, "Created random email address '%s' " % (var_email), 1)
         return sr.Set_Shared_Variables(var_variable, var_email) #saved in shared variable inside variable key
@@ -3978,28 +3977,29 @@ def random_email_read(data_set):
     sModuleInfo = inspect.currentframe().f_code.co_name + " : " + MODULE_NAME
     try:
         var_email = None
-        var_variable=None
+        var_variable = None
 
         for left, mid, right in data_set:
             if "address" in left:
                var_email = right.strip()
             if "action" in mid:
-                var_variable=right.strip()
+                var_variable = right.strip()
 
         if var_variable==None:
             CommonUtil.ExecLog(sModuleInfo, "Please provide variable name to store results", 3)
             return "zeuz_failed"
 
         if var_email!=None:
-            res=checkMails(var_email)
-            if(len(res[var_email])>0):
+
+            res= RandomEmail1SecMail.checkMails(var_email)
+
+            if len(res[var_email])>0:
                 CommonUtil.ExecLog(sModuleInfo, "All mails are saved for '%s' in shared variable " % (var_email), 1)
                 return sr.Set_Shared_Variables(var_variable, res) #saved in shared variable inside variable key
             else:
                 CommonUtil.ExecLog(sModuleInfo, "No email found  for '%s'  " % (var_email), 1)
                 return sr.Set_Shared_Variables(var_variable, res) #saved in shared variable inside variable key
 
-                return "passed"
         else:
             CommonUtil.ExecLog(sModuleInfo, "Please provide email address", 3)
             return "zeuz_failed"
@@ -4036,8 +4036,9 @@ def random_email_delete(data_set):
             return "zeuz_failed"
 
         if var_email!=None:
-            res=deleteMail(var_email)
-            if(res==True):
+            res = RandomEmail1SecMail.deleteMail(var_email)
+
+            if res==True :
                 CommonUtil.ExecLog(sModuleInfo, "'%s' is deleted" % (var_email), 1)
                 return sr.Set_Shared_Variables(var_variable, res) #saved in shared variable inside random_email key
             else:
