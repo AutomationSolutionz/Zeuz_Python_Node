@@ -38,7 +38,8 @@ import datefinder
 import traceback
 import json
 from datetime import timedelta
-from .utility import send_email, check_latest_received_email, delete_mail, save_mail
+from .utility import send_email, check_latest_received_email, delete_mail, save_mail, create_random_email_address, \
+    checkMails, deleteMail
 import re
 
 months = [
@@ -2182,7 +2183,6 @@ def send_mail(data_set):
     except Exception:
         return CommonUtil.Exception_Handler(sys.exc_info())
 
-
 @logger
 def check_latest_mail(data_set):
     """
@@ -3925,6 +3925,128 @@ def custom_step_duration(data_set):
         CommonUtil.custom_step_duration = value
         CommonUtil.ExecLog(sModuleInfo, "%s is set as step duration" % value, 1)
         return "passed"
+
+    except:
+        return CommonUtil.Exception_Handler(sys.exc_info())
+
+
+@logger
+def random_email_generator(data_set):
+
+    """
+    usage: This action allows you to create random email
+    dataset : random email generator | common action | email
+    return : email address in string
+    note: email will be the variable name to store
+    """
+
+
+    sModuleInfo = inspect.currentframe().f_code.co_name + " : " + MODULE_NAME
+    try:
+        var_email = None
+        var_variable = None
+        for left, mid, right in data_set:
+            if "action" in mid:
+               var_variable = right.strip()
+
+        if var_variable==None:
+            CommonUtil.ExecLog(sModuleInfo, "Please provide variable name to store results", 3)
+            return "zeuz_failed"
+
+        var_email = create_random_email_address() #return random email address
+
+        CommonUtil.ExecLog(sModuleInfo, "Created random email address '%s' " % (var_email), 1)
+        return sr.Set_Shared_Variables(var_variable, var_email) #saved in shared variable inside variable key
+
+    except:
+        return CommonUtil.Exception_Handler(sys.exc_info())
+
+
+@logger
+def random_email_read(data_set):
+
+    """
+    usage: This action allows you to read email which are created using our random email generator action
+    dataset :
+        address | input parameter | address
+        random email read | common action | result
+
+    return : return a dictionary which has one key(email)-value(list of emails)
+    note: address is the random email ,result will be the variable name to store
+    """
+
+    sModuleInfo = inspect.currentframe().f_code.co_name + " : " + MODULE_NAME
+    try:
+        var_email = None
+        var_variable=None
+
+        for left, mid, right in data_set:
+            if "address" in left:
+               var_email = right.strip()
+            if "action" in mid:
+                var_variable=right.strip()
+
+        if var_variable==None:
+            CommonUtil.ExecLog(sModuleInfo, "Please provide variable name to store results", 3)
+            return "zeuz_failed"
+
+        if var_email!=None:
+            res=checkMails(var_email)
+            if(len(res[var_email])>0):
+                CommonUtil.ExecLog(sModuleInfo, "All mails are saved for '%s' in shared variable " % (var_email), 1)
+                return sr.Set_Shared_Variables(var_variable, res) #saved in shared variable inside variable key
+            else:
+                CommonUtil.ExecLog(sModuleInfo, "No email found  for '%s'  " % (var_email), 1)
+                return sr.Set_Shared_Variables(var_variable, res) #saved in shared variable inside variable key
+
+                return "passed"
+        else:
+            CommonUtil.ExecLog(sModuleInfo, "Please provide email address", 3)
+            return "zeuz_failed"
+
+    except:
+        return CommonUtil.Exception_Handler(sys.exc_info())
+
+
+@logger
+def random_email_delete(data_set):
+
+    """
+    usage: This action allows you to delete email which are created using our random email generator action
+    dataset :
+        address | input parameter | address
+        random email delete | common action | result
+
+    return : return True/False
+    note: address is the random email ,result will be the variable name to store
+    """
+
+
+    sModuleInfo = inspect.currentframe().f_code.co_name + " : " + MODULE_NAME
+    try:
+        var_email = None
+        for left, mid, right in data_set:
+            if "address" in left:
+               var_email = right.strip()
+            if "action" in mid:
+                var_variable=right.strip()
+
+        if var_variable==None:
+            CommonUtil.ExecLog(sModuleInfo, "Please provide variable name to store results", 3)
+            return "zeuz_failed"
+
+        if var_email!=None:
+            res=deleteMail(var_email)
+            if(res==True):
+                CommonUtil.ExecLog(sModuleInfo, "'%s' is deleted" % (var_email), 1)
+                return sr.Set_Shared_Variables(var_variable, res) #saved in shared variable inside random_email key
+            else:
+                CommonUtil.ExecLog(sModuleInfo, "'%s'  can not be deleted " % (var_email), 1)
+                sr.Set_Shared_Variables(var_variable, res) #saved in shared variable inside variable key
+                return "zeuz_failed"
+        else:
+            CommonUtil.ExecLog(sModuleInfo, "Please provide email address", 3)
+            return "zeuz_failed"
 
     except:
         return CommonUtil.Exception_Handler(sys.exc_info())
