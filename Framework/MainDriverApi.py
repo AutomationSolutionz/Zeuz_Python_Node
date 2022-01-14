@@ -828,8 +828,6 @@ def run_test_case(
                     send_log_file_only_for_fail
                 )
 
-        if sTestStepResultList[-1] == CANCELLED_TAG:
-            return CANCELLED_TAG
         return "passed"
     except:
         CommonUtil.Exception_Handler(sys.exc_info())
@@ -1108,70 +1106,75 @@ def upload_csv_file_info(run_id, test_case):
 def check_run_cancel(run_id):
     while not CommonUtil.run_cancelled:
         CommonUtil.run_cancel = get_status_of_runid(run_id)
+        time.sleep(3)
     CommonUtil.run_cancelled = False
 
 
 def upload_json_report(Userid, temp_ini_file, run_id):
-    if CommonUtil.debug_status: return
-    zip_path = Path(ConfigModule.get_config_value("sectionOne", "temp_run_file_path", temp_ini_file))/run_id.replace(":", "-")/CommonUtil.current_session_name
-    path = zip_path / "execution_log.json"
-    json_report = CommonUtil.get_all_logs(json=True)
-    with open(path, "w") as f:
-        json.dump(json_report, f)
+    try:
+        if CommonUtil.debug_status: return
+        zip_path = Path(ConfigModule.get_config_value("sectionOne", "temp_run_file_path", temp_ini_file))/run_id.replace(":", "-")/CommonUtil.current_session_name
+        path = zip_path / "execution_log.json"
+        json_report = CommonUtil.get_all_logs(json=True)
+        with open(path, "w") as f:
+            json.dump(json_report, f)
 
-    if ConfigModule.get_config_value("RunDefinition", "local_run") == "False":
-        FL.ZipFolder(str(zip_path), str(zip_path) + ".zip")
+        if ConfigModule.get_config_value("RunDefinition", "local_run") == "False" and CommonUtil.run_cancel != CANCELLED_TAG:
+            FL.ZipFolder(str(zip_path), str(zip_path) + ".zip")
 
-        with open(str(zip_path) + ".zip", "rb") as fzip:
-            size = round(os.stat(str(zip_path) + ".zip").st_size / 1024, 2)
-            if size > 1024:
-                size = str(round(size/1024, 2)) + " MB"
-            else:
-                size = str(size) + " KB"
-            print("Uploading %s report of %s testcases of %s from:\n%s"
-                  % (CommonUtil.current_session_name, len(json_report[0]["test_cases"]), size, str(zip_path) + ".zip"))
+            with open(str(zip_path) + ".zip", "rb") as fzip:
+                size = round(os.stat(str(zip_path) + ".zip").st_size / 1024, 2)
+                if size > 1024:
+                    size = str(round(size/1024, 2)) + " MB"
+                else:
+                    size = str(size) + " KB"
+                print("Uploading %s report of %s testcases of %s from:\n%s"
+                      % (CommonUtil.current_session_name, len(json_report[0]["test_cases"]), size, str(zip_path) + ".zip"))
 
-            headers = RequestFormatter.add_api_key_to_headers({})
-            for _ in range(5):
-                try:
-                    res = requests.post(
-                        RequestFormatter.form_uri("create_report_log_api/"),
-                        files={"file": fzip},
-                        data={"machine_name": Userid, "file_name": json_report[CommonUtil.runid_index]["file_name"]},
-                        verify=False,
-                        **headers)
-                except KeyError:
-                    res = requests.post(
-                        RequestFormatter.form_uri("create_report_log_api/"),
-                        files={"file": fzip},
-                        data={"machine_name": Userid},
-                        verify=False,
-                        **headers)
-                if res.status_code == 200:
+                headers = RequestFormatter.add_api_key_to_headers({})
+                for _ in range(5):
                     try:
-                        res_json = res.json()
-                    except:
-                        print("Could not Upload json report to server")
-                        return
-                    if isinstance(res_json, dict) and 'message' in res_json and res_json["message"]:
-                        print("Successfully Uploaded the report to server of run_id '%s'" % run_id)
-                    else:
-                        print("Could not Upload the report to server of run_id '%s'" % run_id)
-                    break
-                time.sleep(1)
-            else:
-                print("Could not Upload the report to server of run_id '%s'" % run_id)
-        # os.unlink(str(zip_path) + ".zip")     # Removing the zip is skipped because node_manager needs the zip
+                        res = requests.post(
+                            RequestFormatter.form_uri("create_report_log_api/"),
+                            files={"file": fzip},
+                            data={"machine_name": Userid, "file_name": json_report[CommonUtil.runid_index]["file_name"]},
+                            verify=False,
+                            **headers)
+                    except KeyError:
+                        res = requests.post(
+                            RequestFormatter.form_uri("create_report_log_api/"),
+                            files={"file": fzip},
+                            data={"machine_name": Userid},
+                            verify=False,
+                            **headers)
+                    if res.status_code == 200:
+                        try:
+                            res_json = res.json()
+                        except:
+                            print("Could not Upload json report to server")
+                            return
+                        if isinstance(res_json, dict) and 'message' in res_json and res_json["message"]:
+                            print("Successfully Uploaded the report to server of run_id '%s'" % run_id)
+                        else:
+                            print("Could not Upload the report to server of run_id '%s'" % run_id)
+                        break
+                    time.sleep(1)
+                else:
+                    print("Could not Upload the report to server of run_id '%s'" % run_id)
+            # os.unlink(str(zip_path) + ".zip")     # Removing the zip is skipped because node_manager needs the zip
 
-    with open(path, "w") as f:
-        json.dump(json_report, f, indent=2)
+        with open(path, "w") as f:
+            json.dump(json_report, f, indent=2)
 
-    # Create a standard report format to be consumed by other tools.
-    junit_report_path = zip_path / "junitreport.xml"
-    print("Generating junit4 compatible report.")
-    junit_report.process(CommonUtil.all_logs_json, str(junit_report_path))
-    print("DONE. Generated junit report at %s" % junit_report_path)
-    return zip_path
+        if CommonUtil.run_cancel != CANCELLED_TAG:
+            # Create a standard report format to be consumed by other tools.
+            junit_report_path = zip_path / "junitreport.xml"
+            print("Generating junit4 compatible report.")
+            junit_report.process(CommonUtil.all_logs_json, str(junit_report_path))
+            print("DONE. Generated junit report at %s" % junit_report_path)
+        return zip_path
+    except:
+        CommonUtil.Exception_Handler(sys.exc_info())
 
 
 def split_testcases(run_id_info, max_tc_in_single_session):
@@ -1249,6 +1252,7 @@ def main(device_dict, user_info_object):
             CommonUtil.run_cancelled = False
             debug_info = ""
             CommonUtil.clear_all_logs()
+            executor.submit(check_run_cancel, run_id)
 
             # Write testcase json
             path = ConfigModule.get_config_value("sectionOne", "temp_run_file_path", temp_ini_file) / Path(run_id.replace(":", "-"))
@@ -1436,7 +1440,7 @@ def main(device_dict, user_info_object):
                             sModuleInfo, "Performance Test Results Uploaded Successfully", 1
                         )
                     else:
-                        run_cancelled = run_test_case(
+                        run_test_case(
                             test_case_no,
                             sModuleInfo,
                             run_id,
@@ -1452,7 +1456,7 @@ def main(device_dict, user_info_object):
                             send_log_file_only_for_fail,
                         )
                         CommonUtil.clear_all_logs()  # clear logs
-                        if run_cancelled == CANCELLED_TAG:
+                        if CommonUtil.run_cancel == CANCELLED_TAG:
                             break
                         print("Executed %s test cases" % cnt)
                         cnt += 1
@@ -1481,7 +1485,7 @@ def main(device_dict, user_info_object):
 
             ConfigModule.add_config_value("sectionOne", "sTestStepExecLogId", "MainDriver", temp_ini_file)
 
-            if run_cancelled == CANCELLED_TAG:
+            if CommonUtil.run_cancel == CANCELLED_TAG:
                 print("Test Set Cancelled by the User")
             elif not CommonUtil.debug_status:
 
@@ -1514,6 +1518,8 @@ def main(device_dict, user_info_object):
                 ws.close()
                 print("[LIVE LOG] Disconnected from Live Log service")
             CommonUtil.runid_index += 1
+            CommonUtil.run_cancel = ""
+            CommonUtil.run_cancelled = False
             break   # Todo: remove this after server side multiple run-id problem is fixed
 
         return "pass"
