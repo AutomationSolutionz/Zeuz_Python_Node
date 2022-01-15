@@ -118,6 +118,8 @@ current_step_name = ""
 current_tc_no = ""
 current_session_name = ""
 custom_step_duration = ""
+run_cancel = ""
+run_cancelled = False
 
 executor = concurrent.futures.ThreadPoolExecutor()
 all_threads = {}
