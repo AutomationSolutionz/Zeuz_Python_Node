@@ -37,3 +37,4 @@ pyyaml
 imap-tools
 beautifulsoup4
 premailer
+html-diff

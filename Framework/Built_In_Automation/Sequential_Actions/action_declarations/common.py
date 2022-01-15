@@ -70,10 +70,10 @@ declarations = (
     { "name": "read from yaml",                              "function": "yaml_read",                             "screenshot": "none" },
     { "name": "write into yaml",                             "function": "yaml_write",                            "screenshot": "none" },
     { "name": "write into text file",                        "function": "text_write",                            "screenshot": "none" },
-    {"name": "compare identifiers content", "function": "compare_identifiers_content", "screenshot": "none"},
-
+    {"name": "compare identifiers content",                  "function": "compare_identifiers_content",            "screenshot": "none"},
     { "name": "compare item occurrence",                     "function": "compare_item_occurrence",                "screenshot": "none" },
-    { "name": "compare text and font",                     "function": "compare_text_and_font",                "screenshot": "none" },
+    { "name": "compare text and font",                       "function": "compare_text_and_font",                  "screenshot": "none" },
+    { "name": "compare file",                                 "function": "compare_file",                           "screenshot": "none" },
 
 ) # yapf: disable
 
