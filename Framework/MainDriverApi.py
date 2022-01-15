@@ -475,17 +475,32 @@ def run_all_test_steps_in_a_test_case(
 
             # check if already failed
             if already_failed:
-                always_run = all_step_info[StepSeq - 1]["always_run"]  # get always run info
-                if always_run:
+                if all_step_info[StepSeq - 1]["always_run"]:
                     CommonUtil.ExecLog(
                         sModuleInfo,
                         "Step-%s is set as 'Always run' so executing this step" % (CommonUtil.step_index + 1),
+                        2,
+                    )
+                elif all_step_info[StepSeq - 1]["run_on_fail"]:
+                    CommonUtil.ExecLog(
+                        sModuleInfo,
+                        "Step-%s is set as 'Run on fail' and the test case has already failed so executing this step" % (CommonUtil.step_index + 1),
                         2,
                     )
                 else:
                     StepSeq += 1
                     CommonUtil.step_index += 1
                     continue
+
+            elif not already_failed and all_step_info[StepSeq - 1]["run_on_fail"]:
+                CommonUtil.ExecLog(
+                    sModuleInfo,
+                    "Step-%s is set as 'Run on fail' and the test case has not failed yet so skipping this step" % (CommonUtil.step_index + 1),
+                    2,
+                )
+                StepSeq += 1
+                CommonUtil.step_index += 1
+                continue
 
             # get step info
             current_step_name = all_step_info[StepSeq - 1]["step_name"]
