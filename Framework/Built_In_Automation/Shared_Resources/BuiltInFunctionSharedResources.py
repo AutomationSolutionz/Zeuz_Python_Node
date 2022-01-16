@@ -674,42 +674,21 @@ def get_previous_response_variables_in_strings(step_data_string_input):
                     CommonUtil.ExecLog(
                         sModuleInfo,
                         'Wrong format provided. The correct for %|random_data()|% is below\n' +
-                        '%|random_data( [False , "a", True] )|%\n%|random_string(100-200)|%',
+                        '%|random_data( [False , "a", True] )|%\n%|random_data(100-200)|%',
                         3,
                     )
                     return "zeuz_failed"
 
                 generated_value = random_string
 
-            elif var_name.startswith("random_string"):
+            elif var_name.startswith("random_string"):    # Todo: Remove this variable 3 months later from 18 January, 2022
                 CommonUtil.ExecLog(
                     "",
-                    '%|random_string()|% is deprecated and will be deleted soon. Use %|random_data()|% to get updated features',
-                    2
+                    '%|random_string()|% is deprecated. Use %|random_data()|% to get updated features. Example:\n'+
+                    "%|random_data('nluc',15)|%\n%|random_data('n',5)|%",
+                    3
                 )
-                full_string = var_name
-                random_string = ""
-                if "(" in full_string:
-                    temp = full_string.split("(")
-                    params = temp[1].split(")")[0]
-                    if "," in params:
-                        list_of_params = params.split(",")
-                        random_string = random_string_generator(
-                            list_of_params[0].strip(),
-                            int(list_of_params[1].strip()),
-                        )
-                    else:
-                        if params.strip() == "":
-                            random_string = random_string_generator()
-                        else:
-                            random_string = random_string_generator(params.strip())
-                else:
-                    return "zeuz_failed"
-
-                if random_string in failed_tag_list:
-                    return "zeuz_failed"
-
-                generated_value = random_string
+                return "zeuz_failed"
 
             elif var_name.startswith("rest_response"):
                 full_string = var_name
@@ -746,44 +725,23 @@ def get_previous_response_variables_in_strings(step_data_string_input):
                 print(replaced)
                 generated_value = replaced
 
-            elif var_name.startswith("random_number_in_range"):
-                full_string = var_name
-                if "(" in full_string:
-                    temp = full_string.split("(")
-                    params = temp[1].split(")")[0]
-                    if "," in params:
-                        list_of_params = params.split(",")
-                    if len(list_of_params) > 2:
-                        return "zeuz_failed"
-                    else:
-                        random_string = str(
-                            random.randint(
-                                int(list_of_params[0]), int(list_of_params[1])
-                            )
-                        )
-                else:
-                    return "zeuz_failed"
+            elif var_name.startswith("random_number_in_range"):    # Todo: Remove this variable 3 months later from 18 January, 2022
+                CommonUtil.ExecLog(
+                    "",
+                    '%|random_number_in_range()|% is deprecated. Use %|random_data()|% to get updated features. Example:\n' +
+                    "%|random_data(100-200)|%\n%|random_data([1,2,3,'hello',True])|%",
+                    3
+                )
+                return "zeuz_failed"
 
-                generated_value = random_string
-
-            elif var_name.startswith("pick_random_element"):
-                full_string = var_name
-                if "(" in full_string:
-                    temp = full_string.split("(")
-                    params = temp[1].split(")")[0]
-                    if "," in params:
-                        list_of_params = params.split(",")
-                        rand_str = list_of_params[
-                            random.randint(0, len(list_of_params) - 1)
-                        ]
-                    else:
-                        rand_str = params
-
-                else:
-                    return "zeuz_failed"
-                if len(params) == 0:
-                    return "zeuz_failed"
-                generated_value = rand_str
+            elif var_name.startswith("pick_random_element"):    # Todo: Remove this variable 3 months later from 18 January, 2022
+                CommonUtil.ExecLog(
+                    "",
+                    '%|pick_random_element()|% is deprecated. Use %|random_data()|% to get updated features. Example:\n' +
+                    "%|random_data(100-200)|%\n%|random_data([1,2,3,'hello',True])|%",
+                    3
+                )
+                return "zeuz_failed"
 
             elif var_name.startswith("os_name"):
                 import platform
@@ -796,12 +754,7 @@ def get_previous_response_variables_in_strings(step_data_string_input):
             else:
                 var_value = parse_variable(var_name)
                 if var_value == "zeuz_failed":
-                    CommonUtil.ExecLog(
-                        sModuleInfo,
-                        "No such variable named '%s' in shared variables list"
-                        % var_name,
-                        3,
-                    )
+                    CommonUtil.ExecLog(sModuleInfo, "No such variable named '%s' in shared variables list" % var_name, 3)
                     return "zeuz_failed"
                 else:
                     generated_value = var_value
@@ -1455,10 +1408,6 @@ def Shared_Variable_Export():
 def save_built_in_time_variable(string):
     sModuleInfo = inspect.currentframe().f_code.co_name + " : " + MODULE_NAME
     try:
-
-        sign = ""
-        number = 0
-        parameter = ""
 
         datetime_format = "%Y-%m-%d"
 
