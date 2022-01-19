@@ -1,25 +1,21 @@
 # -*- coding: utf-8 -*-
-# -*- coding: cp1252 -*-
 """
-Created on April 10, 2017
-
-@author: Built_In_Automation Solutionz Inc.
+REST API actions.
 """
 
-import sys, json
-import os
+import sys
+from typing import Union
 import requests
-from urllib3.exceptions import InsecureRequestWarning
-
-# Suppress the InsecureRequestWarning since we use verify=False parameter.
-requests.packages.urllib3.disable_warnings(category=InsecureRequestWarning)
-
-
-sys.path.append("..")
-
 import ast
 import time
 import inspect
+
+# Suppress the InsecureRequestWarning since we use verify=False parameter.
+from urllib3.exceptions import InsecureRequestWarning
+requests.packages.urllib3.disable_warnings(category=InsecureRequestWarning)
+
+sys.path.append("..")
+
 from Framework.Built_In_Automation.Shared_Resources import (
     BuiltInFunctionSharedResources as Shared_Resources,
 )
@@ -617,6 +613,27 @@ def search_condition_wrapper(data, condition_string):
         return CommonUtil.Exception_Handler(sys.exc_info())
 
 
+def get_session_wrapper():
+    # This dictionary contains a mapping between session names and session objects.
+    # Whenever a session with a new name is requested, it must first be created and
+    # then inserted in this dictionary, and afterwards use the newly created
+    # session. The default is the `None` session, which means there's no session and
+    # every request with the `None` session will be sent as a one-off request.
+    sessions: Union[requests.Request, requests.Session] = {
+        None: requests,
+    }
+    
+    def inner(session_name: Union[str, None] = None) -> Union[requests.Request, requests.Session]:
+        if session_name not in sessions:
+            sessions[session_name] = requests.Session()
+
+        return sessions[session_name]
+
+    return inner
+
+get_session = get_session_wrapper()
+
+
 # Method to handle rest calls
 def handle_rest_call(
     data,
@@ -633,6 +650,7 @@ def handle_rest_call(
     wait_for_response_code=0,
     timeout=None,
     files=None,
+    session_name=None,
 ):
     sModuleInfo = inspect.currentframe().f_code.co_name + " : " + MODULE_NAME
     try:
@@ -664,6 +682,9 @@ def handle_rest_call(
 
         count = 0
 
+        # Decide whether we should use a Session object or a one-off request.
+        session = get_session(session_name)
+
         result = None
         status_code = 1  # dummy value
         if CommonUtil.load_testing:
@@ -677,7 +698,7 @@ def handle_rest_call(
                 if "Content-Type" in headers:
                     content_header = headers["Content-Type"]
                     if content_header == "application/json":
-                        result = requests.request(
+                        result = session.request(
                             method=method,
                             url=url,
                             json=body,
@@ -690,7 +711,7 @@ def handle_rest_call(
                         # set a boundary
                         del headers["Content-Type"]
                         if files:
-                            result = requests.request(
+                            result = session.request(
                                 method=method,
                                 url=url,
                                 files=files,
@@ -699,7 +720,7 @@ def handle_rest_call(
                                 timeout=timeout,
                             )
                         else:
-                            result = requests.request(
+                            result = session.request(
                                 method=method,
                                 url=url,
                                 files=body,
@@ -708,7 +729,7 @@ def handle_rest_call(
                                 timeout=timeout,
                             )
                     elif content_header == "application/x-www-form-urlencoded":
-                        result = requests.request(
+                        result = session.request(
                             method=method,
                             url=url,
                             data=body,
@@ -717,7 +738,7 @@ def handle_rest_call(
                             timeout=timeout,
                         )
                     else:
-                        result = requests.request(
+                        result = session.request(
                             method=method,
                             url=url,
                             json=body,
@@ -727,7 +748,7 @@ def handle_rest_call(
                             timeout=timeout,
                         )
                 else:
-                    result = requests.request(
+                    result = session.request(
                         method=method,
                         url=url,
                         json=body,
@@ -737,7 +758,7 @@ def handle_rest_call(
                         timeout=timeout,
                     )
             elif method in ("get", "head"):
-                result = requests.request(
+                result = session.request(
                     method=method,
                     url=url,
                     headers=headers,
@@ -745,7 +766,7 @@ def handle_rest_call(
                     timeout=timeout,
                 )
             elif method == "delete":
-                result = requests.request(
+                result = session.request(
                     method=method,
                     url=url,
                     json=body,
@@ -1008,15 +1029,25 @@ def Get_Response(step_data, save_cookie=False):
         fields_to_be_saved = ""
         timeout = None
         files = None
-        for row in step_data:
-            if row[1] == "action":
-                fields_to_be_saved = row[2]
-            elif row[0] == "wait for status code":
-                wait_for_response_code = int(row[2])
-            elif "timeout" in row[0].lower():
-                timeout = float(row[2].strip())
-            elif "file" in row[0].lower():
-                files = CommonUtil.parse_value_into_object(row[2])
+        session_name = None
+        for left, mid, right in step_data:
+            left = left.lower()
+
+            if mid == "action":
+                fields_to_be_saved = right
+            elif "wait for status code" in left:
+                wait_for_response_code = int(right)
+            elif "timeout" in left:
+                timeout = float(right.strip())
+            elif "file" in left:
+                files = CommonUtil.parse_value_into_object(right)
+            elif "session" in left:
+                # Allow the user to specify a session name. All requests under
+                # the same session name will be sent from the same Session
+                # object. Which means, it will share cookies and other session
+                # related data automatically among all the requests in that
+                # session.
+                session_name = right.strip()
 
         element_step_data = Get_Element_Step_Data(step_data)
 
@@ -1033,6 +1064,7 @@ def Get_Response(step_data, save_cookie=False):
                     wait_for_response_code=wait_for_response_code,
                     timeout=timeout,
                     files=files,
+                    session_name=session_name,
                 )
                 return return_result
             except Exception:
