@@ -39,6 +39,7 @@ from Framework.Built_In_Automation.Shared_Resources import LocateElement
 from Framework import MainDriverApi
 from Framework.Utilities import FileUtilities
 import datetime, random
+from datetime import datetime
 import datefinder
 import traceback
 import json
@@ -4145,12 +4146,13 @@ def compare_file(data_set):
 
                             1,
                         )
-
+                date = datetime.now(). strftime("%Y_%m_%d_%I_%M_%S_%p")
                 f1 = open(parentpath).read()
                 f2 = open(childpath).read()
                 diff_html = diff(f1, f2)
+                test_case = ConfigModule.get_config_value("sectionOne", "test_case", temp_config)
                 test_case_folder = ConfigModule.get_config_value("sectionOne", "test_case_folder", temp_config)
-                with open(test_case_folder+os.sep+"diff.html", "w") as f:
+                with open(test_case_folder+os.sep+f"{test_case}_{date}.html", "w") as f:
                     f.write(diff_html)
 
                 return "zeuz_failed"
@@ -4185,11 +4187,13 @@ def compare_file(data_set):
 
                             1,
                         )
+                date = datetime.now().strftime("%Y_%m_%d_%I_%M_%S_%p")
                 test_case_folder = ConfigModule.get_config_value("sectionOne", "test_case_folder", temp_config)
+                test_case = ConfigModule.get_config_value("sectionOne", "test_case", temp_config)
                 f1 = open(parentpath).read()
                 f2 = open(childpath).read()
                 diff_html = diff(f1, f2)
-                with open(test_case_folder+os.sep+"diff.html", "w") as f:
+                with open(test_case_folder+os.sep+f"{test_case}_{date}.html", "w") as f:
                     f.write(diff_html)
 
 
