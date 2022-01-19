@@ -420,13 +420,6 @@ def run_all_test_steps_in_a_test_case(
             debug_steps = debug_info["debug_steps"]
             if "debug_step_actions" in debug_info:
                 debug_actions = debug_info["debug_step_actions"]
-            if debug_info["debug_clean"] == "YES":
-                cleanup_drivers_during_debug = True
-
-        # clean up shared variables and teardown drivers
-        if cleanup_drivers_during_debug:
-            cleanup_driver_instances()
-            shared.Clean_Up_Shared_Variables()
         if not debug_steps:
             debug_steps = []
 
@@ -710,6 +703,22 @@ def cleanup_driver_instances():  # cleans up driver(selenium, appium) instances
         pass
 
 
+def set_important_variables():
+    try:
+        for module in CommonUtil.common_modules[:-1]:
+            try:
+                if module not in shared.shared_variables:
+                    exec("import " + module)
+                    shared.shared_variables.update({module: eval(module)})
+            except:
+                continue
+        if "sr" not in shared.shared_variables:
+            shared.shared_variables.update({"sr": shared})
+    except:
+        CommonUtil.Exception_Handler(sys.exc_info())
+        raise Exception
+
+
 def run_test_case(
     TestCaseID,
     sModuleInfo,
@@ -735,6 +744,7 @@ def run_test_case(
         CommonUtil.load_testing = False
         ConfigModule.add_config_value("sectionOne", "sTestStepExecLogId", sModuleInfo, temp_ini_file)
         create_tc_log_ss_folder(run_id, test_case, temp_ini_file)
+        set_important_variables()
         file_specific_steps = all_file_specific_steps[TestCaseID] if TestCaseID in all_file_specific_steps else {}
         TestCaseName = testcase_info["title"]
         log_line = "# EXECUTING TEST CASE : %s :: %s #" % (test_case, TestCaseName)
@@ -1325,6 +1335,9 @@ def main(device_dict, user_info_object):
                 debug_info = {"debug_clean": run_id_info["debug_clean"], "debug_steps": run_id_info["debug_steps"]}
                 if "debug_step_actions" in run_id_info:
                     debug_info["debug_step_actions"] = run_id_info["debug_step_actions"]
+                if run_id_info["debug_clean"] == "YES":
+                    cleanup_driver_instances()
+                    shared.Clean_Up_Shared_Variables()
             driver_list = ["Not needed currently"]
 
             final_run_params = {}
