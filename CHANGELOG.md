@@ -1,5 +1,9 @@
 # Changelog
 
+# Version 15
+### [15.0.0] [January 21, 2022]
+- **[Change]** action_disable is flipped
+
 # Version 14
 ### [14.9.0] [January 21, 2022]
 - **[Add]** Added **Python Expression** evaluation inside our `%||%` syntax

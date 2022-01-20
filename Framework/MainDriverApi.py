@@ -451,6 +451,7 @@ def run_all_test_steps_in_a_test_case(
                 all_action_data_set.append(action_dataset)
                 dict = {}
                 dict["Action disabled"] = True if action_info["action_disabled"] == False else False
+                dict["Action disabled"] = not dict["Action disabled"]
                 dict["Action name"] = action_info["action_name"]
                 all_action_Info.append(dict)
             all_step_dataset.append(all_action_data_set)
