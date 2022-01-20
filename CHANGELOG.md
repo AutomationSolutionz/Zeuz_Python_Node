@@ -1,6 +1,25 @@
 # Changelog
 
 # Version 14
+### [14.9.0] [January 21, 2022]
+- **[Add]** Added **Python Expression** evaluation inside our `%||%` syntax
+<br> Examples:
+```%|os.name|% will return os name
+%|os.environ["DB_PASS"]|% will return any env var value
+%|[i.lower().strip() for i in list_var]|% its a list comprehension that will lower and strip every item in that list
+%|sum([1,2,3,4])|% will return the sum of the list inside. similarly you can use any builtin fun() such as print(), len(), reversed(), min(), max()
+%|list(filter(lambda x: (x % 13 == 0), my_list))|% will return a list of numbers divided by 13 
+%|list(zip(list_a, list_b))|% will merge the lists into a parent list and return you a matrix
+%|str(pathlib.Path("~/Desktop/file.txt").expanduser() if platform.system()=="Windows" else pathlib.Path("~/file.txt").expanduser())|% will retrun a file_path based on windows/linux/mac
+```
+- **[Deprecate]** Deprecated `%|random_string|%`, `%|random_number_in_range|%`, `%|pick_random_element|%`, `%|rest_response|%` variables
+- **[Add]** Run-cancel will cancel the run on node
+- **[Add]** Run-on-fail step has been implemented
+-  **[Fix]** Browserstack bug is fixed
+### [14.8.2] [December 31, 2021]
+- **[Improve]** If browser is closed then teardown automatically and restart browser
+- **[Improve]** Support for running apps simultaneously in same mobile
+
 ### [14.8.2] [December 31, 2021]
 - **[Improve]** If browser is closed then teardown automatically and restart browser
 - **[Improve]** Support for running apps simultaneously in same mobile
