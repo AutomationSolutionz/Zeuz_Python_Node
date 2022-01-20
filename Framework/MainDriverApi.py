@@ -474,7 +474,7 @@ def run_all_test_steps_in_a_test_case(
                         "Step-%s is set as 'Always run' so executing this step" % (CommonUtil.step_index + 1),
                         2,
                     )
-                elif all_step_info[StepSeq - 1]["run_on_fail"]:
+                elif "run_on_fail" in all_step_info[StepSeq - 1] and all_step_info[StepSeq - 1]["run_on_fail"]:     # Todo: Remove the 1st condition when all servers are updated
                     CommonUtil.ExecLog(
                         sModuleInfo,
                         "Step-%s is set as 'Run on fail' and the test case has already failed so executing this step" % (CommonUtil.step_index + 1),
@@ -485,7 +485,7 @@ def run_all_test_steps_in_a_test_case(
                     CommonUtil.step_index += 1
                     continue
 
-            elif not already_failed and all_step_info[StepSeq - 1]["run_on_fail"]:
+            elif not already_failed and "run_on_fail" in all_step_info[StepSeq - 1] and all_step_info[StepSeq - 1]["run_on_fail"]:     # Todo: Remove the 2nd condition when all servers are updated
                 CommonUtil.ExecLog(
                     sModuleInfo,
                     "Step-%s is set as 'Run on fail' and the test case has not failed yet so skipping this step" % (CommonUtil.step_index + 1),
