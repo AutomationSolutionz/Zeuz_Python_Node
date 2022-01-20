@@ -3590,7 +3590,10 @@ def switch_iframe(step_data):
 
             elif "default" in right.lower():
                 try:
-                    Element = LocateElement.Get_Element([(left, "element parameter", right)], selenium_driver)
+                    iframe_data = [(left, "element parameter", right)]
+                    if left != "xpath":
+                        iframe_data.append(("tag", "element parameter", "iframe"))
+                    Element = LocateElement.Get_Element(iframe_data, selenium_driver)
                     selenium_driver.switch_to.frame(Element)
                     CommonUtil.ExecLog(sModuleInfo, "Iframe switched using above Xpath", 1)
                 except:
