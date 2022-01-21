@@ -634,7 +634,6 @@ def get_session(session_name: Union[str, None] = None) -> Union[requests.Request
         Shared_Resources.Set_Shared_Variables(
             KEY_ZEUZ_API_SESSIONS,
             { None: requests },
-            allowEmpty=False,
             print_variable=False
         )
         sessions = Shared_Resources.Get_Shared_Variables(KEY_ZEUZ_API_SESSIONS, log=False)
@@ -645,7 +644,6 @@ def get_session(session_name: Union[str, None] = None) -> Union[requests.Request
         Shared_Resources.Set_Shared_Variables(
             KEY_ZEUZ_API_SESSIONS,
             sessions,
-            allowEmpty=False,
             print_variable=False
         )
 
