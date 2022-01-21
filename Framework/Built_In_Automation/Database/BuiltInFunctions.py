@@ -287,7 +287,7 @@ def connect_to_db(data_set):
             if left == DB_USER_ID:
                 sr.Set_Shared_Variables(DB_USER_ID, right)
             if left == DB_PASSWORD:
-                sr.Set_Shared_Variables(DB_PASSWORD, right, allowEmpty=True)
+                sr.Set_Shared_Variables(DB_PASSWORD, right)
             if left == DB_HOST:
                 sr.Set_Shared_Variables(DB_HOST, right)
             if left == DB_PORT:
