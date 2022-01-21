@@ -194,6 +194,15 @@ def Get_Element(step_data_set, driver, query_debug=False, return_all_elements=Fa
         else:
             result = "zeuz_failed"
 
+        """ The following code should have handled element_click_interception_exception according to doc but it cannot handle yet kept the code for rnd """
+        # try:
+        #     if isinstance(result, selenium.webdriver.remote.webelement.WebElement):
+        #         if not EC.element_to_be_clickable(result):
+        #             CommonUtil.ExecLog(sModuleInfo, "Waiting for the element to be clickable for at most %s seconds" % wait_clickable, 2)
+        #         WebDriverWait(driver, wait_clickable).until(EC.element_to_be_clickable((By.XPATH, element_query)))
+        # except:
+        #     CommonUtil.Exception_Handler(sys.exc_info())
+
         if result not in failed_tag_list:
             if type(result) != list:
                 try:

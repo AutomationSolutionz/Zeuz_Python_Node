@@ -36,6 +36,7 @@ from selenium.common.exceptions import ElementClickInterceptedException, WebDriv
 from selenium.webdriver.common.keys import Keys
 from selenium.webdriver.common.by import By
 from selenium.webdriver.support import expected_conditions as EC
+import selenium
 
 from Framework.Utilities import CommonUtil, ConfigModule
 from Framework.Built_In_Automation.Shared_Resources import (
@@ -988,7 +989,7 @@ def Enter_Text_In_Text_Box(step_data):
             selenium_driver.execute_script("arguments[0].click();", Element)
         else:
             try:
-                Element.click()
+                handle_clickability_and_click(step_data, Element)
             except:
                 CommonUtil.ExecLog(sModuleInfo, "Entering text without clicking the element", 2)
             if clear:
@@ -1177,6 +1178,31 @@ def execute_javascript(data_set):
         return CommonUtil.Exception_Handler(sys.exc_info(), None, errMsg)
 
 
+def handle_clickability_and_click(dataset, Element:selenium.webdriver.remote.webelement.WebElement):
+    sModuleInfo = inspect.currentframe().f_code.co_name + " : " + MODULE_NAME
+    wait_clickable = 0
+    for left, mid, right in dataset:
+        if mid.strip().lower() == "option":
+            left = left.strip().lower()
+            if "wait" in left and "clickable" in left:
+                wait_clickable = int(right.strip())
+    if not wait_clickable:
+        Element.click()     # no need of try except here. we need to return the exact exception upto this point
+    else:
+        log_flag = True
+        start = time.time()
+        while True:
+            try:
+                Element.click()
+                break
+            except ElementClickInterceptedException:
+                if log_flag:
+                    CommonUtil.ExecLog(sModuleInfo, "The Element is overlapped. Waiting %s seconds max for the element to become clickable" % wait_clickable, 2)
+                    log_flag = False
+                if time.time() > start + wait_clickable:
+                    raise Exception     # not ElementClickInterceptedException. we dont want js to perform click
+
+
 # Method to click on element; step data passed on by the user
 @logger
 def Click_Element(data_set, retry=0):
@@ -1219,7 +1245,7 @@ def Click_Element(data_set, retry=0):
                 # Click on element.
                 selenium_driver.execute_script("arguments[0].click();", Element)
             else:
-                Element.click()
+                handle_clickability_and_click(data_set, Element)
 
             CommonUtil.ExecLog(sModuleInfo, "Successfully clicked the element", 1)
             return "passed"
@@ -1328,7 +1354,7 @@ def Click_and_Download(data_set, retry=0):
             if use_js:
                 selenium_driver.execute_script("arguments[0].click();", Element)
             else:
-                Element.click()
+                handle_clickability_and_click(data_set, Element)
             CommonUtil.ExecLog(sModuleInfo, "Successfully clicked the element", 1)
         except ElementClickInterceptedException:
             try:
@@ -3590,7 +3616,10 @@ def switch_iframe(step_data):
 
             elif "default" in right.lower():
                 try:
-                    Element = LocateElement.Get_Element([(left, "element parameter", right)], selenium_driver)
+                    iframe_data = [(left, "element parameter", right)]
+                    if left != "xpath":
+                        iframe_data.append(("tag", "element parameter", "iframe"))
+                    Element = LocateElement.Get_Element(iframe_data, selenium_driver)
                     selenium_driver.switch_to.frame(Element)
                     CommonUtil.ExecLog(sModuleInfo, "Iframe switched using above Xpath", 1)
                 except:
@@ -3598,7 +3627,10 @@ def switch_iframe(step_data):
                     selenium_driver.switch_to.default_content()
             else:
                 try:
-                    Element = LocateElement.Get_Element([(left, "element parameter", right)], selenium_driver)
+                    iframe_data = [(left, "element parameter", right)]
+                    if left != "xpath":
+                        iframe_data.append(("tag", "element parameter", "iframe"))
+                    Element = LocateElement.Get_Element(iframe_data, selenium_driver)
                     selenium_driver.switch_to.frame(Element)
                     CommonUtil.ExecLog(sModuleInfo, "Iframe switched using above Xpath", 1)
                 except:
@@ -3862,7 +3894,7 @@ def check_uncheck(data_set):
             return "passed"
         else:
             try:
-                Element.click()
+                handle_clickability_and_click(data_set, Element)
                 if command == "check":
                     CommonUtil.ExecLog(sModuleInfo, "The element is checked successfully", 1)
                 else:

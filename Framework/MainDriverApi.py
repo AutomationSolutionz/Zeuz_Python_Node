@@ -420,13 +420,6 @@ def run_all_test_steps_in_a_test_case(
             debug_steps = debug_info["debug_steps"]
             if "debug_step_actions" in debug_info:
                 debug_actions = debug_info["debug_step_actions"]
-            if debug_info["debug_clean"] == "YES":
-                cleanup_drivers_during_debug = True
-
-        # clean up shared variables and teardown drivers
-        if cleanup_drivers_during_debug:
-            cleanup_driver_instances()
-            shared.Clean_Up_Shared_Variables()
         if not debug_steps:
             debug_steps = []
 
@@ -458,6 +451,7 @@ def run_all_test_steps_in_a_test_case(
                 all_action_data_set.append(action_dataset)
                 dict = {}
                 dict["Action disabled"] = True if action_info["action_disabled"] == False else False
+                dict["Action disabled"] = not dict["Action disabled"]
                 dict["Action name"] = action_info["action_name"]
                 all_action_Info.append(dict)
             all_step_dataset.append(all_action_data_set)
@@ -481,7 +475,7 @@ def run_all_test_steps_in_a_test_case(
                         "Step-%s is set as 'Always run' so executing this step" % (CommonUtil.step_index + 1),
                         2,
                     )
-                elif all_step_info[StepSeq - 1]["run_on_fail"]:
+                elif "run_on_fail" in all_step_info[StepSeq - 1] and all_step_info[StepSeq - 1]["run_on_fail"]:     # Todo: Remove the 1st condition when all servers are updated
                     CommonUtil.ExecLog(
                         sModuleInfo,
                         "Step-%s is set as 'Run on fail' and the test case has already failed so executing this step" % (CommonUtil.step_index + 1),
@@ -492,7 +486,7 @@ def run_all_test_steps_in_a_test_case(
                     CommonUtil.step_index += 1
                     continue
 
-            elif not already_failed and all_step_info[StepSeq - 1]["run_on_fail"]:
+            elif not already_failed and "run_on_fail" in all_step_info[StepSeq - 1] and all_step_info[StepSeq - 1]["run_on_fail"]:     # Todo: Remove the 2nd condition when all servers are updated
                 CommonUtil.ExecLog(
                     sModuleInfo,
                     "Step-%s is set as 'Run on fail' and the test case has not failed yet so skipping this step" % (CommonUtil.step_index + 1),
@@ -710,6 +704,22 @@ def cleanup_driver_instances():  # cleans up driver(selenium, appium) instances
         pass
 
 
+def set_important_variables():
+    try:
+        for module in CommonUtil.common_modules[:-1]:
+            try:
+                if module not in shared.shared_variables:
+                    exec("import " + module)
+                    shared.shared_variables.update({module: eval(module)})
+            except:
+                continue
+        if "sr" not in shared.shared_variables:
+            shared.shared_variables.update({"sr": shared})
+    except:
+        CommonUtil.Exception_Handler(sys.exc_info())
+        raise Exception
+
+
 def run_test_case(
     TestCaseID,
     sModuleInfo,
@@ -735,6 +745,7 @@ def run_test_case(
         CommonUtil.load_testing = False
         ConfigModule.add_config_value("sectionOne", "sTestStepExecLogId", sModuleInfo, temp_ini_file)
         create_tc_log_ss_folder(run_id, test_case, temp_ini_file)
+        set_important_variables()
         file_specific_steps = all_file_specific_steps[TestCaseID] if TestCaseID in all_file_specific_steps else {}
         TestCaseName = testcase_info["title"]
         log_line = "# EXECUTING TEST CASE : %s :: %s #" % (test_case, TestCaseName)
@@ -1325,6 +1336,9 @@ def main(device_dict, user_info_object):
                 debug_info = {"debug_clean": run_id_info["debug_clean"], "debug_steps": run_id_info["debug_steps"]}
                 if "debug_step_actions" in run_id_info:
                     debug_info["debug_step_actions"] = run_id_info["debug_step_actions"]
+                if run_id_info["debug_clean"] == "YES":
+                    cleanup_driver_instances()
+                    shared.Clean_Up_Shared_Variables()
             driver_list = ["Not needed currently"]
 
             final_run_params = {}
