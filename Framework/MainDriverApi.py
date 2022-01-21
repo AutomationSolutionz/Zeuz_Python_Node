@@ -451,7 +451,9 @@ def run_all_test_steps_in_a_test_case(
                 all_action_data_set.append(action_dataset)
                 dict = {}
                 dict["Action disabled"] = True if action_info["action_disabled"] == False else False
-                dict["Action disabled"] = not dict["Action disabled"]
+                server_version = CommonUtil.all_logs_json[CommonUtil.runid_index]["webserver_version"]
+                if float(server_version[:server_version.find(".", 2)]) > 6.0:
+                    dict["Action disabled"] = not dict["Action disabled"]
                 dict["Action name"] = action_info["action_name"]
                 all_action_Info.append(dict)
             all_step_dataset.append(all_action_data_set)
@@ -829,24 +831,6 @@ def run_test_case(
             CommonUtil.Join_Thread_and_Return_Result("screenshot")  # Let the capturing screenshot end in thread
             cleanup_driver_instances()  # clean up drivers
             shared.Clean_Up_Shared_Variables()  # clean up shared variables
-            sTestCaseStatus = rerun_testcase(
-                sTestCaseStatus,
-                TestCaseID,
-                sModuleInfo,
-                run_id,
-                final_dependency,
-                final_run_params,
-                temp_ini_file,
-                is_linked,
-                testcase_info,
-                executor,
-                debug_info,
-                all_file_specific_steps,
-                rerun_on_fail,
-                send_log_file_only_for_fail,
-                performance,
-                browserDriver,
-            )
             if ConfigModule.get_config_value("RunDefinition", "local_run") == "False":
                 zip_and_delete_tc_folder(
                     sTestCaseStatus,
@@ -882,115 +866,6 @@ def run_test_case(
         after_execution_dict["logid"] = TCLogFile
         CommonUtil.CreateJsonReport(TCInfo=after_execution_dict)
         return "passed"
-
-
-def rerun_testcase(
-    sTestCaseStatus,
-    TestCaseID,
-    sModuleInfo,
-    run_id,
-    final_dependency,
-    final_run_params,
-    temp_ini_file,
-    is_linked,
-    testcase_info,
-    executor,
-    debug_info,
-    all_file_specific_steps,
-    rerun_on_fail,
-    send_log_file_only_for_fail,
-    performance,
-    browserDriver,
-):
-    if not (rerun_on_fail and send_log_file_only_for_fail and sTestCaseStatus in ("Failed", "Blocked")):
-        return
-    CommonUtil.rerunning_on_fail = True
-    test_case = str(TestCaseID).replace("#", "no")
-    ConfigModule.add_config_value("sectionOne", "sTestStepExecLogId", sModuleInfo, temp_ini_file)
-    file_specific_steps = all_file_specific_steps[TestCaseID] if TestCaseID in all_file_specific_steps else {}
-    TestCaseName = testcase_info["title"]
-    log_line = "# RE-EXECUTING TEST CASE : %s :: %s #" % (test_case, TestCaseName)
-    print("#" * (len(log_line)))
-    CommonUtil.ExecLog("", log_line, 4, False)
-    print("#" * (len(log_line)))
-    TestCaseStartTime = time.time()
-    if performance and browserDriver:
-        shared.Set_Shared_Variables("selenium_driver", browserDriver)
-
-    # runs all test steps in the test case, all test step result is stored in the list named sTestStepResultList
-    sTestStepResultList = run_all_test_steps_in_a_test_case(
-        testcase_info,
-        test_case,
-        sModuleInfo,
-        run_id,
-        file_specific_steps,
-        final_dependency,
-        final_run_params,
-        temp_ini_file,
-        debug_info,
-        performance
-    )
-
-    ConfigModule.add_config_value(
-        "sectionOne",
-        "sTestStepExecLogId",
-        run_id + "|" + test_case + "|" + "none" + "|" + "none",
-        temp_ini_file,
-    )
-
-    # get test case end time
-    TestCaseEndTime = time.time()
-    sTestCaseEndTime = datetime.fromtimestamp(TestCaseEndTime).strftime("%Y-%m-%d %H:%M:%S")
-    # Decide if Test Case Pass/Failed
-    sTestCaseStatus = calculate_test_case_result(sModuleInfo, test_case, run_id, sTestStepResultList, testcase_info)
-    if sTestCaseStatus == "Passed":
-        CommonUtil.clear_logs_from_report()
-    # write locust file for performance testing
-    if performance:
-        locust_output_file_path = (
-            os.getcwd()
-            + os.sep
-            + "Built_In_Automation"
-            + os.sep
-            + "Performance_Testing"
-            + os.sep
-            + "locustFileOutput.txt"
-        )
-        file = open(locust_output_file_path, "a+")
-        file.write(sTestCaseStatus + "-" + str(",".join(sTestStepResultList)) + "\n")
-        file.close()
-
-    # Time it took to run the test case
-    TimeDiff = TestCaseEndTime - TestCaseStartTime
-    TimeInSec = int(TimeDiff)
-    TestCaseDuration = CommonUtil.FormatSeconds(TimeInSec)
-    after_execution_dict = {
-        "teststarttime": datetime.fromtimestamp(TestCaseStartTime).strftime("%Y-%m-%d %H:%M:%S"),
-        "testendtime": sTestCaseEndTime,
-        "duration": TestCaseDuration,
-        "status": sTestCaseStatus,
-        "failreason": ""
-    }
-    if sTestCaseStatus in ("Failed", "Blocked"):
-        TCLogFile = (
-            os.sep
-            + ConfigModule.get_config_value("Advanced Options", "_file_upload_path")
-            + os.sep
-            + run_id.replace(":", "-")
-            + "/"
-            + ConfigModule.get_config_value("sectionOne", "test_case", temp_ini_file)
-            + ".zip"
-        )
-        after_execution_dict["logid"] = TCLogFile
-    if sTestCaseStatus == "Passed":
-        CommonUtil.passed_after_rerun = True
-    CommonUtil.CreateJsonReport(TCInfo=after_execution_dict)
-    CommonUtil.Join_Thread_and_Return_Result("screenshot")  # Let the capturing screenshot end in thread
-    cleanup_driver_instances()  # clean up drivers
-    shared.Clean_Up_Shared_Variables()  # clean up shared variables
-
-    CommonUtil.rerunning_on_fail = False
-    return sTestCaseStatus
 
 
 def set_device_info_according_to_user_order(device_order, device_dict,  test_case_no, test_case_name, user_info_object, Userid):
@@ -1274,7 +1149,15 @@ def main(device_dict, user_info_object):
         for run_id_info in all_run_id_info:
             run_id_info["base_path"] = ConfigModule.get_config_value("Advanced Options", "_file_upload_path")
             run_id = run_id_info["run_id"]
-            run_cancelled = ""
+            release_version = run_id_info["release_version"]
+            release_name = run_id_info["release_name"]
+            release_info = run_id_info["release_info"]
+            CommonUtil.ExecLog(
+                "",
+                "[Server version] %s\n[Server Release Date] %s\n[Server Release Note] %s" % (release_version, release_name, release_info),
+                4,
+                False,
+            )
             CommonUtil.run_cancelled = False
             debug_info = ""
             CommonUtil.clear_all_logs()
