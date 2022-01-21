@@ -439,7 +439,7 @@ def run_all_test_steps_in_a_test_case(
             path = str(Path(attachment_path + tc_attachment[0][10:]))
             var_name = tc_attachment[1] + "." + tc_attachment[2] if tc_attachment[2] else tc_attachment[1]
             tc_attachment_list.append(var_name)
-            shared.Set_Shared_Variables(var_name, path)
+            shared.Set_Shared_Variables(var_name, path, attachment_var=True)
 
         all_step_info = testcase_info["steps"]
         all_step_dataset, all_action_info = [], []
@@ -507,7 +507,7 @@ def run_all_test_steps_in_a_test_case(
                 path = str(Path(attachment_path + attachment[1][12:]))
                 var_name = attachment[2] + "." + attachment[3] if attachment[3] else attachment[2]
                 step_attachment_list.append(var_name)
-                shared.Set_Shared_Variables(var_name, path)
+                shared.Set_Shared_Variables(var_name, path, attachment_var=True)
 
             # add config value
             ConfigModule.add_config_value(
@@ -566,7 +566,7 @@ def run_all_test_steps_in_a_test_case(
                 minutes, seconds = remainder // 60, remainder % 60
                 TestStepDuration = "%02d:%02d:%s" % (hours, minutes, round(seconds, 3))
             TestStepMemConsumed = WinMemBegin - WinMemEnd  # get memory consumed
-            for i in step_attachment_list: shared.Remove_From_Shared_Variables(i)  # Cleanup step_attachment variables
+            for i in step_attachment_list: shared.Remove_From_Shared_Variables(i, attachment_var=True)  # Cleanup step_attachment variables
 
             if sStepResult:
                 sTestStepResultList.append(sStepResult.upper())
@@ -613,7 +613,7 @@ def run_all_test_steps_in_a_test_case(
                 CommonUtil.run_cancelled = True
                 break
 
-        for i in tc_attachment_list: shared.Remove_From_Shared_Variables(i)   # Cleanup tc_attachment variables
+        for i in tc_attachment_list: shared.Remove_From_Shared_Variables(i, attachment_var=True)   # Cleanup tc_attachment variables
         return sTestStepResultList
     except:
         CommonUtil.Exception_Handler(sys.exc_info())

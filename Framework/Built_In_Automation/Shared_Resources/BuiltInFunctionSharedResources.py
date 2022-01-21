@@ -20,60 +20,62 @@ from .data_collector import DataCollector
 global shared_variables
 test_action_info = []
 shared_variables = {}
-protected_variables = (
-    []
-)  # Used to ensure internally used shared variables can't be overwritten by step data
-
+protected_variables = []  # Used to ensure internally used shared variables can't be overwritten by step data
+attachment_variables = {}
 
 MODULE_NAME = inspect.getmodulename(__file__)
 data_collector = DataCollector()
 
 
-def Set_Shared_Variables(key, value, protected=False, allowEmpty=False, print_variable=True, pretty=True):
+def Set_Shared_Variables(key, value, protected=False, attachment_var=False, print_variable=True, pretty=True):
     try:
         sModuleInfo = inspect.currentframe().f_code.co_name + " : " + MODULE_NAME
         global shared_variables, protected_variables
+
         if key in ("", None):
             return "zeuz_failed"
-
-        if key.startswith("__") and key.endswith("__"):
-            CommonUtil.ExecLog(
-                sModuleInfo,
-                "You cannot use '{k}' because it has double underscore both at beginning and end which are Special Variables in python".format(k=key),
-                3,
-            )
-            return "zeuz_failed"
-        if not re.search("^[a-zA-Z_][a-zA-Z_0-9]*$", key):
-            CommonUtil.ExecLog(
-                sModuleInfo,
-                "Please provide a valid variable name. valid variable name rules-\n" +
-                "1. A variable name can only contain Letters a-z, underscore _ and Digits 0-9\n" +
-                "2. A variable name Cannot Start with Digits 0-9",
-                3,
-            )
-            return "zeuz_failed"
-        if key in CommonUtil.common_modules:
-            # Todo: Suggest a valid name according to what user is trying to define
-            CommonUtil.ExecLog(
-                sModuleInfo,
-                "You are trying to overwrite a zeuz internal variable '{m}'. Please Choose a slightly different name. Example: {mc}, {mu}, _{m}, {m}_".format(m=key, mu=key.upper(), mc=key.capitalize()),
-                2
-            )
-        if protected:
-            protected_variables.append(key)  # Add to list of protected variables
-            protected_variables = list(set(protected_variables))
-        else:  # Check if user is trying to overwrite a protected variable
-            if key in protected_variables:  # If we find a match, exit with failure
+        if attachment_var:
+            global attachment_variables
+            attachment_variables[key] = value
+        else:
+            if key.startswith("__") and key.endswith("__"):
                 CommonUtil.ExecLog(
                     sModuleInfo,
-                    "Error: You tried to overwrite protected variable '%s'. Please choose a different variable name."
-                    % key,
+                    "You cannot use '{k}' because it has double underscore both at beginning and end which are Special Variables in python".format(k=key),
                     3,
                 )
                 return "zeuz_failed"
+            if not re.search("^[a-zA-Z_][a-zA-Z_0-9]*$", key):
+                CommonUtil.ExecLog(
+                    sModuleInfo,
+                    "Please provide a valid variable name. valid variable name rules-\n" +
+                    "1. A variable name can only contain Letters a-z, underscore _ and Digits 0-9\n" +
+                    "2. A variable name Cannot Start with Digits 0-9",
+                    3,
+                )
+                return "zeuz_failed"
+            if key in CommonUtil.common_modules:
+                # Todo: Suggest a valid name according to what user is trying to define
+                CommonUtil.ExecLog(
+                    sModuleInfo,
+                    "You are trying to overwrite a zeuz internal variable '{m}'. Please Choose a slightly different name. Example: {mc}, {mu}, _{m}, {m}_".format(m=key, mu=key.upper(), mc=key.capitalize()),
+                    2
+                )
+            if protected:
+                protected_variables.append(key)  # Add to list of protected variables
+                protected_variables = list(set(protected_variables))
+            else:  # Check if user is trying to overwrite a protected variable
+                if key in protected_variables:  # If we find a match, exit with failure
+                    CommonUtil.ExecLog(
+                        sModuleInfo,
+                        "Error: You tried to overwrite protected variable '%s'. Please choose a different variable name."
+                        % key,
+                        3,
+                    )
+                    return "zeuz_failed"
 
-        # Good to proceed
-        shared_variables[key] = value
+            # Good to proceed
+            shared_variables[key] = value
 
         if print_variable:
             try: val = json.dumps(CommonUtil.parse_value_into_object(value), indent=2, sort_keys=True)
@@ -254,27 +256,15 @@ def Get_Shared_Variables(key, log=True):
     try:
         sModuleInfo = inspect.currentframe().f_code.co_name + " : " + MODULE_NAME
         global shared_variables
-        if key == "" or key == None:  # if input is invalid
+        if key in ("", None):  # if input is invalid
             return "zeuz_failed"
-        else:
-            if key in shared_variables:
-                value = shared_variables[key]
-                # Try to get a pretty print.
-                # CommonUtil.prettify(key, value)
-
-                if log:
-                    CommonUtil.ExecLog(
-                        sModuleInfo, "Accessed variable:\n%s = %s" % (key, value), 0
-                    )
-                return value
-            else:
-                if log:
-                    CommonUtil.ExecLog(
-                        sModuleInfo,
-                        "No Such variable named '%s' found in shared variables" % key,
-                        3,
-                    )
-                return "zeuz_failed"
+        if key in attachment_variables:
+            return attachment_variables[key]
+        elif key in shared_variables:
+            return shared_variables[key]
+        if log:
+            CommonUtil.ExecLog(sModuleInfo, "No Such variable named '%s' found in shared variables" % key, 3)
+        return "zeuz_failed"
     except:
         CommonUtil.Exception_Handler(sys.exc_info())
 
@@ -307,14 +297,16 @@ def Get_List_from_Shared_Variables(list_name):
         CommonUtil.Exception_Handler(sys.exc_info())
 
 
-def Remove_From_Shared_Variables(key):
+def Remove_From_Shared_Variables(key, attachment_var=False):
     """ Remove if a variable already exists and return the value or false """
 
     try:
         sModuleInfo = inspect.currentframe().f_code.co_name + " : " + MODULE_NAME
         global shared_variables
-        if key == "" or key == None:  # if input is invalid
+        if key in ("", None):  # if input is invalid
             return "zeuz_failed"
+        elif attachment_var:
+            return attachment_variables.pop(key, "zeuz_failed")
         else:  # Valid input
             return shared_variables.pop(key, "zeuz_failed")
     except:
@@ -613,7 +605,10 @@ def get_previous_response_variables_in_strings(step_data_string_input):
             splitted = splitted[1].split("|%", 1)
             input = splitted[1]
             var_name = splitted[0]
-            if var_name.startswith("random_data"):
+            if var_name in attachment_variables:
+                generated_value = attachment_variables[var_name]
+                CommonUtil.prettify(var_name, generated_value)
+            elif var_name.startswith("random_data"):
                 full_string = var_name
                 if "(" in full_string:
                     temp = full_string.split("(")
