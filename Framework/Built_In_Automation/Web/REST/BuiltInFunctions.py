@@ -613,25 +613,34 @@ def search_condition_wrapper(data, condition_string):
         return CommonUtil.Exception_Handler(sys.exc_info())
 
 
-def get_session_wrapper():
+KEY_ZEUZ_API_SESSIONS = "zeuz_api_sessions"
+def get_session(session_name: Union[str, None] = None) -> Union[requests.Request, requests.Session]:
+    """
+    Fetches either an old session or creates a new session if it does not exist
+    with the provided `session_name`. A value of `None` means, we won't return
+    any session - we'll simply return the top level `requests` module.
+    """
+
     # This dictionary contains a mapping between session names and session objects.
     # Whenever a session with a new name is requested, it must first be created and
     # then inserted in this dictionary, and afterwards use the newly created
     # session. The default is the `None` session, which means there's no session and
     # every request with the `None` session will be sent as a one-off request.
-    sessions: Union[requests.Request, requests.Session] = {
-        None: requests,
-    }
-    
-    def inner(session_name: Union[str, None] = None) -> Union[requests.Request, requests.Session]:
-        if session_name not in sessions:
-            sessions[session_name] = requests.Session()
+    sessions: Union[requests.Request, requests.Session] = Shared_Resources.Get_Shared_Variables(KEY_ZEUZ_API_SESSIONS, log=False)
 
-        return sessions[session_name]
+    if sessions == "zeuz_failed":
+        Shared_Resources.Set_Shared_Variables(
+            KEY_ZEUZ_API_SESSIONS,
+            { None: requests },
+            allowEmpty=False,
+            print_variable=False
+        )
+        sessions = Shared_Resources.Get_Shared_Variables(KEY_ZEUZ_API_SESSIONS, log=False)
 
-    return inner
+    if session_name not in sessions:
+        sessions[session_name] = requests.Session()
 
-get_session = get_session_wrapper()
+    return sessions[session_name]
 
 
 # Method to handle rest calls
