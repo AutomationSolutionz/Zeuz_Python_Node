@@ -3,8 +3,10 @@
 REST API actions.
 """
 
+import os
+from pathlib import Path
 import sys
-from typing import Union
+from typing import Tuple, Union
 import requests
 import ast
 import time
@@ -640,7 +642,74 @@ def get_session(session_name: Union[str, None] = None) -> Union[requests.Request
     if session_name not in sessions:
         sessions[session_name] = requests.Session()
 
+        Shared_Resources.Set_Shared_Variables(
+            KEY_ZEUZ_API_SESSIONS,
+            sessions,
+            allowEmpty=False,
+            print_variable=False
+        )
+
     return sessions[session_name]
+
+
+ENV_ZEUZ_NODE_CLIENT_CERT = "ZEUZ_NODE_CLIENT_CERT"
+def get_client_certificate() -> Union[str, Tuple[str, str], None]:
+    """
+    Gets the client-side certificate if there's any.
+
+    Location to the certificate(s) file(s) is resolved in the following way:
+
+    1. Checks for `ZEUZ_NODE_CLIENT_CERT` environment variable which should
+       point to the directory containing the certificate(s).
+    2. Tries to search for a `certificates` folder in the current `PYTHON PATH`.
+
+    If there are multiple type of certificates, they're resolved according to
+    the following priorities - 1 being the highest (pick first):
+
+    1. If there's a ".pem" file, it'll take the highest priority as the only
+       certificate file.
+    2. If there's a pair of ".cert" and ".key" files, pick them.
+    3. If there's a pair of ".crt" and ".key" files, pick them.
+    4. If there's a pair of ".cer" and ".key" files, pick them.
+    5. Otherwise we pick nothing and return `None`.
+
+    **NOTE**: `requests` module supports loading only **UNENCRYPTED** files.
+    """
+
+    sModuleInfo = inspect.currentframe().f_code.co_name + " : " + MODULE_NAME
+
+    certificates_dir: Path = None
+    try:
+        env_value = os.environ[ENV_ZEUZ_NODE_CLIENT_CERT]
+        certificates_dir = Path(env_value)
+        if not certificates_dir.exists():
+            CommonUtil.ExecLog(
+                sModuleInfo,
+                f'The directory "{env_value}" specified by the environment variable "ZEUZ_NODE_CLIENT_CERT" does not exist.\n'
+                f'Trying to locate certificates from "{Path.cwd() / "certificates"}" dir.',
+                3,
+            )
+            raise Exception(f"{env_value} does not exist.")
+    except:
+        # Try to find inside the "certificates" folder.
+        certificates_dir = Path.cwd() / "certificates"
+
+    def get_len(pattern: str) -> int:
+        return len(list(certificates_dir.glob(pattern)))
+
+    if get_len("*.pem") > 0:
+        str(next(certificates_dir.glob("*.pem")))
+    elif get_len("*.key") > 0:
+        cert_file_exts = ["cert", "crt", "cer"]
+        for cfe in cert_file_exts:
+            cfe_name = f"*.{cfe}"
+            if get_len(cfe_name) > 0:
+                return (
+                    str(next(certificates_dir.glob(cfe_name))),
+                    str(next(certificates_dir.glob("*.key"))),
+                )
+
+    return None
 
 
 # Method to handle rest calls
@@ -694,6 +763,10 @@ def handle_rest_call(
         # Decide whether we should use a Session object or a one-off request.
         session = get_session(session_name)
 
+        # Get client-side certificates if it exists in the
+        # `ZEUZ_NODE_CLIENT_CERT` or `PYTHON PATH`.
+        cert = get_client_certificate()
+
         result = None
         status_code = 1  # dummy value
         if CommonUtil.load_testing:
@@ -713,6 +786,7 @@ def handle_rest_call(
                             json=body,
                             headers=headers,
                             verify=False,
+                            cert=cert,
                             timeout=timeout,
                         )
                     elif content_header == "multipart/form-data":
@@ -726,6 +800,7 @@ def handle_rest_call(
                                 files=files,
                                 headers=headers,
                                 verify=False,
+                                cert=cert,
                                 timeout=timeout,
                             )
                         else:
@@ -735,6 +810,7 @@ def handle_rest_call(
                                 files=body,
                                 headers=headers,
                                 verify=False,
+                                cert=cert,
                                 timeout=timeout,
                             )
                     elif content_header == "application/x-www-form-urlencoded":
@@ -744,6 +820,7 @@ def handle_rest_call(
                             data=body,
                             headers=headers,
                             verify=False,
+                            cert=cert,
                             timeout=timeout,
                         )
                     else:
@@ -754,6 +831,7 @@ def handle_rest_call(
                             data=payload,
                             headers=headers,
                             verify=False,
+                            cert=cert,
                             timeout=timeout,
                         )
                 else:
@@ -764,6 +842,7 @@ def handle_rest_call(
                         data=payload,
                         headers=headers,
                         verify=False,
+                        cert=cert,
                         timeout=timeout,
                     )
             elif method in ("get", "head"):
@@ -772,6 +851,7 @@ def handle_rest_call(
                     url=url,
                     headers=headers,
                     verify=False,
+                    cert=cert,
                     timeout=timeout,
                 )
             elif method == "delete":
@@ -781,6 +861,7 @@ def handle_rest_call(
                     json=body,
                     headers=headers,
                     verify=False,
+                    cert=cert,
                     timeout=timeout,
                 )
             else:
