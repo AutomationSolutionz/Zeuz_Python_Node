@@ -1,25 +1,23 @@
 # -*- coding: utf-8 -*-
-# -*- coding: cp1252 -*-
 """
-Created on April 10, 2017
-
-@author: Built_In_Automation Solutionz Inc.
+REST API actions.
 """
 
-import sys, json
 import os
+from pathlib import Path
+import sys
+from typing import Tuple, Union
 import requests
-from urllib3.exceptions import InsecureRequestWarning
-
-# Suppress the InsecureRequestWarning since we use verify=False parameter.
-requests.packages.urllib3.disable_warnings(category=InsecureRequestWarning)
-
-
-sys.path.append("..")
-
 import ast
 import time
 import inspect
+
+# Suppress the InsecureRequestWarning since we use verify=False parameter.
+from urllib3.exceptions import InsecureRequestWarning
+requests.packages.urllib3.disable_warnings(category=InsecureRequestWarning)
+
+sys.path.append("..")
+
 from Framework.Built_In_Automation.Shared_Resources import (
     BuiltInFunctionSharedResources as Shared_Resources,
 )
@@ -617,6 +615,103 @@ def search_condition_wrapper(data, condition_string):
         return CommonUtil.Exception_Handler(sys.exc_info())
 
 
+KEY_ZEUZ_API_SESSIONS = "zeuz_api_sessions"
+def get_session(session_name: Union[str, None] = None) -> Union[requests.Request, requests.Session]:
+    """
+    Fetches either an old session or creates a new session if it does not exist
+    with the provided `session_name`. A value of `None` means, we won't return
+    any session - we'll simply return the top level `requests` module.
+    """
+
+    # This dictionary contains a mapping between session names and session objects.
+    # Whenever a session with a new name is requested, it must first be created and
+    # then inserted in this dictionary, and afterwards use the newly created
+    # session. The default is the `None` session, which means there's no session and
+    # every request with the `None` session will be sent as a one-off request.
+    sessions: Union[requests.Request, requests.Session] = Shared_Resources.Get_Shared_Variables(KEY_ZEUZ_API_SESSIONS, log=False)
+
+    if sessions == "zeuz_failed":
+        Shared_Resources.Set_Shared_Variables(
+            KEY_ZEUZ_API_SESSIONS,
+            { None: requests },
+            allowEmpty=False,
+            print_variable=False
+        )
+        sessions = Shared_Resources.Get_Shared_Variables(KEY_ZEUZ_API_SESSIONS, log=False)
+
+    if session_name not in sessions:
+        sessions[session_name] = requests.Session()
+
+        Shared_Resources.Set_Shared_Variables(
+            KEY_ZEUZ_API_SESSIONS,
+            sessions,
+            allowEmpty=False,
+            print_variable=False
+        )
+
+    return sessions[session_name]
+
+
+ENV_ZEUZ_NODE_CLIENT_CERT = "ZEUZ_NODE_CLIENT_CERT"
+def get_client_certificate() -> Union[str, Tuple[str, str], None]:
+    """
+    Gets the client-side certificate if there's any.
+
+    Location to the certificate(s) file(s) is resolved in the following way:
+
+    1. Checks for `ZEUZ_NODE_CLIENT_CERT` environment variable which should
+       point to the directory containing the certificate(s).
+    2. Tries to search for a `certificates` folder in the current `PYTHON PATH`.
+
+    If there are multiple type of certificates, they're resolved according to
+    the following priorities - 1 being the highest (pick first):
+
+    1. If there's a ".pem" file, it'll take the highest priority as the only
+       certificate file.
+    2. If there's a pair of ".cert" and ".key" files, pick them.
+    3. If there's a pair of ".crt" and ".key" files, pick them.
+    4. If there's a pair of ".cer" and ".key" files, pick them.
+    5. Otherwise we pick nothing and return `None`.
+
+    **NOTE**: `requests` module supports loading only **UNENCRYPTED** files.
+    """
+
+    sModuleInfo = inspect.currentframe().f_code.co_name + " : " + MODULE_NAME
+
+    certificates_dir: Path = None
+    try:
+        env_value = os.environ[ENV_ZEUZ_NODE_CLIENT_CERT]
+        certificates_dir = Path(env_value)
+        if not certificates_dir.exists():
+            CommonUtil.ExecLog(
+                sModuleInfo,
+                f'The directory "{env_value}" specified by the environment variable "ZEUZ_NODE_CLIENT_CERT" does not exist.\n'
+                f'Trying to locate certificates from "{Path.cwd() / "certificates"}" dir.',
+                3,
+            )
+            raise Exception(f"{env_value} does not exist.")
+    except:
+        # Try to find inside the "certificates" folder.
+        certificates_dir = Path.cwd() / "certificates"
+
+    def get_len(pattern: str) -> int:
+        return len(list(certificates_dir.glob(pattern)))
+
+    if get_len("*.pem") > 0:
+        str(next(certificates_dir.glob("*.pem")))
+    elif get_len("*.key") > 0:
+        cert_file_exts = ["cert", "crt", "cer"]
+        for cfe in cert_file_exts:
+            cfe_name = f"*.{cfe}"
+            if get_len(cfe_name) > 0:
+                return (
+                    str(next(certificates_dir.glob(cfe_name))),
+                    str(next(certificates_dir.glob("*.key"))),
+                )
+
+    return None
+
+
 # Method to handle rest calls
 def handle_rest_call(
     data,
@@ -633,6 +728,7 @@ def handle_rest_call(
     wait_for_response_code=0,
     timeout=None,
     files=None,
+    session_name=None,
 ):
     sModuleInfo = inspect.currentframe().f_code.co_name + " : " + MODULE_NAME
     try:
@@ -664,6 +760,13 @@ def handle_rest_call(
 
         count = 0
 
+        # Decide whether we should use a Session object or a one-off request.
+        session = get_session(session_name)
+
+        # Get client-side certificates if it exists in the
+        # `ZEUZ_NODE_CLIENT_CERT` or `PYTHON PATH`.
+        cert = get_client_certificate()
+
         result = None
         status_code = 1  # dummy value
         if CommonUtil.load_testing:
@@ -677,12 +780,13 @@ def handle_rest_call(
                 if "Content-Type" in headers:
                     content_header = headers["Content-Type"]
                     if content_header == "application/json":
-                        result = requests.request(
+                        result = session.request(
                             method=method,
                             url=url,
                             json=body,
                             headers=headers,
                             verify=False,
+                            cert=cert,
                             timeout=timeout,
                         )
                     elif content_header == "multipart/form-data":
@@ -690,67 +794,74 @@ def handle_rest_call(
                         # set a boundary
                         del headers["Content-Type"]
                         if files:
-                            result = requests.request(
+                            result = session.request(
                                 method=method,
                                 url=url,
                                 files=files,
                                 headers=headers,
                                 verify=False,
+                                cert=cert,
                                 timeout=timeout,
                             )
                         else:
-                            result = requests.request(
+                            result = session.request(
                                 method=method,
                                 url=url,
                                 files=body,
                                 headers=headers,
                                 verify=False,
+                                cert=cert,
                                 timeout=timeout,
                             )
                     elif content_header == "application/x-www-form-urlencoded":
-                        result = requests.request(
+                        result = session.request(
                             method=method,
                             url=url,
                             data=body,
                             headers=headers,
                             verify=False,
+                            cert=cert,
                             timeout=timeout,
                         )
                     else:
-                        result = requests.request(
+                        result = session.request(
                             method=method,
                             url=url,
                             json=body,
                             data=payload,
                             headers=headers,
                             verify=False,
+                            cert=cert,
                             timeout=timeout,
                         )
                 else:
-                    result = requests.request(
+                    result = session.request(
                         method=method,
                         url=url,
                         json=body,
                         data=payload,
                         headers=headers,
                         verify=False,
+                        cert=cert,
                         timeout=timeout,
                     )
             elif method in ("get", "head"):
-                result = requests.request(
+                result = session.request(
                     method=method,
                     url=url,
                     headers=headers,
                     verify=False,
+                    cert=cert,
                     timeout=timeout,
                 )
             elif method == "delete":
-                result = requests.request(
+                result = session.request(
                     method=method,
                     url=url,
                     json=body,
                     headers=headers,
                     verify=False,
+                    cert=cert,
                     timeout=timeout,
                 )
             else:
@@ -1008,15 +1119,25 @@ def Get_Response(step_data, save_cookie=False):
         fields_to_be_saved = ""
         timeout = None
         files = None
-        for row in step_data:
-            if row[1] == "action":
-                fields_to_be_saved = row[2]
-            elif row[0] == "wait for status code":
-                wait_for_response_code = int(row[2])
-            elif "timeout" in row[0].lower():
-                timeout = float(row[2].strip())
-            elif "file" in row[0].lower():
-                files = CommonUtil.parse_value_into_object(row[2])
+        session_name = None
+        for left, mid, right in step_data:
+            left = left.lower()
+
+            if mid == "action":
+                fields_to_be_saved = right
+            elif "wait for status code" in left:
+                wait_for_response_code = int(right)
+            elif "timeout" in left:
+                timeout = float(right.strip())
+            elif "file" in left:
+                files = CommonUtil.parse_value_into_object(right)
+            elif "session" in left:
+                # Allow the user to specify a session name. All requests under
+                # the same session name will be sent from the same Session
+                # object. Which means, it will share cookies and other session
+                # related data automatically among all the requests in that
+                # session.
+                session_name = right.strip()
 
         element_step_data = Get_Element_Step_Data(step_data)
 
@@ -1033,6 +1154,7 @@ def Get_Response(step_data, save_cookie=False):
                     wait_for_response_code=wait_for_response_code,
                     timeout=timeout,
                     files=files,
+                    session_name=session_name,
                 )
                 return return_result
             except Exception:

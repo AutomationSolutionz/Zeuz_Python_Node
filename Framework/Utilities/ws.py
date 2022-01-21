@@ -1,6 +1,6 @@
 import json
+import time
 import websocket
-import traceback
 import ssl
 import json
 import os
@@ -12,6 +12,7 @@ from pathlib import Path
 
 # Websocket connection object that runs on a different thread.
 ws = None
+connected = False
 
 
 def get_url():
@@ -96,6 +97,8 @@ def binary(data):
 
 def close():
     global ws
+    global connected
+    connected = False
     if ws != None:
         try:
             ws.close(status=1000, reason="Test Set run complete")
@@ -117,10 +120,14 @@ def on_error(ws, error):
 
 
 def on_close(ws):
+    global connected
+    connected = False
     print("[ws] Connection closed.")
 
 
 def on_open(ws):
+    global connected
+    connected = True
     print("[ws] Live Log Connection established.")
 
 
@@ -133,15 +140,22 @@ def run_ws_thread(ws):
 
 def connect():
     global ws
+    global connected
+
     # Uncomment next line for debugging.
     # websocket.enableTrace(True)
     ws = websocket.WebSocketApp(get_url(),
                                 on_message=on_message,
                                 on_error=on_error,
                                 on_close=on_close)
+    
     ws.on_open = on_open
-
+    
     t = Thread(target=run_ws_thread, args=(ws,))
     t.start()
 
-
+    # Retry for 6s with 0.3s interval.
+    for _ in range(20):
+        if connected:
+            break
+        time.sleep(0.3)
