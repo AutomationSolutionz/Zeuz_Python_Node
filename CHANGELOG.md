@@ -1,6 +1,15 @@
 # Changelog
 
 # Version 14
+
+### [14.9.1] [January 21, 2022]
+- **[Add]** Session based requests (same session requests will utilize
+  connection pooling, cookie sharing, etc.)
+- **[Add]** Ability to specify a an environment variable `ZEUZ_NODE_CLIENT_CERT`
+  which contains the location to the certificates directory or a default
+  certificate directory in `ZeuZ Node > Framework > certificates` so that every
+  API action will use these certificates to issue any kind of requests.
+
 ### [14.9.0] [January 21, 2022]
 - **[Add]** Added **Python Expression** evaluation inside our `%||%` syntax
 <br> Examples:
