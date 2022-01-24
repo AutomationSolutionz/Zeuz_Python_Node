@@ -51,3 +51,4 @@ pythonnet
 keyboard
 mouse
 imap-tools
+rich

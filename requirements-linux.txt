@@ -39,3 +39,4 @@ opencv-python
 imap-tools
 keyboard
 mouse
+rich

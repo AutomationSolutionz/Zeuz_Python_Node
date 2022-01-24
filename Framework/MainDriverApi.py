@@ -1154,7 +1154,7 @@ def main(device_dict, user_info_object):
             release_info = run_id_info["release_info"]
             CommonUtil.ExecLog(
                 "",
-                "[Server version] %s\n[Server Release Date] %s\n[Server Release Note] %s" % (release_version, release_name, release_info),
+                "Server version = %s\nServer Release Date = %s\nServer Release Note = %s" % (release_version, release_name, release_info),
                 4,
                 False,
             )

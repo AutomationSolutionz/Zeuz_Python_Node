@@ -45,3 +45,4 @@ pyyaml
 imap-tools
 keyboard
 mouse
+rich

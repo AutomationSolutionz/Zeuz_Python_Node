@@ -91,6 +91,9 @@ temp_ini_file = (
 
 import subprocess
 
+from rich import traceback
+traceback.install(show_locals=True, max_frames=1)
+
 def signal_handler(sig, frame):
     print("Disconnecting from server...")
     disconnect_from_server()
