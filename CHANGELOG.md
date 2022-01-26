@@ -5,6 +5,7 @@
 ### [14.10.0] [January 26, 2022]
 - **[Add]** Add `http_response_headers` and `http_status_code` variables for
   REST API actions.
+- **[Add]** Add `allow redirect` optional parameter to REST actions.
 - **[Fix]** Internal: respect `print_variable` parameter.
 
 ### [14.9.1] [January 21, 2022]
