@@ -2,6 +2,11 @@
 
 # Version 14
 
+### [14.10.0] [January 26, 2022]
+- **[Add]** Add `http_response_headers` and `http_status_code` variables for
+  REST API actions.
+- **[Fix]** Internal: respect `print_variable` parameter.
+
 ### [14.9.1] [January 21, 2022]
 - **[Add]** Session based requests (same session requests will utilize
   connection pooling, cookie sharing, etc.)
