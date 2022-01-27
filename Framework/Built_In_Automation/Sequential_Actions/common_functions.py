@@ -4246,7 +4246,7 @@ def compare_file_with_tag(data_set):
         for file in files_list:
             files.append(open(file, "r").read())
             soups.append(BeautifulSoup(files[i], 'xml'))
-            for tag_text in soups[i].find_all(attr):
+            for tag_text in soups[i].find_all([attr]+[f"{attr}:"+str(tag.name) for tag in soups[i].find_all() if attr in str(tag)]):
                 text[i].append(''.join(str(tag_text)))
                 compared_list[i] += '\n' + str(tag_text)
             i += 1
