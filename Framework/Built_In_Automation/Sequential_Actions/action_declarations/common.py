@@ -73,7 +73,8 @@ declarations = (
     {"name": "compare identifiers content",                  "function": "compare_identifiers_content",            "screenshot": "none"},
     { "name": "compare item occurrence",                     "function": "compare_item_occurrence",                "screenshot": "none" },
     { "name": "compare text and font",                       "function": "compare_text_and_font",                  "screenshot": "none" },
-    { "name": "compare file",                                 "function": "compare_file",                           "screenshot": "none" },
+    { "name": "compare file",                                "function": "compare_file",                           "screenshot": "none" },
+    { "name": "compare file with tag",                       "function": "compare_file_with_tag",                  "screenshot": "none" },
 
 ) # yapf: disable
 

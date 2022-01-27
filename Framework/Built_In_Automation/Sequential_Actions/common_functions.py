@@ -4,7 +4,7 @@
 
     Caveat: Functions common to multiple Built In Functions must have action names that are unique, because we search the common functions first, regardless of the module name passed by the user
 """
-
+import difflib
 import inspect, sys, time, collections, ftplib, os, ast, copy, csv, yaml
 import itertools
 from pathlib import Path
@@ -4199,6 +4199,92 @@ def compare_file(data_set):
 
 
             return "passed"
+
+
+
+    except:
+        return CommonUtil.Exception_Handler(sys.exc_info())
+
+
+@logger
+def compare_file_with_tag(data_set):
+    sModuleInfo = inspect.currentframe().f_code.co_name + " : " + MODULE_NAME
+    try:
+        parentpath = None
+        childpath = None
+        exclude=None
+        attr=None
+        step_result=None
+        for left, middle, right in data_set:
+            left = left.lower().strip()
+            middle = middle.lower().strip()
+            right = right
+            if "base file" == left:
+                parentpath = right
+            elif "files to be compared" == left:
+                childpath = right
+            elif "attr" == left:
+                attr = right
+            elif "end result" == left:
+                step_result = right
+
+        # Expand ~ (home directory of user) to absolute path.
+        if "~" in parentpath:
+            parentpath = Path(os.path.expanduser(parentpath))
+
+        if "~" in childpath:
+            childpath = Path(os.path.expanduser(childpath))
+
+        parentpath = Path(parentpath)
+        childpath = Path(childpath)
+        compared_list = ["", ""]
+        text = [[], []]
+        files = []
+        soups = []
+        files_list = [parentpath, childpath]
+        i = 0
+        for file in files_list:
+            files.append(open(file, "r").read())
+            soups.append(BeautifulSoup(files[i], 'xml'))
+            for tag_text in soups[i].find_all(attr):
+                text[i].append(''.join(str(tag_text)))
+                compared_list[i] += '\n' + str(tag_text)
+            i += 1
+
+        result = ""
+        for first_string, second_string in zip(text[0], text[1]):
+            d = difflib.Differ()
+            diff = d.compare(first_string.splitlines(), second_string.splitlines())
+            result += '\n'.join(diff)
+
+        # f1 = open(files_list[0]).read()
+        # f2 = open(files_list[0]).read()
+
+            # diff_html = html_diff.diff('\n'.join(text[0]), '\n'.join(text[1]))
+
+        CommonUtil.ExecLog(
+            sModuleInfo,
+            f"Here is the changes:\n {result}",
+            1,
+        )
+
+
+
+
+        CommonUtil.ExecLog(
+            sModuleInfo,
+            "Processing a file to show the changes ...",
+
+            1,
+        )
+        date = datetime.now().strftime("%Y_%m_%d_%I_%M_%S_%p")
+        test_case_folder = ConfigModule.get_config_value("sectionOne", "test_case_folder", temp_config)
+        test_case = ConfigModule.get_config_value("sectionOne", "test_case", temp_config)
+
+        with open(test_case_folder+os.sep+f"{test_case}_{date}.txt", "w") as f:
+            f.write(result)
+
+        return "passed"
 
 
 
