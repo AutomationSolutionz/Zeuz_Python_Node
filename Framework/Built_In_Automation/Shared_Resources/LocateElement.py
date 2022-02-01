@@ -137,7 +137,7 @@ def Get_Element(step_data_set, driver, query_debug=False, return_all_elements=Fa
                 else:
                     CommonUtil.ExecLog(sModuleInfo, "Use '%| |%' sign to get variable value", 3)
                     return "zeuz_failed"
-            elif row[1].strip().lower() == "option":
+            elif row[1].strip().lower() in ("option", "parameter"):
                 left = row[0].strip().lower()
                 right = row[2].strip().lower()
                 if left in ("allow hidden", "allow disable"):
