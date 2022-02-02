@@ -87,9 +87,10 @@ def Set_Shared_Variables(key, value, protected=False, attachment_var=False, prin
                     "val": val
                 }
             )
-        if pretty:
-            # Try to get a pretty print.
-            CommonUtil.prettify(key, value)
+
+            if pretty:
+                # Try to get a pretty print.
+                CommonUtil.prettify(key, value)
 
         return "passed"
     except:
