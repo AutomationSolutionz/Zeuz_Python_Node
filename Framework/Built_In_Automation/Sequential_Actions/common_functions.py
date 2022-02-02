@@ -6,7 +6,7 @@
 """
 
 import difflib
-import inspect, sys, time, collections, ftplib, os, ast, copy, csv, yaml
+import inspect, sys, time, collections, ftplib, os, ast, copy, csv, yaml, subprocess
 import itertools
 from pathlib import Path
 
@@ -4691,15 +4691,15 @@ def extract_text_from_pdf(data_set):
         if not txt_path:
             CommonUtil.ExecLog(sModuleInfo, "Trying to extract text from %s" % pdf_path, 1)
             txt_path = str(pdf_dir/"poppler_output.txt")
-            cmd = str(poppler_dir/"pdftotext.exe") + " -layout " + pdf_path + " " + txt_path
-            os.system(cmd)
+            cmd = '"' + str(poppler_dir/"pdftotext.exe") + '" -layout "' + pdf_path + '" "' + txt_path +'"'
+            subprocess.run(cmd)
             with open(txt_path) as file:
                 var_value = file.read()
             os.unlink(txt_path)
         else:
-            cmd = str(poppler_dir/"pdftotext.exe") + " -layout " + pdf_path + " " + txt_path
+            cmd = '"' + str(poppler_dir/"pdftotext.exe") + '" -layout "' + pdf_path + '" "' + txt_path + '"'
             CommonUtil.ExecLog(sModuleInfo, "Trying to extract text from %s to %s" % (pdf_path, txt_path), 1)
-            os.system(cmd)
+            subprocess.run(cmd)
             with open(txt_path) as file:
                 var_value = file.read()
 
