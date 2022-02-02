@@ -3932,7 +3932,7 @@ def random_email_generator(data_set):
 
     """
     usage: This action allows you to create random email
-    dataset : random email generator | common action | email
+    dataset : random email generator | common action | var_name
     return : email address in string
     note: email will be the variable name to store
     """
@@ -3966,7 +3966,8 @@ def random_email_read(data_set):
     usage: This action allows you to read email which are created using our random email generator action
     dataset :
         address | input parameter | address
-        random email read | common action | result
+        wait    | optional parameter| 10
+        random email read | common action | var_name
 
     return : return a dictionary which has one key(email)-value(list of emails)
     note: address is the random email ,result will be the variable name to store
