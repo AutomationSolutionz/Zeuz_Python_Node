@@ -1995,7 +1995,7 @@ def Click_Element_Appium(data_set):
       Example:
       below example will offset by 25% to the right off the center of the element.  If we select 100% it will go to the right edge of the bound.  If you want to go left prove -25.
 
-      x_offset:y_offset             optional option           25:0
+      x_offset:y_offset             optional parameter           25:0
 
     """
 
@@ -2011,62 +2011,39 @@ def Click_Element_Appium(data_set):
         y_offset = False
         offset = False
 
-        for row in data_set:
-            if (
-                "option" in str(row[1]).lower().strip()
-                and "x_offset:y_offset" in str(row[0]).lower().strip()
-            ):
+        for left, mid, right in data_set:
+            left = left.lower().strip()
+            mid = mid.lower().strip()
+            if mid in ("option", "parameter") and "x_offset:y_offset" in left:
                 offset = True
-                x_offset = ((str(row[2]).lower().strip()).split(":")[0]).strip()
-                y_offset = ((str(row[2]).lower().strip()).split(":")[1]).strip()
+                x_offset, y_offset = [i.strip() for i in (right.strip()).split(":")]
 
         Element = LocateElement.Get_Element(data_set, appium_driver)
 
         if Element == "zeuz_failed":
-
-            CommonUtil.ExecLog(
-                sModuleInfo, "Unable to locate your element with given data.", 3
-            )
+            CommonUtil.ExecLog(sModuleInfo, "Unable to locate your element with given data.", 3)
             CommonUtil.ExecLog(sModuleInfo, "Trying to see if there are contexts", 1)
 
             context_result = auto_switch_context_and_try("webview")
             if context_result == "zeuz_failed":
-                CommonUtil.ExecLog(
-                    sModuleInfo,
-                    "Unable to locate your element with different contexts.",
-                    3,
-                )
+                CommonUtil.ExecLog(sModuleInfo, "Unable to locate your element with different contexts.", 3)
                 return "zeuz_failed"
             else:
                 context_switched = True
             Element = LocateElement.Get_Element(data_set, appium_driver)
             if Element == "zeuz_failed":
-                CommonUtil.ExecLog(
-                    sModuleInfo,
-                    "Unable to locate your element with different contexts.",
-                    3,
-                )
+                CommonUtil.ExecLog(sModuleInfo, "Unable to locate your element with different contexts.", 3)
                 if context_switched == True:
-                    CommonUtil.ExecLog(
-                        sModuleInfo,
-                        "Context was switched during this action.  Switching back to default Native Context",
-                        1,
-                    )
+                    CommonUtil.ExecLog(sModuleInfo, "Context was switched during this action.  Switching back to default Native Context", 1)
                     context_result = auto_switch_context_and_try("native")
                 return "zeuz_failed"
             else:
-                CommonUtil.ExecLog(
-                    sModuleInfo, "Found your element with different context", 1
-                )
+                CommonUtil.ExecLog(sModuleInfo, "Found your element with different context", 1)
 
         if Element.is_enabled():
             if offset == True:
                 try:
-                    CommonUtil.ExecLog(
-                        sModuleInfo,
-                        "Clicking the element based on offset with appium TouchAction.",
-                        1,
-                    )
+                    CommonUtil.ExecLog(sModuleInfo, "Clicking the element based on offset with appium TouchAction.", 1)
                     start_loc = Element.location
                     height_width = Element.size
                     start_x = int((start_loc)["x"])
@@ -2084,32 +2061,18 @@ def Click_Element_Appium(data_set):
                     x_cord_to_tap = center_x + total_x_offset
                     y_cord_to_tap = center_y + total_y_offset
                     TouchAction(appium_driver).tap(None, x_cord_to_tap, y_cord_to_tap, 1).perform()
-                    CommonUtil.ExecLog(
-                        sModuleInfo, "Tapped on element by offset successfully", 1
-                    )
+                    CommonUtil.ExecLog(sModuleInfo, "Tapped on element by offset successfully", 1)
                     if context_switched == True:
-                        CommonUtil.ExecLog(
-                            sModuleInfo,
-                            "Context was switched during this action.  Switching back to default Native Context",
-                            1,
-                        )
+                        CommonUtil.ExecLog(sModuleInfo, "Context was switched during this action.  Switching back to default Native Context",1)
                         context_result = auto_switch_context_and_try("native")
 
                     return "passed"
 
                 except:
                     # CommonUtil.TakeScreenShot(sModuleInfo)
-                    CommonUtil.ExecLog(
-                        sModuleInfo,
-                        "Element is enabled. Unable to tap based on offset.",
-                        3,
-                    )
+                    CommonUtil.ExecLog(sModuleInfo, "Element is enabled. Unable to tap based on offset.", 3)
                     if context_switched == True:
-                        CommonUtil.ExecLog(
-                            sModuleInfo,
-                            "Context was switched during this action.  Switching back to default Native Context",
-                            1,
-                        )
+                        CommonUtil.ExecLog(sModuleInfo, "Context was switched during this action.  Switching back to default Native Context", 1)
                         context_result = auto_switch_context_and_try("native")
 
                     return "zeuz_failed"
@@ -2118,17 +2081,9 @@ def Click_Element_Appium(data_set):
                 try:
                     Element.click()
                     # CommonUtil.TakeScreenShot(sModuleInfo)
-                    CommonUtil.ExecLog(
-                        sModuleInfo,
-                        "Successfully clicked the element with given parameters and values",
-                        1,
-                    )
+                    CommonUtil.ExecLog(sModuleInfo, "Successfully clicked the element with given parameters and values", 1)
                     if context_switched == True:
-                        CommonUtil.ExecLog(
-                            sModuleInfo,
-                            "Context was switched during this action.  Switching back to default Native Context",
-                            1,
-                        )
+                        CommonUtil.ExecLog(sModuleInfo, "Context was switched during this action.  Switching back to default Native Context", 1)
                         context_result = auto_switch_context_and_try("native")
                     return "passed"
 
@@ -2136,11 +2091,7 @@ def Click_Element_Appium(data_set):
                     errMsg = "Could not select/click your element."
 
                     if context_switched == True:
-                        CommonUtil.ExecLog(
-                            sModuleInfo,
-                            "Context was switched during this action.  Switching back to default Native Context",
-                            1,
-                        )
+                        CommonUtil.ExecLog(sModuleInfo, "Context was switched during this action.  Switching back to default Native Context", 1)
                         context_result = auto_switch_context_and_try("native")
                     return CommonUtil.Exception_Handler(sys.exc_info(), None, errMsg)
 
@@ -2148,21 +2099,13 @@ def Click_Element_Appium(data_set):
             # CommonUtil.TakeScreenShot(sModuleInfo)
             CommonUtil.ExecLog(sModuleInfo, "Element not enabled. Unable to click.", 3)
             if context_switched == True:
-                CommonUtil.ExecLog(
-                    sModuleInfo,
-                    "Context was switched during this action.  Switching back to default Native Context",
-                    1,
-                )
+                CommonUtil.ExecLog(sModuleInfo, "Context was switched during this action.  Switching back to default Native Context", 1)
                 context_result = auto_switch_context_and_try("native")
             return "zeuz_failed"
 
     except Exception:
         if context_switched == True:
-            CommonUtil.ExecLog(
-                sModuleInfo,
-                "Context was switched during this action.  Switching back to default Native Context",
-                1,
-            )
+            CommonUtil.ExecLog(sModuleInfo, "Context was switched during this action.  Switching back to default Native Context", 1)
             context_result = auto_switch_context_and_try("native")
         errMsg = "Could not find/click your element."
         return CommonUtil.Exception_Handler(sys.exc_info(), None, errMsg)
