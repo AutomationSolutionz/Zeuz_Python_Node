@@ -808,7 +808,7 @@ def handle_rest_call(
                             result = session.request(
                                 method=method,
                                 url=url,
-                                files=body,
+                                data=body,
                                 headers=headers,
                                 verify=False,
                                 cert=cert,

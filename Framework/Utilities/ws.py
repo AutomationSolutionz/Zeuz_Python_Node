@@ -119,7 +119,7 @@ def on_error(ws, error):
     print("[ws] Error. Connection closed\n")
 
 
-def on_close(ws):
+def on_close(ws=None, a=None, b=None):
     global connected
     connected = False
     print("[ws] Connection closed.")

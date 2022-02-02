@@ -2,6 +2,10 @@
 
 # Version 14
 
+### [14.10.1] [February 2, 2022]
+- **[Fix]** REST API action - POST `multipart/form-data` send payload as `data`
+  parameter instead of `files`.
+
 ### [14.10.0] [January 26, 2022]
 - **[Add]** Add `http_response_headers` and `http_status_code` variables for
   REST API actions.
