@@ -82,6 +82,7 @@ declarations = (
     {"name": "compare text and font",                        "function": "compare_text_and_font",                 "screenshot": "none" },
     {"name": "compare file",                                 "function": "compare_file",                          "screenshot": "none" },
     {"name": "compare file with tag",                        "function": "compare_file_with_tag",                 "screenshot": "none" },
+    {"name": "extract text from pdf",                        "function": "extract_text_from_pdf",                 "screenshot": "none" },
     # Actions of taxcalc end
 
 ) # yapf: disable

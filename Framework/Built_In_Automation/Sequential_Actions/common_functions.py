@@ -4639,4 +4639,72 @@ def compare_file_with_tag(data_set):
         return CommonUtil.Exception_Handler(sys.exc_info())
 
 
+@logger
+def extract_text_from_pdf(data_set):
+    """
+    usage: This action allows you to create a text file from the contents of a PDF
+    input pdf             | input parameter    | %|input.pdf|%
+    output variable       | output parameter   | variable_name
+    output txt            | optional parameter | output_filename.txt
+    extract text from pdf | common action      | extract text from pdf
+    """
+    sModuleInfo = inspect.currentframe().f_code.co_name + " : " + MODULE_NAME
+
+    try:
+        pdf_path, var_name, txt_path = "", "", ""
+        for left, mid, right in data_set:
+            left = left.strip().lower()
+            right = right.strip()
+            if "input pdf" == left:
+               pdf_path = CommonUtil.path_parser(right)
+            if "output variable" == left:
+               var_name = right
+            if "output text file" == left:
+                txt_path = CommonUtil.path_parser(right)
+
+        if not pdf_path:
+            CommonUtil.ExecLog(sModuleInfo, "Please provide the file-path of the pdf", 3)
+            return "zeuz_failed"
+        if not var_name:
+            CommonUtil.ExecLog(sModuleInfo, "Please provide variable name to store results", 3)
+            return "zeuz_failed"
+
+        pdf_dir = Path(os.path.abspath(__file__).split("Framework")[0])/"Apps"/"pdf"
+        poppler_dir = pdf_dir/"poppler"
+
+        if not os.path.isdir(poppler_dir):
+            CommonUtil.ExecLog(sModuleInfo, "Installing Poppler. it may take few minutes...", 1)
+            import zipfile, requests
+            if not os.path.isdir(pdf_dir):
+                os.makedirs(pdf_dir)
+            zip_url = "https://github.com/AutomationSolutionz/InstallerHelperFiles/raw/master/Windows/poppler_win.zip"
+            response = requests.get(zip_url, stream=True, verify=False)
+            chunk_size = 4096
+            with open(pdf_dir / "poppler.zip", 'wb') as file:
+                for data in response.iter_content(chunk_size):
+                    file.write(data)
+            z = zipfile.ZipFile(pdf_dir/"poppler.zip")
+            z.extractall(pdf_dir)
+            z.close()
+            os.unlink(pdf_dir/"poppler.zip")
+
+        if not txt_path:
+            CommonUtil.ExecLog(sModuleInfo, "Trying to extract text from %s" % pdf_path, 1)
+            txt_path = str(pdf_dir/"poppler_output.txt")
+            cmd = str(poppler_dir/"pdftotext.exe") + " -layout " + pdf_path + " " + txt_path
+            os.system(cmd)
+            with open(txt_path) as file:
+                var_value = file.read()
+            os.unlink(txt_path)
+        else:
+            cmd = str(poppler_dir/"pdftotext.exe") + " -layout " + pdf_path + " " + txt_path
+            CommonUtil.ExecLog(sModuleInfo, "Trying to extract text from %s to %s" % (pdf_path, txt_path), 1)
+            os.system(cmd)
+            with open(txt_path) as file:
+                var_value = file.read()
+
+        return sr.Set_Shared_Variables(var_name, var_value, pretty=True)
+
+    except:
+        return CommonUtil.Exception_Handler(sys.exc_info())
 
