@@ -92,6 +92,7 @@ temp_ini_file = (
 import subprocess
 
 def signal_handler(sig, frame):
+    CommonUtil.run_cancelled = True
     print("Disconnecting from server...")
     disconnect_from_server()
     sys.exit(0)
@@ -1033,4 +1034,5 @@ if __name__ == "__main__":
     else:
         # Bypass()
         Login(cli=True, run_once=RUN_ONCE, log_dir=log_dir)
+    CommonUtil.run_cancelled = True
     CommonUtil.ShutdownExecutor()
