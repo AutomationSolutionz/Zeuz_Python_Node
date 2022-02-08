@@ -1995,7 +1995,7 @@ def Click_Element_Appium(data_set):
       Example:
       below example will offset by 25% to the right off the center of the element.  If we select 100% it will go to the right edge of the bound.  If you want to go left prove -25.
 
-      x_offset:y_offset             optional option           25:0
+      x_offset:y_offset             optional parameter           25:0
 
     """
 
@@ -2011,62 +2011,39 @@ def Click_Element_Appium(data_set):
         y_offset = False
         offset = False
 
-        for row in data_set:
-            if (
-                "option" in str(row[1]).lower().strip()
-                and "x_offset:y_offset" in str(row[0]).lower().strip()
-            ):
+        for left, mid, right in data_set:
+            left = left.lower().strip()
+            mid = mid.lower().strip()
+            if mid in ("option", "parameter") and "x_offset:y_offset" in left:
                 offset = True
-                x_offset = ((str(row[2]).lower().strip()).split(":")[0]).strip()
-                y_offset = ((str(row[2]).lower().strip()).split(":")[1]).strip()
+                x_offset, y_offset = [i.strip() for i in (right.strip()).split(":")]
 
         Element = LocateElement.Get_Element(data_set, appium_driver)
 
         if Element == "zeuz_failed":
-
-            CommonUtil.ExecLog(
-                sModuleInfo, "Unable to locate your element with given data.", 3
-            )
+            CommonUtil.ExecLog(sModuleInfo, "Unable to locate your element with given data.", 3)
             CommonUtil.ExecLog(sModuleInfo, "Trying to see if there are contexts", 1)
 
             context_result = auto_switch_context_and_try("webview")
             if context_result == "zeuz_failed":
-                CommonUtil.ExecLog(
-                    sModuleInfo,
-                    "Unable to locate your element with different contexts.",
-                    3,
-                )
+                CommonUtil.ExecLog(sModuleInfo, "Unable to locate your element with different contexts.", 3)
                 return "zeuz_failed"
             else:
                 context_switched = True
             Element = LocateElement.Get_Element(data_set, appium_driver)
             if Element == "zeuz_failed":
-                CommonUtil.ExecLog(
-                    sModuleInfo,
-                    "Unable to locate your element with different contexts.",
-                    3,
-                )
+                CommonUtil.ExecLog(sModuleInfo, "Unable to locate your element with different contexts.", 3)
                 if context_switched == True:
-                    CommonUtil.ExecLog(
-                        sModuleInfo,
-                        "Context was switched during this action.  Switching back to default Native Context",
-                        1,
-                    )
+                    CommonUtil.ExecLog(sModuleInfo, "Context was switched during this action.  Switching back to default Native Context", 1)
                     context_result = auto_switch_context_and_try("native")
                 return "zeuz_failed"
             else:
-                CommonUtil.ExecLog(
-                    sModuleInfo, "Found your element with different context", 1
-                )
+                CommonUtil.ExecLog(sModuleInfo, "Found your element with different context", 1)
 
         if Element.is_enabled():
             if offset == True:
                 try:
-                    CommonUtil.ExecLog(
-                        sModuleInfo,
-                        "Clicking the element based on offset with appium TouchAction.",
-                        1,
-                    )
+                    CommonUtil.ExecLog(sModuleInfo, "Clicking the element based on offset with appium TouchAction.", 1)
                     start_loc = Element.location
                     height_width = Element.size
                     start_x = int((start_loc)["x"])
@@ -2084,32 +2061,18 @@ def Click_Element_Appium(data_set):
                     x_cord_to_tap = center_x + total_x_offset
                     y_cord_to_tap = center_y + total_y_offset
                     TouchAction(appium_driver).tap(None, x_cord_to_tap, y_cord_to_tap, 1).perform()
-                    CommonUtil.ExecLog(
-                        sModuleInfo, "Tapped on element by offset successfully", 1
-                    )
+                    CommonUtil.ExecLog(sModuleInfo, "Tapped on element by offset successfully", 1)
                     if context_switched == True:
-                        CommonUtil.ExecLog(
-                            sModuleInfo,
-                            "Context was switched during this action.  Switching back to default Native Context",
-                            1,
-                        )
+                        CommonUtil.ExecLog(sModuleInfo, "Context was switched during this action.  Switching back to default Native Context",1)
                         context_result = auto_switch_context_and_try("native")
 
                     return "passed"
 
                 except:
                     # CommonUtil.TakeScreenShot(sModuleInfo)
-                    CommonUtil.ExecLog(
-                        sModuleInfo,
-                        "Element is enabled. Unable to tap based on offset.",
-                        3,
-                    )
+                    CommonUtil.ExecLog(sModuleInfo, "Element is enabled. Unable to tap based on offset.", 3)
                     if context_switched == True:
-                        CommonUtil.ExecLog(
-                            sModuleInfo,
-                            "Context was switched during this action.  Switching back to default Native Context",
-                            1,
-                        )
+                        CommonUtil.ExecLog(sModuleInfo, "Context was switched during this action.  Switching back to default Native Context", 1)
                         context_result = auto_switch_context_and_try("native")
 
                     return "zeuz_failed"
@@ -2118,17 +2081,9 @@ def Click_Element_Appium(data_set):
                 try:
                     Element.click()
                     # CommonUtil.TakeScreenShot(sModuleInfo)
-                    CommonUtil.ExecLog(
-                        sModuleInfo,
-                        "Successfully clicked the element with given parameters and values",
-                        1,
-                    )
+                    CommonUtil.ExecLog(sModuleInfo, "Successfully clicked the element with given parameters and values", 1)
                     if context_switched == True:
-                        CommonUtil.ExecLog(
-                            sModuleInfo,
-                            "Context was switched during this action.  Switching back to default Native Context",
-                            1,
-                        )
+                        CommonUtil.ExecLog(sModuleInfo, "Context was switched during this action.  Switching back to default Native Context", 1)
                         context_result = auto_switch_context_and_try("native")
                     return "passed"
 
@@ -2136,11 +2091,7 @@ def Click_Element_Appium(data_set):
                     errMsg = "Could not select/click your element."
 
                     if context_switched == True:
-                        CommonUtil.ExecLog(
-                            sModuleInfo,
-                            "Context was switched during this action.  Switching back to default Native Context",
-                            1,
-                        )
+                        CommonUtil.ExecLog(sModuleInfo, "Context was switched during this action.  Switching back to default Native Context", 1)
                         context_result = auto_switch_context_and_try("native")
                     return CommonUtil.Exception_Handler(sys.exc_info(), None, errMsg)
 
@@ -2148,21 +2099,13 @@ def Click_Element_Appium(data_set):
             # CommonUtil.TakeScreenShot(sModuleInfo)
             CommonUtil.ExecLog(sModuleInfo, "Element not enabled. Unable to click.", 3)
             if context_switched == True:
-                CommonUtil.ExecLog(
-                    sModuleInfo,
-                    "Context was switched during this action.  Switching back to default Native Context",
-                    1,
-                )
+                CommonUtil.ExecLog(sModuleInfo, "Context was switched during this action.  Switching back to default Native Context", 1)
                 context_result = auto_switch_context_and_try("native")
             return "zeuz_failed"
 
     except Exception:
         if context_switched == True:
-            CommonUtil.ExecLog(
-                sModuleInfo,
-                "Context was switched during this action.  Switching back to default Native Context",
-                1,
-            )
+            CommonUtil.ExecLog(sModuleInfo, "Context was switched during this action.  Switching back to default Native Context", 1)
             context_result = auto_switch_context_and_try("native")
         errMsg = "Could not find/click your element."
         return CommonUtil.Exception_Handler(sys.exc_info(), None, errMsg)
@@ -4393,16 +4336,14 @@ def auto_switch_context_and_try(native_web):
         )
         return "zeuz_failed"
 
+
 @logger
 def swipe_appium(data_set):
     """
-    To auto scroll to an element which is scrollable, won't work if no scrollable element is present
     """
-    scrollable_element = None
-    global generic_driver
-    generic_driver = appium_driver
+    global appium_driver
     sModuleInfo = inspect.currentframe().f_code.co_name + " : " + MODULE_NAME
-    scrollable_element = LocateElement.Get_Element(data_set,appium_driver)
+    scrollable_element = LocateElement.Get_Element(data_set, appium_driver)
     if scrollable_element == None:
         CommonUtil.ExecLog(sModuleInfo, "Scrollable element is not found", 3)
         return "zeuz_failed"
@@ -4495,7 +4436,7 @@ def swipe_appium(data_set):
            "Calculated Coordinate: (%s,%s) to (%s,%s)" % (x1, y1, x2, y2), 1)
         i = 0
         while i < max_try:
-            generic_driver.swipe(x1, y1, x2, y2, duration * 1000)  # duration seconds to milliseconds
+            appium_driver.swipe(x1, y1, x2, y2, duration * 1000)  # duration seconds to milliseconds
             i = i+1
         return "passed"
 
@@ -4503,49 +4444,44 @@ def swipe_appium(data_set):
         CommonUtil.Exception_Handler(sys.exc_info(), None, "Error could not scroll the element")
         return "zeuz_failed"
 
+
 @logger
 def scroll_to_element(data_set):
     """
-    To auto scroll to an element which is scrollable, won't work if no scrollable element is present
+    Currently this is the main scroll_to_element function
     """
-    scrollable_element = None
-    global generic_driver
-    generic_driver = appium_driver
     sModuleInfo = inspect.currentframe().f_code.co_name + " : " + MODULE_NAME
-    scroll_dataset = []
-
-    for left, mid, right in data_set:
-        left = left.strip().lower()
-        mid = mid.strip().lower()
-        right = right.replace("%", "").replace(" ", "")
-        if mid == 'element parameter':
-            scroll_dataset.append((left, 'element parameter', right))
-
-    scrollable_element = LocateElement.Get_Element(scroll_dataset,appium_driver)
-    if scrollable_element == None:
-        CommonUtil.ExecLog(sModuleInfo, "Scrollable element is not found", 3)
-        return "zeuz_failed"
-    desired_dataset =[]
-    Element = None
-    inset = 0.1
-    position = 0.5
-    height = scrollable_element.size["height"]
-    width = scrollable_element.size["width"]
-    xstart_location = scrollable_element.location["x"]  # Starting location of the x-coordinate of scrollable element
-    ystart_location = scrollable_element.location["y"]  # Starting location of the y-coordinate of scrollable element
-    max_try = 10
-    direction = "up" if height > width else "left"
-    swipe_speed = None
 
     try:
+        global appium_driver
+        scroll_dataset = []
         for left, mid, right in data_set:
-            left = left.strip().lower()
+            if not mid.strip().lower().startswith("desired"):
+                scroll_dataset.append((left, mid, right))
+
+        scrollable_element = LocateElement.Get_Element(scroll_dataset, appium_driver)
+        if scrollable_element == "zeuz_failed":
+            CommonUtil.ExecLog(sModuleInfo, "Scrollable element is not found", 3)
+            return "zeuz_failed"
+        desired_dataset = []
+        inset = 0.1
+        position = 0.5
+        height = scrollable_element.size["height"]
+        width = scrollable_element.size["width"]
+        xstart_location = scrollable_element.location["x"]  # Starting location of the x-coordinate of scrollable element
+        ystart_location = scrollable_element.location["y"]  # Starting location of the y-coordinate of scrollable element
+        max_try = 10
+        direction = "up" if height > width else "left"
+        swipe_speed = None
+
+        for left, mid, right in data_set:
             mid = mid.strip().lower()
-            right = right.replace("%", "").replace(" ", "")
             if mid.startswith("desired"):
-                desired_dataset.append((left, 'element parameter', right))
+                desired_dataset.append((left, mid[8:].strip().lower(), right))
 
             if "scroll parameter" in mid:
+                right = right.replace("%", "").replace(" ", "")
+                left = left.strip().lower()
                 if left == "direction" and right in ("up", "down", "left", "right"):
                     direction = right
                 elif left == "swipe speed":
@@ -4556,61 +4492,60 @@ def scroll_to_element(data_set):
                     position = float(right) / 100.0
                 elif left == "max try":
                     max_try = float(right)
-    except:
-        CommonUtil.Exception_Handler(sys.exc_info(), None, "Unable to parse data. Please write data in correct format")
-        return "zeuz_failed"
 
-    if direction == "up":
-        tmp = 1.0 - inset
-        new_height = round(tmp * height)
-        new_width = round(position * width)
-        x1 = xstart_location + new_width
-        x2 = x1
-        y1 = ystart_location + new_height - 1
-        y2 = ystart_location
-        if swipe_speed is None:
-            duration = new_height * 0.0032
-        else :
-            duration = new_height * swipe_speed
-    elif direction == "down":
-        tmp = 1.0 - inset
-        new_height = round(tmp * height)
-        new_width = round(position * width)
-        x1 = xstart_location + new_width
-        x2 = x1
-        y1 = ystart_location + 1
-        y2 = ystart_location + new_height
-        if swipe_speed is None:
-            duration = new_height * 0.0032
+        if direction == "up":
+            tmp = 1.0 - inset
+            new_height = round(tmp * height)
+            new_width = round(position * width)
+            x1 = xstart_location + new_width
+            x2 = x1
+            y1 = ystart_location + new_height - 1
+            y2 = ystart_location
+            if swipe_speed is None:
+                duration = new_height * 0.0032
+            else :
+                duration = new_height * swipe_speed
+        elif direction == "down":
+            tmp = 1.0 - inset
+            new_height = round(tmp * height)
+            new_width = round(position * width)
+            x1 = xstart_location + new_width
+            x2 = x1
+            y1 = ystart_location + 1
+            y2 = ystart_location + new_height
+            if swipe_speed is None:
+                duration = new_height * 0.0032
+            else:
+                duration = new_height * swipe_speed
+        elif direction == "left":
+            tmp = 1.0 - inset
+            new_width = round(tmp * width)
+            new_height = round(position * height)
+            x1 = xstart_location + new_width - 1
+            x2 = xstart_location
+            y1 = ystart_location + new_height
+            y2 = y1
+            if swipe_speed is None:
+                duration = new_width * 0.0032
+            else:
+                duration = new_width * swipe_speed
+        elif direction == "right":
+            tmp = 1.0 - inset
+            new_width = round(tmp * width)
+            new_height = round(position * height)
+            x1 = xstart_location + 1
+            x2 = xstart_location + new_width
+            y1 = ystart_location + new_height
+            y2 = y1
+            if swipe_speed is None:
+                duration = new_width * 0.0032
+            else:
+                duration = new_width * swipe_speed
         else:
-            duration = new_height * swipe_speed
-    elif direction == "left":
-        tmp = 1.0 - inset
-        new_width = round(tmp * width)
-        new_height = round(position * height)
-        x1 = xstart_location + new_width - 1
-        x2 = xstart_location
-        y1 = ystart_location + new_height
-        y2 = y1
-        if swipe_speed is None:
-            duration = new_width * 0.0032
-        else:
-            duration = new_width * swipe_speed
-    elif direction == "right":
-        tmp = 1.0 - inset
-        new_width = round(tmp * width)
-        new_height = round(position * height)
-        x1 = xstart_location + 1
-        x2 = xstart_location + new_width
-        y1 = ystart_location + new_height
-        y2 = y1
-        if swipe_speed is None:
-            duration = new_width * 0.0032
-        else:
-            duration = new_width * swipe_speed
-    else:
-        CommonUtil.ExecLog(sModuleInfo, "Direction should be among up, down, right or left", 3)
-        return "zeuz_failed"
+            CommonUtil.ExecLog(sModuleInfo, "Direction should be among up, down, right or left", 3)
+            return "zeuz_failed"
+    except:
+        return CommonUtil.Exception_Handler(sys.exc_info(), None, "Unable to parse data. Please write data in correct format")
 
     try:
         CommonUtil.ExecLog(sModuleInfo, "Scrolling with the following scroll parameter:\n" +
@@ -4618,15 +4553,15 @@ def scroll_to_element(data_set):
            "Calculated Coordinate: (%s,%s) to (%s,%s)" % (x1, y1, x2, y2), 1)
         i = 0
         while i < max_try:
-            Element = LocateElement.Get_Element(desired_dataset, appium_driver)
-            if Element != ('zeuz_failed' or None):
-                CommonUtil.ExecLog(sModuleInfo,"Scrolled to desired element succesfully.",1)
+            Element = LocateElement.Get_Element(desired_dataset, appium_driver, element_wait=1.5)
+            if Element != 'zeuz_failed':
+                CommonUtil.ExecLog(sModuleInfo, "Scrolled to the desired element successfully.", 1)
                 return "passed"
-            generic_driver.swipe(x1, y1, x2, y2, duration * 1000)  # duration seconds to milliseconds
+            appium_driver.swipe(x1, y1, x2, y2, duration * 1000)  # duration seconds to milliseconds
             i = i+1
-        CommonUtil.ExecLog(sModuleInfo, "Scrolled %d times.Couldn't find the element." %max_try , 3)
+        CommonUtil.ExecLog(sModuleInfo, "Scrolled %d times.Couldn't find the element." % max_try, 3)
         return "zeuz_failed"
 
     except Exception:
-        CommonUtil.Exception_Handler(sys.exc_info(), None, "Error could not scroll the element")
-        return "zeuz_failed"
+        return CommonUtil.Exception_Handler(sys.exc_info(), None, "Error could not scroll the element")
+

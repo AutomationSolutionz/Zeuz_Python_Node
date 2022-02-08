@@ -727,6 +727,7 @@ def handle_rest_call(
     timeout=None,
     files=None,
     session_name=None,
+    allow_redirects=True,
 ):
     sModuleInfo = inspect.currentframe().f_code.co_name + " : " + MODULE_NAME
     try:
@@ -786,6 +787,7 @@ def handle_rest_call(
                             verify=False,
                             cert=cert,
                             timeout=timeout,
+                            allow_redirects=allow_redirects,
                         )
                     elif content_header == "multipart/form-data":
                         # delete the header itself before making the request, as you also need to
@@ -800,16 +802,18 @@ def handle_rest_call(
                                 verify=False,
                                 cert=cert,
                                 timeout=timeout,
+                                allow_redirects=allow_redirects,
                             )
                         else:
                             result = session.request(
                                 method=method,
                                 url=url,
-                                files=body,
+                                data=body,
                                 headers=headers,
                                 verify=False,
                                 cert=cert,
                                 timeout=timeout,
+                                allow_redirects=allow_redirects,
                             )
                     elif content_header == "application/x-www-form-urlencoded":
                         result = session.request(
@@ -820,6 +824,7 @@ def handle_rest_call(
                             verify=False,
                             cert=cert,
                             timeout=timeout,
+                            allow_redirects=allow_redirects,
                         )
                     else:
                         result = session.request(
@@ -831,6 +836,7 @@ def handle_rest_call(
                             verify=False,
                             cert=cert,
                             timeout=timeout,
+                            allow_redirects=allow_redirects,
                         )
                 else:
                     result = session.request(
@@ -842,6 +848,7 @@ def handle_rest_call(
                         verify=False,
                         cert=cert,
                         timeout=timeout,
+                        allow_redirects=allow_redirects,
                     )
             elif method in ("get", "head"):
                 result = session.request(
@@ -851,6 +858,7 @@ def handle_rest_call(
                     verify=False,
                     cert=cert,
                     timeout=timeout,
+                    allow_redirects=allow_redirects,
                 )
             elif method == "delete":
                 result = session.request(
@@ -861,6 +869,7 @@ def handle_rest_call(
                     verify=False,
                     cert=cert,
                     timeout=timeout,
+                    allow_redirects=allow_redirects,
                 )
             else:
                 return "zeuz_failed"
@@ -924,7 +933,9 @@ def handle_rest_call(
             )
             return "zeuz_failed"
 
-        Shared_Resources.Set_Shared_Variables("status_code", result.status_code)
+        Shared_Resources.Set_Shared_Variables("status_code", result.status_code, print_variable=False)
+        Shared_Resources.Set_Shared_Variables("http_status_code", result.status_code)
+        Shared_Resources.Set_Shared_Variables("http_response_headers", result.headers)
         try:
             if result.json():
                 Shared_Resources.Set_Shared_Variables("rest_response", result.json(), print_variable=False)
@@ -1118,6 +1129,7 @@ def Get_Response(step_data, save_cookie=False):
         timeout = None
         files = None
         session_name = None
+        allow_redirects = True
         for left, mid, right in step_data:
             left = left.lower()
 
@@ -1136,6 +1148,8 @@ def Get_Response(step_data, save_cookie=False):
                 # related data automatically among all the requests in that
                 # session.
                 session_name = right.strip()
+            elif "allow redirect" in left:
+                allow_redirects = True if "true" in right.lower() else False
 
         element_step_data = Get_Element_Step_Data(step_data)
 
@@ -1153,6 +1167,7 @@ def Get_Response(step_data, save_cookie=False):
                     timeout=timeout,
                     files=files,
                     session_name=session_name,
+                    allow_redirects=allow_redirects,
                 )
                 return return_result
             except Exception:
