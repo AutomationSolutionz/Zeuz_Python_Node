@@ -682,14 +682,18 @@ def get_previous_response_variables_in_strings(step_data_string_input):
                 )
                 return "zeuz_failed"
 
+            elif var_name.startswith("rest_response"):        # Todo: Remove this variable from Rest files after batch updates
+                CommonUtil.ExecLog(
+                    "",
+                    '%|rest_response|% is deprecated. Use %|http_response|% to get updated features. Example:\n' +
+                    "%|http_response[\"data\"][1][\"default\"]|%",
+                    3
+                )
+                generated_value = str(handle_nested_rest_json(Get_Shared_Variables("rest_response"), var_name))
+                if generated_value == "zeuz_failed":
+                    CommonUtil.ExecLog(sModuleInfo, "Json indexes are not provided correctly for run_response", 3)
+                    return "zeuz_failed"
             else:
-                if var_name.startswith("rest_response"):        # Todo: Remove this variable from Rest files 3 months later from 18 January, 2022
-                    CommonUtil.ExecLog(
-                        "",
-                        '%|rest_response|% is deprecated. Use %|http_response|% to get updated features. Example:\n' +
-                        "%|http_response[\"data\"][1][\"default\"]|%",
-                        3
-                    )
                 var_value = str(parse_variable(var_name))
                 if var_value == "zeuz_failed":
                     # CommonUtil.ExecLog(sModuleInfo, "No such variable named '%s' in shared variables list" % var_name, 3)
