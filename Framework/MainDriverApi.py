@@ -1057,11 +1057,17 @@ def upload_json_report(Userid, temp_ini_file, run_id):
                         if isinstance(res_json, dict) and 'message' in res_json and res_json["message"]:
                             print("Successfully Uploaded the report to server of run_id '%s'" % run_id)
                         else:
-                            print("Could not Upload the report to server of run_id '%s'" % run_id)
+                            print("------------- Report -------------")
+                            print("Could not Upload the report to server of run_id '%s'\nstatus_code = %s" % (run_id, res.status_code))
+                            print(res.text)
+                            print("----------------------------------")
                         break
                     time.sleep(1)
                 else:
-                    print("Could not Upload the report to server of run_id '%s'" % run_id)
+                    print("------------- Report -------------")
+                    print("Could not Upload the report to server of run_id '%s'\nstatus_code = %s" % (run_id, res.status_code))
+                    print(res.text)
+                    print("----------------------------------")
             # os.unlink(str(zip_path) + ".zip")     # Removing the zip is skipped because node_manager needs the zip
 
         with open(path, "w") as f:
