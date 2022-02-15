@@ -4341,6 +4341,12 @@ def auto_switch_context_and_try(native_web):
 def swipe_appium(data_set):
     """
     """
+    sModuleInfo = inspect.currentframe().f_code.co_name + " : " + MODULE_NAME
+    
+    skip_or_not = filter_optional_action_and_step_data(data_set, sModuleInfo)
+    if not skip_or_not:
+        return "passed"
+
     global appium_driver
     sModuleInfo = inspect.currentframe().f_code.co_name + " : " + MODULE_NAME
     scrollable_element = LocateElement.Get_Element(data_set, appium_driver)
@@ -4449,8 +4455,12 @@ def swipe_appium(data_set):
 def scroll_to_element(data_set):
     """
     Currently this is the main scroll_to_element function
-    """
+    """        
     sModuleInfo = inspect.currentframe().f_code.co_name + " : " + MODULE_NAME
+
+    skip_or_not = filter_optional_action_and_step_data(data_set, sModuleInfo)
+    if not skip_or_not:
+        return "passed"
 
     try:
         global appium_driver
