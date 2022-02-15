@@ -590,7 +590,8 @@ def parse_variable(name):
         else:
             val = eval(name, shared_variables)
             # Print to console.
-            CommonUtil.prettify(copy_of_name, val)
+            if "os.environ" not in name:
+                CommonUtil.prettify(copy_of_name, val)
             return generate_zeuz_code_if_not_json_obj(val)
     except:
         return CommonUtil.Exception_Handler(sys.exc_info())
