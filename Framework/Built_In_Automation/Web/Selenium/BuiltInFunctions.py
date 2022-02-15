@@ -851,10 +851,8 @@ def Handle_Browser_Alert(step_data):
         elif "get text" in choice_lower:
             alert_text = selenium_driver.switch_to_alert().text
             selenium_driver.switch_to_alert().accept()
-            variable_name = (choice.split("="))[1]
-            result = Shared_Resources.Set_Shared_Variables(
-                variable_name, alert_text
-            )
+            variable_name = (choice.split("="))[1].strip()
+            result = Shared_Resources.Set_Shared_Variables(variable_name, alert_text)
             if result in failed_tag_list:
                 CommonUtil.ExecLog(
                     sModuleInfo,
@@ -866,7 +864,7 @@ def Handle_Browser_Alert(step_data):
                 return "passed"
 
         elif "send text" in choice_lower:
-            text_to_send = (choice.split("="))[1]
+            text_to_send = (choice.split("="))[1].strip()
             selenium_driver.switch_to_alert().send_keys(text_to_send)
             selenium_driver.switch_to_alert().accept()
             return "passed"
