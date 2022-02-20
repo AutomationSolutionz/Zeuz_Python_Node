@@ -4526,7 +4526,7 @@ def compare_file(data_set):
                 test_case_folder = ConfigModule.get_config_value("sectionOne", "test_case_folder", temp_config)
                 head_parent, tail_parent = os.path.split(parentpath)
                 head_child, tail_child = os.path.split(childpath)
-                with open(test_case_folder + os.sep + f"{test_case}_{tail_parent}_{tail_child}_{date}.html", "w") as f:
+                with open(test_case_folder + os.sep + f"{test_case}_{tail_parent}_{tail_child}_{date}_(Compare file).html", "w") as f:
                     f.write(diff_html)
 
                 return "zeuz_failed"
@@ -4581,7 +4581,7 @@ def compare_file(data_set):
 
                 head_parent, tail_parent = os.path.split(parentpath)
                 head_child, tail_child = os.path.split(childpath)
-                with open(test_case_folder + os.sep + f"{test_case}_{tail_parent}_{tail_child}_{date}.html", "w") as f:
+                with open(test_case_folder + os.sep + f"{test_case}_{tail_parent}_{tail_child}_{date}_(Compare file).html", "w") as f:
                     f.write(str(tags))
 
 
@@ -4662,7 +4662,7 @@ def compare_file_with_tag(data_set):
             test_case = ConfigModule.get_config_value("sectionOne", "test_case", temp_config)
             head_parent, tail_parent = os.path.split(parentpath)
             head_child, tail_child = os.path.split(childpath)
-            with open(test_case_folder+os.sep+f"{test_case}_{tail_parent}_{tail_child}_{date}.html", "w") as f:
+            with open(test_case_folder+os.sep+f"{test_case}_{tail_parent}_{tail_child}_{date}_(Compare file with tag).html", "w") as f:
                 f.write(diff_html)
 
 
@@ -4712,7 +4712,7 @@ def compare_file_with_tag(data_set):
             test_case = ConfigModule.get_config_value("sectionOne", "test_case", temp_config)
             head_parent, tail_parent = os.path.split(parentpath)
             head_child, tail_child = os.path.split(childpath)
-            with open(test_case_folder+os.sep+f"{test_case}_{tail_parent}_{tail_child}_{date}.html", "w") as f:
+            with open(test_case_folder+os.sep+f"{test_case}_{tail_parent}_{tail_child}_{date}_(Compare file with tag).html", "w") as f:
                 f.write(result)
             return "passed"
 
