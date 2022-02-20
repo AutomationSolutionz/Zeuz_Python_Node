@@ -4509,12 +4509,24 @@ def compare_file(data_set):
                             1,
                         )
                 date = datetime.datetime.now(). strftime("%Y_%m_%d_%I_%M_%S_%p")
+                # f1 = open(parentpath).readlines()
+                # f2 = open(childpath).readlines()
+                # diff_html = difflib.HtmlDiff().make_file(f1, f2)
+
+
+
                 f1 = open(parentpath).read()
                 f2 = open(childpath).read()
-                diff_html = difflib.HtmlDiff().make_file(f1,f2)
+                diff_html = diff(f1, f2)
+                tags=BeautifulSoup(diff_html,'html.parser')
+                ins_tag=tags.ins
+                ins_tag['style']="color:green"
+                # diff_html = difflib.HtmlDiff().make_file(f1,f2)
                 test_case = ConfigModule.get_config_value("sectionOne", "test_case", temp_config)
                 test_case_folder = ConfigModule.get_config_value("sectionOne", "test_case_folder", temp_config)
-                with open(test_case_folder+os.sep+f"{test_case}_{date}.html", "w") as f:
+                head_parent, tail_parent = os.path.split(parentpath)
+                head_child, tail_child = os.path.split(childpath)
+                with open(test_case_folder + os.sep + f"{test_case}_{tail_parent}_{tail_child}_{date}.html", "w") as f:
                     f.write(diff_html)
 
                 return "zeuz_failed"
@@ -4552,11 +4564,25 @@ def compare_file(data_set):
                 date = datetime.datetime.now().strftime("%Y_%m_%d_%I_%M_%S_%p")
                 test_case_folder = ConfigModule.get_config_value("sectionOne", "test_case_folder", temp_config)
                 test_case = ConfigModule.get_config_value("sectionOne", "test_case", temp_config)
-                f1 = open(parentpath).readlines()
-                f2 = open(childpath).readlines()
-                diff_html = difflib.HtmlDiff().make_file(f1,f2)
-                with open(test_case_folder+os.sep+f"{test_case}_{date}.html", "w") as f:
-                    f.write(diff_html)
+                # f1 = open(parentpath).readlines()
+                # f2 = open(childpath).readlines()
+                # diff_html = difflib.HtmlDiff().make_file(f1, f2)
+
+
+
+                f1 = open(parentpath).read()
+                f2 = open(childpath).read()
+                diff_html = diff(f1, f2)
+                tags=BeautifulSoup(diff_html,'html.parser')
+                for tag in tags.findAll('ins'):
+                    tag['style'] = "color: green;"
+                for tag in tags.findAll('del'):
+                    tag['style'] = "color: red;"
+
+                head_parent, tail_parent = os.path.split(parentpath)
+                head_child, tail_child = os.path.split(childpath)
+                with open(test_case_folder + os.sep + f"{test_case}_{tail_parent}_{tail_child}_{date}.html", "w") as f:
+                    f.write(str(tags))
 
 
 
@@ -4590,50 +4616,105 @@ def compare_file_with_tag(data_set):
             elif "end result" == left:
                 step_result = right
 
-        compared_list = ["", ""]
-        text = [[], []]
-        files = []
-        soups = []
-        files_list = [parentpath, childpath]
-        i = 0
-        for file in files_list:
-            files.append(open(file, "r").read())
-            soups.append(BeautifulSoup(files[i], 'xml'))
-            for tag_text in soups[i].find_all([attr]+[f"{attr}:"+str(tag.name) for tag in soups[i].find_all() if attr in str(tag)]):
-                text[i].append(''.join(str(tag_text)))
-                compared_list[i] += '\n' + str(tag_text)
-            i += 1
+        if attr is None:
+            compared_list = ["", ""]
+            text = [[], []]
+            files = []
+            soups = []
+            files_list = [parentpath, childpath]
+            i = 0
+            for file in files_list:
+                files.append(open(file, "r").read())
+                soups.append(BeautifulSoup(files[i], 'xml'))
+                for tag_text in soups[i].find_all():
+                    text[i].append(''.join(str(tag_text.text)))
+                    compared_list[i] += '\n' + str(tag_text.text)
+                i += 1
 
-        result = ""
-        for first_string, second_string in zip(text[0], text[1]):
-            d = difflib.Differ()
-            diff = d.compare(first_string.splitlines(), second_string.splitlines())
-            result += '\n'.join(diff)
+            result = ""
+            for first_string, second_string in zip(text[0], text[1]):
+                d = difflib.Differ()
+                diff = d.compare(first_string.splitlines(), second_string.splitlines())
+                result += '\n'.join(diff)
 
-        # f1 = open(files_list[0]).read()
-        # f2 = open(files_list[0]).read()
+            # f1 = open(files_list[0]).read()
+            # f2 = open(files_list[0]).read()
 
-            # diff_html = html_diff.diff('\n'.join(text[0]), '\n'.join(text[1]))
+                # diff_html = html_diff.diff('\n'.join(text[0]), '\n'.join(text[1]))
 
-        CommonUtil.ExecLog(
-            sModuleInfo,
-            f"Here is the changes:\n {result}",
-            1,
-        )
+            CommonUtil.ExecLog(
+                sModuleInfo,
+                f"Here is the changes:\n {result}",
+                1,
+            )
 
-        CommonUtil.ExecLog(
-            sModuleInfo,
-            "Processing a file to show the changes ...",
+            f1 = open(parentpath).readlines()
+            f2 = open(childpath).readlines()
+            diff_html = difflib.HtmlDiff().make_file(f1, f2)
+            CommonUtil.ExecLog(
+                sModuleInfo,
+                "Processing a file to show the changes ...",
 
-            1,
-        )
-        date = datetime.datetime.now().strftime("%Y_%m_%d_%I_%M_%S_%p")
-        test_case_folder = ConfigModule.get_config_value("sectionOne", "test_case_folder", temp_config)
-        test_case = ConfigModule.get_config_value("sectionOne", "test_case", temp_config)
+                1,
+            )
+            date = datetime.datetime.now().strftime("%Y_%m_%d_%I_%M_%S_%p")
+            test_case_folder = ConfigModule.get_config_value("sectionOne", "test_case_folder", temp_config)
+            test_case = ConfigModule.get_config_value("sectionOne", "test_case", temp_config)
+            head_parent, tail_parent = os.path.split(parentpath)
+            head_child, tail_child = os.path.split(childpath)
+            with open(test_case_folder+os.sep+f"{test_case}_{tail_parent}_{tail_child}_{date}.html", "w") as f:
+                f.write(diff_html)
 
-        with open(test_case_folder+os.sep+f"{test_case}_{date}.txt", "w") as f:
-            f.write(result)
-        return "passed"
+
+
+            return "passed"
+
+        else:
+            compared_list = ["", ""]
+            text = [[], []]
+            files = []
+            soups = []
+            files_list = [parentpath, childpath]
+            i = 0
+            for file in files_list:
+                files.append(open(file, "r").read())
+                soups.append(BeautifulSoup(files[i], 'xml'))
+                for tag_text in soups[i].find_all([attr]+[f"{attr}:"+str(tag.name) for tag in soups[i].find_all() if attr in str(tag)]):
+                    text[i].append(''.join(str(tag_text)))
+                    compared_list[i] += '\n' + str(tag_text)
+                i += 1
+
+            result = ""
+            for first_string, second_string in zip(text[0], text[1]):
+                d = difflib.Differ()
+                diff = d.compare(first_string.splitlines(), second_string.splitlines())
+                result += '\n'.join(diff)
+
+            # f1 = open(files_list[0]).read()
+            # f2 = open(files_list[0]).read()
+
+                # diff_html = html_diff.diff('\n'.join(text[0]), '\n'.join(text[1]))
+
+            CommonUtil.ExecLog(
+                sModuleInfo,
+                f"Here is the changes:\n {result}",
+                1,
+            )
+
+            CommonUtil.ExecLog(
+                sModuleInfo,
+                "Processing a file to show the changes ...",
+
+                1,
+            )
+            date = datetime.datetime.now().strftime("%Y_%m_%d_%I_%M_%S_%p")
+            test_case_folder = ConfigModule.get_config_value("sectionOne", "test_case_folder", temp_config)
+            test_case = ConfigModule.get_config_value("sectionOne", "test_case", temp_config)
+            head_parent, tail_parent = os.path.split(parentpath)
+            head_child, tail_child = os.path.split(childpath)
+            with open(test_case_folder+os.sep+f"{test_case}_{tail_parent}_{tail_child}_{date}.html", "w") as f:
+                f.write(result)
+            return "passed"
 
     except:
         return CommonUtil.Exception_Handler(sys.exc_info())
