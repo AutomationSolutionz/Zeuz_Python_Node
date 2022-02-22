@@ -65,6 +65,7 @@ action_support = (
     "table parameter",
     "source parameter",
     "input parameter",
+    "output parameter",
     "custom action",
     "unique parameter",
     "save parameter",

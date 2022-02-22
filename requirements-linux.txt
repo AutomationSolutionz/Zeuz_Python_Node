@@ -39,3 +39,6 @@ opencv-python
 imap-tools
 keyboard
 mouse
+beautifulsoup4
+premailer
+html-diff
