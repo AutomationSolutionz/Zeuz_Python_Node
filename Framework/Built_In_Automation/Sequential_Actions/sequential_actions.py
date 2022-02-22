@@ -2132,7 +2132,7 @@ def Action_Handler(_data_set, action_row, _bypass_bug=True):
     data_set = []
     for row in _data_set:
         new_row = list(row)
-        if "optional parameter" in row[1] and "screen capture" == row[0].strip().lower():
+        if row[1].strip().lower() in ("optional parameter", "optional option") and row[0].strip().lower() in ("screen capture", "screenshot", "ss"):
             screenshot = row[2].strip().lower()
             if screenshot in ("false", "no", "none", "disable"):
                 screenshot = "none"

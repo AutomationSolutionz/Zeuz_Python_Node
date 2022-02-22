@@ -35,6 +35,7 @@ from selenium.common.exceptions import ElementClickInterceptedException, WebDriv
     SessionNotCreatedException, TimeoutException, NoSuchFrameException, StaleElementReferenceException
 from selenium.webdriver.common.keys import Keys
 from selenium.webdriver.common.by import By
+from selenium.webdriver.common.alert import Alert
 from selenium.webdriver.support import expected_conditions as EC
 import selenium
 
@@ -839,42 +840,35 @@ def Handle_Browser_Alert(step_data):
 
     try:
         if choice_lower in ("accept", "pass", "yes", "ok"):
-            selenium_driver.switch_to_alert().accept()
+            Alert(selenium_driver).accept()
             CommonUtil.ExecLog(sModuleInfo, "Browser alert accepted", 1)
             return "passed"
 
-        elif choice_lower in ("reject", "fail", "no", "cancel"):
-            selenium_driver.switch_to_alert().dismiss()
+        elif choice_lower in ("reject", "decline", "dismiss", "fail", "no", "cancel"):
+            Alert(selenium_driver).dismiss()
             CommonUtil.ExecLog(sModuleInfo, "Browser alert rejected", 1)
             return "passed"
 
-        elif "get text" in choice_lower:
-            alert_text = selenium_driver.switch_to_alert().text
-            selenium_driver.switch_to_alert().accept()
-            variable_name = (choice.split("="))[1]
-            result = Shared_Resources.Set_Shared_Variables(
-                variable_name, alert_text
-            )
-            if result in failed_tag_list:
-                CommonUtil.ExecLog(
-                    sModuleInfo,
-                    "Value of Variable '%s' could not be saved!!!" % variable_name,
-                    3,
-                )
-                return "zeuz_failed"
-            else:
-                return "passed"
+        elif choice_lower.replace(" ", "").replace("_", "").startswith("gettext"):
+            alert_text = Alert(selenium_driver).text
+            Alert(selenium_driver).accept()
+            variable_name = (choice.split("="))[1].strip()
+            return Shared_Resources.Set_Shared_Variables(variable_name, alert_text)
 
-        elif "send text" in choice_lower:
-            text_to_send = (choice.split("="))[1]
-            selenium_driver.switch_to_alert().send_keys(text_to_send)
-            selenium_driver.switch_to_alert().accept()
+        elif choice_lower.replace(" ", "").replace("_", "").startswith("sendtext"):
+            text_to_send = (choice.split("="))[1].strip()
+            Alert(selenium_driver).send_keys(text_to_send)
+            Alert(selenium_driver).accept()
             return "passed"
 
         else:
             CommonUtil.ExecLog(
                 sModuleInfo,
-                "Wrong Step Data.  Please review the action help document",
+                "Wrong Step Data. The following are valid data --\n" +
+                "1. (handle alert, selenium action, ok)" +
+                "2. (handle alert, selenium action, cancel)" +
+                "3. (handle alert, selenium action, get text = var_name)" +
+                "4. (handle alert, selenium action, send text = some text)",
                 3,
             )
             return "zeuz_failed"
