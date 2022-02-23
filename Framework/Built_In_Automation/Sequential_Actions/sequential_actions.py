@@ -575,8 +575,8 @@ def for_loop_action(step_data, data_set_no):
                 else:
                     left = row[0].strip()[4:].strip()
                     each_varname, left = left[:left.find(" ")], left[left.find(" "):].strip()[3:].strip()
-                    var_name = left.strip("%").strip("|")
-                    if sr.Test_Shared_Variables(var_name):
+                    if left.startswith("%|") and left.endswith("|%"):
+                        var_name = left.strip("%").strip("|")
                         iterable = sr.parse_variable(var_name)
                         iterable = CommonUtil.ZeuZ_map_code_decoder(iterable)   # Decode if this is a ZeuZ_map_code
                     else:
