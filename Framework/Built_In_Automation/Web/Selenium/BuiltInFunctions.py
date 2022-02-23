@@ -389,7 +389,7 @@ def Open_Browser(dependency, window_size_X=None, window_size_Y=None):
         CommonUtil.teardown = True
         browser = browser.lower().strip()
 
-        if browser in ("android", "ios"):
+        if browser in ("ios",):
             # Finds the appium binary and starts the server.
             appium_port = start_appium_server()
 
@@ -422,7 +422,7 @@ def Open_Browser(dependency, window_size_X=None, window_size_Y=None):
             selenium_driver = appiumdriver.Remote("http://localhost:%d/wd/hub" % appium_port, capabilities)
             selenium_driver.implicitly_wait(WebDriver_Wait)
 
-        elif browser in ("chrome", "chromeheadless"):
+        elif browser in ("android", "chrome", "chromeheadless"):
             from selenium.webdriver.chrome.options import Options
             chrome_path = ConfigModule.get_config_value("Selenium_driver_paths", "chrome_path")
             if not chrome_path:
@@ -433,7 +433,11 @@ def Open_Browser(dependency, window_size_X=None, window_size_Y=None):
             options.add_argument("--disable-extensions")
             options.add_argument('--ignore-certificate-errors')
             options.add_argument('--ignore-ssl-errors')
-            options.add_experimental_option("useAutomationExtension", False)
+            if browser == "android":
+                mobile_emulation = {"deviceName": "Pixel 2 XL"}
+                options.add_experimental_option("mobileEmulation", mobile_emulation)
+            else:
+                options.add_experimental_option("useAutomationExtension", False)
             d = DesiredCapabilities.CHROME
             d["loggingPrefs"] = {"browser": "ALL"}
             d['goog:loggingPrefs'] = {'performance': 'ALL'}
@@ -649,7 +653,7 @@ def Open_Browser(dependency, window_size_X=None, window_size_Y=None):
                 "Couldn't open the browser because the webdriver is backdated. Trying again after updating webdriver",
                 2
             )
-            if browser in ("chrome", "chromeheadless"):
+            if browser in ("android", "chrome", "chromeheadless"):
                 ConfigModule.add_config_value("Selenium_driver_paths", "chrome_path", ChromeDriverManager().install())
             elif browser in ("firefox", "firefoxheadless"):
                 ConfigModule.add_config_value("Selenium_driver_paths", "firefox_path", GeckoDriverManager().install())
