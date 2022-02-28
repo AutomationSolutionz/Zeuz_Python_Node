@@ -1207,7 +1207,6 @@ def handle_clickability_and_click(dataset, Element:selenium.webdriver.remote.web
 @logger
 def Click_Element(data_set, retry=0):
     """ Click using element or location """
-
     sModuleInfo = inspect.currentframe().f_code.co_name + " : " + MODULE_NAME
     global selenium_driver
 
@@ -1219,20 +1218,14 @@ def Click_Element(data_set, retry=0):
                 bodyElement = LocateElement.Get_Element(
                     [("tag", "element parameter", "body")], selenium_driver
                 )  # Get element object of webpage body, so we can have a reference to the 0,0 coordinates
-                shared_var = row[
-                    2
-                ]  # Save shared variable name, or coordinates if entered directory in step data
+                shared_var = row[2]  # Save shared variable name, or coordinates if entered directory in step data
             if "use js" in row[0].lower():
                 use_js = row[2].strip().lower() in ("true", "yes", "1")
     except Exception:
-        return CommonUtil.Exception_Handler(
-            sys.exc_info(), None, "Error parsing data set"
-        )
+        return CommonUtil.Exception_Handler(sys.exc_info(), None, "Error parsing data set")
 
     # Click using element
     if bodyElement == "":
-        CommonUtil.ExecLog(sModuleInfo, "Looking for element", 0)
-
         # Get element object
         Element = LocateElement.Get_Element(data_set, selenium_driver)
         if Element in failed_tag_list:
@@ -1259,111 +1252,6 @@ def Click_Element(data_set, retry=0):
                     2
                 )
                 return "passed"
-            except Exception:
-                element_attributes = Element.get_attribute("outerHTML")
-                CommonUtil.ExecLog(
-                    sModuleInfo, "Element Attributes: %s" % (element_attributes), 3
-                )
-                errMsg = "Could not select/click your element."
-                return CommonUtil.Exception_Handler(sys.exc_info(), None, errMsg)
-        except StaleElementReferenceException:
-            if retry == 5:
-                CommonUtil.ExecLog(
-                    sModuleInfo, "Could not perform click because javascript of the element is not fully loaded", 3
-                )
-                return "zeuz_failed"
-            CommonUtil.ExecLog(
-                "", "Javascript of the element is not fully loaded. Trying again after 1 second delay", 2
-            )
-            time.sleep(1)
-            return Click_Element(data_set, retry + 1)
-
-        except Exception:
-            element_attributes = Element.get_attribute("outerHTML")
-            CommonUtil.ExecLog(
-                sModuleInfo, "Element Attributes: %s" % (element_attributes), 3
-            )
-            errMsg = "Could not select/click your element."
-            return CommonUtil.Exception_Handler(sys.exc_info(), None, errMsg)
-
-    # Click using location
-    else:
-        CommonUtil.ExecLog(sModuleInfo, "Using provided location", 0)
-        try:
-            # Get coordinates
-            if "," in shared_var:  # These are coordinates, use directly
-                location = shared_var
-            else:  # Shared variable name was provided
-                location = Shared_Resources.Get_List_from_Shared_Variables(shared_var)
-            location = location.replace(" ", "")
-            location = location.split(",")
-            x = float(location[0])
-            y = float(location[1])
-
-            # Click coordinates
-            actions = ActionChains(selenium_driver)  # Create actions object
-            actions.move_to_element_with_offset(
-                bodyElement, x, y
-            )  # Move to coordinates (referrenced by body at 0,0)
-            actions.click()  # Click action
-            actions.perform()  # Perform all actions
-
-            CommonUtil.ExecLog(sModuleInfo, "Click on location successful", 1)
-            return "passed"
-        except Exception:
-            return CommonUtil.Exception_Handler(
-                sys.exc_info(), None, "Error clicking location"
-            )
-
-@logger
-def Click_and_Download(data_set, retry=0):
-    """ Click and download attachments from web and save it to specific destinations"""
-
-    sModuleInfo = inspect.currentframe().f_code.co_name + " : " + MODULE_NAME
-    global selenium_driver
-
-    use_js = False  # Use js to click on element?
-    try:
-        bodyElement = ""
-        filepath = ""
-        file_to_be_moved = ""
-        for left, mid, right in data_set:
-            if left == "location" and mid == "element parameter":
-                bodyElement = LocateElement.Get_Element(
-                    [("tag", "element parameter", "body")], selenium_driver
-                )  # Get element object of webpage body, so we can have a reference to the 0,0 coordinates
-                shared_var = right
-            elif "use js" in left.lower():
-                use_js = right.strip().lower() in ("true", "yes", "1")
-            elif left.strip().lower() == "folder path" and mid.strip().lower() == "parameter":
-                filepath = right.strip()
-                filepath = CommonUtil.path_parser(filepath)
-
-            # On next improvement user will have option to tell the filename and only that filename will be copied from
-            # the initial download directory
-    except Exception:
-        return CommonUtil.Exception_Handler(
-            sys.exc_info(), None, "Error parsing data set"
-        )
-    if bodyElement == "":
-        Element = LocateElement.Get_Element(data_set, selenium_driver)
-        if Element in failed_tag_list:
-            CommonUtil.ExecLog(sModuleInfo, "Could not find element", 3)
-            return "zeuz_failed"
-        try:
-            if use_js:
-                selenium_driver.execute_script("arguments[0].click();", Element)
-            else:
-                handle_clickability_and_click(data_set, Element)
-            CommonUtil.ExecLog(sModuleInfo, "Successfully clicked the element", 1)
-        except ElementClickInterceptedException:
-            try:
-                selenium_driver.execute_script("arguments[0].click();", Element)
-                CommonUtil.ExecLog(
-                    sModuleInfo,
-                    "Your element is overlapped with another sibling element. Clicked the element successfully by executing JavaScript",
-                    2
-                )
             except Exception:
                 element_attributes = Element.get_attribute("outerHTML")
                 CommonUtil.ExecLog(sModuleInfo, "Element Attributes: %s" % (element_attributes), 3)
@@ -1399,17 +1287,41 @@ def Click_and_Download(data_set, retry=0):
 
             # Click coordinates
             actions = ActionChains(selenium_driver)  # Create actions object
-            actions.move_to_element_with_offset(
-                bodyElement, x, y
-            )  # Move to coordinates (referrenced by body at 0,0)
+            actions.move_to_element_with_offset(bodyElement, x, y)  # Move to coordinates (referrenced by body at 0,0)
             actions.click()  # Click action
             actions.perform()  # Perform all actions
 
             CommonUtil.ExecLog(sModuleInfo, "Click on location successful", 1)
+            return "passed"
         except Exception:
             return CommonUtil.Exception_Handler(sys.exc_info(), None, "Error clicking location")
 
+@logger
+def Click_and_Download(data_set, retry=0):
+    """ Click and download attachments from web and save it to specific destinations"""
+    sModuleInfo = inspect.currentframe().f_code.co_name + " : " + MODULE_NAME
+    global selenium_driver
+
+    wait_download = 10
+    filepath = ""
     try:
+        click_dataset = []
+        for left, mid, right in data_set:
+            if left == "wait for download":
+                wait_download = float(right.strip())
+            elif left.strip().lower() == "folder path" and mid.strip().lower() == "parameter":
+                filepath = right.strip()
+                filepath = CommonUtil.path_parser(filepath)
+            else:
+                click_dataset.append((left, mid, right))
+
+            # On next improvement user will have option to tell the filename and only that filename will be copied from
+            # the initial download directory
+    except Exception:
+        return CommonUtil.Exception_Handler(sys.exc_info(), None, "Error parsing data set")
+
+    try:
+        Click_Element(click_dataset)
         if filepath:
             from pathlib import Path
             # filepath = Shared_Resources.Get_Shared_Variables("zeuz_download_folder")
