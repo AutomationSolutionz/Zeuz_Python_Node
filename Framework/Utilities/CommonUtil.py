@@ -1112,3 +1112,8 @@ def path_parser(path: str) -> str:
     except:
         Exception_Handler(sys.exc_info())
         raise Exception
+
+
+if __name__ == "__main__":
+    pass
+    # path_parser('~\Downloads\*S.exe')
