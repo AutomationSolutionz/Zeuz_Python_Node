@@ -2512,12 +2512,44 @@ def run_macro_in_excel(data_set):
     except Exception:
         return CommonUtil.Exception_Handler(sys.exc_info())
 
+def openpyxl_excel_read(filepath, sheet_name, var_name, cell_range, structure_of_variable, key_reference):
+
+    wb =  load_workbook(filepath)
+    sheet = wb[sheet_name]
+    if key_reference is None:
+        key_reference = "row1"
+   
+    cell_data = []
+    for row in sheet[cell_range]:
+        cell_data.append([cell.value for cell in row])
+
+    if structure_of_variable == "dictionary":
+        data_dict = {}
+        if key_reference == "row1":
+            row_data = list(map(list, zip(*cell_data)))
+            for cells in row_data:
+                data_dict[cells[0]] = cells[1:]
+        elif key_reference == "column1":
+            for cells in cell_data:
+                data_dict[cells[0]] = cells[1:] 
+        cell_data = data_dict
+
+    # Save into shared variables
+    sr.Set_Shared_Variables(var_name, cell_data)
+
+    # Save file so that we don't see the "Want to save" dailog.
+    wb.save(filepath)
+    wb.close()
+
+    return "passed"
+
 
 @logger
 def excel_read(data_set):
     sModuleInfo = inspect.currentframe().f_code.co_name + " : " + MODULE_NAME
 
     try:
+        driver = None
         filepath = None
         sheet_name = None
         var_name = None
@@ -2528,6 +2560,8 @@ def excel_read(data_set):
 
         for left, mid, right in data_set:
             left = left.lower()
+            if "driver" in left:
+                driver = right.strip()
             if "file path" in left:
                 filepath = right.strip()
                 filepath = Path(CommonUtil.path_parser(filepath))
@@ -2549,36 +2583,39 @@ def excel_read(data_set):
                 if key_reference not in ("row1", "column1"):
                     CommonUtil.ExecLog(sModuleInfo, "Currently we only support Column 1 and Row 1", 3)
                     return "zeuz_failed"
+        if driver == "openpyxl":
+            openpyxl_excel_read(filepath, sheet_name, var_name, cell_range, structure_of_variable, key_reference)
 
-        wb = xw.Book(filepath)
-        sheet = wb.sheets[sheet_name]
-        if key_reference is None:
-            key_reference = "row1"
-        if expand:
-            # expand can be 'table', 'down' and 'right'
-            cell_data = sheet.range(cell_range).expand(expand).value
         else:
-            cell_data = sheet.range(cell_range).value
+            wb = xw.Book(filepath)
+            sheet = wb.sheets[sheet_name]
+            if key_reference is None:
+                key_reference = "row1"
+            if expand:
+            # expand can be 'table', 'down' and 'right'
+                cell_data = sheet.range(cell_range).expand(expand).value
+            else:
+                cell_data = sheet.range(cell_range).value
 
-        if structure_of_variable == "dictionary":
-            data_dict = {}
-            if key_reference == "row1":
-                row_data = list(map(list, zip(*cell_data)))
-                for cells in row_data:
-                    data_dict[cells[0]] = cells[1:]
-            elif key_reference == "column1":
-                for cells in cell_data:
-                    data_dict[cells[0]] = cells[1:] 
-            cell_data = data_dict
+            if structure_of_variable == "dictionary":
+                data_dict = {}
+                if key_reference == "row1":
+                    row_data = list(map(list, zip(*cell_data)))
+                    for cells in row_data:
+                        data_dict[cells[0]] = cells[1:]
+                elif key_reference == "column1":
+                    for cells in cell_data:
+                        data_dict[cells[0]] = cells[1:] 
+                cell_data = data_dict
 
         # Save into shared variables
-        sr.Set_Shared_Variables(var_name, cell_data)
+            sr.Set_Shared_Variables(var_name, cell_data)
 
         # Save file so that we don't see the "Want to save" dailog.
-        wb.save()
-        wb.close()
+            wb.save()
+            wb.close()
 
-        return "passed"
+            return "passed"
     except:
         return CommonUtil.Exception_Handler(sys.exc_info())
 
