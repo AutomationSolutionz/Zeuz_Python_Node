@@ -1084,6 +1084,7 @@ def path_parser(path: str) -> str:
         if path.startswith("~"):
             path = path.replace("~", os.path.expanduser("~"), 1)
 
+        path = str(Path(path))
         path = path.split(os.sep)
         new_path = ''
         for a in path:

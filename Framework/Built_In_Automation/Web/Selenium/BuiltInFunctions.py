@@ -1315,6 +1315,7 @@ def Click_Element(data_set, retry=0):
                 sys.exc_info(), None, "Error clicking location"
             )
 
+
 @logger
 def Click_and_Download(data_set, retry=0):
     """ Click and download attachments from web and save it to specific destinations"""
@@ -3681,6 +3682,98 @@ def upload_file(step_data):
 
         upload_button.send_keys(file_name)
         CommonUtil.ExecLog(sModuleInfo, "Uploaded the file: %s successfully."%file_name, 1)
+        return "passed"
+
+    except Exception:
+        return CommonUtil.Exception_Handler(sys.exc_info())
+
+
+@logger
+def upload_file_through_window(step_data):
+    """
+    Purpose: Sometimes there are some upload window
+    """
+    sModuleInfo = inspect.currentframe().f_code.co_name + " : " + MODULE_NAME
+    global selenium_driver
+    all_file_path = []
+    if "headless" in dependency:
+        CommonUtil.ExecLog(sModuleInfo, "This action will not work on headless browsers", 3)
+        return "zeuz_failed"
+    try:
+        for left, mid, right in step_data:
+            left = left.strip().lower()
+            l = left.replace(" ", "").replace("_", "").lower()
+            if l in ("filepath", "directory"):
+                path = CommonUtil.path_parser(right.strip())
+                if os.path.isdir(path) or os.path.isfile(path):
+                    all_file_path.append(path)
+                else:
+                    CommonUtil.ExecLog(sModuleInfo, "Could not find any directory or file with the path: %s" % path, 3)
+    except:
+        return CommonUtil.Exception_Handler(sys.exc_info(), None, "Error parsing dataset")
+
+    try:
+        path_name = '"' + '" "'.join(all_file_path) + '"'
+        pid = str(selenium_driver.service.process.pid)
+        window_ds = ("*window", "element parameter", selenium_driver.title)# todo: find more reliable way with pid
+        if platform.system() == "Windows":
+            from Framework.Built_In_Automation.Desktop.Windows.BuiltInFunctions import Click_Element, Enter_Text_In_Text_Box, Save_Attribute
+            # time.sleep(3)
+            save_attribute_ds = [
+                window_ds,
+                ("AutomationId", "element parameter", "1090"),
+                ("Name", "save parameter", "ZeuZ_uPLOad_W1N_F1LE__OR_FOLdeR_87138131"),
+                ("save attribute", "windows action", "save attribute"),
+            ]
+            if Save_Attribute(save_attribute_ds) == "zeuz_failed":
+                return "zeuz_failed"
+            file_or_folder = Shared_Resources.Get_Shared_Variables("ZeuZ_uPLOad_W1N_F1LE__OR_FOLdeR_87138131")
+            if "file name" in file_or_folder.lower():
+                id = "1148"
+            elif "folder" in file_or_folder.lower():
+                id = "1152"
+            else:
+                CommonUtil.ExecLog(sModuleInfo, "Invalid Upload type. file_or_folder = '%s'" % file_or_folder, 3)
+                return "zeuz_failed"
+
+            enter_text_ds = [
+                window_ds,
+                ("LocalizedControlType", "element parameter", "edit"),
+                ("AutomationId", "element parameter", id),
+                ("text", "windows action", path_name),
+            ]
+            if Enter_Text_In_Text_Box(enter_text_ds) == "zeuz_failed":
+                return "zeuz_failed"
+
+            click_ds = [
+                window_ds,
+                ("AutomationId", "element parameter", "1"),
+                ("Name", "element parameter", "Open"),
+                ("LocalizedControlType", "element parameter", "button"),
+                ("click", "windows action", "click"),
+            ]
+            if Click_Element(click_ds) == "zeuz_failed":
+                return "zeuz_failed"
+
+        elif platform.system() == "Linux":
+            import autoit
+            time.sleep(3)
+            autoit.send("^a")
+            time.sleep(0.5)
+            autoit.send(path_name)
+            time.sleep(1)
+            autoit.send("{ENTER}")
+
+        else:
+            import autoit
+            time.sleep(3)
+            autoit.send("^a")
+            time.sleep(0.5)
+            autoit.send(path_name)
+            time.sleep(1)
+            autoit.send("{ENTER}")
+
+        CommonUtil.ExecLog(sModuleInfo, "Entered the following path:\n%s" % path_name, 1)
         return "passed"
 
     except Exception:
