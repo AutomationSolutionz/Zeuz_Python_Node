@@ -1177,7 +1177,7 @@ def _get_main_window(WindowName):
             try:
                 if WindowName[2] == "pid":
                     try:
-                        if MainWindowElement.Current.ProcessId == WindowName[0]:
+                        if MainWindowElement.Current.ProcessId == int(WindowName[0]):
                             return MainWindowElement
                     except:
                         pass
@@ -1668,6 +1668,21 @@ def Run_Application(data_set):
     except:
         CommonUtil.Exception_Handler(sys.exc_info())
         return "zeuz_failed"
+
+
+def get_pids_from_title(title):
+    MainWindowsList = AutomationElement.RootElement.FindAll(
+        TreeScope.Children, Condition.TrueCondition
+    )
+    pids = []
+    for window in MainWindowsList:
+        try:
+            NameS = window.Current.Name
+            if title in NameS:
+                pids.append(window.Current.ProcessId)
+        except:
+            pass
+    return pids
 
 
 @logger

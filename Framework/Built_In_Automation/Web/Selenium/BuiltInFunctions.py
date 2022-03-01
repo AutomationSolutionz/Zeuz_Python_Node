@@ -17,6 +17,7 @@ import platform
 import sys, os, time, inspect, shutil, subprocess
 import socket
 import requests
+import psutil
 
 sys.path.append("..")
 from selenium import webdriver
@@ -432,6 +433,7 @@ def Open_Browser(dependency, window_size_X=None, window_size_Y=None):
             options.add_argument("--disable-extensions")
             options.add_argument('--ignore-certificate-errors')
             options.add_argument('--ignore-ssl-errors')
+            options.add_argument('--Zeuz_pid_finder')
             options.add_experimental_option("useAutomationExtension", False)
             d = DesiredCapabilities.CHROME
             d["loggingPrefs"] = {"browser": "ALL"}
@@ -556,11 +558,12 @@ def Open_Browser(dependency, window_size_X=None, window_size_Y=None):
             capabilities = webdriver.DesiredCapabilities().OPERA
             capabilities['acceptSslCerts'] = True
 
-            # from selenium.webdriver.opera.options import Options
-            # options = Options()
+            from selenium.webdriver.opera.options import Options
+            options = Options()
+            options.add_argument("--zeuz_pid_finder")
             # options.binary_location = r'C:\Users\ASUS\AppData\Local\Programs\Opera\launcher.exe'  # This might be needed
 
-            selenium_driver = webdriver.Opera(executable_path=opera_path, desired_capabilities=capabilities)
+            selenium_driver = webdriver.Opera(executable_path=opera_path, desired_capabilities=capabilities, options=options)
             selenium_driver.implicitly_wait(WebDriver_Wait)
             if not window_size_X and not window_size_Y:
                 selenium_driver.set_window_size(default_x, default_y)
@@ -652,7 +655,7 @@ def Open_Browser(dependency, window_size_X=None, window_size_Y=None):
                 ConfigModule.add_config_value("Selenium_driver_paths", "chrome_path", ChromeDriverManager().install())
             elif browser in ("firefox", "firefoxheadless"):
                 ConfigModule.add_config_value("Selenium_driver_paths", "firefox_path", GeckoDriverManager().install())
-            elif browser == "edge":
+            elif browser == "microsoft edge chromium":
                 ConfigModule.add_config_value("Selenium_driver_paths", "edge_path", EdgeChromiumDriverManager().install())
             elif browser == "opera":
                 ConfigModule.add_config_value("Selenium_driver_paths", "opera_path", OperaDriverManager().install())
@@ -673,7 +676,7 @@ def Open_Browser(dependency, window_size_X=None, window_size_Y=None):
                 ConfigModule.add_config_value("Selenium_driver_paths", "chrome_path", ChromeDriverManager().install())
             elif browser in ("firefox", "firefoxheadless"):
                 ConfigModule.add_config_value("Selenium_driver_paths", "firefox_path", GeckoDriverManager().install())
-            elif browser == "edge":
+            elif browser == "microsoft edge chromium":
                 ConfigModule.add_config_value("Selenium_driver_paths", "edge_path", EdgeChromiumDriverManager().install())
             elif browser == "opera":
                 ConfigModule.add_config_value("Selenium_driver_paths", "opera_path", OperaDriverManager().install())
@@ -3714,11 +3717,76 @@ def upload_file_through_window(step_data):
 
     try:
         path_name = '"' + '" "'.join(all_file_path) + '"'
-        pid = str(selenium_driver.service.process.pid)
-        window_ds = ("*window", "element parameter", selenium_driver.title)# todo: find more reliable way with pid
+
+        if selenium_driver.capabilities["browserName"].lower() == "firefox":
+            pid = str(selenium_driver.capabilities["moz:processID"])
+        elif selenium_driver.capabilities["browserName"].lower() == "chrome":
+            for process in psutil.process_iter():
+                if process.name() == 'chrome.exe' and '--test-type=webdriver' in process.cmdline() and "--zeuz_pid_finder" in process.cmdline():
+                    pid = str(process.pid)
+        elif selenium_driver.capabilities["browserName"].lower() == "opera":
+            for process in psutil.process_iter():
+                if process.name() == 'opera.exe' and '--test-type=webdriver' in process.cmdline() and "--zeuz_pid_finder" in process.cmdline():
+                    pid = str(process.pid)
+
+        # window_ds = ("*window", "element parameter", selenium_driver.title)
         if platform.system() == "Windows":
-            from Framework.Built_In_Automation.Desktop.Windows.BuiltInFunctions import Click_Element, Enter_Text_In_Text_Box, Save_Attribute
+            from Framework.Built_In_Automation.Desktop.Windows.BuiltInFunctions import Click_Element, Enter_Text_In_Text_Box, Save_Attribute, get_pids_from_title
             # time.sleep(3)
+            if selenium_driver.capabilities["browserName"].lower() == "msedge": # Msedge browser only exists in windows
+                win_pids = get_pids_from_title(selenium_driver.title)
+                if len(win_pids) == 0:
+                    CommonUtil.ExecLog(sModuleInfo, "Could not find the pid for msedge. Switching to GUI method", 2)
+                    import autoit
+                    time.sleep(3)
+                    autoit.send("^a")
+                    time.sleep(0.5)
+                    autoit.send(path_name)
+                    time.sleep(1)
+                    autoit.send("{ENTER}")
+                    CommonUtil.ExecLog(sModuleInfo, "Entered the following path:\n%s" % path_name, 1)
+                    return "passed"
+                if len(win_pids) > 1:
+                    psutil_pids = []
+                    for process in psutil.process_iter():
+                        if process.name() == 'msedge.exe' and '--test-type=webdriver' in process.cmdline():
+                            psutil_pids.append(process.pid)
+                    for i in win_pids:
+                        if i in psutil_pids:
+                            pid = str(i)
+                            break
+                    else:
+                        pid = str(win_pids[0])
+                else:
+                    pid = str(win_pids[0])
+            elif selenium_driver.capabilities["browserName"].lower() not in ("firefox", "chrome", "opera"):
+                win_pids = get_pids_from_title(selenium_driver.title)
+                if len(win_pids) == 0:
+                    CommonUtil.ExecLog(sModuleInfo, "Could not find the pid for browser. Switching to GUI method", 2)
+                    import autoit
+                    time.sleep(3)
+                    autoit.send("^a")
+                    time.sleep(0.5)
+                    autoit.send(path_name)
+                    time.sleep(1)
+                    autoit.send("{ENTER}")
+                    CommonUtil.ExecLog(sModuleInfo, "Entered the following path:\n%s" % path_name, 1)
+                    return "passed"
+                if len(win_pids) > 1:
+                    psutil_pids = []
+                    for process in psutil.process_iter():
+                        if '--test-type=webdriver' in process.cmdline():
+                            psutil_pids.append(process.pid)
+                    for i in win_pids:
+                        if i in psutil_pids:
+                            pid = str(i)
+                            break
+                    else:
+                        pid = str(win_pids[0])
+                else:
+                    pid = str(win_pids[0])
+
+            window_ds = ("window pid", "element parameter", pid)
             save_attribute_ds = [
                 window_ds,
                 ("AutomationId", "element parameter", "1090"),
@@ -3758,6 +3826,7 @@ def upload_file_through_window(step_data):
         elif platform.system() == "Linux":
             import autoit
             time.sleep(3)
+            #Todo: Activate window with pid
             autoit.send("^a")
             time.sleep(0.5)
             autoit.send(path_name)
@@ -3767,6 +3836,7 @@ def upload_file_through_window(step_data):
         else:
             import autoit
             time.sleep(3)
+            #Todo: Activate window with pid
             autoit.send("^a")
             time.sleep(0.5)
             autoit.send(path_name)
