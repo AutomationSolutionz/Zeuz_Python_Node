@@ -17,6 +17,8 @@ import platform
 import sys, os, time, inspect, shutil, subprocess
 import socket
 import requests
+import psutil
+import pyautogui
 
 sys.path.append("..")
 from selenium import webdriver
@@ -432,7 +434,12 @@ def Open_Browser(dependency, window_size_X=None, window_size_Y=None):
             options.add_argument("--disable-extensions")
             options.add_argument('--ignore-certificate-errors')
             options.add_argument('--ignore-ssl-errors')
-            options.add_experimental_option("useAutomationExtension", False)
+            options.add_argument('--Zeuz_pid_finder')
+            if browser == "android":
+                mobile_emulation = {"deviceName": "Pixel 2 XL"}
+                options.add_experimental_option("mobileEmulation", mobile_emulation)
+            else:
+                options.add_experimental_option("useAutomationExtension", False)
             d = DesiredCapabilities.CHROME
             d["loggingPrefs"] = {"browser": "ALL"}
             d['goog:loggingPrefs'] = {'performance': 'ALL'}
@@ -556,11 +563,12 @@ def Open_Browser(dependency, window_size_X=None, window_size_Y=None):
             capabilities = webdriver.DesiredCapabilities().OPERA
             capabilities['acceptSslCerts'] = True
 
-            # from selenium.webdriver.opera.options import Options
-            # options = Options()
+            from selenium.webdriver.opera.options import Options
+            options = Options()
+            options.add_argument("--zeuz_pid_finder")
             # options.binary_location = r'C:\Users\ASUS\AppData\Local\Programs\Opera\launcher.exe'  # This might be needed
 
-            selenium_driver = webdriver.Opera(executable_path=opera_path, desired_capabilities=capabilities)
+            selenium_driver = webdriver.Opera(executable_path=opera_path, desired_capabilities=capabilities, options=options)
             selenium_driver.implicitly_wait(WebDriver_Wait)
             if not window_size_X and not window_size_Y:
                 selenium_driver.set_window_size(default_x, default_y)
@@ -652,7 +660,7 @@ def Open_Browser(dependency, window_size_X=None, window_size_Y=None):
                 ConfigModule.add_config_value("Selenium_driver_paths", "chrome_path", ChromeDriverManager().install())
             elif browser in ("firefox", "firefoxheadless"):
                 ConfigModule.add_config_value("Selenium_driver_paths", "firefox_path", GeckoDriverManager().install())
-            elif browser == "edge":
+            elif browser == "microsoft edge chromium":
                 ConfigModule.add_config_value("Selenium_driver_paths", "edge_path", EdgeChromiumDriverManager().install())
             elif browser == "opera":
                 ConfigModule.add_config_value("Selenium_driver_paths", "opera_path", OperaDriverManager().install())
@@ -673,7 +681,7 @@ def Open_Browser(dependency, window_size_X=None, window_size_Y=None):
                 ConfigModule.add_config_value("Selenium_driver_paths", "chrome_path", ChromeDriverManager().install())
             elif browser in ("firefox", "firefoxheadless"):
                 ConfigModule.add_config_value("Selenium_driver_paths", "firefox_path", GeckoDriverManager().install())
-            elif browser == "edge":
+            elif browser == "microsoft edge chromium":
                 ConfigModule.add_config_value("Selenium_driver_paths", "edge_path", EdgeChromiumDriverManager().install())
             elif browser == "opera":
                 ConfigModule.add_config_value("Selenium_driver_paths", "opera_path", OperaDriverManager().install())
@@ -1314,6 +1322,7 @@ def Click_Element(data_set, retry=0):
             return CommonUtil.Exception_Handler(
                 sys.exc_info(), None, "Error clicking location"
             )
+
 
 @logger
 def Click_and_Download(data_set, retry=0):
@@ -3685,6 +3694,176 @@ def upload_file(step_data):
 
     except Exception:
         return CommonUtil.Exception_Handler(sys.exc_info())
+
+
+def _gui_upload(path_name, pid=None):
+    # Todo: Implement PID to activate the window and focus that at front
+    time.sleep(3)
+    pyautogui.hotkey("alt", "a")
+    time.sleep(0.5)
+    pyautogui.write(path_name)
+    time.sleep(1)
+    pyautogui.hotkey("enter")
+
+
+@logger
+def upload_file_through_window(step_data):
+    """
+    Purpose: Sometimes there are some upload window to upload one or more files which is out of selenium's scope.
+    This action automate that upload window with microsoft System API and pyautogui GUI API
+
+    Code detail:
+    The upload API is searched by their pid
+    The main problem is there are multiple process which open while when launching driver having multiple pid. but we need to find out the main browsers pid
+    Firefox driver provides the pid inside capabilities
+    For Chrome and Opera we added a custom args named "--ZeuZ_pid_finder" and searched in the psutil which process contains that arg and get the pid of that process
+    For MS Edge browser We extracted selenium.title and searched in Microsoft System API with that window title and fetch all the pids with that window title.
+    Also we had extracted all the pids from psutil having "--test-type=webdriver" arg and then matched the pids with previous one to find the genuin pid
+
+    In windows, firstly we try to automate with Microsoft System API. If anything fails in between then we switch to GUI method
+    In Mac and Linux, we automate only with GUI
+    """
+    sModuleInfo = inspect.currentframe().f_code.co_name + " : " + MODULE_NAME
+    global selenium_driver
+    all_file_path = []
+    if "headless" in dependency:
+        CommonUtil.ExecLog(sModuleInfo, "This action will not work on headless browsers", 3)
+        return "zeuz_failed"
+    try:
+        for left, mid, right in step_data:
+            left = left.strip().lower()
+            l = left.replace(" ", "").replace("_", "").lower()
+            if l in ("filepath", "directory"):
+                path = CommonUtil.path_parser(right.strip())
+                if os.path.isdir(path) or os.path.isfile(path):
+                    all_file_path.append(path)
+                else:
+                    CommonUtil.ExecLog(sModuleInfo, "Could not find any directory or file with the path: %s" % path, 3)
+        path_name = '"' + '" "'.join(all_file_path) + '"'
+    except:
+        return CommonUtil.Exception_Handler(sys.exc_info(), None, "Error parsing dataset")
+
+    try:
+        if selenium_driver.capabilities["browserName"].lower() == "firefox":
+            pid = str(selenium_driver.capabilities["moz:processID"])
+        elif selenium_driver.capabilities["browserName"].lower() == "chrome":
+            for process in psutil.process_iter():
+                if process.name() == 'chrome.exe' and '--test-type=webdriver' in process.cmdline() and "--zeuz_pid_finder" in process.cmdline():
+                    pid = str(process.pid)
+        elif selenium_driver.capabilities["browserName"].lower() == "opera":
+            for process in psutil.process_iter():
+                if process.name() == 'opera.exe' and '--test-type=webdriver' in process.cmdline() and "--zeuz_pid_finder" in process.cmdline():
+                    pid = str(process.pid)
+
+        # window_ds = ("*window", "element parameter", selenium_driver.title)
+        if platform.system() == "Windows":
+            from Framework.Built_In_Automation.Desktop.Windows.BuiltInFunctions import Click_Element, Enter_Text_In_Text_Box, Save_Attribute, get_pids_from_title
+            # time.sleep(3)
+            if selenium_driver.capabilities["browserName"].lower() == "msedge": # Msedge browser only exists in windows
+                win_pids = get_pids_from_title(selenium_driver.title)
+                if len(win_pids) == 0:
+                    CommonUtil.ExecLog(sModuleInfo, "Could not find the pid for msedge. Switching to GUI method", 2)
+                    _gui_upload(path_name)
+                    CommonUtil.ExecLog(sModuleInfo, "Entered the following path:\n%s" % path_name, 1)
+                    return "passed"
+                if len(win_pids) > 1:
+                    psutil_pids = []
+                    for process in psutil.process_iter():
+                        if process.name() == 'msedge.exe' and '--test-type=webdriver' in process.cmdline():
+                            psutil_pids.append(process.pid)
+                    for i in win_pids:      # Todo: For every PID search from the element (minor task)
+                        if i in psutil_pids:
+                            pid = str(i)
+                            break
+                    else:
+                        pid = str(win_pids[0])
+                else:
+                    pid = str(win_pids[0])
+            elif selenium_driver.capabilities["browserName"].lower() not in ("firefox", "chrome", "opera"):
+                win_pids = get_pids_from_title(selenium_driver.title)
+                if len(win_pids) == 0:
+                    CommonUtil.ExecLog(sModuleInfo, "Could not find the pid for browser. Switching to GUI method", 2)
+                    _gui_upload(path_name)
+                    CommonUtil.ExecLog(sModuleInfo, "Entered the following path:\n%s" % path_name, 1)
+                    return "passed"
+                if len(win_pids) > 1:
+                    psutil_pids = []
+                    for process in psutil.process_iter():
+                        if '--test-type=webdriver' in process.cmdline():
+                            psutil_pids.append(process.pid)
+                    for i in win_pids:
+                        if i in psutil_pids:
+                            pid = str(i)
+                            break
+                    else:
+                        pid = str(win_pids[0])
+                else:
+                    pid = str(win_pids[0])
+
+            window_ds = ("window pid", "element parameter", pid)
+            save_attribute_ds = [
+                window_ds,
+                ("wait", "optional parameter", "20"),
+                ("AutomationId", "element parameter", "1090"),
+                ("Name", "save parameter", "ZeuZ_uPLOad_W1N_F1LE__OR_FOLdeR_87138131"),
+                ("save attribute", "windows action", "save attribute"),
+            ]
+            if Save_Attribute(save_attribute_ds) == "zeuz_failed":
+                CommonUtil.ExecLog(sModuleInfo, "Could not find the Textbox. Switching to GUI method", 2)
+                _gui_upload(path_name)
+                CommonUtil.ExecLog(sModuleInfo, "Entered the following path:\n%s" % path_name, 1)
+                return "passed"
+            file_or_folder = Shared_Resources.Get_Shared_Variables("ZeuZ_uPLOad_W1N_F1LE__OR_FOLdeR_87138131")
+            if "file name" in file_or_folder.lower():
+                id = "1148"
+            elif "folder" in file_or_folder.lower():
+                id = "1152"
+            else:
+                CommonUtil.ExecLog(sModuleInfo, "Invalid Upload type. file_or_folder = '%s'" % file_or_folder, 3)
+                return "zeuz_failed"
+
+            enter_text_ds = [
+                window_ds,
+                ("wait", "optional parameter", "20"),
+                ("LocalizedControlType", "element parameter", "edit"),
+                ("AutomationId", "element parameter", id),
+                ("text", "windows action", path_name),
+            ]
+            if Enter_Text_In_Text_Box(enter_text_ds) == "zeuz_failed":
+                CommonUtil.ExecLog(sModuleInfo, "Could not find the Open button. Switching to GUI method (pressing Enter)", 2)
+                _gui_upload(path_name)
+                CommonUtil.ExecLog(sModuleInfo, "Entered the following path:\n%s" % path_name, 1)
+                return "passed"
+
+            click_ds = [
+                window_ds,
+                ("wait", "optional parameter", "20"),
+                ("AutomationId", "element parameter", "1"),
+                ("Name", "element parameter", "Open"),
+                ("LocalizedControlType", "element parameter", "button"),
+                ("click", "windows action", "click"),
+            ]
+            if Click_Element(click_ds) == "zeuz_failed":
+                CommonUtil.ExecLog(sModuleInfo, "Could not find the Open button. Switching to GUI method (pressing Enter)", 2)
+                time.sleep(1)
+                pyautogui.hotkey("enter")
+                CommonUtil.ExecLog(sModuleInfo, "Entered the following path:\n%s" % path_name, 1)
+                return "passed"
+
+        # elif platform.system() == "Linux":
+        #     _gui_upload(path_name)
+        else:
+            _gui_upload(path_name)
+
+        CommonUtil.ExecLog(sModuleInfo, "Entered the following path:\n%s" % path_name, 1)
+        return "passed"
+
+    except Exception:
+        CommonUtil.Exception_Handler(sys.exc_info())
+        CommonUtil.ExecLog(sModuleInfo, "Could not find the Textbox. Switching to GUI method", 2)
+        _gui_upload(path_name)
+        CommonUtil.ExecLog(sModuleInfo, "Entered the following path:\n%s" % path_name, 1)
+        return "passed"
 
 
 # Method to upload file

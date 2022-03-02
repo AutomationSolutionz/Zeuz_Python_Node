@@ -52,3 +52,6 @@ keyboard
 mouse
 imap-tools
 rich
+beautifulsoup4
+premailer
+html-diff

@@ -40,3 +40,6 @@ imap-tools
 keyboard
 mouse
 rich
+beautifulsoup4
+premailer
+html-diff

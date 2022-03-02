@@ -8,7 +8,8 @@ version_path = Path(os.getcwd())/"Framework"/"Version.txt"
 with open(version_path, "r"):
     text = version_path.read_text()
     text = text[text.find("=")+1:].split("\n")[0].strip()
-    os.system("title " + "Python " + platform.python_version() + "(" + platform.architecture()[0] + ")" + " -- ZeuZ Node " + text)
+    if os.name == "nt":
+        os.system("title " + "Python " + platform.python_version() + "(" + platform.architecture()[0] + ")" + " -- ZeuZ Node " + text)
     print(version_path.read_text())
 from Framework.module_installer import install_missing_modules
 install_missing_modules()
@@ -95,6 +96,7 @@ from rich import traceback
 traceback.install(show_locals=True, max_frames=1)
 
 def signal_handler(sig, frame):
+    CommonUtil.run_cancelled = True
     print("Disconnecting from server...")
     disconnect_from_server()
     sys.exit(0)
@@ -1036,4 +1038,5 @@ if __name__ == "__main__":
     else:
         # Bypass()
         Login(cli=True, run_once=RUN_ONCE, log_dir=log_dir)
+    CommonUtil.run_cancelled = True
     CommonUtil.ShutdownExecutor()

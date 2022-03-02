@@ -1030,9 +1030,10 @@ def Get_Element(data_set, wait_time=Shared_Resources.Get_Shared_Variables("eleme
             left = left.replace(" ", "").replace("_", "").lower()
             mid = mid.strip().lower()
 
-            if left == "wait time": wait_time = int(right)
+            if left == "wait": wait_time = float(right.strip())
             # elif left == "index": element_index = int(right.strip())
-            elif "window" in left: window_name = [right, _count_star(left)]
+            elif "windowpid" in left: window_name = [right, _count_star(left), "pid"]
+            elif "window" in left: window_name = [right, _count_star(left), "name"]
 
             if mid == "element parameter":
                 elem = True
@@ -1174,11 +1175,18 @@ def _get_main_window(WindowName):
         )
         for MainWindowElement in MainWindowsList:
             try:
-                NameS = MainWindowElement.Current.Name
-                if _found(WindowName, NameS):
-                    CommonUtil.ExecLog(sModuleInfo, "Switching to window: %s" % NameS, 1)
-                    autoit.win_activate(NameS)
-                    return MainWindowElement
+                if WindowName[2] == "pid":
+                    try:
+                        if MainWindowElement.Current.ProcessId == int(WindowName[0]):
+                            return MainWindowElement
+                    except:
+                        pass
+                else:
+                    NameS = MainWindowElement.Current.Name
+                    if _found(WindowName, NameS):
+                        CommonUtil.ExecLog(sModuleInfo, "Switching to window: %s" % NameS, 1)
+                        autoit.win_activate(NameS)
+                        return MainWindowElement
             except:
                 pass
 
@@ -1231,7 +1239,7 @@ def Double_Click_Element(data_set):
             right = right.strip().lower()
             left = left.strip().lower()
             if left == "method" and right == "gui":
-                    Gui = True
+                Gui = True
 
         Element = Get_Element(data_set)
         if Element == "zeuz_failed":
@@ -1407,7 +1415,7 @@ def Enter_Text_In_Text_Box(data_set):
         keystroke = False
 
         for left, mid, right in data_set:
-            if mid.lower().strip() == "action":
+            if left.lower().strip() == "text":
                 text = right
             elif left.lower().strip() == "method" and right.lower().strip() in ("gui", "keystroke"):
                 keystroke = True
@@ -1441,7 +1449,7 @@ def Enter_Text_In_Text_Box(data_set):
 
         return "passed"
     except Exception:
-        return CommonUtil.Exception_Handler(sys.exc_info(), None, "Couln't enter text")
+        return CommonUtil.Exception_Handler(sys.exc_info(), None, "Couldn't enter text")
 
 
 @logger
@@ -1662,6 +1670,21 @@ def Run_Application(data_set):
         return "zeuz_failed"
 
 
+def get_pids_from_title(title):
+    MainWindowsList = AutomationElement.RootElement.FindAll(
+        TreeScope.Children, Condition.TrueCondition
+    )
+    pids = []
+    for window in MainWindowsList:
+        try:
+            NameS = window.Current.Name
+            if title in NameS:
+                pids.append(window.Current.ProcessId)
+        except:
+            pass
+    return pids
+
+
 @logger
 def Close_Application(data_set):
     sModuleInfo = inspect.currentframe().f_code.co_name + " : " + MODULE_NAME
@@ -1872,108 +1895,111 @@ def save_attribute_values_in_list(data_set):
 
         # if not p and len(target) == 1:
         #     paired = False
-        while True:
-            all_elements = []
-            for each in target:
-                all_elements.append(Get_Element(each[0], Parent_Element=Element))
+        try:
+            while True:
+                all_elements = []
+                for each in target:
+                    all_elements.append(Get_Element(each[0], Parent_Element=Element))
 
-            if paired and not len(target) == 1:
-                variable_value_size = 0
-                variable_value = []
-                for each in all_elements:
-                    variable_value_size = max(variable_value_size, len(each))
-                for i in range(variable_value_size):
-                    variable_value.append([])
-                i = 0
-                for each in all_elements:
-                    search_by_attribute = target[i][1] if target[i][1] else "Value"
-                    j = 0
-                    for elem in each:
-                        if search_by_attribute.strip().lower() == "value":
-                            Attribute_value = eval("elem.GetCurrentPattern(ValuePattern.Pattern).Current.Value")
-                        else:
-                            Attribute_value = eval("elem.Current." + _get_attribute(search_by_attribute))
-                        try:
-                            for search_contain in target[i][2]:
-                                if not isinstance(search_contain, type(Attribute_value)) or search_contain in Attribute_value or len(search_contain) == 0:
-                                    break
-                            else:
-                                if target[i][2]:
-                                    Attribute_value = None
-
-                            for search_doesnt_contain in target[i][3]:
-                                if isinstance(search_doesnt_contain, type(Attribute_value)) and search_doesnt_contain in Attribute_value and len(search_doesnt_contain) != 0:
-                                    Attribute_value = None
-                        except:
-                            CommonUtil.ExecLog(sModuleInfo, "Couldn't search by return_contains and return_does_not_contain", 2)
-                        variable_value[j].append(Attribute_value)
-                        j = j + 1
-                    i = i + 1
-            elif not paired or len(target) == 1:
-                variable_value = []
-                for i in range(len(all_elements)):
-                    variable_value.append([])
-                i = 0
-                for each in all_elements:
-                    search_by_attribute = target[i][1] if target[i][1] else "Value"
-                    j = 0
-                    for elem in each:
-                        if search_by_attribute.strip().lower() == "value":
-                            Attribute_value = eval("elem.GetCurrentPattern(ValuePattern.Pattern).Current.Value")
-                        else:
-                            Attribute_value = eval("elem.Current." + _get_attribute(search_by_attribute))
-                        try:
-                            for search_contain in target[i][2]:
-                                if not isinstance(search_contain, type(Attribute_value)) or search_contain in Attribute_value or len(search_contain) == 0:
-                                    break
-                            else:
-                                if target[i][2]:
-                                    Attribute_value = None
-
-                            for search_doesnt_contain in target[i][3]:
-                                if isinstance(search_doesnt_contain, type(Attribute_value)) and search_doesnt_contain in Attribute_value and len(search_doesnt_contain) != 0:
-                                    Attribute_value = None
-                        except:
-                            CommonUtil.ExecLog(sModuleInfo, "Couldn't search by return_contains and return_does_not_contain", 2)
-                        if len(target) == 1:
-                            variable_value[i].append([Attribute_value, elem])
-                        else:
-                            variable_value[i].append(Attribute_value)
-                        j = j + 1
-                    i = i + 1
-                if len(target) == 1:
-                    variable_value = variable_value[0]
-                    new_values = {}
-                    for i in variable_value:
-                        top = str(i[1].Current.BoundingRectangle.Top)
-                        if top in new_values:
-                            new_values[top] += [i[0]]
-                        else:
-                            new_values[top] = [i[0]]
+                if paired and not len(target) == 1:
+                    variable_value_size = 0
                     variable_value = []
-                    for i in new_values:
-                        variable_value.append(new_values[i])
+                    for each in all_elements:
+                        variable_value_size = max(variable_value_size, len(each))
+                    for i in range(variable_value_size):
+                        variable_value.append([])
+                    i = 0
+                    for each in all_elements:
+                        search_by_attribute = target[i][1] if target[i][1] else "Value"
+                        j = 0
+                        for elem in each:
+                            if search_by_attribute.strip().lower() == "value":
+                                Attribute_value = eval("elem.GetCurrentPattern(ValuePattern.Pattern).Current.Value")
+                            else:
+                                Attribute_value = eval("elem.Current." + _get_attribute(search_by_attribute))
+                            try:
+                                for search_contain in target[i][2]:
+                                    if not isinstance(search_contain, type(Attribute_value)) or search_contain in Attribute_value or len(search_contain) == 0:
+                                        break
+                                else:
+                                    if target[i][2]:
+                                        Attribute_value = None
 
-            if scroll_value is None:
-                scroll_value = variable_value
-            else:
-                i = len(variable_value)
-                while i > 0:
-                    if scroll_value[len(scroll_value)-i:] == variable_value[:i]:
-                        temp = variable_value[i:]
-                        break
-                    i -= 1
+                                for search_doesnt_contain in target[i][3]:
+                                    if isinstance(search_doesnt_contain, type(Attribute_value)) and search_doesnt_contain in Attribute_value and len(search_doesnt_contain) != 0:
+                                        Attribute_value = None
+                            except:
+                                CommonUtil.ExecLog(sModuleInfo, "Couldn't search by return_contains and return_does_not_contain", 2)
+                            variable_value[j].append(Attribute_value)
+                            j = j + 1
+                        i = i + 1
+                elif not paired or len(target) == 1:
+                    variable_value = []
+                    for i in range(len(all_elements)):
+                        variable_value.append([])
+                    i = 0
+                    for each in all_elements:
+                        search_by_attribute = target[i][1] if target[i][1] else "Value"
+                        j = 0
+                        for elem in each:
+                            if search_by_attribute.strip().lower() == "value":
+                                Attribute_value = eval("elem.GetCurrentPattern(ValuePattern.Pattern).Current.Value")
+                            else:
+                                Attribute_value = eval("elem.Current." + _get_attribute(search_by_attribute))
+                            try:
+                                for search_contain in target[i][2]:
+                                    if not isinstance(search_contain, type(Attribute_value)) or search_contain in Attribute_value or len(search_contain) == 0:
+                                        break
+                                else:
+                                    if target[i][2]:
+                                        Attribute_value = None
+
+                                for search_doesnt_contain in target[i][3]:
+                                    if isinstance(search_doesnt_contain, type(Attribute_value)) and search_doesnt_contain in Attribute_value and len(search_doesnt_contain) != 0:
+                                        Attribute_value = None
+                            except:
+                                CommonUtil.ExecLog(sModuleInfo, "Couldn't search by return_contains and return_does_not_contain", 2)
+                            if len(target) == 1:
+                                variable_value[i].append([Attribute_value, elem])
+                            else:
+                                variable_value[i].append(Attribute_value)
+                            j = j + 1
+                        i = i + 1
+                    if len(target) == 1:
+                        variable_value = variable_value[0]
+                        new_values = {}
+                        for i in variable_value:
+                            top = str(i[1].Current.BoundingRectangle.Top)
+                            if top in new_values:
+                                new_values[top] += [i[0]]
+                            else:
+                                new_values[top] = [i[0]]
+                        variable_value = []
+                        for i in new_values:
+                            variable_value.append(new_values[i])
+
+                if scroll_value is None:
+                    scroll_value = variable_value
                 else:
-                    temp = variable_value
-                if i == len(variable_value):
-                    break
-                scroll_value += temp
-            win32api.SetCursorPos(get_coords(Element))
-            autoit.mouse_wheel("down", scroll_count)
+                    i = len(variable_value)
+                    while i > 0:
+                        if scroll_value[len(scroll_value)-i:] == variable_value[:i]:
+                            temp = variable_value[i:]
+                            break
+                        i -= 1
+                    else:
+                        temp = variable_value
+                    if i == len(variable_value):
+                        break
+                    scroll_value += temp
+                win32api.SetCursorPos(get_coords(Element))
+                autoit.mouse_wheel("down", scroll_count)
 
-        if not paired:
-            scroll_value = list(map(list, zip(*scroll_value)))
-        return Shared_Resources.Set_Shared_Variables(variable_name, scroll_value)
-
+            if not paired:
+                scroll_value = list(map(list, zip(*scroll_value)))
+            return Shared_Resources.Set_Shared_Variables(variable_name, scroll_value)
+        except:
+            CommonUtil.Exception_Handler(sys.exc_info())
+            return Shared_Resources.Set_Shared_Variables(variable_name, [])
     except Exception:
         return CommonUtil.Exception_Handler(sys.exc_info())

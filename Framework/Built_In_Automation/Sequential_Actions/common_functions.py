@@ -5,8 +5,15 @@
     Caveat: Functions common to multiple Built In Functions must have action names that are unique, because we search the common functions first, regardless of the module name passed by the user
 """
 
-import inspect, sys, time, collections, ftplib, os, ast, copy, csv, yaml
+import difflib
+import inspect, sys, time, collections, ftplib, os, ast, copy, csv, yaml, subprocess
+import itertools
 from pathlib import Path
+
+from bs4 import BeautifulSoup
+from premailer import transform
+from html_diff import diff
+
 from imap_tools import MailBox
 import re
 from typing import List
@@ -16,7 +23,7 @@ try:
 except:
     pass
 global sr
-from Framework.Utilities import CommonUtil
+from Framework.Utilities import CommonUtil, ConfigModule
 from Framework.Built_In_Automation.Shared_Resources import (
     BuiltInFunctionSharedResources as sr,
 )
@@ -74,6 +81,14 @@ programming_logic_keywords = ["if else", "while loop", "for loop", "loop setting
 
 MODULE_NAME = inspect.getmodulename(__file__)
 
+temp_config = os.path.join(
+    os.path.join(
+        os.path.abspath(__file__).split("Framework")[0],
+        os.path.join(
+            "AutomationLog", ConfigModule.get_config_value("Advanced Options", "_file")
+        ),
+    )
+)
 
 def unmask_string(givenText):
     for e in list(unmask_characters.keys()):
@@ -4046,6 +4061,730 @@ def random_email_delete(data_set):
         else:
             CommonUtil.ExecLog(sModuleInfo, "'%s' can not be deleted" % (var_email), 1)
             return "zeuz_failed"
+
+    except:
+        return CommonUtil.Exception_Handler(sys.exc_info())
+
+
+
+
+@logger
+def compare_item_occurrence(data_set):
+    sModuleInfo = inspect.currentframe().f_code.co_name + " : " + MODULE_NAME
+    try:
+        parentpath = None
+        childpath = None
+        attr_dict = {}
+        selector = None
+        for left, middle, right in data_set:
+            left = left.lower().strip()
+            middle = middle.lower().strip()
+            right = right.strip()
+            if "base file" == left:
+                parentpath = CommonUtil.path_parser(right)
+            elif "files to be compared" == left:
+                childpath = CommonUtil.path_parser(right)
+            elif "selector" == left:
+                selector = right
+            elif "class" == left or "id" == left:
+                attr_dict[left] = right
+
+
+        with open(parentpath) as pf:
+            p_soup = BeautifulSoup(pf, 'html.parser')
+
+        with open(childpath) as cf:
+            c_soup = BeautifulSoup(cf, 'html.parser')
+        p_total = len(p_soup.find_all(selector, attr_dict))
+        c_total = len(c_soup.find_all(selector, attr_dict))
+        if p_total == c_total:
+            CommonUtil.ExecLog(
+                sModuleInfo,
+                "Parent File has %s occurrence and Child file has %s occurrence , So they are Matched!!!" % (
+                p_total, c_total),
+                1,
+            )
+            return "passed"
+
+        else:
+            CommonUtil.ExecLog(
+                sModuleInfo,
+                "Parent File has %s occurrence and Child file has %s occurrence , So they  are not Matched!!!" % (
+                p_total, c_total),
+                3,
+            )
+            return "zeuz_failed"
+
+
+    except:
+        return CommonUtil.Exception_Handler(sys.exc_info())
+
+
+@logger
+def compare_text_and_font(data_set):
+    sModuleInfo = inspect.currentframe().f_code.co_name + " : " + MODULE_NAME
+    try:
+        parentpath = None
+        childpath = None
+        attr_dict = {}
+        text = None
+        attr = None
+        partial_text = False
+        for left, middle, right in data_set:
+            left = left.lower().strip()
+            middle = middle.lower().strip()
+            right = right
+            if "base file" == left:
+                parentpath = CommonUtil.path_parser(right)
+            elif "files to be compared" == left:
+                childpath = CommonUtil.path_parser(right)
+            elif "text" == left:
+                text = right
+            elif "attr" == left:
+                attr = right
+
+        with open(parentpath) as pf:
+            p_soup = BeautifulSoup(pf, 'html.parser')
+
+        with open(childpath) as cf:
+            c_soup = BeautifulSoup(cf, 'html.parser')
+
+        if attr != None:
+            p_bold = p_soup.select(attr)
+            p_texts = list(map(lambda tag: tag.text, p_bold))
+            c_bold = p_soup.select(attr)
+            c_texts = list(map(lambda tag: tag.text, c_bold))
+            if any(text in s for s in p_texts):
+                CommonUtil.ExecLog(
+                    sModuleInfo,
+                    "Parent File has this Bold Text -> '%s'" % (
+                        text),
+                    1,
+                )
+                if any(text in s for s in c_texts):
+                    CommonUtil.ExecLog(
+                        sModuleInfo,
+                        "Child File has this Bold Text ->'%s'" % (
+                            text),
+                        1,
+                    )
+                    CommonUtil.ExecLog(
+                        sModuleInfo,
+                        "Parent File and Child File are matched based On this Bold Text -> %s" % (
+                            text),
+                        1,
+                    )
+                    return "passed"
+                else:
+                    CommonUtil.ExecLog(
+                        sModuleInfo,
+                        "Child File doesn't have  this Bold Text ->'%s'" % (
+                            text),
+                        1,
+                    )
+                    CommonUtil.ExecLog(
+                        sModuleInfo,
+                        "Parent File and Child File aren't Matched based on this Bold Text -> %s" % (
+                            text),
+                        3,
+                    )
+                    return "zeuz_failed"
+            else:
+                CommonUtil.ExecLog(
+                    sModuleInfo,
+                    "Parent File doesn't have this Bold Text -> '%s'" % (
+                        text),
+                    3,
+                )
+                return "zeuz_failed"
+
+        else:
+            p_texts = p_soup.findAll(text=re.compile(text))
+            c_texts = c_soup.findAll(text=re.compile(text))
+            if any(text == s for s in list(p_texts)):
+                CommonUtil.ExecLog(
+                    sModuleInfo,
+                    "Parent File has this Text -> '%s'" % (
+                        text),
+                    1,
+                )
+                if  any(text == s for s in c_texts):
+                    CommonUtil.ExecLog(
+                        sModuleInfo,
+                        "Child File has this Text -> '%s'" % (
+                            text),
+                        1,
+                    )
+                    CommonUtil.ExecLog(
+                        sModuleInfo,
+                        "Parent File and Child File are matched based On this Text -> %s" % (
+                            text),
+                        1,
+                    )
+                    return "passed"
+                else:
+                    CommonUtil.ExecLog(
+                        sModuleInfo,
+                        "Child File doesn't have  this Text ->'%s'" % (
+                            text),
+                        1,
+                    )
+                    CommonUtil.ExecLog(
+                        sModuleInfo,
+                        "Parent File and Child File aren't Matched based on this Text -> %s" % (
+                            text),
+                        3,
+                    )
+                    return "zeuz_failed"
+
+
+            else:
+                CommonUtil.ExecLog(
+                    sModuleInfo,
+                    "Parent File doesn't have this Text -> '%s'" % (
+                        text),
+                    3,
+                )
+                return "zeuz_failed"
+
+
+    except:
+        return CommonUtil.Exception_Handler(sys.exc_info())
+
+
+@logger
+def compare_identifiers_content(data_set):
+    sModuleInfo = inspect.currentframe().f_code.co_name + " : " + MODULE_NAME
+    try:
+        parentpath = None
+        childpath = None
+        attr = None
+        exclude=None
+        content=None
+        step_result=None
+        for left, middle, right in data_set:
+            left = left.lower().strip()
+            middle = middle.lower().strip()
+            right = right
+            if "base file" == left:
+                parentpath = CommonUtil.path_parser(right)
+            elif "files to be compared" == left:
+                childpath = CommonUtil.path_parser(right)
+            elif "attr" == left:
+                attr = right
+            elif "exclude" == left:
+                exclude = right
+            elif "content" == left:
+                content = right
+            elif "end result" == left:
+                step_result = right
+
+        with open(parentpath) as pf:
+            p_soup = BeautifulSoup(pf, 'html.parser')
+
+        with open(childpath) as cf:
+            c_soup = BeautifulSoup(cf, 'html.parser')
+
+        p_soup=BeautifulSoup(transform(str(p_soup)))
+        c_soup=BeautifulSoup(transform(str(c_soup)))
+
+        if attr is not None:
+            p_all_bold = p_soup.select(attr)
+            c_all_bold = c_soup.select(attr)
+            p_texts = list(set(list(map(lambda tag: tag.text, p_all_bold))))
+            c_texts = list(set(list(map(lambda tag: tag.text, c_all_bold))))
+
+            if exclude is not None:
+                p_exclude=p_soup.select(exclude)
+                c_exclude=c_soup.select(exclude)
+                p_exclude_texts = list(set(list(map(lambda tag: tag.text, p_exclude))))
+                c_exclude_texts = list(set(list(map(lambda tag: tag.text, c_exclude))))
+                p_texts=[d for d in p_texts if d not in p_exclude_texts]
+                c_texts=[d for d in c_texts if d not in c_exclude_texts]
+
+            temp = []
+            for index in range(len(p_texts)):
+                text_list=p_texts[index].split('\n')
+                text_list=list(filter(lambda x: x != "" and x!="(" and x!=")", text_list))
+                # matched_text.pop(index)
+                temp+=text_list
+            p_texts=temp
+            temp=[]
+            for index in range(len(c_texts)):
+                text_list=c_texts[index].split('\n')
+                text_list=list(filter(lambda x: x != "" and x!="(" and x!=")", text_list))
+                # not_matched_text.pop(index)
+                temp+=text_list
+            c_texts=temp
+
+
+            if content=='text':
+                p_texts = [d for d in p_texts if d.replace('(','').replace(')','').replace('$','').replace('=','').replace(',', '').isnumeric()==False]
+                c_texts = [d for d in c_texts if d.replace('(','').replace(')','').replace('$','').replace('=','').replace(',', '').isnumeric()==False]
+            elif content=="numeric" or content=="number":
+                p_texts = [d for d in p_texts if d.replace(',', '').isnumeric()]
+                c_texts = [d for d in c_texts if d.replace(',', '').isnumeric()]
+
+            matched_text=[d for d in c_texts if d  in p_texts]
+            p_not_matched_text = [d for d in c_texts if d not in p_texts]
+            c_not_matched_text = [d for d in p_texts if d not in c_texts]
+
+            matched_text=list(set(matched_text))
+            p_not_matched_text=list(set(p_not_matched_text))
+            c_not_matched_text=list(set(c_not_matched_text))
+            CommonUtil.ExecLog(
+                sModuleInfo,
+            "Matched found : %s" % (
+                            str(len(matched_text))),
+                        1,
+                    )
+            if step_result!="pass":
+                CommonUtil.ExecLog(
+                    sModuleInfo,
+                "Text Not Matched : %s" % (
+                                str(len(p_not_matched_text)+len(c_not_matched_text))),
+                            3,
+                        )
+                if(len(p_not_matched_text)>0):
+                    CommonUtil.ExecLog(
+                        sModuleInfo,
+                    "Not Matched Text in base file : %s" %
+                    (str(', '.join(p_not_matched_text))),
+                                3,
+                            )
+                if(len(c_not_matched_text)>0):
+                    CommonUtil.ExecLog(
+                        sModuleInfo,
+                    "Not Matched Text in compared file : %s" %
+                    (str(', '.join(c_not_matched_text))),
+                                3,
+                            )
+                    return "zeuz_failed"
+            else:
+                CommonUtil.ExecLog(
+                    sModuleInfo,
+                "Text Not Matched : %s" % (
+                                str(len(p_not_matched_text)+len(c_not_matched_text))),
+                            1,
+                        )
+                if(len(p_not_matched_text)>0):
+                    CommonUtil.ExecLog(
+                        sModuleInfo,
+                    "Not Matched Text in base file : %s" %
+                    (str(', '.join(p_not_matched_text))),
+                                1,
+                            )
+                if(len(c_not_matched_text)>0):
+                    CommonUtil.ExecLog(
+                        sModuleInfo,
+                    "Not Matched Text in compared file : %s" %
+                    (str(', '.join(c_not_matched_text))),
+                                1,
+                            )
+
+            return "passed"
+        else:
+            CommonUtil.ExecLog(
+                sModuleInfo,
+                "attr parameter must need to compare",
+                3
+            )
+            return "zeuz_failed"
+
+
+
+    except:
+        return CommonUtil.Exception_Handler(sys.exc_info())
+
+
+@logger
+def compare_file(data_set):
+    sModuleInfo = inspect.currentframe().f_code.co_name + " : " + MODULE_NAME
+    try:
+        parentpath = None
+        childpath = None
+        exclude = None
+        attr = "body"
+        step_result = None
+        for left, middle, right in data_set:
+            left = left.lower().strip()
+            middle = middle.lower().strip()
+            right = right
+            if "base file" == left:
+                parentpath = CommonUtil.path_parser(right)
+            elif "files to be compared" == left:
+                childpath = CommonUtil.path_parser(right)
+            elif "exclude" == left:
+                exclude = right
+            elif "end result" == left:
+                step_result = right
+
+        with open(parentpath) as pf:
+            p_soup = BeautifulSoup(pf, 'html.parser')
+
+        with open(childpath) as cf:
+            c_soup = BeautifulSoup(cf, 'html.parser')
+
+        p_soup = BeautifulSoup(transform(str(p_soup)))
+        c_soup = BeautifulSoup(transform(str(c_soup)))
+
+        p_all_bold = p_soup.select(attr)
+        c_all_bold = c_soup.select(attr)
+        p_texts = list(set(list(map(lambda tag: tag.text, p_all_bold))))
+        c_texts = list(set(list(map(lambda tag: tag.text, c_all_bold))))
+
+        if exclude is not None:
+            p_exclude = p_soup.select(exclude)
+            c_exclude = c_soup.select(exclude)
+            p_exclude_texts = list(set(list(map(lambda tag: tag.text, p_exclude))))
+            c_exclude_texts = list(set(list(map(lambda tag: tag.text, c_exclude))))
+            p_texts = [d for d in p_texts if d not in p_exclude_texts]
+            c_texts = [d for d in c_texts if d not in c_exclude_texts]
+
+        temp = []
+        for index in range(len(p_texts)):
+            text_list = p_texts[index].split('\n')
+            text_list = list(filter(lambda x: x != "" and x != "(" and x != ")", text_list))
+            # matched_text.pop(index)
+            temp += text_list
+        p_texts = temp
+        temp = []
+        for index in range(len(c_texts)):
+            text_list = c_texts[index].split('\n')
+            text_list = list(filter(lambda x: x != "" and x != "(" and x != ")", text_list))
+            # not_matched_text.pop(index)
+            temp += text_list
+        c_texts = temp
+
+
+        p_texts = [d.replace('(', '').replace(')', '').replace('$', '').replace('=', '').replace(',','') for d in p_texts]
+        c_texts = [d.replace('(', '').replace(')', '').replace('$', '').replace('=', '').replace(',','') for d in c_texts]
+
+        matched_text = [d for d in c_texts if d in p_texts]
+        p_not_matched_text = [d for d in c_texts if d not in p_texts]
+        c_not_matched_text = [d for d in p_texts if d not in c_texts]
+
+        matched_text = list(set(matched_text))
+        p_not_matched_text = list(set(p_not_matched_text))
+        c_not_matched_text = list(set(c_not_matched_text))
+
+        CommonUtil.ExecLog(
+                sModuleInfo,
+            "Matched found : %s" % (
+                            str(len(matched_text))),
+                        1,
+                    )
+        if step_result != "pass":
+            CommonUtil.ExecLog(
+                    sModuleInfo,
+                "Text Not Matched : %s" % (
+                                str(len(p_not_matched_text)+len(c_not_matched_text))),
+                            3,
+                        )
+            if len(p_not_matched_text)>0 or len(c_not_matched_text)>0:
+                if(len(p_not_matched_text)>0):
+                    CommonUtil.ExecLog(
+                        sModuleInfo,
+                    "Not Matched Text in base file : \n" ,
+                                3,
+                            )
+                    CommonUtil.ExecLog(
+                        sModuleInfo,
+                        '\n'.join(p_not_matched_text),
+                        3,
+                    )
+
+                if(len(c_not_matched_text)>0):
+                    CommonUtil.ExecLog(sModuleInfo, "Not Matched Text in compared file :\n", 3)
+                    CommonUtil.ExecLog(
+                        sModuleInfo,
+                        '\n'.join(c_not_matched_text),
+                        3,
+                    )
+
+                CommonUtil.ExecLog(
+                    sModuleInfo,
+                "Processing a file to show the changes ..." ,
+
+                            1,
+                        )
+                date = datetime.datetime.now(). strftime("%Y_%m_%d_%I_%M_%S_%p")
+                # f1 = open(parentpath).readlines()
+                # f2 = open(childpath).readlines()
+                # diff_html = difflib.HtmlDiff().make_file(f1, f2)
+
+
+
+                f1 = open(parentpath).read()
+                f2 = open(childpath).read()
+                diff_html = diff(f1, f2)
+                tags=BeautifulSoup(diff_html,'html.parser')
+                ins_tag=tags.ins
+                ins_tag['style']="color:green"
+                # diff_html = difflib.HtmlDiff().make_file(f1,f2)
+                test_case = ConfigModule.get_config_value("sectionOne", "test_case", temp_config)
+                test_case_folder = ConfigModule.get_config_value("sectionOne", "test_case_folder", temp_config)
+                head_parent, tail_parent = os.path.split(parentpath)
+                head_child, tail_child = os.path.split(childpath)
+                with open(test_case_folder + os.sep + f"{test_case}_{tail_parent}_{tail_child}_{date}_(Compare file).html", "w") as f:
+                    f.write(diff_html)
+
+                return "zeuz_failed"
+        else:
+            if (len(p_not_matched_text) > 0):
+                CommonUtil.ExecLog(
+                    sModuleInfo,
+                    "Not Matched Text in base file : \n",
+                    1,
+                )
+                CommonUtil.ExecLog(
+                    sModuleInfo,
+                    '\n'.join(p_not_matched_text),
+                    1,
+                )
+
+            if (len(c_not_matched_text) > 0):
+                CommonUtil.ExecLog(
+                    sModuleInfo,
+                    "Not Matched Text in compared file : \n",
+                    1,
+                )
+                CommonUtil.ExecLog(
+                    sModuleInfo,
+                    '\n'.join(c_not_matched_text),
+                    1,
+                )
+
+                CommonUtil.ExecLog(
+                    sModuleInfo,
+                "Processing a file to show the changes ..." ,
+
+                            1,
+                        )
+                date = datetime.datetime.now().strftime("%Y_%m_%d_%I_%M_%S_%p")
+                test_case_folder = ConfigModule.get_config_value("sectionOne", "test_case_folder", temp_config)
+                test_case = ConfigModule.get_config_value("sectionOne", "test_case", temp_config)
+                # f1 = open(parentpath).readlines()
+                # f2 = open(childpath).readlines()
+                # diff_html = difflib.HtmlDiff().make_file(f1, f2)
+
+
+
+                f1 = open(parentpath).read()
+                f2 = open(childpath).read()
+                diff_html = diff(f1, f2)
+                tags=BeautifulSoup(diff_html,'html.parser')
+                for tag in tags.findAll('ins'):
+                    tag['style'] = "color: green;"
+                for tag in tags.findAll('del'):
+                    tag['style'] = "color: red;"
+
+                head_parent, tail_parent = os.path.split(parentpath)
+                head_child, tail_child = os.path.split(childpath)
+                with open(test_case_folder + os.sep + f"{test_case}_{tail_parent}_{tail_child}_{date}_(Compare file).html", "w") as f:
+                    f.write(str(tags))
+
+
+
+            return "passed"
+
+
+
+    except:
+        return CommonUtil.Exception_Handler(sys.exc_info())
+
+
+@logger
+def compare_file_with_tag(data_set):
+    sModuleInfo = inspect.currentframe().f_code.co_name + " : " + MODULE_NAME
+    try:
+        parentpath = None
+        childpath = None
+        exclude=None
+        attr=None
+        step_result=None
+        for left, middle, right in data_set:
+            left = left.lower().strip()
+            middle = middle.lower().strip()
+            right = right
+            if "base file" == left:
+                parentpath = CommonUtil.path_parser(right)
+            elif "files to be compared" == left:
+                childpath = CommonUtil.path_parser(right)
+            elif "attr" == left:
+                attr = right
+            elif "end result" == left:
+                step_result = right
+
+        if attr is None:
+            compared_list = ["", ""]
+            text = [[], []]
+            files = []
+            soups = []
+            files_list = [parentpath, childpath]
+            i = 0
+            for file in files_list:
+                files.append(open(file, "r").read())
+                soups.append(BeautifulSoup(files[i], 'xml'))
+                for tag_text in soups[i].find_all():
+                    text[i].append(''.join(str(tag_text.text)))
+                    compared_list[i] += '\n' + str(tag_text.text)
+                i += 1
+
+            result = ""
+            for first_string, second_string in zip(text[0], text[1]):
+                d = difflib.Differ()
+                diff = d.compare(first_string.splitlines(), second_string.splitlines())
+                result += '\n'.join(diff)
+
+            # f1 = open(files_list[0]).read()
+            # f2 = open(files_list[0]).read()
+
+                # diff_html = html_diff.diff('\n'.join(text[0]), '\n'.join(text[1]))
+
+            CommonUtil.ExecLog(
+                sModuleInfo,
+                f"Here is the changes:\n {result}",
+                1,
+            )
+
+            f1 = open(parentpath).readlines()
+            f2 = open(childpath).readlines()
+            diff_html = difflib.HtmlDiff().make_file(f1, f2)
+            CommonUtil.ExecLog(
+                sModuleInfo,
+                "Processing a file to show the changes ...",
+
+                1,
+            )
+            date = datetime.datetime.now().strftime("%Y_%m_%d_%I_%M_%S_%p")
+            test_case_folder = ConfigModule.get_config_value("sectionOne", "test_case_folder", temp_config)
+            test_case = ConfigModule.get_config_value("sectionOne", "test_case", temp_config)
+            head_parent, tail_parent = os.path.split(parentpath)
+            head_child, tail_child = os.path.split(childpath)
+            with open(test_case_folder+os.sep+f"{test_case}_{tail_parent}_{tail_child}_{date}_(Compare file with tag).html", "w") as f:
+                f.write(diff_html)
+
+
+
+            return "passed"
+
+        else:
+            compared_list = ["", ""]
+            text = [[], []]
+            files = []
+            soups = []
+            files_list = [parentpath, childpath]
+            i = 0
+            for file in files_list:
+                files.append(open(file, "r").read())
+                soups.append(BeautifulSoup(files[i], 'xml'))
+                for tag_text in soups[i].find_all([attr]+[f"{attr}:"+str(tag.name) for tag in soups[i].find_all() if attr in str(tag)]):
+                    text[i].append(''.join(str(tag_text)))
+                    compared_list[i] += '\n' + str(tag_text)
+                i += 1
+
+            result = ""
+            for first_string, second_string in zip(text[0], text[1]):
+                d = difflib.Differ()
+                diff = d.compare(first_string.splitlines(), second_string.splitlines())
+                result += '\n'.join(diff)
+
+            # f1 = open(files_list[0]).read()
+            # f2 = open(files_list[0]).read()
+
+                # diff_html = html_diff.diff('\n'.join(text[0]), '\n'.join(text[1]))
+
+            CommonUtil.ExecLog(
+                sModuleInfo,
+                f"Here is the changes:\n {result}",
+                1,
+            )
+
+            CommonUtil.ExecLog(
+                sModuleInfo,
+                "Processing a file to show the changes ...",
+
+                1,
+            )
+            date = datetime.datetime.now().strftime("%Y_%m_%d_%I_%M_%S_%p")
+            test_case_folder = ConfigModule.get_config_value("sectionOne", "test_case_folder", temp_config)
+            test_case = ConfigModule.get_config_value("sectionOne", "test_case", temp_config)
+            head_parent, tail_parent = os.path.split(parentpath)
+            head_child, tail_child = os.path.split(childpath)
+            with open(test_case_folder+os.sep+f"{test_case}_{tail_parent}_{tail_child}_{date}_(Compare file with tag).html", "w") as f:
+                f.write(result)
+            return "passed"
+
+    except:
+        return CommonUtil.Exception_Handler(sys.exc_info())
+
+
+@logger
+def extract_text_from_pdf(data_set):
+    """
+    usage: This action allows you to create a text file from the contents of a PDF
+    input pdf             | input parameter    | %|input.pdf|%
+    output variable       | output parameter   | variable_name
+    output txt            | optional parameter | output_filename.txt
+    extract text from pdf | common action      | extract text from pdf
+    """
+    sModuleInfo = inspect.currentframe().f_code.co_name + " : " + MODULE_NAME
+
+    try:
+        pdf_path, var_name, txt_path = "", "", ""
+        for left, mid, right in data_set:
+            left = left.strip().lower()
+            right = right.strip()
+            if "input pdf" == left:
+               pdf_path = CommonUtil.path_parser(right)
+            if "output variable" == left:
+               var_name = right
+            if "output text file" == left:
+                txt_path = CommonUtil.path_parser(right)
+
+        if not pdf_path:
+            CommonUtil.ExecLog(sModuleInfo, "Please provide the file-path of the pdf", 3)
+            return "zeuz_failed"
+        if not var_name:
+            CommonUtil.ExecLog(sModuleInfo, "Please provide variable name to store results", 3)
+            return "zeuz_failed"
+
+        pdf_dir = Path(os.path.abspath(__file__).split("Framework")[0])/"Apps"/"pdf"
+        poppler_dir = pdf_dir/"poppler"
+
+        if not os.path.isdir(poppler_dir):
+            CommonUtil.ExecLog(sModuleInfo, "Installing Poppler. it may take few minutes...", 1)
+            import zipfile, requests
+            if not os.path.isdir(pdf_dir):
+                os.makedirs(pdf_dir)
+            zip_url = "https://github.com/AutomationSolutionz/InstallerHelperFiles/raw/master/Windows/poppler_win.zip"
+            response = requests.get(zip_url, stream=True, verify=False)
+            chunk_size = 4096
+            with open(pdf_dir / "poppler.zip", 'wb') as file:
+                for data in response.iter_content(chunk_size):
+                    file.write(data)
+            z = zipfile.ZipFile(pdf_dir/"poppler.zip")
+            z.extractall(pdf_dir)
+            z.close()
+            os.unlink(pdf_dir/"poppler.zip")
+
+        if not txt_path:
+            CommonUtil.ExecLog(sModuleInfo, "Trying to extract text from %s" % pdf_path, 1)
+            txt_path = str(pdf_dir/"poppler_output.txt")
+            cmd = '"' + str(poppler_dir/"pdftotext.exe") + '" -layout "' + pdf_path + '" "' + txt_path +'"'
+            subprocess.run(cmd)
+            with open(txt_path) as file:
+                var_value = file.read()
+            os.unlink(txt_path)
+        else:
+            cmd = '"' + str(poppler_dir/"pdftotext.exe") + '" -layout "' + pdf_path + '" "' + txt_path + '"'
+            CommonUtil.ExecLog(sModuleInfo, "Trying to extract text from %s to %s" % (pdf_path, txt_path), 1)
+            subprocess.run(cmd)
+            with open(txt_path) as file:
+                var_value = file.read()
+
+        return sr.Set_Shared_Variables(var_name, var_value, pretty=True)
 
     except:
         return CommonUtil.Exception_Handler(sys.exc_info())

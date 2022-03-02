@@ -1431,7 +1431,7 @@ def main(device_dict, user_info_object):
                 print("[LIVE LOG] Disconnected from Live Log service")
             CommonUtil.runid_index += 1
             CommonUtil.run_cancel = ""
-            CommonUtil.run_cancelled = False
+            CommonUtil.run_cancelled = True
             break   # Todo: remove this after server side multiple run-id problem is fixed
 
         return "pass"
