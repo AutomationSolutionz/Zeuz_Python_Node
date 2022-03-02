@@ -15,7 +15,8 @@ import uuid
 from pathlib import Path
 import io
 from rich.console import Console
-from rich import print, print_json
+# from rich import print
+from rich import print_json
 
 
 from Framework.Utilities import ws
@@ -206,19 +207,21 @@ dont_prettify_on_server = ["step_data"]
 
 def prettify(key, val):
     """Tries to pretty print the given value."""
+    color = Fore.MAGENTA
     try:
         if type(val) == str:
             val = parse_value_into_object(val)
+        print(color + "%s = " % (key), end="")
         print_json(data=val)
         expression = "%s = %s" % (key, json.dumps(val, indent=2, sort_keys=True))
         if key not in dont_prettify_on_server:
+            ws.log("VARIABLE", 4, expression.replace("\n", "<br>").replace(" ", "&nbsp;"))
             # 4 means console log which is Magenta color in server console
-            ws.log("VARIABLE", 4, expression.replace("\n", "<br>").replace(" ", "&nbsp;"))
     except:
-        expression = "%s = %s" % (key, val)
-        print_json(data=expression)
+        # expression = "%s" % (key, val)
+        print(color + str(val))
         if key not in dont_prettify_on_server:
-            ws.log("VARIABLE", 4, expression.replace("\n", "<br>").replace(" ", "&nbsp;"))
+            ws.log("VARIABLE", 4, str(val).replace("\n", "<br>").replace(" ", "&nbsp;"))
 
 
 def Add_Folder_To_Current_Test_Case_Log(src):
@@ -460,7 +463,7 @@ def ExecLog(
     sDetails = sDetails.replace(";", ":").replace("%22", "'")
 
     # Terminal output color
-    line_color = "white"
+    line_color = ""
 
     # Convert logLevel from int to string for clarity
     if iLogLevel == 0:
@@ -472,26 +475,26 @@ def ExecLog(
             return
     elif iLogLevel == 1:
         status = "Passed"
-        line_color = "green"
+        line_color = Fore.GREEN
     elif iLogLevel == 2:
         status = "Warning"
-        line_color = "yellow"
+        line_color = Fore.YELLOW
     elif iLogLevel == 3:
         status = "Error"
-        line_color = "red"
+        line_color = Fore.RED
     elif iLogLevel == 4:
         status = "Console"
     elif iLogLevel == 5:
         status = "Info"
         iLogLevel = 1
-        line_color = "cyan"
+        line_color = Fore.CYAN
     elif iLogLevel == 6:
         status = "BrowserConsole"
     else:
         print("*** Unknown log level - Set to Info ***")
         status = "Info"
         iLogLevel = 5
-        line_color = "cyan"
+        line_color = Fore.CYAN
 
     if not sModuleInfo:
         sModuleInfo = ""
@@ -504,9 +507,9 @@ def ExecLog(
     if "saved variable" not in sDetails.lower():
         if status == "Console":
             msg = f"{info}{sDetails}" if sModuleInfo else sDetails
-            console.print(msg, style=line_color)
+            print(line_color + msg)
         else:
-            console.print(f"{status.upper()} - {info}{sDetails}", style=line_color)
+            print(line_color + f"{status.upper()} - {info}{sDetails}")
 
     current_log_line = f"{status.upper()} - {sModuleInfo} - {sDetails}"
 
