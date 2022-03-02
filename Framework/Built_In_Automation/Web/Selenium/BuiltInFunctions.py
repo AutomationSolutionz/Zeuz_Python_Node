@@ -435,7 +435,11 @@ def Open_Browser(dependency, window_size_X=None, window_size_Y=None):
             options.add_argument('--ignore-certificate-errors')
             options.add_argument('--ignore-ssl-errors')
             options.add_argument('--Zeuz_pid_finder')
-            options.add_experimental_option("useAutomationExtension", False)
+            if browser == "android":
+                mobile_emulation = {"deviceName": "Pixel 2 XL"}
+                options.add_experimental_option("mobileEmulation", mobile_emulation)
+            else:
+                options.add_experimental_option("useAutomationExtension", False)
             d = DesiredCapabilities.CHROME
             d["loggingPrefs"] = {"browser": "ALL"}
             d['goog:loggingPrefs'] = {'performance': 'ALL'}
