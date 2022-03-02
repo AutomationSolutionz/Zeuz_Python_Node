@@ -15,6 +15,7 @@ from datetime import datetime
 from dateutil.relativedelta import relativedelta
 from Framework.Utilities.decorators import logger, deprecated
 from .data_collector import DataCollector
+from rich import print
 
 
 global shared_variables

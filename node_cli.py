@@ -92,6 +92,9 @@ temp_ini_file = (
 
 import subprocess
 
+from rich import traceback
+traceback.install(show_locals=True, max_frames=1)
+
 def signal_handler(sig, frame):
     CommonUtil.run_cancelled = True
     print("Disconnecting from server...")
@@ -575,7 +578,7 @@ def update_machine(dependency, default_team_and_project_dict):
             "device": device_dict,
             "allProject": allProject,
         }
-        r = RequestFormatter.Get("update_automation_machine_api", update_object)
+        r = RequestFormatter.Get("update_automation_machine_api/", update_object)
         if r["registered"]:
             CommonUtil.ExecLog(
                 "", "Zeuz Node is online: %s" % (r["name"]), 4, False,
