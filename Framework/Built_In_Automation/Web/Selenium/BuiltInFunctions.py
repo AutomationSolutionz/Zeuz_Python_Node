@@ -18,7 +18,7 @@ import sys, os, time, inspect, shutil, subprocess
 import socket
 import requests
 import psutil
-import autoit
+import pyautogui
 
 sys.path.append("..")
 from selenium import webdriver
@@ -3695,17 +3695,29 @@ def upload_file(step_data):
 def _gui_upload(path_name, pid=None):
     # Todo: Implement PID to activate the window and focus that at front
     time.sleep(3)
-    autoit.send("^a")
+    pyautogui.hotkey("alt", "a")
     time.sleep(0.5)
-    autoit.send(path_name)
+    pyautogui.write(path_name)
     time.sleep(1)
-    autoit.send("{ENTER}")
+    pyautogui.hotkey("enter")
 
 
 @logger
 def upload_file_through_window(step_data):
     """
-    Purpose: Sometimes there are some upload window
+    Purpose: Sometimes there are some upload window to upload one or more files which is out of selenium's scope.
+    This action automate that upload window with microsoft System API and pyautogui GUI API
+
+    Code detail:
+    The upload API is searched by their pid
+    The main problem is there are multiple process which open while when launching driver having multiple pid. but we need to find out the main browsers pid
+    Firefox driver provides the pid inside capabilities
+    For Chrome and Opera we added a custom args named "--ZeuZ_pid_finder" and searched in the psutil which process contains that arg and get the pid of that process
+    For MS Edge browser We extracted selenium.title and searched in Microsoft System API with that window title and fetch all the pids with that window title.
+    Also we had extracted all the pids from psutil having "--test-type=webdriver" arg and then matched the pids with previous one to find the genuin pid
+
+    In windows, firstly we try to automate with Microsoft System API. If anything fails in between then we switch to GUI method
+    In Mac and Linux, we automate only with GUI
     """
     sModuleInfo = inspect.currentframe().f_code.co_name + " : " + MODULE_NAME
     global selenium_driver
@@ -3723,12 +3735,11 @@ def upload_file_through_window(step_data):
                     all_file_path.append(path)
                 else:
                     CommonUtil.ExecLog(sModuleInfo, "Could not find any directory or file with the path: %s" % path, 3)
+        path_name = '"' + '" "'.join(all_file_path) + '"'
     except:
         return CommonUtil.Exception_Handler(sys.exc_info(), None, "Error parsing dataset")
 
     try:
-        path_name = '"' + '" "'.join(all_file_path) + '"'
-
         if selenium_driver.capabilities["browserName"].lower() == "firefox":
             pid = str(selenium_driver.capabilities["moz:processID"])
         elif selenium_driver.capabilities["browserName"].lower() == "chrome":
@@ -3831,13 +3842,12 @@ def upload_file_through_window(step_data):
             if Click_Element(click_ds) == "zeuz_failed":
                 CommonUtil.ExecLog(sModuleInfo, "Could not find the Open button. Switching to GUI method (pressing Enter)", 2)
                 time.sleep(1)
-                autoit.send("{ENTER}")
+                pyautogui.hotkey("enter")
                 CommonUtil.ExecLog(sModuleInfo, "Entered the following path:\n%s" % path_name, 1)
                 return "passed"
 
         # elif platform.system() == "Linux":
         #     _gui_upload(path_name)
-
         else:
             _gui_upload(path_name)
 
@@ -3845,7 +3855,11 @@ def upload_file_through_window(step_data):
         return "passed"
 
     except Exception:
-        return CommonUtil.Exception_Handler(sys.exc_info())
+        CommonUtil.Exception_Handler(sys.exc_info())
+        CommonUtil.ExecLog(sModuleInfo, "Could not find the Textbox. Switching to GUI method", 2)
+        _gui_upload(path_name)
+        CommonUtil.ExecLog(sModuleInfo, "Entered the following path:\n%s" % path_name, 1)
+        return "passed"
 
 
 # Method to upload file
