@@ -1030,7 +1030,7 @@ def Get_Element(data_set, wait_time=Shared_Resources.Get_Shared_Variables("eleme
             left = left.replace(" ", "").replace("_", "").lower()
             mid = mid.strip().lower()
 
-            if left == "wait": wait_time = int(right)
+            if left == "wait": wait_time = float(right.strip())
             # elif left == "index": element_index = int(right.strip())
             elif "windowpid" in left: window_name = [right, _count_star(left), "pid"]
             elif "window" in left: window_name = [right, _count_star(left), "name"]

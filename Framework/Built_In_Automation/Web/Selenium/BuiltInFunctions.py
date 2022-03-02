@@ -18,6 +18,7 @@ import sys, os, time, inspect, shutil, subprocess
 import socket
 import requests
 import psutil
+import autoit
 
 sys.path.append("..")
 from selenium import webdriver
@@ -3691,6 +3692,16 @@ def upload_file(step_data):
         return CommonUtil.Exception_Handler(sys.exc_info())
 
 
+def _gui_upload(path_name, pid=None):
+    # Todo: Implement PID to activate the window and focus that at front
+    time.sleep(3)
+    autoit.send("^a")
+    time.sleep(0.5)
+    autoit.send(path_name)
+    time.sleep(1)
+    autoit.send("{ENTER}")
+
+
 @logger
 def upload_file_through_window(step_data):
     """
@@ -3737,13 +3748,7 @@ def upload_file_through_window(step_data):
                 win_pids = get_pids_from_title(selenium_driver.title)
                 if len(win_pids) == 0:
                     CommonUtil.ExecLog(sModuleInfo, "Could not find the pid for msedge. Switching to GUI method", 2)
-                    import autoit
-                    time.sleep(3)
-                    autoit.send("^a")
-                    time.sleep(0.5)
-                    autoit.send(path_name)
-                    time.sleep(1)
-                    autoit.send("{ENTER}")
+                    _gui_upload(path_name)
                     CommonUtil.ExecLog(sModuleInfo, "Entered the following path:\n%s" % path_name, 1)
                     return "passed"
                 if len(win_pids) > 1:
@@ -3751,7 +3756,7 @@ def upload_file_through_window(step_data):
                     for process in psutil.process_iter():
                         if process.name() == 'msedge.exe' and '--test-type=webdriver' in process.cmdline():
                             psutil_pids.append(process.pid)
-                    for i in win_pids:
+                    for i in win_pids:      # Todo: For every PID search from the element (minor task)
                         if i in psutil_pids:
                             pid = str(i)
                             break
@@ -3763,13 +3768,7 @@ def upload_file_through_window(step_data):
                 win_pids = get_pids_from_title(selenium_driver.title)
                 if len(win_pids) == 0:
                     CommonUtil.ExecLog(sModuleInfo, "Could not find the pid for browser. Switching to GUI method", 2)
-                    import autoit
-                    time.sleep(3)
-                    autoit.send("^a")
-                    time.sleep(0.5)
-                    autoit.send(path_name)
-                    time.sleep(1)
-                    autoit.send("{ENTER}")
+                    _gui_upload(path_name)
                     CommonUtil.ExecLog(sModuleInfo, "Entered the following path:\n%s" % path_name, 1)
                     return "passed"
                 if len(win_pids) > 1:
@@ -3789,12 +3788,16 @@ def upload_file_through_window(step_data):
             window_ds = ("window pid", "element parameter", pid)
             save_attribute_ds = [
                 window_ds,
+                ("wait", "optional parameter", "20"),
                 ("AutomationId", "element parameter", "1090"),
                 ("Name", "save parameter", "ZeuZ_uPLOad_W1N_F1LE__OR_FOLdeR_87138131"),
                 ("save attribute", "windows action", "save attribute"),
             ]
             if Save_Attribute(save_attribute_ds) == "zeuz_failed":
-                return "zeuz_failed"
+                CommonUtil.ExecLog(sModuleInfo, "Could not find the Textbox. Switching to GUI method", 2)
+                _gui_upload(path_name)
+                CommonUtil.ExecLog(sModuleInfo, "Entered the following path:\n%s" % path_name, 1)
+                return "passed"
             file_or_folder = Shared_Resources.Get_Shared_Variables("ZeuZ_uPLOad_W1N_F1LE__OR_FOLdeR_87138131")
             if "file name" in file_or_folder.lower():
                 id = "1148"
@@ -3806,42 +3809,37 @@ def upload_file_through_window(step_data):
 
             enter_text_ds = [
                 window_ds,
+                ("wait", "optional parameter", "20"),
                 ("LocalizedControlType", "element parameter", "edit"),
                 ("AutomationId", "element parameter", id),
                 ("text", "windows action", path_name),
             ]
             if Enter_Text_In_Text_Box(enter_text_ds) == "zeuz_failed":
-                return "zeuz_failed"
+                CommonUtil.ExecLog(sModuleInfo, "Could not find the Open button. Switching to GUI method (pressing Enter)", 2)
+                _gui_upload(path_name)
+                CommonUtil.ExecLog(sModuleInfo, "Entered the following path:\n%s" % path_name, 1)
+                return "passed"
 
             click_ds = [
                 window_ds,
+                ("wait", "optional parameter", "20"),
                 ("AutomationId", "element parameter", "1"),
                 ("Name", "element parameter", "Open"),
                 ("LocalizedControlType", "element parameter", "button"),
                 ("click", "windows action", "click"),
             ]
             if Click_Element(click_ds) == "zeuz_failed":
-                return "zeuz_failed"
+                CommonUtil.ExecLog(sModuleInfo, "Could not find the Open button. Switching to GUI method (pressing Enter)", 2)
+                time.sleep(1)
+                autoit.send("{ENTER}")
+                CommonUtil.ExecLog(sModuleInfo, "Entered the following path:\n%s" % path_name, 1)
+                return "passed"
 
-        elif platform.system() == "Linux":
-            import autoit
-            time.sleep(3)
-            #Todo: Activate window with pid
-            autoit.send("^a")
-            time.sleep(0.5)
-            autoit.send(path_name)
-            time.sleep(1)
-            autoit.send("{ENTER}")
+        # elif platform.system() == "Linux":
+        #     _gui_upload(path_name)
 
         else:
-            import autoit
-            time.sleep(3)
-            #Todo: Activate window with pid
-            autoit.send("^a")
-            time.sleep(0.5)
-            autoit.send(path_name)
-            time.sleep(1)
-            autoit.send("{ENTER}")
+            _gui_upload(path_name)
 
         CommonUtil.ExecLog(sModuleInfo, "Entered the following path:\n%s" % path_name, 1)
         return "passed"
