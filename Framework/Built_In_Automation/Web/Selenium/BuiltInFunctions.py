@@ -1351,7 +1351,7 @@ def Click_and_Download(data_set):
         for left, mid, right in data_set:
             if left == "wait for download":
                 wait_download = float(right.strip())
-            elif left.strip().lower() == "folder path" and mid.strip().lower() in ("parameter", "option"):
+            elif left.strip().lower() in ("folder path", "directory") and mid.strip().lower() in ("parameter", "option"):
                 filepath = right.strip()
                 filepath = CommonUtil.path_parser(filepath)
             elif left.strip().lower() == "automate firefox save window" and mid.strip().lower() in ("parameter", "option"):
@@ -1389,8 +1389,7 @@ def Click_and_Download(data_set):
                             ("click", "windows action", "click"),
                         ]
                         if win_Click_Element(save_click_ds) == "zeuz_failed":
-                            CommonUtil.ExecLog(sModuleInfo, "Could not click Save Button", 2)
-                            #Todo: GUI method
+                            CommonUtil.ExecLog(sModuleInfo, "Could not click Save Button. Switching to GUI method", 2)
                             pyautogui.hotkey("down")
                             pyautogui.hotkey("enter")
 
@@ -1411,8 +1410,7 @@ def Click_and_Download(data_set):
                                 ("click", "windows action", "click"),
                             ]
                             if win_Click_Element(ok_ds) == "zeuz_failed":
-                                CommonUtil.ExecLog(sModuleInfo, "Could not click remember choice Button", 2)
-                                #Todo: GUI method
+                                CommonUtil.ExecLog(sModuleInfo, "Could not find the OK button. Switching to GUI method (pressing Enter)", 2)
                                 pyautogui.hotkey("enter")
                 except:
                     CommonUtil.ExecLog(sModuleInfo, "Could not check if any save window was opened. Continuing...", 2)
@@ -1448,22 +1446,33 @@ def Click_and_Download(data_set):
             # filepath = Shared_Resources.Get_Shared_Variables("zeuz_download_folder")
             source_folder = ConfigModule.get_config_value("sectionOne", "initial_download_folder", temp_config)
             all_source_dir = [os.path.join(source_folder, f) for f in os.listdir(source_folder) if os.path.isfile(os.path.join(source_folder, f))]
-            new_directory_of_the_file = filepath
+            new_path = filepath
             for file_to_be_moved in all_source_dir:
                 file_name = Path(file_to_be_moved).name
-                if not os.path.exists(new_directory_of_the_file):
-                    Path(new_directory_of_the_file).mkdir(parents=True, exist_ok=True)
-                shutil.move(file_to_be_moved, new_directory_of_the_file)
+                if "." not in os.path.basename(new_path) and not os.path.exists(new_path):
+                    # if the path is a directory and does not exist then create the directory
+                    Path(new_path).mkdir(parents=True, exist_ok=True)
+                elif "." in os.path.basename(new_path) and not os.path.exists(new_path):
+                    # if the path is a filepath and the directory does not exist then create the directory
+                    Path(os.path.dirname(new_path)).mkdir(parents=True, exist_ok=True)
+                shutil.move(file_to_be_moved, new_path)
 
                 # after performing shutil.move() we have to check that if the file with new name exists in correct location.
                 # if the file exists in correct position then return passed
                 # if the file doesn't exist in correct position then return failed
-                file_path_for_check_after_move = os.path.join(new_directory_of_the_file, file_name)
-                if os.path.isfile(file_path_for_check_after_move):
-                    CommonUtil.ExecLog(sModuleInfo, "File '%s' is moved to '%s'" % (file_name, new_directory_of_the_file), 1)
+                if "." not in os.path.basename(new_path):
+                    file_path_for_check_after_move = os.path.join(new_path, file_name)
+                    if os.path.isfile(file_path_for_check_after_move):
+                        CommonUtil.ExecLog(sModuleInfo, "File '%s' is moved to '%s'" % (file_name, file_path_for_check_after_move), 1)
+                    else:
+                        CommonUtil.ExecLog(sModuleInfo, "File failed to move", 3)
+                        return "zeuz_failed"
                 else:
-                    CommonUtil.ExecLog(sModuleInfo, "File failed to move", 3)
-                    return "zeuz_failed"
+                    if os.path.isfile(new_path):
+                        CommonUtil.ExecLog(sModuleInfo, "File '%s' is moved to '%s'" % (file_name, new_path), 1)
+                    else:
+                        CommonUtil.ExecLog(sModuleInfo, "File failed to move", 3)
+                        return "zeuz_failed"
         return "passed"
     except Exception:
         return CommonUtil.Exception_Handler(sys.exc_info(), None, "Error downloading file \nfrom %s\nto %s" % (file_to_be_moved, filepath))
@@ -3853,7 +3862,7 @@ def upload_file_through_window(step_data):
                 ("text", "windows action", path_name),
             ]
             if Enter_Text_In_Text_Box(enter_text_ds) == "zeuz_failed":
-                CommonUtil.ExecLog(sModuleInfo, "Could not find the Open button. Switching to GUI method (pressing Enter)", 2)
+                CommonUtil.ExecLog(sModuleInfo, "Could not find the Open button. Switching to GUI method", 2)
                 _gui_upload(path_name)
                 CommonUtil.ExecLog(sModuleInfo, "Entered the following path:\n%s" % path_name, 1)
                 return "passed"
