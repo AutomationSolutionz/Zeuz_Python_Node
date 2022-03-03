@@ -1349,12 +1349,13 @@ def Click_and_Download(data_set):
     try:
         click_dataset = []
         for left, mid, right in data_set:
-            if left == "wait for download":
+            l = left.replace(" ", "").replace("_", "").lower()
+            if l == "waitfordownload":
                 wait_download = float(right.strip())
-            elif left.strip().lower() in ("folder path", "directory") and mid.strip().lower() in ("parameter", "option"):
+            elif l in ("folderpath", "directory", "filepath", "file", "folder") and mid.strip().lower() in ("parameter", "option"):
                 filepath = right.strip()
                 filepath = CommonUtil.path_parser(filepath)
-            elif left.strip().lower() == "automate firefox save window" and mid.strip().lower() in ("parameter", "option"):
+            elif l == "automatefirefoxsavewindow" and mid.strip().lower() in ("parameter", "option"):
                 automate_firefox = right.strip().lower() in ("accept", "yes", "ok", "true")
             else:
                 click_dataset.append((left, mid, right))
@@ -1476,7 +1477,6 @@ def Click_and_Download(data_set):
         return "passed"
     except Exception:
         return CommonUtil.Exception_Handler(sys.exc_info(), None, "Error downloading file \nfrom %s\nto %s" % (file_to_be_moved, filepath))
-
 
 
 @logger
