@@ -506,7 +506,8 @@ def Open_Browser(dependency, window_size_X=None, window_size_Y=None):
             profile.set_preference("browser.download.manager.showWhenStarting", False)
             profile.set_preference("browser.download.dir", download_dir)
             #text/plain;charset=UTF-8
-            apps = "application/pdf;text/plain;application/text;text/xml;application/xml;application/xlsx"
+            # Allowing txt, pdf, xlsx, xml, csv, zip files to be directly downloaded without save prompt
+            apps = "application/pdf;text/plain;application/text;text/xml;application/xml;application/xlsx;application/csv;application/zip"
             profile.set_preference("browser.helperApps.neverAsk.saveToDisk", apps)
             profile.accept_untrusted_certs = True
             selenium_driver = webdriver.Firefox(
@@ -575,6 +576,8 @@ def Open_Browser(dependency, window_size_X=None, window_size_Y=None):
             from selenium.webdriver.opera.options import Options
             options = Options()
             options.add_argument("--zeuz_pid_finder")
+            download_dir = ConfigModule.get_config_value("sectionOne", "initial_download_folder", temp_config)
+            options.add_experimental_option("prefs", {"download.default_directory": download_dir})  # This does not work
             # options.binary_location = r'C:\Users\ASUS\AppData\Local\Programs\Opera\launcher.exe'  # This might be needed
 
             selenium_driver = webdriver.Opera(executable_path=opera_path, desired_capabilities=capabilities, options=options)
@@ -831,6 +834,7 @@ def Go_To_Link(step_data, page_title=False):
     except Exception:
         ErrorMessage = "failed to open your link: %s" % (web_link)
         return CommonUtil.Exception_Handler(sys.exc_info(), None, ErrorMessage)
+
 
 @logger
 def Handle_Browser_Alert(step_data):
@@ -1326,14 +1330,22 @@ def Click_Element(data_set, retry=0):
         except Exception:
             return CommonUtil.Exception_Handler(sys.exc_info(), None, "Error clicking location")
 
+
 @logger
-def Click_and_Download(data_set, retry=0):
+def Click_and_Download(data_set):
     """ Click and download attachments from web and save it to specific destinations"""
     sModuleInfo = inspect.currentframe().f_code.co_name + " : " + MODULE_NAME
     global selenium_driver
 
-    wait_download = 10
+    if selenium_driver.capabilities["browserName"].strip().lower() not in ("chrome", "msedge", "firefox"):
+        CommonUtil.ExecLog(sModuleInfo, "This action was made for Chrome, MS Edge and Firefox. Other browsers won't download files in Zeuz_Download_Folder", 2)
+
+    #Todo:
+    # 1. For other browsers than ("chrome", "msedge", "firefox") copy the New files generated in Downloads directory and move them to zeuz_download_folder
+
+    wait_download = 20
     filepath = ""
+    automate_firefox = False
     try:
         click_dataset = []
         for left, mid, right in data_set:
@@ -1342,6 +1354,8 @@ def Click_and_Download(data_set, retry=0):
             elif left.strip().lower() == "folder path" and mid.strip().lower() in ("parameter", "option"):
                 filepath = right.strip()
                 filepath = CommonUtil.path_parser(filepath)
+            elif left.strip().lower() == "automate firefox save window" and mid.strip().lower() in ("parameter", "option"):
+                automate_firefox = right.strip().lower() in ("accept", "yes", "ok", "true")
             else:
                 click_dataset.append((left, mid, right))
 
@@ -1352,10 +1366,86 @@ def Click_and_Download(data_set, retry=0):
 
     try:
         Click_Element(click_dataset)
+        if selenium_driver.capabilities["browserName"].strip().lower() == "firefox" and automate_firefox:
+            if platform.system() == "Windows":
+                try:
+                    from Framework.Built_In_Automation.Desktop.Windows.BuiltInFunctions import Click_Element as win_Click_Element, wait_for_element
+                    pid = str(selenium_driver.capabilities["moz:processID"])
+                    window_ds = ("window pid", "element parameter", pid)
+                    wait_ds = [
+                        window_ds,
+                        ("Name", "element parameter", "Save File"),
+                        ("LocalizedControlType", "element parameter", "radio button"),
+                        ("wait to appear", "windows action", "10"),
+                    ]
+                    CommonUtil.ExecLog(sModuleInfo, "Checking if any Save window is opened", 1)
+                    if wait_for_element(wait_ds) == "zeuz_failed":
+                        CommonUtil.ExecLog(sModuleInfo, "No Save window is found. Continuing...", 1)
+                    else:
+                        save_click_ds = [
+                            window_ds,
+                            ("Name", "element parameter", "Save File"),
+                            ("LocalizedControlType", "element parameter", "radio button"),
+                            ("click", "windows action", "click"),
+                        ]
+                        if win_Click_Element(save_click_ds) == "zeuz_failed":
+                            CommonUtil.ExecLog(sModuleInfo, "Could not click Save Button", 2)
+                            #Todo: GUI method
+                            pyautogui.hotkey("down")
+                            pyautogui.hotkey("enter")
+
+                        else:
+                            # remember_choice_ds = [
+                            #     window_ds,
+                            #     ("wait", "optional parameter", "5"),
+                            #     ("*Name", "element parameter", "Do this automatically"),
+                            #     ("LocalizedControlType", "element parameter", "check box"),
+                            #     ("click", "windows action", "click"),
+                            # ]
+                            # if win_Click_Element(remember_choice_ds) == "zeuz_failed":
+                            #     CommonUtil.ExecLog(sModuleInfo, "Could not click remember choice Button", 2)
+                            ok_ds = [
+                                window_ds,
+                                ("Name", "element parameter", "OK"),
+                                ("LocalizedControlType", "element parameter", "button"),
+                                ("click", "windows action", "click"),
+                            ]
+                            if win_Click_Element(ok_ds) == "zeuz_failed":
+                                CommonUtil.ExecLog(sModuleInfo, "Could not click remember choice Button", 2)
+                                #Todo: GUI method
+                                pyautogui.hotkey("enter")
+                except:
+                    CommonUtil.ExecLog(sModuleInfo, "Could not check if any save window was opened. Continuing...", 2)
+
+            else:
+                # Todo: Test this on Mac and Linux
+                pyautogui.hotkey("down")
+                pyautogui.hotkey("enter")
+
+        if selenium_driver.capabilities["browserName"].strip().lower() in ("chrome", "msedge", "firefox"):
+            CommonUtil.ExecLog(sModuleInfo, "Download started. Will wait max %s seconds..." % wait_download, 1)
+            s = time.perf_counter()
+            if selenium_driver.capabilities["browserName"].strip().lower() == "firefox":
+                ext = ".part"
+            elif selenium_driver.capabilities["browserName"].strip().lower() == "opera":
+                ext = ".opera"
+            else:
+                ext = ".crdownload"
+            while True:
+                ld = os.listdir(ConfigModule.get_config_value("sectionOne", "initial_download_folder", temp_config))
+                if all([len(ld) > 0, all([not i.endswith(".tmp") and not i.endswith(ext) for i in ld])]):
+                    CommonUtil.ExecLog(sModuleInfo, "Download Finished in %s seconds" % round(time.perf_counter()-s, 2), 1)
+                    break
+                if s + wait_download < time.perf_counter():
+                    CommonUtil.ExecLog(sModuleInfo, "Could not finish download within %s seconds. You can increase the amount of seconds with (wait for download, optional parameter, 60)" % wait_download, 2)
+                    break
+        else:
+            time.sleep(2)
+        time.sleep(3)
+
         if filepath:
             from pathlib import Path
             # filepath = Shared_Resources.Get_Shared_Variables("zeuz_download_folder")
-            time.sleep(3)   # Sleep is needed here so that downloaded
             source_folder = ConfigModule.get_config_value("sectionOne", "initial_download_folder", temp_config)
             all_source_dir = [os.path.join(source_folder, f) for f in os.listdir(source_folder) if os.path.isfile(os.path.join(source_folder, f))]
             new_directory_of_the_file = filepath
