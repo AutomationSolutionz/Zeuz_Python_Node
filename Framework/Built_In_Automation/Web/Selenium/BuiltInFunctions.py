@@ -531,8 +531,7 @@ def Open_Browser(dependency, window_size_X=None, window_size_Y=None):
             CommonUtil.set_screenshot_vars(Shared_Resources.Shared_Variable_Export())
             return "passed"
 
-        elif browser == "microsoft edge chromium":
-            from selenium.webdriver.edge.options import Options
+        elif browser in ("microsoft edge chromium", "edgechromiumheadless"):
             edge_path = ConfigModule.get_config_value("Selenium_driver_paths", "edge_path")
             if not edge_path:
                 edge_path = EdgeChromiumDriverManager().install()
@@ -547,6 +546,7 @@ def Open_Browser(dependency, window_size_X=None, window_size_Y=None):
             capabilities = EdgeOptions().capabilities
             capabilities['acceptSslCerts'] = True
             options.use_chromium = True
+            options.headless = "headless" in browser
             options.add_experimental_option("prefs", {"download.default_directory": download_dir})
             selenium_driver = Edge(executable_path=edge_path, options=options, capabilities=capabilities)
 
@@ -672,7 +672,7 @@ def Open_Browser(dependency, window_size_X=None, window_size_Y=None):
                 ConfigModule.add_config_value("Selenium_driver_paths", "chrome_path", ChromeDriverManager().install())
             elif browser in ("firefox", "firefoxheadless"):
                 ConfigModule.add_config_value("Selenium_driver_paths", "firefox_path", GeckoDriverManager().install())
-            elif browser == "microsoft edge chromium":
+            elif browser in ("microsoft edge chromium", "EdgeChromiumHeadless"):
                 ConfigModule.add_config_value("Selenium_driver_paths", "edge_path", EdgeChromiumDriverManager().install())
             elif browser == "opera":
                 ConfigModule.add_config_value("Selenium_driver_paths", "opera_path", OperaDriverManager().install())
@@ -693,7 +693,7 @@ def Open_Browser(dependency, window_size_X=None, window_size_Y=None):
                 ConfigModule.add_config_value("Selenium_driver_paths", "chrome_path", ChromeDriverManager().install())
             elif browser in ("firefox", "firefoxheadless"):
                 ConfigModule.add_config_value("Selenium_driver_paths", "firefox_path", GeckoDriverManager().install())
-            elif browser == "microsoft edge chromium":
+            elif browser in ("microsoft edge chromium", "EdgeChromiumHeadless"):
                 ConfigModule.add_config_value("Selenium_driver_paths", "edge_path", EdgeChromiumDriverManager().install())
             elif browser == "opera":
                 ConfigModule.add_config_value("Selenium_driver_paths", "opera_path", OperaDriverManager().install())
@@ -767,7 +767,10 @@ def Go_To_Link(step_data, page_title=False):
             "Microsoft Edge Chromium": 'msedge',
             "Chrome": "chrome",
             "FireFox": "firefox",
-            "Opera": "opera"
+            "Opera": "opera",
+            "ChromeHeadless": "chrome",
+            "FirefoxHeadless": "firefox",
+            "EdgeChromiumHeadless": "msedge",
         }
 
         if driver_id not in selenium_details or selenium_details[driver_id]["driver"].capabilities["browserName"].strip().lower() != browser_map[dependency["Browser"]]:
