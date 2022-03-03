@@ -84,12 +84,8 @@ default_x, default_y = 1920, 1080
 
 # Recall dependency, if not already set
 dependency = None
-if Shared_Resources.Test_Shared_Variables(
-        "dependency"
-):  # Check if driver is already set in shared variables
-    dependency = Shared_Resources.Get_Shared_Variables(
-        "dependency"
-    )  # Retreive appium driver
+if Shared_Resources.Test_Shared_Variables("dependency"):  # Check if driver is already set in shared variables
+    dependency = Shared_Resources.Get_Shared_Variables("dependency")  # Retreive appium driver
 else:
     raise ValueError("No dependency set - Cannot run")
 
@@ -505,11 +501,13 @@ def Open_Browser(dependency, window_size_X=None, window_size_Y=None):
             capabilities = webdriver.DesiredCapabilities().FIREFOX
             capabilities['acceptSslCerts'] = True
             profile = webdriver.FirefoxProfile()
-            # download_dir = ConfigModule.get_config_value("sectionOne", "test_case_folder", temp_config)
-            # profile.set_preference("browser.download.folderList", 2)
-            # profile.set_preference("browser.download.manager.showWhenStarting", False)
-            # profile.set_preference("browser.download.dir", download_dir)
-            # profile.set_preference("browser.helperApps.neverAsk.saveToDisk", "application/x-gzip")
+            download_dir = ConfigModule.get_config_value("sectionOne", "initial_download_folder", temp_config)
+            profile.set_preference("browser.download.folderList", 2)
+            profile.set_preference("browser.download.manager.showWhenStarting", False)
+            profile.set_preference("browser.download.dir", download_dir)
+            #text/plain;charset=UTF-8
+            apps = "application/pdf;text/plain;application/text;text/xml;application/xml;application/xlsx"
+            profile.set_preference("browser.helperApps.neverAsk.saveToDisk", apps)
             profile.accept_untrusted_certs = True
             selenium_driver = webdriver.Firefox(
                 executable_path=firefox_path,
@@ -533,13 +531,24 @@ def Open_Browser(dependency, window_size_X=None, window_size_Y=None):
             return "passed"
 
         elif browser == "microsoft edge chromium":
+            from selenium.webdriver.edge.options import Options
             edge_path = ConfigModule.get_config_value("Selenium_driver_paths", "edge_path")
             if not edge_path:
                 edge_path = EdgeChromiumDriverManager().install()
                 ConfigModule.add_config_value("Selenium_driver_paths", "edge_path", edge_path)
-            capabilities = webdriver.DesiredCapabilities().EDGE
+
+            """We are using a Custom module from Microsoft which inherits Selenium class and provides additional supports which we need.
+            Since this module inherits Selenium module so all updates will be inherited as well
+            """
+            from Framework.edge_module.msedge.selenium_tools import EdgeOptions, Edge
+            download_dir = ConfigModule.get_config_value("sectionOne", "initial_download_folder", temp_config)
+            options = EdgeOptions()
+            capabilities = EdgeOptions().capabilities
             capabilities['acceptSslCerts'] = True
-            selenium_driver = webdriver.Edge(executable_path=edge_path, capabilities=capabilities)
+            options.use_chromium = True
+            options.add_experimental_option("prefs", {"download.default_directory": download_dir})
+            selenium_driver = Edge(executable_path=edge_path, options=options, capabilities=capabilities)
+
             selenium_driver.implicitly_wait(WebDriver_Wait)
             if not window_size_X and not window_size_Y:
                 selenium_driver.set_window_size(default_x, default_y)
@@ -696,6 +705,7 @@ def Open_Browser(dependency, window_size_X=None, window_size_Y=None):
         return CommonUtil.Exception_Handler(sys.exc_info())
 
 
+@deprecated
 @logger
 def Open_Browser_Wrapper(step_data):
     """ Temporary wrapper for open_browser() until that function can be updated to use only data_set """
@@ -722,7 +732,6 @@ def Open_Browser_Wrapper(step_data):
         return CommonUtil.Exception_Handler(sys.exc_info(), None, ErrorMessage)
 
 
-
 @logger
 def Go_To_Link(step_data, page_title=False):
     # this function needs work with validating page title.  We need to check if user entered any title.
@@ -734,6 +743,10 @@ def Go_To_Link(step_data, page_title=False):
     global dependency
     global selenium_driver
     global selenium_details
+    if Shared_Resources.Test_Shared_Variables("dependency"):
+        dependency = Shared_Resources.Get_Shared_Variables("dependency")
+    else:
+        raise ValueError("No dependency set - Cannot run")
 
     try:
         driver_id = ""
@@ -747,12 +760,17 @@ def Go_To_Link(step_data, page_title=False):
         if not driver_id:
             driver_id = "default"
 
-        if driver_id not in selenium_details:
+        browser_map = {
+            "Microsoft Edge Chromium": 'msedge',
+            "Chrome": "chrome",
+            "FireFox": "firefox",
+            "Opera": "opera"
+        }
+
+        if driver_id not in selenium_details or selenium_details[driver_id]["driver"].capabilities["browserName"].strip().lower() != browser_map[dependency["Browser"]]:
+            if driver_id in selenium_details and selenium_details[driver_id]["driver"].capabilities["browserName"].strip().lower() != browser_map[dependency["Browser"]]:
+                Tear_Down_Selenium()    # If dependency is changed then teardown and relaunch selenium driver
             CommonUtil.ExecLog(sModuleInfo, "Browser not previously opened, doing so now", 1)
-            global dependency
-            # Get the dependency again in case it was missed
-            if Shared_Resources.Test_Shared_Variables("dependency"):  # Check if driver is already set in shared variables
-                dependency = Shared_Resources.Get_Shared_Variables("dependency")  # Retreive selenium driver
             if window_size_X == "None" and window_size_Y == "None":
                 result = Open_Browser(dependency)
             elif window_size_X == "None":
@@ -781,10 +799,14 @@ def Go_To_Link(step_data, page_title=False):
         CommonUtil.ExecLog(sModuleInfo, "Successfully opened your link with driver_id='%s': %s" % (driver_id, web_link), 1)
         return "passed"
     except WebDriverException as e:
-        if e.msg.lower().startswith("chrome not reachable"):
+        browser = selenium_driver.capabilities["browserName"].strip().lower()
+        if (browser in ("chrome", "msedge", "opera") and e.msg.lower().startswith("chrome not reachable")) or (browser == "firefox" and e.msg.lower().startswith("tried to run command without establishing a connection")):
             CommonUtil.ExecLog(sModuleInfo, "Browser not found. trying to restart the browser", 2)
-            if Shared_Resources.Test_Shared_Variables("dependency"):  # Check if driver is already set in shared variables
-                dependency = Shared_Resources.Get_Shared_Variables("dependency")  # Retreive selenium driver
+            # If the browser is closed but selenium instance is on, relaunch selenium_driver
+            if Shared_Resources.Test_Shared_Variables("dependency"):
+                dependency = Shared_Resources.Get_Shared_Variables("dependency")
+            else:
+                return CommonUtil.Exception_Handler(sys.exc_info())
             if window_size_X == "None" and window_size_Y == "None":
                 result = Open_Browser(dependency)
             elif window_size_X == "None":
