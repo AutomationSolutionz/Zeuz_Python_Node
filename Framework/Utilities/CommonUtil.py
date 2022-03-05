@@ -1092,16 +1092,16 @@ def path_parser(path: str) -> str:
         new_path = ''
         for a in path:
             final = a
-            if a.startswith("*"):
+            if "*" in a:
                 extension = a.split(".")[1] if "." in a else ""
                 name = a.split(".")[0].replace("*", "")
                 w = list(os.walk(new_path))[0]
                 w = w[1] + w[2]
                 for j in w:
-                    if a.startswith("**") and name.lower() in j.lower() and j.endswith(extension):
+                    if "**" in a and name.lower() in j.lower() and j.endswith(extension):
                         final = j
                         break
-                    elif a.startswith("*") and name in j and j.endswith(extension):
+                    elif "*" in a and name in j and j.endswith(extension):
                         final = j
                         break
                 else:
