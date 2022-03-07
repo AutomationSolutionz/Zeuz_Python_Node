@@ -2375,6 +2375,65 @@ def write_into_single_cell_in_excel(data_set):
     except Exception:
         return CommonUtil.Exception_Handler(sys.exc_info())
 
+
+def excel_write_openpyxl(excel_file_path, sheet_name, cell, value, expand, rename):
+
+
+    from openpyxl.utils.cell import coordinate_from_string, column_index_from_string
+    import os.path
+
+    #Check if the filepath exist. If not, the create the excel file in that path
+    if not os.path.isfile(excel_file_path):
+        wb = Workbook()
+        #wb.save(excel_file_path)
+        sheet = wb.active
+        sheet.title = sheet_name
+        wb.save(excel_file_path)
+        wb.close()
+
+    wb = load_workbook(excel_file_path)
+    sheet = wb.active
+
+    #check if the the sheet exist with same name. if not, create a new sheet with that name.
+    if not (sheet_name in wb.sheetnames):
+        wb.create_sheet(sheet_name)
+        wb.save(excel_file_path)
+
+    #rename the sheet
+    """sheet = wb[sheet_name]
+    if rename:
+        sheet2 = wb[sheet_name]
+        sheet2.title = rename
+        wb.save(excel_file_path)
+        sheet = wb[rename]"""
+
+    #convert A1 like value to (1, 1) to identify excel column and row 
+    xy = coordinate_from_string(cell) # returns ('A',1)
+    column = column_index_from_string(xy[0]) # returns 1
+    row = xy[1]
+
+    #check if the value is list or not
+    if isinstance(value, list):
+        #put the data in column wise
+        if expand.lower() == "down":
+            for i, val in enumerate(value):
+                sheet.cell(row = row+i, column=column, value=val)
+        else:
+            #put the data row wise
+            for i, val in enumerate(value):
+                if isinstance(value[0], list) == True:
+                    for j, v in enumerate(val):
+                        sheet.cell(column=column+j, row=row, value=v)
+                    row = row + 1
+                else:
+                    sheet.cell(column = column+i, row = row, value = val) 
+    else:
+        sheet[cell].value = value
+
+    wb.save(excel_file_path)
+    wb.close()
+
+
 @logger
 def excel_write(data_set):
     """
@@ -2421,17 +2480,23 @@ def excel_write(data_set):
     sModuleInfo = inspect.currentframe().f_code.co_name + " : " + MODULE_NAME
 
     try:
+        module_name = ""
         sheet_name = ""
         cell = ""
         expand = "right"
         value = ""
         excel_file_path = ""
+        rename = ""
 
         for left, mid, right in data_set:
             left = left.lower()
             right = right.strip()
-            if "sheet name" in left:
+            if "module" in left:
+                module_name = right
+            elif "sheet name" in left:
                 sheet_name = right
+            elif "rename" in left:
+                rename = right
             elif "starting cell" in left:
                 cell = right
             elif "expand" in left:
@@ -2456,17 +2521,22 @@ def excel_write(data_set):
             )
             return "zeuz_failed"
 
-        if expand.lower() == "down":
-            Transpose_condition = True
-        else:
-            expand = "right"
-            Transpose_condition = False
 
-        wb = xw.Book(excel_file_path)
-        sheet = wb.sheets[sheet_name]
-        sheet.range(cell).options(transpose=Transpose_condition).value = value
+
+        if module_name == "openpyxl":
+            excel_write_openpyxl(excel_file_path, sheet_name, cell, value, expand, rename)
+
+        else:
+            if expand.lower() == "down":
+                Transpose_condition = True
+            else:
+                expand = "right"
+                Transpose_condition = False
+            wb = xw.Book(excel_file_path)
+            sheet = wb.sheets[sheet_name]
+            sheet.range(cell).options(transpose=Transpose_condition).value = value
         # print(type(sheet.range(cell).value),".....",sheet.range(cell).value)
-        wb.save(excel_file_path)
+            wb.save(excel_file_path)
 
         CommonUtil.ExecLog(
             sModuleInfo,
@@ -2474,6 +2544,7 @@ def excel_write(data_set):
             1,
         )
         return "passed"
+
     except Exception:
         return CommonUtil.Exception_Handler(sys.exc_info())
 
