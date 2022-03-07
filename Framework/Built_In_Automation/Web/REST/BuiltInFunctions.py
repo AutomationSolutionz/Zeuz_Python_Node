@@ -856,6 +856,7 @@ def handle_rest_call(
                     url=url,
                     headers=headers,
                     verify=False,
+                    data=body,
                     cert=cert,
                     timeout=timeout,
                     allow_redirects=allow_redirects,
