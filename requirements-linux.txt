@@ -42,3 +42,4 @@ mouse
 beautifulsoup4
 premailer
 html-diff
+PyPDF2
