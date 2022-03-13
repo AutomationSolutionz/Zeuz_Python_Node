@@ -2,6 +2,9 @@
 
 # Version 14
 
+### [14.10.2] [February 2, 2022]
+- **[Fix]** Removed `black` linter entry from README.md.
+
 ### [14.10.1] [February 2, 2022]
 - **[Fix]** REST API action - POST `multipart/form-data` send payload as `data`
   parameter instead of `files`.
