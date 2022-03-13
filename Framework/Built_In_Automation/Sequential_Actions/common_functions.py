@@ -3899,7 +3899,7 @@ def search_and_save_text(data_set):
             if "pattern to match" in left:
                 user_given_data = right
             elif "data" in left:
-                data = CommonUtil.parse_value_into_object(right)
+                data = right
             elif "action" in mid:
                variable_name = right.strip()
 
