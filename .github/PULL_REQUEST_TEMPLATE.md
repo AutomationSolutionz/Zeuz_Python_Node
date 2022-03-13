@@ -15,7 +15,7 @@ PR_TYPE
 - [ ] Documentation comments have been added / updated.
 - [ ] A changelog entry has been made.
 - [ ] Version number has been updated.
-- [ ] Format code with the latest stable yapf.
+- [ ] Required modules have been added to respective "requirements*.txt" files.
 - [ ] (Team) Label with affected action categories and semver status.
 
 
