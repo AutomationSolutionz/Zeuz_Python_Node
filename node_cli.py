@@ -483,6 +483,16 @@ def RunProcess(sTesterid, user_info_object, run_once=False, log_dir=None):
                 except:
                     pass
 
+                # Terminating all run_cancel threads after finishing a run
+                CommonUtil.run_cancel = ""
+                CommonUtil.run_cancelled = True
+                if "run_cancel" in CommonUtil.all_threads:
+                    for t in CommonUtil.all_threads["run_cancel"]:
+                        t.result()
+                        CommonUtil.run_cancelled = True
+                    del CommonUtil.all_threads["run_cancel"]
+                CommonUtil.run_cancelled = False
+
                 if run_once or exit_script:
                     return False
                 CommonUtil.ExecLog("", "Successfully updated db with parameter", 4, False)

@@ -1180,7 +1180,7 @@ def execute_javascript(data_set):
     """
 
     try:
-        Element = None
+        Element = False
         var_name = None
         script_to_exec = None
 
@@ -1190,26 +1190,23 @@ def execute_javascript(data_set):
             right = right.strip()
 
             if "element parameter" in mid:
-                Element = LocateElement.Get_Element(data_set, selenium_driver)
-
-            if "variable" in left:
+                Element = True
+            if "variable" == left:
                 var_name = right
-
-            if "action" in mid:
+            if "execute js" == left:
                 script_to_exec = right
 
         # Element parameter is provided to use Zeuz Node's element finding approach.
         if Element:
+            Element = LocateElement.Get_Element(data_set, selenium_driver)
             # Replace "$elem" with "arguments[0]". For convenience only.
             script_to_exec = script_to_exec.replace("$elem", "arguments[0]")
-
             # Execute the script.
             result = selenium_driver.execute_script(script_to_exec, Element)
         else:
-            result = selenium_driver.execute_script(script_to_exec, Element)
+            result = selenium_driver.execute_script(script_to_exec, None)
 
-        if var_name:
-            Shared_Resources.Set_Shared_Variables(var_name, result)
+        return Shared_Resources.Set_Shared_Variables(var_name, result)
     except Exception:
         errMsg = "Make sure element parameter is provided in the action."
         return CommonUtil.Exception_Handler(sys.exc_info(), None, errMsg)

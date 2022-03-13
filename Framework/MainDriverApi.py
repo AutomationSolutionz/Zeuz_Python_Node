@@ -1008,7 +1008,7 @@ def check_run_cancel(run_id):
     while not CommonUtil.run_cancelled:
         CommonUtil.run_cancel = get_status_of_runid(run_id)
         time.sleep(3)
-    CommonUtil.run_cancelled = False
+    # CommonUtil.run_cancelled = False
 
 
 def upload_json_report(Userid, temp_ini_file, run_id):
@@ -1053,11 +1053,13 @@ def upload_json_report(Userid, temp_ini_file, run_id):
                             res_json = res.json()
                         except:
                             print("Could not Upload json report to server")
+                            print("\nResponse Text = " + res.text + "\n")
                             return
                         if isinstance(res_json, dict) and 'message' in res_json and res_json["message"]:
                             print("Successfully Uploaded the report to server of run_id '%s'" % run_id)
                         else:
                             print("Could not Upload the report to server of run_id '%s'" % run_id)
+                            print("\nResponse Text = " + res.text + "\n")
                         break
                     time.sleep(1)
                 else:
@@ -1158,10 +1160,12 @@ def main(device_dict, user_info_object):
                 4,
                 False,
             )
-            CommonUtil.run_cancelled = False
             debug_info = ""
             CommonUtil.clear_all_logs()
-            executor.submit(check_run_cancel, run_id)
+
+            CommonUtil.run_cancelled = False
+            thr = executor.submit(check_run_cancel, run_id)
+            CommonUtil.SaveThread("run_cancel", thr)
 
             # Write testcase json
             path = ConfigModule.get_config_value("sectionOne", "temp_run_file_path", temp_ini_file) / Path(run_id.replace(":", "-"))
@@ -1392,7 +1396,7 @@ def main(device_dict, user_info_object):
                 session_cnt += 1
 
             print("Test set execution time = %s sec for %s testcases" % (round(TimeDiff, 3), num_of_tc))
-            print("Report creation time = %s sec for %s testcases" % (round(CommonUtil.report_json_time, 3), num_of_tc))
+            # print("Report creation time = %s sec for %s testcases" % (round(CommonUtil.report_json_time, 3), num_of_tc))
             print("Test Set Completed")
 
             ConfigModule.add_config_value("sectionOne", "sTestStepExecLogId", "MainDriver", temp_ini_file)
@@ -1430,8 +1434,17 @@ def main(device_dict, user_info_object):
                 ws.close()
                 print("[LIVE LOG] Disconnected from Live Log service")
             CommonUtil.runid_index += 1
+
+            # Terminating all run_cancel threads after finishing a run_id
             CommonUtil.run_cancel = ""
             CommonUtil.run_cancelled = True
+            if "run_cancel" in CommonUtil.all_threads:
+                for t in CommonUtil.all_threads["run_cancel"]:
+                    t.result()
+                    CommonUtil.run_cancelled = True
+                del CommonUtil.all_threads["run_cancel"]
+            CommonUtil.run_cancelled = False
+
             break   # Todo: remove this after server side multiple run-id problem is fixed
 
         return "pass"
