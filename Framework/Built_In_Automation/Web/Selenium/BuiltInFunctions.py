@@ -548,6 +548,7 @@ def Open_Browser(dependency, window_size_X=None, window_size_Y=None):
             options.use_chromium = True
             options.headless = "headless" in browser
             options.add_experimental_option("prefs", {"download.default_directory": download_dir})
+            options.add_argument('--Zeuz_pid_finder')
             selenium_driver = Edge(executable_path=edge_path, options=options, capabilities=capabilities)
 
             selenium_driver.implicitly_wait(WebDriver_Wait)
@@ -3758,6 +3759,7 @@ def upload_file_through_window(step_data):
     sModuleInfo = inspect.currentframe().f_code.co_name + " : " + MODULE_NAME
     global selenium_driver
     all_file_path = []
+    pid = ""
     if "headless" in dependency:
         CommonUtil.ExecLog(sModuleInfo, "This action will not work on headless browsers", 3)
         return "zeuz_failed"
@@ -3771,6 +3773,10 @@ def upload_file_through_window(step_data):
                     all_file_path.append(path)
                 else:
                     CommonUtil.ExecLog(sModuleInfo, "Could not find any directory or file with the path: %s" % path, 3)
+        if len(all_file_path) == 0:
+            CommonUtil.ExecLog(sModuleInfo, "Could not find any valid filepath or directory", 3)
+            return "zeuz_failed"
+
         path_name = '"' + '" "'.join(all_file_path) + '"'
     except:
         return CommonUtil.Exception_Handler(sys.exc_info(), None, "Error parsing dataset")
@@ -3786,32 +3792,39 @@ def upload_file_through_window(step_data):
             for process in psutil.process_iter():
                 if process.name() == 'opera.exe' and '--test-type=webdriver' in process.cmdline() and "--zeuz_pid_finder" in process.cmdline():
                     pid = str(process.pid)
+        elif selenium_driver.capabilities["browserName"].lower() == "msedge":
+            for process in psutil.process_iter():
+                if process.name() == 'msedge.exe' and '--test-type=webdriver' in process.cmdline() and "--zeuz_pid_finder" in process.cmdline():
+                    pid = str(process.pid)
 
         # window_ds = ("*window", "element parameter", selenium_driver.title)
         if platform.system() == "Windows":
             from Framework.Built_In_Automation.Desktop.Windows.BuiltInFunctions import Click_Element, Enter_Text_In_Text_Box, Save_Attribute, get_pids_from_title
+
+            """ We may need the following codes when deprecated msedge selenium stops working """
             # time.sleep(3)
-            if selenium_driver.capabilities["browserName"].lower() == "msedge": # Msedge browser only exists in windows
-                win_pids = get_pids_from_title(selenium_driver.title)
-                if len(win_pids) == 0:
-                    CommonUtil.ExecLog(sModuleInfo, "Could not find the pid for msedge. Switching to GUI method", 2)
-                    _gui_upload(path_name)
-                    CommonUtil.ExecLog(sModuleInfo, "Entered the following path:\n%s" % path_name, 1)
-                    return "passed"
-                if len(win_pids) > 1:
-                    psutil_pids = []
-                    for process in psutil.process_iter():
-                        if process.name() == 'msedge.exe' and '--test-type=webdriver' in process.cmdline():
-                            psutil_pids.append(process.pid)
-                    for i in win_pids:      # Todo: For every PID search from the element (minor task)
-                        if i in psutil_pids:
-                            pid = str(i)
-                            break
-                    else:
-                        pid = str(win_pids[0])
-                else:
-                    pid = str(win_pids[0])
-            elif selenium_driver.capabilities["browserName"].lower() not in ("firefox", "chrome", "opera"):
+            # if selenium_driver.capabilities["browserName"].lower() == "msedge": # Msedge browser only exists in windows
+            #     win_pids = get_pids_from_title(selenium_driver.title)
+            #     if len(win_pids) == 0:
+            #         CommonUtil.ExecLog(sModuleInfo, "Could not find the pid for msedge. Switching to GUI method", 2)
+            #         _gui_upload(path_name)
+            #         CommonUtil.ExecLog(sModuleInfo, "Entered the following path:\n%s" % path_name, 1)
+            #         return "passed"
+            #     if len(win_pids) > 1:
+            #         psutil_pids = []
+            #         for process in psutil.process_iter():
+            #             if process.name() == 'msedge.exe' and '--test-type=webdriver' in process.cmdline():
+            #                 psutil_pids.append(process.pid)
+            #         for i in win_pids:
+            #             if i in psutil_pids:
+            #                 pid = str(i)
+            #                 break
+            #         else:
+            #             pid = str(win_pids[0])
+            #     else:
+            #         pid = str(win_pids[0])
+
+            if selenium_driver.capabilities["browserName"].lower() not in ("firefox", "chrome", "opera", "msedge"):
                 win_pids = get_pids_from_title(selenium_driver.title)
                 if len(win_pids) == 0:
                     CommonUtil.ExecLog(sModuleInfo, "Could not find the pid for browser. Switching to GUI method", 2)
@@ -3831,6 +3844,12 @@ def upload_file_through_window(step_data):
                         pid = str(win_pids[0])
                 else:
                     pid = str(win_pids[0])
+
+            if not pid:
+                CommonUtil.ExecLog(sModuleInfo, "Could not find the PID for browser. Switching to GUI method", 2)
+                _gui_upload(path_name)
+                CommonUtil.ExecLog(sModuleInfo, "Entered the following path:\n%s" % path_name, 1)
+                return "passed"
 
             window_ds = ("window pid", "element parameter", pid)
             save_attribute_ds = [
