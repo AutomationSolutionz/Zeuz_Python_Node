@@ -2375,6 +2375,7 @@ def write_into_single_cell_in_excel(data_set):
     except Exception:
         return CommonUtil.Exception_Handler(sys.exc_info())
 
+
 @logger
 def excel_write(data_set):
     """
@@ -2421,24 +2422,29 @@ def excel_write(data_set):
     sModuleInfo = inspect.currentframe().f_code.co_name + " : " + MODULE_NAME
 
     try:
+        module_name = "xlwings"
         sheet_name = ""
         cell = ""
         expand = "right"
         value = ""
         excel_file_path = ""
+        rename = ""
 
         for left, mid, right in data_set:
             left = left.lower()
             right = right.strip()
-            if "sheet name" in left:
-                sheet_name = right
+            if "module" in left:
+                module_name = right.strip().lower()
+            elif "sheet name" in left:
+                sheet_name = right.strip()
+            elif "rename sheet" in left:
+                rename = right.strip()
             elif "starting cell" in left:
-                cell = right
+                cell = right.strip()
             elif "expand" in left:
-                expand = right
+                expand = right.strip().lower()
             elif "write into excel" in left:
-                value = right
-                value = CommonUtil.parse_value_into_object(value)
+                value = CommonUtil.parse_value_into_object(right)
                 # print("......1......", type(value), ".......", value)
             elif "file path" in left:
                 filepath = right.strip()
@@ -2456,17 +2462,77 @@ def excel_write(data_set):
             )
             return "zeuz_failed"
 
-        if expand.lower() == "down":
-            Transpose_condition = True
-        else:
-            expand = "right"
-            Transpose_condition = False
+        if module_name == "openpyxl":
+            # excel_write_openpyxl(excel_file_path, sheet_name, cell, value, expand, rename)
+            from openpyxl import Workbook, load_workbook
+            from openpyxl.utils.cell import coordinate_from_string, column_index_from_string
+            import os.path
 
-        wb = xw.Book(excel_file_path)
-        sheet = wb.sheets[sheet_name]
-        sheet.range(cell).options(transpose=Transpose_condition).value = value
-        # print(type(sheet.range(cell).value),".....",sheet.range(cell).value)
-        wb.save(excel_file_path)
+            # Check if the filepath exist. If not, the create the excel file in that path
+            if not os.path.isfile(excel_file_path):
+                wb = Workbook()
+                # wb.save(excel_file_path)
+                sheet = wb.active
+                sheet.title = sheet_name
+                # wb.save(excel_file_path)
+                # wb.close()
+            else:
+                wb = load_workbook(excel_file_path)
+            # sheet = wb.active
+
+            # check if the sheet exist with same name. if not, create a new sheet with that name.
+            if not (sheet_name in wb.sheetnames):
+                wb.create_sheet(sheet_name)
+                # wb.save(excel_file_path)
+
+            sheet = wb[sheet_name]
+            if rename:
+                if rename in wb.sheetnames:
+                    CommonUtil.ExecLog(sModuleInfo, "Sheet name '%s' already exists, switching to that sheet" % rename, 2)
+                    sheet = wb[rename]
+                else:
+                    sheet.title = rename
+
+            # convert A1 like value to (1, 1) to identify excel column and row
+            xy = coordinate_from_string(cell)  # returns ('A',1)
+            column = column_index_from_string(xy[0])  # returns 1
+            row = xy[1]
+
+            # check if the value is list or not
+            if isinstance(value, list):
+                # put the data in column wise
+                if len(value) > 0 and type(value[0]) == list and expand == "down":
+                    value = list(map(list, zip(*value)))
+                    expand = "right"
+                if expand == "down":
+                    for i, val in enumerate(value):
+                        sheet.cell(row=row + i, column=column, value=val)
+                else:
+                    # put the data row wise
+                    for i, val in enumerate(value):
+                        if isinstance(value[0], list):
+                            for j, v in enumerate(val):
+                                sheet.cell(column=column + j, row=row, value=v)
+                            row = row + 1
+                        else:
+                            sheet.cell(column=column + i, row=row, value=val)
+            else:
+                sheet[cell].value = value
+
+            wb.save(excel_file_path)
+            wb.close()
+
+        else:
+            if expand == "down":
+                Transpose_condition = True
+            else:
+                expand = "right"
+                Transpose_condition = False
+            wb = xw.Book(excel_file_path)
+            sheet = wb.sheets[sheet_name]
+            sheet.range(cell).options(transpose=Transpose_condition).value = value
+            # print(type(sheet.range(cell).value),".....",sheet.range(cell).value)
+            wb.save(excel_file_path)
 
         CommonUtil.ExecLog(
             sModuleInfo,
@@ -2474,6 +2540,7 @@ def excel_write(data_set):
             1,
         )
         return "passed"
+
     except Exception:
         return CommonUtil.Exception_Handler(sys.exc_info())
 
@@ -2518,6 +2585,8 @@ def excel_read(data_set):
     sModuleInfo = inspect.currentframe().f_code.co_name + " : " + MODULE_NAME
 
     try:
+        module = "xlwings"
+        # module = "openpyxl"
         filepath = None
         sheet_name = None
         var_name = None
@@ -2528,13 +2597,15 @@ def excel_read(data_set):
 
         for left, mid, right in data_set:
             left = left.lower()
+            if "module" in left:
+                module = right.strip().lower()
             if "file path" in left:
                 filepath = right.strip()
                 filepath = Path(CommonUtil.path_parser(filepath))
             if "sheet name" in left:
                 sheet_name = right.strip()
             if "expand" in left:
-                expand = right.strip()
+                expand = right.strip().lower()
             if "cell range" in left:
                 cell_range = right.strip()
             if "read from excel" in left:
@@ -2550,15 +2621,39 @@ def excel_read(data_set):
                     CommonUtil.ExecLog(sModuleInfo, "Currently we only support Column 1 and Row 1", 3)
                     return "zeuz_failed"
 
-        wb = xw.Book(filepath)
-        sheet = wb.sheets[sheet_name]
-        if key_reference is None:
-            key_reference = "row1"
-        if expand:
-            # expand can be 'table', 'down' and 'right'
-            cell_data = sheet.range(cell_range).expand(expand).value
+        if module not in ("openpyxl", "xlwings"):
+            CommonUtil.ExecLog(sModuleInfo, "Currently we only support 'openpyxl' and 'xlwings' modules", 3)
+            return "zeuz_failed"
+
+        if module == "openpyxl":
+            # openpyxl_excel_read(filepath, sheet_name, var_name, cell_range, structure_of_variable, key_reference)
+            from openpyxl import load_workbook
+            wb = load_workbook(filepath)
+            sheet = wb[sheet_name]
+            if key_reference is None:
+                key_reference = "row1"
+
+            cell_data = []
+            for row in sheet[cell_range]:
+                cell_data.append([cell.value for cell in row])
+
+            # wb.close()            # it does nothing
+            # wb.save(filepath)     # Save does not work while
+
         else:
-            cell_data = sheet.range(cell_range).value
+            wb = xw.Book(filepath)
+            sheet = wb.sheets[sheet_name]
+            if key_reference is None:
+                key_reference = "row1"
+            if expand:
+            # expand can be 'table', 'down' and 'right'
+                cell_data = sheet.range(cell_range).expand(expand).value
+            else:
+                cell_data = sheet.range(cell_range).value
+
+            # Save file so that we don't see the "Want to save" dialog.
+            wb.save()
+            wb.close()
 
         if structure_of_variable == "dictionary":
             data_dict = {}
@@ -2568,17 +2663,11 @@ def excel_read(data_set):
                     data_dict[cells[0]] = cells[1:]
             elif key_reference == "column1":
                 for cells in cell_data:
-                    data_dict[cells[0]] = cells[1:] 
+                    data_dict[cells[0]] = cells[1:]
             cell_data = data_dict
 
-        # Save into shared variables
-        sr.Set_Shared_Variables(var_name, cell_data)
+        return sr.Set_Shared_Variables(var_name, cell_data)
 
-        # Save file so that we don't see the "Want to save" dailog.
-        wb.save()
-        wb.close()
-
-        return "passed"
     except:
         return CommonUtil.Exception_Handler(sys.exc_info())
 
