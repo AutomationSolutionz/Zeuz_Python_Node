@@ -2514,7 +2514,8 @@ def run_macro_in_excel(data_set):
 
 def openpyxl_excel_read(filepath, sheet_name, var_name, cell_range, structure_of_variable, key_reference):
 
-    wb =  load_workbook(filepath)
+    from openpyxl import load_workbook
+    wb = load_workbook(filepath)
     sheet = wb[sheet_name]
     if key_reference is None:
         key_reference = "row1"
@@ -2549,7 +2550,7 @@ def excel_read(data_set):
     sModuleInfo = inspect.currentframe().f_code.co_name + " : " + MODULE_NAME
 
     try:
-        driver = None
+        module = "openpyxl"
         filepath = None
         sheet_name = None
         var_name = None
@@ -2560,8 +2561,8 @@ def excel_read(data_set):
 
         for left, mid, right in data_set:
             left = left.lower()
-            if "driver" in left:
-                driver = right.strip()
+            if "module" in left:
+                module = right.strip()
             if "file path" in left:
                 filepath = right.strip()
                 filepath = Path(CommonUtil.path_parser(filepath))
@@ -2583,8 +2584,25 @@ def excel_read(data_set):
                 if key_reference not in ("row1", "column1"):
                     CommonUtil.ExecLog(sModuleInfo, "Currently we only support Column 1 and Row 1", 3)
                     return "zeuz_failed"
-        if driver == "openpyxl":
-            openpyxl_excel_read(filepath, sheet_name, var_name, cell_range, structure_of_variable, key_reference)
+
+        if module not in ("openpyxl", "xlwings"):
+            CommonUtil.ExecLog(sModuleInfo, "Currently we only support 'openpyxl' and 'xlwings' modules", 3)
+            return "zeuz_failed"
+
+        if module == "openpyxl":
+            # openpyxl_excel_read(filepath, sheet_name, var_name, cell_range, structure_of_variable, key_reference)
+            from openpyxl import load_workbook
+            wb = load_workbook(filepath)
+            sheet = wb[sheet_name]
+            if key_reference is None:
+                key_reference = "row1"
+
+            cell_data = []
+            for row in sheet[cell_range]:
+                cell_data.append([cell.value for cell in row])
+
+            wb.save(filepath)
+            wb.close()
 
         else:
             wb = xw.Book(filepath)
@@ -2597,25 +2615,23 @@ def excel_read(data_set):
             else:
                 cell_data = sheet.range(cell_range).value
 
-            if structure_of_variable == "dictionary":
-                data_dict = {}
-                if key_reference == "row1":
-                    row_data = list(map(list, zip(*cell_data)))
-                    for cells in row_data:
-                        data_dict[cells[0]] = cells[1:]
-                elif key_reference == "column1":
-                    for cells in cell_data:
-                        data_dict[cells[0]] = cells[1:] 
-                cell_data = data_dict
-
-        # Save into shared variables
-            sr.Set_Shared_Variables(var_name, cell_data)
-
-        # Save file so that we don't see the "Want to save" dailog.
+            # Save file so that we don't see the "Want to save" dailog.
             wb.save()
             wb.close()
 
-            return "passed"
+        if structure_of_variable == "dictionary":
+            data_dict = {}
+            if key_reference == "row1":
+                row_data = list(map(list, zip(*cell_data)))
+                for cells in row_data:
+                    data_dict[cells[0]] = cells[1:]
+            elif key_reference == "column1":
+                for cells in cell_data:
+                    data_dict[cells[0]] = cells[1:]
+            cell_data = data_dict
+
+        return sr.Set_Shared_Variables(var_name, cell_data)
+
     except:
         return CommonUtil.Exception_Handler(sys.exc_info())
 
