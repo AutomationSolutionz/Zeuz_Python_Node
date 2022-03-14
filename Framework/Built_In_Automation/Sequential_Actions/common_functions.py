@@ -4808,3 +4808,86 @@ def extract_text_from_pdf(data_set):
     except:
         return CommonUtil.Exception_Handler(sys.exc_info())
 
+
+@logger
+def search_text_and_font(data_set):
+    sModuleInfo = inspect.currentframe().f_code.co_name + " : " + MODULE_NAME
+    try:
+        filepath = None
+        text = None
+        attr = None
+        partial_text=False
+        for left, middle, right in data_set:
+            left = left.lower().strip()
+            middle = middle.lower().strip()
+            right = right
+            if "file path" == left:
+                filepath = CommonUtil.path_parser(right)
+            elif "text" == left:
+                text = right.strip()
+            elif "*text" ==left:
+                text = right.strip()
+                partial_text=True
+            elif "attr" == left:
+                attr = right
+
+        with open(filepath) as pf:
+            p_soup = BeautifulSoup(pf, 'html.parser')
+
+
+        if attr != None:
+            p_bold = p_soup.select(attr)
+            p_texts = list(map(lambda tag: tag.text, p_bold))
+            if partial_text:
+                if any(text in s.strip() for s in p_texts):
+                    CommonUtil.ExecLog(
+                        sModuleInfo,
+                        "File has this colored Partial Text -> '%s'" % (
+                            text),
+                        1,
+                    )
+                    return "passed"
+            else:
+                if any(text == s.strip() for s in p_texts):
+                    CommonUtil.ExecLog(
+                        sModuleInfo,
+                        "File has this colored Exact Text -> '%s'" % (
+                            text),
+                        1,
+                    )
+                    return "passed"
+
+        else:
+            p_texts = p_soup.findAll(text=re.compile(text))
+            if partial_text:
+                if any(text in s.strip() for s in p_texts):
+                    CommonUtil.ExecLog(
+                        sModuleInfo,
+                        "File has this Partial Text -> '%s'" % (
+                            text),
+                        1,
+                    )
+                    return "passed"
+            else:
+                if any(text == s.strip() for s in list(p_texts)):
+                    CommonUtil.ExecLog(
+                        sModuleInfo,
+                        "File has this Exact Text -> '%s'" % (
+                            text),
+                        1,
+                    )
+                    return "passed"
+        CommonUtil.ExecLog(
+            sModuleInfo,
+            "File has not   Text -> '%s'" % (
+                text),
+            3,
+        )
+
+        return "zeuz_failed"
+
+
+    except:
+        return CommonUtil.Exception_Handler(sys.exc_info())
+
+
