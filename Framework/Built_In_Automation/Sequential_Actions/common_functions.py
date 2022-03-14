@@ -2550,7 +2550,8 @@ def excel_read(data_set):
     sModuleInfo = inspect.currentframe().f_code.co_name + " : " + MODULE_NAME
 
     try:
-        module = "openpyxl"
+        module = "xlwings"
+        # module = "openpyxl"
         filepath = None
         sheet_name = None
         var_name = None
@@ -2601,8 +2602,8 @@ def excel_read(data_set):
             for row in sheet[cell_range]:
                 cell_data.append([cell.value for cell in row])
 
-            wb.save(filepath)
-            wb.close()
+            # wb.close()            # it does nothing
+            # wb.save(filepath)     # Save does not work while
 
         else:
             wb = xw.Book(filepath)
