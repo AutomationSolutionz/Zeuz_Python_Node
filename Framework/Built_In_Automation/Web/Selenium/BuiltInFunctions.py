@@ -3771,6 +3771,10 @@ def upload_file_through_window(step_data):
                     all_file_path.append(path)
                 else:
                     CommonUtil.ExecLog(sModuleInfo, "Could not find any directory or file with the path: %s" % path, 3)
+        if len(all_file_path) == 0:
+            CommonUtil.ExecLog(sModuleInfo, "Could not find any valid filepath or directory", 3)
+            return "zeuz_failed"
+
         path_name = '"' + '" "'.join(all_file_path) + '"'
     except:
         return CommonUtil.Exception_Handler(sys.exc_info(), None, "Error parsing dataset")
