@@ -14,7 +14,10 @@ from Framework.Utilities import FileUtilities as FL
 import uuid
 from pathlib import Path
 import io
-import traceback
+from rich.console import Console
+# from rich import print
+from rich import print_json
+
 
 from Framework.Utilities import ws
 import concurrent.futures
@@ -39,6 +42,9 @@ from colorama import Fore, Back
 
 # Initialize colorama for the current platform
 colorama_init(autoreset=True)
+
+# Initialize Rich console
+console = Console()
 
 MODULE_NAME = inspect.getmodulename(__file__)
 
@@ -199,27 +205,23 @@ def parse_value_into_object(val):
 dont_prettify_on_server = ["step_data"]
 
 
-def prettify(key, val, color=None):
+def prettify(key, val):
     """Tries to pretty print the given value."""
-    if color is None:
-        color = Fore.MAGENTA
-    elif color.lower().strip() == "cyan":
-        color = Fore.CYAN
-    elif color.lower().strip() == "green":
-        color = Fore.GREEN
+    color = Fore.MAGENTA
     try:
         if type(val) == str:
             val = parse_value_into_object(val)
+        print(color + "%s = " % (key), end="")
+        print_json(data=val)
         expression = "%s = %s" % (key, json.dumps(val, indent=2, sort_keys=True))
-        print(color + expression)
         if key not in dont_prettify_on_server:
             ws.log("VARIABLE", 4, expression.replace("\n", "<br>").replace(" ", "&nbsp;"))
             # 4 means console log which is Magenta color in server console
     except:
-        expression = "%s = %s" % (key, val)
-        print(color + expression)
+        # expression = "%s" % (key, val)
+        print(color + str(val))
         if key not in dont_prettify_on_server:
-            ws.log("VARIABLE", 4, expression.replace("\n", "<br>").replace(" ", "&nbsp;"))
+            ws.log("VARIABLE", 4, str(val).replace("\n", "<br>").replace(" ", "&nbsp;"))
 
 
 def Add_Folder_To_Current_Test_Case_Log(src):
@@ -260,54 +262,55 @@ def Add_File_To_Current_Test_Case_Log(src):
 
 def Exception_Handler(exec_info, temp_q=None, UserMessage=None):
     try:
-        sModuleInfo_Local = inspect.currentframe().f_code.co_name + " : " + MODULE_NAME
-        exc_type, exc_obj, exc_tb = exec_info
-        Error_Type = (
-            (str(exc_type).replace("type ", ""))
-            .replace("<", "")
-            .replace(">", "")
-            .replace(";", ":")
-        )
-        Error_Message = str(exc_obj)
-        File_Name = os.path.split(exc_tb.tb_frame.f_code.co_filename)[1]
-        Function_Name = os.path.split(exc_tb.tb_frame.f_code.co_name)[1]
-        Line_Number = str(exc_tb.tb_lineno)
-        Error_Detail = (
-            "Error Type ~ %s: Error Message ~ %s: File Name ~ %s: Function Name ~ %s: Line ~ %s"
-            % (Error_Type, Error_Message, File_Name, Function_Name, Line_Number)
-        )
-        sModuleInfo = Function_Name + ":" + File_Name
-        ExecLog(sModuleInfo, "Following exception occurred: %s" % (Error_Detail), 3)
-        # TakeScreenShot(Function_Name + "~" + File_Name)
-        if UserMessage != None:
-            ExecLog(
-                sModuleInfo, "Following error message is custom: %s" % (UserMessage), 3
-            )
+        console.print_exception(show_locals=True, max_frames=1)
+        # sModuleInfo_Local = inspect.currentframe().f_code.co_name + " : " + MODULE_NAME
+        # exc_type, exc_obj, exc_tb = exec_info
+        # Error_Type = (
+        #     (str(exc_type).replace("type ", ""))
+        #     .replace("<", "")
+        #     .replace(">", "")
+        #     .replace(";", ":")
+        # )
+        # Error_Message = str(exc_obj)
+        # File_Name = os.path.split(exc_tb.tb_frame.f_code.co_filename)[1]
+        # Function_Name = os.path.split(exc_tb.tb_frame.f_code.co_name)[1]
+        # Line_Number = str(exc_tb.tb_lineno)
+        # Error_Detail = (
+        #     "Error Type ~ %s: Error Message ~ %s: File Name ~ %s: Function Name ~ %s: Line ~ %s"
+        #     % (Error_Type, Error_Message, File_Name, Function_Name, Line_Number)
+        # )
+        # sModuleInfo = Function_Name + ":" + File_Name
+        # ExecLog(sModuleInfo, "Following exception occurred: %s" % (Error_Detail), 3)
+        # # TakeScreenShot(Function_Name + "~" + File_Name)
+        # if UserMessage != None:
+        #     ExecLog(
+        #         sModuleInfo, "Following error message is custom: %s" % (UserMessage), 3
+        #     )
         if temp_q != None:
             temp_q.put("zeuz_failed")
 
         return "zeuz_failed"
 
     except Exception:
-        exc_type_local, exc_obj_local, exc_tb_local = sys.exc_info()
-        fname_local = os.path.split(exc_tb.tb_frame.f_code.co_filename)[1]
-        Error_Detail_Local = (
-            (str(exc_type_local).replace("type ", "Error Type: "))
-            + ";"
-            + "Error Message: "
-            + str(exc_obj_local)
-            + ";"
-            + "File Name: "
-            + fname_local
-            + ";"
-            + "Line: "
-            + str(exc_tb_local.tb_lineno)
-        )
-        ExecLog(
-            sModuleInfo_Local,
-            "Following exception occurred: %s" % (Error_Detail_Local),
-            3,
-        )
+        # exc_type_local, exc_obj_local, exc_tb_local = sys.exc_info()
+        # fname_local = os.path.split(exc_tb.tb_frame.f_code.co_filename)[1]
+        # Error_Detail_Local = (
+        #     (str(exc_type_local).replace("type ", "Error Type: "))
+        #     + ";"
+        #     + "Error Message: "
+        #     + str(exc_obj_local)
+        #     + ";"
+        #     + "File Name: "
+        #     + fname_local
+        #     + ";"
+        #     + "Line: "
+        #     + str(exc_tb_local.tb_lineno)
+        # )
+        # ExecLog(
+        #     sModuleInfo_Local,
+        #     "Following exception occurred: %s" % (Error_Detail_Local),
+        #     3,
+        # )
         return "zeuz_failed"
 
 
@@ -1084,20 +1087,21 @@ def path_parser(path: str) -> str:
         if path.startswith("~"):
             path = path.replace("~", os.path.expanduser("~"), 1)
 
+        path = str(Path(path))
         path = path.split(os.sep)
         new_path = ''
         for a in path:
             final = a
-            if a.startswith("*"):
+            if "*" in a:
                 extension = a.split(".")[1] if "." in a else ""
                 name = a.split(".")[0].replace("*", "")
                 w = list(os.walk(new_path))[0]
                 w = w[1] + w[2]
                 for j in w:
-                    if a.startswith("**") and name.lower() in j.lower() and j.endswith(extension):
+                    if "**" in a and name.lower() in j.lower() and j.endswith(extension):
                         final = j
                         break
-                    elif a.startswith("*") and name in j and j.endswith(extension):
+                    elif "*" in a and name in j and j.endswith(extension):
                         final = j
                         break
                 else:

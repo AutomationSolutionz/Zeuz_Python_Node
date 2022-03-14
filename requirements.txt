@@ -35,6 +35,7 @@ tqdm
 pyscreenshot
 pyyaml
 imap-tools
+rich
 beautifulsoup4
 premailer
 html-diff

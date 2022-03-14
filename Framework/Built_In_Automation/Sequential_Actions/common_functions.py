@@ -2880,6 +2880,21 @@ def save_text_from_file_into_variable(data_set):
 
 @logger
 def Read_text_file(data_set):
+    """
+        This function reads the data from a .txt/.pdf/.json and saves it into the given variable.
+        Both text and json file will be first read as text file and will save as a string into the variable.
+        And if the `read as json` `optional parameter` as `true` that string variable will be converted to python json object.
+
+        Args:
+            data_set:
+                file path       |element parameter      |path/to/the/file or %|attachment|%
+                read as json    |optional parameter     |true
+                read text file  |common action          |**variable_name** or %|previous_variable|%
+
+        Returns:
+            `passed` if success.
+            `zeuz_failed` if fails.
+        """
     sModuleInfo = inspect.currentframe().f_code.co_name + " : " + MODULE_NAME
 
     try:
@@ -2887,10 +2902,13 @@ def Read_text_file(data_set):
         text_file_path = ""
         var_name = ""
         var_value = ""
+        read_as_json = False
 
         for left, mid, right in data_set:
             if left.strip().lower() == "file path":
                 text_file_path = CommonUtil.path_parser(right.strip())
+            elif left.strip().lower() == "read as json" and right.strip().lower() in ("true", "yes", "ok", "enable", "accept"):
+                read_as_json = True
             elif left.strip().lower() == "read text file":
                 var_name = right.strip()
 
@@ -2919,9 +2937,10 @@ def Read_text_file(data_set):
             with open(text_file_path, "r") as file:
                 data = file.read()
                 var_value += data
+                if read_as_json:
+                    var_value = json.loads(var_value)
 
-        sr.Set_Shared_Variables(var_name, var_value)
-        return "passed"
+        return sr.Set_Shared_Variables(var_name, var_value)
     except Exception:
         return CommonUtil.Exception_Handler(sys.exc_info())
 
@@ -3952,7 +3971,7 @@ def search_and_save_text(data_set):
             if "pattern to match" in left:
                 user_given_data = right
             elif "data" in left:
-                data = CommonUtil.parse_value_into_object(right)
+                data = right
             elif "action" in mid:
                variable_name = right.strip()
 
