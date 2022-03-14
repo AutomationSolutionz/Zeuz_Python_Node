@@ -2854,7 +2854,7 @@ def Read_text_file(data_set):
         for left, mid, right in data_set:
             if left.strip().lower() == "file path":
                 text_file_path = CommonUtil.path_parser(right.strip())
-            elif left.strip().lower() == "read as json" and right.strip().lower() in ("true","yes","ok","enable","accept"):
+            elif left.strip().lower() == "read as json" and right.strip().lower() in ("true", "yes", "ok", "enable", "accept"):
                 read_as_json = True
             elif left.strip().lower() == "read text file":
                 var_name = right.strip()
@@ -2884,7 +2884,7 @@ def Read_text_file(data_set):
             with open(text_file_path, "r") as file:
                 data = file.read()
                 var_value += data
-                if text_file_path.endswith("json") and read_as_json:
+                if read_as_json:
                     var_value = json.loads(var_value)
 
         return sr.Set_Shared_Variables(var_name, var_value)
