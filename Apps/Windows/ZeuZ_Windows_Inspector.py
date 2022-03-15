@@ -5,7 +5,12 @@ import pyautogui
 import os
 import sys
 import inspect
+from colorama import init as colorama_init
 from colorama import Fore
+
+# Initialize colorama for the current platform
+colorama_init(autoreset=True)
+
 from PIL import ImageGrab as ImageGrab_Mac_Win
 from PIL import Image, ImageTk
 import configparser

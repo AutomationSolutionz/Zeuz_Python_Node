@@ -575,8 +575,8 @@ def for_loop_action(step_data, data_set_no):
                 else:
                     left = row[0].strip()[4:].strip()
                     each_varname, left = left[:left.find(" ")], left[left.find(" "):].strip()[3:].strip()
-                    var_name = left.strip("%").strip("|")
-                    if sr.Test_Shared_Variables(var_name):
+                    if left.startswith("%|") and left.endswith("|%"):
+                        var_name = left.strip("%").strip("|")
                         iterable = sr.parse_variable(var_name)
                         iterable = CommonUtil.ZeuZ_map_code_decoder(iterable)   # Decode if this is a ZeuZ_map_code
                     else:
@@ -2132,7 +2132,7 @@ def Action_Handler(_data_set, action_row, _bypass_bug=True):
     data_set = []
     for row in _data_set:
         new_row = list(row)
-        if "optional parameter" in row[1] and "screen capture" == row[0].strip().lower():
+        if row[1].strip().lower() in ("optional parameter", "optional option") and row[0].strip().lower() in ("screen capture", "screenshot", "ss"):
             screenshot = row[2].strip().lower()
             if screenshot in ("false", "no", "none", "disable"):
                 screenshot = "none"

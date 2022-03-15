@@ -252,6 +252,12 @@ class RandomEmail1SecMail:
                     elif k == 'textBody':
                         content = v
                         var_mail_info['content']=content
+                    elif k == 'body':
+                        body = v
+                        var_mail_info['body']=body
+                    elif k == 'htmlBody':
+                        htmlBody = v
+                        var_mail_info['content']=htmlBody
                 var_mails.append(var_mail_info)
 
             return {newMail:var_mails}

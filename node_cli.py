@@ -8,7 +8,8 @@ version_path = Path(os.getcwd())/"Framework"/"Version.txt"
 with open(version_path, "r"):
     text = version_path.read_text()
     text = text[text.find("=")+1:].split("\n")[0].strip()
-    os.system("title " + "Python " + platform.python_version() + "(" + platform.architecture()[0] + ")" + " -- ZeuZ Node " + text)
+    if os.name == "nt":
+        os.system("title " + "Python " + platform.python_version() + "(" + platform.architecture()[0] + ")" + " -- ZeuZ Node " + text)
     print(version_path.read_text())
 from Framework.module_installer import install_missing_modules
 install_missing_modules()
@@ -90,6 +91,9 @@ temp_ini_file = (
 )
 
 import subprocess
+
+from rich import traceback
+traceback.install(show_locals=True, max_frames=1)
 
 def signal_handler(sig, frame):
     CommonUtil.run_cancelled = True
@@ -479,6 +483,16 @@ def RunProcess(sTesterid, user_info_object, run_once=False, log_dir=None):
                 except:
                     pass
 
+                # Terminating all run_cancel threads after finishing a run
+                CommonUtil.run_cancel = ""
+                CommonUtil.run_cancelled = True
+                if "run_cancel" in CommonUtil.all_threads:
+                    for t in CommonUtil.all_threads["run_cancel"]:
+                        t.result()
+                        CommonUtil.run_cancelled = True
+                    del CommonUtil.all_threads["run_cancel"]
+                CommonUtil.run_cancelled = False
+
                 if run_once or exit_script:
                     return False
                 CommonUtil.ExecLog("", "Successfully updated db with parameter", 4, False)
@@ -574,7 +588,7 @@ def update_machine(dependency, default_team_and_project_dict):
             "device": device_dict,
             "allProject": allProject,
         }
-        r = RequestFormatter.Get("update_automation_machine_api", update_object)
+        r = RequestFormatter.Get("update_automation_machine_api/", update_object)
         if r["registered"]:
             CommonUtil.ExecLog(
                 "", "Zeuz Node is online: %s" % (r["name"]), 4, False,
