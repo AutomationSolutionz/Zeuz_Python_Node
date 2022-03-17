@@ -740,14 +740,17 @@ def handle_rest_call(
         body = data[2]
         headers = data[3]
         payload = data[4]
+        body_as_string = data[5]
 
         # Parse header into proper object.
         headers = CommonUtil.parse_value_into_object(headers)
 
-        # Parse body into proper object unless it is not GraphQL.
-        temp = CommonUtil.parse_value_into_object(body)
-        if temp not in failed_tag_list:
-            body = temp
+        # Parse body into proper object unless it is not GraphQL or a plain
+        # string.
+        if not body_as_string:
+            temp = CommonUtil.parse_value_into_object(body)
+            if temp not in failed_tag_list:
+                body = temp
 
         CommonUtil.ExecLog(sModuleInfo, "HTTP method: %s\nURL: %s\nBODY: %s\nHEADERS: %s" % (method, url, body, headers), 5)
         if payload:
@@ -937,6 +940,7 @@ def handle_rest_call(
         Shared_Resources.Set_Shared_Variables("status_code", result.status_code, print_variable=False)
         Shared_Resources.Set_Shared_Variables("http_status_code", result.status_code)
         Shared_Resources.Set_Shared_Variables("http_response_headers", result.headers)
+        Shared_Resources.Set_Shared_Variables("http_response_cookies", result.cookies)
         try:
             if result.json():
                 Shared_Resources.Set_Shared_Variables("rest_response", result.json(), print_variable=False)
@@ -1442,6 +1446,7 @@ def Validate_Step_Data(step_data):
         plain_body_text = False
         payload = ""
         graphql_dict = dict()
+        body_as_string = False
 
         for each in step_data:
             if "graphql" in each[1]:
@@ -1454,6 +1459,10 @@ def Validate_Step_Data(step_data):
                     url = each[2]
                 elif element_parameter == "payload":
                     payload = """%s""" % str(each[2])
+            elif each[1].lower().strip() == "body":
+                if each[0].lower().strip() == "string":
+                    temp_body = each[2]
+                    body_as_string = True
             elif each[1].lower().strip() == "body":
                 if each[0].lower().strip() == "plain text":
                     temp_body = each[2]
@@ -1480,7 +1489,7 @@ def Validate_Step_Data(step_data):
         else:
             body = temp_body
 
-        validated_data = (url, method, body, headers, payload)
+        validated_data = (url, method, body, headers, payload, body_as_string)
         return validated_data
 
     except Exception:
