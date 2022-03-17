@@ -2,6 +2,21 @@
 
 # Version 14
 
+### [Current changes]
+- **[Change]** Improve README.md.
+
+### [14.11.0][March 15, 2022]
+- **[Add]** Added Upload through window for web
+- **[Add]** Added actions for different pdf format comparison
+- **[Add]** Added extract_text_from_pdf action
+- **[Add]** Openpyxl module is added for Excel for silent read
+- **[Add]** Add optional parameter `read as json` in `Read Text File` common action
+- **[Improve]** Improved click and download action with wait and file managements
+- **[Improve]** Node logging is enhanced with rich UI
+- **[Change]** Launch mobile browser only on desktop chrome
+- **[Fix]** Node-offline bug is fixed
+- **[Fix]** Switch to Alert action is fixed by replacing deprecated methods and dataset parsing
+
 ### [14.10.1] [February 2, 2022]
 - **[Fix]** REST API action - POST `multipart/form-data` send payload as `data`
   parameter instead of `files`.

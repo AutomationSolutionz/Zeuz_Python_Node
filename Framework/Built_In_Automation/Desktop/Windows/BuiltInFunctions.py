@@ -31,6 +31,26 @@ import win32con
 import PIL
 from PIL import Image, ImageGrab
 
+
+python_folder = []
+for location in subprocess.getoutput("where python").split("\n"):
+    if "Microsoft" not in location:
+        python_folder.append(location)
+try:
+    python_location = "" if len(python_folder) == 0 else "by going to {}".format(python_folder[0].split("Python")[0] + "Python")
+except:
+    python_location = ""
+if not 3.5 <= float(sys.version.split(" ")[0][0:3]) <= 3.8:
+    error_msg = "You have the wrong Python version or bit" \
+                + "\nFollow this procedure" \
+                + "\n1.Go to settings, then go to Apps and in search box type python and uninstall all python related things" \
+                + "\n2.Delete your Python folder" \
+                + python_location \
+                + "\n3.Go to this link and download python https://www.python.org/ftp/python/3.8.10/python-3.8.10-amd64.exe" \
+                + "\n4.During installation, give uncheck 'for all user' and check 'Add Python to Path'. This is very important." \
+                + "\n5.Relaunch zeuz node_cli.py"
+    CommonUtil.ExecLog("", error_msg, 3)
+
 # this needs to be here on top, otherwise will return error
 import clr, System
 dll_path = os.getcwd().split("Framework")[0] + "Framework" + os.sep + "windows_dll_files" + os.sep
@@ -1030,9 +1050,10 @@ def Get_Element(data_set, wait_time=Shared_Resources.Get_Shared_Variables("eleme
             left = left.replace(" ", "").replace("_", "").lower()
             mid = mid.strip().lower()
 
-            if left == "wait time": wait_time = int(right)
+            if left == "wait": wait_time = float(right.strip())
             # elif left == "index": element_index = int(right.strip())
-            elif "window" in left: window_name = [right, _count_star(left)]
+            elif "windowpid" in left: window_name = [right, _count_star(left), "pid"]
+            elif "window" in left: window_name = [right, _count_star(left), "name"]
 
             if mid == "element parameter":
                 elem = True
@@ -1174,11 +1195,18 @@ def _get_main_window(WindowName):
         )
         for MainWindowElement in MainWindowsList:
             try:
-                NameS = MainWindowElement.Current.Name
-                if _found(WindowName, NameS):
-                    CommonUtil.ExecLog(sModuleInfo, "Switching to window: %s" % NameS, 1)
-                    autoit.win_activate(NameS)
-                    return MainWindowElement
+                if WindowName[2] == "pid":
+                    try:
+                        if MainWindowElement.Current.ProcessId == int(WindowName[0]):
+                            return MainWindowElement
+                    except:
+                        pass
+                else:
+                    NameS = MainWindowElement.Current.Name
+                    if _found(WindowName, NameS):
+                        CommonUtil.ExecLog(sModuleInfo, "Switching to window: %s" % NameS, 1)
+                        autoit.win_activate(NameS)
+                        return MainWindowElement
             except:
                 pass
 
@@ -1231,7 +1259,7 @@ def Double_Click_Element(data_set):
             right = right.strip().lower()
             left = left.strip().lower()
             if left == "method" and right == "gui":
-                    Gui = True
+                Gui = True
 
         Element = Get_Element(data_set)
         if Element == "zeuz_failed":
@@ -1407,7 +1435,7 @@ def Enter_Text_In_Text_Box(data_set):
         keystroke = False
 
         for left, mid, right in data_set:
-            if mid.lower().strip() == "action":
+            if left.lower().strip() == "text":
                 text = right
             elif left.lower().strip() == "method" and right.lower().strip() in ("gui", "keystroke"):
                 keystroke = True
@@ -1441,7 +1469,7 @@ def Enter_Text_In_Text_Box(data_set):
 
         return "passed"
     except Exception:
-        return CommonUtil.Exception_Handler(sys.exc_info(), None, "Couln't enter text")
+        return CommonUtil.Exception_Handler(sys.exc_info(), None, "Couldn't enter text")
 
 
 @logger
@@ -1660,6 +1688,21 @@ def Run_Application(data_set):
     except:
         CommonUtil.Exception_Handler(sys.exc_info())
         return "zeuz_failed"
+
+
+def get_pids_from_title(title):
+    MainWindowsList = AutomationElement.RootElement.FindAll(
+        TreeScope.Children, Condition.TrueCondition
+    )
+    pids = []
+    for window in MainWindowsList:
+        try:
+            NameS = window.Current.Name
+            if title in NameS:
+                pids.append(window.Current.ProcessId)
+        except:
+            pass
+    return pids
 
 
 @logger

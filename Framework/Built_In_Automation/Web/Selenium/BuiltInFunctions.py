@@ -17,6 +17,8 @@ import platform
 import sys, os, time, inspect, shutil, subprocess
 import socket
 import requests
+import psutil
+import pyautogui
 
 sys.path.append("..")
 from selenium import webdriver
@@ -82,12 +84,8 @@ default_x, default_y = 1920, 1080
 
 # Recall dependency, if not already set
 dependency = None
-if Shared_Resources.Test_Shared_Variables(
-        "dependency"
-):  # Check if driver is already set in shared variables
-    dependency = Shared_Resources.Get_Shared_Variables(
-        "dependency"
-    )  # Retreive appium driver
+if Shared_Resources.Test_Shared_Variables("dependency"):  # Check if driver is already set in shared variables
+    dependency = Shared_Resources.Get_Shared_Variables("dependency")  # Retreive appium driver
 else:
     raise ValueError("No dependency set - Cannot run")
 
@@ -432,7 +430,12 @@ def Open_Browser(dependency, window_size_X=None, window_size_Y=None):
             options.add_argument("--disable-extensions")
             options.add_argument('--ignore-certificate-errors')
             options.add_argument('--ignore-ssl-errors')
-            options.add_experimental_option("useAutomationExtension", False)
+            options.add_argument('--Zeuz_pid_finder')
+            if browser == "android":
+                mobile_emulation = {"deviceName": "Pixel 2 XL"}
+                options.add_experimental_option("mobileEmulation", mobile_emulation)
+            else:
+                options.add_experimental_option("useAutomationExtension", False)
             d = DesiredCapabilities.CHROME
             d["loggingPrefs"] = {"browser": "ALL"}
             d['goog:loggingPrefs'] = {'performance': 'ALL'}
@@ -498,11 +501,14 @@ def Open_Browser(dependency, window_size_X=None, window_size_Y=None):
             capabilities = webdriver.DesiredCapabilities().FIREFOX
             capabilities['acceptSslCerts'] = True
             profile = webdriver.FirefoxProfile()
-            # download_dir = ConfigModule.get_config_value("sectionOne", "test_case_folder", temp_config)
-            # profile.set_preference("browser.download.folderList", 2)
-            # profile.set_preference("browser.download.manager.showWhenStarting", False)
-            # profile.set_preference("browser.download.dir", download_dir)
-            # profile.set_preference("browser.helperApps.neverAsk.saveToDisk", "application/x-gzip")
+            download_dir = ConfigModule.get_config_value("sectionOne", "initial_download_folder", temp_config)
+            profile.set_preference("browser.download.folderList", 2)
+            profile.set_preference("browser.download.manager.showWhenStarting", False)
+            profile.set_preference("browser.download.dir", download_dir)
+            #text/plain;charset=UTF-8
+            # Allowing txt, pdf, xlsx, xml, csv, zip files to be directly downloaded without save prompt
+            apps = "application/pdf;text/plain;application/text;text/xml;application/xml;application/xlsx;application/csv;application/zip"
+            profile.set_preference("browser.helperApps.neverAsk.saveToDisk", apps)
             profile.accept_untrusted_certs = True
             selenium_driver = webdriver.Firefox(
                 executable_path=firefox_path,
@@ -525,14 +531,26 @@ def Open_Browser(dependency, window_size_X=None, window_size_Y=None):
             CommonUtil.set_screenshot_vars(Shared_Resources.Shared_Variable_Export())
             return "passed"
 
-        elif browser == "microsoft edge chromium":
+        elif browser in ("microsoft edge chromium", "edgechromiumheadless"):
             edge_path = ConfigModule.get_config_value("Selenium_driver_paths", "edge_path")
             if not edge_path:
                 edge_path = EdgeChromiumDriverManager().install()
                 ConfigModule.add_config_value("Selenium_driver_paths", "edge_path", edge_path)
-            capabilities = webdriver.DesiredCapabilities().EDGE
+
+            """We are using a Custom module from Microsoft which inherits Selenium class and provides additional supports which we need.
+            Since this module inherits Selenium module so all updates will be inherited as well
+            """
+            from Framework.edge_module.msedge.selenium_tools import EdgeOptions, Edge
+            download_dir = ConfigModule.get_config_value("sectionOne", "initial_download_folder", temp_config)
+            options = EdgeOptions()
+            capabilities = EdgeOptions().capabilities
             capabilities['acceptSslCerts'] = True
-            selenium_driver = webdriver.Edge(executable_path=edge_path, capabilities=capabilities)
+            options.use_chromium = True
+            options.headless = "headless" in browser
+            options.add_experimental_option("prefs", {"download.default_directory": download_dir})
+            options.add_argument('--Zeuz_pid_finder')
+            selenium_driver = Edge(executable_path=edge_path, options=options, capabilities=capabilities)
+
             selenium_driver.implicitly_wait(WebDriver_Wait)
             if not window_size_X and not window_size_Y:
                 selenium_driver.set_window_size(default_x, default_y)
@@ -556,11 +574,14 @@ def Open_Browser(dependency, window_size_X=None, window_size_Y=None):
             capabilities = webdriver.DesiredCapabilities().OPERA
             capabilities['acceptSslCerts'] = True
 
-            # from selenium.webdriver.opera.options import Options
-            # options = Options()
+            from selenium.webdriver.opera.options import Options
+            options = Options()
+            options.add_argument("--zeuz_pid_finder")
+            download_dir = ConfigModule.get_config_value("sectionOne", "initial_download_folder", temp_config)
+            options.add_experimental_option("prefs", {"download.default_directory": download_dir})  # This does not work
             # options.binary_location = r'C:\Users\ASUS\AppData\Local\Programs\Opera\launcher.exe'  # This might be needed
 
-            selenium_driver = webdriver.Opera(executable_path=opera_path, desired_capabilities=capabilities)
+            selenium_driver = webdriver.Opera(executable_path=opera_path, desired_capabilities=capabilities, options=options)
             selenium_driver.implicitly_wait(WebDriver_Wait)
             if not window_size_X and not window_size_Y:
                 selenium_driver.set_window_size(default_x, default_y)
@@ -652,7 +673,7 @@ def Open_Browser(dependency, window_size_X=None, window_size_Y=None):
                 ConfigModule.add_config_value("Selenium_driver_paths", "chrome_path", ChromeDriverManager().install())
             elif browser in ("firefox", "firefoxheadless"):
                 ConfigModule.add_config_value("Selenium_driver_paths", "firefox_path", GeckoDriverManager().install())
-            elif browser == "edge":
+            elif browser in ("microsoft edge chromium", "EdgeChromiumHeadless"):
                 ConfigModule.add_config_value("Selenium_driver_paths", "edge_path", EdgeChromiumDriverManager().install())
             elif browser == "opera":
                 ConfigModule.add_config_value("Selenium_driver_paths", "opera_path", OperaDriverManager().install())
@@ -673,7 +694,7 @@ def Open_Browser(dependency, window_size_X=None, window_size_Y=None):
                 ConfigModule.add_config_value("Selenium_driver_paths", "chrome_path", ChromeDriverManager().install())
             elif browser in ("firefox", "firefoxheadless"):
                 ConfigModule.add_config_value("Selenium_driver_paths", "firefox_path", GeckoDriverManager().install())
-            elif browser == "edge":
+            elif browser in ("microsoft edge chromium", "EdgeChromiumHeadless"):
                 ConfigModule.add_config_value("Selenium_driver_paths", "edge_path", EdgeChromiumDriverManager().install())
             elif browser == "opera":
                 ConfigModule.add_config_value("Selenium_driver_paths", "opera_path", OperaDriverManager().install())
@@ -688,6 +709,7 @@ def Open_Browser(dependency, window_size_X=None, window_size_Y=None):
         return CommonUtil.Exception_Handler(sys.exc_info())
 
 
+@deprecated
 @logger
 def Open_Browser_Wrapper(step_data):
     """ Temporary wrapper for open_browser() until that function can be updated to use only data_set """
@@ -714,7 +736,6 @@ def Open_Browser_Wrapper(step_data):
         return CommonUtil.Exception_Handler(sys.exc_info(), None, ErrorMessage)
 
 
-
 @logger
 def Go_To_Link(step_data, page_title=False):
     # this function needs work with validating page title.  We need to check if user entered any title.
@@ -726,6 +747,10 @@ def Go_To_Link(step_data, page_title=False):
     global dependency
     global selenium_driver
     global selenium_details
+    if Shared_Resources.Test_Shared_Variables("dependency"):
+        dependency = Shared_Resources.Get_Shared_Variables("dependency")
+    else:
+        raise ValueError("No dependency set - Cannot run")
 
     try:
         driver_id = ""
@@ -739,12 +764,20 @@ def Go_To_Link(step_data, page_title=False):
         if not driver_id:
             driver_id = "default"
 
-        if driver_id not in selenium_details:
+        browser_map = {
+            "Microsoft Edge Chromium": 'msedge',
+            "Chrome": "chrome",
+            "FireFox": "firefox",
+            "Opera": "opera",
+            "ChromeHeadless": "chrome",
+            "FirefoxHeadless": "firefox",
+            "EdgeChromiumHeadless": "msedge",
+        }
+
+        if driver_id not in selenium_details or selenium_details[driver_id]["driver"].capabilities["browserName"].strip().lower() != browser_map[dependency["Browser"]]:
+            if driver_id in selenium_details and selenium_details[driver_id]["driver"].capabilities["browserName"].strip().lower() != browser_map[dependency["Browser"]]:
+                Tear_Down_Selenium()    # If dependency is changed then teardown and relaunch selenium driver
             CommonUtil.ExecLog(sModuleInfo, "Browser not previously opened, doing so now", 1)
-            global dependency
-            # Get the dependency again in case it was missed
-            if Shared_Resources.Test_Shared_Variables("dependency"):  # Check if driver is already set in shared variables
-                dependency = Shared_Resources.Get_Shared_Variables("dependency")  # Retreive selenium driver
             if window_size_X == "None" and window_size_Y == "None":
                 result = Open_Browser(dependency)
             elif window_size_X == "None":
@@ -773,10 +806,14 @@ def Go_To_Link(step_data, page_title=False):
         CommonUtil.ExecLog(sModuleInfo, "Successfully opened your link with driver_id='%s': %s" % (driver_id, web_link), 1)
         return "passed"
     except WebDriverException as e:
-        if e.msg.lower().startswith("chrome not reachable"):
+        browser = selenium_driver.capabilities["browserName"].strip().lower()
+        if (browser in ("chrome", "msedge", "opera") and e.msg.lower().startswith("chrome not reachable")) or (browser == "firefox" and e.msg.lower().startswith("tried to run command without establishing a connection")):
             CommonUtil.ExecLog(sModuleInfo, "Browser not found. trying to restart the browser", 2)
-            if Shared_Resources.Test_Shared_Variables("dependency"):  # Check if driver is already set in shared variables
-                dependency = Shared_Resources.Get_Shared_Variables("dependency")  # Retreive selenium driver
+            # If the browser is closed but selenium instance is on, relaunch selenium_driver
+            if Shared_Resources.Test_Shared_Variables("dependency"):
+                dependency = Shared_Resources.Get_Shared_Variables("dependency")
+            else:
+                return CommonUtil.Exception_Handler(sys.exc_info())
             if window_size_X == "None" and window_size_Y == "None":
                 result = Open_Browser(dependency)
             elif window_size_X == "None":
@@ -801,6 +838,7 @@ def Go_To_Link(step_data, page_title=False):
     except Exception:
         ErrorMessage = "failed to open your link: %s" % (web_link)
         return CommonUtil.Exception_Handler(sys.exc_info(), None, ErrorMessage)
+
 
 @logger
 def Handle_Browser_Alert(step_data):
@@ -1143,7 +1181,7 @@ def execute_javascript(data_set):
     """
 
     try:
-        Element = None
+        Element = False
         var_name = None
         script_to_exec = None
 
@@ -1153,26 +1191,23 @@ def execute_javascript(data_set):
             right = right.strip()
 
             if "element parameter" in mid:
-                Element = LocateElement.Get_Element(data_set, selenium_driver)
-
-            if "variable" in left:
+                Element = True
+            if "variable" == left:
                 var_name = right
-
-            if "action" in mid:
+            if "execute js" == left:
                 script_to_exec = right
 
         # Element parameter is provided to use Zeuz Node's element finding approach.
         if Element:
+            Element = LocateElement.Get_Element(data_set, selenium_driver)
             # Replace "$elem" with "arguments[0]". For convenience only.
             script_to_exec = script_to_exec.replace("$elem", "arguments[0]")
-
             # Execute the script.
             result = selenium_driver.execute_script(script_to_exec, Element)
         else:
-            result = selenium_driver.execute_script(script_to_exec, Element)
+            result = selenium_driver.execute_script(script_to_exec, None)
 
-        if var_name:
-            Shared_Resources.Set_Shared_Variables(var_name, result)
+        return Shared_Resources.Set_Shared_Variables(var_name, result)
     except Exception:
         errMsg = "Make sure element parameter is provided in the action."
         return CommonUtil.Exception_Handler(sys.exc_info(), None, errMsg)
@@ -1207,7 +1242,6 @@ def handle_clickability_and_click(dataset, Element:selenium.webdriver.remote.web
 @logger
 def Click_Element(data_set, retry=0):
     """ Click using element or location """
-
     sModuleInfo = inspect.currentframe().f_code.co_name + " : " + MODULE_NAME
     global selenium_driver
 
@@ -1219,20 +1253,14 @@ def Click_Element(data_set, retry=0):
                 bodyElement = LocateElement.Get_Element(
                     [("tag", "element parameter", "body")], selenium_driver
                 )  # Get element object of webpage body, so we can have a reference to the 0,0 coordinates
-                shared_var = row[
-                    2
-                ]  # Save shared variable name, or coordinates if entered directory in step data
+                shared_var = row[2]  # Save shared variable name, or coordinates if entered directory in step data
             if "use js" in row[0].lower():
                 use_js = row[2].strip().lower() in ("true", "yes", "1")
     except Exception:
-        return CommonUtil.Exception_Handler(
-            sys.exc_info(), None, "Error parsing data set"
-        )
+        return CommonUtil.Exception_Handler(sys.exc_info(), None, "Error parsing data set")
 
     # Click using element
     if bodyElement == "":
-        CommonUtil.ExecLog(sModuleInfo, "Looking for element", 0)
-
         # Get element object
         Element = LocateElement.Get_Element(data_set, selenium_driver)
         if Element in failed_tag_list:
@@ -1259,111 +1287,6 @@ def Click_Element(data_set, retry=0):
                     2
                 )
                 return "passed"
-            except Exception:
-                element_attributes = Element.get_attribute("outerHTML")
-                CommonUtil.ExecLog(
-                    sModuleInfo, "Element Attributes: %s" % (element_attributes), 3
-                )
-                errMsg = "Could not select/click your element."
-                return CommonUtil.Exception_Handler(sys.exc_info(), None, errMsg)
-        except StaleElementReferenceException:
-            if retry == 5:
-                CommonUtil.ExecLog(
-                    sModuleInfo, "Could not perform click because javascript of the element is not fully loaded", 3
-                )
-                return "zeuz_failed"
-            CommonUtil.ExecLog(
-                "", "Javascript of the element is not fully loaded. Trying again after 1 second delay", 2
-            )
-            time.sleep(1)
-            return Click_Element(data_set, retry + 1)
-
-        except Exception:
-            element_attributes = Element.get_attribute("outerHTML")
-            CommonUtil.ExecLog(
-                sModuleInfo, "Element Attributes: %s" % (element_attributes), 3
-            )
-            errMsg = "Could not select/click your element."
-            return CommonUtil.Exception_Handler(sys.exc_info(), None, errMsg)
-
-    # Click using location
-    else:
-        CommonUtil.ExecLog(sModuleInfo, "Using provided location", 0)
-        try:
-            # Get coordinates
-            if "," in shared_var:  # These are coordinates, use directly
-                location = shared_var
-            else:  # Shared variable name was provided
-                location = Shared_Resources.Get_List_from_Shared_Variables(shared_var)
-            location = location.replace(" ", "")
-            location = location.split(",")
-            x = float(location[0])
-            y = float(location[1])
-
-            # Click coordinates
-            actions = ActionChains(selenium_driver)  # Create actions object
-            actions.move_to_element_with_offset(
-                bodyElement, x, y
-            )  # Move to coordinates (referrenced by body at 0,0)
-            actions.click()  # Click action
-            actions.perform()  # Perform all actions
-
-            CommonUtil.ExecLog(sModuleInfo, "Click on location successful", 1)
-            return "passed"
-        except Exception:
-            return CommonUtil.Exception_Handler(
-                sys.exc_info(), None, "Error clicking location"
-            )
-
-@logger
-def Click_and_Download(data_set, retry=0):
-    """ Click and download attachments from web and save it to specific destinations"""
-
-    sModuleInfo = inspect.currentframe().f_code.co_name + " : " + MODULE_NAME
-    global selenium_driver
-
-    use_js = False  # Use js to click on element?
-    try:
-        bodyElement = ""
-        filepath = ""
-        file_to_be_moved = ""
-        for left, mid, right in data_set:
-            if left == "location" and mid == "element parameter":
-                bodyElement = LocateElement.Get_Element(
-                    [("tag", "element parameter", "body")], selenium_driver
-                )  # Get element object of webpage body, so we can have a reference to the 0,0 coordinates
-                shared_var = right
-            elif "use js" in left.lower():
-                use_js = right.strip().lower() in ("true", "yes", "1")
-            elif left.strip().lower() == "folder path" and mid.strip().lower() == "parameter":
-                filepath = right.strip()
-                filepath = CommonUtil.path_parser(filepath)
-
-            # On next improvement user will have option to tell the filename and only that filename will be copied from
-            # the initial download directory
-    except Exception:
-        return CommonUtil.Exception_Handler(
-            sys.exc_info(), None, "Error parsing data set"
-        )
-    if bodyElement == "":
-        Element = LocateElement.Get_Element(data_set, selenium_driver)
-        if Element in failed_tag_list:
-            CommonUtil.ExecLog(sModuleInfo, "Could not find element", 3)
-            return "zeuz_failed"
-        try:
-            if use_js:
-                selenium_driver.execute_script("arguments[0].click();", Element)
-            else:
-                handle_clickability_and_click(data_set, Element)
-            CommonUtil.ExecLog(sModuleInfo, "Successfully clicked the element", 1)
-        except ElementClickInterceptedException:
-            try:
-                selenium_driver.execute_script("arguments[0].click();", Element)
-                CommonUtil.ExecLog(
-                    sModuleInfo,
-                    "Your element is overlapped with another sibling element. Clicked the element successfully by executing JavaScript",
-                    2
-                )
             except Exception:
                 element_attributes = Element.get_attribute("outerHTML")
                 CommonUtil.ExecLog(sModuleInfo, "Element Attributes: %s" % (element_attributes), 3)
@@ -1399,43 +1322,162 @@ def Click_and_Download(data_set, retry=0):
 
             # Click coordinates
             actions = ActionChains(selenium_driver)  # Create actions object
-            actions.move_to_element_with_offset(
-                bodyElement, x, y
-            )  # Move to coordinates (referrenced by body at 0,0)
+            actions.move_to_element_with_offset(bodyElement, x, y)  # Move to coordinates (referrenced by body at 0,0)
             actions.click()  # Click action
             actions.perform()  # Perform all actions
 
             CommonUtil.ExecLog(sModuleInfo, "Click on location successful", 1)
+            return "passed"
         except Exception:
             return CommonUtil.Exception_Handler(sys.exc_info(), None, "Error clicking location")
 
+
+@logger
+def Click_and_Download(data_set):
+    """ Click and download attachments from web and save it to specific destinations"""
+    sModuleInfo = inspect.currentframe().f_code.co_name + " : " + MODULE_NAME
+    global selenium_driver
+
+    if selenium_driver.capabilities["browserName"].strip().lower() not in ("chrome", "msedge", "firefox"):
+        CommonUtil.ExecLog(sModuleInfo, "This action was made for Chrome, MS Edge and Firefox. Other browsers won't download files in Zeuz_Download_Folder", 2)
+
+    #Todo:
+    # 1. For other browsers than ("chrome", "msedge", "firefox") copy the New files generated in Downloads directory and move them to zeuz_download_folder
+
+    wait_download = 20
+    filepath = ""
+    automate_firefox = False
     try:
+        click_dataset = []
+        for left, mid, right in data_set:
+            l = left.replace(" ", "").replace("_", "").lower()
+            if l == "waitfordownload":
+                wait_download = float(right.strip())
+            elif l in ("folderpath", "directory", "filepath", "file", "folder") and mid.strip().lower() in ("parameter", "option"):
+                filepath = right.strip()
+                filepath = CommonUtil.path_parser(filepath)
+            elif l == "automatefirefoxsavewindow" and mid.strip().lower() in ("parameter", "option"):
+                automate_firefox = right.strip().lower() in ("accept", "yes", "ok", "true")
+            else:
+                click_dataset.append((left, mid, right))
+
+            # On next improvement user will have option to tell the filename and only that filename will be copied from
+            # the initial download directory
+    except Exception:
+        return CommonUtil.Exception_Handler(sys.exc_info(), None, "Error parsing data set")
+
+    try:
+        Click_Element(click_dataset)
+        if selenium_driver.capabilities["browserName"].strip().lower() == "firefox" and automate_firefox:
+            if platform.system() == "Windows":
+                try:
+                    from Framework.Built_In_Automation.Desktop.Windows.BuiltInFunctions import Click_Element as win_Click_Element, wait_for_element
+                    pid = str(selenium_driver.capabilities["moz:processID"])
+                    window_ds = ("window pid", "element parameter", pid)
+                    wait_ds = [
+                        window_ds,
+                        ("Name", "element parameter", "Save File"),
+                        ("LocalizedControlType", "element parameter", "radio button"),
+                        ("wait to appear", "windows action", "10"),
+                    ]
+                    CommonUtil.ExecLog(sModuleInfo, "Checking if any Save window is opened", 1)
+                    if wait_for_element(wait_ds) == "zeuz_failed":
+                        CommonUtil.ExecLog(sModuleInfo, "No Save window is found. Continuing...", 1)
+                    else:
+                        save_click_ds = [
+                            window_ds,
+                            ("Name", "element parameter", "Save File"),
+                            ("LocalizedControlType", "element parameter", "radio button"),
+                            ("click", "windows action", "click"),
+                        ]
+                        if win_Click_Element(save_click_ds) == "zeuz_failed":
+                            CommonUtil.ExecLog(sModuleInfo, "Could not click Save Button. Switching to GUI method", 2)
+                            pyautogui.hotkey("down")
+                            pyautogui.hotkey("enter")
+
+                        else:
+                            # remember_choice_ds = [
+                            #     window_ds,
+                            #     ("wait", "optional parameter", "5"),
+                            #     ("*Name", "element parameter", "Do this automatically"),
+                            #     ("LocalizedControlType", "element parameter", "check box"),
+                            #     ("click", "windows action", "click"),
+                            # ]
+                            # if win_Click_Element(remember_choice_ds) == "zeuz_failed":
+                            #     CommonUtil.ExecLog(sModuleInfo, "Could not click remember choice Button", 2)
+                            ok_ds = [
+                                window_ds,
+                                ("Name", "element parameter", "OK"),
+                                ("LocalizedControlType", "element parameter", "button"),
+                                ("click", "windows action", "click"),
+                            ]
+                            if win_Click_Element(ok_ds) == "zeuz_failed":
+                                CommonUtil.ExecLog(sModuleInfo, "Could not find the OK button. Switching to GUI method (pressing Enter)", 2)
+                                pyautogui.hotkey("enter")
+                except:
+                    CommonUtil.ExecLog(sModuleInfo, "Could not check if any save window was opened. Continuing...", 2)
+
+            else:
+                # Todo: Test this on Mac and Linux
+                pyautogui.hotkey("down")
+                pyautogui.hotkey("enter")
+
+        if selenium_driver.capabilities["browserName"].strip().lower() in ("chrome", "msedge", "firefox"):
+            CommonUtil.ExecLog(sModuleInfo, "Download started. Will wait max %s seconds..." % wait_download, 1)
+            s = time.perf_counter()
+            if selenium_driver.capabilities["browserName"].strip().lower() == "firefox":
+                ext = ".part"
+            elif selenium_driver.capabilities["browserName"].strip().lower() == "opera":
+                ext = ".opera"
+            else:
+                ext = ".crdownload"
+            while True:
+                ld = os.listdir(ConfigModule.get_config_value("sectionOne", "initial_download_folder", temp_config))
+                if all([len(ld) > 0, all([not i.endswith(".tmp") and not i.endswith(ext) for i in ld])]):
+                    CommonUtil.ExecLog(sModuleInfo, "Download Finished in %s seconds" % round(time.perf_counter()-s, 2), 1)
+                    break
+                if s + wait_download < time.perf_counter():
+                    CommonUtil.ExecLog(sModuleInfo, "Could not finish download within %s seconds. You can increase the amount of seconds with (wait for download, optional parameter, 60)" % wait_download, 2)
+                    break
+        else:
+            time.sleep(2)
+        time.sleep(3)
+
         if filepath:
             from pathlib import Path
             # filepath = Shared_Resources.Get_Shared_Variables("zeuz_download_folder")
-            time.sleep(3)   # Sleep is needed here so that downloaded
             source_folder = ConfigModule.get_config_value("sectionOne", "initial_download_folder", temp_config)
             all_source_dir = [os.path.join(source_folder, f) for f in os.listdir(source_folder) if os.path.isfile(os.path.join(source_folder, f))]
-            new_directory_of_the_file = filepath
+            new_path = filepath
             for file_to_be_moved in all_source_dir:
                 file_name = Path(file_to_be_moved).name
-                if not os.path.exists(new_directory_of_the_file):
-                    Path(new_directory_of_the_file).mkdir(parents=True, exist_ok=True)
-                shutil.move(file_to_be_moved, new_directory_of_the_file)
+                if "." not in os.path.basename(new_path) and not os.path.exists(new_path):
+                    # if the path is a directory and does not exist then create the directory
+                    Path(new_path).mkdir(parents=True, exist_ok=True)
+                elif "." in os.path.basename(new_path) and not os.path.exists(new_path):
+                    # if the path is a filepath and the directory does not exist then create the directory
+                    Path(os.path.dirname(new_path)).mkdir(parents=True, exist_ok=True)
+                shutil.move(file_to_be_moved, new_path)
 
                 # after performing shutil.move() we have to check that if the file with new name exists in correct location.
                 # if the file exists in correct position then return passed
                 # if the file doesn't exist in correct position then return failed
-                file_path_for_check_after_move = os.path.join(new_directory_of_the_file, file_name)
-                if os.path.isfile(file_path_for_check_after_move):
-                    CommonUtil.ExecLog(sModuleInfo, "File '%s' is moved to '%s'" % (file_name, new_directory_of_the_file), 1)
+                if "." not in os.path.basename(new_path):
+                    file_path_for_check_after_move = os.path.join(new_path, file_name)
+                    if os.path.isfile(file_path_for_check_after_move):
+                        CommonUtil.ExecLog(sModuleInfo, "File '%s' is moved to '%s'" % (file_name, file_path_for_check_after_move), 1)
+                    else:
+                        CommonUtil.ExecLog(sModuleInfo, "File failed to move", 3)
+                        return "zeuz_failed"
                 else:
-                    CommonUtil.ExecLog(sModuleInfo, "File failed to move", 3)
-                    return "zeuz_failed"
+                    if os.path.isfile(new_path):
+                        CommonUtil.ExecLog(sModuleInfo, "File '%s' is moved to '%s'" % (file_name, new_path), 1)
+                    else:
+                        CommonUtil.ExecLog(sModuleInfo, "File failed to move", 3)
+                        return "zeuz_failed"
         return "passed"
     except Exception:
         return CommonUtil.Exception_Handler(sys.exc_info(), None, "Error downloading file \nfrom %s\nto %s" % (file_to_be_moved, filepath))
-
 
 
 @logger
@@ -3603,7 +3645,7 @@ def switch_iframe(step_data):
                 try:
                     frame_attribute = iframes[idx].get_attribute('outerHTML')
                     i, c = 0, 0
-                    for i in range(len(frame_attribute)): 
+                    for i in range(len(frame_attribute)):
                         if frame_attribute[i] == '"':
                             c += 1
                         if (frame_attribute[i] == ">" and c % 2 == 0):
@@ -3685,6 +3727,194 @@ def upload_file(step_data):
 
     except Exception:
         return CommonUtil.Exception_Handler(sys.exc_info())
+
+
+def _gui_upload(path_name, pid=None):
+    # Todo: Implement PID to activate the window and focus that at front
+    time.sleep(3)
+    pyautogui.hotkey("alt", "a")
+    time.sleep(0.5)
+    pyautogui.write(path_name)
+    time.sleep(1)
+    pyautogui.hotkey("enter")
+
+
+@logger
+def upload_file_through_window(step_data):
+    """
+    Purpose: Sometimes there are some upload window to upload one or more files which is out of selenium's scope.
+    This action automate that upload window with microsoft System API and pyautogui GUI API
+
+    Code detail:
+    The upload API is searched by their pid
+    The main problem is there are multiple process which open while when launching driver having multiple pid. but we need to find out the main browsers pid
+    Firefox driver provides the pid inside capabilities
+    For Chrome and Opera we added a custom args named "--ZeuZ_pid_finder" and searched in the psutil which process contains that arg and get the pid of that process
+    For MS Edge browser We extracted selenium.title and searched in Microsoft System API with that window title and fetch all the pids with that window title.
+    Also we had extracted all the pids from psutil having "--test-type=webdriver" arg and then matched the pids with previous one to find the genuin pid
+
+    In windows, firstly we try to automate with Microsoft System API. If anything fails in between then we switch to GUI method
+    In Mac and Linux, we automate only with GUI
+    """
+    sModuleInfo = inspect.currentframe().f_code.co_name + " : " + MODULE_NAME
+    global selenium_driver
+    all_file_path = []
+    pid = ""
+    if "headless" in dependency:
+        CommonUtil.ExecLog(sModuleInfo, "This action will not work on headless browsers", 3)
+        return "zeuz_failed"
+    try:
+        for left, mid, right in step_data:
+            left = left.strip().lower()
+            l = left.replace(" ", "").replace("_", "").lower()
+            if l in ("filepath", "directory"):
+                path = CommonUtil.path_parser(right.strip())
+                if os.path.isdir(path) or os.path.isfile(path):
+                    all_file_path.append(path)
+                else:
+                    CommonUtil.ExecLog(sModuleInfo, "Could not find any directory or file with the path: %s" % path, 3)
+        if len(all_file_path) == 0:
+            CommonUtil.ExecLog(sModuleInfo, "Could not find any valid filepath or directory", 3)
+            return "zeuz_failed"
+
+        path_name = '"' + '" "'.join(all_file_path) + '"'
+    except:
+        return CommonUtil.Exception_Handler(sys.exc_info(), None, "Error parsing dataset")
+
+    try:
+        if selenium_driver.capabilities["browserName"].lower() == "firefox":
+            pid = str(selenium_driver.capabilities["moz:processID"])
+        elif selenium_driver.capabilities["browserName"].lower() == "chrome":
+            for process in psutil.process_iter():
+                if process.name() == 'chrome.exe' and '--test-type=webdriver' in process.cmdline() and "--zeuz_pid_finder" in process.cmdline():
+                    pid = str(process.pid)
+        elif selenium_driver.capabilities["browserName"].lower() == "opera":
+            for process in psutil.process_iter():
+                if process.name() == 'opera.exe' and '--test-type=webdriver' in process.cmdline() and "--zeuz_pid_finder" in process.cmdline():
+                    pid = str(process.pid)
+        elif selenium_driver.capabilities["browserName"].lower() == "msedge":
+            for process in psutil.process_iter():
+                if process.name() == 'msedge.exe' and '--test-type=webdriver' in process.cmdline() and "--zeuz_pid_finder" in process.cmdline():
+                    pid = str(process.pid)
+
+        # window_ds = ("*window", "element parameter", selenium_driver.title)
+        if platform.system() == "Windows":
+            from Framework.Built_In_Automation.Desktop.Windows.BuiltInFunctions import Click_Element, Enter_Text_In_Text_Box, Save_Attribute, get_pids_from_title
+
+            """ We may need the following codes when deprecated msedge selenium stops working """
+            # time.sleep(3)
+            # if selenium_driver.capabilities["browserName"].lower() == "msedge": # Msedge browser only exists in windows
+            #     win_pids = get_pids_from_title(selenium_driver.title)
+            #     if len(win_pids) == 0:
+            #         CommonUtil.ExecLog(sModuleInfo, "Could not find the pid for msedge. Switching to GUI method", 2)
+            #         _gui_upload(path_name)
+            #         CommonUtil.ExecLog(sModuleInfo, "Entered the following path:\n%s" % path_name, 1)
+            #         return "passed"
+            #     if len(win_pids) > 1:
+            #         psutil_pids = []
+            #         for process in psutil.process_iter():
+            #             if process.name() == 'msedge.exe' and '--test-type=webdriver' in process.cmdline():
+            #                 psutil_pids.append(process.pid)
+            #         for i in win_pids:
+            #             if i in psutil_pids:
+            #                 pid = str(i)
+            #                 break
+            #         else:
+            #             pid = str(win_pids[0])
+            #     else:
+            #         pid = str(win_pids[0])
+
+            if selenium_driver.capabilities["browserName"].lower() not in ("firefox", "chrome", "opera", "msedge"):
+                win_pids = get_pids_from_title(selenium_driver.title)
+                if len(win_pids) == 0:
+                    CommonUtil.ExecLog(sModuleInfo, "Could not find the pid for browser. Switching to GUI method", 2)
+                    _gui_upload(path_name)
+                    CommonUtil.ExecLog(sModuleInfo, "Entered the following path:\n%s" % path_name, 1)
+                    return "passed"
+                if len(win_pids) > 1:
+                    psutil_pids = []
+                    for process in psutil.process_iter():
+                        if '--test-type=webdriver' in process.cmdline():
+                            psutil_pids.append(process.pid)
+                    for i in win_pids:
+                        if i in psutil_pids:
+                            pid = str(i)
+                            break
+                    else:
+                        pid = str(win_pids[0])
+                else:
+                    pid = str(win_pids[0])
+
+            if not pid:
+                CommonUtil.ExecLog(sModuleInfo, "Could not find the PID for browser. Switching to GUI method", 2)
+                _gui_upload(path_name)
+                CommonUtil.ExecLog(sModuleInfo, "Entered the following path:\n%s" % path_name, 1)
+                return "passed"
+
+            window_ds = ("window pid", "element parameter", pid)
+            save_attribute_ds = [
+                window_ds,
+                ("wait", "optional parameter", "20"),
+                ("AutomationId", "element parameter", "1090"),
+                ("Name", "save parameter", "ZeuZ_uPLOad_W1N_F1LE__OR_FOLdeR_87138131"),
+                ("save attribute", "windows action", "save attribute"),
+            ]
+            if Save_Attribute(save_attribute_ds) == "zeuz_failed":
+                CommonUtil.ExecLog(sModuleInfo, "Could not find the Textbox. Switching to GUI method", 2)
+                _gui_upload(path_name)
+                CommonUtil.ExecLog(sModuleInfo, "Entered the following path:\n%s" % path_name, 1)
+                return "passed"
+            file_or_folder = Shared_Resources.Get_Shared_Variables("ZeuZ_uPLOad_W1N_F1LE__OR_FOLdeR_87138131")
+            if "file name" in file_or_folder.lower():
+                id = "1148"
+            elif "folder" in file_or_folder.lower():
+                id = "1152"
+            else:
+                CommonUtil.ExecLog(sModuleInfo, "Invalid Upload type. file_or_folder = '%s'" % file_or_folder, 3)
+                return "zeuz_failed"
+
+            enter_text_ds = [
+                window_ds,
+                ("wait", "optional parameter", "20"),
+                ("LocalizedControlType", "element parameter", "edit"),
+                ("AutomationId", "element parameter", id),
+                ("text", "windows action", path_name),
+            ]
+            if Enter_Text_In_Text_Box(enter_text_ds) == "zeuz_failed":
+                CommonUtil.ExecLog(sModuleInfo, "Could not find the Open button. Switching to GUI method", 2)
+                _gui_upload(path_name)
+                CommonUtil.ExecLog(sModuleInfo, "Entered the following path:\n%s" % path_name, 1)
+                return "passed"
+
+            click_ds = [
+                window_ds,
+                ("wait", "optional parameter", "20"),
+                ("AutomationId", "element parameter", "1"),
+                ("Name", "element parameter", "Open"),
+                ("LocalizedControlType", "element parameter", "button"),
+                ("click", "windows action", "click"),
+            ]
+            if Click_Element(click_ds) == "zeuz_failed":
+                CommonUtil.ExecLog(sModuleInfo, "Could not find the Open button. Switching to GUI method (pressing Enter)", 2)
+                time.sleep(1)
+                pyautogui.hotkey("enter")
+                CommonUtil.ExecLog(sModuleInfo, "Entered the following path:\n%s" % path_name, 1)
+                return "passed"
+
+        # elif platform.system() == "Linux":
+        #     _gui_upload(path_name)
+        else:
+            _gui_upload(path_name)
+
+        CommonUtil.ExecLog(sModuleInfo, "Entered the following path:\n%s" % path_name, 1)
+        return "passed"
+
+    except Exception:
+        CommonUtil.Exception_Handler(sys.exc_info())
+        CommonUtil.ExecLog(sModuleInfo, "Could not find the Textbox. Switching to GUI method", 2)
+        _gui_upload(path_name)
+        CommonUtil.ExecLog(sModuleInfo, "Entered the following path:\n%s" % path_name, 1)
+        return "passed"
 
 
 # Method to upload file
@@ -3929,7 +4159,7 @@ def insert(string, str_to_insert, index):
 
 @logger
 def slider_bar(data_set):
-    """Set certain value to a slider bar 
+    """Set certain value to a slider bar
     you must provide a number between 0 - 100
      """
 
@@ -3956,10 +4186,10 @@ def slider_bar(data_set):
             ele_height = int((height_width)["height"])
             x_cord_to_tap = ((value/100) * ele_width)
             y_cord_to_tap = (ele_height/2)
-            
+
             move.move_to_element_with_offset(Element, x_cord_to_tap, y_cord_to_tap).click().perform()
             CommonUtil.ExecLog(sModuleInfo, f"Successfully set the slider to %{value}", 1)
-                    
+
         return "passed"
     except Exception:
         return CommonUtil.Exception_Handler(sys.exc_info())
