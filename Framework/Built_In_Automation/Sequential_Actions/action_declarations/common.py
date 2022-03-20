@@ -75,6 +75,16 @@ declarations = (
     {"name":"random email read",                             "function": "random_email_read",                     "screenshot": "none" },
     {"name":"random email delete",                           "function": "random_email_delete",                   "screenshot": "none" },
 
+    # Actions  for attachment upload to server
+    {"name":"upload attachment to testcase",                 "function": "upload_attachment_to_testcase",         "screenshot": "none" },
+    {"name":"download attachment from testcase",             "function": "download_attachment_from_testcase",     "screenshot": "none" },
+    {"name":"upload attachment to step",                     "function": "upload_attachment_to_step",             "screenshot": "none" },
+    {"name":"download attachment from step",                 "function": "download_attachment_from_step",         "screenshot": "none" },
+    {"name":"upload attachment to global",                   "function": "upload_attachment_to_global",         "screenshot": "none" },
+    {"name":"download attachment from global",               "function": "download_attachment_from_global",     "screenshot": "none" },
+
+    # Actions  for attachment upload to server
+
     # Actions for TaxCalc
     {"name": "write into text file",                         "function": "text_write",                            "screenshot": "none" },
     {"name": "compare identifiers content",                  "function": "compare_identifiers_content",           "screenshot": "none" },
