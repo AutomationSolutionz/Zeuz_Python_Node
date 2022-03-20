@@ -19,7 +19,6 @@ from imap_tools import MailBox
 import re
 from typing import List
 
-from node_cli import PROJECT_TAG
 
 try:
     import xlwings as xw
@@ -4420,10 +4419,11 @@ def upload_attachment_to_global(data_set):
             CommonUtil.ExecLog(sModuleInfo, "Please insert attachment path ", 3)
             return "zeuz_failed"
         headers = RequestFormatter.add_api_key_to_headers({})
+        lala=(ConfigModule.get_config_value("sectionOne", 'project', temp_config))
+        print(lala)
         res = requests.post(
             RequestFormatter.form_uri("global_file_upload/"),
             files={"file": open(var_path,'rb')},
-            data={"project_id":  PROJECT_TAG ,"team_id":TEAM_TAG  },
             verify=False,
             **headers)
         return "passed"
