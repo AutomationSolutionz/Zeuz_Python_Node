@@ -4176,11 +4176,8 @@ def random_email_delete(data_set):
         return CommonUtil.Exception_Handler(sys.exc_info())
 
 
-
-
 @logger
 def upload_attachment_to_testcase(data_set):
-
     """
     usage: This action allows you to upload attachments  to a testcase id
     dataset :
@@ -4194,7 +4191,7 @@ def upload_attachment_to_testcase(data_set):
     sModuleInfo = inspect.currentframe().f_code.co_name + " : " + MODULE_NAME
     try:
         var_id = None
-        var_path=None
+        var_path = None
         for left, mid, right in data_set:
             left = left.strip().lower()
             if "id" == left:
@@ -4211,22 +4208,20 @@ def upload_attachment_to_testcase(data_set):
         headers = RequestFormatter.add_api_key_to_headers({})
         res = requests.post(
             RequestFormatter.form_uri("test_case_file_upload/"),
-            files={"file": open(var_path,'rb')},
-            data={"file_upload_tc": var_id, },
+            files={"file": open(var_path, 'rb')},
+            data={"file_upload_tc": var_id},
             verify=False,
             **headers)
-        return "passed"
 
+        CommonUtil.ExecLog(sModuleInfo, "Attachment was uploaded to TEST-%s" % var_id, 1)
+        return "passed"
 
     except:
         return CommonUtil.Exception_Handler(sys.exc_info())
 
 
-
-
 @logger
 def download_attachment_from_testcase(data_set):
-
     """
     usage: This action allows you to download attachments  from a testcase id
     dataset :
@@ -4241,8 +4236,8 @@ def download_attachment_from_testcase(data_set):
     sModuleInfo = inspect.currentframe().f_code.co_name + " : " + MODULE_NAME
     try:
         var_id = None
-        var_name=None
-        var_path=None
+        var_name = None
+        var_path = None
         for left, mid, right in data_set:
             left = left.strip().lower()
             if "id" == left:
@@ -4263,7 +4258,7 @@ def download_attachment_from_testcase(data_set):
             return "zeuz_failed"
 
         headers = RequestFormatter.add_api_key_to_headers({})
-        url=RequestFormatter.form_uri(f"static/tc_folder/{var_id}/{var_name}")
+        url = RequestFormatter.form_uri(f"static/tc_folder/{var_id}/{var_name}")
         local_filename = url.split('/')[-1]
         with requests.get(url, stream=True, verify=False,**headers) as r:
             r.raise_for_status()
@@ -4271,22 +4266,15 @@ def download_attachment_from_testcase(data_set):
                 for chunk in r.iter_content(chunk_size=8192):
                     f.write(chunk)
 
+        CommonUtil.ExecLog(sModuleInfo, "Attachment '%s' was downloaded from TEST-%s" % (var_name, var_id), 1)
         return "passed"
-
 
     except Exception as e:
         return CommonUtil.Exception_Handler(sys.exc_info())
 
 
-
-
-
-
-
-
 @logger
 def upload_attachment_to_step(data_set):
-
     """
     usage: This action allows you to upload attachments  to a testcase id
     dataset :
@@ -4300,7 +4288,7 @@ def upload_attachment_to_step(data_set):
     sModuleInfo = inspect.currentframe().f_code.co_name + " : " + MODULE_NAME
     try:
         var_id = None
-        var_path=None
+        var_path = None
         for left, mid, right in data_set:
             left = left.strip().lower()
             if "id" == left:
@@ -4321,18 +4309,16 @@ def upload_attachment_to_step(data_set):
             data={"file_upload_step": var_id, },
             verify=False,
             **headers)
-        return "passed"
 
+        CommonUtil.ExecLog(sModuleInfo, "Attachment was uploaded to STEP-%s" % var_id, 1)
+        return "passed"
 
     except:
         return CommonUtil.Exception_Handler(sys.exc_info())
 
 
-
-
 @logger
 def download_attachment_from_step(data_set):
-
     """
     usage: This action allows you to download attachments  from a testcase id
     dataset :
@@ -4347,8 +4333,8 @@ def download_attachment_from_step(data_set):
     sModuleInfo = inspect.currentframe().f_code.co_name + " : " + MODULE_NAME
     try:
         var_id = None
-        var_name=None
-        var_path=None
+        var_name = None
+        var_path = None
         for left, mid, right in data_set:
             left = left.strip().lower()
             if "id" == left:
@@ -4369,7 +4355,7 @@ def download_attachment_from_step(data_set):
             return "zeuz_failed"
 
         headers = RequestFormatter.add_api_key_to_headers({})
-        url=RequestFormatter.form_uri(f"static/step_folder/{var_id}/{var_name}")
+        url = RequestFormatter.form_uri(f"static/step_folder/{var_id}/{var_name}")
         local_filename = url.split('/')[-1]
         with requests.get(url, stream=True, verify=False,**headers) as r:
             r.raise_for_status()
@@ -4377,26 +4363,15 @@ def download_attachment_from_step(data_set):
                 for chunk in r.iter_content(chunk_size=8192):
                     f.write(chunk)
 
+        CommonUtil.ExecLog(sModuleInfo, "Attachment '%s' was downloaded from STEP-%s" % (var_name, var_id), 1)
         return "passed"
-
 
     except Exception as e:
         return CommonUtil.Exception_Handler(sys.exc_info())
 
 
-
-
-
-
-
-
-
-
-
-
 @logger
 def upload_attachment_to_global(data_set):
-
     """
     usage: This action allows you to upload attachments  to a testcase id
     dataset :
@@ -4408,8 +4383,7 @@ def upload_attachment_to_global(data_set):
     """
     sModuleInfo = inspect.currentframe().f_code.co_name + " : " + MODULE_NAME
     try:
-        var_id = None
-        var_path=None
+        var_path = None
         for left, mid, right in data_set:
             left = left.strip().lower()
             if "attachment path" == left:
@@ -4419,25 +4393,20 @@ def upload_attachment_to_global(data_set):
             CommonUtil.ExecLog(sModuleInfo, "Please insert attachment path ", 3)
             return "zeuz_failed"
         headers = RequestFormatter.add_api_key_to_headers({})
-        lala=(ConfigModule.get_config_value("sectionOne", 'project', temp_config))
-        print(lala)
         res = requests.post(
             RequestFormatter.form_uri("global_file_upload/"),
             files={"file": open(var_path,'rb')},
             verify=False,
             **headers)
+        CommonUtil.ExecLog(sModuleInfo, "Attachment was uploaded to Global Attachmetns", 1)
         return "passed"
-
 
     except:
         return CommonUtil.Exception_Handler(sys.exc_info())
 
 
-
-
 @logger
 def download_attachment_from_global(data_set):
-
     """
     usage: This action allows you to download attachments  from a testcase id
     dataset :
@@ -4450,9 +4419,8 @@ def download_attachment_from_global(data_set):
     """
     sModuleInfo = inspect.currentframe().f_code.co_name + " : " + MODULE_NAME
     try:
-        var_id = None
-        var_name=None
-        var_path=None
+        var_name = None
+        var_path = None
         for left, mid, right in data_set:
             left = left.strip().lower()
             if "attachment name" == left:
@@ -4468,7 +4436,7 @@ def download_attachment_from_global(data_set):
             return "zeuz_failed"
 
         headers = RequestFormatter.add_api_key_to_headers({})
-        url=RequestFormatter.form_uri(f"static/global_folder/{var_name}")
+        url = RequestFormatter.form_uri(f"static/global_folder/{var_name}")
         local_filename = url.split('/')[-1]
         with requests.get(url, stream=True, verify=False,**headers) as r:
             r.raise_for_status()
@@ -4476,13 +4444,11 @@ def download_attachment_from_global(data_set):
                 for chunk in r.iter_content(chunk_size=8192):
                     f.write(chunk)
 
+        CommonUtil.ExecLog(sModuleInfo, "Attachment '%s' was downloaded from Global Attachments" % var_name, 1)
         return "passed"
-
 
     except Exception as e:
         return CommonUtil.Exception_Handler(sys.exc_info())
-
-
 
 
 @logger
@@ -4505,7 +4471,6 @@ def compare_item_occurrence(data_set):
                 selector = right
             elif "class" == left or "id" == left:
                 attr_dict[left] = right
-
 
         with open(parentpath) as pf:
             p_soup = BeautifulSoup(pf, 'html.parser')
@@ -4531,7 +4496,6 @@ def compare_item_occurrence(data_set):
                 3,
             )
             return "zeuz_failed"
-
 
     except:
         return CommonUtil.Exception_Handler(sys.exc_info())
