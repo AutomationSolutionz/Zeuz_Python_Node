@@ -11,6 +11,7 @@ import itertools
 from pathlib import Path
 
 from bs4 import BeautifulSoup
+import requests
 from premailer import transform
 from html_diff import diff
 
@@ -18,12 +19,13 @@ from imap_tools import MailBox
 import re
 from typing import List
 
+
 try:
     import xlwings as xw
 except:
     pass
 global sr
-from Framework.Utilities import CommonUtil, ConfigModule
+from Framework.Utilities import CommonUtil, ConfigModule, RequestFormatter
 from Framework.Built_In_Automation.Shared_Resources import (
     BuiltInFunctionSharedResources as sr,
 )
@@ -4174,6 +4176,279 @@ def random_email_delete(data_set):
         return CommonUtil.Exception_Handler(sys.exc_info())
 
 
+@logger
+def upload_attachment_to_testcase(data_set):
+    """
+    usage: This action allows you to upload attachments  to a testcase id
+    dataset :
+        id                  | input parameter | TEST-0151
+        attachment path     | input parameter | path
+        upload attachment to testcase | common action | result
+
+    return : return True/False
+    note: id will be the testcase id , attachment path will be the path of that attachment ,result will be the variable name to store
+    """
+    sModuleInfo = inspect.currentframe().f_code.co_name + " : " + MODULE_NAME
+    try:
+        var_id = None
+        var_path = None
+        for left, mid, right in data_set:
+            left = left.strip().lower()
+            if "id" == left:
+               var_id = right.strip()
+            if "attachment path" == left:
+               var_path = CommonUtil.path_parser(right)
+
+        if var_id is None:
+            CommonUtil.ExecLog(sModuleInfo, "Please insert testcase id ", 3)
+            return "zeuz_failed"
+        if var_path is None:
+            CommonUtil.ExecLog(sModuleInfo, "Please insert attachment path ", 3)
+            return "zeuz_failed"
+        headers = RequestFormatter.add_api_key_to_headers({})
+        res = requests.post(
+            RequestFormatter.form_uri("test_case_file_upload/"),
+            files={"file": open(var_path, 'rb')},
+            data={"file_upload_tc": var_id},
+            verify=False,
+            **headers)
+
+        CommonUtil.ExecLog(sModuleInfo, "Attachment was uploaded to TEST-%s" % var_id, 1)
+        return "passed"
+
+    except:
+        return CommonUtil.Exception_Handler(sys.exc_info())
+
+
+@logger
+def download_attachment_from_testcase(data_set):
+    """
+    usage: This action allows you to download attachments  from a testcase id
+    dataset :
+        id                  | input parameter | TEST-0151
+        attachment name     | input parameter | name
+        path to save        | optional parameter | path
+        download_attachment_from_testcase | common action | result
+
+    return : return True/False
+    note: id will be the testcase id , attachment name will be the name of that attachment ,result will be the variable name to store
+    """
+    sModuleInfo = inspect.currentframe().f_code.co_name + " : " + MODULE_NAME
+    try:
+        var_id = None
+        var_name = None
+        var_path = None
+        for left, mid, right in data_set:
+            left = left.strip().lower()
+            if "id" == left:
+               var_id = right.strip()
+            if "attachment name" == left:
+               var_name = right.strip()
+            if "path to save" == left:
+               var_path = CommonUtil.path_parser(right)
+
+        if var_id is None:
+            CommonUtil.ExecLog(sModuleInfo, "Please insert testcase id ", 3)
+            return "zeuz_failed"
+        if var_path is None:
+            CommonUtil.ExecLog(sModuleInfo, "Please insert attachment path to download ", 3)
+            return "zeuz_failed"
+        if var_name is None:
+            CommonUtil.ExecLog(sModuleInfo, "Please insert attachment name to download ", 3)
+            return "zeuz_failed"
+
+        headers = RequestFormatter.add_api_key_to_headers({})
+        url = RequestFormatter.form_uri(f"static/tc_folder/{var_id}/{var_name}")
+        local_filename = url.split('/')[-1]
+        with requests.get(url, stream=True, verify=False,**headers) as r:
+            r.raise_for_status()
+            with open(var_path+'/'+local_filename, 'wb') as f:
+                for chunk in r.iter_content(chunk_size=8192):
+                    f.write(chunk)
+
+        CommonUtil.ExecLog(sModuleInfo, "Attachment '%s' was downloaded from TEST-%s" % (var_name, var_id), 1)
+        return "passed"
+
+    except Exception as e:
+        return CommonUtil.Exception_Handler(sys.exc_info())
+
+
+@logger
+def upload_attachment_to_step(data_set):
+    """
+    usage: This action allows you to upload attachments  to a testcase id
+    dataset :
+        id                  | input parameter | 14
+        attachment path     | input parameter | path
+        upload attachment to step | common action | result
+
+    return : return True/False
+    note: id will be the step id , attachment path will be the path of that attachment ,result will be the variable name to store
+    """
+    sModuleInfo = inspect.currentframe().f_code.co_name + " : " + MODULE_NAME
+    try:
+        var_id = None
+        var_path = None
+        for left, mid, right in data_set:
+            left = left.strip().lower()
+            if "id" == left:
+               var_id = right.strip()
+            if "attachment path" == left:
+               var_path = CommonUtil.path_parser(right)
+
+        if var_id is None:
+            CommonUtil.ExecLog(sModuleInfo, "Please insert step id ", 3)
+            return "zeuz_failed"
+        if var_path is None:
+            CommonUtil.ExecLog(sModuleInfo, "Please insert attachment path ", 3)
+            return "zeuz_failed"
+        headers = RequestFormatter.add_api_key_to_headers({})
+        res = requests.post(
+            RequestFormatter.form_uri("step_file_upload/"),
+            files={"file": open(var_path,'rb')},
+            data={"file_upload_step": var_id, },
+            verify=False,
+            **headers)
+
+        CommonUtil.ExecLog(sModuleInfo, "Attachment was uploaded to STEP-%s" % var_id, 1)
+        return "passed"
+
+    except:
+        return CommonUtil.Exception_Handler(sys.exc_info())
+
+
+@logger
+def download_attachment_from_step(data_set):
+    """
+    usage: This action allows you to download attachments  from a testcase id
+    dataset :
+        id                  | input parameter | 14
+        attachment name     | input parameter | name
+        path to save        | optional parameter | path
+        download attachment from_step | common action | result
+
+    return : return True/False
+    note: id will be the testcase id , attachment name will be the name of that attachment ,result will be the variable name to store
+    """
+    sModuleInfo = inspect.currentframe().f_code.co_name + " : " + MODULE_NAME
+    try:
+        var_id = None
+        var_name = None
+        var_path = None
+        for left, mid, right in data_set:
+            left = left.strip().lower()
+            if "id" == left:
+               var_id = right.strip()
+            if "attachment name" == left:
+               var_name = right.strip()
+            if "path to save" == left:
+               var_path = CommonUtil.path_parser(right)
+
+        if var_id is None:
+            CommonUtil.ExecLog(sModuleInfo, "Please insert testcase id ", 3)
+            return "zeuz_failed"
+        if var_path is None:
+            CommonUtil.ExecLog(sModuleInfo, "Please insert attachment path to download ", 3)
+            return "zeuz_failed"
+        if var_name is None:
+            CommonUtil.ExecLog(sModuleInfo, "Please insert attachment name to download ", 3)
+            return "zeuz_failed"
+
+        headers = RequestFormatter.add_api_key_to_headers({})
+        url = RequestFormatter.form_uri(f"static/step_folder/{var_id}/{var_name}")
+        local_filename = url.split('/')[-1]
+        with requests.get(url, stream=True, verify=False,**headers) as r:
+            r.raise_for_status()
+            with open(var_path+'/'+local_filename, 'wb') as f:
+                for chunk in r.iter_content(chunk_size=8192):
+                    f.write(chunk)
+
+        CommonUtil.ExecLog(sModuleInfo, "Attachment '%s' was downloaded from STEP-%s" % (var_name, var_id), 1)
+        return "passed"
+
+    except Exception as e:
+        return CommonUtil.Exception_Handler(sys.exc_info())
+
+
+@logger
+def upload_attachment_to_global(data_set):
+    """
+    usage: This action allows you to upload attachments  to a testcase id
+    dataset :
+        attachment path     | input parameter | path
+        upload attachment to global | common action | result
+
+    return : return True/False
+    note: attachment path will be the path of that attachment ,result will be the variable name to store
+    """
+    sModuleInfo = inspect.currentframe().f_code.co_name + " : " + MODULE_NAME
+    try:
+        var_path = None
+        for left, mid, right in data_set:
+            left = left.strip().lower()
+            if "attachment path" == left:
+               var_path = CommonUtil.path_parser(right)
+
+        if var_path is None:
+            CommonUtil.ExecLog(sModuleInfo, "Please insert attachment path ", 3)
+            return "zeuz_failed"
+        headers = RequestFormatter.add_api_key_to_headers({})
+        res = requests.post(
+            RequestFormatter.form_uri("global_file_upload/"),
+            files={"file": open(var_path,'rb')},
+            verify=False,
+            **headers)
+        CommonUtil.ExecLog(sModuleInfo, "Attachment was uploaded to Global Attachmetns", 1)
+        return "passed"
+
+    except:
+        return CommonUtil.Exception_Handler(sys.exc_info())
+
+
+@logger
+def download_attachment_from_global(data_set):
+    """
+    usage: This action allows you to download attachments  from a testcase id
+    dataset :
+        attachment name     | input parameter | name
+        path to save        | optional parameter | path
+        download attachment from global | common action | result
+
+    return : return True/False
+    note:  attachment name will be the name of that attachment ,result will be the variable name to store
+    """
+    sModuleInfo = inspect.currentframe().f_code.co_name + " : " + MODULE_NAME
+    try:
+        var_name = None
+        var_path = None
+        for left, mid, right in data_set:
+            left = left.strip().lower()
+            if "attachment name" == left:
+               var_name = right.strip()
+            if "path to save" == left:
+               var_path = CommonUtil.path_parser(right)
+
+        if var_path is None:
+            CommonUtil.ExecLog(sModuleInfo, "Please insert attachment path to download ", 3)
+            return "zeuz_failed"
+        if var_name is None:
+            CommonUtil.ExecLog(sModuleInfo, "Please insert attachment name to download ", 3)
+            return "zeuz_failed"
+
+        headers = RequestFormatter.add_api_key_to_headers({})
+        url = RequestFormatter.form_uri(f"static/global_folder/{var_name}")
+        local_filename = url.split('/')[-1]
+        with requests.get(url, stream=True, verify=False,**headers) as r:
+            r.raise_for_status()
+            with open(var_path+'/'+local_filename, 'wb') as f:
+                for chunk in r.iter_content(chunk_size=8192):
+                    f.write(chunk)
+
+        CommonUtil.ExecLog(sModuleInfo, "Attachment '%s' was downloaded from Global Attachments" % var_name, 1)
+        return "passed"
+
+    except Exception as e:
+        return CommonUtil.Exception_Handler(sys.exc_info())
 
 
 @logger
@@ -4196,7 +4471,6 @@ def compare_item_occurrence(data_set):
                 selector = right
             elif "class" == left or "id" == left:
                 attr_dict[left] = right
-
 
         with open(parentpath) as pf:
             p_soup = BeautifulSoup(pf, 'html.parser')
@@ -4222,7 +4496,6 @@ def compare_item_occurrence(data_set):
                 3,
             )
             return "zeuz_failed"
-
 
     except:
         return CommonUtil.Exception_Handler(sys.exc_info())
