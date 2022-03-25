@@ -508,6 +508,7 @@ def run_all_test_steps_in_a_test_case(
             current_step_name = all_step_info[StepSeq - 1]["step_name"]
             current_step_id = all_step_info[StepSeq - 1]["step_id"]
             current_step_sequence = all_step_info[StepSeq - 1]["step_sequence"]
+            shared.Set_Shared_Variables("zeuz_current_step", all_step_info[StepSeq - 1], print_variable=False, pretty=False)
 
             step_attachments = all_step_info[StepSeq - 1]['step_attachments']
             step_attachment_list = []
@@ -785,6 +786,7 @@ def run_test_case(
         set_important_variables()
         file_specific_steps = all_file_specific_steps[TestCaseID] if TestCaseID in all_file_specific_steps else {}
         TestCaseName = testcase_info["title"]
+        shared.Set_Shared_Variables("zeuz_current_tc", testcase_info, print_variable=False, pretty=False)
         log_line = "# EXECUTING TEST CASE : %s :: %s #" % (test_case, TestCaseName)
         print("#"*(len(log_line)))
         CommonUtil.ExecLog("", log_line, 4, False)
