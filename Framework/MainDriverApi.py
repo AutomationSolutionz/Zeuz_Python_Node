@@ -885,8 +885,11 @@ def run_test_case(
                         send_log_file_only_for_fail
                     )
 
-                    tc_report = copy.deepcopy(testcase_info)
-                    for step in tc_report["steps"]:
+                    tc_report = copy.deepcopy(CommonUtil.all_logs_json)
+                    tc_report[CommonUtil.runid_index]["machine_name"] = Userid
+                    tc_report[CommonUtil.runid_index]["test_cases"] = [tc_report[CommonUtil.runid_index]["test_cases"][CommonUtil.tc_index]]
+
+                    for step in tc_report[CommonUtil.runid_index]["test_cases"][0]["steps"]:
                         if "actions" in step:
                             del step["actions"]
                         if "log" in step:
@@ -895,7 +898,7 @@ def run_test_case(
                         try:
                             res = requests.post(
                                 RequestFormatter.form_uri("create_report_log_api/"),
-                                data={"machine_name": Userid, "execution_report": {"run_id": run_id, "testcase": tc_report}},
+                                data={"execution_report": json.dumps(tc_report)},
                                 verify=False,
                                 **RequestFormatter.add_api_key_to_headers({}))
                             if res.status_code == 200:
