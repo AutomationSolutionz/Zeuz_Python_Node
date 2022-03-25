@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 # -*- coding: cp1252 -*-
-
+import copy
 import json
 import inspect
 import os
@@ -171,7 +171,7 @@ def check_if_other_machines_failed_in_linked_run():
 
 
 # downloads attachments for a test case
-def create_tc_log_ss_folder(run_id, test_case, temp_ini_file):
+def create_tc_log_ss_folder(run_id, test_case, temp_ini_file, server_version):
     try:
         log_file_path = ConfigModule.get_config_value(
             "sectionOne", "temp_run_file_path", temp_ini_file
@@ -181,11 +181,11 @@ def create_tc_log_ss_folder(run_id, test_case, temp_ini_file):
     test_case_folder = (
         log_file_path +
         os.sep +
-        (run_id.replace(":", "-") +
+        run_id.replace(":", "-") +
         os.sep +
         CommonUtil.current_session_name +
         os.sep +
-        test_case.replace(":", "-"))
+        test_case.replace(":", "-")
     )
     # create test_case_folder
     ConfigModule.add_config_value("sectionOne", "test_case", test_case, temp_ini_file)
@@ -206,6 +206,12 @@ def create_tc_log_ss_folder(run_id, test_case, temp_ini_file):
     performance_report = test_case_folder + os.sep + "performance_report"
     ConfigModule.add_config_value("sectionOne", "performance_report", performance_report, temp_ini_file)
     FL.CreateFolder(performance_report)
+
+    if float(server_version.split(".")[0]) >= 7:
+        # json report folder
+        json_report = test_case_folder + os.sep + "json_report"
+        ConfigModule.add_config_value("sectionOne", "json_report", json_report, temp_ini_file)
+        FL.CreateFolder(json_report)
 
     # create where attachments from selenium browser will be downloaded
     zeuz_download_folder = test_case_folder + os.sep + "zeuz_download_folder"
@@ -672,7 +678,7 @@ def calculate_test_case_result(sModuleInfo, TestCaseID, run_id, sTestStepResultL
 
 
 # writes the log file for a test case
-def zip_and_delete_tc_folder(
+def zip_and_delete_tc_folder_old(
     sTestCaseStatus,
     temp_ini_file,
     send_log_file_only_for_fail=True,
@@ -683,6 +689,33 @@ def zip_and_delete_tc_folder(
             FL.ZipFolder(
                 ConfigModule.get_config_value("sectionOne", "test_case_folder", temp_ini_file),
                 ConfigModule.get_config_value("sectionOne", "test_case_folder", temp_ini_file) + ".zip",
+            )
+    # Delete the folder
+    FL.DeleteFolder(ConfigModule.get_config_value("sectionOne", "test_case_folder", temp_ini_file))
+
+
+# writes the log file for a test case
+def zip_and_delete_tc_folder(
+    run_id,
+    TestCaseID,
+    sTestCaseStatus,
+    temp_ini_file,
+    send_log_file_only_for_fail=True,
+
+):
+    # if settings checked, then send log file or screenshots, otherwise don't send
+    if sTestCaseStatus not in passed_tag_list or sTestCaseStatus in passed_tag_list and not send_log_file_only_for_fail:
+        if ConfigModule.get_config_value("RunDefinition", "local_run") == "False":
+            all_steps = CommonUtil.all_logs_json[CommonUtil.runid_index]["test_cases"][CommonUtil.tc_index]["steps"]
+            for step in all_steps:
+                json_filename = Path(ConfigModule.get_config_value("sectionOne", "json_report", temp_ini_file))/(str(step["step_sequence"])+".json")
+                with open(json_filename, "w") as f:
+                    json.dump(step, f)
+
+            zip_name = run_id.replace(":", "-") + "_" + TestCaseID.replace(":", "-") + ".zip"
+            FL.ZipFolder(
+                ConfigModule.get_config_value("sectionOne", "test_case_folder", temp_ini_file),
+                Path(ConfigModule.get_config_value("sectionOne", "test_case_folder", temp_ini_file)).parent/zip_name,
             )
     # Delete the folder
     FL.DeleteFolder(ConfigModule.get_config_value("sectionOne", "test_case_folder", temp_ini_file))
@@ -735,6 +768,8 @@ def run_test_case(
     debug_info,
     all_file_specific_steps,
     rerun_on_fail,
+    Userid,
+    server_version,
     send_log_file_only_for_fail=True,
     performance=False,
     browserDriver=None,
@@ -746,7 +781,7 @@ def run_test_case(
         CommonUtil.current_tc_no = test_case
         CommonUtil.load_testing = False
         ConfigModule.add_config_value("sectionOne", "sTestStepExecLogId", sModuleInfo, temp_ini_file)
-        create_tc_log_ss_folder(run_id, test_case, temp_ini_file)
+        create_tc_log_ss_folder(run_id, test_case, temp_ini_file, server_version)
         set_important_variables()
         file_specific_steps = all_file_specific_steps[TestCaseID] if TestCaseID in all_file_specific_steps else {}
         TestCaseName = testcase_info["title"]
@@ -832,12 +867,54 @@ def run_test_case(
             cleanup_driver_instances()  # clean up drivers
             shared.Clean_Up_Shared_Variables()  # clean up shared variables
             if ConfigModule.get_config_value("RunDefinition", "local_run") == "False":
-                zip_and_delete_tc_folder(
-                    sTestCaseStatus,
-                    temp_ini_file,
-                    send_log_file_only_for_fail
-                )
+                
+                if float(server_version.split(".")[0]) < 7:
+                    zip_and_delete_tc_folder_old(
+                        sTestCaseStatus,
+                        temp_ini_file,
+                        send_log_file_only_for_fail
+                    )
+                else:
+                    zip_and_delete_tc_folder(
+                        run_id,
+                        TestCaseID,
+                        sTestCaseStatus,
+                        temp_ini_file,
+                        send_log_file_only_for_fail
+                    )
 
+                    tc_report = copy.deepcopy(testcase_info)
+                    for step in tc_report["steps"]:
+                        if "actions" in step:
+                            del step["actions"]
+                        if "log" in step:
+                            del step["log"]
+                    for _ in range(5):
+                        try:
+                            res = requests.post(
+                                RequestFormatter.form_uri("create_report_log_api/"),
+                                data={"machine_name": Userid, "execution_report": {"run_id": run_id, "testcase": tc_report}},
+                                verify=False,
+                                **RequestFormatter.add_api_key_to_headers({}))
+                            if res.status_code == 200:
+                                try:
+                                    res_json = res.json()
+                                except:
+                                    print("Could not Upload execution report of TEST-%s" % TestCaseID)
+                                    print("\nResponse Text = " + res.text + "\n")
+                                    break
+                                if isinstance(res_json, dict) and 'message' in res_json and res_json["message"]:
+                                    print("Successfully Uploaded the execution report of TEST-%s" % TestCaseID)
+                                else:
+                                    print("Could not Upload the execution report of TEST-%s" % TestCaseID)
+                                    print("\nResponse Text = " + res.text + "\n")
+                                break
+                            time.sleep(4)
+                        except:
+                            CommonUtil.Exception_Handler(sys.exc_info())
+                            time.sleep(4)
+                    else:
+                        print("Could not Upload the report to server of TEST-%s" % TestCaseID)
         return "passed"
     except:
         CommonUtil.Exception_Handler(sys.exc_info())
@@ -1011,7 +1088,7 @@ def check_run_cancel(run_id):
     # CommonUtil.run_cancelled = False
 
 
-def upload_json_report(Userid, temp_ini_file, run_id):
+def upload_json_report_old(Userid, temp_ini_file, run_id):
     try:
         if CommonUtil.debug_status: return
         zip_path = Path(ConfigModule.get_config_value("sectionOne", "temp_run_file_path", temp_ini_file))/run_id.replace(":", "-")/CommonUtil.current_session_name
@@ -1076,6 +1153,69 @@ def upload_json_report(Userid, temp_ini_file, run_id):
             junit_report.process(CommonUtil.all_logs_json, str(junit_report_path))
             print("DONE. Generated junit report at %s" % junit_report_path)
         return zip_path
+    except:
+        CommonUtil.Exception_Handler(sys.exc_info())
+
+
+def upload_zips(Userid, temp_ini_file, run_id):
+    try:
+        if CommonUtil.debug_status: return
+        zip_dir = Path(ConfigModule.get_config_value("sectionOne", "temp_run_file_path", temp_ini_file))/run_id.replace(":", "-")/CommonUtil.current_session_name
+
+        if ConfigModule.get_config_value("RunDefinition", "local_run") == "False" and CommonUtil.run_cancel != CANCELLED_TAG:
+            # FL.ZipFolder(str(zip_path), str(zip_path) + ".zip")
+
+            zip_files = [os.path.join(zip_dir, f) for f in os.listdir(zip_dir) if f.endswith(".zip")]
+            opened_zips = []
+            size = 0
+            for zip_file in zip_files:
+                opened_zips.append(open(str(zip_file), "rb"))
+                size += round(os.stat(str(zip_file)).st_size / 1024, 2)
+
+            if size > 1024:
+                size = str(round(size/1024, 2)) + " MB"
+            else:
+                size = str(size) + " KB"
+            print("Uploading %s logs-screenshots of %s testcases of %s from:\n%s" % (CommonUtil.current_session_name, len(zip_files), size, str(zip_dir)))
+
+            for _ in range(5):
+                try:
+                    res = requests.post(
+                        RequestFormatter.form_uri("save_log_and_attachment_api/"),
+                        files=opened_zips,
+                        data={"machine_name": Userid},
+                        verify=False,
+                        **RequestFormatter.add_api_key_to_headers({}))
+                    if res.status_code == 200:
+                        try:
+                            res_json = res.json()
+                        except:
+                            print("Could not Upload logs-screenshots to server")
+                            print("\nResponse Text = " + res.text + "\n")
+                            break
+                        if isinstance(res_json, dict) and 'message' in res_json and res_json["message"]:
+                            print("Successfully Uploaded logs-screenshots to server of run_id '%s'" % run_id)
+                        else:
+                            print("Could not Upload logs-screenshots to server of run_id '%s'" % run_id)
+                            print("\nResponse Text = " + res.text + "\n")
+                        break
+                except:
+                    pass
+
+                time.sleep(4)
+            else:
+                print("Could not Upload logs-screenshots to server of run_id '%s'" % run_id)
+
+        with open(zip_dir / "execution_log_old_format.json", "w") as f:
+            json.dump(CommonUtil.get_all_logs(json=True), f, indent=2)
+
+        if CommonUtil.run_cancel != CANCELLED_TAG:
+            # Create a standard report format to be consumed by other tools.
+            junit_report_path = zip_dir / "junitreport.xml"
+            print("Generating junit4 compatible report.")
+            junit_report.process(CommonUtil.all_logs_json, str(junit_report_path))
+            print("DONE. Generated junit report at %s" % junit_report_path)
+        return zip_dir
     except:
         CommonUtil.Exception_Handler(sys.exc_info())
 
@@ -1151,12 +1291,12 @@ def main(device_dict, user_info_object):
         for run_id_info in all_run_id_info:
             run_id_info["base_path"] = ConfigModule.get_config_value("Advanced Options", "_file_upload_path")
             run_id = run_id_info["run_id"]
-            release_version = run_id_info["release_version"]
+            server_version = run_id_info["release_version"]
             release_name = run_id_info["release_name"]
             release_info = run_id_info["release_info"]
             CommonUtil.ExecLog(
                 "",
-                "Server version = %s\nServer Release Date = %s\nServer Release Note = %s" % (release_version, release_name, release_info),
+                "Server version = %s\nServer Release Date = %s\nServer Release Note = %s" % (server_version, release_name, release_info),
                 4,
                 False,
             )
@@ -1369,6 +1509,8 @@ def main(device_dict, user_info_object):
                             debug_info,
                             all_file_specific_steps,
                             rerun_on_fail,
+                            Userid,
+                            server_version,
                             send_log_file_only_for_fail,
                         )
                         CommonUtil.clear_all_logs()  # clear logs
@@ -1392,7 +1534,12 @@ def main(device_dict, user_info_object):
                     "duration": TestSetDuration
                 }
                 CommonUtil.CreateJsonReport(setInfo=after_execution_dict)
-                upload_json_report(Userid, temp_ini_file, run_id)
+
+                if float(server_version.split(".")[0]) < 7:
+                    upload_json_report_old(Userid, temp_ini_file, run_id)
+                else:
+                    upload_zips(Userid, temp_ini_file, run_id)
+
                 session_cnt += 1
 
             print("Test set execution time = %s sec for %s testcases" % (round(TimeDiff, 3), num_of_tc))
