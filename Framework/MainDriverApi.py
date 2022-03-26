@@ -1185,9 +1185,12 @@ def upload_zips(Userid, temp_ini_file, run_id):
 
             for _ in range(5):
                 try:
+                    files_list=[]
+                    for zips in opened_zips:
+                        files_list.append(("file",zips))
                     res = requests.post(
                         RequestFormatter.form_uri("save_log_and_attachment_api/"),
-                        files=opened_zips,
+                        files=files_list,
                         data={"machine_name": Userid},
                         verify=False,
                         **RequestFormatter.add_api_key_to_headers({}))
