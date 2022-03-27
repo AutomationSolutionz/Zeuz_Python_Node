@@ -5253,3 +5253,37 @@ def search_text_and_font(data_set):
         return CommonUtil.Exception_Handler(sys.exc_info())
 
 
+@logger
+def disable_step(data_set):
+    sModuleInfo = inspect.currentframe().f_code.co_name + " : " + MODULE_NAME
+    try:
+        steps = []
+        step_value = ""
+        for left, middle, right in data_set:
+            left = left.lower().strip()
+            if "steps" == left:
+                step_value = right.replace(" ", "")
+
+        splitted = str(step_value).strip().split(",")
+        for each in splitted:
+            try:
+                if "-" in each:
+                    start, end = each.replace(" ", "").split("-")
+                    for i in range(int(start), int(end) + 1):
+                        steps.append(i)
+                else:
+                    string = each.strip()
+                    steps.append(int(string))
+            except:
+                pass
+        if len(steps) == 0:
+            CommonUtil.ExecLog(sModuleInfo, "All steps have been enabled", 1)
+        else:
+            CommonUtil.ExecLog(sModuleInfo, "%s steps have been enabled" % steps, 1)
+            CommonUtil.disabled_step = steps
+
+        return "passed"
+    except:
+        return CommonUtil.Exception_Handler(sys.exc_info())
+
+

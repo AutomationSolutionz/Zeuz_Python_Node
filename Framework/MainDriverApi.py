@@ -550,19 +550,24 @@ def run_all_test_steps_in_a_test_case(
             sTestStepStartTime = datetime.fromtimestamp(TestStepStartTime).strftime("%Y-%m-%d %H:%M:%S.%f")
             WinMemBegin = CommonUtil.PhysicalAvailableMemory()  # get available memory
 
-            sStepResult = call_driver_function_of_test_step(
-                sModuleInfo,
-                all_step_info,
-                StepSeq,
-                step_time,
-                current_step_name,
-                final_dependency,
-                final_run_params,
-                test_steps_data,
-                test_action_info,
-                file_specific_steps,
-                debug_actions,
-            )
+            if StepSeq in CommonUtil.disabled_step:
+                CommonUtil.ExecLog(sModuleInfo, "STEP-%s is disabled" % StepSeq, 2)
+                sStepResult = "skipped"
+            else:
+                sStepResult = call_driver_function_of_test_step(
+                    sModuleInfo,
+                    all_step_info,
+                    StepSeq,
+                    step_time,
+                    current_step_name,
+                    final_dependency,
+                    final_run_params,
+                    test_steps_data,
+                    test_action_info,
+                    file_specific_steps,
+                    debug_actions,
+                )
+
             TestStepEndTime = time.time()
             sTestStepEndTime = datetime.fromtimestamp(TestStepEndTime).strftime("%Y-%m-%d %H:%M:%S.%f")
             WinMemEnd = CommonUtil.PhysicalAvailableMemory()  # get available memory
@@ -599,8 +604,12 @@ def run_all_test_steps_in_a_test_case(
                 CommonUtil.ExecLog(sModuleInfo, "%s : Test Step Passed" % current_step_name, 1)
                 after_execution_dict.update({"status": PASSED_TAG})
 
+            elif sStepResult.upper() == "SKIPPED":
+                CommonUtil.ExecLog(sModuleInfo, "%s : Test Step Skipped" % current_step_name, 2)
+                after_execution_dict.update({"status": "Skipped"})
+
             else:
-                CommonUtil.ExecLog(sModuleInfo, "%s%s" % (current_step_name, CommonUtil.to_dlt_from_fail_reason), 3)  # add log
+                CommonUtil.ExecLog(sModuleInfo, "%s%s" % (current_step_name, CommonUtil.to_dlt_from_fail_reason), 3)
                 after_execution_dict.update({"status": "Failed"})  # dictionary update
 
                 # check if set for continue
@@ -1424,6 +1433,7 @@ def main(device_dict, user_info_object):
                     test_case_no = testcase_info["testcase_no"]
                     test_case_name = testcase_info["title"]
                     set_device_info_according_to_user_order(device_order, device_dict, test_case_no, test_case_name, user_info_object, Userid)
+                    CommonUtil.disabled_step = []
 
                     if performance_test_case:
                         # get performance test info
