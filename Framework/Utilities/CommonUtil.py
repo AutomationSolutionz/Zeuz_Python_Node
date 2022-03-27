@@ -127,6 +127,7 @@ current_session_name = ""
 custom_step_duration = ""
 run_cancel = ""
 run_cancelled = False
+disabled_step = []
 
 executor = concurrent.futures.ThreadPoolExecutor()
 all_threads = {}
