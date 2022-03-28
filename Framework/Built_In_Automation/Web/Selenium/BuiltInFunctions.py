@@ -68,10 +68,6 @@ temp_config = os.path.join(
         ),
     )
 )
-
-# Disable WebdriverManager SSL verification.
-os.environ['WDM_SSL_VERIFY'] = '0'
-
 global WebDriver_Wait
 WebDriver_Wait = 1
 global WebDriver_Wait_Short
