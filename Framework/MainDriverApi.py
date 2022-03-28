@@ -1416,7 +1416,7 @@ def main(device_dict, user_info_object):
             num_of_tc = len(all_testcases_info)
             cnt = 1
 
-            max_tc_in_single_session = 25    # Todo: make it 25
+            max_tc_in_single_session = 10    # Todo: make it 25
             all_sessions = split_testcases(run_id_info, max_tc_in_single_session)
             session_cnt = 1
             for each_session in all_sessions:
