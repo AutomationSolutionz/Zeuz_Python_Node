@@ -1174,9 +1174,9 @@ def execute_javascript(data_set):
 
     Args:
         data_set:
-          id/class/etc | element parameter  | button_id     ; optional row
-          variable     | optional parameter | var_name      ; store result into variable
-          execute js   | selenium action    | js_code_here  ; example: $elem.click();
+          id/class/etc       | element parameter  | button_id     ; optional row
+          variable           | optional parameter | var_name      ; store result into variable
+          execute javascript | selenium action    | js_code_here  ; example: $elem.click();
 
     Returns:
         "passed" if the given script execution is successful.
@@ -1197,7 +1197,7 @@ def execute_javascript(data_set):
                 Element = True
             if "variable" == left:
                 var_name = right
-            if "execute js" == left:
+            if "javascript" in left:
                 script_to_exec = right
 
         # Element parameter is provided to use Zeuz Node's element finding approach.
@@ -1210,7 +1210,10 @@ def execute_javascript(data_set):
         else:
             result = selenium_driver.execute_script(script_to_exec, None)
 
-        return Shared_Resources.Set_Shared_Variables(var_name, result)
+        if var_name:
+            return Shared_Resources.Set_Shared_Variables(var_name, result)
+        else:
+            return "passed"
     except Exception:
         errMsg = "Make sure element parameter is provided in the action."
         return CommonUtil.Exception_Handler(sys.exc_info(), None, errMsg)
