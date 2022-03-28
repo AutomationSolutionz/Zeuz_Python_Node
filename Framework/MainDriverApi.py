@@ -725,7 +725,7 @@ def zip_and_delete_tc_folder(
             zip_name = run_id.replace(":", "-") + "_" + TestCaseID.replace(":", "-") + ".zip"
             FL.ZipFolder(
                 ConfigModule.get_config_value("sectionOne", "test_case_folder", temp_ini_file),
-                Path(ConfigModule.get_config_value("sectionOne", "test_case_folder", temp_ini_file)).parent/zip_name,
+                str(Path(ConfigModule.get_config_value("sectionOne", "test_case_folder", temp_ini_file)).parent/zip_name),
             )
     # Delete the folder
     FL.DeleteFolder(ConfigModule.get_config_value("sectionOne", "test_case_folder", temp_ini_file))
@@ -772,13 +772,10 @@ def run_test_case(
     final_dependency,
     final_run_params,
     temp_ini_file,
-    is_linked,
     testcase_info,
-    executor,
     debug_info,
     all_file_specific_steps,
     rerun_on_fail,
-    Userid,
     server_version,
     send_log_file_only_for_fail=True,
     performance=False,
@@ -893,42 +890,6 @@ def run_test_case(
                         temp_ini_file,
                         send_log_file_only_for_fail
                     )
-
-                    tc_report = copy.deepcopy(CommonUtil.all_logs_json)
-                    tc_report[CommonUtil.runid_index]["machine_name"] = Userid
-                    tc_report[CommonUtil.runid_index]["test_cases"] = [tc_report[CommonUtil.runid_index]["test_cases"][CommonUtil.tc_index]]
-
-                    for step in tc_report[CommonUtil.runid_index]["test_cases"][0]["steps"]:
-                        if "actions" in step:
-                            del step["actions"]
-                        if "log" in step:
-                            del step["log"]
-                    for _ in range(5):
-                        try:
-                            res = requests.post(
-                                RequestFormatter.form_uri("create_report_log_api/"),
-                                data={"execution_report": json.dumps(tc_report)},
-                                verify=False,
-                                **RequestFormatter.add_api_key_to_headers({}))
-                            if res.status_code == 200:
-                                try:
-                                    res_json = res.json()
-                                except:
-                                    print("Could not Upload execution report of TEST-%s" % TestCaseID)
-                                    print("\nResponse Text = " + res.text + "\n")
-                                    break
-                                if isinstance(res_json, dict) and 'message' in res_json and res_json["message"]:
-                                    print("Successfully Uploaded the execution report of TEST-%s" % TestCaseID)
-                                else:
-                                    print("Could not Upload the execution report of TEST-%s" % TestCaseID)
-                                    print("\nResponse Text = " + res.text + "\n")
-                                break
-                            time.sleep(4)
-                        except:
-                            CommonUtil.Exception_Handler(sys.exc_info())
-                            time.sleep(4)
-                    else:
-                        print("Could not Upload the report to server of TEST-%s" % TestCaseID)
         return "passed"
     except:
         CommonUtil.Exception_Handler(sys.exc_info())
@@ -1171,13 +1132,50 @@ def upload_json_report_old(Userid, temp_ini_file, run_id):
         CommonUtil.Exception_Handler(sys.exc_info())
 
 
-def upload_zips(Userid, temp_ini_file, run_id):
+def upload_reports_and_zips(Userid, temp_ini_file, run_id):
     try:
         if CommonUtil.debug_status: return
         zip_dir = Path(ConfigModule.get_config_value("sectionOne", "temp_run_file_path", temp_ini_file))/run_id.replace(":", "-")/CommonUtil.current_session_name
 
         if ConfigModule.get_config_value("RunDefinition", "local_run") == "False" and CommonUtil.run_cancel != CANCELLED_TAG:
             # FL.ZipFolder(str(zip_path), str(zip_path) + ".zip")
+
+            tc_report = copy.deepcopy(CommonUtil.all_logs_json)
+            tc_report[CommonUtil.runid_index]["machine_name"] = Userid
+
+            for testcase in tc_report[CommonUtil.runid_index]["test_cases"]:
+                for step in testcase["steps"]:
+                    if "actions" in step:
+                        del step["actions"]
+                    if "log" in step:
+                        del step["log"]
+            for _ in range(5):
+                try:
+                    res = requests.post(
+                        RequestFormatter.form_uri("create_report_log_api/"),
+                        data={"execution_report": json.dumps(tc_report)},
+                        verify=False,
+                        **RequestFormatter.add_api_key_to_headers({}))
+                    if res.status_code == 200:
+                        try:
+                            res_json = res.json()
+                        except:
+                            # print("Could not Upload the report of run_id '%s'" % run_id)
+                            # print("\nResponse Text = " + res.text + "\n")
+                            # break
+                            continue
+                        if isinstance(res_json, dict) and 'message' in res_json and res_json["message"]:
+                            print("Successfully Uploaded the execution report of run_id '%s'" % run_id)
+                        else:
+                            print("Could not Upload the execution report of run_id '%s'" % run_id)
+                            print("\nResponse Text = " + res.text + "\n")
+                        break
+                    time.sleep(4)
+                except:
+                    CommonUtil.Exception_Handler(sys.exc_info())
+                    time.sleep(4)
+            else:
+                print("Could not Upload the report to server of run_id '%s'" % run_id)
 
             zip_files = [os.path.join(zip_dir, f) for f in os.listdir(zip_dir) if f.endswith(".zip")]
             opened_zips = []
@@ -1187,14 +1185,14 @@ def upload_zips(Userid, temp_ini_file, run_id):
                 size += round(os.stat(str(zip_file)).st_size / 1024, 2)
 
             if size > 1024:
-                size = str(round(size/1024, 2)) + " MB"
+                size = str(round(size/1024, 3)) + " MB"
             else:
-                size = str(size) + " KB"
+                size = str(round(size, 3)) + " KB"
             print("Uploading %s logs-screenshots of %s testcases of %s from:\n%s" % (CommonUtil.current_session_name, len(zip_files), size, str(zip_dir)))
 
             for _ in range(5):
                 try:
-                    files_list=[]
+                    files_list = []
                     for zips in opened_zips:
                         files_list.append(("file",zips))
                     res = requests.post(
@@ -1207,9 +1205,10 @@ def upload_zips(Userid, temp_ini_file, run_id):
                         try:
                             res_json = res.json()
                         except:
-                            print("Could not Upload logs-screenshots to server")
-                            print("\nResponse Text = " + res.text + "\n")
-                            break
+                            # print("Could not Upload logs-screenshots to server")
+                            # print("\nResponse Text = " + res.text + "\n")
+                            # break
+                            continue
                         if isinstance(res_json, dict) and 'message' in res_json and res_json["message"]:
                             print("Successfully Uploaded logs-screenshots to server of run_id '%s'" % run_id)
                         else:
@@ -1521,13 +1520,10 @@ def main(device_dict, user_info_object):
                             final_dependency,
                             final_run_params,
                             temp_ini_file,
-                            is_linked,
                             testcase_info,
-                            executor,
                             debug_info,
                             all_file_specific_steps,
                             rerun_on_fail,
-                            Userid,
                             server_version,
                             send_log_file_only_for_fail,
                         )
@@ -1556,7 +1552,7 @@ def main(device_dict, user_info_object):
                 if float(server_version.split(".")[0]) < 7:
                     upload_json_report_old(Userid, temp_ini_file, run_id)
                 else:
-                    upload_zips(Userid, temp_ini_file, run_id)
+                    upload_reports_and_zips(Userid, temp_ini_file, run_id)
 
                 session_cnt += 1
 
