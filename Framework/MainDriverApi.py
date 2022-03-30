@@ -1163,6 +1163,7 @@ def upload_reports_and_zips(Userid, temp_ini_file, run_id):
                     if res.status_code == 200:
                         res_json = res.json()
                         print(f"Successfully uploaded the execution report of run_id {run_id}")
+                        break
                     else:
                         print(f"Failed to upload the execution report of run_id {run_id}")
                         print(f"Status: {res.status_code} Response: {res.text}")
