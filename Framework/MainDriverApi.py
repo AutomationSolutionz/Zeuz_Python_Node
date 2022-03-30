@@ -1165,7 +1165,7 @@ def upload_reports_and_zips(Userid, temp_ini_file, run_id):
                         print(f"Successfully uploaded the execution report of run_id {run_id}")
                     else:
                         print(f"Failed to upload the execution report of run_id {run_id}")
-                        print(f"Status: {res.code} Response: {res.text}")
+                        print(f"Status: {res.status_code} Response: {res.text}")
                         print("Retrying...")
                     time.sleep(4)
                 except:
