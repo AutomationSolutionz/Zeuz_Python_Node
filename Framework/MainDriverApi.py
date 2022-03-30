@@ -30,6 +30,14 @@ from Framework.Built_In_Automation.Shared_Resources import (
 from Framework.Utilities import ws
 from reporting import junit_report
 
+from rich.style import Style
+from rich.table import Table
+from rich.console import Console
+from rich.box import ASCII_DOUBLE_HEAD, DOUBLE
+from rich.padding import Padding
+
+rich_print = Console().print
+
 top_path = os.path.dirname(os.getcwd())
 drivers_path = os.path.join(top_path, "Drivers")
 sys.path.append(drivers_path)
@@ -527,10 +535,19 @@ def run_all_test_steps_in_a_test_case(
             )
             CommonUtil.current_step_no = str(current_step_sequence)
             # add log
-            log_line = "STEP #%d: %s" % (StepSeq, current_step_name)
-            print("-"*len(log_line))
-            CommonUtil.ExecLog(sModuleInfo, log_line, 4)
-            print("-"*len(log_line))
+            # log_line = "STEP #%d: %s" % (StepSeq, current_step_name)
+            # print("-"*len(log_line))
+            # CommonUtil.ExecLog(sModuleInfo, log_line, 4)
+            # print("-"*len(log_line))
+
+            _color = "yellow"
+            # _style = Style(color="yellow", blink=False, bold=True)
+            table = Table(border_style=_color, box=ASCII_DOUBLE_HEAD, expand=False)
+            table.add_column(f"STEP-{StepSeq}", justify="center", style=_color)
+            table.add_row(f"{current_step_name}", style=_color)
+            width_pad = CommonUtil.max_char // 2 - (max(len(current_step_name), 6) + 4) // 2
+            table = Padding(table, (0, width_pad))
+            rich_print(table)
 
             test_steps_data = all_step_dataset[StepSeq-1]
             test_action_info = all_action_info[StepSeq-1]
@@ -793,10 +810,19 @@ def run_test_case(
         file_specific_steps = all_file_specific_steps[TestCaseID] if TestCaseID in all_file_specific_steps else {}
         TestCaseName = testcase_info["title"]
         shared.Set_Shared_Variables("zeuz_current_tc", testcase_info, print_variable=False, pretty=False)
-        log_line = "# EXECUTING TEST CASE : %s :: %s #" % (test_case, TestCaseName)
-        print("#"*(len(log_line)))
-        CommonUtil.ExecLog("", log_line, 4, False)
-        print("#"*(len(log_line)))
+
+        # log_line = "# EXECUTING TEST CASE : %s :: %s #" % (test_case, TestCaseName)
+        # print("#"*(len(log_line)))
+        # CommonUtil.ExecLog("", log_line, 4, False)
+        # print("#"*(len(log_line)))
+        _color = "cyan"
+        # danger_style = Style(color=_color, blink=False, bold=True)
+        table = Table(border_style=_color, box=DOUBLE, expand=False, padding=1)
+        table.add_column(test_case, justify="center", style=_color)
+        table.add_row(TestCaseName, style=_color)
+        width_pad = CommonUtil.max_char//2 - (max(len(TestCaseName), len(test_case)) + 4)//2
+        table = Padding(table, (0, width_pad))
+        rich_print(table)
 
         # get test case start time
         if performance and browserDriver:
@@ -1329,23 +1355,23 @@ def main(device_dict, user_info_object):
 
             # Start websocket server if we're in debug mode.
             if run_id.lower().startswith("debug"):
-                CommonUtil.ExecLog(
-                    "",
-                    "\n********************************\n*    STARTING DEBUG SESSION    *\n********************************",
-                    4,
-                    False,
-                )
+                # CommonUtil.ExecLog(
+                #     "",
+                #     "\n********************************\n*    STARTING DEBUG SESSION    *\n********************************",
+                #     4,
+                #     False,
+                # )
                 CommonUtil.debug_status = True
                 print("[LIVE LOG] Connecting to Live Log service")
                 ws.connect()
                 print("[LIVE LOG] Connected to Live Log service")
             else:
-                CommonUtil.ExecLog(
-                    "",
-                    "\n******************************\n*    STARTING RUN SESSION    *\n******************************",
-                    4,
-                    False,
-                )
+                # CommonUtil.ExecLog(
+                #     "",
+                #     "\n******************************\n*    STARTING RUN SESSION    *\n******************************",
+                #     4,
+                #     False,
+                # )
                 CommonUtil.debug_status = False
                 cleanup_driver_instances()  # clean up drivers
                 shared.Clean_Up_Shared_Variables()  # clean up shared variables

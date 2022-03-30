@@ -128,6 +128,7 @@ custom_step_duration = ""
 run_cancel = ""
 run_cancelled = False
 disabled_step = []
+max_char = 0
 
 executor = concurrent.futures.ThreadPoolExecutor()
 all_threads = {}
@@ -449,7 +450,7 @@ def clear_logs_from_report(send_log_file_only_for_fail, rerun_on_fail, sTestCase
 
 
 def ExecLog(
-    sModuleInfo, sDetails, iLogLevel=1, _local_run="", sStatus="", force_write=False, variable=None
+    sModuleInfo, sDetails, iLogLevel=1, _local_run="", sStatus="", force_write=False, variable=None, print_Execlog=True
 ):
     # Do not log anything if load testing is going on and we're not forced to write logs
     if load_testing and not force_write:
@@ -457,6 +458,7 @@ def ExecLog(
 
     if not print_execlog: return    # For bypass_bug() function dont print logs
 
+    global max_char
     # Read from settings file
     debug_mode = ConfigModule.get_config_value("RunDefinition", "debug_mode")
 
@@ -505,12 +507,14 @@ def ExecLog(
 
     # Display on console
     # Change the format for console, mainly leave out the status level
-    if "saved variable" not in sDetails.lower():
+    if "saved variable" not in sDetails.lower() and print_Execlog:
         if status == "Console":
             msg = f"{info}{sDetails}" if sModuleInfo else sDetails
             print(line_color + msg)
         else:
-            print(line_color + f"{status.upper()} - {info}{sDetails}")
+            msg = f"{status.upper()} - {info}{sDetails}"
+            print(line_color + msg)
+        max_char = max(max_char, len(msg))
 
     current_log_line = f"{status.upper()} - {sModuleInfo} - {sDetails}"
 

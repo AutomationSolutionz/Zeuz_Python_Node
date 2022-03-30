@@ -47,6 +47,13 @@ from Framework.Utilities.CommonUtil import (
     failed_tag_list,
 )  # Allowed return strings, used to normalize pass/fail
 
+from rich.style import Style
+from rich.table import Table
+from rich.console import Console
+from rich.box import SQUARE
+from rich.padding import Padding
+
+rich_print = Console().print
 
 MODULE_NAME = inspect.getmodulename(__file__)
 temp_ini_file = os.path.join(
@@ -224,7 +231,7 @@ def Sequential_Actions(
     # Process step data
     # save the full step data in share variables
 
-    sr.Set_Shared_Variables(CommonUtil.dont_prettify_on_server[0], step_data, protected=True)
+    sr.Set_Shared_Variables(CommonUtil.dont_prettify_on_server[0], step_data, protected=True, pretty=False)
     # sr.Set_Shared_Variables("test_action_info", test_action_info, protected=True, print_variable=False)
     sr.test_action_info = test_action_info
 
@@ -950,6 +957,7 @@ def Run_Sequential_Actions(
                     data_set_list.append(i)
 
         for dataset_cnt in data_set_list:  # For each data set within step data
+            data_set = step_data[dataset_cnt]  # Save data set to variable
             if test_action_info:
                 Action_name = ": '" + test_action_info[dataset_cnt]["Action name"] + "'"
                 Action_disabled = test_action_info[dataset_cnt]["Action disabled"]
@@ -958,23 +966,40 @@ def Run_Sequential_Actions(
                 Action_name = ""
                 Action_disabled = False
             if Action_disabled:
+                _color = "cyan"
+                title = "Disabled %s, STEP-%s, ACTION-%d%s" % (CommonUtil.current_tc_no, CommonUtil.current_step_no, dataset_cnt + 1, Action_name)
+                table = Table(border_style=_color, box=SQUARE)
+                table.add_column(title, justify="center")
+                print()
+                rich_print(table)
                 CommonUtil.ExecLog(
                     "",
                     "\n********** Disabling %s, STEP-%s, ACTION-%d%s **********\n"
                     % (CommonUtil.current_tc_no, CommonUtil.current_step_no, dataset_cnt + 1, Action_name),
-                    4,
+                    4, print_Execlog=False
                 )
                 continue
             elif dataset_cnt in skip:
                 continue  # If this data set is in the skip list, do not process it
             else:
+                _color = "cyan"
+                title = ":notebook: Starting %s, STEP-%s, ACTION-%d%s :notebook:" % (CommonUtil.current_tc_no, CommonUtil.current_step_no, dataset_cnt + 1, Action_name)
+                table = Table(border_style=_color, title=title, box=SQUARE, min_width=len(title)-10)
+                table.add_column("Field", justify="center",)
+                table.add_column("Sub-field", justify="center")
+                table.add_column("Value", justify="center")
+                for row in data_set:
+                    table.add_row(*row, style=_color)
+                print()
+                rich_print(table)
+
                 CommonUtil.ExecLog(
                     "",
                     "\n********** Starting %s, STEP-%s, ACTION-%d%s **********\n"
                     % (CommonUtil.current_tc_no, CommonUtil.current_step_no, dataset_cnt + 1, Action_name),
                     4,
+                    print_Execlog=False
                 )  # Offset by one to make it look proper
-            data_set = step_data[dataset_cnt]  # Save data set to variable
 
             for row in data_set:  # For each row of the data set
                 action_name = row[1]  # Get Sub-Field
