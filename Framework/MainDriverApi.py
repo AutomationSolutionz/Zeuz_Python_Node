@@ -901,7 +901,7 @@ def run_test_case(
             cleanup_driver_instances()  # clean up drivers
             shared.Clean_Up_Shared_Variables()  # clean up shared variables
             if ConfigModule.get_config_value("RunDefinition", "local_run") == "False":
-                
+
                 if float(server_version.split(".")[0]) < 7:
                     zip_and_delete_tc_folder_old(
                         sTestCaseStatus,
@@ -1175,27 +1175,25 @@ def upload_reports_and_zips(Userid, temp_ini_file, run_id):
                         del step["actions"]
                     if "log" in step:
                         del step["log"]
+
+            with open("report.json", "w") as f:
+                f.write(json.dumps({"execution_report": json.dumps(tc_report)}))
+
             for _ in range(5):
                 try:
                     res = requests.post(
-                        RequestFormatter.form_uri("create_report_log_api/"),
-                        data={"execution_report": json.dumps(tc_report)},
+                        RequestFormatter.form_uri("/report/exec/v1/submit"),
+                        json={"execution_report": tc_report},
                         verify=False,
                         **RequestFormatter.add_api_key_to_headers({}))
                     if res.status_code == 200:
-                        try:
-                            res_json = res.json()
-                        except:
-                            # print("Could not Upload the report of run_id '%s'" % run_id)
-                            # print("\nResponse Text = " + res.text + "\n")
-                            # break
-                            continue
-                        if isinstance(res_json, dict) and 'message' in res_json and res_json["message"]:
-                            print("Successfully Uploaded the execution report of run_id '%s'" % run_id)
-                        else:
-                            print("Could not Upload the execution report of run_id '%s'" % run_id)
-                            print("\nResponse Text = " + res.text + "\n")
+                        res_json = res.json()
+                        print(f"Successfully uploaded the execution report of run_id {run_id}")
                         break
+                    else:
+                        print(f"Failed to upload the execution report of run_id {run_id}")
+                        print(f"Status: {res.status_code} Response: {res.text}")
+                        print("Retrying...")
                     time.sleep(4)
                 except:
                     CommonUtil.Exception_Handler(sys.exc_info())
@@ -1442,7 +1440,7 @@ def main(device_dict, user_info_object):
             num_of_tc = len(all_testcases_info)
             cnt = 1
 
-            max_tc_in_single_session = 10    # Todo: make it 25
+            max_tc_in_single_session = 50    # Todo: make it 25
             all_sessions = split_testcases(run_id_info, max_tc_in_single_session)
             session_cnt = 1
             for each_session in all_sessions:
