@@ -875,7 +875,7 @@ def run_test_case(
             cleanup_driver_instances()  # clean up drivers
             shared.Clean_Up_Shared_Variables()  # clean up shared variables
             if ConfigModule.get_config_value("RunDefinition", "local_run") == "False":
-                
+
                 if float(server_version.split(".")[0]) < 7:
                     zip_and_delete_tc_folder_old(
                         sTestCaseStatus,
@@ -1149,11 +1149,15 @@ def upload_reports_and_zips(Userid, temp_ini_file, run_id):
                         del step["actions"]
                     if "log" in step:
                         del step["log"]
+
+            with open("report.json", "w") as f:
+                f.write(json.dumps({"execution_report": json.dumps(tc_report)}))
+
             for _ in range(5):
                 try:
                     res = requests.post(
-                        RequestFormatter.form_uri("create_report_log_api/"),
-                        data={"execution_report": json.dumps(tc_report)},
+                        RequestFormatter.form_uri("/report/exec/v1/submit"),
+                        json={"execution_report": tc_report},
                         verify=False,
                         **RequestFormatter.add_api_key_to_headers({}))
                     if res.status_code == 200:
@@ -1416,7 +1420,7 @@ def main(device_dict, user_info_object):
             num_of_tc = len(all_testcases_info)
             cnt = 1
 
-            max_tc_in_single_session = 10    # Todo: make it 25
+            max_tc_in_single_session = 50    # Todo: make it 25
             all_sessions = split_testcases(run_id_info, max_tc_in_single_session)
             session_cnt = 1
             for each_session in all_sessions:
