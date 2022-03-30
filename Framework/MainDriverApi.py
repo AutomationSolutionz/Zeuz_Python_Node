@@ -1161,19 +1161,12 @@ def upload_reports_and_zips(Userid, temp_ini_file, run_id):
                         verify=False,
                         **RequestFormatter.add_api_key_to_headers({}))
                     if res.status_code == 200:
-                        try:
-                            res_json = res.json()
-                        except:
-                            # print("Could not Upload the report of run_id '%s'" % run_id)
-                            # print("\nResponse Text = " + res.text + "\n")
-                            # break
-                            continue
-                        if isinstance(res_json, dict) and 'message' in res_json and res_json["message"]:
-                            print("Successfully Uploaded the execution report of run_id '%s'" % run_id)
-                        else:
-                            print("Could not Upload the execution report of run_id '%s'" % run_id)
-                            print("\nResponse Text = " + res.text + "\n")
-                        break
+                        res_json = res.json()
+                        print(f"Successfully uploaded the execution report of run_id {run_id}")
+                    else:
+                        print(f"Failed to upload the execution report of run_id {run_id}")
+                        print(f"Status: {res.code} Response: {res.text}")
+                        print("Retrying...")
                     time.sleep(4)
                 except:
                     CommonUtil.Exception_Handler(sys.exc_info())
