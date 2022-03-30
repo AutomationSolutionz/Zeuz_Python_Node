@@ -18,6 +18,7 @@ import sys, os, time, inspect, shutil, subprocess
 import socket
 import requests
 import psutil
+import pyautogui
 
 sys.path.append("..")
 from selenium import webdriver
@@ -1391,7 +1392,6 @@ def Click_and_Download(data_set):
                         ]
                         if win_Click_Element(save_click_ds) == "zeuz_failed":
                             CommonUtil.ExecLog(sModuleInfo, "Could not click Save Button. Switching to GUI method", 2)
-                            import pyautogui
                             pyautogui.hotkey("down")
                             pyautogui.hotkey("enter")
 
@@ -1413,14 +1413,12 @@ def Click_and_Download(data_set):
                             ]
                             if win_Click_Element(ok_ds) == "zeuz_failed":
                                 CommonUtil.ExecLog(sModuleInfo, "Could not find the OK button. Switching to GUI method (pressing Enter)", 2)
-                                import pyautogui
                                 pyautogui.hotkey("enter")
                 except:
                     CommonUtil.ExecLog(sModuleInfo, "Could not check if any save window was opened. Continuing...", 2)
 
             else:
                 # Todo: Test this on Mac and Linux
-                import pyautogui
                 pyautogui.hotkey("down")
                 pyautogui.hotkey("enter")
 
@@ -3733,7 +3731,6 @@ def upload_file(step_data):
 
 def _gui_upload(path_name, pid=None):
     # Todo: Implement PID to activate the window and focus that at front
-    import pyautogui
     time.sleep(3)
     pyautogui.hotkey("alt", "a")
     time.sleep(0.5)
@@ -3900,7 +3897,6 @@ def upload_file_through_window(step_data):
             if Click_Element(click_ds) == "zeuz_failed":
                 CommonUtil.ExecLog(sModuleInfo, "Could not find the Open button. Switching to GUI method (pressing Enter)", 2)
                 time.sleep(1)
-                import pyautogui
                 pyautogui.hotkey("enter")
                 CommonUtil.ExecLog(sModuleInfo, "Entered the following path:\n%s" % path_name, 1)
                 return "passed"

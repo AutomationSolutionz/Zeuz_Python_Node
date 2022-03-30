@@ -5255,13 +5255,6 @@ def search_text_and_font(data_set):
 
 @logger
 def disable_step(data_set):
-    """
-    This action will disable some steps
-    Example 1:
-    Field                        Sub Field              Value
-    steps                        input parameter        1,2,3-6
-    disable step                 common action          disable step
-    """
     sModuleInfo = inspect.currentframe().f_code.co_name + " : " + MODULE_NAME
     try:
         steps = []
