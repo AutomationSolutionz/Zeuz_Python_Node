@@ -4,6 +4,10 @@
 import os
 from pathlib import Path
 import platform
+
+# Disable WebdriverManager SSL verification.
+os.environ['WDM_SSL_VERIFY'] = '0'
+
 version_path = Path(os.getcwd())/"Framework"/"Version.txt"
 with open(version_path, "r"):
     text = version_path.read_text()
