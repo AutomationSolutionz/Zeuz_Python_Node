@@ -48,11 +48,13 @@ declarations = (
     { "name": "replace string",                              "function": "replace_string",                        "screenshot": "none" },
     { "name": "search text",                                 "function": "search_and_save_text",                  "screenshot": "none" },
     { "name": "custom step duration",                        "function": "custom_step_duration",                  "screenshot": "none" },
+    { "name": "disable step",                                "function": "disable_step",                          "screenshot": "none" },
+
     # Mail actions
     { "name": "send mail",                                   "function": "send_mail",                             "screenshot": "none" },
     { "name": "check latest mail",                           "function": "check_latest_mail",                     "screenshot": "none" },
-    {"name": "delete mail",                                  "function": "delete_mail_action",                     "screenshot": "none"},
-    {"name": "save mail",                                    "function": "save_mail_action",                       "screenshot": "none"},
+    {"name": "delete mail",                                  "function": "delete_mail_action",                    "screenshot": "none"},
+    {"name": "save mail",                                    "function": "save_mail_action",                      "screenshot": "none"},
 
     # Global Variable Actions
     { "name": "get global list variable",                    "function": "get_global_list_variable",              "screenshot": "none" },

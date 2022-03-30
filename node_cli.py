@@ -309,17 +309,26 @@ def Login(cli=False, run_once=False, log_dir=None):
                 user_info_object["project"] = default_team_and_project["project_name"]
                 user_info_object["team"] = default_team_and_project["team_name"]
 
-                CommonUtil.ExecLog("", f"Authenticating user: {username}", 4, False)
+                # CommonUtil.ExecLog("", f"Authenticating user: {username}", 4, False)
 
                 if api_flag:
                     r = RequestFormatter.Post("login_api", user_info_object)
 
                 if r or (isinstance(r, dict) and r['status'] == 200):
+                    from rich.console import Console
+                    rich_print = Console().print
+                    rich_print("\nAuthentication successful\nUSER=", end="")
+                    rich_print(username, style="bold cyan", end="")
+                    rich_print(", TEAM=", end="")
+                    rich_print(user_info_object['team'], style="bold cyan", end="")
+                    rich_print(", SERVER=", end="")
+                    rich_print(server_name, style="bold cyan")
                     CommonUtil.ExecLog(
                         "",
                         f"Authentication successful: USER='{username}', "
                         f"PROJECT='{user_info_object['project']}', TEAM='{user_info_object['team']}', SERVER='{server_name}'",
-                        4
+                        4,
+                        print_Execlog=False
                     )
                     ConfigModule.add_config_value("sectionOne", PROJECT_TAG, user_info_object['project'], temp_ini_file)
                     ConfigModule.add_config_value("sectionOne", TEAM_TAG, user_info_object['team'], temp_ini_file)
@@ -499,7 +508,6 @@ def RunProcess(sTesterid, user_info_object, run_once=False, log_dir=None):
 
                 if run_once or exit_script:
                     return False
-                CommonUtil.ExecLog("", "Successfully updated db with parameter", 4, False)
                 break
             else:
                 time.sleep(3)
@@ -594,9 +602,12 @@ def update_machine(dependency, default_team_and_project_dict):
         }
         r = RequestFormatter.Get("update_automation_machine_api/", update_object)
         if r["registered"]:
-            CommonUtil.ExecLog(
-                "", "Zeuz Node is online: %s" % (r["name"]), 4, False,
-            )
+            from rich.console import Console
+            rich_print = Console().print
+            # rich_print(":green_circle: Zeuz Node is online: ", end="")
+            rich_print(":green_circle:" + r["name"], style="bold cyan", end="")
+            print(" is Online\n")
+            CommonUtil.ExecLog("", "Zeuz Node is online: %s" % (r["name"]), 4, False, print_Execlog=False)
         else:
             if r["license"]:
                 CommonUtil.ExecLog("", "Machine is not registered as online", 4, False)
