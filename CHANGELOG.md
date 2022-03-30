@@ -5,6 +5,10 @@
 ### [Current changes]
 - _
 
+### [14.11.2][March 30, 2022]
+- **[Fix]** Pyautogui import fix for ui-less machine
+- **[Add]** Added missing commits of `Alert` and `Android browser`
+
 ### [14.11.1][March 24, 2022]
 - **[Change]** Improve README.md.
 - **[Add]** Added Attachment Upload and Download actions
