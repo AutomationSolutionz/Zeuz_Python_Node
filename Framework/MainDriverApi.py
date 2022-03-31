@@ -543,10 +543,10 @@ def run_all_test_steps_in_a_test_case(
             _color = "yellow"
             # _style = Style(color="yellow", blink=False, bold=True)
             table = Table(border_style=_color, box=ASCII_DOUBLE_HEAD, expand=False)
-            table.add_column(f"STEP-{StepSeq}", justify="center", style=_color)
+            table.add_column(f"STEP-{str(StepSeq)}", justify="center", style=_color, max_width=40)
             table.add_row(f"{current_step_name}", style=_color)
-            width_pad = CommonUtil.max_char // 2 - (max(len(current_step_name), 6) + 4) // 2
-            table = Padding(table, (0, width_pad))
+            # width_pad = CommonUtil.max_char // 2 - (max(len(current_step_name), 6) + 4) // 2
+            # table = Padding(table, (0, width_pad))
             rich_print(table)
 
             test_steps_data = all_step_dataset[StepSeq-1]
@@ -815,13 +815,13 @@ def run_test_case(
         # print("#"*(len(log_line)))
         # CommonUtil.ExecLog("", log_line, 4, False)
         # print("#"*(len(log_line)))
-        _color = "cyan"
+        _color = "white"
         # danger_style = Style(color=_color, blink=False, bold=True)
         table = Table(border_style=_color, box=DOUBLE, expand=False, padding=1)
-        table.add_column(test_case, justify="center", style=_color)
+        table.add_column(test_case, justify="center", style=_color, max_width=40)
         table.add_row(TestCaseName, style=_color)
-        width_pad = CommonUtil.max_char//2 - (max(len(TestCaseName), len(test_case)) + 4)//2
-        table = Padding(table, (0, width_pad))
+        # width_pad = CommonUtil.max_char//2 - (max(len(TestCaseName), len(test_case)) + 4)//2
+        # table = Padding(table, (0, width_pad))
         rich_print(table)
 
         # get test case start time
