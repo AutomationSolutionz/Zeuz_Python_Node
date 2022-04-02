@@ -2630,15 +2630,73 @@ def excel_read(data_set):
         if module == "openpyxl":
             # openpyxl_excel_read(filepath, sheet_name, var_name, cell_range, structure_of_variable, key_reference)
             from openpyxl import load_workbook
+            from openpyxl.utils.cell import coordinate_from_string, column_index_from_string
             wb = load_workbook(filepath)
             sheet = wb[sheet_name]
             if key_reference is None:
                 key_reference = "row1"
 
             cell_data = []
-            for row in sheet[cell_range]:
-                cell_data.append([cell.value for cell in row])
 
+            if ":" in cell_range:
+                #splited the cell_range
+                cell_range_split = cell_range.split(":")
+
+                #converted the Cell_range index value into numerical index value
+                xy1 = coordinate_from_string(cell_range_split[0])  
+                column1 = column_index_from_string(xy1[0])  
+                row1 = xy1[1]
+
+                xy2 = coordinate_from_string(cell_range_split[1])  
+                column2 = column_index_from_string(xy2[0])  
+                row2 = xy2[1]
+
+                #sorted the row and column according to cell_range
+                if row1<row2:
+                    row = row1
+                    last_row = row2
+                else:
+                    row = row2
+                    last_row = row1
+                
+                if column1<column2:
+                    column = column1
+                    last_column = column2
+                else:
+                    column = column2
+                    last_column = column1
+
+                if expand:
+                    if expand == "table":
+                        for i in range(row, sheet.max_row+1):
+                            cell_data.append([cell.value for cell in sheet[i][column-1:sheet.max_column+1]])
+                    if expand == "right":
+                        for i in range(row, last_row+1):
+                            cell_data.append([cell.value for cell in sheet[i][column-1:sheet.max_column+1]])
+                    if expand == "down":
+                        for i in range(row, sheet.max_row+1):
+                            cell_data.append([cell.value for cell in sheet[i][column-1:last_column+1]])
+
+                else:
+                    for i in range(row, last_row+1):
+                        cell_data.append([cell.value for cell in sheet[i][column-1:last_column+1]])
+            else:
+                xy = coordinate_from_string(cell_range) 
+                column = column_index_from_string(xy[0])  
+                row = xy[1]
+    
+                if expand:
+                    if expand == "table":
+                        for i in range(row, sheet.max_row+1):
+                            cell_data.append([cell.value for cell in sheet[i][column-1:sheet.max_column+1]])
+                    if expand == "right":
+                        cell_data.append([cell.value for cell in sheet[row][column-1:sheet.max_column+1]])
+                    if expand == "down":
+                        for i in range(row, sheet.max_row+1):
+                            cell_data.append([cell.value for cell in sheet[i][column-1:column]])
+
+                else:
+                    cell_data.append(sheet[cell_range].value)
             # wb.close()            # it does nothing
             # wb.save(filepath)     # Save does not work while
 
