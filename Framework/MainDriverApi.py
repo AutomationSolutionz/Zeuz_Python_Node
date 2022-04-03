@@ -1305,7 +1305,7 @@ def main(device_dict, user_info_object):
         Userid = (CommonUtil.MachineInfo().getLocalUser()).lower()
 
         get_json, all_file_specific_steps = True, {}
-        save_path = Path(temp_ini_file).parent / "attachments"
+        save_path = Path(ConfigModule.get_config_value("sectionOne", "temp_run_file_path", temp_ini_file)) / "attachments"
         cnt = 0
         for i in os.walk(save_path):
             if get_json:
