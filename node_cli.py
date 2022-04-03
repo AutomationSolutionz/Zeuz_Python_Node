@@ -458,12 +458,13 @@ def RunProcess(sTesterid, user_info_object, run_once=False, log_dir=None):
             # r = requests.get(RequestFormatter.form_uri("is_submitted_api"), {"machine_name": sTesterid}, verify=False).json()
             Userid = (CommonUtil.MachineInfo().getLocalUser()).lower()
             if r and "found" in r and r["found"]:
+                PreProcess(log_dir=log_dir)
                 size = round(int(r["file_size"]) / 1024, 2)
                 if size > 1024:
                     size = str(round(size / 1024, 2)) + " MB"
                 else:
                     size = str(size) + " KB"
-                save_path = temp_ini_file.parent / "attachments"
+                save_path = Path(ConfigModule.get_config_value("sectionOne", "temp_run_file_path", temp_ini_file)) / "attachments"
                 CommonUtil.ExecLog("", "Downloading dataset and attachments of %s into:\n%s" % (size, str(save_path/"input.zip")), 4)
                 FL.CreateFolder(save_path)
                 headers = RequestFormatter.add_api_key_to_headers({})
@@ -480,7 +481,6 @@ def RunProcess(sTesterid, user_info_object, run_once=False, log_dir=None):
                 z.extractall(save_path)
                 z.close()
                 os.unlink(save_path/"input.zip")
-                PreProcess(log_dir=log_dir)
                 # Telling the node_manager that a run_id is deployed
                 CommonUtil.node_manager_json(
                     {

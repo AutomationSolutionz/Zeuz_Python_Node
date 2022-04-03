@@ -985,8 +985,8 @@ def Run_Sequential_Actions(
                 _color = "cyan"
                 title = ":notebook: Starting %s, STEP-%s, ACTION-%d%s :notebook:" % (CommonUtil.current_tc_no, CommonUtil.current_step_no, dataset_cnt + 1, Action_name)
                 table = Table(border_style=_color, title=title, box=SQUARE, min_width=len(title)-10, width=70)
-                table.add_column("Field", justify="center", max_width=20)
-                table.add_column("Sub-field", justify="center", max_width=15)
+                table.add_column("Field", justify="left", max_width=20)
+                table.add_column("Sub-field", justify="left", max_width=15)
                 table.add_column("Value", justify="left", max_width=35)
                 for row in data_set:
                     table.add_row(*row, style=_color)
