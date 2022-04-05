@@ -248,7 +248,11 @@ def Login(cli=False, run_once=False, log_dir=None):
             try:
                 token = r['token']
                 res = RequestFormatter.Get("/api/user", headers={'Authorization': "Bearer %s" % token})
-                info = res[0]
+                if "data" in res:   # Todo: implement it with proper server versioning
+                    info = res["data"][0]
+                else:
+                    info = res[0]
+
                 username = info['username']
                 api_flag = False
                 ConfigModule.add_config_value(AUTHENTICATION_TAG, "username", username)
