@@ -429,6 +429,12 @@ def Open_Browser(dependency, window_size_X=None, window_size_Y=None):
                 chrome_path = ChromeDriverManager().install()
                 ConfigModule.add_config_value("Selenium_driver_paths", "chrome_path", chrome_path)
             options = Options()
+
+            # capability
+            options.set_capability('unhandledPromptBehavior', 'ignore')
+
+            # argument
+            options.add_argument("--no-sandbox")
             options.add_argument("--no-sandbox")
             options.add_argument("--disable-extensions")
             options.add_argument('--ignore-certificate-errors')
