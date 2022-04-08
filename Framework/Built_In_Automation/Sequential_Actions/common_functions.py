@@ -2968,7 +2968,7 @@ def Read_text_file(data_set):
                 data = file.read()
                 var_value += data
                 if read_as_json:
-                    var_value = json.loads(var_value)
+                    var_value = CommonUtil.parse_value_into_object(var_value)
 
         return sr.Set_Shared_Variables(var_name, var_value)
     except Exception:
