@@ -26,18 +26,10 @@ except:
     pass
 global sr
 from Framework.Utilities import CommonUtil, ConfigModule, RequestFormatter
-from Framework.Built_In_Automation.Shared_Resources import (
-    BuiltInFunctionSharedResources as sr,
-)
-from Framework.Built_In_Automation.Sequential_Actions.sequential_actions import (
-    actions,
-    action_support,
-)
-from Framework.Utilities.CommonUtil import (
-    passed_tag_list,
-    failed_tag_list,
-    skipped_tag_list,
-)  # Allowed return strings, used to normalize pass/fail
+from Framework.Built_In_Automation.Shared_Resources import BuiltInFunctionSharedResources as sr
+
+from Framework.Built_In_Automation.Sequential_Actions.sequential_actions import actions, action_support
+from Framework.Utilities.CommonUtil import passed_tag_list, failed_tag_list, skipped_tag_list
 from Framework.Utilities.decorators import logger, deprecated
 from Framework.Built_In_Automation.Shared_Resources import LocateElement
 from Framework import MainDriverApi
@@ -3034,7 +3026,7 @@ def Read_text_file(data_set):
                 data = file.read()
                 var_value += data
                 if read_as_json:
-                    var_value = json.loads(var_value)
+                    var_value = CommonUtil.parse_value_into_object(var_value)
 
         return sr.Set_Shared_Variables(var_name, var_value)
     except Exception:
@@ -3988,6 +3980,7 @@ def save_mail_action(data_set):
         before_date = ""
         variable_name = None
         wait = 10.0
+        attachment_path = ""
 
         for left, mid, right in data_set:
             left = left.lower().strip()
@@ -4022,6 +4015,8 @@ def save_mail_action(data_set):
                 variable_name = right.strip()
             elif "wait" == left:
                 wait = float(right.strip())
+            elif "attachment directory" in left:
+                attachment_path = CommonUtil.path_parser(right)
 
         if imap_host == "" or imap_user == "" or imap_pass == "" or select_mailbox == "":
             CommonUtil.ExecLog(sModuleInfo, "please provide the imap credentials for your mail server, see action help", 3)
@@ -4044,7 +4039,8 @@ def save_mail_action(data_set):
             exact_date,
             after_date,
             before_date,
-            wait
+            attachment_path,
+            wait,
         )
 
         sr.Set_Shared_Variables(variable_name, result)
