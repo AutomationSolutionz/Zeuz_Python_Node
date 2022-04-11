@@ -755,7 +755,10 @@ def Go_To_Link(step_data, page_title=False):
     sModuleInfo = inspect.currentframe().f_code.co_name + " : " + MODULE_NAME
     window_size_X = ConfigModule.get_config_value("", "window_size_x")
     window_size_Y = ConfigModule.get_config_value("", "window_size_y")
+
+    # default capabilities
     capabilities = {"unhandledPromptBehavior": "ignore"}
+    
     # Open browser and create driver if user has not already done so
     global dependency
     global selenium_driver
@@ -774,6 +777,7 @@ def Go_To_Link(step_data, page_title=False):
             elif left == "driverid":
                 driver_id = right.strip()
 
+            # checks for capabilities and modifies them by the given step_data
             elif mid.strip().lower() == "capability":
                 if left.strip().lower() in ("promptbehavior", "alertbehavior"):
                     if right.strip().lower() in ("accept", "yes", "ok"):
