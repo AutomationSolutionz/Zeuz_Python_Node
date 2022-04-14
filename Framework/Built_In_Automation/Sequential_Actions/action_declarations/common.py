@@ -98,6 +98,9 @@ declarations = (
     {"name": "search text and font",                         "function": "search_text_and_font",                  "screenshot": "none" },
     # Actions of taxcalc end
 
+    # Action(s) for pdf (beyond-essential)
+    {"name": "read scanned pdf",                            "function": "extract_text_from_scanned_pdf",        "screenshot": "none"},
+
 ) # yapf: disable
 
 module_name = "common"
