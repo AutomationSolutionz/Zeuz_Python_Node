@@ -5375,7 +5375,7 @@ def extract_text_from_scanned_pdf(data_set):
 
         pdf_file_path = ""
         poppler_path = Path(os.environ["PROGRAMFILES"]) / "poppler-22.01.0" / "Library" / "bin"
-        tesseract_path = Path(os.environ["PROGRAMFILES"]) / "Tessaract-OCR" / "tessaract.exe"
+        tesseract_path = Path(os.environ["PROGRAMFILES"]) / "Tessaract-OCR" / "tesseract.exe"
         var_name = ""
         full_pdf_text = []
 
