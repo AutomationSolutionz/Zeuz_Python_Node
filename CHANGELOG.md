@@ -3,7 +3,7 @@
 # Version 14
 
 ### [Current changes]
-- _
+- **[Add]** Add action read scanned pdf
 
 ### [14.11.2][March 30, 2022]
 - **[Fix]** Pyautogui import fix for ui-less machine

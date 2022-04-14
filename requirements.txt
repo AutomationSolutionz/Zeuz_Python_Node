@@ -39,3 +39,5 @@ rich
 beautifulsoup4
 premailer
 html-diff
+pytesseract
+pdf2image
