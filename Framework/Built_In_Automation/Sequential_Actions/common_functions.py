@@ -5374,8 +5374,8 @@ def extract_text_from_scanned_pdf(data_set):
         from pdf2image import convert_from_path
 
         pdf_file_path = ""
-        poppler_path = r"C:\ZeuZ_Programs\poppler-22.01.0\Library\bin"
-        tesseract_path = r"C:\ZeuZ_Programs\Tesseract-OCR\tesseract.exe"
+        poppler_path = Path(os.environ["PROGRAMFILES"]) / "poppler-22.01.0" / "Library" / "bin"
+        tesseract_path = Path(os.environ["PROGRAMFILES"]) / "Tessaract-OCR" / "tessaract.exe"
         var_name = ""
         full_pdf_text = []
 
@@ -5393,17 +5393,10 @@ def extract_text_from_scanned_pdf(data_set):
             elif left.strip().lower() == "read scanned pdf":
                 var_name = right.strip()
 
-        # file_path = os.path.expanduser(r"~\Documents") + os.sep + 'patient_labels.pdf'
-        # pytesseract.tesseract_cmd = r"C:\ZeuZ_Programs\Tesseract-OCR\tesseract.exe"
-        # pages = convert_from_path(file_path, 500, poppler_path=r"C:\ZeuZ_Programs\poppler-22.01.0\Library\bin")
-
         pytesseract.tesseract_cmd = tesseract_path
         pages = convert_from_path(pdf_file_path, 500, poppler_path=poppler_path)
         for page in pages:
             texts = pytesseract.image_to_string(page)
-            # text = set(texts.split("\n"))
-            # text = list(texts.split("\n"))
-            # text = list(text)
             full_pdf_text.append(texts)
 
         return sr.Set_Shared_Variables(var_name, full_pdf_text)
