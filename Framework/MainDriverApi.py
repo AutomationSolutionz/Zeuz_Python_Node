@@ -1182,12 +1182,11 @@ def upload_reports_and_zips(Userid, temp_ini_file, run_id):
             for _ in range(5):
                 try:
                     res = requests.post(
-                        RequestFormatter.form_uri("/report/exec/v1/submit"),
-                        json={"execution_report": tc_report},
+                        RequestFormatter.form_uri("create_report_log_api/"),
+                        data={"execution_report": json.dumps(tc_report)},
                         verify=False,
                         **RequestFormatter.add_api_key_to_headers({}))
                     if res.status_code == 200:
-                        res_json = res.json()
                         print(f"Successfully uploaded the execution report of run_id {run_id}")
                         break
                     else:
