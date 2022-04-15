@@ -7,6 +7,7 @@ import string
 import time
 import datetime
 
+import os
 import requests
 from imap_tools import MailBox, AND
 from email.mime.text import MIMEText
@@ -19,6 +20,8 @@ from quopri import decodestring
 from email.header import decode_header
 from Framework.Utilities import CommonUtil
 import inspect
+from Framework.Built_In_Automation.Shared_Resources import BuiltInFunctionSharedResources as sr
+
 
 # using IMAP protocol
 from Framework.Utilities.CommonUtil import MODULE_NAME
@@ -369,7 +372,8 @@ def save_mail(
         exact_date,
         after_date,
         before_date,
-        wait
+        attachment_path,
+        wait,
 ):
     # time.sleep(5)
     with MailBox(imap_host).login(imap_user, imap_pass, initial_folder=select_mailbox) as mailboxi:
@@ -416,5 +420,20 @@ def save_mail(
 
         value = []
         for msg in all_mails:
-            value.append({"Sender": msg.from_, "Receiver": msg.to, "Subject": msg.subject, "Date": msg.date, "Text": msg.text, "htmlBody": msg.html})
+            value.append({"Sender": msg.from_, "Receiver": msg.to, "Subject": msg.subject, "Date": msg.date, "Text": msg.text, "htmlBody": msg.html, "attachment": msg.attachments})
+
+        if not attachment_path:
+            attachment_path = sr.Get_Shared_Variables("zeuz_download_folder") + os.sep + "email_attachments"
+        if not os.path.isdir(attachment_path):
+            os.makedirs(attachment_path)
+
+        # Todo: If read mail is run multiple times then multiple directory with 0,1,2 in folder_name is needed
+        # Todo: If read mail fetches multiple mails then multiple directory with 0,1,2 in folder_name is needed
+        # Todo: If user want to rename they should put file_path with commas in action data_set and we need to implement ot here
+
+        for msg in all_mails:
+            for att in msg.attachments:
+                with open(attachment_path + os.sep + att.filename, 'wb') as f:
+                    f.write(att.payload)
+
         return value

@@ -26,18 +26,10 @@ except:
     pass
 global sr
 from Framework.Utilities import CommonUtil, ConfigModule, RequestFormatter
-from Framework.Built_In_Automation.Shared_Resources import (
-    BuiltInFunctionSharedResources as sr,
-)
-from Framework.Built_In_Automation.Sequential_Actions.sequential_actions import (
-    actions,
-    action_support,
-)
-from Framework.Utilities.CommonUtil import (
-    passed_tag_list,
-    failed_tag_list,
-    skipped_tag_list,
-)  # Allowed return strings, used to normalize pass/fail
+from Framework.Built_In_Automation.Shared_Resources import BuiltInFunctionSharedResources as sr
+
+from Framework.Built_In_Automation.Sequential_Actions.sequential_actions import actions, action_support
+from Framework.Utilities.CommonUtil import passed_tag_list, failed_tag_list, skipped_tag_list
 from Framework.Utilities.decorators import logger, deprecated
 from Framework.Built_In_Automation.Shared_Resources import LocateElement
 from Framework import MainDriverApi
@@ -3034,7 +3026,7 @@ def Read_text_file(data_set):
                 data = file.read()
                 var_value += data
                 if read_as_json:
-                    var_value = json.loads(var_value)
+                    var_value = CommonUtil.parse_value_into_object(var_value)
 
         return sr.Set_Shared_Variables(var_name, var_value)
     except Exception:
@@ -3988,6 +3980,7 @@ def save_mail_action(data_set):
         before_date = ""
         variable_name = None
         wait = 10.0
+        attachment_path = ""
 
         for left, mid, right in data_set:
             left = left.lower().strip()
@@ -4022,6 +4015,8 @@ def save_mail_action(data_set):
                 variable_name = right.strip()
             elif "wait" == left:
                 wait = float(right.strip())
+            elif "attachment directory" in left:
+                attachment_path = CommonUtil.path_parser(right)
 
         if imap_host == "" or imap_user == "" or imap_pass == "" or select_mailbox == "":
             CommonUtil.ExecLog(sModuleInfo, "please provide the imap credentials for your mail server, see action help", 3)
@@ -4044,7 +4039,8 @@ def save_mail_action(data_set):
             exact_date,
             after_date,
             before_date,
-            wait
+            attachment_path,
+            wait,
         )
 
         sr.Set_Shared_Variables(variable_name, result)
@@ -5352,3 +5348,58 @@ def disable_step(data_set):
         return CommonUtil.Exception_Handler(sys.exc_info())
 
 
+@logger
+def extract_text_from_scanned_pdf(data_set):
+    """
+    This function reads the text from a scanned pdf and saves it into a variable
+
+    Args:
+        data_set:
+            ------------------------------------------------------------------------------------------------------------
+            |pdf    		    |path		    |~/path/to/document.pdf
+            |poppler	    	|path		    |~/path/to/poppler (C:/ZeuZ_Programs/poppler-22.01.0/Library/bin/)
+            |tesseract   		|path		    |~/path/to/tesseract (C:/ZeuZ_Programs/Tesseract-OCR/tesseract.exe/)
+            |read scanned pdf	|common action	| variable_name
+            ------------------------------------------------------------------------------------------------------------
+
+    Return:
+        `passed` if success
+        `zeuz_failed` if fails
+    """
+
+    sModuleInfo = inspect.currentframe().f_code.co_name + " : " + MODULE_NAME
+
+    try:
+        from pytesseract import pytesseract
+        from pdf2image import convert_from_path
+
+        pdf_file_path = ""
+        poppler_path = Path(os.environ["PROGRAMFILES"]) / "poppler-22.01.0" / "Library" / "bin"
+        tesseract_path = Path(os.environ["PROGRAMFILES"]) / "Tessaract-OCR" / "tesseract.exe"
+        var_name = ""
+        full_pdf_text = []
+
+        for left, mid, right in data_set:
+            if mid.strip().lower() == "path":
+                if left.strip().lower() == "pdf":
+                    pdf_file_path = CommonUtil.path_parser(right.strip())
+
+                elif left.strip().lower() == "poppler":
+                    poppler_path = CommonUtil.path_parser(right.strip())
+
+                elif left.strip().lower() == "tesseract":
+                    tesseract_path = CommonUtil.path_parser(right.strip())
+
+            elif left.strip().lower() == "read scanned pdf":
+                var_name = right.strip()
+
+        pytesseract.tesseract_cmd = tesseract_path
+        pages = convert_from_path(pdf_file_path, 500, poppler_path=poppler_path)
+        for page in pages:
+            texts = pytesseract.image_to_string(page)
+            full_pdf_text.append(texts)
+
+        return sr.Set_Shared_Variables(var_name, full_pdf_text)
+
+    except Exception:
+        return CommonUtil.Exception_Handler(sys.exc_info())
