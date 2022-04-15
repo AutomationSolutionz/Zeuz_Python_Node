@@ -85,9 +85,7 @@ declarations = (
     {"name":"upload attachment to global",                   "function": "upload_attachment_to_global",         "screenshot": "none" },
     {"name":"download attachment from global",               "function": "download_attachment_from_global",     "screenshot": "none" },
 
-    # Actions  for attachment upload to server
-
-    # Actions for TaxCalc
+    # Client specific actions
     {"name": "write into text file",                         "function": "text_write",                            "screenshot": "none" },
     {"name": "compare identifiers content",                  "function": "compare_identifiers_content",           "screenshot": "none" },
     {"name": "compare item occurrence",                      "function": "compare_item_occurrence",               "screenshot": "none" },
@@ -96,9 +94,6 @@ declarations = (
     {"name": "compare file with tag",                        "function": "compare_file_with_tag",                 "screenshot": "none" },
     {"name": "extract text from pdf",                        "function": "extract_text_from_pdf",                 "screenshot": "none" },
     {"name": "search text and font",                         "function": "search_text_and_font",                  "screenshot": "none" },
-    # Actions of taxcalc end
-
-    # Action(s) for pdf (beyond-essential)
     {"name": "read scanned pdf",                            "function": "extract_text_from_scanned_pdf",        "screenshot": "none"},
 
 ) # yapf: disable
