@@ -3,6 +3,7 @@
 # Version 14
 
 ### [Current changes]
+- **[Add]** Add capability for handling alert as desired.
 - **[Add]** Add action read scanned pdf
 
 ### [14.11.2][March 30, 2022]
