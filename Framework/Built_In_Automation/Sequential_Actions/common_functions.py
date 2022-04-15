@@ -5348,3 +5348,58 @@ def disable_step(data_set):
         return CommonUtil.Exception_Handler(sys.exc_info())
 
 
+@logger
+def extract_text_from_scanned_pdf(data_set):
+    """
+    This function reads the text from a scanned pdf and saves it into a variable
+
+    Args:
+        data_set:
+            ------------------------------------------------------------------------------------------------------------
+            |pdf    		    |path		    |~/path/to/document.pdf
+            |poppler	    	|path		    |~/path/to/poppler (C:/ZeuZ_Programs/poppler-22.01.0/Library/bin/)
+            |tesseract   		|path		    |~/path/to/tesseract (C:/ZeuZ_Programs/Tesseract-OCR/tesseract.exe/)
+            |read scanned pdf	|common action	| variable_name
+            ------------------------------------------------------------------------------------------------------------
+
+    Return:
+        `passed` if success
+        `zeuz_failed` if fails
+    """
+
+    sModuleInfo = inspect.currentframe().f_code.co_name + " : " + MODULE_NAME
+
+    try:
+        from pytesseract import pytesseract
+        from pdf2image import convert_from_path
+
+        pdf_file_path = ""
+        poppler_path = Path(os.environ["PROGRAMFILES"]) / "poppler-22.01.0" / "Library" / "bin"
+        tesseract_path = Path(os.environ["PROGRAMFILES"]) / "Tessaract-OCR" / "tesseract.exe"
+        var_name = ""
+        full_pdf_text = []
+
+        for left, mid, right in data_set:
+            if mid.strip().lower() == "path":
+                if left.strip().lower() == "pdf":
+                    pdf_file_path = CommonUtil.path_parser(right.strip())
+
+                elif left.strip().lower() == "poppler":
+                    poppler_path = CommonUtil.path_parser(right.strip())
+
+                elif left.strip().lower() == "tesseract":
+                    tesseract_path = CommonUtil.path_parser(right.strip())
+
+            elif left.strip().lower() == "read scanned pdf":
+                var_name = right.strip()
+
+        pytesseract.tesseract_cmd = tesseract_path
+        pages = convert_from_path(pdf_file_path, 500, poppler_path=poppler_path)
+        for page in pages:
+            texts = pytesseract.image_to_string(page)
+            full_pdf_text.append(texts)
+
+        return sr.Set_Shared_Variables(var_name, full_pdf_text)
+
+    except Exception:
+        return CommonUtil.Exception_Handler(sys.exc_info())
