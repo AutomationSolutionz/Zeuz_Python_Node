@@ -2579,8 +2579,8 @@ def excel_read(data_set):
     sModuleInfo = inspect.currentframe().f_code.co_name + " : " + MODULE_NAME
 
     try:
-        module = "xlwings"
-        # module = "openpyxl"
+        # module = "xlwings"
+        module = "openpyxl"
         filepath = None
         sheet_name = None
         var_name = None
