@@ -438,7 +438,6 @@ def Open_Browser(dependency, window_size_X=None, window_size_Y=None, capability=
 
             # argument
             options.add_argument("--no-sandbox")
-            options.add_argument("--no-sandbox")
             options.add_argument("--disable-extensions")
             options.add_argument('--ignore-certificate-errors')
             options.add_argument('--ignore-ssl-errors')
