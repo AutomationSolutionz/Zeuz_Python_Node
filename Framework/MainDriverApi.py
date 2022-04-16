@@ -82,6 +82,7 @@ failed_due_to_linked_fail = False
 
 
 # sets server variable
+# TODO: remove, need alternative
 def set_server_variable(run_id, key, value):
     return RequestFormatter.Get(
         "set_server_variable_api", {"run_id": run_id, "var_name": key, "var_val": value}
@@ -89,6 +90,7 @@ def set_server_variable(run_id, key, value):
 
 
 # gets server variable
+# TODO: remove, need alternative
 def get_server_variable(run_id, key):
     return RequestFormatter.Get(
         "get_server_variable_api", {"run_id": run_id, "var_name": key}
@@ -96,6 +98,7 @@ def get_server_variable(run_id, key):
 
 
 # get global list variable
+# TODO: remove, need alternative
 def get_global_list_variable(name):
     return RequestFormatter.Get(
         "set_or_get_global_server_list_variable_api", {"name": name}
@@ -103,6 +106,7 @@ def get_global_list_variable(name):
 
 
 # append to global list variable
+# TODO: remove, need alternative
 def append_to_global_list_variable(name, value):
     return RequestFormatter.Get(
         "append_value_to_global_server_list_variable_api",
@@ -111,6 +115,7 @@ def append_to_global_list_variable(name, value):
 
 
 # remove item from global list variable
+# TODO: remove, need alternative
 def remove_item_from_global_list_variable(name, value):
     return RequestFormatter.Get(
         "delete_global_server_list_variable_by_value_api",
@@ -119,21 +124,24 @@ def remove_item_from_global_list_variable(name, value):
 
 
 # get all server variable
+# TODO: remove, need alternative
 def get_all_server_variable(run_id):
     return RequestFormatter.Get("get_all_server_variable_api", {"run_id": run_id})
 
 
-
 # if run is cancelled then it can be called, it cleans up the runid from database
+# TODO: remove, unnecessary
 def cleanup_runid_from_server(run_id):
     RequestFormatter.Get("clean_up_run_api", {"run_id": run_id})
 
 
 # returns current status of the runid
+# TODO: remove, unnecessary
 def get_status_of_runid(run_id):
     return RequestFormatter.Get("get_status_of_a_run_api", {"run_id": run_id})
 
 
+# TODO: Remove
 def check_if_other_machines_failed_in_linked_run():
     # can get multiple server variable with one action
     sModuleInfo = inspect.currentframe().f_code.co_name + " : " + MODULE_NAME
@@ -186,6 +194,8 @@ def create_tc_log_ss_folder(run_id, test_case, temp_ini_file, server_version):
         )
     except Exception:
         return CommonUtil.Exception_Handler(sys.exc_info())
+
+    # TODO: use pathlib
     test_case_folder = (
         log_file_path +
         os.sep +
@@ -195,6 +205,8 @@ def create_tc_log_ss_folder(run_id, test_case, temp_ini_file, server_version):
         os.sep +
         test_case.replace(":", "-")
     )
+
+    # TODO: Use pathlib for following items
     # create test_case_folder
     ConfigModule.add_config_value("sectionOne", "test_case", test_case, temp_ini_file)
     ConfigModule.add_config_value("sectionOne", "test_case_folder", test_case_folder, temp_ini_file)
@@ -215,19 +227,27 @@ def create_tc_log_ss_folder(run_id, test_case, temp_ini_file, server_version):
     ConfigModule.add_config_value("sectionOne", "performance_report", performance_report, temp_ini_file)
     FL.CreateFolder(performance_report)
 
+    # TODO: we'll be breaking internal server compatibility anyway
+    # ! This will be unnecessary
     if float(server_version.split(".")[0]) >= 7:
         # json report folder
         json_report = test_case_folder + os.sep + "json_report"
         ConfigModule.add_config_value("sectionOne", "json_report", json_report, temp_ini_file)
         FL.CreateFolder(json_report)
 
-    # create where attachments from selenium browser will be downloaded
+    # create where attachments from selenium browser will be
+    # downloaded
+    # ? Why are we keeping two separate download folders?
     zeuz_download_folder = test_case_folder + os.sep + "zeuz_download_folder"
     FL.CreateFolder(zeuz_download_folder)
     initial_download_folder = zeuz_download_folder + os.sep + "initial_download_folder"
     FL.CreateFolder(initial_download_folder)
     ConfigModule.add_config_value("sectionOne", "initial_download_folder", initial_download_folder, temp_ini_file)
     shared.Set_Shared_Variables("zeuz_download_folder", zeuz_download_folder)
+
+    # ? Can't we run the above folder creation codes only once when
+    # the node starts or when main driver is called for the first
+    # time?
 
     # Store the attachments for each test case separately inside
     # AutomationLog/attachments/TEST-XYZ
@@ -275,7 +295,7 @@ def call_driver_function_of_test_step(
         # get step driver
         current_driver = all_step_info[StepSeq-1]["step_driver_type"]
         # current_driver = "Built_In_Driver"
-        print("DRIVER: {}".format(current_driver))
+        print(f"DRIVER: {current_driver}")
 
         try:
             current_driver = "Drivers." + current_driver
@@ -464,10 +484,14 @@ def run_all_test_steps_in_a_test_case(
                 action_dataset = action_info["step_actions"]
                 all_action_data_set.append(action_dataset)
                 dict = {}
+                
+                # TODO: Remove the reverse boolean value since every
+                # server is now upgraded to or above 6.
                 dict["Action disabled"] = True if action_info["action_disabled"] == False else False
                 server_version = CommonUtil.all_logs_json[CommonUtil.runid_index]["webserver_version"]
                 if float(server_version[:server_version.find(".", 2)]) > 6.0:
                     dict["Action disabled"] = not dict["Action disabled"]
+
                 dict["Action name"] = action_info["action_name"]
                 all_action_Info.append(dict)
             all_step_dataset.append(all_action_data_set)
@@ -491,6 +515,7 @@ def run_all_test_steps_in_a_test_case(
                         "Step-%s is set as 'Always run' so executing this step" % (CommonUtil.step_index + 1),
                         2,
                     )
+                # TODO: Revisit the todo on the right
                 elif "run_on_fail" in all_step_info[StepSeq - 1] and all_step_info[StepSeq - 1]["run_on_fail"]:     # Todo: Remove the 1st condition when all servers are updated
                     CommonUtil.ExecLog(
                         sModuleInfo,
