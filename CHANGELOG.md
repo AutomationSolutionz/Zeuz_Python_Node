@@ -3,8 +3,25 @@
 # Version 14
 
 ### [Current changes]
+- _
+
+### [15.0.0][April 16, 2022]
+- **[Add]** Added capability for handling alert as desired.
+- **[Add]** Added action read scanned pdf
+- **[Add]** email_attachment feature is added into email_read action
+- **[Add]** `zeuz_current_tc` and `zeuz_current_step` variables are added
 - **[Add]** Add capability for handling alert as desired.
-- **[Add]** Add action read scanned pdf
+- **[Add]** Added 4 new actions: 
+  - `Attachments upload to Testcase`
+  - `Attachments upload to Step`
+  - `Attachments upload to Global`
+  - `Disable steps`
+
+- **[Change]** openpyxl is made default for excel_read
+- **[Change]** Reporting structure is changed
+- **[Fix]** `--log_dir` is fixed
+- **[Fix]** import pyautogui fix for ui-less machine
+- **[Remove]** SSL validation is bypassed while installing webdriver
 
 ### [14.11.2][March 30, 2022]
 - **[Fix]** Pyautogui import fix for ui-less machine
