@@ -4254,8 +4254,8 @@ def upload_attachment_to_testcase(data_set):
                var_path = CommonUtil.path_parser(right)
 
         if var_id is None:
-            CommonUtil.ExecLog(sModuleInfo, "Please insert testcase id ", 3)
-            return "zeuz_failed"
+            var_id = CommonUtil.current_tc_no
+            CommonUtil.ExecLog(sModuleInfo, f"Testcase id is set to {var_id}", 1)
         if var_path is None:
             CommonUtil.ExecLog(sModuleInfo, "Please insert attachment path ", 3)
             return "zeuz_failed"
