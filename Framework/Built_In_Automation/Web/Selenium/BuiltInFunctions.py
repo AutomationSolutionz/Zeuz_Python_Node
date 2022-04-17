@@ -785,6 +785,10 @@ def Go_To_Link(step_data, page_title=False):
                     elif right.strip().lower() in ("dismiss", "no", "cancel"):
                         capabilities["unhandledPromptBehavior"] = "dismiss"
 
+                else:
+                    # any other shared capabilities can be added from the selenium document
+                    capabilities[left.strip()] = right.strip()
+
         if not driver_id:
             driver_id = "default"
 
