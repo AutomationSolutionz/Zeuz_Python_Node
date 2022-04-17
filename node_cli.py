@@ -462,6 +462,13 @@ def RunProcess(sTesterid, user_info_object, run_once=False, log_dir=None):
             # r = requests.get(RequestFormatter.form_uri("is_submitted_api"), {"machine_name": sTesterid}, verify=False).json()
             Userid = (CommonUtil.MachineInfo().getLocalUser()).lower()
             if r and "found" in r and r["found"]:
+                # TODO: We should not be downloading test cases here. Instead it
+                # should move to its own module and the module should be
+                # responsible for translating the fetched test cases into the
+                # appropriate format suitable for consumption by the MainDriver.
+                # The MainDriver will be called as soon as there is/are new test
+                # case(s) available.
+
                 PreProcess(log_dir=log_dir)
                 size = round(int(r["file_size"]) / 1024, 2)
                 if size > 1024:

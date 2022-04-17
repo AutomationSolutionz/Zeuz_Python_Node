@@ -576,6 +576,10 @@ def run_all_test_steps_in_a_test_case(
 
             test_steps_data = all_step_dataset[StepSeq-1]
             test_action_info = all_action_info[StepSeq-1]
+
+            # FIXME: If either one of run on fail or step time throws an
+            # exception, both values will be set to a default value. So it has
+            # the possibility to ignore one of the other correct values.
             try:
                 test_case_continue = all_step_info[StepSeq - 1]["continue_on_fail"]
                 step_time = all_step_info[StepSeq - 1]["step_time"]
@@ -1368,6 +1372,7 @@ def main(device_dict, user_info_object):
             CommonUtil.clear_all_logs()
 
             CommonUtil.run_cancelled = False
+            # FIXME: Remove the unnecessary threading. This won't be needed anymore.
             thr = executor.submit(check_run_cancel, run_id)
             CommonUtil.SaveThread("run_cancel", thr)
 
@@ -1434,6 +1439,8 @@ def main(device_dict, user_info_object):
 
             final_run_params = {}
             for param in final_run_params_from_server:
+                # TODO: This needs to be changed to use the new key/value format
+                # to be sent from server.
                 final_run_params[param] = CommonUtil.parse_value_into_object(list(final_run_params_from_server[param].items())[1][1])
                 # final_run_params[param] = CommonUtil.parse_value_into_object(list(final_run_params_from_server[param].items())[0][1])
                 # final_run_params[param] = CommonUtil.parse_value_into_object(final_run_params_from_server[param]["subfield"])
