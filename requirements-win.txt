@@ -56,3 +56,5 @@ beautifulsoup4
 premailer
 html-diff
 openpyxl
+pytesseract
+pdf2image

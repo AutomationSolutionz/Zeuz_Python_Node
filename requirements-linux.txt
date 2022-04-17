@@ -44,3 +44,5 @@ beautifulsoup4
 premailer
 html-diff
 PyPDF2
+pytesseract
+pdf2image
