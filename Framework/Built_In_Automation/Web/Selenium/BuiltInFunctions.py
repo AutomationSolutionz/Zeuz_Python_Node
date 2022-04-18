@@ -438,7 +438,6 @@ def Open_Browser(dependency, window_size_X=None, window_size_Y=None, capability=
 
             # argument
             options.add_argument("--no-sandbox")
-            options.add_argument("--no-sandbox")
             options.add_argument("--disable-extensions")
             options.add_argument('--ignore-certificate-errors')
             options.add_argument('--ignore-ssl-errors')
@@ -1358,7 +1357,6 @@ def Click_and_Download(data_set):
     """ Click and download attachments from web and save it to specific destinations"""
     sModuleInfo = inspect.currentframe().f_code.co_name + " : " + MODULE_NAME
     global selenium_driver
-    import pyautogui
 
     if selenium_driver.capabilities["browserName"].strip().lower() not in ("chrome", "msedge", "firefox"):
         CommonUtil.ExecLog(sModuleInfo, "This action was made for Chrome, MS Edge and Firefox. Other browsers won't download files in Zeuz_Download_Folder", 2)
@@ -1414,6 +1412,7 @@ def Click_and_Download(data_set):
                         ]
                         if win_Click_Element(save_click_ds) == "zeuz_failed":
                             CommonUtil.ExecLog(sModuleInfo, "Could not click Save Button. Switching to GUI method", 2)
+                            import pyautogui
                             pyautogui.hotkey("down")
                             pyautogui.hotkey("enter")
 
@@ -1435,6 +1434,7 @@ def Click_and_Download(data_set):
                             ]
                             if win_Click_Element(ok_ds) == "zeuz_failed":
                                 CommonUtil.ExecLog(sModuleInfo, "Could not find the OK button. Switching to GUI method (pressing Enter)", 2)
+                                import pyautogui
                                 pyautogui.hotkey("enter")
                 except:
                     CommonUtil.ExecLog(sModuleInfo, "Could not check if any save window was opened. Continuing...", 2)
