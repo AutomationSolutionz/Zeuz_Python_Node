@@ -4,6 +4,10 @@
 import os
 from pathlib import Path
 import platform
+
+# Disable WebdriverManager SSL verification.
+os.environ['WDM_SSL_VERIFY'] = '0'
+
 version_path = Path(os.getcwd())/"Framework"/"Version.txt"
 with open(version_path, "r"):
     text = version_path.read_text()
@@ -244,7 +248,11 @@ def Login(cli=False, run_once=False, log_dir=None):
             try:
                 token = r['token']
                 res = RequestFormatter.Get("/api/user", headers={'Authorization': "Bearer %s" % token})
-                info = res[0]
+                if "data" in res:   # Todo: implement it with proper server versioning
+                    info = res["data"][0]
+                else:
+                    info = res[0]
+
                 username = info['username']
                 api_flag = False
                 ConfigModule.add_config_value(AUTHENTICATION_TAG, "username", username)
@@ -305,17 +313,26 @@ def Login(cli=False, run_once=False, log_dir=None):
                 user_info_object["project"] = default_team_and_project["project_name"]
                 user_info_object["team"] = default_team_and_project["team_name"]
 
-                CommonUtil.ExecLog("", f"Authenticating user: {username}", 4, False)
+                # CommonUtil.ExecLog("", f"Authenticating user: {username}", 4, False)
 
                 if api_flag:
                     r = RequestFormatter.Post("login_api", user_info_object)
 
                 if r or (isinstance(r, dict) and r['status'] == 200):
+                    from rich.console import Console
+                    rich_print = Console().print
+                    rich_print("\nAuthentication successful\nUSER=", end="")
+                    rich_print(username, style="bold cyan", end="")
+                    rich_print(", TEAM=", end="")
+                    rich_print(user_info_object['team'], style="bold cyan", end="")
+                    rich_print(", SERVER=", end="")
+                    rich_print(server_name, style="bold cyan")
                     CommonUtil.ExecLog(
                         "",
                         f"Authentication successful: USER='{username}', "
                         f"PROJECT='{user_info_object['project']}', TEAM='{user_info_object['team']}', SERVER='{server_name}'",
-                        4
+                        4,
+                        print_Execlog=False
                     )
                     ConfigModule.add_config_value("sectionOne", PROJECT_TAG, user_info_object['project'], temp_ini_file)
                     ConfigModule.add_config_value("sectionOne", TEAM_TAG, user_info_object['team'], temp_ini_file)
@@ -445,12 +462,13 @@ def RunProcess(sTesterid, user_info_object, run_once=False, log_dir=None):
             # r = requests.get(RequestFormatter.form_uri("is_submitted_api"), {"machine_name": sTesterid}, verify=False).json()
             Userid = (CommonUtil.MachineInfo().getLocalUser()).lower()
             if r and "found" in r and r["found"]:
+                PreProcess(log_dir=log_dir)
                 size = round(int(r["file_size"]) / 1024, 2)
                 if size > 1024:
                     size = str(round(size / 1024, 2)) + " MB"
                 else:
                     size = str(size) + " KB"
-                save_path = temp_ini_file.parent / "attachments"
+                save_path = Path(ConfigModule.get_config_value("sectionOne", "temp_run_file_path", temp_ini_file)) / "attachments"
                 CommonUtil.ExecLog("", "Downloading dataset and attachments of %s into:\n%s" % (size, str(save_path/"input.zip")), 4)
                 FL.CreateFolder(save_path)
                 headers = RequestFormatter.add_api_key_to_headers({})
@@ -467,7 +485,6 @@ def RunProcess(sTesterid, user_info_object, run_once=False, log_dir=None):
                 z.extractall(save_path)
                 z.close()
                 os.unlink(save_path/"input.zip")
-                PreProcess(log_dir=log_dir)
                 # Telling the node_manager that a run_id is deployed
                 CommonUtil.node_manager_json(
                     {
@@ -495,7 +512,6 @@ def RunProcess(sTesterid, user_info_object, run_once=False, log_dir=None):
 
                 if run_once or exit_script:
                     return False
-                CommonUtil.ExecLog("", "Successfully updated db with parameter", 4, False)
                 break
             else:
                 time.sleep(3)
@@ -590,9 +606,12 @@ def update_machine(dependency, default_team_and_project_dict):
         }
         r = RequestFormatter.Get("update_automation_machine_api/", update_object)
         if r["registered"]:
-            CommonUtil.ExecLog(
-                "", "Zeuz Node is online: %s" % (r["name"]), 4, False,
-            )
+            from rich.console import Console
+            rich_print = Console().print
+            # rich_print(":green_circle: Zeuz Node is online: ", end="")
+            rich_print(":green_circle:" + r["name"], style="bold cyan", end="")
+            print(" is Online\n")
+            CommonUtil.ExecLog("", "Zeuz Node is online: %s" % (r["name"]), 4, False, print_Execlog=False)
         else:
             if r["license"]:
                 CommonUtil.ExecLog("", "Machine is not registered as online", 4, False)

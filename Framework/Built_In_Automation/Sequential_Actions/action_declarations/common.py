@@ -48,11 +48,13 @@ declarations = (
     { "name": "replace string",                              "function": "replace_string",                        "screenshot": "none" },
     { "name": "search text",                                 "function": "search_and_save_text",                  "screenshot": "none" },
     { "name": "custom step duration",                        "function": "custom_step_duration",                  "screenshot": "none" },
+    { "name": "disable step",                                "function": "disable_step",                          "screenshot": "none" },
+
     # Mail actions
     { "name": "send mail",                                   "function": "send_mail",                             "screenshot": "none" },
     { "name": "check latest mail",                           "function": "check_latest_mail",                     "screenshot": "none" },
-    {"name": "delete mail",                                  "function": "delete_mail_action",                     "screenshot": "none"},
-    {"name": "save mail",                                    "function": "save_mail_action",                       "screenshot": "none"},
+    {"name": "delete mail",                                  "function": "delete_mail_action",                    "screenshot": "none"},
+    {"name": "save mail",                                    "function": "save_mail_action",                      "screenshot": "none"},
 
     # Global Variable Actions
     { "name": "get global list variable",                    "function": "get_global_list_variable",              "screenshot": "none" },
@@ -75,7 +77,15 @@ declarations = (
     {"name":"random email read",                             "function": "random_email_read",                     "screenshot": "none" },
     {"name":"random email delete",                           "function": "random_email_delete",                   "screenshot": "none" },
 
-    # Actions for TaxCalc
+    # Actions  for attachment upload to server
+    {"name":"upload attachment to testcase",                 "function": "upload_attachment_to_testcase",         "screenshot": "none" },
+    {"name":"download attachment from testcase",             "function": "download_attachment_from_testcase",     "screenshot": "none" },
+    {"name":"upload attachment to step",                     "function": "upload_attachment_to_step",             "screenshot": "none" },
+    {"name":"download attachment from step",                 "function": "download_attachment_from_step",         "screenshot": "none" },
+    {"name":"upload attachment to global",                   "function": "upload_attachment_to_global",         "screenshot": "none" },
+    {"name":"download attachment from global",               "function": "download_attachment_from_global",     "screenshot": "none" },
+
+    # Client specific actions
     {"name": "write into text file",                         "function": "text_write",                            "screenshot": "none" },
     {"name": "compare identifiers content",                  "function": "compare_identifiers_content",           "screenshot": "none" },
     {"name": "compare item occurrence",                      "function": "compare_item_occurrence",               "screenshot": "none" },
@@ -84,7 +94,7 @@ declarations = (
     {"name": "compare file with tag",                        "function": "compare_file_with_tag",                 "screenshot": "none" },
     {"name": "extract text from pdf",                        "function": "extract_text_from_pdf",                 "screenshot": "none" },
     {"name": "search text and font",                         "function": "search_text_and_font",                  "screenshot": "none" },
-    # Actions of taxcalc end
+    {"name": "read scanned pdf",                            "function": "extract_text_from_scanned_pdf",        "screenshot": "none"},
 
 ) # yapf: disable
 

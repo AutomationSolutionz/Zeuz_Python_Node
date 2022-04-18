@@ -243,43 +243,29 @@ def UnZip(file_to_be_unzipped, location_where_to_unzip):
         :param location_where_to_unzip: location of destination
         :return: Exception if Exception occurs or False if file doesn't exist otherwise return result
     """
-
     sModuleInfo = inspect.currentframe().f_code.co_name + " : " + MODULE_NAME
-
     try:
-        CommonUtil.ExecLog(
-            sModuleInfo,
-            "Unzipping file %s to %s" % (file_to_be_unzipped, location_where_to_unzip),
-            1,
-        )
-        if os.path.isfile(file_to_be_unzipped):  # If zip file exists
-            if not os.path.isdir(
-                location_where_to_unzip
-            ):  # If destination directory does not exist, create it
-                CommonUtil.ExecLog(sModuleInfo, "Directory doesn't exist, creating", 1)
-                if (
-                    CreateFolder(location_where_to_unzip) in failed_tag_list
-                ):  # Create directory, but if it fails, exit
-                    CommonUtil.ExecLog(
-                        sModuleInfo, "Couldn't create directory, so can't unzip", 3
-                    )
-                    return "zeuz_failed"
 
-            # Unzip file
+        if os.path.isfile(file_to_be_unzipped):  # If zip file exists
+            if not os.path.isdir(location_where_to_unzip):  # If destination directory does not exist, create it
+                CommonUtil.ExecLog(sModuleInfo, "Directory doesn't exist, creating", 1)
+                if CreateFolder(location_where_to_unzip) == "zeuz_failed":  # Create directory, but if it fails, exit
+                    CommonUtil.ExecLog(sModuleInfo, "Couldn't create directory, so can't unzip", 3)
+                    return "zeuz_failed"
+            CommonUtil.ExecLog(
+                sModuleInfo,
+                "Unzipping file %s to %s" % (file_to_be_unzipped, location_where_to_unzip),
+                1,
+            )
             zip_ref = zipfile.ZipFile(file_to_be_unzipped, "r")
             zip_ref.extractall(location_where_to_unzip)
-            result = zip_ref.close()
-            if result in failed_tag_list:
-                return "zeuz_failed"
-            else:
-                return "passed"
+            zip_ref.close()
+            return "passed"
         else:
             CommonUtil.ExecLog(sModuleInfo, "Zip file doesn't exist", 3)
             return "zeuz_failed"
-    except Exception:
-        return CommonUtil.Exception_Handler(
-            sys.exc_info(), None, "Error unzipping file"
-        )
+    except:
+        return CommonUtil.Exception_Handler(sys.exc_info())
 
 
 @logger
@@ -1188,71 +1174,27 @@ def Copy_File_or_Folder(step_data):
 def Unzip_File_or_Folder(step_data):
     sModuleInfo = inspect.currentframe().f_code.co_name + " : " + MODULE_NAME
 
-    # Recall file attachment, if not already set
-    file_attachment = []
-    if Shared_Resources.Test_Shared_Variables("file_attachment"):
-        file_attachment = Shared_Resources.Get_Shared_Variables("file_attachment")
-
     try:
-        if _platform == "linux" or _platform == "linux2" or _platform == "darwin":
-            from_path = str(
-                step_data[0][2]
-            ).strip()  # location of the file/folder to be copied
-            if from_path[0] == "/":
-                from_path = from_path.lstrip("/")
-
-        elif _platform == "win32":
-            from_path = raw(
-                str(step_data[0][2]).strip()
-            )  # location of the file/folder to be copied
+        source, destination = "", ""
+        for left, mid, right in step_data:
+            left = left.strip().lower()
+            right = right.strip()
+            if "src" in left or "source" in left:
+                source = CommonUtil.path_parser(right)
+            if "destination" in left or "dst" in left:
+                destination = CommonUtil.path_parser(right)
 
         # Try to find the file
-        if (
-            from_path not in file_attachment
-            and os.path.exists(os.path.join(get_home_folder(), from_path)) == False
-        ):
-            CommonUtil.ExecLog(
-                sModuleInfo,
-                "Could not find file attachment called %s, and could not find it locally"
-                % from_path,
-                3,
-            )
+        if not source or not destination:
+            CommonUtil.ExecLog(sModuleInfo, "Source path and destination directory needs to be set", 3)
             return "zeuz_failed"
-        if from_path not in file_attachment:
-            from_path = os.path.join(get_home_folder(), from_path)
-            if _platform == "linux" or _platform == "linux2" or _platform == "darwin":
-                to_path = str(step_data[1][2]).strip()
-                if to_path[0] == "/":
-                    to_path = to_path.lstrip("/")
-                to_path = os.path.join(
-                    get_home_folder(), to_path
-                )  # location where to copy the file/folder
-            elif _platform == "win32":
-                to_path = os.path.join(
-                    get_home_folder(), raw(str(step_data[1][2]).strip())
-                )  # location where to copy the file/folder
-        if from_path in file_attachment:
-            file_name = from_path
-            from_path = file_attachment[
-                from_path
-            ]  # In file is an attachment, get the full path
-            to_path = from_path[0 : len(from_path) - (len(file_name) + 1)]
-            Save_in_variable = step_data[1][2]
 
-        result = UnZip(from_path, to_path)
-        if result in failed_tag_list:
-            CommonUtil.ExecLog(
-                sModuleInfo, "Can't not unzip '%s' to '%s'" % (from_path, to_path), 3
-            )
+        result = UnZip(source, destination)
+        if result == "zeuz_failed":
+            CommonUtil.ExecLog(sModuleInfo, "Can't not unzip '%s' to '%s'" % (source, destination), 3)
             return "zeuz_failed"
-        else:
-            Shared_Resources.Set_Shared_Variables(Save_in_variable, to_path)
-            CommonUtil.ExecLog(
-                sModuleInfo,
-                "'%s' is unzipped to '%s' successfully" % (from_path, to_path),
-                1,
-            )
-            return "passed"
+        CommonUtil.ExecLog(sModuleInfo, "'%s' is unzipped to '%s' successfully" % (source, destination), 1)
+        return "passed"
     except Exception:
         return CommonUtil.Exception_Handler(sys.exc_info())
 

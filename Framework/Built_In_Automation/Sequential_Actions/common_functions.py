@@ -11,6 +11,7 @@ import itertools
 from pathlib import Path
 
 from bs4 import BeautifulSoup
+import requests
 from premailer import transform
 from html_diff import diff
 
@@ -18,24 +19,17 @@ from imap_tools import MailBox
 import re
 from typing import List
 
+
 try:
     import xlwings as xw
 except:
     pass
 global sr
-from Framework.Utilities import CommonUtil, ConfigModule
-from Framework.Built_In_Automation.Shared_Resources import (
-    BuiltInFunctionSharedResources as sr,
-)
-from Framework.Built_In_Automation.Sequential_Actions.sequential_actions import (
-    actions,
-    action_support,
-)
-from Framework.Utilities.CommonUtil import (
-    passed_tag_list,
-    failed_tag_list,
-    skipped_tag_list,
-)  # Allowed return strings, used to normalize pass/fail
+from Framework.Utilities import CommonUtil, ConfigModule, RequestFormatter
+from Framework.Built_In_Automation.Shared_Resources import BuiltInFunctionSharedResources as sr
+
+from Framework.Built_In_Automation.Sequential_Actions.sequential_actions import actions, action_support
+from Framework.Utilities.CommonUtil import passed_tag_list, failed_tag_list, skipped_tag_list
 from Framework.Utilities.decorators import logger, deprecated
 from Framework.Built_In_Automation.Shared_Resources import LocateElement
 from Framework import MainDriverApi
@@ -2585,8 +2579,8 @@ def excel_read(data_set):
     sModuleInfo = inspect.currentframe().f_code.co_name + " : " + MODULE_NAME
 
     try:
-        module = "xlwings"
-        # module = "openpyxl"
+        # module = "xlwings"
+        module = "openpyxl"
         filepath = None
         sheet_name = None
         var_name = None
@@ -2628,15 +2622,73 @@ def excel_read(data_set):
         if module == "openpyxl":
             # openpyxl_excel_read(filepath, sheet_name, var_name, cell_range, structure_of_variable, key_reference)
             from openpyxl import load_workbook
+            from openpyxl.utils.cell import coordinate_from_string, column_index_from_string
             wb = load_workbook(filepath)
             sheet = wb[sheet_name]
             if key_reference is None:
                 key_reference = "row1"
 
             cell_data = []
-            for row in sheet[cell_range]:
-                cell_data.append([cell.value for cell in row])
 
+            if ":" in cell_range:
+                #splited the cell_range
+                cell_range_split = cell_range.split(":")
+
+                #converted the Cell_range index value into numerical index value
+                xy1 = coordinate_from_string(cell_range_split[0])  
+                column1 = column_index_from_string(xy1[0])  
+                row1 = xy1[1]
+
+                xy2 = coordinate_from_string(cell_range_split[1])  
+                column2 = column_index_from_string(xy2[0])  
+                row2 = xy2[1]
+
+                #sorted the row and column according to cell_range
+                if row1<row2:
+                    row = row1
+                    last_row = row2
+                else:
+                    row = row2
+                    last_row = row1
+                
+                if column1<column2:
+                    column = column1
+                    last_column = column2
+                else:
+                    column = column2
+                    last_column = column1
+
+                if expand:
+                    if expand == "table":
+                        for i in range(row, sheet.max_row+1):
+                            cell_data.append([cell.value for cell in sheet[i][column-1:sheet.max_column+1]])
+                    if expand == "right":
+                        for i in range(row, last_row+1):
+                            cell_data.append([cell.value for cell in sheet[i][column-1:sheet.max_column+1]])
+                    if expand == "down":
+                        for i in range(row, sheet.max_row+1):
+                            cell_data.append([cell.value for cell in sheet[i][column-1:last_column+1]])
+
+                else:
+                    for i in range(row, last_row+1):
+                        cell_data.append([cell.value for cell in sheet[i][column-1:last_column+1]])
+            else:
+                xy = coordinate_from_string(cell_range) 
+                column = column_index_from_string(xy[0])  
+                row = xy[1]
+    
+                if expand:
+                    if expand == "table":
+                        for i in range(row, sheet.max_row+1):
+                            cell_data.append([cell.value for cell in sheet[i][column-1:sheet.max_column+1]])
+                    if expand == "right":
+                        cell_data.append([cell.value for cell in sheet[row][column-1:sheet.max_column+1]])
+                    if expand == "down":
+                        for i in range(row, sheet.max_row+1):
+                            cell_data.append([cell.value for cell in sheet[i][column-1:column]])
+
+                else:
+                    cell_data.append(sheet[cell_range].value)
             # wb.close()            # it does nothing
             # wb.save(filepath)     # Save does not work while
 
@@ -2974,7 +3026,7 @@ def Read_text_file(data_set):
                 data = file.read()
                 var_value += data
                 if read_as_json:
-                    var_value = json.loads(var_value)
+                    var_value = CommonUtil.parse_value_into_object(var_value)
 
         return sr.Set_Shared_Variables(var_name, var_value)
     except Exception:
@@ -3928,6 +3980,7 @@ def save_mail_action(data_set):
         before_date = ""
         variable_name = None
         wait = 10.0
+        attachment_path = ""
 
         for left, mid, right in data_set:
             left = left.lower().strip()
@@ -3962,6 +4015,8 @@ def save_mail_action(data_set):
                 variable_name = right.strip()
             elif "wait" == left:
                 wait = float(right.strip())
+            elif "attachment directory" in left:
+                attachment_path = CommonUtil.path_parser(right)
 
         if imap_host == "" or imap_user == "" or imap_pass == "" or select_mailbox == "":
             CommonUtil.ExecLog(sModuleInfo, "please provide the imap credentials for your mail server, see action help", 3)
@@ -3984,7 +4039,8 @@ def save_mail_action(data_set):
             exact_date,
             after_date,
             before_date,
-            wait
+            attachment_path,
+            wait,
         )
 
         sr.Set_Shared_Variables(variable_name, result)
@@ -4174,6 +4230,279 @@ def random_email_delete(data_set):
         return CommonUtil.Exception_Handler(sys.exc_info())
 
 
+@logger
+def upload_attachment_to_testcase(data_set):
+    """
+    usage: This action allows you to upload attachments  to a testcase id
+    dataset :
+        id                  | input parameter | TEST-0151
+        attachment path     | input parameter | path
+        upload attachment to testcase | common action | result
+
+    return : return True/False
+    note: id will be the testcase id , attachment path will be the path of that attachment ,result will be the variable name to store
+    """
+    sModuleInfo = inspect.currentframe().f_code.co_name + " : " + MODULE_NAME
+    try:
+        var_id = None
+        var_path = None
+        for left, mid, right in data_set:
+            left = left.strip().lower()
+            if "id" == left:
+               var_id = right.strip()
+            if "attachment path" == left:
+               var_path = CommonUtil.path_parser(right)
+
+        if var_id is None:
+            var_id = CommonUtil.current_tc_no
+            CommonUtil.ExecLog(sModuleInfo, f"Testcase id is set to {var_id}", 1)
+        if var_path is None:
+            CommonUtil.ExecLog(sModuleInfo, "Please insert attachment path ", 3)
+            return "zeuz_failed"
+        headers = RequestFormatter.add_api_key_to_headers({})
+        res = requests.post(
+            RequestFormatter.form_uri("test_case_file_upload/"),
+            files={"file": open(var_path, 'rb')},
+            data={"file_upload_tc": var_id},
+            verify=False,
+            **headers)
+
+        CommonUtil.ExecLog(sModuleInfo, "Attachment was uploaded to TEST-%s" % var_id, 1)
+        return "passed"
+
+    except:
+        return CommonUtil.Exception_Handler(sys.exc_info())
+
+
+@logger
+def download_attachment_from_testcase(data_set):
+    """
+    usage: This action allows you to download attachments  from a testcase id
+    dataset :
+        id                  | input parameter | TEST-0151
+        attachment name     | input parameter | name
+        path to save        | optional parameter | path
+        download_attachment_from_testcase | common action | result
+
+    return : return True/False
+    note: id will be the testcase id , attachment name will be the name of that attachment ,result will be the variable name to store
+    """
+    sModuleInfo = inspect.currentframe().f_code.co_name + " : " + MODULE_NAME
+    try:
+        var_id = None
+        var_name = None
+        var_path = None
+        for left, mid, right in data_set:
+            left = left.strip().lower()
+            if "id" == left:
+               var_id = right.strip()
+            if "attachment name" == left:
+               var_name = right.strip()
+            if "path to save" == left:
+               var_path = CommonUtil.path_parser(right)
+
+        if var_id is None:
+            CommonUtil.ExecLog(sModuleInfo, "Please insert testcase id ", 3)
+            return "zeuz_failed"
+        if var_path is None:
+            CommonUtil.ExecLog(sModuleInfo, "Please insert attachment path to download ", 3)
+            return "zeuz_failed"
+        if var_name is None:
+            CommonUtil.ExecLog(sModuleInfo, "Please insert attachment name to download ", 3)
+            return "zeuz_failed"
+
+        headers = RequestFormatter.add_api_key_to_headers({})
+        url = RequestFormatter.form_uri(f"static/tc_folder/{var_id}/{var_name}")
+        local_filename = url.split('/')[-1]
+        with requests.get(url, stream=True, verify=False,**headers) as r:
+            r.raise_for_status()
+            with open(var_path+'/'+local_filename, 'wb') as f:
+                for chunk in r.iter_content(chunk_size=8192):
+                    f.write(chunk)
+
+        CommonUtil.ExecLog(sModuleInfo, "Attachment '%s' was downloaded from TEST-%s" % (var_name, var_id), 1)
+        return "passed"
+
+    except Exception as e:
+        return CommonUtil.Exception_Handler(sys.exc_info())
+
+
+@logger
+def upload_attachment_to_step(data_set):
+    """
+    usage: This action allows you to upload attachments  to a testcase id
+    dataset :
+        id                  | input parameter | 14
+        attachment path     | input parameter | path
+        upload attachment to step | common action | result
+
+    return : return True/False
+    note: id will be the step id , attachment path will be the path of that attachment ,result will be the variable name to store
+    """
+    sModuleInfo = inspect.currentframe().f_code.co_name + " : " + MODULE_NAME
+    try:
+        var_id = None
+        var_path = None
+        for left, mid, right in data_set:
+            left = left.strip().lower()
+            if "id" == left:
+               var_id = right.strip()
+            if "attachment path" == left:
+               var_path = CommonUtil.path_parser(right)
+
+        if var_id is None:
+            CommonUtil.ExecLog(sModuleInfo, "Please insert step id ", 3)
+            return "zeuz_failed"
+        if var_path is None:
+            CommonUtil.ExecLog(sModuleInfo, "Please insert attachment path ", 3)
+            return "zeuz_failed"
+        headers = RequestFormatter.add_api_key_to_headers({})
+        res = requests.post(
+            RequestFormatter.form_uri("step_file_upload/"),
+            files={"file": open(var_path,'rb')},
+            data={"file_upload_step": var_id, },
+            verify=False,
+            **headers)
+
+        CommonUtil.ExecLog(sModuleInfo, "Attachment was uploaded to STEP-%s" % var_id, 1)
+        return "passed"
+
+    except:
+        return CommonUtil.Exception_Handler(sys.exc_info())
+
+
+@logger
+def download_attachment_from_step(data_set):
+    """
+    usage: This action allows you to download attachments  from a testcase id
+    dataset :
+        id                  | input parameter | 14
+        attachment name     | input parameter | name
+        path to save        | optional parameter | path
+        download attachment from_step | common action | result
+
+    return : return True/False
+    note: id will be the testcase id , attachment name will be the name of that attachment ,result will be the variable name to store
+    """
+    sModuleInfo = inspect.currentframe().f_code.co_name + " : " + MODULE_NAME
+    try:
+        var_id = None
+        var_name = None
+        var_path = None
+        for left, mid, right in data_set:
+            left = left.strip().lower()
+            if "id" == left:
+               var_id = right.strip()
+            if "attachment name" == left:
+               var_name = right.strip()
+            if "path to save" == left:
+               var_path = CommonUtil.path_parser(right)
+
+        if var_id is None:
+            CommonUtil.ExecLog(sModuleInfo, "Please insert testcase id ", 3)
+            return "zeuz_failed"
+        if var_path is None:
+            CommonUtil.ExecLog(sModuleInfo, "Please insert attachment path to download ", 3)
+            return "zeuz_failed"
+        if var_name is None:
+            CommonUtil.ExecLog(sModuleInfo, "Please insert attachment name to download ", 3)
+            return "zeuz_failed"
+
+        headers = RequestFormatter.add_api_key_to_headers({})
+        url = RequestFormatter.form_uri(f"static/step_folder/{var_id}/{var_name}")
+        local_filename = url.split('/')[-1]
+        with requests.get(url, stream=True, verify=False,**headers) as r:
+            r.raise_for_status()
+            with open(var_path+'/'+local_filename, 'wb') as f:
+                for chunk in r.iter_content(chunk_size=8192):
+                    f.write(chunk)
+
+        CommonUtil.ExecLog(sModuleInfo, "Attachment '%s' was downloaded from STEP-%s" % (var_name, var_id), 1)
+        return "passed"
+
+    except Exception as e:
+        return CommonUtil.Exception_Handler(sys.exc_info())
+
+
+@logger
+def upload_attachment_to_global(data_set):
+    """
+    usage: This action allows you to upload attachments  to a testcase id
+    dataset :
+        attachment path     | input parameter | path
+        upload attachment to global | common action | result
+
+    return : return True/False
+    note: attachment path will be the path of that attachment ,result will be the variable name to store
+    """
+    sModuleInfo = inspect.currentframe().f_code.co_name + " : " + MODULE_NAME
+    try:
+        var_path = None
+        for left, mid, right in data_set:
+            left = left.strip().lower()
+            if "attachment path" == left:
+               var_path = CommonUtil.path_parser(right)
+
+        if var_path is None:
+            CommonUtil.ExecLog(sModuleInfo, "Please insert attachment path ", 3)
+            return "zeuz_failed"
+        headers = RequestFormatter.add_api_key_to_headers({})
+        res = requests.post(
+            RequestFormatter.form_uri("global_file_upload/"),
+            files={"file": open(var_path,'rb')},
+            verify=False,
+            **headers)
+        CommonUtil.ExecLog(sModuleInfo, "Attachment was uploaded to Global Attachmetns", 1)
+        return "passed"
+
+    except:
+        return CommonUtil.Exception_Handler(sys.exc_info())
+
+
+@logger
+def download_attachment_from_global(data_set):
+    """
+    usage: This action allows you to download attachments  from a testcase id
+    dataset :
+        attachment name     | input parameter | name
+        path to save        | optional parameter | path
+        download attachment from global | common action | result
+
+    return : return True/False
+    note:  attachment name will be the name of that attachment ,result will be the variable name to store
+    """
+    sModuleInfo = inspect.currentframe().f_code.co_name + " : " + MODULE_NAME
+    try:
+        var_name = None
+        var_path = None
+        for left, mid, right in data_set:
+            left = left.strip().lower()
+            if "attachment name" == left:
+               var_name = right.strip()
+            if "path to save" == left:
+               var_path = CommonUtil.path_parser(right)
+
+        if var_path is None:
+            CommonUtil.ExecLog(sModuleInfo, "Please insert attachment path to download ", 3)
+            return "zeuz_failed"
+        if var_name is None:
+            CommonUtil.ExecLog(sModuleInfo, "Please insert attachment name to download ", 3)
+            return "zeuz_failed"
+
+        headers = RequestFormatter.add_api_key_to_headers({})
+        url = RequestFormatter.form_uri(f"static/global_folder/{var_name}")
+        local_filename = url.split('/')[-1]
+        with requests.get(url, stream=True, verify=False,**headers) as r:
+            r.raise_for_status()
+            with open(var_path+'/'+local_filename, 'wb') as f:
+                for chunk in r.iter_content(chunk_size=8192):
+                    f.write(chunk)
+
+        CommonUtil.ExecLog(sModuleInfo, "Attachment '%s' was downloaded from Global Attachments" % var_name, 1)
+        return "passed"
+
+    except Exception as e:
+        return CommonUtil.Exception_Handler(sys.exc_info())
 
 
 @logger
@@ -4196,7 +4525,6 @@ def compare_item_occurrence(data_set):
                 selector = right
             elif "class" == left or "id" == left:
                 attr_dict[left] = right
-
 
         with open(parentpath) as pf:
             p_soup = BeautifulSoup(pf, 'html.parser')
@@ -4222,7 +4550,6 @@ def compare_item_occurrence(data_set):
                 3,
             )
             return "zeuz_failed"
-
 
     except:
         return CommonUtil.Exception_Handler(sys.exc_info())
@@ -4980,3 +5307,99 @@ def search_text_and_font(data_set):
         return CommonUtil.Exception_Handler(sys.exc_info())
 
 
+@logger
+def disable_step(data_set):
+    """
+    This action will disable some steps
+    Example 1:
+    Field                        Sub Field              Value
+    steps                        input parameter        1,2,3-6
+    disable step                 common action          disable step
+    """
+    sModuleInfo = inspect.currentframe().f_code.co_name + " : " + MODULE_NAME
+    try:
+        steps = []
+        step_value = ""
+        for left, middle, right in data_set:
+            left = left.lower().strip()
+            if "steps" == left:
+                step_value = right.replace(" ", "")
+
+        splitted = str(step_value).strip().split(",")
+        for each in splitted:
+            try:
+                if "-" in each:
+                    start, end = each.replace(" ", "").split("-")
+                    for i in range(int(start), int(end) + 1):
+                        steps.append(i)
+                else:
+                    string = each.strip()
+                    steps.append(int(string))
+            except:
+                pass
+        if len(steps) == 0:
+            CommonUtil.ExecLog(sModuleInfo, "All steps have been enabled", 1)
+        else:
+            CommonUtil.ExecLog(sModuleInfo, "%s steps have been enabled" % steps, 1)
+            CommonUtil.disabled_step = steps
+
+        return "passed"
+    except:
+        return CommonUtil.Exception_Handler(sys.exc_info())
+
+
+@logger
+def extract_text_from_scanned_pdf(data_set):
+    """
+    This function reads the text from a scanned pdf and saves it into a variable
+
+    Args:
+        data_set:
+            ------------------------------------------------------------------------------------------------------------
+            |pdf    		    |path		    |~/path/to/document.pdf
+            |poppler	    	|path		    |~/path/to/poppler (C:/ZeuZ_Programs/poppler-22.01.0/Library/bin/)
+            |tesseract   		|path		    |~/path/to/tesseract (C:/ZeuZ_Programs/Tesseract-OCR/tesseract.exe/)
+            |read scanned pdf	|common action	| variable_name
+            ------------------------------------------------------------------------------------------------------------
+
+    Return:
+        `passed` if success
+        `zeuz_failed` if fails
+    """
+
+    sModuleInfo = inspect.currentframe().f_code.co_name + " : " + MODULE_NAME
+
+    try:
+        from pytesseract import pytesseract
+        from pdf2image import convert_from_path
+
+        pdf_file_path = ""
+        poppler_path = Path(os.environ["PROGRAMFILES"]) / "poppler-22.01.0" / "Library" / "bin"
+        tesseract_path = Path(os.environ["PROGRAMFILES"]) / "Tessaract-OCR" / "tesseract.exe"
+        var_name = ""
+        full_pdf_text = []
+
+        for left, mid, right in data_set:
+            if mid.strip().lower() == "path":
+                if left.strip().lower() == "pdf":
+                    pdf_file_path = CommonUtil.path_parser(right.strip())
+
+                elif left.strip().lower() == "poppler":
+                    poppler_path = CommonUtil.path_parser(right.strip())
+
+                elif left.strip().lower() == "tesseract":
+                    tesseract_path = CommonUtil.path_parser(right.strip())
+
+            elif left.strip().lower() == "read scanned pdf":
+                var_name = right.strip()
+
+        pytesseract.tesseract_cmd = tesseract_path
+        pages = convert_from_path(pdf_file_path, 500, poppler_path=poppler_path)
+        for page in pages:
+            texts = pytesseract.image_to_string(page)
+            full_pdf_text.append(texts)
+
+        return sr.Set_Shared_Variables(var_name, full_pdf_text)
+
+    except Exception:
+        return CommonUtil.Exception_Handler(sys.exc_info())
