@@ -16,7 +16,7 @@ import test_case_message_pb2 as test__case__message__pb2
 import deploy_info_message_pb2 as deploy__info__message__pb2
 
 
-DESCRIPTOR = _descriptor_pool.Default().AddSerializedFile(b'\n\x1d\x64\x65ploy_response_message.proto\x12\tprotos.v1\x1a\x17test_case_message.proto\x1a\x19\x64\x65ploy_info_message.proto\"\x8c\x01\n\x0e\x44\x65ployResponse\x12\x0e\n\x06run_id\x18\x01 \x01(\t\x12&\n\ttest_case\x18\x02 \x03(\x0b\x32\x13.protos.v1.TestCase\x12\x16\n\x0eserver_version\x18\x03 \x01(\t\x12*\n\x0b\x64\x65ploy_info\x18\x04 \x01(\x0b\x32\x15.protos.v1.DeployInfoB\x07Z\x05pb/v1b\x06proto3')
+DESCRIPTOR = _descriptor_pool.Default().AddSerializedFile(b'\n\x1d\x64\x65ploy_response_message.proto\x12\tprotos.v1\x1a\x17test_case_message.proto\x1a\x19\x64\x65ploy_info_message.proto\"\x8d\x01\n\x0e\x44\x65ployResponse\x12\x0e\n\x06run_id\x18\x01 \x01(\t\x12\'\n\ntest_cases\x18\x02 \x03(\x0b\x32\x13.protos.v1.TestCase\x12\x16\n\x0eserver_version\x18\x03 \x01(\t\x12*\n\x0b\x64\x65ploy_info\x18\x04 \x01(\x0b\x32\x15.protos.v1.DeployInfoB\x07Z\x05pb/v1b\x06proto3')
 
 
 
@@ -33,5 +33,5 @@ if _descriptor._USE_C_DESCRIPTORS == False:
   DESCRIPTOR._options = None
   DESCRIPTOR._serialized_options = b'Z\005pb/v1'
   _DEPLOYRESPONSE._serialized_start=97
-  _DEPLOYRESPONSE._serialized_end=237
+  _DEPLOYRESPONSE._serialized_end=238
 # @@protoc_insertion_point(module_scope)
