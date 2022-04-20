@@ -2,11 +2,15 @@
 
 import json
 from pathlib import Path
-import sys
 from typing import Dict, List
-sys.path.append(str(Path.cwd() / "Framework" / "pb" / "v1"))
 
-from pb.v1.deploy_response_message_pb2 import DeployResponse
+# Uncomment the following lines for single-file debug
+# import sys
+# sys.path.append(str(Path.cwd() / "Framework" / "pb" / "v1"))
+# from pb.v1.deploy_response_message_pb2 import DeployResponse
+
+# Comment the following line for single-file debug
+from Framework.pb.v1.deploy_response_message_pb2 import DeployResponse
 
 
 def read_actions(actions_pb) -> List[Dict]:
@@ -67,14 +71,21 @@ def read_test_cases(test_cases_pb) -> List[Dict]:
     return test_cases
 
 
-def adapt(r: DeployResponse, node_id: str) -> List[Dict]:
+def adapt(message: str, node_id: str) -> List[Dict]:
     """
     adapt takes the deploy_response and converts it to a python dictionary
     suitable for consumption by MainDriver.
     """
+
+    r = DeployResponse()
+    r.ParseFromString(message)
+
+    # TODO: Check r.server_version and create different adapeter classes for new
+    # schemaa changes.
+
     result = {
         "run_id": r.run_id,
-        "release_version": r.server_version,
+        "server_version": r.server_version,
         "device_info": {
             "browser_stack": {},
         },
@@ -90,6 +101,7 @@ def adapt(r: DeployResponse, node_id: str) -> List[Dict]:
         "project_id": r.deploy_info.project_id,
         "team_id": r.deploy_info.team_id,
         "run_time": {},
+        "objective": r.deploy_info.objective,
         "file_name": f"{node_id}_1"
     }
 
@@ -124,7 +136,5 @@ if __name__ == "__main__":
     node_id = "admin_node1"
     with open("test.pb", "rb") as f:
         message = f.read()
-        response = DeployResponse()
-        response.ParseFromString(message)
-        adapted_data = adapt(response, node_id)
+        adapted_data = adapt(message, node_id)
         print(adapted_data)

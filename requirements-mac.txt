@@ -49,5 +49,4 @@ rich
 beautifulsoup4
 premailer
 html-diff
-grpcio_tools
-git+https://github.com/bubbleboy14/registeredeventlistener
+protobuf

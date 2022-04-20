@@ -57,5 +57,4 @@ premailer
 html-diff
 openpyxl
 pytesseract
-grpcio_tools
-git+https://github.com/bubbleboy14/registeredeventlistener
+protobuf

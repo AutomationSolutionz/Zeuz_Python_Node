@@ -488,7 +488,7 @@ def run_all_test_steps_in_a_test_case(
                 # TODO: Remove the reverse boolean value since every
                 # server is now upgraded to or above 6.
                 dict["Action disabled"] = True if action_info["action_disabled"] == False else False
-                server_version = CommonUtil.all_logs_json[CommonUtil.runid_index]["webserver_version"]
+                server_version = CommonUtil.all_logs_json[CommonUtil.runid_index]["server_version"]
                 if float(server_version[:server_version.find(".", 2)]) > 6.0:
                     dict["Action disabled"] = not dict["Action disabled"]
 
@@ -1048,7 +1048,7 @@ def write_locust_input_file(
     final_dependency,
     final_run_params,
     temp_ini_file,
-    is_linked,
+    # is_linked,
     send_log_file_only_for_fail,
 ):
     try:
@@ -1070,7 +1070,7 @@ def write_locust_input_file(
         file.write(str(final_dependency) + "\n")
         file.write(str(final_run_params) + "\n")
         file.write(str(temp_ini_file) + "\n")
-        file.write(str(is_linked) + "\n")
+        # file.write(str(is_linked) + "\n")
         file.write(str(send_log_file_only_for_fail) + "\n")
         file.close()
     except:
@@ -1359,12 +1359,10 @@ def main(device_dict, user_info_object):
         for run_id_info in all_run_id_info:
             run_id_info["base_path"] = ConfigModule.get_config_value("Advanced Options", "_file_upload_path")
             run_id = run_id_info["run_id"]
-            server_version = run_id_info["release_version"]
-            release_name = run_id_info["release_name"]
-            release_info = run_id_info["release_info"]
+            server_version = run_id_info["server_version"]
             CommonUtil.ExecLog(
                 "",
-                "Server version = %s\nServer Release Date = %s\nServer Release Note = %s" % (server_version, release_name, release_info),
+                f"Server version = {server_version}",
                 4,
                 False,
             )
@@ -1373,8 +1371,8 @@ def main(device_dict, user_info_object):
 
             CommonUtil.run_cancelled = False
             # FIXME: Remove the unnecessary threading. This won't be needed anymore.
-            thr = executor.submit(check_run_cancel, run_id)
-            CommonUtil.SaveThread("run_cancel", thr)
+            # thr = executor.submit(check_run_cancel, run_id)
+            # CommonUtil.SaveThread("run_cancel", thr)
 
             # Write testcase json
             path = ConfigModule.get_config_value("sectionOne", "temp_run_file_path", temp_ini_file) / Path(run_id.replace(":", "-"))
@@ -1404,7 +1402,7 @@ def main(device_dict, user_info_object):
                 shared.Clean_Up_Shared_Variables()  # clean up shared variables
             device_order = run_id_info["device_info"]
             final_dependency = run_id_info["dependency_list"]
-            is_linked = run_id_info["is_linked"]
+            # is_linked = run_id_info["is_linked"]
             final_run_params_from_server = run_id_info["run_time"]
             if not CommonUtil.debug_status:
                 rem_config = {
@@ -1507,7 +1505,7 @@ def main(device_dict, user_info_object):
                             final_dependency,
                             final_run_params,
                             temp_ini_file,
-                            is_linked,
+                            # is_linked,
                             send_log_file_only_for_fail=send_log_file_only_for_fail,
                         )
 

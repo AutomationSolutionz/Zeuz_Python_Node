@@ -40,5 +40,4 @@ beautifulsoup4
 premailer
 html-diff
 pdf2image
-grpcio_tools
-git+https://github.com/bubbleboy14/registeredeventlistener
+protobuf

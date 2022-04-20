@@ -6,14 +6,17 @@ from urllib import response
 from websocket import WebSocketApp
 from typing import Callable
 import threading
-import sys
 import signal
 from pathlib import Path
-sys.path.append(str(Path.cwd() / "Framework" / "pb" / "v1"))
 
-# from Framework.pb.v1 import deploy_response_message_pb2
-from pb.v1.deploy_response_message_pb2 import DeployResponse
-import proto_adapter
+import sys
+# Uncomment the following lines for single-file debug
+# sys.path.append(str(Path.cwd() / "Framework" / "pb" / "v1"))
+# from pb.v1.deploy_response_message_pb2 import DeployResponse
+
+# Comment the following line for single-file debug
+from Framework.pb.v1.deploy_response_message_pb2 import DeployResponse
+
 
 
 class DeployHandler:
@@ -34,6 +37,7 @@ class DeployHandler:
         done_callback: Callable[[None], None],
     ) -> None:
         self.ws = None
+        self.quit = False
         self.response_callback = response_callback
         self.cancel_callback = cancel_callback
         self.done_callback = done_callback
@@ -52,11 +56,7 @@ class DeployHandler:
             self.cancel_callback()
             return
 
-        response = DeployResponse()
-        response.ParseFromString(message)
-
-        self.response_callback(response)
-
+        self.response_callback(message)
         ws.send(self.COMMAND_NEXT)
 
 
@@ -75,8 +75,9 @@ class DeployHandler:
 
 
     def signal_handler(self, sig, frame):
-        self.cancel_callback()
         print("[deploy] Received interrupt signal (Ctrl-C), disconnecting from service...")
+        self.quit = True
+        self.cancel_callback()
 
         if self.ws:
             self.ws.close()
@@ -89,7 +90,7 @@ class DeployHandler:
         signal.signal(signal.SIGINT, self.signal_handler)
         # websocket.enableTrace(True)
 
-        while True:
+        while not self.quit:
             try:
                 self.ws = WebSocketApp(
                     host,
@@ -102,7 +103,7 @@ class DeployHandler:
                 self.ws.run_forever()
 
                 self.ws = None
-                print("[deploy] Reconnecting in 5 sec.")
+                print("[deploy] Reconnecting in 5 seconds...")
                 time.sleep(5)
             except:
                 self.ws = None
@@ -111,13 +112,16 @@ class DeployHandler:
 
 
 if __name__ == "__main__":
+    from Framework.deploy_handler import proto_adapter
+
     node_id = "admin_node1"
     host = f"ws://localhost:8300/zsvc/deploy/connect/{node_id}"
 
     # TODO: Save the response with an *adapter* to the appropriate location.
     # TODO: Call MainDriver with the given callback.
-    def response_callback(response: DeployResponse):
-        proto_adapter.adapt(response, node_id)
+    def response_callback(response: str):
+        node_json = proto_adapter.adapt(response, node_id)
+        print(node_json[0]["run_id"])
 
     def done_callback():
         print("DONE from callback")

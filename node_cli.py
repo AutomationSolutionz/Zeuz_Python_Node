@@ -31,6 +31,7 @@ from Framework.Utilities import ConfigModule
 PROJECT_ROOT = os.path.abspath(os.curdir)
 # Append correct paths so that it can find the configuration files and other modules
 sys.path.append(os.path.join(os.path.dirname(os.path.abspath(__file__)), "Framework"))
+sys.path.append(str(Path.cwd() / "Framework" / "pb" / "v1"))
 
 # kill any process that is running  from the same node folder
 pid = os.getpid()
@@ -95,9 +96,13 @@ temp_ini_file = (
 )
 
 import subprocess
+import json
 
 from rich import traceback
 traceback.install(show_locals=True, max_frames=1)
+
+from Framework.deploy_handler import handler
+from Framework.deploy_handler import proto_adapter
 
 def signal_handler(sig, frame):
     CommonUtil.run_cancelled = True
@@ -367,7 +372,7 @@ def Login(cli=False, run_once=False, log_dir=None):
                                 }
                             }
                         )
-                        run_again = RunProcess(tester_id, user_info_object, run_once=run_once, log_dir=log_dir)
+                        run_again = RunProcess(tester_id, device_dict, user_info_object, run_once=run_once, log_dir=log_dir)
 
                         if not run_again:
                             break  # Exit login
@@ -446,7 +451,7 @@ def disconnect_from_server():
     CommonUtil.set_exit_mode(True)  # Tell Sequential Actions to exit
 
 
-def RunProcess(sTesterid, user_info_object, run_once=False, log_dir=None):
+def RunProcess(sTesterid, device_dict, user_info_object, run_once=False, log_dir=None):
     etime = time.time() + (30 * 60)  # 30 minutes
     executor = CommonUtil.GetExecutor()
     while True:
@@ -457,73 +462,55 @@ def RunProcess(sTesterid, user_info_object, run_once=False, log_dir=None):
                 print("30 minutes over, logging in again")
                 return True  # Timeout reached, re-login. We do this because after about 3-4 hours this function will hang, and thus not be available for deployment
             executor.submit(RequestFormatter.Get, "update_machine_with_time_api", {"machine_name": sTesterid})
-            # r = RequestFormatter.Get("is_run_submitted_api", {"machine_name": sTesterid})
-            r = RequestFormatter.Get(f"is_submitted_api?machine_name={sTesterid}")
-            # r = requests.get(RequestFormatter.form_uri("is_submitted_api"), {"machine_name": sTesterid}, verify=False).json()
-            Userid = (CommonUtil.MachineInfo().getLocalUser()).lower()
-            if r and "found" in r and r["found"]:
-                # TODO: We should not be downloading test cases here. Instead it
-                # should move to its own module and the module should be
-                # responsible for translating the fetched test cases into the
-                # appropriate format suitable for consumption by the MainDriver.
-                # The MainDriver will be called as soon as there is/are new test
-                # case(s) available.
 
-                PreProcess(log_dir=log_dir)
-                size = round(int(r["file_size"]) / 1024, 2)
-                if size > 1024:
-                    size = str(round(size / 1024, 2)) + " MB"
-                else:
-                    size = str(size) + " KB"
-                save_path = Path(ConfigModule.get_config_value("sectionOne", "temp_run_file_path", temp_ini_file)) / "attachments"
-                CommonUtil.ExecLog("", "Downloading dataset and attachments of %s into:\n%s" % (size, str(save_path/"input.zip")), 4)
-                FL.CreateFolder(save_path)
-                headers = RequestFormatter.add_api_key_to_headers({})
-                response = requests.get(RequestFormatter.form_uri("getting_json_data_api"), {"machine_name": Userid}, stream=True, verify=False, **headers)
-                chunk_size = 4096
-                progress_bar = tqdm(total=r["file_size"], unit='B', mininterval=0, unit_scale=True, unit_divisor=1024, leave=False)
-                with open(save_path/"input.zip", 'wb') as file:
-                    for data in response.iter_content(chunk_size):
-                        progress_bar.update(len(data))
-                        file.write(data)
-                    progress_bar.refresh()
-                progress_bar.close()
-                z = zipfile.ZipFile(save_path/"input.zip")
-                z.extractall(save_path)
-                z.close()
-                os.unlink(save_path/"input.zip")
-                # Telling the node_manager that a run_id is deployed
-                CommonUtil.node_manager_json(
-                    {
-                        "state": "in_progress",
-                        "report": {
-                            "zip": None,
-                            "directory": None,
-                        }
-                    }
-                )
-                try:
-                    MainDriverApi.main(device_dict, user_info_object)
-                except:
-                    pass
+            # --- START WS service --- #
 
-                # Terminating all run_cancel threads after finishing a run
-                CommonUtil.run_cancel = ""
+            node_id = CommonUtil.MachineInfo().getLocalUser().lower()
+            PreProcess(log_dir=log_dir)
+
+            save_path = Path(ConfigModule.get_config_value("sectionOne", "temp_run_file_path", temp_ini_file)) / "attachments"
+            # CommonUtil.ExecLog("", "Downloading dataset and attachments of %s into:\n%s" % (size, str(save_path/"input.zip")), 4)
+            FL.CreateFolder(save_path)
+
+            host = f"ws://localhost:8300/zsvc/deploy/connect/{node_id}"
+
+            def response_callback(response: str):
+                # 1. Adapt the proto response to appropriate json format
+                node_json = proto_adapter.adapt(response, node_id)
+
+                # 2. Save the json for MainDriver to find
+                with open(save_path / f"{node_id}.zeuz.json", "w") as f:
+                    f.write(json.dumps(node_json))
+
+                # 3. Call MainDriver
+                MainDriverApi.main(device_dict, user_info_object)
+
+            def done_callback():
+                local_tz = str(get_localzone())
+                RequestFormatter.Get("send_machine_time_zone_api", {
+                    "time_zone": local_tz,
+                    "machine": node_id,
+                })
+                RequestFormatter.Get("update_machine_with_time_api", {"machine_name": sTesterid})
+
+            def cancel_callback():
+                local_tz = str(get_localzone())
+                RequestFormatter.Get("send_machine_time_zone_api", {
+                    "time_zone": local_tz,
+                    "machine": node_id,
+                })
+                RequestFormatter.Get("update_machine_with_time_api", {"machine_name": sTesterid})
                 CommonUtil.run_cancelled = True
-                if "run_cancel" in CommonUtil.all_threads:
-                    for t in CommonUtil.all_threads["run_cancel"]:
-                        t.result()
-                        CommonUtil.run_cancelled = True
-                    del CommonUtil.all_threads["run_cancel"]
-                CommonUtil.run_cancelled = False
 
-                if run_once or exit_script:
-                    return False
-                break
-            else:
-                time.sleep(3)
+            deploy_handler = handler.DeployHandler(
+                response_callback=response_callback,
+                cancel_callback=cancel_callback,
+                done_callback=done_callback,
+            )
+            deploy_handler.run(host)
+            return False
 
-        except Exception as e:
+        except Exception:
             exc_type, exc_obj, exc_tb = sys.exc_info()
             fname = os.path.split(exc_tb.tb_frame.f_code.co_filename)[1]
             Error_Detail = (
@@ -1052,7 +1039,7 @@ def Bypass():
         oLocalInfo = CommonUtil.MachineInfo()
         testerid = (oLocalInfo.getLocalUser()).lower()
         print("[Bypass] Zeuz Node is online: %s" % testerid)
-        RunProcess(testerid, user_info_object)
+        RunProcess(testerid, device_dict, user_info_object)
 
 
 if __name__ == "__main__":
