@@ -474,7 +474,10 @@ def RunProcess(sTesterid, device_dict, user_info_object, run_once=False, log_dir
 
             host = f"ws://localhost:8300/zsvc/deploy/connect/{node_id}"
 
+            node_json = None
             def response_callback(response: str):
+                nonlocal node_json
+
                 # 1. Adapt the proto response to appropriate json format
                 node_json = proto_adapter.adapt(response, node_id)
 
@@ -486,6 +489,14 @@ def RunProcess(sTesterid, device_dict, user_info_object, run_once=False, log_dir
                 MainDriverApi.main(device_dict, user_info_object)
 
             def done_callback():
+                update_machine(
+                    False,
+                    {
+                        "project_name": node_json[0]["project_id"],
+                        "team_name": node_json[0]["team_id"],
+                    },
+                )
+
                 local_tz = str(get_localzone())
                 RequestFormatter.Get("send_machine_time_zone_api", {
                     "time_zone": local_tz,
@@ -494,13 +505,22 @@ def RunProcess(sTesterid, device_dict, user_info_object, run_once=False, log_dir
                 RequestFormatter.Get("update_machine_with_time_api", {"machine_name": sTesterid})
 
             def cancel_callback():
+                CommonUtil.run_cancelled = True
+
+                update_machine(
+                    False,
+                    {
+                        "project_name": node_json[0]["project_id"],
+                        "team_name": node_json[0]["team_id"],
+                    },
+                )
+
                 local_tz = str(get_localzone())
                 RequestFormatter.Get("send_machine_time_zone_api", {
                     "time_zone": local_tz,
                     "machine": node_id,
                 })
                 RequestFormatter.Get("update_machine_with_time_api", {"machine_name": sTesterid})
-                CommonUtil.run_cancelled = True
 
             deploy_handler = handler.DeployHandler(
                 response_callback=response_callback,
