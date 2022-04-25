@@ -777,7 +777,7 @@ def Go_To_Link(step_data, page_title=False):
                 driver_id = right.strip()
 
             # checks for capabilities and modifies them by the given step_data
-            elif mid.strip().lower() == "capability":
+            elif mid.strip().lower() == "shared capability":
                 if left.strip().lower() in ("promptbehavior", "alertbehavior"):
                     if right.strip().lower() in ("accept", "yes", "ok"):
                         capabilities["unhandledPromptBehavior"] = "accept"
