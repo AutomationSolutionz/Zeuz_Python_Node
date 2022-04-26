@@ -47,7 +47,7 @@ def read_steps(steps_pb) -> List[Dict]:
                 "step_function": "Sequential Actions",
                 "step_driver": step.step_info.driver,
                 "type": step.type,
-                "step_attachments": [],
+                "step_attachments": list(step.step_info.attachments),
                 "verify_point": step.step_info.verify_point,
                 "continue_on_fail": step.step_info.step_continue,
                 "step_time": step.time,

@@ -484,14 +484,7 @@ def run_all_test_steps_in_a_test_case(
                 action_dataset = action_info["step_actions"]
                 all_action_data_set.append(action_dataset)
                 dict = {}
-                
-                # TODO: Remove the reverse boolean value since every
-                # server is now upgraded to or above 6.
-                dict["Action disabled"] = True if action_info["action_disabled"] == False else False
-                server_version = CommonUtil.all_logs_json[CommonUtil.runid_index]["server_version"]
-                if float(server_version[:server_version.find(".", 2)]) > 6.0:
-                    dict["Action disabled"] = not dict["Action disabled"]
-
+                dict["Action disabled"] = action_info["action_disabled"]
                 dict["Action name"] = action_info["action_name"]
                 all_action_Info.append(dict)
             all_step_dataset.append(all_action_data_set)
@@ -546,10 +539,10 @@ def run_all_test_steps_in_a_test_case(
             step_attachments = all_step_info[StepSeq - 1]['step_attachments']
             step_attachment_list = []
             for attachment in step_attachments:
-                path = str(Path(attachment_path + attachment[1][12:]))
-                var_name = attachment[2] + "." + attachment[3] if attachment[3] else attachment[2]
-                step_attachment_list.append(var_name)
-                shared.Set_Shared_Variables(var_name, path, attachment_var=True)
+                attachment_name = attachment.split("/")[-1]
+                path = str(Path(attachment_path) / attachment_name)
+                step_attachment_list.append(attachment_name)
+                shared.Set_Shared_Variables(attachment_name, path, attachment_var=True)
 
             # add config value
             ConfigModule.add_config_value(
