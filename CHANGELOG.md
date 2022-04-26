@@ -5,6 +5,9 @@
 ### [Current changes]
 - _
 
+### [15.0.2][April 26, 2022]
+- **[Add]** `%|zeuz_auto_teardown|%` variable is added for turning off auto teardown
+
 ### [15.0.1][April 26, 2022]
 - **[Change]** Screenshot image quality upgraded to resolution 1920,1080
 
