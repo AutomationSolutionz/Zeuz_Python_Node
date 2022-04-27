@@ -75,7 +75,7 @@ action_support = (
     "attribute constrain",
     "optional option",
     "graphql",
-    "capability"
+    "shared capability"
 )
 
 # List of supported mobile platforms - must be lower case

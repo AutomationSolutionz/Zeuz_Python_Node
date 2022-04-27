@@ -57,3 +57,4 @@ premailer
 html-diff
 openpyxl
 pytesseract
+pdf2image
