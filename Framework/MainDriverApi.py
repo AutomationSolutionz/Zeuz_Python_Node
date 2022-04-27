@@ -898,7 +898,8 @@ def run_test_case(
 
         if not CommonUtil.debug_status:  # if normal run, then write log file and cleanup driver instances
             CommonUtil.Join_Thread_and_Return_Result("screenshot")  # Let the capturing screenshot end in thread
-            cleanup_driver_instances()  # clean up drivers
+            if shared.Get_Shared_Variables("zeuz_auto_teardown").strip().lower() in ("on", "yes", "true", "ok", "enable"):
+                cleanup_driver_instances()  # clean up drivers
             shared.Clean_Up_Shared_Variables()  # clean up shared variables
             if ConfigModule.get_config_value("RunDefinition", "local_run") == "False":
 
@@ -1419,6 +1420,7 @@ def main(device_dict, user_info_object):
             rerun_on_fail = ConfigModule.get_config_value("RunDefinition", "rerun_on_fail")
             rerun_on_fail = False if rerun_on_fail.lower() == "false" else True
             CommonUtil.upload_on_fail, CommonUtil.rerun_on_fail = send_log_file_only_for_fail, rerun_on_fail
+            shared.Set_Shared_Variables("zeuz_auto_teardown", "on")
 
             all_testcases_info = run_id_info["test_cases"]
             TestSetStartTime = time.time()
