@@ -823,7 +823,7 @@ def run_test_case(
     try:
         TestCaseStartTime = time.time()
         shared.Set_Shared_Variables("run_id", run_id)
-        test_case = str(TestCaseID).replace("#", "no")
+        test_case = str(TestCaseID).replace("#", "no") # FIXME: Why are we replacing '#' with 'no'?
         CommonUtil.current_tc_no = test_case
         CommonUtil.load_testing = False
         ConfigModule.add_config_value("sectionOne", "sTestStepExecLogId", sModuleInfo, temp_ini_file)
@@ -1371,42 +1371,33 @@ def main(device_dict, user_info_object):
             path = ConfigModule.get_config_value("sectionOne", "temp_run_file_path", temp_ini_file) / Path(run_id.replace(":", "-"))
             FL.CreateFolder(path)
 
-            # Start websocket server if we're in debug mode.
+            # Start live log service - websocket if we're in debug mode.
             if run_id.lower().startswith("debug"):
-                # CommonUtil.ExecLog(
-                #     "",
-                #     "\n********************************\n*    STARTING DEBUG SESSION    *\n********************************",
-                #     4,
-                #     False,
-                # )
                 CommonUtil.debug_status = True
-                print("[LIVE LOG] Connecting to Live Log service")
+                print("[LIVE LOG] Connecting to Live Log service...")
                 ws.connect()
-                print("[LIVE LOG] Connected to Live Log service")
+                print("[LIVE LOG] Connected to Live Log service.")
             else:
-                # CommonUtil.ExecLog(
-                #     "",
-                #     "\n******************************\n*    STARTING RUN SESSION    *\n******************************",
-                #     4,
-                #     False,
-                # )
                 CommonUtil.debug_status = False
                 cleanup_driver_instances()  # clean up drivers
                 shared.Clean_Up_Shared_Variables()  # clean up shared variables
+
             device_order = run_id_info["device_info"]
             final_dependency = run_id_info["dependency_list"]
             # is_linked = run_id_info["is_linked"]
             final_run_params_from_server = run_id_info["run_time"]
+
+            runtime_settings = run_id_info["runtime_settings"]
             if not CommonUtil.debug_status:
                 rem_config = {
-                    "threading": run_id_info["threading"] if "threading" in run_id_info else False,
-                    "local_run": run_id_info["local_run"] if "local_run" in run_id_info else False,
-                    "take_screenshot": run_id_info["take_screenshot"] if "take_screenshot" in run_id_info else True,
-                    "upload_log_file_only_for_fail": run_id_info["upload_log_file_only_for_fail"] if "upload_log_file_only_for_fail" in run_id_info else True,
-                    # "rerun_on_fail": run_id_info["rerun_on_fail"] if "rerun_on_fail" in run_id_info else False,
+                    "threading": runtime_settings["threading"],
+                    "local_run": runtime_settings["local_run"],
+                    "take_screenshot": runtime_settings["take_screenshot"],
+                    "upload_log_file_only_for_fail": runtime_settings["upload_log_file_only_for_fail"],
+                    # "rerun_on_fail": runtime_settings["rerun_on_fail"] if "rerun_on_fail" in runtime_settings else False,
                     "rerun_on_fail": False,     # Turning off rerun until its completed
-                    "window_size_x": run_id_info["window_size_x"] if "window_size_x" in run_id_info else "",
-                    "window_size_y": run_id_info["window_size_y"] if "window_size_y" in run_id_info else "",
+                    "window_size_x": runtime_settings["window_size_x"] if runtime_settings["window_size_x"] != 0 else "",
+                    "window_size_y": runtime_settings["window_size_y"] if runtime_settings["window_size_y"] != 0 else "",
                 }
                 if ConfigModule.get_config_value("RunDefinition", "local_run") == "True":
                     rem_config["local_run"] = True
@@ -1462,6 +1453,11 @@ def main(device_dict, user_info_object):
             num_of_tc = len(all_testcases_info)
             cnt = 1
 
+            # TODO: Download test case and step attachments here.
+
+            # TODO: This is not needed anymore since the server controls exactly
+            # how many test cases are sent in each session and node simply needs
+            # to execute the test cases and upload the reports.
             max_tc_in_single_session = 50    # Todo: make it 25
             all_sessions = split_testcases(run_id_info, max_tc_in_single_session)
             session_cnt = 1
@@ -1470,7 +1466,7 @@ def main(device_dict, user_info_object):
                 CommonUtil.all_logs_json = [each_session]
                 CommonUtil.tc_index = 0
                 all_testcases_info = each_session["test_cases"]
-                print("Starting %s with %s testcases" % (CommonUtil.current_session_name, len(all_testcases_info)))
+                print("Starting %s with %s test cases" % (CommonUtil.current_session_name, len(all_testcases_info)))
                 for testcase_info in all_testcases_info:
                     performance_test_case = False
                     if testcase_info["automatability"].lower() == "performance":
