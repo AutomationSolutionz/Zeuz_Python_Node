@@ -883,87 +883,86 @@ def Create_Android_UI_Inspector_Shortcut():
         return False
 
 
-def main(rungui=False):
-    if not rungui:  # GUI elevates already, so no need to do it again
-        # If run in Windows, elevate permissions
-        if sys.platform == 'win32':
-            if not detect_admin():
+def windows_android_installer():
+    if sys.platform == 'win32':
+        if not detect_admin():
+            try:
                 os.system('powershell -command Start-Process "python \'%s\'" -Verb runAs' % sys.argv[0].split(os.sep)[-1])  # Re-run this program with elevated permissions to admin
                 quit()  # Exit this program, the elevated program should run
+            except: # If admin access is not given
+                pass
 
-    # Setup logging
-    # CommonUtils.Logger_Setup(logfile, rungui)
+    print("\n 1. Please note that if you have duplicate JDK or newer than 1.8 JAVA Appium will not work.\n", True)
+    print("\n 2. You must be logged in as Admin.  If you don't run as admin, appium installer will NOT WORK.\n", True)
+    print("\n 3. If you have spaces in your user name, Appium will not work.  Create new user with admin permission with no spaces.\n", True)
+    print("\n 4. Make sure you uninstall all other Java versions and remove any java version from Environmental Variable.\n", True)
+    print("\n 5. We will download a known JDK version (JDK 1.8) that is compatible and install it for you.\n", True)
+    print("\n 6. If you have an older Android Studio. Make sure you upgrade it to latest before running this.\n", True)
+    Java_Installer = Install_JDK()
 
-    # Install
-    if Check_Pre_Req():
+    if Java_Installer == False:
+        print("\nWe were unable to install JDK 1.8. Please install JDK 1.8 manually and run again", True)
 
-        print("\n 1. Please note that if you have duplicate JDK or newer than 1.8 JAVA Appium will not work.\n", True)
-        print("\n 2. You must be logged in as Admin.  If you don't run as admin, appium installer will NOT WORK.\n", True)
-        print("\n 3. If you have spaces in your user name, Appium will not work.  Create new user with admin permission with no spaces.\n", True)
-        print("\n 4. Make sure you uninstall all other Java versions and remove any java version from Environmental Variable.\n", True)
-        print("\n 5. We will download a known JDK version (JDK 1.8) that is compatible and install it for you.\n", True)
-        print("\n 6. If you have an older Android Studio. Make sure you upgrade it to latest before running this.\n", True)
-        Java_Installer = Install_JDK()
+        return False
 
-        if Java_Installer == False:
-            print("\nWe were unable to install JDK 1.8. Please install JDK 1.8 manually and run again", True)
+    Android_Studio = True
+    Android_Studio = Auto_locate_Android_Studio()
 
-            return False
-
-        Android_Studio = True
-        Android_Studio = Auto_locate_Android_Studio()
-
-        if Android_Studio == False:
-            print("\nAndroid Studio is not installed.", True)
-            print("\n 1. Download and Install Android Studio.", True)
-            print("\n 2. You must run Android Studio once. It will download additional tools for Appium to work.", True)
-            print("\n 3. Quit this installer and close all other programs.", True)
-            print("\n 4. Run Android Studio and start a blank project.", True)
-            print("\n 5. Wait for all Android Studio components to finish download and install.", True)
-            print("\n 6. You must Quit ZeuZ Node Installer and Re-Run Android Setup.", True)
-            print("\n If you still have issues with installer, please contact help@zeuz.ai", True)
-            return False
-        else:
-            # create a shortcut ui automator
-            try:
-                print("\nCreating short cut for android UIAutomatorViewer", True)
-                from pyshortcuts import make_shortcut
-                import winshell
-                from win32com.client import Dispatch
-                Android_UI_Inspection = (expanduser("~") + os.sep + "AppData" + os.sep + "Local" + os.sep + "Android" + os.sep + "Sdk" + os.sep + "tools" + os.sep + "bin" + os.sep + "uiautomatorviewer.bat")
-                target_exe_path = Android_UI_Inspection
-                # current_script_path = '%s'%(sys.path[0])
-                # UiAutomator_Icon_Path = (current_script_path.split('Zeuz_Node')[0])+os.sep+"images"+os.sep+"androidInsep.ico"
-                shortcut_name = "AndroidUIInspector"
-                startin = winshell.desktop()
-                shell = Dispatch('WScript.Shell')
-                shortcut_file = os.path.join(winshell.desktop(), shortcut_name + '.lnk')
-                shortcut = shell.CreateShortCut(shortcut_file)
-                shortcut.Targetpath = target_exe_path
-                shortcut.WorkingDirectory = startin
-                # shortcut.IconLocation = UiAutomator_Icon_Path
-                shortcut.save()
-                print("\nSuccessfully created short cut for android UIAutomatorViewer\n", True)
-
-            except Exception as e:
-                exc_type, exc_obj, exc_tb = sys.exc_info()
-                fname = os.path.split(exc_tb.tb_frame.f_code.co_filename)[1]
-                Error_Detail = ((str(exc_type).replace("type ", "Error Type: ")) + ";" + "Error Message: " + str(exc_obj) + ";" + "File Name: " + fname + ";" + "Line: " + str(exc_tb.tb_lineno))
-                print("\tUnable to create short cut for UI AUtomator: %s\n" % Error_Detail, True)
-
-        Appium_Install_Result = Install_Appium()
-        if Appium_Install_Result == False:
-            print("\nWe were unable to install Appium.", True)
-            print("\n 1. Make sure you do not have duplicate java installer.  Appium works only with JDK 1.8", True)
-            print("\n If you still have issues with installer, please contact help@zeuz.ai", True)
-            return False
-
-    # Clean up logger, and reinstate STDOUT/ERR
+    if Android_Studio == False:
+        print("\nAndroid Studio is not installed.", True)
+        print("\n1. Download and Install Android Studio.", True)
+        print("\n2. You must run Android Studio once. It will download additional tools for Appium to work.", True)
+        print("\n3. Quit this installer and close all other programs.", True)
+        print("\n4. Run Android Studio and start a blank project.", True)
+        print("\n5. Wait for all Android Studio components to finish download and install.", True)
+        print("\n6. You must Quit ZeuZ Node Installer and Re-Run Android Setup.", True)
+        print("\nIf you still have issues with installer, please contact help@zeuz.ai", True)
+        return False
     else:
-        print("check installation of python version 3.8", True)
+        # create a shortcut ui automator
+        try:
+            print("\nCreating short cut for android UIAutomatorViewer", True)
+            from pyshortcuts import make_shortcut
+            import winshell
+            from win32com.client import Dispatch
+            Android_UI_Inspection = (expanduser("~") + os.sep + "AppData" + os.sep + "Local" + os.sep + "Android" + os.sep + "Sdk" + os.sep + "tools" + os.sep + "bin" + os.sep + "uiautomatorviewer.bat")
+            target_exe_path = Android_UI_Inspection
+            # current_script_path = '%s'%(sys.path[0])
+            # UiAutomator_Icon_Path = (current_script_path.split('Zeuz_Node')[0])+os.sep+"images"+os.sep+"androidInsep.ico"
+            shortcut_name = "AndroidUIInspector"
+            startin = winshell.desktop()
+            shell = Dispatch('WScript.Shell')
+            shortcut_file = os.path.join(winshell.desktop(), shortcut_name + '.lnk')
+            shortcut = shell.CreateShortCut(shortcut_file)
+            shortcut.Targetpath = target_exe_path
+            shortcut.WorkingDirectory = startin
+            # shortcut.IconLocation = UiAutomator_Icon_Path
+            shortcut.save()
+            print("\nSuccessfully created short cut for android UIAutomatorViewer\n", True)
+
+        except Exception as e:
+            exc_type, exc_obj, exc_tb = sys.exc_info()
+            fname = os.path.split(exc_tb.tb_frame.f_code.co_filename)[1]
+            Error_Detail = ((str(exc_type).replace("type ", "Error Type: ")) + ";" + "Error Message: " + str(exc_obj) + ";" + "File Name: " + fname + ";" + "Line: " + str(exc_tb.tb_lineno))
+            print("\tUnable to create short cut for UI AUtomator: %s\n" % Error_Detail, True)
+
+    Appium_Install_Result = Install_Appium()
+    if Appium_Install_Result == False:
+        print("\nWe were unable to install Appium.", True)
+        print("\n 1. Make sure you do not have duplicate java installer.  Appium works only with JDK 1.8", True)
+        print("\n If you still have issues with installer, please contact help@zeuz.ai", True)
+        return False
 
 
 if __name__ == "__main__":
-    main()
+    if os.name == "nt":
+        windows_android_installer()
+    elif platform.system() == "Darwin":
+        print("Currently this script is only for Windows")
+    elif platform.system() == "Linux":
+        print("Currently this script is only for Windows")
+    else:
+        print("Currently this script is only for Windows")
+
 
     input("Press ENTER to exit")
