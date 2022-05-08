@@ -264,55 +264,55 @@ def Add_File_To_Current_Test_Case_Log(src):
 
 def Exception_Handler(exec_info, temp_q=None, UserMessage=None):
     try:
-        console.print_exception(show_locals=True, max_frames=1)
-        # sModuleInfo_Local = inspect.currentframe().f_code.co_name + " : " + MODULE_NAME
-        # exc_type, exc_obj, exc_tb = exec_info
-        # Error_Type = (
-        #     (str(exc_type).replace("type ", ""))
-        #     .replace("<", "")
-        #     .replace(">", "")
-        #     .replace(";", ":")
-        # )
-        # Error_Message = str(exc_obj)
-        # File_Name = os.path.split(exc_tb.tb_frame.f_code.co_filename)[1]
-        # Function_Name = os.path.split(exc_tb.tb_frame.f_code.co_name)[1]
-        # Line_Number = str(exc_tb.tb_lineno)
-        # Error_Detail = (
-        #     "Error Type ~ %s: Error Message ~ %s: File Name ~ %s: Function Name ~ %s: Line ~ %s"
-        #     % (Error_Type, Error_Message, File_Name, Function_Name, Line_Number)
-        # )
-        # sModuleInfo = Function_Name + ":" + File_Name
-        # ExecLog(sModuleInfo, "Following exception occurred: %s" % (Error_Detail), 3)
-        # # TakeScreenShot(Function_Name + "~" + File_Name)
-        # if UserMessage != None:
-        #     ExecLog(
-        #         sModuleInfo, "Following error message is custom: %s" % (UserMessage), 3
-        #     )
-        if temp_q != None:
-            temp_q.put("zeuz_failed")
+        # console.print_exception(show_locals=True, max_frames=1)
+        sModuleInfo_Local = inspect.currentframe().f_code.co_name + " : " + MODULE_NAME
+        exc_type, exc_obj, exc_tb = exec_info
+        Error_Type = (
+            (str(exc_type).replace("type ", ""))
+            .replace("<", "")
+            .replace(">", "")
+            .replace(";", ":")
+        )
+        Error_Message = str(exc_obj)
+        File_Name = os.path.split(exc_tb.tb_frame.f_code.co_filename)[1]
+        Function_Name = os.path.split(exc_tb.tb_frame.f_code.co_name)[1]
+        Line_Number = str(exc_tb.tb_lineno)
+        Error_Detail = (
+            "Error Type ~ %s: Error Message ~ %s: File Name ~ %s: Function Name ~ %s: Line ~ %s"
+            % (Error_Type, Error_Message, File_Name, Function_Name, Line_Number)
+        )
+        sModuleInfo = Function_Name + ":" + File_Name
+        ExecLog(sModuleInfo, "Following exception occurred: %s" % (Error_Detail), 3)
+        # TakeScreenShot(Function_Name + "~" + File_Name)
+        if UserMessage != None:
+            ExecLog(
+                sModuleInfo, "Following error message is custom: %s" % (UserMessage), 3
+            )
+        # if temp_q != None:
+        #     temp_q.put("zeuz_failed")
 
         return "zeuz_failed"
 
     except Exception:
-        # exc_type_local, exc_obj_local, exc_tb_local = sys.exc_info()
-        # fname_local = os.path.split(exc_tb.tb_frame.f_code.co_filename)[1]
-        # Error_Detail_Local = (
-        #     (str(exc_type_local).replace("type ", "Error Type: "))
-        #     + ";"
-        #     + "Error Message: "
-        #     + str(exc_obj_local)
-        #     + ";"
-        #     + "File Name: "
-        #     + fname_local
-        #     + ";"
-        #     + "Line: "
-        #     + str(exc_tb_local.tb_lineno)
-        # )
-        # ExecLog(
-        #     sModuleInfo_Local,
-        #     "Following exception occurred: %s" % (Error_Detail_Local),
-        #     3,
-        # )
+        exc_type_local, exc_obj_local, exc_tb_local = sys.exc_info()
+        fname_local = os.path.split(exc_tb.tb_frame.f_code.co_filename)[1]
+        Error_Detail_Local = (
+            (str(exc_type_local).replace("type ", "Error Type: "))
+            + ";"
+            + "Error Message: "
+            + str(exc_obj_local)
+            + ";"
+            + "File Name: "
+            + fname_local
+            + ";"
+            + "Line: "
+            + str(exc_tb_local.tb_lineno)
+        )
+        ExecLog(
+            sModuleInfo_Local,
+            "Following exception occurred: %s" % (Error_Detail_Local),
+            3,
+        )
         return "zeuz_failed"
 
 
