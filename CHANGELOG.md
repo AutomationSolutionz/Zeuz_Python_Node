@@ -5,6 +5,9 @@
 ### [Current changes]
 - _
 
+### [15.0.3][May 08, 2022]
+- **[Change]** Removed printing the whole traceback of error
+
 ### [15.0.2][April 26, 2022]
 - **[Add]** `%|zeuz_auto_teardown|%` variable is added for turning off auto teardown
 
