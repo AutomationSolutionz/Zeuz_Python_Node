@@ -264,7 +264,7 @@ def Add_File_To_Current_Test_Case_Log(src):
 
 def Exception_Handler(exec_info, temp_q=None, UserMessage=None):
     try:
-        console.print_exception(show_locals=True, max_frames=1)
+        # console.print_exception(show_locals=True, max_frames=1)
         sModuleInfo_Local = inspect.currentframe().f_code.co_name + " : " + MODULE_NAME
         exc_type, exc_obj, exc_tb = exec_info
         Error_Type = (
