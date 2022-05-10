@@ -470,6 +470,7 @@ def run_all_test_steps_in_a_test_case(
         attachment_path = str(Path(ConfigModule.get_config_value("sectionOne", "temp_run_file_path", temp_ini_file)) / "attachments")
         tc_attachment_list = []
         for tc_attachment in testcase_info['testcase_attachments_links']:
+            # FIXME: Test case attachments.
             path = str(Path(attachment_path + tc_attachment[0][10:]))
             var_name = tc_attachment[1] + "." + tc_attachment[2] if tc_attachment[2] else tc_attachment[1]
             tc_attachment_list.append(var_name)
@@ -536,6 +537,7 @@ def run_all_test_steps_in_a_test_case(
             current_step_sequence = all_step_info[StepSeq - 1]["step_sequence"]
             shared.Set_Shared_Variables("zeuz_current_step", all_step_info[StepSeq - 1], print_variable=False, pretty=False)
 
+            # FIXME: step attachments.
             step_attachments = all_step_info[StepSeq - 1]['step_attachments']
             step_attachment_list = []
             for attachment in step_attachments:
