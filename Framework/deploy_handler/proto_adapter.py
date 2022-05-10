@@ -102,7 +102,18 @@ def adapt(message: str, node_id: str) -> List[Dict]:
         "team_id": r.deploy_info.team_id,
         "run_time": {},
         "objective": r.deploy_info.objective,
-        "file_name": f"{node_id}_1"
+        "file_name": f"{node_id}_1",
+        "runtime_settings": {
+            "debug_mode": r.deploy_info.runtime_settings.debug_mode,
+            "is_linked": r.deploy_info.runtime_settings.is_linked,
+            "local_run": r.deploy_info.runtime_settings.local_run,
+            "rerun_on_fail": r.deploy_info.runtime_settings.rerun_on_fail,
+            "take_screenshot": r.deploy_info.runtime_settings.take_screenshot,
+            "threading": r.deploy_info.runtime_settings.threading,
+            "upload_log_file_only_for_fail": r.deploy_info.runtime_settings.upload_log_file_only_for_fail,
+            "window_size_x": r.deploy_info.runtime_settings.window_size_x,
+            "window_size_y": r.deploy_info.runtime_settings.window_size_y,
+        },
     }
 
     if r.deploy_info.device_info:
