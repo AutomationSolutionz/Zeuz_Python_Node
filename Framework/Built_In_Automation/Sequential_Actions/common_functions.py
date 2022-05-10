@@ -4464,9 +4464,8 @@ def download_attachment_from_global(data_set):
     """
     usage: This action allows you to download attachments  from a testcase id
     dataset :
-        attachment name     | input parameter | name
         path to save        | optional parameter | path
-        download attachment from global | common action | result
+        download attachment from global | common action | attachment name
 
     return : return True/False
     note:  attachment name will be the name of that attachment ,result will be the variable name to store
@@ -4474,14 +4473,13 @@ def download_attachment_from_global(data_set):
     sModuleInfo = inspect.currentframe().f_code.co_name + " : " + MODULE_NAME
     try:
         var_name = None
-        var_path = None
+        var_path = sr.Get_Shared_Variables("zeuz_download_folder")
         for left, mid, right in data_set:
             left = left.strip().lower()
-            if "attachment name" == left:
-               var_name = right.strip()
             if "path to save" == left:
                var_path = CommonUtil.path_parser(right)
-
+            if "download attachment from global"==left:
+                var_name=right.strip()
         if var_path is None:
             CommonUtil.ExecLog(sModuleInfo, "Please insert attachment path to download ", 3)
             return "zeuz_failed"
