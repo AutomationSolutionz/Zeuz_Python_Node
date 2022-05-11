@@ -1743,7 +1743,7 @@ def Keystroke_For_Element(data_set):
             left = left.strip().lower()
             if "action" in mid.lower():
                 if left == "keystroke keys":
-                    keystroke_value = right.lower()  # Store keystroke
+                    keystroke_value = right.strip().lower()  # Store keystroke
                 elif left == "keystroke chars":
                     keystroke_char = right
             if "parameter"in mid.lower():
@@ -1776,14 +1776,21 @@ def Keystroke_For_Element(data_set):
                 keystroke_value, count = keystroke_value.split(",")
                 count = int(count.strip())
             keys = keystroke_value.split("+")
-            keys = [x.strip() for x in keys]
+            for i in range(len(keys)):
+                keys[i] = keys[i].strip()
+                if keys[i] == "plus":
+                    keys[i] = "+"
+                elif keys[i] == "minus":
+                    keys[i] = "-"
+                elif keys[i] == "comma":
+                    keys[i] = ","
 
             for i in range(count):
                 gui.hotkey(*keys)  # Send keypress (as individual values using the asterisk)
             CommonUtil.ExecLog(sModuleInfo, "Successfully entered keystroke", 1)
             return "passed"
 
-        elif method_name=='autoit':
+        elif method_name == 'autoit':
             try:
                 if keystroke_char != "":
                     autoit.send(keystroke_char)
@@ -1794,26 +1801,31 @@ def Keystroke_For_Element(data_set):
                 return CommonUtil.Exception_Handler(sys.exc_info(), None, errMsg)
 
             count = 1
-            keystroke_value = keystroke_value
             if "," in keystroke_value:
                 keystroke_value, count = keystroke_value.split(",")
                 count = int(count.strip())
             keys = keystroke_value.split("+")
-            keys = [x.strip() for x in keys]
+            for i in range(len(keys)):
+                keys[i] = keys[i].strip()
+                if keys[i] == "plus":
+                    keys[i] = "+"
+                elif keys[i] == "minus":
+                    keys[i] = "-"
+                elif keys[i] == "comma":
+                    keys[i] = ","
 
             send_key = ""
             for i in range(len(keys)):
                 if i == len(keys)-1:
                     send_key += '{' + keys[i] + ' ' + str(count) + '}'
                 else:
-                    upper = keys[i].upper()
-                    if upper == 'SHIFT':
+                    if keys[i] == 'shift':
                         send_key += '+'
-                    elif upper == 'CTRL':
+                    elif keys[i] == 'ctrl':
                         send_key += '^'
-                    elif upper == 'ALT':
+                    elif keys[i] == 'alt':
                         send_key += '!'
-                    elif upper == 'WIN':
+                    elif keys[i] == 'win':
                         send_key += '#'
             # print(send_key)
             autoit.send(send_key)

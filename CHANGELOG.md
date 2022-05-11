@@ -5,6 +5,9 @@
 ### [Current changes]
 - _
 
+### [15.0.4][May 11, 2022]
+- **[Improve]** Added plus button support in keystroke action
+
 ### [15.0.3][May 08, 2022]
 - **[Change]** Removed printing the whole traceback of error
 
