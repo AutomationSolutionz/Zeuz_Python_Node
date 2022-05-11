@@ -88,26 +88,26 @@ def Android_SDK_PATH(Android_Home_Dir):
 
         print("Setting platform-tools dir to PATH\n")
         Add_To_Path("PATH", Android_Platform_Tools_Dir)
+
         # ANT_HOME
-
-        print("Setting ANT_HOME to Environmental variable\n")
-        ANT_HOME = Downloaded_Path + os.sep + 'apache-ant-1.10.7' + os.sep + 'bin'
-        Add_To_Path("ANT_HOME", ANT_HOME)
-        # M2_HOME
-
-        print("Setting M2_HOME to Environmental variable\n")
-        M2_HOME = Downloaded_Path + os.sep + "apache-maven-3.6.2"
-        Add_To_Path("M2_HOME", M2_HOME)
-        # M2
-
-        print("Setting maven to Environmental variable\n")
-        M2 = Downloaded_Path + os.sep + "apache-maven-3.6.2" + os.sep + "bin"
-        Add_To_Path("M2", M2)
-        # M2 to PATH
-
-        print("Setting maven to PATH\n")
-        M2 = Downloaded_Path + os.sep + "apache-maven-3.6.2" + os.sep + "bin"
-        Add_To_Path("PATH", M2)
+        # print("Setting ANT_HOME to Environmental variable\n")
+        # ANT_HOME = Downloaded_Path + os.sep + 'apache-ant-1.10.7' + os.sep + 'bin'
+        # Add_To_Path("ANT_HOME", ANT_HOME)
+        # # M2_HOME
+        #
+        # print("Setting M2_HOME to Environmental variable\n")
+        # M2_HOME = Downloaded_Path + os.sep + "apache-maven-3.6.2"
+        # Add_To_Path("M2_HOME", M2_HOME)
+        # # M2
+        #
+        # print("Setting maven to Environmental variable\n")
+        # M2 = Downloaded_Path + os.sep + "apache-maven-3.6.2" + os.sep + "bin"
+        # Add_To_Path("M2", M2)
+        # # M2 to PATH
+        #
+        # print("Setting maven to PATH\n")
+        # M2 = Downloaded_Path + os.sep + "apache-maven-3.6.2" + os.sep + "bin"
+        # Add_To_Path("PATH", M2)
 
     except Exception as e:
         exc_type, exc_obj, exc_tb = sys.exc_info()
