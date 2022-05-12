@@ -249,7 +249,7 @@ def execute_hotkey(data_set) -> str:
         for left, mid, right in data_set:
             left = left.strip()
             if "hotkey" in left:
-                hotkey_combination = [i.strip() for i in right.split("+")]
+                hotkey_combination = [i.strip().replace("plus", "+") for i in right.split("+")]
             elif "count" in left:
                 try:
                     count = int(right)
