@@ -220,6 +220,14 @@ def Get_Element(step_data_set, driver, query_debug=False, return_all_elements=Fa
             if save_parameter != "":  # save element to a variable
                 sr.Set_Shared_Variables(save_parameter, result)
             return result  # Return on pass
+        elif result == "zeuz_failed":
+            try:
+                if len(generic_driver.find_elements(By.TAG_NAME, "iframe")) > 0:
+                    CommonUtil.ExecLog(sModuleInfo, "You have Iframes in your Webpage. Try switching Iframe with \"Switch Iframe\" action", 3)
+                elif len(generic_driver.find_elements(By.TAG_NAME, "frame")) > 0:
+                    CommonUtil.ExecLog(sModuleInfo, "You have Frames in your Webpage. Try switching Frame with \"Switch Iframe\" action", 3)
+            except:
+                pass
         return "zeuz_failed"
     except Exception:
         return CommonUtil.Exception_Handler(sys.exc_info())
@@ -791,7 +799,7 @@ def _get_xpath_or_css_element(element_query, css_xpath,data_set, index_number=No
         # end of while loop
 
         if exception_cnd:
-            return False
+            return "zeuz_failed"
 
         if driver_type == "appium" and index_number is not None and index_number > 0 and len(all_matching_elements_visible_invisible) == 0:
             CommonUtil.ExecLog(sModuleInfo, "Element not found and we do not support Auto Scroll when index is provided", 2)
@@ -830,7 +838,7 @@ def _get_xpath_or_css_element(element_query, css_xpath,data_set, index_number=No
                     "To get hidden elements add a row (\"allow hidden\", \"optional option\", \"yes\")",
                     3
                 )
-            return False
+            return "zeuz_failed"
         elif len(all_matching_elements) == 1 and index_number is None:
             if hidden_len > 0 and Filter != "allow hidden":
                 CommonUtil.ExecLog(
