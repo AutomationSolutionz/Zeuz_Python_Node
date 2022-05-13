@@ -794,7 +794,7 @@ def _get_xpath_or_css_element(element_query, css_xpath,data_set, index_number=No
 
             if all_matching_elements_visible_invisible and len(filter_elements(all_matching_elements_visible_invisible, "")) > 0:
                 break
-            elif time.time() > end:
+            if time.time() > end:
                 break
         # end of while loop
 
