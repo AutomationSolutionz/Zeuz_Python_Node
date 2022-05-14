@@ -1,9 +1,45 @@
 # Changelog
 
-# Version 14
+# Version 15
 
 ### [Current changes]
 - _
+
+### [15.0.4][May 11, 2022]
+- **[Improve]** Added plus button support in keystroke action
+
+### [15.0.3][May 08, 2022]
+- **[Change]** Removed printing the whole traceback of error
+
+### [15.0.2][April 26, 2022]
+- **[Add]** `%|zeuz_auto_teardown|%` variable is added for turning off auto teardown
+
+### [15.0.1][April 26, 2022]
+- **[Change]** Screenshot image quality upgraded to resolution 1920,1080
+
+### [15.0.0][April 16, 2022]
+- **[Add]** Added capability for handling alert as desired.
+- **[Add]** Added action read scanned pdf
+- **[Add]** email_attachment feature is added into email_read action
+- **[Add]** `zeuz_current_tc` and `zeuz_current_step` variables are added
+- **[Add]** Add capability for handling alert as desired.
+- **[Add]** Added 4 new actions: 
+  - `Attachments upload to Testcase`
+  - `Attachments upload to Step`
+  - `Attachments upload to Global`
+  - `Disable steps`
+
+- **[Change]** openpyxl is made default for excel_read
+- **[Change]** Reporting structure is changed
+- **[Fix]** `--log_dir` is fixed
+- **[Fix]** import pyautogui fix for ui-less machine
+- **[Remove]** SSL validation is bypassed while installing webdriver
+
+# Version 14
+
+### [14.11.2][March 30, 2022]
+- **[Fix]** Pyautogui import fix for ui-less machine
+- **[Add]** Added missing commits of `Alert` and `Android browser`
 
 ### [14.11.1][March 24, 2022]
 - **[Change]** Improve README.md.

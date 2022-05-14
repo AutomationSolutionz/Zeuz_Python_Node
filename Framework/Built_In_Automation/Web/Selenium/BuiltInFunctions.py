@@ -18,7 +18,6 @@ import sys, os, time, inspect, shutil, subprocess
 import socket
 import requests
 import psutil
-import pyautogui
 
 sys.path.append("..")
 from selenium import webdriver
@@ -37,6 +36,7 @@ from selenium.common.exceptions import ElementClickInterceptedException, WebDriv
     SessionNotCreatedException, TimeoutException, NoSuchFrameException, StaleElementReferenceException
 from selenium.webdriver.common.keys import Keys
 from selenium.webdriver.common.by import By
+from selenium.webdriver.common.alert import Alert
 from selenium.webdriver.support import expected_conditions as EC
 import selenium
 
@@ -363,7 +363,7 @@ def Open_Electron_App(data_set):
 
 
 @logger
-def Open_Browser(dependency, window_size_X=None, window_size_Y=None):
+def Open_Browser(dependency, window_size_X=None, window_size_Y=None, capability=None):
     """ Launch browser and create instance """
 
     global selenium_driver
@@ -385,7 +385,7 @@ def Open_Browser(dependency, window_size_X=None, window_size_Y=None):
         CommonUtil.teardown = True
         browser = browser.lower().strip()
 
-        if browser in ("android", "ios"):
+        if browser in ("ios",):
             # Finds the appium binary and starts the server.
             appium_port = start_appium_server()
 
@@ -418,13 +418,21 @@ def Open_Browser(dependency, window_size_X=None, window_size_Y=None):
             selenium_driver = appiumdriver.Remote("http://localhost:%d/wd/hub" % appium_port, capabilities)
             selenium_driver.implicitly_wait(WebDriver_Wait)
 
-        elif browser in ("chrome", "chromeheadless"):
+        elif browser in ("android", "chrome", "chromeheadless"):
             from selenium.webdriver.chrome.options import Options
             chrome_path = ConfigModule.get_config_value("Selenium_driver_paths", "chrome_path")
             if not chrome_path:
                 chrome_path = ChromeDriverManager().install()
                 ConfigModule.add_config_value("Selenium_driver_paths", "chrome_path", chrome_path)
             options = Options()
+
+            # capability
+            if capability:
+                for key, value in capability.items():
+                    # options.set_capability('unhandledPromptBehavior', 'ignore')
+                    options.set_capability(key, value)
+
+            # argument
             options.add_argument("--no-sandbox")
             options.add_argument("--disable-extensions")
             options.add_argument('--ignore-certificate-errors')
@@ -742,6 +750,10 @@ def Go_To_Link(step_data, page_title=False):
     sModuleInfo = inspect.currentframe().f_code.co_name + " : " + MODULE_NAME
     window_size_X = ConfigModule.get_config_value("", "window_size_x")
     window_size_Y = ConfigModule.get_config_value("", "window_size_y")
+
+    # default capabilities
+    capabilities = {"unhandledPromptBehavior": "ignore"}
+    
     # Open browser and create driver if user has not already done so
     global dependency
     global selenium_driver
@@ -759,6 +771,19 @@ def Go_To_Link(step_data, page_title=False):
                 web_link = right.strip()
             elif left == "driverid":
                 driver_id = right.strip()
+
+            # checks for capabilities and modifies them by the given step_data
+            elif mid.strip().lower() == "shared capability":
+                if left.strip().lower() in ("promptbehavior", "alertbehavior"):
+                    if right.strip().lower() in ("accept", "yes", "ok"):
+                        capabilities["unhandledPromptBehavior"] = "accept"
+
+                    elif right.strip().lower() in ("dismiss", "no", "cancel"):
+                        capabilities["unhandledPromptBehavior"] = "dismiss"
+
+                else:
+                    # any other shared capabilities can be added from the selenium document
+                    capabilities[left.strip()] = right.strip()
 
         if not driver_id:
             driver_id = "default"
@@ -778,13 +803,13 @@ def Go_To_Link(step_data, page_title=False):
                 Tear_Down_Selenium()    # If dependency is changed then teardown and relaunch selenium driver
             CommonUtil.ExecLog(sModuleInfo, "Browser not previously opened, doing so now", 1)
             if window_size_X == "None" and window_size_Y == "None":
-                result = Open_Browser(dependency)
+                result = Open_Browser(dependency, capability=capabilities)
             elif window_size_X == "None":
-                result = Open_Browser(dependency, window_size_Y)
+                result = Open_Browser(dependency, window_size_Y, capability=capabilities)
             elif window_size_Y == "None":
-                result = Open_Browser(dependency, window_size_X)
+                result = Open_Browser(dependency, window_size_X, capability=capabilities)
             else:
-                result = Open_Browser(dependency, window_size_X, window_size_Y)
+                result = Open_Browser(dependency, window_size_X, window_size_Y, capability=capabilities)
 
             if result == "zeuz_failed":
                 return "zeuz_failed"
@@ -814,13 +839,13 @@ def Go_To_Link(step_data, page_title=False):
             else:
                 return CommonUtil.Exception_Handler(sys.exc_info())
             if window_size_X == "None" and window_size_Y == "None":
-                result = Open_Browser(dependency)
+                result = Open_Browser(dependency, capability=capabilities)
             elif window_size_X == "None":
-                result = Open_Browser(dependency, window_size_Y)
+                result = Open_Browser(dependency, window_size_Y, capability=capabilities)
             elif window_size_Y == "None":
-                result = Open_Browser(dependency, window_size_X)
+                result = Open_Browser(dependency, window_size_X, capability=capabilities)
             else:
-                result = Open_Browser(dependency, window_size_X, window_size_Y)
+                result = Open_Browser(dependency, window_size_X, window_size_Y, capability=capabilities)
 
         if result == "zeuz_failed":
             ErrorMessage = "failed to open your link with driver_id='%s: %s" % (driver_id, web_link)
@@ -876,42 +901,35 @@ def Handle_Browser_Alert(step_data):
 
     try:
         if choice_lower in ("accept", "pass", "yes", "ok"):
-            selenium_driver.switch_to_alert().accept()
+            Alert(selenium_driver).accept()
             CommonUtil.ExecLog(sModuleInfo, "Browser alert accepted", 1)
             return "passed"
 
-        elif choice_lower in ("reject", "fail", "no", "cancel"):
-            selenium_driver.switch_to_alert().dismiss()
+        elif choice_lower in ("reject", "decline", "dismiss", "fail", "no", "cancel"):
+            Alert(selenium_driver).dismiss()
             CommonUtil.ExecLog(sModuleInfo, "Browser alert rejected", 1)
             return "passed"
 
-        elif "get text" in choice_lower:
-            alert_text = selenium_driver.switch_to_alert().text
-            selenium_driver.switch_to_alert().accept()
-            variable_name = (choice.split("="))[1]
-            result = Shared_Resources.Set_Shared_Variables(
-                variable_name, alert_text
-            )
-            if result in failed_tag_list:
-                CommonUtil.ExecLog(
-                    sModuleInfo,
-                    "Value of Variable '%s' could not be saved!!!" % variable_name,
-                    3,
-                )
-                return "zeuz_failed"
-            else:
-                return "passed"
+        elif choice_lower.replace(" ", "").replace("_", "").startswith("gettext"):
+            alert_text = Alert(selenium_driver).text
+            Alert(selenium_driver).accept()
+            variable_name = (choice.split("="))[1].strip()
+            return Shared_Resources.Set_Shared_Variables(variable_name, alert_text)
 
-        elif "send text" in choice_lower:
-            text_to_send = (choice.split("="))[1]
-            selenium_driver.switch_to_alert().send_keys(text_to_send)
-            selenium_driver.switch_to_alert().accept()
+        elif choice_lower.replace(" ", "").replace("_", "").startswith("sendtext"):
+            text_to_send = (choice.split("="))[1].strip()
+            Alert(selenium_driver).send_keys(text_to_send)
+            Alert(selenium_driver).accept()
             return "passed"
 
         else:
             CommonUtil.ExecLog(
                 sModuleInfo,
-                "Wrong Step Data.  Please review the action help document",
+                "Wrong Step Data. The following are valid data --\n" +
+                "1. (handle alert, selenium action, ok)" +
+                "2. (handle alert, selenium action, cancel)" +
+                "3. (handle alert, selenium action, get text = var_name)" +
+                "4. (handle alert, selenium action, send text = some text)",
                 3,
             )
             return "zeuz_failed"
@@ -1394,6 +1412,7 @@ def Click_and_Download(data_set):
                         ]
                         if win_Click_Element(save_click_ds) == "zeuz_failed":
                             CommonUtil.ExecLog(sModuleInfo, "Could not click Save Button. Switching to GUI method", 2)
+                            import pyautogui
                             pyautogui.hotkey("down")
                             pyautogui.hotkey("enter")
 
@@ -1415,6 +1434,7 @@ def Click_and_Download(data_set):
                             ]
                             if win_Click_Element(ok_ds) == "zeuz_failed":
                                 CommonUtil.ExecLog(sModuleInfo, "Could not find the OK button. Switching to GUI method (pressing Enter)", 2)
+                                import pyautogui
                                 pyautogui.hotkey("enter")
                 except:
                     CommonUtil.ExecLog(sModuleInfo, "Could not check if any save window was opened. Continuing...", 2)
@@ -3733,6 +3753,7 @@ def upload_file(step_data):
 
 def _gui_upload(path_name, pid=None):
     # Todo: Implement PID to activate the window and focus that at front
+    import pyautogui
     time.sleep(3)
     pyautogui.hotkey("alt", "a")
     time.sleep(0.5)
@@ -3762,6 +3783,7 @@ def upload_file_through_window(step_data):
     global selenium_driver
     all_file_path = []
     pid = ""
+    import pyautogui
     if "headless" in dependency:
         CommonUtil.ExecLog(sModuleInfo, "This action will not work on headless browsers", 3)
         return "zeuz_failed"

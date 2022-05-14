@@ -6,7 +6,7 @@ sys.path.append("..")
 from Framework.Utilities import CommonUtil, ConfigModule
 
 # Disable WebdriverManager SSL verification.
-os.environ["WDM_SSL_VERIFY"] = '0'
+os.environ['WDM_SSL_VERIFY'] = '0'
 
 try:
     from webdriver_manager.chrome import ChromeDriverManager
