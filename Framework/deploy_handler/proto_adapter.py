@@ -47,7 +47,7 @@ def read_steps(steps_pb) -> List[Dict]:
                 "step_function": "Sequential Actions",
                 "step_driver": step.step_info.driver,
                 "type": step.type,
-                "step_attachments": list(step.step_info.attachments),
+                "attachments": list(step.step_info.attachments),
                 "verify_point": step.step_info.verify_point,
                 "continue_on_fail": step.step_info.step_continue,
                 "step_time": step.time,
@@ -65,7 +65,7 @@ def read_test_cases(test_cases_pb) -> List[Dict]:
             "title": tc.test_case_detail.name,
             "automatability": tc.test_case_detail.automatability,
             "debug_steps": [],
-            "testcase_attachments_links": list(tc.attachments),
+            "attachments": list(tc.attachments),
             "steps": read_steps(tc.steps),
         })
     return test_cases

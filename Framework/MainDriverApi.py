@@ -12,6 +12,7 @@ import shutil
 import importlib
 import requests
 import zipfile
+from multiprocessing.pool import ThreadPool
 from urllib3.exceptions import InsecureRequestWarning
 # Suppress the InsecureRequestWarning since we use verify=False parameter.
 requests.packages.urllib3.disable_warnings(category=InsecureRequestWarning)
@@ -469,10 +470,9 @@ def run_all_test_steps_in_a_test_case(
         # Creating Testcase attachment variables
         attachment_path = str(Path(ConfigModule.get_config_value("sectionOne", "temp_run_file_path", temp_ini_file)) / "attachments")
         tc_attachment_list = []
-        for tc_attachment in testcase_info['testcase_attachments_links']:
-            # FIXME: Test case attachments.
-            path = str(Path(attachment_path + tc_attachment[0][10:]))
-            var_name = tc_attachment[1] + "." + tc_attachment[2] if tc_attachment[2] else tc_attachment[1]
+        for tc_attachment in testcase_info['attachments']:
+            path = str(Path(attachment_path + tc_attachment))
+            var_name = Path(tc_attachment).name
             tc_attachment_list.append(var_name)
             shared.Set_Shared_Variables(var_name, path, attachment_var=True)
 
@@ -537,11 +537,10 @@ def run_all_test_steps_in_a_test_case(
             current_step_sequence = all_step_info[StepSeq - 1]["step_sequence"]
             shared.Set_Shared_Variables("zeuz_current_step", all_step_info[StepSeq - 1], print_variable=False, pretty=False)
 
-            # FIXME: step attachments.
-            step_attachments = all_step_info[StepSeq - 1]['step_attachments']
+            step_attachments = all_step_info[StepSeq - 1]['attachments']
             step_attachment_list = []
             for attachment in step_attachments:
-                attachment_name = attachment.split("/")[-1]
+                attachment_name = Path(attachment).name
                 path = str(Path(attachment_path) / attachment_name)
                 step_attachment_list.append(attachment_name)
                 shared.Set_Shared_Variables(attachment_name, path, attachment_var=True)
@@ -1307,6 +1306,53 @@ def split_testcases(run_id_info, max_tc_in_single_session):
     return all_sessions
 
 
+def download_url(url):
+    """Downloads a given url into the 'attachments' folder."""
+
+    temp_ini_file = os.path.join(
+        os.path.join(
+            os.path.abspath(__file__).split("Framework")[0],
+            os.path.join(
+                "AutomationLog",
+                ConfigModule.get_config_value("Advanced Options", "_file"),
+            ),
+        )
+    )
+    attachment_path = Path(ConfigModule.get_config_value("sectionOne", "temp_run_file_path", temp_ini_file)) / "attachments"
+
+    # assumes that the last segment after the / represents the file name
+    # if url is abc/xyz/file.txt, the file name will be file.txt
+    file_name_start_pos = url.rfind("/") + 1
+    file_name = url[file_name_start_pos:]
+
+    r = requests.get(url, stream=True)
+    if r.status_code == requests.codes.ok:
+        with open(attachment_path / file_name, 'wb') as f:
+            for data in r:
+                f.write(data)
+    return url
+
+
+def download_attachments(testcase_info):
+    """Download test case and step attachments for the given test case."""
+
+    url_prefix = ConfigModule.get_config_value("Authentication", "server_address") + "/static"
+    urls = []
+
+    # Test case attachments
+    for attachment_url in testcase_info["attachments"]:
+        urls.append(url_prefix + attachment_url)
+
+    # Step attachments
+    for step in testcase_info["steps"]:
+        for attachment_url in step["attachments"]:
+            urls.append(url_prefix + attachment_url)
+
+    results = ThreadPool(4).imap_unordered(download_url, urls)
+    for r in results:
+        print("Downloaded: %s" % r)
+
+
 # main function
 def main(device_dict, user_info_object):
     try:
@@ -1457,8 +1503,6 @@ def main(device_dict, user_info_object):
             num_of_tc = len(all_testcases_info)
             cnt = 1
 
-            # TODO: Download test case and step attachments here.
-
             # TODO: This is not needed anymore since the server controls exactly
             # how many test cases are sent in each session and node simply needs
             # to execute the test cases and upload the reports.
@@ -1479,6 +1523,9 @@ def main(device_dict, user_info_object):
                     test_case_name = testcase_info["title"]
                     set_device_info_according_to_user_order(device_order, device_dict, test_case_no, test_case_name, user_info_object, Userid)
                     CommonUtil.disabled_step = []
+
+                    # Download test case and step attachments
+                    download_attachments(testcase_info)
 
                     if performance_test_case:
                         # get performance test info
