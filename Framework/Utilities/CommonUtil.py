@@ -264,55 +264,55 @@ def Add_File_To_Current_Test_Case_Log(src):
 
 def Exception_Handler(exec_info, temp_q=None, UserMessage=None):
     try:
-        console.print_exception(show_locals=True, max_frames=1)
-        # sModuleInfo_Local = inspect.currentframe().f_code.co_name + " : " + MODULE_NAME
-        # exc_type, exc_obj, exc_tb = exec_info
-        # Error_Type = (
-        #     (str(exc_type).replace("type ", ""))
-        #     .replace("<", "")
-        #     .replace(">", "")
-        #     .replace(";", ":")
-        # )
-        # Error_Message = str(exc_obj)
-        # File_Name = os.path.split(exc_tb.tb_frame.f_code.co_filename)[1]
-        # Function_Name = os.path.split(exc_tb.tb_frame.f_code.co_name)[1]
-        # Line_Number = str(exc_tb.tb_lineno)
-        # Error_Detail = (
-        #     "Error Type ~ %s: Error Message ~ %s: File Name ~ %s: Function Name ~ %s: Line ~ %s"
-        #     % (Error_Type, Error_Message, File_Name, Function_Name, Line_Number)
-        # )
-        # sModuleInfo = Function_Name + ":" + File_Name
-        # ExecLog(sModuleInfo, "Following exception occurred: %s" % (Error_Detail), 3)
-        # # TakeScreenShot(Function_Name + "~" + File_Name)
-        # if UserMessage != None:
-        #     ExecLog(
-        #         sModuleInfo, "Following error message is custom: %s" % (UserMessage), 3
-        #     )
-        if temp_q != None:
-            temp_q.put("zeuz_failed")
+        # console.print_exception(show_locals=True, max_frames=1)
+        sModuleInfo_Local = inspect.currentframe().f_code.co_name + " : " + MODULE_NAME
+        exc_type, exc_obj, exc_tb = exec_info
+        Error_Type = (
+            (str(exc_type).replace("type ", ""))
+            .replace("<", "")
+            .replace(">", "")
+            .replace(";", ":")
+        )
+        Error_Message = str(exc_obj)
+        File_Name = os.path.split(exc_tb.tb_frame.f_code.co_filename)[1]
+        Function_Name = os.path.split(exc_tb.tb_frame.f_code.co_name)[1]
+        Line_Number = str(exc_tb.tb_lineno)
+        Error_Detail = (
+            "Error Type ~ %s: Error Message ~ %s: File Name ~ %s: Function Name ~ %s: Line ~ %s"
+            % (Error_Type, Error_Message, File_Name, Function_Name, Line_Number)
+        )
+        sModuleInfo = Function_Name + ":" + File_Name
+        ExecLog(sModuleInfo, "Following exception occurred: %s" % (Error_Detail), 3)
+        # TakeScreenShot(Function_Name + "~" + File_Name)
+        if UserMessage != None:
+            ExecLog(
+                sModuleInfo, "Following error message is custom: %s" % (UserMessage), 3
+            )
+        # if temp_q != None:
+        #     temp_q.put("zeuz_failed")
 
         return "zeuz_failed"
 
     except Exception:
-        # exc_type_local, exc_obj_local, exc_tb_local = sys.exc_info()
-        # fname_local = os.path.split(exc_tb.tb_frame.f_code.co_filename)[1]
-        # Error_Detail_Local = (
-        #     (str(exc_type_local).replace("type ", "Error Type: "))
-        #     + ";"
-        #     + "Error Message: "
-        #     + str(exc_obj_local)
-        #     + ";"
-        #     + "File Name: "
-        #     + fname_local
-        #     + ";"
-        #     + "Line: "
-        #     + str(exc_tb_local.tb_lineno)
-        # )
-        # ExecLog(
-        #     sModuleInfo_Local,
-        #     "Following exception occurred: %s" % (Error_Detail_Local),
-        #     3,
-        # )
+        exc_type_local, exc_obj_local, exc_tb_local = sys.exc_info()
+        fname_local = os.path.split(exc_tb.tb_frame.f_code.co_filename)[1]
+        Error_Detail_Local = (
+            (str(exc_type_local).replace("type ", "Error Type: "))
+            + ";"
+            + "Error Message: "
+            + str(exc_obj_local)
+            + ";"
+            + "File Name: "
+            + fname_local
+            + ";"
+            + "Line: "
+            + str(exc_tb_local.tb_lineno)
+        )
+        ExecLog(
+            sModuleInfo_Local,
+            "Following exception occurred: %s" % (Error_Detail_Local),
+            3,
+        )
         return "zeuz_failed"
 
 
@@ -753,8 +753,8 @@ def Thread_ScreenShot(function_name, image_folder, Method, Driver, image_name):
         r"\/",
         r":",
     ]  # Symbols that can't be used in filename
-    picture_quality = 20  # Quality of picture
-    picture_size = 800, 600  # Size of image (for reduction in file size)
+    picture_quality = 100  # Quality of picture
+    picture_size = 1920, 1080  # Size of image (for reduction in file size)
 
     # Adjust filename and create full path (remove invalid characters, convert spaces to underscore, remove leading and trailing spaces)
     trans_table = str.maketrans(
@@ -773,9 +773,7 @@ def Thread_ScreenShot(function_name, image_folder, Method, Driver, image_name):
                 image.save(ImageName, format="PNG")  # Save to disk
 
         # Exit if we don't have a driver yet (happens when Test Step is set to mobile/web, but we haven't setup the driver)
-        elif Driver == None and (
-            Method == "mobile" or Method == "web"
-        ):
+        elif Driver is None and Method in ("mobile", "web"):
             ExecLog(
                 sModuleInfo,
                 "Can't capture screen, driver not available for type: %s, or invalid driver: %s"
@@ -786,15 +784,11 @@ def Thread_ScreenShot(function_name, image_folder, Method, Driver, image_name):
 
         # Capture screenshot of web browser
         elif Method == "web":
-            Driver.get_screenshot_as_file(
-                ImageName
-            )  # Must be .png, otherwise an exception occurs
+            Driver.get_screenshot_as_file(ImageName)  # Must be .png, otherwise an exception occurs
 
         # Capture screenshot of mobile
         elif Method == "mobile":
-            Driver.save_screenshot(
-                ImageName
-            )  # Must be .png, otherwise an exception occurs
+            Driver.save_screenshot(ImageName)  # Must be .png, otherwise an exception occurs
         else:
             ExecLog(
                 sModuleInfo,
@@ -805,12 +799,8 @@ def Thread_ScreenShot(function_name, image_folder, Method, Driver, image_name):
         # Lower the picture quality
         if os.path.exists(ImageName):  # Make sure image was saved
             image = Image.open(ImageName)  # Re-open in standard format
-            image.thumbnail(
-                picture_size, Image.ANTIALIAS
-            )  # Resize picture to lower file size
-            image.save(
-                ImageName, format="PNG", quality=picture_quality
-            )  # Change quality to reduce file size
+            image.thumbnail(picture_size, Image.ANTIALIAS)  # Resize picture to lower file size
+            image.save(ImageName, format="PNG", quality=picture_quality)  # Change quality to reduce file size
 
             # Convert image to bytearray and send it to ws for streaming.
             image_byte_array = pil_image_to_bytearray(image)
