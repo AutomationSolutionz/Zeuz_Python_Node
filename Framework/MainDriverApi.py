@@ -468,11 +468,11 @@ def run_all_test_steps_in_a_test_case(
             sTestStepResultList.append("PASSED")
 
         # Creating Testcase attachment variables
-        attachment_path = str(Path(ConfigModule.get_config_value("sectionOne", "temp_run_file_path", temp_ini_file)) / "attachments")
+        attachment_path = Path(ConfigModule.get_config_value("sectionOne", "temp_run_file_path", temp_ini_file)) / "attachments"
         tc_attachment_list = []
         for tc_attachment in testcase_info['attachments']:
-            path = str(Path(attachment_path + tc_attachment))
             var_name = Path(tc_attachment).name
+            path = str(attachment_path / var_name)
             tc_attachment_list.append(var_name)
             shared.Set_Shared_Variables(var_name, path, attachment_var=True)
 
@@ -541,7 +541,7 @@ def run_all_test_steps_in_a_test_case(
             step_attachment_list = []
             for attachment in step_attachments:
                 attachment_name = Path(attachment).name
-                path = str(Path(attachment_path) / attachment_name)
+                path = str(attachment_path / attachment_name)
                 step_attachment_list.append(attachment_name)
                 shared.Set_Shared_Variables(attachment_name, path, attachment_var=True)
 
@@ -1396,7 +1396,6 @@ def main(device_dict, user_info_object):
             CommonUtil.ExecLog("", "No Test Run Schedule found for the current user : %s" % Userid, 2)
             return False
 
-        executor = CommonUtil.GetExecutor()
         CommonUtil.runid_index = 0
         for run_id_info in all_run_id_info:
             run_id_info["base_path"] = ConfigModule.get_config_value("Advanced Options", "_file_upload_path")
