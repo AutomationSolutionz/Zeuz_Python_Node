@@ -562,8 +562,38 @@ def run_all_test_steps_in_a_test_case(
             _color = "yellow"
             # _style = Style(color="yellow", blink=False, bold=True)
             table = Table(border_style=_color, box=ASCII_DOUBLE_HEAD, expand=False)
-            table.add_column(f"STEP-{str(StepSeq)}", justify="center", style=_color, max_width=40)
-            table.add_row(f"{current_step_name}", style=_color)
+            table.add_column(
+                f"ID",
+                justify="center",
+                style=_color,
+                max_width=5,
+            )
+            table.add_column(
+                f"STEP #{StepSeq}",
+                justify="center",
+                style=_color,
+                max_width=40,
+            )
+            table.add_column(
+                f"Always run",
+                justify="center",
+                style=_color,
+                min_width=6,
+                max_width=6,
+            )
+            table.add_column(
+                f"Type",
+                justify="center",
+                style=_color,
+                max_width=6,
+            )
+            table.add_row(
+                f"{all_step_info[StepSeq - 1]['step_id']}",
+                f"{current_step_name}",
+                f"{all_step_info[StepSeq - 1]['always_run']}",
+                "global" if all_step_info[StepSeq - 1]['type'] == "linked" else "local",
+                style=_color,
+            )
             # width_pad = CommonUtil.max_char // 2 - (max(len(current_step_name), 6) + 4) // 2
             # table = Padding(table, (0, width_pad))
             rich_print(table)
