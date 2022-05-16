@@ -41,6 +41,7 @@ class DeployHandler:
         self.response_callback = response_callback
         self.cancel_callback = cancel_callback
         self.done_callback = done_callback
+        self.backoff_time = 0
 
 
     def on_message(self, ws: WebSocketApp, message) -> None:
@@ -63,6 +64,8 @@ class DeployHandler:
     def on_error(self, ws: WebSocketApp, error) -> None:
         print("[deploy] Error communicating with the deploy service.")
         print(error)
+        if self.backoff_time < 6:
+            self.backoff_time += 1
 
 
     def on_close(self, ws: WebSocketApp, close_status_code: int, close_msg) -> None:
@@ -70,6 +73,9 @@ class DeployHandler:
 
 
     def on_open(self, ws: WebSocketApp) -> None:
+        # on successful connection, reset backoff time
+        self.backoff_time = 0
+
         print("[deploy] Connected to deploy service.")
         ws.send(self.COMMAND_NEXT)
 
@@ -101,14 +107,15 @@ class DeployHandler:
                 )
 
                 self.ws.run_forever()
-
                 self.ws = None
-                print("[deploy] Reconnecting in 5 seconds...")
-                time.sleep(5)
+
+                print(f"[deploy] Establishing connection in {1 << self.backoff_time} secs...")
+                time.sleep(1 << self.backoff_time)
+
             except:
                 self.ws = None
-                print("[deploy] Connection to deploy service closed abruptly. Reconnecting...")
-                time.sleep(5)
+                print(f"[deploy] Connection to deploy service closed abruptly. Reconnecting in {1 << self.backoff_time} secs...")
+                time.sleep(1 << self.backoff_time)
 
 
 if __name__ == "__main__":
