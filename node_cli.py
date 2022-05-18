@@ -472,7 +472,21 @@ def RunProcess(sTesterid, device_dict, user_info_object, run_once=False, log_dir
             # CommonUtil.ExecLog("", "Downloading dataset and attachments of %s into:\n%s" % (size, str(save_path/"input.zip")), 4)
             FL.CreateFolder(save_path)
 
-            host = f"ws://localhost:8300/zsvc/deploy/connect/{node_id}"
+            server_address = ConfigModule.get_config_value("Authentication", "server_address")
+            protocol, domain = server_address.split("://")
+            host = None
+            if protocol == "http":
+                host = f"ws://{domain}"
+            elif protocol == "https":
+                host = f"wss://{domain}"
+            else:
+                raise Exception("Unknown protocol for server address. Must be either 'http' or 'https'")
+
+            deploy_srv_addr = f"{host}/zsvc/deploy/connect/{node_id}"
+
+            # WARNING: For local development only.
+            if "localhost" in host:
+                deploy_srv_addr = deploy_srv_addr.replace("8000", "8300")
 
             node_json = None
             def response_callback(response: str):
@@ -527,7 +541,7 @@ def RunProcess(sTesterid, device_dict, user_info_object, run_once=False, log_dir
                 cancel_callback=cancel_callback,
                 done_callback=done_callback,
             )
-            deploy_handler.run(host)
+            deploy_handler.run(deploy_srv_addr)
             return False
 
         except Exception:
