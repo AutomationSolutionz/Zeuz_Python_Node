@@ -503,6 +503,10 @@ def RunProcess(sTesterid, device_dict, user_info_object, run_once=False, log_dir
                 MainDriverApi.main(device_dict, user_info_object)
 
             def done_callback():
+                if not node_json:
+                    return
+
+                print("[deploy] Run complete.")
                 update_machine(
                     False,
                     {
@@ -519,6 +523,10 @@ def RunProcess(sTesterid, device_dict, user_info_object, run_once=False, log_dir
                 RequestFormatter.Get("update_machine_with_time_api", {"machine_name": sTesterid})
 
             def cancel_callback():
+                if not node_json:
+                    return
+
+                print("[deploy] Run cancelled.")
                 CommonUtil.run_cancelled = True
 
                 update_machine(
