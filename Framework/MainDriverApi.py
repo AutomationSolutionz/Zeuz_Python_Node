@@ -1204,9 +1204,7 @@ def upload_json_report_old(Userid, temp_ini_file, run_id):
         if CommonUtil.run_cancel != CANCELLED_TAG:
             # Create a standard report format to be consumed by other tools.
             junit_report_path = zip_path / "junitreport.xml"
-            print("Generating junit4 compatible report.")
             junit_report.process(CommonUtil.all_logs_json, str(junit_report_path))
-            print("DONE. Generated junit report at %s" % junit_report_path)
         return zip_path
     except:
         CommonUtil.Exception_Handler(sys.exc_info())
@@ -1305,9 +1303,7 @@ def upload_reports_and_zips(Userid, temp_ini_file, run_id):
         if CommonUtil.run_cancel != CANCELLED_TAG:
             # Create a standard report format to be consumed by other tools.
             junit_report_path = zip_dir / "junitreport.xml"
-            print("Generating junit4 compatible report.")
             junit_report.process(CommonUtil.all_logs_json, str(junit_report_path))
-            print("DONE. Generated junit report at %s" % junit_report_path)
         return zip_dir
     except:
         CommonUtil.Exception_Handler(sys.exc_info())
@@ -1325,7 +1321,7 @@ def split_testcases(run_id_info, max_tc_in_single_session):
         len_list.append(ceil(len(testcases)/session_num))
     for _ in range(lower_num):
         len_list.append(floor(len(testcases)/session_num))
-    print("We have split %d test cases into %d sessions: %s" % (len(testcases), session_num, str(len_list)))
+    # print("We have split %d test cases into %d sessions: %s" % (len(testcases), session_num, str(len_list)))
     all_sessions = []
     start = 0
     for i in range(session_num):
@@ -1524,9 +1520,11 @@ def main(device_dict, user_info_object):
                     i -= 1
                 i += 1
             if len(all_testcases_info) > 0:
-                CommonUtil.ExecLog("", "Total number of Automated test cases %s" % len(all_testcases_info), 4, False)
+                # CommonUtil.ExecLog("", "Total number of Automated test cases
+                # %s" % len(all_testcases_info), 4, False)
+                pass
             else:
-                CommonUtil.ExecLog("", "No Automated test cases found for the current user : %s" % Userid, 2)
+                CommonUtil.ExecLog("", "No Automated test cases found in this deployment: %s" % Userid, 2)
                 CommonUtil.runid_index += 1
                 return "pass"
             num_of_tc = len(all_testcases_info)
@@ -1543,7 +1541,7 @@ def main(device_dict, user_info_object):
                 CommonUtil.all_logs_json = [each_session]
                 CommonUtil.tc_index = 0
                 all_testcases_info = each_session["test_cases"]
-                print("Starting %s with %s test cases" % (CommonUtil.current_session_name, len(all_testcases_info)))
+                # print("Starting %s with %s test cases" % (CommonUtil.current_session_name, len(all_testcases_info)))
                 for testcase_info in all_testcases_info:
                     performance_test_case = False
                     if testcase_info["automatability"].lower() == "performance":
@@ -1652,7 +1650,7 @@ def main(device_dict, user_info_object):
                         CommonUtil.clear_all_logs()  # clear logs
                         if CommonUtil.run_cancel == CANCELLED_TAG:
                             break
-                        print("Executed %s test cases" % cnt)
+                        # print("Executed %s test cases" % cnt)
                         cnt += 1
                     CommonUtil.tc_index += 1
 
@@ -1678,9 +1676,9 @@ def main(device_dict, user_info_object):
 
                 session_cnt += 1
 
-            print("Test set execution time = %s sec for %s testcases" % (round(TimeDiff, 3), num_of_tc))
+            print("Execution time = %s sec" % round(TimeDiff, 3))
             # print("Report creation time = %s sec for %s testcases" % (round(CommonUtil.report_json_time, 3), num_of_tc))
-            print("Test Set Completed")
+            # print("Test Set Completed")
 
             ConfigModule.add_config_value("sectionOne", "sTestStepExecLogId", "MainDriver", temp_ini_file)
 
