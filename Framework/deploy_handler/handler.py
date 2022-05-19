@@ -6,6 +6,7 @@ from urllib import response
 from websocket import WebSocketApp
 from typing import Callable
 import threading
+from concurrent.futures import ThreadPoolExecutor
 import signal
 from pathlib import Path
 
@@ -42,41 +43,42 @@ class DeployHandler:
         self.cancel_callback = cancel_callback
         self.done_callback = done_callback
         self.backoff_time = 0
+        self.thread_pool = ThreadPoolExecutor(max_workers=1)
 
 
     def on_message(self, ws: WebSocketApp, message) -> None:
         if message == self.COMMAND_DONE:
             # We're done for this run session.
-            print("[deploy] Run complete.")
             self.done_callback()
             return
 
         elif message == self.COMMAND_CANCEL:
             # Run cancelled by the user/service.
-            print("[deploy] Run cancelled.")
             self.cancel_callback()
             return
 
-        self.response_callback(message)
+        # self.response_callback(message)
+        self.thread_pool.submit(self.response_callback, message)
         ws.send(self.COMMAND_NEXT)
 
 
     def on_error(self, ws: WebSocketApp, error) -> None:
-        print("[deploy] Error communicating with the deploy service.")
+        # print("[deploy] Error communicating with the deploy service.")
         print(error)
         if self.backoff_time < 6:
             self.backoff_time += 1
 
 
     def on_close(self, ws: WebSocketApp, close_status_code: int, close_msg) -> None:
-        print("[deploy] Connection closed.")
+        # print("[deploy] Connection closed.")
+        pass
 
 
     def on_open(self, ws: WebSocketApp) -> None:
         # on successful connection, reset backoff time
         self.backoff_time = 0
 
-        print("[deploy] Connected to deploy service.")
+        # print("[deploy] Connected to deploy service.")
         ws.send(self.COMMAND_NEXT)
 
 
@@ -88,7 +90,7 @@ class DeployHandler:
         if self.ws:
             self.ws.close()
 
-        print("[deploy] Disconnected from deploy service.")
+        # print("[deploy] Disconnected from deploy service.")
         sys.exit(0)
 
 
@@ -109,7 +111,7 @@ class DeployHandler:
                 self.ws.run_forever()
                 self.ws = None
 
-                print(f"[deploy] Establishing connection in {1 << self.backoff_time} secs...")
+                # print(f"[deploy] Establishing connection in {1 << self.backoff_time} secs...")
                 time.sleep(1 << self.backoff_time)
 
             except:

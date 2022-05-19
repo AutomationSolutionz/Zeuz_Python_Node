@@ -451,6 +451,23 @@ def disconnect_from_server():
     CommonUtil.set_exit_mode(True)  # Tell Sequential Actions to exit
 
 
+def update_machine_info(user_info_object, node_id):
+    update_machine(
+        False,
+        {
+            "project_name": user_info_object["project"],
+            "team_name": user_info_object["team"],
+        },
+    )
+
+    local_tz = str(get_localzone())
+    RequestFormatter.Get("send_machine_time_zone_api", {
+        "time_zone": local_tz,
+        "machine": node_id,
+    })
+    RequestFormatter.Get("update_machine_with_time_api", {"machine_name": node_id})
+
+
 def RunProcess(sTesterid, device_dict, user_info_object, run_once=False, log_dir=None):
     etime = time.time() + (30 * 60)  # 30 minutes
     executor = CommonUtil.GetExecutor()
@@ -507,20 +524,7 @@ def RunProcess(sTesterid, device_dict, user_info_object, run_once=False, log_dir
                     return
 
                 print("[deploy] Run complete.")
-                update_machine(
-                    False,
-                    {
-                        "project_name": node_json[0]["project_id"],
-                        "team_name": node_json[0]["team_id"],
-                    },
-                )
-
-                local_tz = str(get_localzone())
-                RequestFormatter.Get("send_machine_time_zone_api", {
-                    "time_zone": local_tz,
-                    "machine": node_id,
-                })
-                RequestFormatter.Get("update_machine_with_time_api", {"machine_name": sTesterid})
+                update_machine_info(user_info_object, node_id)
 
             def cancel_callback():
                 if not node_json:
@@ -529,20 +533,7 @@ def RunProcess(sTesterid, device_dict, user_info_object, run_once=False, log_dir
                 print("[deploy] Run cancelled.")
                 CommonUtil.run_cancelled = True
 
-                update_machine(
-                    False,
-                    {
-                        "project_name": node_json[0]["project_id"],
-                        "team_name": node_json[0]["team_id"],
-                    },
-                )
-
-                local_tz = str(get_localzone())
-                RequestFormatter.Get("send_machine_time_zone_api", {
-                    "time_zone": local_tz,
-                    "machine": node_id,
-                })
-                RequestFormatter.Get("update_machine_with_time_api", {"machine_name": sTesterid})
+                update_machine_info(user_info_object, node_id)
 
             deploy_handler = handler.DeployHandler(
                 response_callback=response_callback,
