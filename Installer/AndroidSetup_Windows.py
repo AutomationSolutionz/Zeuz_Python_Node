@@ -506,13 +506,11 @@ def Install_JDK():
     '''
     try:
         print("Validating if JDK is installed...\n")  # Print to terminal window, and log file
-        print("Validating if JDK is installed...")
         base_url = "https://github.com/AutomationSolutionz/InstallerHelperFiles/raw/master/Windows/"
         check_JDK = Check_If_JDK_Installed()
         print(check_JDK)
         if check_JDK == False:
             print("JDK was not installed  We will download and install known stable version of JDK \n")  # Print to terminal window, and log file
-            print("JDK was not installed  We will download and install known stable version of JDK")
             # Download 3 parts of installer
             print("part 1 of 3")
             print("Downloading JDK part 1 of 3 \n")
@@ -526,8 +524,8 @@ def Install_JDK():
 
             # extracting file
             print("Please wait while we extracting files silently...\n")  # Print to terminal window, and log file
-            print("Extracting files silently...")
             silent_extract_command = "%s /s" % (Downloaded_Path + os.sep + installer_jdk_file_part_1)
+            print("Extracting files silently with command '%s'" % silent_extract_command)
             os.system(silent_extract_command)
             print("JDK Extraction completed\n")
             print("Extracting completed")
@@ -536,7 +534,7 @@ def Install_JDK():
 
             jdk_exe_path = current_script_path + os.sep + installer_jdk_file_name
             silent_installer_command = "%s /s" % jdk_exe_path
-            print("Installing JDK silently from %s.  This will take some time...\n" % jdk_exe_path)  # Print to terminal window, and log file
+            print("Installing JDK silently from command '%s'.\nThis will take some time...\n" % silent_installer_command)  # Print to terminal window, and log file
 
             os.system(silent_installer_command)
             # this will set all paths as well
@@ -593,7 +591,7 @@ def Check_If_JDK_Installed():
 
 def JAVA_PATH():
     try:
-        print("\tWe will check default location to see if we can locate JDK\n")
+        print("We will check default location to see if we can locate JDK\n")
         java_path_64 = r'C:\Program Files\Java'
         java_path_32 = r'C:\Program Files (x86)\Java'
         if (os.path.isdir(java_path_64)):
@@ -795,7 +793,7 @@ def Check_If_NPM_Installed():
             # print "Checking if NPM is installed..."
             print("Checking if NPM is installed...\n")
             npm_check = subprocess.check_output(["node", "-v"], stderr=subprocess.STDOUT)
-            print("NPM version: %s is installed\n" % npm_check)  # Print to terminal window, and log file
+            print("NPM version: %s is installed\n" % npm_check.strip())  # Print to terminal window, and log file
 
             return True
         except:
@@ -818,12 +816,11 @@ def Check_If_Appium_Installed():
             print("Checking if Appium is installed...\n")
             appium_check = "False"
             appium_check = subprocess.check_output(["where", "appium"], stderr=subprocess.STDOUT)
-            print("Appium is installed %s\n" % appium_check)
+            print("Appium is installed %s\n" % appium_check.strip())
 
             return True
         except:
             print("Appium is not installed")
-            print("Appium is not installed\n")
             print("Checking to see if we can locate appium in appdata folder\n")
 
             if (os.path.isdir(appium_path)):
@@ -934,22 +931,21 @@ def pre_installer():
         print("Failed to install missing modules...\n")
 
 
-
 def windows_android_installer():
     if sys.platform == 'win32':
         if not detect_admin():
             try:
                 os.system('powershell -command Start-Process "python \'%s\'" -Verb runAs' % sys.argv[0].split(os.sep)[-1])  # Re-run this program with elevated permissions to admin
                 quit()  # Exit this program, the elevated program should run
-            except: # If admin access is not given
-                pass
+            except Exception as e: # If admin access is not given
+                print(e)
 
-    print("\n 1. Please note that if you have duplicate JDK or newer than 1.8 JAVA Appium will not work.\n")
-    print("\n 2. You must be logged in as Admin.  If you don't run as admin, appium installer will NOT WORK.\n")
-    print("\n 3. If you have spaces in your user name, Appium will not work.  Create new user with admin permission with no spaces.\n")
-    print("\n 4. Make sure you uninstall all other Java versions and remove any java version from Environmental Variable.\n")
-    print("\n 5. We will download a known JDK version (JDK 1.8) that is compatible and install it for you.\n")
-    print("\n 6. If you have an older Android Studio. Make sure you upgrade it to latest before running this.\n")
+    print("1. Please note that if you have duplicate JDK or newer than 1.8 JAVA Appium will not work.\n")
+    print("2. You must be logged in as Admin.  If you don't run as admin, appium installer will NOT WORK.\n")
+    print("3. If you have spaces in your user name, Appium will not work.  Create new user with admin permission with no spaces.\n")
+    print("4. Make sure you uninstall all other Java versions and remove any java version from Environmental Variable.\n")
+    print("5. We will download a known JDK version (JDK 1.8) that is compatible and install it for you.\n")
+    print("6. If you have an older Android Studio. Make sure you upgrade it to latest before running this.\n")
     Java_Installer = Install_JDK()
 
     if Java_Installer == False:
@@ -961,13 +957,13 @@ def windows_android_installer():
 
     if Android_Studio == False:
         print("\nAndroid Studio is not installed.")
-        print("\n1. Download and Install Android Studio.")
-        print("\n2. You must run Android Studio once. It will download additional tools for Appium to work.")
-        print("\n3. Quit this installer and close all other programs.")
-        print("\n4. Run Android Studio and start a blank project.")
-        print("\n5. Wait for all Android Studio components to finish download and install.")
-        print("\n6. You must Quit ZeuZ Node Installer and Re-Run Android Setup.")
-        print("\nIf you still have issues with installer, please contact help@zeuz.ai")
+        print("1. Download and Install Android Studio.")
+        print("2. You must run Android Studio once. It will download additional tools for Appium to work.")
+        print("3. Quit this installer and close all other programs.")
+        print("4. Run Android Studio and start a blank project.")
+        print("5. Wait for all Android Studio components to finish download and install.")
+        print("6. You must Quit ZeuZ Node Installer and Re-Run Android Setup.")
+        print("If you still have issues with installer, please contact help@zeuz.ai")
         return False
     else:
         # create a shortcut ui automator
