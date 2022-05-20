@@ -43,7 +43,7 @@ class DeployHandler:
         self.cancel_callback = cancel_callback
         self.done_callback = done_callback
         self.backoff_time = 0
-        self.thread_pool = ThreadPoolExecutor(max_workers=1)
+        # self.thread_pool = ThreadPoolExecutor(max_workers=1)
 
 
     def on_message(self, ws: WebSocketApp, message) -> None:
@@ -57,8 +57,8 @@ class DeployHandler:
             self.cancel_callback()
             return
 
-        # self.response_callback(message)
-        self.thread_pool.submit(self.response_callback, message)
+        self.response_callback(message)
+        # self.thread_pool.submit(self.response_callback, message)
         ws.send(self.COMMAND_NEXT)
 
 
