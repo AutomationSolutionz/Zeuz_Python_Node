@@ -1406,7 +1406,6 @@ def main(device_dict, user_info_object):
         for i in os.walk(save_path):
             if get_json:
                 get_json = False
-                json_path = Path(i[0]) / i[2][0]
                 folder_list = i[1]
                 for j in folder_list:
                     all_file_specific_steps[j] = {}
@@ -1414,7 +1413,10 @@ def main(device_dict, user_info_object):
                 for j in i[2]:
                     all_file_specific_steps[folder_list[cnt]][j] = str(Path(i[0]) / j)
                 cnt += 1
-        # TODO: Remove all_file_specific_steps at a later period. keeping this only for custom driver purpose
+        # TODO: Remove all_file_specific_steps at a later period. keeping this
+        # only for custom driver purpose
+
+        json_path = save_path.glob("*.zeuz.json").__next__()
         with open(json_path, "r") as f:
             all_run_id_info = json.loads(f.read())
 
