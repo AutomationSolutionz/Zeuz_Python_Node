@@ -35,13 +35,17 @@ class DeployHandler:
         self,
         response_callback: Callable[[DeployResponse], None],
         cancel_callback: Callable[[None], None],
-        done_callback: Callable[[None], None],
+        done_callback: Callable[[None], bool],
     ) -> None:
         self.ws = None
         self.quit = False
         self.response_callback = response_callback
         self.cancel_callback = cancel_callback
+
+        # Done callback should return true if node does not want to run anymore
+        # test cases, false otherwise.
         self.done_callback = done_callback
+
         self.backoff_time = 0
         # self.thread_pool = ThreadPoolExecutor(max_workers=1)
 
@@ -49,7 +53,7 @@ class DeployHandler:
     def on_message(self, ws: WebSocketApp, message) -> None:
         if message == self.COMMAND_DONE:
             # We're done for this run session.
-            self.done_callback()
+            self.quit = self.done_callback()
             return
 
         elif message == self.COMMAND_CANCEL:
@@ -63,7 +67,7 @@ class DeployHandler:
 
 
     def on_error(self, ws: WebSocketApp, error) -> None:
-        # print("[deploy] Error communicating with the deploy service.")
+        print("[deploy] Error communicating with the deploy service.")
         print(error)
         if self.backoff_time < 6:
             self.backoff_time += 1
@@ -111,7 +115,7 @@ class DeployHandler:
                 self.ws.run_forever()
                 self.ws = None
 
-                # print(f"[deploy] Establishing connection in {1 << self.backoff_time} secs...")
+                print(f"[deploy] Establishing connection in {1 << self.backoff_time} secs...")
                 time.sleep(1 << self.backoff_time)
 
             except:

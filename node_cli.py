@@ -318,7 +318,13 @@ def Login(cli=False, run_once=False, log_dir=None):
                 user_info_object["project"] = default_team_and_project["project_name"]
                 user_info_object["team"] = default_team_and_project["team_name"]
 
-                # CommonUtil.ExecLog("", f"Authenticating user: {username}", 4, False)
+                # Store team and project to config
+                ConfigModule.add_config_value("sectionOne", PROJECT_TAG, user_info_object['project'], temp_ini_file)
+                ConfigModule.add_config_value("sectionOne", TEAM_TAG, user_info_object['team'], temp_ini_file)
+
+                # Load device information
+                global device_dict
+                device_dict = All_Device_Info.get_all_connected_device_info()
 
                 if api_flag:
                     r = RequestFormatter.Post("login_api", user_info_object)
@@ -339,45 +345,19 @@ def Login(cli=False, run_once=False, log_dir=None):
                         4,
                         print_Execlog=False
                     )
-                    ConfigModule.add_config_value("sectionOne", PROJECT_TAG, user_info_object['project'], temp_ini_file)
-                    ConfigModule.add_config_value("sectionOne", TEAM_TAG, user_info_object['team'], temp_ini_file)
-                    global device_dict
-                    device_dict = All_Device_Info.get_all_connected_device_info()
-                    machine_object = update_machine(
-                        dependency_collection(default_team_and_project),
-                        default_team_and_project,
-                    )
-                    if machine_object["registered"]:
-                        tester_id = machine_object["name"]
-                        try:
-                            # send machine's time zone
-                            local_tz = str(get_localzone())
-                            time_zone_object = {
-                                "time_zone": local_tz,
-                                "machine": tester_id,
-                            }
-                            executor = CommonUtil.GetExecutor()
-                            executor.submit(RequestFormatter.Get, "send_machine_time_zone_api", time_zone_object)
-                            # RequestFormatter.Get("send_machine_time_zone_api", time_zone_object)
-                            # end
-                        except Exception as e:
-                            CommonUtil.ExecLog("", "Time zone settings failed {}".format(e), 4, False)
-                        # Telling the node_manager that the node is ready to deploy
-                        CommonUtil.node_manager_json(
-                            {
-                                "state": "idle",
-                                "report": {
-                                    "zip": None,
-                                    "directory": None,
-                                }
-                            }
-                        )
-                        run_again = RunProcess(tester_id, device_dict, user_info_object, run_once=run_once, log_dir=log_dir)
 
-                        if not run_again:
-                            break  # Exit login
-                    else:
-                        return False
+                    CommonUtil.node_manager_json(
+                        {
+                            "state": "idle",
+                            "report": {
+                                "zip": None,
+                                "directory": None,
+                            }
+                        }
+                    )
+                    node_id = CommonUtil.MachineInfo().getLocalUser().lower()
+                    RunProcess(node_id, device_dict, user_info_object, run_once=run_once, log_dir=log_dir)
+
                 elif not r:  # Server should send "False" when user/pass is wrong
                     CommonUtil.ExecLog(
                         "",
@@ -468,98 +448,95 @@ def update_machine_info(user_info_object, node_id):
     RequestFormatter.Get("update_machine_with_time_api", {"machine_name": node_id})
 
 
-def RunProcess(sTesterid, device_dict, user_info_object, run_once=False, log_dir=None):
-    etime = time.time() + (30 * 60)  # 30 minutes
-    executor = CommonUtil.GetExecutor()
-    while True:
-        try:
-            if exit_script:
+def RunProcess(node_id, device_dict, user_info_object, run_once=False, log_dir=None):
+    try:
+        PreProcess(log_dir=log_dir)
+
+        update_machine_info(user_info_object, node_id)
+
+        save_path = Path(ConfigModule.get_config_value("sectionOne", "temp_run_file_path", temp_ini_file)) / "attachments"
+        FL.CreateFolder(save_path)
+
+        # --- START WS service --- #
+
+        server_address = ConfigModule.get_config_value("Authentication", "server_address")
+        protocol, domain = server_address.split("://")
+        host = None
+        if protocol == "http":
+            host = f"ws://{domain}"
+        elif protocol == "https":
+            host = f"wss://{domain}"
+        else:
+            raise Exception("Unknown protocol for server address. Must be either 'http' or 'https'")
+
+        deploy_srv_addr = f"{host}/zsvc/deploy/connect/{node_id}"
+
+        # WARNING: For local development only.
+        if "localhost" in host:
+            deploy_srv_addr = deploy_srv_addr.replace("8000", "8300")
+
+        node_json = None
+        def response_callback(response: str):
+            nonlocal node_json
+
+            # 1. Adapt the proto response to appropriate json format
+            node_json = proto_adapter.adapt(response, node_id)
+
+            # 2. Save the json for MainDriver to find
+            with open(save_path / f"{node_id}.zeuz.json", "w") as f:
+                f.write(json.dumps(node_json))
+
+            # 3. Call MainDriver
+            MainDriverApi.main(device_dict, user_info_object)
+
+        def done_callback():
+            """Returns True if we do not want to connect to the service
+            further."""
+
+            if run_once:
+                return True
+
+            if not node_json:
                 return False
-            if time.time() > etime:
-                print("30 minutes over, logging in again")
-                return True  # Timeout reached, re-login. We do this because after about 3-4 hours this function will hang, and thus not be available for deployment
-            executor.submit(RequestFormatter.Get, "update_machine_with_time_api", {"machine_name": sTesterid})
 
-            # --- START WS service --- #
-
-            node_id = CommonUtil.MachineInfo().getLocalUser().lower()
-            PreProcess(log_dir=log_dir)
-
-            save_path = Path(ConfigModule.get_config_value("sectionOne", "temp_run_file_path", temp_ini_file)) / "attachments"
-            # CommonUtil.ExecLog("", "Downloading dataset and attachments of %s into:\n%s" % (size, str(save_path/"input.zip")), 4)
-            FL.CreateFolder(save_path)
-
-            server_address = ConfigModule.get_config_value("Authentication", "server_address")
-            protocol, domain = server_address.split("://")
-            host = None
-            if protocol == "http":
-                host = f"ws://{domain}"
-            elif protocol == "https":
-                host = f"wss://{domain}"
-            else:
-                raise Exception("Unknown protocol for server address. Must be either 'http' or 'https'")
-
-            deploy_srv_addr = f"{host}/zsvc/deploy/connect/{node_id}"
-
-            # WARNING: For local development only.
-            if "localhost" in host:
-                deploy_srv_addr = deploy_srv_addr.replace("8000", "8300")
-
-            node_json = None
-            def response_callback(response: str):
-                nonlocal node_json
-
-                # 1. Adapt the proto response to appropriate json format
-                node_json = proto_adapter.adapt(response, node_id)
-
-                # 2. Save the json for MainDriver to find
-                with open(save_path / f"{node_id}.zeuz.json", "w") as f:
-                    f.write(json.dumps(node_json))
-
-                # 3. Call MainDriver
-                MainDriverApi.main(device_dict, user_info_object)
-
-            def done_callback():
-                if not node_json:
-                    return
-
-                print("[deploy] Run complete.")
-                update_machine_info(user_info_object, node_id)
-
-            def cancel_callback():
-                if not node_json:
-                    return
-
-                print("[deploy] Run cancelled.")
-                CommonUtil.run_cancelled = True
-
-                update_machine_info(user_info_object, node_id)
-
-            deploy_handler = handler.DeployHandler(
-                response_callback=response_callback,
-                cancel_callback=cancel_callback,
-                done_callback=done_callback,
-            )
-            deploy_handler.run(deploy_srv_addr)
+            print("[deploy] Run complete.")
+            update_machine_info(user_info_object, node_id)
             return False
 
-        except Exception:
-            exc_type, exc_obj, exc_tb = sys.exc_info()
-            fname = os.path.split(exc_tb.tb_frame.f_code.co_filename)[1]
-            Error_Detail = (
-                (str(exc_type).replace("type ", "Error Type: "))
-                + ";"
-                + "Error Message: "
-                + str(exc_obj)
-                + ";"
-                + "File Name: "
-                + fname
-                + ";"
-                + "Line: "
-                + str(exc_tb.tb_lineno)
-            )
-            CommonUtil.ExecLog("", Error_Detail, 4, False)
-            break  # Exit back to login() - In some circumstances, this while loop will get into a state when certain errors occur, where nothing runs, but loops forever. This stops that from happening
+        def cancel_callback():
+            if not node_json:
+                return
+
+            print("[deploy] Run cancelled.")
+            CommonUtil.run_cancelled = True
+
+            update_machine_info(user_info_object, node_id)
+
+        deploy_handler = handler.DeployHandler(
+            response_callback=response_callback,
+            cancel_callback=cancel_callback,
+            done_callback=done_callback,
+        )
+        deploy_handler.run(deploy_srv_addr)
+        return False
+
+    except Exception:
+        exc_type, exc_obj, exc_tb = sys.exc_info()
+        fname = os.path.split(exc_tb.tb_frame.f_code.co_filename)[1]
+        Error_Detail = (
+            (str(exc_type).replace("type ", "Error Type: "))
+            + ";"
+            + "Error Message: "
+            + str(exc_obj)
+            + ";"
+            + "File Name: "
+            + fname
+            + ";"
+            + "Line: "
+            + str(exc_tb.tb_lineno)
+        )
+        CommonUtil.ExecLog("", Error_Detail, 4, False)
+
     return True
 
 
@@ -636,7 +613,7 @@ def update_machine(dependency, default_team_and_project_dict):
             from rich.console import Console
             rich_print = Console().print
             # rich_print(":green_circle: Zeuz Node is online: ", end="")
-            rich_print(":green_circle:" + r["name"], style="bold cyan", end="")
+            rich_print(":green_circle: " + r["name"], style="bold cyan", end="")
             print(" is Online\n")
             CommonUtil.ExecLog("", "Zeuz Node is online: %s" % (r["name"]), 4, False, print_Execlog=False)
         else:
@@ -653,21 +630,10 @@ def update_machine(dependency, default_team_and_project_dict):
                         "", "Machine is not registered as online", 4, False
                     )
         return r
-    except Exception as e:
+    except Exception:
         exc_type, exc_obj, exc_tb = sys.exc_info()
         fname = os.path.split(exc_tb.tb_frame.f_code.co_filename)[1]
-        Error_Detail = (
-            (str(exc_type).replace("type ", "Error Type: "))
-            + ";"
-            + "Error Message: "
-            + str(exc_obj)
-            + ";"
-            + "File Name: "
-            + fname
-            + ";"
-            + "Line: "
-            + str(exc_tb.tb_lineno)
-        )
+        Error_Detail = f'{str(exc_type).replace("type ", "Error Type: ")}; Message: {exc_obj}; File: {fname}; Line: {exc_tb.tb_lineno}'
         CommonUtil.ExecLog("", Error_Detail, 4, False)
 
 
