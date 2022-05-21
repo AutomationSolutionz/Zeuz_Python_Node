@@ -17,7 +17,6 @@ colorama
 pyodbc
 python-dateutil
 Appium-Python-Client
-futures
 xlwings
 image
 tzlocal
