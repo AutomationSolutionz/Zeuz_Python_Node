@@ -469,7 +469,7 @@ def RunProcess(node_id, device_dict, user_info_object, run_once=False, log_dir=N
         else:
             raise Exception("Unknown protocol for server address. Must be either 'http' or 'https'")
 
-        deploy_srv_addr = f"{host}/zsvc/deploy/connect/{node_id}"
+        deploy_srv_addr = f"{host}/zsvc/deploy/v1/connect/{node_id}"
 
         # WARNING: For local development only.
         if "localhost" in host:
