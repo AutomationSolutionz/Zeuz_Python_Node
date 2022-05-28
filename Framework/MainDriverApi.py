@@ -1475,8 +1475,8 @@ def main(device_dict, user_info_object):
                     "window_size_x": runtime_settings["window_size_x"] if runtime_settings["window_size_x"] != 0 else "",
                     "window_size_y": runtime_settings["window_size_y"] if runtime_settings["window_size_y"] != 0 else "",
                 }
-                if ConfigModule.get_config_value("RunDefinition", "local_run") == "True":
-                    rem_config["local_run"] = True
+                # if ConfigModule.get_config_value("RunDefinition", "local_run") == "True":
+                #     rem_config["local_run"] = True
                 ConfigModule.remote_config = rem_config
             else:
                 rem_config = {

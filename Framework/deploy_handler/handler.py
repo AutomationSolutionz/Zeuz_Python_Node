@@ -53,7 +53,6 @@ class DeployHandler:
 
 
     def on_message(self, ws: WebSocketApp, message) -> None:
-        print(message)
         if message == self.COMMAND_DONE:
             # We're done for this run session.
             self.quit = self.done_callback()
@@ -77,7 +76,7 @@ class DeployHandler:
 
 
     def on_close(self, ws: WebSocketApp, close_status_code: int, close_msg) -> None:
-        print("[deploy] Connection closed.")
+        # print("[deploy] Connection closed.")
         pass
 
 
@@ -85,7 +84,7 @@ class DeployHandler:
         # on successful connection, reset backoff time
         self.backoff_time = 0
 
-        print("[deploy] Connected to deploy service.")
+        # print("[deploy] Connected to deploy service.")
         self.on_connect_callback()
         ws.send(self.COMMAND_NEXT)
 

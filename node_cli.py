@@ -502,7 +502,6 @@ def RunProcess(node_id, device_dict, user_info_object, run_once=False, log_dir=N
                 return False
 
             print("[deploy] Run complete.")
-            update_machine_info(user_info_object, node_id)
             return False
 
         def cancel_callback():
@@ -511,8 +510,6 @@ def RunProcess(node_id, device_dict, user_info_object, run_once=False, log_dir=N
 
             print("[deploy] Run cancelled.")
             CommonUtil.run_cancelled = True
-
-            update_machine_info(user_info_object, node_id)
 
         deploy_handler = handler.DeployHandler(
             on_connect_callback=on_connect_callback,
