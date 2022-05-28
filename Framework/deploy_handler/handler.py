@@ -33,12 +33,14 @@ class DeployHandler:
 
     def __init__(
         self,
+        on_connect_callback: Callable[[], None],
         response_callback: Callable[[DeployResponse], None],
         cancel_callback: Callable[[None], None],
         done_callback: Callable[[None], bool],
     ) -> None:
         self.ws = None
         self.quit = False
+        self.on_connect_callback = on_connect_callback
         self.response_callback = response_callback
         self.cancel_callback = cancel_callback
 
@@ -51,6 +53,7 @@ class DeployHandler:
 
 
     def on_message(self, ws: WebSocketApp, message) -> None:
+        print(message)
         if message == self.COMMAND_DONE:
             # We're done for this run session.
             self.quit = self.done_callback()
@@ -83,6 +86,7 @@ class DeployHandler:
         self.backoff_time = 0
 
         print("[deploy] Connected to deploy service.")
+        self.on_connect_callback()
         ws.send(self.COMMAND_NEXT)
 
 

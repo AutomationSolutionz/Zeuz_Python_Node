@@ -452,8 +452,6 @@ def RunProcess(node_id, device_dict, user_info_object, run_once=False, log_dir=N
     try:
         PreProcess(log_dir=log_dir)
 
-        update_machine_info(user_info_object, node_id)
-
         save_path = Path(ConfigModule.get_config_value("sectionOne", "temp_run_file_path", temp_ini_file)) / "attachments"
         FL.CreateFolder(save_path)
 
@@ -489,6 +487,10 @@ def RunProcess(node_id, device_dict, user_info_object, run_once=False, log_dir=N
             # 3. Call MainDriver
             MainDriverApi.main(device_dict, user_info_object)
 
+        def on_connect_callback():
+            update_machine_info(user_info_object, node_id)
+            return
+
         def done_callback():
             """Returns True if we do not want to connect to the service
             further."""
@@ -513,6 +515,7 @@ def RunProcess(node_id, device_dict, user_info_object, run_once=False, log_dir=N
             update_machine_info(user_info_object, node_id)
 
         deploy_handler = handler.DeployHandler(
+            on_connect_callback=on_connect_callback,
             response_callback=response_callback,
             cancel_callback=cancel_callback,
             done_callback=done_callback,
