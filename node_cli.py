@@ -470,8 +470,8 @@ def RunProcess(node_id, device_dict, user_info_object, run_once=False, log_dir=N
         deploy_srv_addr = f"{host}/zsvc/deploy/v1/connect/{node_id}"
 
         # WARNING: For local development only.
-        if "localhost" in host:
-            deploy_srv_addr = deploy_srv_addr.replace("8000", "8300")
+        # if "localhost" in host:
+        #     deploy_srv_addr = deploy_srv_addr.replace("8000", "8300")
 
         node_json = None
         def response_callback(response: str):
