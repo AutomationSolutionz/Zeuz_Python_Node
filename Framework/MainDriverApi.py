@@ -1228,9 +1228,6 @@ def upload_reports_and_zips(Userid, temp_ini_file, run_id):
                     if "log" in step:
                         del step["log"]
 
-            with open("report.json", "w") as f:
-                f.write(json.dumps({"execution_report": json.dumps(tc_report)}))
-
             for _ in range(5):
                 try:
                     res = requests.post(
