@@ -104,7 +104,7 @@ def adapt(message: str, node_id: str) -> List[Dict]:
         "objective": r.deploy_info.objective,
         "file_name": f"{node_id}_1",
         "runtime_settings": {
-            "debug_mode": r.deploy_info.runtime_settings.debug_mode,
+            "debug_mode": r.deploy_info.debug.debug_mode,
             "is_linked": r.deploy_info.runtime_settings.is_linked,
             "local_run": r.deploy_info.runtime_settings.local_run,
             "rerun_on_fail": r.deploy_info.runtime_settings.rerun_on_fail,
