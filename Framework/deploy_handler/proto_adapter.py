@@ -84,25 +84,27 @@ def adapt(message: str, node_id: str) -> List[Dict]:
     # schemaa changes.
 
     result = {
-        "run_id": r.run_id,
         "server_version": r.server_version,
-        "device_info": {
-            "browser_stack": {},
-        },
+
+        "run_id": r.run_id,
+        "objective": r.deploy_info.objective,
+        "project_id": r.deploy_info.project_id,
+        "team_id": r.deploy_info.team_id,
+
         "test_cases": read_test_cases(r.test_cases),
+
         "dependency_list": {
             "Browser": r.deploy_info.dependency.browser,
             "Mobile": r.deploy_info.dependency.mobile,
         },
-        "debug": "yes" if r.deploy_info.debug.debug_mode else "no",
-        "debug_clean": "YES" if r.deploy_info.debug.cleanup else "NO",
-        "debug_step_actions": [],
-        "debug_steps": [],
-        "project_id": r.deploy_info.project_id,
-        "team_id": r.deploy_info.team_id,
+
+        "device_info": {
+            "browser_stack": {},
+        },
+
         "run_time": {},
-        "objective": r.deploy_info.objective,
         "file_name": f"{node_id}_1",
+
         "runtime_settings": {
             "debug_mode": r.deploy_info.debug.debug_mode,
             "is_linked": r.deploy_info.runtime_settings.is_linked,
@@ -114,6 +116,11 @@ def adapt(message: str, node_id: str) -> List[Dict]:
             "window_size_x": r.deploy_info.runtime_settings.window_size_x,
             "window_size_y": r.deploy_info.runtime_settings.window_size_y,
         },
+
+        "debug": "yes" if r.deploy_info.debug.debug_mode else "no",
+        "debug_clean": "YES" if r.deploy_info.debug.cleanup else "NO",
+        "debug_step_actions": [],
+        "debug_steps": [],
     }
 
     if r.deploy_info.device_info:
