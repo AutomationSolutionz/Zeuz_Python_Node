@@ -23,6 +23,7 @@ from Framework.Built_In_Automation.Built_In_Utility.CrossPlatform import (
 from Framework.Built_In_Automation.Mobile.Android.adb_calls import adbOptions
 from Framework.Built_In_Automation.Mobile.iOS import iosOptions
 from appium.webdriver.common.touch_action import TouchAction
+from appium.webdriver.common.appiumby import AppiumBy
 from Framework.Utilities import ConfigModule
 from Framework.Built_In_Automation.Shared_Resources import (
     BuiltInFunctionSharedResources as Shared_Resources,
@@ -1542,7 +1543,7 @@ def swipe_handler_android(data_set=[], save_att_data_set={}):
 
 
 @logger
-def scroll_to_an_element(data_set):
+def scroll_to_element_by_uiautomator(data_set):
     global appium_driver
     sModuleInfo = inspect.currentframe().f_code.co_name + " : " + MODULE_NAME
     skip_or_not = filter_optional_action_and_step_data(data_set, sModuleInfo)
@@ -1636,7 +1637,7 @@ def scroll_to_an_element(data_set):
                     else:
                         CommonUtil.ExecLog(sModuleInfo, "Max scroll should be an integer", 3)
                         return "zeuz_failed"
-                elif "scroll to an element" == left:
+                elif "swipe by uiautomator" == left:
                     if right.strip().lower() == "scroll to end":
                         scroll_to = "end"
                     elif right.strip().lower() == "scroll to beginning":
@@ -1668,7 +1669,7 @@ def scroll_to_an_element(data_set):
             return CommonUtil.Exception_Handler(sys.exc_info(), None, errMsg)
 
 
-        element = appium_driver.find_element_by_android_uiautomator(final_string)
+        element = appium_driver.find_element(AppiumBy.ANDROID_UIAUTOMATOR, final_string)
         if element.text == '' or element == None :
             CommonUtil.ExecLog(sModuleInfo, "Desired element is not found in scrollable element", 3)
             return "zeuz_failed"
