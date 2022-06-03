@@ -1,0 +1,27 @@
+Android installtion for Windows os:
+
+1. If you have java installed in your machine which is other than 1.8 version its better to uninstall that java and re-install java-1.8 from this link https://github.com/adoptium/temurin8-binaries/releases/download/jdk8u322-b06/OpenJDK8U-jdk_x64_windows_hotspot_8u322b06.msi
+2. Download and install node.js - https://nodejs.org/dist/v16.15.0/node-v16.15.0-x64.msi While installing node.js, it'll ask whether to install additional tools and libraries (chocolatey and visual c++ runtime) - make sure to skip those. Installing chocolatey automatically installs another version of python which will conflict with the existing python setup.
+3. Download and install Android Studio - https://developer.android.com/studio You must run Android Studio once. It will download additional tools for Appium to work. Quit this installer and close all other programs. Wait for all Android Studio components to finish download and install.
+4. You need to set some Environment variables. While setting environment variables, you will find, the top pane (User variables, only for current user) and the bottom pane (System variables, for all users). You need to set the variables for all users -
+JAVA_HOME = C:\Program Files\Eclipse Adoptium\jdk-8.0.322.6-hotspot (Its usually like this when you install java from the link above)
+ANDROID_HOME = C:\Users\YOUR_PC_USERNAME_HERE\AppData\Local\Android\Sdk (Substitute YOUR_PC_USERNAME_HERE with the appropriate user's folder.)
+Inside path you need to edit and add 3 paths-
+%ANDROID_HOME%\tools
+%ANDROID_HOME%\tools\bin
+%ANDROID_HOME%\platform-tools
+5. To inspect elements, You need to run uiautomatorviewer.bat from the path %ANDROID_HOME%\tools\bin . So it’s better if you make a desktop shortcut for this. Sometimes while launching uiautomatorviewer.bat it crashes. The solution is to run “adb kill-server” from command prompt and re-run uiautomatorviewer.bat.
+6. Install Appium and Appium-doctor (Optional) with node-package-manager by executing following commands-
+npm install -g appium
+npm install -g appium-doctor
+
+
+HAXM Installer: Sometimes you need to activate HAXM from "Android_Studio>>Tools>>SDK Manager>>Android SDK>>SDK Tools>>Intel x86 Emulator Accelerator (HAXM installer)" And install HAXM "C:\AndroidSDK\extras\intel\Hardware_Accelerated_Exucation_Manager\intelhaxm-android" Sometimes you need to activate "Intel Virtualization Technology" From BIOS
+
+
+If no tools folder: Sometimes in newer Android_Studio there is no tools folder in SDK Folder. Here's how to enable it:
+1. Launch Android Studio
+2. Launch SDK Manager
+3. Go to "SDK Tools" tab, and uncheck the "Hide Obsolete Packages".
+4. Find and check/tick "Android SDK Tools (obsolete)".
+5. Click apply

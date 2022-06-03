@@ -17,7 +17,6 @@ colorama
 pyodbc
 python-dateutil
 Appium-Python-Client
-futures
 xlwings
 image
 tzlocal
@@ -57,3 +56,4 @@ premailer
 html-diff
 openpyxl
 pytesseract
+pdf2image
