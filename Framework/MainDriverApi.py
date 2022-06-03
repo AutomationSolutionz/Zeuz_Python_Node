@@ -28,7 +28,6 @@ from .Utilities import ConfigModule, FileUtilities as FL, CommonUtil, RequestFor
 from Framework.Built_In_Automation.Shared_Resources import (
     BuiltInFunctionSharedResources as shared,
 )
-from Framework.Utilities import ws
 from reporting import junit_report
 
 from rich.style import Style
@@ -1444,12 +1443,8 @@ def main(device_dict, user_info_object):
             path = ConfigModule.get_config_value("sectionOne", "temp_run_file_path", temp_ini_file) / Path(run_id.replace(":", "-"))
             FL.CreateFolder(path)
 
-            # Start live log service - websocket if we're in debug mode.
             if run_id.lower().startswith("debug"):
                 CommonUtil.debug_status = True
-                print("[LIVE LOG] Connecting to Live Log service...")
-                ws.connect()
-                print("[LIVE LOG] Connected to Live Log service.")
             else:
                 CommonUtil.debug_status = False
                 cleanup_driver_instances()  # clean up drivers
@@ -1711,8 +1706,9 @@ def main(device_dict, user_info_object):
 
             # Close websocket connection.
             elif CommonUtil.debug_status:
-                ws.close()
-                print("[LIVE LOG] Disconnected from Live Log service")
+                # ws.close()
+                # print("[LIVE LOG] Disconnected from Live Log service")
+                pass
             CommonUtil.runid_index += 1
 
             # Terminating all run_cancel threads after finishing a run_id

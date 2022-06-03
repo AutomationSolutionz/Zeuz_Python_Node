@@ -27,6 +27,7 @@ from tqdm import tqdm
 requests.packages.urllib3.disable_warnings(category=InsecureRequestWarning)
 
 from Framework.Utilities import ConfigModule
+from Framework.Utilities import live_log_service
 
 PROJECT_ROOT = os.path.abspath(os.curdir)
 # Append correct paths so that it can find the configuration files and other modules
@@ -454,6 +455,9 @@ def RunProcess(node_id, device_dict, user_info_object, run_once=False, log_dir=N
 
         save_path = Path(ConfigModule.get_config_value("sectionOne", "temp_run_file_path", temp_ini_file)) / "attachments"
         FL.CreateFolder(save_path)
+
+        # Connect to the live log service.
+        live_log_service.connect(node_id)
 
         # --- START WS service --- #
 

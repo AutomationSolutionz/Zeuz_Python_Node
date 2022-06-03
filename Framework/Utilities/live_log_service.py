@@ -15,22 +15,7 @@ ws = None
 connected = False
 
 
-def get_url():
-    # Find node id file
-    node_id_file_path = Path(
-        os.path.abspath(__file__).split("Framework")[0]
-    ) / Path("node_id.conf")
-
-    unique_id = ConfigModule.get_config_value(
-        "UniqueID", "id", node_id_file_path
-    )
-
-    node_id = (
-        ConfigModule.get_config_value("Authentication", "username")
-        + "_"
-        + str(unique_id)
-    )
-
+def get_url(node_id: str):
     server_url = urlparse(ConfigModule.get_config_value("Authentication", "server_address"))
 
     path = f"faster/v1/ws/live_log/send/{node_id}"
@@ -40,13 +25,7 @@ def get_url():
     else:
         protocol = "ws"
 
-    if server_url.hostname in ("localhost", "127.0.0.1"):
-        # Development URL (as websocket server runs on a different port)
-        ws_url = f"{protocol}://{server_url.hostname}:8080/{path}"
-    else:
-        # Production URL (path prefixed with `faster`)
-        ws_url = f"{protocol}://{server_url.netloc}/{path}"
-
+    ws_url = f"{protocol}://{server_url.netloc}/{path}"
     return ws_url
 
 
@@ -64,6 +43,10 @@ def send_file(data, ws):
 
 def send(msg, ws):
     """Send plain text through websocket."""
+
+    # TODO: Make this "send" method buffered so that it only sends certain
+    # amount of messages at certain intervals of time. Maybe send it in a queue
+    # that a background thread reads from every 1s or so.
 
     try:
         if ws is None:
@@ -116,19 +99,19 @@ def on_error(ws, error):
     elif isinstance(error, OSError):
         # Prevent bad file descriptor error from showing
         return
-    print("[ws] Error. Connection closed\n")
+    # print("[ws] Error. Connection closed\n")
 
 
 def on_close(ws=None, a=None, b=None):
     global connected
     connected = False
-    print("[ws] Connection closed.")
+    # print("[ws] Connection closed.")
 
 
 def on_open(ws):
     global connected
     connected = True
-    print("[ws] Live Log Connection established.")
+    # print("[ws] Live Log Connection established.")
 
 
 def run_ws_thread(ws):
@@ -138,24 +121,24 @@ def run_ws_thread(ws):
         pass
 
 
-def connect():
+def connect(node_id: str):
     global ws
     global connected
 
     # Uncomment next line for debugging.
     # websocket.enableTrace(True)
-    ws = websocket.WebSocketApp(get_url(),
+    ws = websocket.WebSocketApp(get_url(node_id),
                                 on_message=on_message,
                                 on_error=on_error,
                                 on_close=on_close)
-    
+
     ws.on_open = on_open
-    
+
     t = Thread(target=run_ws_thread, args=(ws,))
     t.start()
 
     # Retry for 6s with 0.3s interval.
-    for _ in range(20):
-        if connected:
-            break
-        time.sleep(0.3)
+    # for _ in range(20):
+    #     if connected:
+    #         break
+    #     time.sleep(0.3)
