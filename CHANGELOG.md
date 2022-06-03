@@ -5,6 +5,9 @@
 ### [Current changes]
 - _
 
+### [15.1.0][Jun , 2022]
+- **[Improve]** Added swipe by uiautomator action for android
+
 ### [15.0.4][May 11, 2022]
 - **[Improve]** Added plus button support in keystroke action
 
