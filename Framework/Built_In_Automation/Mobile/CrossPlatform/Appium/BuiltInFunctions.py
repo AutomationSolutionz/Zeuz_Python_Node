@@ -1552,7 +1552,7 @@ def scroll_to_element_by_uiautomator(data_set):
     try:
         final_scroll_string = "new UiScrollable(new UiSelector()"
         final_element_string = ".scrollIntoView(new UiSelector()"
-        scroll_search_string = ""
+        scroll_search_string = ".scrollable(true)"
         element_search_string = ""
         element = None
         direction = ""
@@ -1643,8 +1643,8 @@ def scroll_to_element_by_uiautomator(data_set):
                     elif right.strip().lower() == "scroll to beginning":
                         scroll_to = "beginning"
 
-            if scroll_search_string == "":
-                scroll_search_string = ".scrollable(true)"
+            # if scroll_search_string == "":
+            #     scroll_search_string = ".scrollable(true)"
 
             final_scroll_string = final_scroll_string + scroll_search_string + ')'
             final_element_string = final_element_string + element_search_string + ')'
