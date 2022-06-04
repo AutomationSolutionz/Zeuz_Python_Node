@@ -29,7 +29,7 @@ class DeployHandler:
     COMMAND_DONE = "DONE"
     COMMAND_CANCEL = "CANCEL"
     COMMAND_NEXT = "NEXT"
-    COMMAND_CONFIRMED = "CONFIRMED"
+    COMMAND_TC_ACKNOWLEDGED = "TC_ACK"
 
 
     def __init__(
@@ -64,9 +64,9 @@ class DeployHandler:
             self.cancel_callback()
             return
 
+        ws.send(self.COMMAND_TC_ACKNOWLEDGED)
         self.response_callback(message)
         # self.thread_pool.submit(self.response_callback, message)
-        ws.send(self.COMMAND_CONFIRMED)
         ws.send(self.COMMAND_NEXT)
 
 
@@ -125,7 +125,10 @@ class DeployHandler:
                     on_ping=self.on_ping,
                 )
 
-                self.ws.run_forever()
+                self.ws.run_forever(
+                    # ping_interval=1,
+                    # ping_timeout=30,
+                )
                 self.ws = None
 
                 print(f"[deploy] Establishing connection in {1 << self.backoff_time} secs...")
