@@ -125,11 +125,14 @@ def adapt(message: str, node_id: str) -> List[Dict]:
 
     if r.deploy_info.device_info:
         if r.deploy_info.device_info == "local_device":
-            r.deploy_info.device_info = ""
-        try:
-            result["device_info"] = json.loads(r.deploy_info.device_info)
-        except:
-            result["device_info"] = str(r.deploy_info.device_info)
+            r.deploy_info.device_info = "[[1, 1]]"
+    else:
+        r.deploy_info.device_info = "[[1, 1]]"
+    try:
+        result["device_info"] = json.loads(r.deploy_info.device_info)
+    except:
+        result["device_info"] = str(r.deploy_info.device_info)
+
 
     # Add debug information
     for tc in r.deploy_info.debug.test_cases:

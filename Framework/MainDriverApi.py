@@ -1003,13 +1003,17 @@ def set_device_info_according_to_user_order(device_order, device_dict,  test_cas
     # Need to set device_info for browserstack here
     global device_info
     if isinstance(device_order, list):
-        for each in device_order:
-            device_order_val = str(each[0])
-            device_no_val = str(each[1])
-            original_dict = device_dict
-            device_info["device " + device_order_val] = original_dict[
-                "device " + device_no_val
+        try:
+            # FIXME: The device info needs to be fixed for deploy v3
+            for each in device_order:
+                device_order_val = str(each[0])
+                device_no_val = str(each[1])
+                original_dict = device_dict
+                device_info["device " + device_order_val] = original_dict[
+                    "device " + device_no_val
                 ]
+        except:
+            pass
     elif "browser_stack" in device_order and device_order["browser_stack"]:
         project = user_info_object["project"]
         team = user_info_object["team"]
