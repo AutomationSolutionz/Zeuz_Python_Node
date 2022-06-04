@@ -29,6 +29,7 @@ class DeployHandler:
     COMMAND_DONE = "DONE"
     COMMAND_CANCEL = "CANCEL"
     COMMAND_NEXT = "NEXT"
+    COMMAND_CONFIRMED = "CONFIRMED"
 
 
     def __init__(
@@ -65,6 +66,7 @@ class DeployHandler:
 
         self.response_callback(message)
         # self.thread_pool.submit(self.response_callback, message)
+        ws.send(self.COMMAND_CONFIRMED)
         ws.send(self.COMMAND_NEXT)
 
 
@@ -101,6 +103,13 @@ class DeployHandler:
         sys.exit(0)
 
 
+    def on_ping(self, ws, data) -> None:
+        # print("replied to ping, ping data: ", ws, data)
+        # COMMAND_NEXT = "NEXT"
+        # ws.send(self.COMMAND_NEXT)
+        pass
+
+
     def run(self, host: str) -> None:
         signal.signal(signal.SIGINT, self.signal_handler)
         # websocket.enableTrace(True)
@@ -113,6 +122,7 @@ class DeployHandler:
                     on_message=self.on_message,
                     on_error=self.on_error,
                     on_close=self.on_close,
+                    on_ping=self.on_ping,
                 )
 
                 self.ws.run_forever()

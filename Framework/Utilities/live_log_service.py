@@ -5,28 +5,11 @@ import ssl
 import json
 import os
 from threading import Thread
-from Framework.Utilities import ConfigModule
-from urllib.parse import urlparse
-from pathlib import Path
 
 
 # Websocket connection object that runs on a different thread.
 ws = None
 connected = False
-
-
-def get_url(node_id: str):
-    server_url = urlparse(ConfigModule.get_config_value("Authentication", "server_address"))
-
-    path = f"faster/v1/ws/live_log/send/{node_id}"
-
-    if server_url.scheme == "https":
-        protocol = "wss"
-    else:
-        protocol = "ws"
-
-    ws_url = f"{protocol}://{server_url.netloc}/{path}"
-    return ws_url
 
 
 def send_file(data, ws):
@@ -121,13 +104,13 @@ def run_ws_thread(ws):
         pass
 
 
-def connect(node_id: str):
+def connect(url):
     global ws
     global connected
 
     # Uncomment next line for debugging.
     # websocket.enableTrace(True)
-    ws = websocket.WebSocketApp(get_url(node_id),
+    ws = websocket.WebSocketApp(url,
                                 on_message=on_message,
                                 on_error=on_error,
                                 on_close=on_close)

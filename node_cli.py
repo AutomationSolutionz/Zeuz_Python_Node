@@ -3,6 +3,7 @@
 # -*- coding: cp1252 -*-
 import os
 from pathlib import Path
+from urllib.parse import urlparse
 import platform
 
 # Disable WebdriverManager SSL verification.
@@ -456,22 +457,20 @@ def RunProcess(node_id, device_dict, user_info_object, run_once=False, log_dir=N
         save_path = Path(ConfigModule.get_config_value("sectionOne", "temp_run_file_path", temp_ini_file)) / "attachments"
         FL.CreateFolder(save_path)
 
-        # Connect to the live log service.
-        live_log_service.connect(node_id)
+        # --- START websocket service connections --- #
 
-        # --- START WS service --- #
-
-        server_address = ConfigModule.get_config_value("Authentication", "server_address")
-        protocol, domain = server_address.split("://")
-        host = None
-        if protocol == "http":
-            host = f"ws://{domain}"
-        elif protocol == "https":
-            host = f"wss://{domain}"
+        server_url = urlparse(ConfigModule.get_config_value("Authentication", "server_address"))
+        if server_url.scheme == "https":
+            protocol = "wss"
         else:
-            raise Exception("Unknown protocol for server address. Must be either 'http' or 'https'")
+            protocol = "ws"
 
-        deploy_srv_addr = f"{host}/zsvc/deploy/v1/connect/{node_id}"
+        server_addr = f"{protocol}://{server_url.netloc}"
+        live_log_service_addr = f"{server_addr}/faster/v1/ws/live_log/send/{node_id}"
+        deploy_srv_addr = f"{server_addr}/zsvc/deploy/v1/connect/{node_id}"
+
+        # Connect to the live log service.
+        live_log_service.connect(live_log_service_addr)
 
         # WARNING: For local development only.
         # if "localhost" in host:
