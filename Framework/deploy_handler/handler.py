@@ -9,6 +9,7 @@ import threading
 from concurrent.futures import ThreadPoolExecutor
 import signal
 from pathlib import Path
+import ssl
 
 import sys
 # Uncomment the following lines for single-file debug
@@ -126,6 +127,10 @@ class DeployHandler:
                 )
 
                 self.ws.run_forever(
+                    sslopt={
+                        "cert_reqs": ssl.CERT_NONE,
+                        "check_hostname": False,
+                    },
                     # ping_interval=1,
                     # ping_timeout=30,
                 )
