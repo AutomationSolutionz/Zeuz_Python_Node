@@ -658,10 +658,10 @@ def run_all_test_steps_in_a_test_case(
 # from the returned step results, it finds out the test case result
 def calculate_test_case_result(sModuleInfo, TestCaseID, run_id, sTestStepResultList, testcase_info):
     if "BLOCKED" in sTestStepResultList:
-        CommonUtil.ExecLog(sModuleInfo, "Test Case Blocked", 3)
+        CommonUtil.ExecLog(sModuleInfo, f"{TestCaseID} - Test Case Blocked", 3)
         sTestCaseStatus = "Blocked"
     elif "CANCELLED" in sTestStepResultList or "Cancelled" in sTestStepResultList:
-        CommonUtil.ExecLog(sModuleInfo, "Test Case Cancelled", 3)
+        CommonUtil.ExecLog(sModuleInfo, f"{TestCaseID} - Test Case Cancelled", 3)
         sTestCaseStatus = "Cancelled"
     elif "zeuz_failed".upper() in sTestStepResultList:
         step_index = 0
@@ -673,16 +673,16 @@ def calculate_test_case_result(sModuleInfo, TestCaseID, run_id, sTestStepResultL
             step_index += 1
         else:
             sTestCaseStatus = "Blocked"
-        CommonUtil.ExecLog(sModuleInfo, "Test Case " + sTestCaseStatus, 3)
+        CommonUtil.ExecLog(sModuleInfo, f"{TestCaseID} - Test Case " + sTestCaseStatus, 3)
 
     elif "WARNING" in sTestStepResultList:
-        CommonUtil.ExecLog(sModuleInfo, "Test Case Contain Warning(s)", 2)
+        CommonUtil.ExecLog(sModuleInfo, f"{TestCaseID} - Test Case Contain Warning(s)", 2)
         sTestCaseStatus = "Failed"
     elif "NOT RUN" in sTestStepResultList:
-        CommonUtil.ExecLog(sModuleInfo, "Test Case Contain Not Run Steps", 2)
+        CommonUtil.ExecLog(sModuleInfo, f"{TestCaseID} - Test Case Contain Not Run Steps", 2)
         sTestCaseStatus = "Failed"
     elif "SKIPPED" in sTestStepResultList:
-        CommonUtil.ExecLog(sModuleInfo, "Test Case Contain Skipped Step(s)", 1)
+        CommonUtil.ExecLog(sModuleInfo, f"{TestCaseID} - Test Case Contain Skipped Step(s)", 1)
         skipped = True
         for each in sTestStepResultList:
             if each != "SKIPPED":
@@ -690,15 +690,15 @@ def calculate_test_case_result(sModuleInfo, TestCaseID, run_id, sTestStepResultL
                 break
         if skipped:
             sTestCaseStatus = "Skipped"
-            CommonUtil.ExecLog(sModuleInfo, "Test Case Skipped", 1)
+            CommonUtil.ExecLog(sModuleInfo, f"{TestCaseID} - Test Case Skipped", 1)
         else:
             sTestCaseStatus = "Passed"
-            CommonUtil.ExecLog(sModuleInfo, "Test Case Passed", 1)
+            CommonUtil.ExecLog(sModuleInfo, f"{TestCaseID} - Test Case Passed", 1)
     elif "PASSED" in sTestStepResultList:
-        CommonUtil.ExecLog(sModuleInfo, "Test Case Passed", 1)
+        CommonUtil.ExecLog(sModuleInfo, f"{TestCaseID} - Test Case Passed", 1)
         sTestCaseStatus = "Passed"
     else:
-        CommonUtil.ExecLog(sModuleInfo, "Test Case Status Unknown", 2)
+        CommonUtil.ExecLog(sModuleInfo, f"{TestCaseID} - Test Case Status Unknown", 2)
         sTestCaseStatus = "Unknown"
 
     return sTestCaseStatus
