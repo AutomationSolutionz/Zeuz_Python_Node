@@ -13,6 +13,11 @@ except ImportError:
     import os
     DEVNULL = open(os.devnull, 'wb')
 
+from Framework.Utilities import ConfigModule
+
+ConfigModule.add_config_value("Periodic_update",'last_pip_upgrade','t123est1233')
+
+
 
 def install_missing_modules():
     """
@@ -20,36 +25,32 @@ def install_missing_modules():
     If anything is missing from requirements-win.txt file, it will install them only. It also ensures to upgrade pip to lastest version every 7 days
     """
     from datetime import datetime
-    import configparser
 
+    # Upgrade pip to latest version
+    os.chdir(os.path.dirname(os.path.abspath(__file__)))
     upgrade_pip = True
-    config_file_path = "./Framework/settings.conf"
     section_name = "Periodic_update"
     key_name = "last_pip_upgrade"
-    config = configparser.ConfigParser()
-    config.read(config_file_path)
-    if(config.has_section(section_name)):
+    if(ConfigModule.has_section(section_name)):
         try:
-            last_pip_upgrade = config.get(section_name,key_name)
+            last_pip_upgrade = ConfigModule.get_config_value(section_name,key_name)
             gap = datetime.now() - datetime.strptime(last_pip_upgrade, '%Y-%m-%d %H:%M:%S')
             if(gap.days <6):
                 upgrade_pip = False
         except:
             traceback.print_exc()
     else:
-        config.add_section(section_name)
-
+        ConfigModule.add_section(section_name)
 
     if(upgrade_pip == True):
         try:
             print('\nmodule_installer: Upgrading pip to latest version')
             subprocess.check_call([sys.executable, "-m", "pip", "install", "--trusted-host=pypi.org", "--trusted-host=files.pythonhosted.org", "--upgrade", "pip"],stderr=DEVNULL, stdout=DEVNULL,)
-            config.set(section_name, key_name, datetime.now().strftime("%Y-%m-%d %H:%M:%S"))
-            with open(config_file_path,'w') as f:
-                config.write(f)
+            ConfigModule.add_config_value(section_name,key_name,datetime.now().strftime("%Y-%m-%d %H:%M:%S"))
         except:
             print("\nmodule_installer: Failed to upgrade pip version")
             traceback.print_exc()
+    os.chdir(sys.path[0])
 
     try:
         print("\nmodule_installer: Checking for missing modules...")
