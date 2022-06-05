@@ -1,7 +1,10 @@
+from curses import keyname
 import os
 import subprocess
 import sys
 import traceback
+
+from django import conf
 
 # NULL output device for disabling print output of pip installs
 try:
@@ -14,36 +17,36 @@ except ImportError:
 def install_missing_modules():
     """
     Purpose: This function will check all the installed modules, compare with what is in requirements-win.txt file
-    If anything is missing from requirements-win.txt file, it will install them only
+    If anything is missing from requirements-win.txt file, it will install them only. It also ensures to upgrade pip to lastest version every 7 days
     """
-    import json
     from datetime import datetime
-    
-    upgrade_pip = True
+    import configparser
 
-    last_update_file_path = req_file_path = (
-                os.path.dirname(os.path.abspath(__file__))
-                + os.sep
-                + "pip_last_update.json"
-            )
-            
-    if(os.path.exists(last_update_file_path)):
-        with open(last_update_file_path,'r') as f:
-            try:
-                last_pip = json.load(f).get('pip')
-                if(last_pip):
-                    gap =  datetime.now() - datetime.strptime(last_pip, '%Y-%m-%d %H:%M:%S')
-                    if(gap.days < 6):
-                        upgrade_pip = False
-            except:
-                traceback.print_exc()
-    
+    upgrade_pip = True
+    config_file_path = "./Framework/settings.conf"
+    section_name = "Periodic_update"
+    key_name = "last_pip_upgrade"
+    config = configparser.ConfigParser()
+    config.read(config_file_path)
+    if(config.has_section(section_name)):
+        try:
+            last_pip_upgrade = config.get(section_name,key_name)
+            gap = datetime.now() - datetime.strptime(last_pip_upgrade, '%Y-%m-%d %H:%M:%S')
+            if(gap.days <6):
+                upgrade_pip = False
+        except:
+            traceback.print_exc()
+    else:
+        config.add_section(section_name)
+
+
     if(upgrade_pip == True):
         try:
             print('\nmodule_installer: Upgrading pip to latest version')
             subprocess.check_call([sys.executable, "-m", "pip", "install", "--trusted-host=pypi.org", "--trusted-host=files.pythonhosted.org", "--upgrade", "pip"],stderr=DEVNULL, stdout=DEVNULL,)
-            with open(last_update_file_path,'w') as f:
-                json.dump({'pip': datetime.now().strftime("%Y-%m-%d %H:%M:%S")},f)
+            config.set(section_name, key_name, datetime.now().strftime("%Y-%m-%d %H:%M:%S"))
+            with open(config_file_path,'w') as f:
+                config.write(f)
         except:
             print("\nmodule_installer: Failed to upgrade pip version")
             traceback.print_exc()
