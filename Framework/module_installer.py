@@ -15,7 +15,6 @@ except ImportError:
 
 from Framework.Utilities import ConfigModule
 
-ConfigModule.add_config_value("Periodic_update",'last_pip_upgrade','t123est1233')
 
 
 
