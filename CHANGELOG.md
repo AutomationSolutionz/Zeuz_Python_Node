@@ -5,6 +5,14 @@
 ### [Current changes]
 - _
 
+### [15.1.1][Jun 07, 2022]
+- **[Add]** Upload window is automated with pyautogui for MAC
+- **[Improve]** spaces inside appium binary path is now supported
+
+### [15.1.0][Jun 03, 2022]
+- **[Add]** Added swipe by uiautomator action for android
+- **[Add]** Added uiautomatorviewer.bat inside App directory
+
 ### [15.0.4][May 11, 2022]
 - **[Improve]** Added plus button support in keystroke action
 

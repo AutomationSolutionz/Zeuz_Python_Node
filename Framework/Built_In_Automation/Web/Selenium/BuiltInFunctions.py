@@ -441,7 +441,7 @@ def Open_Browser(dependency, window_size_X=None, window_size_Y=None, capability=
             options.add_argument("--disable-extensions")
             options.add_argument('--ignore-certificate-errors')
             options.add_argument('--ignore-ssl-errors')
-            options.add_argument('--Zeuz_pid_finder')
+            options.add_argument('--zeuz_pid_finder')
             if browser == "android":
                 mobile_emulation = {"deviceName": "Pixel 2 XL"}
                 options.add_experimental_option("mobileEmulation", mobile_emulation)
@@ -3810,23 +3810,48 @@ def upload_file_through_window(step_data):
         return CommonUtil.Exception_Handler(sys.exc_info(), None, "Error parsing dataset")
 
     try:
-        if selenium_driver.capabilities["browserName"].lower() == "firefox":
-            pid = str(selenium_driver.capabilities["moz:processID"])
-        elif selenium_driver.capabilities["browserName"].lower() == "chrome":
-            for process in psutil.process_iter():
-                if process.name() == 'chrome.exe' and '--test-type=webdriver' in process.cmdline() and "--zeuz_pid_finder" in process.cmdline():
-                    pid = str(process.pid)
-        elif selenium_driver.capabilities["browserName"].lower() == "opera":
-            for process in psutil.process_iter():
-                if process.name() == 'opera.exe' and '--test-type=webdriver' in process.cmdline() and "--zeuz_pid_finder" in process.cmdline():
-                    pid = str(process.pid)
-        elif selenium_driver.capabilities["browserName"].lower() == "msedge":
-            for process in psutil.process_iter():
-                if process.name() == 'msedge.exe' and '--test-type=webdriver' in process.cmdline() and "--zeuz_pid_finder" in process.cmdline():
-                    pid = str(process.pid)
+        if platform.system() == "Darwin":
+            # Will require pid when we will atomate with atomacos module. Fetching PID is only tested on Chrome for now
+            if selenium_driver.capabilities["browserName"].lower() == "chrome":
+                for process in psutil.process_iter():
+                    try:
+                        if process.name() == 'Google Chrome' and '--test-type=webdriver' in process.cmdline() and "--zeuz_pid_finder" in process.cmdline():
+                            pid = str(process.pid)
+                            break
+                    except Exception as e:
+                        # print(e)
+                        pass
+
+            path_name = path_name[1:-1]
+
+            import pyautogui
+            time.sleep(3)
+            pyautogui.hotkey("/")
+            time.sleep(5)
+            pyautogui.hotkey("command", "a")
+            time.sleep(0.5)
+            pyautogui.write(path_name)
+            time.sleep(0.5)
+            pyautogui.hotkey("enter")
+            time.sleep(2)
+            pyautogui.hotkey("enter")
 
         # window_ds = ("*window", "element parameter", selenium_driver.title)
-        if platform.system() == "Windows":
+        elif platform.system() == "Windows":
+            if selenium_driver.capabilities["browserName"].lower() == "firefox":
+                pid = str(selenium_driver.capabilities["moz:processID"])
+            elif selenium_driver.capabilities["browserName"].lower() == "chrome":
+                for process in psutil.process_iter():
+                    if process.name() == 'chrome.exe' and '--test-type=webdriver' in process.cmdline() and "--zeuz_pid_finder" in process.cmdline():
+                        pid = str(process.pid)
+            elif selenium_driver.capabilities["browserName"].lower() == "opera":
+                for process in psutil.process_iter():
+                    if process.name() == 'opera.exe' and '--test-type=webdriver' in process.cmdline() and "--zeuz_pid_finder" in process.cmdline():
+                        pid = str(process.pid)
+            elif selenium_driver.capabilities["browserName"].lower() == "msedge":
+                for process in psutil.process_iter():
+                    if process.name() == 'msedge.exe' and '--test-type=webdriver' in process.cmdline() and "--zeuz_pid_finder" in process.cmdline():
+                        pid = str(process.pid)
             from Framework.Built_In_Automation.Desktop.Windows.BuiltInFunctions import Click_Element, Enter_Text_In_Text_Box, Save_Attribute, get_pids_from_title
 
             """ We may need the following codes when deprecated msedge selenium stops working """
@@ -3932,7 +3957,7 @@ def upload_file_through_window(step_data):
         # elif platform.system() == "Linux":
         #     _gui_upload(path_name)
         else:
-            _gui_upload(path_name)
+            _gui_upload(path_name[0:-1])
 
         CommonUtil.ExecLog(sModuleInfo, "Entered the following path:\n%s" % path_name, 1)
         return "passed"
