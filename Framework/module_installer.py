@@ -4,7 +4,7 @@ import subprocess
 import sys
 import traceback
 
-from django import conf
+
 
 # NULL output device for disabling print output of pip installs
 try:
