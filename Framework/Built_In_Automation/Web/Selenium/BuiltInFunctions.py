@@ -757,6 +757,9 @@ def Go_To_Link(step_data, page_title=False):
 
     # default capabilities
     capabilities = {"unhandledPromptBehavior": "ignore"}
+
+    # options for add_argument or add_extension etc
+    browser_options = []
     
     # Open browser and create driver if user has not already done so
     global dependency
@@ -788,6 +791,16 @@ def Go_To_Link(step_data, page_title=False):
                 else:
                     # any other shared capabilities can be added from the selenium document
                     capabilities[left.strip()] = right.strip()
+
+            # Todo: profile, argument, extension, chrome option => go_to_link
+            elif mid.strip().lower() in ("chrome option", "chrome options"):
+                print(dependency["Browser"])
+                print("Found one chrome option:")
+                print(right)
+                browser_options.append([left, right])
+
+        print("this is go to link & out of for loop")
+        print(browser_options)
 
         if not driver_id:
             driver_id = "default"
