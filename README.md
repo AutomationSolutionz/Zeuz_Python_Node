@@ -29,3 +29,41 @@ To run Zeuz Node in daemon mode (as a background process), execute the
    issues.
 > Set the `WDM_SSL_VERIFY=0` environment variable, relaunch your terminal and
 > run node_cli.py again.
+
+## State diagram
+
+```mermaid
+stateDiagram-v2
+    direction TB
+    state Node {
+        direction TB
+        dh : deploy_handler
+        save_json : Save json to file
+        run_tc: Run test case
+        run_id_complete: RunID Complete
+        deploy_svc_connect: Connect to deploy service
+
+        [*] --> node_cli
+        node_cli --> login
+        login --> deploy_svc_connect
+
+        deploy_svc_connect --> dh : /zsvc/deploy/v1/connect
+        dh --> response_callback : server sends Test Case data
+        dh --> done_callback : server sends DONE
+        dh --> cancel_callback : server sends CANCEL
+
+        done_callback --> deploy_svc_connect : Start new session
+        cancel_callback --> deploy_svc_connect : Stop running and start new session
+
+        response_callback --> proto_adapter
+        proto_adapter --> save_json : converts the protobuf into expected json format
+        save_json --> MainDriver : reads the json content
+
+        MainDriver --> run_tc
+        run_tc --> report_uploader : Upload test case result
+        run_tc --> artifacts_uploader : Upload logs, screenshots, etc
+
+        report_uploader --> run_id_complete
+        artifacts_uploader --> run_id_complete
+    }
+```

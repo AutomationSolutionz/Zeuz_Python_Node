@@ -18,6 +18,7 @@ pid.txt
 Framework/settings.conf
 AutomationLog/
 iosSimulator/*
+node_state.json
 
 # Nodejs gitignore
 # Logs

@@ -48,3 +48,4 @@ rich
 beautifulsoup4
 premailer
 html-diff
+protobuf
