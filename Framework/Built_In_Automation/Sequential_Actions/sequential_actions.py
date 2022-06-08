@@ -951,7 +951,7 @@ def Run_Sequential_Actions(
         if data_set_list == []:  # run the full step data
             for i in range(len(step_data)):
                 if debug_actions:
-                    if str(i + 1) in debug_actions:
+                    if (i + 1) in debug_actions:
                         data_set_list.append(i)
                 else:
                     data_set_list.append(i)

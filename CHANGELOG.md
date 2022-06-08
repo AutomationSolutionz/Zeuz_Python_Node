@@ -1,9 +1,28 @@
 # Changelog
 
-# Version 15
+# Version 16
 
 ### [Current changes]
-- _
+- **[Change]** Change the deploy system. This change replaces the old deploy
+  system code with a new one that is compatible with the v3 engine on the server
+  side.  This works by connecting with a persistent websocket connection that is
+  forcefully disconnected every 30 seconds from the server side. This makes sure
+  that we don't have long persistent but unstable connections. There are also
+  other mechanisms in place to make sure we always receive test cases in proper
+  order. If for some reason, node's connection breaks when test cases are
+  in-flight (being sent from server to node), they'll be automatically restored
+  back to the run id so that node can run the same test case even though the
+  connection got disrupted. Run cancellations work properly. In deploy API you
+  can also specify preferred nodes so that some test cases are always run in
+  those preferred nodes.
+
+### [15.1.1][Jun 07, 2022]
+- **[Add]** Upload window is automated with pyautogui for MAC
+- **[Improve]** spaces inside appium binary path is now supported
+
+### [15.1.0][Jun 03, 2022]
+- **[Add]** Added swipe by uiautomator action for android
+- **[Add]** Added uiautomatorviewer.bat inside App directory
 
 ### [15.0.4][May 11, 2022]
 - **[Improve]** Added plus button support in keystroke action

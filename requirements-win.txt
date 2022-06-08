@@ -56,4 +56,5 @@ premailer
 html-diff
 openpyxl
 pytesseract
+protobuf
 pdf2image

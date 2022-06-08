@@ -19,7 +19,7 @@ from rich.console import Console
 from rich import print_json
 
 
-from Framework.Utilities import ws
+from Framework.Utilities import live_log_service
 import concurrent.futures
 
 
@@ -216,14 +216,14 @@ def prettify(key, val):
         print(color + "%s = " % (key), end="")
         print_json(data=val)
         expression = "%s = %s" % (key, json.dumps(val, indent=2, sort_keys=True))
-        if key not in dont_prettify_on_server:
-            ws.log("VARIABLE", 4, expression.replace("\n", "<br>").replace(" ", "&nbsp;"))
+        if debug_status and key not in dont_prettify_on_server:
+            live_log_service.log("VARIABLE", 4, expression.replace("\n", "<br>").replace(" ", "&nbsp;"))
             # 4 means console log which is Magenta color in server console
     except:
         # expression = "%s" % (key, val)
         print(color + str(val))
-        if key not in dont_prettify_on_server:
-            ws.log("VARIABLE", 4, str(val).replace("\n", "<br>").replace(" ", "&nbsp;"))
+        if debug_status and key not in dont_prettify_on_server:
+            live_log_service.log("VARIABLE", 4, str(val).replace("\n", "<br>").replace(" ", "&nbsp;"))
 
 
 def Add_Folder_To_Current_Test_Case_Log(src):
@@ -526,7 +526,8 @@ def ExecLog(
     # Set current log as the next previous log
     previous_log_line = current_log_line
 
-    ws.log(sModuleInfo, iLogLevel, sDetails)
+    if debug_status:
+        live_log_service.log(sModuleInfo, iLogLevel, sDetails)
 
     if iLogLevel > 0:
         if iLogLevel == 6:
@@ -802,9 +803,11 @@ def Thread_ScreenShot(function_name, image_folder, Method, Driver, image_name):
             image.thumbnail(picture_size, Image.ANTIALIAS)  # Resize picture to lower file size
             image.save(ImageName, format="PNG", quality=picture_quality)  # Change quality to reduce file size
 
-            # Convert image to bytearray and send it to ws for streaming.
-            image_byte_array = pil_image_to_bytearray(image)
-            ws.binary(image_byte_array)
+            if debug_status:
+                # Convert image to bytearray and send it to live_log_service for streaming.
+                image_byte_array = pil_image_to_bytearray(image)
+
+                live_log_service.binary(image_byte_array)
         else:
             ExecLog(
                 "",

@@ -3954,7 +3954,7 @@ def upload_file_through_window(step_data):
         # elif platform.system() == "Linux":
         #     _gui_upload(path_name)
         else:
-            _gui_upload(path_name)
+            _gui_upload(path_name[0:-1])
 
         CommonUtil.ExecLog(sModuleInfo, "Entered the following path:\n%s" % path_name, 1)
         return "passed"
