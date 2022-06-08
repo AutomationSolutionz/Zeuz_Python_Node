@@ -447,10 +447,11 @@ def Open_Browser(dependency, window_size_X=None, window_size_Y=None, capability=
             # Todo: profile, add_argument => open_browser
             if browser_options:
                 for left, right in browser_options:
-                    if left.replace("_","").replace(" ","").lower() == ("addargument", "addarguments"):
+                    if left in ("addargument", "addarguments"):
                         options.add_argument(right.strip())
+                        print(left, right)
 
-                    elif left.replace("_","").replace(" ","").lower() == ("addextension", "addextensions"):
+                    elif left in ("addextension", "addextensions"):
                         options.add_extension(CommonUtil.path_parser(right.strip()))
 
             if browser == "android":
@@ -805,12 +806,9 @@ def Go_To_Link(step_data, page_title=False):
 
             # Todo: profile, argument, extension, chrome option => go_to_link
             elif mid.strip().lower() in ("chrome option", "chrome options") and dependency["Browser"].lower() == "chrome":
-                print(dependency["Browser"])
-                print("Found one chrome option:")
-                print(right)
                 browser_options.append([left, right])
 
-        print("this is go to link & out of for loop")
+        print("Got these browser_options")
         print(browser_options)
 
         if not driver_id:
