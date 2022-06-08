@@ -16,6 +16,11 @@
   can also specify preferred nodes so that some test cases are always run in
   those preferred nodes.
 
+### [15.2.0][Jun 07, 2022]
+- **[Add]** Add profile functionality for Chrome
+- **[Add]** Add extension functionality for Chrome
+- **[Improve]** Chrome browser options and arguments
+
 ### [15.1.1][Jun 07, 2022]
 - **[Add]** Upload window is automated with pyautogui for MAC
 - **[Improve]** spaces inside appium binary path is now supported
