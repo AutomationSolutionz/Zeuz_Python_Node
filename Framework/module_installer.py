@@ -1,10 +1,7 @@
-from curses import keyname
 import os
 import subprocess
 import sys
 import traceback
-
-
 
 # NULL output device for disabling print output of pip installs
 try:
@@ -14,9 +11,6 @@ except ImportError:
     DEVNULL = open(os.devnull, 'wb')
 
 from Framework.Utilities import ConfigModule
-
-
-
 
 def install_missing_modules():
     """
