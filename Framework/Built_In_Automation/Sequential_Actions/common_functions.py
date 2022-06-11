@@ -2439,7 +2439,6 @@ def excel_write(data_set):
                 expand = right.strip().lower()
             elif "write into excel" in left:
                 value = CommonUtil.parse_value_into_object(right)
-                # print("......1......", type(value), ".......", value)
             elif "file path" in left:
                 filepath = right.strip()
                 excel_file_path = Path(CommonUtil.path_parser(filepath))
@@ -3620,13 +3619,11 @@ def csv_read(data_set):
                                 not_exist.append(i)
                                 CommonUtil.ExecLog("", "'%s' key does not exist for converting to boolean" % i, 2)
                     if Python_mod:
-                        print()
                         for i in line:
                             temp = line[i].strip()
                             if "(" in temp and temp.endswith(")") and temp.split("(")[0] in fun_list:
                                 line[i] = fun_list[temp.split("(")[0]](*eval("["+temp.split("(")[1][:-1] + "]"))
 
-                        print()
 
                     data_to_save.append(line)
         CommonUtil.ExecLog(sModuleInfo, "Extracted CSV data with '%s' delimiter and saved data as %s format" % (delimiter, structure), 1)
