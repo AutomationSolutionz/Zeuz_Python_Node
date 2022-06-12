@@ -138,7 +138,7 @@ def assign_locust_task(data_set):
         try:
             for left, mid, right in data_set:
                 left = left.strip().lower()
-                if "action" in left:
+                if "actiona" in left:
                     action = right.strip().lower()
                 elif "data" in left:
                     data = right.strip().lower()
