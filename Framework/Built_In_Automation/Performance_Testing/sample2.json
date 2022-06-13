@@ -1,0 +1,479 @@
+{
+    "TestCases": [
+        {
+            "Title": "Performance test action design in one step",
+            "Folder": "Oytizzo",
+            "Feature": "oytizzo/Demo",
+            "Dependencies": {},
+            "Steps": [
+                {
+                    "Step name": "oytizzo Sample Step",
+                    "Step description": "oytizzo Sample Step",
+                    "Step expected": "oytizzo Sample Step",
+                    "Step type": "linked",
+                    "Step actions": [
+                        {
+                            "Action name": 8528,
+                            "Action data": [
+                                [
+                                    "swarm",
+                                    "input parameter",
+                                    "10",
+                                    1
+                                ],
+                                [
+                                    "spawn",
+                                    "input parameter",
+                                    "100",
+                                    2
+                                ],
+                                [
+                                    "locust config",
+                                    "performance action",
+                                    "PERF_VARIABLE",
+                                    3
+                                ]
+                            ]
+                        },
+                        {
+                            "Action name": 8529,
+                            "Action data": [
+                                [
+                                    "wait_time",
+                                    "input parameter",
+                                    "between(5,10)",
+                                    1
+                                ],
+                                [
+                                    "host",
+                                    "input parameter",
+                                    "https://google.com",
+                                    2
+                                ],
+                                [
+                                    "name",
+                                    "input parameter",
+                                    "WebsiteUser",
+                                    3
+                                ],
+                                [
+                                    "type",
+                                    "input parameter",
+                                    "HttpUser",
+                                    4
+                                ],
+                                [
+                                    "assign locust user",
+                                    "performance action",
+                                    "PERF_VARIABLE",
+                                    5
+                                ]
+                            ]
+                        },
+                        {
+                            "Action name": 8530,
+                            "Action data": [
+                                [
+                                    "wait_time",
+                                    "input parameter",
+                                    "between(5,10)",
+                                    1
+                                ],
+                                [
+                                    "host",
+                                    "input parameter",
+                                    "https://twitter.com",
+                                    2
+                                ],
+                                [
+                                    "name",
+                                    "input parameter",
+                                    "AnotherUser",
+                                    3
+                                ],
+                                [
+                                    "type",
+                                    "input parameter",
+                                    "USER",
+                                    4
+                                ],
+                                [
+                                    "assign locust user",
+                                    "performance action",
+                                    "PERF_VARIABLE",
+                                    5
+                                ]
+                            ]
+                        },
+                        {
+                            "Action name": 8531,
+                            "Action data": [
+                                [
+                                    "action",
+                                    "input parameter",
+                                    "post",
+                                    1
+                                ],
+                                [
+                                    "data",
+                                    "input parameter",
+                                    "/submit/form",
+                                    2
+                                ],
+                                [
+                                    "task name",
+                                    "input parameter",
+                                    "visit_homepage",
+                                    3
+                                ],
+                                [
+                                    "name",
+                                    "input parameter",
+                                    "WebsiteUser",
+                                    4
+                                ],
+                                [
+                                    "task name",
+                                    "input parameter",
+                                    "visit_homepage",
+                                    5
+                                ],
+                                [
+                                    "assign locust task",
+                                    "performance action",
+                                    "PERF_VARIABLE",
+                                    6
+                                ]
+                            ]
+                        },
+                        {
+                            "Action name": 8532,
+                            "Action data": [
+                                [
+                                    "run performance test",
+                                    "performance action",
+                                    "PERF_VARIABLE",
+                                    1
+                                ]
+                            ]
+                        }
+                    ]
+                },
+                {
+                    "Step name": "another sample step",
+                    "Step description": "another sample step",
+                    "Step expected": "another sample step",
+                    "Step type": "linked",
+                    "Step actions": [
+                        {
+                            "Action name": 8533,
+                            "Action data": [
+                                [
+                                    "swarm",
+                                    "input parameter",
+                                    "20",
+                                    1
+                                ],
+                                [
+                                    "spawn",
+                                    "input parameter",
+                                    "200",
+                                    2
+                                ],
+                                [
+                                    "locust config",
+                                    "performance action",
+                                    "PERF_VARIABLE2",
+                                    3
+                                ]
+                            ]
+                        },
+                        {
+                            "Action name": 8534,
+                            "Action data": [
+                                [
+                                    "wait_time",
+                                    "input parameter",
+                                    "between(5,10)",
+                                    1
+                                ],
+                                [
+                                    "host",
+                                    "input parameter",
+                                    "https://google.com",
+                                    2
+                                ],
+                                [
+                                    "name",
+                                    "input parameter",
+                                    "WebsiteUser2",
+                                    3
+                                ],
+                                [
+                                    "type",
+                                    "input parameter",
+                                    "HttpUser",
+                                    4
+                                ],
+                                [
+                                    "assign locust user",
+                                    "performance action",
+                                    "PERF_VARIABLE2",
+                                    5
+                                ]
+                            ]
+                        },
+                        {
+                            "Action name": 8535,
+                            "Action data": [
+                                [
+                                    "wait_time",
+                                    "input parameter",
+                                    "between(5,10)",
+                                    1
+                                ],
+                                [
+                                    "host",
+                                    "input parameter",
+                                    "https://twitter.com",
+                                    2
+                                ],
+                                [
+                                    "name",
+                                    "input parameter",
+                                    "AnotherUser2",
+                                    3
+                                ],
+                                [
+                                    "type",
+                                    "input parameter",
+                                    "USER",
+                                    4
+                                ],
+                                [
+                                    "assign locust user",
+                                    "performance action",
+                                    "PERF_VARIABLE2",
+                                    5
+                                ]
+                            ]
+                        },
+                        {
+                            "Action name": 8536,
+                            "Action data": [
+                                [
+                                    "action",
+                                    "input parameter",
+                                    "post",
+                                    1
+                                ],
+                                [
+                                    "data",
+                                    "input parameter",
+                                    "/submit/form",
+                                    2
+                                ],
+                                [
+                                    "task name",
+                                    "input parameter",
+                                    "visit_homepage2",
+                                    3
+                                ],
+                                [
+                                    "name",
+                                    "input parameter",
+                                    "WebsiteUser2",
+                                    4
+                                ],
+                                [
+                                    "task name",
+                                    "input parameter",
+                                    "visit_homepage",
+                                    5
+                                ],
+                                [
+                                    "assign locust task",
+                                    "performance action",
+                                    "PERF_VARIABLE2",
+                                    6
+                                ]
+                            ]
+                        },
+                        {
+                            "Action name": 8537,
+                            "Action data": [
+                                [
+                                    "run performance test",
+                                    "performance action",
+                                    "PERF_VARIABLE2",
+                                    1
+                                ]
+                            ]
+                        }
+                    ]
+                },
+                {
+                    "Step name": "part1",
+                    "Step description": "part1",
+                    "Step expected": "part1",
+                    "Step type": "linked",
+                    "Step actions": [
+                        {
+                            "Action name": 8518,
+                            "Action data": [
+                                [
+                                    "swarm",
+                                    "input parameter",
+                                    "30",
+                                    1
+                                ],
+                                [
+                                    "spawn",
+                                    "input parameter",
+                                    "300",
+                                    2
+                                ],
+                                [
+                                    "locust config",
+                                    "performance action",
+                                    "PERF_VARIABLE3",
+                                    3
+                                ]
+                            ]
+                        },
+                        {
+                            "Action name": 8519,
+                            "Action data": [
+                                [
+                                    "wait_time",
+                                    "input parameter",
+                                    "between(5,10)",
+                                    1
+                                ],
+                                [
+                                    "host",
+                                    "input parameter",
+                                    "https://google.com",
+                                    2
+                                ],
+                                [
+                                    "name",
+                                    "input parameter",
+                                    "WebsiteUser3",
+                                    3
+                                ],
+                                [
+                                    "type",
+                                    "input parameter",
+                                    "HttpUser",
+                                    4
+                                ],
+                                [
+                                    "assign locust user",
+                                    "performance action",
+                                    "PERF_VARIABLE3",
+                                    5
+                                ]
+                            ]
+                        }
+                    ]
+                },
+                {
+                    "Step name": "part2",
+                    "Step description": "part2",
+                    "Step expected": "part2",
+                    "Step type": "linked",
+                    "Step actions": [
+                        {
+                            "Action name": 8538,
+                            "Action data": [
+                                [
+                                    "wait_time",
+                                    "input parameter",
+                                    "between(5,10)",
+                                    1
+                                ],
+                                [
+                                    "host",
+                                    "input parameter",
+                                    "https://twitter.com",
+                                    2
+                                ],
+                                [
+                                    "name",
+                                    "input parameter",
+                                    "AnotherUser3",
+                                    3
+                                ],
+                                [
+                                    "type",
+                                    "input parameter",
+                                    "USER",
+                                    4
+                                ],
+                                [
+                                    "assign locust user",
+                                    "performance action",
+                                    "PERF_VARIABLE3",
+                                    5
+                                ]
+                            ]
+                        },
+                        {
+                            "Action name": 8539,
+                            "Action data": [
+                                [
+                                    "action",
+                                    "input parameter",
+                                    "post",
+                                    1
+                                ],
+                                [
+                                    "data",
+                                    "input parameter",
+                                    "/submit/form",
+                                    2
+                                ],
+                                [
+                                    "task name",
+                                    "input parameter",
+                                    "visit_homepage",
+                                    3
+                                ],
+                                [
+                                    "name",
+                                    "input parameter",
+                                    "WebsiteUser3",
+                                    4
+                                ],
+                                [
+                                    "task name",
+                                    "input parameter",
+                                    "visit_homepage3",
+                                    5
+                                ],
+                                [
+                                    "assign locust task",
+                                    "performance action",
+                                    "PERF_VARIABLE3",
+                                    6
+                                ]
+                            ]
+                        },
+                        {
+                            "Action name": 8540,
+                            "Action data": [
+                                [
+                                    "run performance test",
+                                    "performance action",
+                                    "PERF_VARIABLE3",
+                                    1
+                                ]
+                            ]
+                        }
+                    ]
+                }
+            ]
+        }
+    ]
+}

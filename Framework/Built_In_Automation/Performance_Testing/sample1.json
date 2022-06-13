@@ -1,27 +1,6 @@
 [
     {
         "action_name": "Locust config",
-        "action_disabled": "false",
-        "step_actions": [
-            [
-                "swarm",
-                "input parameter",
-                "10"
-            ],
-            [
-                "spawn",
-                "input parameter",
-                "100"
-            ],
-            [
-                "not locust config",
-                "performance action",
-                "PERF_VARIABLE"
-            ]
-        ]
-    },
-    {
-        "action_name": "Locust config",
         "action_disabled": "true",
         "step_actions": [
             [
@@ -32,7 +11,7 @@
             [
                 "spawn",
                 "input parameter",
-                "101"
+                "100"
             ],
             [
                 "locust config",

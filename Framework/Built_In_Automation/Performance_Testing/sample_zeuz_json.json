@@ -1,0 +1,80 @@
+{
+    "PERF_VARIABLE": {
+        "locust_config": {
+            "swarm": "10",
+            "spawn": "100"
+        },
+        "users": {
+            "WebsiteUser": {
+                "type": "HttpUser",
+                "wait_time": "between(5,10)",
+                "host": "https://google.com",
+                "tasks": [
+                    {
+                        "action": "client.post",
+                        "data": "/submit/form",
+                        "name": "WebsiteUser"
+                    }
+                ]
+            },
+            "AnotherUser": {
+                "type": "USER",
+                "wait_time": "between(5,10)",
+                "host": "https://twitter.com",
+                "tasks": []
+            }
+        }
+    },
+    "PERF_VARIABLE2": {
+        "locust_config": {
+            "swarm": "20",
+            "spawn": "200"
+        },
+        "users": {
+            "WebsiteUser2": {
+                "type": "HttpUser",
+                "wait_time": "between(5,10)",
+                "host": "https://google.com",
+                "tasks": [
+                    {
+                        "action": "client.post",
+                        "data": "/submit/form",
+                        "name": "WebsiteUser2"
+                    }
+                ]
+            },
+            "AnotherUser2": {
+                "type": "USER",
+                "wait_time": "between(5,10)",
+                "host": "https://twitter.com",
+                "tasks": []
+            }
+        }
+    },
+    "PERF_VARIABLE3": {
+        "locust_config": {
+            "swarm": "30",
+            "spawn": "300"
+        },
+        "users": {
+            "WebsiteUser3": {
+                "type": "HttpUser",
+                "wait_time": "between(5,10)",
+                "host": "https://google.com",
+                "tasks": [
+                    {
+                        "action": "client.post",
+                        "data": "/submit/form",
+                        "name": "WebsiteUser3"
+                    }
+                ]
+            },
+            "AnotherUser3": {
+                "type": "USER",
+                "wait_time": "between(5,10)",
+                "host": "https://twitter.com",
+                "tasks": []
+            }
+        }
+    }
+}
