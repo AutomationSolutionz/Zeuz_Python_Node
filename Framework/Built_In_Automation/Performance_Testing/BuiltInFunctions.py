@@ -40,7 +40,7 @@ def locust_config(data_set):
                     swarm = float(right.strip().lower())
                 elif "spawn" in left:
                     spawn = float(right.strip().lower())
-                elif "action" in mid and 'locust config' in left:
+                elif "locust config" in left:
                     variable_value = {
                         "locust_config": {
                             "swarm": swarm,
