@@ -40,3 +40,4 @@ premailer
 html-diff
 pdf2image
 protobuf
+pytz
