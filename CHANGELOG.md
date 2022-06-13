@@ -15,6 +15,9 @@
   connection got disrupted. Run cancellations work properly. In deploy API you
   can also specify preferred nodes so that some test cases are always run in
   those preferred nodes.
+- **[Fix]** Convert all timestamps into UTC timezone to match server timezone.
+  This fixes all runid related time issues like showing a negative date and time
+  difference.
 
 ### [15.2.0][Jun 07, 2022]
 - **[Add]** Add profile functionality for Chrome
