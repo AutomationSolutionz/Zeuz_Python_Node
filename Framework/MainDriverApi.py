@@ -22,6 +22,7 @@ from pathlib import Path
 from sys import platform as _platform
 from datetime import datetime
 from datetime import timedelta
+import pytz
 from threading import Timer
 from Framework.Built_In_Automation import Shared_Resources
 from .Utilities import ConfigModule, FileUtilities as FL, CommonUtil, RequestFormatter
@@ -616,7 +617,7 @@ def run_all_test_steps_in_a_test_case(
 
             # get step start time
             TestStepStartTime = time.time()
-            sTestStepStartTime = datetime.fromtimestamp(TestStepStartTime).strftime("%Y-%m-%d %H:%M:%S.%f")
+            sTestStepStartTime = datetime.fromtimestamp(TestStepStartTime, tz=pytz.UTC).strftime("%Y-%m-%d %H:%M:%S.%f")
             WinMemBegin = CommonUtil.PhysicalAvailableMemory()  # get available memory
 
             if StepSeq in CommonUtil.disabled_step:
@@ -638,7 +639,7 @@ def run_all_test_steps_in_a_test_case(
                 )
 
             TestStepEndTime = time.time()
-            sTestStepEndTime = datetime.fromtimestamp(TestStepEndTime).strftime("%Y-%m-%d %H:%M:%S.%f")
+            sTestStepEndTime = datetime.fromtimestamp(TestStepEndTime, tz=pytz.UTC).strftime("%Y-%m-%d %H:%M:%S.%f")
             WinMemEnd = CommonUtil.PhysicalAvailableMemory()  # get available memory
             if CommonUtil.custom_step_duration:
                 TestStepDuration = CommonUtil.custom_step_duration
@@ -903,7 +904,7 @@ def run_test_case(
 
         # get test case end time
         TestCaseEndTime = time.time()
-        sTestCaseEndTime = datetime.fromtimestamp(TestCaseEndTime).strftime("%Y-%m-%d %H:%M:%S")
+        sTestCaseEndTime = datetime.fromtimestamp(TestCaseEndTime, tz=pytz.UTC).strftime("%Y-%m-%d %H:%M:%S")
 
         # Decide if Test Case Pass/Failed
         sTestCaseStatus = calculate_test_case_result(sModuleInfo, test_case, run_id, sTestStepResultList, testcase_info)
@@ -928,7 +929,7 @@ def run_test_case(
         TimeInSec = int(TimeDiff)
         TestCaseDuration = CommonUtil.FormatSeconds(TimeInSec)
         after_execution_dict = {
-            "teststarttime": datetime.fromtimestamp(TestCaseStartTime).strftime("%Y-%m-%d %H:%M:%S"),
+            "teststarttime": datetime.fromtimestamp(TestCaseStartTime, tz=pytz.UTC).strftime("%Y-%m-%d %H:%M:%S"),
             "testendtime": sTestCaseEndTime,
             "duration": TestCaseDuration,
             "status": sTestCaseStatus,
@@ -973,13 +974,13 @@ def run_test_case(
     except:
         CommonUtil.Exception_Handler(sys.exc_info())
         TestCaseEndTime = time.time()
-        sTestCaseEndTime = datetime.fromtimestamp(TestCaseEndTime).strftime("%Y-%m-%d %H:%M:%S")
+        sTestCaseEndTime = datetime.fromtimestamp(TestCaseEndTime, tz=pytz.UTC).strftime("%Y-%m-%d %H:%M:%S")
         TimeDiff = TestCaseEndTime - TestCaseStartTime
         TimeInSec = int(TimeDiff)
         TestCaseDuration = CommonUtil.FormatSeconds(TimeInSec)
         sTestCaseStatus = "Blocked"
         after_execution_dict = {
-            "teststarttime": datetime.fromtimestamp(TestCaseStartTime).strftime("%Y-%m-%d %H:%M:%S"),
+            "teststarttime": datetime.fromtimestamp(TestCaseStartTime, tz=pytz.UTC).strftime("%Y-%m-%d %H:%M:%S"),
             "testendtime": sTestCaseEndTime,
             "duration": TestCaseDuration,
             "status": sTestCaseStatus,
@@ -1653,7 +1654,7 @@ def main(device_dict, user_info_object):
                     CommonUtil.tc_index += 1
 
                 # calculate elapsed time of runid
-                sTestSetEndTime = datetime.fromtimestamp(time.time()).strftime("%Y-%m-%d %H:%M:%S")
+                sTestSetEndTime = datetime.fromtimestamp(time.time(), tz=pytz.UTC).strftime("%Y-%m-%d %H:%M:%S")
                 TestSetEndTime = time.time()
                 TimeDiff = TestSetEndTime - TestSetStartTime
                 TimeInSec = int(TimeDiff)
@@ -1661,7 +1662,7 @@ def main(device_dict, user_info_object):
 
                 after_execution_dict = {
                     "status": "Complete",
-                    "teststarttime": datetime.fromtimestamp(TestSetStartTime).strftime("%Y-%m-%d %H:%M:%S"),
+                    "teststarttime": datetime.fromtimestamp(TestSetStartTime, tz=pytz.UTC).strftime("%Y-%m-%d %H:%M:%S"),
                     "testendtime": sTestSetEndTime,
                     "duration": TestSetDuration
                 }

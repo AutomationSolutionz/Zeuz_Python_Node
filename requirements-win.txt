@@ -58,3 +58,4 @@ openpyxl
 pytesseract
 protobuf
 pdf2image
+pytz
