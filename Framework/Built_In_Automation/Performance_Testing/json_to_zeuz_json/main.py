@@ -1,12 +1,13 @@
 import json
 import pprint
 
+# Check if action is disabled
 def check_if_disabled(action):
     if action['action_disabled'] == 'false':
         return True
     else:
         return False
-
+# Check if the action is a locust action
 def selected_locust_action(action):
     all_locust_actions = ['locust config','assign locust user','assign locust task']
     locust_actions =  [ac[0] for ac in action['step_actions'] if ac[0] in all_locust_actions]
@@ -15,64 +16,41 @@ def selected_locust_action(action):
     else:
         return False
 
-        
-
-variable_value = None
-
+# Get the values for the action paramteres
+def get_values(step_actions,action_val_map):
+    data = dict()
+    for sa in step_actions:
+        variable_name = action_val_map.get(sa[0])
+        if(variable_name):
+            variable_value = sa[2]
+            data[variable_name] = variable_value
+    return data
 
 def main(input_json_file_path):
     actions = json.load(open(input_json_file_path))
-    
+    all_locusts = dict()
     for action in actions:
         locust_action = selected_locust_action(action)
         if(check_if_disabled(action) == False and locust_action):
                 step_actions = action['step_actions']
                 if(locust_action == 'locust config'):
-                    for sa in step_actions:
-                        if('swarm' in sa[0].strip()):
-                            swarm = sa[2].strip()
-                        if('spawn' in sa[0].strip()):
-                            spawn = sa[2].strip()
-                        if('locust config' in sa[0].strip()):
-                            variable_name = sa[2].strip()
-                            variable_value = {
-                                "locust_config": {
-                                    "swarm": swarm,
-                                    "spawn": spawn
-                                },
-                                "users": {}
-                            }
+                    params = get_values(step_actions,{'swarm':'swarm','spawn':'spawn','locust config':'variable_name'})
+                    all_locusts[params['variable_name']] = ({"locust_config": {"swarm": params['swarm'],"spawn": params['spawn']},"users": {}})
                 if(locust_action == 'assign locust user'):
-                    for sa in step_actions:
-                        if('type' in sa[0].strip()):
-                            user_type = sa[2].strip()
-                        if('name' in sa[0].strip()):
-                            name = sa[2].strip()
-                        if('host' in sa[0].strip()):
-                            host = sa[2].strip()
-                        if('wait_time' in sa[0].strip()):
-                            wait_time = sa[2].strip()
-                        if('locust user' in sa[0].strip()):
-                            variable_name = sa[2].strip()
-                            variable_value['users'][name] = {'type':user_type,'wait_time' : wait_time,'host':host,'tasks':[]}
-                    
-                # ## Locust User
+                    params = get_values(step_actions,{'type':'type','name':'name','host':'host','wait_time':'wait_time','assign locust user':'variable_name'})
+                    all_locusts[params['variable_name']]['users'][params['name']] = {'type':params['type'],'wait_time' : params['wait_time'],'host':params['host'],'tasks':[]}
 
-                # # Locust Task
                 if(locust_action == 'assign locust task'):
-                    for sa in step_actions:
-                        if('action' in sa[0].strip()):
-                            http_method = sa[2].strip()
-                        if('data' in sa[0].strip()):
-                            data = sa[2].strip()
-                        if('name' in sa[0].strip()):
-                            name = sa[2].strip()
-                        if('locust task' in sa[0].strip()):
-                            variable_name = sa[2].strip()
-                            variable_value['users'][name]['tasks'].append({'action':http_method,'data':data,'name':name}) 
-                # # Locust Config
-    pprint.pprint(variable_value)
+                    params = get_values(step_actions,{'action':'http_method','data':'data','name':'name','assign locust task':'variable_name'})
+                    all_locusts[params['variable_name']]['users'][params['name']]['tasks'].append({'action': 'client.' + params['http_method'],'data':params['data'],'name':params['name']}) 
+    
+    pprint.pprint(all_locusts)
+
+    with open("sample_zeuz_json.json", "w") as outfile:
+        json.dump(all_locusts, outfile)
 
 
 if __name__ == '__main__':
     main(input_json_file_path="/home/sakib/Documents/Zeuz/Locust/de/Zeuz_Python_Node/Framework/Built_In_Automation/Performance_Testing/json_to_zeuz_json/sample.json")
+    # v = [['swarm', 'input parameter', '10'], ['spawn', 'input parameter', '101'], ['locust config', 'performance action', 'PERF_VARIABLE']]
+    # get_values(v,{'swarm':'swarm','spawn':'spawn'})
