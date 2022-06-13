@@ -47,7 +47,7 @@ def main(input_json_file_path):
     pprint.pprint(all_locusts)
 
     with open("sample_zeuz_json.json", "w") as outfile:
-        json.dump(all_locusts, outfile)
+        json.dump(all_locusts,outfile,indent=4 )
 
 
 if __name__ == '__main__':
