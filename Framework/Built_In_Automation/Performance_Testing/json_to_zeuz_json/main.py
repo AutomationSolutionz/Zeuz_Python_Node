@@ -51,6 +51,4 @@ def main(input_json_file_path):
 
 
 if __name__ == '__main__':
-    main(input_json_file_path="/home/sakib/Documents/Zeuz/Locust/de/Zeuz_Python_Node/Framework/Built_In_Automation/Performance_Testing/json_to_zeuz_json/sample.json")
-    # v = [['swarm', 'input parameter', '10'], ['spawn', 'input parameter', '101'], ['locust config', 'performance action', 'PERF_VARIABLE']]
-    # get_values(v,{'swarm':'swarm','spawn':'spawn'})
+    main(input_json_file_path="sample.json")
