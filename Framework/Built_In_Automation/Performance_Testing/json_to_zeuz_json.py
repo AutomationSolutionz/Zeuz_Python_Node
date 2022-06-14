@@ -26,15 +26,15 @@ def get_values(step_actions,action_val_map):
             data[variable_name] = variable_value
     return data
 
-def main(input_json_file_path):
+def convert_json(input_json_file_path,output_json_file_path):
+    input_json_file_path = os.path.dirname(os.path.realpath(__file__)) + '/' + input_json_file_path
+    output_json_file_path = os.path.dirname(os.path.realpath(__file__)) + '/' + output_json_file_path
     input_json_data = json.load(open(input_json_file_path))
     testcase = input_json_data["TestCases"]
     steps = testcase[0]["Steps"]
     actions = []
     for step in steps:
         actions = actions + step["Step actions"]
-
-    actions
     all_locusts = dict()
     for action in actions:
         locust_action = selected_locust_action(action)
@@ -53,9 +53,9 @@ def main(input_json_file_path):
     
     pprint.pprint(all_locusts)
 
-    with open(os.path.dirname(os.path.realpath(__file__)) + "/sample_zeuz_json.json", "w") as outfile:
+    with open(output_json_file_path, "w") as outfile:
         json.dump(all_locusts,outfile,indent=4 )
 
 import os
 if __name__ == '__main__':
-    main(input_json_file_path= os.path.dirname(os.path.realpath(__file__)) + "/sample2.json")
+    convert_json(input_json_file_path="sample2.json",output_json_file_path="sample_zeuz_json.json")
