@@ -9,19 +9,13 @@ MODULE_NAME = inspect.getmodulename(__file__)
 
 @logger
 def locust_config(data_set):
-    """-Comment Needs to be updated!!!!
-    Save variable with native python type.
-
-    Can also create/append/update a str, list or dictionary from the given data.
-
-    Accepts any valid Python representation or JSON data.
-
+    """
+    Save locust configuration to a variable
     Args:
         data_set:
-          data               | element parameter  | valid JSON string
-          operation          | element parameter  | save/update
-          extra operation    | optional parameter | length/no duplicate/ascending sort/descending sort
-          save into variable | common action      | variable_name
+          swarm              | input parameter    | integer
+          spawn              | input parameter    | integer
+          locust config      | performance action | variable_name
 
     Returns:
         "passed" if success.
@@ -31,29 +25,33 @@ def locust_config(data_set):
     sModuleInfo = inspect.currentframe().f_code.co_name + " : " + MODULE_NAME
 
     try:
-        variable_value = None
-        variable_name = None
+        locust_var = losust_var_name = swarm = spawn = None
         try:
             for left, mid, right in data_set:
                 left = left.strip().lower()
-                if "swarm" in left:
-                    swarm = float(right.strip().lower())
-                elif "spawn" in left:
-                    spawn = float(right.strip().lower())
-                elif "locust config" in left:
-                    variable_value = {
-                        "locust_config": {
-                            "swarm": swarm,
-                            "spawn": spawn
-                        },
-                        "users": {}
-                    }
-                    variable_name = right.strip()
+                if mid.strip().lower() == "input parameter":
+                    if "swarm" == left:
+                        swarm = float(right.strip().lower())
+                    elif "spawn" == left:
+                        spawn = float(right.strip().lower())
+                elif "action" == mid.strip().lower():
+                    if "locust config" == left:
+                        losust_var_name = right.strip()
+            if None in [losust_var_name,swarm,spawn]: 
+                CommonUtil.ExecLog(sModuleInfo,  f"dataset is inaccurate", 3)
+                return "zeuz_failed"
+            locust_var = {
+                            "locust_config": {
+                                "swarm": swarm,
+                                "spawn": spawn
+                            },
+                            "users": {}
+                    }    
         except:
             CommonUtil.ExecLog(sModuleInfo, "Failed to parse data.", 1)
             traceback.print_exc()
             return "zeuz_failed"
-        sr.Set_Shared_Variables(variable_name, variable_value)
+        sr.Set_Shared_Variables(losust_var_name, locust_var)
         return "passed"
     except:
         return CommonUtil.Exception_Handler(sys.exc_info())
@@ -83,8 +81,7 @@ def assign_locust_user(data_set):
     sModuleInfo = inspect.currentframe().f_code.co_name + " : " + MODULE_NAME
 
     try:
-        variable_value = None
-        variable_name = None
+        locust_var = losust_var_name = name = user_type = wait_time = host = None
         try:
             for left, mid, right in data_set:
                 left = left.strip().lower()
@@ -97,17 +94,19 @@ def assign_locust_user(data_set):
                         wait_time = right.strip().lower()
                     elif "host" == left:
                         host = right.strip().lower()
-                elif mid.strip().lower() in "performance action":
+                elif mid.strip().lower() == "action":
                     if "assign locust user" == left:
-                        variable_name = right.strip()
-                        locust_var = sr.Get_Shared_Variables(variable_name)
-                        locust_var['users'][name] = {'type':user_type,'wait_time' : wait_time,'host':host,'tasks':[]}
-                        variable_value = locust_var
+                        losust_var_name = right.strip()
+            if None in [losust_var_name,name,user_type,wait_time,host]: 
+                CommonUtil.ExecLog(sModuleInfo,  f"dataset is inaccurate", 3)
+                return "zeuz_failed"
+            locust_var = sr.Get_Shared_Variables(losust_var_name,log=False)
+            locust_var['users'][name] = {'type':user_type,'wait_time' : wait_time,'host':host,'tasks':[]}
         except:
             CommonUtil.ExecLog(sModuleInfo, "Failed to parse data.", 1)
             traceback.print_exc()
             return "zeuz_failed"
-        sr.Set_Shared_Variables(variable_name, variable_value)
+        sr.Set_Shared_Variables(losust_var_name, locust_var)
         return "passed"
     except:
         return CommonUtil.Exception_Handler(sys.exc_info())
@@ -135,29 +134,32 @@ def assign_locust_task(data_set):
     sModuleInfo = inspect.currentframe().f_code.co_name + " : " + MODULE_NAME
 
     try:
-        variable_value = None
-        variable_name = None
+        locust_var = locust_var_name = action = data = name = task_name = None
         try:
             for left, mid, right in data_set:
                 left = left.strip().lower()
-                if "action" == left.strip():
-                    action = right.strip().lower()
-                elif "data" == left.strip():
-                    data = right.strip().lower()
-                elif "name" == left.strip():
-                    name = right.strip().lower()
-                elif "task name" == left:
-                    task_name = right.strip().lower()
-                elif "assign locust task" == left:
-                    variable_name = right.strip()
-                    locust_var = sr.Get_Shared_Variables(variable_name)
-                    locust_var['users'][name]['tasks'].append({'action':action,'data':data,'name':task_name}) 
-                    variable_value = locust_var
+                if mid.strip().lower() == "input parameter":
+                    if "action" == left.strip():
+                        action = right.strip().lower()
+                    elif "data" == left.strip():
+                        data = right.strip().lower()
+                    elif "name" == left.strip():
+                        name = right.strip().lower()
+                    elif "task name" == left:
+                        task_name = right.strip().lower()
+                elif mid.strip().lower() == "action":
+                    if "assign locust task" == left:
+                        locust_var_name = right.strip()
+            if None in [locust_var_name,action,data,name,task_name]:
+                CommonUtil.ExecLog(sModuleInfo,  f"dataset is inaccurate", 3)
+                return "zeuz_failed"
+            locust_var = sr.Get_Shared_Variables(locust_var_name,log=False)
+            locust_var['users'][name]['tasks'].append({'action':action,'data':data,'name':task_name}) 
         except:
             CommonUtil.ExecLog(sModuleInfo, "Failed to parse data.", 1)
             traceback.print_exc()
             return "zeuz_failed"
-        sr.Set_Shared_Variables(variable_name, variable_value)
+        sr.Set_Shared_Variables(locust_var_name, locust_var)
         return "passed"
     except:
         return CommonUtil.Exception_Handler(sys.exc_info())
