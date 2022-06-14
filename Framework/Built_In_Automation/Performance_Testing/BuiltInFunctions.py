@@ -59,20 +59,16 @@ def locust_config(data_set):
 
 @logger
 def assign_locust_user(data_set):
-    """-Comment Needs to be updated!!!!
-    Save variable with native python type.
-
-    Can also create/append/update a str, list or dictionary from the given data.
-
-    Accepts any valid Python representation or JSON data.
-
+    """
+    Add Locust user configuration to the existing locust variable
+    This action provides that data to creates a user class into locust file
     Args:
         data_set:
-          data               | element parameter  | valid JSON string
-          operation          | element parameter  | save/update
-          extra operation    | optional parameter | length/no duplicate/ascending sort/descending sort
-          save into variable | common action      | variable_name
-
+          wait_time          | input parameter    | between(int,int)
+          host               | input parameter    | url of host
+          name               | input parameter    | user/class name
+          type               | input parameter    | type of user/class
+          assign locust user | performance action | existing locust variable name
     Returns:
         "passed" if success.
         "zeuz_failed" otherwise.
@@ -111,21 +107,18 @@ def assign_locust_user(data_set):
     except:
         return CommonUtil.Exception_Handler(sys.exc_info())
 
+@logger
 def assign_locust_task(data_set):
-    """-Comment Needs to be updated!!!!
-    Save variable with native python type.
-
-    Can also create/append/update a str, list or dictionary from the given data.
-
-    Accepts any valid Python representation or JSON data.
-
+    """
+    Add task configuration to the existing locust user
+    This action provides that data to define the tasks performed by locust user/class
     Args:
         data_set:
-          data               | element parameter  | valid JSON string
-          operation          | element parameter  | save/update
-          extra operation    | optional parameter | length/no duplicate/ascending sort/descending sort
-          save into variable | common action      | variable_name
-
+          action             | input parameter    | get/post etc
+          data               | input parameter    | url of endpoint
+          task name          | input parameter    | string
+          name               | input parameter    | existing user/class name
+          assign locust task | performance action | existing locust variable name
     Returns:
         "passed" if success.
         "zeuz_failed" otherwise.
