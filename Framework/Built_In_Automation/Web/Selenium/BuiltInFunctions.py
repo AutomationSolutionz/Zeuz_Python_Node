@@ -809,7 +809,7 @@ def Go_To_Link(step_data, page_title=False):
                 browser_options.append([left, right.strip()])
 
         CommonUtil.ExecLog(sModuleInfo, "Got these browser_options", 2)
-        CommonUtil.ExecLog(sModuleInfo, browser_options, 2)
+        CommonUtil.ExecLog(sModuleInfo, str(browser_options), 2)
 
         if not driver_id:
             driver_id = "default"
