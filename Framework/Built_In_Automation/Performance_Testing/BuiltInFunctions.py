@@ -88,19 +88,21 @@ def assign_locust_user(data_set):
         try:
             for left, mid, right in data_set:
                 left = left.strip().lower()
-                if "name" == left.strip():
-                    name = right.strip().lower()
-                if "type" == left.strip():
-                    user_type = right.strip().lower()
-                elif "wait_time" == left.strip():
-                    wait_time = right.strip().lower()
-                elif "host" == left.strip():
-                    host = right.strip().lower()
-                elif "assign locust user" == left.strip():
-                    variable_name = right.strip()
-                    locust_var = sr.Get_Shared_Variables(variable_name)
-                    locust_var['users'][name] = {'type':user_type,'wait_time' : wait_time,'host':host,'tasks':[]}
-                    variable_value = locust_var
+                if mid.strip().lower() == "input parameter":
+                    if "name" == left:
+                        name = right.strip().lower()
+                    if "type" == left:
+                        user_type = right.strip().lower()
+                    elif "wait_time" == left:
+                        wait_time = right.strip().lower()
+                    elif "host" == left:
+                        host = right.strip().lower()
+                elif mid.strip().lower() in "performance action":
+                    if "assign locust user" == left:
+                        variable_name = right.strip()
+                        locust_var = sr.Get_Shared_Variables(variable_name)
+                        locust_var['users'][name] = {'type':user_type,'wait_time' : wait_time,'host':host,'tasks':[]}
+                        variable_value = locust_var
         except:
             CommonUtil.ExecLog(sModuleInfo, "Failed to parse data.", 1)
             traceback.print_exc()
