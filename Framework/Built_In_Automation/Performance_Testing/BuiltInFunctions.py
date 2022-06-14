@@ -88,18 +88,18 @@ def assign_locust_user(data_set):
         try:
             for left, mid, right in data_set:
                 left = left.strip().lower()
-                if "user title" in left:
-                    user_title = right.strip().lower()
-                if "type" in left:
+                if "name" == left.strip():
+                    name = right.strip().lower()
+                if "type" == left.strip():
                     user_type = right.strip().lower()
-                elif "wait_time" in left:
+                elif "wait_time" == left.strip():
                     wait_time = right.strip().lower()
-                elif "host" in left:
+                elif "host" == left.strip():
                     host = right.strip().lower()
-                elif "assign locust user" in left:
+                elif "assign locust user" == left.strip():
                     variable_name = right.strip()
                     locust_var = sr.Get_Shared_Variables(variable_name)
-                    locust_var['users'][user_title] = {'type':user_type,'wait_time' : wait_time,'host':host,'tasks':[]}
+                    locust_var['users'][name] = {'type':user_type,'wait_time' : wait_time,'host':host,'tasks':[]}
                     variable_value = locust_var
         except:
             CommonUtil.ExecLog(sModuleInfo, "Failed to parse data.", 1)
@@ -138,18 +138,18 @@ def assign_locust_task(data_set):
         try:
             for left, mid, right in data_set:
                 left = left.strip().lower()
-                if "action" in left:
+                if "action" == left.strip():
                     action = right.strip().lower()
-                elif "data" in left:
+                elif "data" == left.strip():
                     data = right.strip().lower()
-                elif "name" in left:
+                elif "name" == left.strip():
                     name = right.strip().lower()
-                elif "user title" in left:
-                    user_title = right.strip().lower()
-                elif "assign locust task" in left:
+                elif "task name" == left:
+                    task_name = right.strip().lower()
+                elif "assign locust task" == left:
                     variable_name = right.strip()
                     locust_var = sr.Get_Shared_Variables(variable_name)
-                    locust_var['users'][user_title]['tasks'].append({'action':action,'data':data,'name':name}) 
+                    locust_var['users'][name]['tasks'].append({'action':action,'data':data,'name':task_name}) 
                     variable_value = locust_var
         except:
             CommonUtil.ExecLog(sModuleInfo, "Failed to parse data.", 1)
