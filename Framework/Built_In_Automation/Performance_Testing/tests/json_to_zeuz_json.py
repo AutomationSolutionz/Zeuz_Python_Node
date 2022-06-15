@@ -56,4 +56,4 @@ def convert_json(input_json_file_path,output_json_file_path):
         json.dump(all_locusts,outfile,indent=4 )
 
 if __name__ == '__main__':
-    convert_json(input_json_file_path="sample2.json",output_json_file_path="sample_zeuz_json.json")
+    convert_json(input_json_file_path="sample2.json", output_json_file_path="sample_zeuz_json.json")
