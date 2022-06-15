@@ -77,7 +77,7 @@ def assign_locust_user(data_set):
     sModuleInfo = inspect.currentframe().f_code.co_name + " : " + MODULE_NAME
 
     try:
-        locust_var = losust_var_name = name = user_type = wait_time = host = None
+        locust_var = losust_var_name = name = user_type = wait_time = host = sequential = None
         try:
             for left, mid, right in data_set:
                 left = left.strip().lower()
@@ -91,14 +91,21 @@ def assign_locust_user(data_set):
                         wait_time = right.strip().lower()
                     elif "host" == left:
                         host = right.strip().lower()
+                if mid.strip().lower() == "parameter":
+                    if "sequential" == left:
+                        sequential = (right.strip().lower() == 'true')
                 elif mid.strip().lower() == "action":
                     if "assign locust user" == left:
                         losust_var_name = right.strip()
             if None in [losust_var_name,name,user_type,wait_time,host]: 
                 CommonUtil.ExecLog(sModuleInfo,  f"dataset is inaccurate", 3)
                 return "zeuz_failed"
+            
+            if sequential == None:
+                sequential = False
+                
             locust_var = sr.Get_Shared_Variables(losust_var_name,log=False)
-            locust_var['users'][name] = {'type':user_type,'wait_time' : wait_time,'host':host,'tasks':[]}
+            locust_var['users'][name] = {'type':user_type,'wait_time' : wait_time,'host':host,'sequential':sequential,'tasks':[]}
         except:
             CommonUtil.ExecLog(sModuleInfo, "Failed to parse data.", 1)
             traceback.print_exc()
@@ -128,7 +135,7 @@ def assign_locust_task(data_set):
     sModuleInfo = inspect.currentframe().f_code.co_name + " : " + MODULE_NAME
 
     try:
-        locust_var = locust_var_name = action = data = name = task_name = None
+        locust_var = locust_var_name = action = data = name = task_name = weight = None
         try:
             for left, mid, right in data_set:
                 left = left.strip().lower()
@@ -141,6 +148,9 @@ def assign_locust_task(data_set):
                         name = right.strip()
                     elif "task name" == left:
                         task_name = right.strip().lower()
+                if mid.strip().lower() == "parameter":
+                    if "weight" == left.strip():
+                        weight = right.strip().lower()
                 elif mid.strip().lower() == "action":
                     if "assign locust task" == left:
                         locust_var_name = right.strip()
@@ -148,7 +158,7 @@ def assign_locust_task(data_set):
                 CommonUtil.ExecLog(sModuleInfo,  f"dataset is inaccurate", 3)
                 return "zeuz_failed"
             locust_var = sr.Get_Shared_Variables(locust_var_name,log=False)
-            locust_var['users'][name]['tasks'].append({'action':action,'data':data,'name':task_name}) 
+            locust_var['users'][name]['tasks'].append({'action':action,'data':data,'name':task_name,'weight':weight}) 
         except:
             CommonUtil.ExecLog(sModuleInfo, "Failed to parse data.", 1)
             traceback.print_exc()

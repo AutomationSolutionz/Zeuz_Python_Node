@@ -1,5 +1,4 @@
-import json
-import pprint
+import json,pprint,os
 
 # Check if action is disabled
 def check_if_disabled(action):
@@ -56,6 +55,5 @@ def convert_json(input_json_file_path,output_json_file_path):
     with open(output_json_file_path, "w") as outfile:
         json.dump(all_locusts,outfile,indent=4 )
 
-import os
 if __name__ == '__main__':
     convert_json(input_json_file_path="sample2.json",output_json_file_path="sample_zeuz_json.json")
