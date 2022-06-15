@@ -66,7 +66,7 @@ def assign_locust_user(data_set):
         data_set:
           wait_time          | input parameter    | between(int,int)
           host               | input parameter    | url of host
-          name               | input parameter    | user/class name
+          name               | input parameter    | user/class name Case sensitive
           type               | input parameter    | type of user/class
           assign locust user | performance action | existing locust variable name
     Returns:
@@ -83,9 +83,10 @@ def assign_locust_user(data_set):
                 left = left.strip().lower()
                 if mid.strip().lower() == "input parameter":
                     if "name" == left:
-                        name = right.strip().lower()
+                        name = right.strip()
                     if "type" == left:
                         user_type = right.strip().lower()
+                        user_type = 'HttpUser' if user_type == 'httpuser' else "User" if user_type == "user" else None
                     elif "wait_time" == left:
                         wait_time = right.strip().lower()
                     elif "host" == left:
@@ -117,7 +118,7 @@ def assign_locust_task(data_set):
           action             | input parameter    | get/post etc
           data               | input parameter    | url of endpoint
           task name          | input parameter    | string
-          name               | input parameter    | existing user/class name
+          name               | input parameter    | existing user/class name Case sensitive
           assign locust task | performance action | existing locust variable name
     Returns:
         "passed" if success.
@@ -137,7 +138,7 @@ def assign_locust_task(data_set):
                     elif "data" == left.strip():
                         data = right.strip().lower()
                     elif "name" == left.strip():
-                        name = right.strip().lower()
+                        name = right.strip()
                     elif "task name" == left:
                         task_name = right.strip().lower()
                 elif mid.strip().lower() == "action":
