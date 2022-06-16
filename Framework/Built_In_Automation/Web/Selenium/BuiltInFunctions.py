@@ -367,7 +367,7 @@ def Open_Electron_App(data_set):
 
 
 @logger
-def Open_Browser(dependency, window_size_X=None, window_size_Y=None, capability=None):
+def Open_Browser(dependency, window_size_X=None, window_size_Y=None, capability=None, browser_options=None):
     """ Launch browser and create instance """
 
     global selenium_driver
@@ -437,11 +437,23 @@ def Open_Browser(dependency, window_size_X=None, window_size_Y=None, capability=
                     options.set_capability(key, value)
 
             # argument
-            options.add_argument("--no-sandbox")
-            options.add_argument("--disable-extensions")
-            options.add_argument('--ignore-certificate-errors')
-            options.add_argument('--ignore-ssl-errors')
-            options.add_argument('--Zeuz_pid_finder')
+            if not browser_options:
+                options.add_argument("--no-sandbox")
+                options.add_argument("--disable-extensions")
+                options.add_argument('--ignore-certificate-errors')
+                options.add_argument('--ignore-ssl-errors')
+                options.add_argument('--Zeuz_pid_finder')
+
+            # Todo: profile, add_argument => open_browser
+            if browser_options:
+                for left, right in browser_options:
+                    if left in ("addargument", "addarguments"):
+                        options.add_argument(right.strip())
+                        print(left, right)
+
+                    elif left in ("addextension", "addextensions"):
+                        options.add_extension(CommonUtil.path_parser(right.strip()))
+
             if browser == "android":
                 mobile_emulation = {"deviceName": "Pixel 2 XL"}
                 options.add_experimental_option("mobileEmulation", mobile_emulation)
@@ -757,6 +769,9 @@ def Go_To_Link(step_data, page_title=False):
 
     # default capabilities
     capabilities = {"unhandledPromptBehavior": "ignore"}
+
+    # options for add_argument or add_extension etc
+    browser_options = []
     
     # Open browser and create driver if user has not already done so
     global dependency
@@ -789,6 +804,13 @@ def Go_To_Link(step_data, page_title=False):
                     # any other shared capabilities can be added from the selenium document
                     capabilities[left.strip()] = right.strip()
 
+            # Todo: profile, argument, extension, chrome option => go_to_link
+            elif mid.strip().lower() in ("chrome option", "chrome options") and dependency["Browser"].lower() == "chrome":
+                browser_options.append([left, right.strip()])
+
+        CommonUtil.ExecLog(sModuleInfo, "Got these browser_options", 2)
+        CommonUtil.ExecLog(sModuleInfo, str(browser_options), 2)
+
         if not driver_id:
             driver_id = "default"
 
@@ -807,13 +829,13 @@ def Go_To_Link(step_data, page_title=False):
                 Tear_Down_Selenium()    # If dependency is changed then teardown and relaunch selenium driver
             CommonUtil.ExecLog(sModuleInfo, "Browser not previously opened, doing so now", 1)
             if window_size_X == "None" and window_size_Y == "None":
-                result = Open_Browser(dependency, capability=capabilities)
+                result = Open_Browser(dependency, capability=capabilities, browser_options=browser_options)
             elif window_size_X == "None":
-                result = Open_Browser(dependency, window_size_Y, capability=capabilities)
+                result = Open_Browser(dependency, window_size_Y, capability=capabilities, browser_options=browser_options)
             elif window_size_Y == "None":
-                result = Open_Browser(dependency, window_size_X, capability=capabilities)
+                result = Open_Browser(dependency, window_size_X, capability=capabilities, browser_options=browser_options)
             else:
-                result = Open_Browser(dependency, window_size_X, window_size_Y, capability=capabilities)
+                result = Open_Browser(dependency, window_size_X, window_size_Y, capability=capabilities, browser_options=browser_options)
 
             if result == "zeuz_failed":
                 return "zeuz_failed"
@@ -3810,23 +3832,48 @@ def upload_file_through_window(step_data):
         return CommonUtil.Exception_Handler(sys.exc_info(), None, "Error parsing dataset")
 
     try:
-        if selenium_driver.capabilities["browserName"].lower() == "firefox":
-            pid = str(selenium_driver.capabilities["moz:processID"])
-        elif selenium_driver.capabilities["browserName"].lower() == "chrome":
-            for process in psutil.process_iter():
-                if process.name() == 'chrome.exe' and '--test-type=webdriver' in process.cmdline() and "--zeuz_pid_finder" in process.cmdline():
-                    pid = str(process.pid)
-        elif selenium_driver.capabilities["browserName"].lower() == "opera":
-            for process in psutil.process_iter():
-                if process.name() == 'opera.exe' and '--test-type=webdriver' in process.cmdline() and "--zeuz_pid_finder" in process.cmdline():
-                    pid = str(process.pid)
-        elif selenium_driver.capabilities["browserName"].lower() == "msedge":
-            for process in psutil.process_iter():
-                if process.name() == 'msedge.exe' and '--test-type=webdriver' in process.cmdline() and "--zeuz_pid_finder" in process.cmdline():
-                    pid = str(process.pid)
+        if platform.system() == "Darwin":
+            # Will require pid when we will atomate with atomacos module. Fetching PID is only tested on Chrome for now
+            if selenium_driver.capabilities["browserName"].lower() == "chrome":
+                for process in psutil.process_iter():
+                    try:
+                        if process.name() == 'Google Chrome' and '--test-type=webdriver' in process.cmdline() and "--zeuz_pid_finder" in process.cmdline():
+                            pid = str(process.pid)
+                            break
+                    except Exception as e:
+                        # print(e)
+                        pass
+
+            path_name = path_name[1:-1]
+
+            import pyautogui
+            time.sleep(3)
+            pyautogui.hotkey("/")
+            time.sleep(5)
+            pyautogui.hotkey("command", "a")
+            time.sleep(0.5)
+            pyautogui.write(path_name)
+            time.sleep(0.5)
+            pyautogui.hotkey("enter")
+            time.sleep(2)
+            pyautogui.hotkey("enter")
 
         # window_ds = ("*window", "element parameter", selenium_driver.title)
-        if platform.system() == "Windows":
+        elif platform.system() == "Windows":
+            if selenium_driver.capabilities["browserName"].lower() == "firefox":
+                pid = str(selenium_driver.capabilities["moz:processID"])
+            elif selenium_driver.capabilities["browserName"].lower() == "chrome":
+                for process in psutil.process_iter():
+                    if process.name() == 'chrome.exe' and '--test-type=webdriver' in process.cmdline() and "--zeuz_pid_finder" in process.cmdline():
+                        pid = str(process.pid)
+            elif selenium_driver.capabilities["browserName"].lower() == "opera":
+                for process in psutil.process_iter():
+                    if process.name() == 'opera.exe' and '--test-type=webdriver' in process.cmdline() and "--zeuz_pid_finder" in process.cmdline():
+                        pid = str(process.pid)
+            elif selenium_driver.capabilities["browserName"].lower() == "msedge":
+                for process in psutil.process_iter():
+                    if process.name() == 'msedge.exe' and '--test-type=webdriver' in process.cmdline() and "--zeuz_pid_finder" in process.cmdline():
+                        pid = str(process.pid)
             from Framework.Built_In_Automation.Desktop.Windows.BuiltInFunctions import Click_Element, Enter_Text_In_Text_Box, Save_Attribute, get_pids_from_title
 
             """ We may need the following codes when deprecated msedge selenium stops working """
@@ -3932,7 +3979,7 @@ def upload_file_through_window(step_data):
         # elif platform.system() == "Linux":
         #     _gui_upload(path_name)
         else:
-            _gui_upload(path_name)
+            _gui_upload(path_name[0:-1])
 
         CommonUtil.ExecLog(sModuleInfo, "Entered the following path:\n%s" % path_name, 1)
         return "passed"

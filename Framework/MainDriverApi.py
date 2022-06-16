@@ -12,6 +12,7 @@ import shutil
 import importlib
 import requests
 import zipfile
+from multiprocessing.pool import ThreadPool
 from urllib3.exceptions import InsecureRequestWarning
 # Suppress the InsecureRequestWarning since we use verify=False parameter.
 requests.packages.urllib3.disable_warnings(category=InsecureRequestWarning)
@@ -21,13 +22,13 @@ from pathlib import Path
 from sys import platform as _platform
 from datetime import datetime
 from datetime import timedelta
+import pytz
 from threading import Timer
 from Framework.Built_In_Automation import Shared_Resources
 from .Utilities import ConfigModule, FileUtilities as FL, CommonUtil, RequestFormatter
 from Framework.Built_In_Automation.Shared_Resources import (
     BuiltInFunctionSharedResources as shared,
 )
-from Framework.Utilities import ws
 from reporting import junit_report
 
 from rich.style import Style
@@ -82,6 +83,7 @@ failed_due_to_linked_fail = False
 
 
 # sets server variable
+# TODO: remove, need alternative
 def set_server_variable(run_id, key, value):
     return RequestFormatter.Get(
         "set_server_variable_api", {"run_id": run_id, "var_name": key, "var_val": value}
@@ -89,6 +91,7 @@ def set_server_variable(run_id, key, value):
 
 
 # gets server variable
+# TODO: remove, need alternative
 def get_server_variable(run_id, key):
     return RequestFormatter.Get(
         "get_server_variable_api", {"run_id": run_id, "var_name": key}
@@ -96,6 +99,7 @@ def get_server_variable(run_id, key):
 
 
 # get global list variable
+# TODO: remove, need alternative
 def get_global_list_variable(name):
     return RequestFormatter.Get(
         "set_or_get_global_server_list_variable_api", {"name": name}
@@ -103,6 +107,7 @@ def get_global_list_variable(name):
 
 
 # append to global list variable
+# TODO: remove, need alternative
 def append_to_global_list_variable(name, value):
     return RequestFormatter.Get(
         "append_value_to_global_server_list_variable_api",
@@ -111,6 +116,7 @@ def append_to_global_list_variable(name, value):
 
 
 # remove item from global list variable
+# TODO: remove, need alternative
 def remove_item_from_global_list_variable(name, value):
     return RequestFormatter.Get(
         "delete_global_server_list_variable_by_value_api",
@@ -119,21 +125,24 @@ def remove_item_from_global_list_variable(name, value):
 
 
 # get all server variable
+# TODO: remove, need alternative
 def get_all_server_variable(run_id):
     return RequestFormatter.Get("get_all_server_variable_api", {"run_id": run_id})
 
 
-
 # if run is cancelled then it can be called, it cleans up the runid from database
+# TODO: remove, unnecessary
 def cleanup_runid_from_server(run_id):
     RequestFormatter.Get("clean_up_run_api", {"run_id": run_id})
 
 
 # returns current status of the runid
+# TODO: remove, unnecessary
 def get_status_of_runid(run_id):
     return RequestFormatter.Get("get_status_of_a_run_api", {"run_id": run_id})
 
 
+# TODO: Remove
 def check_if_other_machines_failed_in_linked_run():
     # can get multiple server variable with one action
     sModuleInfo = inspect.currentframe().f_code.co_name + " : " + MODULE_NAME
@@ -186,6 +195,8 @@ def create_tc_log_ss_folder(run_id, test_case, temp_ini_file, server_version):
         )
     except Exception:
         return CommonUtil.Exception_Handler(sys.exc_info())
+
+    # TODO: use pathlib
     test_case_folder = (
         log_file_path +
         os.sep +
@@ -195,6 +206,8 @@ def create_tc_log_ss_folder(run_id, test_case, temp_ini_file, server_version):
         os.sep +
         test_case.replace(":", "-")
     )
+
+    # TODO: Use pathlib for following items
     # create test_case_folder
     ConfigModule.add_config_value("sectionOne", "test_case", test_case, temp_ini_file)
     ConfigModule.add_config_value("sectionOne", "test_case_folder", test_case_folder, temp_ini_file)
@@ -215,19 +228,27 @@ def create_tc_log_ss_folder(run_id, test_case, temp_ini_file, server_version):
     ConfigModule.add_config_value("sectionOne", "performance_report", performance_report, temp_ini_file)
     FL.CreateFolder(performance_report)
 
+    # TODO: we'll be breaking internal server compatibility anyway
+    # ! This will be unnecessary
     if float(server_version.split(".")[0]) >= 7:
         # json report folder
         json_report = test_case_folder + os.sep + "json_report"
         ConfigModule.add_config_value("sectionOne", "json_report", json_report, temp_ini_file)
         FL.CreateFolder(json_report)
 
-    # create where attachments from selenium browser will be downloaded
+    # create where attachments from selenium browser will be
+    # downloaded
+    # ? Why are we keeping two separate download folders?
     zeuz_download_folder = test_case_folder + os.sep + "zeuz_download_folder"
     FL.CreateFolder(zeuz_download_folder)
     initial_download_folder = zeuz_download_folder + os.sep + "initial_download_folder"
     FL.CreateFolder(initial_download_folder)
     ConfigModule.add_config_value("sectionOne", "initial_download_folder", initial_download_folder, temp_ini_file)
     shared.Set_Shared_Variables("zeuz_download_folder", zeuz_download_folder)
+
+    # ? Can't we run the above folder creation codes only once when
+    # the node starts or when main driver is called for the first
+    # time?
 
     # Store the attachments for each test case separately inside
     # AutomationLog/attachments/TEST-XYZ
@@ -275,7 +296,7 @@ def call_driver_function_of_test_step(
         # get step driver
         current_driver = all_step_info[StepSeq-1]["step_driver_type"]
         # current_driver = "Built_In_Driver"
-        print("DRIVER: {}".format(current_driver))
+        print(f"DRIVER: {current_driver}")
 
         try:
             current_driver = "Drivers." + current_driver
@@ -447,11 +468,11 @@ def run_all_test_steps_in_a_test_case(
             sTestStepResultList.append("PASSED")
 
         # Creating Testcase attachment variables
-        attachment_path = str(Path(ConfigModule.get_config_value("sectionOne", "temp_run_file_path", temp_ini_file)) / "attachments")
+        attachment_path = Path(ConfigModule.get_config_value("sectionOne", "temp_run_file_path", temp_ini_file)) / "attachments"
         tc_attachment_list = []
-        for tc_attachment in testcase_info['testcase_attachments_links']:
-            path = str(Path(attachment_path + tc_attachment[0][10:]))
-            var_name = tc_attachment[1] + "." + tc_attachment[2] if tc_attachment[2] else tc_attachment[1]
+        for tc_attachment in testcase_info['attachments']:
+            var_name = Path(tc_attachment).name
+            path = str(attachment_path / var_name)
             tc_attachment_list.append(var_name)
             shared.Set_Shared_Variables(var_name, path, attachment_var=True)
 
@@ -464,10 +485,7 @@ def run_all_test_steps_in_a_test_case(
                 action_dataset = action_info["step_actions"]
                 all_action_data_set.append(action_dataset)
                 dict = {}
-                dict["Action disabled"] = True if action_info["action_disabled"] == False else False
-                server_version = CommonUtil.all_logs_json[CommonUtil.runid_index]["webserver_version"]
-                if float(server_version[:server_version.find(".", 2)]) > 6.0:
-                    dict["Action disabled"] = not dict["Action disabled"]
+                dict["Action disabled"] = action_info["action_disabled"]
                 dict["Action name"] = action_info["action_name"]
                 all_action_Info.append(dict)
             all_step_dataset.append(all_action_data_set)
@@ -491,6 +509,7 @@ def run_all_test_steps_in_a_test_case(
                         "Step-%s is set as 'Always run' so executing this step" % (CommonUtil.step_index + 1),
                         2,
                     )
+                # TODO: Revisit the todo on the right
                 elif "run_on_fail" in all_step_info[StepSeq - 1] and all_step_info[StepSeq - 1]["run_on_fail"]:     # Todo: Remove the 1st condition when all servers are updated
                     CommonUtil.ExecLog(
                         sModuleInfo,
@@ -518,13 +537,13 @@ def run_all_test_steps_in_a_test_case(
             current_step_sequence = all_step_info[StepSeq - 1]["step_sequence"]
             shared.Set_Shared_Variables("zeuz_current_step", all_step_info[StepSeq - 1], print_variable=False, pretty=False)
 
-            step_attachments = all_step_info[StepSeq - 1]['step_attachments']
+            step_attachments = all_step_info[StepSeq - 1]['attachments']
             step_attachment_list = []
             for attachment in step_attachments:
-                path = str(Path(attachment_path + attachment[1][12:]))
-                var_name = attachment[2] + "." + attachment[3] if attachment[3] else attachment[2]
-                step_attachment_list.append(var_name)
-                shared.Set_Shared_Variables(var_name, path, attachment_var=True)
+                attachment_name = Path(attachment).name
+                path = str(attachment_path / attachment_name)
+                step_attachment_list.append(attachment_name)
+                shared.Set_Shared_Variables(attachment_name, path, attachment_var=True)
 
             # add config value
             ConfigModule.add_config_value(
@@ -543,14 +562,48 @@ def run_all_test_steps_in_a_test_case(
             _color = "yellow"
             # _style = Style(color="yellow", blink=False, bold=True)
             table = Table(border_style=_color, box=ASCII_DOUBLE_HEAD, expand=False)
-            table.add_column(f"STEP-{str(StepSeq)}", justify="center", style=_color, max_width=40)
-            table.add_row(f"{current_step_name}", style=_color)
+            table.add_column(
+                f"ID",
+                justify="center",
+                style=_color,
+                max_width=5,
+            )
+            table.add_column(
+                f"STEP #{StepSeq}",
+                justify="center",
+                style=_color,
+                max_width=40,
+            )
+            table.add_column(
+                f"Always run",
+                justify="center",
+                style=_color,
+                min_width=6,
+                max_width=6,
+            )
+            table.add_column(
+                f"Type",
+                justify="center",
+                style=_color,
+                max_width=6,
+            )
+            table.add_row(
+                f"{all_step_info[StepSeq - 1]['step_id']}",
+                f"{current_step_name}",
+                f"{all_step_info[StepSeq - 1]['always_run']}",
+                "global" if all_step_info[StepSeq - 1]['type'] == "linked" else "local",
+                style=_color,
+            )
             # width_pad = CommonUtil.max_char // 2 - (max(len(current_step_name), 6) + 4) // 2
             # table = Padding(table, (0, width_pad))
             rich_print(table)
 
             test_steps_data = all_step_dataset[StepSeq-1]
             test_action_info = all_action_info[StepSeq-1]
+
+            # FIXME: If either one of run on fail or step time throws an
+            # exception, both values will be set to a default value. So it has
+            # the possibility to ignore one of the other correct values.
             try:
                 test_case_continue = all_step_info[StepSeq - 1]["continue_on_fail"]
                 step_time = all_step_info[StepSeq - 1]["step_time"]
@@ -564,7 +617,7 @@ def run_all_test_steps_in_a_test_case(
 
             # get step start time
             TestStepStartTime = time.time()
-            sTestStepStartTime = datetime.fromtimestamp(TestStepStartTime).strftime("%Y-%m-%d %H:%M:%S.%f")
+            sTestStepStartTime = datetime.fromtimestamp(TestStepStartTime, tz=pytz.UTC).strftime("%Y-%m-%d %H:%M:%S.%f")
             WinMemBegin = CommonUtil.PhysicalAvailableMemory()  # get available memory
 
             if StepSeq in CommonUtil.disabled_step:
@@ -586,7 +639,7 @@ def run_all_test_steps_in_a_test_case(
                 )
 
             TestStepEndTime = time.time()
-            sTestStepEndTime = datetime.fromtimestamp(TestStepEndTime).strftime("%Y-%m-%d %H:%M:%S.%f")
+            sTestStepEndTime = datetime.fromtimestamp(TestStepEndTime, tz=pytz.UTC).strftime("%Y-%m-%d %H:%M:%S.%f")
             WinMemEnd = CommonUtil.PhysicalAvailableMemory()  # get available memory
             if CommonUtil.custom_step_duration:
                 TestStepDuration = CommonUtil.custom_step_duration
@@ -801,7 +854,7 @@ def run_test_case(
     try:
         TestCaseStartTime = time.time()
         shared.Set_Shared_Variables("run_id", run_id)
-        test_case = str(TestCaseID).replace("#", "no")
+        test_case = str(TestCaseID).replace("#", "no") # FIXME: Why are we replacing '#' with 'no'?
         CommonUtil.current_tc_no = test_case
         CommonUtil.load_testing = False
         ConfigModule.add_config_value("sectionOne", "sTestStepExecLogId", sModuleInfo, temp_ini_file)
@@ -851,7 +904,7 @@ def run_test_case(
 
         # get test case end time
         TestCaseEndTime = time.time()
-        sTestCaseEndTime = datetime.fromtimestamp(TestCaseEndTime).strftime("%Y-%m-%d %H:%M:%S")
+        sTestCaseEndTime = datetime.fromtimestamp(TestCaseEndTime, tz=pytz.UTC).strftime("%Y-%m-%d %H:%M:%S")
 
         # Decide if Test Case Pass/Failed
         sTestCaseStatus = calculate_test_case_result(sModuleInfo, test_case, run_id, sTestStepResultList, testcase_info)
@@ -876,7 +929,7 @@ def run_test_case(
         TimeInSec = int(TimeDiff)
         TestCaseDuration = CommonUtil.FormatSeconds(TimeInSec)
         after_execution_dict = {
-            "teststarttime": datetime.fromtimestamp(TestCaseStartTime).strftime("%Y-%m-%d %H:%M:%S"),
+            "teststarttime": datetime.fromtimestamp(TestCaseStartTime, tz=pytz.UTC).strftime("%Y-%m-%d %H:%M:%S"),
             "testendtime": sTestCaseEndTime,
             "duration": TestCaseDuration,
             "status": sTestCaseStatus,
@@ -921,13 +974,13 @@ def run_test_case(
     except:
         CommonUtil.Exception_Handler(sys.exc_info())
         TestCaseEndTime = time.time()
-        sTestCaseEndTime = datetime.fromtimestamp(TestCaseEndTime).strftime("%Y-%m-%d %H:%M:%S")
+        sTestCaseEndTime = datetime.fromtimestamp(TestCaseEndTime, tz=pytz.UTC).strftime("%Y-%m-%d %H:%M:%S")
         TimeDiff = TestCaseEndTime - TestCaseStartTime
         TimeInSec = int(TimeDiff)
         TestCaseDuration = CommonUtil.FormatSeconds(TimeInSec)
         sTestCaseStatus = "Blocked"
         after_execution_dict = {
-            "teststarttime": datetime.fromtimestamp(TestCaseStartTime).strftime("%Y-%m-%d %H:%M:%S"),
+            "teststarttime": datetime.fromtimestamp(TestCaseStartTime, tz=pytz.UTC).strftime("%Y-%m-%d %H:%M:%S"),
             "testendtime": sTestCaseEndTime,
             "duration": TestCaseDuration,
             "status": sTestCaseStatus,
@@ -951,13 +1004,17 @@ def set_device_info_according_to_user_order(device_order, device_dict,  test_cas
     # Need to set device_info for browserstack here
     global device_info
     if isinstance(device_order, list):
-        for each in device_order:
-            device_order_val = str(each[0])
-            device_no_val = str(each[1])
-            original_dict = device_dict
-            device_info["device " + device_order_val] = original_dict[
-                "device " + device_no_val
+        try:
+            # FIXME: The device info needs to be fixed for deploy v3
+            for each in device_order:
+                device_order_val = str(each[0])
+                device_no_val = str(each[1])
+                original_dict = device_dict
+                device_info["device " + device_order_val] = original_dict[
+                    "device " + device_no_val
                 ]
+        except:
+            pass
     elif "browser_stack" in device_order and device_order["browser_stack"]:
         project = user_info_object["project"]
         team = user_info_object["team"]
@@ -1020,7 +1077,7 @@ def write_locust_input_file(
     final_dependency,
     final_run_params,
     temp_ini_file,
-    is_linked,
+    # is_linked,
     send_log_file_only_for_fail,
 ):
     try:
@@ -1042,7 +1099,7 @@ def write_locust_input_file(
         file.write(str(final_dependency) + "\n")
         file.write(str(final_run_params) + "\n")
         file.write(str(temp_ini_file) + "\n")
-        file.write(str(is_linked) + "\n")
+        # file.write(str(is_linked) + "\n")
         file.write(str(send_log_file_only_for_fail) + "\n")
         file.close()
     except:
@@ -1151,9 +1208,7 @@ def upload_json_report_old(Userid, temp_ini_file, run_id):
         if CommonUtil.run_cancel != CANCELLED_TAG:
             # Create a standard report format to be consumed by other tools.
             junit_report_path = zip_path / "junitreport.xml"
-            print("Generating junit4 compatible report.")
             junit_report.process(CommonUtil.all_logs_json, str(junit_report_path))
-            print("DONE. Generated junit report at %s" % junit_report_path)
         return zip_path
     except:
         CommonUtil.Exception_Handler(sys.exc_info())
@@ -1176,9 +1231,6 @@ def upload_reports_and_zips(Userid, temp_ini_file, run_id):
                         del step["actions"]
                     if "log" in step:
                         del step["log"]
-
-            with open("report.json", "w") as f:
-                f.write(json.dumps({"execution_report": json.dumps(tc_report)}))
 
             for _ in range(5):
                 try:
@@ -1252,9 +1304,7 @@ def upload_reports_and_zips(Userid, temp_ini_file, run_id):
         if CommonUtil.run_cancel != CANCELLED_TAG:
             # Create a standard report format to be consumed by other tools.
             junit_report_path = zip_dir / "junitreport.xml"
-            print("Generating junit4 compatible report.")
             junit_report.process(CommonUtil.all_logs_json, str(junit_report_path))
-            print("DONE. Generated junit report at %s" % junit_report_path)
         return zip_dir
     except:
         CommonUtil.Exception_Handler(sys.exc_info())
@@ -1272,7 +1322,7 @@ def split_testcases(run_id_info, max_tc_in_single_session):
         len_list.append(ceil(len(testcases)/session_num))
     for _ in range(lower_num):
         len_list.append(floor(len(testcases)/session_num))
-    print("We have split %d test cases into %d sessions: %s" % (len(testcases), session_num, str(len_list)))
+    # print("We have split %d test cases into %d sessions: %s" % (len(testcases), session_num, str(len_list)))
     all_sessions = []
     start = 0
     for i in range(session_num):
@@ -1281,6 +1331,53 @@ def split_testcases(run_id_info, max_tc_in_single_session):
         all_sessions.append(temp)
         start += len_list[i]
     return all_sessions
+
+
+def download_url(url):
+    """Downloads a given url into the 'attachments' folder."""
+
+    temp_ini_file = os.path.join(
+        os.path.join(
+            os.path.abspath(__file__).split("Framework")[0],
+            os.path.join(
+                "AutomationLog",
+                ConfigModule.get_config_value("Advanced Options", "_file"),
+            ),
+        )
+    )
+    attachment_path = Path(ConfigModule.get_config_value("sectionOne", "temp_run_file_path", temp_ini_file)) / "attachments"
+
+    # assumes that the last segment after the / represents the file name
+    # if url is abc/xyz/file.txt, the file name will be file.txt
+    file_name_start_pos = url.rfind("/") + 1
+    file_name = url[file_name_start_pos:]
+
+    r = requests.get(url, stream=True)
+    if r.status_code == requests.codes.ok:
+        with open(attachment_path / file_name, 'wb') as f:
+            for data in r:
+                f.write(data)
+    return url
+
+
+def download_attachments(testcase_info):
+    """Download test case and step attachments for the given test case."""
+
+    url_prefix = ConfigModule.get_config_value("Authentication", "server_address") + "/static"
+    urls = []
+
+    # Test case attachments
+    for attachment_url in testcase_info["attachments"]:
+        urls.append(url_prefix + attachment_url)
+
+    # Step attachments
+    for step in testcase_info["steps"]:
+        for attachment_url in step["attachments"]:
+            urls.append(url_prefix + attachment_url)
+
+    results = ThreadPool(4).imap_unordered(download_url, urls)
+    for r in results:
+        print("Downloaded: %s" % r)
 
 
 # main function
@@ -1310,7 +1407,6 @@ def main(device_dict, user_info_object):
         for i in os.walk(save_path):
             if get_json:
                 get_json = False
-                json_path = Path(i[0]) / i[2][0]
                 folder_list = i[1]
                 for j in folder_list:
                     all_file_specific_steps[j] = {}
@@ -1318,7 +1414,10 @@ def main(device_dict, user_info_object):
                 for j in i[2]:
                     all_file_specific_steps[folder_list[cnt]][j] = str(Path(i[0]) / j)
                 cnt += 1
-        # TODO: Remove all_file_specific_steps at a later period. keeping this only for custom driver purpose
+        # TODO: Remove all_file_specific_steps at a later period. keeping this
+        # only for custom driver purpose
+
+        json_path = save_path.glob("*.zeuz.json").__next__()
         with open(json_path, "r") as f:
             all_run_id_info = json.loads(f.read())
 
@@ -1326,17 +1425,14 @@ def main(device_dict, user_info_object):
             CommonUtil.ExecLog("", "No Test Run Schedule found for the current user : %s" % Userid, 2)
             return False
 
-        executor = CommonUtil.GetExecutor()
         CommonUtil.runid_index = 0
         for run_id_info in all_run_id_info:
             run_id_info["base_path"] = ConfigModule.get_config_value("Advanced Options", "_file_upload_path")
             run_id = run_id_info["run_id"]
-            server_version = run_id_info["release_version"]
-            release_name = run_id_info["release_name"]
-            release_info = run_id_info["release_info"]
+            server_version = run_id_info["server_version"]
             CommonUtil.ExecLog(
                 "",
-                "Server version = %s\nServer Release Date = %s\nServer Release Note = %s" % (server_version, release_name, release_info),
+                f"Server version = {server_version}",
                 4,
                 False,
             )
@@ -1344,52 +1440,40 @@ def main(device_dict, user_info_object):
             CommonUtil.clear_all_logs()
 
             CommonUtil.run_cancelled = False
-            thr = executor.submit(check_run_cancel, run_id)
-            CommonUtil.SaveThread("run_cancel", thr)
+            # FIXME: Remove the unnecessary threading. This won't be needed anymore.
+            # thr = executor.submit(check_run_cancel, run_id)
+            # CommonUtil.SaveThread("run_cancel", thr)
 
             # Write testcase json
             path = ConfigModule.get_config_value("sectionOne", "temp_run_file_path", temp_ini_file) / Path(run_id.replace(":", "-"))
             FL.CreateFolder(path)
 
-            # Start websocket server if we're in debug mode.
             if run_id.lower().startswith("debug"):
-                # CommonUtil.ExecLog(
-                #     "",
-                #     "\n********************************\n*    STARTING DEBUG SESSION    *\n********************************",
-                #     4,
-                #     False,
-                # )
                 CommonUtil.debug_status = True
-                print("[LIVE LOG] Connecting to Live Log service")
-                ws.connect()
-                print("[LIVE LOG] Connected to Live Log service")
             else:
-                # CommonUtil.ExecLog(
-                #     "",
-                #     "\n******************************\n*    STARTING RUN SESSION    *\n******************************",
-                #     4,
-                #     False,
-                # )
                 CommonUtil.debug_status = False
                 cleanup_driver_instances()  # clean up drivers
                 shared.Clean_Up_Shared_Variables()  # clean up shared variables
+
             device_order = run_id_info["device_info"]
             final_dependency = run_id_info["dependency_list"]
-            is_linked = run_id_info["is_linked"]
+            # is_linked = run_id_info["is_linked"]
             final_run_params_from_server = run_id_info["run_time"]
+
+            runtime_settings = run_id_info["runtime_settings"]
             if not CommonUtil.debug_status:
                 rem_config = {
-                    "threading": run_id_info["threading"] if "threading" in run_id_info else False,
-                    "local_run": run_id_info["local_run"] if "local_run" in run_id_info else False,
-                    "take_screenshot": run_id_info["take_screenshot"] if "take_screenshot" in run_id_info else True,
-                    "upload_log_file_only_for_fail": run_id_info["upload_log_file_only_for_fail"] if "upload_log_file_only_for_fail" in run_id_info else True,
-                    # "rerun_on_fail": run_id_info["rerun_on_fail"] if "rerun_on_fail" in run_id_info else False,
+                    "threading": runtime_settings["threading"],
+                    "local_run": runtime_settings["local_run"],
+                    "take_screenshot": runtime_settings["take_screenshot"],
+                    "upload_log_file_only_for_fail": runtime_settings["upload_log_file_only_for_fail"],
+                    # "rerun_on_fail": runtime_settings["rerun_on_fail"] if "rerun_on_fail" in runtime_settings else False,
                     "rerun_on_fail": False,     # Turning off rerun until its completed
-                    "window_size_x": run_id_info["window_size_x"] if "window_size_x" in run_id_info else "",
-                    "window_size_y": run_id_info["window_size_y"] if "window_size_y" in run_id_info else "",
+                    "window_size_x": runtime_settings["window_size_x"] if runtime_settings["window_size_x"] != 0 else "",
+                    "window_size_y": runtime_settings["window_size_y"] if runtime_settings["window_size_y"] != 0 else "",
                 }
-                if ConfigModule.get_config_value("RunDefinition", "local_run") == "True":
-                    rem_config["local_run"] = True
+                # if ConfigModule.get_config_value("RunDefinition", "local_run") == "True":
+                #     rem_config["local_run"] = True
                 ConfigModule.remote_config = rem_config
             else:
                 rem_config = {
@@ -1410,6 +1494,8 @@ def main(device_dict, user_info_object):
 
             final_run_params = {}
             for param in final_run_params_from_server:
+                # TODO: This needs to be changed to use the new key/value format
+                # to be sent from server.
                 final_run_params[param] = CommonUtil.parse_value_into_object(list(final_run_params_from_server[param].items())[1][1])
                 # final_run_params[param] = CommonUtil.parse_value_into_object(list(final_run_params_from_server[param].items())[0][1])
                 # final_run_params[param] = CommonUtil.parse_value_into_object(final_run_params_from_server[param]["subfield"])
@@ -1433,14 +1519,19 @@ def main(device_dict, user_info_object):
                     i -= 1
                 i += 1
             if len(all_testcases_info) > 0:
-                CommonUtil.ExecLog("", "Total number of Automated test cases %s" % len(all_testcases_info), 4, False)
+                # CommonUtil.ExecLog("", "Total number of Automated test cases
+                # %s" % len(all_testcases_info), 4, False)
+                pass
             else:
-                CommonUtil.ExecLog("", "No Automated test cases found for the current user : %s" % Userid, 2)
+                CommonUtil.ExecLog("", "No Automated test cases found in this deployment: %s" % Userid, 2)
                 CommonUtil.runid_index += 1
                 return "pass"
             num_of_tc = len(all_testcases_info)
             cnt = 1
 
+            # TODO: This is not needed anymore since the server controls exactly
+            # how many test cases are sent in each session and node simply needs
+            # to execute the test cases and upload the reports.
             max_tc_in_single_session = 50    # Todo: make it 25
             all_sessions = split_testcases(run_id_info, max_tc_in_single_session)
             session_cnt = 1
@@ -1449,7 +1540,7 @@ def main(device_dict, user_info_object):
                 CommonUtil.all_logs_json = [each_session]
                 CommonUtil.tc_index = 0
                 all_testcases_info = each_session["test_cases"]
-                print("Starting %s with %s testcases" % (CommonUtil.current_session_name, len(all_testcases_info)))
+                # print("Starting %s with %s test cases" % (CommonUtil.current_session_name, len(all_testcases_info)))
                 for testcase_info in all_testcases_info:
                     performance_test_case = False
                     if testcase_info["automatability"].lower() == "performance":
@@ -1458,6 +1549,9 @@ def main(device_dict, user_info_object):
                     test_case_name = testcase_info["title"]
                     set_device_info_according_to_user_order(device_order, device_dict, test_case_no, test_case_name, user_info_object, Userid)
                     CommonUtil.disabled_step = []
+
+                    # Download test case and step attachments
+                    download_attachments(testcase_info)
 
                     if performance_test_case:
                         # get performance test info
@@ -1477,7 +1571,7 @@ def main(device_dict, user_info_object):
                             final_dependency,
                             final_run_params,
                             temp_ini_file,
-                            is_linked,
+                            # is_linked,
                             send_log_file_only_for_fail=send_log_file_only_for_fail,
                         )
 
@@ -1555,12 +1649,12 @@ def main(device_dict, user_info_object):
                         CommonUtil.clear_all_logs()  # clear logs
                         if CommonUtil.run_cancel == CANCELLED_TAG:
                             break
-                        print("Executed %s test cases" % cnt)
+                        # print("Executed %s test cases" % cnt)
                         cnt += 1
                     CommonUtil.tc_index += 1
 
                 # calculate elapsed time of runid
-                sTestSetEndTime = datetime.fromtimestamp(time.time()).strftime("%Y-%m-%d %H:%M:%S")
+                sTestSetEndTime = datetime.fromtimestamp(time.time(), tz=pytz.UTC).strftime("%Y-%m-%d %H:%M:%S")
                 TestSetEndTime = time.time()
                 TimeDiff = TestSetEndTime - TestSetStartTime
                 TimeInSec = int(TimeDiff)
@@ -1568,7 +1662,7 @@ def main(device_dict, user_info_object):
 
                 after_execution_dict = {
                     "status": "Complete",
-                    "teststarttime": datetime.fromtimestamp(TestSetStartTime).strftime("%Y-%m-%d %H:%M:%S"),
+                    "teststarttime": datetime.fromtimestamp(TestSetStartTime, tz=pytz.UTC).strftime("%Y-%m-%d %H:%M:%S"),
                     "testendtime": sTestSetEndTime,
                     "duration": TestSetDuration
                 }
@@ -1581,9 +1675,9 @@ def main(device_dict, user_info_object):
 
                 session_cnt += 1
 
-            print("Test set execution time = %s sec for %s testcases" % (round(TimeDiff, 3), num_of_tc))
+            print("Execution time = %s sec" % round(TimeDiff, 3))
             # print("Report creation time = %s sec for %s testcases" % (round(CommonUtil.report_json_time, 3), num_of_tc))
-            print("Test Set Completed")
+            # print("Test Set Completed")
 
             ConfigModule.add_config_value("sectionOne", "sTestStepExecLogId", "MainDriver", temp_ini_file)
 
@@ -1617,8 +1711,9 @@ def main(device_dict, user_info_object):
 
             # Close websocket connection.
             elif CommonUtil.debug_status:
-                ws.close()
-                print("[LIVE LOG] Disconnected from Live Log service")
+                # ws.close()
+                # print("[LIVE LOG] Disconnected from Live Log service")
+                pass
             CommonUtil.runid_index += 1
 
             # Terminating all run_cancel threads after finishing a run_id

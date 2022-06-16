@@ -36,6 +36,7 @@ import json
 import subprocess
 from concurrent.futures import ThreadPoolExecutor
 from datetime import datetime
+import pytz
 
 from . import common_functions as common  # Functions that are common to all modules
 from Framework.Built_In_Automation.Shared_Resources import BuiltInFunctionSharedResources as sr
@@ -951,7 +952,7 @@ def Run_Sequential_Actions(
         if data_set_list == []:  # run the full step data
             for i in range(len(step_data)):
                 if debug_actions:
-                    if str(i + 1) in debug_actions:
+                    if (i + 1) in debug_actions:
                         data_set_list.append(i)
                 else:
                     data_set_list.append(i)
@@ -1531,7 +1532,7 @@ def Loop_Action_Handler(data, row, dataset_cnt):
         inside_interval = False
         load_testing_count = -1
 
-        performance_start_time = datetime.fromtimestamp(time.time()).strftime("%Y-%m-%d %H:%M:%S")
+        performance_start_time = datetime.fromtimestamp(time.time(), tz=pytz.UTC).strftime("%Y-%m-%d %H:%M:%S")
         performance_start_counter = time.perf_counter()
         while True:  # We control the new sub-set of the step data, so we can examine the output
             CommonUtil.ExecLog(sModuleInfo, "Loop action #%d" % sub_set_cnt, 1)
@@ -1688,7 +1689,7 @@ def Loop_Action_Handler(data, row, dataset_cnt):
         if load_testing:
             thread_pool.shutdown()
 
-            performance_end_time = datetime.fromtimestamp(time.time()).strftime("%Y-%m-%d %H:%M:%S")
+            performance_end_time = datetime.fromtimestamp(time.time(), tz=pytz.UTC).strftime("%Y-%m-%d %H:%M:%S")
             performance_end_counter = time.perf_counter()
             performance_duration = round(performance_end_counter-performance_start_counter, 6)
 
