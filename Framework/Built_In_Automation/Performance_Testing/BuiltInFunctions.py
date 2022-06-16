@@ -1,3 +1,6 @@
+import os
+from jinja2 import Environment, FileSystemLoader
+
 from Framework.Utilities.decorators import logger, deprecated
 import inspect,sys,random
 from Framework.Utilities import CommonUtil, ConfigModule
@@ -223,3 +226,44 @@ def assign_locust_task(data_set):
         return "passed"
     except:
         return CommonUtil.Exception_Handler(sys.exc_info())
+
+
+# @logger
+# def run_performance_test(data_set):
+#     """
+#     This function will perform at the last for building the locust python file and running it.
+#     """
+#     sModuleInfo = inspect.currentframe().f_code.co_name + " : " + MODULE_NAME
+#
+#     try:
+#         locust_var_name = None
+#         locust_output_file = f"{os.getcwd()}{os.sep}locust_files{os.sep}locust_python_file.py"
+#
+#         try:
+#             for left, mid, right in data_set:
+#                 left = left.strip().lower()
+#                 if mid.strip().lower() == "action":
+#                     if "run performance test" == left:
+#                         locust_var_name = right.strip()
+#         except Exception as e:
+#             CommonUtil.ExecLog(sModuleInfo, "Failed to parse data.", 1)
+#             traceback.print_exc()
+#             return "zeuz_failed"
+#
+#         # Todo: Generate the locust python file and run it
+#         # Load templates folder and then load the template file then render the template
+#         file_loader = FileSystemLoader('templates')
+#         env = Environment(loader=file_loader)
+#         jinja_template = env.get_template("performance_template.txt")
+#         template_string = jinja_template.render(PERF_VARIABLE=sr.Get_Shared_Variables(locust_var_name, log=False))
+#         print(template_string)
+#
+#         # write python file
+#         with open(locust_output_file, "w") as output_file:
+#             output_file.write(template_string)
+#
+#         return "passed"
+#
+#     except Exception as e:
+#         CommonUtil.ExecLog(sModuleInfo, e, 3)
+#         return CommonUtil.Exception_Handler(sys.exc_info())
