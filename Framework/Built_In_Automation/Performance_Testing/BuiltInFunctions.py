@@ -45,7 +45,7 @@ def locust_config(data_set):
                                 "swarm": swarm,
                                 "spawn": spawn
                             },
-                            "task_sets": [],
+                            "task_sets": {},
                             "users": {}
                     }    
         except:
@@ -78,7 +78,7 @@ def assign_locust_user(data_set):
     sModuleInfo = inspect.currentframe().f_code.co_name + " : " + MODULE_NAME
 
     try:
-        locust_var = losust_var_name = user_name = user_type = wait_time = host = sequential = None
+        locust_var = losust_var_name = user_name = user_type = wait_time = host = None
         try:
             for left, mid, right in data_set:
                 left = left.strip().lower()
@@ -100,7 +100,7 @@ def assign_locust_user(data_set):
                 return "zeuz_failed"
                 
             locust_var = sr.Get_Shared_Variables(losust_var_name,log=False)
-            locust_var['users'][user_name] = {'type':user_type,'wait_time' : wait_time,'host':host,'sequential':sequential,'tasks':[]}
+            locust_var['users'][user_name] = {'type':user_type,'wait_time' : wait_time,'host':host,'tasks':[],'user_task_sets':[]}
         except:
             CommonUtil.ExecLog(sModuleInfo, "Failed to parse data.", 1)
             traceback.print_exc()
@@ -109,6 +109,58 @@ def assign_locust_user(data_set):
         return "passed"
     except:
         return CommonUtil.Exception_Handler(sys.exc_info())
+
+
+@logger
+def assign_locust_taskset(data_set):
+    """
+    Add Locust user configuration to the existing locust variable
+    This action provides that data to creates a user class into locust file
+    Args:
+        data_set:
+          wait_time          | input parameter    | between(int,int)
+          host               | input parameter    | url of host
+          name               | input parameter    | user/class name Case sensitive
+          type               | input parameter    | type of user/class
+          assign locust user | performance action | existing locust variable name
+    Returns:
+        "passed" if success.
+        "zeuz_failed" otherwise.
+    """
+
+    sModuleInfo = inspect.currentframe().f_code.co_name + " : " + MODULE_NAME
+
+    try:
+        locust_var = losust_var_name = taskset_name = user_names =  None
+        try:
+            for left, mid, right in data_set:
+                left = left.strip().lower()
+                if mid.strip().lower() == "input parameter":
+                    if "taskset name" == left:
+                        taskset_name = right.strip()
+                    if "user name" == left:
+                        user_names = [un.strip() for un in right.strip().split(',')]
+                    elif "sequential" == left:
+                        sequential = (right.strip().lower() == 'true')
+                elif mid.strip().lower() == "action":
+                    if "assign locust taskset" == left:
+                        losust_var_name = right.strip()
+            if None in [losust_var_name,taskset_name]: 
+                CommonUtil.ExecLog(sModuleInfo,  f"dataset is inaccurate", 3)
+                return "zeuz_failed"
+            locust_var = sr.Get_Shared_Variables(losust_var_name,log=False)
+            locust_var['task_sets'][taskset_name] = {'sequential':sequential,'tasks':[]}
+            for user_name in user_names:
+                locust_var['users'][user_name]['user_task_sets'].append(taskset_name)
+        except:
+            CommonUtil.ExecLog(sModuleInfo, "Failed to parse data.", 1)
+            traceback.print_exc()
+            return "zeuz_failed"
+        sr.Set_Shared_Variables(losust_var_name, locust_var)
+        return "passed"
+    except:
+        return CommonUtil.Exception_Handler(sys.exc_info())
+
 
 @logger
 def assign_locust_task(data_set):
@@ -130,17 +182,19 @@ def assign_locust_task(data_set):
     sModuleInfo = inspect.currentframe().f_code.co_name + " : " + MODULE_NAME
 
     try:
-        locust_var = locust_var_name = action = data = name = task_name = weight = None
+        locust_var = locust_var_name = action = url = user_name = task_name = taskset_name = weight = None
         try:
             for left, mid, right in data_set:
                 left = left.strip().lower()
                 if mid.strip().lower() == "input parameter":
                     if "action" == left.strip():
                         action = right.strip().lower()
-                    elif "data" == left.strip():
-                        data = right.strip().lower()
-                    elif "name" == left.strip():
-                        name = right.strip()
+                    elif "url" == left.strip():
+                        url = right.strip().lower()
+                    elif "user name" == left.strip():
+                        user_name = right.strip()
+                    elif "taskset name" == left.strip():
+                        taskset_name = right.strip()
                     elif "task name" == left:
                         task_name = right.strip().lower()
                 if mid.strip().lower() == "parameter":
@@ -149,11 +203,18 @@ def assign_locust_task(data_set):
                 elif mid.strip().lower() == "action":
                     if "assign locust task" == left:
                         locust_var_name = right.strip()
-            if None in [locust_var_name,action,data,name,task_name]:
+            if None in [locust_var_name,action,url,task_name]:
                 CommonUtil.ExecLog(sModuleInfo,  f"dataset is inaccurate", 3)
                 return "zeuz_failed"
+            if (sum(x is not None for x in [user_name,taskset_name])) != 1:
+                CommonUtil.ExecLog(sModuleInfo,  f"either user name or taskset name should be given", 3)
+                return "zeuz_failed"
             locust_var = sr.Get_Shared_Variables(locust_var_name,log=False)
-            locust_var['users'][name]['tasks'].append({'action':action,'data':data,'name':task_name,'weight':weight}) 
+            task_data = {'action':action,'url':url,'name':task_name,'weight':weight}
+            if(user_name):
+                locust_var['users'][user_name]['tasks'].append(task_data) 
+            elif(taskset_name):
+                locust_var['task_sets'][taskset_name]['tasks'].append(task_data)
         except:
             CommonUtil.ExecLog(sModuleInfo, "Failed to parse data.", 1)
             traceback.print_exc()
