@@ -45,6 +45,7 @@ def locust_config(data_set):
                                 "swarm": swarm,
                                 "spawn": spawn
                             },
+                            "task_sets": [],
                             "users": {}
                     }    
         except:
@@ -77,13 +78,13 @@ def assign_locust_user(data_set):
     sModuleInfo = inspect.currentframe().f_code.co_name + " : " + MODULE_NAME
 
     try:
-        locust_var = losust_var_name = name = user_type = wait_time = host = sequential = None
+        locust_var = losust_var_name = user_name = user_type = wait_time = host = sequential = None
         try:
             for left, mid, right in data_set:
                 left = left.strip().lower()
                 if mid.strip().lower() == "input parameter":
-                    if "name" == left:
-                        name = right.strip()
+                    if "user name" == left:
+                        user_name = right.strip()
                     if "type" == left:
                         user_type = right.strip().lower()
                         user_type = 'HttpUser' if user_type == 'httpuser' else "User" if user_type == "user" else None
@@ -97,7 +98,7 @@ def assign_locust_user(data_set):
                 elif mid.strip().lower() == "action":
                     if "assign locust user" == left:
                         losust_var_name = right.strip()
-            if None in [losust_var_name,name,user_type,wait_time,host]: 
+            if None in [losust_var_name,user_name,user_type,wait_time,host]: 
                 CommonUtil.ExecLog(sModuleInfo,  f"dataset is inaccurate", 3)
                 return "zeuz_failed"
             
@@ -105,7 +106,7 @@ def assign_locust_user(data_set):
                 sequential = False
                 
             locust_var = sr.Get_Shared_Variables(losust_var_name,log=False)
-            locust_var['users'][name] = {'type':user_type,'wait_time' : wait_time,'host':host,'sequential':sequential,'tasks':[]}
+            locust_var['users'][user_name] = {'type':user_type,'wait_time' : wait_time,'host':host,'sequential':sequential,'tasks':[]}
         except:
             CommonUtil.ExecLog(sModuleInfo, "Failed to parse data.", 1)
             traceback.print_exc()
