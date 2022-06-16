@@ -3,7 +3,7 @@
 # Version 15
 
 ### [Current changes]
-- _
+- **[Fix]** Fixed return for common screenshot action
 
 ### [15.0.4][May 11, 2022]
 - **[Improve]** Added plus button support in keystroke action

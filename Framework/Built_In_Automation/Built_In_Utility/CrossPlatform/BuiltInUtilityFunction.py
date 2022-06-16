@@ -2263,10 +2263,12 @@ def TakeScreenShot(step_data):
                 CommonUtil.ExecLog(
                     sModuleInfo, 'screenshot saved as: "%s"' % full_location, 1
                 )
+                return "passed"
                 # print 'screenshot saved as: "%s"' % full_location
             else:
                 # print "unable to take screenshot..."
-                CommonUtil.ExecLog(sModuleInfo, "unable to take screenshot...", 1)
+                CommonUtil.ExecLog(sModuleInfo, "unable to take screenshot...", 3)
+                return "zeuz_failed"
 
         elif os.name == "nt":
             # windows working copy
@@ -2280,12 +2282,18 @@ def TakeScreenShot(step_data):
             basewidth = 1200
             wpercent = basewidth / float(img.size[0])
             hsize = int((float(img.size[1]) * float(wpercent)))
-            img = img.resize((basewidth, hsize), Image.ANTIALIAS)
-            img.save(path, "JPEG")
-            CommonUtil.ExecLog(sModuleInfo, 'screenshot saved as: "%s"' % path, 1)
+            if img:    
+                img = img.resize((basewidth, hsize), Image.ANTIALIAS)
+                img.save(path, "JPEG")
+                CommonUtil.ExecLog(sModuleInfo, 'screenshot saved as: "%s"' % path, 1)
+                return "passed"
+            else:
+                CommonUtil.ExecLog(sModuleInfo,"unable to take screenshot...", 3)
+                return "zeuz_failed"
 
     except Exception:
-        return CommonUtil.Exception_Handler(sys.exc_info())
+        CommonUtil.Exception_Handler(sys.exc_info())
+        return "zeuz_failed"
 
 
 @logger
