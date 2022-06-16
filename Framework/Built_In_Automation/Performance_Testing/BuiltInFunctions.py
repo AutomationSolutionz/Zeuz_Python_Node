@@ -92,9 +92,6 @@ def assign_locust_user(data_set):
                         wait_time = right.strip().lower()
                     elif "host" == left:
                         host = right.strip().lower()
-                if mid.strip().lower() == "parameter":
-                    if "sequential" == left:
-                        sequential = (right.strip().lower() == 'true')
                 elif mid.strip().lower() == "action":
                     if "assign locust user" == left:
                         losust_var_name = right.strip()
