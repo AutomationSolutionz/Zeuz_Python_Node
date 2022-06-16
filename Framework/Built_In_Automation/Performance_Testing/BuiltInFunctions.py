@@ -98,9 +98,6 @@ def assign_locust_user(data_set):
             if None in [losust_var_name,user_name,user_type,wait_time,host]: 
                 CommonUtil.ExecLog(sModuleInfo,  f"dataset is inaccurate", 3)
                 return "zeuz_failed"
-            
-            if sequential == None:
-                sequential = False
                 
             locust_var = sr.Get_Shared_Variables(losust_var_name,log=False)
             locust_var['users'][user_name] = {'type':user_type,'wait_time' : wait_time,'host':host,'sequential':sequential,'tasks':[]}
