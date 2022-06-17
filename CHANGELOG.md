@@ -3,6 +3,9 @@
 # Version 16
 
 ### [Current changes]
+
+- **[Fix]** Fixed return for common screenshot action
+
 - **[Change]** Change the deploy system. This change replaces the old deploy
   system code with a new one that is compatible with the v3 engine on the server
   side.  This works by connecting with a persistent websocket connection that is
@@ -31,6 +34,7 @@
 ### [15.1.0][Jun 03, 2022]
 - **[Add]** Added swipe by uiautomator action for android
 - **[Add]** Added uiautomatorviewer.bat inside App directory
+
 
 ### [15.0.4][May 11, 2022]
 - **[Improve]** Added plus button support in keystroke action
