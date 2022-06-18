@@ -939,7 +939,8 @@ def handle_rest_call(
         try:
             if result.json():
                 Shared_Resources.Set_Shared_Variables("rest_response", result.json(), print_variable=False)
-                Shared_Resources.Set_Shared_Variables("http_response", result.json())
+                Shared_Resources.Set_Shared_Variables("http_response", result.json(), print_raw=True),
+                print_raw=True,
                 CommonUtil.ExecLog(sModuleInfo, "HTTP Request successful.", 1)
 
                 # if save cookie option enabled then push cookie into shared variables, if cookie var name is 'id' then you can reference it later with %|id|%
@@ -1032,7 +1033,8 @@ def handle_rest_call(
                         "rest_response", json_of_response, print_variable=False
                     )
                     Shared_Resources.Set_Shared_Variables(
-                        "http_response", json_of_response
+                        "http_response", json_of_response,
+                        print_raw=True,
                     )
                     CommonUtil.ExecLog(
                         sModuleInfo,
@@ -1051,7 +1053,8 @@ def handle_rest_call(
                         "rest_response", response_text, print_variable=False
                     )
                     Shared_Resources.Set_Shared_Variables(
-                        "http_response", CommonUtil.parse_value_into_object(response_text)
+                        "http_response", CommonUtil.parse_value_into_object(response_text),
+                        print_raw=True,
                     )
                     CommonUtil.ExecLog(
                         sModuleInfo,
@@ -1074,7 +1077,7 @@ def handle_rest_call(
                 )
                 json_of_response = ast.literal_eval(response_text)
                 Shared_Resources.Set_Shared_Variables("rest_response", json_of_response, print_variable=False)
-                Shared_Resources.Set_Shared_Variables("http_response", json_of_response)
+                Shared_Resources.Set_Shared_Variables("http_response", json_of_response, print_raw=True)
                 CommonUtil.ExecLog(
                     sModuleInfo,
                     "REST Call Response Text converted to json and saved in 'http_response' shared variable",
@@ -1088,7 +1091,7 @@ def handle_rest_call(
                     2,
                 )
                 Shared_Resources.Set_Shared_Variables("rest_response", response_text, print_variable=False)
-                Shared_Resources.Set_Shared_Variables("http_response", response_text)
+                Shared_Resources.Set_Shared_Variables("http_response", response_text, print_raw=True)
                 CommonUtil.ExecLog(
                     sModuleInfo,
                     "REST Call Response Text saved in 'http_response' shared variable",

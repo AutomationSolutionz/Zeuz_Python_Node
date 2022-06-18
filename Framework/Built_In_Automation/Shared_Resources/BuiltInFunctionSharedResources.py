@@ -27,7 +27,15 @@ MODULE_NAME = inspect.getmodulename(__file__)
 data_collector = DataCollector()
 
 
-def Set_Shared_Variables(key, value, protected=False, attachment_var=False, print_variable=True, pretty=True):
+def Set_Shared_Variables(
+    key,
+    value,
+    protected=False,
+    attachment_var=False,
+    print_variable=True,
+    pretty=True,
+    print_raw=True,
+):
     try:
         sModuleInfo = inspect.currentframe().f_code.co_name + " : " + MODULE_NAME
         global shared_variables, protected_variables
@@ -78,8 +86,14 @@ def Set_Shared_Variables(key, value, protected=False, attachment_var=False, prin
             shared_variables[key] = value
 
         if print_variable:
+            if print_raw:
+                CommonUtil.ExecLog(
+                    sModuleInfo, "Raw variable data: %s" % value, 4,
+                )
+
             try: val = json.dumps(CommonUtil.parse_value_into_object(value), indent=2, sort_keys=True)
             except: val = str(value)
+
             CommonUtil.ExecLog(
                 sModuleInfo, "Saved variable: %s" % key, 1,
                 variable={
