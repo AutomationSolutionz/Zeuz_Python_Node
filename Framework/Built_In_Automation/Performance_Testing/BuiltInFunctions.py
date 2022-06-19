@@ -245,7 +245,7 @@ def assign_locust_task(data_set):
 #                     if "run performance test" == left:
 #                         locust_var_name = right.strip()
 #         except Exception as e:
-#             CommonUtil.ExecLog(sModuleInfo, "Failed to parse data.", 1)
+#             CommonUtil.ExecLog(sModuleInfo, "Failed to parse data.", 3)
 #             traceback.print_exc()
 #             return "zeuz_failed"
 #
@@ -288,7 +288,7 @@ def generate_performance_test(data_set):
                     if "generate performance test" == left:
                         locust_var_name = right.strip()
         except Exception as e:
-            CommonUtil.ExecLog(sModuleInfo, "Failed to parse data.", 1)
+            CommonUtil.ExecLog(sModuleInfo, "Failed to parse data.", 3)
             traceback.print_exc()
             return "zeuz_failed"
 
