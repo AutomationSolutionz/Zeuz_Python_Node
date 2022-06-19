@@ -433,13 +433,14 @@ def disconnect_from_server():
     CommonUtil.set_exit_mode(True)  # Tell Sequential Actions to exit
 
 
-def update_machine_info(user_info_object, node_id):
+def update_machine_info(user_info_object, node_id, should_print=True):
     update_machine(
         False,
         {
             "project_name": user_info_object["project"],
             "team_name": user_info_object["team"],
         },
+        should_print,
     )
 
     local_tz = str(get_localzone())
@@ -490,8 +491,8 @@ def RunProcess(node_id, device_dict, user_info_object, run_once=False, log_dir=N
             # 3. Call MainDriver
             MainDriverApi.main(device_dict, user_info_object)
 
-        def on_connect_callback():
-            update_machine_info(user_info_object, node_id)
+        def on_connect_callback(reconnected: bool):
+            update_machine_info(user_info_object, node_id, should_print=not reconnected)
             return
 
         def done_callback():
@@ -572,7 +573,7 @@ def PreProcess(log_dir=None):
     ConfigModule.add_config_value("sectionOne", "sTestStepExecLogId", "node_cli", temp_ini_file)
 
 
-def update_machine(dependency, default_team_and_project_dict):
+def update_machine(dependency, default_team_and_project_dict, should_print=True):
     try:
         # Get Local Info object
         oLocalInfo = CommonUtil.MachineInfo()
@@ -613,12 +614,13 @@ def update_machine(dependency, default_team_and_project_dict):
         }
         r = RequestFormatter.Get("update_automation_machine_api/", update_object)
         if r["registered"]:
-            from rich.console import Console
-            rich_print = Console().print
-            # rich_print(":green_circle: Zeuz Node is online: ", end="")
-            rich_print(":green_circle: " + r["name"], style="bold cyan", end="")
-            print(" is Online\n")
-            CommonUtil.ExecLog("", "Zeuz Node is online: %s" % (r["name"]), 4, False, print_Execlog=False)
+            if should_print:
+                from rich.console import Console
+                rich_print = Console().print
+                # rich_print(":green_circle: Zeuz Node is online: ", end="")
+                rich_print(":green_circle: " + r["name"], style="bold cyan", end="")
+                print(" is Online\n")
+                CommonUtil.ExecLog("", "Zeuz Node is online: %s" % (r["name"]), 4, False, print_Execlog=False)
         else:
             if r["license"]:
                 CommonUtil.ExecLog("", "Machine is not registered as online", 4, False)

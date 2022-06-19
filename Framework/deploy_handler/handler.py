@@ -30,6 +30,7 @@ class DeployHandler:
     COMMAND_DONE = "DONE"
     COMMAND_CANCEL = "CANCEL"
     COMMAND_NEXT = "NEXT"
+    COMMAND_RECONNECT = "RECONNECT"
     COMMAND_TC_ACKNOWLEDGED = "TC_ACK"
 
 
@@ -45,6 +46,11 @@ class DeployHandler:
         self.on_connect_callback = on_connect_callback
         self.response_callback = response_callback
         self.cancel_callback = cancel_callback
+
+        # This will be set to True only when the node connection is closed
+        # because the server asked to reconnect. It needs to be immediately set
+        # to False after reading its value.
+        self.reconnecting = False
 
         # Done callback should return true if node does not want to run anymore
         # test cases, false otherwise.
@@ -79,8 +85,10 @@ class DeployHandler:
 
 
     def on_close(self, ws: WebSocketApp, close_status_code: int, close_msg) -> None:
+        if close_msg == self.COMMAND_RECONNECT:
+            self.reconnecting = True
+            # print("reconnecting")
         # print("[deploy] Connection closed.")
-        pass
 
 
     def on_open(self, ws: WebSocketApp) -> None:
@@ -88,7 +96,8 @@ class DeployHandler:
         self.backoff_time = 0
 
         # print("[deploy] Connected to deploy service.")
-        self.on_connect_callback()
+        self.on_connect_callback(self.reconnecting)
+        self.reconnecting = False
         ws.send(self.COMMAND_NEXT)
 
 
@@ -136,7 +145,11 @@ class DeployHandler:
                 )
                 self.ws = None
 
-                print(f"[deploy] Establishing connection in {1 << self.backoff_time} secs...")
+                if not self.reconnecting or self.backoff_time > 3:
+                    # We don't print out anything when we're reconnecting or the
+                    # connection attempt failed at least 3 times.
+                    print(f"[deploy] Establishing connection in {1 << self.backoff_time} secs...")
+
                 time.sleep(1 << self.backoff_time)
 
             except:
