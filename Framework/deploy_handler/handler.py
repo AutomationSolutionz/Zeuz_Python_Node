@@ -36,7 +36,7 @@ class DeployHandler:
 
     def __init__(
         self,
-        on_connect_callback: Callable[[], None],
+        on_connect_callback: Callable[[bool], None],
         response_callback: Callable[[DeployResponse], None],
         cancel_callback: Callable[[None], None],
         done_callback: Callable[[None], bool],
