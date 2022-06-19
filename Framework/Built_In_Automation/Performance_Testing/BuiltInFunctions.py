@@ -278,8 +278,7 @@ def generate_performance_test(data_set):
     try:
         locust_var_name = None
         locust_output_file = f"{os.path.dirname(os.path.realpath(__file__))}{os.sep}locust_files{os.sep}locust_python_file.py"
-        jinja2_temp_dir = f"{os.getcwd()}{os.sep}templates"
-        jinja2_temp_dir2 = os.path.dirname(os.path.realpath(__file__)) + os.sep + "templates"
+        jinja2_temp_dir = os.path.dirname(os.path.realpath(__file__)) + os.sep + "templates"
 
         try:
             for left, mid, right in data_set:
@@ -295,7 +294,7 @@ def generate_performance_test(data_set):
         # Todo: Generate the locust python file and run it
         # Load templates folder and then load the template file then render the template
         # file_loader = FileSystemLoader("E:\\Z_github_dev\\zeuz_node\\Zeuz_Python_Node\\Framework\\Built_In_Automation\\Performance_Testing\\templates")
-        file_loader = FileSystemLoader(jinja2_temp_dir2)
+        file_loader = FileSystemLoader(jinja2_temp_dir)
         env = Environment(loader=file_loader)
         jinja_template = env.get_template("performance_template.txt")
         template_string = jinja_template.render(PERF_VARIABLE=sr.Get_Shared_Variables(locust_var_name, log=False))
