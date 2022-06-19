@@ -1,6 +1,5 @@
 import os
 from jinja2 import Environment, FileSystemLoader
-
 from Framework.Utilities.decorators import logger, deprecated
 import inspect,sys,random
 from Framework.Utilities import CommonUtil, ConfigModule
@@ -32,7 +31,7 @@ def locust_config(data_set):
         try:
             for left, mid, right in data_set:
                 left = left.strip().lower()
-                if mid.strip().lower() == "input parameter":
+                if mid.strip().lower() in ["element parameter","input parameter"]:
                     if "swarm" == left:
                         swarm = float(right.strip().lower())
                     elif "spawn" == left:
@@ -52,7 +51,7 @@ def locust_config(data_set):
                             "users": {}
                     }    
         except:
-            CommonUtil.ExecLog(sModuleInfo, "Failed to parse data.", 1)
+            CommonUtil.Exception_Handler(sModuleInfo, "Failed to parse data.", 3)
             traceback.print_exc()
             return "zeuz_failed"
         sr.Set_Shared_Variables(losust_var_name, locust_var)
@@ -85,7 +84,7 @@ def assign_locust_user(data_set):
         try:
             for left, mid, right in data_set:
                 left = left.strip().lower()
-                if mid.strip().lower() == "input parameter":
+                if mid.strip().lower() in ["element parameter","input parameter"]:
                     if "user name" == left:
                         user_name = right.strip()
                     if "type" == left:
@@ -105,7 +104,7 @@ def assign_locust_user(data_set):
             locust_var = sr.Get_Shared_Variables(losust_var_name,log=False)
             locust_var['users'][user_name] = {'type':user_type,'wait_time' : wait_time,'host':host,'tasks':[],'user_task_sets':[]}
         except:
-            CommonUtil.ExecLog(sModuleInfo, "Failed to parse data.", 1)
+            CommonUtil.Exception_Handler(sModuleInfo, "Failed to parse data.", 3)
             traceback.print_exc()
             return "zeuz_failed"
         sr.Set_Shared_Variables(losust_var_name, locust_var)
@@ -138,13 +137,13 @@ def assign_locust_taskset(data_set):
         try:
             for left, mid, right in data_set:
                 left = left.strip().lower()
-                if mid.strip().lower() == "input parameter":
+                if mid.strip().lower() in ["element parameter","input parameter"]:
                     if "taskset name" == left:
                         taskset_name = right.strip()
                     if "user name" == left:
                         user_names = [un.strip() for un in right.strip().split(',')]
                     elif "sequential" == left:
-                        sequential = (right.strip().lower() == 'true')
+                        sequential = right.strip().lower() in ("true", "yes", "ok", "enable")
                 elif mid.strip().lower() == "action":
                     if "assign locust taskset" == left:
                         losust_var_name = right.strip()
@@ -156,7 +155,7 @@ def assign_locust_taskset(data_set):
             for user_name in user_names:
                 locust_var['users'][user_name]['user_task_sets'].append(taskset_name)
         except:
-            CommonUtil.ExecLog(sModuleInfo, "Failed to parse data.", 1)
+            CommonUtil.Exception_Handler(sModuleInfo, "Failed to parse data.", 3)
             traceback.print_exc()
             return "zeuz_failed"
         sr.Set_Shared_Variables(losust_var_name, locust_var)
@@ -189,7 +188,7 @@ def assign_locust_task(data_set):
         try:
             for left, mid, right in data_set:
                 left = left.strip().lower()
-                if mid.strip().lower() == "input parameter":
+                if mid.strip().lower() in ["element parameter","input parameter"]:
                     if "action" == left.strip():
                         action = right.strip().lower()
                     elif "url" == left.strip():
@@ -209,17 +208,17 @@ def assign_locust_task(data_set):
             if None in [locust_var_name,action,url,task_name]:
                 CommonUtil.ExecLog(sModuleInfo,  f"dataset is inaccurate", 3)
                 return "zeuz_failed"
-            if (sum(x is not None for x in [user_name,taskset_name])) != 1:
+            if sum(x is not None for x in [user_name,taskset_name]) != 1:
                 CommonUtil.ExecLog(sModuleInfo,  f"either user name or taskset name should be given", 3)
                 return "zeuz_failed"
             locust_var = sr.Get_Shared_Variables(locust_var_name,log=False)
             task_data = {'action':action,'url':url,'name':task_name,'weight':weight}
-            if(user_name):
+            if user_name:
                 locust_var['users'][user_name]['tasks'].append(task_data) 
             elif(taskset_name):
                 locust_var['task_sets'][taskset_name]['tasks'].append(task_data)
         except:
-            CommonUtil.ExecLog(sModuleInfo, "Failed to parse data.", 1)
+            CommonUtil.Exception_Handler(sModuleInfo, "Failed to parse data.", 3)
             traceback.print_exc()
             return "zeuz_failed"
         sr.Set_Shared_Variables(locust_var_name, locust_var)
