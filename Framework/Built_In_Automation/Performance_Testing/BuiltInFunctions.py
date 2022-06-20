@@ -244,37 +244,43 @@ def load_jinja_template_and_generate_locust_py(jinja_template_dir="", jinja_file
     CommonUtil.ExecLog(sModuleInfo, "Passed", 1)
 
 
-# @logger
-# def run_performance_test(data_set):
-#     """
-#     This function will perform at the last for building the locust python file and running it.
-#     """
-#     sModuleInfo = inspect.currentframe().f_code.co_name + " : " + MODULE_NAME
+@logger
+def run_performance_test(data_set):
+    """
+    This function will perform at the last for building the locust python file and running it.
+    """
+    sModuleInfo = inspect.currentframe().f_code.co_name + " : " + MODULE_NAME
+
+    try:
+        locust_var_name = None
+        # Todo: output file needs to renamed each time by either run_id or debug_id
+        locust_output_file = f"{os.path.dirname(os.path.realpath(__file__))}{os.sep}locust_files{os.sep}locust_python_file_1.py"
+        jinja2_temp_dir = os.path.dirname(os.path.realpath(__file__)) + os.sep + "templates"
 #
-#     try:
-#         locust_var_name = None
-#         locust_output_file = f"{os.getcwd()}{os.sep}locust_files{os.sep}locust_python_file.py"
-#
-#         try:
-#             for left, mid, right in data_set:
-#                 left = left.strip().lower()
-#                 if mid.strip().lower() == "action":
-#                     if "run performance test" == left:
-#                         locust_var_name = right.strip()
-#         except Exception as e:
-#             CommonUtil.ExecLog(sModuleInfo, "Failed to parse data.", 3)
-#             traceback.print_exc()
-#             return "zeuz_failed"
-#
-#         # Todo: Run the locust python file
-#         # Load templates folder and then load the template file then render the template
-#
-#
-#         return "passed"
-#
-#     except Exception as e:
-#         CommonUtil.ExecLog(sModuleInfo, e, 3)
-#         return CommonUtil.Exception_Handler(sys.exc_info())
+        try:
+            for left, mid, right in data_set:
+                left = left.strip().lower()
+                if mid.strip().lower() == "action":
+                    if "run performance test" == left:
+                        locust_var_name = right.strip()
+        except Exception as e:
+            CommonUtil.ExecLog(sModuleInfo, "Failed to parse data.", 3)
+            traceback.print_exc()
+            return "zeuz_failed"
+
+        # Load templates folder and then load the template file then render the template
+        load_jinja_template_and_generate_locust_py(jinja_template_dir=jinja2_temp_dir,
+                                                   jinja_file_path="performance_template.txt",
+                                                   jinja2_template_variable=sr.Get_Shared_Variables(locust_var_name, log=False),
+                                                   output_file_path=locust_output_file)
+
+        # Todo: Run the locust python file
+
+        return "passed"
+
+    except Exception as e:
+        CommonUtil.ExecLog(sModuleInfo, e, 3)
+        return CommonUtil.Exception_Handler(sys.exc_info())
 
 
 @logger
@@ -314,17 +320,17 @@ def generate_performance_test(data_set):
         return CommonUtil.Exception_Handler(sys.exc_info())
 
 
-@logger
-def run_performance_test(data_set):
-    """
-    This is a test function
-    """
-    sModuleInfo = inspect.currentframe().f_code.co_name + " : " + MODULE_NAME
-
-    try:
-        print("executed the code from run_performace_t")
-        return "passed"
-
-    except Exception as e:
-        CommonUtil.ExecLog(sModuleInfo, e, 3)
-        return CommonUtil.Exception_Handler(sys.exc_info())
+# @logger
+# def run_performance_test(data_set):
+#     """
+#     This is a test function
+#     """
+#     sModuleInfo = inspect.currentframe().f_code.co_name + " : " + MODULE_NAME
+#
+#     try:
+#         print("executed the code from run_performace_t")
+#         return "passed"
+#
+#     except Exception as e:
+#         CommonUtil.ExecLog(sModuleInfo, e, 3)
+#         return CommonUtil.Exception_Handler(sys.exc_info())
