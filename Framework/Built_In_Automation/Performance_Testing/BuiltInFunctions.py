@@ -227,6 +227,23 @@ def assign_locust_task(data_set):
         return CommonUtil.Exception_Handler(sys.exc_info())
 
 
+@logger
+def load_jinja_template_and_generate_locust_py(jinja_template_dir="", jinja_file_path="",
+                                               jinja2_template_variable=None, output_file_path=""):
+    sModuleInfo = inspect.currentframe().f_code.co_name + " : " + MODULE_NAME
+
+    file_loader = FileSystemLoader(jinja_template_dir)
+    env = Environment(loader=file_loader)
+    jinja_template = env.get_template(jinja_file_path)
+    template_string = jinja_template.render(PERF_VARIABLE=jinja2_template_variable)
+    print(template_string)
+
+    # write locust python file
+    with open(output_file_path, "w") as output_file:
+        output_file.write(template_string)
+    CommonUtil.ExecLog(sModuleInfo, "Passed", 1)
+
+
 # @logger
 # def run_performance_test(data_set):
 #     """
@@ -249,17 +266,9 @@ def assign_locust_task(data_set):
 #             traceback.print_exc()
 #             return "zeuz_failed"
 #
-#         # Todo: Run the locust python file and run it
+#         # Todo: Run the locust python file
 #         # Load templates folder and then load the template file then render the template
-#         file_loader = FileSystemLoader('templates')
-#         env = Environment(loader=file_loader)
-#         jinja_template = env.get_template("performance_template.txt")
-#         template_string = jinja_template.render(PERF_VARIABLE=sr.Get_Shared_Variables(locust_var_name, log=False))
-#         print(template_string)
 #
-#         # write python file
-#         with open(locust_output_file, "w") as output_file:
-#             output_file.write(template_string)
 #
 #         return "passed"
 #
@@ -277,7 +286,8 @@ def generate_performance_test(data_set):
 
     try:
         locust_var_name = None
-        locust_output_file = f"{os.path.dirname(os.path.realpath(__file__))}{os.sep}locust_files{os.sep}locust_python_file.py"
+        # Todo: output file needs to renmaed each time by either run_id or debug_id
+        locust_output_file = f"{os.path.dirname(os.path.realpath(__file__))}{os.sep}locust_files{os.sep}locust_python_file_1.py"
         jinja2_temp_dir = os.path.dirname(os.path.realpath(__file__)) + os.sep + "templates"
 
         try:
@@ -291,18 +301,11 @@ def generate_performance_test(data_set):
             traceback.print_exc()
             return "zeuz_failed"
 
-        # Todo: Generate the locust python file and run it
         # Load templates folder and then load the template file then render the template
-        # file_loader = FileSystemLoader("E:\\Z_github_dev\\zeuz_node\\Zeuz_Python_Node\\Framework\\Built_In_Automation\\Performance_Testing\\templates")
-        file_loader = FileSystemLoader(jinja2_temp_dir)
-        env = Environment(loader=file_loader)
-        jinja_template = env.get_template("performance_template.txt")
-        template_string = jinja_template.render(PERF_VARIABLE=sr.Get_Shared_Variables(locust_var_name, log=False))
-        print(template_string)
-
-        # write python file
-        with open(locust_output_file, "w") as output_file:
-            output_file.write(template_string)
+        load_jinja_template_and_generate_locust_py(jinja_template_dir=jinja2_temp_dir,
+                                                   jinja_file_path="performance_template.txt",
+                                                   jinja2_template_variable=sr.Get_Shared_Variables(locust_var_name, log=False),
+                                                   output_file_path=locust_output_file)
 
         return "passed"
 
