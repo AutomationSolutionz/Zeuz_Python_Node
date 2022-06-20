@@ -1,4 +1,5 @@
 import os
+import subprocess
 from jinja2 import Environment, FileSystemLoader
 from Framework.Utilities.decorators import logger, deprecated
 import inspect,sys,random
@@ -254,7 +255,7 @@ def run_performance_test(data_set):
     try:
         locust_var_name = None
         # Todo: output file needs to renamed each time by either run_id or debug_id
-        locust_output_file = f"{os.path.dirname(os.path.realpath(__file__))}{os.sep}locust_files{os.sep}locust_python_file_1.py"
+        locust_output_file = f"{os.path.dirname(os.path.realpath(__file__))}{os.sep}locust_files{os.sep}run_locust_python_file.py"
         jinja2_temp_dir = os.path.dirname(os.path.realpath(__file__)) + os.sep + "templates"
 #
         try:
@@ -275,7 +276,13 @@ def run_performance_test(data_set):
                                                    output_file_path=locust_output_file)
 
         # Todo: Run the locust python file
+        command = ["locust", "-f", locust_output_file]
+        sp = subprocess.Popen(command, shell=False, stdout=subprocess.PIPE, stderr=subprocess.PIPE, universal_newlines=True)
 
+        # rtrn = sp.wait()
+
+        out, err = sp.communicate()
+        print(out)
         return "passed"
 
     except Exception as e:
@@ -293,7 +300,7 @@ def generate_performance_test(data_set):
     try:
         locust_var_name = None
         # Todo: output file needs to renmaed each time by either run_id or debug_id
-        locust_output_file = f"{os.path.dirname(os.path.realpath(__file__))}{os.sep}locust_files{os.sep}locust_python_file_1.py"
+        locust_output_file = f"{os.path.dirname(os.path.realpath(__file__))}{os.sep}locust_files{os.sep}gen_locust_python_file.py"
         jinja2_temp_dir = os.path.dirname(os.path.realpath(__file__)) + os.sep + "templates"
 
         try:
