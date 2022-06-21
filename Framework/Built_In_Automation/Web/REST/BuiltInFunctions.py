@@ -953,7 +953,6 @@ def handle_rest_call(
             if result.json():
                 Shared_Resources.Set_Shared_Variables("rest_response", result.json(), print_variable=False)
                 Shared_Resources.Set_Shared_Variables("http_response", result.json(), print_raw=True),
-                print_raw=True,
                 CommonUtil.ExecLog(sModuleInfo, "HTTP Request successful.", 1)
 
                 # if save cookie option enabled then push cookie into shared variables, if cookie var name is 'id' then you can reference it later with %|id|%
