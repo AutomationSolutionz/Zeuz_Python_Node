@@ -4,6 +4,14 @@
 
 ### [Current changes]
 
+- **[Add]** Add support for multiple certificates in API actions. Use them like
+  so:
+
+    - cert | optional parameter | filename.pem
+    - cert | optional parameter | filename.cert, filename.key
+
+  Certificates are best used by pairing with the `session` optional parameter.
+
 - **[Fix]** Fixed return for common screenshot action
 
 - **[Change]** Change the deploy system. This change replaces the old deploy
