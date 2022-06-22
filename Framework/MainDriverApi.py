@@ -789,7 +789,7 @@ def zip_and_delete_tc_folder(
             all_steps = CommonUtil.all_logs_json[CommonUtil.runid_index]["test_cases"][CommonUtil.tc_index]["steps"]
             for step in all_steps:
                 json_filename = Path(ConfigModule.get_config_value("sectionOne", "json_report", temp_ini_file))/(str(step["step_sequence"])+".json")
-                with open(json_filename, "w") as f:
+                with open(json_filename, "w", encoding="utf-8") as f:
                     json.dump(step, f)
 
             zip_name = run_id.replace(":", "-") + "_" + TestCaseID.replace(":", "-") + ".zip"
@@ -1153,7 +1153,7 @@ def upload_json_report_old(Userid, temp_ini_file, run_id):
         zip_path = Path(ConfigModule.get_config_value("sectionOne", "temp_run_file_path", temp_ini_file))/run_id.replace(":", "-")/CommonUtil.current_session_name
         path = zip_path / "execution_log.json"
         json_report = CommonUtil.get_all_logs(json=True)
-        with open(path, "w") as f:
+        with open(path, "w", encoding="utf-8") as f:
             json.dump(json_report, f)
 
         if ConfigModule.get_config_value("RunDefinition", "local_run") == "False" and CommonUtil.run_cancel != CANCELLED_TAG:
@@ -1202,7 +1202,7 @@ def upload_json_report_old(Userid, temp_ini_file, run_id):
                     print("Could not Upload the report to server of run_id '%s'" % run_id)
             # os.unlink(str(zip_path) + ".zip")     # Removing the zip is skipped because node_manager needs the zip
 
-        with open(path, "w") as f:
+        with open(path, "w", encoding="utf-8") as f:
             json.dump(json_report, f, indent=2)
 
         if CommonUtil.run_cancel != CANCELLED_TAG:
@@ -1298,7 +1298,7 @@ def upload_reports_and_zips(Userid, temp_ini_file, run_id):
             else:
                 print("Could not Upload logs-screenshots to server of run_id '%s'" % run_id)
 
-        with open(zip_dir / "execution_log_old_format.json", "w") as f:
+        with open(zip_dir / "execution_log_old_format.json", "w", encoding="utf-8") as f:
             json.dump(CommonUtil.get_all_logs(json=True), f, indent=2)
 
         if CommonUtil.run_cancel != CANCELLED_TAG:
@@ -1418,7 +1418,7 @@ def main(device_dict, user_info_object):
         # only for custom driver purpose
 
         json_path = save_path.glob("*.zeuz.json").__next__()
-        with open(json_path, "r") as f:
+        with open(json_path, "r", encoding="utf-8") as f:
             all_run_id_info = json.loads(f.read())
 
         if len(all_run_id_info) == 0:

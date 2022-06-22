@@ -485,7 +485,7 @@ def RunProcess(node_id, device_dict, user_info_object, run_once=False, log_dir=N
             node_json = proto_adapter.adapt(response, node_id)
 
             # 2. Save the json for MainDriver to find
-            with open(save_path / f"{node_id}.zeuz.json", "w") as f:
+            with open(save_path / f"{node_id}.zeuz.json", "w", encoding="utf-8") as f:
                 f.write(json.dumps(node_json))
 
             # 3. Call MainDriver
