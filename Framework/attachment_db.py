@@ -2,7 +2,7 @@
 
 import json
 from pathlib import Path
-from time import time
+import time
 from typing import Any, Dict, Union
 
 
@@ -35,6 +35,9 @@ class AttachmentDB:
         put puts the attachment into the db.
         """
 
+        if len(hash.strip()) == 0:
+            return False
+
         modified_at = time.time()
         entry = {
             "hash": hash,
@@ -48,6 +51,8 @@ class AttachmentDB:
         db[hash] = entry
 
         self.save_db(db)
+
+        return True
 
 
     def get_db(self) -> Dict[str, Any]:

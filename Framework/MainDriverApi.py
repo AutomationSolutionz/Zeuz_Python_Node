@@ -1335,15 +1335,6 @@ def split_testcases(run_id_info, max_tc_in_single_session):
     return all_sessions
 
 
-class AttachmentFromServer:
-    def __init__(self, data: Dict[string, Any]) -> None:
-        self.id = data["id"]
-        self.path = data["path"]
-        self.uploaded_by = data["uploaded_by"]
-        self.uploaded_at = data["uploaded_at"]
-        self.hash = data["hash"]
-
-
 def download_attachment(attachment_info: Dict[str, Any]):
     """
     Downloads a given attachment into the 'attachments' folder.
@@ -1365,6 +1356,7 @@ def download_attachment(attachment_info: Dict[str, Any]):
 
     # assumes that the last segment after the / represents the file name
     # if url is abc/xyz/file.txt, the file name will be file.txt
+    url = attachment_info["url"]
     file_name_start_pos = url.rfind("/") + 1
     file_name = url[file_name_start_pos:]
     file_path = attachment_info["download_dir"] / file_name
@@ -1412,7 +1404,7 @@ def download_attachments(testcase_info):
                 "attachment": attachment,
             })
         else:
-            shutil.copyfile(str(got_path), attachment_path / got_path.name())
+            shutil.copyfile(str(got_path), attachment_path / got_path.name)
 
     # Step attachments
     for step in testcase_info["steps"]:
@@ -1425,12 +1417,20 @@ def download_attachments(testcase_info):
                     "attachment": attachment,
                 })
             else:
-                shutil.copyfile(str(got_path), attachment_path / got_path.name())
+                shutil.copyfile(str(got_path), str(attachment_path / got_path.name))
 
     results = ThreadPool(4).imap_unordered(download_attachment, urls)
     for r in results:
         print("Downloaded: %s" % r)
-        db.put(r["path"], r["hash"])
+
+        # Copy into the attachments db.
+        attachment_path_in_db = attachment_db_path / r["path"].name
+
+        put = db.put(attachment_path_in_db, r["hash"])
+        if put:
+            # If entry is successful, we copy the downloaded attachment to the
+            # db directory.
+            shutil.copyfile(r["path"], str(attachment_path_in_db))
 
 
 # main function
