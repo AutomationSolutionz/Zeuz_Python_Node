@@ -1036,7 +1036,7 @@ def command_line_args() -> Path:
     if max_run_history:
         pass
     if gh_token:
-        os.environ["GH_TOEKN"] = gh_token
+        os.environ["GH_TOKEN"] = gh_token
 
     """argparse module automatically shows exceptions of corresponding wrong arguments
      and executes sys.exit(). So we don't need to use try except"""
