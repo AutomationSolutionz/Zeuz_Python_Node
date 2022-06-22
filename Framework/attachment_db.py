@@ -35,7 +35,7 @@ class AttachmentDB:
         put puts the attachment into the db.
         """
 
-        if len(hash.strip()) == 0:
+        if len(hash) == 0 or hash == "0":
             return False
 
         modified_at = time.time()
