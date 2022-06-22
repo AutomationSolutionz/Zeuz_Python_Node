@@ -471,7 +471,7 @@ def run_all_test_steps_in_a_test_case(
         attachment_path = Path(ConfigModule.get_config_value("sectionOne", "temp_run_file_path", temp_ini_file)) / "attachments"
         tc_attachment_list = []
         for tc_attachment in testcase_info['attachments']:
-            var_name = Path(tc_attachment).name
+            var_name = Path(tc_attachment["path"]).name
             path = str(attachment_path / var_name)
             tc_attachment_list.append(var_name)
             shared.Set_Shared_Variables(var_name, path, attachment_var=True)
@@ -540,7 +540,7 @@ def run_all_test_steps_in_a_test_case(
             step_attachments = all_step_info[StepSeq - 1]['attachments']
             step_attachment_list = []
             for attachment in step_attachments:
-                attachment_name = Path(attachment).name
+                attachment_name = Path(attachment["path"]).name
                 path = str(attachment_path / attachment_name)
                 step_attachment_list.append(attachment_name)
                 shared.Set_Shared_Variables(attachment_name, path, attachment_var=True)
@@ -1384,13 +1384,13 @@ def download_attachments(testcase_info):
     urls = []
 
     # Test case attachments
-    for attachment_url in testcase_info["attachments"]:
-        urls.append(url_prefix + attachment_url)
+    for attachment in testcase_info["attachments"]:
+        urls.append(url_prefix + attachment["path"])
 
     # Step attachments
     for step in testcase_info["steps"]:
-        for attachment_url in step["attachments"]:
-            urls.append(url_prefix + attachment_url)
+        for attachment in step["attachments"]:
+            urls.append(url_prefix + attachment["path"])
 
     results = ThreadPool(4).imap_unordered(download_url, urls)
     for r in results:
