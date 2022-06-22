@@ -1334,7 +1334,23 @@ def split_testcases(run_id_info, max_tc_in_single_session):
 
 
 def download_url(url):
-    """Downloads a given url into the 'attachments' folder."""
+    """
+    Downloads a given url into the 'attachments' folder.
+
+    Benchmark for downloading large files: bigfile.zip (575.2 MB)
+
+    chunk size               | time (seconds)
+    ----------------------------------------------
+    1 byte                   | 56.872249603271484
+    1 KB   (1024)            | 7.789804697036743
+    512 KB (512*1024)        | 0.2882239818572998
+    1 MB   (1024*1024)       | 0.51566481590271
+    8 MB   (8*1024*1024)     | 0.46999025344848633
+    1 GB   (1024*1024*1024)  | 0.6988034248352051
+    shutil.copyfileobj       | 0.6343142986297607
+
+    We can see that 512KB is the ideal chunk size for large file downloads.
+    """
 
     temp_ini_file = os.path.join(
         os.path.join(
@@ -1355,8 +1371,9 @@ def download_url(url):
     r = requests.get(url, stream=True)
     if r.status_code == requests.codes.ok:
         with open(attachment_path / file_name, 'wb') as f:
-            for data in r:
+            for data in r.iter_content(chunk_size=512*1024):
                 f.write(data)
+
     return url
 
 
