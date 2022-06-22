@@ -964,7 +964,7 @@ def command_line_args() -> Path:
     )
     
     parser_object.add_argument(
-        "-gh", "--gh_token", action="store", help="Enter gh-token", metavar=""
+        "-gh", "--gh_token", action="store", help="Enter GitHub personal access token (https://github.com/settings/tokens)", metavar=""
     )
     all_arguments = parser_object.parse_args()
 
