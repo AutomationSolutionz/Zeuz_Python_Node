@@ -6,6 +6,7 @@ import inspect
 import os
 import time
 import sys
+from typing import Any, Dict
 import urllib.request, urllib.error, urllib.parse
 import queue
 import shutil
@@ -24,6 +25,7 @@ from datetime import datetime
 from datetime import timedelta
 import pytz
 from threading import Timer
+from Framework.attachment_db import AttachmentDB
 from Framework.Built_In_Automation import Shared_Resources
 from .Utilities import ConfigModule, FileUtilities as FL, CommonUtil, RequestFormatter
 from Framework.Built_In_Automation.Shared_Resources import (
@@ -1333,9 +1335,18 @@ def split_testcases(run_id_info, max_tc_in_single_session):
     return all_sessions
 
 
-def download_url(url):
+class AttachmentFromServer:
+    def __init__(self, data: Dict[string, Any]) -> None:
+        self.id = data["id"]
+        self.path = data["path"]
+        self.uploaded_by = data["uploaded_by"]
+        self.uploaded_at = data["uploaded_at"]
+        self.hash = data["hash"]
+
+
+def download_attachment(attachment_info: Dict[str, Any]):
     """
-    Downloads a given url into the 'attachments' folder.
+    Downloads a given attachment into the 'attachments' folder.
 
     Benchmark for downloading large files: bigfile.zip (575.2 MB)
 
@@ -1352,6 +1363,28 @@ def download_url(url):
     We can see that 512KB is the ideal chunk size for large file downloads.
     """
 
+    # assumes that the last segment after the / represents the file name
+    # if url is abc/xyz/file.txt, the file name will be file.txt
+    file_name_start_pos = url.rfind("/") + 1
+    file_name = url[file_name_start_pos:]
+    file_path = attachment_info["download_dir"] / file_name
+
+    r = requests.get(url, stream=True)
+    if r.status_code == requests.codes.ok:
+        with open(file_path, 'wb') as f:
+            for data in r.iter_content(chunk_size=512*1024):
+                f.write(data)
+
+    # Return the hash of the file and the path where its stored.
+    return {
+        "hash": attachment_info["attachment"]["hash"], 
+        "path": file_path,
+    }
+
+
+def download_attachments(testcase_info):
+    """Download test case and step attachments for the given test case."""
+
     temp_ini_file = os.path.join(
         os.path.join(
             os.path.abspath(__file__).split("Framework")[0],
@@ -1362,39 +1395,42 @@ def download_url(url):
         )
     )
     attachment_path = Path(ConfigModule.get_config_value("sectionOne", "temp_run_file_path", temp_ini_file)) / "attachments"
-
-    # assumes that the last segment after the / represents the file name
-    # if url is abc/xyz/file.txt, the file name will be file.txt
-    file_name_start_pos = url.rfind("/") + 1
-    file_name = url[file_name_start_pos:]
-
-    r = requests.get(url, stream=True)
-    if r.status_code == requests.codes.ok:
-        with open(attachment_path / file_name, 'wb') as f:
-            for data in r.iter_content(chunk_size=512*1024):
-                f.write(data)
-
-    return url
-
-
-def download_attachments(testcase_info):
-    """Download test case and step attachments for the given test case."""
+    attachment_db_path = Path(ConfigModule.get_config_value("sectionOne", "temp_run_file_path", temp_ini_file)) / "attachments_db"
 
     url_prefix = ConfigModule.get_config_value("Authentication", "server_address") + "/static"
     urls = []
 
+    db = AttachmentDB(attachment_db_path)
+
     # Test case attachments
     for attachment in testcase_info["attachments"]:
-        urls.append(url_prefix + attachment["path"])
+        got_path = db.exists(attachment["hash"])
+        if got_path is None:
+            urls.append({
+                "url": url_prefix + attachment["path"],
+                "download_dir": attachment_path,
+                "attachment": attachment,
+            })
+        else:
+            shutil.copyfile(str(got_path), attachment_path / got_path.name())
 
     # Step attachments
     for step in testcase_info["steps"]:
         for attachment in step["attachments"]:
-            urls.append(url_prefix + attachment["path"])
+            got_path = db.exists(attachment["hash"])
+            if got_path is None:
+                urls.append({
+                    "url": url_prefix + attachment["path"],
+                    "download_dir": attachment_path,
+                    "attachment": attachment,
+                })
+            else:
+                shutil.copyfile(str(got_path), attachment_path / got_path.name())
 
-    results = ThreadPool(4).imap_unordered(download_url, urls)
+    results = ThreadPool(4).imap_unordered(download_attachment, urls)
     for r in results:
         print("Downloaded: %s" % r)
+        db.put(r["path"], r["hash"])
 
 
 # main function
