@@ -4,6 +4,11 @@
 
 ### [Current changes]
 
+- **[Add]** Don't download the same attachments multiple times. This is achieved
+  by keeping track of hashes of the attachment files sent from the server.
+
+  Technical note: protobuf definitions updated.
+
 - **[Add]** Add support for multiple certificates in API actions. Use them like
   so:
 

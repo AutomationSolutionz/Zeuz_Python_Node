@@ -6,6 +6,7 @@ import inspect
 import os
 import time
 import sys
+from typing import Any, Dict
 import urllib.request, urllib.error, urllib.parse
 import queue
 import shutil
@@ -24,6 +25,7 @@ from datetime import datetime
 from datetime import timedelta
 import pytz
 from threading import Timer
+from Framework.attachment_db import AttachmentDB
 from Framework.Built_In_Automation import Shared_Resources
 from .Utilities import ConfigModule, FileUtilities as FL, CommonUtil, RequestFormatter
 from Framework.Built_In_Automation.Shared_Resources import (
@@ -471,7 +473,7 @@ def run_all_test_steps_in_a_test_case(
         attachment_path = Path(ConfigModule.get_config_value("sectionOne", "temp_run_file_path", temp_ini_file)) / "attachments"
         tc_attachment_list = []
         for tc_attachment in testcase_info['attachments']:
-            var_name = Path(tc_attachment).name
+            var_name = Path(tc_attachment["path"]).name
             path = str(attachment_path / var_name)
             tc_attachment_list.append(var_name)
             shared.Set_Shared_Variables(var_name, path, attachment_var=True)
@@ -540,7 +542,7 @@ def run_all_test_steps_in_a_test_case(
             step_attachments = all_step_info[StepSeq - 1]['attachments']
             step_attachment_list = []
             for attachment in step_attachments:
-                attachment_name = Path(attachment).name
+                attachment_name = Path(attachment["path"]).name
                 path = str(attachment_path / attachment_name)
                 step_attachment_list.append(attachment_name)
                 shared.Set_Shared_Variables(attachment_name, path, attachment_var=True)
@@ -1333,9 +1335,9 @@ def split_testcases(run_id_info, max_tc_in_single_session):
     return all_sessions
 
 
-def download_url(url):
+def download_attachment(attachment_info: Dict[str, Any]):
     """
-    Downloads a given url into the 'attachments' folder.
+    Downloads a given attachment into the 'attachments' folder.
 
     Benchmark for downloading large files: bigfile.zip (575.2 MB)
 
@@ -1352,6 +1354,29 @@ def download_url(url):
     We can see that 512KB is the ideal chunk size for large file downloads.
     """
 
+    # assumes that the last segment after the / represents the file name
+    # if url is abc/xyz/file.txt, the file name will be file.txt
+    url = attachment_info["url"]
+    file_name_start_pos = url.rfind("/") + 1
+    file_name = url[file_name_start_pos:]
+    file_path = attachment_info["download_dir"] / file_name
+
+    r = requests.get(url, stream=True)
+    if r.status_code == requests.codes.ok:
+        with open(file_path, 'wb') as f:
+            for data in r.iter_content(chunk_size=512*1024):
+                f.write(data)
+
+    # Return the hash of the file and the path where its stored.
+    return {
+        "hash": attachment_info["attachment"]["hash"], 
+        "path": file_path,
+    }
+
+
+def download_attachments(testcase_info):
+    """Download test case and step attachments for the given test case."""
+
     temp_ini_file = os.path.join(
         os.path.join(
             os.path.abspath(__file__).split("Framework")[0],
@@ -1362,39 +1387,50 @@ def download_url(url):
         )
     )
     attachment_path = Path(ConfigModule.get_config_value("sectionOne", "temp_run_file_path", temp_ini_file)) / "attachments"
-
-    # assumes that the last segment after the / represents the file name
-    # if url is abc/xyz/file.txt, the file name will be file.txt
-    file_name_start_pos = url.rfind("/") + 1
-    file_name = url[file_name_start_pos:]
-
-    r = requests.get(url, stream=True)
-    if r.status_code == requests.codes.ok:
-        with open(attachment_path / file_name, 'wb') as f:
-            for data in r.iter_content(chunk_size=512*1024):
-                f.write(data)
-
-    return url
-
-
-def download_attachments(testcase_info):
-    """Download test case and step attachments for the given test case."""
+    attachment_db_path = Path(ConfigModule.get_config_value("sectionOne", "temp_run_file_path", temp_ini_file)) / "attachments_db"
 
     url_prefix = ConfigModule.get_config_value("Authentication", "server_address") + "/static"
     urls = []
 
+    db = AttachmentDB(attachment_db_path)
+
     # Test case attachments
-    for attachment_url in testcase_info["attachments"]:
-        urls.append(url_prefix + attachment_url)
+    for attachment in testcase_info["attachments"]:
+        got_path = db.exists(attachment["hash"])
+        if got_path is None:
+            urls.append({
+                "url": url_prefix + attachment["path"],
+                "download_dir": attachment_path,
+                "attachment": attachment,
+            })
+        else:
+            shutil.copyfile(str(got_path), attachment_path / got_path.name)
 
     # Step attachments
     for step in testcase_info["steps"]:
-        for attachment_url in step["attachments"]:
-            urls.append(url_prefix + attachment_url)
+        for attachment in step["attachments"]:
+            got_path = db.exists(attachment["hash"])
+            if got_path is None:
+                urls.append({
+                    "url": url_prefix + attachment["path"],
+                    "download_dir": attachment_path,
+                    "attachment": attachment,
+                })
+            else:
+                shutil.copyfile(str(got_path), str(attachment_path / got_path.name))
 
-    results = ThreadPool(4).imap_unordered(download_url, urls)
+    results = ThreadPool(4).imap_unordered(download_attachment, urls)
     for r in results:
         print("Downloaded: %s" % r)
+
+        # Copy into the attachments db.
+        attachment_path_in_db = attachment_db_path / r["path"].name
+
+        put = db.put(attachment_path_in_db, r["hash"])
+        if put:
+            # If entry is successful, we copy the downloaded attachment to the
+            # db directory.
+            shutil.copyfile(r["path"], str(attachment_path_in_db))
 
 
 # main function
