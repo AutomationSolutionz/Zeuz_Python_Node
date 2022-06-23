@@ -102,8 +102,7 @@ def install_missing_modules():
                         print("module_installer: Upgrading module: %s" % module_name)
                         subprocess.check_call([sys.executable, "-m", "pip", "install","--trusted-host=pypi.org", "--trusted-host=files.pythonhosted.org", module_name, "--upgrade"], stderr=DEVNULL, stdout=DEVNULL,)
                         print("module_installer: Upgraded outdated module: %s" % module_name)
-                    except Exception as e:
-                        print(e)
+                    except Exception:
                         print("module_installer: Failed to upgrade module: %s" % module_name)
         def get_outdated_modules(): 
             # Storing outdated modules to upgrade on the next run
