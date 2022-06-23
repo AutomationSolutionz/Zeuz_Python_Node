@@ -90,12 +90,12 @@ def install_missing_modules():
         # Upgrading outdated modules found in last run
         outdated_modules_filepath = os.path.dirname(os.path.abspath(__file__)) + os.sep + 'outdated_modules.json'
         needs_to_be_updated = None
-        if(os.path.exists(outdated_modules_filepath)):
+        if os.path.exists(outdated_modules_filepath):
             try:
                 needs_to_be_updated = json.load(open(outdated_modules_filepath))
             except:
                 traceback.print_exc()
-            if(needs_to_be_updated):
+            if needs_to_be_updated:
                 for module in needs_to_be_updated:
                     try:
                         module_name = module['name']
