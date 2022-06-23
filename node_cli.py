@@ -960,6 +960,10 @@ def command_line_args() -> Path:
     parser_object.add_argument(
         "-d", "--log_dir", action="store", help="Specify a custom directory for storing Run IDs and logs.", metavar=""
     )
+    
+    parser_object.add_argument(
+        "-gh", "--gh_token", action="store", help="Enter GitHub personal access token (https://github.com/settings/tokens)", metavar=""
+    )
     all_arguments = parser_object.parse_args()
 
     username = all_arguments.username
@@ -970,6 +974,8 @@ def command_line_args() -> Path:
     max_run_history = all_arguments.max_run_history
     logout = all_arguments.logout
     auto_update = all_arguments.auto_update
+    gh_token = all_arguments.gh_token
+    
 
     # Check if custom log directory exists, if not, we'll try to create it. If
     # we can't create the custom log directory, we should error out.
@@ -1027,6 +1033,8 @@ def command_line_args() -> Path:
         CommonUtil.MachineInfo().setLocalUser(node_id)
     if max_run_history:
         pass
+    if gh_token:
+        os.environ["GH_TOKEN"] = gh_token
 
     """argparse module automatically shows exceptions of corresponding wrong arguments
      and executes sys.exit(). So we don't need to use try except"""
