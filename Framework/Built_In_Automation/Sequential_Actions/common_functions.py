@@ -4444,7 +4444,7 @@ def upload_attachment_to_global(data_set):
             if "attachment path" == left:
                var_path = CommonUtil.path_parser(right)
             if "replace" == left:
-                replace = CommonUtil.path_parser(right)
+                replace = right.lower()
 
         if var_path is None:
             CommonUtil.ExecLog(sModuleInfo, "Please insert attachment path ", 3)
