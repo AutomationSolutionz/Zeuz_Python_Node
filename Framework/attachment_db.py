@@ -4,6 +4,12 @@ import json
 from pathlib import Path
 import time
 from typing import Any, Dict, Union
+import random
+import string
+
+
+def random_string(n: int) -> str:
+    return ''.join(random.choice(string.ascii_lowercase) for _ in range(n))
 
 
 class AttachmentDB:
@@ -11,6 +17,8 @@ class AttachmentDB:
         self.db_directory = db_directory
         self.db_file = db_directory / "db.json"
         self.init_db()
+        self.path_suffix = ".zeuz."
+        self.suffix_length = 8
 
 
     def exists(self, hash: str) -> Union[Path, None]:
@@ -25,7 +33,9 @@ class AttachmentDB:
 
         if hash in db:
             entry = db[hash]
-            return Path(entry["path"])
+            path = entry["path"]
+            path = path[:path.find(self.path_suffix)]
+            return Path(path)
 
         return None
 
@@ -39,9 +49,20 @@ class AttachmentDB:
             return False
 
         modified_at = time.time()
+
+        # We add a random suffix to the filepath to make sure files with same
+        # names but different hashes do not overwrite each other. Specially
+        # important if there are multiple attachments across multiple test
+        # cases/steps with the same file name.
+        path = filepath.with_suffix(
+            filepath.suffix +
+            self.path_suffix +
+            random_string(self.suffix_length)
+        )
+
         entry = {
             "hash": hash,
-            "path": str(filepath),
+            "path": str(path),
             "modified_at": modified_at,
         }
 
