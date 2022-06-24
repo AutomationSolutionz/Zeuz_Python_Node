@@ -21,7 +21,7 @@ class AttachmentDB:
         self.suffix_length = 8
 
 
-    def exists(self, hash: str) -> Union[Path, None]:
+    def exists(self, hash: str) -> Union[Dict[str, str], None]:
         """
         exists returns a Path indicating whether the attachment exists in the
         database. None is returned if it does not exist.
@@ -33,11 +33,25 @@ class AttachmentDB:
 
         if hash in db:
             entry = db[hash]
-            path = entry["path"]
-            path = path[:path.find(self.path_suffix)]
-            return Path(path)
+            return entry
 
         return None
+
+
+    def remove(self, hash: str) -> bool:
+        """
+        remove removes an attachment with the given hash from the db and returns
+        True if successful.
+        """
+
+        db = self.get_db()
+
+        if hash in db:
+            del db[hash]
+            self.save_db(db)
+            return True
+
+        return False
 
 
     def put(self, filepath: Path, hash: str):
@@ -46,7 +60,7 @@ class AttachmentDB:
         """
 
         if len(hash) == 0 or hash == "0":
-            return False
+            return None
 
         modified_at = time.time()
 
@@ -63,6 +77,7 @@ class AttachmentDB:
         entry = {
             "hash": hash,
             "path": str(path),
+            "name": filepath.name,
             "modified_at": modified_at,
         }
 
@@ -73,7 +88,7 @@ class AttachmentDB:
 
         self.save_db(db)
 
-        return True
+        return entry
 
 
     def get_db(self) -> Dict[str, Any]:
