@@ -1,9 +1,44 @@
 # Changelog
 
-# Version 15
+# Version 16
 
 ### [Current changes]
-- _
+
+- **[Add]** Don't download the same attachments multiple times. This is achieved
+  by keeping track of hashes of the attachment files sent from the server.
+
+  Technical note: protobuf definitions updated.
+
+- **[Add]** Add support for multiple certificates in API actions. Use them like
+  so:
+
+    - cert | optional parameter | filename.pem
+    - cert | optional parameter | filename.cert, filename.key
+
+  Certificates are best used by pairing with the `session` optional parameter.
+
+- **[Fix]** Fixed return for common screenshot action
+
+- **[Change]** Change the deploy system. This change replaces the old deploy
+  system code with a new one that is compatible with the v3 engine on the server
+  side.  This works by connecting with a persistent websocket connection that is
+  forcefully disconnected every 30 seconds from the server side. This makes sure
+  that we don't have long persistent but unstable connections. There are also
+  other mechanisms in place to make sure we always receive test cases in proper
+  order. If for some reason, node's connection breaks when test cases are
+  in-flight (being sent from server to node), they'll be automatically restored
+  back to the run id so that node can run the same test case even though the
+  connection got disrupted. Run cancellations work properly. In deploy API you
+  can also specify preferred nodes so that some test cases are always run in
+  those preferred nodes.
+- **[Fix]** Convert all timestamps into UTC timezone to match server timezone.
+  This fixes all runid related time issues like showing a negative date and time
+  difference.
+
+### [15.2.0][Jun 07, 2022]
+- **[Add]** Add profile functionality for Chrome
+- **[Add]** Add extension functionality for Chrome
+- **[Improve]** Chrome browser options and arguments
 
 ### [15.1.1][Jun 07, 2022]
 - **[Add]** Upload window is automated with pyautogui for MAC
@@ -12,6 +47,7 @@
 ### [15.1.0][Jun 03, 2022]
 - **[Add]** Added swipe by uiautomator action for android
 - **[Add]** Added uiautomatorviewer.bat inside App directory
+
 
 ### [15.0.4][May 11, 2022]
 - **[Improve]** Added plus button support in keystroke action

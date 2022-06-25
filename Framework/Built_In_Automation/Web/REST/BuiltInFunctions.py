@@ -6,7 +6,8 @@ REST API actions.
 import os
 from pathlib import Path
 import sys
-from typing import Tuple, Union
+import traceback
+from typing import Dict, Union
 import requests
 import ast
 import time
@@ -615,13 +616,62 @@ def search_condition_wrapper(data, condition_string):
         return CommonUtil.Exception_Handler(sys.exc_info())
 
 
+ENV_ZEUZ_NODE_CLIENT_CERT = "ZEUZ_NODE_CLIENT_CERT"
+def get_client_certificates() -> Dict[str, Union[str, str]]:
+    """
+    Gets the client-side certificate if there's any.
+
+    Location to the certificate(s) file(s) is resolved in the following way:
+
+    1. Checks for `ZEUZ_NODE_CLIENT_CERT` environment variable which should
+       point to the directory containing the certificate(s).
+    2. Tries to search for a `certificates` folder in the current `PYTHON PATH`.
+
+    Returns the certificates as a dictionary where 'key' is the file name with
+    the extension and 'value' is the filepath of the certificate.
+
+    Use one of the following formats to specify the certificate(s) to use:
+
+    - cert | optional parameter | filename.pem
+    - cert | optional parameter | filename.cert, filename.key
+
+    **NOTE**: `requests` module supports loading only **UNENCRYPTED** files.
+    """
+
+    sModuleInfo = inspect.currentframe().f_code.co_name + " : " + MODULE_NAME
+
+    certificates_dir: Path = None
+    try:
+        env_value = os.environ[ENV_ZEUZ_NODE_CLIENT_CERT]
+        certificates_dir = Path(env_value)
+        if not certificates_dir.exists():
+            CommonUtil.ExecLog(
+                sModuleInfo,
+                f'The directory "{env_value}" specified by the environment variable "ZEUZ_NODE_CLIENT_CERT" does not exist.\n'
+                f'Trying to locate certificates from "{Path.cwd() / "certificates"}" dir.',
+                3,
+            )
+            raise Exception(f"{env_value} does not exist.")
+    except:
+        # Try to find inside the "certificates" folder.
+        certificates_dir = Path.cwd() / "certificates"
+
+    certificates = {}
+    for filepath in certificates_dir.glob("*"):
+        certificates[filepath.name] = str(filepath)
+
+    return certificates
+
+
 KEY_ZEUZ_API_SESSIONS = "zeuz_api_sessions"
-def get_session(session_name: Union[str, None] = None) -> Union[requests.Request, requests.Session]:
+def get_session(session_name: Union[str, None] = None, cert: str = None) -> Union[requests.Request, requests.Session]:
     """
     Fetches either an old session or creates a new session if it does not exist
     with the provided `session_name`. A value of `None` means, we won't return
     any session - we'll simply return the top level `requests` module.
     """
+
+    sModuleInfo = inspect.currentframe().f_code.co_name + " : " + MODULE_NAME
 
     # This dictionary contains a mapping between session names and session objects.
     # Whenever a session with a new name is requested, it must first be created and
@@ -647,67 +697,37 @@ def get_session(session_name: Union[str, None] = None) -> Union[requests.Request
             print_variable=False
         )
 
-    return sessions[session_name]
+    selected_session: Union[requests.Request, requests.Session] = sessions[session_name]
 
+    if not cert:
+        return selected_session
 
-ENV_ZEUZ_NODE_CLIENT_CERT = "ZEUZ_NODE_CLIENT_CERT"
-def get_client_certificate() -> Union[str, Tuple[str, str], None]:
-    """
-    Gets the client-side certificate if there's any.
-
-    Location to the certificate(s) file(s) is resolved in the following way:
-
-    1. Checks for `ZEUZ_NODE_CLIENT_CERT` environment variable which should
-       point to the directory containing the certificate(s).
-    2. Tries to search for a `certificates` folder in the current `PYTHON PATH`.
-
-    If there are multiple type of certificates, they're resolved according to
-    the following priorities - 1 being the highest (pick first):
-
-    1. If there's a ".pem" file, it'll take the highest priority as the only
-       certificate file.
-    2. If there's a pair of ".cert" and ".key" files, pick them.
-    3. If there's a pair of ".crt" and ".key" files, pick them.
-    4. If there's a pair of ".cer" and ".key" files, pick them.
-    5. Otherwise we pick nothing and return `None`.
-
-    **NOTE**: `requests` module supports loading only **UNENCRYPTED** files.
-    """
-
-    sModuleInfo = inspect.currentframe().f_code.co_name + " : " + MODULE_NAME
-
-    certificates_dir: Path = None
+    # Add certificate(s) to the session object if provided.
     try:
-        env_value = os.environ[ENV_ZEUZ_NODE_CLIENT_CERT]
-        certificates_dir = Path(env_value)
-        if not certificates_dir.exists():
-            CommonUtil.ExecLog(
-                sModuleInfo,
-                f'The directory "{env_value}" specified by the environment variable "ZEUZ_NODE_CLIENT_CERT" does not exist.\n'
-                f'Trying to locate certificates from "{Path.cwd() / "certificates"}" dir.',
-                3,
-            )
-            raise Exception(f"{env_value} does not exist.")
-    except:
-        # Try to find inside the "certificates" folder.
-        certificates_dir = Path.cwd() / "certificates"
+        loaded_certificates = get_client_certificates()
 
-    def get_len(pattern: str) -> int:
-        return len(list(certificates_dir.glob(pattern)))
-
-    if get_len("*.pem") > 0:
-        str(next(certificates_dir.glob("*.pem")))
-    elif get_len("*.key") > 0:
-        cert_file_exts = ["cert", "crt", "cer"]
-        for cfe in cert_file_exts:
-            cfe_name = f"*.{cfe}"
-            if get_len(cfe_name) > 0:
-                return (
-                    str(next(certificates_dir.glob(cfe_name))),
-                    str(next(certificates_dir.glob("*.key"))),
+        cert = [i.strip() for i in cert.split(",")]
+        for i, name in enumerate(cert):
+            try:
+                cert[i] = loaded_certificates[name]
+            except:
+                CommonUtil.ExecLog(
+                    sModuleInfo,
+                    f"No certificates found with the name: {name}\nLoaded certificates: {loaded_certificates}",
+                    3,
                 )
+                return selected_session
 
-    return None
+        cert = tuple(cert)
+        if len(cert) == 1:
+            cert = cert[0]
+
+        selected_session.cert = cert
+    except:
+        CommonUtil.ExecLog(sModuleInfo, "Failed to load certificate. Printing traceback...", 3)
+        traceback.print_exc()
+
+    return selected_session
 
 
 # Method to handle rest calls
@@ -728,6 +748,7 @@ def handle_rest_call(
     files=None,
     session_name=None,
     allow_redirects=True,
+    cert=None,
 ):
     sModuleInfo = inspect.currentframe().f_code.co_name + " : " + MODULE_NAME
     try:
@@ -760,11 +781,11 @@ def handle_rest_call(
         count = 0
 
         # Decide whether we should use a Session object or a one-off request.
-        session = get_session(session_name)
+        session = get_session(session_name, cert)
 
         # Get client-side certificates if it exists in the
         # `ZEUZ_NODE_CLIENT_CERT` or `PYTHON PATH`.
-        cert = get_client_certificate()
+        # cert = get_client_certificates()
 
         result = None
         status_code = 1  # dummy value
@@ -785,7 +806,6 @@ def handle_rest_call(
                             json=body,
                             headers=headers,
                             verify=False,
-                            cert=cert,
                             timeout=timeout,
                             allow_redirects=allow_redirects,
                         )
@@ -800,7 +820,6 @@ def handle_rest_call(
                                 files=files,
                                 headers=headers,
                                 verify=False,
-                                cert=cert,
                                 timeout=timeout,
                                 allow_redirects=allow_redirects,
                             )
@@ -811,7 +830,6 @@ def handle_rest_call(
                                 data=body,
                                 headers=headers,
                                 verify=False,
-                                cert=cert,
                                 timeout=timeout,
                                 allow_redirects=allow_redirects,
                             )
@@ -822,7 +840,6 @@ def handle_rest_call(
                             data=body,
                             headers=headers,
                             verify=False,
-                            cert=cert,
                             timeout=timeout,
                             allow_redirects=allow_redirects,
                         )
@@ -834,7 +851,6 @@ def handle_rest_call(
                             data=payload,
                             headers=headers,
                             verify=False,
-                            cert=cert,
                             timeout=timeout,
                             allow_redirects=allow_redirects,
                         )
@@ -846,7 +862,6 @@ def handle_rest_call(
                         data=payload,
                         headers=headers,
                         verify=False,
-                        cert=cert,
                         timeout=timeout,
                         allow_redirects=allow_redirects,
                     )
@@ -856,7 +871,6 @@ def handle_rest_call(
                     url=url,
                     headers=headers,
                     verify=False,
-                    cert=cert,
                     timeout=timeout,
                     allow_redirects=allow_redirects,
                 )
@@ -867,7 +881,6 @@ def handle_rest_call(
                     json=body,
                     headers=headers,
                     verify=False,
-                    cert=cert,
                     timeout=timeout,
                     allow_redirects=allow_redirects,
                 )
@@ -939,7 +952,7 @@ def handle_rest_call(
         try:
             if result.json():
                 Shared_Resources.Set_Shared_Variables("rest_response", result.json(), print_variable=False)
-                Shared_Resources.Set_Shared_Variables("http_response", result.json())
+                Shared_Resources.Set_Shared_Variables("http_response", result.json(), print_raw=True),
                 CommonUtil.ExecLog(sModuleInfo, "HTTP Request successful.", 1)
 
                 # if save cookie option enabled then push cookie into shared variables, if cookie var name is 'id' then you can reference it later with %|id|%
@@ -1032,7 +1045,8 @@ def handle_rest_call(
                         "rest_response", json_of_response, print_variable=False
                     )
                     Shared_Resources.Set_Shared_Variables(
-                        "http_response", json_of_response
+                        "http_response", json_of_response,
+                        print_raw=True,
                     )
                     CommonUtil.ExecLog(
                         sModuleInfo,
@@ -1051,7 +1065,8 @@ def handle_rest_call(
                         "rest_response", response_text, print_variable=False
                     )
                     Shared_Resources.Set_Shared_Variables(
-                        "http_response", CommonUtil.parse_value_into_object(response_text)
+                        "http_response", CommonUtil.parse_value_into_object(response_text),
+                        print_raw=True,
                     )
                     CommonUtil.ExecLog(
                         sModuleInfo,
@@ -1074,7 +1089,7 @@ def handle_rest_call(
                 )
                 json_of_response = ast.literal_eval(response_text)
                 Shared_Resources.Set_Shared_Variables("rest_response", json_of_response, print_variable=False)
-                Shared_Resources.Set_Shared_Variables("http_response", json_of_response)
+                Shared_Resources.Set_Shared_Variables("http_response", json_of_response, print_raw=True)
                 CommonUtil.ExecLog(
                     sModuleInfo,
                     "REST Call Response Text converted to json and saved in 'http_response' shared variable",
@@ -1088,7 +1103,7 @@ def handle_rest_call(
                     2,
                 )
                 Shared_Resources.Set_Shared_Variables("rest_response", response_text, print_variable=False)
-                Shared_Resources.Set_Shared_Variables("http_response", response_text)
+                Shared_Resources.Set_Shared_Variables("http_response", response_text, print_raw=True)
                 CommonUtil.ExecLog(
                     sModuleInfo,
                     "REST Call Response Text saved in 'http_response' shared variable",
@@ -1130,6 +1145,8 @@ def Get_Response(step_data, save_cookie=False):
         files = None
         session_name = None
         allow_redirects = True
+        cert = None
+
         for left, mid, right in step_data:
             left = left.lower()
 
@@ -1148,6 +1165,11 @@ def Get_Response(step_data, save_cookie=False):
                 # related data automatically among all the requests in that
                 # session.
                 session_name = right.strip()
+            elif "cert" in left:
+                # Allow the user to specify a certificate ('.pem') file or a
+                # ('cert', key) pair. The specified certificate information will
+                # be associated with the currently selected session object.
+                cert = right.strip()
             elif "allow redirect" in left:
                 allow_redirects = True if "true" in right.lower() else False
 
@@ -1168,6 +1190,7 @@ def Get_Response(step_data, save_cookie=False):
                     files=files,
                     session_name=session_name,
                     allow_redirects=allow_redirects,
+                    cert=cert,
                 )
                 return return_result
             except Exception:

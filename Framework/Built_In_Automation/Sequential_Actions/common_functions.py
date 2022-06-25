@@ -4458,20 +4458,27 @@ def upload_attachment_to_global(data_set):
     sModuleInfo = inspect.currentframe().f_code.co_name + " : " + MODULE_NAME
     try:
         var_path = None
+        replace = False
         for left, mid, right in data_set:
             left = left.strip().lower()
             if "attachment path" == left:
                var_path = CommonUtil.path_parser(right)
+            if "replace" == left:
+                replace = right.lower().strip() == "true"
 
         if var_path is None:
             CommonUtil.ExecLog(sModuleInfo, "Please insert attachment path ", 3)
             return "zeuz_failed"
+
         headers = RequestFormatter.add_api_key_to_headers({})
         res = requests.post(
             RequestFormatter.form_uri("global_file_upload/"),
             files={"file": open(var_path,'rb')},
             verify=False,
+            data={"replace": replace},
             **headers)
+
+
         CommonUtil.ExecLog(sModuleInfo, "Attachment was uploaded to Global Attachmetns", 1)
         return "passed"
 

@@ -3,6 +3,7 @@
 # -*- coding: cp1252 -*-
 import os
 from pathlib import Path
+from urllib.parse import urlparse
 import platform
 
 # Disable WebdriverManager SSL verification.
@@ -27,10 +28,12 @@ from tqdm import tqdm
 requests.packages.urllib3.disable_warnings(category=InsecureRequestWarning)
 
 from Framework.Utilities import ConfigModule
+from Framework.Utilities import live_log_service
 
 PROJECT_ROOT = os.path.abspath(os.curdir)
 # Append correct paths so that it can find the configuration files and other modules
 sys.path.append(os.path.join(os.path.dirname(os.path.abspath(__file__)), "Framework"))
+sys.path.append(str(Path.cwd() / "Framework" / "pb" / "v1"))
 
 # kill any process that is running  from the same node folder
 pid = os.getpid()
@@ -95,9 +98,13 @@ temp_ini_file = (
 )
 
 import subprocess
+import json
 
 from rich import traceback
 traceback.install(show_locals=True, max_frames=1)
+
+from Framework.deploy_handler import handler
+from Framework.deploy_handler import proto_adapter
 
 def signal_handler(sig, frame):
     CommonUtil.run_cancelled = True
@@ -313,7 +320,13 @@ def Login(cli=False, run_once=False, log_dir=None):
                 user_info_object["project"] = default_team_and_project["project_name"]
                 user_info_object["team"] = default_team_and_project["team_name"]
 
-                # CommonUtil.ExecLog("", f"Authenticating user: {username}", 4, False)
+                # Store team and project to config
+                ConfigModule.add_config_value("sectionOne", PROJECT_TAG, user_info_object['project'], temp_ini_file)
+                ConfigModule.add_config_value("sectionOne", TEAM_TAG, user_info_object['team'], temp_ini_file)
+
+                # Load device information
+                global device_dict
+                device_dict = All_Device_Info.get_all_connected_device_info()
 
                 if api_flag:
                     r = RequestFormatter.Post("login_api", user_info_object)
@@ -334,45 +347,19 @@ def Login(cli=False, run_once=False, log_dir=None):
                         4,
                         print_Execlog=False
                     )
-                    ConfigModule.add_config_value("sectionOne", PROJECT_TAG, user_info_object['project'], temp_ini_file)
-                    ConfigModule.add_config_value("sectionOne", TEAM_TAG, user_info_object['team'], temp_ini_file)
-                    global device_dict
-                    device_dict = All_Device_Info.get_all_connected_device_info()
-                    machine_object = update_machine(
-                        dependency_collection(default_team_and_project),
-                        default_team_and_project,
-                    )
-                    if machine_object["registered"]:
-                        tester_id = machine_object["name"]
-                        try:
-                            # send machine's time zone
-                            local_tz = str(get_localzone())
-                            time_zone_object = {
-                                "time_zone": local_tz,
-                                "machine": tester_id,
-                            }
-                            executor = CommonUtil.GetExecutor()
-                            executor.submit(RequestFormatter.Get, "send_machine_time_zone_api", time_zone_object)
-                            # RequestFormatter.Get("send_machine_time_zone_api", time_zone_object)
-                            # end
-                        except Exception as e:
-                            CommonUtil.ExecLog("", "Time zone settings failed {}".format(e), 4, False)
-                        # Telling the node_manager that the node is ready to deploy
-                        CommonUtil.node_manager_json(
-                            {
-                                "state": "idle",
-                                "report": {
-                                    "zip": None,
-                                    "directory": None,
-                                }
-                            }
-                        )
-                        run_again = RunProcess(tester_id, user_info_object, run_once=run_once, log_dir=log_dir)
 
-                        if not run_again:
-                            break  # Exit login
-                    else:
-                        return False
+                    CommonUtil.node_manager_json(
+                        {
+                            "state": "idle",
+                            "report": {
+                                "zip": None,
+                                "directory": None,
+                            }
+                        }
+                    )
+                    node_id = CommonUtil.MachineInfo().getLocalUser().lower()
+                    RunProcess(node_id, device_dict, user_info_object, run_once=run_once, log_dir=log_dir)
+
                 elif not r:  # Server should send "False" when user/pass is wrong
                     CommonUtil.ExecLog(
                         "",
@@ -446,93 +433,114 @@ def disconnect_from_server():
     CommonUtil.set_exit_mode(True)  # Tell Sequential Actions to exit
 
 
-def RunProcess(sTesterid, user_info_object, run_once=False, log_dir=None):
-    etime = time.time() + (30 * 60)  # 30 minutes
-    executor = CommonUtil.GetExecutor()
-    while True:
-        try:
-            if exit_script:
+def update_machine_info(user_info_object, node_id, should_print=True):
+    update_machine(
+        False,
+        {
+            "project_name": user_info_object["project"],
+            "team_name": user_info_object["team"],
+        },
+        should_print,
+    )
+
+    local_tz = str(get_localzone())
+    RequestFormatter.Get("send_machine_time_zone_api", {
+        "time_zone": local_tz,
+        "machine": node_id,
+    })
+    RequestFormatter.Get("update_machine_with_time_api", {"machine_name": node_id})
+
+
+def RunProcess(node_id, device_dict, user_info_object, run_once=False, log_dir=None):
+    try:
+        PreProcess(log_dir=log_dir)
+
+        save_path = Path(ConfigModule.get_config_value("sectionOne", "temp_run_file_path", temp_ini_file)) / "attachments"
+        FL.CreateFolder(save_path)
+
+        # --- START websocket service connections --- #
+
+        server_url = urlparse(ConfigModule.get_config_value("Authentication", "server_address"))
+        if server_url.scheme == "https":
+            protocol = "wss"
+        else:
+            protocol = "ws"
+
+        server_addr = f"{protocol}://{server_url.netloc}"
+        live_log_service_addr = f"{server_addr}/faster/v1/ws/live_log/send/{node_id}"
+        deploy_srv_addr = f"{server_addr}/zsvc/deploy/v1/connect/{node_id}"
+
+        # Connect to the live log service.
+        live_log_service.connect(live_log_service_addr)
+
+        # WARNING: For local development only.
+        # if "localhost" in host:
+        #     deploy_srv_addr = deploy_srv_addr.replace("8000", "8300")
+
+        node_json = None
+        def response_callback(response: str):
+            nonlocal node_json
+
+            # 1. Adapt the proto response to appropriate json format
+            node_json = proto_adapter.adapt(response, node_id)
+
+            # 2. Save the json for MainDriver to find
+            with open(save_path / f"{node_id}.zeuz.json", "w", encoding="utf-8") as f:
+                f.write(json.dumps(node_json))
+
+            # 3. Call MainDriver
+            MainDriverApi.main(device_dict, user_info_object)
+
+        def on_connect_callback(reconnected: bool):
+            update_machine_info(user_info_object, node_id, should_print=not reconnected)
+            return
+
+        def done_callback():
+            """Returns True if we do not want to connect to the service
+            further."""
+
+            if run_once:
+                return True
+
+            if not node_json:
                 return False
-            if time.time() > etime:
-                print("30 minutes over, logging in again")
-                return True  # Timeout reached, re-login. We do this because after about 3-4 hours this function will hang, and thus not be available for deployment
-            executor.submit(RequestFormatter.Get, "update_machine_with_time_api", {"machine_name": sTesterid})
-            # r = RequestFormatter.Get("is_run_submitted_api", {"machine_name": sTesterid})
-            r = RequestFormatter.Get(f"is_submitted_api?machine_name={sTesterid}")
-            # r = requests.get(RequestFormatter.form_uri("is_submitted_api"), {"machine_name": sTesterid}, verify=False).json()
-            Userid = (CommonUtil.MachineInfo().getLocalUser()).lower()
-            if r and "found" in r and r["found"]:
-                PreProcess(log_dir=log_dir)
-                size = round(int(r["file_size"]) / 1024, 2)
-                if size > 1024:
-                    size = str(round(size / 1024, 2)) + " MB"
-                else:
-                    size = str(size) + " KB"
-                save_path = Path(ConfigModule.get_config_value("sectionOne", "temp_run_file_path", temp_ini_file)) / "attachments"
-                CommonUtil.ExecLog("", "Downloading dataset and attachments of %s into:\n%s" % (size, str(save_path/"input.zip")), 4)
-                FL.CreateFolder(save_path)
-                headers = RequestFormatter.add_api_key_to_headers({})
-                response = requests.get(RequestFormatter.form_uri("getting_json_data_api"), {"machine_name": Userid}, stream=True, verify=False, **headers)
-                chunk_size = 4096
-                progress_bar = tqdm(total=r["file_size"], unit='B', mininterval=0, unit_scale=True, unit_divisor=1024, leave=False)
-                with open(save_path/"input.zip", 'wb') as file:
-                    for data in response.iter_content(chunk_size):
-                        progress_bar.update(len(data))
-                        file.write(data)
-                    progress_bar.refresh()
-                progress_bar.close()
-                z = zipfile.ZipFile(save_path/"input.zip")
-                z.extractall(save_path)
-                z.close()
-                os.unlink(save_path/"input.zip")
-                # Telling the node_manager that a run_id is deployed
-                CommonUtil.node_manager_json(
-                    {
-                        "state": "in_progress",
-                        "report": {
-                            "zip": None,
-                            "directory": None,
-                        }
-                    }
-                )
-                try:
-                    MainDriverApi.main(device_dict, user_info_object)
-                except:
-                    pass
 
-                # Terminating all run_cancel threads after finishing a run
-                CommonUtil.run_cancel = ""
-                CommonUtil.run_cancelled = True
-                if "run_cancel" in CommonUtil.all_threads:
-                    for t in CommonUtil.all_threads["run_cancel"]:
-                        t.result()
-                        CommonUtil.run_cancelled = True
-                    del CommonUtil.all_threads["run_cancel"]
-                CommonUtil.run_cancelled = False
+            print("[deploy] Run complete.")
+            return False
 
-                if run_once or exit_script:
-                    return False
-                break
-            else:
-                time.sleep(3)
+        def cancel_callback():
+            if not node_json:
+                return
 
-        except Exception as e:
-            exc_type, exc_obj, exc_tb = sys.exc_info()
-            fname = os.path.split(exc_tb.tb_frame.f_code.co_filename)[1]
-            Error_Detail = (
-                (str(exc_type).replace("type ", "Error Type: "))
-                + ";"
-                + "Error Message: "
-                + str(exc_obj)
-                + ";"
-                + "File Name: "
-                + fname
-                + ";"
-                + "Line: "
-                + str(exc_tb.tb_lineno)
-            )
-            CommonUtil.ExecLog("", Error_Detail, 4, False)
-            break  # Exit back to login() - In some circumstances, this while loop will get into a state when certain errors occur, where nothing runs, but loops forever. This stops that from happening
+            print("[deploy] Run cancelled.")
+            CommonUtil.run_cancelled = True
+
+        deploy_handler = handler.DeployHandler(
+            on_connect_callback=on_connect_callback,
+            response_callback=response_callback,
+            cancel_callback=cancel_callback,
+            done_callback=done_callback,
+        )
+        deploy_handler.run(deploy_srv_addr)
+        return False
+
+    except Exception:
+        exc_type, exc_obj, exc_tb = sys.exc_info()
+        fname = os.path.split(exc_tb.tb_frame.f_code.co_filename)[1]
+        Error_Detail = (
+            (str(exc_type).replace("type ", "Error Type: "))
+            + ";"
+            + "Error Message: "
+            + str(exc_obj)
+            + ";"
+            + "File Name: "
+            + fname
+            + ";"
+            + "Line: "
+            + str(exc_tb.tb_lineno)
+        )
+        CommonUtil.ExecLog("", Error_Detail, 4, False)
+
     return True
 
 
@@ -565,7 +573,7 @@ def PreProcess(log_dir=None):
     ConfigModule.add_config_value("sectionOne", "sTestStepExecLogId", "node_cli", temp_ini_file)
 
 
-def update_machine(dependency, default_team_and_project_dict):
+def update_machine(dependency, default_team_and_project_dict, should_print=True):
     try:
         # Get Local Info object
         oLocalInfo = CommonUtil.MachineInfo()
@@ -606,12 +614,13 @@ def update_machine(dependency, default_team_and_project_dict):
         }
         r = RequestFormatter.Get("update_automation_machine_api/", update_object)
         if r["registered"]:
-            from rich.console import Console
-            rich_print = Console().print
-            # rich_print(":green_circle: Zeuz Node is online: ", end="")
-            rich_print(":green_circle:" + r["name"], style="bold cyan", end="")
-            print(" is Online\n")
-            CommonUtil.ExecLog("", "Zeuz Node is online: %s" % (r["name"]), 4, False, print_Execlog=False)
+            if should_print:
+                from rich.console import Console
+                rich_print = Console().print
+                # rich_print(":green_circle: Zeuz Node is online: ", end="")
+                rich_print(":green_circle: " + r["name"], style="bold cyan", end="")
+                print(" is Online\n")
+                CommonUtil.ExecLog("", "Zeuz Node is online: %s" % (r["name"]), 4, False, print_Execlog=False)
         else:
             if r["license"]:
                 CommonUtil.ExecLog("", "Machine is not registered as online", 4, False)
@@ -626,21 +635,10 @@ def update_machine(dependency, default_team_and_project_dict):
                         "", "Machine is not registered as online", 4, False
                     )
         return r
-    except Exception as e:
+    except Exception:
         exc_type, exc_obj, exc_tb = sys.exc_info()
         fname = os.path.split(exc_tb.tb_frame.f_code.co_filename)[1]
-        Error_Detail = (
-            (str(exc_type).replace("type ", "Error Type: "))
-            + ";"
-            + "Error Message: "
-            + str(exc_obj)
-            + ";"
-            + "File Name: "
-            + fname
-            + ";"
-            + "Line: "
-            + str(exc_tb.tb_lineno)
-        )
+        Error_Detail = f'{str(exc_type).replace("type ", "Error Type: ")}; Message: {exc_obj}; File: {fname}; Line: {exc_tb.tb_lineno}'
         CommonUtil.ExecLog("", Error_Detail, 4, False)
 
 
@@ -962,6 +960,10 @@ def command_line_args() -> Path:
     parser_object.add_argument(
         "-d", "--log_dir", action="store", help="Specify a custom directory for storing Run IDs and logs.", metavar=""
     )
+    
+    parser_object.add_argument(
+        "-gh", "--gh_token", action="store", help="Enter GitHub personal access token (https://github.com/settings/tokens)", metavar=""
+    )
     all_arguments = parser_object.parse_args()
 
     username = all_arguments.username
@@ -972,6 +974,8 @@ def command_line_args() -> Path:
     max_run_history = all_arguments.max_run_history
     logout = all_arguments.logout
     auto_update = all_arguments.auto_update
+    gh_token = all_arguments.gh_token
+    
 
     # Check if custom log directory exists, if not, we'll try to create it. If
     # we can't create the custom log directory, we should error out.
@@ -1029,6 +1033,8 @@ def command_line_args() -> Path:
         CommonUtil.MachineInfo().setLocalUser(node_id)
     if max_run_history:
         pass
+    if gh_token:
+        os.environ["GH_TOKEN"] = gh_token
 
     """argparse module automatically shows exceptions of corresponding wrong arguments
      and executes sys.exit(). So we don't need to use try except"""
@@ -1045,7 +1051,7 @@ def Bypass():
         oLocalInfo = CommonUtil.MachineInfo()
         testerid = (oLocalInfo.getLocalUser()).lower()
         print("[Bypass] Zeuz Node is online: %s" % testerid)
-        RunProcess(testerid, user_info_object)
+        RunProcess(testerid, device_dict, user_info_object)
 
 
 if __name__ == "__main__":

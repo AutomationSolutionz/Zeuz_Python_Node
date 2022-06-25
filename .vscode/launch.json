@@ -33,19 +33,20 @@
             "console": "integratedTerminal"
         },
         {
-            "name": "Python: node_gui",
-            "type": "python",
-            "request": "launch",
-            "program": "${workspaceFolder}/node_gui.py",
-            "console": "integratedTerminal"
-        },
-        {
             "name": "Python: local_run",
             "type": "python",
             "request": "launch",
             "program": "${workspaceFolder}/node_cli.py",
             "args": ["--local_run"],
             "console": "integratedTerminal"
-        }
+        },
+        {
+            "name": "Python: node_cli with GH_TOKEN",
+            "type": "python",
+            "request": "launch",
+            "program": "${workspaceFolder}/node_cli.py",
+            "args": ["--gh", "TOKEN_HERE"],
+            "console": "integratedTerminal"
+        },
     ]
 }
