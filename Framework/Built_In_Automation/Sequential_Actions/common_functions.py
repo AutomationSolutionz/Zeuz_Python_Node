@@ -2439,7 +2439,6 @@ def excel_write(data_set):
                 expand = right.strip().lower()
             elif "write into excel" in left:
                 value = CommonUtil.parse_value_into_object(right)
-                # print("......1......", type(value), ".......", value)
             elif "file path" in left:
                 filepath = right.strip()
                 excel_file_path = Path(CommonUtil.path_parser(filepath))
@@ -3503,6 +3502,7 @@ def csv_read(data_set):
         allowed_list = None
         map_key_names = None
         Integer, Float, Bool = [], [], []
+        Python_mod = False
         for left, _, right in data_set:
             left = left.lower().strip()
             if "file path" == left:
@@ -3548,6 +3548,18 @@ def csv_read(data_set):
                         Bool += fields
                 elif "str" in left:
                     pass    # every field is already in string in csv
+            elif "pythonmodule" == left.replace(" ", "").replace("_", "").replace("-", "").lower():
+                r = right.strip()
+                sys.path.append(os.path.dirname(r))
+                try:
+                    filename = os.path.basename(r)
+                    filename = filename[:filename.find(".")] if "." in filename else filename
+                    exec("import " + filename)
+                    module = eval(filename)
+                    fun_list = dict(inspect.getmembers(module, inspect.isfunction))
+                    Python_mod = True
+                except:
+                    return CommonUtil.Exception_Handler(sys.exc_info())
             elif "read from csv" == left:
                 var_name = right.strip()
 
@@ -3606,6 +3618,13 @@ def csv_read(data_set):
                             elif i not in not_exist:
                                 not_exist.append(i)
                                 CommonUtil.ExecLog("", "'%s' key does not exist for converting to boolean" % i, 2)
+                    if Python_mod:
+                        for i in line:
+                            temp = line[i].strip()
+                            if "(" in temp and temp.endswith(")") and temp.split("(")[0] in fun_list:
+                                line[i] = fun_list[temp.split("(")[0]](*eval("["+temp.split("(")[1][:-1] + "]"))
+
+
                     data_to_save.append(line)
         CommonUtil.ExecLog(sModuleInfo, "Extracted CSV data with '%s' delimiter and saved data as %s format" % (delimiter, structure), 1)
         sr.Set_Shared_Variables(var_name, data_to_save)
