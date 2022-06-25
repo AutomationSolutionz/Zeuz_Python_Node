@@ -8,6 +8,7 @@
 import difflib
 import inspect, sys, time, collections, ftplib, os, ast, copy, csv, yaml, subprocess
 import itertools
+import platform
 from pathlib import Path
 
 from bs4 import BeautifulSoup
@@ -5417,6 +5418,62 @@ def extract_text_from_scanned_pdf(data_set):
             full_pdf_text.append(texts)
 
         return sr.Set_Shared_Variables(var_name, full_pdf_text)
+
+    except Exception:
+        return CommonUtil.Exception_Handler(sys.exc_info())
+
+
+@logger
+def authenticator_code_generator(data_set):
+    """
+    This function reads the authenticator secret code and generate tfa code in every 30 sec
+
+    Args:
+        data_set:
+            ------------------------------------------------------------------------------
+            |app_name   		            |path		    | %|os.environ["AUTH_CODE"]|%
+            |authenticator code generator	|common action	| variable_name
+            ------------------------------------------------------------------------------
+    Return:
+        `passed` if success
+        `zeuz_failed` if fails
+    """
+
+    sModuleInfo = inspect.currentframe().f_code.co_name + " : " + MODULE_NAME
+
+    try:
+        var_name = app_name = secret_code = ""
+
+        for left, mid, right in data_set:
+            if mid.strip().lower() == "input parameter":
+                app_name = left.strip()
+                secret_code = right.strip()
+            elif left.strip().lower() == "authenticator code generator":
+                var_name = right.strip()
+
+        if "" in (app_name, secret_code):
+            CommonUtil.ExecLog(sModuleInfo, "Please provide the app name and authenticator secret key", 3)
+            return "zeuz_failed"
+
+        app_dir = Path(os.path.abspath(__file__).split("Framework")[0])/"Apps"/"Authenticator"
+        csv_path = app_dir/"gauth.csv"
+        with open(csv_path,"w") as file:
+            file.write(app_name + ":" + secret_code)
+
+        if platform.system() == "Windows":
+            cmd = str(app_dir)
+            cmd = f'{cmd[:2]} && cd "{cmd}" && gauth.exe -csv'
+        elif platform.system() == "Darwin":
+            cmd = str(app_dir/"gauth.mac")
+        else:
+            cmd = str(app_dir/"gauth.lin")
+
+        CommonUtil.ExecLog(sModuleInfo, f"Running the following command:\n{cmd}", 1)
+        # output = os.system(cmd)
+        output = subprocess.check_output(cmd, shell=True, encoding="utf-8").strip()
+        CommonUtil.ExecLog(sModuleInfo, f"Captured following output:\n{output}", 1)
+
+        return sr.Set_Shared_Variables(var_name, output.split(",")[-4])
 
     except Exception:
         return CommonUtil.Exception_Handler(sys.exc_info())
