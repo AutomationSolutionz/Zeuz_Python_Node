@@ -12,8 +12,6 @@ except ImportError:
     import os
     DEVNULL = open(os.devnull, 'wb')
 
-executor = concurrent.futures.ThreadPoolExecutor()
-
 def install_missing_modules():
     """
     Purpose: This function will check all the installed modules, compare with what is in requirements-win.txt file
@@ -88,7 +86,7 @@ def install_missing_modules():
             )
         
         # Upgrading outdated modules found in last run
-        outdated_modules_filepath = os.path.dirname(os.path.abspath(__file__)) + os.sep + 'outdated_modules.json'
+        outdated_modules_filepath = os.path.dirname(os.path.abspath(__file__)).replace(os.sep + "Framework", os.sep + 'AutomationLog') + os.sep + 'outdated_modules.json'
         needs_to_be_updated = None
         if os.path.exists(outdated_modules_filepath):
             try:
@@ -106,7 +104,7 @@ def install_missing_modules():
                         print("module_installer: Failed to upgrade module: %s" % module_name)
         def get_outdated_modules(): 
             # Storing outdated modules to upgrade on the next run
-            sleep(5)
+            sleep(15)
             try:
                 print("module_installer: Checking for outdated modules")
                 p1 = subprocess.run([sys.executable, "-m",'pip','list','--outdated','--format','json'],capture_output=True)
@@ -119,8 +117,9 @@ def install_missing_modules():
             except:
                 print("Failed to gather outdated modules...")
                 traceback.print_exc()
-
+        executor = concurrent.futures.ThreadPoolExecutor()
         executor.submit(get_outdated_modules)
+        executor.shutdown(wait=False)
     except:
         print("Failed to install missing modules...")
         traceback.print_exc()
