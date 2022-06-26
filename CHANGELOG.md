@@ -4,6 +4,9 @@
 
 ### [Current changes]
 
+- **[Add]** Authenticator code generator action is added for windows
+- **[Improve]** Function handle capability inside csv cells is implemented
+- **[Fix]** Windows_pid issue solved for image searching
 - **[Add]** Don't download the same attachments multiple times. This is achieved
   by keeping track of hashes of the attachment files sent from the server.
 
