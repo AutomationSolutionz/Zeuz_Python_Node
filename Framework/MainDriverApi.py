@@ -1394,8 +1394,13 @@ def download_attachments(testcase_info):
 
     db = AttachmentDB(attachment_db_path)
 
-    # Test case attachments
-    for attachment in testcase_info["attachments"]:
+    def download_or_copy(attachment):
+        """
+        Puts the given attachment to the "to be downloaded" list or if its found
+        in the attachment db, it'll copy it from the db to the "attachments"
+        folder.
+        """
+
         entry = db.exists(attachment["hash"])
         to_append = {
             "url": url_prefix + attachment["path"],
@@ -1406,45 +1411,38 @@ def download_attachments(testcase_info):
             urls.append(to_append)
         else:
             try:
-                shutil.copyfile(str(entry["path"]), attachment_path / Path(attachment["path"].name))
+                shutil.copyfile(str(entry["path"]), attachment_path / Path(attachment["path"]).name)
             except:
                 # If copy fails, the file either does not exist or we don't have
                 # permission. Download the file again and remove from db.
                 urls.append(to_append)
                 db.remove(entry["hash"])
 
+    # Test case attachments
+    for attachment in testcase_info["attachments"]:
+        download_or_copy(attachment)
+
     # Step attachments
     for step in testcase_info["steps"]:
         for attachment in step["attachments"]:
-            entry = db.exists(attachment["hash"])
-            to_append = {
-                "url": url_prefix + attachment["path"],
-                "download_dir": attachment_path,
-                "attachment": attachment,
-            }
-            if entry is None:
-                urls.append(to_append)
-            else:
-                try:
-                    shutil.copyfile(str(entry["path"]), attachment_path / Path(attachment["path"].name))
-                except:
-                    # If copy fails, the file either does not exist or we don't have
-                    # permission. Download the file again and remove from db.
-                    urls.append(to_append)
-                    db.remove(entry["hash"])
+            download_or_copy(attachment)
 
     results = ThreadPool(4).imap_unordered(download_attachment, urls)
     for r in results:
         print("Downloaded: %s" % r)
 
         # Copy into the attachments db.
-        # attachment_path_in_db = attachment_db_path / r["path"].name
+        attachment_path_in_db = attachment_db_path / r["path"].name
 
-        # put = db.put(attachment_path_in_db, r["hash"])
-        # if put:
-        #     # If entry is successful, we copy the downloaded attachment to the
-        #     # db directory.
-        #     shutil.copyfile(r["path"], put["path"])
+        put = db.put(attachment_path_in_db, r["hash"])
+        if put:
+            # If entry is successful, we copy the downloaded attachment to the
+            # db directory.
+            try:
+                shutil.copyfile(r["path"], put["path"])
+            except:
+                # If copying the attachment fails, we remove the entry.
+                db.remove(r["hash"])
 
 
 # main function
