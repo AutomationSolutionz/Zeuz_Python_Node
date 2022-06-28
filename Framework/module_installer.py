@@ -17,7 +17,7 @@ def install_missing_modules():
     If anything is missing from requirements-win.txt file, it will install them only
     """
     try:
-        print("\nmodule_installer: Checking for missing modules...")
+        # print("\nmodule_installer: Checking for missing modules...")
 
         import platform
 
@@ -70,7 +70,16 @@ def install_missing_modules():
             if module_name.lower() not in alredy_installed_list:
                 try:
                     print("module_installer: Installing module: %s" % module_name)
-                    subprocess.check_call([sys.executable, "-m", "pip", "install","--trusted-host=pypi.org", "--trusted-host=files.pythonhosted.org", module_name], stderr=DEVNULL, stdout=DEVNULL,)
+                    subprocess.check_call([
+                        sys.executable,
+                        "-m",
+                        "pip",
+                        "install",
+                        "--trusted-host=pypi.org",
+                        "--trusted-host=pypi.python.org"
+                        "--trusted-host=files.pythonhosted.org",
+                        module_name
+                    ], stderr=DEVNULL, stdout=DEVNULL,)
                     print("module_installer: Installed missing module: %s" % module_name)
                     installed = True
                 except:
