@@ -78,7 +78,7 @@ def install_missing_modules():
                         "pip",
                         "install",
                         "--trusted-host=pypi.org",
-                        "--trusted-host pypi.python.org",
+                        "--trusted-host=pypi.python.org",
                         "--trusted-host=files.pythonhosted.org",
                         module_name
                     ], stderr=DEVNULL, stdout=DEVNULL,)
@@ -111,7 +111,7 @@ def install_missing_modules():
                             "pip",
                             "install",
                             "--trusted-host=pypi.org",
-                            "--trusted-host pypi.python.org"
+                            "--trusted-host=pypi.python.org"
                             "--trusted-host=files.pythonhosted.org",
                             module_name,
                             "--upgrade"
