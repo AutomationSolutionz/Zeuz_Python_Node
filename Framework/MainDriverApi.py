@@ -1468,7 +1468,7 @@ def main(device_dict, user_info_object):
 
         save_path = Path(ConfigModule.get_config_value("sectionOne", "temp_run_file_path", temp_ini_file)) / "attachments"
 
-        # get_json, all_file_specific_steps = True, {}
+        get_json, all_file_specific_steps = True, {}
         cnt = 0
         # for i in os.walk(save_path):
         #     if get_json:
