@@ -1466,19 +1466,20 @@ def main(device_dict, user_info_object):
         # get local machine user id
         Userid = (CommonUtil.MachineInfo().getLocalUser()).lower()
 
-        get_json, all_file_specific_steps = True, {}
         save_path = Path(ConfigModule.get_config_value("sectionOne", "temp_run_file_path", temp_ini_file)) / "attachments"
+
+        # get_json, all_file_specific_steps = True, {}
         cnt = 0
-        for i in os.walk(save_path):
-            if get_json:
-                get_json = False
-                folder_list = i[1]
-                for j in folder_list:
-                    all_file_specific_steps[j] = {}
-            else:
-                for j in i[2]:
-                    all_file_specific_steps[folder_list[cnt]][j] = str(Path(i[0]) / j)
-                cnt += 1
+        # for i in os.walk(save_path):
+        #     if get_json:
+        #         get_json = False
+        #         folder_list = i[1]
+        #         for j in folder_list:
+        #             all_file_specific_steps[j] = {}
+        #     else:
+        #         for j in i[2]:
+        #             all_file_specific_steps[folder_list[cnt]][j] = str(Path(i[0]) / j)
+        #         cnt += 1
         # TODO: Remove all_file_specific_steps at a later period. keeping this
         # only for custom driver purpose
 
