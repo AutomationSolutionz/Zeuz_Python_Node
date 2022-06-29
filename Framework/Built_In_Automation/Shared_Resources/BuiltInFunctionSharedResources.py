@@ -34,7 +34,7 @@ def Set_Shared_Variables(
     attachment_var=False,
     print_variable=True,
     pretty=True,
-    print_raw=True,
+    print_raw=False,
 ):
     try:
         sModuleInfo = inspect.currentframe().f_code.co_name + " : " + MODULE_NAME
@@ -87,9 +87,12 @@ def Set_Shared_Variables(
 
         if print_variable:
             if print_raw:
-                CommonUtil.ExecLog(
-                    sModuleInfo, "Raw variable data: %s" % value, 4,
-                )
+                try:
+                    CommonUtil.ExecLog(
+                        sModuleInfo, "Raw variable data: %s" % value, 4,
+                    )
+                except:
+                    pass
 
             try: val = json.dumps(CommonUtil.parse_value_into_object(value), indent=2, sort_keys=True)
             except: val = str(value)
